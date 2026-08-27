@@ -40,7 +40,7 @@ export interface OntologyProperty {
   readonly type: "object" | "datatype";
 }
 
-/** The `ontology show` payload — the detailed view plus render options. */
+/** The `ontology lookup` payload — the detailed view plus render options. */
 export interface OntologyShowData {
   readonly prefix: string;
   readonly namespace: string;

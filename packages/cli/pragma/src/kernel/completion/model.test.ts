@@ -33,10 +33,9 @@ function moduleWith(overrides: Partial<VerbSpec>): CapabilityModule {
 }
 
 describe("buildCompletionModel — structure", () => {
-  it("collects nouns sorted, injecting the bin-served mcp", () => {
+  it("collects nouns sorted, from the declared verbs alone", () => {
     expect(model.nouns.map((n) => n.noun)).toEqual([
       "block",
-      "mcp",
       "standard",
       "status",
     ]);
@@ -62,17 +61,12 @@ describe("buildCompletionModel — structure", () => {
     expect(status?.verbs).toEqual([]);
   });
 
-  it("injects mcp as a bare self-verb noun with nothing to offer", () => {
-    const mcp = findNoun(model, "mcp");
-    expect(mcp?.selfVerb).toEqual({
-      label: "mcp",
-      mutates: false,
-      flags: [],
-      positionals: [],
-    });
-  });
+  it("offers the mcp noun from its declared verb, with no self-verb", () => {
+    // The noun used to be conjured here because the bin served it without a
+    // spec; nothing is conjured now, so a module that declares no mcp verb
+    // gets no mcp noun.
+    expect(findNoun(model, "mcp")).toBeUndefined();
 
-  it("does not inject mcp when a live mcp noun exists", () => {
     const withMcp = buildCompletionModel([
       moduleWith({ path: ["mcp", "serve"] }),
     ]);
@@ -119,6 +113,38 @@ describe("buildCompletionModel — flags and sources", () => {
       takesValue: true,
       repeatable: true,
     });
+  });
+
+  it("marks a spec-declared repeatable string/enum flag repeatable", () => {
+    // `string[]` is not the only accumulating shape: a compiled pack marks
+    // every declared filter `repeatable`, so `--category css --category git`
+    // is the union. Reading the kind alone de-offered the flag after its
+    // first use, which is exactly when repetition becomes offerable.
+    const repeatables = buildCompletionModel([
+      moduleWith({
+        params: [
+          {
+            kind: "enum",
+            name: "category",
+            doc: "Filter by category.",
+            values: ["css", "git"],
+            repeatable: true,
+          },
+          {
+            kind: "string",
+            name: "search",
+            doc: "Free text.",
+            repeatable: true,
+          },
+          { kind: "string", name: "note", doc: "Once only." },
+        ],
+      }),
+    ]);
+    const thing = findNoun(repeatables, "thing")?.selfVerb;
+    const flagOf = (flag: string) => thing?.flags.find((f) => f.flag === flag);
+    expect(flagOf("--category")?.repeatable).toBe(true);
+    expect(flagOf("--search")?.repeatable).toBe(true);
+    expect(flagOf("--note")?.repeatable).toBe(false);
   });
 
   it("resolves name positionals with required/variadic markers", () => {
@@ -270,6 +296,11 @@ describe("buildCompletionModel — flags and sources", () => {
       kind: "values",
       values: ["summary", "standard", "detailed"],
     });
+    // Every flag the global parser accepts is offered — a flag the surface
+    // advertises but completion omits is invisible at the TAB that would
+    // teach it.
+    expect(flags["--no-headers"]).toMatchObject({ takesValue: false });
+    expect(flags["--quiet"]).toMatchObject({ takesValue: false });
     expect(flags["--llm"]).toBeUndefined();
     expect(flags["--version"]?.rootOnly).toBe(true);
     expect(flags["--help"]?.rootOnly).toBeUndefined();
@@ -457,7 +488,14 @@ describe("mounted create completion — literal candidate pins (PROTECTED)", () 
     // the global tier is offered.
     expect(
       await runComplete(["create", "component", "--"], capabilities),
-    ).toEqual(["--detail", "--format", "--help", "--verbose"]);
+    ).toEqual([
+      "--detail",
+      "--format",
+      "--help",
+      "--no-headers",
+      "--quiet",
+      "--verbose",
+    ]);
   });
 
   it("leaf flag tier: `create component react --<TAB>` offers the REGISTERED flags", async () => {
@@ -476,9 +514,11 @@ describe("mounted create completion — literal candidate pins (PROTECTED)", () 
       "--dry-run",
       "--format",
       "--help",
+      "--no-headers",
       "--no-with-ssr-tests",
       "--no-with-stories",
       "--no-with-styles",
+      "--quiet",
       "--undo",
       "--verbose",
       "--yes",
@@ -492,9 +532,11 @@ describe("mounted create completion — literal candidate pins (PROTECTED)", () 
       "--dry-run",
       "--format",
       "--help",
+      "--no-headers",
       "--no-with-ssr-tests",
       "--no-with-stories",
       "--no-with-styles",
+      "--quiet",
       "--undo",
       "--use-ts-stories",
       "--verbose",

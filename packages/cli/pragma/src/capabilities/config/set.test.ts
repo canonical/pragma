@@ -3,10 +3,11 @@
  *
  * Pins the emitted covenant slice (`{ v:"set", args:["<key>","<value>"],
  * mutates:true, mcp:"config_set" }`), proves it drives the shared per-field
- * write path (set / reset-sentinel / enum-backstop), rejects an unknown key and
- * an out-of-set enum value with INVALID_INPUT, and holds MCP plan-first/confirm
- * parity. Since AV-228 B3 retired `config tier/channel/detail`, `config set` is
- * the sole config setter — `config set <field> <value>` is the migration path.
+ * write path (write / enum-backstop), rejects an unknown key and an out-of-set
+ * enum value with INVALID_INPUT, and holds MCP plan-first/confirm parity.
+ * Since AV-228 B3 retired `config tier/channel/detail`, `config set` is the
+ * sole config setter. It only ever SETS: the three strings that once doubled
+ * as clear-markers are refused here, and the error names `config unset`.
  */
 
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
@@ -72,7 +73,7 @@ describe("config set — covenant-exact emission (PROTECTED)", () => {
   });
 });
 
-describe("config set — write & reset (shares the per-field path)", () => {
+describe("config set — writes through the shared per-field path", () => {
   it("set tier writes the field to the GLOBAL config, never booting the store", async () => {
     const rt: PragmaRuntime = bootRuntime(FLAGS, tmp("pragma-proj-"));
     const outcome = await executeVerb(
@@ -101,8 +102,17 @@ describe("config set — write & reset (shares the per-field path)", () => {
     expect(written.channel).toBe("experimental");
     expect(written.detail).toBe("detailed");
   });
+});
 
-  it("a reset sentinel via set removes the tier field", async () => {
+describe("config set — the reserved clear-markers are refused, naming unset", () => {
+  // Clearing a field is a command, so no value may quietly mean "remove me":
+  // the three strings that used to are rejected, and the rejection names the
+  // command that owns the job. `tier` keeps whatever it held.
+  it.each([
+    "none",
+    "default",
+    "-",
+  ])("set tier %s is INVALID_INPUT that recovers with config unset tier", async (reserved) => {
     const cwd = tmp("pragma-proj-");
     await executeVerb(
       setVerb,
@@ -110,14 +120,31 @@ describe("config set — write & reset (shares the per-field path)", () => {
       REAL,
       bootRuntime(FLAGS, cwd),
     );
-    const outcome = await executeVerb(
-      setVerb,
-      { key: "tier", value: "none" },
-      REAL,
-      bootRuntime(FLAGS, cwd),
+    let caught: unknown;
+    try {
+      await executeVerb(
+        setVerb,
+        { key: "tier", value: reserved },
+        REAL,
+        bootRuntime(FLAGS, cwd),
+      );
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBeInstanceOf(PragmaError);
+    expect((caught as PragmaError).code).toBe("INVALID_INPUT");
+    expect(JSON.stringify((caught as PragmaError).recovery)).toContain(
+      "config unset tier",
     );
-    expect(outcome.stdout).toContain("Reset tier");
-    expect("tier" in readGlobal()).toBe(false);
+    expect(readGlobal().tier).toBe("apps/lxd");
+  });
+
+  it("a reserved marker is only reserved for a free-string field", () => {
+    // `channel`/`detail` are closed enums: their rejection is the enum
+    // backstop naming the members, not the clear-marker rule.
+    expect(() => runSet({ key: "channel", value: "none" })).toThrow(
+      /Invalid channel/,
+    );
   });
 });
 

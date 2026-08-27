@@ -2,8 +2,8 @@
  * The config field table — one declarative row per writable field. Since AV-228
  * B3 retired the per-field `config tier`/`channel`/`detail` verbs, this table no
  * longer emits verbs of its own: it is the shared source of truth that drives
- * `config set <key> <value>` (via `runSet` → `runField`), giving `set` its
- * `<key>` enum, per-field reset sentinels, enum validation, and positional
+ * `config set <key> <value>` and `config get`/`config unset` (via `runSet` →
+ * `runField`), giving each its `<key>` enum, enum validation, and positional
  * shaping for free.
  */
 
@@ -21,23 +21,30 @@ export interface ConfigFieldSpec {
   readonly kind: "string" | "enum";
   /** The allowed values for an enum field. */
   readonly values?: readonly string[];
-  /** Reserved values that REMOVE the field instead of setting it. */
-  readonly resetSentinel?: readonly string[];
 }
 
 /**
- * The three writable fields. Only `tier` (a free string with a meaningful
- * "no value") carries reset sentinels; `channel`/`detail` reset by setting
- * their default (`normal`/`standard`). The migration path for the retired
- * field-verbs is `config set <field> <value>` (e.g. `config set tier apps/lxd`,
- * `config set tier none` to clear it).
+ * Values `config set` refuses for a FREE-STRING field: clearing a field is a
+ * command (`config unset <key>`), not a magic value — a value spelled `none`
+ * conflated "remove the field" with "set it to the string none". They stay
+ * reserved (rather than becoming writable) so the strings cannot silently
+ * change meaning; the rejection names `unset` as the owner of the job.
+ */
+export const RESERVED_CLEAR_VALUES: readonly string[] = [
+  "none",
+  "default",
+  "-",
+];
+
+/**
+ * The three writable fields. `channel`/`detail` are fixed enums;
+ * `tier` is a free string, cleared with `config unset tier`.
  */
 export const CONFIG_FIELDS: readonly ConfigFieldSpec[] = [
   {
     field: "tier",
     positional: "path",
     kind: "string",
-    resetSentinel: ["none", "default", "-"],
   },
   {
     field: "channel",

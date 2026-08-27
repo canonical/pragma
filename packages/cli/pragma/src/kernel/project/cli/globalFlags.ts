@@ -1,7 +1,7 @@
 /**
  * Global-flag pre-parsing, ahead of Commander.
  *
- * `--format`, `--verbose`, and `--detail` may appear anywhere on the line, so
+ * `--format`, `--verbose`, `--no-headers`, and `--detail` may appear anywhere on the line, so
  * they are scanned and stripped before Commander sees argv — otherwise
  * `enablePositionalOptions()` scoping would reject a flag placed after a verb.
  *
@@ -17,10 +17,11 @@
  * it, so the filter would vanish and the command would answer over the whole
  * set instead — a wrong answer with no diagnostic.
  * Ported from the v1 `parseGlobalFlags`, with two v2 changes: a new `--detail`
- * flag and the `--format text` value renamed to `plain` (the kernel's
- * {@link OutputFormat}). The dedicated `--llm` flag was folded into
- * `--format llm`, leaving auto-detection as the sole implicit trigger. Both the
- * space (`--format json`) and equals (`--format=json`) forms are recognized.
+ * flag and the `--format text` value replaced by `plain` (the kernel's
+ * {@link OutputFormat}) — `text` is not accepted; the bin rejects it with the
+ * valid list. The dedicated `--llm` flag was folded into `--format llm`,
+ * leaving auto-detection as the sole implicit trigger. Both the space
+ * (`--format json`) and equals (`--format=json`) forms are recognized.
  */
 
 import { DETAIL_LEVELS, type DetailLevel } from "../../../constants.js";
@@ -81,28 +82,61 @@ function readFlagValue(
 }
 
 /**
- * Read the raw `--format` value exactly as typed, for validation.
+ * Read a value flag's raw value exactly as typed, for validation.
  *
  * Unlike {@link parseGlobalFlags} this does not normalize — the caller decides
- * how to reject an unknown value. A bare `--format` with no following value is
+ * how to reject an unknown value. A bare flag with no following value is
  * reported as `""` (not `undefined`) so it is rejected rather than silently
- * falling through.
+ * falling through. One reader for every validated global value flag, so a
+ * guard applied to one cannot silently miss its siblings.
  *
  * @param argv - Raw argv (the user's arguments).
- * @returns The raw value, `""` for a valueless `--format`, or `undefined`.
+ * @param flag - The flag including leading dashes (e.g. `--format`).
+ * @returns The raw value, `""` for a valueless flag, or `undefined`.
  */
-export function readRawFormat(argv: readonly string[]): string | undefined {
+function readRawFlag(
+  argv: readonly string[],
+  flag: string,
+): string | undefined {
   const span = selectScanSpan(argv);
-  const equalsArg = span.find((arg) => arg.startsWith("--format="));
-  if (equalsArg !== undefined) return equalsArg.slice("--format=".length);
+  const equalsPrefix = `${flag}=`;
+  const equalsArg = span.find((arg) => arg.startsWith(equalsPrefix));
+  if (equalsArg !== undefined) return equalsArg.slice(equalsPrefix.length);
 
-  const spaceIndex = span.indexOf("--format");
+  const spaceIndex = span.indexOf(flag);
   if (spaceIndex === -1) return undefined;
 
-  // `""` rather than `undefined`: a valueless `--format` must be REJECTED by the
+  // `""` rather than `undefined`: a valueless flag must be REJECTED by the
   // caller, not fall through to the default.
   const value = span.at(spaceIndex + 1);
   return isFlagValue(value) ? value : "";
+}
+
+/** The raw `--format` value as typed (see {@link readRawFlag}). */
+export function readRawFormat(argv: readonly string[]): string | undefined {
+  return readRawFlag(argv, "--format");
+}
+
+/**
+ * The raw `--detail` value as typed (see {@link readRawFlag}). Validated by
+ * the bin exactly as `--format` is — an unrecognized level used to be
+ * dropped silently, which is the same defect class as a filter that
+ * evaporates: wrong output with no diagnostic.
+ */
+export function readRawDetail(argv: readonly string[]): string | undefined {
+  return readRawFlag(argv, "--detail");
+}
+
+/**
+ * The `--verbose=<x>` token, if present. `--verbose` takes no value — one
+ * flag, one spelling — and the program must not accept-and-ignore a second
+ * one: the bin rejects the token this finds.
+ *
+ * @param argv - Raw argv (the user's arguments).
+ * @returns The offending token, or `undefined`.
+ */
+export function findValuedVerbose(argv: readonly string[]): string | undefined {
+  return selectScanSpan(argv).find((arg) => arg.startsWith("--verbose="));
 }
 
 /**
@@ -157,11 +191,18 @@ export function parseGlobalFlags(
   const formatRequested = rawFormat !== undefined;
   const autoLlm = !formatRequested && !env.isTty && !env.noAutoLlm;
   const detail = readDetail(argv);
+  const span = selectScanSpan(argv);
   return {
     llm: format === "llm" || autoLlm,
     autoLlm,
     format,
-    verbose: selectScanSpan(argv).includes("--verbose"),
+    verbose: span.includes("--verbose"),
+    // `--no-headers` suppresses the plain-table header row; it is global so
+    // every list-shaped verb honors one spelling.
+    ...(span.includes("--no-headers") ? { noHeaders: true } : {}),
+    // `--quiet` silences success/progress (the report seam, interpreter logs,
+    // onboarding, calm notices) while error rendering stays untouched.
+    ...(span.includes("--quiet") ? { quiet: true } : {}),
     ...(detail !== undefined ? { detail } : {}),
   };
 }
@@ -190,12 +231,10 @@ export function stripGlobalFlags(argv: readonly string[]): string[] {
       return result;
     }
 
-    if (arg === "--verbose") continue;
-    if (
-      arg.startsWith("--format=") ||
-      arg.startsWith("--verbose=") ||
-      arg.startsWith("--detail=")
-    ) {
+    if (arg === "--verbose" || arg === "--no-headers" || arg === "--quiet") {
+      continue;
+    }
+    if (arg.startsWith("--format=") || arg.startsWith("--detail=")) {
       continue;
     }
     if (arg === "--format" || arg === "--detail") {

@@ -25,8 +25,8 @@ import {
   renderErrorLlm,
   renderErrorPlain,
 } from "../../error/renderError.js";
+import type { RenderContext } from "../../render/contracts.js";
 import { successEnvelope } from "../../render/envelope.js";
-import { selectFormatter } from "../../render/formatters.js";
 import { writeStdout } from "../../render/writeStdout.js";
 import { bootRuntime } from "../../runtime/boot.js";
 import type {
@@ -65,6 +65,18 @@ const logToStderr = (_level: string, message: string): void => {
   process.stderr.write(`${message}\n`);
 };
 
+/** A silenced log sink — `--quiet` drops progress; errors render elsewhere. */
+const logNowhere = (_level: string, _message: string): void => {};
+
+/**
+ * The interpreter log sink for this invocation: stderr, or — under `--quiet`
+ * — nothing. Progress/stage lines are success-path output; error rendering
+ * never routes through this sink, so muting it cannot hide a failure.
+ */
+function logSink(flags: GlobalFlags): (level: string, message: string) => void {
+  return flags.quiet === true ? logNowhere : logToStderr;
+}
+
 /** The result of running a verb: what to write where, and the exit code. */
 export interface DispatchOutcome {
   readonly stdout?: string;
@@ -74,6 +86,15 @@ export interface DispatchOutcome {
 
 /** Coerce one raw arg into the type its {@link ParamSpec} declares. */
 function coerceParam(param: ParamSpec, raw: unknown): unknown {
+  // A repeatable flag's collector hands over an array of occurrences; coerce
+  // each element so an enum still validates every value.
+  if (
+    Array.isArray(raw) &&
+    (param.kind === "string" || param.kind === "enum") &&
+    param.repeatable === true
+  ) {
+    return raw.map((value) => coerceParam(param, value));
+  }
   switch (param.kind) {
     case "number": {
       const value = typeof raw === "number" ? raw : Number(raw);
@@ -140,7 +161,19 @@ export function extractParams(
   return result;
 }
 
-/** Render a read/execute result through the verb's formatters. */
+/**
+ * Render a read/execute result through the verb's formatters.
+ *
+ * The plain branch owns two ROUTING decisions (the rendering itself stays in
+ * the formatters): it threads the presentation context (`--no-headers`,
+ * stdout's TTY-ness) into the plain formatter, and it routes a declared
+ * empty-state notice to STDERR with exit 0 — a zero-record result is a calm
+ * success, and stdout (the data stream) must not carry a human sentence a
+ * pipe would read as a record. `llm` and `json` keep their own empty shapes
+ * on stdout: both are machine contracts whose consumers read one stream.
+ *
+ * @note Impure — reads `process.stdout.isTTY` for the render context.
+ */
 function renderData(
   verb: VerbSpec,
   flags: GlobalFlags,
@@ -154,8 +187,25 @@ function renderData(
       exitCode: 0,
     };
   }
-  const text = selectFormatter(flags, verb.output.formatters)(data);
-  return { stdout: text ? `${text}\n` : "", exitCode: 0 };
+  if (flags.llm) {
+    const text = verb.output.formatters.llm(data);
+    return { stdout: text ? `${text}\n` : "", exitCode: 0 };
+  }
+  const context: RenderContext = {
+    headers: flags.noHeaders !== true,
+    stdoutIsTty: process.stdout.isTTY === true,
+  };
+  const text = verb.output.formatters.plain(data, context);
+  // The calm zero-record notice is success-path guidance — `--quiet` mutes it.
+  const notice =
+    flags.quiet === true
+      ? undefined
+      : verb.output.formatters.emptyNotice?.(data);
+  return {
+    stdout: text ? `${text}\n` : "",
+    ...(notice ? { stderr: `${notice}\n` } : {}),
+    exitCode: 0,
+  };
 }
 
 /** Render a dry-run plan (the effects a mutation would perform). */
@@ -257,7 +307,10 @@ export async function executeVerb(
       // Progress seam (U7): a long mutation's eager resolve/build runs before its
       // Task is returned, so `onLog` can't reach it — stream stage lines straight
       // to stderr instead, keeping stdout (the JSON/data stream) clean.
-      report: (message: string) => process.stderr.write(`${message}\n`),
+      report:
+        flags.quiet === true
+          ? () => {}
+          : (message: string) => process.stderr.write(`${message}\n`),
     };
     const task = await Promise.resolve(
       verb.run(params, mutationRuntime) as
@@ -277,7 +330,7 @@ export async function executeVerb(
         const { effects } = await runPreview(task, {
           cwd: previewExec.cwd,
           onEffectStart: previewExec.onEffectStart,
-          onLog: logToStderr,
+          onLog: logSink(flags),
         });
         // A plan is the effects a mutation WOULD apply — a `Prompt` is not one,
         // so the interactive confirm gate / answer prompts never clutter it.
@@ -294,7 +347,7 @@ export async function executeVerb(
       }
     }
     if (mutation.undo) {
-      const { undoCount } = await runUndo(task, { onLog: logToStderr });
+      const { undoCount } = await runUndo(task, { onLog: logSink(flags) });
       return renderUndo(flags, undoCount);
     }
     // Real execution: spread the verb's runner options into the node
@@ -304,7 +357,7 @@ export async function executeVerb(
     const onSigint = (): void => controller.abort();
     process.once("SIGINT", onSigint);
     try {
-      const value = await runTask(task, { onLog: logToStderr, ...exec });
+      const value = await runTask(task, { onLog: logSink(flags), ...exec });
       return renderData(verb, flags, value, {});
     } finally {
       process.removeListener("SIGINT", onSigint);

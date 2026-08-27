@@ -90,6 +90,13 @@ const GLOBAL_FLAGS: readonly FlagEntry[] = [
     repeatable: false,
     source: { kind: "values", values: DETAIL_LEVELS },
   },
+  {
+    flag: "--no-headers",
+    takesValue: false,
+    repeatable: false,
+    source: none(),
+  },
+  { flag: "--quiet", takesValue: false, repeatable: false, source: none() },
   { flag: "--help", takesValue: false, repeatable: false, source: none() },
   {
     flag: "--version",
@@ -186,18 +193,18 @@ function toVerbEntry(verb: VerbSpec): VerbEntry {
       flags.push({
         flag: `--${name}`,
         takesValue: param.kind !== "boolean",
-        repeatable: param.kind === "string[]",
+        // Two grammars accumulate, so two shapes are repeatable: a `string[]`
+        // flag (`--tag a --tag b`) and any `string`/`enum` param the spec
+        // marks `repeatable` — the form compiled packs give every declared
+        // filter. Reading only the kind de-offered a filter after its first
+        // use, hiding the repetition the parser had just started honouring.
+        repeatable: param.kind === "string[]" || param.repeatable === true,
         source,
       });
     }
   }
 
   return { label, mutates: verb.capability.mutates, flags, positionals };
-}
-
-/** An empty self-verb entry (used for the injected `mcp` noun). */
-function bareSelfVerb(label: string): VerbEntry {
-  return { label, mutates: false, flags: [], positionals: [] };
 }
 
 /**
@@ -264,9 +271,9 @@ function toMountedEntry(
  * Derive the completion model from the capability modules.
  *
  * Hidden verbs are excluded (matching `emitSurface` and `buildProgram`).
- * The bin-served `mcp` entry is injected so `pragma mc<Tab>` completes it,
- * matching the root help.
- * TODO(spec): drop the injection when `mcp` lands as a real (non-hidden) spec.
+ * Every noun in the model comes from a declared verb — `mcp` used to be
+ * injected here because the bin served it without a spec, and it now declares
+ * `mcp serve` like any other pair.
  *
  * @param modules - The capability modules.
  * @returns The completion model, nouns and verbs sorted.
@@ -314,10 +321,6 @@ export function buildCompletionModel(
         bucket.verbs.push(entry);
       }
     }
-  }
-
-  if (!byNoun.has("mcp")) {
-    byNoun.set("mcp", { selfVerb: bareSelfVerb("mcp"), verbs: [] });
   }
 
   const nouns: NounEntry[] = [...byNoun.entries()]

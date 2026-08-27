@@ -111,6 +111,14 @@ export type ParamSpec =
       default?: unknown;
       positional?: boolean;
       complete?: ParamComplete;
+      /**
+       * A repeatable flag ACCUMULATES: `--category css --category git` is
+       * the union, never last-wins (repetition is the sanctioned multi-value
+       * form, and silently dropping all but the last value is data loss).
+       * CLI-side only: the MCP arg schema keeps its scalar shape, and the
+       * run body accepts one value or many.
+       */
+      repeatable?: true;
     }
   | {
       kind: "enum";
@@ -121,6 +129,8 @@ export type ParamSpec =
       default?: string;
       positional?: boolean;
       complete?: ParamComplete;
+      /** See the string variant — repeated occurrences accumulate. */
+      repeatable?: true;
     }
   | {
       kind: "string[]";
@@ -131,11 +141,28 @@ export type ParamSpec =
       complete?: ParamComplete;
     };
 
-/** The three output modes every verb must render. */
+/**
+ * The three output modes every verb must render.
+ *
+ * `plain` takes an optional {@link RenderContext} — the dispatcher's
+ * presentation facts (`--no-headers`, whether stdout is a terminal). Only
+ * list-shaped formatters read it; `llm` (the byte-frozen agent contract) and
+ * `json` (the envelope) never see it.
+ *
+ * `emptyNotice` is the empty-state seam: when the data amounts to zero
+ * records, return the calm notice — the dispatcher routes it to STDERR with
+ * exit 0, keeping the stdout data stream free of human sentences a pipe
+ * would read as records. Return `undefined` (or omit the member) for data
+ * that has content; only the plain mode routes it.
+ */
 export interface Formatters<T> {
-  readonly plain: (d: T) => string;
+  readonly plain: (
+    d: T,
+    context?: import("../render/contracts.js").RenderContext,
+  ) => string;
   readonly llm: (d: T) => string;
   readonly json: (d: T) => string;
+  readonly emptyNotice?: (d: T) => string | undefined;
 }
 
 /** A usage example shown in verb help. */
@@ -312,6 +339,18 @@ export interface CliMountHost {
  * completion labels); the mount owns everything beneath the noun.
  */
 export interface CliProjection {
+  /**
+   * Load the mount's registration machinery, when it is deferred. The
+   * projection hook rides the capabilities barrel, which `--help` and
+   * `__complete` import on every spawn — so a mount whose registration needs
+   * heavy modules (a Commander adapter, shared decision logic) keeps them
+   * behind this async step instead of a static import, and only the one
+   * caller that actually builds the command tree (the bin, before
+   * `buildProgram`) awaits it. {@link mount} stays synchronous and throws
+   * when invoked unprepared, so a future caller cannot silently skip the
+   * step.
+   */
+  readonly prepare?: () => Promise<void>;
   /** Populate this module's noun parent with its subcommands. */
   readonly mount: (
     parent: import("commander").Command,

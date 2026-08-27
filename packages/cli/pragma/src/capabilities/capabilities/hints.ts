@@ -58,7 +58,13 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   },
   colophon: {
     category: "read",
-    use_when: `Understanding how ${BIN_NAME} and the active domain are built — the toolchain + domain colophon, for onboarding or a demo`,
+    use_when:
+      "Understanding how the active domain is built — its declared colophon, for onboarding or a demo",
+  },
+  config_get: {
+    category: "read",
+    use_when:
+      "Reading ONE config field's effective value and the layer it came from — the single-value form of config_show",
   },
   config_show: {
     category: "read",
@@ -98,11 +104,6 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     category: "read",
     use_when:
       "Exploring the full schema of a namespace by name — classes, properties, and hierarchy",
-  },
-  ontology_show: {
-    category: "read",
-    use_when:
-      "Deprecated alias of ontology_lookup — exploring a namespace's schema (prefer ontology_lookup)",
   },
   prompt_list: {
     category: "read",
@@ -175,6 +176,11 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     category: "write",
     use_when:
       "Setting any config field by name — tier, channel, or detail (e.g. `config set tier apps/lxd`)",
+  },
+  config_unset: {
+    category: "write",
+    use_when:
+      'Clearing a config field so the built-in default applies again — no value means "remove", this tool does',
   },
   create_component: {
     category: "write",

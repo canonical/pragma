@@ -3,7 +3,7 @@
  * CLI entry point for `pragma` (v2 kernel).
  *
  * The composition root. Ordered early exits keep the hot paths minimal and
- * side-effect-free: `mcp` serves over stdio (D9); `__complete` resolves
+ * side-effect-free: `mcp serve` serves over stdio (D9); `__complete` resolves
  * completions storelessly *before* first-run so the greeting never leaks into a
  * shell buffer; `--version` prints and exits. Otherwise: parse global flags,
  * reject a bad `--format`, run first-run onboarding, then build the Commander
@@ -14,20 +14,38 @@
  */
 
 import type { Command } from "commander";
-import { BIN_NAME, PROGRAM_DESCRIPTION, VERSION } from "./constants.js";
+import {
+  BIN_NAME,
+  DETAIL_LEVELS,
+  PROGRAM_DESCRIPTION,
+  VERSION,
+} from "./constants.js";
 
 /**
  * The flags a bare invocation answers itself. `--version` returns earlier; the
- * help forms fall through to the front door, which IS their answer — so the
- * unknown-flag guard must not mistake them for typos.
+ * help form falls through to the front door, which IS its answer — so the
+ * unknown-flag guard must not mistake it for a typo. One spelling per flag:
+ * no `-h`/`-v` shorts exist anywhere on the surface.
  */
-const ROOT_FLAGS = new Set(["--help", "-h", "--version", "-v"]);
+const ROOT_FLAGS = new Set(["--help", "--version"]);
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
 
-  // 1. MCP server entry (D9) — `pragma mcp` serves over stdio.
-  if (argv[0] === "mcp") {
+  // 1. MCP server entry (D9) — `pragma mcp serve` serves over stdio.
+  //    The exit is NARROW on purpose: argv must be EXACTLY those two tokens.
+  //    The server's startup has to stay minimal and stdio-pure (no first-run
+  //    banner, no config read, nothing on stdout but JSON-RPC), which is what
+  //    this shortcut buys — but the noun itself is ordinary grammar, so
+  //    `pragma mcp`, `pragma mcp --help` and `pragma mcp serve --help` fall
+  //    through to the same help machinery every other noun uses, and root
+  //    help's promise that `--help` works on any command becomes true.
+  //    Matching on a PREFIX would extend that purity budget to malformed argv
+  //    it was never bought for: `mcp serve extra` would serve instead of
+  //    letting Commander reject the excess argument, and `mcp serve --version`
+  //    would serve instead of answering the global flag. Anything suffixed
+  //    falls through to the ordinary grammar, which owns both jobs.
+  if (argv.length === 2 && argv[0] === "mcp" && argv[1] === "serve") {
     const [{ serveMcp }, { capabilities }] = await Promise.all([
       import("./kernel/project/mcp/serve.js"),
       import("./capabilities/index.js"),
@@ -67,59 +85,86 @@ async function main(): Promise<void> {
     return;
   }
 
-  const { parseGlobalFlags, readRawFormat, stripGlobalFlags } = await import(
-    "./kernel/project/cli/globalFlags.js"
-  );
+  const {
+    findValuedVerbose,
+    parseGlobalFlags,
+    readRawDetail,
+    readRawFormat,
+    stripGlobalFlags,
+  } = await import("./kernel/project/cli/globalFlags.js");
   const globalFlags = parseGlobalFlags(argv);
 
   // 3. `--version` is global — print and exit wherever it appears.
-  if (argv.some((arg) => arg === "--version" || arg === "-v")) {
+  if (argv.some((arg) => arg === "--version")) {
     process.stdout.write(`${VERSION}\n`);
     return;
   }
 
-  // 4. Reject an unknown `--format` early (help still prints regardless).
-  const explicitHelp = argv.some((arg) => arg === "--help" || arg === "-h");
-  const rawFormat = readRawFormat(argv);
-  if (
-    !explicitHelp &&
-    rawFormat !== undefined &&
-    !["plain", "llm", "json", "text"].includes(rawFormat)
-  ) {
-    const [
-      { PragmaError },
-      { renderErrorPlain, renderErrorJson },
-      { mapExitCode },
-    ] = await Promise.all([
-      import("./kernel/error/PragmaError.js"),
-      import("./kernel/error/renderError.js"),
-      import("./kernel/project/cli/exitCodes.js"),
-    ]);
-    const error = PragmaError.invalidInput("format", rawFormat, {
-      validOptions: ["plain", "llm", "json"],
-    });
-    const rendered =
-      globalFlags.format === "json"
-        ? renderErrorJson(error)
-        : renderErrorPlain(error);
-    process.stderr.write(`${rendered}\n`);
-    process.exitCode = mapExitCode(error.code);
-    return;
+  // 4. Reject a bad global-flag value early (help still prints regardless):
+  //    an unknown `--format`, an unrecognized `--detail` level (which used to
+  //    be dropped silently — the same defect class as a filter that
+  //    evaporates), and a valued `--verbose=<x>` (the flag takes no value;
+  //    accepting-and-ignoring one would be a silent no-op).
+  const explicitHelp = argv.some((arg) => arg === "--help");
+  const jsonMode = globalFlags.format === "json";
+  if (!explicitHelp) {
+    const rawFormat = readRawFormat(argv);
+    if (
+      rawFormat !== undefined &&
+      !["plain", "llm", "json"].includes(rawFormat)
+    ) {
+      await rejectGlobalValue(
+        "format",
+        rawFormat,
+        ["plain", "llm", "json"],
+        jsonMode,
+      );
+      return;
+    }
+    const rawDetail = readRawDetail(argv);
+    if (
+      rawDetail !== undefined &&
+      !(DETAIL_LEVELS as readonly string[]).includes(rawDetail)
+    ) {
+      await rejectGlobalValue(
+        "detail",
+        rawDetail,
+        [...DETAIL_LEVELS],
+        jsonMode,
+      );
+      return;
+    }
+    const valuedVerbose = findValuedVerbose(argv);
+    if (valuedVerbose !== undefined) {
+      const { PragmaError } = await import("./kernel/error/PragmaError.js");
+      await renderStartupError(
+        new PragmaError({
+          code: "INVALID_INPUT",
+          message: `\`--verbose\` takes no value; \`${valuedVerbose}\` is not a flag of this program.`,
+          recovery: { message: "Use `--verbose` on its own." },
+        }),
+        jsonMode,
+      );
+      return;
+    }
   }
 
   // 5. First-run onboarding (stderr-only, failure-tolerant). Skipped on the
-  //    side-effect-free help path — `--help` here; `mcp`, `__complete`, and
+  //    side-effect-free help path — `--help` here; `mcp serve`, `__complete`, and
   //    `--version` already returned above — so help never seeds state.
   if (!explicitHelp) {
     const { ensureFirstRun } = await import("./kernel/config/firstRun.js");
-    await ensureFirstRun();
+    // `--quiet` silences the onboarding lines but still seeds the state —
+    // onboarding is failure-tolerant by design, so muting its stderr changes
+    // nothing about the invocation.
+    await ensureFirstRun(globalFlags.quiet === true ? () => {} : undefined);
   }
 
-  // 6. Build the command tree.
-  const [{ buildProgram }, { capabilities }] = await Promise.all([
-    import("./kernel/project/cli/buildProgram.js"),
-    import("./capabilities/index.js"),
-  ]);
+  // 6. Load the capability registry — the command tree's data. Commander and
+  //    the program builder are NOT loaded yet: the bare-invocation branch
+  //    below answers `--help` and the front door from the registry alone, so
+  //    the help fast path never pays for the parser it will not run.
+  const { capabilities } = await import("./capabilities/index.js");
   const args = stripGlobalFlags(argv);
 
   // 7. A bare invocation (no command token — argv empty or only global flags)
@@ -187,10 +232,12 @@ async function main(): Promise<void> {
       );
       const effective = await loadEffectiveModules(capabilities, process.cwd());
       modules = effective.modules;
-      for (const problem of effective.problems) {
-        process.stderr.write(
-          `Ignored story ${problem.source}: ${problem.message}\n`,
-        );
+      if (globalFlags.quiet !== true) {
+        for (const problem of effective.problems) {
+          process.stderr.write(
+            `Ignored story ${problem.source}: ${problem.message}\n`,
+          );
+        }
       }
     } catch (error) {
       await renderStartupError(error, globalFlags.format === "json");
@@ -210,6 +257,14 @@ async function main(): Promise<void> {
     ),
   );
 
+  // A mount may defer its registration machinery behind `prepare()` (the
+  // fast paths import the projection hook without ever mounting) — resolve
+  // every deferred import before the tree is built, alongside the program
+  // builder's own deferred load.
+  const [{ buildProgram }] = await Promise.all([
+    import("./kernel/project/cli/buildProgram.js"),
+    ...[...mounts.values()].map((projection) => projection.prepare?.()),
+  ]);
   const program = buildProgram(verbs, {
     globalFlags,
     programName: BIN_NAME,
@@ -227,6 +282,26 @@ async function main(): Promise<void> {
   } catch (error) {
     await handleProgramError(error, argv, globalFlags.format, verbs);
   }
+}
+
+/**
+ * Reject an invalid global-flag value before dispatch: one renderer for the
+ * `--format`/`--detail` guards, so every validated global value flag fails
+ * with the same invalid-input shape and its valid list.
+ */
+async function rejectGlobalValue(
+  name: string,
+  value: string,
+  validOptions: readonly string[],
+  jsonMode: boolean,
+): Promise<void> {
+  const { PragmaError } = await import("./kernel/error/PragmaError.js");
+  await renderStartupError(
+    PragmaError.invalidInput(name, value, {
+      validOptions: [...validOptions],
+    }),
+    jsonMode,
+  );
 }
 
 /**
@@ -338,9 +413,8 @@ async function handleProgramError(
       return;
     }
     if (error.code === "commander.unknownCommand") {
-      const { nounVerbMap, resolveUnknownCommand } = await import(
-        "./kernel/project/cli/suggest.js"
-      );
+      const { curatedSuggestions, nounVerbMap, resolveUnknownCommand } =
+        await import("./kernel/project/cli/suggest.js");
       const { stripGlobalFlags } = await import(
         "./kernel/project/cli/globalFlags.js"
       );
@@ -364,9 +438,10 @@ async function handleProgramError(
           import("./kernel/error/renderError.js"),
           import("./kernel/project/cli/suggestNames.js"),
         ]);
-        const suggestions = suggestNames(unknown.token, [
-          ...unknown.candidates,
-        ]);
+        const curated = curatedSuggestions(unknown.token);
+        const suggestions = curated
+          ? [...curated]
+          : suggestNames(unknown.token, [...unknown.candidates]);
         const unknownError = PragmaError.unknownVerb(unknown.token, {
           suggestions,
         });

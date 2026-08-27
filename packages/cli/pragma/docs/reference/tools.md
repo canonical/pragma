@@ -49,7 +49,7 @@ _No input parameters._
 
 ### colophon
 
-Storeless — a colophon for the toolchain. Prints the story the distribution declares for itself (its config's `colophon`) followed by the active pack's domain colophon. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
+Storeless — the colophon each active pack declares for its domain. With no pack telling a story, it prints the one pragma declares for itself instead; with neither, it says so. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
 
 Read-only.
 
@@ -57,9 +57,21 @@ Read-only.
 
 _No input parameters._
 
+### config_get
+
+Reads the effective value of a single field after layering — built-in defaults, the global config, and the nearest project config. Prints the bare value (nothing when the field is unset), so the output substitutes directly into a shell.
+
+Read-only.
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `key` | enum(tier, channel, detail) | yes | The config field to read. (one of: tier, channel, detail) |
+
 ### config_set
 
-Write a global config field by name — the one-command form of the per-field setters. `key` is one of `tier`, `channel`, or `detail`; the field's own reset rules apply (e.g. `set tier none` clears it). Written to the global layer only — project configs are authored by hand.
+Write a global config field by name. `key` is one of `tier`, `channel`, or `detail`; clearing a field is `config unset <key>`'s job, and the values that used to double as clear-markers are refused. Written to the global layer only — project configs are authored by hand.
 
 Mutation — plan-first (set `confirm: true` to apply).
 
@@ -68,7 +80,7 @@ Mutation — plan-first (set `confirm: true` to apply).
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `key` | enum(tier, channel, detail) | yes | The config field to write. (one of: tier, channel, detail) |
-| `value` | string | yes | The value to write (or a field's reset sentinel, e.g. `none`). |
+| `value` | string | yes | The value to write. |
 | `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
 | `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
 
@@ -81,6 +93,20 @@ Read-only.
 **Input**
 
 _No input parameters._
+
+### config_unset
+
+Removes a field from the global config so the built-in default (or a project config) applies again. The counterpart of `config set` — setting writes a value, unsetting removes one; no value doubles as a remove-marker.
+
+Mutation — plan-first (set `confirm: true` to apply).
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `key` | enum(tier, channel, detail) | yes | The config field to clear. (one of: tier, channel, detail) |
+| `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
+| `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
 
 ### create_application
 
@@ -229,22 +255,6 @@ _No input parameters._
 ### ontology_lookup
 
 Look up a namespace's classes (hierarchy + counts) and properties.
-
-Read-only.
-
-**Input**
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `prefix` | string | yes | The namespace prefix (ds) or full URI. |
-| `properties` | boolean | no | Include the properties section (also implied by --detail standard or higher). |
-| `fullUris` | boolean | no | Show full IRIs instead of prefixed. |
-| `class` | string | no | Focus on one class and its properties. |
-| `detail` | enum(summary, standard, detailed) | no | Progressive-disclosure level (default summary). |
-
-### ontology_show
-
-Deprecated alias of `ontology lookup` — retained for compatibility. Prefer `ontology lookup <prefix>`.
 
 Read-only.
 

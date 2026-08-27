@@ -8,6 +8,7 @@
 // fails when this file drifts; rerunning the build fixes it.
 
 import type { SurfaceCommand } from "@canonical/summon-core/projection";
+import type { PromptCliSyntax } from "./types.js";
 
 /** Declared command path → its projected command surface. */
 export const CREATE_SURFACE: Readonly<Record<string, SurfaceCommand>> = {
@@ -248,5 +249,152 @@ export const CREATE_SURFACE: Readonly<Record<string, SurfaceCommand>> = {
         "group": "Post-setup"
       }
     ]
+  },
+};
+
+/**
+ * Declared command path → prompt name → the REGISTERED CLI spelling
+ * (`buildOptionInfo`/`toKebabCase` over the projected prompts, captured at
+ * build time). Completion and the reference emitter read THIS record, so the
+ * `--help`/`__complete` fast paths never import the registration machinery
+ * to learn a token it already decided.
+ */
+export const CREATE_CLI_SYNTAX: Readonly<
+  Record<string, Readonly<Record<string, PromptCliSyntax>>>
+> = {
+  "application/react": {
+    "appPath": {
+      "flag": "--app-path",
+      "takesValue": true,
+      "kebabName": "app-path"
+    },
+    "forms": {
+      "flag": "--no-forms",
+      "takesValue": false,
+      "kebabName": "forms"
+    },
+    "intl": {
+      "flag": "--intl",
+      "takesValue": false,
+      "kebabName": "intl"
+    },
+    "relay": {
+      "flag": "--relay",
+      "takesValue": false,
+      "kebabName": "relay"
+    },
+    "runInstall": {
+      "flag": "--no-run-install",
+      "takesValue": false,
+      "kebabName": "run-install"
+    }
+  },
+  "component/lit": {
+    "componentPath": {
+      "flag": "--component-path",
+      "takesValue": true,
+      "kebabName": "component-path"
+    },
+    "withStyles": {
+      "flag": "--no-with-styles",
+      "takesValue": false,
+      "kebabName": "with-styles"
+    },
+    "withStories": {
+      "flag": "--no-with-stories",
+      "takesValue": false,
+      "kebabName": "with-stories"
+    }
+  },
+  "component/react": {
+    "componentPath": {
+      "flag": "--component-path",
+      "takesValue": true,
+      "kebabName": "component-path"
+    },
+    "withStyles": {
+      "flag": "--no-with-styles",
+      "takesValue": false,
+      "kebabName": "with-styles"
+    },
+    "withStories": {
+      "flag": "--no-with-stories",
+      "takesValue": false,
+      "kebabName": "with-stories"
+    },
+    "withSsrTests": {
+      "flag": "--no-with-ssr-tests",
+      "takesValue": false,
+      "kebabName": "with-ssr-tests"
+    }
+  },
+  "component/svelte": {
+    "componentPath": {
+      "flag": "--component-path",
+      "takesValue": true,
+      "kebabName": "component-path"
+    },
+    "withStyles": {
+      "flag": "--no-with-styles",
+      "takesValue": false,
+      "kebabName": "with-styles"
+    },
+    "withStories": {
+      "flag": "--no-with-stories",
+      "takesValue": false,
+      "kebabName": "with-stories"
+    },
+    "withSsrTests": {
+      "flag": "--no-with-ssr-tests",
+      "takesValue": false,
+      "kebabName": "with-ssr-tests"
+    },
+    "useTsStories": {
+      "flag": "--use-ts-stories",
+      "takesValue": false,
+      "kebabName": "use-ts-stories"
+    }
+  },
+  "package": {
+    "name": {
+      "flag": "--name",
+      "takesValue": true,
+      "kebabName": "name"
+    },
+    "type": {
+      "flag": "--type",
+      "takesValue": true,
+      "kebabName": "type"
+    },
+    "description": {
+      "flag": "--description",
+      "takesValue": true,
+      "kebabName": "description"
+    },
+    "withReact": {
+      "flag": "--with-react",
+      "takesValue": false,
+      "kebabName": "with-react"
+    },
+    "withStorybook": {
+      "flag": "--with-storybook",
+      "takesValue": false,
+      "kebabName": "with-storybook"
+    },
+    "withCli": {
+      "flag": "--with-cli",
+      "takesValue": false,
+      "kebabName": "with-cli"
+    },
+    "withPrTemplate": {
+      "flag": "--with-pr-template",
+      "takesValue": false,
+      "kebabName": "with-pr-template"
+    },
+    "runInstall": {
+      "flag": "--no-run-install",
+      "takesValue": false,
+      "kebabName": "run-install"
+    }
   },
 };

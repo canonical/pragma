@@ -10,6 +10,7 @@
 
 import { kebabCase } from "../../spec/emitSurface.js";
 import type { ParamSpec, VerbSpec } from "../../spec/types.js";
+import { MUTATION_FLAG_DOCS, negationFlagDoc } from "./constants.js";
 import {
   helpColumns,
   helpDim,
@@ -73,12 +74,27 @@ export function formatVerbHelp(programName: string, verb: VerbSpec): string {
     if (cliDoc) lines.push("", cliDoc);
   }
 
-  if (flags.length > 0) {
-    lines.push(
-      "",
-      helpHeading("Flags"),
-      ...helpColumns(flags.map((flag) => [flagDisplay(flag), flag.doc])),
+  // Every flag the command PARSES is rendered, from the same spec facts
+  // registration reads: the declared params, each default-true boolean's
+  // `--no-` negation, and — on a mutating verb — the auto-injected mutation
+  // flags. Help denying a working flag is the drift this derivation removes.
+  const flagRows: (readonly [string, string])[] = flags.flatMap((flag) => {
+    const rows: (readonly [string, string])[] = [
+      [flagDisplay(flag), flag.doc] as const,
+    ];
+    if (flag.kind === "boolean" && flag.default === true) {
+      const kebab = kebabCase(flag.name);
+      rows.push([`--no-${kebab}`, negationFlagDoc(kebab)] as const);
+    }
+    return rows;
+  });
+  if (verb.capability.mutates) {
+    flagRows.push(
+      ...MUTATION_FLAG_DOCS.map(({ flag, doc }) => [flag, doc] as const),
     );
+  }
+  if (flagRows.length > 0) {
+    lines.push("", helpHeading("Flags"), ...helpColumns(flagRows));
   }
 
   if (verb.examples && verb.examples.length > 0) {

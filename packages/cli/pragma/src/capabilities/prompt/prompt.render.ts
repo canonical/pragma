@@ -19,8 +19,12 @@ function argTokens(args: readonly PromptArgument[]): string {
 }
 
 export const promptListFormatters: Formatters<PromptListData> = {
+  // Zero prompts: plain stdout stays empty — the notice is `emptyNotice`,
+  // routed to stderr (exit 0) by the dispatcher so a pipe reads no prose.
+  emptyNotice: (data) =>
+    data.prompts.length === 0 ? "No prompts in the store." : undefined,
   plain(data) {
-    if (data.prompts.length === 0) return "No prompts in the store.";
+    if (data.prompts.length === 0) return "";
     const lines = ["Prompts"];
     for (const prompt of data.prompts) {
       lines.push(`  ${prompt.name} — ${prompt.description ?? ""}`.trimEnd());

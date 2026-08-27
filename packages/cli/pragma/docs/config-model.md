@@ -87,11 +87,11 @@ The setters write to the **global** layer only — project configs are authored 
 pragma config set tier apps/lxd
 pragma config set channel experimental
 pragma config set detail detailed
-pragma config set tier none
+pragma config unset tier
 ```
 
-- `tier` is a free string with meaningful reset sentinels: `none`, `default`, or `-` clear it.
-- `channel` and `detail` are closed enums; reset them by setting their default (`normal` / `standard`).
-- `config set <key> <value>` is the one-command form of the per-field setters — `key` is one of `tier`, `channel`, or `detail`, and the field's own reset rules still apply.
+- `tier` is a free string. Clearing it is its own command, `config unset tier` — `none`, `default` and `-` are refused as values, because a string that doubles as a remove-marker cannot say "set the tier to the literal none".
+- `channel` and `detail` are closed enums; `config unset` clears them too, so the built-in default (`normal` / `standard`) applies again.
+- `config set <key> <value>` is the one-command form of the per-field setters — `key` is one of `tier`, `channel`, or `detail`, and `config unset <key>` is how any of the three is cleared.
 
 See [getting-started.md](./getting-started.md) for how the tier and channel scope the read commands, the [configuration reference](./reference/config.md) for every field, and the [command reference](./reference/commands.md) for each setter's full signature.

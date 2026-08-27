@@ -27,22 +27,40 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     expect(() => assertConforms(emitted, golden)).not.toThrow();
   });
 
-  it("emits config show + the one-command config set, in covenant order (field-verbs retired, B3)", () => {
+  it("emits the four config verbs — show, get, set, unset — in covenant order", () => {
     // AV-228 B3 retired the per-field `tier`/`channel`/`detail` setters; the
-    // config noun is now just the `show` reader and the `set <key> <value>` writer.
+    // config noun is the `show` dump, the `get <key>` single read, the
+    // `set <key> <value>` writer, and the `unset <key>` clearer. Reading one
+    // value and clearing one field are commands of their own — neither hides
+    // inside `show --format json` nor inside a reserved `set` value.
     expect(emitted.nouns.config?.verbs).toEqual([
       { v: "show", mcp: "config_show" },
+      { v: "get", args: ["<key>"], mcp: "config_get" },
       {
         v: "set",
         args: ["<key>", "<value>"],
         mutates: true,
         mcp: "config_set",
       },
+      {
+        v: "unset",
+        args: ["<key>"],
+        mutates: true,
+        mcp: "config_unset",
+      },
     ]);
     // info stays a data-only enrichment — its emitted verb is unchanged.
     expect(emitted.nouns.info?.verbs).toEqual([{ v: "info", mcp: "info" }]);
-    // Hidden meta verbs (__complete, mcp) are excluded from the surface.
-    expect(emitted.nouns.mcp).toBeUndefined();
+    // `version` is the command form of `--version`: one value, two spellings
+    // of the same read, and no tool — the version already rides `info`.
+    expect(emitted.nouns.version?.verbs).toEqual([
+      { v: "version", mcp: false },
+    ]);
+    // The server entry is a real noun/verb pair, emitted like any other and
+    // carrying no tool — it serves a protocol, it is not an agent tool.
+    expect(emitted.nouns.mcp?.verbs).toEqual([{ v: "serve", mcp: false }]);
+    // The completion resolver stays hidden — it is a protocol between the
+    // shell script and the bin, not a command anyone types.
     expect(emitted.nouns.__complete).toBeUndefined();
   });
 
@@ -107,15 +125,8 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
         needsStore: true,
         mcp: "ontology_lookup",
       },
-      // `show` is the deprecated alias of `lookup` (AV-228 B1) — same shape,
-      // both blessed in the covenant.
-      {
-        v: "show",
-        args: ["<prefix>"],
-        flags: ["--properties", "--full-uris", "--class"],
-        needsStore: true,
-        mcp: "ontology_show",
-      },
+      // One job, one spelling: `lookup` is the by-name read, and nothing
+      // else answers to it.
     ]);
     // skill discovery is storeless (filesystem) — no needsStore.
     expect(emitted.nouns.skill?.verbs).toEqual([
@@ -288,6 +299,8 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       "standard_sample",
       "tier_list",
       "config_show",
+      "config_get",
+      "config_unset",
       "colophon",
     ]) {
       expect(tools).toContain(tool);
@@ -301,14 +314,14 @@ describe("surface COMPLETE — emitted == covenant (PROTECTED)", () => {
   // The CLOSING direction: assertConforms already proves emitted ⊆ covenant;
   // this proves covenant ⊆ emitted, so together the tool sets are EQUAL — the
   // surface-complete milestone. After PR7, every covenant tool is realized.
-  it("emits every covenant tool (all 37) — set equality with the covenant", () => {
+  it("emits every covenant tool (all 38) — set equality with the covenant", () => {
     const emittedTools = new Set(emitted.mcpSurface.tools);
     const missing = golden.mcpSurface.tools.filter((t) => !emittedTools.has(t));
     expect(missing).toEqual([]);
     expect([...emitted.mcpSurface.tools].sort()).toEqual(
       [...golden.mcpSurface.tools].sort(),
     );
-    expect(emitted.mcpSurface.tools).toHaveLength(37);
+    expect(emitted.mcpSurface.tools).toHaveLength(38);
   });
 
   // The covenant edit: the non-tool MCP surface is frozen too.

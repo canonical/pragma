@@ -8,9 +8,11 @@
 import { BIN_NAME, PROJECT_CONFIG_FILENAME } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { CapabilityModule, VerbSpec } from "../../kernel/spec/types.js";
+import { configGetVerb } from "./get.verb.js";
 import { configSetVerb } from "./set.verb.js";
 import { configShowFormatters } from "./show.render.js";
 import type { ConfigShowData } from "./types.js";
+import { configUnsetVerb } from "./unset.verb.js";
 
 const showVerb: VerbSpec<Record<string, unknown>, ConfigShowData> = {
   path: ["config", "show"],
@@ -35,12 +37,13 @@ const showVerb: VerbSpec<Record<string, unknown>, ConfigShowData> = {
 };
 
 /**
- * The `config` capability module: the `show` reader (PR1) and the one-command
- * `set <key> <value>` setter (PR9), emitted in covenant order. The per-field
- * `tier`/`channel`/`detail` verbs were retired in favour of `config set`
- * (AV-228 B3).
+ * The `config` capability module, emitted in covenant order: the `show`
+ * reader, the `get <key>` single-value reader, the `set <key> <value>`
+ * writer, and the `unset <key>` clearer. The per-field `tier`/`channel`/
+ * `detail` verbs were retired in favour of `config set` (AV-228 B3);
+ * clearing moved from a magic `set` value to its own verb.
  */
 export const configModule: CapabilityModule = {
   name: "config",
-  verbs: [asVerb(showVerb), configSetVerb],
+  verbs: [asVerb(showVerb), configGetVerb, configSetVerb, configUnsetVerb],
 };

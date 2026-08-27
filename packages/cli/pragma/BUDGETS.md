@@ -51,13 +51,105 @@ neither uses it. `lazy.test.ts` stays green because that subpath is not what it
 guards: summon-core proper, React, zod and oxigraph are all still absent from
 the fast-path graph.
 
-The two ceilings now sit together because the two costs are the same cost.
+The two ceilings sat together because the two costs were the same cost.
 
-**Both are PROVISIONAL.** Moving the projection behind the lazy boundary is the
-real fix and belongs with the create-surface work rather than a budget edit;
-these numbers should come back down when the eager import does. They are sized
-to let CI report the true runner-to-laptop ratio rather than guessed tight
-enough to flake.
+**Both were PROVISIONAL**, sized to hold until the eager import moved behind
+the lazy boundary — which the next section records.
+
+## Recovered: the create registration leaves the fast paths
+
+The provisional 220 ms ceilings existed to cover eager create-surface imports
+on the capabilities barrel. Three changes removed them:
+
+1. **Registered syntax is baked, not derived.** The build already projected
+   the generators into `createSurface.generated.ts`; it now also bakes each
+   prompt's REGISTERED CLI spelling (`CREATE_CLI_SYNTAX`: flag token,
+   takes-value, kebab name), so completion and the reference emitter read
+   data instead of calling the projection's flag-shape authority at import
+   time.
+2. **The mount's registration machinery is deferred.** The projection hook
+   split into a light half on the barrel (`cliProjection.ts` — completion +
+   reference syntax over baked data) and a heavy half (`mount.ts` —
+   summon-core's Commander adapter, the interaction decisions, the kernel
+   dispatcher) loaded by `CliProjection.prepare()`, which only the bin awaits
+   right before `buildProgram`. `create.verb.ts`'s projection helpers moved
+   behind the same lazy `run` import that already guarded summon-core proper.
+3. **The bare-help path no longer loads Commander.** The bin answered
+   `--help`/the front door from the capability registry alone but imported
+   the program builder first; that import now happens after the
+   bare-invocation branch.
+
+The lazy-graph guard in `lazy.test.ts` pins all three: no module on the
+`capabilities/index` static graph may value-import
+`@canonical/summon-core/projection`, its Commander adapter, or `commander`.
+
+**Measured — A/B, both arms built from source and interleaved.** The earlier
+pass asserted the recovery rather than demonstrating it, so this is a paired
+measurement: the pre-refactor tree (`2aaf368`) and this branch's tree were each
+built to their own `dist/`, and every spawn alternates arms case by case, so
+machine drift on a shared box lands on both arms equally instead of on
+whichever was measured second. 40 kept samples per cell (5 warmup rounds),
+`node dist/src/bin.js` through `spawnSync`, fresh XDG dirs, load average ~1.5.
+
+| Path | before (median) | after (median) | ceiling |
+|---|---|---|---|
+| `pragma --help` | 74.6 ms | **64.7 ms** | 130 ms |
+| `pragma __complete config` | 79.1 ms | **69.2 ms** | 150 ms |
+| `pragma __complete skill lookup` | 74.2 ms | **69.3 ms** | 150 ms |
+| `pragma --version` (control) | 25.4 ms | 29.5 ms | — |
+
+Process start is most of every number above, and it is not pragma's to spend,
+so the arms are also compared net of each arm's OWN `--version` control — the
+work the CLI actually does:
+
+| Path | before | after | delta |
+|---|---|---|---|
+| `pragma --help` | 49.3 ms | 35.3 ms | **−14.0 ms (−28%)** |
+| `pragma __complete config` | 53.7 ms | 39.7 ms | **−14.0 ms (−26%)** |
+| `pragma __complete skill lookup` | 48.9 ms | 39.8 ms | **−9.1 ms (−19%)** |
+
+The capabilities barrel's own import, measured the same paired way (25 spawns
+per arm, 5 discarded, timing one dynamic `import()` of `capabilities/index.js`
+and nothing else): **44.0 ms → 37.6 ms**. That 6.4 ms is the eager-import cost
+proper; the remaining ~8 ms on `--help` is the third change — the bare
+invocation answering before the program builder, and therefore before
+Commander, loads at all.
+
+**The eager cost is gone, and the size of it is now on the record rather than
+asserted.** It was never the ~46 ms the provisional 220 ms ceilings were sized
+for: measured end to end here it is ~14 ms of the fast paths' work. The 220 ms
+ceilings were nevertheless right to be provisional, and are right to be down.
+
+### Re-deriving the ceilings
+
+The 2×-median rule against the after arm, on this box:
+
+| Path | after median | 2× median | ceiling |
+|---|---|---|---|
+| `pragma --help` | 64.7 ms | 129.5 ms | **130 ms** |
+| `pragma __complete` (slower of the two cases) | 69.3 ms | 138.5 ms | **150 ms** |
+
+`--help` lands on 130 to within half a millisecond — the standing ceiling IS
+the rule's number, not a number the rule happens to tolerate.
+
+`__complete`'s rule number is 138.5, i.e. below the standing 150. **It is not
+lowered to 140, and the reason is a correction to the method, not a
+preference.** A ceiling is relative to the artifact AND the box (the header of
+`budgets.ts` says so). This box's cold process start is 25–30 ms; the reference
+box in the table under "p95 stabilization" is 45.5 ms. Holding the measured
+work constant and projecting onto the reference box:
+
+- `--help`: 45.5 + 35.3 = **~81 ms** median → 2× = ~162 ms
+- `__complete`: 45.5 + 39.7 = **~85 ms** median → 2× = ~170 ms
+
+Both projections sit ABOVE the standing ceilings. On the box the ceilings have
+to hold on, 130 and 150 are already the tight side of the 2× rule, and CI has
+run `__complete` at a ~100 ms trimmed mean before. So the honest reading of the
+measurement is that these two ceilings are at their floor: the recovery earned
+back the 220 ms, it does not earn a further cut, and a cut made from this box's
+median alone would be a ceiling derived on hardware the suite does not run on.
+
+The designed 50 ms target stays recorded as unmet.
 
 ## Re-derived for the shipped entry
 

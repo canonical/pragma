@@ -284,7 +284,7 @@ function renderCommandsPage(
   const blocks = [
     "# CLI command reference",
     `Every \`${BIN_NAME}\` command, grouped by noun. Generated from the live capability grammar — do not edit by hand.`,
-    "Global flags apply to every command: `--format <plain|llm|json>` (auto-detected — the llm/condensed-Markdown form turns on when output is piped), `--verbose`, and `--detail <summary|standard|detailed>`.",
+    "Global flags apply to every command: `--format <plain|llm|json>` (auto-detected — the llm/condensed-Markdown form turns on when output is piped), `--verbose`, `--no-headers`, `--quiet`, and `--detail <summary|standard|detailed>`.",
   ];
   let currentNoun = "";
   for (const verb of verbs) {
@@ -551,7 +551,7 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
   tier: {
     type: "string (optional)",
     notes:
-      "Accepted by the validator and SCOPES NOTHING: since the block list became declared content, no read filters by tier — the value is only reported by `config show` and `info`. Set it with `config set tier <path>`; `none`, `default` or `-` clear it.",
+      "Accepted by the validator and SCOPES NOTHING: since the block list became declared content, no read filters by tier — the value is only reported by `config show` and `info`. Set it with `config set tier <path>` and clear it with `config unset tier`; `none`, `default` and `-` are refused as values, so no string doubles as a remove-marker.",
   },
   channel: {
     type: "`normal` | `experimental` | `prerelease` (optional)",

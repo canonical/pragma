@@ -115,7 +115,7 @@ pragma prompt list
 ```
 
 - `capabilities` returns the conventions, a four-stage discovery sequence, and the annotated tool catalog — call it first at session start.
-- `colophon` narrates how pragma and the active design-system domain are made.
+- `colophon` narrates how the active design-system domain is made.
 - `prompt list` browses the workflow prompt templates in the active graph, and `prompt lookup <name>` prints one template's body and arguments. This distribution's graph carries no prompt entities today, so `prompt list` reports `_No prompts in the store._`; the surface is populated by configuring a pack whose graph declares them.
 
 ## Next steps

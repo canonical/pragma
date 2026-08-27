@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  findValuedVerbose,
   parseGlobalFlags,
+  readRawDetail,
   readRawFormat,
   stripGlobalFlags,
 } from "./globalFlags.js";
@@ -30,7 +32,7 @@ describe("parseGlobalFlags", () => {
     expect(parseGlobalFlags(["--format=json"], TTY).format).toBe("json");
   });
 
-  it("renames --format text to plain", () => {
+  it("maps an unrecognized --format value to plain (the bin rejects it first)", () => {
     expect(parseGlobalFlags(["--format", "text"], PIPE).format).toBe("plain");
   });
 
@@ -67,6 +69,55 @@ describe("parseGlobalFlags", () => {
 
   it("reads --verbose", () => {
     expect(parseGlobalFlags(["--verbose"], TTY).verbose).toBe(true);
+  });
+
+  it("reports the raw --detail value for validation, including valueless", () => {
+    expect(readRawDetail(["--detail", "detailed"])).toBe("detailed");
+    expect(readRawDetail(["--detail=bogus"])).toBe("bogus");
+    // "" so a valueless flag is rejected, never silently defaulted.
+    expect(readRawDetail(["--detail", "--category"])).toBe("");
+    expect(readRawDetail(["block", "list"])).toBeUndefined();
+    // Past the terminator it is data, not a flag of this program.
+    expect(readRawDetail(["lookup", "--", "--detail=x"])).toBeUndefined();
+  });
+
+  it("finds a valued --verbose token so the bin can reject it", () => {
+    expect(findValuedVerbose(["--verbose=true"])).toBe("--verbose=true");
+    expect(findValuedVerbose(["--verbose"])).toBeUndefined();
+    expect(findValuedVerbose(["lookup", "--", "--verbose=x"])).toBeUndefined();
+  });
+
+  it("reads --no-headers anywhere and strips it before Commander", () => {
+    expect(parseGlobalFlags(["--no-headers"], TTY).noHeaders).toBe(true);
+    expect(
+      parseGlobalFlags(["block", "list", "--no-headers"], TTY).noHeaders,
+    ).toBe(true);
+    expect(parseGlobalFlags(["block", "list"], TTY).noHeaders).toBeUndefined();
+    expect(stripGlobalFlags(["block", "list", "--no-headers"])).toEqual([
+      "block",
+      "list",
+    ]);
+    // Past the terminator it is the user's data, not this program's flag.
+    expect(
+      parseGlobalFlags(["block", "lookup", "--", "--no-headers"], TTY)
+        .noHeaders,
+    ).toBeUndefined();
+  });
+
+  it("reads --quiet anywhere and strips it before Commander", () => {
+    expect(parseGlobalFlags(["--quiet"], TTY).quiet).toBe(true);
+    expect(parseGlobalFlags(["sources", "update", "--quiet"], TTY).quiet).toBe(
+      true,
+    );
+    expect(parseGlobalFlags(["sources", "update"], TTY).quiet).toBeUndefined();
+    expect(stripGlobalFlags(["sources", "update", "--quiet"])).toEqual([
+      "sources",
+      "update",
+    ]);
+    // Past the terminator it is the user's data, not this program's flag.
+    expect(
+      parseGlobalFlags(["graph", "query", "--", "--quiet"], TTY).quiet,
+    ).toBeUndefined();
   });
 });
 

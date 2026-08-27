@@ -172,8 +172,10 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
   it("narrates the colophon the fork declares, titled with the fork's name", async () => {
     // The toolchain colophon is DECLARED content (`pragma.conf.ts#colophon`),
     // not authored code: the collector must render the fork's declaration
-    // under the fork's own name. With no packs declared, the fork's whole
-    // colophon is its own story. `kind: "pragma"` is asserted AS the literal:
+    // under the fork's own name. This is also where the FALLBACK is pinned —
+    // the toolchain's own section prints when no pack tells a domain story,
+    // and a fork with no packs is the distribution that has none.
+    // `kind: "pragma"` is asserted AS the literal:
     // it is the frozen JSON discriminant every distribution serves (wire
     // compatibility, like the resource scheme), deliberately NOT derived.
     process.env.XDG_CONFIG_HOME = mkdtempSync(join(tmpdir(), "identity-"));

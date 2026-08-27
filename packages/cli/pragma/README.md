@@ -56,7 +56,7 @@ pragma create component react src/components/Button
 
 ## MCP
 
-Run pragma as an MCP server over stdio via `pragma setup mcp` (automatic harness registration) or the manual `pragma mcp` entry point. The server exposes the read and scaffold tools, a `pragma:{+uri}` resource surface for entity reads, whatever workflow prompts the active graph declares (none, for this distribution's current graph), and handshake instructions describing the discovery sequence. Mutating tools are plan-first — they return the plan they would apply until called with `confirm: true`. See [docs/mcp-integration.md](./docs/mcp-integration.md).
+Run pragma as an MCP server over stdio via `pragma setup mcp` (automatic harness registration) or the manual `pragma mcp serve` command. The server exposes the read and scaffold tools, a `pragma:{+uri}` resource surface for entity reads, whatever workflow prompts the active graph declares (none, for this distribution's current graph), and handshake instructions describing the discovery sequence. Mutating tools are plan-first — they return the plan they would apply until called with `confirm: true`. See [docs/mcp-integration.md](./docs/mcp-integration.md).
 
 ## Documentation
 

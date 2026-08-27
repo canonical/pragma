@@ -21,10 +21,14 @@ export interface GlobalFlags {
   readonly llm: boolean;
   /** True when `llm` was inferred from a non-interactive stdout, not requested. */
   readonly autoLlm?: boolean;
-  /** Selected output format; `--format text` is normalised to `plain`. */
+  /** Selected output format (`plain`, `llm`, or `json` — the full set). */
   readonly format: OutputFormat;
   /** Diagnostic output to stderr. */
   readonly verbose: boolean;
+  /** True when `--no-headers` suppressed the plain-table header row. */
+  readonly noHeaders?: boolean;
+  /** True when `--quiet` suppresses success/progress output (errors keep printing). */
+  readonly quiet?: boolean;
   /** Explicit progressive-disclosure level from `--detail`, if any. */
   readonly detail?: DetailLevel;
 }

@@ -2,7 +2,11 @@
  * Data shapes for `pragma config show`.
  */
 
-import type { ConfigOrigins, PragmaConfig } from "../../kernel/config/types.js";
+import type {
+  ConfigOrigin,
+  ConfigOrigins,
+  PragmaConfig,
+} from "../../kernel/config/types.js";
 
 /** The resolved configuration plus per-field provenance and layer locations. */
 export interface ConfigShowData {
@@ -22,14 +26,24 @@ export interface ConfigShowData {
   readonly globalExists: boolean;
 }
 
-/** The outcome of a `config <field>` setter (set, or reset via sentinel). */
+/** The outcome of a config write (`set` writes a value, `unset` clears one). */
 export interface ConfigFieldResult {
   /** The config field written (`tier` / `channel` / `detail`). */
   readonly field: string;
-  /** The value written, or absent when the field was reset (removed). */
+  /** The value written, or absent when the field was cleared (removed). */
   readonly value?: string;
   /** The global config file the write landed in. */
   readonly path: string;
-  /** True when a reset sentinel removed the field rather than setting a value. */
+  /** True when `unset` removed the field rather than setting a value. */
   readonly reset: boolean;
+}
+
+/** The payload of `config get <key>` — one resolved value with provenance. */
+export interface ConfigGetData {
+  /** The config field read (`tier` / `channel` / `detail`). */
+  readonly field: string;
+  /** The effective value after layering, absent when the field is unset. */
+  readonly value?: unknown;
+  /** The layer that supplied the value (`default` / `global` / `project`). */
+  readonly source: ConfigOrigin;
 }

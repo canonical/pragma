@@ -105,6 +105,121 @@ describe("buildProgram — default-true boolean negation (B9)", () => {
   });
 });
 
+describe("buildProgram — one spelling per flag", () => {
+  it("registers no short option anywhere in the tree", () => {
+    const program = projectCli([fixtureModule]);
+    const walk = (cmd: import("commander").Command): void => {
+      expect(cmd.options.some((o) => o.short !== undefined)).toBe(false);
+      for (const child of cmd.commands) walk(child);
+    };
+    walk(program);
+  });
+
+  it("still answers --help while -v/-h reject as unknown options", async () => {
+    const spyErr = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation(() => true);
+    const spyOut = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    await expect(
+      projectCli([fixtureModule]).parseAsync(["widget", "--help"], {
+        from: "user",
+      }),
+    ).rejects.toMatchObject({ code: "commander.helpDisplayed" });
+    await expect(
+      projectCli([fixtureModule]).parseAsync(["widget", "list", "-h"], {
+        from: "user",
+      }),
+    ).rejects.toMatchObject({ code: "commander.unknownOption" });
+    await expect(
+      projectCli([fixtureModule]).parseAsync(["widget", "list", "-v"], {
+        from: "user",
+      }),
+    ).rejects.toMatchObject({ code: "commander.unknownOption" });
+    spyErr.mockRestore();
+    spyOut.mockRestore();
+  });
+});
+
+describe("buildProgram — repeatable filter flags", () => {
+  /** A verb with a repeatable enum filter and a repeatable string filter. */
+  const filterVerb: VerbSpec = {
+    path: ["thing", "list"],
+    summary: "thing list summary",
+    params: [
+      {
+        kind: "enum",
+        name: "category",
+        doc: "Filter by category.",
+        values: ["css", "git"],
+        repeatable: true,
+      },
+      { kind: "string", name: "tag", doc: "Filter by tag.", repeatable: true },
+    ],
+    output: {
+      formatters: {
+        plain: (d) => JSON.stringify(d),
+        llm: (d) => JSON.stringify(d),
+        json: (d) => JSON.stringify(d),
+      },
+    },
+    capability: { needsStore: false, mutates: false, mcp: { expose: true } },
+    run: async (params) => params,
+  };
+
+  /** Parse argv and capture the option bag the action receives. */
+  async function optsFor(argv: string[]): Promise<Record<string, unknown>> {
+    let seen: Record<string, unknown> = {};
+    const program = projectCli([
+      {
+        name: "thing",
+        verbs: [
+          {
+            ...filterVerb,
+            run: async (params) => {
+              seen = params;
+              return null;
+            },
+          },
+        ],
+      },
+    ]);
+    await program.parseAsync(["thing", "list", ...argv], { from: "user" });
+    return seen;
+  }
+
+  it("accumulates a repeated filter into the union, never last-wins", async () => {
+    const params = await optsFor([
+      "--category",
+      "css",
+      "--category",
+      "git",
+      "--tag",
+      "a",
+      "--tag",
+      "b",
+    ]);
+    expect(params.category).toEqual(["css", "git"]);
+    expect(params.tag).toEqual(["a", "b"]);
+  });
+
+  it("keeps a single occurrence a one-element array and validates enum values", async () => {
+    const params = await optsFor(["--category", "css"]);
+    expect(params.category).toEqual(["css"]);
+    const program = projectCli([{ name: "thing", verbs: [filterVerb] }]);
+    const spy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation(() => true);
+    await expect(
+      program.parseAsync(["thing", "list", "--category", "bogus"], {
+        from: "user",
+      }),
+    ).rejects.toMatchObject({ code: "commander.invalidArgument" });
+    spy.mockRestore();
+  });
+});
+
 describe("buildProgram — early exits", () => {
   it("throws commander.version for --version, writing the version", async () => {
     const program = projectCli([fixtureModule]);
@@ -389,11 +504,13 @@ describe("formatRootHelp — grouping", () => {
     expect(help.match(/pragma test/g)).toHaveLength(1);
   });
 
-  it("lists the live nouns and always-available mcp", () => {
+  it("lists the live nouns, and only those", () => {
     expect(help).toContain("block");
     expect(help).toContain("config");
     expect(help).toContain("info");
-    expect(help).toContain("mcp");
+    // `mcp` is curated for PLACEMENT, not conjured into existence: a registry
+    // without an mcp verb has no mcp row.
+    expect(help).not.toContain("mcp");
   });
 
   it("drops nouns that are not present", () => {
@@ -420,13 +537,12 @@ describe("formatRootHelp — grouping", () => {
         config  Read and write pragma configuration
         info    Show version, config, and update status
 
-      For AI agents
-        mcp     Start the MCP server over stdio
-
       Global flags
         --format <plain|llm|json>  Select output format (llm = condensed Markdown for agents)
         --detail <level>           Progressive-disclosure level (summary, standard, detailed)
-        --verbose                  Diagnostic output on stderr
+        --no-headers               Hide the table header row in plain output
+        --quiet                    Suppress success and progress output (errors still print)
+        --verbose                  Diagnostic output on stderr (sources update)
         --help                     Show help (works on any command)
         --version                  Show the CLI version
 

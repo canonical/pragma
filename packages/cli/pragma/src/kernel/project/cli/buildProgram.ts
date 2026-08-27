@@ -11,11 +11,12 @@
  * the v1 cli-core `registerAll`, retargeted at the grammar.
  */
 
-import { Command, Option } from "commander";
+import { Command, InvalidArgumentError, Option } from "commander";
 import { BIN_NAME, PROGRAM_DESCRIPTION, VERSION } from "../../../constants.js";
 import type { GlobalFlags } from "../../runtime/types.js";
 import { kebabCase } from "../../spec/emitSurface.js";
 import type { CliProjection, ParamSpec, VerbSpec } from "../../spec/types.js";
+import { MUTATION_FLAG_DOCS, negationFlagDoc } from "./constants.js";
 import { dispatch } from "./dispatch.js";
 import { formatRootHelp } from "./rootHelp.js";
 import { formatNounHelp, formatVerbHelp } from "./verbHelp.js";
@@ -68,7 +69,30 @@ function registerParams(command: Command, verb: VerbSpec): void {
   for (const param of verb.params) {
     if (param.positional) continue;
     const spec = flagSpec(param);
-    if (param.kind === "enum") {
+    if (
+      (param.kind === "enum" || param.kind === "string") &&
+      param.repeatable === true
+    ) {
+      // A repeatable flag ACCUMULATES — Commander's default keeps only the
+      // last occurrence, which silently drops data. The collector validates
+      // an enum's values itself, since a custom parser replaces the parser
+      // `.choices()` would install.
+      command.addOption(
+        new Option(spec, param.doc).argParser(
+          (value: string, previous: string[] | undefined) => {
+            if (
+              param.kind === "enum" &&
+              !(param.values as readonly string[]).includes(value)
+            ) {
+              throw new InvalidArgumentError(
+                `Allowed choices are ${param.values.join(", ")}.`,
+              );
+            }
+            return [...(previous ?? []), value];
+          },
+        ),
+      );
+    } else if (param.kind === "enum") {
       const option = new Option(spec, param.doc).choices([...param.values]);
       if (param.default !== undefined) option.default(param.default);
       command.addOption(option);
@@ -91,14 +115,14 @@ function registerParams(command: Command, verb: VerbSpec): void {
     // seam, not this convention (L-CIS-2).
     if (param.kind === "boolean" && param.default === true) {
       const flag = kebabCase(param.name);
-      command.option(`--no-${flag}`, `Disable --${flag} (on by default).`);
+      command.option(`--no-${flag}`, negationFlagDoc(flag));
     }
   }
 
   if (verb.capability.mutates) {
-    command.option("--dry-run", "Preview effects without applying them");
-    command.option("--undo", "Reverse a previous run of this command");
-    command.option("--yes", "Apply without an interactive confirmation");
+    for (const { flag, doc } of MUTATION_FLAG_DOCS) {
+      command.option(flag, doc);
+    }
   }
 }
 
@@ -257,7 +281,12 @@ export function buildProgram(
 
   const program = new Command();
   program.name(programName).description(description);
-  program.version(version, "-v, --version");
+  // One spelling per flag: no shorts. `--version` drops `-v` (which reads as
+  // *verbose* everywhere else), and the help option is `--help` alone —
+  // subcommands created from here on inherit it (Commander copies the help
+  // option into children at creation), including a mounted subtree's.
+  program.version(version, "--version");
+  program.helpOption("--help", "Show help (works on any command)");
   program.enablePositionalOptions();
   program.exitOverride();
   useDesignedHelp(program, () =>

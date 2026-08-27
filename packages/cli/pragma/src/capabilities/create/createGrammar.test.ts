@@ -498,14 +498,13 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(excess.stderr).toBe('error: unexpected argument "X"\n');
   }, 60_000);
 
-  it("`-v` COLLIDES with pragma's global --version — the version prints, exit 0, nothing written (§2)", () => {
-    // summon's `-v` is `--verbose` (the run proceeds); pragma's whole-argv
-    // global scan makes the same token print the VERSION and scaffold
-    // nothing — no unknown-option error, unlike -d/-y/-l. §2 documents the
-    // collision; this cell keeps the divergence deliberate, not accidental
-    // (pragma's global -v/--version is HOST surface owned by bin.ts's
-    // pre-dispatch scan — deliberately out of CIS scope; the covenant
-    // freezes neither token).
+  it("`-v` is an unknown option in the subtree — exit 2, nothing written (§2)", () => {
+    // summon's `-v` is `--verbose` (its run proceeds); pragma has no short
+    // flags at all — one spelling per flag — so the token reaches the
+    // subtree and fails as an ordinary unknown option instead of silently
+    // meaning something else. This cell keeps the divergence deliberate,
+    // not accidental (the host flag surface is bin.ts's — out of CIS scope;
+    // the covenant freezes neither token).
     const { status, stdout, stderr, cwd } = run([
       "create",
       "component",
@@ -514,10 +513,9 @@ describe("the mounted create grammar (subprocess)", () => {
       "-v",
       "--yes",
     ]);
-    expect(status).toBe(0);
-    expect(stdout).toBe(`${VERSION}\n`);
-    // The scan exits before first-run onboarding: a clean stderr too.
-    expect(stderr).toBe("");
+    expect(status).toBe(2);
+    expect(stdout).toBe("");
+    expect(stderr).toContain("error: unknown option '-v'");
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
 

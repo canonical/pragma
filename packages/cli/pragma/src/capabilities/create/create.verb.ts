@@ -13,23 +13,20 @@
  * generator TREE itself (`create component react [component-path]` — see
  * `mount.ts`); these specs are what MCP tools and the emitted surface read.
  *
- * LAZY DISPATCH (R9 + lazy-React): only `@canonical/summon-core/projection`
- * (UI-free data-and-decisions, pinned light by its own graph guard) is
- * imported statically; `run` lazily `import()`s `pickGenerator` + summon-core,
- * so `buildProgram` / `--help` / `__complete` / reads never load summon-core
- * or the generators — and `create --yes` never loads React.
+ * LAZY DISPATCH (R9 + lazy-React): NOTHING of summon-core is imported
+ * statically — not even the UI-free projection subpath: this module sits on
+ * the capabilities barrel, so `--help` and `__complete` pay its import cost
+ * on every spawn, and the projection helpers it needs (`decideInteraction`,
+ * `refusalMessage`, `toKebabCase`, …) are only ever called inside `run`.
+ * `run` lazily `import()`s `pickGenerator` + summon-core + the projection, so
+ * `buildProgram` / `--help` / `__complete` / reads never load summon-core or
+ * the generators — and `create --yes` never loads React. The lazy-graph
+ * guard in `lazy.test.ts` pins the boundary.
  */
 
 import { isAbsolute } from "node:path";
 import type { GeneratorResult } from "@canonical/summon-core";
-import {
-  decideInteraction,
-  explicitAnswersComplete,
-  missingExplicitFlags,
-  type ProjectedPrompt,
-  refusalMessage,
-  toKebabCase,
-} from "@canonical/summon-core/projection";
+import type { ProjectedPrompt } from "@canonical/summon-core/projection";
 import type { Task } from "@canonical/task";
 import { BIN_NAME } from "../../constants.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
@@ -191,11 +188,12 @@ export function isModuleNotFound(cause: unknown): boolean {
  */
 async function loadCreateRuntime() {
   try {
-    const [summon, pick] = await Promise.all([
+    const [summon, projection, pick] = await Promise.all([
       import("@canonical/summon-core"),
+      import("@canonical/summon-core/projection"),
       import("./pickGenerator.js"),
     ]);
-    return { pickGenerator: pick.pickGenerator, summon };
+    return { pickGenerator: pick.pickGenerator, summon, projection };
   } catch (cause) {
     if (isModuleNotFound(cause)) {
       throw new PragmaError({
@@ -247,7 +245,7 @@ export async function runCreate(
   // Lazy: importing these pulls summon-core (and with it React) — kept off every
   // non-create path. The specifiers stay static so they remain analysable; the
   // embedded `.ejs` manifest is injected here as the disk read's fallback.
-  const { pickGenerator, summon } = await loadCreateRuntime();
+  const { pickGenerator, summon, projection } = await loadCreateRuntime();
 
   const generator = pickGenerator(commandPath);
   const kind = kindOf(commandPath);
@@ -277,7 +275,7 @@ export async function runCreate(
     // recovery and still does not.
     const escaped =
       pathParam !== undefined &&
-      invalid.startsWith(`Invalid --${toKebabCase(pathParam)} `) &&
+      invalid.startsWith(`Invalid --${projection.toKebabCase(pathParam)} `) &&
       isEscapeValue(answers[pathParam]);
     throw new PragmaError({
       code: "INVALID_INPUT",
@@ -319,18 +317,23 @@ export async function runCreate(
   // The ONE interaction decision (R2) — the same function, over the same five
   // inputs, as the summon bin. The mount refuses before ever loading this
   // runtime; re-deriving here keeps direct kernel callers honest too.
-  const { mode } = decideInteraction({
+  const { mode } = projection.decideInteraction({
     dryRun: rt.mutation?.preview === true,
     undo: rt.mutation?.undo === true,
     yes: yes === true,
     isTTY: isTTY === true,
-    explicitComplete: explicitAnswersComplete(generator.prompts, answers),
+    explicitComplete: projection.explicitAnswersComplete(
+      generator.prompts,
+      answers,
+    ),
   });
 
   if (mode === "refuse") {
     throw new PragmaError({
       code: "INVALID_INPUT",
-      message: refusalMessage(missingExplicitFlags(generator.prompts, answers)),
+      message: projection.refusalMessage(
+        projection.missingExplicitFlags(generator.prompts, answers),
+      ),
     });
   }
 

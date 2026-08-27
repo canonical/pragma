@@ -1,19 +1,21 @@
 /**
- * The hidden `mcp` verb — the MCP server entry point.
+ * `mcp serve` — the MCP server entry point.
  *
- * The server is not an agent tool, so it is withheld from MCP with a reason and
- * `hidden` from the CLI surface/help. The bin special-cases `pragma mcp` to
- * serve over stdio (D9); this spec's lazy `run` is the same serve, reachable if
- * a future tier dispatches it.
+ * The server is not an agent tool, so it is withheld from MCP with a reason —
+ * but it IS a command, and it is spelled like one: a noun and a verb, the same
+ * shape as every other pair in the grammar, so it completes, appears in help,
+ * and answers `--help` without a special case. The bin still short-circuits
+ * the exact `pragma mcp serve` invocation before flag parsing and first-run,
+ * because the server's stdout carries JSON-RPC and nothing else may reach it;
+ * this spec's lazy `run` is that same serve, for any tier that dispatches it.
  */
 
 import type { VerbSpec } from "../../kernel/spec/types.js";
 
 /** The `mcp` verb spec. */
 export const mcpVerb: VerbSpec<Record<string, unknown>, void> = {
-  path: ["mcp"],
+  path: ["mcp", "serve"],
   summary: "Start the MCP server over stdio.",
-  hidden: true,
   params: [],
   output: {
     formatters: {

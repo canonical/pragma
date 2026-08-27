@@ -1,9 +1,8 @@
 /**
- * Formatters for a `config <field>` setter — plain, llm, json (no ink).
+ * Formatters for the config writers (`set` and `unset`) — plain, llm, json.
  *
- * One shared formatter across all three setters (the field-table pattern): a
- * set reports the value and the file it landed in; a reset reports the removed
- * field.
+ * One shared formatter (the field-table pattern): a set reports the value and
+ * the file it landed in; an unset reports the removed field.
  */
 
 import type { Formatters } from "../../kernel/spec/types.js";

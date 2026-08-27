@@ -12,6 +12,30 @@
 
 import type { VerbSpec } from "../../spec/types.js";
 
+/**
+ * Curated suggestions for a token whose JOB exists under other names. Edit
+ * distance cannot rank these — `status` is nowhere near `info` textually —
+ * but a user typing the conventional spelling deserves the commands that own
+ * the job here, not the nearest-looking noun. Consulted before fuzzy ranking;
+ * adding a second spelling as a real command is the one thing this table must
+ * never become.
+ */
+const CURATED_SUGGESTIONS: Readonly<Record<string, readonly string[]>> = {
+  status: ["info", "doctor"],
+};
+
+/**
+ * The curated suggestions for an unknown token, if any.
+ *
+ * @param token - The unresolved command token.
+ * @returns The commands that own the token's job, or `undefined`.
+ */
+export function curatedSuggestions(
+  token: string,
+): readonly string[] | undefined {
+  return CURATED_SUGGESTIONS[token];
+}
+
 /** An unresolved token and the sibling names to rank it against. */
 export interface UnknownCommand {
   readonly token: string;

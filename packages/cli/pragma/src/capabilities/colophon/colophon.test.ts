@@ -2,11 +2,14 @@
  * `pragma colophon` — the storeless, pack-extensible toolchain colophon (PR10).
  *
  * Pins the covenant-exact emitted slice (`{ v:"colophon", mcp:"colophon" }`),
- * proves the collector is storeless and combines pragma's built-in section with
- * the active pack's (the bundled `block` design-system colophon), exercises the
- * three formatter modes + `--format` precedence, holds CLI-json ≡ MCP
- * parity, and checks the pack-grammar accepts a `colophon` field (rejecting a
- * non-string).
+ * proves the collector is storeless and prints the ACTIVE DOMAIN's colophon
+ * (the bundled `block` design-system story) with no toolchain section in front
+ * of it, pins the empty state for a distribution and packs that declare none,
+ * exercises the three formatter modes + `--format` precedence, holds CLI-json
+ * ≡ MCP parity, and checks the pack-grammar accepts a `colophon` field
+ * (rejecting a non-string). The fallback — the toolchain's own section when no
+ * pack tells a story — is pinned where a story-less distribution exists:
+ * `identity.test.ts`'s fork.
  */
 
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
@@ -116,23 +119,41 @@ describe("colophon — storeless collector (PROTECTED)", () => {
   });
 });
 
-describe("colophon — combined content (pragma + active domain)", () => {
-  it("leads with pragma's built-in section", async () => {
-    const data = await collectColophon(bootRuntime(FLAGS, tmpCwd()));
-    const first = data.sections[0];
-    expect(first?.kind).toBe("pragma");
-    expect(first?.title).toBe("pragma");
-    expect(first?.source).toBe("built-in");
-    expect(first?.markdown.length).toBeGreaterThan(0);
-    expect(first?.summary?.length).toBeGreaterThan(0);
-  });
-
-  it("appends the bundled design-system (block) domain section", async () => {
+describe("colophon — the configured domain's story, and only that", () => {
+  it("prints the bundled design-system (block) domain section", async () => {
     const data = await collectColophon(bootRuntime(FLAGS, tmpCwd()));
     const block = data.sections.find((section) => section.title === "block");
     expect(block?.kind).toBe("pack");
     expect(block?.source).toBe("pack:block");
     expect(block?.markdown).toContain("knowledge graph");
+  });
+
+  it("does NOT prepend the toolchain's own section when a domain has one", async () => {
+    // A configured reader asked about the domain. The paragraph about how this
+    // program is built is not an answer to that, and it used to arrive first.
+    const data = await collectColophon(bootRuntime(FLAGS, tmpCwd()));
+    // Guard the vacuous pass: `every` over nothing is true, and "no sections"
+    // is a different outcome than "only domain sections".
+    expect(data.sections.length).toBeGreaterThan(0);
+    expect(data.sections.every((section) => section.kind === "pack")).toBe(
+      true,
+    );
+  });
+
+  it("says so, on stderr, when nothing declares a colophon", () => {
+    // The collector can only reach this with neither a pack story nor a
+    // distribution one; the formatter is where the state is expressible, so
+    // the empty state is pinned here — bare stdout, guidance on stderr.
+    const empty: ColophonData = { sections: [] };
+    expect(colophonFormatters.plain(empty)).toBe("");
+    const notice = colophonFormatters.emptyNotice?.(empty);
+    expect(notice).toContain("No colophon declared");
+    expect(notice).toContain("sources update");
+    // llm returns before the dispatcher's stderr routing, so it says the same
+    // thing in its own body rather than emitting nothing.
+    expect(colophonFormatters.llm(empty)).toContain("No colophon declared");
+    // A populated payload has nothing to be calm about.
+    expect(colophonFormatters.emptyNotice?.(FIXTURE)).toBeUndefined();
   });
 });
 
@@ -167,7 +188,7 @@ describe("colophon — formatter modes", () => {
     );
     const envelope = JSON.parse(outcome.stdout as string);
     expect(envelope.ok).toBe(true);
-    expect((envelope.data as ColophonData).sections[0]?.kind).toBe("pragma");
+    expect((envelope.data as ColophonData).sections[0]?.kind).toBe("pack");
   });
 
   it("--format llm selects the condensed Markdown form", async () => {
@@ -177,12 +198,12 @@ describe("colophon — formatter modes", () => {
       NO_MUT,
       bootRuntime(FLAGS_LLM, tmpCwd()),
     );
-    expect(outcome.stdout).toContain("## pragma");
+    expect(outcome.stdout).toContain("## block");
   });
 });
 
 describe("colophon — MCP parity", () => {
-  it("projects a read-only `colophon` tool that returns the pragma section", async () => {
+  it("projects a read-only `colophon` tool that returns the domain section", async () => {
     const cwd = tmpCwd();
     const mcp = await projectMcp([colophonModule], cwd);
     const tool = (await mcp.listTools()).find((t) => t.name === "colophon");
@@ -195,7 +216,7 @@ describe("colophon — MCP parity", () => {
       openWorldHint: false,
     });
     expect(envelope.ok).toBe(true);
-    expect((envelope.data as ColophonData).sections[0]?.kind).toBe("pragma");
+    expect((envelope.data as ColophonData).sections[0]?.kind).toBe("pack");
   });
 
   it("CLI --format json ≡ MCP colophon (same envelope)", async () => {

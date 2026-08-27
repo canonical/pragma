@@ -79,6 +79,7 @@ function buildKernelGroups(programName: string): readonly HelpGroup[] {
           summary: `Read and write ${programName} configuration`,
         },
         { noun: "info", summary: "Show version, config, and update status" },
+        { noun: "version", summary: "Print the CLI version" },
         {
           noun: "upgrade",
           summary: `Upgrade the ${programName} CLI to the latest version`,
@@ -92,14 +93,12 @@ function buildKernelGroups(programName: string): readonly HelpGroup[] {
           noun: "capabilities",
           summary: "Discover conventions, tools, and the discovery sequence",
         },
-        {
-          noun: "colophon",
-          summary: `Read how ${programName} and the active domain are made`,
-        },
+        { noun: "colophon", summary: "Read how the active domain is made" },
         { noun: "skill", summary: "Browse agent skills from the active packs" },
         { noun: "prompt", summary: "Browse reusable prompt templates" },
-        // The one noun with no verb to speak for it (the bin special-cases it),
-        // so its summary is hand-written rather than derived.
+        // Curated for PLACEMENT, not for existence: `mcp serve` is an
+        // ordinary verb like every other, and this group is where a reader
+        // looks for it.
         { noun: "mcp", summary: "Start the MCP server over stdio" },
       ],
     },
@@ -141,9 +140,6 @@ export function formatRootHelp(
   verbs: readonly VerbSpec[],
 ): string {
   const present = nounsFrom(verbs);
-  // `mcp` is served by the bin's special-case, not a projected verb, but is
-  // always available — surface it so the front door is complete.
-  present.add("mcp");
   const kernel = buildKernelGroups(programName);
   const curated = new Set(kernel.flatMap((g) => g.nouns.map((n) => n.noun)));
 
@@ -203,7 +199,9 @@ export function formatRootHelp(
       "--detail <level>",
       "Progressive-disclosure level (summary, standard, detailed)",
     ],
-    ["--verbose", "Diagnostic output on stderr"],
+    ["--no-headers", "Hide the table header row in plain output"],
+    ["--quiet", "Suppress success and progress output (errors still print)"],
+    ["--verbose", "Diagnostic output on stderr (sources update)"],
     ["--help", "Show help (works on any command)"],
     ["--version", "Show the CLI version"],
   ];

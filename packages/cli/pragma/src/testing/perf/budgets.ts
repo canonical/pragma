@@ -22,49 +22,50 @@
  */
 
 /**
- * `pragma --help` ceiling (ms). Designed 50; the compiled median was ~61 → 2×.
+ * `pragma --help` ceiling (ms). Designed 50; the rule is 2× the measured median.
  *
- * RAISED from 130, and the cause is named rather than absorbed. Two costs
- * stacked: shipping JavaScript that node executes roughly doubled the fast
- * paths, and the create surface's projection added ~46 ms of eager import on
- * top. Measured locally at ~151 ms (load 1.8) against the old 130.
+ * Down from the provisional 220, which covered the create surface's eager
+ * registration imports on the capabilities barrel. Those are gone — the
+ * registered flag spellings are baked into `createSurface.generated.ts` at
+ * build time, the mount's adapter loads behind `CliProjection.prepare()`, and
+ * the bare-help path no longer loads Commander at all — and the lazy-graph
+ * guard in `lazy.test.ts` pins all three so the cost cannot creep back
+ * silently.
  *
- * WHERE THE 46 ms GOES: `capabilities/index` barrels every capability, and
- * `create.verb.ts` statically value-imports `@canonical/summon-core/projection`
- * — `decideInteraction`, `refusalMessage`, `toKebabCase` and friends, the logic
- * this CLI shares with summon so the two cannot drift. Help pays for it without
- * using it. `lazy.test.ts` passes because that subpath is not what it guards
- * (it guards summon-core proper, React, zod and oxigraph, all still absent).
- *
- * Moving the projection behind the lazy boundary is the real fix and belongs
- * with the create-surface work, not with a budget edit. This ceiling is
- * therefore PROVISIONAL: it is sized to let CI tell us the real
- * runner-to-laptop ratio rather than guessed tight enough to flake, and it
- * should come back down when the eager import does.
+ * MEASURED, paired: the pre-refactor tree and this one were each built and
+ * spawned alternately, 40 kept samples per cell, so drift on a shared box hits
+ * both arms. Median 74.6 → 64.7 ms; net of each arm's own `--version` control,
+ * the work this path does went 49.3 → 35.3 ms (−28%). 2 × 64.7 = 129.5, so
+ * 130 is the rule's own number rather than a number the rule tolerates. It is
+ * also where this path sat before the regression. BUDGETS.md carries the full
+ * table, the reference-box projection, and why this is the floor.
  */
-export const BUDGET_HELP_MS = 220;
+export const BUDGET_HELP_MS = 130;
 
 /**
  * `pragma __complete …` ceiling (ms). Designed 50 — **not met, and recorded as
  * such**: the shipped entry cannot reach it, because node's own start is most
  * of that number before pragma runs a line.
  *
- * Compiled median was ~46 (ceiling 100 = 2×). The shipped entry measures ~69 ms
- * locally and ~100 ms as a CI trimmed mean, so 100 was the median, not a
- * ceiling. 150 restores the 2× rule against the artifact that ships and still
- * fails a 50 % regression from today — a gate rather than a rubber stamp.
+ * Down from the provisional 220 for the same reason as {@link BUDGET_HELP_MS}:
+ * the eager create-surface imports both fast paths paid for are deferred, and
+ * completion additionally sheds Commander — nothing on the `__complete`
+ * closure imports it any more.
  *
- * RAISED AGAIN, from 150, for the same reason as {@link BUDGET_HELP_MS} and to
- * the same number: both fast paths import `capabilities/index`, so both pay the
- * create surface's eager `@canonical/summon-core/projection` import. Measured
- * ~163 ms locally. The two ceilings sit together because the two costs are now
- * the same cost.
+ * MEASURED in the same paired run: median 79.1 → 69.2 ms for the noun case and
+ * 74.2 → 69.3 ms for the name-source case; net of the control, 53.7 → 39.7 ms
+ * and 48.9 → 39.8 ms.
  *
- * Completion is typed interactively, so this is the budget most worth pulling
- * back down — and the eager import is the thing to pull. PROVISIONAL on the
- * same terms.
+ * 2× the slower median is 138.5, BELOW this 150 — and it stays 150 anyway,
+ * because a ceiling is relative to the box as well as the artifact. This box's
+ * cold start is 25–30 ms against the reference box's 45.5; projecting the
+ * measured work onto the reference box gives a ~85 ms median, whose 2× is
+ * ~170. CI has already run this path at a ~100 ms trimmed mean. Cutting to 140
+ * on a local median would be deriving a ceiling on hardware the suite does not
+ * run on. Completion is typed interactively, so this stays the budget most
+ * worth defending — see BUDGETS.md for the arithmetic.
  */
-export const BUDGET_COMPLETE_MS = 220;
+export const BUDGET_COMPLETE_MS = 150;
 
 /** Warm project-config (`pragma.config.ts`) load ceiling (ms). Cache hit is sub-ms. */
 export const BUDGET_PROJECT_CONFIG_MS = 10;

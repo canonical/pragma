@@ -287,9 +287,15 @@ function projectFilters(
         name: filter.param,
         doc,
         values: [...filter.values],
+        repeatable: true,
       } satisfies ParamSpec;
     }
-    return { kind: "string", name: filter.param, doc } satisfies ParamSpec;
+    return {
+      kind: "string",
+      name: filter.param,
+      doc,
+      repeatable: true,
+    } satisfies ParamSpec;
   });
 }
 

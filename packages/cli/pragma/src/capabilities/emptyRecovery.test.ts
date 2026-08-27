@@ -101,21 +101,23 @@ describe("pack list empty-state (U5, PROTECTED)", () => {
 
   it.each(
     PACK_LISTS,
-  )("$pack.noun list renders a non-blank message (+ hint) and keeps JSON []", ({
+  )("$pack.noun list declares a non-blank empty notice (+ hint), JSON stays []", ({
     pack,
     hint,
   }) => {
     const { formatters } = listVerb(pack).output;
-    const plain = formatters.plain([]);
-    expect(plain).toContain(`No ${pack.noun} entries found.`);
-    expect(plain).toMatch(hint);
+    // The message + runnable hint live on the empty-state seam — the
+    // dispatcher routes them to stderr, keeping plain stdout pure data.
+    const notice = formatters.emptyNotice?.([]);
+    expect(notice).toContain(`No ${pack.noun} entries found.`);
+    expect(notice).toMatch(hint);
     // JSON is the uniform empty array — unchanged by the message.
     expect(formatters.json([])).toBe("[]");
     // The llm view stays non-blank too (the `(0)` heading plus the message).
     expect(formatters.llm([]).trim().length).toBeGreaterThan(0);
   });
 
-  it("dispatch prints the empty message on stdout and exits 0 (end-to-end)", async () => {
+  it("dispatch routes the empty message to stderr and exits 0 (end-to-end)", async () => {
     const outcome = await executeVerb(
       listVerb(storyFor("modifier")),
       {},
@@ -123,7 +125,10 @@ describe("pack list empty-state (U5, PROTECTED)", () => {
       rt,
     );
     expect(outcome.exitCode).toBe(0);
-    expect(outcome.stdout).toContain("No modifier entries found.");
-    expect(outcome.stdout).toContain("pragma sources update");
+    // stdout carries no prose a pipe would read as a record; the calm notice
+    // and its hint reach the human on stderr.
+    expect(outcome.stdout ?? "").not.toContain("No modifier entries found.");
+    expect(outcome.stderr).toContain("No modifier entries found.");
+    expect(outcome.stderr).toContain("pragma sources update");
   });
 });

@@ -30,10 +30,12 @@ import { setupModule } from "./setup/index.js";
 import { skillModule } from "./skill/index.js";
 import { sourcesModule } from "./sources/index.js";
 import { upgradeModule } from "./upgrade/index.js";
+import { versionModule } from "./version/index.js";
 
 /** The modules with hand-written code, in authoring order. */
 const authored: readonly CapabilityModule[] = [
   infoModule,
+  versionModule,
   configModule,
   createModule,
   sourcesModule,
