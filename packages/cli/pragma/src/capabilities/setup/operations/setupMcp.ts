@@ -24,7 +24,8 @@ import type {
   PlatformEnv,
   TargetGroup,
 } from "@canonical/harnesses";
-import { sequence_, type Task } from "@canonical/task";
+import { dirname } from "node:path";
+import { mkdir, sequence_, type Task } from "@canonical/task";
 import { MCP_SERVER_NAME } from "../../../constants.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
 import type { McpTargetState, ScopeBand } from "../types.js";
@@ -32,6 +33,10 @@ import type { McpTargetState, ScopeBand } from "../types.js";
 /** The `writeMcpConfigTargets` builder, captured from the dynamic harness import. */
 type WriteMcpConfigTargets =
   typeof import("@canonical/harnesses").writeMcpConfigTargets;
+
+/** The `removeMcpConfigFrom` builder, captured from the dynamic harness import. */
+type RemoveMcpConfigFrom =
+  typeof import("@canonical/harnesses").removeMcpConfigFrom;
 
 /**
  * The detected MCP state: the per-file target groups (already scoped to the
@@ -48,7 +53,23 @@ export interface McpDetection {
   readonly cwd: string;
   readonly platform: PlatformEnv;
   readonly writeMcpConfigTargets: WriteMcpConfigTargets;
+  readonly removeMcpConfigFrom: RemoveMcpConfigFrom;
 }
+
+/**
+ * The argv a registered harness spawns to reach the server.
+ *
+ * The server verb is `mcp serve`: `mcp` is the noun, and the noun on its own is
+ * not the server entry. An entry still carrying the old single-token `mcp`
+ * spawns something that no longer serves, so it must not survive.
+ *
+ * It does not have to: `mcpEntryMatches` treats `args` as a controlled field,
+ * so an entry written before this rename classifies as `drifted` on the very
+ * next detection and the ordinary forward write repairs it. That is the whole
+ * migration — no flag, no prompt, no compatibility branch — and the run after
+ * it converges, because the repaired entry then matches byte for byte.
+ */
+const MCP_SERVE_ARGV = ["mcp", "serve"] as const;
 
 /**
  * The pragma MCP server entry we register — the SINGLE source of truth both the
@@ -72,8 +93,8 @@ export interface McpDetection {
  */
 export function pragmaMcpEntry(cwd: string, band: ScopeBand): McpServerConfig {
   return band === "project"
-    ? { command: MCP_SERVER_NAME, args: ["mcp"], cwd }
-    : { command: MCP_SERVER_NAME, args: ["mcp"] };
+    ? { command: MCP_SERVER_NAME, args: [...MCP_SERVE_ARGV], cwd }
+    : { command: MCP_SERVER_NAME, args: [...MCP_SERVE_ARGV] };
 }
 
 /**
@@ -143,6 +164,7 @@ export async function detectMcp(
       mcpEntryMatches,
       readMcpConfigFrom,
       readPlatformEnv,
+      removeMcpConfigFrom,
       writeMcpConfigTargets,
     },
     { runTask },
@@ -172,7 +194,14 @@ export async function detectMcp(
     }),
   );
 
-  return { groups, stateByPath, cwd, platform, writeMcpConfigTargets };
+  return {
+    groups,
+    stateByPath,
+    cwd,
+    platform,
+    writeMcpConfigTargets,
+    removeMcpConfigFrom,
+  };
 }
 
 /**
@@ -237,10 +266,23 @@ export const ownedMcpGroups = (d: McpDetection): readonly TargetGroup[] =>
   d.groups.filter((group) => mcpGroupState(d, group.path) !== "absent");
 
 /**
- * Compose the removal of the pragma entry from every owned file. The forward
- * effect re-asserts the entry (idempotent) and `writeMcpConfigTargets` attaches
- * the key-scoped deletion as its `undo`, which is what the undo interpreter
- * executes — so only the pragma key is ever removed.
+ * Compose the removal of the pragma entry from every owned file.
+ *
+ * The FORWARD side of this task must be walkable without reading anything.
+ * `runUndo` collects undos by walking the forward task with effects MOCKED —
+ * real `Exists`, but `ReadFile` deliberately returns a placeholder, so that the
+ * walk cannot observe the forward run's own edits. Re-asserting the entry here
+ * (the obvious composition, and the one this had) put a read-parse-merge on
+ * that walk: the placeholder is not JSON, the parse failed closed, and the
+ * collection aborted before gathering a single undo. `setup mcp --undo` could
+ * not remove anything, and said so by refusing a config that was perfectly
+ * valid.
+ *
+ * So the forward effect is a `mkdir` of the config's own directory — which
+ * already exists, reads nothing, and is a genuine no-op — carrying the
+ * key-scoped removal as its `undo`. Phase two then runs that removal against
+ * the real file. Only the pragma key is ever deleted; a foreign server in the
+ * same file is never touched.
  *
  * @param d - The detection gathered up front.
  * @returns A Task whose undo removes the pragma entry from each owned file.
@@ -248,11 +290,13 @@ export const ownedMcpGroups = (d: McpDetection): readonly TargetGroup[] =>
 export function composeMcpRemoval(d: McpDetection): Task<void> {
   return sequence_(
     ownedMcpGroups(d).map((group) =>
-      d.writeMcpConfigTargets(
-        group.writes,
-        MCP_SERVER_NAME,
-        pragmaMcpEntry(d.cwd, group.scope),
-      ),
+      mkdir(dirname(group.path), true, {
+        undo: sequence_(
+          group.writes.map((write) =>
+            d.removeMcpConfigFrom(write, MCP_SERVER_NAME),
+          ),
+        ),
+      }),
     ),
   );
 }

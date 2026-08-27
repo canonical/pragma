@@ -347,7 +347,7 @@ describe("setup mcp — scope & dedup", () => {
     const fromB = await register(tmp("pragma-setup-projB-"));
     expect(fromA).toBe(fromB);
     const entry = JSON.parse(fromA).mcpServers?.pragma;
-    expect(entry).toEqual({ command: "pragma", args: ["mcp"] });
+    expect(entry).toEqual({ command: "pragma", args: ["mcp", "serve"] });
     expect(entry).not.toHaveProperty("cwd");
   });
 
@@ -385,7 +385,7 @@ describe("setup mcp — scope & dedup", () => {
     );
     expect(
       JSON.parse(readFileSync(configPath, "utf-8")).mcpServers.pragma,
-    ).toEqual({ command: "pragma", args: ["mcp"] });
+    ).toEqual({ command: "pragma", args: ["mcp", "serve"] });
     // ...and it stays `configured` afterwards (no churn on every run).
     const after = await detectMcp(bootRuntime(FLAGS, cwd), "global");
     expect(mcpGroupState(after, configPath)).toBe("configured");

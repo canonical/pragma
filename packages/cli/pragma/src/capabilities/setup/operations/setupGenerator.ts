@@ -378,7 +378,12 @@ export async function buildSetupRun(
       };
     }
     if (!isActionable(row.action)) return { status: "noop" };
-    const note = childNote(row) ?? ACTION_NOTES[row.action];
+    // A removal never borrows the forward child summary: its children are the
+    // files the entry is being taken OUT of, and counting them as "1 updated"
+    // described the opposite of what the run had just done.
+    const note = removal
+      ? ACTION_NOTES[row.action]
+      : (childNote(row) ?? ACTION_NOTES[row.action]);
     return {
       status: removal ? "removed" : "done",
       ...(note === undefined ? {} : { note }),
