@@ -30,7 +30,7 @@ pragma block list --format llm
 
 Look up block details by name, IRI, or glob.
 
-Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. Use when you need the full spec of specific blocks by name — detail: "summary" trims to the base view. Example: block_lookup { names: ["Button"] }.
+Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. Use when you need the full spec of specific blocks by name — detail: "summary" trims to the base view. Example: block_lookup { name: ["Button"] }.
 
 ```
 pragma block lookup <name...>
@@ -564,7 +564,7 @@ pragma modifier list --format llm
 
 Look up modifier details by name, IRI, or glob.
 
-Get values and usage details for one or more modifier families by name. Use when you need the allowed values of specific families. Example: modifier_lookup { names: ["importance"] }.
+Get values and usage details for one or more modifier families by name. Use when you need the allowed values of specific families. Example: modifier_lookup { name: ["importance"] }.
 
 ```
 pragma modifier lookup <name...>
@@ -1046,7 +1046,7 @@ pragma tier list --format llm
 
 Show tiers by name, with the blocks scoped to each.
 
-Get one or more tiers by name, with the blocks scoped directly to each. Use when you need which blocks a specific tier carries. Example: tier_lookup { names: ["apps/lxd"] }.
+Get one or more tiers by name, with the blocks scoped directly to each. Use when you need which blocks a specific tier carries. Example: tier_lookup { name: ["apps/lxd"] }.
 
 ```
 pragma tier lookup <name...>
@@ -1093,7 +1093,7 @@ pragma token list --format llm
 
 Look up token details by name, IRI, or glob.
 
-Get type and theme values for one or more design tokens by name. Use when resolving specific tokens' light/dark values. Example: token_lookup { names: ["color.primary"] }.
+Get type and theme values for one or more design tokens by name. Use when resolving specific tokens' light/dark values. Example: token_lookup { name: ["color.primary"] }.
 
 ```
 pragma token lookup <name...>
