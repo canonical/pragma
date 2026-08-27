@@ -16,7 +16,7 @@
 import chalk from "chalk";
 import { BIN_NAME } from "../../constants.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
-import { BAND_LABELS } from "../shared/bands.js";
+import { BAND_LABELS } from "../shared/index.js";
 import {
   type PlanChildRow,
   type PlanRow,

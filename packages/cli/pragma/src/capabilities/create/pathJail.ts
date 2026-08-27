@@ -13,7 +13,7 @@
 
 import { existsSync, realpathSync } from "node:fs";
 import * as path from "node:path";
-import { PragmaError } from "../../kernel/error/PragmaError.js";
+import { PragmaError } from "../../kernel/error/index.js";
 
 /** Walk up from `p` to the nearest ancestor that exists on disk. */
 function nearestExisting(p: string): string {

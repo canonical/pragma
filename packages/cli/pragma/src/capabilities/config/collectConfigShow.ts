@@ -7,12 +7,12 @@
  * zod) onto the fast path.
  */
 
-import { readConfig } from "../../kernel/config/readConfig.js";
 import type {
   PackDeclaration,
   PragmaConfig,
-} from "../../kernel/config/types.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
+} from "../../kernel/config/index.js";
+import { readConfig } from "../../kernel/config/index.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import type { ConfigShowData } from "./types.js";
 
 /** A pack declaration with any declared story bodies dropped. */

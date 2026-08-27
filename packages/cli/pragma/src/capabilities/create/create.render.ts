@@ -22,7 +22,7 @@
 import type { GeneratorResult } from "@canonical/summon-core";
 import { type Effect, getAffectedFiles } from "@canonical/task";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
-import type { Formatters } from "../../kernel/spec/types.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 
 /** The user-visible mutating effects, de-duplicated by path for MakeDir. */
 function created(effects: readonly Effect[]): string[] {

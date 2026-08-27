@@ -45,7 +45,7 @@ import {
 } from "@canonical/summon-core/projection/commander";
 import type { Task } from "@canonical/task";
 import { type Command, CommanderError } from "commander";
-import { PragmaError } from "../../kernel/error/PragmaError.js";
+import { PragmaError } from "../../kernel/error/index.js";
 import { renderErrorForFormat } from "../../kernel/error/renderError.js";
 import { MUTATION_FLAG_DOCS } from "../../kernel/project/cli/constants.js";
 import {

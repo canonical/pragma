@@ -17,7 +17,7 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { checkKeStore } from "./checks/checkKeStore.js";
 import { checkNodeVersion } from "./checks/checkNodeVersion.js";
 import { checkPackageRefs } from "./checks/checkPackageRefs.js";

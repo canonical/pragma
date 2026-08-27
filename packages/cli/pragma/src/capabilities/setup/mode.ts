@@ -25,7 +25,7 @@
  */
 
 import type { InteractionMode } from "@canonical/summon-core/projection";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 
 /** The inputs the decision reads, lifted off the runtime. */
 export interface SetupModeInput {

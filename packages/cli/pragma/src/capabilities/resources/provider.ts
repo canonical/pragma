@@ -37,7 +37,7 @@ import {
   readPackIndex,
 } from "../../kernel/completion/entitySource.js";
 import { asPragmaError } from "../../kernel/error/fromTaskError.js";
-import { PragmaError } from "../../kernel/error/PragmaError.js";
+import { PragmaError } from "../../kernel/error/index.js";
 import { mcpErrorFrom } from "../../kernel/project/mcp/mcpError.js";
 import { toTurtle } from "../../kernel/render/turtle.js";
 import type {

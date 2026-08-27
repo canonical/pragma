@@ -2,7 +2,7 @@
  * The `skill` capability module — storeless filesystem discovery.
  */
 
-import type { CapabilityModule } from "../../kernel/spec/types.js";
+import type { CapabilityModule } from "../../kernel/spec/index.js";
 import { skillListVerb, skillLookupVerb } from "./verbs.js";
 
 /** The `skill` capability module (`list`, `lookup`). */

@@ -10,7 +10,7 @@
  * the recap agree by construction rather than by review.
  */
 
-import type { Formatters } from "../../kernel/spec/types.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 import type { SetupPlan } from "./plan.js";
 import { renderPlanLlm, renderPlanTable, renderRecap } from "./plan.render.js";
 

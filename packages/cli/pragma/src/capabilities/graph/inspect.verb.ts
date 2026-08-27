@@ -13,11 +13,11 @@ import {
   DEFAULT_DETAIL_LEVEL,
   DETAIL_LEVELS,
 } from "../../constants.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import type { InspectResult } from "../../kernel/runtime/readEntity.js";
 import { readEntity } from "../../kernel/runtime/readEntity.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
-import type { VerbSpec } from "../../kernel/spec/types.js";
+import type { VerbSpec } from "../../kernel/spec/index.js";
 import { inspectFormatters } from "./inspect.render.js";
 
 const inspectVerb: VerbSpec<Record<string, unknown>, InspectResult> = {

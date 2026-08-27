@@ -14,7 +14,7 @@
 
 import { BIN_NAME } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
-import type { CapabilityModule, VerbSpec } from "../../kernel/spec/types.js";
+import type { CapabilityModule, VerbSpec } from "../../kernel/spec/index.js";
 import { doctorFormatters } from "./doctor.render.js";
 import type { DoctorData } from "./types.js";
 

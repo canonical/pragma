@@ -24,8 +24,8 @@ import {
   recover,
   type Task,
 } from "@canonical/task";
-import { PragmaError } from "../../kernel/error/PragmaError.js";
-import type { Recovery } from "../../kernel/error/types.js";
+import type { Recovery } from "../../kernel/error/index.js";
+import { PragmaError } from "../../kernel/error/index.js";
 
 /**
  * Route a {@link PragmaError} through the Task FAILURE CHANNEL (a `Fail` node

@@ -9,12 +9,11 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { BIN_NAME } from "../../constants.js";
-import { PragmaError } from "../../kernel/error/PragmaError.js";
-import { cliRecovery } from "../../kernel/error/recovery.js";
+import { cliRecovery, PragmaError } from "../../kernel/error/index.js";
 import { suggestNames } from "../../kernel/project/cli/suggestNames.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
-import type { VerbSpec } from "../../kernel/spec/types.js";
+import type { VerbSpec } from "../../kernel/spec/index.js";
 import { type DiscoveredSkill, discoverSkills } from "./discover.js";
 import { skillListFormatters, skillLookupFormatters } from "./render.js";
 

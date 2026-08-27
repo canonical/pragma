@@ -10,7 +10,7 @@
  */
 
 import type { Task } from "@canonical/task";
-import { PragmaError } from "../../kernel/error/PragmaError.js";
+import { PragmaError } from "../../kernel/error/index.js";
 import { CONFIG_FIELDS, type ConfigFieldSpec } from "./fields.js";
 import { runField, runUnset as runFieldUnset } from "./runField.js";
 import type { ConfigFieldResult } from "./types.js";

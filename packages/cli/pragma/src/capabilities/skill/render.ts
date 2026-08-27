@@ -3,7 +3,7 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
-import type { Formatters } from "../../kernel/spec/types.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 import type { DiscoveredSkill } from "./discover.js";
 import type { SkillLookup } from "./verbs.js";
 

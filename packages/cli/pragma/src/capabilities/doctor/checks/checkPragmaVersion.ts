@@ -1,6 +1,6 @@
 import { BIN_NAME } from "../../../constants.js";
-import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
-import { detectInstallSource } from "../../shared/packageManager.js";
+import type { PragmaRuntime } from "../../../kernel/runtime/index.js";
+import { detectInstallSource } from "../../shared/index.js";
 import type { CheckResult } from "../types.js";
 
 /**

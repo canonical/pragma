@@ -7,7 +7,7 @@
 
 import { BIN_NAME, PROJECT_CONFIG_FILENAME } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
-import type { CapabilityModule, VerbSpec } from "../../kernel/spec/types.js";
+import type { CapabilityModule, VerbSpec } from "../../kernel/spec/index.js";
 import { configGetVerb } from "./get.verb.js";
 import { configSetVerb } from "./set.verb.js";
 import { configShowFormatters } from "./show.render.js";

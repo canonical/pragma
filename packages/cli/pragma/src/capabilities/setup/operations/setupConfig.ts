@@ -27,7 +27,7 @@ import {
   type Task,
   writeFile,
 } from "@canonical/task";
-import { globalConfigPath } from "../../../kernel/config/paths.js";
+import { globalConfigPath } from "../../../kernel/config/index.js";
 
 /** Seed content: an empty object, so nothing is pinned the user did not choose. */
 export const SEED_CONFIG = "{}\n";

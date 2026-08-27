@@ -31,22 +31,19 @@ import {
   writeFile,
 } from "@canonical/task";
 import { VERSION } from "../../constants.js";
-import { PragmaError } from "../../kernel/error/PragmaError.js";
-import { cliRecovery } from "../../kernel/error/recovery.js";
-import { buildPack } from "../../kernel/runtime/graphpack/build.js";
+import { cliRecovery, PragmaError } from "../../kernel/error/index.js";
+import { buildPack } from "../../kernel/runtime/graphpack/index.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { activePackPath, readActivePack } from "../../kernel/runtime/paths.js";
-import type { PackageRef } from "../../kernel/runtime/refs/parseRef.js";
-import {
-  parsePackDeclaration,
-  redactUrl,
-} from "../../kernel/runtime/refs/parseRef.js";
+import type { PackageRef } from "../../kernel/runtime/refs/index.js";
 import {
   detectPrefixClashes,
   harvestPrefixes,
+  parsePackDeclaration,
   type ResolvedPackage,
+  redactUrl,
   resolvePackage,
-} from "../../kernel/runtime/refs/resolve.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
+} from "../../kernel/runtime/refs/index.js";
 import { installedSkillsDir } from "../skill/discover.js";
 import { planSkillInstall } from "./installSkills.js";
 import type { SourcesUpdateData } from "./types.js";

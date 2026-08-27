@@ -14,7 +14,7 @@
  * `--help`/`__complete` fast paths stay free of the config reader and zod.
  */
 
-import type { CapabilityModule } from "../kernel/spec/types.js";
+import type { CapabilityModule } from "../kernel/spec/index.js";
 import { capabilitiesModule } from "./capabilities/index.js";
 import { colophonModule } from "./colophon/index.js";
 import { configModule } from "./config/index.js";

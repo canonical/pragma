@@ -27,7 +27,7 @@ import type {
 } from "@canonical/harnesses";
 import { mkdir, sequence_, type Task } from "@canonical/task";
 import { MCP_SERVER_NAME } from "../../../constants.js";
-import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
+import type { PragmaRuntime } from "../../../kernel/runtime/index.js";
 import type { McpTargetState, ScopeBand } from "../types.js";
 
 /** The `writeMcpConfigTargets` builder, captured from the dynamic harness import. */

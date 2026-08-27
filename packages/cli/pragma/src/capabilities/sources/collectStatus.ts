@@ -12,12 +12,14 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { PackDeclaration } from "../../kernel/config/types.js";
-import { embeddedManifest } from "../../kernel/runtime/graphpack/embedded.js";
-import { readManifest } from "../../kernel/runtime/graphpack/manifest.js";
+import type { PackDeclaration } from "../../kernel/config/index.js";
+import {
+  embeddedManifest,
+  readManifest,
+} from "../../kernel/runtime/graphpack/index.js";
 import { INDEX_FILE } from "../../kernel/runtime/graphpack/types.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { resolveSources } from "../../kernel/runtime/resolveSources.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { SourcesStatusData } from "./types.js";
 
 const entryName = (entry: PackDeclaration): string =>

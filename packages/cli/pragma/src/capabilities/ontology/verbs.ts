@@ -22,16 +22,15 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
-import { PragmaError } from "../../kernel/error/PragmaError.js";
-import { cliRecovery } from "../../kernel/error/recovery.js";
+import { cliRecovery, PragmaError } from "../../kernel/error/index.js";
 import { resolvePackDetail } from "../../kernel/packs/disclosure.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type {
   DisclosureSpec,
   ParamSpec,
   VerbSpec,
-} from "../../kernel/spec/types.js";
+} from "../../kernel/spec/index.js";
 import {
   listNamespaces,
   localName,
