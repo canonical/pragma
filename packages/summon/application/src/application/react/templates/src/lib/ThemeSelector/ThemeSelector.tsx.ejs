@@ -1,8 +1,14 @@
+<% if (intl) { -%>
+import { useTranslation } from "@canonical/i18n-react";
+<% } -%>
 import { usePreferredTheme } from "@canonical/react-hooks";
 import type { ChangeEvent, ReactElement } from "react";
 
 export default function ThemeSelector(): ReactElement {
   const { value, source, set, reset } = usePreferredTheme();
+<% if (intl) { -%>
+  const { t } = useTranslation();
+<% } -%>
 
   function handleChange(event: ChangeEvent<HTMLSelectElement>) {
     const selected = event.target.value;
@@ -18,13 +24,23 @@ export default function ThemeSelector(): ReactElement {
 
   return (
     <select
+<% if (intl) { -%>
+      aria-label={t("theme.label")}
+<% } else { -%>
       aria-label="Color theme"
+<% } -%>
       onChange={handleChange}
       value={selectValue}
     >
+<% if (intl) { -%>
+      <option value="system">{t("theme.system")}</option>
+      <option value="light">{t("theme.light")}</option>
+      <option value="dark">{t("theme.dark")}</option>
+<% } else { -%>
       <option value="system">System</option>
       <option value="light">Light</option>
       <option value="dark">Dark</option>
+<% } -%>
     </select>
   );
 }

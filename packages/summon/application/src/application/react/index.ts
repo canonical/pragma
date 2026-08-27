@@ -28,6 +28,7 @@ export interface ApplicationReactAnswers {
   readonly ssr: boolean;
   readonly router: boolean;
   readonly forms: boolean;
+  readonly intl: boolean;
   readonly relay: boolean;
   readonly runInstall: boolean;
 }
@@ -61,6 +62,14 @@ const prompts: PromptDefinition[] = [
     type: "confirm",
     message: "Include form components?",
     default: true,
+    group: "Application",
+  },
+  {
+    name: "intl",
+    type: "confirm",
+    message:
+      "Include internationalisation (locale negotiation, translated UI, locale switcher)?",
+    default: false,
     group: "Application",
   },
   {
@@ -184,6 +193,7 @@ Requires both --ssr and --router flags.`,
         const vars = withHelpers({
           name,
           forms: answers.forms,
+          intl: answers.intl,
           relay: answers.relay,
           standalone,
           pragmaVersion,
@@ -282,7 +292,11 @@ Requires both --ssr and --router flags.`,
 
           // E2e tests (the 2×3 server matrix + its spawn/teardown harness)
           copy("test/e2e/serverHarness.ts"),
-          copy("test/e2e/servers.e2e.ts"),
+          template({
+            source: src("test/e2e/servers.e2e.ts.ejs"),
+            dest: dest("test/e2e/servers.e2e.ts"),
+            vars,
+          }),
 
           // Styles
           // styles (EJS — form stylesheet imported only when --forms)
@@ -308,9 +322,21 @@ Requires both --ssr and --router flags.`,
             dest: dest("src/server/entry.tsx"),
             vars,
           }),
-          copy("src/server/renderer.tsx"),
-          copy("src/server/server.express.ts"),
-          copy("src/server/server.bun.ts"),
+          template({
+            source: src("src/server/renderer.tsx.ejs"),
+            dest: dest("src/server/renderer.tsx"),
+            vars,
+          }),
+          template({
+            source: src("src/server/server.express.ts.ejs"),
+            dest: dest("src/server/server.express.ts"),
+            vars,
+          }),
+          template({
+            source: src("src/server/server.bun.ts.ejs"),
+            dest: dest("src/server/server.bun.ts"),
+            vars,
+          }),
           copy("src/server/preview.express.ts"),
           copy("src/server/preview.bun.ts"),
 
@@ -325,17 +351,40 @@ Requires both --ssr and --router flags.`,
           }),
 
           // Domain: marketing
-          copy("src/domains/marketing/HomePage.tsx"),
-          copy("src/domains/marketing/GuidePage.tsx"),
+          template({
+            source: src("src/domains/marketing/HomePage.tsx.ejs"),
+            dest: dest("src/domains/marketing/HomePage.tsx"),
+            vars,
+          }),
+          template({
+            source: src("src/domains/marketing/GuidePage.tsx.ejs"),
+            dest: dest("src/domains/marketing/GuidePage.tsx"),
+            vars,
+          }),
           copy("src/domains/marketing/routes.ts"),
 
           // Domain: account
-          copy("src/domains/account/AccountPage.tsx"),
-          copy("src/domains/account/LoginPage.tsx"),
+          template({
+            source: src("src/domains/account/AccountPage.tsx.ejs"),
+            dest: dest("src/domains/account/AccountPage.tsx"),
+            vars,
+          }),
+          template({
+            source: src("src/domains/account/LoginPage.tsx.ejs"),
+            dest: dest("src/domains/account/LoginPage.tsx"),
+            vars,
+          }),
           copy("src/domains/account/routes.ts"),
 
           // Domain: contact (when --forms is enabled)
-          when(answers.forms, copy("src/domains/contact/ContactPage.tsx")),
+          when(
+            answers.forms,
+            template({
+              source: src("src/domains/contact/ContactPage.tsx.ejs"),
+              dest: dest("src/domains/contact/ContactPage.tsx"),
+              vars,
+            }),
+          ),
           when(answers.forms, copy("src/domains/contact/routes.ts")),
 
           // Relay data layer (when --relay is enabled): environment factory +
@@ -359,21 +408,54 @@ Requires both --ssr and --router flags.`,
           ),
 
           // Domain: catalog (when --relay is enabled)
-          when(answers.relay, copy("src/domains/catalog/CatalogPage.tsx")),
-          when(answers.relay, copy("src/domains/catalog/ProductList.tsx")),
           when(
             answers.relay,
-            copy("src/domains/catalog/ProductList.stories.tsx"),
+            template({
+              source: src("src/domains/catalog/CatalogPage.tsx.ejs"),
+              dest: dest("src/domains/catalog/CatalogPage.tsx"),
+              vars,
+            }),
           ),
           when(
             answers.relay,
-            copy("src/domains/catalog/ProductList.tests.tsx"),
+            template({
+              source: src("src/domains/catalog/ProductList.tsx.ejs"),
+              dest: dest("src/domains/catalog/ProductList.tsx"),
+              vars,
+            }),
           ),
-          when(answers.relay, copy("src/domains/catalog/ProductCard.tsx")),
+          when(
+            answers.relay,
+            template({
+              source: src("src/domains/catalog/ProductList.stories.tsx.ejs"),
+              dest: dest("src/domains/catalog/ProductList.stories.tsx"),
+              vars,
+            }),
+          ),
+          when(
+            answers.relay,
+            template({
+              source: src("src/domains/catalog/ProductList.tests.tsx.ejs"),
+              dest: dest("src/domains/catalog/ProductList.tests.tsx"),
+              vars,
+            }),
+          ),
+          when(
+            answers.relay,
+            template({
+              source: src("src/domains/catalog/ProductCard.tsx.ejs"),
+              dest: dest("src/domains/catalog/ProductCard.tsx"),
+              vars,
+            }),
+          ),
           when(answers.relay, copy("src/domains/catalog/ErrorBoundary.tsx")),
           when(
             answers.relay,
-            copy("src/domains/catalog/ErrorBoundary.tests.tsx"),
+            template({
+              source: src("src/domains/catalog/ErrorBoundary.tests.tsx.ejs"),
+              dest: dest("src/domains/catalog/ErrorBoundary.tests.tsx"),
+              vars,
+            }),
           ),
           when(answers.relay, copy("src/domains/catalog/routes.ts")),
 
@@ -435,8 +517,30 @@ Requires both --ssr and --router flags.`,
           copy("src/lib/Navigation/index.ts"),
 
           // Lib: ThemeSelector
-          copy("src/lib/ThemeSelector/ThemeSelector.tsx"),
+          template({
+            source: src("src/lib/ThemeSelector/ThemeSelector.tsx.ejs"),
+            dest: dest("src/lib/ThemeSelector/ThemeSelector.tsx"),
+            vars,
+          }),
           copy("src/lib/ThemeSelector/index.ts"),
+
+          // Lib: LocaleSelector (when --intl is enabled)
+          when(answers.intl, copy("src/lib/LocaleSelector/LocaleSelector.tsx")),
+          when(
+            answers.intl,
+            copy("src/lib/LocaleSelector/LocaleSelector.tests.tsx"),
+          ),
+          when(answers.intl, copy("src/lib/LocaleSelector/index.ts")),
+
+          // i18n (when --intl is enabled): locale config, one catalog per
+          // locale, negotiation tests
+          when(answers.intl, copy("src/i18n/config.ts")),
+          when(answers.intl, copy("src/i18n/catalogs.ts")),
+          when(answers.intl, copy("src/i18n/en.ts")),
+          when(answers.intl, copy("src/i18n/fr.ts")),
+          when(answers.intl, copy("src/i18n/ar.ts")),
+          when(answers.intl, copy("src/i18n/index.ts")),
+          when(answers.intl, copy("src/i18n/negotiation.tests.ts")),
 
           // Lib: ExampleComponent
           copy("src/lib/ExampleComponent/ExampleComponent.tsx"),
@@ -475,9 +579,18 @@ Requires both --ssr and --router flags.`,
             dest: dest(".storybook/main.ts"),
             vars,
           }),
-          copy(".storybook/preview.ts"),
+          template({
+            source: src(".storybook/preview.ts.ejs"),
+            dest: dest(".storybook/preview.ts"),
+            vars,
+          }),
           copy(".storybook/decorators/withRouter.tsx"),
-          copy(".storybook/decorators/index.ts"),
+          when(answers.intl, copy(".storybook/decorators/withI18n.tsx")),
+          template({
+            source: src(".storybook/decorators/index.ts.ejs"),
+            dest: dest(".storybook/decorators/index.ts"),
+            vars,
+          }),
 
           // Static asset dirs (kept by placeholder; both wired into Storybook staticDirs)
           copy("src/assets/.gitkeep"),

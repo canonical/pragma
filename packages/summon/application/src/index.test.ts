@@ -36,6 +36,7 @@ describe("application/react generator", () => {
         ssr: true,
         router: true,
         forms: false,
+        intl: false,
         relay: false,
         runInstall: false,
       }),
@@ -126,6 +127,7 @@ describe("application/react generator", () => {
         ssr: true,
         router: true,
         forms: true,
+        intl: true,
         relay: true,
         runInstall: false,
       }),
@@ -154,6 +156,7 @@ describe("application/react generator", () => {
         ssr: true,
         router: true,
         forms: true,
+        intl: false,
         relay: false,
         runInstall: false,
       }),
@@ -188,6 +191,7 @@ describe("application/react generator", () => {
         ssr: true,
         router: true,
         forms: false,
+        intl: false,
         relay: false,
         runInstall: false,
       }),
@@ -214,6 +218,7 @@ describe("application/react generator", () => {
         ssr: true,
         router: true,
         forms: false,
+        intl: false,
         relay: true,
         runInstall: false,
       }),
@@ -295,6 +300,7 @@ describe("application/react generator", () => {
           ssr: true,
           router: true,
           forms: false,
+          intl: false,
           relay: true,
           runInstall: false,
         }),
@@ -327,6 +333,7 @@ describe("application/react generator", () => {
         ssr: true,
         router: true,
         forms: true,
+        intl: false,
         relay: false,
         runInstall: false,
       }),
@@ -356,6 +363,63 @@ describe("application/react generator", () => {
     expect(filePaths).not.toContain("my-app/relay.config.json");
   });
 
+  it("includes the i18n layer and locale switcher when intl=true", () => {
+    const result = dryRun(
+      generators["application/react"].generate({
+        appPath: "my-app",
+        ssr: true,
+        router: true,
+        forms: false,
+        intl: true,
+        relay: false,
+        runInstall: false,
+      }),
+    );
+    const filePaths = result.effects
+      .filter((e) => e._tag === "WriteFile" || e._tag === "CopyFile")
+      .map(
+        (e) =>
+          (e as { path?: string; dest?: string }).path ??
+          (e as { dest?: string }).dest,
+      );
+
+    expect(filePaths).toContain("my-app/src/i18n/config.ts");
+    expect(filePaths).toContain("my-app/src/i18n/en.ts");
+    expect(filePaths).toContain("my-app/src/i18n/fr.ts");
+    expect(filePaths).toContain("my-app/src/i18n/ar.ts");
+    expect(filePaths).toContain(
+      "my-app/src/lib/LocaleSelector/LocaleSelector.tsx",
+    );
+    expect(filePaths).toContain("my-app/.storybook/decorators/withI18n.tsx");
+  });
+
+  it("excludes the i18n layer and locale switcher when intl=false", () => {
+    const result = dryRun(
+      generators["application/react"].generate({
+        appPath: "my-app",
+        ssr: true,
+        router: true,
+        forms: false,
+        intl: false,
+        relay: false,
+        runInstall: false,
+      }),
+    );
+    const filePaths = result.effects
+      .filter((e) => e._tag === "WriteFile" || e._tag === "CopyFile")
+      .map(
+        (e) =>
+          (e as { path?: string; dest?: string }).path ??
+          (e as { dest?: string }).dest,
+      );
+
+    expect(filePaths.filter((f) => String(f).includes("/i18n/"))).toEqual([]);
+    expect(
+      filePaths.filter((f) => String(f).includes("LocaleSelector")),
+    ).toEqual([]);
+    expect(filePaths.filter((f) => String(f).includes("withI18n"))).toEqual([]);
+  });
+
   it("uses the appPath in file paths", () => {
     const result = dryRun(
       generators["application/react"].generate({
@@ -363,6 +427,7 @@ describe("application/react generator", () => {
         ssr: true,
         router: true,
         forms: false,
+        intl: false,
         relay: false,
         runInstall: false,
       }),
@@ -388,6 +453,7 @@ describe("application/react generator", () => {
       ssr: true,
       router: true,
       forms: false,
+      intl: false,
       relay: false,
       runInstall: false,
     });
@@ -406,6 +472,7 @@ describe("application/react generator", () => {
           ssr: false,
           router: true,
           forms: false,
+          intl: false,
           relay: false,
           runInstall: false,
         }),
@@ -421,6 +488,7 @@ describe("application/react generator", () => {
           ssr: true,
           router: false,
           forms: false,
+          intl: false,
           relay: false,
           runInstall: false,
         }),

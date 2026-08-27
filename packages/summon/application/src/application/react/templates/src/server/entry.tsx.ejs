@@ -1,3 +1,7 @@
+<% if (intl) { -%>
+import { documentAttrs, isSupportedLocale } from "@canonical/i18n-core";
+import { I18nProvider } from "@canonical/i18n-react";
+<% } -%>
 import { HeadProvider } from "@canonical/react-head";
 import type { ServerEntrypointProps } from "@canonical/react-ssr/renderer";
 import {
@@ -8,6 +12,11 @@ import {
 import { Outlet, RouterProvider } from "@canonical/router-react";
 <% if (relay) { -%>
 import { fetchQuery, RelayEnvironmentProvider } from "react-relay";
+<% } -%>
+<% if (intl) { -%>
+import { catalogs, i18nConfig } from "#i18n/index.js";
+<% } -%>
+<% if (relay) { -%>
 import { createEnvironment } from "#relay/environment.js";
 <% } -%>
 import {
@@ -44,6 +53,10 @@ interface InitialData extends Record<string, unknown> {
    * flat-spread into this same object, so nesting avoids any collision.
    */
   readonly relayPayloads?: readonly SerializedRelayPayload[];
+<% if (intl) { -%>
+  /** Locale negotiated from the request cookie / Accept-Language, if any. */
+  readonly locale?: string;
+<% } -%>
 }
 
 /** How the server should answer a request for this URL. */
@@ -255,12 +268,30 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
   });
 <% } -%>
 
+<% if (intl) { -%>
+  // The servers negotiate the locale (cookie > Accept-Language > default,
+  // via i18n-core's negotiateLocale) and pass it through initialData; the
+  // same value reaches the client via `window.__INITIAL_DATA__`, so the
+  // server markup and the first client render agree on the language.
+  const locale = isSupportedLocale(i18nConfig, initialData.locale)
+    ? initialData.locale
+    : i18nConfig.defaultLocale;
+  // `<html lang dir>` must be right on first paint for assistive technology
+  // and RTL locales; after hydration the client's locale source keeps both
+  // attributes in sync with every switch.
+  const { lang, dir } = documentAttrs(i18nConfig, locale);
+
+<% } -%>
   // Paint the cookie-resolved theme on <html> for a flash-free first render —
   // the same element `usePreferredTheme` toggles on the client, and one React
   // does not hydrate (only `#root` is), so there is no mismatch to reconcile.
 <% if (relay) { -%>
   return (
+<% if (intl) { -%>
+    <html lang={lang} dir={dir} className={initialData.theme}>
+<% } else { -%>
     <html lang={props.lang} className={initialData.theme}>
+<% } -%>
       <head>
         {props.otherHeadElements}
         {props.scriptElements}
@@ -268,6 +299,17 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
       </head>
       <body>
         <div id="root">
+<% if (intl) { -%>
+          <I18nProvider config={i18nConfig} catalogs={catalogs} locale={locale}>
+            <HeadProvider>
+              <RelayEnvironmentProvider environment={relayEnvironment}>
+                <RouterProvider router={router}>
+                  <Outlet fallback={<p>Loading…</p>} />
+                </RouterProvider>
+              </RelayEnvironmentProvider>
+            </HeadProvider>
+          </I18nProvider>
+<% } else { -%>
           <HeadProvider>
             <RelayEnvironmentProvider environment={relayEnvironment}>
               <RouterProvider router={router}>
@@ -275,13 +317,18 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
               </RouterProvider>
             </RelayEnvironmentProvider>
           </HeadProvider>
+<% } -%>
         </div>
       </body>
     </html>
   );
 <% } else { -%>
   return (
+<% if (intl) { -%>
+    <html lang={lang} dir={dir} className={initialData.theme}>
+<% } else { -%>
     <html lang={props.lang} className={initialData.theme}>
+<% } -%>
       <head>
         {props.otherHeadElements}
         {props.scriptElements}
@@ -289,11 +336,21 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
       </head>
       <body>
         <div id="root">
+<% if (intl) { -%>
+          <I18nProvider config={i18nConfig} catalogs={catalogs} locale={locale}>
+            <HeadProvider>
+              <RouterProvider router={router}>
+                <Outlet fallback={<p>Loading…</p>} />
+              </RouterProvider>
+            </HeadProvider>
+          </I18nProvider>
+<% } else { -%>
           <HeadProvider>
             <RouterProvider router={router}>
               <Outlet fallback={<p>Loading…</p>} />
             </RouterProvider>
           </HeadProvider>
+<% } -%>
         </div>
       </body>
     </html>

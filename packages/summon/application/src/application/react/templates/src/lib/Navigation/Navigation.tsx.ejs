@@ -1,24 +1,58 @@
+<% if (intl) { -%>
+import { useTranslation } from "@canonical/i18n-react";
+<% } -%>
 import { Link } from "@canonical/router-react";
 import type { ReactElement } from "react";
+<% if (intl) { -%>
+import LocaleSelector from "../LocaleSelector/index.js";
+<% } -%>
 import ThemeSelector from "../ThemeSelector/index.js";
 
 export default function Navigation(): ReactElement {
+<% if (intl) { -%>
+  const { t } = useTranslation();
+
+<% } -%>
   return (
+<% if (intl) { -%>
+    <nav aria-label={t("nav.label")}>
+      <Link to="home">{t("nav.home")}</Link>
+<% } else { -%>
     <nav aria-label="Main">
       <Link to="home">Home</Link>
+<% } -%>
       <Link params={{ slug: "router-core" }} to="guide">
+<% if (intl) { -%>
+        {t("nav.guide")}
+<% } else { -%>
         Guide
+<% } -%>
       </Link>
 <% if (relay) { -%>
+<% if (intl) { -%>
+      <Link to="catalog">{t("nav.catalog")}</Link>
+<% } else { -%>
       <Link to="catalog">Catalog</Link>
 <% } -%>
+<% } -%>
 <% if (forms) { -%>
+<% if (intl) { -%>
+      <Link to="contact">{t("nav.contact")}</Link>
+<% } else { -%>
       <Link to="contact">Contact</Link>
 <% } -%>
+<% } -%>
       <Link search={{ auth: "1" }} to="account">
+<% if (intl) { -%>
+        {t("nav.signIn")}
+<% } else { -%>
         Demo sign-in
+<% } -%>
       </Link>
       <ThemeSelector />
+<% if (intl) { -%>
+      <LocaleSelector />
+<% } -%>
     </nav>
   );
 }

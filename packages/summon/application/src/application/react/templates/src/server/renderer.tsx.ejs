@@ -17,9 +17,15 @@
 import fs from "node:fs";
 import type { IncomingMessage } from "node:http";
 import path from "node:path";
+<% if (intl) { -%>
+import { negotiateLocale } from "@canonical/i18n-core";
+<% } -%>
 import { extractPreferences } from "@canonical/react-hooks";
 import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import { getRequestUrl } from "@canonical/react-ssr/server";
+<% if (intl) { -%>
+import { i18nConfig } from "#i18n/config.js";
+<% } -%>
 import EntryServer, {
   type InitialData,
   prefetchRouteData,
@@ -39,6 +45,21 @@ function cookieHeader(request: Request | IncomingMessage): string | null {
     : ((request as IncomingMessage).headers?.cookie ?? null);
 }
 
+<% if (intl) { -%>
+/** Read the `Accept-Language` header from a Web `Request` or a Node request. */
+function acceptLanguageHeader(
+  request: Request | IncomingMessage,
+): string | null {
+  if (typeof (request as Request).headers?.get === "function") {
+    return (request as Request).headers.get("accept-language");
+  }
+  const header = (request as IncomingMessage).headers?.["accept-language"];
+  // Node joins repeated header lines for most headers but can surface arrays;
+  // negotiation expects the single comma-separated wire format.
+  return Array.isArray(header) ? header.join(",") : (header ?? null);
+}
+
+<% } -%>
 /**
  * Per-request factory for the JSX app renderer. Accepts either a Web `Request`
  * (`serve-bun`) or a Node `IncomingMessage` (`serve-express`); it derives the
@@ -56,7 +77,16 @@ export type AppRendererResult =
 export default async function createAppRenderer(
   request: Request | IncomingMessage,
 ): Promise<AppRendererResult> {
+<% if (intl) { -%>
+  const cookie = cookieHeader(request);
+  const { theme } = extractPreferences(cookie);
+  const locale = negotiateLocale(i18nConfig, {
+    cookieHeader: cookie,
+    acceptLanguage: acceptLanguageHeader(request),
+  });
+<% } else { -%>
   const { theme } = extractPreferences(cookieHeader(request));
+<% } -%>
   const url = getRequestUrl(request);
   const disposition = resolveRouteDisposition(url ?? "/");
 
@@ -72,6 +102,9 @@ export default async function createAppRenderer(
   const initialData: InitialData = {
     url,
     theme: theme === "light" || theme === "dark" ? theme : undefined,
+<% if (intl) { -%>
+    locale,
+<% } -%>
     ...(relayPayloads ? { relayPayloads } : {}),
   };
 
@@ -83,6 +116,9 @@ export default async function createAppRenderer(
     kind: "render",
     renderer: new JSXRenderer(EntryServer, initialData, {
       htmlString,
+<% if (intl) { -%>
+      defaultLocale: locale,
+<% } -%>
       statusCode: disposition.status,
     }),
   };

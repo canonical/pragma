@@ -25,11 +25,16 @@ export default defineConfig(({ mode }) => ({
   // `@rolldown/plugin-babel` escape hatch; `vite-plugin-relay-lite` does the
   // same rewrite with its own parser and no Babel, and works on Vite 8 /
   // rolldown despite its peer range stopping at Vite 7 (bun installs it with
+<% if (intl) { -%>
+  // only a peer-version warning). `codegen: false` because artifacts are
+  // committed and regenerated explicitly via `bun run relay` / `relay:watch`.
+<% } else { -%>
   // only a peer-version warning). Footgun: its tag scanner matches the word
   // "graphql" followed by a backtick even inside comments, so never
   // backtick-quote a graphql file name in a comment. `codegen: false` because
   // artifacts are committed and regenerated explicitly via the `relay` /
   // `relay:watch` scripts.
+<% } -%>
   plugins: [relay({ codegen: false }), react()],
 <% } else { -%>
   plugins: [react()],
