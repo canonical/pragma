@@ -421,6 +421,19 @@ pragma info  # human-readable summary
 pragma info --format json  # the full {ok,data,meta} envelope
 ```
 
+## mcp
+
+### pragma mcp serve
+
+Start the MCP server over stdio.
+
+```
+pragma mcp serve
+```
+
+- Store: storeless.
+- MCP: not exposed (CLI-only).
+
 ## modifier
 
 ### pragma modifier list

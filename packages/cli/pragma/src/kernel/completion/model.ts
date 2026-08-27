@@ -195,11 +195,6 @@ function toVerbEntry(verb: VerbSpec): VerbEntry {
   return { label, mutates: verb.capability.mutates, flags, positionals };
 }
 
-/** An empty self-verb entry (used for the injected `mcp` noun). */
-function bareSelfVerb(label: string): VerbEntry {
-  return { label, mutates: false, flags: [], positionals: [] };
-}
-
 /**
  * Convert one module-declared completion node (a mounted subtree's static
  * data) into a verb entry, asserting every inlinable token's safety exactly
@@ -264,9 +259,9 @@ function toMountedEntry(
  * Derive the completion model from the capability modules.
  *
  * Hidden verbs are excluded (matching `emitSurface` and `buildProgram`).
- * The bin-served `mcp` entry is injected so `pragma mc<Tab>` completes it,
- * matching the root help.
- * TODO(spec): drop the injection when `mcp` lands as a real (non-hidden) spec.
+ * Every noun in the model comes from a declared verb — `mcp` used to be
+ * injected here because the bin served it without a spec, and it now declares
+ * `mcp serve` like any other pair.
  *
  * @param modules - The capability modules.
  * @returns The completion model, nouns and verbs sorted.
@@ -314,10 +309,6 @@ export function buildCompletionModel(
         bucket.verbs.push(entry);
       }
     }
-  }
-
-  if (!byNoun.has("mcp")) {
-    byNoun.set("mcp", { selfVerb: bareSelfVerb("mcp"), verbs: [] });
   }
 
   const nouns: NounEntry[] = [...byNoun.entries()]

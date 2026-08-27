@@ -326,11 +326,4 @@ describe("parseWords — self-verb nouns (PROTECTED)", () => {
       reason: "positionals exhausted",
     });
   });
-
-  it("the injected mcp noun completes but offers nothing after", () => {
-    expect(parse(["mcp", ""]).context).toEqual({
-      kind: "nothing",
-      reason: "positionals exhausted",
-    });
-  });
 });

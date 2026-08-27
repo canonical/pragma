@@ -28,6 +28,11 @@ describe("runComplete — the __complete pipeline", () => {
       "unset",
     ]);
     await expect(runComplete(["mc"], capabilities)).resolves.toEqual(["mcp"]);
+    // The server entry completes from its own spec — it used to be injected
+    // into the model because the bin served it without one.
+    await expect(runComplete(["mcp", ""], capabilities)).resolves.toEqual([
+      "serve",
+    ]);
     await expect(runComplete(["--d"], capabilities)).resolves.toEqual([
       "--detail",
     ]);

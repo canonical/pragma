@@ -504,11 +504,13 @@ describe("formatRootHelp — grouping", () => {
     expect(help.match(/pragma test/g)).toHaveLength(1);
   });
 
-  it("lists the live nouns and always-available mcp", () => {
+  it("lists the live nouns, and only those", () => {
     expect(help).toContain("block");
     expect(help).toContain("config");
     expect(help).toContain("info");
-    expect(help).toContain("mcp");
+    // `mcp` is curated for PLACEMENT, not conjured into existence: a registry
+    // without an mcp verb has no mcp row.
+    expect(help).not.toContain("mcp");
   });
 
   it("drops nouns that are not present", () => {
@@ -534,9 +536,6 @@ describe("formatRootHelp — grouping", () => {
       Set up & maintain
         config  Read and write pragma configuration
         info    Show version, config, and update status
-
-      For AI agents
-        mcp     Start the MCP server over stdio
 
       Global flags
         --format <plain|llm|json>  Select output format (llm = condensed Markdown for agents)

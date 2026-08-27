@@ -33,10 +33,9 @@ function moduleWith(overrides: Partial<VerbSpec>): CapabilityModule {
 }
 
 describe("buildCompletionModel — structure", () => {
-  it("collects nouns sorted, injecting the bin-served mcp", () => {
+  it("collects nouns sorted, from the declared verbs alone", () => {
     expect(model.nouns.map((n) => n.noun)).toEqual([
       "block",
-      "mcp",
       "standard",
       "status",
     ]);
@@ -62,17 +61,12 @@ describe("buildCompletionModel — structure", () => {
     expect(status?.verbs).toEqual([]);
   });
 
-  it("injects mcp as a bare self-verb noun with nothing to offer", () => {
-    const mcp = findNoun(model, "mcp");
-    expect(mcp?.selfVerb).toEqual({
-      label: "mcp",
-      mutates: false,
-      flags: [],
-      positionals: [],
-    });
-  });
+  it("offers the mcp noun from its declared verb, with no self-verb", () => {
+    // The noun used to be conjured here because the bin served it without a
+    // spec; nothing is conjured now, so a module that declares no mcp verb
+    // gets no mcp noun.
+    expect(findNoun(model, "mcp")).toBeUndefined();
 
-  it("does not inject mcp when a live mcp noun exists", () => {
     const withMcp = buildCompletionModel([
       moduleWith({ path: ["mcp", "serve"] }),
     ]);

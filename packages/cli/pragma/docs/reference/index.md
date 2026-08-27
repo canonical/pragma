@@ -4,8 +4,8 @@ Machine-generated reference for the `pragma` CLI and MCP server, projected from 
 
 ## At a glance
 
-- **19** command nouns
-- **43** CLI commands
+- **20** command nouns
+- **44** CLI commands
 - **38** MCP tools
 - **1** resource template(s)
 

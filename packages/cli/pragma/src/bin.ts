@@ -3,7 +3,7 @@
  * CLI entry point for `pragma` (v2 kernel).
  *
  * The composition root. Ordered early exits keep the hot paths minimal and
- * side-effect-free: `mcp` serves over stdio (D9); `__complete` resolves
+ * side-effect-free: `mcp serve` serves over stdio (D9); `__complete` resolves
  * completions storelessly *before* first-run so the greeting never leaks into a
  * shell buffer; `--version` prints and exits. Otherwise: parse global flags,
  * reject a bad `--format`, run first-run onboarding, then build the Commander
@@ -32,8 +32,16 @@ const ROOT_FLAGS = new Set(["--help", "--version"]);
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
 
-  // 1. MCP server entry (D9) — `pragma mcp` serves over stdio.
-  if (argv[0] === "mcp") {
+  // 1. MCP server entry (D9) — `pragma mcp serve` serves over stdio.
+  //    The exit is NARROW on purpose: only the exact serve invocation, and
+  //    only without a help flag. The server's startup has to stay minimal and
+  //    stdio-pure (no first-run banner, no config read, nothing on stdout but
+  //    JSON-RPC), which is what this shortcut buys — but the noun itself is
+  //    ordinary grammar, so `pragma mcp`, `pragma mcp --help` and
+  //    `pragma mcp serve --help` fall through to the same help machinery every
+  //    other noun uses, and root help's promise that `--help` works on any
+  //    command becomes true.
+  if (argv[0] === "mcp" && argv[1] === "serve" && !argv.includes("--help")) {
     const [{ serveMcp }, { capabilities }] = await Promise.all([
       import("./kernel/project/mcp/serve.js"),
       import("./capabilities/index.js"),
@@ -138,7 +146,7 @@ async function main(): Promise<void> {
   }
 
   // 5. First-run onboarding (stderr-only, failure-tolerant). Skipped on the
-  //    side-effect-free help path — `--help` here; `mcp`, `__complete`, and
+  //    side-effect-free help path — `--help` here; `mcp serve`, `__complete`, and
   //    `--version` already returned above — so help never seeds state.
   if (!explicitHelp) {
     const { ensureFirstRun } = await import("./kernel/config/firstRun.js");

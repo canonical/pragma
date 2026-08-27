@@ -79,7 +79,7 @@ _pragma() {
 
   # nouns
   if [ -z "$noun" ]; then
-    COMPREPLY=($(compgen -W "block mcp standard status" -- "$cur"))
+    COMPREPLY=($(compgen -W "block standard status" -- "$cur"))
     return
   fi
 
@@ -172,7 +172,7 @@ end
 complete -c pragma -f
 
 # nouns
-complete -c pragma -n "__pragma_at ''" -a "block mcp standard status"
+complete -c pragma -n "__pragma_at ''" -a "block standard status"
 
 # global flags
 complete -c pragma -l format -x -a "plain llm json"
@@ -291,7 +291,7 @@ _pragma() {
 
   # nouns
   if [[ -z "$noun" ]]; then
-    compadd -- block mcp standard status
+    compadd -- block standard status
     return 0
   fi
 

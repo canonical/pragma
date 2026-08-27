@@ -99,8 +99,9 @@ function buildKernelGroups(programName: string): readonly HelpGroup[] {
         },
         { noun: "skill", summary: "Browse agent skills from the active packs" },
         { noun: "prompt", summary: "Browse reusable prompt templates" },
-        // The one noun with no verb to speak for it (the bin special-cases it),
-        // so its summary is hand-written rather than derived.
+        // Curated for PLACEMENT, not for existence: `mcp serve` is an
+        // ordinary verb like every other, and this group is where a reader
+        // looks for it.
         { noun: "mcp", summary: "Start the MCP server over stdio" },
       ],
     },
@@ -142,9 +143,6 @@ export function formatRootHelp(
   verbs: readonly VerbSpec[],
 ): string {
   const present = nounsFrom(verbs);
-  // `mcp` is served by the bin's special-case, not a projected verb, but is
-  // always available — surface it so the front door is complete.
-  present.add("mcp");
   const kernel = buildKernelGroups(programName);
   const curated = new Set(kernel.flatMap((g) => g.nouns.map((n) => n.noun)));
 

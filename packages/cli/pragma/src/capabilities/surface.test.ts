@@ -56,8 +56,11 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     expect(emitted.nouns.version?.verbs).toEqual([
       { v: "version", mcp: false },
     ]);
-    // Hidden meta verbs (__complete, mcp) are excluded from the surface.
-    expect(emitted.nouns.mcp).toBeUndefined();
+    // The server entry is a real noun/verb pair, emitted like any other and
+    // carrying no tool — it serves a protocol, it is not an agent tool.
+    expect(emitted.nouns.mcp?.verbs).toEqual([{ v: "serve", mcp: false }]);
+    // The completion resolver stays hidden — it is a protocol between the
+    // shell script and the bin, not a command anyone types.
     expect(emitted.nouns.__complete).toBeUndefined();
   });
 
