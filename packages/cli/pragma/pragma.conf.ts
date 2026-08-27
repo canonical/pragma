@@ -396,19 +396,12 @@ const designSystemStories: readonly PackDefinition[] = [
 ];
 
 /**
- * The read story the code-standards pack supplies — `standard` as declared data.
- *
- * Normalized for the v2 grammar: the old `digest` level is the canonical
- * `standard`, so disclosure gates by the canonical index. The default is
- * `summary` (base fields by name), `--detail standard` adds the `dos` examples,
- * `--detail detailed` adds `donts`. `cs:extends` stays the raw IRI in JSON
- * (renderers compact it at display time).
+ * The `concept` story the design-system pack also supplies: long-form
+ * documentation not bound to a single UIBlock (foundations, how-to guides,
+ * decision guides) — ds:Concept entries ingested from Coda. The list stays
+ * terse (name/type/summary); the Markdown body is the lookup's payload,
+ * served at the `standard` level with knownEdgeCases behind `detailed`.
  */
-// The `concept` story: long-form design-system documentation not bound to a
-// single UIBlock (foundations, how-to guides, decision guides) — ds:Concept
-// entries ingested from Coda by the design-system pack. The list stays terse
-// (name/type/summary); the Markdown body is the lookup's payload, served at
-// the `standard` level with knownEdgeCases behind `detailed`.
 const conceptStory: PackDefinition = {
   noun: "concept",
   description: "List design-system concepts.",
@@ -482,6 +475,15 @@ const conceptStory: PackDefinition = {
   },
 };
 
+/**
+ * The read story the code-standards pack supplies — `standard` as declared data.
+ *
+ * Normalized for the v2 grammar: the old `digest` level is the canonical
+ * `standard`, so disclosure gates by the canonical index. The default is
+ * `summary` (base fields by name), `--detail standard` adds the `dos` examples,
+ * `--detail detailed` adds `donts`. `cs:extends` stays the raw IRI in JSON
+ * (renderers compact it at display time).
+ */
 const codeStandardsStories: readonly PackDefinition[] = [
   {
     noun: "standard",
