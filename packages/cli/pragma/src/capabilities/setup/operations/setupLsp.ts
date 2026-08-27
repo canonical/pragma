@@ -36,7 +36,6 @@ import {
   type ExecResult,
   exec,
   flatMap,
-  info,
   mkdir,
   sequence_,
   type Task,
@@ -63,11 +62,16 @@ export interface DetectedEditor {
  * aggregate {@link LspState} — `unknown` when NO editor CLI was found (the
  * step becomes a named skip), `installed` when every found editor already has
  * the extension, `absent` otherwise (the installer runs for the missing ones).
+ *
+ * `probed` is every CLI name that was LOOKED for, kept so the skip row can name
+ * them: a skip that says only "no editor found" leaves the user guessing what
+ * would have counted.
  */
 export interface LspDetection {
   readonly available: true;
   readonly state: LspState;
   readonly editors: readonly DetectedEditor[];
+  readonly probed: readonly string[];
   readonly stagingDir: string;
 }
 
@@ -133,6 +137,7 @@ export async function detectLsp(_cwd: string): Promise<LspDetection> {
     available: true,
     state,
     editors,
+    probed: editorClis.map((editor) => editor.cli),
     stagingDir: join(userDataBase(platform), BIN_NAME, "lsp"),
   };
 }
@@ -141,11 +146,24 @@ export async function detectLsp(_cwd: string): Promise<LspDetection> {
 export const lspEditorNames = (d: LspDetection): string[] =>
   d.editors.map((e) => e.editor.name);
 
-/** The named-skip line for a machine with no VS Code-family CLI on PATH. */
-export const NO_EDITOR_SKIP_MESSAGE =
-  `No VS Code-family editor CLI found on PATH — skipped installing the ` +
-  `Terrazzo LSP extension. Install VS Code, VSCodium, or another fork (or ` +
-  `put its CLI on PATH), then run \`${BIN_NAME} setup lsp\`.`;
+/**
+ * The named-skip reason for a machine with no VS Code-family CLI on PATH. It
+ * names every CLI that was probed, because a skip the user cannot act on is
+ * only honest if it says what would have counted.
+ *
+ * @param d - The detection gathered up front.
+ * @returns The reason line.
+ */
+export const lspSkipReason = (d: LspDetection): string =>
+  `no VS Code-family editor CLI on PATH (${d.probed.join(", ")})`;
+
+/**
+ * The remedy beneath that skip. It states plainly that nothing is possible here
+ * yet rather than offering a command for a binary this machine lacks — the rule
+ * every remedy line in this capability holds to.
+ */
+export const LSP_SKIP_REMEDY =
+  "no action is possible on this machine yet — install VS Code or VSCodium, then run this again";
 
 /**
  * Compose the LSP-install effects for a detection.
@@ -160,22 +178,13 @@ export const NO_EDITOR_SKIP_MESSAGE =
  * @returns A Task installing the extension into each editor missing it.
  */
 export function composeLsp(d: LspDetection): Task<void> {
-  if (d.state === "unknown") {
-    return info(NO_EDITOR_SKIP_MESSAGE);
-  }
-  if (d.state === "installed") {
-    return info(
-      `Terrazzo LSP extension already installed (${lspEditorNames(d).join(", ")}) — skipped.`,
-    );
-  }
+  // Nothing to install: no editor CLI on PATH (a named skip the plan row
+  // carries) or every detected editor already has it. Both compose NOTHING —
+  // what the run SAYS about this target is the plan row's business.
+  if (d.state !== "absent") return sequence_([]);
 
   const pending = d.editors.filter((e) => !e.installed);
-  const vsixPath = join(
-    d.stagingDir,
-    "node_modules",
-    ...LSP_PACKAGE.split("/"),
-    "terrazzo-lsp.vsix",
-  );
+  const vsixPath = lspVsixPath(d);
 
   // Fetch the VSIX-bundling package into the pragma-owned staging dir. `bun`
   // (not bunx) so the unpacked package — and its VSIX — survives at a stable
@@ -219,13 +228,44 @@ export function composeLsp(d: LspDetection): Task<void> {
     );
   });
 
-  return sequence_([
-    info(
-      `Installing the Terrazzo LSP extension (${EXTENSION_ID}) into: ${pending
-        .map((e) => e.editor.name)
-        .join(", ")}...`,
-    ),
-    fetchVsix,
-    ...sideloads,
-  ]);
+  return sequence_([fetchVsix, ...sideloads]);
+}
+
+/**
+ * Compose the removal — deliberately empty. An extension install is an `exec`,
+ * and an `exec` carries no reversal: pretending otherwise is what made
+ * `setup lsp --undo` report a step count for work it never did. The honest
+ * answer is the plan row's, which names the editor CLI that CAN uninstall it
+ * (see {@link lspUninstallRemedy}) or states that this machine has none.
+ *
+ * @param _d - The detection (unused; the shape is the table's).
+ * @returns An empty Task.
+ */
+export function composeLspRemoval(_d: LspDetection): Task<void> {
+  return sequence_([]);
+}
+
+/**
+ * The uninstall instruction for a detection — a command that runs on THIS
+ * machine, or `undefined` when no editor CLI was found and there is therefore
+ * nothing honest to print.
+ *
+ * @param d - The detection gathered up front.
+ * @returns The uninstall command, or undefined.
+ */
+export function lspUninstallRemedy(d: LspDetection): string | undefined {
+  const cli = d.editors.at(0)?.editor.cli;
+  return cli === undefined
+    ? undefined
+    : `${cli} --uninstall-extension ${EXTENSION_ID}`;
+}
+
+/** The VSIX path a failed sideload leaves behind for a manual retry. */
+export function lspVsixPath(d: LspDetection): string {
+  return join(
+    d.stagingDir,
+    "node_modules",
+    ...LSP_PACKAGE.split("/"),
+    "terrazzo-lsp.vsix",
+  );
 }

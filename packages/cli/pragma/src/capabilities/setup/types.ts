@@ -2,14 +2,18 @@
  * Data shapes for `pragma setup` and its sub-verbs.
  */
 
-import type { ShellId } from "./shell.js";
-
 /**
  * Which setup entry point is running: the run-all self-verb or one sub-verb.
  * Lives here (a leaf type module) so `setup.verb.ts` can name it WITHOUT a
  * static import of the generator ops — keeping them dynamic-only (lazy-React).
  */
-export type SetupMode = "all" | "completions" | "lsp" | "mcp" | "skills";
+export type SetupMode =
+  | "all"
+  | "config"
+  | "completions"
+  | "lsp"
+  | "mcp"
+  | "skills";
 
 /**
  * One of the two config bands: the per-user/home `global` band or the per-repo
@@ -20,9 +24,11 @@ export type SetupMode = "all" | "completions" | "lsp" | "mcp" | "skills";
 export type ScopeBand = "project" | "global";
 
 /**
- * The resolved `--scope` selection: which config band(s) a run touches. `both`
- * (the default) runs each detected harness's default band; `global`/`project`
- * run only that band. Structurally mirrors the harnesses `ScopeSelection`.
+ * The resolved `--scope` selection: which config band(s) a run touches.
+ * `global` is the DEFAULT — the user/home band a machine-level installer
+ * configures; `project` is the opt-in per-repository band; `both` is the
+ * explicit "run each band in one invocation". Structurally mirrors the
+ * harnesses `ScopeSelection`.
  */
 export type ScopeSelection = "project" | "global" | "both";
 
@@ -34,18 +40,6 @@ export type ScopeSelection = "project" | "global" | "both";
  * created/skipped/replaced idempotency at the file grain.
  */
 export type McpTargetState = "absent" | "configured" | "drifted";
-
-/**
- * One configured MCP target in a result: the file that was written, which band
- * it belongs to, the harness name(s) that share it, and its prior
- * {@link McpTargetState} (so the recap can report new vs updated vs unchanged).
- */
-export interface ConfiguredTarget {
-  readonly name: string;
-  readonly band: ScopeBand;
-  readonly path: string;
-  readonly state: McpTargetState;
-}
 
 /**
  * The prior on-disk state of the shell-completion script, read up front by
@@ -64,43 +58,3 @@ export type CompletionsState = "absent" | "installed" | "stale";
  * there is nothing to install into).
  */
 export type LspState = "installed" | "absent" | "unknown";
-
-/** One symlink create/skip/replace action performed during skill setup. */
-export interface SymlinkAction {
-  readonly skillName: string;
-  readonly target: string;
-  readonly linkPath: string;
-  readonly action: "created" | "skipped" | "replaced";
-  readonly harnessName: string;
-}
-
-/** Aggregate result of `pragma setup skills`. */
-export interface SetupSkillsResult {
-  readonly actions: readonly SymlinkAction[];
-  readonly harnessCount: number;
-  readonly skillCount: number;
-  readonly warnings: readonly string[];
-}
-
-/** The result of one setup verb, tagged by which verb produced it. */
-export type SetupResult =
-  | {
-      readonly kind: "completions";
-      readonly shell: ShellId | null;
-      readonly path: string | null;
-      readonly installed: boolean;
-      readonly state: CompletionsState;
-    }
-  | {
-      readonly kind: "lsp";
-      readonly state: LspState;
-      /** The detected editors (CLI on PATH) the state aggregates over. */
-      readonly editors: readonly string[];
-    }
-  | {
-      readonly kind: "mcp";
-      readonly configured: readonly string[];
-      readonly targets: readonly ConfiguredTarget[];
-    }
-  | { readonly kind: "skills"; readonly result: SetupSkillsResult }
-  | { readonly kind: "all"; readonly steps: readonly string[] };

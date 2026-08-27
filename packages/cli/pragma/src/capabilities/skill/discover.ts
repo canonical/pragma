@@ -121,6 +121,19 @@ export function installedSkillsDir(): string {
 }
 
 /**
+ * The project skills root: `<cwd>/.<bin>/skills` — skills that belong to THIS
+ * repository and travel with it. Named separately from {@link skillRoots}
+ * because the two roots are also the two setup BANDS: `setup skills --local`
+ * links this root into the project's harness directories, while the global band
+ * links {@link installedSkillsDir} into the user-level ones. Mixing them leaks
+ * machine state into a repository's directories, or applies one repository's
+ * skills machine-wide.
+ */
+export function projectSkillsDir(cwd: string): string {
+  return join(cwd, `.${BIN_NAME}`, "skills");
+}
+
+/**
  * The conventional roots skills are discovered from, in PRECEDENCE order: the
  * project root (`<cwd>/.<bin>/skills`) FIRST so a project-local skill overrides
  * an installed skill of the same name (`discoverSkills` dedups first-seen-wins),
@@ -128,7 +141,7 @@ export function installedSkillsDir(): string {
  * skills land on `sources update`).
  */
 export function skillRoots(cwd: string): string[] {
-  return [join(cwd, `.${BIN_NAME}`, "skills"), installedSkillsDir()];
+  return [projectSkillsDir(cwd), installedSkillsDir()];
 }
 
 /** Immediate subdirectories of `root` (each a candidate skill folder). */
@@ -149,16 +162,24 @@ function subdirs(root: string): string[] {
 }
 
 /**
- * Discover every skill reachable from the conventional roots.
+ * Discover every skill reachable from an EXPLICIT list of roots, in precedence
+ * order (first-seen wins on a duplicate name).
  *
- * @param cwd - The project directory (project skills root).
+ * Split out of {@link discoverSkills} so a caller that owns one band can read
+ * exactly that band's root: `setup skills` links the project root into project
+ * harness directories and the installed root into user-level ones, and reading
+ * both roots for either band is what used to mix the two.
+ *
+ * @param roots - The roots to read, in precedence order.
  * @returns Discovered skills, sorted by name; malformed ones are skipped.
  * @note Impure — reads SKILL.md files.
  */
-export function discoverSkills(cwd: string): DiscoveredSkill[] {
+export function discoverSkillsFrom(
+  roots: readonly string[],
+): DiscoveredSkill[] {
   const skills: DiscoveredSkill[] = [];
   const seen = new Set<string>();
-  for (const root of skillRoots(cwd)) {
+  for (const root of roots) {
     for (const dir of subdirs(root)) {
       let content: string;
       try {
@@ -181,4 +202,15 @@ export function discoverSkills(cwd: string): DiscoveredSkill[] {
   return skills.sort((a, b) =>
     a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
   );
+}
+
+/**
+ * Discover every skill reachable from the conventional roots.
+ *
+ * @param cwd - The project directory (project skills root).
+ * @returns Discovered skills, sorted by name; malformed ones are skipped.
+ * @note Impure — reads SKILL.md files.
+ */
+export function discoverSkills(cwd: string): DiscoveredSkill[] {
+  return discoverSkillsFrom(skillRoots(cwd));
 }

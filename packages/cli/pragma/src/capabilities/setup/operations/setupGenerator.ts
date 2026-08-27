@@ -1,21 +1,19 @@
 /**
- * Synthesize `setup` (and each sub-verb) as a summon `GeneratorDefinition`, so
- * they all flow through the SAME `execute` seam `create` uses — inheriting the
- * Ink wizard, the recap/confirm gate, live progress, colours, and the shared
- * cancel fixes (H1/H2/H3/M1) by construction. Replaces the old readline
- * `promptStrategy` + `setupAll`.
+ * Synthesize a setup invocation as a summon `GeneratorDefinition` driven by the
+ * TARGET TABLE, so the run-all and every sub-verb flow through the same
+ * `execute` seam `create` uses — inheriting the Ink wizard, the recap/confirm
+ * gate, live progress, colours, and the shared cancel fixes by construction.
  *
- * The shape mirrors `create`: detection runs FOR REAL up front (in each
- * `detectX`), then a PURE `generate` composes only the effects for the SELECTED
- * steps. `generate` must stay side-effect-free — `execute` and the wizard invoke
- * it more than once (the confirm-gate preview + the build), so all real reads
- * belong in detection, never in `generate`.
+ * The shape mirrors `create`: detection runs FOR REAL up front (once per
+ * target/band, in `detectTargets`), then a PURE `generate` composes only the
+ * effects for the SELECTED rows. `generate` must stay re-interpretable —
+ * `execute` invokes it more than once (the confirm-gate preview and the build) —
+ * so it is composed from combinators and does no reads of its own.
  *
- * The `--scope` selection is threaded through detection AND step-offering so
- * `listAvailableSteps` only offers steps whose band the scope runs, and the MCP
- * step targets exactly the deduped files for that scope. Per-file narrowing is
- * opt-in (Item 6): the "all" default never springs a per-file question — it
- * configures every deduped file.
+ * The wizard is the PLAN'S EDITOR, not a parallel path: its choices are the plan
+ * rows, and what it edits is each row's `selected` flag. There is exactly one
+ * list of things this command can do, and the preview, the wizard, the progress
+ * lines and the recap are four views of it.
  *
  * This module carries NO static import of `@canonical/summon-core` VALUES or of
  * React/Ink — it only `import type`s the generator shape and builds plain object
@@ -29,10 +27,9 @@ import type {
 } from "@canonical/summon-core";
 import {
   flatMap,
-  map,
   pure,
   recover,
-  sequence,
+  sequence_,
   type Task,
   type TaskError,
   warn,
@@ -40,150 +37,125 @@ import {
 import { BIN_NAME } from "../../../constants.js";
 import { PragmaError } from "../../../kernel/error/PragmaError.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
-import type { ScopeSelection, SetupMode, SetupResult } from "../types.js";
 import {
-  type CompletionsDetection,
-  composeCompletions,
-  detectCompletions,
-} from "./setupCompletions.js";
+  buildPlan,
+  type DetectedRow,
+  detectTargets,
+  draftFor,
+  resolveRoots,
+} from "../buildPlan.js";
 import {
-  composeLsp,
-  detectLsp,
-  type LspDetection,
-  lspEditorNames,
-} from "./setupLsp.js";
-import {
-  composeMcp,
-  detectMcp,
-  type McpDetection,
-  mcpConfigured,
-  mcpGroupState,
-  mcpTargets,
-  selectedGroups,
-} from "./setupMcp.js";
-import {
-  composeSkills,
-  detectSkills,
-  type SkillsDetection,
-  skillsEmptyError,
-  toSkillsResult,
-} from "./setupSkills.js";
+  isActionable,
+  type PlanOutcome,
+  type PlanRow,
+  type SetupPlan,
+  TARGET_IDS,
+  type TargetId,
+  withRows,
+} from "../plan.js";
+import type { ScopeBand, ScopeSelection, SetupMode } from "../types.js";
 
-/** The run-all steps, in composition (and display) order. */
-type StepId = "completions" | "lsp" | "mcp" | "skills";
+/** The answer key the run-all's row multiselect writes. */
+const ROWS_ANSWER = "targets";
+
+/** The answer key the opt-in per-file MCP narrowing writes. */
+const MCP_FILES_ANSWER = "mcpTargets";
+
+/** A row's identity in an answer bag: band-qualified, so `both` stays unambiguous. */
+const rowKey = (band: ScopeBand, target: TargetId): string =>
+  `${band}:${target}`;
 
 /**
- * A ready-to-run setup plan: the synthesized generator (fed to `inkPrompt` /
- * `execute`) plus a mapper from the completed answers back onto setup's tagged
- * {@link SetupResult} output union (its `--format json` shape is frozen).
+ * A ready-to-run setup invocation: the plan as detected, the synthesized
+ * generator, and a projection from the completed answers back onto the plan with
+ * outcomes filled in — the recap, and the `--format json` body.
  */
-export interface SetupPlan {
+export interface SetupRun {
+  readonly plan: SetupPlan;
   readonly generator: GeneratorDefinition;
-  readonly toResult: (answers: Record<string, unknown>) => SetupResult;
+  /** The plan with the wizard's selection and the run's outcomes applied. */
+  applied(answers: Record<string, unknown>): SetupPlan;
 }
 
-/** The union of every step's detection, gathered up front for the run-all. */
-interface SetupDetection {
-  readonly completions: CompletionsDetection;
-  readonly lsp: LspDetection;
-  readonly mcp: McpDetection;
-  readonly skills: SkillsDetection;
+/**
+ * Where a failed row's error lands during interpretation.
+ *
+ * Per-row failure isolation needs somewhere to put "row X failed with Y", and
+ * `execute` yields only the generator's answers and effects — the value of the
+ * composed task is discarded. So the recover handlers record here, and the head
+ * of the sequence CLEARS it: `generate` is invoked fresh per interpretation, so
+ * the clear runs first on every drive and the last drive (the real one, which
+ * follows `execute`'s mocked preview) is the one whose records survive. The
+ * composition itself stays pure and re-interpretable — nothing is captured in
+ * the task, only written while it runs.
+ */
+class OutcomeSink {
+  private readonly errors = new Map<string, TaskError>();
+
+  /** Forget every recorded failure — run at the head of each interpretation. */
+  clear(): void {
+    this.errors.clear();
+  }
+
+  record(key: string, error: TaskError): void {
+    this.errors.set(key, error);
+  }
+
+  get(key: string): TaskError | undefined {
+    return this.errors.get(key);
+  }
+
+  get failureCount(): number {
+    return this.errors.size;
+  }
 }
 
-/** Read `answers.steps` (the run-all multiselect) as a string array. */
-const readSteps = (answers: Record<string, unknown>): string[] =>
-  Array.isArray(answers.steps) ? (answers.steps as string[]) : [];
-
-/** Read `answers.mcpTargets` (selected file paths), falling back to ALL files. */
-const resolveMcpPaths = (
-  d: McpDetection,
-  answers: Record<string, unknown>,
-): string[] =>
-  Array.isArray(answers.mcpTargets)
-    ? (answers.mcpTargets as string[])
-    : d.groups.map((g) => g.path);
-
-/** The groups the user chose (or all, under the "all" default). */
-const selectChosenGroups = (
-  d: McpDetection,
-  answers: Record<string, unknown>,
-) => selectedGroups(d, resolveMcpPaths(d, answers));
-
-/** One run-all step's outcome: its id, plus the failure it ended in (if any). */
-interface StepOutcome {
-  readonly id: StepId;
-  readonly error?: TaskError;
-}
-
-/** The {@link PragmaError} a step failure carries, or a wrapper around it. */
-const stepPragmaError = (error: TaskError): PragmaError =>
+/** The {@link PragmaError} a row failure carries, or a wrapper around it. */
+const rowPragmaError = (error: TaskError): PragmaError =>
   error.cause instanceof PragmaError
     ? error.cause
     : new PragmaError({ code: "UNSUPPORTED", message: error.message });
 
 /**
- * Run the CHOSEN steps with per-step failure isolation (S1-1). The steps are
- * independent installers, so one unsatisfiable prerequisite must not consume
- * the others: previously the sequenced composition let a failing LSP step
- * abort the run before MCP or skills ever executed — on every machine without
- * a usable editor CLI, the single advertised onboarding command configured
- * nothing that mattered and exited 1.
+ * Run the chosen rows with per-row failure isolation. The rows are independent
+ * installers, so one unsatisfiable prerequisite must not consume the others: a
+ * sequenced composition let a failing editor sideload abort the run before MCP
+ * or skills ever executed, so on every machine without a usable editor CLI the
+ * single advertised onboarding command configured nothing that mattered.
  *
- * Each step runs under a `recover` frame: a failure is reported inline (a
- * `warn` right where it happened) and recorded, and the remaining steps still
- * run. After the last step the recorded failures decide the aggregate
- * outcome — none: success; one: the ORIGINAL error is rethrown (its code,
- * message, and recovery intact); several: one UNSUPPORTED error naming every
- * failed step. The run's exit code therefore reflects the true aggregate
- * result while every satisfiable step has already applied.
+ * Each row runs under a `recover` frame: the failure is reported inline (a
+ * `warn` right where it happened), recorded on the sink, and the remaining rows
+ * still run. The aggregate outcome is decided afterwards by the caller reading
+ * the sink — a run whose every failure is recorded does NOT rethrow, because the
+ * recap is the report and the exit code comes from the plan's own rule.
  *
- * Only failures travelling the task FAILURE CHANNEL are isolable — a
- * synchronous throw bypasses the trampoline's recovery frames — which is why
- * the step bodies raise via `checkExecOk`/`failPragma`/`failWith`, never a
- * bare throw. Interruption (TASK_INTERRUPTED) bypasses recovery by interpreter
- * invariant, so Ctrl-C still stops the whole run. Pure and re-runnable: the
- * outcome array flows through task values, never a captured mutable, so
- * `execute`'s double interpretation (preview + perform) stays sound.
+ * Only failures travelling the task FAILURE CHANNEL are isolable — a synchronous
+ * throw bypasses the trampoline's recovery frames — which is why the row bodies
+ * raise via `checkExecOk`/`failPragma`, never a bare throw. Interruption bypasses
+ * recovery by interpreter invariant, so Ctrl-C still stops the whole run.
  */
-const runStepsIsolated = (
-  steps: readonly { id: StepId; task: Task<void> }[],
+const runRowsIsolated = (
+  sink: OutcomeSink,
+  rows: readonly { key: string; task: Task<void> }[],
 ): Task<void> =>
-  flatMap(
-    sequence(
-      steps.map(({ id, task }) =>
-        recover(
-          map(task, (): StepOutcome => ({ id })),
-          (error) =>
-            flatMap(
-              warn(
-                `Step "${id}" failed — continuing with the remaining steps.`,
-              ),
-              () => pure<StepOutcome>({ id, error }),
+  flatMap(pure(undefined), (): Task<void> => {
+    sink.clear();
+    return sequence_(
+      rows.map(({ key, task }) =>
+        recover(task, (error) =>
+          flatMap(
+            warn(
+              `The ${key.split(":")[1]} step did not complete — continuing with the remaining targets.`,
             ),
+            () => {
+              sink.record(key, error);
+              return pure(undefined);
+            },
+          ),
         ),
       ),
-    ),
-    (outcomes) => {
-      const failures = outcomes.flatMap((o) =>
-        o.error === undefined ? [] : [{ id: o.id, error: o.error }],
-      );
-      const first = failures[0];
-      if (first === undefined) return pure(undefined);
-      if (failures.length === 1) throw stepPragmaError(first.error);
-      const lines = failures
-        .map((f) => `${f.id}: ${stepPragmaError(f.error).message}`)
-        .join("\n");
-      throw new PragmaError({
-        code: "UNSUPPORTED",
-        message: `${failures.length} of ${outcomes.length} setup steps failed:\n${lines}`,
-        recovery: {
-          message: `The other steps completed. Re-run the failed ones individually: ${failures
-            .map((f) => `\`${BIN_NAME} setup ${f.id}\``)
-            .join(", ")}.`,
-        },
-      });
-    },
-  );
+    );
+  });
 
 /** Build a generator's `meta` (no stamping — the version is just header text). */
 const buildMeta = (
@@ -192,11 +164,43 @@ const buildMeta = (
 ): GeneratorDefinition["meta"] => ({
   name: title,
   displayName: title,
-  description: `Configure ${BIN_NAME} for this project`,
+  description: `Configure ${BIN_NAME} on this machine`,
   version: rt.version,
 });
 
-/** The opt-in "customize which files" gate (Item 6) — defaults to false. */
+/** Read a multiselect answer as a string array. */
+const readList = (
+  answers: Record<string, unknown>,
+  key: string,
+): string[] | undefined =>
+  Array.isArray(answers[key]) ? (answers[key] as string[]) : undefined;
+
+/**
+ * The wizard's row multiselect — its choices ARE the plan rows. Actionable rows
+ * are pre-selected; an already-current row is offered DE-selected, so a re-run
+ * never proposes to rewrite what is already correct. A skip row is not a choice
+ * at all (summon's choice shape has no disabled state) but stays a visible row
+ * in the plan and the recap, carrying its reason.
+ */
+const buildRowsPrompt = (plan: SetupPlan): PromptDefinition => {
+  const choices = plan.rows
+    .filter((row) => row.action !== "skip")
+    .map((row) => ({
+      label: `${row.target} — ${row.detail}${row.action === "none" ? " (already configured)" : ""}`,
+      value: rowKey(row.band, row.target),
+    }));
+  return {
+    name: ROWS_ANSWER,
+    type: "multiselect",
+    message: "Which targets would you like to configure?",
+    choices,
+    default: plan.rows
+      .filter((row) => row.selected)
+      .map((row) => rowKey(row.band, row.target)),
+  };
+};
+
+/** The opt-in "customize which files" gate — defaults to false. */
 const buildCustomizePrompt = (
   when?: PromptDefinition["when"],
 ): PromptDefinition => ({
@@ -207,276 +211,178 @@ const buildCustomizePrompt = (
   when,
 });
 
-/** The suffix a group's prior state adds to its multiselect label. */
-const mcpStateSuffix = (d: McpDetection, path: string): string => {
-  switch (mcpGroupState(d, path)) {
-    case "configured":
-      return " — already configured";
-    case "drifted":
-      return " — needs update";
-    default:
-      return "";
-  }
+/**
+ * The per-file MCP multiselect — one row per deduplicated config file, across
+ * every band the run covers. An already-current file is DEFAULT-DESELECTED; a
+ * file that is absent or drifted stays selected. Retained unchanged from the
+ * landed opt-in narrowing: it is row-level CHILD selection, which is exactly
+ * what the plan's child rows are.
+ */
+const buildMcpFilesPrompt = (
+  plan: SetupPlan,
+  when?: PromptDefinition["when"],
+): PromptDefinition => {
+  const children = plan.rows
+    .filter((row) => row.target === "mcp")
+    .flatMap((row) => row.children ?? []);
+  return {
+    name: MCP_FILES_ANSWER,
+    type: "multiselect",
+    message: "Configure MCP for which files?",
+    when,
+    choices: children.map((child) => ({
+      label: `${child.label} — ${child.action}`,
+      value: child.key,
+    })),
+    default: children
+      .filter((child) => child.action !== "unchanged")
+      .map((child) => child.key),
+  };
 };
 
-/**
- * The per-file MCP multiselect — one row per deduped {@link TargetGroup} file.
- * A row's label carries its prior state, and an already-`configured` file is
- * DEFAULT-DESELECTED (so a re-run does not re-offer to rewrite what is already
- * current); `absent`/`drifted` files stay selected by default.
- */
-const buildMcpTargetsPrompt = (
-  d: McpDetection,
-  when?: PromptDefinition["when"],
-): PromptDefinition => ({
-  name: "mcpTargets",
-  type: "multiselect",
-  message: "Configure MCP for which files?",
-  when,
-  choices: d.groups.map((g) => ({
-    label: `${g.path} — ${g.harnessNames.join(", ")} [${g.scope}]${mcpStateSuffix(d, g.path)}`,
-    value: g.path,
-  })),
-  default: d.groups
-    .filter((g) => mcpGroupState(d, g.path) !== "configured")
-    .map((g) => g.path),
-});
+/** Whether a row was chosen: by the wizard's answer, else by its own default. */
+const isChosen = (
+  row: PlanRow,
+  chosen: readonly string[] | undefined,
+): boolean =>
+  row.action !== "skip" &&
+  (chosen === undefined
+    ? row.selected
+    : chosen.includes(rowKey(row.band, row.target)));
 
-// =============================================================================
-// Detection
-// =============================================================================
-
-/** Gather EVERY step's detection up front (real reads), for the run-all. */
-async function gatherDetection(
-  rt: PragmaRuntime,
-  scope: ScopeSelection,
-): Promise<SetupDetection> {
-  const [completions, lsp, mcp, skills] = await Promise.all([
-    detectCompletions(rt.cwd),
-    detectLsp(rt.cwd),
-    detectMcp(rt, scope),
-    detectSkills(rt),
-  ]);
-  return { completions, lsp, mcp, skills };
+/** The `2 added, 1 updated` note an MCP row's children produce. */
+function childNote(row: PlanRow): string | undefined {
+  const children = row.children;
+  if (children === undefined || children.length === 0) return undefined;
+  const count = (action: string): number =>
+    children.filter((child) => child.action === action).length;
+  const parts = [
+    count("add") > 0 ? `${count("add")} added` : "",
+    count("update") > 0 ? `${count("update")} updated` : "",
+    count("unchanged") > 0 ? `${count("unchanged")} unchanged` : "",
+  ].filter((part) => part.length > 0);
+  return parts.length > 0 ? parts.join(", ") : undefined;
 }
 
 /**
- * The steps worth OFFERING, given detection AND the scope selection. An
- * undetectable step is omitted so the run-all degrades gracefully instead of
- * throwing a mid-wizard EMPTY_RESULTS; a step whose band the scope does not run
- * is omitted too (completions/lsp are global-band, skills are project-band, MCP
- * spans both via its resolved groups). Threading `scope` here is what makes
- * `setup --local` skip completions+lsp and `setup --global` skip skills — the
- * MCP groups are already scoped by {@link detectMcp}.
+ * Build one invocation: detect, plan, synthesize the generator, and expose the
+ * projection back onto the plan.
  *
- * @param detected - Every step's up-front detection.
- * @param scope - The resolved `--scope` selection (project/global/both).
- * @returns The offerable steps, in composition/display order.
+ * @param rt - The per-invocation runtime.
+ * @param mode - The entry point: the run-all, or one target.
+ * @param scope - The resolved band selection.
+ * @param removal - Compose the removal (`--undo`) instead of the install.
+ * @returns The plan, the generator, and the answers-to-plan projection.
+ * @note Impure — runs every selected target's real detection.
  */
-function listAvailableSteps(
-  detected: SetupDetection,
-  scope: ScopeSelection,
-): { label: string; value: StepId }[] {
-  const hasProject = scope !== "global";
-  const hasGlobal = scope !== "project";
-  const choices: { label: string; value: StepId }[] = [];
-  if (detected.completions.shell && hasGlobal) {
-    choices.push({
-      label: `Shell completions (${detected.completions.shell})`,
-      value: "completions",
-    });
-  }
-  if (hasGlobal) {
-    choices.push({ label: "Terrazzo LSP extension", value: "lsp" });
-  }
-  if (detected.mcp.groups.length > 0) {
-    choices.push({
-      label: `MCP config (${detected.mcp.groups.length} file(s))`,
-      value: "mcp",
-    });
-  }
-  if (detected.skills.available && hasProject) {
-    choices.push({
-      label: `Link skills (${detected.skills.skillCount})`,
-      value: "skills",
-    });
-  }
-  return choices;
-}
-
-// =============================================================================
-// Plan builders
-// =============================================================================
-
-/**
- * The run-all self-verb: a step multiselect + per-step composition. The resolved
- * `scope` narrows BOTH the offered steps (via {@link listAvailableSteps}) and the
- * MCP target groups (already scoped by {@link detectMcp}), so `--local` omits the
- * global-band completions+lsp and `--global` omits the project-band skills.
- */
-function buildRunAllPlan(
+export async function buildSetupRun(
   rt: PragmaRuntime,
-  detected: SetupDetection,
+  mode: SetupMode,
   scope: ScopeSelection,
-): SetupPlan {
-  const steps = listAvailableSteps(detected, scope);
-  const prompts: PromptDefinition[] = [
-    {
-      name: "steps",
-      type: "multiselect",
-      message: "Which steps would you like to run?",
-      choices: steps,
-      default: steps.map((c) => c.value), // --yes / non-TTY ⇒ every step
-    },
-  ];
-  // Item 6: per-file narrowing is opt-in. The "customize?" gate (default false)
-  // only surfaces when MCP is chosen and there is more than one file; the
-  // per-file multiselect only surfaces after an explicit yes — so the "all"
-  // default configures every deduped file without an extra question.
-  if (detected.mcp.groups.length > 0) {
+  removal = false,
+): Promise<SetupRun> {
+  const ids: TargetId[] = mode === "all" ? [...TARGET_IDS] : [mode as TargetId];
+  const roots = await resolveRoots(rt);
+  const detected = await detectTargets(rt, ids, scope);
+  const plan = buildPlan(scope, roots, detected, ids, removal);
+  const sink = new OutcomeSink();
+
+  const prompts: PromptDefinition[] = [];
+  if (mode === "all") prompts.push(buildRowsPrompt(plan));
+  const mcpChildren = plan.rows
+    .filter((row) => row.target === "mcp")
+    .flatMap((row) => row.children ?? []);
+  if (!removal && mcpChildren.length > 1) {
+    const mcpChosen = (answers: Record<string, unknown>): boolean => {
+      const chosen = readList(answers, ROWS_ANSWER);
+      return plan.rows.some(
+        (row) => row.target === "mcp" && isChosen(row, chosen),
+      );
+    };
     prompts.push(
-      buildCustomizePrompt((a) => readSteps(a).includes("mcp")),
-      buildMcpTargetsPrompt(
-        detected.mcp,
-        (a) => a.customize === true && readSteps(a).includes("mcp"),
+      buildCustomizePrompt(mcpChosen),
+      buildMcpFilesPrompt(
+        plan,
+        (answers) => answers.customize === true && mcpChosen(answers),
       ),
     );
   }
 
-  // `generate` MUST be pure and re-runnable — `execute` interprets it twice (the
-  // confirm-gate preview + the build) — so it composes with immutable
-  // combinators rather than a single-use `gen`, and does NO detection (all real
-  // reads already happened up front). The chosen steps run through
-  // {@link runStepsIsolated} so one failing step reports and lets the rest
-  // proceed (S1-1) while the run's exit code reflects the aggregate outcome.
+  /** The detection behind a row, for composing and for re-reading its draft. */
+  const detectionFor = (row: PlanRow): DetectedRow | undefined =>
+    detected.find((d) => d.target.id === row.target && d.band === row.band);
+
   const generator: GeneratorDefinition = {
-    meta: buildMeta(rt, `${BIN_NAME} setup`),
+    meta: buildMeta(
+      rt,
+      mode === "all" ? `${BIN_NAME} setup` : `${BIN_NAME} setup ${mode}`,
+    ),
     prompts,
     generate: (answers) => {
-      const chosen = readSteps(answers);
-      const all: { id: StepId; task: Task<void> }[] = [
-        { id: "completions", task: composeCompletions(detected.completions) },
-        { id: "lsp", task: composeLsp(detected.lsp) },
-        {
-          id: "mcp",
-          task: composeMcp(
-            detected.mcp,
-            selectChosenGroups(detected.mcp, answers),
-          ),
-        },
-        { id: "skills", task: composeSkills(detected.skills) },
-      ];
-      return runStepsIsolated(all.filter((s) => chosen.includes(s.id)));
+      const chosen = readList(answers, ROWS_ANSWER);
+      const files = readList(answers, MCP_FILES_ANSWER);
+      const tasks = plan.rows.flatMap((row) => {
+        if (!isChosen(row, chosen)) return [];
+        const hit = detectionFor(row);
+        if (hit === undefined) return [];
+        const task = removal
+          ? hit.target.composeRemoval(hit.detection)
+          : hit.target.compose(hit.detection, files);
+        return [{ key: rowKey(row.band, row.target), task }];
+      });
+      return runRowsIsolated(sink, tasks);
     },
   };
 
-  return {
-    generator,
-    toResult: (answers) => ({ kind: "all", steps: readSteps(answers) }),
+  /** The outcome one row ended in, read off the sink and its own draft. */
+  const outcomeFor = (
+    row: PlanRow,
+    chosen: readonly string[] | undefined,
+  ): PlanOutcome | undefined => {
+    const hit = detectionFor(row);
+    const draft = hit === undefined ? undefined : draftFor(hit, roots, removal);
+    if (row.action === "skip") {
+      return {
+        status: "skipped",
+        ...(draft?.remedy === undefined ? {} : { remedy: draft.remedy }),
+      };
+    }
+    if (!isChosen(row, chosen)) return undefined;
+    const error = sink.get(rowKey(row.band, row.target));
+    if (error !== undefined) {
+      const pragma = rowPragmaError(error);
+      return {
+        status: "failed",
+        note: pragma.message,
+        ...(pragma.recovery?.message === undefined
+          ? {}
+          : { remedy: pragma.recovery.message }),
+      };
+    }
+    if (!isActionable(row.action)) return { status: "noop" };
+    const note = childNote(row);
+    return {
+      status: removal ? "removed" : "done",
+      ...(note === undefined ? {} : { note }),
+    };
   };
-}
 
-/** A single-step generator (no run-all multiselect) for one sub-verb. */
-function buildSingleStep(
-  rt: PragmaRuntime,
-  title: string,
-  prompts: PromptDefinition[],
-  generate: (answers: Record<string, unknown>) => Task<void>,
-): GeneratorDefinition {
-  return { meta: buildMeta(rt, title), prompts, generate };
-}
-
-/**
- * Build the plan for an entry point. Detection runs here (up front); the
- * returned generator's `generate` is pure. The `skills` sub-verb throws
- * EMPTY_RESULTS before returning a plan when nothing is discoverable (its direct
- * contract), whereas the run-all simply omits an undetectable step.
- *
- * @param rt - The per-invocation runtime.
- * @param mode - The entry point (`all` or one sub-verb).
- * @param scope - The resolved `--scope` selection (project/global/both).
- * @returns The generator + result mapper.
- * @throws PragmaError EMPTY_RESULTS for a direct `setup skills` with no skills.
- * @note Impure — performs each step's real detection.
- */
-export async function buildSetupPlan(
-  rt: PragmaRuntime,
-  mode: SetupMode,
-  scope: ScopeSelection,
-): Promise<SetupPlan> {
-  switch (mode) {
-    case "all":
-      return buildRunAllPlan(rt, await gatherDetection(rt, scope), scope);
-
-    case "completions": {
-      const d = await detectCompletions(rt.cwd);
-      return {
-        generator: buildSingleStep(
-          rt,
-          `${BIN_NAME} setup completions`,
-          [],
-          () => composeCompletions(d),
-        ),
-        toResult: () => ({
-          kind: "completions",
-          shell: d.shell,
-          path: d.path,
-          installed: d.shell !== null,
-          state: d.state,
-        }),
-      };
-    }
-
-    case "lsp": {
-      const d = await detectLsp(rt.cwd);
-      return {
-        generator: buildSingleStep(rt, `${BIN_NAME} setup lsp`, [], () =>
-          composeLsp(d),
-        ),
-        toResult: () => ({
-          kind: "lsp",
-          state: d.state,
-          editors: lspEditorNames(d),
-        }),
-      };
-    }
-
-    case "mcp": {
-      const d = await detectMcp(rt, scope);
-      const prompts: PromptDefinition[] =
-        d.groups.length > 0
-          ? [
-              buildCustomizePrompt(),
-              buildMcpTargetsPrompt(d, (a) => a.customize === true),
-            ]
-          : [];
-      return {
-        generator: buildSingleStep(
-          rt,
-          `${BIN_NAME} setup mcp`,
-          prompts,
-          (answers) => composeMcp(d, selectChosenGroups(d, answers)),
-        ),
-        toResult: (answers) => {
-          const sel = selectChosenGroups(d, answers);
+  return {
+    plan,
+    generator,
+    applied: (answers) => {
+      const chosen = readList(answers, ROWS_ANSWER);
+      return withRows(
+        plan,
+        plan.rows.map((row): PlanRow => {
+          const outcome = outcomeFor(row, chosen);
           return {
-            kind: "mcp",
-            configured: mcpConfigured(sel),
-            targets: mcpTargets(d, sel),
+            ...row,
+            selected: isChosen(row, chosen),
+            ...(outcome === undefined ? {} : { outcome }),
           };
-        },
-      };
-    }
-
-    case "skills": {
-      const d = await detectSkills(rt);
-      if (!d.available) throw skillsEmptyError();
-      return {
-        generator: buildSingleStep(rt, `${BIN_NAME} setup skills`, [], () =>
-          composeSkills(d),
-        ),
-        toResult: () => ({ kind: "skills", result: toSkillsResult(d) }),
-      };
-    }
-  }
+        }),
+      );
+    },
+  };
 }

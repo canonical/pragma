@@ -14,19 +14,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
 import {
   deleteFile,
-  info,
   mkdir,
   sequence_,
   type Task,
-  warn,
   writeFile,
 } from "@canonical/task";
-import {
-  activationHint,
-  completionScriptPath,
-  detectShell,
-  type ShellId,
-} from "../shell.js";
+import { completionScriptPath, detectShell, type ShellId } from "../shell.js";
 import type { CompletionsState } from "../types.js";
 
 /**
@@ -112,28 +105,42 @@ export async function detectCompletions(
  * interprets a generator's task TWICE — once for the confirm-gate preview and
  * once to perform it — so the composed task must survive a second drive.
  *
- * The prior `state` drives the MESSAGE only ("already up to date" / "Updating" /
- * "Installing"), NOT whether the write happens: the (idempotent) write is always
- * composed so it carries its `undo` — `--undo` reverses the SAME task and must
- * find the reversible effect, and `execute` interprets the task twice. A
- * byte-identical rewrite in the `installed` case is harmless.
+ * An `installed` (byte-identical) script composes NOTHING. The write used to
+ * happen anyway so that `--undo` had a reversible effect to find; removal is
+ * now composed from detection instead ({@link composeCompletionsRemoval}), so
+ * the forward path is free to be quiet: a converged re-run leaves the file's
+ * mtime alone.
+ *
+ * The task carries no log effects. What a run says about this target is the
+ * plan row's business — one structure, rendered the same way in the preview,
+ * the progress line and the recap.
  *
  * @param d - The detection gathered up front.
- * @returns A Task that writes the script (with an undo), or warns if no shell.
+ * @returns A Task that installs the script, or an empty Task when it is current.
  */
 export function composeCompletions(d: CompletionsDetection): Task<void> {
   if (d.shell === null || d.path === null || d.script === null) {
-    return warn("Cannot detect your shell — set $SHELL to zsh, bash, or fish.");
+    return sequence_([]);
   }
-  const { path, script, shell, state } = d;
-  const opening =
-    state === "installed"
-      ? `${shell} completions already up to date at ${path}.`
-      : `${state === "stale" ? "Updating" : "Installing"} ${shell} completions to ${path}...`;
+  if (d.state === "installed") return sequence_([]);
   return sequence_([
-    info(opening),
-    mkdir(dirname(path), true),
-    writeFile(path, script, { undo: deleteFile(path) }),
-    info(activationHint(shell)),
+    mkdir(dirname(d.path), true),
+    writeFile(d.path, d.script, { undo: deleteFile(d.path) }),
   ]);
+}
+
+/**
+ * Compose the removal of an installed script: the forward effect re-asserts the
+ * script (idempotent) and carries its deletion as `undo`, which is what the undo
+ * interpreter executes. An absent script composes nothing, so `--undo` on a
+ * machine that never installed one reverses zero steps and says so.
+ *
+ * @param d - The detection gathered up front.
+ * @returns A Task whose undo deletes the installed script.
+ */
+export function composeCompletionsRemoval(d: CompletionsDetection): Task<void> {
+  if (d.path === null || d.script === null || d.state === "absent") {
+    return sequence_([]);
+  }
+  return sequence_([writeFile(d.path, d.script, { undo: deleteFile(d.path) })]);
 }
