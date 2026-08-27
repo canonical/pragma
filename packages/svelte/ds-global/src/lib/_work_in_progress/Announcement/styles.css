@@ -51,5 +51,10 @@
 
   & .heading {
     font-weight: var(--typography-heading-6-font-weight);
+    /* 
+      TODO: Uncomment after line-height bug in typography tokens is addressed 
+      See https://github.com/canonical/pragma/pull/961#issuecomment-5421532811
+    */
+    /* line-height: var(--typography-heading-6-line-height); */
   }
 }
