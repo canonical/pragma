@@ -160,7 +160,7 @@ ds:prompt.configure a ds:Prompt ;
 ds:prompt.scaffold-component a ds:Prompt ;
   rdfs:label "scaffold-component" ;
   rdfs:comment "Scaffold a new component and align it to the standards." ;
-  ds:promptBody "Scaffold the {{componentName}} component in {{framework}}. Use create_component with the component path and --framework {{framework}}, then review the generated files against the react/component standards via standard_lookup." ;
+  ds:promptBody "Scaffold the {{componentName}} component in {{framework}}. Use create_component with framework {{framework}} and the component path, then review the generated files against the react/component standards via standard_lookup." ;
   ds:promptArgument [ ds:argName "componentName" ; rdfs:comment "Component name/path (e.g. Button)." ; ds:argRequired true ] ;
   ds:promptArgument [ ds:argName "framework" ; rdfs:comment "react | svelte | lit." ; ds:argRequired false ] .
 `;

@@ -10,6 +10,20 @@
  * that were actually wrong were raw `cli:` object literals that never reached
  * this function at all. `kernel/copy.test.ts` covers those, at the position.
  *
+ * A THIRD authoring route is also legal and reached by NEITHER guard: a `cli`
+ * DERIVED from the program's own name at the call site. One site does this —
+ * the create mount (`capabilities/create/mount.ts`,
+ * `[...detail.chain, suggestion].join(" ")`), whose `chain[0]` is the root
+ * Commander program's name, `BIN_NAME` by wiring. It bypasses
+ * {@link cliRecovery}, and the position rule is structurally blind to it (it
+ * flags QUOTED literals containing the distribution's name, never a computed
+ * expression) — so D5 holds there by derivation, and the derivation is pinned
+ * where the value surfaces: `createGrammar.test.ts` COMPOSES its expected
+ * `cli` from {@link RECOVERY_CLI_PREFIX}, so a renamed root program reddens
+ * the cell naming the constant. (A separate `startsWith` assertion cannot
+ * pin it — behind an exact pin of the same value it has no reachable
+ * failing input.)
+ *
  * `kernel/packs/schema.ts` holds a user-authored pack's `emptyRecovery.cli` to
  * the same shape from the other side — it must NOT carry a prefix, because the
  * consuming distribution's renderer supplies one.

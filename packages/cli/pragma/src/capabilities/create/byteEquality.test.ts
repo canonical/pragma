@@ -36,6 +36,7 @@ import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
+import { blankCanonicalRanges } from "../../testing/helpers/blankCanonicalRanges.js";
 import { createVerbs } from "./create.verb.js";
 import type { CreateKind } from "./types.js";
 
@@ -82,8 +83,16 @@ async function produceSummon(
   answers: Readonly<Record<string, unknown>>,
 ): Promise<TreeSnapshot> {
   const { pickGenerator } = await import("./pickGenerator.js");
+  // pickGenerator is keyed by FULL COMMAND PATH now; this surface still
+  // thinks in kind+framework, so map first (exactly as runCreate does).
+  const commandPath =
+    kind === "component"
+      ? `component/${framework}`
+      : kind === "package"
+        ? "package"
+        : "application/react";
   return produceReference({
-    generator: pickGenerator(kind, { framework }),
+    generator: pickGenerator(commandPath),
     answers,
   });
 }
@@ -156,16 +165,13 @@ const cases: Case[] = [
     fixture: "application",
     kind: "application",
     framework: "",
-    // The pragma path receives the CLI `--with-X` params (AV-228 B8); the shared
-    // fixture carries the generator's bare prompt names. runCreate's boundary
-    // remap (`withSsr` -> `ssr`, ...) makes both produce the identical tree —
-    // which is exactly what this case exists to prove.
+    // The prompt names ARE the param names now (the B8 alias seam is gone):
+    // the pragma path takes the generator's own `forms`/`relay` (ssr/router
+    // are always-on facts, no longer prompts).
     params: {
       appPath: "my-app",
-      withSsr: true,
-      withRouter: true,
-      withForms: true,
-      withRelay: false,
+      forms: true,
+      relay: false,
       runInstall: false,
     },
   },
@@ -186,12 +192,20 @@ describe("byte-equality goldens — pragma create \u2261 the conformance referen
         (entry) => entry.name === testCase.fixture,
       );
       if (!shared) throw new Error(`no fixture "${testCase.fixture}"`);
-      const pragma = await producePragma(testCase.kind, testCase.params);
-      const reference = await produceSummon(
+      let pragma = await producePragma(testCase.kind, testCase.params);
+      let reference = await produceSummon(
         testCase.kind,
         testCase.framework,
         shared.answers,
       );
+      // Two independent `npm view` resolutions feed the application tree
+      // (one per producer); blank the @canonical/* ranges identically so an
+      // asymmetric registry outcome cannot red this template-surface cell —
+      // range truth lives in the offline subprocess cells.
+      if (testCase.kind === "application") {
+        pragma = blankCanonicalRanges(pragma);
+        reference = blankCanonicalRanges(reference);
+      }
       expect(pragma.size).toBeGreaterThan(0);
       const diff = diffTrees(pragma, reference);
       expect(

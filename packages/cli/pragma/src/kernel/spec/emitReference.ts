@@ -28,6 +28,7 @@ import type {
   CapabilityModule,
   Example,
   ParamSpec,
+  ReferenceCliSyntax,
   VerbSpec,
 } from "./types.js";
 
@@ -165,22 +166,39 @@ function formatUsage(verb: VerbSpec): string {
   return segments.join(" ");
 }
 
-/** The Args table for a verb's positionals, or `""` when it has none. */
-function formatArgsTable(params: readonly ParamSpec[]): string {
+/**
+ * The Args table for a verb's positionals, or `""` when it has none. A
+ * mounted verb's {@link ReferenceCliSyntax.positionalTokens} supplies the
+ * REGISTERED token per param — the one its usage line prints — so the
+ * Argument column and the synopsis agree on the same spelling; without one,
+ * the token derives from the param name.
+ */
+function formatArgsTable(
+  params: readonly ParamSpec[],
+  positionalTokens?: Readonly<Record<string, string>>,
+): string {
   const positionals = params.filter((p) => p.positional);
   if (positionals.length === 0) return "";
   const rows = ["| Argument | Required | Description |", "| --- | --- | --- |"];
   for (const param of positionals) {
     const required = param.required ? "yes" : "no";
-    rows.push(
-      `| \`${formatPositionalToken(param)}\` | ${required} | ${describeParam(param)} |`,
-    );
+    const token =
+      positionalTokens?.[param.name] ?? formatPositionalToken(param);
+    rows.push(`| \`${token}\` | ${required} | ${describeParam(param)} |`);
   }
   return `**Arguments**\n\n${rows.join("\n")}`;
 }
 
-/** The Flags table for a verb's non-positional params, or `""` when it has none. */
-function formatFlagsTable(params: readonly ParamSpec[]): string {
+/**
+ * The Flags table for a verb's non-positional params, or `""` when it has
+ * none. A mounted verb's {@link ReferenceCliSyntax.flagTokens} supplies the
+ * REGISTERED token per param (e.g. a default-true boolean's `--no-` form);
+ * without one, the token derives from the param name.
+ */
+function formatFlagsTable(
+  params: readonly ParamSpec[],
+  flagTokens?: Readonly<Record<string, string>>,
+): string {
   const flags = params.filter((p) => !p.positional);
   if (flags.length === 0) return "";
   const rows = ["| Flag | Value | Description |", "| --- | --- | --- |"];
@@ -189,9 +207,8 @@ function formatFlagsTable(params: readonly ParamSpec[]): string {
     // does not split the table column.
     const value = formatFlagValue(param);
     const valueCell = value === "" ? "—" : `\`${escapeCell(value)}\``;
-    rows.push(
-      `| \`--${kebabCase(param.name)}\` | ${valueCell} | ${describeParam(param)} |`,
-    );
+    const token = flagTokens?.[param.name] ?? `--${kebabCase(param.name)}`;
+    rows.push(`| \`${token}\` | ${valueCell} | ${describeParam(param)} |`);
   }
   return `**Flags**\n\n${rows.join("\n")}`;
 }
@@ -235,22 +252,35 @@ function assemblePage(blocks: readonly string[]): string {
 }
 
 /** Render one verb's `commands.md` section (heading through examples). */
-function renderCommandSection(verb: VerbSpec): string {
+function renderCommandSection(
+  verb: VerbSpec,
+  syntax?: ReferenceCliSyntax,
+): string {
   const blocks = [
     `### ${formatInvocation(verb)}`,
     verb.summary,
     verb.doc ?? "",
-    `\`\`\`\n${formatUsage(verb)}\n\`\`\``,
-    formatArgsTable(verb.params),
-    formatFlagsTable(verb.params),
+    `\`\`\`\n${syntax ? `${BIN_NAME} ${syntax.usage}` : formatUsage(verb)}\n\`\`\``,
+    formatArgsTable(verb.params, syntax?.positionalTokens),
+    formatFlagsTable(verb.params, syntax?.flagTokens),
     formatVerbAttributes(verb),
     formatExamples(verb.examples),
   ];
   return blocks.filter((block) => block.length > 0).join("\n\n");
 }
 
-/** Render the CLI command reference, grouped by noun. */
-function renderCommandsPage(verbs: readonly VerbSpec[]): string {
+/**
+ * Render the CLI command reference, grouped by noun. A noun whose module
+ * declares a `cliProjection.referenceIntro` gets that Markdown inserted
+ * directly under its heading, and a verb its module supplies a
+ * `cliProjection.referenceSyntax` for renders the MOUNTED usage/flag
+ * spelling (generic module fields — the kernel renders, the module authors).
+ */
+function renderCommandsPage(
+  verbs: readonly VerbSpec[],
+  nounIntros: ReadonlyMap<string, string>,
+  verbSyntax: ReadonlyMap<VerbSpec, ReferenceCliSyntax>,
+): string {
   const blocks = [
     "# CLI command reference",
     `Every \`${BIN_NAME}\` command, grouped by noun. Generated from the live capability grammar — do not edit by hand.`,
@@ -262,10 +292,43 @@ function renderCommandsPage(verbs: readonly VerbSpec[]): string {
     if (noun !== currentNoun) {
       currentNoun = noun;
       blocks.push(`## ${noun}`);
+      const intro = nounIntros.get(noun);
+      if (intro) blocks.push(intro);
     }
-    blocks.push(renderCommandSection(verb));
+    blocks.push(renderCommandSection(verb, verbSyntax.get(verb)));
   }
   return assemblePage(blocks);
+}
+
+/** Collect each noun's declared reference intro from its module's mount. */
+function collectNounIntros(
+  modules: readonly CapabilityModule[],
+): Map<string, string> {
+  const intros = new Map<string, string>();
+  for (const module of modules) {
+    const intro = module.cliProjection?.referenceIntro;
+    if (!intro) continue;
+    for (const verb of module.verbs) {
+      intros.set(verb.path[0], intro);
+    }
+  }
+  return intros;
+}
+
+/** Collect each mounted verb's registered CLI syntax from its module. */
+function collectVerbSyntax(
+  modules: readonly CapabilityModule[],
+): Map<VerbSpec, ReferenceCliSyntax> {
+  const syntax = new Map<VerbSpec, ReferenceCliSyntax>();
+  for (const module of modules) {
+    const provider = module.cliProjection?.referenceSyntax;
+    if (!provider) continue;
+    for (const verb of module.verbs) {
+      const entry = provider(verb.path);
+      if (entry) syntax.set(verb, entry);
+    }
+  }
+  return syntax;
 }
 
 /** One MCP tool input row: name, projected type, requiredness, description. */
@@ -616,7 +679,14 @@ export function emitReference(
   const verbs = collectDocVerbs(modules);
   return new Map<string, string>([
     ["index.md", renderIndexPage(verbs, modules)],
-    ["commands.md", renderCommandsPage(verbs)],
+    [
+      "commands.md",
+      renderCommandsPage(
+        verbs,
+        collectNounIntros(modules),
+        collectVerbSyntax(modules),
+      ),
+    ],
     ["tools.md", renderToolsPage(verbs, modules)],
     ["errors.md", renderErrorsPage()],
     ["config.md", renderConfigPage()],

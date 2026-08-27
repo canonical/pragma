@@ -71,6 +71,25 @@ for (const verb of allVerbs) {
   );
 }
 
+/**
+ * A MOUNTED verb's registered flag token per param name — the module's own
+ * `ReferenceCliSyntax.flagTokens` seam (derived from `buildOptionInfo`: a
+ * default-`true` confirm registers ONLY its `--no-<kebab>` form). The gate
+ * must speak the CLI's vocabulary: kebab-casing param names blessed a
+ * documented `--with-styles` (exit 2 on the wire) and rejected the real
+ * `--no-with-styles`. Kernel-registered verbs have no entry here and keep
+ * the kebab derivation — B9 registers the positive form and ADDS `--no-`.
+ */
+const mountedFlagTokens = new Map<VerbSpec, Record<string, string>>();
+for (const module of capabilities) {
+  const provider = module.cliProjection?.referenceSyntax;
+  if (!provider) continue;
+  for (const verb of module.verbs) {
+    const syntax = provider(verb.path);
+    if (syntax) mountedFlagTokens.set(verb, { ...syntax.flagTokens });
+  }
+}
+
 /** Flags valid on every command, beyond a verb's own declared flags. */
 const AMBIENT_FLAGS = new Set([
   "--llm",
@@ -102,11 +121,17 @@ function resolveSpec(positionals: readonly string[]): VerbSpec | undefined {
   return paired ?? specByKey.get(noun);
 }
 
-/** The set of flags a verb accepts: its own declared flags plus the ambient set. */
+/**
+ * The set of flags a verb accepts: its own declared flags — a mounted verb's
+ * REGISTERED spellings (see {@link mountedFlagTokens}) — plus the ambient set.
+ */
 function collectValidFlags(verb: VerbSpec): Set<string> {
   const flags = new Set(AMBIENT_FLAGS);
+  const registered = mountedFlagTokens.get(verb);
   for (const param of verb.params) {
-    if (!param.positional) flags.add(`--${kebabCase(param.name)}`);
+    if (!param.positional) {
+      flags.add(registered?.[param.name] ?? `--${kebabCase(param.name)}`);
+    }
   }
   return flags;
 }

@@ -28,42 +28,30 @@ const GENERATOR_MAPS: Record<CreateKind, GeneratorMap> = {
 };
 
 /**
- * Pick the generator for a `create <kind>` run.
+ * Pick the generator for one FULL COMMAND PATH (`component/react`,
+ * `package`, `application/react`) — a straight lookup over the declared
+ * bindings, no framework axis: the path IS the identity, exactly as summon's
+ * tree keys it. Callers with a kind+framework surface (MCP) map to a path
+ * first.
  *
  * The module this lives in statically imports the summon generator packages'
  * `generators` maps — and importing them pulls summon-core. So it MUST stay
  * behind `create`'s lazy `import()` (R9): the fast paths (`buildProgram` /
- * `__complete` / `--help` / reads) never load it, and `create --yes` never loads
- * React either (summon-core's Ink UI is dynamic-only).
+ * `__complete` / `--help` / reads) never load it, and `create --yes` never
+ * loads React either (summon-core's Ink UI is dynamic-only).
  *
- * `component` is branched on literally: it is the only noun with a framework
- * axis (which is why the verb synthesises a `--framework` enum), and narrowing
- * on `kind` here lets `CREATE_GENERATORS[kind].key` type-check over the
- * remaining nouns without `in`-narrowing gymnastics.
- *
- * @param kind - The create noun.
- * @param params - The coerced params (used for `--framework` on `component`).
+ * @param commandPath - The declared command path to run.
  * @returns The selected generator definition.
- * @throws PragmaError INVALID_INPUT for an unknown component framework.
+ * @throws PragmaError INTERNAL for an undeclared path (callers validate
+ *   user-facing inputs before mapping to a path).
  */
-export function pickGenerator(
-  kind: CreateKind,
-  params: Readonly<Record<string, unknown>>,
-): GeneratorDefinition {
-  if (kind === "component") {
-    const { frameworks } = CREATE_GENERATORS.component;
-    const framework = String(params.framework ?? frameworks[0]);
-    const generator = GENERATOR_MAPS.component[`component/${framework}`];
-    if (!generator) {
-      throw PragmaError.invalidInput("framework", framework, {
-        validOptions: [...frameworks],
-      });
+export function pickGenerator(commandPath: string): GeneratorDefinition {
+  for (const [kind, binding] of Object.entries(CREATE_GENERATORS)) {
+    if ((binding.paths as readonly string[]).includes(commandPath)) {
+      const generator = GENERATOR_MAPS[kind as CreateKind][commandPath];
+      if (generator) return generator;
+      break;
     }
-    return generator;
   }
-  const generator = GENERATOR_MAPS[kind][CREATE_GENERATORS[kind].key];
-  if (!generator) {
-    throw PragmaError.internalError(`missing ${kind} generator`);
-  }
-  return generator;
+  throw PragmaError.internalError(`missing generator for ${commandPath}`);
 }

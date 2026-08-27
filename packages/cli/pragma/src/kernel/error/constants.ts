@@ -26,9 +26,12 @@ const ERROR_CODES = [
   "INTERNAL_ERROR",
   // A runtime condition that is NOT a bug and NOT a usage mistake, so it must
   // NOT collapse to INTERNAL_ERROR's "please report this issue": a capability
-  // genuinely unavailable in this environment (`create` when its
-  // `@canonical/summon-*` dependencies cannot be resolved — a broken or pruned
-  // install), OR an external command
+  // genuinely unavailable in this environment (`create` refusing when its
+  // lazily-imported generator runtime cannot be loaded at all — the
+  // module-not-found backstop in `capabilities/create/create.verb.ts`, which
+  // means the `@canonical/summon-*` dependencies could not be resolved, i.e. a
+  // broken or pruned install; every declared generator otherwise runs
+  // everywhere), OR an external command
   // that RAN and failed for a fixable environment reason (a denied global
   // `npm i -g`, a network/registry failure — see `shared/assertExecOk`). Both
   // carry an actionable recovery and map to the generic runtime exit 1.

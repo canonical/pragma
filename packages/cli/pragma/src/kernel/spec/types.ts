@@ -224,6 +224,120 @@ export interface McpPromptProvider {
   ) => Promise<void> | void;
 }
 
+/** A flag a mounted subcommand offers to completion (full `--token`). */
+export interface CompletionChildFlag {
+  /** The full flag token (`--no-with-styles`). */
+  readonly flag: string;
+  /** Whether the flag consumes a value. */
+  readonly takesValue: boolean;
+  /** Closed value set for the flag's value, when one exists. */
+  readonly values?: readonly string[];
+}
+
+/** A positional slot a mounted subcommand offers to completion. */
+export interface CompletionChildPositional {
+  /** The slot name (diagnostics only). */
+  readonly name: string;
+  /** Whether the positional is required. */
+  readonly required: boolean;
+  /** Closed value set (e.g. tree segments), when one exists. */
+  readonly values?: readonly string[];
+  /** True when the slot completes file paths natively. */
+  readonly files?: boolean;
+}
+
+/**
+ * The completion surface of one MOUNTED command node: its flags, its
+ * positional slots, and any deeper segment children — static data (it must
+ * pass the completion safety allowlist), never live module state.
+ */
+export interface CompletionChildSpec {
+  /** The command token at this node. */
+  readonly label: string;
+  /** Flags offered at this node. */
+  readonly flags: readonly CompletionChildFlag[];
+  /** Positional slots at this node, in order. */
+  readonly positionals: readonly CompletionChildPositional[];
+  /** Deeper segment children (each with its own flags/positionals/children). */
+  readonly children?: readonly CompletionChildSpec[];
+}
+
+/**
+ * The REGISTERED CLI spelling of one mounted verb — the single syntax seam
+ * every kernel emitter and gate consumes: the reference emitter (usage line
+ * + Args/Flags tables), `emitSurface` (the covenant's mounted-noun flag and
+ * positional tokens, L-CIS-2), and the `docExamples` gate's valid-token
+ * vocabulary. A mounted tree may register a different surface than the
+ * binding-level params suggest (tree segments as subcommands, a
+ * default-true boolean registered only as its `--no-` form), and all three
+ * surfaces must print what the CLI actually accepts — the module supplies
+ * it, the kernel renders it.
+ */
+export interface ReferenceCliSyntax {
+  /**
+   * The usage line after the bin name (e.g.
+   * `create application react [app-path] [options]`) — real tree segments,
+   * the registered positional token.
+   */
+  readonly usage: string;
+  /**
+   * The registered flag token per binding-level param name (e.g.
+   * `withStyles` → `--no-with-styles`). A param absent here renders with the
+   * default `--<kebab-name>` derivation.
+   */
+  readonly flagTokens: Readonly<Record<string, string>>;
+  /**
+   * The registered positional token per binding-level param name (e.g.
+   * `componentPath` → `[component-path]`) — the SAME token the usage line
+   * carries, so the Arguments table never contradicts its own synopsis. A
+   * param absent here renders with the default `<name>`/`[name]` derivation.
+   */
+  readonly positionalTokens?: Readonly<Record<string, string>>;
+}
+
+/** What the program hands a module mounting its own subtree. */
+export interface CliMountHost {
+  /** Global flags for this invocation (closed over by mounted actions). */
+  readonly globalFlags: import("../runtime/types.js").GlobalFlags;
+  /** The binary name (for messages the mounted tree prints). */
+  readonly programName: string;
+}
+
+/**
+ * A module-level CLI projection hook (precedented by `mcpResources`/
+ * `mcpPrompts`/`colophon` — module metadata, NOT a `VerbSpec` field, zero
+ * covenant impact): the module MOUNTS its noun's subtree onto the Commander
+ * parent itself, instead of the generic per-verb attachment. The module's
+ * verbs remain the binding-level grammar (surface, MCP, reference,
+ * completion labels); the mount owns everything beneath the noun.
+ */
+export interface CliProjection {
+  /** Populate this module's noun parent with its subcommands. */
+  readonly mount: (
+    parent: import("commander").Command,
+    host: CliMountHost,
+  ) => void;
+  /**
+   * The completion surface of the mounted tree, keyed by verb label —
+   * static data the completion model attaches as segment children.
+   */
+  readonly completionChildren: () => Readonly<
+    Record<string, CompletionChildSpec>
+  >;
+  /** Markdown inserted under the noun's heading in the generated reference. */
+  readonly referenceIntro?: string;
+  /**
+   * The registered CLI syntax for one of the noun's binding verbs — the
+   * MOUNTED spelling the reference must print (usage line with tree
+   * segments, flag tokens the CLI actually registers) instead of deriving
+   * tokens from binding-level param names the mounted tree may not register.
+   * Return `undefined` to keep the default rendering for that verb.
+   */
+  readonly referenceSyntax?: (
+    verbPath: VerbSpec["path"],
+  ) => ReferenceCliSyntax | undefined;
+}
+
 /** A capability module: a named bundle of verbs with optional boot/resources/prompts hooks. */
 export interface CapabilityModule {
   readonly name: string;
@@ -250,4 +364,6 @@ export interface CapabilityModule {
   readonly mcpResources?: McpResourceProvider;
   /** An optional MCP prompt surface (NOT a VerbSpec field — a module hook). */
   readonly mcpPrompts?: McpPromptProvider;
+  /** An optional CLI mount for the module's noun (NOT a VerbSpec field). */
+  readonly cliProjection?: CliProjection;
 }
