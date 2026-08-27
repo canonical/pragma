@@ -49,37 +49,39 @@ const gen: GeneratorDefinition = {
     writeFile(`${String(a.componentPath)}/index.ts`, "export {};\n"),
 };
 
-// ---- timing model -----------------------------------------------------------
-// One source of truth; every other duration is derived from it, so the
-// invariants hold by construction instead of by keeping literals in sync.
-
-/** Poll cadence for frame/state checks. */
-const POLL_INTERVAL_MS = 15;
-
 /**
- * One polling window for a single frame/state wait. The passing path settles
- * in milliseconds; this width only bounds how long a genuine wedge waits
- * before reporting. Wide, because loaded CI runners are the only place the
- * wedges have ever fired.
+ * The base polling window: how long a single frame/state wait may poll before
+ * declaring a wedge. The passing path settles in milliseconds; this width
+ * only bounds how long a genuine wedge waits before reporting. Wide, because
+ * loaded CI runners are the only place the wedges have ever fired. Every
+ * other duration in {@link TEST_TIMINGS} derives from it, so the suite's
+ * timing invariants hold by construction instead of by keeping literals in
+ * sync.
  */
 const WAIT_WINDOW_MS = 30_000;
 
-/**
- * Re-send a keystroke after this long without visible effect. Long enough
- * that the common fast path stays single-shot, short enough to retry several
- * times inside one window.
- */
-const RESEND_AFTER_MS = WAIT_WINDOW_MS / 30;
-
-/**
- * Per-test budget: strictly wider than the sum of the most helper windows any
- * one test can burn before its first throw (one slow-but-passing wait plus
- * one expiring wait — a throw ends the test, so windows past the second are
- * unreachable). This guarantees a wedge always surfaces as the helpers'
- * diagnostic error (phase, answers, frame), never as vitest's
- * information-free test timeout.
- */
-const TEST_BUDGET_MS = 2 * WAIT_WINDOW_MS + WAIT_WINDOW_MS / 3;
+/** The suite's timing model — one base window, everything else derived. */
+const TEST_TIMINGS = {
+  /** Poll cadence for frame/state checks. */
+  pollIntervalMs: 15,
+  /** One polling window for a single frame/state wait. */
+  waitWindowMs: WAIT_WINDOW_MS,
+  /**
+   * Re-send a keystroke after this long without visible effect. Long enough
+   * that the common fast path stays single-shot, short enough to retry many
+   * times inside one window.
+   */
+  resendAfterMs: WAIT_WINDOW_MS / 30,
+  /**
+   * Per-test budget: strictly wider than the most helper windows any one test
+   * can burn before its first throw (one slow-but-passing wait plus one
+   * expiring wait — a throw ends the test, so windows past the second are
+   * unreachable). This guarantees a wedge always surfaces as the helpers'
+   * diagnostic error (phase, answers, frame), never as vitest's
+   * information-free test timeout.
+   */
+  testBudgetMs: 2 * WAIT_WINDOW_MS + WAIT_WINDOW_MS / 3,
+} as const;
 
 /**
  * Poll a predicate until true (robust to render timing under coverage/load).
@@ -91,12 +93,12 @@ async function waitFor(
   describe?: () => string,
 ): Promise<void> {
   const start = Date.now();
-  while (Date.now() - start < WAIT_WINDOW_MS) {
+  while (Date.now() - start < TEST_TIMINGS.waitWindowMs) {
     if (check()) return;
-    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+    await new Promise((r) => setTimeout(r, TEST_TIMINGS.pollIntervalMs));
   }
   throw new Error(
-    `waitFor: condition not met within ${WAIT_WINDOW_MS}ms${describe ? `\n${describe()}` : ""}`,
+    `waitFor: condition not met within ${TEST_TIMINGS.waitWindowMs}ms${describe ? `\n${describe()}` : ""}`,
   );
 }
 
@@ -104,7 +106,7 @@ async function waitFor(
  * Send a key and re-send it until the expected state lands. ink-testing-library
  * can deliver a write late (after the target's `useInput` handler subscribes),
  * so only IDEMPOTENT keys may be sent this way — a late duplicate must be a
- * no-op. Re-sending only after {@link RESEND_AFTER_MS} of no change keeps the
+ * no-op. Re-sending only after {@link TEST_TIMINGS}.resendAfterMs of no change keeps the
  * common fast path single-shot.
  */
 async function pressUntil(
@@ -114,17 +116,17 @@ async function pressUntil(
   describe?: () => string,
 ): Promise<void> {
   const start = Date.now();
-  while (Date.now() - start < WAIT_WINDOW_MS) {
+  while (Date.now() - start < TEST_TIMINGS.waitWindowMs) {
     if (done()) return;
     stdin.write(key);
     const sent = Date.now();
-    while (Date.now() - sent < RESEND_AFTER_MS && !done()) {
-      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+    while (Date.now() - sent < TEST_TIMINGS.resendAfterMs && !done()) {
+      await new Promise((r) => setTimeout(r, TEST_TIMINGS.pollIntervalMs));
     }
   }
   if (done()) return;
   throw new Error(
-    `pressUntil(${JSON.stringify(key)}): key did not take effect within ${WAIT_WINDOW_MS}ms${describe ? `\n${describe()}` : ""}`,
+    `pressUntil(${JSON.stringify(key)}): key did not take effect within ${TEST_TIMINGS.waitWindowMs}ms${describe ? `\n${describe()}` : ""}`,
   );
 }
 
@@ -223,7 +225,7 @@ describe("create wizard (PROTECTED)", () => {
         unmount();
       }
     },
-    TEST_BUDGET_MS,
+    TEST_TIMINGS.testBudgetMs,
   );
 });
 
@@ -269,7 +271,7 @@ describe("keyboard bindings (one prompt, one render each)", () => {
         unmount();
       }
     },
-    TEST_BUDGET_MS,
+    TEST_TIMINGS.testBudgetMs,
   );
 
   it(
@@ -292,7 +294,7 @@ describe("keyboard bindings (one prompt, one render each)", () => {
         unmount();
       }
     },
-    TEST_BUDGET_MS,
+    TEST_TIMINGS.testBudgetMs,
   );
 
   it(
@@ -318,7 +320,7 @@ describe("keyboard bindings (one prompt, one render each)", () => {
         unmount();
       }
     },
-    TEST_BUDGET_MS,
+    TEST_TIMINGS.testBudgetMs,
   );
 });
 
@@ -342,7 +344,7 @@ describe("cancelled frame is truthful about files written (H2)", () => {
         unmount();
       }
     },
-    TEST_BUDGET_MS,
+    TEST_TIMINGS.testBudgetMs,
   );
 
   it(
@@ -358,7 +360,7 @@ describe("cancelled frame is truthful about files written (H2)", () => {
         unmount();
       }
     },
-    TEST_BUDGET_MS,
+    TEST_TIMINGS.testBudgetMs,
   );
 });
 
@@ -391,7 +393,7 @@ describe("degenerate-choice prompt wiring (C4)", () => {
         unmount();
       }
     },
-    TEST_BUDGET_MS,
+    TEST_TIMINGS.testBudgetMs,
   );
 
   it(
@@ -415,6 +417,6 @@ describe("degenerate-choice prompt wiring (C4)", () => {
         unmount();
       }
     },
-    TEST_BUDGET_MS,
+    TEST_TIMINGS.testBudgetMs,
   );
 });
