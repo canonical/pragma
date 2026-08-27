@@ -208,16 +208,38 @@ function renderData(
   };
 }
 
-/** Render a dry-run plan (the effects a mutation would perform). */
+/**
+ * Render a dry-run plan.
+ *
+ * The default render is the effect dump — one described effect per line — which
+ * is what every verb without a plan of its own gets, byte for byte as before.
+ * A verb that declares `output.formatPlan` AND stashed `runtime.planData`
+ * renders that instead: the dump is debug material (interpreter log effects,
+ * a repeated absolute path prefix on every line), and a preview is something a
+ * user is meant to read. The JSON envelope stays ADDITIVE — `plan` is the same
+ * string array it always was, and `targets` carries the structured data beside
+ * it — so a machine reader of the old shape keeps working.
+ *
+ * @param flags - The global flags (format selection).
+ * @param plan - The described effects the mutation would perform.
+ * @param seam - The verb's plan renderer + its stashed data, when it has both.
+ * @returns The dispatch outcome.
+ */
 function renderPlan(
   flags: GlobalFlags,
   plan: readonly string[],
+  seam?: { format: (planData: unknown) => string; planData: unknown },
 ): DispatchOutcome {
   if (flags.format === "json") {
+    const body =
+      seam === undefined ? { plan } : { plan, targets: seam.planData };
     return {
-      stdout: `${JSON.stringify(successEnvelope({ plan }, { dryRun: true }))}\n`,
+      stdout: `${JSON.stringify(successEnvelope(body, { dryRun: true }))}\n`,
       exitCode: 0,
     };
+  }
+  if (seam !== undefined) {
+    return { stdout: `${seam.format(seam.planData)}\n`, exitCode: 0 };
   }
   const body =
     plan.length > 0
@@ -334,11 +356,16 @@ export async function executeVerb(
         });
         // A plan is the effects a mutation WOULD apply — a `Prompt` is not one,
         // so the interactive confirm gate / answer prompts never clutter it.
+        const format = verb.output.formatPlan;
+        const planData = mutationRuntime.planData;
         return renderPlan(
           flags,
           effects
             .filter((effect) => effect._tag !== "Prompt")
             .map(describeEffect),
+          format !== undefined && planData !== undefined
+            ? { format, planData }
+            : undefined,
         );
       } finally {
         // A verb that mounted an interactive session before returning its Task

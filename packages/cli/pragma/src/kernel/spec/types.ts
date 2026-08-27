@@ -203,7 +203,23 @@ export interface VerbSpec<P = Record<string, unknown>, R = unknown> {
   readonly summary: string;
   readonly doc?: string;
   readonly params: readonly ParamSpec[];
-  readonly output: { schema?: unknown; formatters: Formatters<R> };
+  readonly output: {
+    schema?: unknown;
+    formatters: Formatters<R>;
+    /**
+     * OPTIONAL dry-run seam. A `--dry-run` normally renders the raw effect
+     * dump — one `describeEffect` bullet per effect, absolute paths repeated
+     * per line, interpreter internals included — which is debug material, not a
+     * preview a user was meant to read. A verb that has stashed structured plan
+     * data on the runtime (`PragmaRuntime.planData`) can render that instead.
+     *
+     * ABSENT BY DEFAULT, and absent is exactly today's render: a verb that does
+     * not set both this and `planData` is untouched. The honest preview still
+     * runs underneath either way, so a dry run still fails exactly when the run
+     * would.
+     */
+    formatPlan?: (planData: unknown) => string;
+  };
   readonly examples?: readonly Example[];
   readonly disclosure?: DisclosureSpec;
   readonly capability: Capability;
