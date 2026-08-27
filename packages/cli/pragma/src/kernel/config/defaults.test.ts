@@ -31,7 +31,15 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
     expect(defaults.colophon?.markdown.startsWith("#")).toBe(false);
     expect(defaults.colophon?.summary?.startsWith("#")).toBe(false);
     // The handoff, and the brevity that makes it honest (see the note above).
-    expect(defaults.colophon?.markdown).toContain("docs/architecture.md");
+    // It is a URL, not a repo path: `docs/` is outside the package's `files`
+    // allowlist and is not copied into `dist`, so a path would name a file no
+    // installed user has. A bare `docs/architecture.md` must fail here.
+    expect(defaults.colophon?.markdown).toContain(
+      "https://github.com/canonical/pragma/blob/main/packages/cli/pragma/docs/architecture.md",
+    );
+    expect(defaults.colophon?.summary).toContain(
+      "https://github.com/canonical/pragma/blob/main/packages/cli/pragma/docs/architecture.md",
+    );
     expect(defaults.colophon?.markdown.length).toBeLessThan(400);
     expect(defaults.colophon?.summary?.length).toBeLessThan(400);
   });
