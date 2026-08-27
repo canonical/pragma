@@ -853,6 +853,41 @@ describe("setup (run-all wizard)", () => {
     expect(existsSync(join(cwd, ".cursor", "mcp.json"))).toBe(false);
   });
 
+  it("a failing LSP step no longer aborts the run — MCP and skills still apply, exit reflects the failure (S1-1)", async () => {
+    // The audit's headline break: with an unsatisfiable LSP prerequisite the
+    // single advertised onboarding command configured NOTHING (no MCP write,
+    // no skills link) and exited 1. Steps are independent — one failure must
+    // report, let the rest proceed, and only then fail the run. Here the LSP
+    // step has an editor (`code` stub on PATH) but no `bun`, so its fetch
+    // fails; MCP (.cursor) and skills (a seeded skill) must still apply.
+    const prevData = process.env.XDG_DATA_HOME;
+    process.env.XDG_DATA_HOME = tmp("pragma-s11-data-"); // jail the staging dir
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    const skillDir = join(cwd, ".pragma", "skills", "s");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: s\ndescription: A skill.\n---\n",
+    );
+    let thrown: unknown;
+    try {
+      await executeVerb(setupSelfVerb, {}, YES, bootRuntime(FLAGS, cwd));
+    } catch (error) {
+      thrown = error;
+    } finally {
+      process.env.XDG_DATA_HOME = prevData;
+    }
+    // The satisfiable steps ran to completion...
+    expect(existsSync(join(cwd, ".cursor", "mcp.json"))).toBe(true);
+    expect(existsSync(join(cwd, ".agents", "skills", "s"))).toBe(true);
+    // ...and the run still failed, with the ORIGINAL step error surfaced.
+    expect(thrown).toBeDefined();
+    const err = asPragmaError(thrown);
+    expect(err.code).toBe("UNSUPPORTED");
+    expect(err.message).toContain("bun");
+  });
+
   it("omits skills gracefully when none are discovered (no mid-wizard EMPTY_RESULTS)", async () => {
     // A run-all in a project with no skills must NOT throw — it just doesn't
     // offer the skills step. Reaching a clean plan proves the graceful degrade.
