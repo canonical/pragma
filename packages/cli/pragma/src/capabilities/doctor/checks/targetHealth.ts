@@ -22,6 +22,7 @@ import { MCP_SERVER_NAME } from "../../../constants.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
 import {
   type DetectedRow,
+  detectionFailure,
   detectTargets,
   resolveRoots,
 } from "../../setup/buildPlan.js";
@@ -185,6 +186,12 @@ async function healthOf(
   rt: PragmaRuntime,
   roots: { global: string; project: string },
 ): Promise<Health> {
+  // A detection that threw is reported as ITS OWN failing row. Letting the
+  // rejection escape took the whole banded section of the report with it, so a
+  // single unreadable config file left the user with no rows at all — the one
+  // moment the report is most worth having.
+  const failure = detectionFailure(row);
+  if (failure !== undefined) return { status: "fail", detail: failure };
   switch (row.target.id) {
     case "config":
       return configHealth(row.detection as ConfigDetection, roots);

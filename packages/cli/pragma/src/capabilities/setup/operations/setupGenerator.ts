@@ -40,6 +40,7 @@ import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
 import {
   buildPlan,
   type DetectedRow,
+  detectionFailure,
   detectTargets,
   draftFor,
   resolveRoots,
@@ -392,6 +393,12 @@ export async function buildSetupRun(
     chosen: readonly string[] | undefined,
   ): PlanOutcome | undefined => {
     const hit = detectionFor(row);
+    // A row whose DETECTION threw has no draft to read and nothing to compose,
+    // and it is not a skip: the target was requested and did not happen. It
+    // reports `failed` with its own cause, exactly as a failed compose does, so
+    // the run names it instead of reporting a clean sweep over its siblings.
+    const failure = hit === undefined ? undefined : detectionFailure(hit);
+    if (failure !== undefined) return { status: "failed", note: failure };
     const draft = hit === undefined ? undefined : draftFor(hit, roots, removal);
     if (row.action === "skip") {
       return {

@@ -29,7 +29,7 @@ import { join, relative } from "node:path";
 import { execute } from "@canonical/summon-core";
 import { dryRun, type Effect, type Task } from "@canonical/task";
 import { runTask, runUndo } from "@canonical/task/node";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { emitScripts } from "../../kernel/completion/emitScripts.js";
 import { asPragmaError } from "../../kernel/error/fromTaskError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
@@ -801,6 +801,39 @@ describe("setup skills", () => {
 
     await runUndo(composeSkillsRemoval(detected));
     expect(existsSync(linkPath)).toBe(false);
+  });
+});
+
+describe("setup — detections settle independently", () => {
+  it("gives a rejecting detection its own failed row, leaving the rest planned", async () => {
+    // The targets are independent, and one `Promise.all` made them share a
+    // fate: a single rejecting detection prevented a run being built at all,
+    // so NONE of the other targets ran and doctor rendered no banded rows.
+    const { TARGETS } = await import("./targets.js");
+    const lsp = TARGETS.find((t) => t.id === "lsp") as (typeof TARGETS)[number];
+    const spy = vi
+      .spyOn(lsp, "detect")
+      .mockRejectedValue(new Error("EACCES: permission denied, open '/x'"));
+    try {
+      const run = await buildSetupRun(
+        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+        "all",
+        "global",
+      );
+      const row = run.plan.rows.find((r) => r.target === "lsp");
+      expect(row?.reason).toContain("EACCES");
+      // The point of the fix: the siblings are still planned.
+      expect(
+        run.plan.rows.filter((r) => r.target !== "lsp").length,
+      ).toBeGreaterThan(0);
+      // And the row is attributable, not a quiet skip: it exits non-zero.
+      const applied = run.applied({});
+      expect(applied.rows.find((r) => r.target === "lsp")?.outcome?.status).toBe(
+        "failed",
+      );
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
 

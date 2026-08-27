@@ -30,7 +30,17 @@ export interface DetectedRow {
   readonly target: AnyTarget;
   readonly band: ScopeBand;
   readonly detection: never;
+  /**
+   * Why this row's detection did not settle, when it threw. `detection` is then
+   * meaningless and no reader may touch it — {@link detectionFailure} is the
+   * only question to ask of such a row.
+   */
+  readonly failure?: string;
 }
+
+/** The failure a row's detection ended in, or `undefined` when it settled. */
+export const detectionFailure = (row: DetectedRow): string | undefined =>
+  row.failure;
 
 /** A plan plus the detections behind it — what the apply phase needs. */
 export interface DetectedPlan {
@@ -57,12 +67,23 @@ export async function resolveRoots(
   return { global: userHome(readPlatformEnv()), project: rt.cwd };
 }
 
+/** The cause a rejected detection carries, as one line of copy. */
+const messageOf = (reason: unknown): string =>
+  reason instanceof Error ? reason.message : String(reason);
+
 /**
  * Detect every requested target in every band the scope runs.
  *
- * Detections are started together and awaited as a batch: they are independent
- * reads, and a run-all that probed five targets serially paid for it on every
- * invocation.
+ * Detections are started together and SETTLED INDEPENDENTLY: they are
+ * independent reads, and a run-all that probed five targets serially paid for
+ * it on every invocation.
+ *
+ * Independence is the whole premise, so one detection that throws — an
+ * unreadable config, a permission-denied directory — takes only its own row
+ * down. Awaiting them as one `Promise.all` meant the first rejection prevented
+ * a run from being built at all: none of the other targets ran, and doctor
+ * rendered no banded rows whatsoever. The failed row carries its cause and is
+ * reported as a row, which is the same shape a failed COMPOSE already has.
  *
  * @param rt - The per-invocation runtime.
  * @param ids - The targets to plan (all five for the run-all).
@@ -84,13 +105,21 @@ export async function detectTargets(
         band,
       })),
   );
-  return Promise.all(
-    pairs.map(async ({ target, band }) => ({
+  const settled = await Promise.allSettled(
+    pairs.map(({ target, band }) => target.detect(rt, band)),
+  );
+  return pairs.map(({ target, band }, index) => {
+    const outcome = settled[index] as PromiseSettledResult<unknown>;
+    if (outcome.status === "fulfilled") {
+      return { target, band, detection: outcome.value as never };
+    }
+    return {
       target,
       band,
-      detection: (await target.detect(rt, band)) as never,
-    })),
-  );
+      detection: undefined as never,
+      failure: messageOf(outcome.reason),
+    };
+  });
 }
 
 /**
@@ -110,6 +139,26 @@ const outOfBandRow = (target: AnyTarget, band: ScopeBand): PlanRow => ({
     band === "project"
       ? "user-level only — it has no project band"
       : "project-level only — it has no global band",
+  selected: false,
+});
+
+/**
+ * The row a target gets when its own detection threw. It is a `skip` in the
+ * PLAN — nothing can be composed from a detection that does not exist — but it
+ * is not a quiet one: the reason is the cause, and the apply phase turns it
+ * into a `failed` outcome, so the run exits non-zero naming this target rather
+ * than reporting a clean sweep over the targets that did settle.
+ */
+const failedDetectionRow = (
+  target: AnyTarget,
+  band: ScopeBand,
+  failure: string,
+): PlanRow => ({
+  target: target.id,
+  band,
+  action: "skip",
+  detail: "detection did not complete",
+  reason: failure,
   selected: false,
 });
 
@@ -164,6 +213,11 @@ export function buildPlan(
         // under `--scope both` a global-only target already appears above.
         const elsewhere = detected.some((d) => d.target.id === target.id);
         if (!elsewhere) rows.push(outOfBandRow(target, band));
+        continue;
+      }
+      const failure = detectionFailure(hit);
+      if (failure !== undefined) {
+        rows.push(failedDetectionRow(target, band, failure));
         continue;
       }
       const draft = draftFor(hit, roots, removal);
