@@ -1,4 +1,6 @@
+import { packageVersion } from "./packageVersion.js";
 import type { MonorepoAnswers, TemplateContext } from "./types.js";
+import { normalizeRepositoryUrl } from "./validateRepository.js";
 
 /**
  * Create template context from answers.
@@ -16,7 +18,10 @@ export default function createTemplateContext(
       null,
       4,
     ),
-    repository: answers.repository,
+    repository: normalizeRepositoryUrl(answers.repository),
     bunVersion: answers.bunVersion,
+    // The @canonical/* config packages release on the same fixed-version
+    // train as this generator, so its own version is the correct range line.
+    canonicalVersion: packageVersion(),
   };
 }

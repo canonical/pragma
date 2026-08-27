@@ -12,28 +12,27 @@
     },
     {
       "description": "Group TypeScript toolchain",
-      "matchPackageNames": ["typescript"],
-      "matchPackagePrefixes": ["@canonical/typescript-config-"],
+      "matchPackageNames": ["typescript", "@canonical/typescript-config-**"],
       "groupName": "typescript"
     },
     {
       "description": "Group Vitest ecosystem",
-      "matchPackageNames": ["vitest"],
-      "matchPackagePrefixes": ["@vitest/"],
+      "matchPackageNames": ["vitest", "@vitest/**"],
       "groupName": "vitest"
     },
     {
       "description": "Group Lerna + Nx orchestration",
-      "matchPackageNames": ["lerna", "nx"],
-      "matchPackagePrefixes": ["@nx/"],
+      "matchPackageNames": ["lerna", "nx", "@nx/**"],
       "groupName": "lerna-nx"
     },
     {
       "description": "Group Canonical internal packages",
-      "matchPackagePrefixes": ["@canonical/"],
-      "groupName": "canonical",
-      "excludePackageNames": ["@canonical/biome-config"],
-      "excludePackagePrefixes": ["@canonical/typescript-config-"]
+      "matchPackageNames": [
+        "@canonical/**",
+        "!@canonical/biome-config",
+        "!@canonical/typescript-config-**"
+      ],
+      "groupName": "canonical"
     },
     {
       "description": "Automerge patch/minor devDependencies",
