@@ -9,7 +9,7 @@
  * interpreter mocks). Idempotent by construction.
  */
 
-import { existsSync, readlinkSync } from "node:fs";
+import { lstatSync, readlinkSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   deleteFile,
@@ -42,14 +42,36 @@ export interface SkillsDetection {
   readonly warnings: readonly string[];
 }
 
-/** The current target of a symlink, or `null` when absent / not a symlink. */
-function currentLink(linkPath: string): string | null {
-  if (!existsSync(linkPath)) return null;
+/** What currently occupies a candidate link path. */
+type LinkState =
+  | { readonly kind: "absent" }
+  | { readonly kind: "symlink"; readonly target: string }
+  | { readonly kind: "other" };
+
+/**
+ * Classify a link path WITHOUT following it: absent, a symlink (with its raw
+ * target, resolving or not), or a real (non-symlink) entry. `lstat`-based, the
+ * same classification `sources/installSkills.ts`'s `linkState` uses — the two
+ * planners previously disagreed: this one probed with `existsSync`, which
+ * FOLLOWS the link, so a DANGLING symlink read as "absent", the plan said
+ * `created`, and the real `symlink()` crashed EEXIST with a "please report
+ * this issue" label (S1-2) while the dry-run previewed a clean create.
+ */
+function linkState(linkPath: string): LinkState {
+  let stat: ReturnType<typeof lstatSync>;
   try {
-    return readlinkSync(linkPath);
+    stat = lstatSync(linkPath);
   } catch {
-    return "";
+    return { kind: "absent" };
   }
+  if (stat.isSymbolicLink()) {
+    try {
+      return { kind: "symlink", target: readlinkSync(linkPath) };
+    } catch {
+      return { kind: "other" };
+    }
+  }
+  return { kind: "other" };
 }
 
 /**
@@ -102,18 +124,23 @@ export async function detectSkills(
     targets.push({ dir: crossDir, name: CROSS_CLIENT_DIR });
   }
 
-  // Decide each action against REAL fs (so the preview is accurate).
+  // Decide each action against REAL fs (so the preview is accurate). Dangling
+  // or wrong-target symlinks are `replaced` (delete + relink); a real
+  // (non-symlink) file/dir at the path is `skipped` — a hand-placed skill is
+  // never this command's to delete (matching `planSkillInstall`).
   const actions: SymlinkAction[] = [];
   for (const { dir, name } of targets) {
     for (const skill of skills) {
       const linkPath = resolve(dir, skill.folderName);
-      const current = currentLink(linkPath);
+      const state = linkState(linkPath);
       const action: SymlinkAction["action"] =
-        current === null
+        state.kind === "absent"
           ? "created"
-          : current === skill.sourcePath
+          : state.kind === "symlink" && state.target === skill.sourcePath
             ? "skipped"
-            : "replaced";
+            : state.kind === "symlink"
+              ? "replaced"
+              : "skipped";
       actions.push({
         skillName: skill.name,
         target: skill.sourcePath,

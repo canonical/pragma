@@ -18,7 +18,9 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readlinkSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -431,6 +433,71 @@ describe("setup skills", () => {
     expect(symlinkEffect).toBeDefined();
     expect(symlinkEffect?.undo).toBeDefined();
     expect(existsSync(join(cwd, ".agents", "skills", "my-skill"))).toBe(false);
+  });
+
+  it("classifies a DANGLING symlink as replaced and repairs it (S1-2)", async () => {
+    // `existsSync` FOLLOWS a symlink, so a dangling link used to read as
+    // "absent" → plan `created` → the real symlink() crashed EEXIST labeled
+    // INTERNAL_ERROR ("please report this issue"), leaving the broken link in
+    // place — and the dry-run previewed a clean create the run then belied.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = join(cwd, ".pragma", "skills", "my-skill");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: my-skill\ndescription: A test skill.\n---\n",
+    );
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    const linkPath = join(linkDir, "my-skill");
+    symlinkSync(join(cwd, "nonexistent-target"), linkPath);
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd));
+    const action = detected.actions.find((a) => a.linkPath === linkPath);
+    expect(action?.action).toBe("replaced");
+
+    // The dry-run preview now PREDICTS the repair: a delete before the relink.
+    const { effects } = dryRun(composeSkills(detected));
+    const deletes = effects.filter(
+      (e) =>
+        e._tag === "DeleteFile" && (e as { path?: string }).path === linkPath,
+    );
+    expect(deletes.length).toBe(1);
+
+    // The real run repairs the link instead of crashing EEXIST.
+    await runTask(composeSkills(detected));
+    expect(readlinkSync(linkPath)).toBe(skillDir);
+  });
+
+  it("skips a real (non-symlink) directory at the link path, never deleting it", async () => {
+    // A hand-placed skill directory is not this command's to delete — the
+    // sibling planner (sources/installSkills.ts) already refuses to clobber
+    // it, and the two planners must agree on classification.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = join(cwd, ".pragma", "skills", "my-skill");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: my-skill\ndescription: A test skill.\n---\n",
+    );
+    const realDir = join(cwd, ".agents", "skills", "my-skill");
+    mkdirSync(realDir, { recursive: true });
+    writeFileSync(join(realDir, "SKILL.md"), "hand-placed\n");
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd));
+    const action = detected.actions.find((a) => a.linkPath === realDir);
+    expect(action?.action).toBe("skipped");
+
+    const { effects } = dryRun(composeSkills(detected));
+    expect(
+      effects.some(
+        (e) =>
+          e._tag === "DeleteFile" && (e as { path?: string }).path === realDir,
+      ),
+    ).toBe(false);
+    expect(readFileSync(join(realDir, "SKILL.md"), "utf-8")).toBe(
+      "hand-placed\n",
+    );
   });
 });
 
