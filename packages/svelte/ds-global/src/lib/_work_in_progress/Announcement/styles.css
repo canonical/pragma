@@ -51,6 +51,5 @@
 
   & .heading {
     font-weight: var(--typography-heading-6-font-weight);
-    line-height: var(--typography-heading-6-line-height, var(--dimension-250));
   }
 }
