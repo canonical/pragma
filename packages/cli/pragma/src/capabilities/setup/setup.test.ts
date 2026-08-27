@@ -15,6 +15,7 @@
 
 import {
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -821,6 +822,34 @@ describe("setup skills", () => {
     expect(readFileSync(join(backup, "SKILL.md"), "utf-8")).toBe(
       "the user's own copy\n",
     );
+  });
+
+  it("removes an owned link whose skill is gone from an emptied source root", async () => {
+    // Detection returned before target discovery whenever the source root held
+    // no skills, so `--undo` looked at an empty action list, reported zero work
+    // and left this command's own links on disk forever.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillsRoot = join(cwd, ".pragma", "skills");
+    const skillDir = join(skillsRoot, "my-skill");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: my-skill\ndescription: A test skill.\n---\n",
+    );
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    const linkPath = join(linkDir, "my-skill");
+    symlinkSync(skillDir, linkPath);
+    // The skill is removed upstream: the link is now ours, owned, and dangling.
+    rmSync(skillDir, { recursive: true, force: true });
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    expect(detected.available).toBe(false);
+    expect(ownedSkillLinks(detected).map((a) => a.linkPath)).toEqual([linkPath]);
+
+    await runUndo(composeSkillsRemoval(detected));
+    // `existsSync` follows the link, so the dangling one is read through lstat.
+    expect(() => lstatSync(linkPath)).toThrow();
   });
 
   it("owns a RELATIVE link into the skill root, resolved against the link dir", async () => {

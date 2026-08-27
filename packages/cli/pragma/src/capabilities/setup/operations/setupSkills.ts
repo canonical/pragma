@@ -22,7 +22,7 @@
  * only the symlink/delete effects the dry-run interpreter mocks.
  */
 
-import { lstatSync, readlinkSync } from "node:fs";
+import { lstatSync, readdirSync, readlinkSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import {
   deleteFile,
@@ -89,6 +89,14 @@ export interface SkillsDetection {
   readonly available: boolean;
   readonly targets: readonly { readonly dir: string; readonly name: string }[];
   readonly actions: readonly SymlinkAction[];
+  /**
+   * Links this band OWNS that no CURRENT skill accounts for: the source root
+   * emptied, or one skill removed upstream. They are not part of the forward
+   * plan — there is nothing left to link them to — but they are exactly what
+   * removal exists to clear, and deriving removal from the per-skill actions
+   * alone left them on disk while `--undo` reported zero work.
+   */
+  readonly orphans: readonly SymlinkAction[];
   readonly skillCount: number;
   readonly harnessCount: number;
   readonly warnings: readonly string[];
@@ -199,8 +207,62 @@ function linkTargets(
 }
 
 /**
+ * Every owned link sitting in the target directories that the per-skill pass
+ * did not already visit.
+ *
+ * The forward pass enumerates CURRENT skills, so it can only ever see links a
+ * skill still exists for. Once the source root is emptied — or one skill is
+ * removed upstream — the link it left behind is invisible to that pass, and
+ * removal derived from it found nothing to do. Ownership is the same
+ * containment test the forward pass applies, so a user's own link is no more
+ * removable here than it is there.
+ *
+ * @param targets - The band's link directories.
+ * @param sourceRoot - The band's skill source root.
+ * @param covered - Link paths the per-skill pass already decided.
+ * @returns The owned links no current skill accounts for.
+ * @note Impure — reads each target directory and lstats its entries.
+ */
+function orphanedLinks(
+  targets: readonly { dir: string; name: string }[],
+  sourceRoot: string,
+  covered: ReadonlySet<string>,
+): SymlinkAction[] {
+  const orphans: SymlinkAction[] = [];
+  for (const { dir, name } of targets) {
+    let entries: string[];
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      continue; // The directory does not exist — it holds no links.
+    }
+    for (const entry of entries) {
+      const linkPath = resolve(dir, entry);
+      if (covered.has(linkPath)) continue;
+      const state = linkState(linkPath);
+      if (state.kind !== "symlink") continue;
+      if (!withinRoot(sourceRoot, linkPath, state.target)) continue;
+      orphans.push({
+        skillName: entry,
+        target: resolve(dirname(linkPath), state.target),
+        linkPath,
+        action: "skipped",
+        harnessName: name,
+        blocked: false,
+        owned: true,
+      });
+    }
+  }
+  return orphans;
+}
+
+/**
  * Discover the band's skills, detect harnesses, and decide each link action
  * (real filesystem, up front).
+ *
+ * Target discovery runs even when the band holds NO skills: the directories are
+ * where this command's own links live, and a removal has to be able to find
+ * them after the source root has been emptied.
  *
  * @param rt - The per-invocation runtime.
  * @param band - Which band to plan: global (installed skills) or project.
@@ -226,19 +288,6 @@ export async function detectSkills(
     band === "project" ? projectSkillsDir(cwd) : installedSkillsDir();
   const linkRoot = band === "project" ? cwd : userHome(readPlatformEnv());
   const skills = discoverSkillsFrom([sourceRoot]);
-  if (skills.length === 0) {
-    return {
-      band,
-      sourceRoot,
-      available: false,
-      targets: [],
-      actions: [],
-      skillCount: 0,
-      harnessCount: 0,
-      warnings: [],
-    };
-  }
-
   const detected = await runTask(detectHarnesses(cwd));
   const targets = linkTargets(detected, band, linkRoot);
 
@@ -282,9 +331,14 @@ export async function detectSkills(
   return {
     band,
     sourceRoot,
-    available: true,
+    available: skills.length > 0,
     targets,
     actions,
+    orphans: orphanedLinks(
+      targets,
+      sourceRoot,
+      new Set(actions.map((a) => a.linkPath)),
+    ),
     skillCount: skills.length,
     harnessCount: targets.length,
     warnings,
@@ -328,10 +382,11 @@ export function composeSkills(d: SkillsDetection): Task<void> {
 
 /**
  * The links this band OWNS right now — every existing symlink pointing into the
- * band's skill root, including dangling ones and ones already correct. This is
- * what removal acts on, and it is deliberately NOT the forward plan: undoing a
- * freshly composed forward plan on an already-linked tree reversed the mkdirs
- * and removed nothing, while reporting a step count.
+ * band's skill root, including dangling ones, ones already correct, and the
+ * ones no current skill accounts for. This is what removal acts on, and it is
+ * deliberately NOT the forward plan: undoing a freshly composed forward plan on
+ * an already-linked tree reversed the mkdirs and removed nothing, while
+ * reporting a step count.
  */
 /**
  * The named reason a skills row skips, shared by the setup plan and the doctor
@@ -352,7 +407,7 @@ export const skillsSkipReason = (
     : "no skills installed";
 
 export const ownedSkillLinks = (d: SkillsDetection): readonly SymlinkAction[] =>
-  d.actions.filter((a) => a.owned);
+  [...d.actions.filter((a) => a.owned), ...d.orphans];
 
 /**
  * Compose the removal of every owned link. Each forward effect re-asserts the
