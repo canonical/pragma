@@ -74,6 +74,33 @@ async function pressUntil(
   throw new Error("pressUntil: key did not take effect within timeout");
 }
 
+/**
+ * Type a text value deterministically. Re-sending a multi-character value
+ * (the pressUntil strategy) is not safe for text: a partially-dropped first
+ * write followed by a full re-send still satisfies an `includes` check but
+ * leaves the field garbled, and the later submit wait then hangs to its
+ * ceiling. Instead: prove the input subscription is live with a sentinel
+ * keystroke, clear it, then send the whole value as one atomic chunk —
+ * reliable once the subscription is known to be up.
+ */
+async function typeExactly(
+  stdin: { write: (data: string) => void },
+  frame: () => string,
+  value: string,
+): Promise<void> {
+  await pressUntil(stdin, "@", () => frame().includes("@"));
+  // Clear however many sentinels landed. Control keys must go one write per
+  // keystroke — ink parses key flags per chunk, so a chunk of backspaces is
+  // not N backspaces.
+  for (let i = 0; i < 40 && frame().includes("@"); i++) {
+    stdin.write("\x7f");
+    await new Promise((r) => setTimeout(r, 5));
+  }
+  await waitFor(() => !frame().includes("@"));
+  stdin.write(value);
+  await waitFor(() => frame().includes(value));
+}
+
 const text = (name: string, message: string): PromptEffect =>
   promptEffect({ type: "text", name, message }) as PromptEffect;
 const confirm = (name: string, message: string): PromptEffect =>
@@ -118,13 +145,11 @@ describe("create wizard (PROTECTED)", () => {
           frame().includes("Component path:") &&
           frame().includes("Step 1 of 2"),
       );
-      // Type the value, re-sending until the frame reflects it — the text write
-      // races the useInput subscription just like the keystrokes (a dropped
-      // write left the field empty and hung the frame wait under CI load). Then
-      // re-send Enter until the answer lands.
-      await pressUntil(stdin, "src/components/Button", () =>
-        frame().includes("src/components/Button"),
-      );
+      // Type the value with the sentinel-probe helper — the text write races
+      // the useInput subscription just like the keystrokes, and a partial
+      // drop plus re-send would submit a garbled value. Then re-send Enter
+      // until the answer lands.
+      await typeExactly(stdin, frame, "src/components/Button");
       await pressUntil(
         stdin,
         "\r",
