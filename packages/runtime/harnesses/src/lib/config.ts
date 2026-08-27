@@ -323,7 +323,32 @@ export const removeMcpConfigFrom = (
       }
       const servers = asServerRecord(parsed[target.mcpKey]);
       delete servers[serverName];
-      parsed[target.mcpKey] = servers;
+
+      // Drop the container when our entry was the last one in it, rather than
+      // writing `{"mcpServers": {}}` back into a file that had no such key.
+      //
+      // The FILE is never removed, however empty it becomes.
+      //
+      // Emptiness cannot establish that we created it: a user may have had an
+      // empty `{}` config already, and for `.mcp.json` that empty file is
+      // itself a harness-detection SIGNAL, so removing it would change what
+      // `doctor` sees. Nor can the forward write's `exists` branch serve as
+      // provenance, tempting as it looks: undo collection re-walks the forward
+      // task with its effects MOCKED, and by then the file DOES exist, so the
+      // walk takes the merge branch whichever branch originally ran. Measured,
+      // not assumed — a `deleteFile` hung on the create branch never fires.
+      //
+      // Removing a file this command created therefore needs provenance
+      // RETAINED from the install (a receipt naming what was created), which
+      // is a design change rather than a patch. Until then the container key
+      // is cleaned up and the file is left: a stray `{}` costs far less than
+      // deleting a config somebody else wrote.
+      if (Object.keys(servers).length > 0) {
+        parsed[target.mcpKey] = servers;
+      } else {
+        delete parsed[target.mcpKey];
+      }
+
       return writeFile(target.path, formatJson(parsed));
     }),
     pure(undefined),

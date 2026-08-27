@@ -273,7 +273,10 @@ describe("removeMcpConfig", () => {
     expect(written.mcpServers.figma).toEqual({ command: "figma-mcp" });
   });
 
-  it("handles removing from config with no mcpServers key", () => {
+  it("adds no empty key to a config that never had one", () => {
+    // This used to assert `mcpServers: {}` — an UNDO that left behind a key
+    // the user never wrote. Undo restores the prior state; it does not leave
+    // evidence of itself in a file it was reversing out of.
     const result = dryRunWith(
       removeMcpConfig(claude, "/project", "pragma"),
       buildMocks({
@@ -286,7 +289,90 @@ describe("removeMcpConfig", () => {
     const writeEffects = filterEffects(result.effects, "WriteFile");
     expect(writeEffects.length).toBe(1);
     const written = JSON.parse(writeEffects[0].content);
-    expect(written.mcpServers).toEqual({});
+    expect(written).toEqual({ otherField: true });
+    expect("mcpServers" in written).toBe(false);
+  });
+
+  it("drops the container when the entry it held was the last one", () => {
+    const result = dryRunWith(
+      removeMcpConfig(claude, "/project", "pragma"),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(
+          JSON.stringify({ theme: "dark", mcpServers: { pragma: {} } }),
+        ),
+        WriteFile: writeMock,
+      }),
+    );
+
+    const written = JSON.parse(
+      filterEffects(result.effects, "WriteFile")[0].content,
+    );
+    expect(written).toEqual({ theme: "dark" });
+  });
+
+  it("NEVER removes a file it did not create, however empty it becomes", () => {
+    // Emptiness cannot establish ownership. A user may have had an empty `{}`
+    // config already — and for `.mcp.json` that empty file is itself a
+    // harness-detection signal, so deleting it would change what `doctor`
+    // sees. Removal is decided by the forward write's branch instead; this
+    // path only ever subtracts.
+    const result = dryRunWith(
+      removeMcpConfig(claude, "/project", "pragma"),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(JSON.stringify({ mcpServers: { pragma: {} } })),
+        WriteFile: writeMock,
+      }),
+    );
+
+    expect(filterEffects(result.effects, "DeleteFile")).toHaveLength(0);
+    const written = JSON.parse(
+      filterEffects(result.effects, "WriteFile")[0].content,
+    );
+    expect(written).toEqual({});
+  });
+
+  it("removes no file on any path — ownership is not inferable here", () => {
+    // Guards the boundary this function deliberately stops at. Emptiness does
+    // not prove we created the file, and the forward write's `exists` branch
+    // cannot supply provenance either: the undo re-walk sees a file that
+    // exists by then, so it always takes the merge branch. Deleting from this
+    // path would be a guess about somebody else's config.
+    for (const content of ["{}", '{"mcpServers":{"pragma":{}}}']) {
+      const result = dryRunWith(
+        removeMcpConfig(claude, "/project", "pragma"),
+        buildMocks({
+          Exists: existsMock(() => true),
+          ReadFile: readFileMock(content),
+          WriteFile: writeMock,
+        }),
+      );
+      expect(filterEffects(result.effects, "DeleteFile")).toHaveLength(0);
+    }
+  });
+
+  it("keeps the container, and the file, when another server remains", () => {
+    // The guard on the two above: emptiness is the trigger, and a foreign
+    // server means it is not empty. Nothing of someone else's is removed.
+    const result = dryRunWith(
+      removeMcpConfig(claude, "/project", "pragma"),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(
+          JSON.stringify({
+            mcpServers: { pragma: {}, figma: { command: "f" } },
+          }),
+        ),
+        WriteFile: writeMock,
+      }),
+    );
+
+    expect(filterEffects(result.effects, "DeleteFile")).toHaveLength(0);
+    const written = JSON.parse(
+      filterEffects(result.effects, "WriteFile")[0].content,
+    );
+    expect(written).toEqual({ mcpServers: { figma: { command: "f" } } });
   });
 
   it("dry run collects effects without executing", () => {
