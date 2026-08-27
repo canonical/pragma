@@ -49,6 +49,8 @@ export {
   execute,
   GENERATOR_CANCELLED,
   GENERATOR_INVALID_ANSWER,
+  invalidAnswersError,
+  isInvalidAnswersError,
   validateAnswers,
 } from "./execute/index.js";
 
@@ -105,6 +107,8 @@ export { runGeneratorTask } from "./run/index.js";
 // =============================================================================
 
 export type {
+  LoadedTemplate,
+  RawFileOptions,
   TemplateDirOptions,
   TemplateOptions,
   TemplatingEngine,
@@ -114,7 +118,10 @@ export {
   generateStamp,
   generatorComment,
   getCommentStyle,
+  loadTemplate,
+  loadTemplateSync,
   prependStamp,
+  rawFile,
   renderFile,
   renderString,
   renderStringAsync,

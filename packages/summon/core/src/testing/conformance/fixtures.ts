@@ -70,8 +70,6 @@ export const CONFORMANCE_FIXTURES: readonly ConformanceFixture[] = [
     generator: "application",
     answers: {
       appPath: "my-app",
-      ssr: true,
-      router: true,
       forms: true,
       relay: false,
       runInstall: false,

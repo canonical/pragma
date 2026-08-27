@@ -332,25 +332,19 @@ export const Default: Story = {
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--component-path` | Full path for the component (e.g., `src/components/Button`) | Interactive prompt |
-| `--with-styles` | Include `styles.css` file | `true` |
-| `--no-with-styles` | Skip styles file | — |
-| `--with-stories` | Include Storybook stories | `true` |
-| `--no-with-stories` | Skip stories file | — |
-| `--with-ssr-tests` | Include SSR test file | `true` |
-| `--no-with-ssr-tests` | Skip SSR tests | — |
+| `--no-with-styles` | Skip the `styles.css` file (included by default) | styles on |
+| `--no-with-stories` | Skip the Storybook stories (included by default) | stories on |
+| `--no-with-ssr-tests` | Skip the SSR test file (included by default) | SSR tests on |
 
 ### Svelte Options
 
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--component-path` | Full path for the component (e.g., `src/lib/components/Card`) | Interactive prompt |
-| `--with-styles` | Import an external `styles.css` | `true` |
-| `--no-with-styles` | Skip styles | — |
-| `--with-stories` | Include Storybook stories | `true` |
-| `--no-with-stories` | Skip stories | — |
+| `--no-with-styles` | Skip the external `styles.css` import (included by default) | styles on |
+| `--no-with-stories` | Skip the Storybook stories (included by default) | stories on |
 | `--use-ts-stories` | Use `.stories.ts` instead of `.stories.svelte` | `false` |
-| `--with-ssr-tests` | Include SSR test file | `true` |
-| `--no-with-ssr-tests` | Skip SSR tests | — |
+| `--no-with-ssr-tests` | Skip the SSR test file (included by default) | SSR tests on |
 
 ### Global Options
 
@@ -366,10 +360,8 @@ export const Default: Story = {
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--component-path` | Full path for the component (e.g., `src/lib/Button`) | Interactive prompt |
-| `--with-styles` | Include `styles.css` file | `true` |
-| `--no-with-styles` | Skip styles file | — |
-| `--with-stories` | Include Storybook stories | `true` |
-| `--no-with-stories` | Skip stories file | — |
+| `--no-with-styles` | Skip the `styles.css` file (included by default) | styles on |
+| `--no-with-stories` | Skip the Storybook stories (included by default) | stories on |
 
 ---
 

@@ -16,7 +16,7 @@ import {
   type GeneratorNode,
 } from "@canonical/summon-core";
 import chalk from "chalk";
-import { Command } from "commander";
+import { Command, CommanderError } from "commander";
 import {
   type CompletionNode,
   handleSetupRequest,
@@ -190,11 +190,45 @@ const main = async () => {
     // Fall through to normal help if we can't find the generator
   }
 
+  // Throw CommanderError instead of exiting, so the classification below owns
+  // every exit code. Set BEFORE registration: subcommands copy the override
+  // at creation, and it is the LEAF that raises an unknown-option error.
+  program.exitOverride();
+
   // Register generator commands dynamically
   await registerGeneratorCommands(program, root);
 
   // Parse and execute
-  program.parse();
+  try {
+    program.parse();
+  } catch (error) {
+    // Mirror pragma's classification of Commander parse failures
+    // (`packages/cli/pragma/src/bin.ts` handleProgramError): informational
+    // exits keep their own codes; every usage error is exit 2. Commander has
+    // already written its output (help pages, `error: …` lines) through its
+    // own writers before throwing, so only the exit code is owned here —
+    // stderr stays byte-identical to Commander's.
+    if (!(error instanceof CommanderError)) throw error;
+    if (
+      error.code === "commander.helpDisplayed" ||
+      error.code === "commander.version"
+    ) {
+      process.exitCode = 0;
+      return;
+    }
+    if (error.code === "commander.help") {
+      // Respect the help error's OWN exit code. Live cases: the ROOT invoked
+      // with options but no command (help on stderr, carries 1) and the
+      // implicit `help` command (stdout help, carries 0). A bare NAMESPACE
+      // never raises this — the projection's namespace action writes that
+      // help and sets exit 1 itself.
+      process.exitCode = error.exitCode;
+      return;
+    }
+    // Usage errors (unknown option/command, missing or excess argument):
+    // exit 2, matching pragma — Commander's own code was 1 for these.
+    process.exitCode = 2;
+  }
 };
 
 // Run main
