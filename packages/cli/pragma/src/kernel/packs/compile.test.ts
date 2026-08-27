@@ -484,3 +484,31 @@ describe("weights validation (a weight that can never apply is rejected)", () =>
     ).toThrow();
   });
 });
+
+describe("compileListable — absolute IRIs reach the prefixed contract", () => {
+  it("compacts an absolute lookup type, and its weight key with it", () => {
+    // `PackLookup.type`/`types` accept a prefixed name OR an absolute IRI, but
+    // the listing is keyed on the index's prefixed types. Verbatim, such a story
+    // compiled clean and then matched no class and no weight.
+    const listable = compileListable({
+      noun: "widget",
+      lookup: {
+        by: "ds:name",
+        types: ["https://ds.canonical.com/Component", "ds:Pattern"],
+        weights: { "https://ds.canonical.com/Component": 0.4 },
+      },
+    } as PackDefinition);
+
+    expect(listable?.sources.map((s) => s.type)).toEqual([
+      "ds:Component",
+      "ds:Pattern",
+    ]);
+    // The weight followed its type through the same compaction, so it still
+    // applies — keying it on the raw IRI would have silently dropped it.
+    const component = listable?.sources.find((s) => s.type === "ds:Component");
+    expect(component?.weight).toBe(0.4);
+    expect(listable?.sources.find((s) => s.type === "ds:Pattern")?.weight).toBe(
+      1,
+    );
+  });
+});

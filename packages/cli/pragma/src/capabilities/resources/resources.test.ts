@@ -101,7 +101,10 @@ describe("resource listing (storeless, over the pack index)", () => {
       readPackIndex({ kind: "embedded" }),
       declaredListing(),
     );
-    const bytes = JSON.stringify({ resources }).length;
+    // UTF-8 BYTES, not `String.length`'s UTF-16 code units: the budget is about
+    // what crosses the wire, and a graph with non-ASCII labels would otherwise
+    // blow the ceiling while this assertion still passed.
+    const bytes = Buffer.byteLength(JSON.stringify({ resources }), "utf8");
     expect(
       bytes,
       `resources/list payload is ${bytes} bytes — every connect spends it`,
@@ -340,7 +343,7 @@ describe("resource surface over the server (embedded pack)", () => {
 
   it("keeps what crosses the wire inside the payload budget", async () => {
     const resources = await harness.listResources();
-    const bytes = JSON.stringify({ resources }).length;
+    const bytes = Buffer.byteLength(JSON.stringify({ resources }), "utf8");
     expect(bytes).toBeLessThan(LISTING_BUDGET_BYTES);
   });
 
@@ -504,5 +507,59 @@ describe("a percent-encoded resource URI reads (PROTECTED)", () => {
     expect((error as { data?: { code?: string } }).data?.code).toBe(
       "INVALID_INPUT",
     );
+  });
+});
+
+describe("listing + ranking edge cases the review surfaced", () => {
+  it("states zero for a declared collection whose class has no instances", () => {
+    // Without a default, an empty collection carries NO `pragma/instanceCount`
+    // and is indistinguishable from an entry that is not a collection at all.
+    const index: PackIndex = {
+      version: 2,
+      contentHash: "test",
+      prefixes: {},
+      entities: [
+        {
+          name: "ex:Empty",
+          type: "owl:Class",
+          uri: "https://ex.test/#Empty",
+          prefixed: "ex:Empty",
+          types: ["owl:Class"],
+          label: "Empty",
+          box: "tbox",
+          description: null,
+        },
+      ],
+      instanceCountByType: {},
+    };
+    const listed = buildResourceList(index, {
+      sources: [{ type: "ex:Empty", as: "collection" }],
+    });
+    expect(listed).toHaveLength(1);
+    expect(listed[0]?._meta?.["pragma/instanceCount"]).toBe(0);
+  });
+
+  it("weighs an entity by every type it is declared under, not the primary one", () => {
+    // `type` is one lexically chosen primary among `types`. Weighing only that
+    // ignored a weight declared for a secondary type, and let ranking move when
+    // an unrelated, lexically earlier type was added.
+    const entity = {
+      name: "ex:thing",
+      type: "ex:Alpha",
+      prefixed: "ex:thing",
+      types: ["ex:Alpha", "ex:Demoted"],
+    } as PackIndex["entities"][number];
+    const rival = {
+      name: "ex:thing_other",
+      type: "ex:Alpha",
+      prefixed: "ex:thing_other",
+      types: ["ex:Alpha"],
+    } as PackIndex["entities"][number];
+
+    // Equal match quality; only the SECONDARY type's weight separates them.
+    const ranked = rankUriCompletions([entity, rival], "thing", {
+      "ex:Demoted": 0.2,
+    });
+    expect(ranked).toEqual(["ex:thing_other", "ex:thing"]);
   });
 });

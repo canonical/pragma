@@ -8,10 +8,7 @@ import { ontologyListVerb, ontologyLookupVerb } from "./verbs.js";
 /** The `ontology` capability module (`list` and the `lookup` by-name read). */
 export const ontologyModule: CapabilityModule = {
   name: "ontology",
-<<<<<<< HEAD
   verbs: [ontologyListVerb, ontologyLookupVerb],
-=======
-  verbs: [ontologyListVerb, ontologyLookupVerb, ontologyShowVerb],
   /**
    * The ONE hand-declared listing in the distribution. Every other module is
    * story-compiled and has its slice DERIVED from the types its lookup already
@@ -23,5 +20,4 @@ export const ontologyModule: CapabilityModule = {
    * first, then the vocabulary they are described in.
    */
   mcpListable: { sources: [{ box: "tbox", as: "entities", weight: 0.5 }] },
->>>>>>> eeb011a19 (feat(pragma-cli): curate the MCP resource listing from declared slices)
 };

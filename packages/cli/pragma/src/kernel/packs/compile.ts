@@ -15,6 +15,8 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
+import { compactUri } from "../render/compactUri.js";
+import { DEFAULT_PREFIX_MAP } from "../render/prefixes.js";
 import type { PragmaRuntime } from "../runtime/types.js";
 import { asVerb } from "../spec/asVerb.js";
 import type {
@@ -137,13 +139,27 @@ export function compileListable(
   if (!lookup) return undefined;
   const types = lookup.types ?? (lookup.type ? [lookup.type] : []);
   if (types.length === 0) return undefined;
+  // `PackLookup.type`/`types` accept a prefixed name OR an absolute IRI, but the
+  // listing is keyed on the index's PREFIXED types. Copied verbatim, a lookup
+  // legitimately constrained to `https://…/Widget` compiles clean and then
+  // matches no class and no weight — a story that is valid everywhere else and
+  // silently contributes nothing here. Compacted against the same map
+  // `resolveUri` expands with, so the two directions agree.
+  const compact = (type: string): string =>
+    compactUri(type, DEFAULT_PREFIX_MAP);
+  const weights = Object.fromEntries(
+    Object.entries(lookup.weights ?? {}).map(([type, weight]) => [
+      compact(type),
+      weight,
+    ]),
+  );
   return {
-    sources: types.map((type) => ({
+    sources: types.map(compact).map((type) => ({
       type,
       as: "collection" as const,
       // Unlisted types weigh 1 — the default is "as important as any other",
       // so a story that declares no weights needs no weights.
-      weight: lookup.weights?.[type] ?? 1,
+      weight: weights[type] ?? 1,
     })),
   };
 }

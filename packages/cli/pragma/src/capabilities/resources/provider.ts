@@ -214,9 +214,12 @@ function listSlice(
     if (!type) return [];
     const entity = byPrefixed.get(type);
     if (!entity) return [];
-    const count = entity.uri
-      ? index.instanceCountByType[entity.uri]
-      : undefined;
+    // A class with no instances has NO key in `instanceCountByType`, so reading
+    // it straight through reports `undefined` — and an empty collection then
+    // looks identical to an entry that is not a collection at all. A declared
+    // collection whose class the index knows always states a count, and for an
+    // empty one that count is zero.
+    const count = entity.uri ? (index.instanceCountByType[entity.uri] ?? 0) : 0;
     return [listEntity(entity, weight, count)];
   }
   const listed: ListedResource[] = [];
@@ -328,6 +331,30 @@ export function completionWeights(
  * @param weights - Prefixed type → weight, breaking ties between equal matches.
  * @returns Every matching prefixed URI, best first.
  */
+/**
+ * The weight of an entity across EVERY type it is declared under.
+ *
+ * `PackIndexEntity.type` is one lexically chosen primary among `types`, and the
+ * listing's own `matchesType` already honours both. Weighing only the primary
+ * therefore ignored a weight declared for a secondary type, and let ranking
+ * shift when an unrelated, lexically earlier type was added to an entity.
+ *
+ * The LOWEST declared weight wins: a weight below the default is a demotion, and
+ * a demotion that any membership asks for should not be cancelled by another
+ * membership that simply never asked for anything. Types with no declared weight
+ * do not vote, so an entity nobody weighted keeps the default.
+ */
+function effectiveWeight(
+  entity: PackIndexEntity,
+  weights: Readonly<Record<string, number>>,
+): number {
+  const memberships = entity.types ?? [entity.type];
+  const declared = memberships
+    .map((type) => weights[type])
+    .filter((weight): weight is number => weight !== undefined);
+  return declared.length > 0 ? Math.min(...declared) : DEFAULT_WEIGHT;
+}
+
 export function rankUriCompletions(
   entities: readonly PackIndexEntity[],
   query: string,
@@ -352,7 +379,7 @@ export function rankUriCompletions(
       scored.push({
         prefixed,
         score: best,
-        weight: weights[entity.type] ?? DEFAULT_WEIGHT,
+        weight: effectiveWeight(entity, weights),
       });
     }
   }
