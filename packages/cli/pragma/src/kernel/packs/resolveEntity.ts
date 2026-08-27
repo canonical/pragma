@@ -20,11 +20,10 @@
  * (including the GraphQL path) stay off the storeless fast path.
  */
 
-import { PragmaError } from "../error/PragmaError.js";
-import { cliRecovery } from "../error/recovery.js";
+import { cliRecovery, PragmaError } from "../error/index.js";
 import { suggestNames } from "../project/cli/suggestNames.js";
-import { compactUri } from "../render/compactUri.js";
-import type { PragmaRuntime } from "../runtime/types.js";
+import { compactUri } from "../render/index.js";
+import type { PragmaRuntime } from "../runtime/index.js";
 import { activeExpands } from "./disclosure.js";
 import { expandGlob, isGlobPattern } from "./glob.js";
 import { fetchGraphqlLookup } from "./graphql/fetchGraphqlLookup.js";

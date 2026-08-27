@@ -13,8 +13,8 @@
 
 import { Command, InvalidArgumentError, Option } from "commander";
 import { BIN_NAME, PROGRAM_DESCRIPTION, VERSION } from "../../../constants.js";
-import type { GlobalFlags } from "../../runtime/types.js";
-import { kebabCase } from "../../spec/emitSurface.js";
+import type { GlobalFlags } from "../../runtime/index.js";
+import { kebabCase } from "../../spec/index.js";
 import type { CliProjection, ParamSpec, VerbSpec } from "../../spec/types.js";
 import { MUTATION_FLAG_DOCS, negationFlagDoc } from "./constants.js";
 import { dispatch } from "./dispatch.js";

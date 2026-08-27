@@ -7,8 +7,7 @@
  * before it can be interpolated into a generated `<iri>` query token.
  */
 
-import { PragmaError } from "../error/PragmaError.js";
-import { cliRecovery } from "../error/recovery.js";
+import { cliRecovery, PragmaError } from "../error/index.js";
 
 /** Characters not allowed inside a SPARQL `<IRI>`. */
 const UNSAFE_IRI_PATTERN = /[<>"{}|\\^`\s]/;

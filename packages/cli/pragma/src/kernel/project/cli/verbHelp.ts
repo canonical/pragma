@@ -8,8 +8,8 @@
  * `formatVerbHelp`, retargeted at the grammar.
  */
 
-import { kebabCase } from "../../spec/emitSurface.js";
-import type { ParamSpec, VerbSpec } from "../../spec/types.js";
+import type { ParamSpec, VerbSpec } from "../../spec/index.js";
+import { kebabCase } from "../../spec/index.js";
 import { MUTATION_FLAG_DOCS, negationFlagDoc } from "./constants.js";
 import {
   helpColumns,

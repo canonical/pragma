@@ -6,7 +6,7 @@
  * the supported 1–5 range. Selection is a Fisher-Yates partial shuffle.
  */
 
-import { PragmaError } from "../error/PragmaError.js";
+import { PragmaError } from "../error/index.js";
 import type { PackLookup } from "./types.js";
 
 /** Smallest number of samples the `sample` verb returns. */

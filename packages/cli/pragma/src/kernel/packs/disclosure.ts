@@ -18,8 +18,8 @@
  */
 
 import { DETAIL_LEVELS } from "../../constants.js";
-import { resolveDetail } from "../render/disclosure.js";
-import type { PragmaRuntime } from "../runtime/types.js";
+import { resolveDetail } from "../render/index.js";
+import type { PragmaRuntime } from "../runtime/index.js";
 import type { PackDisclosure, PackExpand, PackField } from "./types.js";
 
 /** The canonical level names, lowest → highest. */

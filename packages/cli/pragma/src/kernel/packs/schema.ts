@@ -18,7 +18,7 @@
 
 import { z } from "zod";
 import { DETAIL_LEVELS, RECOVERY_CLI_PREFIX } from "../../constants.js";
-import { PragmaError } from "../error/PragmaError.js";
+import { PragmaError } from "../error/index.js";
 import type { PackDefinition } from "./types.js";
 
 const NOUN_PATTERN = /^[a-z][a-z0-9-]*$/;

@@ -16,7 +16,7 @@
  */
 
 import { z } from "zod";
-import { PragmaError } from "../error/PragmaError.js";
+import { PragmaError } from "../error/index.js";
 import { CHANNELS, DETAIL_LEVELS, type RawConfig } from "./types.js";
 
 const packDeclarationSchema = z.union([

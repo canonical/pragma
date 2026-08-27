@@ -15,9 +15,8 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
-import { compactUri } from "../render/compactUri.js";
-import { DEFAULT_PREFIX_MAP } from "../render/prefixes.js";
-import type { PragmaRuntime } from "../runtime/types.js";
+import { compactUri, DEFAULT_PREFIX_MAP } from "../render/index.js";
+import type { PragmaRuntime } from "../runtime/index.js";
 import { asVerb } from "../spec/asVerb.js";
 import type {
   CapabilityModule,

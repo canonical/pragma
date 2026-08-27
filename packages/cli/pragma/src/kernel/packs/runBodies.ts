@@ -9,9 +9,8 @@
  * factories carry no heavy static import.
  */
 
-import { PragmaError } from "../error/PragmaError.js";
-import { cliRecovery } from "../error/recovery.js";
-import type { PragmaRuntime } from "../runtime/types.js";
+import { cliRecovery, PragmaError } from "../error/index.js";
+import type { PragmaRuntime } from "../runtime/index.js";
 import { resolvePackDetail } from "./disclosure.js";
 import type { SampleOutput } from "./renderPack.js";
 import {

@@ -17,7 +17,7 @@
 
 import { BIN_NAME, PROJECT_CONFIG_FILENAME } from "../../constants.js";
 import type { RawConfig } from "../config/types.js";
-import { ERROR_CODES } from "../error/constants.js";
+import { ERROR_CODES } from "../error/index.js";
 import {
   FIXED_SURFACE,
   kebabCase,

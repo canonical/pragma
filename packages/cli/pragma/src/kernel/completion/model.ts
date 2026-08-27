@@ -25,7 +25,7 @@
  */
 
 import { DETAIL_LEVELS, OUTPUT_FORMATS } from "../../constants.js";
-import { kebabCase, verbLabel } from "../spec/emitSurface.js";
+import { kebabCase, verbLabel } from "../spec/index.js";
 import type {
   CapabilityModule,
   CompletionChildSpec,
