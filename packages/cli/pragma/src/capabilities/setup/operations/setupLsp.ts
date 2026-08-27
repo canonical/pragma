@@ -142,6 +142,28 @@ export async function detectLsp(_cwd: string): Promise<LspDetection> {
   };
 }
 
+/**
+ * The editors an install would act on: those missing the extension, narrowed to
+ * the user's per-editor selection when the wizard collected one.
+ *
+ * A machine commonly has several VS Code forks installed and the user wants the
+ * extension in one of them. Installing into all of them because they are on
+ * PATH is the same overreach the MCP row already avoids by offering its files.
+ *
+ * @param d - The detection gathered up front.
+ * @param chosen - Selected editor CLI names, or undefined for "all pending".
+ * @returns The editors to install into.
+ */
+export const selectedEditors = (
+  d: LspDetection,
+  chosen?: readonly string[],
+): readonly DetectedEditor[] => {
+  const pending = d.editors.filter((e) => !e.installed);
+  return chosen === undefined
+    ? pending
+    : pending.filter((e) => chosen.includes(e.editor.cli));
+};
+
 /** The editor names in a detection (for messages/results). */
 export const lspEditorNames = (d: LspDetection): string[] =>
   d.editors.map((e) => e.editor.name);
@@ -177,13 +199,18 @@ export const LSP_SKIP_REMEDY =
  * @param d - The detection gathered up front.
  * @returns A Task installing the extension into each editor missing it.
  */
-export function composeLsp(d: LspDetection): Task<void> {
+export function composeLsp(
+  d: LspDetection,
+  chosen?: readonly string[],
+): Task<void> {
   // Nothing to install: no editor CLI on PATH (a named skip the plan row
   // carries) or every detected editor already has it. Both compose NOTHING —
   // what the run SAYS about this target is the plan row's business.
   if (d.state !== "absent") return sequence_([]);
 
-  const pending = d.editors.filter((e) => !e.installed);
+  const pending = selectedEditors(d, chosen);
+  // Every pending editor was deselected — there is no fetch to do either.
+  if (pending.length === 0) return sequence_([]);
   const vsixPath = lspVsixPath(d);
 
   // Fetch the VSIX-bundling package into the pragma-owned staging dir. `bun`

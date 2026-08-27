@@ -49,7 +49,7 @@ import {
   TARGET_IDS,
 } from "./plan.js";
 import { renderProgressLine, renderRecap } from "./plan.render.js";
-import { setupFormatters } from "./setup.render.js";
+import { renderDryRun, setupFormatters } from "./setup.render.js";
 import type { ScopeBand, ScopeSelection, SetupMode } from "./types.js";
 
 /**
@@ -198,6 +198,11 @@ async function runSetup(
   // still fails exactly when the real run would.
   rt.planData = { ...run.plan, preview: true };
 
+  // Whether this invocation only PREVIEWS. The task below is driven either way
+  // — that is what makes the preview honest — so anything it says out loud has
+  // to know which of the two it is.
+  const previewing = interactionMode === "batch-dry-run";
+
   // Adaptation (b): a non-interactive run without `--yes` previews rather than
   // mutating. It is the same plan the dry-run prints, plus one hint line, at
   // exit 0 — the invocation completed a real read-only unit of work.
@@ -252,7 +257,11 @@ async function runSetup(
 
     // Progress: one line per row on stderr for an unattended run (the Ink
     // session already draws them for the wizard). stdout stays the data stream.
-    if (!wizard || yes) {
+    //
+    // A dry run reports NOTHING here. Its honest preview drives this very task
+    // with writes recorded, so the progress lines ran for real and announced
+    // "✓ config — installed" above a plan that had installed nothing.
+    if (!previewing && (!wizard || yes)) {
       const width = Math.max(...applied.rows.map((row) => row.target.length));
       for (const row of applied.rows) {
         if (row.outcome === undefined) continue;
@@ -322,7 +331,7 @@ function setupVerb(
       // The kernel's dry-run branch renders the plan through this seam instead
       // of dumping raw effects. Absent on every other verb, so nothing else
       // changes shape.
-      formatPlan: (planData) => setupFormatters.plain(planData as SetupPlan),
+      formatPlan: (planData) => renderDryRun(planData as SetupPlan),
     },
     capability,
     ...extras,

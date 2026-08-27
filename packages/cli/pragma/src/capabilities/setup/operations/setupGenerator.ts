@@ -46,6 +46,7 @@ import {
 } from "../buildPlan.js";
 import {
   isActionable,
+  type PlanChildRow,
   type PlanOutcome,
   type PlanRow,
   type SetupPlan,
@@ -60,6 +61,15 @@ const ROWS_ANSWER = "targets";
 
 /** The answer key the opt-in per-file MCP narrowing writes. */
 const MCP_FILES_ANSWER = "mcpTargets";
+
+/** The answer key the opt-in per-editor LSP narrowing writes. */
+const LSP_EDITORS_ANSWER = "lspEditors";
+
+/** Which answer key carries a target's per-child selection, if it has one. */
+const CHILD_ANSWER: Partial<Record<TargetId, string>> = {
+  mcp: MCP_FILES_ANSWER,
+  lsp: LSP_EDITORS_ANSWER,
+};
 
 /** A row's identity in an answer bag: band-qualified, so `both` stays unambiguous. */
 const rowKey = (band: ScopeBand, target: TargetId): string =>
@@ -218,17 +228,17 @@ const buildCustomizePrompt = (
  * landed opt-in narrowing: it is row-level CHILD selection, which is exactly
  * what the plan's child rows are.
  */
-const buildMcpFilesPrompt = (
+const buildChildPrompt = (
   plan: SetupPlan,
+  target: TargetId,
+  message: string,
   when?: PromptDefinition["when"],
 ): PromptDefinition => {
-  const children = plan.rows
-    .filter((row) => row.target === "mcp")
-    .flatMap((row) => row.children ?? []);
+  const children = childrenOf(plan, target);
   return {
-    name: MCP_FILES_ANSWER,
+    name: CHILD_ANSWER[target] as string,
     type: "multiselect",
-    message: "Configure MCP for which files?",
+    message,
     when,
     choices: children.map((child) => ({
       label: `${child.label} — ${child.action}`,
@@ -239,6 +249,15 @@ const buildMcpFilesPrompt = (
       .map((child) => child.key),
   };
 };
+
+/** Every child row a target contributes, across the bands in the plan. */
+const childrenOf = (
+  plan: SetupPlan,
+  target: TargetId,
+): readonly PlanChildRow[] =>
+  plan.rows
+    .filter((row) => row.target === target)
+    .flatMap((row) => row.children ?? []);
 
 /** Whether a row was chosen: by the wizard's answer, else by its own default. */
 const isChosen = (
@@ -301,23 +320,41 @@ export async function buildSetupRun(
 
   const prompts: PromptDefinition[] = [];
   if (mode === "all") prompts.push(buildRowsPrompt(plan));
-  const mcpChildren = plan.rows
-    .filter((row) => row.target === "mcp")
-    .flatMap((row) => row.children ?? []);
-  if (!removal && mcpChildren.length > 1) {
-    const mcpChosen = (answers: Record<string, unknown>): boolean => {
+  // A target is worth narrowing only when it has more than one child to choose
+  // between. `mcp` offers its config files; `lsp` offers the editors on PATH —
+  // a machine with several VS Code forks should not have the extension pushed
+  // into all of them just because they are installed.
+  const narrowable = (
+    [
+      ["mcp", "Configure MCP for which files?"],
+      ["lsp", "Install the extension into which editors?"],
+    ] as const
+  ).filter(([target]) => !removal && childrenOf(plan, target).length > 1);
+
+  if (narrowable.length > 0) {
+    const anyChosen = (answers: Record<string, unknown>): boolean => {
       const chosen = readList(answers, ROWS_ANSWER);
-      return plan.rows.some(
-        (row) => row.target === "mcp" && isChosen(row, chosen),
+      return narrowable.some(([target]) =>
+        plan.rows.some((row) => row.target === target && isChosen(row, chosen)),
       );
     };
-    prompts.push(
-      buildCustomizePrompt(mcpChosen),
-      buildMcpFilesPrompt(
-        plan,
-        (answers) => answers.customize === true && mcpChosen(answers),
-      ),
-    );
+    prompts.push(buildCustomizePrompt(anyChosen));
+    for (const [target, message] of narrowable) {
+      const rowChosen = (answers: Record<string, unknown>): boolean => {
+        const chosen = readList(answers, ROWS_ANSWER);
+        return plan.rows.some(
+          (row) => row.target === target && isChosen(row, chosen),
+        );
+      };
+      prompts.push(
+        buildChildPrompt(
+          plan,
+          target,
+          message,
+          (answers) => answers.customize === true && rowChosen(answers),
+        ),
+      );
+    }
   }
 
   /** The detection behind a row, for composing and for re-reading its draft. */
@@ -332,14 +369,18 @@ export async function buildSetupRun(
     prompts,
     generate: (answers) => {
       const chosen = readList(answers, ROWS_ANSWER);
-      const files = readList(answers, MCP_FILES_ANSWER);
       const tasks = plan.rows.flatMap((row) => {
         if (!isChosen(row, chosen)) return [];
         const hit = detectionFor(row);
         if (hit === undefined) return [];
+        // Each target reads ITS OWN child answer. One shared list was handing
+        // MCP file paths to every other target's compose.
+        const key = CHILD_ANSWER[row.target];
+        const children =
+          key === undefined ? undefined : readList(answers, key);
         const task = removal
           ? hit.target.composeRemoval(hit.detection)
-          : hit.target.compose(hit.detection, files);
+          : hit.target.compose(hit.detection, children);
         return [{ key: rowKey(row.band, row.target), task }];
       });
       return runRowsIsolated(sink, tasks);

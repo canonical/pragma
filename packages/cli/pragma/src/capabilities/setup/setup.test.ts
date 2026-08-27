@@ -168,7 +168,9 @@ describe("setup completions", () => {
     // kernel's raw effect dump: one row, the shell it detected, and the script
     // path rendered against the header's roots instead of repeated absolutely.
     expect(outcome.stdout).toContain("Setup plan — global band");
-    expect(outcome.stdout).toContain(`completions  install  ${SHELL} →`);
+    expect(outcome.stdout).toMatch(
+      new RegExp(`completions\\s+install\\s+${SHELL} →`),
+    );
     // The confirm gate / answer prompts are never part of a plan.
     expect(outcome.stdout).not.toContain("Prompt");
     expect(existsSync(path)).toBe(false);
@@ -464,6 +466,90 @@ describe("setup mcp — customize opt-in gate (Item 6)", () => {
   });
 });
 
+describe("setup lsp — per-editor multiselect (child rows)", () => {
+  let prevPath: string | undefined;
+  let stubDir = "";
+  beforeEach(() => {
+    prevPath = process.env.PATH;
+    stubDir = stubPath();
+    // Two VS Code forks on PATH, neither carrying the extension.
+    writeFileSync(join(stubDir, "code"), "");
+    writeFileSync(join(stubDir, "codium"), "");
+    process.env.PATH = stubDir;
+  });
+  afterEach(() => {
+    process.env.PATH = prevPath;
+  });
+
+  it("offers one child per detected editor, like the mcp row offers files", async () => {
+    const { plan } = await buildSetupRun(
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      "lsp",
+      "global",
+    );
+    const row = plan.rows.find((r) => r.target === "lsp");
+    expect(row?.action).toBe("install");
+    expect(row?.children?.map((c) => c.key)).toEqual(["code", "codium"]);
+    expect(row?.children?.every((c) => c.action === "add")).toBe(true);
+  });
+
+  it("marks an editor that already has the extension unchanged", async () => {
+    mkdirSync(
+      join(
+        process.env.HOME ?? "",
+        ".vscode",
+        "extensions",
+        "canonical.terrazzo-lsp-extension-1.2.3",
+      ),
+      { recursive: true },
+    );
+    const { plan } = await buildSetupRun(
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      "lsp",
+      "global",
+    );
+    const children = plan.rows.find((r) => r.target === "lsp")?.children;
+    expect(children?.find((c) => c.key === "code")?.action).toBe("unchanged");
+    expect(children?.find((c) => c.key === "codium")?.action).toBe("add");
+  });
+
+  it("gates the per-editor multiselect behind the same customize confirm", async () => {
+    const { generator } = await buildSetupRun(
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      "lsp",
+      "global",
+    );
+    const customize = generator.prompts.find((p) => p.name === "customize");
+    const editors = generator.prompts.find((p) => p.name === "lspEditors");
+    expect(customize?.default).toBe(false);
+    // Both pending editors are pre-selected, so the default path installs into
+    // every fork without an extra question.
+    expect(editors?.default).toEqual(["code", "codium"]);
+    expect(editors?.when?.({ customize: false })).toBe(false);
+    expect(editors?.when?.({ customize: true })).toBe(true);
+  });
+
+  it("sideloads only into the editors the user kept", async () => {
+    const { detectLsp, composeLsp } = await import("./operations/setupLsp.js");
+    const detected = await detectLsp(tmp("pragma-setup-proj-"));
+    const { effects } = dryRun(composeLsp(detected, ["codium"]));
+    const execs = effects.filter((e) => e._tag === "Exec") as (Effect & {
+      _tag: "Exec";
+      command: string;
+    })[];
+    // The fetch still runs once; the sideload runs for `codium` alone.
+    expect(execs.map((e) => e.command)).toEqual(["bun", "codium"]);
+  });
+
+  it("composes nothing at all when every editor is deselected", async () => {
+    // Not even the package fetch: there is nothing to install it into.
+    const { detectLsp, composeLsp } = await import("./operations/setupLsp.js");
+    const detected = await detectLsp(tmp("pragma-setup-proj-"));
+    const { effects } = dryRun(composeLsp(detected, []));
+    expect(effects.some((e) => e._tag === "Exec")).toBe(false);
+  });
+});
+
 describe("setup (run-all wizard) — scope threading", () => {
   // Isolate PATH so an ambient `claude`/`codex` can't inject a harness via a
   // `process` signal — detection is driven only by the dirs each test makes.
@@ -530,7 +616,7 @@ describe("setup (run-all wizard) — scope threading", () => {
     // The global-band steps are present under --global. Paths render against
     // the header's roots, so the row shows `~/.zfunc/_pragma`, not an absolute
     // prefix repeated on every line.
-    expect(plan).toContain(`completions  install  ${SHELL} →`);
+    expect(plan).toMatch(new RegExp(`completions\\s+install\\s+${SHELL} →`));
     expect(plan).toContain("lsp");
     // The project-band skills step is gone (the bug: it used to run under --global).
     expect(plan).not.toContain(".agents/skills");

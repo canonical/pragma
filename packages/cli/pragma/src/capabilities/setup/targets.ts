@@ -217,16 +217,26 @@ const lspTarget = defineTarget<LspDetection>({
         remedy: LSP_SKIP_REMEDY,
       };
     }
+    // One child per detected editor, exactly like the mcp row's files: a
+    // machine with several VS Code forks on PATH should not have the extension
+    // pushed into all of them because they happen to be installed.
+    const children: PlanChildRow[] = d.editors.map((e) => ({
+      key: e.editor.cli,
+      label: `${e.editor.cli} — ${e.editor.name}`,
+      action: e.installed ? ("unchanged" as const) : ("add" as const),
+    }));
     if (d.state === "installed") {
       return {
         action: "none",
         detail: `installed (${lspEditorNames(d).join(", ")})`,
+        children,
       };
     }
     const pending = d.editors.filter((e) => !e.installed);
     return {
       action: "install",
-      detail: `via ${pending.map((e) => e.editor.cli).join(", ")}`,
+      detail: `${pending.length} ${pending.length === 1 ? "editor" : "editors"}`,
+      children,
     };
   },
   removalPlan: (d) => ({
@@ -237,7 +247,7 @@ const lspTarget = defineTarget<LspDetection>({
       lspUninstallRemedy(d) ??
       "no editor CLI is on PATH — uninstall it from your editor",
   }),
-  compose: (d) => composeLsp(d),
+  compose: (d, chosen) => composeLsp(d, chosen),
   composeRemoval: (d) => composeLspRemoval(d),
 });
 

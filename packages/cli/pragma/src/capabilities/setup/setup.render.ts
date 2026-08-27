@@ -32,6 +32,19 @@ export const DRY_RUN_HINT = "Dry run — nothing applied.";
 const wasApplied = (plan: SetupPlan): boolean =>
   plan.rows.some((row) => row.outcome !== undefined);
 
+/**
+ * The dry-run render. Reached ONLY through the verb's `formatPlan` seam, which
+ * the kernel calls on the `--dry-run` branch — so it can name that path
+ * outright. The identical body under {@link setupFormatters} serves the OTHER
+ * preview, the non-interactive run that was given no consent, whose useful last
+ * line is how to grant it.
+ *
+ * @param plan - The plan to render.
+ * @returns The plan table, ended with the dry-run's own line.
+ */
+export const renderDryRun = (plan: SetupPlan): string =>
+  renderPlanTable(plan, { lead: "Setup plan", hint: DRY_RUN_HINT });
+
 export const setupFormatters: Formatters<SetupPlan> = {
   plain(data) {
     if (data.preview === true) {

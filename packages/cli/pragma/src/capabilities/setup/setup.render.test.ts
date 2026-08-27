@@ -16,7 +16,11 @@
 import { describe, expect, it } from "vitest";
 import type { PlanRow, SetupPlan } from "./plan.js";
 import { renderPlanTable, renderProgressLine, renderRecap } from "./plan.render.js";
-import { PREVIEW_HINT, setupFormatters } from "./setup.render.js";
+import {
+  PREVIEW_HINT,
+  renderDryRun,
+  setupFormatters,
+} from "./setup.render.js";
 
 const ROOTS = { global: "/home/u", project: "/home/u/src/app" };
 
@@ -111,6 +115,17 @@ describe("the setup plan renders as one table", () => {
         "  skills       link     2 skills → 2 dirs (~/.claude/skills, ~/.agents/skills)",
       ].join("\n"),
     );
+  });
+
+  it("an explicit dry run names itself, not the consent it was not asked for", () => {
+    // Two previews, two last lines. `--dry-run` was asked for and answered, so
+    // telling the user to "run again with --yes" would be advice for a question
+    // they did not ask; the run that was DENIED consent is the one where that
+    // is the useful next step.
+    expect(renderDryRun({ ...PLAN, preview: true })).toContain(
+      "Dry run — nothing applied.",
+    );
+    expect(renderDryRun({ ...PLAN, preview: true })).not.toContain("--yes");
   });
 
   it("a non-interactive run without consent previews and says so", () => {
