@@ -14,6 +14,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import conf from "../../../pragma.conf.js";
 import { capabilities } from "../../capabilities/index.js";
 import {
   executeVerb,
@@ -305,4 +306,52 @@ describe("doc examples — Tier 2: curated read commands run green", () => {
       ).toBe(0);
     });
   }
+});
+
+/**
+ * The declared colophons are SHIPPED COPY, not docs: `pragma colophon` prints
+ * the configured domain's story as its default output, so a command named
+ * there is a command a reader is told to run. Deleting a verb elsewhere in the
+ * tree therefore breaks a page nobody edited — the drift that let the domain
+ * colophon keep citing `ontology show` after the verb became `ontology lookup`.
+ *
+ * The gate is the live grammar, never a copied list: every backticked
+ * `<noun> <verb>` whose noun the program declares must name a verb that noun
+ * actually has. A backticked bare noun is left alone (it reads as a reference
+ * to the command family, and a sub-verb-only noun has no self-verb to resolve),
+ * and so is every other backticked span — prefixes, flags, type names.
+ */
+describe("declared colophons — every command they name is real", () => {
+  /** The markdown bodies `pragma colophon` can render: toolchain, then domain. */
+  const colophons: string[] = [
+    conf.colophon?.markdown ?? "",
+    conf.colophon?.summary ?? "",
+    // A pack story declares its colophon as a bare Markdown body.
+    ...conf.packs.flatMap((pack) =>
+      (pack.stories ?? []).flatMap((story) => {
+        const colophon = (story as { colophon?: string }).colophon;
+        return colophon === undefined ? [] : [colophon];
+      }),
+    ),
+  ];
+
+  it("finds the colophon bodies", () => {
+    // A guard against an empty scan silently passing the assertion below.
+    expect(colophons.filter((body) => body.length > 0).length).toBeGreaterThan(
+      1,
+    );
+  });
+
+  it("names only verbs the grammar declares", () => {
+    for (const body of colophons) {
+      for (const [, span] of body.matchAll(/`([^`]+)`/g)) {
+        const words = (span as string).replace(/^pragma\s+/, "").split(/\s+/);
+        if (words.length !== 2) continue;
+        const [noun, verb] = words as [string, string];
+        const labels = nouns.get(noun);
+        if (labels === undefined) continue;
+        expect(labels, `colophon names \`${noun} ${verb}\``).toContain(verb);
+      }
+    }
+  });
 });
