@@ -70,11 +70,14 @@ export default defineConfig(({ mode }) => ({
     // future @canonical dependency is handled.
     //
     // The Relay packages (react-relay, relay-runtime, relay-runtime-network,
-    // graphql) stay externalised like react itself. Two packaging defects
-    // made that possible and are fixed via `patchedDependencies` (see
-    // patches/ at the repo root): react-relay's CJS exports are member
+    // graphql) stay externalised like react itself. Three packaging defects
+    // made that possible and are fixed via `patchedDependencies` (app-local
+    // patches/ for a standalone app; the workspace root's patches/ when the
+    // app lives inside a bun workspace): react-relay's CJS exports are member
     // expressions cjs-module-lexer cannot detect (breaking named imports
-    // under Node SSR and Vite's dev module runner), and
+    // under Node SSR and Vite's dev module runner), relay-runtime lacks
+    // runtime bindings for type-only names its compiler artifacts import as
+    // values (ConcreteRequest, ReaderFragment, FragmentRefs), and
     // relay-runtime-network@0.1.0 ships an `imports` map pointing at its
     // unpublished src/ directory.
     noExternal: [/^@canonical\//],
