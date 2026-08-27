@@ -95,6 +95,7 @@ export async function runChecks(rt: PragmaRuntime): Promise<DoctorData> {
     checks,
     passed: checks.filter((c) => c.status === "pass").length,
     failed: checks.filter((c) => c.status === "fail").length,
+    available: checks.filter((c) => c.status === "available").length,
     skipped: checks.filter((c) => c.status === "skip").length,
   };
 }

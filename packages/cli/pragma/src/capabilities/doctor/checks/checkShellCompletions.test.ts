@@ -79,10 +79,10 @@ describe("checkShellCompletions — effect test (gate 1)", () => {
 });
 
 describe("checkShellCompletions — install probe (gate 2)", () => {
-  it("fails when $SHELL is set but no script is installed", async () => {
+  it("a never-installed script is available (opt-in, not a fault) with the setup command", async () => {
     process.env.SHELL = "/usr/bin/bash";
     const result = await checkShellCompletions(tmp());
-    expect(result.status).toBe("fail");
+    expect(result.status).toBe("available");
     expect(result.detail).toMatch(/not installed/);
     expect(result.remedy).toBe("pragma setup completions");
   });

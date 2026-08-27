@@ -21,7 +21,7 @@ import type { DoctorData } from "./types.js";
 const doctorVerb: VerbSpec<Record<string, unknown>, DoctorData> = {
   path: ["doctor"],
   summary: "Check environment health — Node, config, store, MCP, and skills.",
-  doc: "Runs nine diagnostic checks and reports pass/fail/skip with inline remedies. Storeless by default; the store check boots lazily and never fails the run.",
+  doc: "Runs nine diagnostic checks and reports pass, fail, available (an opt-in integration not yet set up), or skip, with inline remedies. Storeless by default; the store check boots lazily and never fails the run.",
   params: [],
   output: { formatters: doctorFormatters },
   examples: [

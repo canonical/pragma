@@ -11,8 +11,15 @@ import { deriveBand } from "./deriveBand.js";
  * Cursor ⇒ project), not the check name — so a global-scope harness is not
  * mislabeled PROJECT.
  *
+ * MCP registration is OPT-IN, so its tiers are honest about fault: harnesses
+ * detected with nothing configured is `available` (nothing is broken — the
+ * setup command is the remedy), no harnesses at all is `skip` (nothing to
+ * configure, same as the skills check), and only a broken detection is a
+ * `fail`.
+ *
  * @param cwd - The project root to detect harnesses against.
- * @returns A CheckResult listing configured harnesses, or fail with a remedy.
+ * @returns A CheckResult listing configured harnesses, available with the
+ *   setup remedy when none is, or skip when no harness is present.
  * @note Impure — detects harnesses and reads their MCP configs.
  */
 export async function checkMcpConfigured(cwd: string): Promise<CheckResult> {
@@ -31,9 +38,8 @@ export async function checkMcpConfigured(cwd: string): Promise<CheckResult> {
   if (detected.length === 0) {
     return {
       name: "MCP configured",
-      status: "fail",
+      status: "skip",
       detail: "no AI harnesses detected",
-      remedy: `${BIN_NAME} setup mcp`,
     };
   }
 
@@ -60,8 +66,8 @@ export async function checkMcpConfigured(cwd: string): Promise<CheckResult> {
   const names = detected.map((d) => d.harness.name).join(", ");
   return {
     name: "MCP configured",
-    status: "fail",
-    detail: `detected ${names} but ${MCP_SERVER_NAME} not configured`,
+    status: "available",
+    detail: `not set up for ${names}`,
     remedy: `${BIN_NAME} setup mcp`,
     band: deriveBand(detected),
   };

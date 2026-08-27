@@ -3,9 +3,9 @@
  *
  * Runs against isolated HOME/cwd/XDG so the harness/config/completion checks are
  * deterministic (no harnesses, no config, no rc files). Covers the shape, a
- * representative pass/fail/skip spread, the store check (down via an injected
- * throwing store; up via the canonical fixture), exit 0 despite failures, and
- * the MCP read-only envelope.
+ * representative pass/fail/available/skip spread, the store check (down via an
+ * injected throwing store; up via the canonical fixture), exit 0 despite
+ * failures, and the MCP read-only envelope.
  */
 
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -115,9 +115,9 @@ describe("doctor — shape & spread", () => {
   it("returns 9 checks whose tallies sum, each with a valid status", async () => {
     const data = await runChecks(bootRuntime(FLAGS, tmp("pragma-proj-")));
     expect(data.checks).toHaveLength(9);
-    expect(data.passed + data.failed + data.skipped).toBe(9);
+    expect(data.passed + data.failed + data.available + data.skipped).toBe(9);
     for (const check of data.checks) {
-      expect(["pass", "fail", "skip"]).toContain(check.status);
+      expect(["pass", "fail", "available", "skip"]).toContain(check.status);
     }
     // Deterministic under the isolated env.
     expect(byName(data, "Node version")?.status).toBe("pass");
@@ -127,8 +127,9 @@ describe("doctor — shape & spread", () => {
     expect(pkgRefs?.status).toBe("pass");
     expect(pkgRefs?.detail).toContain("embedded snapshot @ ");
     expect(pkgRefs?.remedy).toBeUndefined();
-    // No harnesses in an empty HOME/cwd — attributable fail + skips.
-    expect(byName(data, "MCP configured")?.status).toBe("fail");
+    // No harnesses in an empty HOME/cwd — nothing to check, so all three
+    // harness checks skip (none of this is a fault).
+    expect(byName(data, "MCP configured")?.status).toBe("skip");
     expect(byName(data, "Skills symlinked")?.status).toBe("skip");
     expect(byName(data, "MCP commands")?.status).toBe("skip");
     // No project/global config in the isolated XDG.
@@ -234,5 +235,22 @@ describe("doctor — MCP checks band by detected harness scope, not check name",
     expect(check.status).toBe("pass");
     expect(check.detail).toContain("Windsurf");
     expect(check.band).toBe("global"); // NOT the old static "project"
+  });
+});
+
+describe("doctor — an unconfigured opt-in integration is available, not a fault", () => {
+  it("a detected harness with no MCP entry reports available with the setup command", async () => {
+    // Windsurf is detected (project signal) but nothing is configured. A fresh
+    // install lands exactly here, and a fresh install is healthy — so this is
+    // the `available` tier, keeping its actionable setup command, and it must
+    // never inflate the failure count.
+    const cwd = tmp("pragma-doctor-proj-");
+    mkdirSync(join(cwd, ".windsurf"), { recursive: true }); // ⇒ Windsurf detected
+
+    const check = await checkMcpConfigured(cwd);
+    expect(check.status).toBe("available");
+    expect(check.detail).toContain("not set up for");
+    expect(check.detail).toContain("Windsurf");
+    expect(check.remedy).toBe("pragma setup mcp");
   });
 });
