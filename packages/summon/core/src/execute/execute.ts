@@ -66,12 +66,14 @@ export default function execute(
   ctx: ExecuteContext,
 ): Task<GeneratorResult> {
   // Built from combinators, not gen(): a gen() task closes over one iterator,
-  // so it can be interpreted ONCE — but this task is interpreted repeatedly
-  // (dry-run preview then real run in one dispatch; undo collection re-walks
-  // it, including fail-backtracking restarts). Every continuation below runs
-  // fresh per walk, and `generate(answers)` is invoked anew inside it — so a
-  // generator whose own `generate` uses gen() no longer silently truncates on
-  // the second drive either: each interpretation gets a fresh build.
+  // so it can be interpreted ONCE — but this task must survive repeated
+  // walks: undo collection re-walks it (including fail-backtracking
+  // restarts), and any host is free to interpret the same task object more
+  // than once. Every continuation below runs fresh per walk, and
+  // `generate(answers)` is invoked anew inside it — so a generator whose own
+  // `generate` uses gen() no longer silently truncates on the second drive
+  // either: each interpretation (and step 4's preview vs. performance) gets a
+  // fresh build.
   return flatMap(
     // 1. Collect answers — asks each unprovided, applicable prompt as a Prompt
     //    effect through the runner's injected handler (ctx.prompt).

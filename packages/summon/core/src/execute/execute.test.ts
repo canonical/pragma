@@ -152,20 +152,23 @@ describe("execute — generate() re-interpretation parity (no single-use gen() u
 });
 
 describe("execute — the seam task itself is re-interpretable", () => {
-  // execute() used to be gen()-based and therefore single-use: pragma's
-  // dispatch dry-runs the verb task and then executes it, and undo collection
-  // re-walks it (including fail-backtracking restarts). All of those interpret
-  // the SAME task object more than once, so the seam must be built from
-  // re-runnable combinators.
+  // execute() used to be gen()-based and therefore single-use — but undo
+  // collection re-walks the seam task (including fail-backtracking restarts),
+  // interpreting the SAME task object more than once, so it must be built
+  // from re-runnable combinators.
   it("yields identical effects when interpreted twice", () => {
+    // `flavor` is deliberately NOT provided: the walk must re-drive through
+    // an actual Prompt continuation (dry-run resolves it to its default), so
+    // a one-shot prompt chain in collectAnswers would fail this re-drive.
     const task = execute(fixture, {
       prompt: autoPrompt({}),
-      params: { path: "out.txt", flavor: "a" },
+      params: { path: "out.txt" },
     });
 
     const first = dryRun(task).effects.map((e) => e._tag);
     const second = dryRun(task).effects.map((e) => e._tag);
 
+    expect(first).toContain("Prompt");
     expect(first).toContain("WriteFile");
     expect(second).toEqual(first);
   });

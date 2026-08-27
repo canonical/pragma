@@ -117,10 +117,10 @@ export default function collectAnswers(
   partialAnswers: Readonly<Record<string, unknown>> = {},
 ): Task<Record<string, unknown>> {
   // Built from combinators, not gen(): a gen() task closes over one iterator
-  // and cannot be interpreted twice, but this task IS interpreted repeatedly —
-  // execute() dry-runs it for the preview, and undo collection re-walks it
-  // (including backtracking restarts). Each walk of this chain evaluates the
-  // continuations fresh, so every interpretation asks the same questions.
+  // and cannot be interpreted twice, but this chain must survive repeated
+  // walks — undo collection re-walks the execute() task it is part of
+  // (including backtracking restarts). Each walk evaluates the continuations
+  // fresh, so every interpretation asks the same questions.
   const step = (
     index: number,
     answers: Record<string, unknown>,
