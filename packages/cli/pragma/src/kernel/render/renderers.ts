@@ -40,6 +40,23 @@ const EMPTY_CELL = "-";
 const DEFAULT_CONTEXT: RenderContext = { headers: true, stdoutIsTty: true };
 
 /**
+ * The markdown heading level `renderLookupSections` gives a section in llm mode
+ * — the lookup title is `##`, so a section is `###`. Read, not re-typed, by
+ * {@link nestHeadings}: the renderer is the only party that knows its own
+ * nesting depth, and it must stay the only party that encodes it.
+ */
+const SECTION_HEADING_LEVEL = 3;
+
+/** Markdown's deepest heading. Demotion clamps here rather than overflowing. */
+const MAX_HEADING_LEVEL = 6;
+
+/** An ATX heading: 1–6 `#` then whitespace then text (a bare `#` line is not one). */
+const ATX_HEADING = /^(#{1,6})(\s+\S.*)$/;
+
+/** A fenced code-block delimiter, indentable by up to three spaces. */
+const CODE_FENCE = /^ {0,3}(`{3,}|~{3,})/;
+
+/**
  * The empty-state body — the message plus its optional hint on a second line,
  * or "" when the caller declared no message (bare-empty behavior preserved).
  */
@@ -291,7 +308,9 @@ function renderLookupSections<T>(
 
     sections.push("");
     sections.push(
-      mode === "llm" ? `### ${section.heading}` : `${section.heading}:`,
+      mode === "llm"
+        ? `${"#".repeat(SECTION_HEADING_LEVEL)} ${section.heading}`
+        : `${section.heading}:`,
     );
     sections.push(body);
   }
@@ -333,7 +352,61 @@ function renderFieldValue(
   }
 
   const text = formatScalarValue(value, prefixes);
-  return mode === "llm" ? text : indentBlock(text);
+  // Plain mode is not markdown — a `###` there is literal text, and rewriting
+  // it would corrupt the value. Only the llm mode's markdown has a hierarchy to
+  // collide with, so only it nests.
+  return mode === "llm"
+    ? nestHeadings(text, SECTION_HEADING_LEVEL)
+    : indentBlock(text);
+}
+
+/**
+ * Demote a section body's own ATX headings so they nest UNDER the heading the
+ * renderer gave the section.
+ *
+ * Authored markdown cannot know what level it will be rendered at; the renderer
+ * can, and so the renderer is the side that moves. A block whose shallowest
+ * heading is at or above `parentLevel` is shifted down as a whole — `###
+ * Accessibility` inside a `### Guidelines` section becomes `#### Accessibility`
+ * — which fixes the collision (a section heading immediately followed by a
+ * same-level heading reads as an empty section) while preserving the content's
+ * internal hierarchy exactly. Content already nested deeper is left alone.
+ *
+ * Headings inside a fenced code block are content, not structure — a `# ` in a
+ * shell sample is a comment — so fenced regions pass through untouched.
+ *
+ * @param text - The section body as authored.
+ * @param parentLevel - The heading level the section itself was rendered at.
+ * @returns The body with its headings nested below `parentLevel`.
+ */
+function nestHeadings(text: string, parentLevel: number): string {
+  const lines = text.split("\n");
+  const headings = new Map<number, number>();
+  let fence: string | undefined;
+  for (const [index, line] of lines.entries()) {
+    const marker = CODE_FENCE.exec(line)?.[1]?.charAt(0);
+    if (marker !== undefined) {
+      fence =
+        fence === undefined ? marker : fence === marker ? undefined : fence;
+      continue;
+    }
+    if (fence !== undefined) continue;
+    const level = ATX_HEADING.exec(line)?.[1]?.length;
+    if (level !== undefined) headings.set(index, level);
+  }
+
+  if (headings.size === 0) return text;
+  const shift = parentLevel + 1 - Math.min(...headings.values());
+  if (shift <= 0) return text;
+
+  return lines
+    .map((line, index) => {
+      const level = headings.get(index);
+      if (level === undefined) return line;
+      const hashes = "#".repeat(Math.min(level + shift, MAX_HEADING_LEVEL));
+      return line.replace(ATX_HEADING, `${hashes}$2`);
+    })
+    .join("\n");
 }
 
 function renderCodeValue<T>(

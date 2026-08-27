@@ -321,11 +321,14 @@ describe("section-body headings nest under the heading the renderer gives them",
   }
 
   const render = (guidelines: string): string =>
-    renderLookupLlm<Doc>({ guidelines }, {
-      title: () => "Button",
-      fields: [],
-      sections: [{ key: "guidelines", heading: "Guidelines", kind: "field" }],
-    });
+    renderLookupLlm<Doc>(
+      { guidelines },
+      {
+        title: () => "Button",
+        fields: [],
+        sections: [{ key: "guidelines", heading: "Guidelines", kind: "field" }],
+      },
+    );
 
   it("demotes authored headings that collide with the section heading", () => {
     const out = render(
@@ -367,11 +370,14 @@ describe("section-body headings nest under the heading the renderer gives them",
   });
 
   it("does not rewrite the plain body, where `###` is literal text", () => {
-    const out = renderLookupPlain<Doc>({ guidelines: "### Accessibility" }, {
-      title: () => "Button",
-      fields: [],
-      sections: [{ key: "guidelines", heading: "Guidelines", kind: "field" }],
-    });
+    const out = renderLookupPlain<Doc>(
+      { guidelines: "### Accessibility" },
+      {
+        title: () => "Button",
+        fields: [],
+        sections: [{ key: "guidelines", heading: "Guidelines", kind: "field" }],
+      },
+    );
     expect(out).toContain("Guidelines:");
     expect(out).toContain("  ### Accessibility");
   });
