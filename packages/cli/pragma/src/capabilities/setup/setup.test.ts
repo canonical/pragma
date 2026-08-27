@@ -20,6 +20,7 @@ import {
   readFileSync,
   readlinkSync,
   rmSync,
+  statSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -38,7 +39,7 @@ import type { VerbSpec } from "../../kernel/spec/types.js";
 import { projectCli } from "../../testing/helpers/projectCli.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { capabilities } from "../index.js";
-import { buildSetupPlan } from "./operations/setupGenerator.js";
+import { buildSetupRun } from "./operations/setupGenerator.js";
 import { composeSkills, detectSkills } from "./operations/setupSkills.js";
 import { setupModule } from "./setup.verb.js";
 import { completionScriptPath } from "./shell.js";
@@ -135,8 +136,11 @@ describe("setup completions", () => {
       DRY,
       bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
     );
-    expect(outcome.stdout).toContain("Write file");
-    expect(outcome.stdout).toContain(path);
+    // The dry-run renders the PLAN through the verb's formatPlan seam, not the
+    // kernel's raw effect dump: one row, the shell it detected, and the script
+    // path rendered against the header's roots instead of repeated absolutely.
+    expect(outcome.stdout).toContain("Setup plan — global band");
+    expect(outcome.stdout).toContain("completions  install  zsh → ~/.zfunc/_pragma");
     // The confirm gate / answer prompts are never part of a plan.
     expect(outcome.stdout).not.toContain("Prompt");
     expect(existsSync(path)).toBe(false);
@@ -170,9 +174,11 @@ describe("setup mcp — recap gate", () => {
     mkdirSync(join(cwd, ".cursor"), { recursive: true }); // makes Cursor detected
     const configPath = join(cwd, ".cursor", "mcp.json");
 
+    // `--local`: the project band is opt-in now, so a bare `setup mcp` would
+    // write the HOME config and leave this repository untouched.
     const outcome = await executeVerb(
       verbOf("mcp"),
-      {},
+      { local: true },
       YES,
       bootRuntime(FLAGS, cwd),
     );
@@ -187,7 +193,7 @@ describe("setup mcp — recap gate", () => {
     mkdirSync(join(cwd, ".cursor"), { recursive: true });
     const configPath = join(cwd, ".cursor", "mcp.json");
 
-    const { generator } = await buildSetupPlan(
+    const { generator } = await buildSetupRun(
       bootRuntime(FLAGS, cwd),
       "mcp",
       "both",
@@ -232,7 +238,7 @@ describe("setup mcp — scope & dedup", () => {
     writeFileSync(join(clineExt, "package.json"), "{}");
     const outcome = await executeVerb(
       verbOf("mcp"),
-      {},
+      { local: true },
       YES,
       bootRuntime(FLAGS, cwd),
     );
@@ -405,7 +411,7 @@ describe("setup mcp — customize opt-in gate (Item 6)", () => {
   it("gates the per-file multiselect behind an explicit customize=true", async () => {
     const cwd = tmp("pragma-setup-proj-");
     mkdirSync(join(cwd, ".cursor"), { recursive: true }); // ⇒ one MCP target group
-    const { generator } = await buildSetupPlan(
+    const { generator } = await buildSetupRun(
       bootRuntime(FLAGS, cwd),
       "mcp",
       "both",
@@ -465,9 +471,10 @@ describe("setup (run-all wizard) — scope threading", () => {
     );
     expect(outcome.exitCode).toBe(0);
     const plan = outcome.stdout ?? "";
-    // The global-band steps are gone under --local (the bug: they used to run).
-    expect(plan).not.toContain(completionScriptPath("zsh"));
-    expect(plan).not.toContain("terrazzo-lsp-extension");
+    // A band FILTERS the run-all: the out-of-band targets are still named, as
+    // rows saying why they are not in this run, so nothing is silently absent.
+    expect(plan).toContain("completions  skip");
+    expect(plan).toContain("user-level only — it has no project band");
     // The project-band steps remain: MCP into .cursor, skills into .agents/skills.
     expect(plan).toContain("mcp.json");
     expect(plan).toContain(".agents/skills");
@@ -485,20 +492,32 @@ describe("setup (run-all wizard) — scope threading", () => {
     );
     expect(outcome.exitCode).toBe(0);
     const plan = outcome.stdout ?? "";
-    // The global-band steps are present under --global.
-    expect(plan).toContain(completionScriptPath("zsh"));
-    expect(plan).toContain("terrazzo-lsp-extension");
+    // The global-band steps are present under --global. Paths render against
+    // the header's roots, so the row shows `~/.zfunc/_pragma`, not an absolute
+    // prefix repeated on every line.
+    expect(plan).toContain("completions  install  zsh → ~/.zfunc/_pragma");
+    expect(plan).toContain("lsp");
     // The project-band skills step is gone (the bug: it used to run under --global).
     expect(plan).not.toContain(".agents/skills");
   });
 });
 
 describe("setup skills", () => {
-  it("empty skills raise EMPTY_RESULTS on the direct sub-verb", async () => {
+  it("empty skills are a named skip at exit 0, not a failure", async () => {
+    // A skip is "nothing to do here, honestly named" — the same semantics
+    // doctor gives its skip glyph. Failing the direct sub-verb made a dotfiles
+    // script fail on a machine that simply has no skills installed yet, which
+    // teaches people to ignore the exit code.
     const cwd = tmp("pragma-setup-proj-");
-    await expect(
-      executeVerb(verbOf("skills"), {}, YES, bootRuntime(FLAGS, cwd)),
-    ).rejects.toMatchObject({ code: "EMPTY_RESULTS" });
+    const outcome = await executeVerb(
+      verbOf("skills"),
+      { local: true },
+      YES,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).toContain("skills");
+    expect(outcome.stdout).toContain("no project skills");
   });
 
   it("detects a created action and composes a symlink carrying an undo", async () => {
@@ -510,7 +529,7 @@ describe("setup skills", () => {
       "---\nname: my-skill\ndescription: A test skill.\n---\n",
     );
 
-    const detected = await detectSkills(bootRuntime(FLAGS, cwd));
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
     expect(detected.available).toBe(true);
     expect(detected.skillCount).toBe(1);
     expect(detected.actions.some((a) => a.action === "created")).toBe(true);
@@ -541,7 +560,7 @@ describe("setup skills", () => {
     const linkPath = join(linkDir, "my-skill");
     symlinkSync(join(cwd, "nonexistent-target"), linkPath);
 
-    const detected = await detectSkills(bootRuntime(FLAGS, cwd));
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
     const action = detected.actions.find((a) => a.linkPath === linkPath);
     expect(action?.action).toBe("replaced");
 
@@ -573,7 +592,7 @@ describe("setup skills", () => {
     mkdirSync(realDir, { recursive: true });
     writeFileSync(join(realDir, "SKILL.md"), "hand-placed\n");
 
-    const detected = await detectSkills(bootRuntime(FLAGS, cwd));
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
     const action = detected.actions.find((a) => a.linkPath === realDir);
     expect(action?.action).toBe("skipped");
 
@@ -745,7 +764,11 @@ describe("setup lsp — prerequisites (bun absent / no editor CLI)", () => {
         bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
       );
       expect(outcome.exitCode).toBe(0);
-      expect(outcome.stdout).toContain("No VS Code-family editor CLI");
+      expect(outcome.stdout).toContain("skipped");
+      expect(outcome.stdout).toContain("no VS Code-family editor CLI on PATH");
+      // The remedy names what would count, and states plainly that nothing is
+      // possible here yet rather than offering a command this machine lacks.
+      expect(outcome.stdout).toContain("no action is possible on this machine yet");
     } finally {
       process.env.PATH = prevPath;
     }
@@ -769,42 +792,41 @@ describe("setup — idempotent detection of already-present config", () => {
     const configPath = join(cwd, ".cursor", "mcp.json");
 
     // First run writes the pragma entry.
-    await executeVerb(verbOf("mcp"), {}, YES, bootRuntime(FLAGS, cwd));
+    await executeVerb(
+      verbOf("mcp"),
+      { local: true },
+      YES,
+      bootRuntime(FLAGS, cwd),
+    );
     const firstBody = readFileSync(configPath, "utf-8");
 
-    // Detection now classifies the group `configured`.
-    const { toResult } = await buildSetupPlan(
+    // The plan's mcp row now reads `none` — nothing to do — and its child for
+    // this file reads `unchanged`.
+    const { plan } = await buildSetupRun(
       bootRuntime(FLAGS, cwd),
       "mcp",
-      "both",
+      "project",
     );
-    const result = toResult({});
-    expect(result.kind).toBe("mcp");
-    if (result.kind === "mcp") {
-      expect(result.targets.at(0)?.state).toBe("configured");
-    }
+    const row = plan.rows.find((r) => r.target === "mcp");
+    expect(row?.action).toBe("none");
+    expect(row?.children?.find((c) => c.key === configPath)?.action).toBe(
+      "unchanged",
+    );
+    // An already-current row is offered DE-selected, so a re-run never proposes
+    // to rewrite what is already correct.
+    expect(row?.selected).toBe(false);
 
-    // The wizard default-DESELECTS a configured target (so a plain re-run offers
-    // it unchecked) — proven on the generated multiselect's default.
-    const { generator } = await buildSetupPlan(
+    // A real second run is idempotent: the file stays byte-identical AND the
+    // converged row composes no effect at all, so the mtime is untouched.
+    const before = statSync(configPath).mtimeMs;
+    await executeVerb(
+      verbOf("mcp"),
+      { local: true },
+      YES,
       bootRuntime(FLAGS, cwd),
-      "mcp",
-      "both",
     );
-    const multiselect = generator.prompts.find((p) => p.name === "mcpTargets");
-    expect(multiselect?.default).toEqual([]); // the only file is configured
-    expect(
-      (multiselect?.choices ?? []).some((c) =>
-        typeof c === "object" && "label" in c
-          ? c.label.includes("already configured")
-          : false,
-      ),
-    ).toBe(true);
-
-    // A real second run is idempotent: the file stays byte-identical (the
-    // read-modify-write re-merges the SAME pragma entry).
-    await executeVerb(verbOf("mcp"), {}, YES, bootRuntime(FLAGS, cwd));
     expect(readFileSync(configPath, "utf-8")).toBe(firstBody);
+    expect(statSync(configPath).mtimeMs).toBe(before);
   });
 
   it("mcp: a drifted pragma entry (wrong cwd) reads as `drifted` and is updated", async () => {
@@ -825,20 +847,26 @@ describe("setup — idempotent detection of already-present config", () => {
       )}\n`,
     );
 
-    const { toResult, generator } = await buildSetupPlan(
+    const { plan } = await buildSetupRun(
       bootRuntime(FLAGS, cwd),
       "mcp",
-      "both",
+      "project",
     );
-    const result = toResult({});
-    if (result.kind === "mcp") {
-      expect(result.targets.at(0)?.state).toBe("drifted");
-    }
-    // A drifted target stays SELECTED by default (it needs the update).
-    const multiselect = generator.prompts.find((p) => p.name === "mcpTargets");
-    expect(multiselect?.default).toEqual([configPath]);
+    const row = plan.rows.find((r) => r.target === "mcp");
+    // A drifted file is an `update` child, and the row stays SELECTED by
+    // default because it needs the write.
+    expect(row?.children?.find((c) => c.key === configPath)?.action).toBe(
+      "update",
+    );
+    expect(row?.action).toBe("update");
+    expect(row?.selected).toBe(true);
 
-    await executeVerb(verbOf("mcp"), {}, YES, bootRuntime(FLAGS, cwd));
+    await executeVerb(
+      verbOf("mcp"),
+      { local: true },
+      YES,
+      bootRuntime(FLAGS, cwd),
+    );
     const config = JSON.parse(readFileSync(configPath, "utf-8"));
     expect(config.mcpServers.pragma.cwd).toBe(cwd); // updated to the real cwd
   });
@@ -850,16 +878,16 @@ describe("setup — idempotent detection of already-present config", () => {
     await executeVerb(completionsVerb, {}, YES, bootRuntime(FLAGS, cwd));
     const firstBody = readFileSync(path, "utf-8");
 
-    // Detection now classifies the installed script `installed`.
-    const { toResult } = await buildSetupPlan(
+    // The plan's completions row now reads `none` — the installed bytes are
+    // current, so a re-run composes nothing.
+    const { plan } = await buildSetupRun(
       bootRuntime(FLAGS, cwd),
       "completions",
-      "both",
+      "global",
     );
-    const result = toResult({});
-    if (result.kind === "completions") {
-      expect(result.state).toBe("installed");
-    }
+    expect(plan.rows.find((r) => r.target === "completions")?.action).toBe(
+      "none",
+    );
 
     // A real second run is idempotent — the byte-identical script survives.
     await executeVerb(completionsVerb, {}, YES, bootRuntime(FLAGS, cwd));
@@ -871,30 +899,31 @@ describe("setup — idempotent detection of already-present config", () => {
     const path = completionScriptPath("zsh");
     mkdirSync(join(path, ".."), { recursive: true });
     writeFileSync(path, "# stale hand-edited completion\n");
-    const { toResult } = await buildSetupPlan(
+    const { plan } = await buildSetupRun(
       bootRuntime(FLAGS, cwd),
       "completions",
-      "both",
+      "global",
     );
-    const result = toResult({});
-    if (result.kind === "completions") {
-      expect(result.state).toBe("stale");
-    }
+    // A hand-edited script is `update`, not `install`: the row says which of
+    // the two it is, because overwriting someone's edit is worth naming.
+    expect(plan.rows.find((r) => r.target === "completions")?.action).toBe(
+      "update",
+    );
   });
 
   it("lsp: reports `unknown` when the `code` CLI is absent from PATH", async () => {
     // PATH is the isolated empty dir (beforeEach), so `code` is unresolvable:
     // detection cannot enumerate and reports `unknown` (installer still runs).
-    const { toResult } = await buildSetupPlan(
+    const { plan } = await buildSetupRun(
       bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
       "lsp",
-      "both",
+      "global",
     );
-    const result = toResult({});
-    expect(result.kind).toBe("lsp");
-    if (result.kind === "lsp") {
-      expect(result.state).toBe("unknown");
-    }
+    // No editor CLI resolves, so the row is a SKIP carrying its reason —
+    // never a silent omission, and never a failure.
+    const row = plan.rows.find((r) => r.target === "lsp");
+    expect(row?.action).toBe("skip");
+    expect(row?.reason).toContain("no VS Code-family editor CLI on PATH");
   });
 });
 
@@ -924,9 +953,13 @@ describe("setup (run-all wizard)", () => {
     );
     expect(outcome.exitCode).toBe(0);
     const plan = outcome.stdout ?? "";
-    expect(plan).toContain(completionScriptPath("zsh")); // completions step
-    expect(plan).toContain("terrazzo-lsp-extension"); // lsp step (exec, mocked)
-    expect(plan).toContain("mcp.json"); // mcp step
+    // EVERY target is a visible row — including the ones that will skip. The
+    // run-all used to build its choices only from detectable steps, so a
+    // target it could not offer vanished from the plan and from the recap.
+    for (const id of ["config", "completions", "lsp", "mcp", "skills"]) {
+      expect(plan).toContain(id);
+    }
+    expect(plan).toContain("zsh → ~/.zfunc/_pragma"); // completions row
     expect(plan).not.toContain("Prompt"); // recap gate / multiselects filtered
     // Nothing is written by a preview.
     expect(existsSync(completionScriptPath("zsh"))).toBe(false);
@@ -952,7 +985,16 @@ describe("setup (run-all wizard)", () => {
     );
     let thrown: unknown;
     try {
-      await executeVerb(setupSelfVerb, {}, YES, bootRuntime(FLAGS, cwd));
+      // `--scope both`: the failing target (lsp) is global-only, and the two
+      // that must survive it write the project band, so the run has to cover
+      // both. A bare run-all is the GLOBAL band now and would not touch this
+      // repository at all.
+      await executeVerb(
+        setupSelfVerb,
+        { scope: "both" },
+        YES,
+        bootRuntime(FLAGS, cwd),
+      );
     } catch (error) {
       thrown = error;
     } finally {
@@ -965,6 +1007,9 @@ describe("setup (run-all wizard)", () => {
     expect(thrown).toBeDefined();
     const err = asPragmaError(thrown);
     expect(err.code).toBe("UNSUPPORTED");
+    // One failed row reports ITS OWN cause — a count would throw away the only
+    // sentence that says what is wrong.
+    expect(err.message).toContain("lsp");
     expect(err.message).toContain("bun");
   });
 
@@ -978,7 +1023,11 @@ describe("setup (run-all wizard)", () => {
       bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
     );
     expect(outcome.exitCode).toBe(0);
-    expect(outcome.stdout).toContain("terrazzo-lsp-extension"); // lsp still there
+    // The skills row is PRESENT and says why it cannot act, rather than being
+    // dropped from a plan that then claims completeness.
+    expect(outcome.stdout).toContain("skills");
+    expect(outcome.stdout).toContain("no skills installed");
+    expect(outcome.stdout).toContain("lsp");
   });
 });
 
@@ -1004,7 +1053,7 @@ describe("lazy-React discipline (PROTECTED)", () => {
 });
 
 describe("setup — mixed-noun wiring & MCP surface", () => {
-  it("registers a single `setup` command with an action and four sub-verbs", () => {
+  it("registers a single `setup` command with an action and five sub-verbs", () => {
     const program = projectCli([setupModule]);
     const setups = program.commands.filter((c) => c.name() === "setup");
     expect(setups).toHaveLength(1);
@@ -1013,9 +1062,10 @@ describe("setup — mixed-noun wiring & MCP surface", () => {
     expect(setup?.options.map((o) => o.long)).toEqual(
       expect.arrayContaining(["--dry-run", "--undo", "--yes"]),
     );
-    // The four CLI-only sub-verbs hang under it.
+    // The five CLI-only sub-verbs hang under it — one per target-table row.
     expect(setup?.commands.map((c) => c.name()).sort()).toEqual([
       "completions",
+      "config",
       "lsp",
       "mcp",
       "skills",

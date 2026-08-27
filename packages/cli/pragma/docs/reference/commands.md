@@ -678,7 +678,7 @@ pragma setup mcp [options]
 
 Configure the global config, completions, the LSP, MCP, and skills.
 
-Plans every target in the selected band, then applies the ones you keep. The user/home band is the default; --local targets the project band, and --both runs each. A run with no terminal prints the plan and applies nothing unless --yes is given.
+Plans every target in the selected band, then applies the ones you keep. The user/home band is the default; the scope option chooses the per-project band, or both. A run with no attended terminal prints the plan and applies nothing unless the run is confirmed.
 
 ```
 pragma setup [options]

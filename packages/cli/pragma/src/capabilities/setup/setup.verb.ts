@@ -266,15 +266,37 @@ async function runSetup(
     // stdout on a failing run.
     if (planExitFailed(applied)) {
       rt.report?.(renderRecap(applied));
-      const failed = applied.rows
-        .filter((row) => row.outcome?.status === "failed")
-        .map((row) => row.target);
+      const failed = applied.rows.filter(
+        (row) => row.outcome?.status === "failed",
+      );
+
+      // ONE failure reports itself. The row already carries the cause it was
+      // given ("`bun` is not found on your PATH") and a remedy that runs on
+      // this machine; replacing them with a count would throw away the only
+      // two sentences that say what is wrong and what to do about it.
+      const only = failed.length === 1 ? failed[0] : undefined;
+      if (only?.outcome !== undefined) {
+        throw new PragmaError({
+          code: "UNSUPPORTED",
+          message: `${only.target}: ${only.outcome.note ?? "the step did not complete"}`,
+          ...(only.outcome.remedy === undefined
+            ? {}
+            : { recovery: { message: only.outcome.remedy } }),
+        });
+      }
+
+      // Several failures: name every one with its own cause, then point at the
+      // recap above. A bare list of target names would make the reader re-run
+      // each one to find out why it failed.
+      const named = failed
+        .map((row) => `${row.target} (${row.outcome?.note ?? "no cause recorded"})`)
+        .join("; ");
       throw new PragmaError({
         code: "UNSUPPORTED",
-        message: `${failed.length} of ${planTally(applied).accountable} targets did not complete: ${failed.join(", ")}.`,
+        message: `${failed.length} of ${planTally(applied).accountable} targets did not complete: ${named}.`,
         recovery: {
           message: `The other targets are configured. Re-run the ones that did not complete: ${failed
-            .map((id) => `\`${BIN_NAME} setup ${id}\``)
+            .map((row) => `\`${BIN_NAME} setup ${row.target}\``)
             .join(", ")}.`,
         },
       });
