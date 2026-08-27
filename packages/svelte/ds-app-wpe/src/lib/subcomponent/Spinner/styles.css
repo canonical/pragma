@@ -1,6 +1,6 @@
 /**
  * Spinner styles
- * @implements ds:global.subcomponent.spinner
+ * @implements dso:global.subcomponent.spinner
  *
  * The Spinner renders the `spinner` glyph and rotates it continuously. The
  * rotation is a linear, infinite animation so the motion reads as steady
