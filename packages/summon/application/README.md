@@ -10,7 +10,7 @@ Scaffolds a complete React application with SSR, routing, Storybook, and two sta
 
 ```bash
 summon application/react my-app
-summon application/react --forms my-app
+summon application/react --no-forms my-app
 summon application/react --relay my-app
 ```
 
@@ -35,7 +35,7 @@ my-app/
 │   ├── domains/
 │   │   ├── marketing/        # HomePage, GuidePage, routes
 │   │   ├── account/          # AccountPage, LoginPage, routes
-│   │   ├── contact/          # ContactPage, routes (--forms only)
+│   │   ├── contact/          # ContactPage, routes (omitted with --no-forms)
 │   │   └── catalog/          # CatalogPage, ProductList, ProductCard (--relay only)
 │   ├── lib/
 │   │   ├── Navigation/
@@ -55,7 +55,7 @@ my-app/
 └── vite.config.ts
 ```
 
-The `--forms` flag adds the contact domain with form components and wires `contactRoutes` into `routes.tsx`.
+Form components are ON by default: the contact domain and its `contactRoutes` wiring in `routes.tsx` ship unless `--no-forms` is passed.
 
 #### `--relay`: Relay (GraphQL) data layer
 
@@ -204,7 +204,7 @@ src/
 │   │   ├── AccountPage.tsx
 │   │   ├── LoginPage.tsx
 │   │   └── routes.ts
-│   ├── contact/            # When --forms is enabled
+│   ├── contact/            # Omitted with --no-forms
 │   │   ├── ContactPage.tsx
 │   │   └── routes.ts
 │   └── catalog/            # When --relay is enabled

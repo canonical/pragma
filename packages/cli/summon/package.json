@@ -43,7 +43,7 @@
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
-    "check:ts": "tsc -p tsconfig.build.json --noEmit",
+    "check:ts": "tsc -p tsconfig.build.json --noEmit && tsc -p tsconfig.json --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest"
   },

@@ -24,6 +24,8 @@ import execute, {
   CONFIRM_ANSWER_KEY,
   GENERATOR_CANCELLED,
   GENERATOR_INVALID_ANSWER,
+  invalidAnswersError,
+  isInvalidAnswersError,
 } from "./execute.js";
 
 const fixture: GeneratorDefinition = {
@@ -148,6 +150,40 @@ describe("execute — generate() re-interpretation parity (no single-use gen() u
     expect(dryRun(seqBuilt).effects.map((e) => e._tag)).toEqual(
       dryRun(seqBuilt).effects.map((e) => e._tag),
     );
+  });
+});
+
+describe("invalidAnswersError — a generator's typed cross-answer failure", () => {
+  it("builds the GENERATOR_INVALID_ANSWER shape a host's invalid-input pathway routes", () => {
+    const error = invalidAnswersError("A and B are required together.");
+    expect(error).toBeInstanceOf(Error);
+    expect(error.code).toBe(GENERATOR_INVALID_ANSWER);
+    expect(error.message).toBe("A and B are required together.");
+    expect(error.taskError).toEqual({
+      code: GENERATOR_INVALID_ANSWER,
+      message: "A and B are required together.",
+    });
+  });
+
+  it("isInvalidAnswersError matches by CODE, never by class identity", () => {
+    expect(isInvalidAnswersError(invalidAnswersError("m"))).toBe(true);
+    // A duplicate module instance produces a different class but the same
+    // code — still matched.
+    const foreign = Object.assign(new Error("m"), {
+      code: GENERATOR_INVALID_ANSWER,
+    });
+    expect(isInvalidAnswersError(foreign)).toBe(true);
+    // Everything else is somebody's bug, not an invalid answer.
+    expect(isInvalidAnswersError(new Error("m"))).toBe(false);
+    expect(
+      isInvalidAnswersError(
+        Object.assign(new Error("m"), { code: "OTHER_CODE" }),
+      ),
+    ).toBe(false);
+    expect(
+      isInvalidAnswersError({ code: GENERATOR_INVALID_ANSWER, message: "m" }),
+    ).toBe(false); // not an Error instance
+    expect(isInvalidAnswersError(undefined)).toBe(false);
   });
 });
 

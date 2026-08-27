@@ -6,6 +6,8 @@ export {
   type ExecuteContext,
   GENERATOR_CANCELLED,
   GENERATOR_INVALID_ANSWER,
+  invalidAnswersError,
+  isInvalidAnswersError,
 } from "./execute.js";
 export type { GeneratorResult } from "./GeneratorResult.js";
 export { default as validateAnswers } from "./validateAnswers.js";

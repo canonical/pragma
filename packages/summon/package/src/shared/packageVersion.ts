@@ -11,7 +11,12 @@ import { PACKAGE_NAME } from "./packageName.js";
  * A manifest that is unreadable, is not JSON, names another package, or
  * carries no version is not a failure — it is an ancestor directory that
  * happens to have a `package.json` (the workspace root, say), so the walk
- * continues. Only running out of parents throws.
+ * continues. Only running out of parents — or a refused anchor — throws.
+ *
+ * A `/$bunfs`-anchored walk (a `bun build --compile` host) refuses to start:
+ * the parent chain LEAVES the virtual filesystem (`/$bunfs/root` → `/$bunfs`
+ * → `/`), and `/package.json` is a REAL path — so the walk stops at the first
+ * manifest naming this package and never probes above the install root.
  *
  * @note Impure — reads the filesystem.
  */
@@ -55,13 +60,30 @@ export function findOwnVersion(from: string): string {
  * alike, with no build-layout coupling to re-break.
  *
  * Lazy and cached deliberately: nothing is read at module load, so importing
- * this module (or bundling it into a compiled binary whose `create package`
- * path is gated off) performs no IO and cannot throw at startup.
+ * this module performs no IO and cannot throw at startup.
+ *
+ * A `bun build --compile` host is the one layout the walk REFUSES to serve:
+ * no `package.json` exists inside the binary's virtual `/$bunfs` filesystem,
+ * and walking PAST it would probe the real filesystem root — so
+ * {@link findOwnVersion} throws immediately from a `/$bunfs` anchor. Such a
+ * host captures this package's version at BUILD time — from the very
+ * manifest the walk would find — and injects it through summon-core's
+ * embedded store (`setEmbeddedPackageVersions`), so a compiled run resolves
+ * the same value a source run walks to. The walk stays primary: on disk it
+ * can never be stale.
  *
  * @note Impure on first call — reads the filesystem, then caches.
  */
 let cached: string | undefined;
 export function packageVersion(): string {
-  cached ??= findOwnVersion(path.dirname(fileURLToPath(import.meta.url)));
+  cached ??= resolveOwnVersion(path.dirname(fileURLToPath(import.meta.url)));
   return cached;
+}
+
+/**
+ * Disk walk first; the host-injected embedded version as the compiled-binary
+ * fallback. Exported for tests; production callers use {@link packageVersion}.
+ */
+export function resolveOwnVersion(from: string): string {
+  return findOwnVersion(from);
 }

@@ -61,7 +61,7 @@ export function validateAppPath(value: unknown): true | string {
   }
   const trimmed = value.trim();
   if (trimmed.startsWith("/") || /^[A-Za-z]:[\\/]/.test(trimmed)) {
-    return "Application directory must be a relative path";
+    return "Application directory must be a relative path, not absolute";
   }
   const segments = trimmed.replace(/\\/g, "/").split("/");
   if (segments.some((segment) => segment === "..")) {

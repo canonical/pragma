@@ -14,8 +14,8 @@
  * @example
  * ```bash
  * summon component svelte --component-path=src/lib/components/Button
- * summon component svelte --component-path=src/lib/components/Card --with-stories
- * summon component svelte --component-path=src/lib/components/Modal --with-stories --use-ts-stories
+ * summon component svelte --component-path=src/lib/components/Card --no-with-stories
+ * summon component svelte --component-path=src/lib/components/Modal --use-ts-stories
  * ```
  *
  * @module
@@ -23,9 +23,12 @@
 
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { type GeneratorDefinition, template } from "@canonical/summon-core";
+import {
+  type GeneratorDefinition,
+  loadTemplateSync,
+  template,
+} from "@canonical/summon-core";
 import { debug, info, mkdir, sequence_, when } from "@canonical/task";
-
 import {
   appendExportToParentIndex,
   createComponentPathPrompt,
@@ -37,7 +40,6 @@ import {
   packageVersion,
   sharedPrompts,
 } from "../shared/index.js";
-import { loadTemplateSync } from "../shared/loadTemplate.js";
 import type { SvelteComponentAnswers } from "./types.js";
 
 // =============================================================================
@@ -117,8 +119,8 @@ The component name is extracted from the path and must be PascalCase.
 For example, 'src/lib/components/Button' creates a 'Button' component.`,
     examples: [
       "summon component svelte --component-path=src/lib/components/Button",
-      "summon component svelte --component-path=src/lib/components/Card --with-styles --with-stories",
-      "summon component svelte --component-path=src/lib/components/Modal --with-stories --use-ts-stories",
+      "summon component svelte --component-path=src/lib/components/Card --no-with-styles --no-with-stories",
+      "summon component svelte --component-path=src/lib/components/Modal --use-ts-stories",
       "summon component svelte --component-path=src/lib/components/Button --dry-run",
     ],
   },

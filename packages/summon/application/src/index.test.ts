@@ -33,8 +33,6 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: false,
         intl: false,
         relay: false,
@@ -124,8 +122,6 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: true,
         intl: true,
         relay: true,
@@ -153,8 +149,6 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: true,
         intl: false,
         relay: false,
@@ -188,8 +182,6 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: false,
         intl: false,
         relay: false,
@@ -215,8 +207,6 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: false,
         intl: false,
         relay: true,
@@ -297,8 +287,6 @@ describe("application/react generator", () => {
       const result = dryRun(
         generators["application/react"].generate({
           appPath,
-          ssr: true,
-          router: true,
           forms: false,
           intl: false,
           relay: true,
@@ -330,8 +318,6 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: true,
         intl: false,
         relay: false,
@@ -367,8 +353,6 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: false,
         intl: true,
         relay: false,
@@ -397,8 +381,6 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: false,
         intl: false,
         relay: false,
@@ -424,8 +406,6 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "custom-app",
-        ssr: true,
-        router: true,
         forms: false,
         intl: false,
         relay: false,
@@ -450,8 +430,6 @@ describe("application/react generator", () => {
     // would destroy pre-existing files — the guard must hard-fail, not warn.
     const task = generators["application/react"].generate({
       appPath: "my-app",
-      ssr: true,
-      router: true,
       forms: false,
       intl: false,
       relay: false,
@@ -462,38 +440,6 @@ describe("application/react generator", () => {
     ]);
 
     expect(() => dryRunWith(task, mocks)).toThrow(/already exists/);
-  });
-
-  it("throws when --ssr is false", () => {
-    expect(() =>
-      dryRun(
-        generators["application/react"].generate({
-          appPath: "my-app",
-          ssr: false,
-          router: true,
-          forms: false,
-          intl: false,
-          relay: false,
-          runInstall: false,
-        }),
-      ),
-    ).toThrow();
-  });
-
-  it("throws when --router is false", () => {
-    expect(() =>
-      dryRun(
-        generators["application/react"].generate({
-          appPath: "my-app",
-          ssr: true,
-          router: false,
-          forms: false,
-          intl: false,
-          relay: false,
-          runInstall: false,
-        }),
-      ),
-    ).toThrow();
   });
 });
 

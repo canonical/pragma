@@ -2,11 +2,16 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import type {
   GeneratorDefinition,
+  LoadedTemplate,
   PromptDefinition,
 } from "@canonical/summon-core";
-import { template, withHelpers } from "@canonical/summon-core";
 import {
-  copyFile,
+  loadTemplateSync,
+  rawFile,
+  template,
+  withHelpers,
+} from "@canonical/summon-core";
+import {
   exec,
   exists,
   fail,
@@ -25,8 +30,6 @@ import { findEnclosingWorkspaceRoot } from "../../shared/workspace.js";
 
 export interface ApplicationReactAnswers {
   readonly appPath: string;
-  readonly ssr: boolean;
-  readonly router: boolean;
   readonly forms: boolean;
   readonly intl: boolean;
   readonly relay: boolean;
@@ -43,20 +46,13 @@ const prompts: PromptDefinition[] = [
     validate: validateAppPath,
     group: "Application",
   },
-  {
-    name: "ssr",
-    type: "confirm",
-    message: "Include SSR?",
-    default: true,
-    group: "Application",
-  },
-  {
-    name: "router",
-    type: "confirm",
-    message: "Include router?",
-    default: true,
-    group: "Application",
-  },
+  // SSR and the router are NOT prompts: they are always on (the scaffold has no
+  // SPA arm — every template assumes both), so a question that only ever
+  // accepted its default was two dead wizard steps and, worse, an unanswerable
+  // refusal: a default-`true` confirm can be made explicit ONLY by negating it
+  // (`--no-ssr`/`--no-router`), which the old cross-answer guard then rejected —
+  // so `create application react` had no reachable all-flags completion. The
+  // help text states the facts; the flags simply do not exist.
   {
     name: "forms",
     type: "confirm",
@@ -94,6 +90,20 @@ const templatesDir = path.join(__dirname, "templates");
 /** Resolve a path inside the templates directory. */
 const src = (templatePath: string) => path.join(templatesDir, templatePath);
 
+/**
+ * Carried templates, read on first `generate()` and cached by path — never at
+ * module eval, so importing the generator costs no filesystem work.
+ */
+const templateCache = new Map<string, LoadedTemplate>();
+function load(templatePath: string): LoadedTemplate {
+  let loaded = templateCache.get(templatePath);
+  if (!loaded) {
+    loaded = loadTemplateSync(src(templatePath));
+    templateCache.set(templatePath, loaded);
+  }
+  return loaded;
+}
+
 export const generator: GeneratorDefinition<ApplicationReactAnswers> = {
   meta: {
     name: "application/react",
@@ -113,27 +123,18 @@ export const generator: GeneratorDefinition<ApplicationReactAnswers> = {
   - Storybook with router decorator
   - Biome + TypeScript configuration
 
-Requires both --ssr and --router flags.`,
+SSR and routing are always included; standalone SPA mode is not supported.`,
     examples: [
       "summon application/react my-app",
       "summon application/react --forms my-app",
       "summon application/react --relay my-app",
-      "summon application/react --ssr --router --forms --relay my-app",
+      "summon application/react --forms --relay my-app",
     ],
   },
 
   prompts,
 
   generate: (answers) => {
-    if (!answers.ssr || !answers.router) {
-      return fail({
-        code: "APP_UNSUPPORTED_MODE",
-        message:
-          "The application/react generator requires both --ssr and --router. " +
-          "Standalone SPA mode is not supported.",
-      });
-    }
-
     // The app path is a directory path, not a route path — keep it as given
     // (absolute or relative), only trimming surrounding whitespace and any
     // trailing slash.
@@ -160,7 +161,12 @@ Requires both --ssr and --router flags.`,
     }
 
     const dest = (...segments: string[]) => path.join(appPath, ...segments);
-    const copy = (filePath: string) => copyFile(src(filePath), dest(filePath));
+    const copy = (filePath: string) =>
+      rawFile({
+        source: src(filePath),
+        content: load(filePath).content,
+        dest: dest(filePath),
+      });
 
     // Whether the app lands inside a bun workspace decides who owns dependency
     // patching: bun resolves `patchedDependencies` paths from the WORKSPACE
@@ -284,7 +290,11 @@ Requires both --ssr and --router flags.`,
           // The template is stored as `gitignore` (no leading dot): npm strips a
           // literal `.gitignore` from published tarballs, so we ship it dotless and
           // restore the dot at write time.
-          copyFile(src("gitignore"), dest(".gitignore")),
+          rawFile({
+            source: src("gitignore"),
+            content: load("gitignore").content,
+            dest: dest(".gitignore"),
+          }),
           // The app's browser floor, read by vite.config.ts to derive Lightning
           // CSS targets. Unlike `.gitignore` above, npm does not strip
           // `.browserslistrc` from tarballs, so the template keeps its dot.

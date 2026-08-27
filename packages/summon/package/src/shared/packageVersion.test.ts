@@ -2,9 +2,43 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import pkg from "../../package.json" with { type: "json" };
-import { findOwnVersion, packageVersion } from "./packageVersion.js";
+import {
+  findOwnVersion,
+  packageVersion,
+  resolveOwnVersion,
+} from "./packageVersion.js";
+
+/**
+ * A pass-through `node:fs` mock the `/$bunfs` case flips on: while
+ * `interceptReads` is set, every `readFileSync` in this file's module graph
+ * records its path and serves a DECOY manifest naming THIS package —
+ * simulating the hijacked host where the walk's real-filesystem probes
+ * resolve (`/$bunfs/root` → `/$bunfs` → `/`, all REAL paths once the chain
+ * leaves the virtual filesystem). Off (the default), reads pass through
+ * untouched for every other case.
+ */
+const fsControl = vi.hoisted(() => ({
+  interceptReads: false,
+  reads: [] as unknown[],
+}));
+vi.mock("node:fs", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs")>();
+  return {
+    ...actual,
+    readFileSync: ((...args: Parameters<typeof actual.readFileSync>) => {
+      if (fsControl.interceptReads) {
+        fsControl.reads.push(args[0]);
+        return JSON.stringify({
+          name: "@canonical/summon-package",
+          version: "7.7.7",
+        });
+      }
+      return actual.readFileSync(...args);
+    }) as typeof actual.readFileSync,
+  };
+});
 
 const roots: string[] = [];
 afterAll(() => {
