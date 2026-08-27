@@ -141,6 +141,49 @@ describe("graph inspect", () => {
     expect(result.nested).toEqual({});
   });
 
+  it("samples a roster instead of listing it, keeping the count exact", async () => {
+    // A relation and a roster are not the same kind of edge. `ds:tier` here
+    // fans in 22 deep — past the threshold — so the read shows exemplars and
+    // says so, rather than paging a list verb's job through a resource read.
+    // Listing rosters cost a `detailed` read 19.5 KB on one class of the real
+    // graph and 20.9 KB on one tier.
+    const detailed = await buildFixtureRuntime({
+      ttl: BLOCK_TTL,
+      prefixes: BLOCK_PREFIXES,
+      detail: "detailed",
+    });
+    const result = (await inspectVerb.run(
+      { uri: "ds:rosterHub" },
+      detailed.rt,
+    )) as InspectResult;
+    (await detailed.rt.store.get()).store.dispose();
+
+    const roster = result.inbound.find(
+      (g) => g.predicate.value === `${DS}tier`,
+    );
+    expect(roster?.count).toBe(22);
+    expect(roster?.sampled).toBe(true);
+    expect(roster?.truncated).toBe(true);
+    // Exemplars, not a page — far fewer than the 22 a listed relation would show.
+    expect(roster?.subjects.length).toBeLessThan(10);
+    expect(roster?.subjects.length).toBeGreaterThan(0);
+  });
+
+  it("lists a narrow relation in full, unsampled", async () => {
+    // The counterpart: `ds:hasSubcomponent` fans in once, so every subject is
+    // part of the answer and none of this bounding applies.
+    const result = (await inspectVerb.run(
+      { uri: "ds:button.icon" },
+      rt,
+    )) as InspectResult;
+    const held = result.inbound.find(
+      (g) => g.predicate.value === `${DS}hasSubcomponent`,
+    );
+    expect(held?.sampled).toBeUndefined();
+    expect(held?.truncated).toBeUndefined();
+    expect(held?.subjects).toHaveLength(held?.count ?? 0);
+  });
+
   it("resolves the level from config when no flag is given", async () => {
     // A resource read carries no params, so config is the level it lands on.
     const configured = await buildFixtureRuntime({

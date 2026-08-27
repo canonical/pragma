@@ -21,6 +21,18 @@ export const BLOCK_PREFIXES: Readonly<Record<string, string>> = {
   xsd: "http://www.w3.org/2001/XMLSchema#",
 };
 
+/**
+ * A membership roster deep enough to cross the entity read's fan-in threshold,
+ * so the fixture exercises the SAMPLED branch and not only the listed one.
+ * Generated rather than written out: the count is the whole point of the case,
+ * and 22 hand-copied lines invite someone to "tidy" one away.
+ */
+const ROSTER_MEMBER_COUNT = 22;
+const ROSTER_MEMBERS = Array.from(
+  { length: ROSTER_MEMBER_COUNT },
+  (_, index) => `ds:probe.member${index} a ds:Probe ; ds:tier ds:rosterHub .`,
+).join("\n");
+
 /** The fixture ontology + individuals as Turtle. */
 export const BLOCK_TTL = `
 @prefix ds: <https://ds.canonical.com/> .
@@ -129,4 +141,7 @@ ds:blankHolder a ds:Probe ;
   ds:name "blank holder" ;
   ds:changeLog [ a ds:ChangeLogEntry ; ds:changeType "decision" ; ds:change "Split the button." ] ;
   ds:changeLog [ a ds:ChangeLogEntry ; ds:changeType "revision" ; ds:change "Renamed the slot." ] .
+
+ds:rosterHub a ds:Probe ; ds:name "roster hub" .
+${ROSTER_MEMBERS}
 `;

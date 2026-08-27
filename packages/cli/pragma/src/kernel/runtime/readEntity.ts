@@ -31,11 +31,23 @@
  *   already holds, so a reader is not forced into a second read per IRI just to
  *   learn that `ds:tag.needsdocumentation` is "needs:documentation".
  *
- * Bounded by the SHARED disclosure ladder, not by a private constant: hubs in a
- * real graph reach hundreds of inbound edges (335 here), so `subjects` is capped
- * per level while `count` always reports the TRUE total. A truncated group says
- * so and names the tool that enumerates it properly — a sample that silently
- * passed for the whole set is how "3 implementations" becomes a wrong answer.
+ * Bounded by the SHARED disclosure ladder, and by what an inbound group IS —
+ * because not every edge pointing at an entity is the same kind of thing:
+ *
+ * - A RELATION fans in narrowly and every subject is part of the answer
+ *   (`ds:implementsBlock`, `ds:inheritsFrom`), so it is LISTED.
+ * - A ROSTER fans in without bound because it grows with the data rather than
+ *   the model — a class extension (`rdf:type`), a tier's membership (`ds:tier`,
+ *   141 deep here) — and is already answered by `pragma/instanceCount` and by
+ *   the noun's list verb. So it is SAMPLED: a few exemplars, flagged `sampled`,
+ *   never a page. Listing rosters cost a `detailed` read 19.5 KB on one class
+ *   and 20.9 KB on one tier, restating what a single `*_list` answers properly.
+ *
+ * The two are told apart by FAN-IN, not by predicate name, so the kernel names
+ * no vocabulary and a graph whose rosters hang off different predicates is
+ * bounded just the same. `count` always reports the TRUE total either way: a
+ * sample that silently passed for the whole set is how "3 implementations"
+ * becomes a wrong answer.
  *
  * Reached only behind the lazy store (a `needsStore` verb / a resource read), so
  * it never lands on the storeless fast path.
@@ -59,16 +71,41 @@ import type { PragmaRuntime } from "./types.js";
 type Term = import("@canonical/ke").Term;
 
 /**
- * How many inbound subjects each level lists per predicate.
+ * Where a relation stops being an answer and becomes a roster.
  *
- * `summary` shows none (the count is the answer at that level); `standard` shows
- * enough to recognise the neighbourhood; `detailed` shows a working set without
- * ever becoming the enumeration a list verb exists to serve.
+ * A group at or under this fan-in is LISTED: every subject is part of the
+ * answer, and there are few enough that reading them is cheaper than going to
+ * fetch them. Above it, listing the head is not more useful than showing a few
+ * — only longer — so the group is SAMPLED instead.
+ *
+ * Derived from fan-in rather than from a predicate name, which is what keeps the
+ * kernel free of vocabulary: `rdf:type` inbound is the obvious roster (a class
+ * extension, unbounded by construction and already answered by
+ * `pragma/instanceCount` and the noun's list verb), but it is NOT the only one.
+ * Membership edges behave identically — this graph's `ds:tier` fans in 141 deep
+ * — and a rule keyed on `rdf:type` would have left a `detailed` read of one tier
+ * at 20.9 KB while congratulating itself on having fixed classes.
  */
-const INBOUND_SUBJECT_CAP: Readonly<Record<DetailLevel, number>> = {
+const ROSTER_THRESHOLD = 20;
+
+/** How many subjects each level lists for a genuine ANSWER (fan-in ≤ threshold). */
+const ANSWER_CAP: Readonly<Record<DetailLevel, number>> = {
   summary: 0,
   standard: 10,
-  detailed: 200,
+  detailed: ROSTER_THRESHOLD,
+};
+
+/**
+ * How many EXEMPLARS each level shows for a roster — the move the `*_sample`
+ * verbs make, and for the same reason: enough to see the shape of a member,
+ * never the roster itself. `count` stays exact and {@link InboundGroup.sampled}
+ * says which kind of answer this is, so a reader reaches for the list verb
+ * rather than trying to page a resource read into one.
+ */
+const SAMPLE_CAP: Readonly<Record<DetailLevel, number>> = {
+  summary: 0,
+  standard: 3,
+  detailed: 5,
 };
 
 /**
@@ -113,10 +150,17 @@ export interface InboundGroup {
   readonly predicate: ReadTerm;
   /** The TRUE number of subjects, whatever `subjects` was capped to. */
   readonly count: number;
-  /** Subjects, capped by the effective detail level. */
+  /** Subjects — listed for a relation, sampled for a roster; level-capped. */
   readonly subjects: ReadTerm[];
   /** Set when `subjects` is shorter than `count`. */
   readonly truncated?: true;
+  /**
+   * Set when the group is a ROSTER rather than a relation: `subjects` are
+   * EXEMPLARS chosen to show the shape of a member, not the head of a page.
+   * Reach for the noun's list verb for the full set — paging a resource read
+   * will not produce one.
+   */
+  readonly sampled?: true;
 }
 
 /** The result of inspecting one subject URI. */
@@ -304,31 +348,38 @@ async function readInbound(
   );
   if (result.type !== "select") return [];
 
-  const cap = INBOUND_SUBJECT_CAP[detail];
   const counts = new Map<string, number>();
-  const subjects = new Map<string, ReadTerm[]>();
-  const predicates = new Map<string, ReadTerm>();
+  const retained = new Map<string, Term[]>();
+  const predicates = new Map<string, Term>();
   for (const binding of result.termBindings) {
     const predicate = binding.predicate;
     const subject = binding.subject;
     if (!predicate || !subject) continue;
     const key = predicate.value;
-    predicates.set(key, term(predicate));
+    predicates.set(key, predicate);
     counts.set(key, (counts.get(key) ?? 0) + 1);
-    const listed = subjects.get(key) ?? [];
-    // Count every row, but project only what the level lists — a hub's 335
-    // subjects are counted without 335 terms being built.
-    if (listed.length < cap) listed.push(term(subject));
-    subjects.set(key, listed);
+    // Count every row but retain only what the widest rule could ever show, so
+    // a 335-deep hub is counted without 335 terms being built. A roster shows
+    // at most SAMPLE_CAP and a relation at most ROSTER_THRESHOLD, so the
+    // threshold bounds both — and retaining one MORE than it is what lets the
+    // fan-in test below distinguish "exactly at the threshold" from "over it".
+    const rows = retained.get(key) ?? [];
+    if (rows.length <= ROSTER_THRESHOLD) rows.push(subject);
+    retained.set(key, rows);
   }
 
   return [...counts.entries()].map(([key, count]) => {
-    const listed = subjects.get(key) ?? [];
+    // What the group IS decides how it is shown: a relation is listed, a roster
+    // is sampled. Derived from fan-in, so no predicate is named here.
+    const roster = count > ROSTER_THRESHOLD;
+    const cap = roster ? SAMPLE_CAP[detail] : ANSWER_CAP[detail];
+    const subjects = (retained.get(key) ?? []).slice(0, cap).map(term);
     return {
-      predicate: predicates.get(key) as ReadTerm,
+      predicate: term(predicates.get(key) as Term),
       count,
-      subjects: listed,
-      ...(listed.length < count ? { truncated: true as const } : {}),
+      subjects,
+      ...(subjects.length < count ? { truncated: true as const } : {}),
+      ...(roster ? { sampled: true as const } : {}),
     };
   });
 }

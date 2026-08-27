@@ -21,8 +21,17 @@ const short = (term: ReadTerm): string => term.prefixed ?? term.value;
 const named = (term: ReadTerm): string =>
   term.title ? `${short(term)} (${term.title})` : short(term);
 
-/** `predicate (3, showing 2)` — the count is the truth, the list is the sample. */
+/**
+ * `predicate (330, sample of 5)` — the count is the truth, the list is not.
+ *
+ * A roster and a truncated relation read differently on purpose: "sample of"
+ * tells a reader that paging will not produce the rest and the noun's list verb
+ * is where the full set lives, where "showing" invites them to ask for more.
+ */
 function inboundHeading(group: InboundGroup): string {
+  if (group.sampled) {
+    return `${short(group.predicate)} (${group.count}, sample of ${group.subjects.length})`;
+  }
   const suffix = group.truncated
     ? `${group.count}, showing ${group.subjects.length}`
     : `${group.count}`;
