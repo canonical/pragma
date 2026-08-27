@@ -376,7 +376,7 @@ describe("storeless guarantee (PROTECTED)", () => {
       },
     );
     expect(nouns.status).toBe(0);
-    expect(nouns.stdout).toBe("colophon\nconfig\n");
+    expect(nouns.stdout).toBe("colophon\nconcept\nconfig\n");
     expect(nouns.stderr).toBe("");
 
     // The headline guarantee of the embedded pack: a user who has installed

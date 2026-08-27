@@ -18,7 +18,7 @@ const componentCssClassName = "ds breadcrumbs";
  *
  * `import { Breadcrumbs } from "@canonical/react-ds-global";`
  *
- * @implements ds:global.pattern.breadcrumbs
+ * @implements ds:global.component.breadcrumbs
  */
 const Breadcrumbs = ({
   items,

@@ -142,6 +142,15 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     category: "read",
     use_when: "Discovering which standard categories exist before filtering",
   },
+  concept_list: {
+    category: "read",
+    use_when:
+      "Browsing long-form design-system concepts (foundations, how-to guides, decision guides)",
+  },
+  concept_lookup: {
+    category: "read",
+    use_when: "Reading a concept's full Markdown documentation by name or IRI",
+  },
   standard_sample: {
     category: "read",
     use_when:

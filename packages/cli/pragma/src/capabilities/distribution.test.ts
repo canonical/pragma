@@ -33,12 +33,13 @@ function declaredShape(verb: VerbSpec): Record<string, unknown> {
 }
 
 describe("the distribution's declared stories (PROTECTED)", () => {
-  it("declares exactly the five domain nouns", () => {
+  it("declares exactly the six domain nouns", () => {
     // Every domain noun is now nothing BUT its story (L-OPEN-9), so a renamed
     // or dropped noun deletes a whole command rather than shrinking one — it
     // must fail HERE.
     expect([...declaredStories.keys()].sort()).toEqual([
       "block",
+      "concept",
       "modifier",
       "standard",
       "tier",

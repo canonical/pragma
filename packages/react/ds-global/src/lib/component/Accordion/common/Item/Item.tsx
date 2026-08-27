@@ -14,7 +14,7 @@ const componentCssClassName = "ds accordion-item";
  * state is required; `expanded`/`onExpandedChange` is an optional controlled
  * overlay on the native `open` attribute.
  *
- * @implements dso:global.subcomponent.accordion-item
+ * @implements ds:global.subcomponent.accordion-item
  */
 const Item = ({
   heading,

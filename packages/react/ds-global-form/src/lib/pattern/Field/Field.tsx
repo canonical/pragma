@@ -81,4 +81,7 @@ const Field = ({
   }
 };
 
+/**
+ * @implements ds:global.pattern.field
+ */
 export default Field;

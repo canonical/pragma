@@ -9,6 +9,8 @@ import type { ComboboxFieldProps } from "./types.js";
  * ComboboxInput decomposes it across its input/list/chips internally.
  *
  * `import { ComboboxField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.combobox_field
  */
 export default withWrapper<ComboboxFieldProps>(
   bindField<ComboboxFieldProps>(ComboboxInput, "controlled"),

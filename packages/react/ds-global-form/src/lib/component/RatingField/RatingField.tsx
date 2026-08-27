@@ -9,6 +9,8 @@ import type { RatingFieldProps } from "./types.js";
  * The numeric rating is owned by the field.
  *
  * `import { RatingField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.rating_field
  */
 export default withWrapper<RatingFieldProps>(
   bindField<RatingFieldProps>(RatingInput, "controlled"),

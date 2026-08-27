@@ -21,9 +21,14 @@
  * on every test run), and deleting `pack.generated.ts` forces a full
  * regeneration.
  *
- * Needs the network (a shallow clone per git pack). Run deliberately by a
- * maintainer — `bun run bundle` — never by CI or `bun run build`: the artifacts
- * are committed.
+ * Needs the network (a shallow clone per git pack), so it is NOT part of
+ * `build` / `build:all`: a PR build must not clone three repositories, and the
+ * artifacts are committed. It runs in exactly two places — a maintainer's
+ * deliberate `bun run bundle`, and the release's version job
+ * (`.github/actions/lerna-version`), which refreshes the snapshot into the
+ * tagged commit so a fresh install never ships a graph weeks behind its own
+ * release. The zero-diff-on-unchanged-inputs property above is what makes that
+ * release step free of churn.
  */
 
 import {

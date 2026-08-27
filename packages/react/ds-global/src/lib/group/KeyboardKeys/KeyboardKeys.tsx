@@ -19,7 +19,7 @@ const componentCssClassName = "ds keyboard-keys";
  *
  * `import { KeyboardKeys } from "@canonical/react-ds-global";`
  *
- * @implements dso:global.group.keyboard_keys
+ * @implements ds:global.group.keyboard_keys
  */
 const KeyboardKeys = ({
   className,

@@ -9,7 +9,7 @@ const componentCssClassName = "ds inline-code";
  *
  * `import { InlineCode } from "@canonical/react-ds-global";`
  *
- * @implements dso:global.component.inline_code
+ * @implements ds:global.component.inline_code
  */
 const InlineCode = ({
   className,

@@ -1,6 +1,6 @@
 /**
  * Breadcrumbs styles
- * @implements dso:global.pattern.breadcrumbs
+ * @implements ds:global.component.breadcrumbs
  *
  * DSL anatomy mapping:
  * - layout.type: flow -> display: flex

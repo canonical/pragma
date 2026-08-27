@@ -8,6 +8,8 @@ import type { TimeFieldProps } from "./types.js";
  * (label, description, error) and middleware/conditional-display support.
  *
  * `import { TimeField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.time_field
  */
 export default withWrapper<TimeFieldProps>(
   bindField<TimeFieldProps>(TimeInput, "native"),
