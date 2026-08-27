@@ -1,3 +1,0 @@
-$ bun run scripts/build.ts
-Build failed
-error: script "build" exited with code 1
