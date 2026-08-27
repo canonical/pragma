@@ -1963,6 +1963,22 @@ describe("WriteFile lands atomically", () => {
     expect(readlinkSync(link)).toBe(real);
   });
 
+  it("writes through a DANGLING symlink instead of replacing it", async () => {
+    // `lstat` succeeds on a dangling link and `realpath` throws ENOENT. One
+    // broad catch around both left the destination as the LINK path, so the
+    // rename destroyed the link — the regression this whole function exists to
+    // prevent, on the very state a fresh dotfiles checkout is in.
+    const missing = join(tmpRoot, "not-yet", "real.json");
+    const link = join(tmpRoot, "dangling.json");
+    symlinkSync(missing, link);
+
+    await runTask(writeFile(link, "new\n"));
+
+    expect(lstatSync(link).isSymbolicLink()).toBe(true);
+    expect(readlinkSync(link)).toBe(missing);
+    expect(readFileSync(missing, "utf-8")).toBe("new\n");
+  });
+
   it("preserves the mode of the file it replaces", async () => {
     const path = join(tmpRoot, "moded.json");
     writeFileSync(path, "old\n");

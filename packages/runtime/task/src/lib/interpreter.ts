@@ -51,12 +51,31 @@ const writeFileAtomic = async (
   content: string,
 ): Promise<void> => {
   // Follow a symlink to its destination so the link itself survives the rename.
+  //
+  // The two probes are kept apart on purpose. `lstat` answers "is there a link
+  // here"; `realpath` answers "where does it lead", and it throws ENOENT for a
+  // link whose destination does not exist yet. Catching both together left
+  // `resolved` as the link path, so the rename replaced THE LINK — the exact
+  // destruction this function exists to prevent. A dangling link is still a
+  // link: the write lands on the destination it names, which is what makes the
+  // link work again.
   let resolved = target;
+  let link: Awaited<ReturnType<typeof fs.lstat>> | undefined;
   try {
-    const link = await fs.lstat(target);
-    if (link.isSymbolicLink()) resolved = await fs.realpath(target);
+    link = await fs.lstat(target);
   } catch {
-    // No such file yet — the plain path is the destination.
+    link = undefined; // No such path yet — the plain path is the destination.
+  }
+  if (link?.isSymbolicLink()) {
+    try {
+      resolved = await fs.realpath(target);
+    } catch {
+      // A link with a missing destination: resolve the target it names itself,
+      // relative to the link's own directory, and create the directories the
+      // rename needs.
+      resolved = path.resolve(path.dirname(target), await fs.readlink(target));
+      await fs.mkdir(path.dirname(resolved), { recursive: true });
+    }
   }
 
   // Inherit the mode of the file being replaced, when there is one.
