@@ -38,6 +38,17 @@ runs:
       shell: bash
       run: bun scripts/collect-implementations.ts --version ${{ steps.lerna_version.outputs.VERSION }}
 
+      # Refresh the CLI's embedded pack so the release ships a graph snapshot
+      # current with its own tag — a fresh install answers store-backed reads
+      # offline, and that answer should not lag the release by weeks. Writes
+      # nothing when the resolved upstream inputs are unchanged, so a release
+      # with no upstream movement produces no diff. Needs the network (a
+      # shallow clone per git pack).
+    - name: Refresh the CLI embedded pack
+      shell: bash
+      working-directory: packages/cli/pragma
+      run: bun run bundle
+
     - name: Setup Git CLI
       uses: ./.github/actions/setup-git
       with:
