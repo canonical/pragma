@@ -496,6 +496,7 @@ describe("formatRootHelp — grouping", () => {
       makeVerb(["block", "list"]),
     ],
     "1.2.3",
+    "https://example.test/issues",
   );
 
   it("leads with the uncurated nouns, untitled, under the usage line", () => {
@@ -544,6 +545,8 @@ describe("formatRootHelp — grouping", () => {
                                (___,/'
 
       pragma v1.2.3 — pragma test
+
+      This is a preview version. Issues and suggestions: https://example.test/issues
 
       Usage: pragma <command> [subcommand] [flags]
 

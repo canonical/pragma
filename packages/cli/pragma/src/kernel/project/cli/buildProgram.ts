@@ -12,7 +12,12 @@
  */
 
 import { Command, InvalidArgumentError, Option } from "commander";
-import { BIN_NAME, PROGRAM_DESCRIPTION, VERSION } from "../../../constants.js";
+import {
+  BIN_NAME,
+  ISSUES_URL,
+  PROGRAM_DESCRIPTION,
+  VERSION,
+} from "../../../constants.js";
 import type { GlobalFlags } from "../../runtime/index.js";
 import { kebabCase } from "../../spec/index.js";
 import type { CliProjection, ParamSpec, VerbSpec } from "../../spec/types.js";
@@ -31,6 +36,8 @@ export interface BuildProgramOptions {
   readonly description?: string;
   /** Version string for `--version`. */
   readonly version?: string;
+  /** Where root help's preview notice sends feedback. */
+  readonly issuesUrl?: string;
   /**
    * Module-owned noun mounts (see `CapabilityModule.cliProjection`), keyed by
    * noun. A mounted noun's parent command is created here exactly once and
@@ -277,6 +284,7 @@ export function buildProgram(
   const programName = options.programName ?? BIN_NAME;
   const description = options.description ?? PROGRAM_DESCRIPTION;
   const version = options.version ?? VERSION;
+  const issuesUrl = options.issuesUrl ?? ISSUES_URL;
   const live = verbs.filter((verb) => !verb.hidden);
 
   const program = new Command();
@@ -290,7 +298,7 @@ export function buildProgram(
   program.enablePositionalOptions();
   program.exitOverride();
   useDesignedHelp(program, () =>
-    formatRootHelp(programName, description, live, version),
+    formatRootHelp(programName, description, live, version, issuesUrl),
   );
 
   const groups = new Map<string, VerbSpec[]>();
