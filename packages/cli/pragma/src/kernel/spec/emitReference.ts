@@ -538,6 +538,11 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
     notes:
       "Distribution-only — see below. The one-line blurb on the front door and in the MCP handshake.",
   },
+  logo: {
+    type: "string[] (optional)",
+    notes:
+      "Distribution-only — see below. ASCII-art wordmark lines shown above the header on root `--help`, tinted with the terminal palette's orange slot. Declared content, not code: a wordmark spells the distribution's name, so a fork ships its own art or omits the field and gets no wordmark. Omit or leave empty for a bare header.",
+  },
   colophon: {
     type: "object (optional)",
     notes:

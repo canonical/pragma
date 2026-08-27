@@ -117,6 +117,8 @@ export interface PragmaConfig {
 export interface RawConfig {
   readonly name?: string;
   readonly help?: string;
+  /** ASCII-art wordmark lines shown atop root `--help` (identity, like `name`). */
+  readonly logo?: readonly string[];
   readonly colophon?: ColophonDeclaration;
   readonly issuesUrl?: string;
   readonly tier?: string;

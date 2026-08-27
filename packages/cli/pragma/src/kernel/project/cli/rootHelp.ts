@@ -10,11 +10,13 @@
  * never heard of still surfaces.
  */
 
+import { PROGRAM_LOGO } from "../../../constants.js";
 import type { VerbSpec } from "../../spec/types.js";
 import {
   helpColumns,
   helpDim,
   helpHeading,
+  helpLogo,
   helpTerm,
   helpUsage,
 } from "./helpFormat.js";
@@ -167,6 +169,9 @@ export function formatRootHelp(
   );
 
   const lines: string[] = [
+    // The wordmark leads when the distribution declares one. A fork ships its
+    // own art or none, so its front door is never branded with someone else's.
+    ...(PROGRAM_LOGO.length > 0 ? [...PROGRAM_LOGO.map(helpLogo), ""] : []),
     `${helpHeading(programName)} — ${description}`,
     "",
     helpUsage(

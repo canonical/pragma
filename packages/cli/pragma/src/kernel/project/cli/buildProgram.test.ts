@@ -527,7 +527,18 @@ describe("formatRootHelp — grouping", () => {
 
   it("renders the unified root page (restyle golden)", () => {
     expect(help).toMatchInlineSnapshot(`
-      "pragma — pragma test
+      "              _
+                  /' \`\\
+                /'     )
+              /' (___,/'____     ____     ____     ,__________     ____
+            /'        )'    )--/'    )  /'    )   /'    )     )  /'    )
+          /'        /'       /'    /' /'    /'  /'    /'    /' /'    /'
+      (,/'        /'        (___,/(__(___,/(__/'    /'    /(__(___,/(__
+                                        /'
+                                /     /'
+                               (___,/'
+
+      pragma — pragma test
 
       Usage: pragma <command> [subcommand] [flags]
 
