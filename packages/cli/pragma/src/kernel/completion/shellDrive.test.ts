@@ -333,7 +333,7 @@ const STRUCTURE = [
     at: "pragma setup <TAB>",
     words: ["pragma", "setup", ""],
     cword: 2,
-    offers: ["completions", "lsp", "mcp", "skills"],
+    offers: ["completions", "config", "lsp", "mcp", "skills"],
   },
   {
     at: "pragma create <TAB>",
@@ -538,7 +538,7 @@ describe.skipIf(!hasShell("fish"))(
       { line: "pragma block ", offers: ["list", "lookup", "sample"] },
       {
         line: "pragma setup ",
-        offers: ["completions", "lsp", "mcp", "skills"],
+        offers: ["completions", "config", "lsp", "mcp", "skills"],
       },
       {
         line: "pragma create ",

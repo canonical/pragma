@@ -151,22 +151,19 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     expect(text.startsWith("recipes — Explore the recipe graph (")).toBe(true);
   });
 
-  it("greets a first-time user with the fork's issues URL and config file", async () => {
+  it("hints at a first-time user in the fork's own name", async () => {
     process.env.XDG_CONFIG_HOME = mkdtempSync(join(tmpdir(), "identity-"));
-    const { ensureFirstRun } = await import("./kernel/config/firstRun.js");
+    const { setupHintLines } = await import("./kernel/config/firstRun.js");
     const { globalConfigPath } = await import("./kernel/config/paths.js");
 
-    const lines: string[] = [];
-    await ensureFirstRun((line) => lines.push(line));
-    const greeting = lines.join("\n");
+    const hint = setupHintLines().join("\n");
 
-    // Nothing is masked: the resolved config path is IN the greeting, so the
-    // XDG namespace has to follow the fork's name too or this assertion fails.
-    expect(greeting).not.toMatch(THIS_DISTRIBUTION);
-    expect(greeting).toContain(globalConfigPath());
+    // The hint names the fork's issues URL and its own setup command; the XDG
+    // namespace has to follow the fork's name too or the path assertion fails.
+    expect(hint).not.toMatch(THIS_DISTRIBUTION);
     expect(globalConfigPath()).toContain("/recipes/");
-    expect(greeting).toContain("https://example.invalid/recipes/issues");
-    expect(greeting).toContain("`recipes.config.ts`");
+    expect(hint).toContain("https://example.invalid/recipes/issues");
+    expect(hint).toContain("recipes setup");
   });
 
   it("narrates the colophon the fork declares, titled with the fork's name", async () => {
