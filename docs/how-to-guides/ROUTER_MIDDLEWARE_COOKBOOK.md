@@ -31,27 +31,28 @@ const passthrough: RouteMiddleware = <TRoute extends AnyRoute>(
 
 The `<TRoute extends AnyRoute>` generic is what keeps middleware type-preserving: the route you return is the same shape (and same named-route type) as the one you received. Returning the route unchanged is always valid — that is the correct response when a rule does not apply.
 
-A middleware **factory** is a function that captures configuration and returns a `RouteMiddleware`:
+A middleware **factory** is a function that captures configuration and returns a `RouteMiddleware`. Write the inner function with the real generic signature — no `as RouteMiddleware` cast on the whole function:
 
 ```ts
 function withSomething(config: string): RouteMiddleware {
-  return ((currentRoute: AnyRoute) => {
+  return <TRoute extends AnyRoute>(currentRoute: TRoute): TRoute => {
     // inspect currentRoute.url, currentRoute.meta, etc.
     return currentRoute;
-  }) as RouteMiddleware;
+  };
 }
 ```
 
-The cast on the inner arrow (`as RouteMiddleware`) is the practical idiom: the body works with `AnyRoute`, but the exported value advertises the type-preserving generic signature. This mirrors the real `withAuth` factory in the boilerplate.
+One narrow assertion remains when you *replace a property*: overriding `warm` (or `url`) on the spread object widens that property's type, and TypeScript cannot prove the result is still `TRoute`. Assert the constructed object back — `return { ...currentRoute, warm: guardedWarm } as TRoute;` — and keep the function signature itself honest. This mirrors the real `withAuth` factory in the boilerplate.
 
 ## How middleware is applied
 
-`applyMiddleware(routes, middleware)` runs the middleware over an array of routes and rebuilds each route's `parse`/`render` codec from the (possibly changed) `url`. You rarely call it directly — `createBrowserRouter`, `createStaticRouter`, and `createMemoryRouter` all accept a `middleware` option and apply it for you.
+`applyMiddleware(routes, middleware)` takes an **array** of routes and the middleware array, transforms each route through the chain, and rebuilds each route's `parse`/`render` codec from the (possibly changed) `url`. You rarely call it directly — `createRouter` accepts a `middleware` option and applies the chain to the whole route map for you:
 
 ```ts
-import { createBrowserRouter } from "@canonical/router-core";
+import { createBrowserAdapter, createRouter } from "@canonical/router-core";
 
-const router = createBrowserRouter(appRoutes, {
+const router = createRouter(appRoutes, {
+  adapter: createBrowserAdapter(),
   middleware: [withAuth("/login")],
   notFound: notFoundRoute,
 });
@@ -60,7 +61,11 @@ const router = createBrowserRouter(appRoutes, {
 Two facts about `applyMiddleware` worth internalising:
 
 1. **It rebuilds the codec from `url`.** After the middleware chain runs, `parse(url)` and `render(params)` are regenerated from `transformed.url`. So a middleware that rewrites `url` (for example, a locale prefix) gets coherent matching and link-building for free — you do not rebuild the codec yourself.
-2. **Outermost-first array semantics.** The middleware array is reversed and folded, so the **first** entry in the array is the **outermost** transform: it sees the route last on the way in and its effect wraps everything after it. Order your array from broadest policy to narrowest. See [Composition order](#composition-order).
+2. **First entry = outermost.** The array is reversed and folded (`[...middleware].reverse().reduce(...)`), so with `[A, B, C]` the routes pass through **C first, then B, then A**. Two consequences, one per direction:
+   - *Build time:* the **last** entry sees the original route; the **first** entry sees everything the others already produced. A URL rewrite by the first entry happens after the later entries already ran — they never see it.
+   - *Runtime:* each middleware that wraps `warm` nests around the wrappers applied before it, so the **first** entry's hook code runs outermost (first on the way in), and the **last** entry's runs innermost, closest to the original hook.
+
+   See [Composition order](#composition-order) for a worked example.
 
 ## Recipe: `withAuth(loginPath)`
 
@@ -82,34 +87,35 @@ function hasDemoAuth(search: unknown): boolean {
 }
 
 export function withAuth(loginPath: string): RouteMiddleware {
-  return ((currentRoute: AnyRoute) => {
+  return <TRoute extends AnyRoute>(currentRoute: TRoute): TRoute => {
     if (!protectedPaths.has(currentRoute.url)) {
       return currentRoute;
     }
 
     const currentWarm = currentRoute.warm;
+    const guardedWarm = (
+      params: unknown,
+      search: unknown,
+      context: NavigationContext,
+    ) => {
+      if (!hasDemoAuth(search)) {
+        const from = currentRoute.render(
+          (params ?? {}) as RouteParamValues | Record<string, never>,
+        );
 
-    return {
-      ...currentRoute,
-      warm: (
-        params: unknown,
-        search: unknown,
-        context: NavigationContext,
-      ) => {
-        if (!hasDemoAuth(search)) {
-          const from = currentRoute.render(
-            (params ?? {}) as RouteParamValues | Record<string, never>,
-          );
+        redirect(`${loginPath}?from=${encodeURIComponent(from)}`, 302);
+      }
 
-          redirect(`${loginPath}?from=${encodeURIComponent(from)}`, 302);
-        }
-
-        if (currentWarm) {
-          return currentWarm(params, search, context);
-        }
-      },
+      if (currentWarm) {
+        return currentWarm(params, search, context);
+      }
     };
-  }) as RouteMiddleware;
+
+    // Overriding `warm` widens the property's type, so the object needs a
+    // local assertion back to TRoute; the middleware's signature itself is
+    // the real generic contract.
+    return { ...currentRoute, warm: guardedWarm } as TRoute;
+  };
 }
 ```
 
@@ -117,6 +123,7 @@ What makes this correct against the current API:
 
 - **The data hook is `warm`, not `fetch`.** The route's only data hook is `warm(params, search, context)`. The middleware captures the original (`const currentWarm = currentRoute.warm;`) and delegates to it once the auth check passes.
 - **`redirect()` does not return — it throws.** `redirect(to, status)` constructs a `RouteRedirect` (exported as `Redirect`) and throws it; its return type is `never`. You do not `return redirect(...)`. The throw unwinds out of the void-returning `warm`, and the router catches it and performs the navigation. Because the redirect throws, the `currentWarm(...)` call below it is unreachable for unauthenticated visitors — exactly the intent.
+- **The throw is honored from async hooks too.** A synchronous throw is applied before the navigation commits. If the guard is `async` (say, a session fetch precedes the check), the rejection carrying the `RouteRedirect` arrives after the route has already committed and rendered — the router then applies it late: the page shows briefly, then the redirect lands (as a history *replace*, so Back does not return to the guarded page). A superseded or abandoned navigation drops the late redirect. Fire-and-forget means render is never blocked; the flash is the honest price.
 - **`warm` returns `void | Promise<void>`.** The redirect is a side effect on the control flow, not a value the hook hands back. Never try to model the redirect as a return value or a resolved promise.
 - **Status `302` is the runtime default.** The runtime `redirect()` helper accepts `301 | 302 | 307 | 308` and defaults to `302`. The boilerplate passes `302` explicitly. Do not confuse this with static redirect routes (`route({ url, redirect, status })`), whose `status` is narrower: `301 | 308` only.
 
@@ -127,9 +134,7 @@ The middleware decides at navigation time, inside `warm`. But a server (sitemap 
 ```ts
 export function getAuthRedirectHref(input: string | URL): string | null {
   const url =
-    input instanceof URL
-      ? input
-      : new URL(input, "https://router.local");
+    input instanceof URL ? input : new URL(input, "https://router.local");
 
   if (
     !protectedPaths.has(url.pathname) ||
@@ -149,7 +154,8 @@ const redirectHref = getAuthRedirectHref(requestUrl);
 if (redirectHref) {
   return Response.redirect(redirectHref, 302);
 }
-// otherwise fall through to createStaticRouter(...) + render
+// otherwise fall through to matching + rendering — see the boilerplate's
+// resolveRouteDisposition in apps/react/boilerplate-vite/src/server/entry.tsx
 ```
 
 This is the corrected shape of the auth recipe: the **throwing** path lives inside `warm` (client navigation), the **pure** path is a reusable function (server pre-flight), and both share `protectedPaths` and `hasDemoAuth` so the policy cannot drift between them.
@@ -172,7 +178,7 @@ import {
 } from "@canonical/router-core";
 
 export function withI18n(defaultLocale: string): RouteMiddleware {
-  return ((currentRoute: AnyRoute) => {
+  return <TRoute extends AnyRoute>(currentRoute: TRoute): TRoute => {
     const currentWarm = currentRoute.warm;
 
     return {
@@ -186,11 +192,15 @@ export function withI18n(defaultLocale: string): RouteMiddleware {
           ) => {
             const locale = params.locale ?? defaultLocale;
 
-            return currentWarm(params, { ...(search as object), locale }, context);
+            return currentWarm(
+              params,
+              { ...(search as object), locale },
+              context,
+            );
           }
         : undefined,
-    };
-  }) as RouteMiddleware;
+    } as TRoute;
+  };
 }
 ```
 
@@ -220,40 +230,40 @@ import {
 export function withTiming(
   report: (event: { route: string; durationMs: number }) => void,
 ): RouteMiddleware {
-  return ((currentRoute: AnyRoute) => {
+  return <TRoute extends AnyRoute>(currentRoute: TRoute): TRoute => {
     const currentWarm = currentRoute.warm;
 
     if (!currentWarm) {
       return currentRoute;
     }
 
-    return {
-      ...currentRoute,
-      warm: async (
-        params: unknown,
-        search: unknown,
-        context: NavigationContext,
-      ) => {
-        const startedAt = performance.now();
+    const timedWarm = async (
+      params: unknown,
+      search: unknown,
+      context: NavigationContext,
+    ) => {
+      const startedAt = performance.now();
 
-        try {
-          return await currentWarm(params, search, context);
-        } finally {
-          report({
-            durationMs: performance.now() - startedAt,
-            route: currentRoute.url,
-          });
-        }
-      },
+      try {
+        return await currentWarm(params, search, context);
+      } finally {
+        report({
+          durationMs: performance.now() - startedAt,
+          route: currentRoute.url,
+        });
+      }
     };
-  }) as RouteMiddleware;
+
+    return { ...currentRoute, warm: timedWarm } as TRoute;
+  };
 }
 ```
 
 Notes:
 
 - Return the route untouched when there is no `warm` to time.
-- `warm` may return `void` or `Promise<void>`; `await` handles both, and the `finally` reports even if the hook throws (including a `redirect()` thrown by an inner auth middleware) — instrumentation should not swallow that throw.
+- `warm` may return `void` or `Promise<void>`; `await` handles both.
+- **Wrapping the hook in `async` does not break redirects or statuses.** A `redirect()` or `StatusResponse` thrown by an inner hook rejects the timing wrapper's promise, and the router honors async control-flow rejections: the redirect or status is applied late, after the navigation has committed (a brief render of the target, then the redirect, as a history replace). The `finally` still reports the duration in that case. What instrumentation must **not** do is swallow the rejection — re-throw (or, as here, simply do not catch), so the control flow reaches the router.
 
 ### Rationale
 
@@ -270,9 +280,9 @@ import {
   type AnyRoute,
   type RouteMiddleware,
   type WrapperDefinition,
+  wrapper,
 } from "@canonical/router-core";
 import type { ReactElement } from "react";
-import { wrapper } from "@canonical/router-core";
 
 const shellBoundary = wrapper<ReactElement>({
   id: "shell:error-boundary",
@@ -282,12 +292,12 @@ const shellBoundary = wrapper<ReactElement>({
 export function withErrorBoundary(
   boundary: WrapperDefinition<ReactElement> = shellBoundary,
 ): RouteMiddleware {
-  return ((currentRoute: AnyRoute) => {
+  return <TRoute extends AnyRoute>(currentRoute: TRoute): TRoute => {
     return {
       ...currentRoute,
       wrappers: [boundary, ...currentRoute.wrappers],
-    };
-  }) as RouteMiddleware;
+    } as TRoute;
+  };
 }
 ```
 
@@ -295,7 +305,7 @@ Notes:
 
 - `wrappers` is always present on a `RouteDefinition` (it defaults to `[]`), so `[boundary, ...currentRoute.wrappers]` is safe without a guard.
 - `wrapper()` takes a single type parameter, `wrapper<TRendered>` (here `ReactElement`). A wrapper's own optional `warm` is `(params, context)` — two arguments, no `search` — distinct from a route's three-argument `warm`.
-- The error experience itself is a React `<ErrorBoundary>` inside the wrapper component. The router has no error-UI field; render errors propagate past `<Outlet>`, so the boundary belongs in the wrapper's JSX. Use `StatusResponse` from a `warm` to signal an HTTP-like status to that boundary.
+- The boundary in the wrapper's JSX catches **render errors** only. Data errors never throw into React: a `StatusResponse` thrown from a `warm` becomes the committed location's `status`, so the wrapper (or any component) reads `useRoute().status` and conditionally renders error UI. Router handles data errors as state; React handles render errors — two channels, two mechanisms.
 
 ### Rationale
 
@@ -305,32 +315,32 @@ Notes:
 
 ## Composition order
 
-Middleware runs with outermost-first array semantics: the first array entry is the outermost transform. Order from broadest URL policy to narrowest concern.
+The array is applied **last entry first**: with `[A, B, C]`, routes pass through C, then B, then A. At runtime the nesting is the mirror image — the first entry's hook wrapper is outermost. Order the array deliberately.
 
 ```ts
-import { createBrowserRouter } from "@canonical/router-core";
+import { createBrowserAdapter, createRouter } from "@canonical/router-core";
 
-const router = createBrowserRouter(appRoutes, {
+const router = createRouter(appRoutes, {
+  adapter: createBrowserAdapter(),
   middleware: [withI18n("en"), withAuth("/login"), withTiming(report)],
   notFound: notFoundRoute,
 });
 ```
 
-Reading the array left to right:
+What actually happens with `[withI18n("en"), withAuth("/login"), withTiming(report)]`:
 
-1. `withI18n("en")` rewrites the URL first, so `withAuth` and `withTiming` see the locale-prefixed route and the locale-aware `warm`.
-2. `withAuth("/login")` wraps the (now locale-aware) `warm` with its redirect guard.
-3. `withTiming(report)` wraps last, so its timer is the innermost wrapper around whatever the chain produced — it measures the full composed `warm`, redirect throw included.
+1. **Build time runs right-to-left.** `withTiming` is applied first and wraps the route's original `warm`. `withAuth` is applied next — it checks `protectedPaths.has(currentRoute.url)` against the **un-prefixed** URL, which is exactly why its plain-path lookup works. `withI18n` is applied last: it rewrites the URL to `/:locale/...` after the other two already ran, so neither of them ever sees the prefixed URL.
+2. **Runtime nests left-to-right.** On navigation, `withI18n`'s locale injection runs outermost, then `withAuth`'s guard, then — only if the auth check passes — `withTiming`'s timer around the original hook. For an unauthenticated visitor the redirect throws in the auth layer **before the timer ever starts**: the timer measures the route's own data work, not the guard.
 
-If you reverse the order, `withAuth` would inspect the unprefixed URL and the timer would sit outside the redirect logic. Order is meaningful; choose it deliberately.
+If you moved `withI18n` to the **end** of the array, it would be applied first — `withAuth` would then see `/:locale/account` and its `protectedPaths` lookup would silently stop matching. If you moved `withTiming` to the **front**, its timer would wrap the guard and count redirects as "data time". The given order is the deliberate one: URL policy first in the array (outermost), instrumentation last (innermost, closest to the real work).
 
 The boilerplate exports its chain as a `const` tuple and spreads it into both entries so client and server apply identical policy:
 
 ```ts
 export const middleware = [withAuth("/login")] as const;
 
-// client: createBrowserRouter(appRoutes, { middleware: [...middleware], notFound: notFoundRoute })
-// server: createStaticRouter(appRoutes, url, { middleware: [...middleware], notFound: notFoundRoute })
+// client: createRouter(appRoutes, { adapter: createBrowserAdapter(), middleware: [...middleware], notFound: notFoundRoute })
+// server: createRouter(appRoutes, { adapter: createServerAdapter(url), middleware: [...middleware], notFound: notFoundRoute })
 ```
 
 ## Rules of thumb
@@ -338,14 +348,14 @@ export const middleware = [withAuth("/login")] as const;
 - return the original route unchanged when the rule does not apply
 - capture and delegate to `currentRoute.warm` — never assume it exists, and never replace it with a hook the route never had
 - there is no `fetch` field; `warm(params, search, context)` is the only route data hook
-- `redirect()` throws (`never`) — call it for its side effect inside `warm`, never `return` it
+- `redirect()` throws (`never`) — call it for its side effect inside `warm`, never `return` it; thrown sync it applies before commit, thrown from an async hook it applies late (render never blocks)
 - factor any decision a server also needs into a pure helper (the `getAuthRedirectHref` pattern) so client and server share one policy
 - prefer middleware for cross-cutting policy, wrappers (`wrapper()` + `group()`) for layout and shared UI
 - document any redirect or URL-shape change clearly for consumers — middleware rewrites routes out from under the call site
 
 ## See a working example
 
-The live auth middleware — `withAuth` and the pure `getAuthRedirectHref` companion — is in [apps/react/boilerplate-vite/src/routes.tsx](../../apps/react/boilerplate-vite/src/routes.tsx). The routes it transforms, including the `~standard` search schemas, are in [apps/react/boilerplate-vite/src/domains/account/routes.ts](../../apps/react/boilerplate-vite/src/domains/account/routes.ts) and [apps/react/boilerplate-vite/src/domains/marketing/routes.ts](../../apps/react/boilerplate-vite/src/domains/marketing/routes.ts). The client and server entries that apply the middleware are [src/client/entry.tsx](../../apps/react/boilerplate-vite/src/client/entry.tsx) and [src/server/entry.tsx](../../apps/react/boilerplate-vite/src/server/entry.tsx).
+The live auth middleware — `withAuth` and the pure `getAuthRedirectHref` companion — is in [apps/react/boilerplate-vite/src/routes.tsx](../../apps/react/boilerplate-vite/src/routes.tsx). The routes it transforms, including the Standard Schema v1 search schemas, are in [apps/react/boilerplate-vite/src/domains/account/routes.ts](../../apps/react/boilerplate-vite/src/domains/account/routes.ts) and [apps/react/boilerplate-vite/src/domains/marketing/routes.ts](../../apps/react/boilerplate-vite/src/domains/marketing/routes.ts). The client and server entries that apply the middleware are [src/client/entry.tsx](../../apps/react/boilerplate-vite/src/client/entry.tsx) and [src/server/entry.tsx](../../apps/react/boilerplate-vite/src/server/entry.tsx).
 
 ## Reference
 
