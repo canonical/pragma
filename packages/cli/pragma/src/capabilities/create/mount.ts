@@ -61,8 +61,7 @@ import {
 } from "../../kernel/project/cli/helpFormat.js";
 import type { CliMountHost, VerbSpec } from "../../kernel/spec/types.js";
 import { CREATE_GENERATORS } from "./constants.js";
-import { createFormatters } from "./create.render.js";
-import { CREATE_CAPABILITY, runCreate } from "./create.verb.js";
+import { CREATE_CAPABILITY, CREATE_OUTPUT, runCreate } from "./create.verb.js";
 import { renderCreateHelp } from "./createHelp.js";
 import { CREATE_SURFACE } from "./createSurface.generated.js";
 import type { CreateKind } from "./types.js";
@@ -137,6 +136,11 @@ function kindOf(commandPath: string): CreateKind {
  * (the mount already extracted the explicit answers — leaf commands carry no
  * Commander defaults, so explicit stays distinguishable from default), and
  * `run` is `runCreate` over the full command path.
+ *
+ * The output spec is the SHARED `CREATE_OUTPUT`, not a local rebuild: this is
+ * the spec a real `create component react …` runs against, so a dry-run
+ * renderer declared only on the binding-level verbs would be a renderer the
+ * CLI never reached.
  */
 export function leafVerb(commandPath: string): VerbSpec {
   const surface = CREATE_SURFACE[commandPath];
@@ -144,7 +148,7 @@ export function leafVerb(commandPath: string): VerbSpec {
     path: ["create", kindOf(commandPath)],
     summary: surface?.description ?? commandPath,
     params: [],
-    output: { formatters: createFormatters },
+    output: CREATE_OUTPUT,
     capability: CREATE_CAPABILITY,
     run: (params, rt) =>
       runCreate(commandPath, params, rt) as unknown as Task<GeneratorResult>,

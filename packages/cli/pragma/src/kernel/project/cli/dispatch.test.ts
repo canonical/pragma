@@ -1,7 +1,7 @@
 import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fail, succeed } from "@canonical/task";
+import { $, fail, gen, log, mkdir, succeed, writeFile } from "@canonical/task";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fixturePreviewModule } from "../../../testing/fixtures/fixtureCapability.js";
 import { PragmaError } from "../../error/PragmaError.js";
@@ -148,6 +148,46 @@ describe("executeVerb — mutations", () => {
       bootRuntime(PLAIN),
     );
     expect(outcome.stdout).toContain("Dry run");
+  });
+
+  it("a verb with NO formatPlan renders the effect dump, byte for byte", async () => {
+    // The `formatPlan` seam is opt-in, and opting out is the majority case.
+    // These are the exact bytes the kernel produced before any verb had a
+    // renderer of its own — the whole literal, not a substring — so a verb
+    // that declares nothing can never be re-rendered by accident.
+    const dumped: VerbSpec = {
+      ...make,
+      run: () =>
+        gen(function* () {
+          yield* $(log("info", "starting"));
+          yield* $(mkdir("out"));
+          yield* $(writeFile("out/thing.txt", "hello"));
+          return { dumped: true };
+        }),
+    };
+    const outcome = await executeVerb(
+      dumped,
+      {},
+      { dryRun: true, undo: false, yes: false },
+      bootRuntime(PLAIN, mkdtempSync(join(tmpdir(), "pragma-dump-"))),
+    );
+    expect(outcome.stdout).toBe(
+      "Dry run — planned effects:\n" +
+        "  - Log [info]: starting\n" +
+        "  - Created out/\n" +
+        "  - Write file: out/thing.txt (5 bytes)\n",
+    );
+    expect(outcome.exitCode).toBe(0);
+  });
+
+  it("an empty plan renders the no-effects line, byte for byte", async () => {
+    const outcome = await executeVerb(
+      make,
+      {},
+      { dryRun: true, undo: false, yes: false },
+      bootRuntime(PLAIN),
+    );
+    expect(outcome.stdout).toBe("Dry run — no effects.\n");
   });
 
   it("reports undo count under --undo", async () => {

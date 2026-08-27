@@ -529,7 +529,7 @@ describe("the mounted create grammar (subprocess)", () => {
       "--dry-run",
     ]);
     expect(accepted.status).toBe(0);
-    expect(accepted.stdout).toContain("Dry run");
+    expect(accepted.stdout).toContain("Dry-run complete.");
     expect(readdirSync(accepted.cwd)).toEqual([]);
 
     const rejected = run([
@@ -688,7 +688,7 @@ describe("the mounted create grammar (subprocess)", () => {
       const replied = run(["create", ...path, ...supplied, "--dry-run"]);
       expect(replied.stderr).not.toContain("unknown option");
       expect(replied.status, replied.stderr).toBe(0);
-      expect(replied.stdout).toContain("Dry run");
+      expect(replied.stdout).toContain("Dry-run complete.");
       expect(readdirSync(replied.cwd)).toEqual([]);
     }, 60_000);
   }

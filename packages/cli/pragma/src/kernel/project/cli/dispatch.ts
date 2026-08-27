@@ -11,7 +11,7 @@
  * exit code.
  */
 
-import { describeEffect, type Task } from "@canonical/task";
+import { describeEffect, type Effect, type Task } from "@canonical/task";
 import { runPreview, runTask, runUndo } from "@canonical/task/node";
 import {
   asPragmaError,
@@ -213,33 +213,54 @@ function renderData(
  *
  * The default render is the effect dump — one described effect per line — which
  * is what every verb without a plan of its own gets, byte for byte as before.
- * A verb that declares `output.formatPlan` AND stashed `runtime.planData`
- * renders that instead: the dump is debug material (interpreter log effects,
- * a repeated absolute path prefix on every line), and a preview is something a
- * user is meant to read. The JSON envelope stays ADDITIVE — `plan` is the same
- * string array it always was, and `targets` carries the structured data beside
- * it — so a machine reader of the old shape keeps working.
+ * A verb that declares `output.formatPlan` renders that instead: the dump is
+ * debug material (interpreter log effects, a repeated absolute path prefix on
+ * every line), and a preview is something a user is meant to read.
  *
- * @param flags - The global flags (format selection).
+ * The JSON envelope is decided by the STASHED DATA, not by the seam: `plan` is
+ * the same string array it always was, and `targets` appears only for a verb
+ * that stashed a structured plan beside it. So a verb whose renderer works off
+ * the effects alone leaves the machine-readable shape exactly as it found it.
+ *
+ * @param flags - The global flags (format selection, verbosity).
  * @param plan - The described effects the mutation would perform.
- * @param seam - The verb's plan renderer + its stashed data, when it has both.
+ * @param effects - Those same effects, unformatted, for the verb's renderer.
+ * @param seam - The verb's plan renderer + whatever it stashed, when it has one.
  * @returns The dispatch outcome.
  */
-function renderPlan(
+async function renderPlan(
   flags: GlobalFlags,
   plan: readonly string[],
-  seam?: { format: (planData: unknown) => string; planData: unknown },
-): DispatchOutcome {
+  effects: readonly Effect[],
+  seam?: {
+    format: (
+      planData: unknown,
+      effects: readonly Effect[],
+      verbose: boolean,
+    ) => string | Promise<string>;
+    planData: unknown;
+  },
+): Promise<DispatchOutcome> {
   if (flags.format === "json") {
     const body =
-      seam === undefined ? { plan } : { plan, targets: seam.planData };
+      seam?.planData === undefined
+        ? { plan }
+        : { plan, targets: seam.planData };
     return {
       stdout: `${JSON.stringify(successEnvelope(body, { dryRun: true }))}\n`,
       exitCode: 0,
     };
   }
   if (seam !== undefined) {
-    return { stdout: `${seam.format(seam.planData)}\n`, exitCode: 0 };
+    // Awaited: the seam MAY be async, so a renderer can load formatting rules
+    // that live in another package behind a dynamic `import()` instead of
+    // charging every `--help` spawn for them (see `VerbSpec.output.formatPlan`).
+    const rendered = await seam.format(
+      seam.planData,
+      effects,
+      flags.verbose === true,
+    );
+    return { stdout: `${rendered}\n`, exitCode: 0 };
   }
   const body =
     plan.length > 0
@@ -347,25 +368,30 @@ export async function executeVerb(
       // `exec.cwd` is the same write root the real run resolves paths against,
       // and `exec.onEffectStart` carries summon's stamping transform, so the
       // planned byte counts are the bytes the run would actually write.
+      //
+      // NO `onLog`, deliberately. A preview that PERFORMS an effect is not a
+      // preview of that effect: routing the recorded `Log`s to stderr printed
+      // the generator's whole commentary on the way through, and the plan then
+      // listed the very same lines as rows. The interpreter prints nothing of
+      // its own when `onLog` is absent, so a log is now planned once and
+      // performed never.
       const previewExec = mutationRuntime.exec ?? {};
       try {
         const { effects } = await runPreview(task, {
           cwd: previewExec.cwd,
           onEffectStart: previewExec.onEffectStart,
-          onLog: logSink(flags),
         });
         // A plan is the effects a mutation WOULD apply — a `Prompt` is not one,
         // so the interactive confirm gate / answer prompts never clutter it.
+        const planned = effects.filter((effect) => effect._tag !== "Prompt");
         const format = verb.output.formatPlan;
-        const planData = mutationRuntime.planData;
-        return renderPlan(
+        return await renderPlan(
           flags,
-          effects
-            .filter((effect) => effect._tag !== "Prompt")
-            .map(describeEffect),
-          format !== undefined && planData !== undefined
-            ? { format, planData }
-            : undefined,
+          planned.map(describeEffect),
+          planned,
+          format === undefined
+            ? undefined
+            : { format, planData: mutationRuntime.planData },
         );
       } finally {
         // A verb that mounted an interactive session before returning its Task
