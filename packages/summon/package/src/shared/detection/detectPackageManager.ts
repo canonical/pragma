@@ -1,6 +1,7 @@
 import * as path from "node:path";
 import { exists, ifElseM, pure, type Task } from "@canonical/task";
 import type { PackageManager } from "../types.js";
+import ancestorDirs from "./ancestorDirs.js";
 
 /**
  * Lockfiles in detection-priority order within one directory. Both bun
@@ -14,22 +15,6 @@ const LOCKFILES: ReadonlyArray<readonly [string, PackageManager]> = [
   ["yarn.lock", "yarn"],
   ["package-lock.json", "npm"],
 ];
-
-/**
- * Every directory from `start` up to the filesystem root, nearest first.
- */
-export function ancestorDirs(start: string): string[] {
-  const dirs: string[] = [];
-  let current = path.resolve(start);
-  for (;;) {
-    dirs.push(current);
-    const parent = path.dirname(current);
-    if (parent === current) {
-      return dirs;
-    }
-    current = parent;
-  }
-}
 
 /**
  * Detect the package manager in use: the nearest directory (walking from

@@ -3,6 +3,11 @@ import { dryRunWith, type Effect } from "@canonical/task";
 import { describe, expect, it } from "vitest";
 import detectMonorepo from "./detectMonorepo.js";
 
+// All paths are built with node:path from the platform's real root, so the
+// expectations track the same path semantics the production walk uses.
+const ROOT = path.parse(path.resolve("/")).root;
+const at = (...segments: string[]) => path.join(ROOT, ...segments);
+
 const lernaJson = JSON.stringify({ version: "0.22.0" });
 
 const buildMocks = (
@@ -16,7 +21,7 @@ const buildMocks = (
 
 describe("detectMonorepo", () => {
   it("detects lerna.json in cwd", () => {
-    const cwd = "/a/b/c";
+    const cwd = at("a", "b", "c");
     const lernaPath = path.join(cwd, "lerna.json");
 
     const result = dryRunWith(
@@ -28,7 +33,7 @@ describe("detectMonorepo", () => {
   });
 
   it("detects lerna.json in parent directory", () => {
-    const cwd = "/a/b/c";
+    const cwd = at("a", "b", "c");
     const parentLernaPath = path.join(cwd, "..", "lerna.json");
 
     const result = dryRunWith(
@@ -40,7 +45,7 @@ describe("detectMonorepo", () => {
   });
 
   it("detects lerna.json in grandparent directory", () => {
-    const cwd = "/a/b/c";
+    const cwd = at("a", "b", "c");
     const grandparentLernaPath = path.join(cwd, "..", "..", "lerna.json");
 
     const result = dryRunWith(
@@ -53,7 +58,7 @@ describe("detectMonorepo", () => {
 
   it("returns not monorepo when no lerna.json found", () => {
     const result = dryRunWith(
-      detectMonorepo("/standalone"),
+      detectMonorepo(at("standalone")),
       buildMocks(() => false),
     );
 
@@ -62,8 +67,8 @@ describe("detectMonorepo", () => {
 
   it("detects lerna.json in a distant ancestor (deeper than two levels)", () => {
     const result = dryRunWith(
-      detectMonorepo("/repo/packages/summon/package"),
-      buildMocks((p) => p === "/repo/lerna.json"),
+      detectMonorepo(at("repo", "packages", "summon", "package")),
+      buildMocks((p) => p === at("repo", "lerna.json")),
     );
 
     expect(result.value).toEqual({ isMonorepo: true, version: "0.22.0" });
@@ -71,8 +76,8 @@ describe("detectMonorepo", () => {
 
   it("degrades a malformed lerna.json to not-monorepo instead of crashing", () => {
     const result = dryRunWith(
-      detectMonorepo("/a/b/c"),
-      buildMocks((p) => p === "/a/b/c/lerna.json", "{not json"),
+      detectMonorepo(at("a", "b", "c")),
+      buildMocks((p) => p === at("a", "b", "c", "lerna.json"), "{not json"),
     );
 
     expect(result.value).toEqual({ isMonorepo: false });
@@ -85,28 +90,35 @@ describe("detectMonorepo", () => {
         (e) => {
           const p = (e as { path: string }).path;
           return (
-            p === "/repo/pnpm-workspace.yaml" || p === "/repo/package.json"
+            p === at("repo", "pnpm-workspace.yaml") ||
+            p === at("repo", "package.json")
           );
         },
       ],
       ["ReadFile", () => JSON.stringify({ version: "2.0.0" })],
     ]);
 
-    const result = dryRunWith(detectMonorepo("/repo/packages/x"), mocks);
+    const result = dryRunWith(
+      detectMonorepo(at("repo", "packages", "x")),
+      mocks,
+    );
 
     expect(result.value).toEqual({ isMonorepo: true, version: "2.0.0" });
   });
 
   it("detects a package.json workspaces root", () => {
     const mocks = new Map<string, (effect: Effect) => unknown>([
-      ["Exists", (e) => (e as { path: string }).path === "/repo/package.json"],
+      [
+        "Exists",
+        (e) => (e as { path: string }).path === at("repo", "package.json"),
+      ],
       [
         "ReadFile",
         () => JSON.stringify({ version: "3.1.0", workspaces: ["packages/*"] }),
       ],
     ]);
 
-    const result = dryRunWith(detectMonorepo("/repo/apps"), mocks);
+    const result = dryRunWith(detectMonorepo(at("repo", "apps")), mocks);
 
     expect(result.value).toEqual({ isMonorepo: true, version: "3.1.0" });
   });
@@ -117,19 +129,22 @@ describe("detectMonorepo", () => {
         "Exists",
         (e) => {
           const p = (e as { path: string }).path;
-          return p === "/repo/app/package.json" || p === "/repo/lerna.json";
+          return (
+            p === at("repo", "app", "package.json") ||
+            p === at("repo", "lerna.json")
+          );
         },
       ],
       [
         "ReadFile",
         (e) =>
-          (e as { path: string }).path === "/repo/lerna.json"
+          (e as { path: string }).path === at("repo", "lerna.json")
             ? lernaJson
             : JSON.stringify({ name: "app" }),
       ],
     ]);
 
-    const result = dryRunWith(detectMonorepo("/repo/app"), mocks);
+    const result = dryRunWith(detectMonorepo(at("repo", "app")), mocks);
 
     expect(result.value).toEqual({ isMonorepo: true, version: "0.22.0" });
   });
@@ -138,12 +153,16 @@ describe("detectMonorepo", () => {
     const mocks = new Map<string, (effect: Effect) => unknown>([
       [
         "Exists",
-        (e) => (e as { path: string }).path === "/repo/pnpm-workspace.yaml",
+        (e) =>
+          (e as { path: string }).path === at("repo", "pnpm-workspace.yaml"),
       ],
       ["ReadFile", () => ""],
     ]);
 
-    const result = dryRunWith(detectMonorepo("/repo/packages/x"), mocks);
+    const result = dryRunWith(
+      detectMonorepo(at("repo", "packages", "x")),
+      mocks,
+    );
 
     expect(result.value).toEqual({ isMonorepo: true });
   });
@@ -155,23 +174,27 @@ describe("detectMonorepo", () => {
         (e) => {
           const p = (e as { path: string }).path;
           return (
-            p === "/repo/pnpm-workspace.yaml" || p === "/repo/package.json"
+            p === at("repo", "pnpm-workspace.yaml") ||
+            p === at("repo", "package.json")
           );
         },
       ],
       ["ReadFile", () => "{ not json"],
     ]);
 
-    const result = dryRunWith(detectMonorepo("/repo/packages/x"), mocks);
+    const result = dryRunWith(
+      detectMonorepo(at("repo", "packages", "x")),
+      mocks,
+    );
 
     expect(result.value).toEqual({ isMonorepo: true, version: undefined });
   });
 
   it("reports no version when the marker's version field is not a string", () => {
     const result = dryRunWith(
-      detectMonorepo("/a/b"),
+      detectMonorepo(at("a", "b")),
       buildMocks(
-        (p) => p === "/a/b/lerna.json",
+        (p) => p === at("a", "b", "lerna.json"),
         JSON.stringify({ version: 22 }),
       ),
     );
@@ -185,12 +208,13 @@ describe("detectMonorepo", () => {
     const mocks = new Map<string, (effect: Effect) => unknown>([
       [
         "Exists",
-        (e) => (e as { path: string }).path === "/repo/app/package.json",
+        (e) =>
+          (e as { path: string }).path === at("repo", "app", "package.json"),
       ],
       ["ReadFile", () => "42"],
     ]);
 
-    const result = dryRunWith(detectMonorepo("/repo/app"), mocks);
+    const result = dryRunWith(detectMonorepo(at("repo", "app")), mocks);
 
     expect(result.value).toEqual({ isMonorepo: false });
   });
