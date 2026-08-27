@@ -7,6 +7,7 @@
  */
 
 import {
+  copilotMcpEntry,
   cursorMcpEntry,
   opencodeMcpEntry,
   opendesignMcpEntry,
@@ -26,7 +27,8 @@ const harnesses: readonly HarnessDefinition[] = [
       { type: "process", name: "claude" },
     ],
     configPath: (root) => `${root}/.mcp.json`,
-    // VERIFY(7b): claude-code reads the user MCP config from ~/.claude.json.
+    // Confirmed (was VERIFY(7b)): "User-scoped servers are stored in
+    // ~/.claude.json" — https://code.claude.com/docs/en/mcp (2026-08-27).
     homeConfigPath: (p) => `${userHome(p)}/.claude.json`,
     configFormat: "json",
     mcpKey: "mcpServers",
@@ -36,9 +38,13 @@ const harnesses: readonly HarnessDefinition[] = [
     id: "cursor",
     name: "Cursor",
     version: "*",
-    scope: "project",
+    scope: "both",
     detect: [{ type: "directory", path: ".cursor" }],
     configPath: (root) => `${root}/.cursor/mcp.json`,
+    // Cursor documents a global band: "~/.cursor/mcp.json" alongside the
+    // project ".cursor/mcp.json" — https://cursor.com/docs/context/mcp
+    // (2026-08-27).
+    homeConfigPath: (p) => `${userHome(p)}/.cursor/mcp.json`,
     configFormat: "json",
     mcpKey: "mcpServers",
     // Cursor's MCP docs (https://cursor.com/docs/context/mcp) type stdio
@@ -119,12 +125,17 @@ const harnesses: readonly HarnessDefinition[] = [
     id: "gemini-cli",
     name: "Gemini CLI",
     version: "*",
-    scope: "project",
+    scope: "both",
     detect: [
       { type: "directory", path: ".gemini" },
       { type: "process", name: "gemini" },
     ],
     configPath: (root) => `${root}/.gemini/settings.json`,
+    // Gemini CLI documents a global band: "~/.gemini/settings.json" alongside
+    // the project ".gemini/settings.json" —
+    // https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md
+    // (2026-08-27; `cwd` is an explicitly documented stdio field there too).
+    homeConfigPath: (p) => `${userHome(p)}/.gemini/settings.json`,
     configFormat: "json",
     mcpKey: "mcpServers",
     skillsPath: (root) => `${root}/.agents/skills`,
@@ -133,14 +144,71 @@ const harnesses: readonly HarnessDefinition[] = [
     id: "codex",
     name: "Codex",
     version: "*",
-    scope: "project",
+    scope: "both",
     detect: [
       { type: "directory", path: ".codex" },
       { type: "process", name: "codex" },
     ],
+    // Codex reads project-scoped overrides from ".codex/config.toml" (loaded
+    // only for trusted projects) and its user config from
+    // "$CODEX_HOME/config.toml" (default ~/.codex) —
+    // https://developers.openai.com/codex/config-reference (2026-08-27).
     configPath: (root) => `${root}/.codex/config.toml`,
+    homeConfigPath: (p) =>
+      `${p.env.CODEX_HOME ?? `${userHome(p)}/.codex`}/config.toml`,
     configFormat: "toml",
     mcpKey: "mcp_servers",
+    skillsPath: (root) => `${root}/.agents/skills`,
+  },
+  {
+    id: "copilot",
+    name: "GitHub Copilot CLI",
+    version: "*",
+    // Global-only ON PURPOSE, although Copilot CLI also reads project files:
+    // its project bands are ".mcp.json" (shared with Claude Code's row, same
+    // `mcpServers` key — one write covers both) and ".github/mcp.json". A
+    // project row here would put a SECOND serializer on the same
+    // (path, mcpKey) write the Claude Code row owns; the home config is the
+    // only location nothing else covers.
+    scope: "global",
+    detect: [
+      { type: "directory", path: "~/.copilot" },
+      { type: "process", name: "copilot" },
+    ],
+    // Never resolved (global-only band), but the type requires one; kept at
+    // the documented project fallback shape for legibility.
+    configPath: (root) => `${root}/.mcp.json`,
+    // "~/.copilot/mcp-config.json", relocatable via COPILOT_HOME —
+    // https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers
+    // (2026-08-27).
+    homeConfigPath: (p) =>
+      `${p.env.COPILOT_HOME ?? `${userHome(p)}/.copilot`}/mcp-config.json`,
+    configFormat: "json",
+    mcpKey: "mcpServers",
+    // Its documented local-entry shape carries `type: "local"` and a `tools`
+    // grant — see `copilotMcpEntry`.
+    mcpEntry: copilotMcpEntry,
+    skillsPath: (root) => `${root}/.agents/skills`,
+  },
+  {
+    id: "antigravity",
+    name: "Antigravity",
+    version: "*",
+    scope: "both",
+    detect: [
+      { type: "file", path: ".agents/mcp_config.json" },
+      { type: "file", path: "~/.gemini/config/mcp_config.json" },
+      { type: "process", name: "antigravity" },
+    ],
+    // Antigravity documents a workspace band at ".agents/mcp_config.json" and
+    // a global band at "~/.gemini/config/mcp_config.json", both under
+    // `mcpServers` — https://antigravity.google/docs/ide/mcp/ (2026-08-27).
+    // (The Nov-2025 launch path "~/.gemini/antigravity/mcp_config.json" is
+    // legacy; the docs' current path is the one written here.)
+    configPath: (root) => `${root}/.agents/mcp_config.json`,
+    homeConfigPath: (p) => `${userHome(p)}/.gemini/config/mcp_config.json`,
+    configFormat: "json",
+    mcpKey: "mcpServers",
     skillsPath: (root) => `${root}/.agents/skills`,
   },
   {
@@ -182,5 +250,18 @@ const harnesses: readonly HarnessDefinition[] = [
     skillsPath: (root) => `${root}/.od/skills`,
   },
 ];
+
+// Deliberately ABSENT from the registry (product calls, not oversights):
+//
+// - `pi` (github.com/earendil-works/pi): no first-party MCP client exists —
+//   the README states "No MCP" outright; MCP reaches pi only through the
+//   third-party pi-mcp-adapter extension a user installs themselves. A row
+//   here would write config pi itself never reads. pi IS served on the skills
+//   side without a row: it reads `.agents/skills`, the cross-client directory
+//   `setup skills` always links into.
+//
+// - `vscodium` as an MCP CLIENT: VSCodium has no first-party MCP surface (no
+//   Copilot agent mode), so there is nothing to configure. As an extension
+//   HOST it is fully supported via the editor-CLI registry (`editors.ts`).
 
 export default harnesses;

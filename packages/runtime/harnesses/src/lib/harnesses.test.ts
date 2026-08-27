@@ -4,7 +4,7 @@ import { opendesignMcpEntry } from "./mcpEntries.js";
 
 describe("harnesses registry", () => {
   it("contains all known harnesses", () => {
-    expect(harnesses).toHaveLength(10);
+    expect(harnesses).toHaveLength(12);
     const ids = harnesses.map((h) => h.id);
     expect(ids).toEqual([
       "claude-code",
@@ -15,6 +15,8 @@ describe("harnesses registry", () => {
       "opencode",
       "gemini-cli",
       "codex",
+      "copilot",
+      "antigravity",
       "vscode",
       "opendesign",
     ]);
@@ -47,6 +49,64 @@ describe("harnesses registry", () => {
     const claude = harnesses.find((h) => h.id === "claude-code");
     expect(windsurf?.scope).toBe("global");
     expect(claude?.scope).toBe("both");
+  });
+
+  const PLATFORM = {
+    platform: "linux" as const,
+    env: {},
+    home: "/home/tester",
+    isWsl: false,
+  };
+
+  it("cursor and gemini-cli are dual-scope with their documented home configs", () => {
+    const cursor = harnesses.find((h) => h.id === "cursor");
+    const gemini = harnesses.find((h) => h.id === "gemini-cli");
+    expect(cursor?.scope).toBe("both");
+    expect(cursor?.homeConfigPath?.(PLATFORM)).toBe(
+      "/home/tester/.cursor/mcp.json",
+    );
+    expect(gemini?.scope).toBe("both");
+    expect(gemini?.homeConfigPath?.(PLATFORM)).toBe(
+      "/home/tester/.gemini/settings.json",
+    );
+  });
+
+  it("codex resolves its home config under $CODEX_HOME, defaulting to ~/.codex", () => {
+    const codex = harnesses.find((h) => h.id === "codex");
+    expect(codex?.scope).toBe("both");
+    expect(codex?.homeConfigPath?.(PLATFORM)).toBe(
+      "/home/tester/.codex/config.toml",
+    );
+    expect(
+      codex?.homeConfigPath?.({ ...PLATFORM, env: { CODEX_HOME: "/custom" } }),
+    ).toBe("/custom/config.toml");
+  });
+
+  it("copilot is global-only at ~/.copilot/mcp-config.json (COPILOT_HOME honoured)", () => {
+    const copilot = harnesses.find((h) => h.id === "copilot");
+    expect(copilot?.scope).toBe("global");
+    expect(copilot?.homeConfigPath?.(PLATFORM)).toBe(
+      "/home/tester/.copilot/mcp-config.json",
+    );
+    expect(
+      copilot?.homeConfigPath?.({
+        ...PLATFORM,
+        env: { COPILOT_HOME: "/custom" },
+      }),
+    ).toBe("/custom/mcp-config.json");
+    expect(copilot?.mcpEntry).toBeDefined();
+  });
+
+  it("antigravity is dual-scope: workspace .agents/mcp_config.json, global under ~/.gemini/config", () => {
+    const antigravity = harnesses.find((h) => h.id === "antigravity");
+    expect(antigravity?.scope).toBe("both");
+    expect(antigravity?.configPath("/project")).toBe(
+      "/project/.agents/mcp_config.json",
+    );
+    expect(antigravity?.homeConfigPath?.(PLATFORM)).toBe(
+      "/home/tester/.gemini/config/mcp_config.json",
+    );
+    expect(antigravity?.mcpKey).toBe("mcpServers");
   });
 
   it("cline shares .vscode/mcp.json with VS Code under a different mcpKey", () => {

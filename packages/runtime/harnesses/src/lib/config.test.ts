@@ -452,8 +452,11 @@ describe("resolveConfigTarget", () => {
   });
 
   it("throws for a global band on a harness with no homeConfigPath", () => {
+    // vscode is a project-only row (its user-profile mcp.json is per-profile,
+    // so no global band is offered) — the assertion's exercising case.
+    const vscode = findHarnessById("vscode") as (typeof harnesses)[number];
     expect(() =>
-      resolveConfigTarget(cursor, "/project", "global", PLATFORM),
+      resolveConfigTarget(vscode, "/project", "global", PLATFORM),
     ).toThrow(/homeConfigPath/);
   });
 });
