@@ -2,11 +2,19 @@
  * Look up one or more pack entities by name, prefixed name, absolute IRI, or
  * glob, via the fetch strategy the pack declares.
  *
- * The name→URI resolve is ALWAYS generated SPARQL (an escaped literal or a
- * validated `<iri>` BIND) regardless of `source`; from the resolved IRI, values
- * are fetched either through more generated SELECTs (`sparql`) or one generated
+ * The resolve is ALWAYS generated SPARQL (an escaped literal or a validated
+ * `<iri>` BIND) regardless of `source`; from the resolved IRI, values are
+ * fetched either through more generated SELECTs (`sparql`) or one generated
  * GraphQL document (`graphql`). One poisoned query never discards the batch —
  * per-query failures are collected as structured error entries.
+ *
+ * WHICH query is chosen is decided by the ARGUMENT'S SHAPE first and the pack's
+ * `source` second, and both dispatches live here. Getting that order wrong is
+ * not a style question: it is what made an IRI reach a name FILTER on every
+ * graphql-sourced pack, and what left an IRI-shaped glob expanding against a
+ * population of names. The shape a user typed is a fact about the argument; the
+ * fetch strategy is a fact about the pack, and it cannot change what the
+ * argument means.
  *
  * Reached only behind a dynamic import from the lookup run body, so its imports
  * (including the GraphQL path) stay off the storeless fast path.
@@ -15,6 +23,7 @@
 import { PragmaError } from "../error/PragmaError.js";
 import { cliRecovery } from "../error/recovery.js";
 import { suggestNames } from "../project/cli/suggestNames.js";
+import { compactUri } from "../render/compactUri.js";
 import type { PragmaRuntime } from "../runtime/types.js";
 import { activeExpands } from "./disclosure.js";
 import { expandGlob, isGlobPattern } from "./glob.js";
@@ -22,7 +31,9 @@ import { fetchGraphqlLookup } from "./graphql/fetchGraphqlLookup.js";
 import { isEmbeddableIri, resolveUri } from "./iri.js";
 import {
   buildExpandQuery,
+  buildIriResolveQuery,
   buildLookupByIriQuery,
+  buildLookupIrisQuery,
   buildLookupNamesQuery,
   buildLookupQuery,
   buildNameResolveQuery,
@@ -74,7 +85,14 @@ export async function resolveLookup(
     });
   }
 
-  const expanded = await expandQueries(rt, lookup, noun, source, queries);
+  const expanded = await expandQueries(
+    rt,
+    lookup,
+    noun,
+    source,
+    queries,
+    prefixes,
+  );
   const results: PackEntity[] = [];
   const errors: LookupError[] = [...expanded.globErrors];
   const settled = await Promise.allSettled(
@@ -110,17 +128,34 @@ export async function resolveLookup(
   return { results, errors };
 }
 
-/** Expand glob queries against the entity name list; literals pass through. */
+/**
+ * Expand glob queries against the population their own shape addresses;
+ * literals pass through.
+ *
+ * A name glob expands over the `by` values, an IRI glob over the entity IRIs —
+ * the same split {@link buildResolveQuery} makes, because a glob is just a
+ * lookup argument with a `*` in it. Expanding an IRI pattern over names was why
+ * `ds:global.component.but*` matched nothing on any pack while shell completion
+ * offered nothing BUT those IRIs. Each population is fetched at most once, and
+ * only when a glob of that shape is actually present.
+ */
 async function expandQueries(
   rt: LookupRuntime,
   lookup: PackLookup,
   noun: string,
   source: StorySource,
   queries: readonly string[],
+  prefixes: Readonly<Record<string, string>>,
 ): Promise<{ names: string[]; globErrors: LookupError[] }> {
   if (!queries.some(isGlobPattern))
     return { names: [...queries], globErrors: [] };
-  const allNames = await listEntityNames(rt, lookup, source);
+  const globs = queries.filter(isGlobPattern);
+  const byIri = globs.some(looksLikeIri)
+    ? await listEntityIris(rt, lookup, source, prefixes)
+    : [];
+  const byName = globs.some((glob) => !looksLikeIri(glob))
+    ? await listEntityNames(rt, lookup, source)
+    : [];
   const names: string[] = [];
   const globErrors: LookupError[] = [];
   for (const query of queries) {
@@ -128,7 +163,7 @@ async function expandQueries(
       names.push(query);
       continue;
     }
-    const matches = expandGlob(query, allNames);
+    const matches = expandGlob(query, looksLikeIri(query) ? byIri : byName);
     if (matches.length === 0) {
       globErrors.push({
         query,
@@ -155,9 +190,7 @@ async function lookupOne(
   const graphqlSourced = lookup.source === "graphql";
   const rows = await runSelect(
     rt,
-    graphqlSourced
-      ? buildNameResolveQuery(lookup, query)
-      : buildEntityQuery(lookup, query, prefixes, level),
+    buildResolveQuery(lookup, query, prefixes, level),
     source,
   );
   const base = rows.at(0);
@@ -196,14 +229,27 @@ async function lookupOne(
   return entity;
 }
 
-/** Build the base entity SELECT for the SPARQL path (name or IRI form). */
-function buildEntityQuery(
+/**
+ * Build the resolve SELECT for one lookup argument: shape first, source second.
+ *
+ * The four cells of that 2×2 are the whole dispatch. A graphql-sourced pack
+ * resolves to an IRI and fetches everything else through its document, so both
+ * of its queries are the minimal `?uri ?name` pair; a sparql-sourced pack reads
+ * its fields in the same SELECT, so both of its queries carry the level-gated
+ * projection.
+ */
+function buildResolveQuery(
   lookup: PackLookup,
   query: string,
   prefixes: Readonly<Record<string, string>>,
   level: string | undefined,
 ): string {
-  if (!looksLikeIri(query)) return buildLookupQuery(lookup, query, level);
+  const graphqlSourced = lookup.source === "graphql";
+  if (!looksLikeIri(query)) {
+    return graphqlSourced
+      ? buildNameResolveQuery(lookup, query)
+      : buildLookupQuery(lookup, query, level);
+  }
   const resolved = resolveUri(query, prefixes);
   if (!isEmbeddableIri(resolved)) {
     throw PragmaError.invalidInput("name", query, {
@@ -213,7 +259,9 @@ function buildEntityQuery(
       },
     });
   }
-  return buildLookupByIriQuery(lookup, resolved, level);
+  return graphqlSourced
+    ? buildIriResolveQuery(lookup, resolved)
+    : buildLookupByIriQuery(lookup, resolved, level);
 }
 
 /** Whether a lookup query addresses an entity by IRI or prefixed name. */
@@ -223,6 +271,28 @@ function looksLikeIri(query: string): boolean {
     query.startsWith("https://") ||
     query.includes(":")
   );
+}
+
+/**
+ * List every entity IRI the lookup can address, in the prefixed form shell
+ * completion offers and the absolute form a user may paste — the population an
+ * IRI-shaped glob expands over.
+ *
+ * An entity contributes ONE candidate: its prefixed form when a registered
+ * prefix covers it, its absolute IRI otherwise. Offering both would let a
+ * pattern match the same entity twice and render it twice.
+ */
+async function listEntityIris(
+  rt: LookupRuntime,
+  lookup: PackLookup,
+  source: StorySource,
+  prefixes: Readonly<Record<string, string>>,
+): Promise<string[]> {
+  const rows = await runSelect(rt, buildLookupIrisQuery(lookup), source);
+  return rows
+    .map((row) => row.uri ?? "")
+    .filter((uri) => uri !== "")
+    .map((uri) => compactUri(uri, prefixes));
 }
 
 /** List every entity name the lookup can address (miss suggestions + sample/glob). */

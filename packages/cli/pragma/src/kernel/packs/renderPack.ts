@@ -10,6 +10,7 @@
  */
 
 import { BIN_NAME, RECOVERY_CLI_PREFIX } from "../../constants.js";
+import { compactUri } from "../render/compactUri.js";
 import type {
   ColumnDef,
   LookupField,
@@ -120,7 +121,11 @@ export function lookupOptions(
     }),
   );
   return {
-    title: (entity) => scalar(entity.name) ?? scalar(entity.uri) ?? "(unnamed)",
+    // An entity reached by IRI need not carry a `by` value, so the IRI is a
+    // real title, not a fallback nobody hits — and it is titled in the form the
+    // user addressed it with, not the expanded one they never typed.
+    title: (entity) =>
+      scalar(entity.name) ?? compactScalar(entity.uri, prefixes) ?? "(unnamed)",
     fields,
     sections: [...flatSections, ...expandSections],
     prefixes,
@@ -196,6 +201,15 @@ function scalar(
   value: string | readonly PackChildRow[] | undefined,
 ): string | undefined {
   return typeof value === "string" ? value : undefined;
+}
+
+/** A scalar URI in its prefixed display form, or undefined when it is neither. */
+function compactScalar(
+  value: string | readonly PackChildRow[] | undefined,
+  prefixes: Readonly<Record<string, string>>,
+): string | undefined {
+  const uri = scalar(value);
+  return uri === undefined ? undefined : compactUri(uri, prefixes);
 }
 
 function capitalize(value: string): string {

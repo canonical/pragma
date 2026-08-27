@@ -20,8 +20,9 @@ import {
 import { buildFixtureRuntime } from "../../testing/helpers/packRuntime.js";
 import type { PragmaRuntime } from "../runtime/types.js";
 import { compilePack } from "./compile.js";
+import { lookupOptions } from "./renderPack.js";
 import type { LookupOutput } from "./resolveEntity.js";
-import type { PackDefinition } from "./types.js";
+import type { PackDefinition, PackLookup } from "./types.js";
 import { distributionSource } from "./types.js";
 import { verbKey } from "./uniqueness.js";
 
@@ -120,6 +121,13 @@ describe("pack lookup addressing (PROTECTED)", () => {
       const out = await lookupVia(GQL, "ds:nameless.widget");
       expect(out.errors).toEqual([]);
       expect(uris(out)).toEqual([`${DS}nameless.widget`]);
+    });
+
+    it("titles it with the prefixed IRI it was addressed by", () => {
+      const options = lookupOptions(SPQ.lookup as PackLookup, BLOCK_PREFIXES);
+      expect(options.title({ uri: `${DS}nameless.widget` })).toBe(
+        "ds:nameless.widget",
+      );
     });
   });
 
