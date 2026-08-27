@@ -90,19 +90,19 @@ const lspHealth = (d: LspDetection): Health => {
  * one for presence, one for command resolution — and the second judged every
  * server in the file, so a foreign server's dead command failed this CLI's row.
  */
-function mcpHealth(
+async function mcpHealth(
   d: McpDetection,
   band: ScopeBand,
   cwd: string,
   roots: { global: string; project: string },
-): Health {
+): Promise<Health> {
   if (d.groups.length === 0) {
     return {
       status: "skip",
       detail: "no harness config location in this band",
     };
   }
-  const resolves = commandResolves(MCP_SERVER_NAME, cwd);
+  const resolves = await commandResolves(MCP_SERVER_NAME, cwd);
   const items: CheckItem[] = d.groups.map((group) => {
     const state = mcpGroupState(d, group.path);
     const label = shortenPath(group.path, roots);

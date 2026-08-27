@@ -9,7 +9,8 @@
  */
 
 import { existsSync } from "node:fs";
-import { delimiter, isAbsolute, join } from "node:path";
+import { isAbsolute, join } from "node:path";
+import type { PlatformEnv } from "@canonical/harnesses";
 
 /**
  * Extract the stdio command from an MCP server config entry, if any. HTTP/SSE
@@ -36,15 +37,33 @@ export function commandOf(entry: unknown): string | undefined {
 }
 
 /**
- * Resolve a command the way a shell would: a path-bearing entry is checked as a
- * file (relative to the project root), a bare name is searched across `PATH`.
+ * Resolve a command the way the host would: a path-bearing entry is checked as
+ * a file (relative to the project root), a bare name is searched across `PATH`
+ * through `@canonical/harnesses`' `executableCandidates`, which owns the PATH
+ * split and the win32 `PATHEXT` rules in one place.
+ *
+ * The bare-name arm used to join the name onto each PATH directory, which
+ * cannot see the `.cmd` shim npm installs on Windows: a registration this CLI
+ * had just written correctly was reported as a dead command.
+ *
+ * @param command - The executable the entry names.
+ * @param cwd - The project root a relative command is resolved against.
+ * @param platform - The captured host to use instead of this one (tests).
+ * @returns Whether the command resolves on this machine.
+ * @note Impure — tests candidate paths on the filesystem.
  */
-export function commandResolves(command: string, cwd: string): boolean {
+export async function commandResolves(
+  command: string,
+  cwd: string,
+  platform?: PlatformEnv,
+): Promise<boolean> {
   if (command.includes("/") || command.includes("\\")) {
     return existsSync(isAbsolute(command) ? command : join(cwd, command));
   }
-  return (process.env.PATH ?? "")
-    .split(delimiter)
-    .filter((dir) => dir.length > 0)
-    .some((dir) => existsSync(join(dir, command)));
+  const { executableCandidates, readPlatformEnv } = await import(
+    "@canonical/harnesses"
+  );
+  return executableCandidates(command, platform ?? readPlatformEnv()).some(
+    (candidate) => existsSync(candidate),
+  );
 }
