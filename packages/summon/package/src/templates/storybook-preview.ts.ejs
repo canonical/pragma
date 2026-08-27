@@ -1,7 +1,9 @@
 import { withThemeByClassName } from "@storybook/addon-themes";
 import type { Preview, ReactRenderer } from "@storybook/react-vite";
 
-import "index.css";
+<% if (type === 'css') { -%>
+import "../src/index.css";
+<% } -%>
 import "@canonical/styles-debug/baseline-grid";
 
 const preview: Preview = {

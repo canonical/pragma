@@ -19,8 +19,11 @@ interface Manifest {
   module?: string;
   types?: string;
   exports?: unknown;
+  bin?: Record<string, string>;
+  files: string[];
   scripts: Record<string, string>;
   devDependencies: Record<string, string>;
+  dependencies?: Record<string, string>;
 }
 
 /** Render the package.json template the way the generator does, and parse it. */
@@ -221,6 +224,15 @@ describe("generated manifest", () => {
     );
   });
 
+  it("declares webarchitect wherever check:webarchitect is emitted", () => {
+    const manifest = renderManifest(libraryAnswers);
+
+    expect(manifest.scripts["check:webarchitect"]).toBeDefined();
+    expect(manifest.devDependencies["@canonical/webarchitect"]).toBe(
+      `^${pkg.version}`,
+    );
+  });
+
   it("ranges @canonical/* dependencies on the generator's own version", () => {
     // The host repository's version says nothing about which versions of
     // @canonical/* exist on npm, so it must not leak into the ranges.
@@ -235,5 +247,78 @@ describe("generated manifest", () => {
     expect(manifest.devDependencies["@canonical/typescript-config"]).toBe(
       `^${pkg.version}`,
     );
+  });
+});
+
+describe("generated manifest — validity matrix", () => {
+  // Every supported flag combination must render parseable JSON whose
+  // scripts, dependencies, and published files agree with each other. This is
+  // the class of breakage effect-count assertions can never catch (a trailing
+  // comma, a script referencing an undeclared binary, a dangling bin path).
+  const base = {
+    name: "@canonical/my-pkg",
+    description: "A package",
+    withPrTemplate: false,
+    runInstall: false,
+  } as const;
+  const types = ["tool-ts", "library", "css"] as const;
+  const bools = [false, true] as const;
+
+  const combos = types.flatMap((type) =>
+    bools.flatMap((withReact) =>
+      bools.flatMap((withStorybook) =>
+        bools.map((withCli) => ({ type, withReact, withStorybook, withCli })),
+      ),
+    ),
+  );
+
+  it.each(combos)("renders a consistent manifest for %j", ({
+    type,
+    withReact,
+    withStorybook,
+    withCli,
+  }) => {
+    // renderManifest JSON.parses — an unparseable render fails here.
+    const manifest = renderManifest({
+      ...base,
+      type,
+      withReact,
+      withStorybook,
+      withCli,
+    });
+    const devDependencies = manifest.devDependencies ?? {};
+    const allDependencies = {
+      ...devDependencies,
+      ...(manifest.dependencies ?? {}),
+    };
+
+    // Scripts must not reference binaries the manifest does not declare.
+    if (manifest.scripts["check:webarchitect"] !== undefined) {
+      expect(allDependencies["@canonical/webarchitect"]).toBeDefined();
+    }
+    expect(manifest.scripts.storybook !== undefined).toBe(withStorybook);
+    if (withStorybook) {
+      expect(manifest.scripts["build:storybook"]).toBeDefined();
+      expect(allDependencies.storybook).toBeDefined();
+      expect(allDependencies["@storybook/addon-themes"]).toBeDefined();
+      expect(allDependencies["@storybook/react-vite"]).toBeDefined();
+      expect(allDependencies["@canonical/storybook-config"]).toBeDefined();
+      expect(allDependencies["@canonical/styles-debug"]).toBeDefined();
+      // The react renderer needs react even when the package itself is not
+      // a react package.
+      expect(allDependencies.react).toBeDefined();
+      expect(allDependencies["react-dom"]).toBeDefined();
+    }
+
+    // A bin entry must point inside the published file set.
+    if (withCli && type !== "css") {
+      const binPath = Object.values(manifest.bin ?? {})[0];
+      expect(binPath).toBeDefined();
+      expect(
+        manifest.files.some((dir) => (binPath as string).startsWith(`${dir}/`)),
+      ).toBe(true);
+    } else {
+      expect(manifest.bin).toBeUndefined();
+    }
   });
 });
