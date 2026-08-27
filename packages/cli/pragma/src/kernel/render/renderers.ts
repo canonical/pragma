@@ -50,11 +50,25 @@ const SECTION_HEADING_LEVEL = 3;
 /** Markdown's deepest heading. Demotion clamps here rather than overflowing. */
 const MAX_HEADING_LEVEL = 6;
 
-/** An ATX heading: 1–6 `#` then whitespace then text (a bare `#` line is not one). */
-const ATX_HEADING = /^(#{1,6})(\s+\S.*)$/;
+/**
+ * An ATX heading: up to three spaces of indent, 1–6 `#`, whitespace, text.
+ *
+ * The indent is CommonMark's — four spaces would make the line an indented
+ * code block, three or fewer leave it a heading. Missing it left
+ * `  ### Accessibility` un-nested while its unindented twin was demoted, so
+ * one body could come out with two conflicting hierarchies. The indent is
+ * captured so a rewrite preserves it.
+ */
+const ATX_HEADING = /^( {0,3})(#{1,6})(\s+\S.*)$/;
 
-/** A fenced code-block delimiter, indentable by up to three spaces. */
-const CODE_FENCE = /^ {0,3}(`{3,}|~{3,})/;
+/**
+ * A fenced code-block delimiter: up to three spaces of indent, then the run of
+ * markers, then whatever follows on the line (the info string).
+ *
+ * The RUN LENGTH and the info string both matter for closing, which is why
+ * they are captured rather than just recognised — see {@link nestHeadings}.
+ */
+const CODE_FENCE = /^ {0,3}((`{3,})|(~{3,}))([^`]*)$/;
 
 /**
  * The empty-state body — the message plus its optional hint on a second line,
@@ -382,16 +396,34 @@ function renderFieldValue(
 function nestHeadings(text: string, parentLevel: number): string {
   const lines = text.split("\n");
   const headings = new Map<number, number>();
-  let fence: string | undefined;
+  // A fence CLOSES only on the same marker character, a run at least as long
+  // as the opener's, and no info string — CommonMark's rule, and the reason
+  // the opener's length is remembered rather than just its character. Toggling
+  // on any same-character run let a ``` sample inside a ```` block read as the
+  // close, after which every `#` line in that code block was rewritten as a
+  // heading: the renderer editing someone's sample code.
+  let fence: { marker: string; length: number } | undefined;
   for (const [index, line] of lines.entries()) {
-    const marker = CODE_FENCE.exec(line)?.[1]?.charAt(0);
-    if (marker !== undefined) {
-      fence =
-        fence === undefined ? marker : fence === marker ? undefined : fence;
+    const delimiter = CODE_FENCE.exec(line);
+    const run = delimiter?.[1];
+    if (run !== undefined) {
+      const marker = run.charAt(0);
+      const info = (delimiter?.[4] ?? "").trim();
+      if (fence === undefined) {
+        fence = { marker, length: run.length };
+        continue;
+      }
+      if (
+        marker === fence.marker &&
+        run.length >= fence.length &&
+        info === ""
+      ) {
+        fence = undefined;
+      }
       continue;
     }
     if (fence !== undefined) continue;
-    const level = ATX_HEADING.exec(line)?.[1]?.length;
+    const level = ATX_HEADING.exec(line)?.[2]?.length;
     if (level !== undefined) headings.set(index, level);
   }
 
@@ -404,7 +436,9 @@ function nestHeadings(text: string, parentLevel: number): string {
       const level = headings.get(index);
       if (level === undefined) return line;
       const hashes = "#".repeat(Math.min(level + shift, MAX_HEADING_LEVEL));
-      return line.replace(ATX_HEADING, `${hashes}$2`);
+      // `$1` keeps the line's own indent: rewriting it away would turn a
+      // legally indented heading into an unindented one.
+      return line.replace(ATX_HEADING, `$1${hashes}$3`);
     })
     .join("\n");
 }

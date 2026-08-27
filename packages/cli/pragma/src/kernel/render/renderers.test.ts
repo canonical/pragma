@@ -382,3 +382,61 @@ describe("section-body headings nest under the heading the renderer gives them",
     expect(out).toContain("  ### Accessibility");
   });
 });
+
+describe("section-body nesting follows CommonMark, not a near-enough reading", () => {
+  interface Doc {
+    readonly guidelines: string;
+  }
+
+  const render = (guidelines: string): string =>
+    renderLookupLlm<Doc>(
+      { guidelines },
+      {
+        title: () => "Button",
+        fields: [],
+        sections: [{ key: "guidelines", heading: "Guidelines", kind: "field" }],
+      },
+    );
+
+  it("nests a heading indented up to three spaces, keeping its indent", () => {
+    // Four spaces would make the line an indented code block; three or fewer
+    // leave it a heading. Missing that left an indented heading at the
+    // section's own level while its unindented twin was demoted — one body
+    // rendered with two conflicting hierarchies.
+    expect(render("  ### Accessibility\n\ntext")).toMatch(
+      /^ {2}#### Accessibility$/m,
+    );
+  });
+
+  it("does not close a four-backtick fence on a three-backtick sample", () => {
+    // A closing fence must be AT LEAST as long as the opener. Toggling on any
+    // same-character run let the inner sample read as the close, after which
+    // every `#` line in that code block was rewritten — the renderer silently
+    // editing the user's sample code.
+    const out = render(
+      [
+        "````md",
+        "```",
+        "### Sample text, not a heading",
+        "```",
+        "````",
+        "",
+        "### A real heading",
+      ].join("\n"),
+    );
+    // Anchored: `#### x` CONTAINS `### x`, so a substring check would pass
+    // against the very rewrite this pins against.
+    expect(out).toMatch(/^### Sample text, not a heading$/m);
+    expect(out).toMatch(/^#### A real heading$/m);
+  });
+
+  it("does not close a fence on a run that carries an info string", () => {
+    // An opener may carry an info string; a CLOSER may not. A ```js line
+    // inside a block opens nothing and closes nothing.
+    const out = render(
+      ["```", "### inside", "```js", "### also inside", "```"].join("\n"),
+    );
+    expect(out).toMatch(/^### inside$/m);
+    expect(out).toMatch(/^### also inside$/m);
+  });
+});

@@ -154,6 +154,27 @@ describe("pack lookup addressing (PROTECTED)", () => {
       expect(uris(out)).toEqual([`${DS}modal`]);
     });
 
+    it("expands an ABSOLUTE-IRI glob, not only the compact spelling", async () => {
+      // An entity under a registered prefix has two legal spellings, and a
+      // literal lookup honours both — so a glob that generalises one of them
+      // must too. Expanding over the compact form alone made
+      // `https://ds.canonical.com/but*` an EMPTY_RESULTS while the exact IRI
+      // it generalises resolved fine.
+      const out = await lookupVia(GQL, `${DS}button*`);
+      expect(out.errors).toEqual([]);
+      expect(uris(out).sort()).toEqual([`${DS}button`, `${DS}button.icon`]);
+    });
+
+    it("yields an entity ONCE when both its spellings match", async () => {
+      // Reachable, not defensive: a glob counts as IRI-shaped if it contains
+      // a colon, so `*:*chip` matches BOTH `ds:alpha.chip` and its absolute
+      // twin. That is why the population is a spelling→entity map rather than
+      // a flat list of both forms — a match under either spelling must render
+      // one row, not two.
+      const out = await lookupVia(SPQ, "*:*chip");
+      expect(uris(out).sort()).toEqual([`${DS}alpha.chip`, `${DS}zeta.chip`]);
+    });
+
     it("reports an IRI-shaped glob that matches nothing", async () => {
       await expect(lookupVia(SPQ, "ds:nosuch*")).rejects.toMatchObject({
         code: "EMPTY_RESULTS",

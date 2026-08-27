@@ -151,8 +151,8 @@ async function expandQueries(
     return { names: [...queries], globErrors: [] };
   const globs = queries.filter(isGlobPattern);
   const byIri = globs.some(looksLikeIri)
-    ? await listEntityIris(rt, lookup, source, prefixes)
-    : [];
+    ? await listEntityIriSpellings(rt, lookup, source, prefixes)
+    : new Map<string, string>();
   const byName = globs.some((glob) => !looksLikeIri(glob))
     ? await listEntityNames(rt, lookup, source)
     : [];
@@ -163,7 +163,17 @@ async function expandQueries(
       names.push(query);
       continue;
     }
-    const matches = expandGlob(query, looksLikeIri(query) ? byIri : byName);
+    // An IRI glob expands over every spelling, then collapses to the entity:
+    // matching `ds:button` and its absolute twin must not list it twice.
+    const matches = looksLikeIri(query)
+      ? [
+          ...new Set(
+            expandGlob(query, [...byIri.keys()]).map(
+              (spelling) => byIri.get(spelling) ?? spelling,
+            ),
+          ),
+        ]
+      : expandGlob(query, byName);
     if (matches.length === 0) {
       globErrors.push({
         query,
@@ -274,25 +284,37 @@ function looksLikeIri(query: string): boolean {
 }
 
 /**
- * List every entity IRI the lookup can address, in the prefixed form shell
- * completion offers and the absolute form a user may paste — the population an
- * IRI-shaped glob expands over.
+ * Every SPELLING an IRI-shaped glob may be written against, mapped to the one
+ * entity it addresses.
  *
- * An entity contributes ONE candidate: its prefixed form when a registered
- * prefix covers it, its absolute IRI otherwise. Offering both would let a
- * pattern match the same entity twice and render it twice.
+ * An entity under a registered prefix has two legal spellings — the compact
+ * `ds:button` shell completion offers, and the absolute
+ * `https://ds.canonical.com/button` a user pastes from a browser. Both resolve
+ * to the same entity in a literal lookup, so a glob must expand over both;
+ * offering only the compact form made `https://ds.canonical.com/but*` return
+ * EMPTY_RESULTS while the literal IRI it generalises succeeded.
+ *
+ * The map is spelling → CANONICAL IRI precisely so a pattern that matches an
+ * entity under both spellings still yields it once. Matching over a flat list
+ * of both would render the entity twice, which is why the previous shape
+ * offered only one.
  */
-async function listEntityIris(
+async function listEntityIriSpellings(
   rt: LookupRuntime,
   lookup: PackLookup,
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
-): Promise<string[]> {
+): Promise<Map<string, string>> {
   const rows = await runSelect(rt, buildLookupIrisQuery(lookup), source);
-  return rows
-    .map((row) => row.uri ?? "")
-    .filter((uri) => uri !== "")
-    .map((uri) => compactUri(uri, prefixes));
+  const spellings = new Map<string, string>();
+  for (const row of rows) {
+    const uri = row.uri ?? "";
+    if (uri === "") continue;
+    spellings.set(uri, uri);
+    const compact = compactUri(uri, prefixes);
+    if (compact !== uri) spellings.set(compact, uri);
+  }
+  return spellings;
 }
 
 /** List every entity name the lookup can address (miss suggestions + sample/glob). */
