@@ -31,7 +31,7 @@ const defaultAnswers = {
   name: "test-monorepo",
   description: "A test monorepo",
   license: "LGPL-3.0" as const,
-  typescriptConfig: "@canonical/typescript-config-base",
+  typescriptConfig: "@canonical/typescript-config",
   repository: "https://github.com/test/test-monorepo",
   bunVersion: "1.3.9",
   runInstall: false,
@@ -120,7 +120,7 @@ describe("monorepo generator", () => {
       expect(pkg.devDependencies.vitest).toBeDefined();
       expect(pkg.devDependencies["@biomejs/biome"]).toBeDefined();
       expect(pkg.devDependencies["@canonical/biome-config"]).toMatch(/^\^\d/);
-      expect(pkg.devDependencies["@canonical/typescript-config-base"]).toMatch(
+      expect(pkg.devDependencies["@canonical/typescript-config"]).toMatch(
         /^\^\d/,
       );
       expect(pkg.devDependencies.typescript).toBeDefined();
@@ -147,7 +147,7 @@ describe("monorepo generator", () => {
       expect(tsconfigFile).toBeDefined();
 
       const tsconfig = JSON.parse(tsconfigFile?.content ?? "");
-      expect(tsconfig.extends).toBe("@canonical/typescript-config-base");
+      expect(tsconfig.extends).toBe("@canonical/typescript-config");
     });
 
     it("generates tsconfig with lit config when selected", () => {
@@ -189,6 +189,25 @@ describe("monorepo generator", () => {
       // a step the publish never runs in. OIDC needs neither secret.
       expect(tagFile?.content).toContain("id-token: write");
       expect(tagFile?.content).not.toContain("NPM_AUTH_TOKEN");
+    });
+
+    it("canonicalizes a noncanonical repository URL in the metadata", () => {
+      // Validation accepts trailing "/" and ".git"; emitting them verbatim
+      // produced ".../repo//issues" and ".../repo.git#readme".
+      const result = dryRun(
+        generator.generate({
+          ...defaultAnswers,
+          repository: " https://github.com/test/test-monorepo.git ",
+        }),
+      );
+
+      const pkgFile = getFiles(result).find(
+        (f) => f.path === "test-monorepo/package.json",
+      );
+      const pkg = JSON.parse(pkgFile?.content ?? "");
+      expect(pkg.repository.url).toBe("https://github.com/test/test-monorepo");
+      expect(pkg.bugs.url).toBe("https://github.com/test/test-monorepo/issues");
+      expect(pkg.homepage).toBe("https://github.com/test/test-monorepo#readme");
     });
 
     it("omits repository metadata when no repository was given", () => {

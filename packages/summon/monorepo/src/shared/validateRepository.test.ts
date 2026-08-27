@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import validateRepository from "./validateRepository.js";
+import validateRepository, {
+  normalizeRepositoryUrl,
+} from "./validateRepository.js";
 
 describe("validateRepository", () => {
   it("accepts valid GitHub URLs", () => {
@@ -26,5 +28,22 @@ describe("validateRepository", () => {
     expect(validateRepository(42)).not.toBe(true);
     expect(validateRepository(true)).not.toBe(true);
     expect(validateRepository(["https://github.com/a/b"])).not.toBe(true);
+  });
+});
+
+describe("normalizeRepositoryUrl", () => {
+  it("canonicalizes accepted noncanonical forms", () => {
+    expect(normalizeRepositoryUrl(" https://github.com/org/repo ")).toBe(
+      "https://github.com/org/repo",
+    );
+    expect(normalizeRepositoryUrl("https://github.com/org/repo/")).toBe(
+      "https://github.com/org/repo",
+    );
+    expect(normalizeRepositoryUrl("https://github.com/org/repo.git")).toBe(
+      "https://github.com/org/repo",
+    );
+    expect(normalizeRepositoryUrl("https://github.com/org/repo")).toBe(
+      "https://github.com/org/repo",
+    );
   });
 });

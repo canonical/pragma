@@ -90,8 +90,8 @@ const prompts: PromptDefinition[] = [
     message: "TypeScript config package:",
     choices: [
       {
-        label: "@canonical/typescript-config-base - Standard (no DOM)",
-        value: "@canonical/typescript-config-base",
+        label: "@canonical/typescript-config - Standard (no DOM)",
+        value: "@canonical/typescript-config",
       },
       {
         label:
@@ -99,7 +99,7 @@ const prompts: PromptDefinition[] = [
         value: "@canonical/typescript-config-lit",
       },
     ],
-    default: "@canonical/typescript-config-base",
+    default: "@canonical/typescript-config",
     group: "Monorepo",
   },
   {

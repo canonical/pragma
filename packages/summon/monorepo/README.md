@@ -55,7 +55,7 @@ summon monorepo --name=my-project --description="My awesome project"
 | `name` | string | `my-monorepo` | Monorepo name (kebab-case), used as-is |
 | `description` | string | `""` | Description |
 | `license` | `LGPL-3.0` \| `GPL-3.0` | `LGPL-3.0` | Root license |
-| `typescriptConfig` | string | `@canonical/typescript-config-base` | Shared TypeScript config |
+| `typescriptConfig` | string | `@canonical/typescript-config` | Shared TypeScript config |
 | `repository` | string | `""` | GitHub repository URL |
 | `bunVersion` | string | `1.3.9` | Pinned Bun version for CI |
 | `initGit` | boolean | `true` | Initialize git repository |

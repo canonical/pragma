@@ -22,3 +22,16 @@ export default function validateRepository(value: unknown): true | string {
 
   return true;
 }
+
+/**
+ * Canonicalize an accepted repository URL for template emission: trimmed,
+ * without a trailing slash or `.git` suffix — validation accepts those
+ * forms, but emitting them verbatim produces `.../repo//issues` or
+ * `.../repo.git#readme` in the scaffolded metadata.
+ */
+export function normalizeRepositoryUrl(value: string): string {
+  return value
+    .trim()
+    .replace(/\/+$/, "")
+    .replace(/\.git$/, "");
+}
