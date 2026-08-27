@@ -46,6 +46,26 @@ describe("findEnclosingWorkspaceRoot", () => {
     );
   });
 
+  it("does not claim a descendant the pnpm member patterns exclude", () => {
+    // Membership is decided by the `packages` patterns, not by ancestry: a
+    // path outside them (or negated) is standalone and keeps its patches.
+    const root = createFixture();
+    mkdirSync(root, { recursive: true });
+    writeFileSync(
+      path.join(root, "pnpm-workspace.yaml"),
+      "packages:\n  - apps/*\n  - '!apps/excluded'\n",
+    );
+    expect(
+      findEnclosingWorkspaceRoot(path.join(root, "packages", "my-app")),
+    ).toBeNull();
+    expect(
+      findEnclosingWorkspaceRoot(path.join(root, "apps", "excluded")),
+    ).toBeNull();
+    expect(findEnclosingWorkspaceRoot(path.join(root, "apps", "member"))).toBe(
+      root,
+    );
+  });
+
   it("returns the root whose globs cover the app directory", () => {
     const root = createFixture();
     writeManifest(root, { name: "ws", workspaces: ["apps/*"] });

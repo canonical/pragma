@@ -156,7 +156,7 @@ The generator locates the `routes` object with the TypeScript AST and splices in
 invoices: route({ url: "/billing/invoices", content: InvoicesPage }),
 ```
 
-Running with `--undo` removes exactly that entry and import again. Create the domain first with `summon domain <name>`.
+Running with `--undo` removes that entry and import again — safe when the insertion actually added a new key. If the route key already existed the insertion was a no-op, and `--undo` would remove the pre-existing route (the generator help documents the same caveat). Create the domain first with `summon domain <name>`.
 
 ### `summon wrapper <name>`
 

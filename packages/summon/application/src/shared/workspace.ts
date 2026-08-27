@@ -57,6 +57,42 @@ function readWorkspaceGlobs(manifestPath: string): readonly string[] | null {
   return patterns.length > 0 ? patterns : null;
 }
 
+/**
+ * Read the member patterns from a `pnpm-workspace.yaml` with a minimal
+ * parser: the top-level `packages:` block's `- pattern` items (quoted or
+ * bare, `!`-negations preserved). Returns `null` when the file is missing,
+ * unreadable, or declares no patterns — a malformed file up the tree must
+ * not break scaffolding, and full YAML is deliberately out of scope.
+ *
+ * @note Impure — reads the filesystem.
+ */
+function readPnpmWorkspaceGlobs(yamlPath: string): readonly string[] | null {
+  let content: string;
+  try {
+    content = readFileSync(yamlPath, "utf8");
+  } catch {
+    return null;
+  }
+  const patterns: string[] = [];
+  let inPackages = false;
+  for (const line of content.split("\n")) {
+    if (/^packages\s*:/.test(line)) {
+      inPackages = true;
+      continue;
+    }
+    // A new top-level key ends the block.
+    if (inPackages && /^\S/.test(line)) {
+      break;
+    }
+    if (!inPackages) continue;
+    const item = /^\s*-\s*(['"]?)(.+?)\1\s*$/.exec(line);
+    if (item?.[2]) {
+      patterns.push(item[2]);
+    }
+  }
+  return patterns.length > 0 ? patterns : null;
+}
+
 /** Escape a literal glob segment for regex use, keeping `*`/`?` wildcards. */
 function compileGlobSegment(segment: string): string {
   return segment
@@ -128,12 +164,28 @@ export function findEnclosingWorkspaceRoot(
       }
     }
     // A pnpm workspace declares its members in pnpm-workspace.yaml, not in
-    // package.json `workspaces` — treat such a root as enclosing without
-    // parsing the YAML (member globs are overwhelmingly directory-wide, and
-    // misclassifying a pnpm root as "standalone" emits an app-local bun-only
-    // patch block the root would never apply).
-    if (existsSync(path.join(current, "pnpm-workspace.yaml"))) {
-      return current;
+    // package.json `workspaces`. Membership is decided by its `packages`
+    // patterns (including `!` exclusions), so match them rather than claiming
+    // every descendant — a non-member below a pnpm root is standalone and
+    // still needs its app-local patches.
+    const pnpmGlobs = readPnpmWorkspaceGlobs(
+      path.join(current, "pnpm-workspace.yaml"),
+    );
+    if (pnpmGlobs !== null) {
+      const relativePath = path
+        .relative(current, target)
+        .split(path.sep)
+        .join("/");
+      const includes = pnpmGlobs.filter((glob) => !glob.startsWith("!"));
+      const excludes = pnpmGlobs
+        .filter((glob) => glob.startsWith("!"))
+        .map((glob) => glob.slice(1));
+      if (
+        coversRelativePath(includes, relativePath) &&
+        !coversRelativePath(excludes, relativePath)
+      ) {
+        return current;
+      }
     }
     const parent = path.dirname(current);
     if (parent === current) return null;
