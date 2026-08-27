@@ -310,7 +310,7 @@ const setupAllVerb = setupVerb(
   "all",
   SELF_CAPABILITY,
   {
-    doc: "Plans every target in the selected band, then applies the ones you keep. The user/home band is the default; --local targets the project band, and --both runs each. A run with no terminal prints the plan and applies nothing unless --yes is given.",
+    doc: "Plans every target in the selected band, then applies the ones you keep. The user/home band is the default; the scope option chooses the per-project band, or both. A run with no attended terminal prints the plan and applies nothing unless the run is confirmed.",
     examples: [
       { cmd: `${BIN_NAME} setup` },
       {

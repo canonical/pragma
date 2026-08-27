@@ -250,6 +250,18 @@ const isChosen = (
     ? row.selected
     : chosen.includes(rowKey(row.band, row.target)));
 
+/**
+ * What a row DID, as a past-tense word. The row's detail says what and where;
+ * the note says what happened to it, so a progress line and a recap line read
+ * as sentences rather than as two halves of one.
+ */
+const ACTION_NOTES: Record<string, string> = {
+  install: "installed",
+  update: "updated",
+  link: "linked",
+  remove: "removed",
+};
+
 /** The `2 added, 1 updated` note an MCP row's children produce. */
 function childNote(row: PlanRow): string | undefined {
   const children = row.children;
@@ -360,7 +372,7 @@ export async function buildSetupRun(
       };
     }
     if (!isActionable(row.action)) return { status: "noop" };
-    const note = childNote(row);
+    const note = childNote(row) ?? ACTION_NOTES[row.action];
     return {
       status: removal ? "removed" : "done",
       ...(note === undefined ? {} : { note }),

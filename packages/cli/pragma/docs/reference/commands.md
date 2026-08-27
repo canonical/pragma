@@ -327,9 +327,9 @@ pragma create package --name @canonical/my-tool --no-run-install
 
 ### pragma doctor
 
-Check environment health — Node, config, store, MCP, and skills.
+Check environment health and every setup target, in both bands.
 
-Runs nine diagnostic checks and reports pass, fail, available (an opt-in integration not yet set up), or skip, with inline remedies. Storeless by default; the store check boots lazily and never fails the run.
+Reports the environment checks and then one row per setup target in each band, as pass, fail, available (an opt-in integration not yet set up), or skip, with inline remedies. Every banded row is named after the setup target that repairs it. Storeless by default; the store check boots lazily and never fails the run.
 
 ```
 pragma doctor
@@ -599,8 +599,36 @@ pragma prompt lookup <name>
 Install the shell-completion script for your shell.
 
 ```
-pragma setup completions
+pragma setup completions [options]
 ```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: global (the default), project, or both. (one of: project, global, both) (default: global) |
+| `--global` | — | Shorthand for --scope global (configure the user/home band). |
+| `--local` | — | Shorthand for --scope project (configure the per-project band). |
+
+- Store: storeless.
+- Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
+- MCP: not exposed (CLI-only).
+
+### pragma setup config
+
+Create the global config file with its defaults.
+
+```
+pragma setup config [options]
+```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: global (the default), project, or both. (one of: project, global, both) (default: global) |
+| `--global` | — | Shorthand for --scope global (configure the user/home band). |
+| `--local` | — | Shorthand for --scope project (configure the per-project band). |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -611,8 +639,16 @@ pragma setup completions
 Ensure the Terrazzo LSP VS Code extension is installed.
 
 ```
-pragma setup lsp
+pragma setup lsp [options]
 ```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: global (the default), project, or both. (one of: project, global, both) (default: global) |
+| `--global` | — | Shorthand for --scope global (configure the user/home band). |
+| `--local` | — | Shorthand for --scope project (configure the per-project band). |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -630,7 +666,7 @@ pragma setup mcp [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: project, global, or both. (one of: project, global, both) (default: both) |
+| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: global (the default), project, or both. (one of: project, global, both) (default: global) |
 | `--global` | — | Shorthand for --scope global (configure the user/home band). |
 | `--local` | — | Shorthand for --scope project (configure the per-project band). |
 
@@ -640,9 +676,9 @@ pragma setup mcp [options]
 
 ### pragma setup
 
-Configure MCP, completions, skills, and the LSP for this project.
+Configure the global config, completions, the LSP, MCP, and skills.
 
-Runs the shell-completions, LSP, MCP, and skills installers as a single wizard: pick the steps, review the recap, then apply. The scope option targets the project band, the user/home band, or both.
+Plans every target in the selected band, then applies the ones you keep. The user/home band is the default; --local targets the project band, and --both runs each. A run with no terminal prints the plan and applies nothing unless --yes is given.
 
 ```
 pragma setup [options]
@@ -652,7 +688,7 @@ pragma setup [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: project, global, or both. (one of: project, global, both) (default: both) |
+| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: global (the default), project, or both. (one of: project, global, both) (default: global) |
 | `--global` | — | Shorthand for --scope global (configure the user/home band). |
 | `--local` | — | Shorthand for --scope project (configure the per-project band). |
 
@@ -664,8 +700,8 @@ pragma setup [options]
 
 ```bash
 pragma setup
-pragma setup --dry-run  # preview every step's effects
-pragma setup --global  # configure only the user/home band
+pragma setup --dry-run  # print the plan, write nothing
+pragma setup --local  # configure the project band instead
 pragma setup mcp  # just the MCP server registration
 ```
 
@@ -681,7 +717,7 @@ pragma setup skills [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: project, global, or both. (one of: project, global, both) (default: both) |
+| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: global (the default), project, or both. (one of: project, global, both) (default: global) |
 | `--global` | — | Shorthand for --scope global (configure the user/home band). |
 | `--local` | — | Shorthand for --scope project (configure the per-project band). |
 

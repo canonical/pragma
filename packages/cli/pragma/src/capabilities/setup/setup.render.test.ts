@@ -1,142 +1,188 @@
 /**
- * Render goldens for `pragma setup` — the MCP recap grouped by band.
+ * Render goldens for `pragma setup` — the plan, the progress lines, the recap.
  *
- * `summarizeMcpTargets` (the recap's band grouping) previously shipped
- * executed-but-never-asserted; this pins the ACTUAL banded recap text for BOTH
- * the plain and llm formatters, and locks the unified Global/Project vocabulary
- * (the recap no longer says MACHINE/PROJECT). The setup formatters use no
- * colour, so no chalk level dance is needed.
+ * These three used to be three unrelated renderers over a tagged result union
+ * with one member per sub-verb, and the run-all's member carried only a list of
+ * step NAMES: a run could report "Setup complete — ran: completions, lsp, mcp"
+ * while silently having dropped a target it could not offer. The goldens below
+ * pin the property that replaces that — the preview, the progress stream and
+ * the recap are the SAME rows — by rendering ONE plan three ways and asserting
+ * every byte of each.
+ *
+ * The formatters take an injected style, and `defaultStyle()` is the identity
+ * styler off a TTY, so no chalk-level dance is needed.
  */
 
 import { describe, expect, it } from "vitest";
-import { setupFormatters } from "./setup.render.js";
-import type { SetupResult } from "./types.js";
+import type { PlanRow, SetupPlan } from "./plan.js";
+import { renderPlanTable, renderProgressLine, renderRecap } from "./plan.render.js";
+import { PREVIEW_HINT, setupFormatters } from "./setup.render.js";
 
-/**
- * A two-band MCP result: a global (Windsurf) and a project (Cursor) target,
- * both newly `absent`→added — the clean first-run recap (no state tally).
- */
-const BOTH_BANDS: SetupResult = {
-  kind: "mcp",
-  configured: ["Cursor", "Windsurf"],
-  targets: [
-    {
-      name: "Windsurf",
-      band: "global",
-      path: "/home/u/.codeium/windsurf/mcp_config.json",
-      state: "absent",
-    },
-    {
-      name: "Cursor",
-      band: "project",
-      path: "/proj/.cursor/mcp.json",
-      state: "absent",
-    },
-  ],
+const ROOTS = { global: "/home/u", project: "/home/u/src/app" };
+
+/** The five rows a first global-band run produces on a machine with no editor. */
+const ROWS: PlanRow[] = [
+  {
+    target: "config",
+    band: "global",
+    action: "none",
+    detail: "~/.config/pragma/config.json — present",
+    selected: false,
+  },
+  {
+    target: "completions",
+    band: "global",
+    action: "install",
+    detail: "bash → ~/.local/share/bash-completion/completions/pragma",
+    selected: true,
+  },
+  {
+    target: "lsp",
+    band: "global",
+    action: "skip",
+    detail: "no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
+    reason: "no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
+    selected: false,
+  },
+  {
+    target: "mcp",
+    band: "global",
+    action: "update",
+    detail: "2 files",
+    children: [
+      { key: "/home/u/.claude.json", label: "~/.claude.json", action: "add" },
+      {
+        key: "/home/u/.codeium/windsurf/mcp_config.json",
+        label: "~/.codeium/windsurf/mcp_config.json",
+        action: "add",
+      },
+    ],
+    selected: true,
+  },
+  {
+    target: "skills",
+    band: "global",
+    action: "link",
+    detail: "2 skills → 2 dirs (~/.claude/skills, ~/.agents/skills)",
+    selected: true,
+  },
+];
+
+const PLAN: SetupPlan = { scope: "global", roots: ROOTS, rows: ROWS };
+
+/** The same plan after a run: outcomes filled in, nothing else changed. */
+const APPLIED: SetupPlan = {
+  ...PLAN,
+  rows: ROWS.map((row): PlanRow => {
+    if (row.target === "lsp") {
+      return {
+        ...row,
+        outcome: {
+          status: "skipped",
+          remedy:
+            "no action is possible on this machine yet — install VS Code or VSCodium, then run this again",
+        },
+      };
+    }
+    if (row.target === "config") return { ...row, outcome: { status: "noop" } };
+    if (row.target === "mcp") {
+      return { ...row, outcome: { status: "done", note: "2 added" } };
+    }
+    if (row.target === "completions") {
+      return { ...row, outcome: { status: "done", note: "installed" } };
+    }
+    return { ...row, outcome: { status: "done", note: "linked" } };
+  }),
 };
 
-describe("setup render — MCP recap banded by Global/Project", () => {
-  it("plain lists the global band before the project band", () => {
-    expect(setupFormatters.plain(BOTH_BANDS)).toBe(
-      "Configured MCP — Global: Windsurf · Project: Cursor.",
+describe("the setup plan renders as one table", () => {
+  it("names the band and both roots once, then one row per target", () => {
+    // The header carries the roots so no row repeats an absolute prefix, and
+    // EVERY target is a row — including the one that will skip, which is the
+    // whole point: a target that cannot be offered is named, not omitted.
+    expect(renderPlanTable(PLAN, { lead: "Setup plan" })).toBe(
+      [
+        "Setup plan — global band (~ · project: ~/src/app)",
+        "",
+        "  config       none     ~/.config/pragma/config.json — present",
+        "  completions  install  bash → ~/.local/share/bash-completion/completions/pragma",
+        "  lsp          skip     no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
+        "  mcp          2 files  ~/.claude.json (add) · ~/.codeium/windsurf/mcp_config.json (add)",
+        "  skills       link     2 skills → 2 dirs (~/.claude/skills, ~/.agents/skills)",
+      ].join("\n"),
     );
   });
 
-  it("llm is the same banded recap prefixed with a bullet", () => {
-    expect(setupFormatters.llm(BOTH_BANDS)).toBe(
-      "- Configured MCP — Global: Windsurf · Project: Cursor.",
-    );
+  it("a non-interactive run without consent previews and says so", () => {
+    const preview = setupFormatters.plain({ ...PLAN, preview: true });
+    expect(preview).toContain("Setup plan — global band");
+    expect(preview.endsWith(`\n\n${PREVIEW_HINT}`)).toBe(true);
   });
 
-  it("uses the unified labels, never MACHINE/PROJECT", () => {
-    const out = setupFormatters.plain(BOTH_BANDS);
-    expect(out).not.toContain("MACHINE");
-    expect(out).not.toContain("PROJECT");
-  });
-
-  it("a single-band selection lists only that band", () => {
-    const projectOnly: SetupResult = {
-      kind: "mcp",
-      configured: ["Cursor"],
-      targets: [
+  it("groups the rows under band headings when a run covers both", () => {
+    const both: SetupPlan = {
+      scope: "both",
+      roots: ROOTS,
+      rows: [
+        ROWS[3] as PlanRow,
         {
-          name: "Cursor",
+          target: "mcp",
           band: "project",
-          path: "/p/.cursor/mcp.json",
-          state: "absent",
+          action: "skip",
+          detail: "no harness config location in this band",
+          reason: "no AI harness in this project writes a per-repository config",
+          selected: false,
         },
       ],
     };
-    expect(setupFormatters.plain(projectOnly)).toBe(
-      "Configured MCP — Project: Cursor.",
-    );
-  });
-
-  it("appends the state tally when a target was already present (re-run)", () => {
-    // A mix of already-configured + drifted + newly-added surfaces the
-    // idempotency breakdown, so a re-run reads as a no-op rather than a rewrite.
-    const rerun: SetupResult = {
-      kind: "mcp",
-      configured: ["Cursor", "Windsurf"],
-      targets: [
-        {
-          name: "Windsurf",
-          band: "global",
-          path: "/home/u/.codeium/windsurf/mcp_config.json",
-          state: "configured",
-        },
-        {
-          name: "Cursor",
-          band: "project",
-          path: "/proj/.cursor/mcp.json",
-          state: "drifted",
-        },
-      ],
-    };
-    expect(setupFormatters.plain(rerun)).toBe(
-      "Configured MCP — Global: Windsurf · Project: Cursor (0 added, 1 updated, 1 unchanged).",
-    );
-  });
-
-  it("no targets → a plain 'nothing configured' line", () => {
-    const none: SetupResult = { kind: "mcp", configured: [], targets: [] };
-    expect(setupFormatters.plain(none)).toBe("No harnesses configured.");
-  });
-
-  it("json is the exact SetupResult round-trip", () => {
-    expect(JSON.parse(setupFormatters.json(BOTH_BANDS))).toEqual(BOTH_BANDS);
+    const out = renderPlanTable(both, { lead: "Setup plan" });
+    expect(out).toContain("Global");
+    expect(out).toContain("Project");
+    expect(out).toContain("both bands");
   });
 });
 
-describe("setup render — LSP line names editors, never a false 'installed'", () => {
-  it("`unknown` (no editor CLI) renders as the honest named skip", () => {
-    // The old copy said "is installed (up to date)" for every non-installed
-    // state — false on a machine where nothing was installed at all.
-    const none: SetupResult = { kind: "lsp", state: "unknown", editors: [] };
-    expect(setupFormatters.plain(none)).toBe(
-      "No VS Code-family editor CLI found on PATH — Terrazzo LSP extension not installed.",
+describe("the recap is the plan replayed", () => {
+  it("counts selected targets and carries each row's outcome", () => {
+    expect(renderRecap(APPLIED)).toBe(
+      [
+        "Setup: 3 of 3 selected targets configured — global band",
+        "  ✓ config       ~/.config/pragma/config.json — present",
+        "  ✓ completions  bash → ~/.local/share/bash-completion/completions/pragma — installed",
+        "  ○ lsp          skipped — no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
+        "      no action is possible on this machine yet — install VS Code or VSCodium, then run this again",
+        "  ✓ mcp          2 files — 2 added",
+        "  ✓ skills       2 skills → 2 dirs (~/.claude/skills, ~/.agents/skills) — linked",
+        "",
+        "verify anytime: pragma doctor",
+      ].join("\n"),
     );
   });
 
-  it("`installed` names the editors it is already present in", () => {
-    const done: SetupResult = {
-      kind: "lsp",
-      state: "installed",
-      editors: ["VS Code", "VSCodium"],
-    };
-    expect(setupFormatters.plain(done)).toBe(
-      "Terrazzo LSP extension already installed (VS Code, VSCodium).",
+  it("a skip carries its reason and never counts as a failure", () => {
+    const lsp = APPLIED.rows.find((row) => row.target === "lsp") as PlanRow;
+    expect(renderProgressLine(lsp, 11)).toBe(
+      "○ lsp          skipped — no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
     );
   });
 
-  it("`absent` (installer ran) names the target editors", () => {
-    const ran: SetupResult = {
-      kind: "lsp",
-      state: "absent",
-      editors: ["Cursor"],
-    };
-    expect(setupFormatters.plain(ran)).toBe(
-      "Terrazzo LSP extension installed (Cursor).",
+  it("the plain formatter picks the recap once a run has happened", () => {
+    expect(setupFormatters.plain(APPLIED)).toBe(renderRecap(APPLIED));
+    expect(setupFormatters.plain(PLAN)).toBe(
+      renderPlanTable(PLAN, { lead: "Setup plan" }),
     );
+  });
+});
+
+describe("the machine-readable projections carry the same rows", () => {
+  it("json is the plan round-tripped, band and all", () => {
+    expect(JSON.parse(setupFormatters.json(APPLIED))).toEqual(APPLIED);
+  });
+
+  it("llm names every row with its band and state", () => {
+    const out = setupFormatters.llm(APPLIED);
+    for (const row of APPLIED.rows) {
+      expect(out).toContain(`**${row.target}** (${row.band})`);
+    }
   });
 });

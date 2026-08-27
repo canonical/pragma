@@ -23,6 +23,7 @@ import { emitScripts } from "../../../kernel/completion/emitScripts.js";
 import { capabilities } from "../../index.js";
 import { detectCompletions } from "../../setup/operations/setupCompletions.js";
 import { completionScriptPath, type ShellId } from "../../setup/shell.js";
+import type { CheckResult } from "../types.js";
 import { checkShellCompletions } from "./checkShellCompletions.js";
 
 const roots: string[] = [];
@@ -59,6 +60,15 @@ function installScript(shell: ShellId): void {
   writeScript(shell, emitScripts(capabilities)[shell]);
 }
 
+/**
+ * Run the check the way `doctor` does: the `completions` target detects once
+ * per invocation and the check reads that one answer, so the test drives the
+ * same pairing rather than letting the check re-read behind its own back.
+ */
+async function check(cwd: string): Promise<CheckResult> {
+  return checkShellCompletions(cwd, await detectCompletions(cwd));
+}
+
 /** Write a `.zshrc` that puts ~/.zfunc on fpath. */
 function wireZfunc(): void {
   writeFileSync(
@@ -72,7 +82,7 @@ describe("checkShellCompletions — effect test (gate 1)", () => {
     // No shell → skip, but only AFTER the resolver answered — the detail proves
     // the effect test ran and succeeded.
     delete process.env.SHELL;
-    const result = await checkShellCompletions(tmp());
+    const result = await check(tmp());
     expect(result.status).toBe("skip");
     expect(result.detail).toMatch(/resolver OK/);
   });
@@ -81,7 +91,7 @@ describe("checkShellCompletions — effect test (gate 1)", () => {
 describe("checkShellCompletions — install probe (gate 2)", () => {
   it("a never-installed script is available (opt-in, not a fault) with the setup command", async () => {
     process.env.SHELL = "/usr/bin/bash";
-    const result = await checkShellCompletions(tmp());
+    const result = await check(tmp());
     expect(result.status).toBe("available");
     expect(result.detail).toMatch(/not installed/);
     expect(result.remedy).toBe("pragma setup completions");
@@ -90,7 +100,7 @@ describe("checkShellCompletions — install probe (gate 2)", () => {
   it("passes for bash once the up-to-date script is at its real path", async () => {
     process.env.SHELL = "/usr/bin/bash";
     installScript("bash");
-    const result = await checkShellCompletions(tmp());
+    const result = await check(tmp());
     expect(result.status).toBe("pass");
     expect(result.detail).toMatch(/bash up to date and resolving/);
   });
@@ -98,7 +108,7 @@ describe("checkShellCompletions — install probe (gate 2)", () => {
   it("passes for fish once the up-to-date script is at its real path", async () => {
     process.env.SHELL = "/usr/bin/fish";
     installScript("fish");
-    const result = await checkShellCompletions(tmp());
+    const result = await check(tmp());
     expect(result.status).toBe("pass");
   });
 
@@ -112,7 +122,7 @@ describe("checkShellCompletions — install probe (gate 2)", () => {
     // command whose job is to say so.
     process.env.SHELL = "/usr/bin/bash";
     writeScript("bash", "# STALE JUNK\n");
-    const result = await checkShellCompletions(tmp());
+    const result = await check(tmp());
     expect(result.status).toBe("fail");
     expect(result.detail).toMatch(/out of date/);
     expect(result.remedy).toBe("pragma setup completions");
@@ -135,7 +145,7 @@ describe("checkShellCompletions — install probe (gate 2)", () => {
       "export default { completion: { minChars: 5 } };\n",
     );
     expect((await detectCompletions(cwd)).state).toBe("stale");
-    expect((await checkShellCompletions(cwd)).status).toBe("pass");
+    expect((await check(cwd)).status).toBe("pass");
   });
 });
 
@@ -143,7 +153,7 @@ describe("checkShellCompletions — zsh fpath activation (gate 3)", () => {
   it("fails when the zsh script is installed but ~/.zfunc is not on fpath", async () => {
     process.env.SHELL = "/usr/bin/zsh";
     installScript("zsh");
-    const result = await checkShellCompletions(tmp());
+    const result = await check(tmp());
     expect(result.status).toBe("fail");
     expect(result.detail).toMatch(/not on your fpath/);
     // The remedy IS the activation hint — the exact ~/.zshrc lines.
@@ -154,7 +164,7 @@ describe("checkShellCompletions — zsh fpath activation (gate 3)", () => {
     process.env.SHELL = "/usr/bin/zsh";
     installScript("zsh");
     wireZfunc();
-    const result = await checkShellCompletions(tmp());
+    const result = await check(tmp());
     expect(result.status).toBe("pass");
     expect(result.detail).toMatch(/zsh up to date and resolving/);
   });
