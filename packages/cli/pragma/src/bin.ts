@@ -33,15 +33,19 @@ async function main(): Promise<void> {
   const argv = process.argv.slice(2);
 
   // 1. MCP server entry (D9) — `pragma mcp serve` serves over stdio.
-  //    The exit is NARROW on purpose: only the exact serve invocation, and
-  //    only without a help flag. The server's startup has to stay minimal and
-  //    stdio-pure (no first-run banner, no config read, nothing on stdout but
-  //    JSON-RPC), which is what this shortcut buys — but the noun itself is
-  //    ordinary grammar, so `pragma mcp`, `pragma mcp --help` and
-  //    `pragma mcp serve --help` fall through to the same help machinery every
-  //    other noun uses, and root help's promise that `--help` works on any
-  //    command becomes true.
-  if (argv[0] === "mcp" && argv[1] === "serve" && !argv.includes("--help")) {
+  //    The exit is NARROW on purpose: argv must be EXACTLY those two tokens.
+  //    The server's startup has to stay minimal and stdio-pure (no first-run
+  //    banner, no config read, nothing on stdout but JSON-RPC), which is what
+  //    this shortcut buys — but the noun itself is ordinary grammar, so
+  //    `pragma mcp`, `pragma mcp --help` and `pragma mcp serve --help` fall
+  //    through to the same help machinery every other noun uses, and root
+  //    help's promise that `--help` works on any command becomes true.
+  //    Matching on a PREFIX would extend that purity budget to malformed argv
+  //    it was never bought for: `mcp serve extra` would serve instead of
+  //    letting Commander reject the excess argument, and `mcp serve --version`
+  //    would serve instead of answering the global flag. Anything suffixed
+  //    falls through to the ordinary grammar, which owns both jobs.
+  if (argv.length === 2 && argv[0] === "mcp" && argv[1] === "serve") {
     const [{ serveMcp }, { capabilities }] = await Promise.all([
       import("./kernel/project/mcp/serve.js"),
       import("./capabilities/index.js"),

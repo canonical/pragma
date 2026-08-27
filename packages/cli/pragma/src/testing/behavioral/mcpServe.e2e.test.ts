@@ -7,10 +7,11 @@
  * The server must connect and exit cleanly, not hang or crash.
  *
  * The other half of the contract is the one the bin's narrow short-circuit
- * exists to keep honest: only the exact serve invocation serves. `pragma mcp`
- * and any help form print text and start NO server — which is only observable
- * across the process boundary, because in-process dispatch never reaches the
- * short-circuit at all.
+ * exists to keep honest: only the exact serve invocation serves. `pragma mcp`,
+ * any help form, and any argv with a token after `serve` print text or an
+ * error and start NO server — which is only observable across the process
+ * boundary, because in-process dispatch never reaches the short-circuit at
+ * all.
  */
 
 import { describe, expect, it } from "vitest";
@@ -47,5 +48,29 @@ describe("mcp — the noun is ordinary grammar (e2e)", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("Start the MCP server over stdio");
     expect(result.stdout).toContain("Usage: pragma mcp serve");
+  });
+});
+
+/**
+ * The short-circuit matches argv EXACTLY. A prefix match would extend the
+ * stdio-purity budget — no flag parsing, no first-run, nothing on stdout but
+ * JSON-RPC — to argv the server was never asked to answer, so a suffixed line
+ * would serve instead of being parsed. These are the two suffixes that prove
+ * the fall-through: a global flag the program owns, and a stray operand.
+ */
+describe("mcp serve — anything suffixed falls through to the grammar (e2e)", () => {
+  it("`mcp serve --version` answers the global flag, serving nothing", () => {
+    const result = runCli(["mcp", "serve", "--version"]);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toMatch(/^\d+\.\d+\.\d+/);
+    // A JSON-RPC handshake would have started with `{`; a version never does.
+    expect(result.stdout.startsWith("{")).toBe(false);
+  });
+
+  it("`mcp serve extra` is parsed, so its bad global value is rejected", () => {
+    const result = runCli(["mcp", "serve", "extra", "--format", "bogus"]);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('Invalid format "bogus"');
+    expect(result.stdout).toBe("");
   });
 });
