@@ -1,26 +1,25 @@
 .ds.input-primitive {
-  --color-background-input-active: var(--lp-color-background-active);
-  --color-background-input-hover: var(--lp-color-background-hover);
-  --color-background-input: var(--lp-color-background-input);
-  --dimension-padding-inline-input: var(--lp-dimension-spacing-inline-m);
-  --dimension-padding-block-input: var(--lp-dimension-spacing-block-xxs);
-  --color-border-input: var(--lp-color-border-high-contrast);
+  --color-background-input-active: var(--color-foreground-input-active);
+  --color-background-input-hover: var(--color-foreground-input-hover);
+  --color-background-input: var(--color-foreground-input);
+  --dimension-padding-inline-input: var(--dimension-200);
+  --dimension-padding-block-input: var(--dimension-050);
+  --color-border-input: var(--color-border);
   --border-style-input: none none solid none;
-  --dimension-border-width-input: var(--lp-dimension-stroke-thickness-default);
-  --color-outline-input: var(--lp-color-border-focus);
-  --color-text-input: var(--lp-color-text-default);
-  --color-text-input-placeholder: var(--lp-color-text-muted);
-  --typography-input: var(--lp-typography-paragraph-default);
-  --opacity-input-disabled: var(--lp-opacity-muted);
-  --color-background-input-invalid: var(--lp-color-background-negative-default);
+  --dimension-border-width-input: var(--dimension-stroke-thickness-medium);
+  --color-outline-input: var(--color-focusRing);
+  --color-text-input: var(--color-text);
+  --color-text-input-placeholder: var(--color-text-muted);
+  --typography-input: var(--ds-typography-text-primary);
+  --color-background-input-invalid: var(--color-foreground-input-error);
   --color-background-input-invalid-hover: var(
-    --lp-color-background-negative-hover
+    --color-foreground-input-error-hover
   );
   --color-background-input-invalid-active: var(
-    --lp-color-background-negative-active
+    --color-foreground-input-error-active
   );
-  --color-border-input-invalid: var(--lp-color-border-negative);
-  --color-outline-input-invalid: var(--lp-color-border-negative);
+  --color-border-input-invalid: var(--color-border-error);
+  --color-outline-input-invalid: var(--color-border-error);
 
   padding-inline: var(--dimension-padding-inline-input);
   padding-block: var(--dimension-padding-block-input);
@@ -31,9 +30,9 @@
   background-color: var(--color-background-input);
   color: var(--color-text-input);
   font: var(--typography-input);
-  transition-duration: var(--lp-transition-duration-snap);
+  transition-duration: var(--ds-transition-duration-snap);
   transition-property: background-color, border-color;
-  transition-timing-function: var(--lp-transition-timing-ease-in);
+  transition-timing-function: var(--ds-transition-timing-ease-in);
 
   &::placeholder {
     color: var(--color-text-input-placeholder);
@@ -50,7 +49,9 @@
 
   &:disabled {
     cursor: not-allowed;
-    opacity: var(--opacity-input-disabled);
+    background-color: var(--color-foreground-input-disabled);
+    color: var(--disabled--color-text);
+    border-color: var(--disabled--color-border);
   }
 
   &:user-invalid,
