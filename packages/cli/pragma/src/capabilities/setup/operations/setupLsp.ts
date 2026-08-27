@@ -30,7 +30,7 @@
  */
 
 import { existsSync, readdirSync } from "node:fs";
-import { delimiter, join } from "node:path";
+import { join } from "node:path";
 import type { EditorCliDefinition, PlatformEnv } from "@canonical/harnesses";
 import {
   type ExecResult,
@@ -71,12 +71,23 @@ export interface LspDetection {
   readonly stagingDir: string;
 }
 
-/** Whether `cli` resolves in any PATH dir (same probe doctor's checks use). */
-const cliOnPath = (cli: string, platform: PlatformEnv): boolean =>
-  (platform.env.PATH ?? "")
-    .split(delimiter)
-    .filter((dir) => dir.length > 0)
-    .some((dir) => existsSync(join(dir, cli)));
+/**
+ * Whether an editor CLI resolves on PATH, given the candidate paths the host
+ * would consider for it.
+ *
+ * The candidates come from `@canonical/harnesses`' `executableCandidates` —
+ * the same helper harness detection resolves `process` signals with — rather
+ * than from a local `PATH`-join here. That local version joined the BARE name
+ * onto each PATH directory, which resolves nothing on Windows: `code`,
+ * `codium` and friends install as `.cmd` shims, so every installed editor
+ * went unseen and `setup lsp` took the no-editor path. That path is a named
+ * SKIP, so the run exited 0 reporting a clean answer on a machine that had
+ * the editor — a wrong skip reads as correct, which is worse than a wrong
+ * failure. One implementation of the platform rules means the probe cannot
+ * drift away from detection's.
+ */
+const cliOnPath = (candidates: readonly string[]): boolean =>
+  candidates.some((candidate) => existsSync(candidate));
 
 /** Whether an editor's extensions dir holds a versioned copy of the extension. */
 const extensionInstalled = (
@@ -103,12 +114,11 @@ const extensionInstalled = (
  * @note Impure — reads PATH dirs and editor extension dirs off the real fs.
  */
 export async function detectLsp(_cwd: string): Promise<LspDetection> {
-  const { editorClis, readPlatformEnv, userDataBase } = await import(
-    "@canonical/harnesses"
-  );
+  const { editorClis, executableCandidates, readPlatformEnv, userDataBase } =
+    await import("@canonical/harnesses");
   const platform = readPlatformEnv();
   const editors: DetectedEditor[] = editorClis
-    .filter((editor) => cliOnPath(editor.cli, platform))
+    .filter((editor) => cliOnPath(executableCandidates(editor.cli, platform)))
     .map((editor) => ({
       editor,
       installed: extensionInstalled(editor, platform),

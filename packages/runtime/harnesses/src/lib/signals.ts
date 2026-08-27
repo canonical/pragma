@@ -21,6 +21,7 @@ import {
   traverse,
 } from "@canonical/task";
 import editorClis from "./editors.js";
+import { executableCandidates } from "./executablePaths.js";
 import { type PlatformEnv, userHome } from "./platformPaths.js";
 import type { DetectionSignal } from "./types.js";
 
@@ -50,14 +51,6 @@ const resolveFsPath = (path: string, ctx: DetectContext): string =>
     : join(ctx.projectRoot, path);
 
 /**
- * The executable suffixes probed on win32 when `PATHEXT` is unset — the usual
- * Windows default. Crucially includes `.CMD`/`.BAT`: npm installs CLI harnesses
- * (`claude`, `codex`, `od`…) as `.cmd` shims, never `.exe`, so an `.exe`-only
- * probe would miss every npm-installed harness on Windows.
- */
-const DEFAULT_PATHEXT = ".COM;.EXE;.BAT;.CMD";
-
-/**
  * Check a `process` signal: whether `name` resolves on the platform `PATH` (on
  * win32, under any `PATHEXT` suffix — not just `.exe`) and, when a `verify` is
  * given, whether running it produces stdout matching `verify.match`.
@@ -71,21 +64,9 @@ const checkProcess = (
   signal: Extract<DetectionSignal, { type: "process" }>,
   ctx: DetectContext,
 ): Task<boolean> => {
-  const isWindows = ctx.platform.platform === "win32";
-  const separator = isWindows ? ";" : ":";
-  // On win32 an executable matches under any PATHEXT suffix; elsewhere the bare
-  // name is the sole candidate (the empty suffix).
-  const suffixes = isWindows
-    ? (ctx.platform.env.PATHEXT ?? DEFAULT_PATHEXT)
-        .split(";")
-        .filter((suffix) => suffix.length > 0)
-    : [""];
-  const candidates = (ctx.platform.env.PATH ?? "")
-    .split(separator)
-    .filter((dir) => dir.length > 0)
-    .flatMap((dir) =>
-      suffixes.map((suffix) => join(dir, `${signal.name}${suffix}`)),
-    );
+  // The PATH/PATHEXT rules live in one shared helper (`setup lsp`'s editor
+  // probe resolves the same way) — see `executablePaths.ts` for why.
+  const candidates = executableCandidates(signal.name, ctx.platform);
 
   return flatMap(
     traverse(candidates, (candidate) => exists(candidate)),
