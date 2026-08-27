@@ -39,12 +39,6 @@ export interface TemplateContext {
   version: string;
   /** License */
   license: string;
-  /** Module entry point */
-  module: string;
-  /** Types entry point (null for CSS packages) */
-  types: string | null;
-  /** Files to include */
-  files: string[];
   /** Whether this package type needs a build step */
   needsBuild: boolean;
   /**
@@ -65,10 +59,6 @@ export interface TemplateContext {
   withStorybook: boolean;
   /** Include CLI */
   withCli: boolean;
-  /** Generator name */
-  generatorName: string;
-  /** Generator version */
-  generatorVersion: string;
   /** Index signature for EJS compatibility */
   [key: string]: unknown;
 }

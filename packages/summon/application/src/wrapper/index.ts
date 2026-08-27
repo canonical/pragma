@@ -14,6 +14,7 @@ import {
 } from "@canonical/task";
 import { toKebabCase, toPascalCase } from "@canonical/utils";
 import { normalizeCommandPath } from "../shared/casing.js";
+import { packageVersion } from "../shared/packageVersion.js";
 
 export interface WrapperAnswers {
   readonly wrapperName: string;
@@ -56,7 +57,7 @@ export const generator: GeneratorDefinition<WrapperAnswers> = {
     name: "wrapper",
     displayName: "@canonical/summon-application:wrapper",
     description: "Create a layout wrapper component",
-    version: "0.1.0",
+    version: packageVersion(),
     help: `Creates a layout wrapper component under src/lib/.
 
 Given a name like "settings", creates:

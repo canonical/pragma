@@ -25,6 +25,7 @@ import {
   getComponentName,
   getParentDir,
   PACKAGE_NAME,
+  packageVersion,
   sharedPrompts,
 } from "../shared/index.js";
 import { loadTemplateSync } from "../shared/loadTemplate.js";
@@ -81,7 +82,7 @@ const generator = {
     displayName: `${PACKAGE_NAME}:react`,
     description:
       "Generate a React component with TypeScript, tests, stories, and styles",
-    version: "0.1.0",
+    version: packageVersion(),
     help: `Generate a React component with TypeScript, tests, stories, and styles.
 
 FEATURES:
@@ -108,7 +109,7 @@ For example, 'src/components/Button' creates a 'Button' component.`,
     const componentName = getComponentName(answers.componentPath);
     const componentDir = answers.componentPath;
     const parentDir = getParentDir(answers.componentPath);
-    const ctx = createTemplateContext(answers, "react");
+    const ctx = createTemplateContext(answers);
     const t = reactTemplates();
 
     return sequence_([

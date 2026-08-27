@@ -1,6 +1,6 @@
 # Application Conventions
 
-> From `@canonical/summon-application` v0.29.0
+> From `@canonical/summon-application`
 > Last updated: 2026-07-10
 
 ## Taxonomy Key

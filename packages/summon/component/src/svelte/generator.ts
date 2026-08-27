@@ -33,6 +33,7 @@ import {
   getComponentName,
   getParentDir,
   PACKAGE_NAME,
+  packageVersion,
   sharedPrompts,
 } from "../shared/index.js";
 import { loadTemplateSync } from "../shared/loadTemplate.js";
@@ -99,7 +100,7 @@ const generator = {
     displayName: `${PACKAGE_NAME}:svelte`,
     description:
       "Generate a Svelte 5 component with TypeScript, tests, stories, and styles",
-    version: "0.1.0",
+    version: packageVersion(),
     help: `Generate a Svelte 5 component with TypeScript, tests, stories, and styles.
 
 FEATURES:
@@ -138,7 +139,7 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
     const componentName = getComponentName(answers.componentPath);
     const componentDir = answers.componentPath;
     const parentDir = getParentDir(answers.componentPath);
-    const ctx = createTemplateContext(answers, "svelte");
+    const ctx = createTemplateContext(answers);
     const t = svelteTemplates();
 
     return sequence_([

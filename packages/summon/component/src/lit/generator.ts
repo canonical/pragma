@@ -29,6 +29,7 @@ import {
   getComponentName,
   getParentDir,
   PACKAGE_NAME,
+  packageVersion,
 } from "../shared/index.js";
 import { loadTemplateSync } from "../shared/loadTemplate.js";
 import type { LitAnswers } from "./types.js";
@@ -105,7 +106,7 @@ const generator = {
     displayName: `${PACKAGE_NAME}:lit`,
     description:
       "Generate a Lit web component with TypeScript, tests, stories, and styles",
-    version: "0.1.0",
+    version: packageVersion(),
     help: `Generate a Lit web component with TypeScript, tests, stories, and styles.
 
 FEATURES:
@@ -132,7 +133,7 @@ with the custom element tag 'button'.`,
     const componentName = getComponentName(answers.componentPath);
     const componentDir = answers.componentPath;
     const parentDir = getParentDir(answers.componentPath);
-    const ctx = createTemplateContext(answers, "lit");
+    const ctx = createTemplateContext(answers);
     const t = litTemplates();
 
     return sequence_([
