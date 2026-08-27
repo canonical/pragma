@@ -263,7 +263,8 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
         {props.scriptElements}
         {props.linkElements}
       </head>
-      <body>
+      {/* Surface declaration: context (app) + density (comfortable) — roots the design system's --density-* channel */}
+      <body className="app comfortable">
         <div id="root">
           <I18nProvider config={i18nConfig} catalogs={catalogs} locale={locale}>
             <HeadProvider>

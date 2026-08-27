@@ -7,7 +7,8 @@
     <link rel="icon" type="image/png" sizes="32x32" href="https://assets.ubuntu.com/v1/be7e4cc6-COF-favicon-32x32.png">
     <title><%= name %></title>
   </head>
-  <body>
+  <!-- Surface declaration: context (app) + density (comfortable) — roots the design system's --density-* channel -->
+  <body class="app comfortable">
     <div id="root"></div>
     <script type="module" src="/src/client/entry.tsx"></script>
   </body>
