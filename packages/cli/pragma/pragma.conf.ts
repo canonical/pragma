@@ -529,6 +529,21 @@ const codeStandardsStories: readonly PackDefinition[] = [
 export default {
   name: "pragma",
   help: "Explore the design system",
+  // The `--help` wordmark. Data, not code: `kernel/copy.test.ts` forbids any
+  // kernel string from naming the distribution, and a wordmark spells the name.
+  // Lines rather than one string — the art holds a backtick and backslashes.
+  logo: [
+    "              _",
+    "            /' `\\",
+    "          /'     )",
+    "        /' (___,/'____     ____     ____     ,__________     ____",
+    "      /'        )'    )--/'    )  /'    )   /'    )     )  /'    )",
+    "    /'        /'       /'    /' /'    /'  /'    /'    /' /'    /'",
+    "(,/'        /'        (___,/(__(___,/(__/'    /'    /(__(___,/(__",
+    "                                  /'",
+    "                          /     /'",
+    "                         (___,/'",
+  ],
   // The toolchain's own colophon — CONTENT this distribution declares, not
   // machinery: `pragma colophon` renders whatever stands here as its first
   // section, titled with the distribution's name, before any active pack's
