@@ -98,6 +98,7 @@ export {
   getLlmActionLabel,
   getLlmEffectPath,
   isVisibleEffect,
+  visiblePlanEffects,
 } from "./format/index.js";
 export type { RunGeneratorTaskOptions } from "./run/index.js";
 export { runGeneratorTask } from "./run/index.js";

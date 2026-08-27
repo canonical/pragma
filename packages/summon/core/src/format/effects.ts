@@ -59,6 +59,36 @@ export const isVisibleEffect = (effect: Effect, verbose = false): boolean => {
 };
 
 /**
+ * The rows a plan shows: the user-relevant effects, each directory named once.
+ *
+ * The visibility filter and the `MakeDir` de-duplication are ONE rule with
+ * several readers — the summon bin's dry-run, the `--llm` / `--format json`
+ * projections below, and the pragma kernel's CLI and MCP previews — and each
+ * reader used to carry its own copy of the two steps. A generator that ensures
+ * its output directory before every file plans that directory once per file,
+ * so the de-duplication is what makes a plan a list of artifacts rather than a
+ * list of mkdir calls.
+ *
+ * @param effects - The effects a run would apply, in order.
+ * @param verbose - If true, debug logs stay in the plan.
+ * @returns The visible effects, first occurrence of each directory kept.
+ */
+export const visiblePlanEffects = (
+  effects: readonly Effect[],
+  verbose = false,
+): Effect[] => {
+  const seenDirPaths = new Set<string>();
+  return effects.filter((effect) => {
+    if (!isVisibleEffect(effect, verbose)) return false;
+    if (effect._tag === "MakeDir") {
+      if (seenDirPaths.has(effect.path)) return false;
+      seenDirPaths.add(effect.path);
+    }
+    return true;
+  });
+};
+
+/**
  * Get human-readable action label for an effect.
  */
 export const getActionLabel = (effect: Effect): string => {
@@ -449,18 +479,8 @@ export const formatLlmMarkdown = (
     lines.push("");
   }
 
-  // Filter visible effects
-  const visibleEffects = effects.filter((e) => isVisibleEffect(e, verbose));
-
-  // Deduplicate MakeDir
-  const seenDirPaths = new Set<string>();
-  const dedupedEffects = visibleEffects.filter((e) => {
-    if (e._tag === "MakeDir") {
-      if (seenDirPaths.has(e.path)) return false;
-      seenDirPaths.add(e.path);
-    }
-    return true;
-  });
+  // The one plan rule: visible effects, each directory named once.
+  const dedupedEffects = visiblePlanEffects(effects, verbose);
 
   // Plan table
   if (dedupedEffects.length > 0) {
@@ -526,17 +546,8 @@ export const formatLlmJson = (
   effects: Effect[],
   verbose = false,
 ): Record<string, unknown> => {
-  const visibleEffects = effects.filter((e) => isVisibleEffect(e, verbose));
-
-  // Deduplicate MakeDir
-  const seenDirPaths = new Set<string>();
-  const dedupedEffects = visibleEffects.filter((e) => {
-    if (e._tag === "MakeDir") {
-      if (seenDirPaths.has(e.path)) return false;
-      seenDirPaths.add(e.path);
-    }
-    return true;
-  });
+  // The one plan rule: visible effects, each directory named once.
+  const dedupedEffects = visiblePlanEffects(effects, verbose);
 
   const plan = dedupedEffects.map((effect) => {
     const entry: Record<string, unknown> = {

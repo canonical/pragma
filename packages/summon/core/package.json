@@ -14,6 +14,10 @@
       "types": "./dist/types/testing/index.d.ts",
       "import": "./dist/esm/testing/index.js"
     },
+    "./format": {
+      "types": "./dist/types/format/index.d.ts",
+      "import": "./dist/esm/format/index.js"
+    },
     "./projection": {
       "types": "./dist/types/projection/index.d.ts",
       "import": "./dist/esm/projection/index.js"
