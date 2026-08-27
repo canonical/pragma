@@ -91,13 +91,31 @@ export const runUndo = async <A>(
     resolveExists: hostExistsResolver(options?.cwd),
   });
 
+  // Phase 2: Execute collected undos in reverse (LIFO)
+  return runCollectedUndos(undos, options);
+};
+
+/**
+ * Execute an already-collected undo plan in reverse (LIFO) order.
+ *
+ * Split out of {@link runUndo} for callers that collect first — to preview
+ * the plan or ask for confirmation — and must not walk the task a second
+ * time (collect once, then execute exactly what was shown).
+ *
+ * @param undos - Undo tasks in forward execution order (as `collectUndos`
+ *   returns them); executed here in reverse
+ * @param options - RunTaskOptions passed to each undo execution
+ * @returns The number of undo steps executed
+ */
+export const runCollectedUndos = async (
+  undos: readonly Task<void>[],
+  options?: RunTaskOptions,
+): Promise<UndoResult> => {
   if (undos.length === 0) {
     return { undoCount: 0 };
   }
 
-  // Phase 2: Execute collected undos in reverse (LIFO)
-  // Import sequence_ inline to avoid circular dependency
-  const reversed = undos.reverse();
+  const reversed = [...undos].reverse();
   for (const undoTask of reversed) {
     await runTask(undoTask, options);
   }

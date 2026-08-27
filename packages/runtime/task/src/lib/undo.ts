@@ -26,8 +26,25 @@ export interface CollectUndosOptions {
    * append-if-absent helper would see the very line the forward run appended
    * and skip collecting its remove-line undo). Real existence + mocked
    * content is the contract.
+   *
+   * Known boundary: post-run host state cannot recover the PRE-run branch
+   * when the forward run itself changed the answer and both branches
+   * succeed at collection time — `ifElseM(exists(p), append, create)` over
+   * an initially missing `p` collects the append branch's undo, not the
+   * create branch's delete. That is the accepted cost of stateless undo (no
+   * journal, by design); generators keep it benign by making the
+   * existing-branch undo subsume the fresh-branch one (a remove-line undo
+   * deletes the file when its removal leaves nothing behind).
    */
   resolveExists?: (path: string) => boolean;
+  /**
+   * Observe each leaf forward effect of the successful walk (the branch
+   * assignment the collected undos correspond to), in forward order. Lets a
+   * caller report what the plan does NOT reverse — e.g. `Exec` effects, which
+   * have no default undo — without walking the task again. Called only after
+   * the walk settles; failed backtracking attempts are never reported.
+   */
+  onForwardEffect?: (effect: Effect) => void;
 }
 
 /**
@@ -51,6 +68,8 @@ interface WalkState {
   virtualFs: Set<string>;
   /** Undos collected this attempt, in forward order. */
   undos: Task<void>[];
+  /** Leaf forward effects of this attempt, in forward order. */
+  forwardEffects: Effect[];
   /** Free `Exists` decisions in encounter order. */
   decisions: ExistsDecision[];
   /** Values forced for the first N decisions (backtracking overrides). */
@@ -90,6 +109,7 @@ export const collectUndos = <A>(
     const state: WalkState = {
       virtualFs: new Set(),
       undos: [],
+      forwardEffects: [],
       decisions: [],
       overrides,
       resolveExists: options?.resolveExists,
@@ -112,6 +132,11 @@ export const collectUndos = <A>(
     const { state, error } = walk(overrides);
 
     if (error === null) {
+      if (options?.onForwardEffect) {
+        for (const effect of state.forwardEffects) {
+          options.onForwardEffect(effect);
+        }
+      }
       return state.undos;
     }
 
@@ -204,6 +229,8 @@ const collectUndosInto = (task: Task<unknown>, state: WalkState): unknown => {
       }
       return undefined;
     }
+
+    state.forwardEffects.push(effect);
 
     if (effect._tag === "Exists") {
       // A path this walk already created is present regardless of the host.

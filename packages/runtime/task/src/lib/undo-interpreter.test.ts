@@ -22,7 +22,11 @@ import {
 import { $, effect, fail, flatMap, gen, map, pure, recover } from "./task.js";
 import type { Task } from "./types.js";
 import { collectUndos } from "./undo.js";
-import { hostExistsResolver, runUndo } from "./undo-interpreter.js";
+import {
+  hostExistsResolver,
+  runCollectedUndos,
+  runUndo,
+} from "./undo-interpreter.js";
 
 // =============================================================================
 // collectUndos
@@ -739,6 +743,73 @@ describe("collectUndos - fail-backtracking", () => {
     expect(() => collectUndos(task, { resolveExists: () => true })).toThrow(
       TaskExecutionError,
     );
+  });
+});
+
+describe("collectUndos - onForwardEffect", () => {
+  it("reports the successful walk's leaf effects in forward order", () => {
+    const seen: string[] = [];
+    const task = sequence_([
+      writeFile("/a.txt", "a"),
+      exec("bun", ["install"]),
+      info("done"),
+    ]);
+
+    collectUndos(task, { onForwardEffect: (e) => seen.push(e._tag) });
+
+    expect(seen).toEqual(["WriteFile", "Exec", "Log"]);
+  });
+
+  it("never reports effects from failed backtracking attempts", () => {
+    const seen: string[] = [];
+    const task = ifElseM(
+      exists("/page.tsx"),
+      fail({ code: "PAGE_EXISTS", message: "already there" }),
+      writeFile("/page.tsx", "content"),
+    );
+
+    collectUndos(task, {
+      resolveExists: () => true,
+      onForwardEffect: (e) => seen.push(e._tag),
+    });
+
+    // Only the surviving (flipped) walk's effects: the Exists probe and the
+    // write — never the failed attempt's duplicates.
+    expect(seen).toEqual(["Exists", "WriteFile"]);
+  });
+});
+
+describe("runCollectedUndos", () => {
+  it("executes a pre-collected plan in reverse without re-walking the task", async () => {
+    const order: string[] = [];
+    const onEffectComplete = (eff: import("./types.js").Effect) => {
+      if (eff._tag === "WriteContext" && typeof eff.key === "string") {
+        order.push(eff.key);
+      }
+    };
+    const marker = (label: string) =>
+      effect<void>({ _tag: "WriteContext", key: label, value: true });
+
+    const task = sequence_([
+      writeFile("/tmp/a.txt", "a", { undo: marker("a") }),
+      writeFile("/tmp/b.txt", "b", { undo: marker("b") }),
+    ]);
+    const undos = collectUndos(task);
+
+    const result = await runCollectedUndos(undos, {
+      context: new Map(),
+      onEffectComplete,
+    });
+
+    expect(result.undoCount).toBe(2);
+    expect(order).toEqual(["b", "a"]);
+    // The caller's forward-order array is not mutated by the LIFO execution.
+    expect(dryRun(undos[0]).effects[0]).toMatchObject({ key: "a" });
+  });
+
+  it("returns undoCount 0 for an empty plan", async () => {
+    const result = await runCollectedUndos([]);
+    expect(result.undoCount).toBe(0);
   });
 });
 
