@@ -36,7 +36,10 @@ import {
   type McpDetection,
   mcpGroupState,
 } from "../../setup/operations/setupMcp.js";
-import type { SkillsDetection } from "../../setup/operations/setupSkills.js";
+import {
+  type SkillsDetection,
+  skillsSkipReason,
+} from "../../setup/operations/setupSkills.js";
 import { shortenPath, TARGET_IDS } from "../../setup/plan.js";
 import type { CheckItem, CheckResult, ScopeBand } from "../types.js";
 import { checkShellCompletions } from "./checkShellCompletions.js";
@@ -152,10 +155,7 @@ function skillsHealth(
   if (!d.available) {
     return {
       status: "skip",
-      detail:
-        band === "project"
-          ? `no project skills (${shortenPath(d.sourceRoot, roots)} is absent)`
-          : "no skills installed",
+      detail: skillsSkipReason(shortenPath(d.sourceRoot, roots), band),
     };
   }
   const stale = d.actions.filter((a) => a.action === "replaced").length;

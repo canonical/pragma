@@ -174,6 +174,72 @@ describe("the recap is the plan replayed", () => {
   });
 });
 
+describe("a row that did not run never renders as one that did", () => {
+  it("an unselected row gets a neutral marker, not a green check", () => {
+    // The row was offered and left unselected: neither done nor skipped for a
+    // reason. A ✓ here is the same claim the old recap made when it reported
+    // "Setup complete" over a target it had quietly dropped.
+    const row: PlanRow = {
+      target: "mcp",
+      band: "global",
+      action: "update",
+      detail: "1 file",
+      selected: false,
+    };
+    expect(renderProgressLine(row, 3)).toBe("· mcp  1 file — not selected");
+  });
+
+  it("a converged run recaps its noop rows instead of printing a plan", () => {
+    // Every row already current: nothing is selected, because there is nothing
+    // to do. That is a RESULT, and gating the recap on `selected` made the one
+    // command that had just verified the machine report itself as a preview.
+    const converged: SetupPlan = {
+      scope: "global",
+      roots: ROOTS,
+      rows: [
+        {
+          target: "config",
+          band: "global",
+          action: "none",
+          detail: "~/.config/pragma/config.json — present",
+          selected: false,
+          outcome: { status: "noop", note: "unchanged" },
+        },
+      ],
+    };
+    expect(setupFormatters.plain(converged)).toBe(renderRecap(converged));
+    expect(setupFormatters.plain(converged)).toContain(
+      "✓ config  ~/.config/pragma/config.json — present — unchanged",
+    );
+  });
+
+  it("a failed row carries the failure glyph and its remedy", () => {
+    const failed: PlanRow = {
+      target: "lsp",
+      band: "global",
+      action: "install",
+      detail: "via code",
+      selected: true,
+      outcome: {
+        status: "failed",
+        note: "VS Code refused the VSIX",
+        remedy: "install manually: code --install-extension ~/.local/share/pragma/lsp/terrazzo-lsp.vsix",
+      },
+    };
+    expect(renderProgressLine(failed, 3)).toBe(
+      "✗ lsp  via code — VS Code refused the VSIX",
+    );
+  });
+
+  it("an unapplied plan does not paint every llm row with a check", () => {
+    // `GLYPHS[status ?? "noop"]` gave a plan with no outcomes a green ✓ on
+    // every row, skips included.
+    const out = setupFormatters.llm(PLAN);
+    expect(out).not.toContain("✓");
+    expect(out).toContain("· **lsp** (global): skip");
+  });
+});
+
 describe("the machine-readable projections carry the same rows", () => {
   it("json is the plan round-tripped, band and all", () => {
     expect(JSON.parse(setupFormatters.json(APPLIED))).toEqual(APPLIED);

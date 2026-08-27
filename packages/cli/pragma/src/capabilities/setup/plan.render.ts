@@ -13,6 +13,7 @@
  * a piped run renders byte-for-byte plain.
  */
 
+import chalk from "chalk";
 import { BIN_NAME } from "../../constants.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
 import { BAND_LABELS } from "../shared/bands.js";
@@ -25,7 +26,7 @@ import {
 } from "./plan.js";
 import type { ScopeBand } from "./types.js";
 
-/** The glyph for a row's outcome (or, before a run, for its action). */
+/** The glyph for a row's outcome. */
 const GLYPHS = {
   done: "✓",
   noop: "✓",
@@ -34,6 +35,33 @@ const GLYPHS = {
   skipped: "○",
   failed: "✗",
 } as const;
+
+/**
+ * The marker for a row that carries NO outcome — one the user deselected, so it
+ * was neither done nor skipped-for-cause. It must not be a ✓: a green check
+ * against work that never ran is the same lie the old recap told when it
+ * reported "Setup complete" over a target it had dropped.
+ */
+const NOT_RUN_GLYPH = "·";
+
+/** The TTY styler plus `red` — the one tint {@link RenderStyle} does not carry. */
+interface PlanStyle extends RenderStyle {
+  red(text: string): string;
+}
+
+/**
+ * Widen a {@link RenderStyle} with a `red` gated on the SAME colour decision, so
+ * a failure tint appears only on a colour-capable TTY. Mirrors `doctor`'s own
+ * styler, which is deliberate: a failed setup row and a failed doctor row are
+ * the same finding seen twice, and they are tinted alike.
+ *
+ * @param style - The shared styler.
+ * @returns The styler plus `red`.
+ */
+const withRed = (style: RenderStyle): PlanStyle => ({
+  ...style,
+  red: style.enabled ? (text) => chalk.red(text) : (text) => text,
+});
 
 /** The header's band phrase: `global band`, `project band`, or `both bands`. */
 const scopePhrase = (scope: SetupPlan["scope"]): string =>
@@ -128,17 +156,26 @@ export function renderProgressLine(
   idWidth: number,
   style: RenderStyle = defaultStyle(),
 ): string {
-  const status = row.outcome?.status ?? "noop";
-  const glyph = GLYPHS[status];
+  const painted = withRed(style);
+  const outcome = row.outcome;
+
+  // No outcome at all: the row was offered and left unselected. It is neither a
+  // success nor a skip-for-cause, and painting it green would claim work that
+  // never happened, so it gets a neutral marker and says plainly what it is.
+  if (outcome === undefined) {
+    return `${painted.dim(NOT_RUN_GLYPH)} ${row.target.padEnd(idWidth)}  ${painted.dim(`${row.detail} — not selected`)}`;
+  }
+
+  const glyph = GLYPHS[outcome.status];
   const tinted =
-    status === "failed"
-      ? style.yellow(glyph)
-      : status === "skipped" || status === "kept"
-        ? style.yellow(glyph)
-        : style.green(glyph);
-  const note = row.outcome?.note;
+    outcome.status === "failed"
+      ? painted.red(glyph)
+      : outcome.status === "skipped" || outcome.status === "kept"
+        ? painted.yellow(glyph)
+        : painted.green(glyph);
+  const note = outcome.note;
   const body =
-    status === "skipped"
+    outcome.status === "skipped"
       ? `skipped — ${row.reason ?? row.detail}`
       : note
         ? `${row.detail} — ${note}`
@@ -187,9 +224,13 @@ export function renderPlanLlm(plan: SetupPlan, lead = "Setup"): string {
   const lines = [`## ${lead} — ${scopePhrase(plan.scope)}`, ""];
   for (const row of plan.rows) {
     const status = row.outcome?.status;
+    // Before a run there is no outcome to report, so the row shows its ACTION
+    // behind a neutral marker. Reusing the `noop` glyph here painted every row
+    // of an unapplied plan — skips included — with a green check.
+    const glyph = status === undefined ? NOT_RUN_GLYPH : GLYPHS[status];
     const state = status ?? row.action;
     lines.push(
-      `- ${GLYPHS[status ?? "noop"]} **${row.target}** (${row.band}): ${state} — ${detailCell(row)}`,
+      `- ${glyph} **${row.target}** (${row.band}): ${state} — ${detailCell(row)}`,
     );
     for (const child of row.children ?? []) {
       lines.push(`  - ${childCell(child)}`);

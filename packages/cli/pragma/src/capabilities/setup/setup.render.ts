@@ -21,9 +21,16 @@ export const PREVIEW_HINT =
 /** The trailing line an explicit dry run carries. */
 export const DRY_RUN_HINT = "Dry run — nothing applied.";
 
-/** Whether any row carries an outcome, i.e. whether a run actually happened. */
+/**
+ * Whether any row carries an outcome, i.e. whether a run actually happened.
+ *
+ * Selection is deliberately NOT part of this test. An all-current re-run selects
+ * nothing — every row is already converged — and gating on `selected` made that
+ * run render as an unapplied PLAN, so the one command that had just confirmed
+ * the machine was fully set up reported itself as a preview.
+ */
 const wasApplied = (plan: SetupPlan): boolean =>
-  plan.rows.some((row) => row.outcome !== undefined && row.selected);
+  plan.rows.some((row) => row.outcome !== undefined);
 
 export const setupFormatters: Formatters<SetupPlan> = {
   plain(data) {

@@ -287,6 +287,21 @@ export function composeSkills(d: SkillsDetection): Task<void> {
  * freshly composed forward plan on an already-linked tree reversed the mkdirs
  * and removed nothing, while reporting a step count.
  */
+/**
+ * The named reason a skills row skips, shared by the setup plan and the doctor
+ * row so the two surfaces cannot word the same finding differently. Two strings
+ * for one condition is how a user ends up unsure whether they are looking at one
+ * problem or two.
+ *
+ * @param sourceRoot - The band's skill source root, already root-relative.
+ * @param band - The band being reported.
+ * @returns The reason line.
+ */
+export const skillsSkipReason = (sourceRoot: string, band: ScopeBand): string =>
+  band === "project"
+    ? `no project skills (${sourceRoot} is absent)`
+    : "no skills installed";
+
 export const ownedSkillLinks = (d: SkillsDetection): readonly SymlinkAction[] =>
   d.actions.filter((a) => a.owned);
 

@@ -359,6 +359,12 @@ export async function buildSetupRun(
         ...(draft?.remedy === undefined ? {} : { remedy: draft.remedy }),
       };
     }
+    // An already-current row reports `noop` whether or not it was selected. It
+    // is offered DE-selected (there is nothing to do to it), and returning no
+    // outcome at all left a converged re-run with a plan-shaped output that
+    // claimed nothing had run — while the row still rendered a bare green ✓.
+    // Convergence is a real result: one quiet line per row, zero writes.
+    if (row.action === "none") return { status: "noop", note: "unchanged" };
     if (!isChosen(row, chosen)) return undefined;
     const error = sink.get(rowKey(row.band, row.target));
     if (error !== undefined) {

@@ -63,6 +63,7 @@ import {
   detectSkills,
   ownedSkillLinks,
   type SkillsDetection,
+  skillsSkipReason,
 } from "./operations/setupSkills.js";
 import {
   type PlanAction,
@@ -130,9 +131,7 @@ const configTarget = defineTarget<ConfigDetection>({
   detect: () => detectConfigFile(),
   plan: (d, _band, roots) => {
     const path = shortenPath(d.path, roots);
-    if (!d.exists) {
-      return { action: "install", detail: `${path} — defaults` };
-    }
+    if (!d.exists) return { action: "install", detail: path };
     return { action: "none", detail: `${path} — present` };
   },
   removalPlan: (d, _band, roots) => {
@@ -291,14 +290,8 @@ const skillsTarget = defineTarget<SkillsDetection>({
   detect: (rt, band) => detectSkills(rt, band),
   plan: (d, band, roots) => {
     if (!d.available) {
-      return {
-        action: "skip",
-        detail: `${shortenPath(d.sourceRoot, roots)} is empty`,
-        reason:
-          band === "project"
-            ? `no project skills (${shortenPath(d.sourceRoot, roots)} is absent)`
-            : "no skills are installed",
-      };
+      const reason = skillsSkipReason(shortenPath(d.sourceRoot, roots), band);
+      return { action: "skip", detail: reason, reason };
     }
     const dirs = d.targets.map((t) => shortenPath(t.dir, roots)).join(", ");
     const where = `${d.skillCount} ${d.skillCount === 1 ? "skill" : "skills"} → ${d.targets.length} ${d.targets.length === 1 ? "dir" : "dirs"} (${dirs})`;
