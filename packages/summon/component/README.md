@@ -471,7 +471,7 @@ export const generators = {
 
 ### Modify Templates
 
-Fork the package and edit templates in `src/templates/react/`, `src/templates/svelte/`, or `src/templates/lit/`. Templates use [EJS syntax](https://ejs.co/).
+Fork the package and edit templates in `src/templates/react/`, `src/templates/svelte/`, or `src/templates/lit/` — plus `src/templates/shared/`, which holds the framework-agnostic templates (currently `styles.css.ejs`, the generated stylesheet rendered by the React and Svelte generators; Lit ships its own). Templates use [EJS syntax](https://ejs.co/).
 
 ---
 
