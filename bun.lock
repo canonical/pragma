@@ -5,7 +5,7 @@
     "": {
       "name": "ds25",
       "devDependencies": {
-        "@canonical/design-system": "^0.2.2",
+        "@canonical/design-system": "^0.2.3",
         "@vitest/coverage-v8": "^4.0.18",
         "lerna": "^9.0.5",
         "nx": "^22.5.4",
@@ -1770,7 +1770,7 @@
 
     "@canonical/biome-config": ["@canonical/biome-config@workspace:configs/biome"],
 
-    "@canonical/design-system": ["@canonical/design-system@0.2.2", "", { "dependencies": { "ajv": "^8.17.1", "jsonld": "^9.0.0", "n3": "^2.0.1", "tinyglobby": "^0.2.14" }, "bin": { "collect-implementations": "src/collect-implementations.ts" } }, "sha512-per6gSdBdOWLxgqYjQ3e2BMRgD6Ad02Qz3xBCu4cGUGwPMMB6FTp9pE+WePNgDv7Xz6IfyIQMlUKYTiB7FK7Pw=="],
+    "@canonical/design-system": ["@canonical/design-system@0.2.3", "", { "dependencies": { "ajv": "^8.17.1", "jsonld": "^9.0.0", "n3": "^2.0.1", "tinyglobby": "^0.2.14" }, "bin": { "collect-implementations": "src/collect-implementations.ts" } }, "sha512-4l9v19xSkM4/gbsR4ny+VDnCuJ2uknTOA/JBkPJHca6DCsf9HtcmZwPMFnOt3HaFeD9b+G29fM0Uj53aYvLo6Q=="],
 
     "@canonical/design-tokens": ["@canonical/design-tokens@0.8.1", "", { "dependencies": { "@canonical/terrazzo-lsp": "^0.8.1" } }, "sha512-5EQj2ZpYl3Jqg8rmbckovp+FAEzTPFsAnD8GrCLMCscIpHdumrIHeVzD8hM1Vx1hKchJ8S8IpW91fPyE26onDg=="],
 
