@@ -15,7 +15,12 @@ export default defineConfig({
     // this pass. Reuse the perf suite's "emit once if missing"
     // globalSetup so a clean `test:vitest` provisions it instead of failing with
     // a null exit status (the emit was previously assumed pre-built here).
-    globalSetup: ["./src/testing/perf/globalSetup.ts"],
+    globalSetup: [
+      "./src/testing/perf/globalSetup.ts",
+      // Allocates the run-level temp root BEFORE any worker starts and
+      // removes it after the last one exits. `setupXdgIsolation.ts` reads it.
+      "./src/testing/tempRoot.globalSetup.ts",
+    ],
     setupFiles: ["./src/testing/setupXdgIsolation.ts"],
     environment: "node",
     coverage: {
