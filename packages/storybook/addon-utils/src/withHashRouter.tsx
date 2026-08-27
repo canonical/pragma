@@ -38,11 +38,13 @@ export interface WithHashRouterOptions {
  * Requires the optional peer deps `@canonical/router-core` and
  * `@canonical/router-react`.
  *
- * Both parameters of the returned decorator are optional, so it doubles as a
- * plain "wrap this subtree in a hash router" helper for decorators that need to
- * render something extra *inside* the provider (an `<Outlet />`, a `useRoute()`
- * bridge). That keeps `createRouter` + `createHashAdapter` + `RouterProvider`
- * owned here instead of being hand-rolled per call site.
+ * The returned decorator's `context` parameter is optional (the story
+ * function stays required), so it doubles as a plain "wrap this subtree in a
+ * hash router" helper for decorators that need to render something extra
+ * *inside* the provider (an `<Outlet />`, a `useRoute()` bridge) without
+ * fabricating a `StoryContext`. That keeps `createRouter` +
+ * `createHashAdapter` + `RouterProvider` owned here instead of being
+ * hand-rolled per call site.
  *
  * @example
  * const meta = {
