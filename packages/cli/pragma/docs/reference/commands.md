@@ -351,7 +351,7 @@ pragma doctor --format json  # machine-readable checks
 
 Show every triple where a URI is the subject, grouped by predicate.
 
-Inspect one entity: all predicate/object pairs asserted on the subject. Address it by prefixed name (ds:button) or absolute IRI.
+Inspect one entity: all predicate/object pairs asserted on the subject. Address it by prefixed name (ds:global.component.button) or absolute IRI.
 
 ```
 pragma graph inspect <uri>
@@ -369,8 +369,8 @@ pragma graph inspect <uri>
 **Examples**
 
 ```bash
-pragma graph inspect ds:button
-pragma graph inspect https://ds.canonical.com/button
+pragma graph inspect ds:global.component.button
+pragma graph inspect https://ds.canonical.com/global.component.button
 ```
 
 ### pragma graph query
@@ -396,7 +396,7 @@ pragma graph query <sparql>
 
 ```bash
 pragma graph query "SELECT ?s WHERE { ?s a ds:Component }"  # list every component subject
-pragma graph query "ASK { ds:button a ds:Component }" --format json
+pragma graph query "ASK { <https://ds.canonical.com/global.component.button> a ds:Component }" --format json
 ```
 
 ## info

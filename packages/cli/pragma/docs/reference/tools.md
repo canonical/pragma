@@ -178,7 +178,7 @@ _No input parameters._
 
 ### graph_inspect
 
-Inspect one entity: all predicate/object pairs asserted on the subject. Address it by prefixed name (ds:button) or absolute IRI.
+Inspect one entity: all predicate/object pairs asserted on the subject. Address it by prefixed name (ds:global.component.button) or absolute IRI.
 
 Read-only.
 
