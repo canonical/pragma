@@ -128,11 +128,16 @@ const LITERAL_CAP: Readonly<Record<DetailLevel, number>> = {
 };
 
 /**
- * Ceiling on the inbound rows fetched in one query. Above every hub this graph
- * has (335), so `count` is exact in practice; a graph that exceeds it degrades
- * to an undercount on that one predicate rather than an unbounded read.
+ * Ceiling on the EXEMPLAR rows fetched — never on the counts.
+ *
+ * Counting and exhibiting are two different questions, and answering both from
+ * one capped query answered neither: a single `LIMIT` applies to the whole
+ * ordered result, so the first predicate to fill it under-reported its own
+ * `count` and every predicate after it vanished from the read entirely — while
+ * `InboundGroup.count` promised the true total. Counts now come from an
+ * aggregate the store computes; only the exemplars are bounded.
  */
-const INBOUND_FETCH_LIMIT = 500;
+const EXEMPLAR_FETCH_LIMIT = 500;
 
 /** The predicate whose object is a subject's type — hoisted out of nested records. */
 const RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
@@ -150,6 +155,12 @@ export interface ReadTerm {
   readonly datatype?: string;
   /** Literal language tag, when the literal carries one. */
   readonly language?: string;
+  /**
+   * Base direction of an RDF 1.2 directional literal. Dropped, `"hello"@en--ltr`
+   * is indistinguishable from a plain `"hello"@en` — which is exactly the kind
+   * of quiet flattening reading the TERM view was meant to stop.
+   */
+  readonly direction?: "ltr" | "rtl";
   /** Set when `value` is a PREFIX of the real literal (see {@link length}). */
   readonly truncated?: true;
   /** The literal's true character count, present only when truncated. */
@@ -187,6 +198,15 @@ export interface InboundGroup {
    * will not produce one.
    */
   readonly sampled?: true;
+  /**
+   * How many subjects this level would have exhibited, had any been nameable.
+   *
+   * Without it an empty `subjects` is ambiguous: at `summary` every group is
+   * empty because the level shows none, which is not the same as a group whose
+   * members are all blank nodes and cannot be shown at all. A renderer needs to
+   * tell those apart before it says anything about why the list is empty.
+   */
+  readonly exhibits: number;
 }
 
 /** The result of inspecting one subject URI. */
@@ -214,6 +234,16 @@ export interface InspectResult {
   readonly nested: Record<string, NestedRecord[]>;
   /** The disclosure level this payload was built at. */
   readonly detail: DetailLevel;
+  /**
+   * The prefix map every compacted name in this payload was produced from.
+   *
+   * Carried rather than left to be re-derived: a renderer that reconstructs it
+   * from the terms can only learn the prefixes that happen to appear on a named
+   * NODE, and misses any used solely by the subject, a nested record's key, or a
+   * literal's datatype — emitting compact names with no matching `@prefix`, i.e.
+   * invalid Turtle. The reader knows the real map; it should say so.
+   */
+  readonly prefixes: Readonly<Record<string, string>>;
 }
 
 /**
@@ -278,6 +308,7 @@ function toReadTerm(
       : {}),
     ...(term.datatype ? { datatype: compactUri(term.datatype, prefixes) } : {}),
     ...(term.language ? { language: term.language } : {}),
+    ...(term.direction ? { direction: term.direction } : {}),
   };
 }
 
@@ -361,6 +392,7 @@ export async function readEntity(
     inbound,
     nested,
     detail,
+    prefixes: session.prefixes,
   };
 }
 
@@ -376,38 +408,47 @@ async function readInbound(
   detail: DetailLevel,
   term: (value: Term) => ReadTerm,
 ): Promise<InboundGroup[]> {
-  const result = await rt.query.sparql(
-    `SELECT ?predicate ?subject WHERE { ?subject ?predicate <${resolved}> } ORDER BY ?predicate ?subject LIMIT ${INBOUND_FETCH_LIMIT}`,
+  // Counts from an AGGREGATE, so every predicate is counted in full and no
+  // predicate can be pushed out of the answer by a noisy neighbour.
+  const totals = await rt.query.sparql(
+    `SELECT ?predicate (COUNT(*) AS ?total) WHERE { ?subject ?predicate <${resolved}> } GROUP BY ?predicate ORDER BY ?predicate`,
   );
-  if (result.type !== "select") return [];
+  if (totals.type !== "select") return [];
 
   const counts = new Map<string, number>();
-  const retained = new Map<string, Term[]>();
   const predicates = new Map<string, Term>();
-  for (const binding of result.termBindings) {
+  for (const binding of totals.termBindings) {
     const predicate = binding.predicate;
-    const subject = binding.subject;
-    if (!predicate || !subject) continue;
-    const key = predicate.value;
-    predicates.set(key, predicate);
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-    // Count every row but retain only what the widest rule could ever show, so
-    // a 335-deep hub is counted without 335 terms being built. A roster shows
-    // at most SAMPLE_CAP and a relation at most ROSTER_THRESHOLD, so the
-    // threshold bounds both — and retaining one MORE than it is what lets the
-    // fan-in test below distinguish "exactly at the threshold" from "over it".
-    const rows = retained.get(key) ?? [];
-    // Only NAMED subjects are kept as exemplars. A blank node cannot be read
-    // back through `pragma:{+uri}` and its label is re-minted on every load, so
-    // it can only ever be shown as an anonymous placeholder — and in Turtle each
-    // one written out mints a FRESH node, so a sample of three blank subjects
-    // rendered as three identical, meaningless triples. They still COUNT: the
-    // total stays exact, and a group with no nameable member shows the count
-    // alone, which is the honest answer rather than a row of `[]`.
-    if (subject.termType === "NamedNode" && rows.length <= ROSTER_THRESHOLD) {
-      rows.push(subject);
+    const total = binding.total;
+    if (!predicate || !total) continue;
+    predicates.set(predicate.value, predicate);
+    counts.set(predicate.value, Number(total.value));
+  }
+  if (counts.size === 0) return [];
+
+  // Exemplars in a second, separately bounded pass. Blank nodes are excluded in
+  // the QUERY rather than after it, so the limit is spent on subjects that can
+  // actually be exhibited — a hub whose members are all blank returns nothing
+  // here and is reported by its count alone.
+  const retained = new Map<string, Term[]>();
+  const widest = Math.max(
+    ...Object.values(ANSWER_CAP),
+    ...Object.values(SAMPLE_CAP),
+  );
+  if (widest > 0) {
+    const exemplars = await rt.query.sparql(
+      `SELECT ?predicate ?subject WHERE { ?subject ?predicate <${resolved}> . FILTER(isIRI(?subject)) } ORDER BY ?predicate ?subject LIMIT ${EXEMPLAR_FETCH_LIMIT}`,
+    );
+    if (exemplars.type === "select") {
+      for (const binding of exemplars.termBindings) {
+        const predicate = binding.predicate;
+        const subject = binding.subject;
+        if (!predicate || !subject) continue;
+        const rows = retained.get(predicate.value) ?? [];
+        if (rows.length < widest) rows.push(subject);
+        retained.set(predicate.value, rows);
+      }
     }
-    retained.set(key, rows);
   }
 
   return [...counts.entries()].map(([key, count]) => {
@@ -420,6 +461,7 @@ async function readInbound(
       predicate: term(predicates.get(key) as Term),
       count,
       subjects,
+      exhibits: cap,
       ...(subjects.length < count ? { truncated: true as const } : {}),
       ...(roster ? { sampled: true as const } : {}),
     };
@@ -456,13 +498,18 @@ async function readNested(
     const nodeObject = binding.nodeObject;
     if (!predicate || !node || !nodePredicate || !nodeObject) continue;
     const via = compactUri(predicate.value, prefixes);
-    const record = records.get(node.value) ?? { via, row: {} };
+    // Keyed by predicate AND node. Keyed by node alone, a blank node linked from
+    // two predicates kept only whichever `via` arrived first and the second edge
+    // silently disappeared — and in Turtle the ordinary blank object is filtered
+    // out too, so nothing was left to notice it by.
+    const key = `${predicate.value}\u0000${node.value}`;
+    const record = records.get(key) ?? { via, row: {} };
     const field =
       nodePredicate.value === RDF_TYPE
         ? "type"
         : compactUri(nodePredicate.value, prefixes);
     record.row[field] = term(nodeObject);
-    records.set(node.value, record);
+    records.set(key, record);
   }
 
   const nested: Record<string, NestedRecord[]> = {};

@@ -37,30 +37,6 @@ const BUTTON_NAME = "ds:global.component.button";
 const BUTTON_URI = `pragma:${BUTTON_NAME}`;
 const COMPONENT_URI = "pragma:ds:Component";
 
-/**
- * Blank out blank-node labels.
- *
- * Oxigraph re-mints blank-node identifiers every time it loads a store, so two
- * independently booted sessions over the SAME pack name the same blank node
- * differently. Those labels are store-local handles, not content — and this
- * test's subject is that both surfaces return the same CONTENT for the same
- * entity. (That the labels are not stable across processes is a real property
- * of exposing blank nodes through `graph inspect`; the toy pack this suite used
- * to run against simply had none.)
- *
- * Scrubbed STRUCTURALLY — every `BlankNode` term's `value`, wherever it sits —
- * rather than by matching label-shaped text. ke's terms carry the bare label
- * (no `_:` prefix), so the old textual regex silently stopped matching anything
- * and the mirror would have been asserted against unscrubbed labels.
- */
-const withoutBlankNodeLabels = (value: InspectResult): unknown =>
-  JSON.parse(
-    JSON.stringify(value, function replacer(this: unknown, key, raw) {
-      const holder = this as { termType?: string } | undefined;
-      return key === "value" && holder?.termType === "BlankNode" ? "_:b" : raw;
-    }),
-  );
-
 describe("resource listing (storeless, over the pack index)", () => {
   it("degrades to a recovery entry on a missing or legacy index", () => {
     expect(buildResourceList(undefined)).toEqual([

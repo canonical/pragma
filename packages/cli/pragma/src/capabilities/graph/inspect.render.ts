@@ -15,40 +15,6 @@ import type {
 } from "../../kernel/runtime/readEntity.js";
 import type { Formatters } from "../../kernel/spec/types.js";
 
-/**
- * The prefix map the payload was already compacted against, recovered from the
- * terms themselves.
- *
- * A formatter has no store handle, and reaching for the compiled-in display map
- * would be a SECOND map: it can differ from the one the graph was built with,
- * and then the `@prefix` header would declare namespaces that disagree with the
- * names in the body. Every compacted term carries both halves, so the mapping is
- * already here — read it rather than fetch a rival copy.
- */
-function prefixesOf(data: InspectResult): Record<string, string> {
-  const prefixes: Record<string, string> = {};
-  const learn = (term: ReadTerm): void => {
-    if (term.termType !== "NamedNode" || !term.prefixed) return;
-    const [prefix, ...rest] = term.prefixed.split(":");
-    const local = rest.join(":");
-    if (!prefix || !term.value.endsWith(local)) return;
-    prefixes[prefix] = term.value.slice(0, term.value.length - local.length);
-  };
-  for (const group of data.groups) {
-    learn(group.predicate);
-    for (const object of group.objects) learn(object);
-  }
-  for (const group of data.inbound) {
-    learn(group.predicate);
-    for (const subject of group.subjects) learn(subject);
-  }
-  for (const records of Object.values(data.nested)) {
-    for (const record of records)
-      for (const value of Object.values(record)) learn(value);
-  }
-  return prefixes;
-}
-
 /** The short form of a term: prefixed when there is one, else the raw value. */
 const short = (term: ReadTerm): string => term.prefixed ?? term.value;
 
@@ -86,8 +52,10 @@ export const inspectFormatters: Formatters<InspectResult> = {
     for (const [via, rows] of Object.entries(data.nested)) {
       lines.push("", `  ${via}:`);
       for (const row of rows) {
+        // Values are TERMS; `String(term)` rendered every nested field as
+        // `[object Object]`, which made the whole plain-format record unreadable.
         const fields = Object.entries(row)
-          .map(([key, value]) => `${key}=${String(value)}`)
+          .map(([key, value]) => `${key}=${named(value)}`)
           .join("  ");
         lines.push(`    ${fields}`);
       }
@@ -113,6 +81,6 @@ export const inspectFormatters: Formatters<InspectResult> = {
    * terms against the store's own merged map, so re-deriving a map here could
    * only disagree with the names already in the payload.
    */
-  llm: (data) => toTurtle(data, prefixesOf(data)),
+  llm: (data) => toTurtle(data, data.prefixes),
   json: (data) => JSON.stringify(data, null, 2),
 };

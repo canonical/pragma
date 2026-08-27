@@ -142,6 +142,20 @@ ds:blankHolder a ds:Probe ;
   ds:changeLog [ a ds:ChangeLogEntry ; ds:changeType "decision" ; ds:change "Split the button." ] ;
   ds:changeLog [ a ds:ChangeLogEntry ; ds:changeType "revision" ; ds:change "Renamed the slot." ] .
 
+# One blank node reached by TWO predicates — keyed by node alone, the second
+# edge silently vanished.
+ds:doubleLinked a ds:Probe ;
+  ds:name "double linked" ;
+  ds:changeLog [ a ds:ChangeLogEntry ; ds:changeType "decision" ] ;
+  ds:usageNote [ a ds:ChangeLogEntry ; ds:changeType "note" ] .
+
+# An RDF 1.2 directional literal — dropped, it reads as a plain @ar literal.
+ds:directional a ds:Probe ;
+  ds:name "\u0645\u0631\u062D\u0628\u0627"@ar--rtl .
+
+# The roster hub also carries ONE edge under a different predicate, so a read
+# can prove that a 22-deep neighbour does not evict its quieter sibling.
 ds:rosterHub a ds:Probe ; ds:name "roster hub" .
+ds:probe.quiet a ds:Probe ; ds:hasSubcomponent ds:rosterHub .
 ${ROSTER_MEMBERS}
 `;

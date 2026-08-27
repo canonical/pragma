@@ -51,11 +51,27 @@ Beyond tools, the server exposes three surfaces:
 
 - **Resources** — a `pragma:{+uri}` resource template. An agent reads one entity by URI; listing and autocomplete are storeless over the pack index, and a read shares the CLI's entity reader. `graph_inspect` is the tool equivalent when you already hold a URI.
 
-  A read returns the entity's **graph neighbourhood**, not just its own triples. Terms are typed (`NamedNode` / `BlankNode` / `Literal`) and named nodes carry their prefixed form, so a literal that merely looks like an IRI is never rewritten into one. Alongside the outbound `groups` it carries `inbound` — everything asserting a predicate *about* the subject, which is where relations like "what implements this?" actually live — and `nested`, the blank-node objects inlined one level as records, since a blank node's label is store-local and cannot be read back through the template.
+  A read returns the entity's **graph neighbourhood** as a Turtle document (`text/turtle`) — not just its own triples, and not JSON. The `@prefix` header is declared once, then:
 
-  `inbound` is bounded by what a group **is**, not by a fixed page size. A *relation* fans in narrowly and every subject is part of the answer, so it is listed (up to 10 at `standard`, 20 at `detailed`, none at `summary` — the count is the answer there). A *roster* fans in without bound because it grows with the data rather than the model — a class extension (`rdf:type` inbound), a tier's membership — so it is **sampled**: a few exemplars flagged `sampled`, never a page. The two are told apart by fan-in rather than by predicate name, so no vocabulary is hardcoded and a graph whose rosters hang off other predicates is bounded just the same.
+  - the subject's own triples, with long literals previewed (`"""…"""`) and a `#` comment stating the full length;
+  - its blank-node objects inlined one level as Turtle `[ … ]` records, since a blank node's label is store-local and cannot be read back through the template;
+  - a `# ── referenced by ──` section carrying the edges that point **at** the subject, written as ordinary triples in the other direction.
 
-  `count` is always the true total either way, and `truncated` says when `subjects` is shorter than it. Reach for the noun's list verb (`block_list`, `standard_list`, …) for a roster's full set — paging a resource read will not produce one. A resource read carries no parameters of its own, so it resolves the level from config — `config_set detail detailed` is how an agent asks a resource for more, while `graph inspect` takes `--detail` and `graph_inspect` a `detail` argument.
+  IRI-versus-literal is carried by Turtle syntax itself (`ds:Foo` against `"Foo"`), and datatypes, language tags and RDF 1.2 base directions are native.
+
+  Bounds ride as `#` comments rather than data. An inbound group is either a **relation** — narrow fan-in, every subject part of the answer, so listed — or a **roster**, which grows with the data rather than the model and is **sampled**:
+
+  ```turtle
+  # ds:implementsBlock — 1
+  ds:implementation.react-ds-global.global.component.button ds:implementsBlock ds:global.component.button .
+  # rdf:type — 110 total, sample of 3; use the noun's list verb for the full set
+  ds:apps.component.file_tree rdf:type ds:Component .
+  ```
+
+  The stated count is always the true total. The two kinds are told apart by fan-in, not by predicate name, so no vocabulary is hardcoded.
+
+  A resource read carries no parameters of its own, so it resolves its level from config — `config_set detail detailed` is how an agent asks a resource for more, while `graph inspect` takes `--detail` and the `graph_inspect` tool a `detail` argument. `graph inspect --format json` still returns the structured projection if you need to parse rather than read it.
+
 - **Prompts** — the workflow prompt templates the active pack's graph declares are offered natively over `prompts/list` and `prompts/get`, and as the `prompt_list` / `prompt_lookup` content tools. The two views project the same entities, addressed by the prompt terms the distribution declares. This distribution's graph carries none today, so both views are empty.
 - **Instructions** — the handshake orientation described above.
 

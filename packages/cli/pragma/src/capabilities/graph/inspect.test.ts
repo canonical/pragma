@@ -250,3 +250,86 @@ describe("graph inspect", () => {
     ).rejects.toMatchObject({ code: "INVALID_INPUT" });
   });
 });
+
+describe("bounds and losslessness the review surfaced", () => {
+  it("counts EVERY inbound predicate exactly, whatever the exemplar bound", async () => {
+    // One capped query answered counting and exhibiting at once, and answered
+    // neither: a single LIMIT applies to the whole ordered result, so the first
+    // predicate to fill it under-reported its own count AND every predicate
+    // after it vanished — while `count` promised the true total. The roster hub
+    // here fans in 22 deep, well past what any level exhibits.
+    const result = (await inspectVerb.run(
+      { uri: "ds:rosterHub" },
+      rt,
+    )) as InspectResult;
+    const roster = result.inbound.find(
+      (g) => g.predicate.value === `${DS}tier`,
+    );
+    expect(roster?.count).toBe(22);
+    // Counted in full, exhibited in part — the two are now separate questions.
+    expect(roster?.subjects.length).toBeLessThan(22);
+    // And the quiet neighbour survives the noisy one. Under the single capped
+    // query, a predicate ordered after one that filled the limit was dropped
+    // from the answer entirely.
+    const quiet = result.inbound.find(
+      (g) => g.predicate.value === `${DS}hasSubcomponent`,
+    );
+    expect(quiet?.count).toBe(1);
+    expect(quiet?.subjects[0]?.prefixed).toBe("ds:probe.quiet");
+  });
+
+  it("keeps a blank node reachable from two predicates under both", async () => {
+    // Keyed by node alone, whichever `via` arrived first won and the second
+    // edge disappeared — and Turtle filters the ordinary blank object out too,
+    // so nothing was left to notice the loss by.
+    const result = (await inspectVerb.run(
+      { uri: "ds:doubleLinked" },
+      rt,
+    )) as InspectResult;
+    expect(result.nested["ds:changeLog"]).toHaveLength(1);
+    expect(result.nested["ds:usageNote"]).toHaveLength(1);
+  });
+
+  it("says nothing about addressability at a level that exhibits none", async () => {
+    // At `summary` EVERY group is empty because the level shows no exemplars.
+    // Concluding "none individually addressable" there libels subjects that are
+    // perfectly nameable, so the group records what it WOULD have shown.
+    const summary = await buildFixtureRuntime({
+      ttl: BLOCK_TTL,
+      prefixes: BLOCK_PREFIXES,
+      detail: "summary",
+    });
+    const result = (await inspectVerb.run(
+      { uri: "ds:global" },
+      summary.rt,
+    )) as InspectResult;
+    (await summary.rt.store.get()).store.dispose();
+    const tier = result.inbound.find((g) => g.predicate.value === `${DS}tier`);
+    expect(tier?.exhibits).toBe(0);
+    expect(tier?.count).toBeGreaterThan(0);
+  });
+
+  it("carries the prefix map the payload was compacted against", async () => {
+    // A renderer that re-derives it from named nodes misses any prefix used
+    // only by the subject, a nested record key, or a literal datatype — and
+    // then emits compact names with no matching `@prefix`, i.e. invalid Turtle.
+    const result = (await inspectVerb.run(
+      { uri: "ds:button" },
+      rt,
+    )) as InspectResult;
+    expect(result.prefixes.ds).toBe(DS);
+  });
+
+  it("keeps an RDF 1.2 literal direction rather than flattening it", async () => {
+    const result = (await inspectVerb.run(
+      { uri: "ds:directional" },
+      rt,
+    )) as InspectResult;
+    const label = result.groups.find((g) => g.predicate.value === `${DS}name`);
+    expect(label?.objects[0]).toMatchObject({
+      termType: "Literal",
+      language: "ar",
+      direction: "rtl",
+    });
+  });
+});

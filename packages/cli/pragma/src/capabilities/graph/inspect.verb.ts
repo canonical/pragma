@@ -8,7 +8,11 @@
  * name or absolute IRI addresses the subject exactly.
  */
 
-import { BIN_NAME } from "../../constants.js";
+import {
+  BIN_NAME,
+  DEFAULT_DETAIL_LEVEL,
+  DETAIL_LEVELS,
+} from "../../constants.js";
 import type { InspectResult } from "../../kernel/runtime/readEntity.js";
 import { readEntity } from "../../kernel/runtime/readEntity.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
@@ -32,6 +36,12 @@ const inspectVerb: VerbSpec<Record<string, unknown>, InspectResult> = {
     },
   ],
   output: { formatters: inspectFormatters },
+  // The read is BOUNDED by disclosure — inbound exemplars and literal previews
+  // both widen with the level — so the verb must declare the ladder it honours.
+  // Without this the CLI `--detail` flag has nothing to validate against and the
+  // MCP projector injects no `detail` argument at all, so the documented knob
+  // was one an agent could not actually reach.
+  disclosure: { levels: [...DETAIL_LEVELS], default: DEFAULT_DETAIL_LEVEL },
   examples: [
     { cmd: `${BIN_NAME} graph inspect ds:global.component.button` },
     {

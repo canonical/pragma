@@ -72,6 +72,20 @@ function escapeLong(value: string): string {
   );
 }
 
+/**
+ * Write a name that may or may not have compacted.
+ *
+ * `compactUri` returns its input UNCHANGED when no namespace matches, so a
+ * datatype or predicate outside the prefix map arrived here as a bare absolute
+ * IRI and was emitted raw — producing `"x"^^http://example.com/type`, which no
+ * parser accepts. A prefixed name goes through as-is; anything else is wrapped.
+ */
+function asName(value: string): string {
+  return /^[A-Za-z][\w.-]*:[^/]/.test(value) && !value.includes("://")
+    ? value
+    : `<${value}>`;
+}
+
 /** Render one term in Turtle: a prefixed name, an `<iri>`, or a literal. */
 function renderTerm(term: ReadTerm): string {
   if (term.termType === "NamedNode") {
@@ -85,8 +99,11 @@ function renderTerm(term: ReadTerm): string {
   const body = isMultiline(term.value)
     ? `"""${escapeLong(term.value)}"""`
     : `"${escapeShort(term.value)}"`;
-  if (term.language) return `${body}@${term.language}`;
-  if (term.datatype) return `${body}^^${term.datatype}`;
+  // Direction is RDF 1.2's `@lang--dir`; it only ever accompanies a language.
+  if (term.language) {
+    return `${body}@${term.language}${term.direction ? `--${term.direction}` : ""}`;
+  }
+  if (term.datatype) return `${body}^^${asName(term.datatype)}`;
   return body;
 }
 
@@ -108,7 +125,7 @@ function renderNested(record: NestedRecord): string {
   const fields = Object.entries(record).map(([field, value]) => {
     // `type` was hoisted out of the record body on the way in; `a` is Turtle's
     // own shorthand for it, so it goes back exactly where it came from.
-    const predicate = field === "type" ? "a" : field;
+    const predicate = field === "type" ? "a" : asName(field);
     return `${predicate} ${renderTerm(value)}`;
   });
   return `[ ${fields.join(" ; ")} ]`;
@@ -129,11 +146,14 @@ function usedPrefixes(
 function renderInbound(subject: string, group: InboundGroup): string[] {
   const predicate = renderTerm(group.predicate);
   const total = group.count.toLocaleString("en-US");
-  // "sample of 0" is not a sample. A group whose members are all blank nodes has
-  // nothing addressable to exhibit, and saying so is more use to a reader than a
-  // count of the exemplars we declined to invent.
+  // An empty `subjects` means two different things, and conflating them told a
+  // lie: at `summary` EVERY group is empty because the level exhibits none, so
+  // claiming "none individually addressable" there libelled perfectly nameable
+  // subjects. Only a level that WOULD have shown exemplars can conclude that
+  // none exist.
+  const exhibits = group.exhibits ?? 0;
   const note =
-    group.subjects.length === 0 && group.count > 0
+    exhibits > 0 && group.subjects.length === 0 && group.count > 0
       ? `# ${predicate} — ${total} total, none individually addressable; use the noun's list verb`
       : group.sampled
         ? `# ${predicate} — ${total} total, sample of ${group.subjects.length}; use the noun's list verb for the full set`
