@@ -31,12 +31,14 @@ const OPTION_TERMINATOR = "--";
 
 /**
  * The span of argv this program's flags may occupy — everything before the
- * option terminator, or all of argv when there is none.
+ * option terminator, or all of argv when there is none. Exported for the
+ * bin's retired-flag detection: a retired spelling AFTER the terminator is
+ * an operand, not a flag, and must not trigger a migration message.
  *
  * @param argv - The user's arguments.
  * @returns The scannable span; the same array when no terminator is present.
  */
-function selectScanSpan(argv: readonly string[]): readonly string[] {
+export function selectScanSpan(argv: readonly string[]): readonly string[] {
   const terminator = argv.indexOf(OPTION_TERMINATOR);
   return terminator === -1 ? argv : argv.slice(0, terminator);
 }

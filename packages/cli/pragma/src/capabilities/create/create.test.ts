@@ -1,6 +1,7 @@
 /**
  * `create` behaviour: real generation + stamp, the SEC-2 path jail, the
- * lazy-React discipline, and the generator→grammar adapter parity guard.
+ * lazy-React discipline, and the projection-fidelity guard (the committed
+ * generated surface vs the live generators).
  * The MCP plan-first/confirm parity lives in create.mcp.test.ts; the
  * byte-equality goldens in byteEquality.test.ts.
  */
@@ -24,14 +25,9 @@ import {
 } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
-import type { ParamSpec } from "../../kernel/spec/types.js";
 import { CREATE_GENERATORS } from "./constants.js";
-import {
-  createVerbs,
-  INCLUDE_FLAG_ALIASES,
-  isModuleNotFound,
-} from "./create.verb.js";
-import { generatorToParams } from "./generatorToVerbSpec.js";
+import { createVerbs, isModuleNotFound } from "./create.verb.js";
+import { CREATE_SURFACE } from "./createSurface.generated.js";
 import { createModule } from "./index.js";
 
 const FLAGS: GlobalFlags = {
@@ -48,16 +44,12 @@ async function runIn(
   dir: string,
   params: Record<string, unknown>,
   mutation: MutationFlags = YES,
+  verb = createVerbs.component,
 ) {
   const prev = process.cwd();
   process.chdir(dir);
   try {
-    return await executeVerb(
-      createVerbs.component,
-      params,
-      mutation,
-      bootRuntime(FLAGS, dir),
-    );
+    return await executeVerb(verb, params, mutation, bootRuntime(FLAGS, dir));
   } finally {
     process.chdir(prev);
   }
@@ -106,6 +98,40 @@ describe("create — real generation + stamp", () => {
     expect(outcome.stdout).not.toContain("Prompt");
     expect(walk(dir)).toEqual([]); // nothing written
   });
+
+  it("application --dry-run renders carried assets as WRITES — no Copy rows (§L item 6)", async () => {
+    // copy()→rawFile() reclassified ~62 carried assets from CopyFile to
+    // verbatim WriteFile, changing every dry-run/--llm/json plan row from
+    // `Copy file: <src> → <dest>` to `Write file: <dest> (N bytes)`. That is
+    // a DELIBERATE observable change (PLAN §L); this literal pin keeps both
+    // an accidental reversion and a silent re-rendering visible.
+    const dir = freshCwd();
+    const prev = process.cwd();
+    process.chdir(dir);
+    let outcome: Awaited<ReturnType<typeof executeVerb>>;
+    try {
+      outcome = await executeVerb(
+        // The honest variance cast from this file's typed
+        // VerbSpec<…, GeneratorResult> down to the unknown-result shape
+        // executeVerb takes — the same erasure the mount's `leafVerb`
+        // performs (`as VerbSpec`) on the production path.
+        createVerbs.application as unknown as Parameters<typeof executeVerb>[0],
+        { appPath: "my-app", runInstall: false },
+        { dryRun: true, undo: false, yes: false },
+        bootRuntime(FLAGS, dir),
+      );
+    } finally {
+      process.chdir(prev);
+    }
+    expect(outcome.exitCode).toBe(0);
+    // A known carried (formerly copied) asset plans as a write…
+    expect(outcome.stdout).toMatch(
+      /- Write file: my-app\/\.storybook\/preview\.ts \(\d+ bytes\)/,
+    );
+    // …and no plan row renders as a copy anywhere.
+    expect(outcome.stdout).not.toContain("Copy file:");
+    expect(walk(dir)).toEqual([]); // still a dry run
+  }, 60_000);
 
   it("--dry-run reports the bytes the real run writes (post-stamp)", async () => {
     // The mock previewer never called `onEffectStart`, so summon's stamping
@@ -172,17 +198,23 @@ describe("create — real generation + stamp", () => {
     // stamp test above, doubled; same explicit ceiling.
   }, 60_000);
 
-  it("rejects an unknown framework with INVALID_INPUT", async () => {
+  it("rejects an unknown framework with INVALID_INPUT", () => {
     const dir = freshCwd();
-    // coerceParam rejects the enum before run, so drive run directly via a bad
-    // framework param to exercise pickGenerator's own guard too.
+    // coerceParam rejects the enum before run; the binding run's own path
+    // mapping guards direct callers too (framework is required — no default).
     const runtime = bootRuntime(FLAGS, dir);
-    await expect(
+    expect(() =>
       createVerbs.component.run({ framework: "vue" }, {
         ...runtime,
         interaction: { isTTY: false, transport: "cli", yes: true },
       } as never),
-    ).rejects.toBeInstanceOf(PragmaError);
+    ).toThrow(PragmaError);
+    expect(() =>
+      createVerbs.component.run({}, {
+        ...runtime,
+        interaction: { isTTY: false, transport: "cli", yes: true },
+      } as never),
+    ).toThrow(/framework/);
   });
 });
 
@@ -194,24 +226,86 @@ describe("SEC-2 path jail (PROTECTED)", () => {
   for (const [label, value] of cases) {
     it(`rejects ${label} with a PragmaError before any effect`, async () => {
       const dir = freshCwd();
-      // The jail throws in `run`, before any effect; the projector maps it to an
-      // exit code, but exercised directly here `executeVerb` propagates it.
+      // Since the round-9 reorder the shared VALIDATOR (`validateAnswers`,
+      // running before the jail) refuses these two classes first — the same
+      // line in both hosts; the jail below stays the backstop. The jail's
+      // OWN tier is driven by the symlink cells here (the one class the
+      // value-only validator cannot see) and by pathJail.test.ts directly.
       await expect(
         runIn(dir, { framework: "react", componentPath: value }),
-      ).rejects.toBeInstanceOf(PragmaError);
+      ).rejects.toMatchObject({
+        name: "PragmaError",
+        code: "INVALID_INPUT",
+        // The validator's line — flag spelling, value echo, detail —
+        message: expect.stringContaining(`Invalid --component-path "${value}"`),
+        // — carrying the validator tier's ONE workspace hint for both
+        // escape classes (the jail's `..`-branch message; the jail keeps
+        // its own per-branch hints — "Use a path relative to the current
+        // directory." on absolute — pinned in pathJail.test.ts).
+        recovery: { message: "The path must stay inside the workspace." },
+      });
       expect(walk(dir)).toEqual([]);
     });
   }
 
-  it("rejects a symlink that escapes the workspace (realpath)", async () => {
+  it("a NON-escape rejection of the jailed param stays recovery-FREE — the negative direction of the escape narrowing", async () => {
+    const dir = freshCwd();
+    // The other half of the two escape rows above: `isEscapeValue` keys the
+    // workspace hint on the VALUE class, so a casing complaint about the
+    // same param must carry NO recovery at all — answering "must be in
+    // PascalCase" with "The path must stay inside the workspace." would be
+    // affirmatively false guidance. Asserted on the thrown object directly:
+    // `toMatchObject` cannot pin a field's ABSENCE.
+    const caught: unknown = await runIn(dir, {
+      framework: "react",
+      componentPath: "not-pascal",
+    }).then(
+      () => undefined,
+      (cause: unknown) => cause,
+    );
+    expect(caught, "the casing rejection did not throw").toBeInstanceOf(
+      PragmaError,
+    );
+    const error = caught as PragmaError;
+    expect(error.code).toBe("INVALID_INPUT");
+    expect(error.message).toContain('Invalid --component-path "not-pascal"');
+    expect(error.recovery).toBeUndefined();
+    expect(walk(dir)).toEqual([]);
+  });
+
+  it("rejects a symlink that escapes the workspace — the JAIL tier (realpath)", async () => {
     const root = freshCwd();
     const outside = freshCwd();
-    // A symlink `link` inside the workspace pointing OUT of it.
+    // A symlink `link` inside the workspace pointing OUT of it: relative, no
+    // `..`, PascalCase basename — the validator passes it, so the jail's own
+    // spelling and covenant `recovery` field prove which tier refused.
     symlinkSync(outside, join(root, "link"));
     await expect(
       runIn(root, { framework: "react", componentPath: "link/Widget" }),
-    ).rejects.toBeInstanceOf(PragmaError);
+    ).rejects.toMatchObject({
+      name: "PragmaError",
+      code: "INVALID_INPUT",
+      message: 'Invalid componentPath "link/Widget".',
+      recovery: { message: "The path resolves outside the workspace." },
+    });
     expect(existsSync(join(outside, "Widget"))).toBe(false);
+  });
+
+  it("application/react: a symlink escape lands in the jail — PATH_PARAM.application is pinned", async () => {
+    const root = freshCwd();
+    const outside = freshCwd();
+    symlinkSync(outside, join(root, "link"));
+    // `link/app` passes `validateAppPath` (relative, no `..`); only the
+    // jail's realpath check — bound to `appPath` via PATH_PARAM — refuses.
+    await expect(
+      runIn(root, { appPath: "link/app" }, YES, createVerbs.application),
+    ).rejects.toMatchObject({
+      name: "PragmaError",
+      code: "INVALID_INPUT",
+      message: 'Invalid appPath "link/app".',
+      recovery: { message: "The path resolves outside the workspace." },
+    });
+    expect(walk(outside)).toEqual([]);
   });
 
   it("accepts an in-workspace path", async () => {
@@ -308,164 +402,190 @@ describe("lazy-React discipline (PROTECTED)", () => {
   });
 });
 
-describe("generator→grammar adapter parity (PROTECTED)", () => {
-  // The static mirrors in create.verb.ts are AUTHORITATIVE for omitted CLI
-  // flags: dispatch.extractParams fills ParamSpec.default when a flag is absent,
-  // so a drifted mirror default silently overrides the generator's own default.
-  // These guards assert the EMITTED grammar (names, kinds, defaults, choices)
-  // still matches the real generators for all three create nouns — the
-  // byte-equality goldens can't catch this (they pass every param explicitly).
+describe("projection fidelity — the committed surface IS the live generators (PROTECTED)", () => {
+  // createSurface.generated.ts is what the params, the mount, completion, and
+  // the MCP schemas derive from. This test loads the LIVE generators
+  // (test-only — production paths never do) and asserts the committed
+  // projection deep-equals them, so drift fails the build in the same run
+  // that regenerating (`bun run scripts/build.ts`) fixes. The bytes read
+  // here are the bytes git holds: the gate's own build runs this codegen in
+  // CHECK mode (PRAGMA_BUILD_SKIP_DOCS=1 in scripts/build.ts), failing on a
+  // stale committed module instead of rewriting it before workers start.
 
-  /** Drop `doc` (help text is intentionally paraphrased in the mirrors) so the
-   * comparison is purely behavioural: names, kinds, defaults, choices. */
-  const behavioural = (
-    params: readonly ParamSpec[],
-  ): Record<string, unknown>[] =>
-    params.map((p) => {
-      const clone: Record<string, unknown> = { ...p };
-      delete clone.doc;
-      return clone;
-    });
-
-  /** `runInstall` is a DELIBERATE divergence (package + application): the real
-   * generators default it `true`, but the CLI grammar has no `--no-` form, so
-   * the mirror makes install opt-in (`default:false`, enabled by `--run-install`).
-   * Apply that same override to the generator side before comparing. */
-  const applyRunInstallOverride = (params: readonly ParamSpec[]): ParamSpec[] =>
-    params.map((p) =>
-      p.name === "runInstall" ? ({ ...p, default: false } as ParamSpec) : p,
+  it("every committed entry deep-equals projectGenerator over the live generator", async () => {
+    const [{ projectGenerator }, { pickGenerator }] = await Promise.all([
+      import("@canonical/summon-core/projection"),
+      import("./pickGenerator.js"),
+    ]);
+    const declaredPaths = Object.values(CREATE_GENERATORS).flatMap(
+      (binding) => binding.paths,
     );
-
-  it("component: framework collapse + shared confirms match the react generator", async () => {
-    const { generators } = await import("@canonical/summon-component");
-    const real = generatorToParams(
-      (generators as Record<string, { prompts: unknown[] }>)["component/react"]
-        .prompts as never,
+    expect(Object.keys(CREATE_SURFACE).sort()).toEqual(
+      [...declaredPaths].sort(),
     );
-    const verb = createVerbs.component.params;
-
-    // The verb SYNTHESIZES a `framework` enum (the 3 framework generators
-    // collapse to one verb): react|svelte|lit, default react — no generator
-    // prompt corresponds to it.
-    expect(verb.find((p) => p.name === "framework")).toMatchObject({
-      kind: "enum",
-      values: ["react", "svelte", "lit"],
-      default: "react",
-    });
-
-    // componentPath deliberately drops its ParamSpec default so the SELECTED
-    // framework's own prompt default applies (react vs svelte/lit differ).
-    const verbPath = verb.find((p) => p.name === "componentPath") as
-      | Record<string, unknown>
-      | undefined;
-    const realPath = real.find((p) => p.name === "componentPath") as
-      | Record<string, unknown>
-      | undefined;
-    expect(verbPath).toMatchObject({
-      kind: "string",
-      positional: true,
-      complete: { kind: "files" },
-    });
-    expect(verbPath?.default).toBeUndefined();
-    expect(realPath?.default).toBe("src/components/MyComponent");
-
-    // Every other prompt (the shared confirms) must match names, kinds, AND
-    // defaults exactly — the silent-drift surface.
-    const shared = (ps: readonly ParamSpec[]) =>
-      behavioural(
-        ps.filter((p) => p.name !== "framework" && p.name !== "componentPath"),
-      );
-    expect(shared(verb)).toEqual(shared(real));
+    for (const commandPath of declaredPaths) {
+      expect(
+        projectGenerator(commandPath.split("/"), pickGenerator(commandPath)),
+        `projection drift for ${commandPath} — rerun scripts/build.ts`,
+      ).toEqual(CREATE_SURFACE[commandPath]);
+    }
   });
 
-  it("package: mirror matches the package generator (defaults + type choices)", async () => {
-    const { generators } = await import("@canonical/summon-package");
-    const real = generatorToParams(
-      (generators as Record<string, { prompts: unknown[] }>).package
-        .prompts as never,
+  it("every declared positional path prompt validates `..`/absolute escapes — the claim in pathJail.ts and contract §3, enforced", async () => {
+    // pathJail.ts and §3 state as FACT that the prompts' own validators
+    // reject absolute/`..` uniformly across the declared path prompts — in
+    // BOTH hosts, upstream of pragma's jail. Summon has no jail at all, so
+    // a positional path prompt landing WITHOUT a validate silently reopens
+    // the round-9 escape (summon scaffolds outside the invocation cwd,
+    // exit 0) with every suite green. This cell ties the claim to the
+    // DECLARATION: every `positional: true` text prompt on the declared
+    // bindings' live generators must reject both escape classes.
+    const { pickGenerator } = await import("./pickGenerator.js");
+    const declaredPaths = Object.values(CREATE_GENERATORS).flatMap(
+      (binding) => binding.paths,
     );
-    // The package verb's grammar IS generatorToParams(PACKAGE_MIRROR).
-    expect(behavioural(createVerbs.package.params)).toEqual(
-      behavioural(applyRunInstallOverride(real)),
-    );
+    const audited: string[] = [];
+    for (const commandPath of declaredPaths) {
+      for (const prompt of pickGenerator(commandPath).prompts) {
+        if (prompt.positional !== true || prompt.type !== "text") continue;
+        audited.push(`${commandPath}:${prompt.name}`);
+        expect(
+          prompt.validate,
+          `${commandPath}'s ${prompt.name} declares no validate — the shared escape tier is gone for it`,
+        ).toBeDefined();
+        // PascalCase-SAFE vectors, asserted on the message CONTENT. The
+        // original "../x"/"/abs/x" were refused by component's CASING rule
+        // alone (basename "x"), so deleting both escape branches kept the
+        // three componentPath rows green (round-11 F1, proven live). "../X"
+        // and "/abs/X" pass every name rule, and the `..`/"absolute"
+        // substring pins WHICH rule refused — a rejection from another tier
+        // (or an accepting `true`) reddens the row either way.
+        expect(
+          prompt.validate?.("../X"),
+          `${commandPath}'s ${prompt.name} does not refuse a \`..\` escape with the escape tier's message`,
+        ).toContain("..");
+        expect(
+          prompt.validate?.("/abs/X"),
+          `${commandPath}'s ${prompt.name} does not refuse an absolute path with the escape tier's message`,
+        ).toContain("absolute");
+      }
+    }
+    // The audited set, pinned: a NEW positional path prompt must join this
+    // list (and pass the vectors above) — deliberate, like the conformance
+    // matrix's declaration-completeness, so scope-shrink is visible too.
+    expect(audited.sort()).toEqual([
+      "application/react:appPath",
+      "component/lit:componentPath",
+      "component/react:componentPath",
+      "component/svelte:componentPath",
+    ]);
+  });
 
-    // Guard the intentional runInstall override so it can't silently flip.
-    const realRunInstall = real.find((p) => p.name === "runInstall") as
+  it("component params are the FRAMEWORK UNION of the declared leaves", () => {
+    const params = createVerbs.component.params;
+    const names = params.map((p) => p.name);
+    // First-seen order over declared framework order, positional enum first.
+    expect(names).toEqual([
+      "framework",
+      "componentPath",
+      "withStyles",
+      "withStories",
+      "withSsrTests",
+      "useTsStories",
+    ]);
+
+    // A prompt whose default DIFFERS across frameworks (componentPath:
+    // src/components/… on react vs src/lib/components/… on svelte/lit)
+    // omits its default and stays optional.
+    const componentPath = params.find((p) => p.name === "componentPath") as
       | Record<string, unknown>
       | undefined;
-    const mirrorRunInstall = createVerbs.package.params.find(
-      (p) => p.name === "runInstall",
-    ) as Record<string, unknown> | undefined;
-    expect(realRunInstall?.default).toBe(true);
-    expect(mirrorRunInstall?.default).toBe(false);
+    expect(componentPath).toMatchObject({
+      kind: "string",
+      positional: true,
+      required: false,
+      complete: { kind: "files" },
+    });
+    expect(componentPath?.default).toBeUndefined();
 
-    // The `--type` enum choices are load-bearing and must match exactly.
-    const realType = real.find((p) => p.name === "type");
-    expect(realType).toMatchObject({
+    // A prompt identical across all frameworks keeps its default.
+    expect(params.find((p) => p.name === "withStyles")).toMatchObject({
+      kind: "boolean",
+      default: true,
+    });
+
+    // A prompt not present on EVERY framework names its frameworks in the doc.
+    expect(params.find((p) => p.name === "withSsrTests")?.doc).toContain(
+      "(frameworks: react, svelte)",
+    );
+    expect(params.find((p) => p.name === "useTsStories")?.doc).toContain(
+      "(frameworks: svelte)",
+    );
+    // …and a universal one does not.
+    expect(params.find((p) => p.name === "withStories")?.doc).not.toContain(
+      "frameworks:",
+    );
+  });
+
+  it("the framework enum DERIVES from the declared tree segments: required, positional, no default", () => {
+    const framework = createVerbs.component.params.find(
+      (p) => p.name === "framework",
+    ) as Record<string, unknown> | undefined;
+    expect(framework).toMatchObject({
+      kind: "enum",
+      required: true,
+      positional: true,
+      values: CREATE_GENERATORS.component.paths.map(
+        (path) => path.split("/")[1],
+      ),
+    });
+    // Summon has no default framework; neither does the projection of it.
+    expect(framework?.default).toBeUndefined();
+  });
+
+  it("package and application params are the projected prompts VERBATIM (no aliases, no overrides)", () => {
+    expect(createVerbs.package.params.map((p) => p.name)).toEqual([
+      "name",
+      "type",
+      "description",
+      "withReact",
+      "withStorybook",
+      "withCli",
+      "withPrTemplate",
+      "runInstall",
+    ]);
+    // The prompt names ARE the param names (the flag TOKENS are
+    // buildOptionInfo's registered forms): the B8 --with-X aliases are gone —
+    // and so are ssr/router, WITH their prompts (always-on facts whose only
+    // explicit spelling the generator's old guard rejected).
+    expect(createVerbs.application.params.map((p) => p.name)).toEqual([
+      "appPath",
+      "forms",
+      "intl",
+      "relay",
+      "runInstall",
+    ]);
+    // The generators' own default governs: install is ON unless --no-run-install.
+    expect(
+      createVerbs.package.params.find((p) => p.name === "runInstall"),
+    ).toMatchObject({ kind: "boolean", default: true });
+    expect(
+      createVerbs.application.params.find((p) => p.name === "runInstall"),
+    ).toMatchObject({ kind: "boolean", default: true });
+    // The package type enum still carries its load-bearing choices.
+    expect(
+      createVerbs.package.params.find((p) => p.name === "type"),
+    ).toMatchObject({
       kind: "enum",
       values: ["tool-ts", "library", "css"],
       default: "tool-ts",
     });
   });
-
-  /** Map a mirror's CLI `--with-X` include-flag names back to the generator
-   * prompt names (AV-228 B8) so the parity comparison still checks kinds and
-   * defaults against the real generator despite the deliberate flag rename. */
-  const toGeneratorNames = (
-    kind: "application",
-    params: readonly ParamSpec[],
-  ): ParamSpec[] =>
-    params.map((p) => {
-      const generatorName = INCLUDE_FLAG_ALIASES[kind][p.name];
-      return generatorName ? ({ ...p, name: generatorName } as ParamSpec) : p;
-    });
-
-  it("application: mirror matches the application/react generator (defaults)", async () => {
-    const { generators } = await import("@canonical/summon-application");
-    const real = generatorToParams(
-      (generators as Record<string, { prompts: unknown[] }>)[
-        "application/react"
-      ].prompts as never,
-    );
-    // Bridge the B8 include-flag rename before comparing: the CLI grammar
-    // exposes `withSsr`/`withRouter`/`withForms`, which map back to the
-    // generator's `ssr`/`router`/`forms`.
-    expect(
-      behavioural(
-        toGeneratorNames("application", createVerbs.application.params),
-      ),
-    ).toEqual(behavioural(applyRunInstallOverride(real)));
-
-    // Guard the B8 rename itself: ALL application include-flags ARE on the
-    // `--with-X` convention (params `withSsr`/`withRouter`/`withForms`/
-    // `withRelay`), not the bare `ssr`/`router`/`forms`/`relay` booleans.
-    const names = createVerbs.application.params.map((p) => p.name);
-    expect(names).toContain("withSsr");
-    expect(names).toContain("withRouter");
-    expect(names).toContain("withForms");
-    expect(names).toContain("withRelay");
-    expect(names).not.toContain("ssr");
-    expect(names).not.toContain("relay");
-
-    const realRunInstall = real.find((p) => p.name === "runInstall") as
-      | Record<string, unknown>
-      | undefined;
-    const mirrorRunInstall = createVerbs.application.params.find(
-      (p) => p.name === "runInstall",
-    ) as Record<string, unknown> | undefined;
-    expect(realRunInstall?.default).toBe(true);
-    expect(mirrorRunInstall?.default).toBe(false);
-
-    // appPath is the positional entry point (its default carries across).
-    expect(
-      createVerbs.application.params.find((p) => p.name === "appPath"),
-    ).toMatchObject({ kind: "string", positional: true, default: "my-app" });
-  });
 });
 
 describe("compiled-binary create gate (M4)", () => {
   it("detects a module-resolution failure but not a genuine runtime error", () => {
-    // an unresolved-specifier error (the broken-install case).
+    // bun --compile's unresolved-specifier error (the shipped-binary case).
     expect(
       isModuleNotFound({
         name: "ResolveMessage",
@@ -491,71 +611,43 @@ describe("compiled-binary create gate (M4)", () => {
 describe("declared generator bindings (PROTECTED)", () => {
   // CREATE_GENERATORS is the one place the create surface's generator facts are
   // written down. What is checkable against something outside itself — the live
-  // generator maps and the embedded manifest — is checked here.
+  // generator maps — is checked here.
 
-  it("every binding resolves to the generator it names", async () => {
+  it("every declared path resolves to a generator whose meta.name IS the path", async () => {
     const { pickGenerator } = await import("./pickGenerator.js");
-    // `meta.name` is the generator's OWN identity, so a swapped `key` or a
-    // framework the map does not carry turns this red — which `toBeDefined()`
+    // `meta.name` is the generator's OWN identity, so a swapped path or a
+    // path the map does not carry turns this red — which `toBeDefined()`
     // on a non-nullable return could not.
-    for (const framework of CREATE_GENERATORS.component.frameworks) {
-      expect(pickGenerator("component", { framework }).meta.name).toBe(
-        `component/${framework}`,
-      );
+    for (const binding of Object.values(CREATE_GENERATORS)) {
+      for (const commandPath of binding.paths) {
+        expect(pickGenerator(commandPath).meta.name).toBe(commandPath);
+      }
     }
-    expect(pickGenerator("package", {}).meta.name).toBe("package");
-    expect(pickGenerator("application", {}).meta.name).toBe(
-      "application/react",
-    );
   });
 
-  it("no create verb publishes an availability caveat", () => {
-    // The inverse of the assertion this replaces. While the distribution shipped
-    // a `bun build --compile` executable, `create package` and `create
-    // application` refused inside it — their generators read templates from a
-    // filesystem the binary did not have — and both surfaces published that
-    // refusal: a `Source-run only.` marker on the summary and an `UNSUPPORTED`
-    // explanation in the `doc` that `tools.md` and the MCP tool description
-    // render.
-    //
-    // The binary is gone, the templates are real files under each generator's
-    // package, and `shippedCreate.subprocess.test.ts` proves all three nouns
-    // generate byte-identically from the shipped entry. So the caveat is not
-    // merely unnecessary — publishing it would now be a false statement to every
-    // agent enumerating the tools. Asserted across EVERY verb, not a literal
-    // list, because the claim is universal.
+  it("no binding publishes an availability caveat — every one runs everywhere", () => {
+    // The PRA-14 gate is superseded: every generator's templates are reachable
+    // from a published install (shippedCreate.subprocess.test.ts proves all
+    // three byte-for-byte), so no verb may reintroduce the "Source-run only."
+    // marker or an UNSUPPORTED doc. Publishing one would now be a false
+    // statement to every agent enumerating the tools.
     for (const verb of createModule.verbs) {
-      const kind = verb.path.at(1);
-      expect(verb.summary, kind).not.toContain("Source-run only.");
-      expect(verb.doc ?? "", kind).not.toContain("UNSUPPORTED");
-      // The summary still has to say what the verb MAKES — the property the old
-      // caveat's `doc` was carefully written to preserve must survive its removal.
-      expect(verb.summary.length, kind).toBeGreaterThan(0);
+      expect(verb.summary).not.toContain("Source-run only.");
+      expect(verb.doc ?? "").not.toContain("UNSUPPORTED");
     }
   });
 
-  it("the --framework enum offers the declared frameworks and defaults to one of them", () => {
+  it("the framework enum offers the declared segments — non-empty, and NO default", () => {
     const framework = createVerbs.component.params.find(
       (p) => p.name === "framework",
     );
-    // A `values: []` enum with a `default` would leave every `--framework`
-    // rejected while `--help` still advertises a default — the hazard this names.
-    // (That every value resolves is the test above.)
+    // A `values: []` enum would leave every `create component <framework>`
+    // rejected — the hazard this names. (That every value resolves is the
+    // test above; the derivation shape is pinned in the projection describe.)
     expect(framework?.kind).toBe("enum");
     const values = (framework as { values: readonly string[] }).values;
     expect(values.length).toBeGreaterThan(0);
-    expect(values).toContain(framework?.default);
-  });
-
-  it("embeds only the templates the component loader can key", async () => {
-    const { TEMPLATES } = await import("./templates.embedded.generated.js");
-    const keys = Object.keys(TEMPLATES);
-    // summon-component's `qualifiedKey()` prefixes EVERY lookup with
-    // `component/`, so any other entry ships dead weight the loader can never
-    // read — and a binding embedded without a manifest-reading generator would
-    // put one here. Non-empty first: `.every()` over an empty list is vacuous.
-    expect(keys.length).toBeGreaterThan(0);
-    expect(keys.filter((k) => !k.startsWith("component/"))).toEqual([]);
+    expect(framework?.default).toBeUndefined();
   });
 
   it("create surfaces exactly the three declared nouns", () => {

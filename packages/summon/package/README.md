@@ -194,8 +194,8 @@ packages/my-styles/
 | `--with-react` | Add React dependencies and JSX config | `false` |
 | `--with-storybook` | Add Storybook configuration | `false` |
 | `--with-cli` | Add CLI binary entry point | `false` |
-| `--run-install` | Run package manager install after creation | `true` |
-| `--no-run-install` | Skip the install step | — |
+| `--with-pr-template` | Add a `.github/PULL_REQUEST_TEMPLATE.md` | `false` |
+| `--no-run-install` | Skip the install step (install runs by default) | — |
 
 ### Global Options
 

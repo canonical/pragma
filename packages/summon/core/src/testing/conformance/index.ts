@@ -15,6 +15,7 @@ export type { TreeDiff } from "./diffTrees.js";
 export { diffTrees, formatTreeDiff, isIdentical } from "./diffTrees.js";
 export type { ConformanceFixture } from "./fixtures.js";
 export { CONFORMANCE_FIXTURES, fixture } from "./fixtures.js";
+export { flagizeAnswers } from "./flagizeAnswers.js";
 export type { ReferenceRun } from "./produceReference.js";
 export { produceReference } from "./produceReference.js";
 export type { TreeSnapshot } from "./snapshotTree.js";

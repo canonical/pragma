@@ -1,5 +1,5 @@
 {
-  "$comment": "FROZEN designed surface (covenant) for pragma v2. Each PR emits only the entries it has built and asserts emitted ⊆ covenant (see kernel/spec/surfaceConformance.ts). PR7 is the surface-completion PR: it emits ALL tools (emitted == covenant); PR9 extended this to 39 tools (added config_set, 38→39) and extends mcpSurface with the non-tool surfaces — resources (the pragma:{+uri} template), prompts (the native prompts/* capability), and instructions (the handshake orientation); PR10 extended it to 40 tools (added the colophon self-verb + its tool, 39→40); AV-228 B1 blesses `ontology_lookup` (the ratified by-name read name) and keeps `ontology_show` as a deprecated alias, 40→41; AV-228 B3 RETIRES the per-field setters `config_tier`/`config_channel`/`config_detail` in favour of `config_set <key> <value>`, 41→38; AV-228 B8 unifies ALL `create application` include-flags on the `--with-X` convention (`--ssr`/`--router`/`--forms`/`--relay` → `--with-ssr`/`--with-router`/`--with-forms`/`--with-relay`; tool count unchanged). L-PR6 (PRA-107 ruling, PROJECT FROM CONFIG) records the WIRE IDENTITY rule as mcpSurface.serverInfo: serverInfo PROJECTS from the distribution — name is the declared distribution name, version the package version — so a fork's server introduces itself under its own name (surface.test.ts pins the covenant text, identity.test.ts pins the wire from a fork's config); the resource template pragma:{+uri}, the pragma:<uri> URIs it mints, and the pragma/box / pragma/instanceCount _meta keys stay FROZEN protocol identity every distribution serves unchanged — clients persist resource URIs, and the measured half-derivation (template renamed, minting sites literal) made all 653 of a fork's resources unreadable; tool count unchanged. L-OPEN-9 removes the non-compliant commands — reads the declared grammar can express become declared content, the rest is removed: `tier_lookup` becomes the tier story's compiled lookup (args `<name>` → `<name...>`, the variadic every pack lookup emits); `block_list` becomes the block story's compiled list (`--all-tiers` retired with the hand-written tier-chain/channel filtering — it lists ALL blocks, experimental included, for everyone, until filtering returns in declared form); `token add-config` is REMOVED rather than made declared — it writes a `tokens.config.mjs` starter file, and the content grammar deliberately has no mutation verb, 38→37. L-OPEN-10 strips the `v2` framing from the `bins.pragma` description string (`pragma v2 CLI and MCP server host (stdio)` -> `pragma CLI and MCP server host (stdio)`) — the tool is the tool, not a successor to something; the FILENAME and the chronological records above keep their `v2` because they are history, not a claim about the product. The --intl port (i18n behind an opt-in flag in application/react) adds `--with-intl` to `create application`; flag list only, tool count unchanged. Prompt NAMES are graph data, guarded by the prompt tests, not frozen here. The fixed sections mirror FIXED_SURFACE in kernel/spec/emitSurface.ts verbatim.",
+  "$comment": "FROZEN designed surface (covenant) for pragma v2. Each PR emits only the entries it has built and asserts emitted ⊆ covenant (see kernel/spec/surfaceConformance.ts). PR7 is the surface-completion PR: it emits ALL tools (emitted == covenant); PR9 extended this to 39 tools (added config_set, 38→39) and extends mcpSurface with the non-tool surfaces — resources (the pragma:{+uri} template), prompts (the native prompts/* capability), and instructions (the handshake orientation); PR10 extended it to 40 tools (added the colophon self-verb + its tool, 39→40); AV-228 B1 blesses `ontology_lookup` (the ratified by-name read name) and keeps `ontology_show` as a deprecated alias, 40→41; AV-228 B3 RETIRES the per-field setters `config_tier`/`config_channel`/`config_detail` in favour of `config_set <key> <value>`, 41→38; AV-228 B8 unifies ALL `create application` include-flags on the `--with-X` convention (`--ssr`/`--router`/`--forms`/`--relay` → `--with-ssr`/`--with-router`/`--with-forms`/`--with-relay`; tool count unchanged). L-PR6 (PRA-107 ruling, PROJECT FROM CONFIG) records the WIRE IDENTITY rule as mcpSurface.serverInfo: serverInfo PROJECTS from the distribution — name is the declared distribution name, version the package version — so a fork's server introduces itself under its own name (surface.test.ts pins the covenant text, identity.test.ts pins the wire from a fork's config); the resource template pragma:{+uri}, the pragma:<uri> URIs it mints, and the pragma/box / pragma/instanceCount _meta keys stay FROZEN protocol identity every distribution serves unchanged — clients persist resource URIs, and the measured half-derivation (template renamed, minting sites literal) made all 653 of a fork's resources unreadable; tool count unchanged. L-OPEN-9 removes the non-compliant commands — reads the declared grammar can express become declared content, the rest is removed: `tier_lookup` becomes the tier story's compiled lookup (args `<name>` → `<name...>`, the variadic every pack lookup emits); `block_list` becomes the block story's compiled list (`--all-tiers` retired with the hand-written tier-chain/channel filtering — it lists ALL blocks, experimental included, for everyone, until filtering returns in declared form); `token add-config` is REMOVED rather than made declared — it writes a `tokens.config.mjs` starter file, and the content grammar deliberately has no mutation verb, 38→37. L-OPEN-10 strips the `v2` framing from the `bins.pragma` description string (`pragma v2 CLI and MCP server host (stdio)` -> `pragma CLI and MCP server host (stdio)`) — the tool is the tool, not a successor to something; the FILENAME and the chronological records above keep their `v2` because they are history, not a claim about the product. Prompt NAMES are graph data, guarded by the prompt tests, not frozen here. The fixed sections mirror FIXED_SURFACE in kernel/spec/emitSurface.ts verbatim. L-CIS (Create-Is-Summon ruling, 2026-08-21) makes the `create` surface a PROJECTION of the summon generator tree — `pragma create <path…>` ≡ `summon <path…>` over the three declared bindings, the contract is executed rather than written down (crossCli.subprocess.test.ts runs both CLIs over the same argv and compares what they emit): the CLI mounts tree segments as subcommands (`create component react|svelte|lit`, `create application react`), the `--framework` flag dies loudly naming the new form, and every schema DERIVES from the generators' PromptDefinitions — `create_component` keeps a framework enum argument derived from the tree segments (now required, no default, mirroring the tree), gains the svelte-only `--use-ts-stories`, and `component`'s per-framework prompt truth replaces the shared mirror; `create_application` sheds the B8 `--with-X` aliases for the generator's own `ssr`/`router`/`forms`/`relay`; `run-install` follows the generators' default (install on); the PRA-14 compiled-binary gate and its availability-caveat text die — the compiled binary generates all three, proven byte-equal to source runs; non-TTY mutations without complete input REFUSE in both products; tool count unchanged; the fixed sections are untouched by this clause. L-CIS-2 (round-15 correction, 2026-08-23) makes the create noun's flag lists the REGISTERED spellings and retires the ssr/router pair: a mounted noun's flags derive through the projection's buildOptionInfo — a default-true confirm registers ONLY its `--no-<kebab>` form — so the covenant names tokens the CLI parses (`--no-with-styles`, `--no-run-install`, …) instead of kebab-cased param names it rejects (kernel-registered verbs keep the kebab convention: B9's negation is additive there); the `args` are typed tokens under the same rule — the registered kebab positional the usage line prints (`[component-path]`, `[app-path]`), never the camelCase param name; and `application/react` drops its `ssr`/`router` prompts — SSR and the router are always on (the scaffold has no SPA arm), the pair's only explicit spelling was the negation the generator's own guard rejected (an unfollowable refusal), so `create_application` loses the two args, the wizard the two dead questions, and the flag list shrinks to `--no-forms`/`--relay`/`--no-run-install`; tool count unchanged; the fixed sections are untouched by this clause.",
   "nouns": {
     "block": {
       "verbs": [
@@ -142,12 +142,12 @@
       "verbs": [
         {
           "v": "component",
-          "args": ["[componentPath]"],
+          "args": ["<framework>", "[component-path]"],
           "flags": [
-            "--framework",
-            "--with-styles",
-            "--with-stories",
-            "--with-ssr-tests"
+            "--no-with-styles",
+            "--no-with-stories",
+            "--no-with-ssr-tests",
+            "--use-ts-stories"
           ],
           "mutates": true,
           "mcp": "create_component"
@@ -162,22 +162,15 @@
             "--with-storybook",
             "--with-cli",
             "--with-pr-template",
-            "--run-install"
+            "--no-run-install"
           ],
           "mutates": true,
           "mcp": "create_package"
         },
         {
           "v": "application",
-          "args": ["[appPath]"],
-          "flags": [
-            "--with-ssr",
-            "--with-router",
-            "--with-forms",
-            "--with-intl",
-            "--with-relay",
-            "--run-install"
-          ],
+          "args": ["[app-path]"],
+          "flags": ["--no-forms", "--intl", "--relay", "--no-run-install"],
           "mutates": true,
           "mcp": "create_application"
         }

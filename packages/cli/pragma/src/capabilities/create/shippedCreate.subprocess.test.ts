@@ -73,14 +73,10 @@ function snapshot(dir: string): Map<string, string> {
 const CASES: ReadonlyArray<{ label: string; args: readonly string[] }> = [
   ...(["react", "svelte", "lit"] as const).map((framework) => ({
     label: `component ${framework}`,
-    args: [
-      "create",
-      "component",
-      "src/components/Widget",
-      "--framework",
-      framework,
-      "--yes",
-    ],
+    // The framework is a PATH SEGMENT, not a flag — `create` mirrors summon's
+    // own tree (`summon component react <path>`), so the two CLIs take the
+    // same argv.
+    args: ["create", "component", framework, "src/components/Widget", "--yes"],
   })),
   {
     label: "package",
@@ -88,7 +84,9 @@ const CASES: ReadonlyArray<{ label: string; args: readonly string[] }> = [
   },
   {
     label: "application",
-    args: ["create", "application", "probeapp", "--yes"],
+    // `react` is a path segment here too — the declared binding is
+    // `application/react`, and the tree mirrors summon's.
+    args: ["create", "application", "react", "probeapp", "--yes"],
   },
 ];
 

@@ -350,6 +350,22 @@ function expectAgreement(
     .filter((noun) => noun !== "mcp" || surfaceNouns.includes("mcp"));
   expect(modelNouns).toEqual(surfaceNouns);
 
+  // A module-owned mount REPLACES its verbs' completion surface with the
+  // flags/positionals the mounted tree actually registers, so agreement for
+  // those verbs is asserted against the module's declared projection data —
+  // not the covenant-facing surface flags (which record binding param names).
+  const mountedByNoun = new Map<
+    string,
+    Readonly<Record<string, import("../spec/types.js").CompletionChildSpec>>
+  >();
+  for (const module of modules) {
+    if (!module.cliProjection) continue;
+    const children = module.cliProjection.completionChildren();
+    for (const verb of module.verbs) {
+      mountedByNoun.set(verb.path[0], children);
+    }
+  }
+
   for (const noun of surfaceNouns) {
     const nounEntry = findNoun(completionModel, noun);
     expect(nounEntry).toBeDefined();
@@ -362,6 +378,7 @@ function expectAgreement(
     ].sort();
     expect(modelLabels).toEqual(surfaceVerbs.map((v) => v.v).sort());
 
+    const mounted = mountedByNoun.get(noun);
     for (const surfaceVerb of surfaceVerbs) {
       const modelVerb: VerbEntry | undefined =
         nounEntry.selfVerb?.label === surfaceVerb.v
@@ -369,6 +386,26 @@ function expectAgreement(
           : nounEntry.verbs.find((v) => v.label === surfaceVerb.v);
       expect(modelVerb).toBeDefined();
       if (!modelVerb) continue;
+
+      const mountedSpec = mounted?.[surfaceVerb.v];
+      if (mountedSpec) {
+        expect(modelVerb.flags.map((f) => f.flag)).toEqual(
+          mountedSpec.flags.map((f) => f.flag),
+        );
+        expect(modelVerb.positionals.map((p) => p.name)).toEqual(
+          mountedSpec.positionals.map((p) => p.name),
+        );
+        expect((modelVerb.children ?? []).map((c) => c.label)).toEqual(
+          (mountedSpec.children ?? []).map((c) => c.label),
+        );
+        // A namespace node (children) never mutates for completion: the
+        // mounted tree registers the mutation trio on runnable leaves only.
+        const isNamespace = (mountedSpec.children ?? []).length > 0;
+        expect(modelVerb.mutates).toBe(
+          !isNamespace && surfaceVerb.mutates === true,
+        );
+        continue;
+      }
 
       expect(modelVerb.flags.map((f) => f.flag)).toEqual(
         surfaceVerb.flags ?? [],
@@ -390,6 +427,79 @@ describe("projection agreement with emitSurface (PROTECTED)", () => {
 
   it("the live model matches the live surface", () => {
     expectAgreement(capabilities, buildCompletionModel(capabilities));
+  });
+});
+
+describe("mounted create completion — literal candidate pins (PROTECTED)", () => {
+  // The mounted-tree branch of the agreement describe compares the model to
+  // completionChildren() — the same call the model was BUILT from, so it can
+  // never catch that surface going wrong (a garbage projection satisfies
+  // it). These pins are the INDEPENDENT source: literal candidate sets
+  // through the real resolver, shellDrive noun-tier style — the segment
+  // descent (parse.ts children walk) and a leaf's registered flags.
+
+  it("segment tier: `create component <TAB>` offers exactly the framework segments", async () => {
+    const { runComplete } = await import("./complete.js");
+    expect(
+      await runComplete(["create", "component", ""], capabilities),
+    ).toEqual(["lit", "react", "svelte"]);
+    expect(
+      await runComplete(["create", "application", ""], capabilities),
+    ).toEqual(["react"]);
+  });
+
+  it("namespace flag tier: `create component --<TAB>` offers NO leaf prompt or mutation flags", async () => {
+    const { runComplete } = await import("./complete.js");
+    // Prompt AND mutation flags are registered on the LEAVES; a pre-segment
+    // offer completes orderings Commander rejects (`create component
+    // --use-ts-stories svelte` and `create component --dry-run react` both
+    // exit 2 as unknown options). Until a framework segment is typed, only
+    // the global tier is offered.
+    expect(
+      await runComplete(["create", "component", "--"], capabilities),
+    ).toEqual(["--detail", "--format", "--help", "--verbose"]);
+  });
+
+  it("leaf flag tier: `create component react --<TAB>` offers the REGISTERED flags", async () => {
+    const { runComplete } = await import("./complete.js");
+    // The leaf's prompt-derived flags in their registered spelling (--no-
+    // forms for default-true confirms, --component-path for the positional
+    // prompt — addPromptOptions registers EVERY prompt as an option), the
+    // mutation trio, and the root globals — as literals, so dropping the
+    // framework positional's values or a leaf prompt flag goes red instead
+    // of silently green.
+    expect(
+      await runComplete(["create", "component", "react", "--"], capabilities),
+    ).toEqual([
+      "--component-path",
+      "--detail",
+      "--dry-run",
+      "--format",
+      "--help",
+      "--no-with-ssr-tests",
+      "--no-with-stories",
+      "--no-with-styles",
+      "--undo",
+      "--verbose",
+      "--yes",
+    ]);
+    // Svelte's leaf carries its own extra flag — per-leaf, not unioned.
+    expect(
+      await runComplete(["create", "component", "svelte", "--"], capabilities),
+    ).toEqual([
+      "--component-path",
+      "--detail",
+      "--dry-run",
+      "--format",
+      "--help",
+      "--no-with-ssr-tests",
+      "--no-with-stories",
+      "--no-with-styles",
+      "--undo",
+      "--use-ts-stories",
+      "--verbose",
+      "--yes",
+    ]);
   });
 });
 

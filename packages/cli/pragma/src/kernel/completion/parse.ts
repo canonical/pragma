@@ -137,6 +137,21 @@ function scanCommandWord(
     return;
   }
 
+  // A verb with segment children (a mounted subtree): the word resolves
+  // against the children BEFORE positional counting — a match descends, so
+  // deeper flags/positionals are the child's own; a non-match is terminal.
+  const resolved = knownVerb(state);
+  if (resolved?.children && resolved.children.length > 0) {
+    const child = resolved.children.find((entry) => entry.label === word);
+    if (child) {
+      state.verb = child;
+      state.positionalsSeen = 0;
+      return;
+    }
+    state.verb = "unknown";
+    return;
+  }
+
   state.positionalsSeen += 1;
 }
 

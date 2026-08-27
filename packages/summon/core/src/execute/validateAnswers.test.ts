@@ -41,13 +41,13 @@ describe("validateAnswers", () => {
 
   it("rejects a value its validate function rejects (string message)", () => {
     expect(validateAnswers(prompts, { componentPath: "" })).toBe(
-      "Invalid --component-path: path required",
+      'Invalid --component-path "": path required',
     );
   });
 
   it("rejects with a generic message when validate returns non-string falsy", () => {
     expect(validateAnswers(prompts, { flag: true })).toBe(
-      "Invalid --flag: invalid value",
+      'Invalid --flag "true": invalid value',
     );
   });
 

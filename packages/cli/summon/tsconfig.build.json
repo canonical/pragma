@@ -17,6 +17,9 @@
   "exclude": [
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
+    // Test infrastructure (the vitest globalSetup gate): same class as the
+    // tests it serves — never compiled into the published dist.
+    "src/testing/**",
     "generators/**/templates/**"
   ]
 }

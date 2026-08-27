@@ -6,7 +6,9 @@
 
 import {
   formatContentPreview,
+  GENERATOR_INVALID_ANSWER,
   type GeneratorDefinition,
+  isInvalidAnswersError,
   type PromptDefinition,
   type StampConfig,
 } from "@canonical/summon-core";
@@ -803,6 +805,13 @@ export interface AppProps {
   verbose?: boolean;
   /** Pre-filled answers (for non-interactive mode) */
   answers?: Record<string, unknown>;
+  /**
+   * Wizard mode over a PARTIAL answer set: `answers` are the explicitly
+   * provided ones — never re-asked, shown as completed — and the wizard asks
+   * exactly the pending prompts (empty set ⇒ straight to preview/confirm).
+   * Without this flag, provided `answers` skip prompting entirely (a run).
+   */
+  askMissing?: boolean;
   /** Skip confirmation gates (`--yes`) */
   yes?: boolean;
   /** Stamp configuration for generated files (undefined = no stamps) */
@@ -816,17 +825,81 @@ export const App = ({
   undo = false,
   verbose = false,
   answers: prefilledAnswers,
+  askMissing = false,
   yes = false,
   stamp,
 }: AppProps) => {
   const { exit } = useApp();
   const [state, setState] = useState<AppState>(
-    prefilledAnswers ? { phase: "loading" } : { phase: "prompting" },
+    prefilledAnswers && !askMissing
+      ? { phase: "loading" }
+      : { phase: "prompting" },
   );
   const [answers, setAnswers] = useState<Record<string, unknown>>(
     prefilledAnswers ?? {},
   );
   const [showFiles, setShowFiles] = useState(false);
+  // Set once the user navigates BACK from the confirm gate: the re-entered
+  // wizard asks EVERY prompt again (previous values pre-filled) instead of
+  // seeding `provided` — with a fully-explicit invocation the pending set is
+  // empty, so a kept seed would auto-complete straight back to the gate and
+  // make the advertised `esc to go back` a no-op.
+  const [reasking, setReasking] = useState(false);
+
+  // Generate the task, entering the error phase on ANY throw — §3's exit
+  // contract: a rendered failure never exits 0. A generator-raised typed
+  // invalid answer (a cross-answer constraint its `generate` enforces — two
+  // answers only valid together; no shipped generator raises one today) is
+  // the usage class
+  // (GENERATOR_INVALID_ANSWER → the effect's exit 2); any OTHER throw is a
+  // generator bug rendered as GENERATE_ERROR — the run/wizard sibling of the
+  // batch arms' bare stderr line — carrying the runtime class (exit 1).
+  // Re-throwing it (the old behavior) reached Ink's error boundary, which
+  // renders a crash box but sets NO exit code: `summon … --yes` under bun
+  // exited 0 on a failed run.
+  //
+  // The SUCCESS path is validated too: `undefined` is this helper's
+  // "already handled, stop" sentinel, so a `generate()` that RETURNS
+  // undefined/null (a plain-JS generator that forgot its `return` — the
+  // `--generators` extension point is untyped) must not be forwarded as
+  // that sentinel — no state would be set, no exit code owned, and the
+  // App would sit in phase limbo with `waitUntilExit` pending FOREVER.
+  // It is the same generator-bug class as a throw: GENERATE_ERROR, named.
+  const generateTask = useCallback(
+    (promptAnswers: Record<string, unknown>): Task<void> | undefined => {
+      try {
+        // The wider type is honest: `--generators` loads unchecked JS, so
+        // the declared `Task<void>` is a promise the author may break.
+        const task: Task<void> | undefined | null =
+          generator.generate(promptAnswers);
+        if (task === undefined || task === null) {
+          setState({
+            phase: "error",
+            error: {
+              code: "GENERATE_ERROR",
+              message: `${generator.meta.name}'s generate returned no task`,
+            },
+            answers: promptAnswers,
+          });
+          return undefined;
+        }
+        return task;
+      } catch (error) {
+        setState({
+          phase: "error",
+          error: isInvalidAnswersError(error)
+            ? { code: GENERATOR_INVALID_ANSWER, message: error.message }
+            : {
+                code: "GENERATE_ERROR",
+                message: error instanceof Error ? error.message : String(error),
+              },
+          answers: promptAnswers,
+        });
+        return undefined;
+      }
+    },
+    [generator],
+  );
 
   const runUndoPlan = useCallback(
     (
@@ -857,8 +930,8 @@ export const App = ({
     (promptAnswers: Record<string, unknown>) => {
       setAnswers(promptAnswers);
 
-      // Generate the task
-      const task = generator.generate(promptAnswers);
+      const task = generateTask(promptAnswers);
+      if (task === undefined) return;
 
       // Undo mode: collect the plan ONCE (host-backed Exists resolution, so
       // branch selection matches the run being undone), show it, and execute
@@ -937,13 +1010,17 @@ export const App = ({
         setState({ phase: "executing", task });
       }
     },
-    [generator, preview, dryRunOnly, undo, yes, runUndoPlan],
+    [generateTask, preview, dryRunOnly, undo, yes, runUndoPlan],
   );
 
   const handleConfirm = useCallback(() => {
-    const task = generator.generate(answers);
+    // The same catch as the preview's generate: a re-generate at the confirm
+    // gate normally re-runs what already succeeded, but a stateful generator
+    // throwing HERE must land in the error phase too, not in Ink's boundary.
+    const task = generateTask(answers);
+    if (task === undefined) return;
     setState({ phase: "executing", task });
-  }, [generator, answers]);
+  }, [generateTask, answers]);
 
   const handleCancel = useCallback(() => {
     exit();
@@ -963,16 +1040,32 @@ export const App = ({
     [answers],
   );
 
-  // Handle pre-filled answers
+  // Handle pre-filled answers (run mode only — askMissing starts prompting)
   useEffect(() => {
-    if (prefilledAnswers && state.phase === "loading") {
+    if (prefilledAnswers && !askMissing && state.phase === "loading") {
       handlePromptsComplete(prefilledAnswers);
     }
-  }, [prefilledAnswers, state.phase, handlePromptsComplete]);
+  }, [prefilledAnswers, askMissing, state.phase, handlePromptsComplete]);
 
-  // Handle going back from confirmation to prompting
+  // The error phase owns the process exit code (the cross-CLI matrix): a
+  // rendered failure must not exit 0 — pragma routes the same failures
+  // through mapExitCode (usage → 2, everything else → 1). The typed invalid
+  // answer (a generator's cross-answer guard) is the usage class; every
+  // other rendered failure — execution, dry-run, undo — is a runtime
+  // failure. Only the exit code is owned here: the rendering above it stays
+  // host UI, and a deliberate cancel (n at the confirm gate) keeps exit 0.
+  useEffect(() => {
+    if (state.phase !== "error") return;
+    process.exitCode = state.error.code === GENERATOR_INVALID_ANSWER ? 2 : 1;
+  }, [state]);
+
+  // Handle going back from confirmation to prompting. Clearing the provided
+  // seed (via `reasking`) is what keeps esc meaningful when the wizard had
+  // nothing left to ask — the flag-given answers are exactly what the user
+  // may want to change.
   const handleGoBack = useCallback(() => {
     setShowFiles(false);
+    setReasking(true);
     setState({ phase: "prompting" });
   }, []);
 
@@ -1031,6 +1124,7 @@ export const App = ({
           onComplete={handlePromptsComplete}
           onCancel={handleCancel}
           initialAnswers={answers}
+          provided={askMissing && !reasking ? prefilledAnswers : undefined}
         />
       )}
 

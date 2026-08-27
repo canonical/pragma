@@ -92,13 +92,11 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `appPath` | string | no | Application directory. (default: my-app) |
-| `withSsr` | boolean | no | Include SSR. (default: true) |
-| `withRouter` | boolean | no | Include router. (default: true) |
-| `withForms` | boolean | no | Include form components. (default: true) |
-| `withIntl` | boolean | no | Include internationalisation (locale negotiation, translated UI, locale switcher). (default: false) |
-| `withRelay` | boolean | no | Include a Relay (GraphQL) data layer. (default: false) |
-| `runInstall` | boolean | no | Install dependencies now. (default: false) |
+| `appPath` | string | no | Application directory name. (default: my-app) |
+| `forms` | boolean | no | Include form components. (default: true) |
+| `intl` | boolean | no | Include internationalisation (locale negotiation, translated UI, locale switcher). (default: false) |
+| `relay` | boolean | no | Include a Relay (GraphQL) data layer with a local mock schema. (default: false) |
+| `runInstall` | boolean | no | Install dependencies now. (default: true) |
 | `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
 | `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
 
@@ -112,11 +110,12 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `framework` | enum(react, svelte, lit) | no | Component framework. (one of: react, svelte, lit) (default: react) |
-| `componentPath` | string | no | Component path (its final segment is the PascalCase component name). |
+| `framework` | enum(react, svelte, lit) | yes | Component framework — the tree segment (`create component <framework>`). (one of: react, svelte, lit) |
+| `componentPath` | string | no | Component path. |
 | `withStyles` | boolean | no | Include styles. (default: true) |
 | `withStories` | boolean | no | Include Storybook stories. (default: true) |
-| `withSsrTests` | boolean | no | Include SSR tests. (default: true) |
+| `withSsrTests` | boolean | no | Include SSR tests. (frameworks: react, svelte) (default: true) |
+| `useTsStories` | boolean | no | Use TypeScript stories format? (otherwise Svelte CSF). (frameworks: svelte) (default: false) |
 | `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
 | `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
 
@@ -135,9 +134,9 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 | `description` | string | no | Package description. (default: ) |
 | `withReact` | boolean | no | Include React dependencies. (default: false) |
 | `withStorybook` | boolean | no | Include Storybook setup. (default: false) |
-| `withCli` | boolean | no | Include a CLI binary entry point. (default: false) |
-| `withPrTemplate` | boolean | no | Include a PR template. (default: false) |
-| `runInstall` | boolean | no | Run the package manager install after creation. (default: false) |
+| `withCli` | boolean | no | Include CLI binary entry point. (default: false) |
+| `withPrTemplate` | boolean | no | Include a .github/PULL_REQUEST_TEMPLATE.md. (default: false) |
+| `runInstall` | boolean | no | Run package manager install after creation. (default: true) |
 | `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
 | `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
 

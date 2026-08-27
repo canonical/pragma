@@ -2,10 +2,13 @@
  * SEC-2 path jail: an independent guard that a `create` output path stays inside
  * the workspace, run BEFORE any effect. It rejects an absolute path, a `..`
  * escape, and — via `realpath` on the nearest existing ancestor — a symlink that
- * points out of the tree. This is defence in depth: the generators' own
- * `validateComponentPath` already rejects absolute/`..`, but the jail is the
- * kernel-level backstop that also catches symlink escapes and covers every
- * create noun uniformly.
+ * points out of the tree. This is defence in depth: the generators' own prompt
+ * validators (`validateComponentPath`, `validateAppPath`) reject absolute/`..`
+ * uniformly across the declared path prompts — in BOTH hosts, upstream of this
+ * jail — so the jail is pragma's host-level backstop, and its symlink check is
+ * the one tier the shared validators do not have (summon relies on the
+ * validator tier; hoisting the realpath check into the shared layer is a named
+ * follow-up).
  */
 
 import { existsSync, realpathSync } from "node:fs";

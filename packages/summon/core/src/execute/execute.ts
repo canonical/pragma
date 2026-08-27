@@ -23,7 +23,15 @@
  * per-question handler otherwise cannot know.
  */
 
-import { dryRun, fail, flatMap, map, prompt, type Task } from "@canonical/task";
+import {
+  dryRun,
+  fail,
+  flatMap,
+  map,
+  prompt,
+  type Task,
+  TaskExecutionError,
+} from "@canonical/task";
 import type { PromptHandler } from "../prompt/types.js";
 import type GeneratorDefinition from "../types/GeneratorDefinition.js";
 import collectAnswers, { type AnswerablePrompt } from "./collectAnswers.js";
@@ -38,6 +46,41 @@ export const GENERATOR_INVALID_ANSWER = "GENERATOR_INVALID_ANSWER";
 
 /** Task-error code for a run cancelled at the interactive confirm gate. */
 export const GENERATOR_CANCELLED = "GENERATOR_CANCELLED";
+
+/**
+ * Build the typed error a generator's `generate` throws for a CROSS-answer
+ * constraint no single prompt's `validate` can see — two answers only valid
+ * together. No shipped generator declares one today (application/react's
+ * former ssr+router guard is gone with its prompts); the `guarded` fixture
+ * in cli/summon's interaction tests shows the shape. It carries the same
+ * {@link GENERATOR_INVALID_ANSWER} code the validation failure inside
+ * {@link execute} raises, so a host routes it down its existing invalid-input
+ * pathway — pragma maps the code to `INVALID_INPUT` (exit 2), the summon bin
+ * prints the bare message (exit 2 in a batch mode, the App's error phase in a
+ * wizard) — instead of collapsing it into an internal error with a stack.
+ *
+ * @param message - The human-readable constraint, naming REGISTERED flag
+ *   spellings (what a user can actually type).
+ * @returns The typed error for `generate` to `throw`.
+ */
+export function invalidAnswersError(message: string): TaskExecutionError {
+  return new TaskExecutionError({ code: GENERATOR_INVALID_ANSWER, message });
+}
+
+/**
+ * True when a thrown value is a generator-raised invalid answer — matched by
+ * the {@link GENERATOR_INVALID_ANSWER} code, never by class identity, so the
+ * check survives a duplicate module instance across build outputs.
+ *
+ * @param error - The caught value.
+ * @returns Whether the value is an {@link invalidAnswersError} throw.
+ */
+export function isInvalidAnswersError(error: unknown): error is Error {
+  return (
+    error instanceof Error &&
+    (error as { code?: unknown }).code === GENERATOR_INVALID_ANSWER
+  );
+}
 
 /** The context {@link execute} builds its task from. */
 export interface ExecuteContext {

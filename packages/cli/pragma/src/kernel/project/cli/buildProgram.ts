@@ -15,7 +15,7 @@ import { Command, Option } from "commander";
 import { BIN_NAME, PROGRAM_DESCRIPTION, VERSION } from "../../../constants.js";
 import type { GlobalFlags } from "../../runtime/types.js";
 import { kebabCase } from "../../spec/emitSurface.js";
-import type { ParamSpec, VerbSpec } from "../../spec/types.js";
+import type { CliProjection, ParamSpec, VerbSpec } from "../../spec/types.js";
 import { dispatch } from "./dispatch.js";
 import { formatRootHelp } from "./rootHelp.js";
 import { formatNounHelp, formatVerbHelp } from "./verbHelp.js";
@@ -30,6 +30,13 @@ export interface BuildProgramOptions {
   readonly description?: string;
   /** Version string for `--version`. */
   readonly version?: string;
+  /**
+   * Module-owned noun mounts (see `CapabilityModule.cliProjection`), keyed by
+   * noun. A mounted noun's parent command is created here exactly once and
+   * handed to the module's `mount` — the module owns everything beneath it;
+   * its verbs stay the binding-level grammar for help/surface/completion.
+   */
+  readonly mounts?: ReadonlyMap<string, CliProjection>;
 }
 
 /** The positional usage token for a param (`<name>` / `[name]`, variadic `...`). */
@@ -70,13 +77,18 @@ function registerParams(command: Command, verb: VerbSpec): void {
     } else {
       command.option(spec, param.doc);
     }
-    // B9: a default-`true` boolean is otherwise undisableable — the grammar has
-    // no negation form, so `create`'s sibling booleans (--ssr/--with-styles/…)
-    // could never be turned off. Register a paired `--no-<flag>` so they can:
+    // B9: a default-`true` boolean is otherwise undisableable — the grammar
+    // has no negation form, so a kernel-registered default-true boolean could
+    // never be turned off. Register a paired `--no-<flag>` so it can:
     // Commander keeps the `true` default and lets `--no-<flag>` set it false
-    // (verified: an unset default-false boolean is left alone). This is a CLI
-    // PARSE convenience, never a ParamSpec — `emitSurface`/MCP/the covenant are
-    // untouched — so the frozen flag list stands and negation stays additive.
+    // (verified: an unset default-false boolean is left alone). For verbs
+    // registered HERE this is a CLI PARSE convenience, never a ParamSpec —
+    // `emitSurface`/MCP/the covenant keep the positive kebab token and
+    // negation stays additive. A MOUNTED noun (`create`) never reaches this
+    // loop: its leaves register through the projection's `buildOptionInfo`,
+    // where a default-true confirm registers ONLY the `--no-` form — so its
+    // covenant/reference tokens come from the module's registered-syntax
+    // seam, not this convention (L-CIS-2).
     if (param.kind === "boolean" && param.default === true) {
       const flag = kebabCase(param.name);
       command.option(`--no-${flag}`, `Disable --${flag} (on by default).`);
@@ -263,6 +275,16 @@ export function buildProgram(
   for (const [noun, bucket] of groups) {
     const selfVerbs = bucket.filter((v) => v.path.length === 1);
     const subVerbs = bucket.filter((v) => v.path.length > 1);
+
+    // A module-owned mount replaces the generic per-verb attachment for its
+    // noun: create the parent once, hand it over, move on.
+    const mounted = options.mounts?.get(noun);
+    if (mounted) {
+      const parent = program.command(noun);
+      parent.enablePositionalOptions();
+      mounted.mount(parent, { globalFlags: options.globalFlags, programName });
+      continue;
+    }
 
     // Pure self-verb noun(s) — attach each leaf directly to the root, as before.
     if (subVerbs.length === 0) {
