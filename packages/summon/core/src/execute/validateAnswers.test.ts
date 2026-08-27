@@ -79,6 +79,12 @@ describe("validateAnswers — multiselect and hostile names", () => {
       '"zzz"',
     );
     expect(validateAnswers(prompts, { features: ["a", "b"] })).toBeNull();
+    // Strict entries: no coercion (1 is not the declared "1"-style string
+    // value "a"/"b"), and an undefined entry is still reported.
+    expect(validateAnswers(prompts, { features: [1] })).toContain('"1"');
+    expect(validateAnswers(prompts, { features: [undefined] })).toContain(
+      '"undefined"',
+    );
   });
 
   it("names the offending flag with the CLI's own kebab form", () => {

@@ -95,19 +95,19 @@ export default function inkPrompt(
   let mounted: MountedSession | undefined;
 
   const ensure = (): Promise<MountedSession> => {
-    mountP ??= import("./ink/mount.js").then(
-      (mod) => {
+    mountP ??= import("./ink/mount.js")
+      .then((mod) => {
         mounted = mod.mountPromptSession(generator, options);
         return mounted;
-      },
-      (error) => {
-        // Do not cache a failed mount: a transient import failure would
-        // otherwise reject every later prompt in the session with the same
-        // stale error.
+      })
+      .catch((error) => {
+        // Do not cache a failure — a trailing catch, so BOTH a failed dynamic
+        // import and a throw from mountPromptSession itself (e.g. Ink render)
+        // reset the memo; otherwise every later prompt in the session would
+        // reuse the same stale rejection.
         mountP = undefined;
         throw error;
-      },
-    );
+      });
     return mountP;
   };
 

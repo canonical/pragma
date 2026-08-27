@@ -47,11 +47,17 @@ export default function validateAnswers(
       prompt.choices.length > 0 &&
       Array.isArray(value)
     ) {
-      const allowed = new Set(prompt.choices.map((choice) => choice.value));
-      const unknown = value.find((entry) => !allowed.has(String(entry)));
-      if (unknown !== undefined) {
+      const allowed = new Set<unknown>(
+        prompt.choices.map((choice) => choice.value),
+      );
+      // Strict membership with an index, not a find() sentinel: `[1]` must
+      // not pass for a declared "1", and `[undefined]` must still be caught.
+      const badIndex = value.findIndex(
+        (entry) => typeof entry !== "string" || !allowed.has(entry),
+      );
+      if (badIndex !== -1) {
         const valid = prompt.choices.map((choice) => choice.value).join(", ");
-        return `Invalid --${flagName(prompt.name)} "${String(unknown)}". Valid values: ${valid}.`;
+        return `Invalid --${flagName(prompt.name)} "${String(value[badIndex])}". Valid values: ${valid}.`;
       }
     }
 
