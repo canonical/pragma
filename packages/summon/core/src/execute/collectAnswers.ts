@@ -15,10 +15,10 @@
  */
 
 import {
-  $,
-  gen,
+  flatMap,
   type PromptQuestion,
   prompt,
+  pure,
   type Task,
 } from "@canonical/task";
 
@@ -103,9 +103,10 @@ function toQuestion(definition: AnswerablePrompt): PromptQuestion {
  * Build a Task that collects answers for the given prompt definitions by
  * asking each unanswered, applicable one as a `Prompt` effect.
  *
- * The returned task is single-use (it is `gen`-based): build a fresh one per
- * run. Prompts whose `name` is already present in `partialAnswers` are not
- * asked; `when` predicates observe flags and earlier answers alike.
+ * The returned task is re-interpretable — every walk evaluates the chain's
+ * continuations fresh. Prompts whose `name` is already present in
+ * `partialAnswers` are not asked; `when` predicates observe flags and earlier
+ * answers alike.
  *
  * @param prompts - The prompt definitions, in asking order.
  * @param partialAnswers - Answers already provided (e.g. CLI flags / MCP args).
@@ -115,17 +116,28 @@ export default function collectAnswers(
   prompts: readonly AnswerablePrompt[],
   partialAnswers: Readonly<Record<string, unknown>> = {},
 ): Task<Record<string, unknown>> {
-  return gen(function* () {
-    const answers: Record<string, unknown> = { ...partialAnswers };
-    for (const definition of prompts) {
-      if (definition.name in answers) {
-        continue;
-      }
-      if (definition.when && definition.when(answers) !== true) {
-        continue;
-      }
-      answers[definition.name] = yield* $(prompt(toQuestion(definition)));
+  // Built from combinators, not gen(): a gen() task closes over one iterator
+  // and cannot be interpreted twice, but this chain must survive repeated
+  // walks — undo collection re-walks the execute() task it is part of
+  // (including backtracking restarts). Each walk evaluates the continuations
+  // fresh, so every interpretation asks the same questions.
+  const step = (
+    index: number,
+    answers: Record<string, unknown>,
+  ): Task<Record<string, unknown>> => {
+    if (index >= prompts.length) {
+      return pure(answers);
     }
-    return answers;
-  });
+    const definition = prompts[index];
+    if (
+      definition.name in answers ||
+      (definition.when && definition.when(answers) !== true)
+    ) {
+      return step(index + 1, answers);
+    }
+    return flatMap(prompt(toQuestion(definition)), (value) =>
+      step(index + 1, { ...answers, [definition.name]: value }),
+    );
+  };
+  return step(0, { ...partialAnswers });
 }
