@@ -796,7 +796,7 @@ const UNDO_PLAN_PLUMBING = new Set([
   "Exists",
   "ReadContext",
 ]);
-const undoPlanEffects = (undos: readonly Task<void>[]): Effect[] =>
+const listUndoPlanEffects = (undos: readonly Task<void>[]): Effect[] =>
   undos
     .flatMap((undoTask) => dryRun(undoTask).effects)
     .filter((effect) => !UNDO_PLAN_PLUMBING.has(effect._tag));
@@ -890,7 +890,7 @@ export const App = ({
             });
             return;
           }
-          const planEffects = undoPlanEffects(undos);
+          const planEffects = listUndoPlanEffects(undos);
           if (dryRunOnly) {
             setState({ phase: "undoPreview", planEffects });
             return;
