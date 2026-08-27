@@ -7,32 +7,40 @@ ds:implementation.library.ds-types ds:hasImplementation ds:implementation.ds-typ
 ds:implementation.ds-types.global.modifier_family.anticipation a ds:ImplementationObject;
     ds:implementsBlock ds:global.modifier_family.anticipation;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/ds-types/src/modifierFamilies/constants.ts";
+    ds:importStatement "import { MODIFIER_FAMILIES } from \"@canonical/ds-types\";";
     ds:versionedLink "https://github.com/canonical/pragma/blob/v0.34.0/packages/ds-types/src/modifierFamilies/constants.ts".
 ds:implementation.ds-types.global.modifier_family.criticality a ds:ImplementationObject;
     ds:implementsBlock ds:global.modifier_family.criticality;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/ds-types/src/modifierFamilies/constants.ts";
+    ds:importStatement "import { MODIFIER_FAMILIES } from \"@canonical/ds-types\";";
     ds:versionedLink "https://github.com/canonical/pragma/blob/v0.34.0/packages/ds-types/src/modifierFamilies/constants.ts".
 ds:implementation.ds-types.global.modifier_family.density a ds:ImplementationObject;
     ds:implementsBlock ds:global.modifier_family.density;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/ds-types/src/modifierFamilies/constants.ts";
+    ds:importStatement "import { MODIFIER_FAMILIES } from \"@canonical/ds-types\";";
     ds:versionedLink "https://github.com/canonical/pragma/blob/v0.34.0/packages/ds-types/src/modifierFamilies/constants.ts".
 ds:implementation.ds-types.global.modifier_family.emphasis a ds:ImplementationObject;
     ds:implementsBlock ds:global.modifier_family.emphasis;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/ds-types/src/modifierFamilies/constants.ts";
+    ds:importStatement "import { MODIFIER_FAMILIES } from \"@canonical/ds-types\";";
     ds:versionedLink "https://github.com/canonical/pragma/blob/v0.34.0/packages/ds-types/src/modifierFamilies/constants.ts".
 ds:implementation.ds-types.global.modifier_family.importance a ds:ImplementationObject;
     ds:implementsBlock ds:global.modifier_family.importance;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/ds-types/src/modifierFamilies/constants.ts";
+    ds:importStatement "import { MODIFIER_FAMILIES } from \"@canonical/ds-types\";";
     ds:versionedLink "https://github.com/canonical/pragma/blob/v0.34.0/packages/ds-types/src/modifierFamilies/constants.ts".
 ds:implementation.ds-types.global.modifier_family.lifecycle a ds:ImplementationObject;
     ds:implementsBlock ds:global.modifier_family.lifecycle;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/ds-types/src/modifierFamilies/constants.ts";
+    ds:importStatement "import { MODIFIER_FAMILIES } from \"@canonical/ds-types\";";
     ds:versionedLink "https://github.com/canonical/pragma/blob/v0.34.0/packages/ds-types/src/modifierFamilies/constants.ts".
 ds:implementation.ds-types.global.modifier_family.release a ds:ImplementationObject;
     ds:implementsBlock ds:global.modifier_family.release;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/ds-types/src/modifierFamilies/constants.ts";
+    ds:importStatement "import { MODIFIER_FAMILIES } from \"@canonical/ds-types\";";
     ds:versionedLink "https://github.com/canonical/pragma/blob/v0.34.0/packages/ds-types/src/modifierFamilies/constants.ts".
 ds:implementation.ds-types.global.modifier_family.severity a ds:ImplementationObject;
     ds:implementsBlock ds:global.modifier_family.severity;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/ds-types/src/modifierFamilies/constants.ts";
+    ds:importStatement "import { MODIFIER_FAMILIES } from \"@canonical/ds-types\";";
     ds:versionedLink "https://github.com/canonical/pragma/blob/v0.34.0/packages/ds-types/src/modifierFamilies/constants.ts".

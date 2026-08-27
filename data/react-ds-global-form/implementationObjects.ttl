@@ -83,11 +83,13 @@ ds:implementation.react-ds-global-form.global.component.time_field a ds:Implemen
 ds:implementation.react-ds-global-form.global.pattern.field a ds:ImplementationObject;
     ds:implementsBlock ds:global.pattern.field;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global-form/src/lib/pattern/Field/Field.tsx";
-    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.34.0/packages/react/ds-global-form/src/lib/pattern/Field/Field.tsx".
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.34.0/packages/react/ds-global-form/src/lib/pattern/Field/Field.tsx";
+    ds:importStatement "import { Field } from \"@canonical/react-ds-global-form\";".
 ds:implementation.react-ds-global-form.global.pattern.form a ds:ImplementationObject;
     ds:implementsBlock ds:global.pattern.form;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global-form/src/lib/pattern/Form/Form.tsx";
-    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.34.0/packages/react/ds-global-form/src/lib/pattern/Form/Form.tsx".
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.34.0/packages/react/ds-global-form/src/lib/pattern/Form/Form.tsx";
+    ds:importStatement "import { Form } from \"@canonical/react-ds-global-form\";".
 ds:implementation.react-ds-global-form.global.subcomponent.checkbox_input a ds:ImplementationObject;
     ds:implementsBlock ds:global.subcomponent.checkbox_input;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global-form/src/lib/subcomponent/CheckboxInput/CheckboxInput.tsx";
@@ -147,7 +149,8 @@ ds:implementation.react-ds-global-form.global.subcomponent.range_input a ds:Impl
 ds:implementation.react-ds-global-form.global.subcomponent.rating_input a ds:ImplementationObject;
     ds:implementsBlock ds:global.subcomponent.rating_input;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global-form/src/lib/subcomponent/RatingInput/RatingInput.tsx";
-    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.34.0/packages/react/ds-global-form/src/lib/subcomponent/RatingInput/RatingInput.tsx".
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.34.0/packages/react/ds-global-form/src/lib/subcomponent/RatingInput/RatingInput.tsx";
+    ds:importStatement "import { RatingInput } from \"@canonical/react-ds-global-form\";".
 ds:implementation.react-ds-global-form.global.subcomponent.select_input a ds:ImplementationObject;
     ds:implementsBlock ds:global.subcomponent.select_input;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global-form/src/lib/subcomponent/SelectInput/SelectInput.tsx";
