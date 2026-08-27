@@ -18,7 +18,9 @@ const routes = {
     // harmless, it re-fetches).
     warm: () => {
       if (typeof document === "undefined") {
-        return; // SSR: catalog content is ClientOnly; nothing to warm.
+        // SSR data comes from the renderer's awaited prefetch of the same
+        // query this route declares in `serverQueries` — nothing to warm.
+        return;
       }
 
       void fetchQuery(getBrowserEnvironment(), productListQuery, {

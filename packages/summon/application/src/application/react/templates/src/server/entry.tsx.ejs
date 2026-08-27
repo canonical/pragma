@@ -7,7 +7,7 @@ import {
 } from "@canonical/router-core";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 <% if (relay) { -%>
-import { RelayEnvironmentProvider } from "react-relay";
+import { fetchQuery, RelayEnvironmentProvider } from "react-relay";
 import { createEnvironment } from "#relay/environment.js";
 <% } -%>
 import {
@@ -15,6 +15,13 @@ import {
   getAuthRedirectForMatch,
   middleware,
   notFoundRoute,
+<% if (relay) { -%>
+  resolveRelayPayloads,
+<% } -%>
+  type SerializedRelayPayload,
+<% if (relay) { -%>
+  serverQueries,
+<% } -%>
 } from "../routes.js";
 import "#styles/app.css";
 
@@ -30,6 +37,13 @@ interface InitialData extends Record<string, unknown> {
   readonly kind?: "route" | "not-found";
   readonly routeId?: string | null;
   readonly status?: number;
+  /**
+   * Server-captured GraphQL responses for the matched route (see
+   * `prefetchRouteData`), replayed into the Relay store on both the server
+   * render and the client. A dedicated nested key — the router state is
+   * flat-spread into this same object, so nesting avoids any collision.
+   */
+  readonly relayPayloads?: readonly SerializedRelayPayload[];
 }
 
 /** How the server should answer a request for this URL. */
@@ -110,6 +124,92 @@ export function resolveRouteDisposition(url: string): RouteDisposition {
   };
 }
 
+/**
+ * Execute the matched route's declared server query (if any) and return the
+ * captured responses in serializable form. Fetch-then-render: the payloads
+ * exist before the renderer is constructed, so they ride the fixed
+ * `__INITIAL_DATA__` bootstrap script. On any failure the request degrades —
+ * render without payloads, the client fetches after hydration — a data
+ * hiccup must never take the page down.
+ */
+const SSR_PREFETCH_TIMEOUT_MS = 5_000;
+
+export async function prefetchRouteData(
+  disposition: RouteDisposition,
+): Promise<readonly SerializedRelayPayload[] | undefined> {
+<% if (relay) { -%>
+  if (disposition.kind !== "render") {
+    return undefined;
+  }
+
+  const routeId = disposition.dehydratedState?.routeId;
+  const serverQuery = routeId
+    ? serverQueries[routeId as keyof typeof serverQueries]
+    : undefined;
+
+  if (!serverQuery) {
+    return undefined;
+  }
+
+  const captured: SerializedRelayPayload[] = [];
+
+  try {
+    // A fresh, request-scoped environment: nothing leaks across requests,
+    // and the capture tee records exactly the responses this route needs.
+    const environment = createEnvironment({
+      captureResponse: (entry) => {
+        captured.push(entry);
+      },
+    });
+
+    // Bound the prefetch: an endpoint that never settles must not hold the
+    // whole SSR response hostage. On timeout the subscription is cancelled
+    // and rendering proceeds without payloads.
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        subscription.unsubscribe();
+        reject(
+          new Error(
+            `SSR data prefetch exceeded ${SSR_PREFETCH_TIMEOUT_MS}ms`,
+          ),
+        );
+      }, SSR_PREFETCH_TIMEOUT_MS);
+      const subscription = fetchQuery(
+        environment,
+        serverQuery.query,
+        serverQuery.variables,
+        { fetchPolicy: "network-only" },
+      ).subscribe({
+        complete: () => {
+          clearTimeout(timer);
+          resolve();
+        },
+        error: (error: unknown) => {
+          clearTimeout(timer);
+          reject(error);
+        },
+      });
+    });
+  } catch (error) {
+    console.warn(
+      "SSR data prefetch failed; rendering without payloads (the client will fetch).",
+      error,
+    );
+
+    return undefined;
+  }
+
+  return captured.length > 0 ? captured : undefined;
+<% } else { -%>
+  // No data layer scaffolded: nothing to prefetch, every route renders
+  // without payloads. The uniform signature keeps the server files (plain
+  // copies shared by all flag combinations) unconditional.
+  void disposition;
+
+  return undefined;
+<% } -%>
+}
+
 export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
   const initialData = props.initialData ?? {};
   const url = initialData.url ?? "/";
@@ -145,11 +245,14 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
 <% if (relay) { -%>
 
   // A fresh Relay environment per server render, so no store state leaks
-  // between requests. Nothing fetches through it yet: components that issue
-  // queries are wrapped in `ClientOnly` (see CatalogPage) until data
-  // serialization/hydration is supported; the provider is here so any
-  // component touching Relay context renders without branching on runtime.
-  const relayEnvironment = createEnvironment();
+  // between requests — seeded with the same serialized payloads the client
+  // will replay, so server markup and first client render read identical
+  // data. Without payloads (no server query, or the prefetch failed) a
+  // querying component suspends and fetches through this request's own
+  // environment instead.
+  const relayEnvironment = createEnvironment({
+    payloads: resolveRelayPayloads(initialData.relayPayloads),
+  });
 <% } -%>
 
   // Paint the cookie-resolved theme on <html> for a flash-free first render —

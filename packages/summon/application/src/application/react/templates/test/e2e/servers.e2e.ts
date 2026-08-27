@@ -145,6 +145,24 @@ describe("server matrix (2×3) serves correctly", () => {
             const authorized = await fetch(`${server.base}/account?auth=1`);
             expect(authorized.status).toBe(200);
           }
+
+          // SSR cells serialize Relay data across the boundary (when the app
+          // was scaffolded with --relay): the catalog page arrives with
+          // server-rendered product markup and carries the captured operation
+          // payloads for the client to replay. Without --relay there is no
+          // /catalog route (404), so the assertions self-disable — this file
+          // is a plain copy shared by every flag combination.
+          if (cell.ssr) {
+            const catalog = await fetch(`${server.base}/catalog`);
+            if (catalog.status === 200) {
+              const catalogHtml = await catalog.text();
+              expect(catalogHtml).toContain("Vanguard Workstation");
+              expect(catalogHtml).toContain("relayPayloads");
+            }
+
+            const home = await fetch(`${server.base}/`);
+            expect(await home.text()).not.toContain("relayPayloads");
+          }
         } finally {
           await server.stop();
         }

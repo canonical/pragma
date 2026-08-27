@@ -8,7 +8,7 @@ import {
   StatusResponse,
 } from "@canonical/router-core";
 import { Outlet, RouterProvider } from "@canonical/router-react";
-import { RelayEnvironmentProvider } from "react-relay";
+import { fetchQuery, RelayEnvironmentProvider } from "react-relay";
 import { catalogs, i18nConfig } from "#i18n/index.js";
 import { createEnvironment } from "#relay/environment.js";
 import {
@@ -16,6 +16,9 @@ import {
   getAuthRedirectForMatch,
   middleware,
   notFoundRoute,
+  resolveRelayPayloads,
+  type SerializedRelayPayload,
+  serverQueries,
 } from "../routes.js";
 import "#styles/app.css";
 
@@ -33,6 +36,13 @@ interface InitialData extends Record<string, unknown> {
   readonly status?: number;
   /** Locale negotiated from the request cookie / Accept-Language, if any. */
   readonly locale?: string;
+  /**
+   * Server-captured GraphQL responses for the matched route (see
+   * `prefetchRouteData`), replayed into the Relay store on both the server
+   * render and the client. A dedicated nested key — the router state is
+   * flat-spread into this same object, so nesting avoids any collision.
+   */
+  readonly relayPayloads?: readonly SerializedRelayPayload[];
 }
 
 /** How the server should answer a request for this URL. */
@@ -113,6 +123,81 @@ export function resolveRouteDisposition(url: string): RouteDisposition {
   };
 }
 
+/**
+ * Execute the matched route's declared server query (if any) and return the
+ * captured responses in serializable form. Fetch-then-render: the payloads
+ * exist before the renderer is constructed, so they ride the fixed
+ * `__INITIAL_DATA__` bootstrap script. On any failure the request degrades to
+ * today's behavior — render without payloads, the client fetches after
+ * hydration — a data hiccup must never take the page down.
+ */
+const SSR_PREFETCH_TIMEOUT_MS = 5_000;
+
+export async function prefetchRouteData(
+  disposition: RouteDisposition,
+): Promise<readonly SerializedRelayPayload[] | undefined> {
+  if (disposition.kind !== "render") {
+    return undefined;
+  }
+
+  const routeId = disposition.dehydratedState?.routeId;
+  const serverQuery = routeId
+    ? serverQueries[routeId as keyof typeof serverQueries]
+    : undefined;
+
+  if (!serverQuery) {
+    return undefined;
+  }
+
+  const captured: SerializedRelayPayload[] = [];
+
+  try {
+    // A fresh, request-scoped environment: nothing leaks across requests,
+    // and the capture tee records exactly the responses this route needs.
+    const environment = createEnvironment({
+      captureResponse: (entry) => {
+        captured.push(entry);
+      },
+    });
+
+    // Bound the prefetch: an endpoint that never settles must not hold the
+    // whole SSR response hostage. On timeout the subscription is cancelled
+    // and rendering proceeds without payloads.
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        subscription.unsubscribe();
+        reject(
+          new Error(`SSR data prefetch exceeded ${SSR_PREFETCH_TIMEOUT_MS}ms`),
+        );
+      }, SSR_PREFETCH_TIMEOUT_MS);
+      const subscription = fetchQuery(
+        environment,
+        serverQuery.query,
+        serverQuery.variables,
+        { fetchPolicy: "network-only" },
+      ).subscribe({
+        complete: () => {
+          clearTimeout(timer);
+          resolve();
+        },
+        error: (error: unknown) => {
+          clearTimeout(timer);
+          reject(error);
+        },
+      });
+    });
+  } catch (error) {
+    console.warn(
+      "SSR data prefetch failed; rendering without payloads (the client will fetch).",
+      error,
+    );
+
+    return undefined;
+  }
+
+  return captured.length > 0 ? captured : undefined;
+}
+
 export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
   const initialData = props.initialData ?? {};
   const url = initialData.url ?? "/";
@@ -147,11 +232,14 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
   }
 
   // A fresh Relay environment per server render, so no store state leaks
-  // between requests. Nothing fetches through it yet: components that issue
-  // queries are wrapped in `ClientOnly` (see CatalogPage) until the follow-up
-  // SSR PR adds data serialization/hydration; the provider is here so any
-  // component touching Relay context renders without branching on runtime.
-  const relayEnvironment = createEnvironment();
+  // between requests — seeded with the same serialized payloads the client
+  // will replay, so server markup and first client render read identical
+  // data. Without payloads (no server query, or the prefetch failed) a
+  // querying component suspends and fetches through this request's own
+  // environment instead.
+  const relayEnvironment = createEnvironment({
+    payloads: resolveRelayPayloads(initialData.relayPayloads),
+  });
 
   // The servers negotiate the locale (cookie > Accept-Language > default,
   // via i18n-core's negotiateLocale) and pass it through initialData; the

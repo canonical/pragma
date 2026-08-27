@@ -10,11 +10,14 @@ import {
   wrapper,
 } from "@canonical/router-core";
 import type { ReactElement, ReactNode } from "react";
+import { getRequest } from "relay-runtime";
 import accountRoutes from "#domains/account/routes.js";
+import { PAGE_SIZE, productListQuery } from "#domains/catalog/ProductList.js";
 import catalogRoutes from "#domains/catalog/routes.js";
 import contactRoutes from "#domains/contact/routes.js";
 import marketingRoutes from "#domains/marketing/routes.js";
 import Navigation from "#lib/Navigation/index.js";
+import type { RelaySeedPayload } from "#relay/environment.js";
 
 const protectedPaths = new Set(["/account"]);
 
@@ -141,6 +144,67 @@ declare module "@canonical/router-react" {
   interface RouterRegister {
     routes: AppRoutes;
   }
+}
+
+/**
+ * A GraphQL operation captured on the server and replayed on the client:
+ * the operation name identifies the query, `variables` rebuilds the operation
+ * descriptor, and `data` is the raw response payload. Pure JSON — this is the
+ * wire shape that rides `__INITIAL_DATA__.relayPayloads`.
+ */
+export interface SerializedRelayPayload {
+  readonly id: string;
+  readonly variables: Record<string, unknown>;
+  readonly data: Record<string, unknown>;
+}
+
+/**
+ * Per-route server queries: what the SSR layer fetches (and serializes) for a
+ * matched route before rendering it. Keyed by the route ids that
+ * `resolveRouteDisposition` computes; the declaration reuses the exact query
+ * the route's client-side `warm` hook fires, so navigation warming and SSR
+ * prefetch can never drift apart.
+ */
+export const serverQueries: Partial<
+  Record<
+    keyof AppRoutes,
+    {
+      readonly query: typeof productListQuery;
+      readonly variables: Record<string, unknown>;
+    }
+  >
+> = {
+  catalog: { query: productListQuery, variables: { count: PAGE_SIZE } },
+};
+
+/**
+ * Resolve serialized payloads back to replayable operations by matching each
+ * entry's operation name against the declared server queries. Unknown or
+ * malformed entries are dropped — a stale payload must never crash boot.
+ */
+export function resolveRelayPayloads(
+  serialized: readonly SerializedRelayPayload[] | undefined,
+): readonly RelaySeedPayload[] {
+  // The payload rides window state, so a stale or foreign value can be any
+  // shape — only a real array is iterable here.
+  if (!Array.isArray(serialized) || serialized.length === 0) {
+    return [];
+  }
+
+  const byName = new Map(
+    Object.values(serverQueries).map((serverQuery) => [
+      getRequest(serverQuery.query).params.name,
+      serverQuery.query,
+    ]),
+  );
+
+  return serialized.flatMap((entry) => {
+    const query = byName.get(entry.id);
+
+    return query
+      ? [{ query, variables: entry.variables, data: entry.data }]
+      : [];
+  });
 }
 
 export const middleware = [withAuth("/login")] as const;

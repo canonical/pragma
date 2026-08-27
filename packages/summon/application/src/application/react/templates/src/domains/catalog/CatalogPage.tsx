@@ -1,11 +1,21 @@
 import { useHead } from "@canonical/react-head";
 import { type ReactElement, Suspense } from "react";
-import { ClientOnly } from "#lib/index.js";
+import { useRelayEnvironment } from "react-relay";
+import { createOperationDescriptor, getRequest } from "relay-runtime";
 import ErrorBoundary from "./ErrorBoundary.js";
-import ProductList from "./ProductList.js";
+import ProductList, { PAGE_SIZE, productListQuery } from "./ProductList.js";
 
 export default function CatalogPage(): ReactElement {
   useHead({ title: "Catalog — Boilerplate" });
+
+  const environment = useRelayEnvironment();
+  const canRenderQuery =
+    typeof document !== "undefined" ||
+    environment.check(
+      createOperationDescriptor(getRequest(productListQuery), {
+        count: PAGE_SIZE,
+      }),
+    ).status === "available";
 
   return (
     <section aria-labelledby="catalog-title">
@@ -19,11 +29,13 @@ export default function CatalogPage(): ReactElement {
         point it at a real endpoint instead.
       </p>
       {/*
-        SSR guard: `useLazyLoadQuery` fetches (and suspends) while rendering,
-        and the server has no way to serialize the fetched store for the
-        client yet — that lands in the follow-up SSR data-hydration PR. Until
-        then `ClientOnly` keeps the query off the server render path: the
-        server streams the fallback and the browser fetches after hydration.
+        SSR: the server prefetches this route's declared query (see
+        `serverQueries` in src/routes.tsx) and seeds both render environments
+        from the captured payloads, so `useLazyLoadQuery` (store-or-network)
+        renders synchronously on the server and on first client render — the
+        product list is real server-rendered HTML and the client issues no
+        second fetch. If the prefetch failed, the query suspends and fetches
+        through the active environment instead.
       */}
       {/*
         The canonical Relay pairing: Suspense renders the pending state while
@@ -32,7 +44,15 @@ export default function CatalogPage(): ReactElement {
         `VITE_GRAPHQL_URL` mode) — without it a thrown query error would
         unmount the whole tree to a blank page.
       */}
-      <ClientOnly fallback={<p>Loading catalog…</p>}>
+      {/*
+        On the server, the query renders only when the SSR prefetch already
+        seeded the store — after a failed or timed-out prefetch, querying here
+        would re-issue the same doomed request mid-stream. The loading
+        fallback is rendered instead and the client fetches after hydration;
+        markup matches, since a client without payloads paints the same
+        fallback via Suspense first.
+      */}
+      {canRenderQuery ? (
         <ErrorBoundary
           fallback={
             <p role="alert">
@@ -44,7 +64,9 @@ export default function CatalogPage(): ReactElement {
             <ProductList />
           </Suspense>
         </ErrorBoundary>
-      </ClientOnly>
+      ) : (
+        <p>Loading catalog…</p>
+      )}
     </section>
   );
 }
