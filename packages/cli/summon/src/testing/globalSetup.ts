@@ -90,9 +90,13 @@ function sleepSync(ms: number): void {
  * without waiting on anything. The holder stats after acquiring and
  * builds only if stale, so an uncontended fresh root pays one
  * open/unlink and nothing else; a contender waits for release and then
- * RE-STATS instead of building — looping back to contend when the dist
- * is still stale, which a FAILED holder guarantees: a `build` callback
- * whose build RAN and failed destroys the served artifact before
+ * loops back to ACQUIRE the lock itself and re-stat UNDER it — a
+ * lock-free existence-then-freshness probe is two unsynchronised
+ * observations, and between them a new holder can take the lock and
+ * begin an in-place rebuild whose mid-flight mtimes the probe blesses —
+ * building only when the re-stat still reads stale, which a FAILED
+ * holder guarantees: a `build` callback whose build RAN and failed
+ * destroys the served artifact before
  * rethrowing, because a failed build can still EMIT it (nothing sets
  * `noEmitOnError`, so `tsc` writes output and exits nonzero, and the
  * two-step builds' first step writes the entry before the second can
@@ -139,7 +143,6 @@ function buildUnderLock(
         );
       }
       sleepSync(LOCK_POLL_MS);
-      if (!existsSync(lockPath) && isFresh()) return;
       continue;
     }
     try {

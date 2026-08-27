@@ -151,7 +151,7 @@ describe("buildDistOrDestroy — the per-root build-or-destroy wrapper", () => {
   });
 });
 
-describe("buildUnderLock contention — a waiter blocks, then re-stats instead of building", () => {
+describe("buildUnderLock contention — a waiter blocks, then re-acquires and re-stats under the lock", () => {
   let root: string;
   let artifact: string;
   let lockPath: string;
@@ -169,16 +169,24 @@ describe("buildUnderLock contention — a waiter blocks, then re-stats instead o
 
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-  it("a contender waits out a held lock and blesses the holder's emit without building", async () => {
+  it("a contender waits out a held lock and blesses the holder's emit without building — never statting lock-free", async () => {
     // The EEXIST wait path, driven for real across processes: the parent
     // plays the HOLDER (lockfile on disk, build in flight), a bun child
     // plays the CONTENDER — buildDistOrDestroy with an isFresh that stats
     // the artifact and a runner that would drop a marker file. The child
     // must neither build while the lock is held (no concurrent double
     // build) nor build after release (the holder's emit re-stats FRESH) —
-    // the marker never appears.
+    // the marker never appears. The isFresh is also an OWNERSHIP sentinel:
+    // it drops `violation` whenever it runs while the lockfile is absent or
+    // carries another pid. Freshness observed without holding the lock is
+    // exactly the waiter fast path this pins against — after `existsSync`
+    // saw no lock, a new holder could acquire and begin an in-place rebuild
+    // whose mid-flight mtimes the lock-free stat blessed — so the sentinel
+    // fires deterministically on release under that shape, where the torn
+    // artifact itself only appears when the third process wins a race.
     const marker = join(root, "contender-built");
     const ready = join(root, "contender-ready");
+    const violation = join(root, "contender-statted-lock-free");
     const driver = join(root, "driver.ts");
     const setupModule = fileURLToPath(
       new URL("./globalSetup.ts", import.meta.url),
@@ -186,11 +194,19 @@ describe("buildUnderLock contention — a waiter blocks, then re-stats instead o
     writeFileSync(
       driver,
       [
-        `import { existsSync, writeFileSync } from "node:fs";`,
+        `import { existsSync, readFileSync, writeFileSync } from "node:fs";`,
         `import { buildDistOrDestroy } from ${JSON.stringify(setupModule)};`,
-        `const [root, artifact, marker, ready] = process.argv.slice(2) as [string, string, string, string];`,
+        `const [root, artifact, marker, ready, lockPath, violation] = process.argv.slice(2) as [string, string, string, string, string, string];`,
         `writeFileSync(ready, "");`,
-        `buildDistOrDestroy(root, artifact, () => existsSync(artifact), () => {`,
+        `const isFresh = () => {`,
+        `  let owned = false;`,
+        `  try {`,
+        `    owned = readFileSync(lockPath, "utf-8") === \`\${process.pid}\\n\`;`,
+        `  } catch {}`,
+        `  if (!owned) writeFileSync(violation, "");`,
+        `  return existsSync(artifact);`,
+        `};`,
+        `buildDistOrDestroy(root, artifact, isFresh, () => {`,
         `  writeFileSync(marker, "// built by the contender\\n");`,
         `  return { status: 0, signal: null, stdout: "", stderr: "" };`,
         `});`,
@@ -199,9 +215,13 @@ describe("buildUnderLock contention — a waiter blocks, then re-stats instead o
 
     // The holder's lock is on disk BEFORE the contender starts.
     writeFileSync(lockPath, "424242\n");
-    const child = spawn("bun", [driver, root, artifact, marker, ready], {
-      stdio: ["ignore", "pipe", "pipe"],
-    });
+    const child = spawn(
+      "bun",
+      [driver, root, artifact, marker, ready, lockPath, violation],
+      {
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
     let stderr = "";
     child.stderr.on("data", (chunk: Buffer) => {
       stderr += chunk.toString();
@@ -236,13 +256,15 @@ describe("buildUnderLock contention — a waiter blocks, then re-stats instead o
       expect(exitCode).toBeUndefined();
       expect(existsSync(marker)).toBe(false);
 
-      // The holder finishes: emit lands, lock clears. The contender's
-      // re-stat (isFresh under/after the wait) must bless the emit and
-      // return WITHOUT running its own build.
+      // The holder finishes: emit lands, lock clears. The contender must
+      // loop back, take the lock for ITSELF, and only then re-stat — the
+      // sentinel proves every isFresh ran under its own lock — blessing
+      // the emit and returning WITHOUT running its own build.
       writeFileSync(artifact, "// the holder's emit\n");
       rmSync(lockPath);
       expect(await exited).toBe(0);
       expect(existsSync(marker)).toBe(false);
+      expect(existsSync(violation)).toBe(false);
       expect(readFileSync(artifact, "utf-8")).toBe("// the holder's emit\n");
       expect(stderr).toBe("");
     } finally {
