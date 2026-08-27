@@ -9,7 +9,7 @@
 
 export { evaluateProjectConfig } from "./evaluateProjectConfig.js";
 export { findProjectConfig } from "./findProjectConfig.js";
-export { ensureFirstRun, firstRunTask } from "./firstRun.js";
+export { setupHintLines } from "./firstRun.js";
 export type { GlobalConfigRead } from "./globalConfig.js";
 export { readGlobalConfig } from "./globalConfig.js";
 export {
