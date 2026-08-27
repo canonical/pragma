@@ -648,6 +648,13 @@ export interface PlatformAdapter {
   getLocation(): string | URL;
   navigate(url: string, options?: PlatformNavigateOptions): void;
   subscribe(callback: (location: string | URL) => void): () => void;
+  /**
+   * Optional: receive the in-flight load the router scheduled for the most
+   * recent adapter-visible navigation, so platform loading UI can await it
+   * (the Navigation API adapter passes it to `event.intercept()`). The
+   * promise settles when the load settles and never rejects.
+   */
+  trackLoad?(load: Promise<void>): void;
 }
 
 export interface MemoryAdapter extends PlatformAdapter {

@@ -623,6 +623,7 @@ interface PlatformAdapter {
   getLocation(): string | URL;
   navigate(url: string, options?: PlatformNavigateOptions): void;
   subscribe(callback: (location: string | URL) => void): () => void;
+  trackLoad?(load: Promise<void>): void; // optional — see below
 }
 
 interface PlatformNavigateOptions {
@@ -631,10 +632,12 @@ interface PlatformNavigateOptions {
 }
 ```
 
+**`trackLoad` (optional).** For every adapter-visible navigation (`navigate()`, `setSearchParams()`, and adapter-driven back/forward), the router hands the adapter a promise for the load it just scheduled. The promise settles when the load settles — success or failure — and **never rejects**. Adapters that don't implement it are unaffected; the Navigation API adapter uses it to pass the router's work to `event.intercept({ handler })`, so the browser's native loading UI (spinner, stop button) reflects the in-flight router navigation. The intercept handler never rejects either — a failed load still commits router state (as an error status on the location) and must not mark the browser navigation as failed.
+
 | Adapter | Signature | Notes |
 |---|---|---|
 | `createBrowserAdapter` | `(): PlatformAdapter` | Navigation API (`window.navigation`) when available, History API otherwise. The default client choice. |
-| `createNavigationAdapter` | `(navigationWindow?): PlatformAdapter` | Navigation API only; throws without one. Intercepts same-origin navigations; transition-promise rejections from superseded navigations are absorbed. |
+| `createNavigationAdapter` | `(navigationWindow?): PlatformAdapter` | Navigation API only; throws without one. Intercepts same-origin navigations and ties `intercept()`'s handler to the router's tracked load (`trackLoad`), so native loading UI reflects the navigation; transition-promise rejections from superseded navigations are absorbed. |
 | `createHistoryAdapter` | `(browserWindow?): PlatformAdapter` | History API (`pushState`/`popstate`). |
 | `createHashAdapter` | `(browserWindow?): PlatformAdapter` | Stores the route in `location.hash` (`#/path`). For Storybook, static file hosts, and anywhere the real path is fixed. Throws without a window-like object. |
 | `createMemoryAdapter` | `(initialUrl?: string \| URL, options?: MemoryAdapterOptions): MemoryAdapter` | In-memory location for tests; adds `back()`/`forward()`. |
