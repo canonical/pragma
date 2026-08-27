@@ -1,10 +1,21 @@
 import { useHead } from "@canonical/react-head";
 import { type ReactElement, Suspense } from "react";
+import { useRelayEnvironment } from "react-relay";
+import { createOperationDescriptor, getRequest } from "relay-runtime";
 import ErrorBoundary from "./ErrorBoundary.js";
-import ProductList from "./ProductList.js";
+import ProductList, { PAGE_SIZE, productListQuery } from "./ProductList.js";
 
 export default function CatalogPage(): ReactElement {
   useHead({ title: "Catalog — Boilerplate" });
+
+  const environment = useRelayEnvironment();
+  const canRenderQuery =
+    typeof document !== "undefined" ||
+    environment.check(
+      createOperationDescriptor(getRequest(productListQuery), {
+        count: PAGE_SIZE,
+      }),
+    ).status === "available";
 
   return (
     <section aria-labelledby="catalog-title">
@@ -33,17 +44,29 @@ export default function CatalogPage(): ReactElement {
         `VITE_GRAPHQL_URL` mode) — without it a thrown query error would
         unmount the whole tree to a blank page.
       */}
-      <ErrorBoundary
-        fallback={
-          <p role="alert">
-            The catalog failed to load. Reload the page to try again.
-          </p>
-        }
-      >
-        <Suspense fallback={<p>Loading catalog…</p>}>
-          <ProductList />
-        </Suspense>
-      </ErrorBoundary>
+      {/*
+        On the server, the query renders only when the SSR prefetch already
+        seeded the store — after a failed or timed-out prefetch, querying here
+        would re-issue the same doomed request mid-stream. The loading
+        fallback is rendered instead and the client fetches after hydration;
+        markup matches, since a client without payloads paints the same
+        fallback via Suspense first.
+      */}
+      {canRenderQuery ? (
+        <ErrorBoundary
+          fallback={
+            <p role="alert">
+              The catalog failed to load. Reload the page to try again.
+            </p>
+          }
+        >
+          <Suspense fallback={<p>Loading catalog…</p>}>
+            <ProductList />
+          </Suspense>
+        </ErrorBoundary>
+      ) : (
+        <p>Loading catalog…</p>
+      )}
     </section>
   );
 }

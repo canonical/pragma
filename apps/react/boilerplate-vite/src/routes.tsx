@@ -185,7 +185,9 @@ export const serverQueries: Partial<
 export function resolveRelayPayloads(
   serialized: readonly SerializedRelayPayload[] | undefined,
 ): readonly RelaySeedPayload[] {
-  if (!serialized || serialized.length === 0) {
+  // The payload rides window state, so a stale or foreign value can be any
+  // shape — only a real array is iterable here.
+  if (!Array.isArray(serialized) || serialized.length === 0) {
     return [];
   }
 

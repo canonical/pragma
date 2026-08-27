@@ -29,6 +29,14 @@ import * as process from "node:process";
 import { viteFetchMiddleware } from "@canonical/react-ssr/server";
 import { createServer as createViteServer } from "vite";
 
+// Match Node's semantics for unhandled rejections: warn, don't die. Bun
+// kills the process by default, and a data-layer library's internal floating
+// promise (e.g. a failed GraphQL fetch teed inside its pipeline) must take
+// down a request, never the server.
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled rejection (server kept alive):", reason);
+});
+
 const PORT = Number(process.env.PORT) || 5174;
 
 const vite = await createViteServer({

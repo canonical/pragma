@@ -131,6 +131,8 @@ export function resolveRouteDisposition(url: string): RouteDisposition {
  * today's behavior — render without payloads, the client fetches after
  * hydration — a data hiccup must never take the page down.
  */
+const SSR_PREFETCH_TIMEOUT_MS = 5_000;
+
 export async function prefetchRouteData(
   disposition: RouteDisposition,
 ): Promise<readonly SerializedRelayPayload[] | undefined> {
@@ -158,9 +160,32 @@ export async function prefetchRouteData(
       },
     });
 
-    await fetchQuery(environment, serverQuery.query, serverQuery.variables, {
-      fetchPolicy: "network-only",
-    }).toPromise();
+    // Bound the prefetch: an endpoint that never settles must not hold the
+    // whole SSR response hostage. On timeout the subscription is cancelled
+    // and rendering proceeds without payloads.
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        subscription.unsubscribe();
+        reject(
+          new Error(`SSR data prefetch exceeded ${SSR_PREFETCH_TIMEOUT_MS}ms`),
+        );
+      }, SSR_PREFETCH_TIMEOUT_MS);
+      const subscription = fetchQuery(
+        environment,
+        serverQuery.query,
+        serverQuery.variables,
+        { fetchPolicy: "network-only" },
+      ).subscribe({
+        complete: () => {
+          clearTimeout(timer);
+          resolve();
+        },
+        error: (error: unknown) => {
+          clearTimeout(timer);
+          reject(error);
+        },
+      });
+    });
   } catch (error) {
     console.warn(
       "SSR data prefetch failed; rendering without payloads (the client will fetch).",

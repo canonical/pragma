@@ -29,6 +29,7 @@ import {
   httpExecutor,
   localGraphExecutor,
   type RelayFetchContext,
+  type RelayFetchExecutor,
   type RelayRuntimeFetch,
   urlMiddleware,
 } from "relay-runtime-network";
@@ -110,11 +111,46 @@ const createLocalNetwork = () =>
     },
   });
 
+/**
+ * Wraps an executor so a transport failure resolves as a well-formed GraphQL
+ * error payload instead of a thrown exception. The pipeline's fetch context
+ * creates an internal incremental-payload promise that no non-incremental
+ * consumer ever awaits; an executor throw rejects it unhandled (fatal under
+ * Bun). Converting the failure at the source means nothing in the pipeline
+ * ever rejects, while Relay still surfaces it as an operation error.
+ */
+const safeExecutor = (executor: RelayFetchExecutor): RelayFetchExecutor =>
+  Object.assign(
+    async (context: RelayFetchContext) => {
+      try {
+        return await executor(context);
+      } catch (error) {
+        console.warn(
+          "[relay] transport failure converted to error payload:",
+          error,
+        );
+
+        return {
+          payload: {
+            errors: [
+              {
+                message: error instanceof Error ? error.message : String(error),
+              },
+            ],
+          },
+          response: null,
+          status: null,
+        };
+      }
+    },
+    { descriptor: executor.descriptor },
+  );
+
 /** Builds the HTTP network that posts operations to `graphqlUrl`. */
 const createHttpNetwork = (graphqlUrl: string) =>
   createRelayRuntimeNetwork({
     fetch: {
-      executor: httpExecutor(),
+      executor: safeExecutor(httpExecutor()),
       middlewares: [urlMiddleware({ url: graphqlUrl })],
     },
   });
@@ -128,10 +164,19 @@ const createHttpNetwork = (graphqlUrl: string) =>
  */
 const toFetchFunction =
   (fetchGraphQL: RelayRuntimeFetch): FetchFunction =>
-  (params, variables, cacheConfig) =>
-    fetchGraphQL(params, variables, {
+  (params, variables, cacheConfig) => {
+    const response = fetchGraphQL(params, variables, {
       ...cacheConfig,
     }) as Promise<GraphQLResponse>;
+
+    // The pipeline starts the request at call time, before Relay's observable
+    // attaches its handlers — guard the raw promise so a rejection that beats
+    // (or never gains) a subscriber cannot crash the process. Consumers still
+    // observe the same rejection through the returned promise.
+    response.catch(() => {});
+
+    return response;
+  };
 
 /**
  * Creates a Relay `Environment` for the app.

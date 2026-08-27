@@ -39,6 +39,14 @@ import createSitemapRenderer from "../../dist/server/sitemap.js";
 type CreateAppRenderer = typeof import("./renderer.js").default;
 type CreateSitemapRenderer = typeof import("../sitemap/renderer.js").default;
 
+// Match Node's semantics for unhandled rejections: warn, don't die. Bun
+// kills the process by default, and a data-layer library's internal floating
+// promise (e.g. a failed GraphQL fetch teed inside its pipeline) must take
+// down a request, never the server.
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled rejection (server kept alive):", reason);
+});
+
 const PORT = Number(process.env.PORT) || 5174;
 const staticMount = parseStaticPair(":dist/client");
 
