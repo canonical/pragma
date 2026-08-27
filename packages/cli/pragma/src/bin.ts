@@ -17,6 +17,7 @@ import type { Command } from "commander";
 import {
   BIN_NAME,
   DETAIL_LEVELS,
+  ISSUES_URL,
   PROGRAM_DESCRIPTION,
   VERSION,
 } from "./constants.js";
@@ -203,7 +204,7 @@ async function main(): Promise<void> {
       .flatMap((module) => [...module.verbs])
       .filter((verb) => !verb.hidden);
     process.stdout.write(
-      `${formatRootHelp(BIN_NAME, PROGRAM_DESCRIPTION, live, VERSION)}\n`,
+      `${formatRootHelp(BIN_NAME, PROGRAM_DESCRIPTION, live, VERSION, ISSUES_URL)}\n`,
     );
     // The front door is a read, so it is where the un-set-up hint belongs: the
     // machine's state is the presence of the global config, and nothing is

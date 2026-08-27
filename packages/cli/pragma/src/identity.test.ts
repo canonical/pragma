@@ -122,6 +122,7 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
         ...colophonModule.verbs,
       ],
       "9.9.9",
+      "https://recipes.test/issues",
     );
 
     expect(help).not.toMatch(THIS_DISTRIBUTION);

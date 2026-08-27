@@ -95,7 +95,7 @@ function buildKernelGroups(programName: string): readonly HelpGroup[] {
           noun: "capabilities",
           summary: "Discover conventions, tools, and the discovery sequence",
         },
-        { noun: "colophon", summary: "Read how the active domain is made" },
+        { noun: "colophon", summary: "Read what the active domain is made of" },
         { noun: "skill", summary: "Browse agent skills from the active packs" },
         { noun: "prompt", summary: "Browse reusable prompt templates" },
         // Curated for PLACEMENT, not for existence: `mcp serve` is an
@@ -134,6 +134,8 @@ function summarizeNoun(noun: string, verbs: readonly VerbSpec[]): string {
  * @param programName - The CLI binary name (the distribution's `name`).
  * @param description - The program description shown in the header.
  * @param verbs - All registered verbs, used to derive the live noun set.
+ * @param issuesUrl - Where the preview notice sends feedback; the
+ *   distribution's own, so a fork points at its own tracker.
  * @param version - The version to stamp on the header. Passed in rather than
  *   read here so it is the SAME string `--version` prints: `buildProgram`
  *   resolves `options.version ?? VERSION`, and a host that overrides one must
@@ -145,6 +147,7 @@ export function formatRootHelp(
   description: string,
   verbs: readonly VerbSpec[],
   version: string,
+  issuesUrl: string,
 ): string {
   const present = nounsFrom(verbs);
   const kernel = buildKernelGroups(programName);
@@ -182,6 +185,16 @@ export function formatRootHelp(
     // surface does. Dimmed: it answers "which build am I on" for someone who
     // is already here, and must not compete with the name.
     `${helpHeading(programName)} ${helpDim(`v${version}`)} — ${description}`,
+    "",
+    // The preview notice. Dimmed and directly under the header, because it
+    // qualifies what the reader has just been told the tool IS — a version
+    // number alone does not say "expect this to move".
+    //
+    // The URL is the distribution's declared `issuesUrl`, never a literal:
+    // `kernel/copy.test.ts` forbids the kernel naming a distribution, and a
+    // fork inviting feedback to someone else's tracker would be worse than a
+    // missing line. It is passed in for the same reason `version` is.
+    helpDim(`This is a preview version. Issues and suggestions: ${issuesUrl}`),
     "",
     helpUsage(
       `${programName} ${helpTerm("<command>")} ${helpDim("[subcommand] [flags]")}`,
