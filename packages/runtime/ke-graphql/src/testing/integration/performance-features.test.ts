@@ -112,14 +112,39 @@ describe("extraction artifact (DMMF-style boot)", () => {
     ]);
     const artifact = JSON.parse(serializeExtraction(live.extraction, "0"));
     expect(deserializeExtraction(artifact).extraction).toEqual(live.extraction);
-    // An artifact serialized before the deferral existed has no field at all
-    // — [] is the state it was built under, and it must still boot.
+    // Within the CURRENT format version, a missing field is simply absent and
+    // defaults to the empty list.
     delete artifact.deferredSyntheticNamespaces;
     const { extraction } = deserializeExtraction(artifact);
     expect(extraction.deferredSyntheticNamespaces).toEqual([]);
     expect(
       compileFromExtraction(artifact).schema.getType("Thing"),
     ).toBeDefined();
+  });
+
+  it("REJECTS a genuinely v1 artifact rather than defaulting its way in", async () => {
+    // Defaulting cannot make a v1 artifact equivalent, and this is the case
+    // the test above does NOT cover: it deletes the field from an artifact the
+    // NEW extractor produced. A real v1 artifact was produced by a Pass 1 that
+    // had already folded a resolvable `graphql:prefix` into `namespaces`. Read
+    // back under `mode: "auto"` it would project the annotation-derived prefix
+    // while a live compile of the same unchanged sources projects the
+    // registered or synthetic one — the same source hash yielding two
+    // different schemas depending only on whether a cached artifact happened
+    // to be lying around.
+    //
+    // The fold is lossy, so no migration can recover the pre-overlay map. The
+    // version is bumped and the stale artifact is refused, which costs one
+    // recompile.
+    const store = await boot(MINIMAL_TTL);
+    const live = await compile(createStoreQueryFn(store), PREFIXES);
+    const legacy = JSON.parse(serializeExtraction(live.extraction, "0"));
+    legacy.version = 1;
+    delete legacy.deferredSyntheticNamespaces;
+
+    expect(() => deserializeExtraction(legacy)).toThrow(/version 1 is not supported/);
+    // And it names the remedy, since the user's move is to rebuild.
+    expect(() => deserializeExtraction(legacy)).toThrow(/regenerate/);
   });
 
   it("tolerates an extraction object built without the deferred list", async () => {
