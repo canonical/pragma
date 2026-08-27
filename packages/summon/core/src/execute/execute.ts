@@ -24,10 +24,9 @@
  */
 
 import {
-  $,
   dryRun,
   fail,
-  gen,
+  flatMap,
   prompt,
   type Task,
   TaskExecutionError,
@@ -108,44 +107,57 @@ export default function execute(
   generator: GeneratorDefinition,
   ctx: ExecuteContext,
 ): Task<GeneratorResult> {
-  return gen(function* () {
+  // Built from combinators, not gen(): a gen() task closes over one iterator,
+  // so it can be interpreted ONCE — but this task must survive repeated
+  // walks: undo collection re-walks it (including fail-backtracking
+  // restarts), and any host is free to interpret the same task object more
+  // than once. Every continuation below runs fresh per walk, and
+  // `generate(answers)` is invoked anew inside it — so a generator whose own
+  // `generate` uses gen() no longer silently truncates on the second drive
+  // either: each interpretation (and step 4's preview vs. performance) gets a
+  // fresh build.
+  return flatMap(
     // 1. Collect answers — asks each unprovided, applicable prompt as a Prompt
     //    effect through the runner's injected handler (ctx.prompt).
-    const answers = yield* $(
-      collectAnswers(
-        generator.prompts as readonly AnswerablePrompt[],
-        ctx.params,
-      ),
-    );
+    collectAnswers(
+      generator.prompts as readonly AnswerablePrompt[],
+      ctx.params,
+    ),
+    (answers) => {
+      // 2. Validate — reject the same bad input (unknown enum, failing
+      //    validator) a wizard would, so flag/MCP-arg runs are held to the
+      //    same constraints.
+      const invalid = validateAnswers(generator.prompts, answers);
+      if (invalid !== null) {
+        return fail({ code: GENERATOR_INVALID_ANSWER, message: invalid });
+      }
 
-    // 2. Validate — reject the same bad input (unknown enum, failing validator)
-    //    a wizard would, so flag/MCP-arg runs are held to the same constraints.
-    const invalid = validateAnswers(generator.prompts, answers);
-    if (invalid !== null) {
-      yield* $(fail({ code: GENERATOR_INVALID_ANSWER, message: invalid }));
-    }
+      // 3. Confirm gate — see the module doc. Auto/MCP/dry-run resolve `true`.
+      return flatMap(
+        prompt({
+          type: "confirm",
+          name: CONFIRM_ANSWER_KEY,
+          message: "Proceed?",
+          default: true,
+        }),
+        (proceed) => {
+          if (proceed === false) {
+            return fail({ code: GENERATOR_CANCELLED, message: "Cancelled." });
+          }
 
-    // 3. Confirm gate — see the module doc. Auto/MCP/dry-run resolve to `true`.
-    const proceed = yield* $(
-      prompt({
-        type: "confirm",
-        name: CONFIRM_ANSWER_KEY,
-        message: "Proceed?",
-        default: true,
-      }),
-    );
-    if (proceed === false) {
-      yield* $(fail({ code: GENERATOR_CANCELLED, message: "Cancelled." }));
-    }
-
-    // 4. Build once, preview its effects (pure), then perform them. On the
-    //    dry-run interpreter step 4's `generate` effects ARE the plan; on the
-    //    node interpreter they write for real. The preview gives the outcome
-    //    summary its file list without re-running side effects.
-    const built = generator.generate(answers);
-    const effects = dryRun(built).effects;
-    yield* $(built);
-
-    return { generator, answers, effects };
-  });
+          // 4. Preview the effects of one fresh build (pure), then perform
+          //    ANOTHER fresh build. On the dry-run interpreter step 4's
+          //    `generate` effects ARE the plan; on the node interpreter they
+          //    write for real. The preview gives the outcome summary its file
+          //    list without re-running side effects.
+          const effects = dryRun(generator.generate(answers)).effects;
+          return map(generator.generate(answers), () => ({
+            generator,
+            answers,
+            effects,
+          }));
+        },
+      );
+    },
+  );
 }

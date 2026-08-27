@@ -1,4 +1,4 @@
-import { createHashRouter, route } from "@canonical/router-core";
+import { createHashAdapter, createRouter, route } from "@canonical/router-core";
 import { RouterProvider } from "@canonical/router-react";
 import type { Decorator } from "@storybook/react-vite";
 import type { ReactNode } from "react";
@@ -34,7 +34,7 @@ const storyRoutes = {
  * live location without a server.
  */
 export const withHashRouter: Decorator = (Story) => {
-  const router = createHashRouter(storyRoutes);
+  const router = createRouter(storyRoutes, { adapter: createHashAdapter() });
   return (
     <RouterProvider router={router}>
       <Story />

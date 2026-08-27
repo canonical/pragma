@@ -37,7 +37,7 @@ Route authoring story, in short:
 
 - define every route with `route()`
 - give it a `url` pattern such as `/docs/:slug`
-- optionally add `prefetch`, `content`, and `wrappers`
+- optionally add `warm`, `content`, and `wrappers`
 - create one router from the full flat route map
 - let the router match incoming URLs — React renders the result
 
@@ -117,12 +117,12 @@ Important distinction:
 
 The router does not own data. `content()` receives `params` and `search` — not data. Components fetch their own data from their cache library (Relay, TanStack Query, SWR, etc.).
 
-The optional `prefetch()` on routes is a fire-and-forget navigation-time hook. Use it to warm caches, preload assets, or run side effects before the component renders. It does not pass data to `content()`.
+The optional `warm()` on routes is a fire-and-forget navigation-time hook. Use it to warm caches, preload assets, or run side effects before the component renders. It does not pass data to `content()`.
 
 ```tsx
 const userRoute = route({
   url: "/users/:id",
-  prefetch: async ({ id }) => {
+  warm: async ({ id }) => {
     await queryClient.prefetchQuery(["user", id], () => fetchUser(id));
   },
   content: ({ params }) => <UserProfile id={params.id} />,
@@ -136,7 +136,7 @@ function UserProfile({ id }: { id: string }) {
 
 ## Error handling
 
-The router does not ship an error boundary component. When `prefetch()` throws, the error propagates into the React render tree and is caught by the nearest React error boundary.
+The router does not ship an error boundary component. When `warm()` throws, the error propagates into the React render tree and is caught by the nearest React error boundary.
 
 Use `StatusResponse` from `@canonical/router-core` to signal HTTP-like errors:
 
@@ -272,7 +272,7 @@ const routes = {
   }),
   docs: route({
     url: "/docs/:slug",
-    prefetch: async ({ slug }) => {
+    warm: async ({ slug }) => {
       await queryClient.prefetchQuery(["doc", slug], () => fetchDoc(slug));
     },
     content: ({ params }) => <DocPage slug={params.slug} />,
@@ -291,7 +291,7 @@ Important parts:
 - the route-map key such as `docs` is the typed navigation name used by `Link` and `router.navigate()`
 - the `url` string is the matcher used for incoming URLs
 - `:slug` segments become typed route params
-- `prefetch` runs at navigation time as a fire-and-forget hook
+- `warm` runs at navigation time as a fire-and-forget hook
 - `content` renders the matched route, receiving `params` and `search`
 
 Routes stay flat even when the UI is nested. Shared layout lives in wrappers from the core package, not in a nested route tree.
@@ -300,7 +300,7 @@ Routes stay flat even when the UI is nested. Shared layout lives in wrappers fro
 
 ### Server side
 
-Wire your own render tree using standard React SSR primitives. Use `createStaticRouter` for server rendering — it matches on construction and fires `prefetch()` eagerly so caches start warming before React renders:
+Wire your own render tree using standard React SSR primitives. Use `createStaticRouter` for server rendering — it matches on construction and fires `warm()` eagerly so caches start warming before React renders:
 
 ```tsx
 import { createStaticRouter } from "@canonical/router-core";
@@ -382,7 +382,7 @@ hydrateRoot(
 
 ### `Link`
 
-`Link` builds typed hrefs from route names and optional route params, search data, and hash values. Primary-button clicks are intercepted and routed through the core router. Hover prefetches the destination.
+`Link` builds typed hrefs from route names and optional route params, search data, and hash values. Primary-button clicks are intercepted and routed through the core router. Hover warms the destination.
 
 ```tsx
 <Link<typeof routes> params={{ slug: "api" }} to="docs">
@@ -425,7 +425,7 @@ The reference integration lives in [apps/react/boilerplate-vite](../../../apps/r
 - domain-colocated route modules
 - a shell-as-route-provider layout
 - SSR + hydration
-- hover prefetch
+- hover warm
 - auth middleware redirect flow
 - error handling with `StatusResponse` and React error boundaries
 
@@ -434,7 +434,7 @@ The reference integration lives in [apps/react/boilerplate-vite](../../../apps/r
 ### Components and helpers
 
 - `createHydratedRouter()` — create a browser-backed router that resumes from dehydrated state.
-- `Link` — render a typed anchor that navigates and prefetches through the router.
+- `Link` — render a typed anchor that navigates and warms through the router.
 - `Outlet` — render the current matched subtree.
 - `RouterProvider` — place a router instance into React context.
 - `useBlocker()` — block navigation when the component has unsaved state.

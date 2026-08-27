@@ -14,9 +14,9 @@ Before diving into version-specific translations, understand the pragma router's
 
 **Type-safe navigation by name.** Routes are navigated by their key in the route map (`"home"`, `"userProfile"`), not by path. TypeScript enforces that only valid route names are used.
 
-**Data is not a routing concern.** The router does not own data fetching. `prefetch()` is a fire-and-forget navigation-time hook for warming caches or preloading assets. Components fetch their own data from their cache library (Relay, TanStack Query, SWR, etc.).
+**Data is not a routing concern.** The router does not own data fetching. `warm()` is a fire-and-forget navigation-time hook for warming caches or preloading assets. Components fetch their own data from their cache library (Relay, TanStack Query, SWR, etc.).
 
-**React error boundaries for errors.** No router-specific error UI. Errors from `prefetch()` throw into the React tree and are caught by standard React error boundaries. Use `StatusResponse` to signal HTTP-like errors.
+**React error boundaries for errors.** No router-specific error UI. Errors from `warm()` throw into the React tree and are caught by standard React error boundaries. Use `StatusResponse` to signal HTTP-like errors.
 
 ---
 
@@ -34,7 +34,7 @@ React Router v5 uses class-based patterns, `<Switch>`, render props, and the `wi
 | `this.props.match.params` | `useRoute().params` or `({ params }) => ...` in content |
 | `this.props.history.push("/bar")` | `router.navigate("bar")` (by route name, not path) |
 | `this.props.location` | `useRoute()` returns pathname, search, hash |
-| `<Redirect to="/login">` | `redirect("/login", 302)` in `prefetch()`, or a static redirect route |
+| `<Redirect to="/login">` | `redirect("/login", 302)` in `warm()`, or a static redirect route |
 | `<Link to="/foo">` | `<Link to="foo">` (route name, typed) |
 | `<NavLink activeClassName="on">` | `<Link to="foo">` sets `aria-current="page"` when active |
 | Nested `<Route>` for layout | `wrapper()` + `group()` |
@@ -63,15 +63,15 @@ React Router v6 is hooks-based and closer to pragma's model. The main difference
 | `useLocation()` | `useRoute()` returns pathname, hash, searchParams |
 | `<Link to="/foo">` | `<Link to="foo">` (route name, not path) |
 | `<Link to="../sibling">` | Not supported — use absolute route names |
-| `Navigate` component | `redirect()` in `prefetch()` |
-| `loader` (v6.4+) | `prefetch()` (fire-and-forget, not data provider) |
+| `Navigate` component | `redirect()` in `warm()` |
+| `loader` (v6.4+) | `warm()` (fire-and-forget, not data provider) |
 | `useLoaderData()` | Use your cache library: `useQuery()`, `useLazyLoadQuery()` |
 | Error boundaries via `errorElement` | React `<ErrorBoundary>` with `StatusResponse` |
 
 ### Key differences
 
 - **No relative paths.** Pragma routes are flat — there's no hierarchy to navigate relative to. All navigation uses route names.
-- **No `loader` data return.** `prefetch()` warms caches but doesn't return data to the component. Components own their data.
+- **No `loader` data return.** `warm()` warms caches but doesn't return data to the component. Components own their data.
 - **Wrappers instead of layout routes.** Instead of nesting `<Route>` inside a layout route with `<Outlet>`, use `wrapper()` to define the layout and `group()` to apply it.
 
 ### Example: nested layout migration
@@ -105,14 +105,14 @@ React Router v7 merges Remix's data model (loaders, actions, forms) into the rou
 
 | React Router v7 | Pragma |
 |---|---|
-| `loader()` | `prefetch()` — fire-and-forget cache warming, not data provider |
+| `loader()` | `warm()` — fire-and-forget cache warming, not data provider |
 | `action()` | No equivalent — use your cache library's mutation API |
 | `useLoaderData()` | `useQuery()` / `useLazyLoadQuery()` from cache library |
 | `useActionData()` | Cache library's mutation result state |
 | `<Form>` | Standard `<form>` with cache library mutation |
 | `useFetcher()` | Cache library's `useMutation()` or `useQuery()` |
 | `useNavigation()` | `useNavigationState()` for loading state |
-| `redirect()` in loader | `redirect()` in `prefetch()` |
+| `redirect()` in loader | `redirect()` in `warm()` |
 | `ErrorBoundary` in route | React `<ErrorBoundary>` wrapping `<Outlet>` |
 | File-based routing (optional) | Code-based only — no file conventions |
 | Framework mode | Library only — no server functions |
@@ -125,7 +125,7 @@ React Router v7 merges Remix's data model (loaders, actions, forms) into the rou
 
 ### Migration strategy for data-heavy v7 apps
 
-1. Replace `loader()` with `prefetch()` that warms your cache library
+1. Replace `loader()` with `warm()` that warms your cache library
 2. Replace `action()` with standard form handlers using your cache library's mutation API
 3. Replace `useLoaderData()` with your cache library's data hooks
 4. Replace `<Form>` with `<form>` + `onSubmit` handler
@@ -149,7 +149,7 @@ TanStack Router's type-safe tree model is the closest competitor to pragma's typ
 | `useParams()` | `useRoute().params` |
 | `useNavigate()` | `useRouter().navigate("routeName")` |
 | `beforeLoad` | Middleware via `applyMiddleware()` |
-| `loader` | `prefetch()` (fire-and-forget) |
+| `loader` | `warm()` (fire-and-forget) |
 | `useLoaderData()` | Cache library hooks |
 | `zodSearchValidator()` | Standard Schema on route: `search: schema` |
 | Route-level `errorComponent` | React `<ErrorBoundary>` |

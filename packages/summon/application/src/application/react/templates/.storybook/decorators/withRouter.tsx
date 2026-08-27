@@ -1,5 +1,10 @@
 import { HeadProvider } from "@canonical/react-head";
-import { createHashRouter, type RouteMap, route } from "@canonical/router-core";
+import {
+  createHashAdapter,
+  createRouter,
+  type RouteMap,
+  route,
+} from "@canonical/router-core";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 import type { ElementType } from "react";
 
@@ -29,7 +34,7 @@ interface WithRouterOptions {
 const withRouter =
   ({ routes = defaultRoutes }: WithRouterOptions = {}) =>
   (Story: ElementType) => {
-    const router = createHashRouter(routes);
+    const router = createRouter(routes, { adapter: createHashAdapter() });
 
     return (
       <HeadProvider>
