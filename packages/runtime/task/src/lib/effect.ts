@@ -59,11 +59,12 @@ export const readFileEffect = (path: string): Effect => ({
 export const writeFileEffect = (
   path: string,
   content: string,
-  opts?: UndoOptions,
+  opts?: UndoOptions & { verbatim?: boolean },
 ): Effect => ({
   _tag: "WriteFile",
   path,
   content,
+  ...(opts?.verbatim !== undefined ? { verbatim: opts.verbatim } : {}),
   undo: resolveUndo(opts?.undo, bareTask({ _tag: "DeleteFile", path })),
 });
 
