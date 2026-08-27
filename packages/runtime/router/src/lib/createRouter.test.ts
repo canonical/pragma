@@ -2540,4 +2540,67 @@ describe("createRouter", () => {
       expect(result.status).toBe(200);
     });
   });
+
+  describe("adapter load tracking", () => {
+    it("hands a settle-only load promise to trackLoad for adapter-visible navigations", async () => {
+      let popCallback: ((location: string | URL) => void) | null = null;
+      const trackedLoads: Array<Promise<void>> = [];
+      const adapter = {
+        getLocation: () => "/",
+        navigate: vi.fn(),
+        subscribe(callback: (location: string | URL) => void) {
+          popCallback = callback;
+          return () => {
+            popCallback = null;
+          };
+        },
+        trackLoad(load: Promise<void>) {
+          trackedLoads.push(load);
+        },
+      };
+
+      const router = createRouter(
+        {
+          home: route({ url: "/", content: () => "home" }),
+          about: route({ url: "/about", content: () => "about" }),
+        },
+        { adapter },
+      );
+
+      await router.load("/");
+
+      router.navigate("about");
+      expect(trackedLoads).toHaveLength(1);
+
+      router.setSearchParams({ page: "2" });
+      expect(trackedLoads).toHaveLength(2);
+
+      popCallback?.("/");
+      expect(trackedLoads).toHaveLength(3);
+
+      // Every tracked promise settles by resolving — never rejecting.
+      await expect(Promise.all(trackedLoads)).resolves.toBeDefined();
+
+      await vi.waitFor(() => {
+        expect(router.getState().location.pathname).toBe("/");
+      });
+    });
+
+    it("works unchanged with adapters that do not implement trackLoad", async () => {
+      const router = createRouter(
+        {
+          home: route({ url: "/", content: () => "home" }),
+          about: route({ url: "/about", content: () => "about" }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      await router.load("/");
+      router.navigate("about");
+
+      await vi.waitFor(() => {
+        expect(router.getState().location.pathname).toBe("/about");
+      });
+    });
+  });
 });

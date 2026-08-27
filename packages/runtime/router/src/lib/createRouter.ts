@@ -891,6 +891,27 @@ export default function createRouter<
   }
 
   /**
+   * Schedule an adapter-visible load and hand the adapter a settle-only view
+   * of it, so platform loading UI (e.g. the Navigation API's intercept
+   * handler) can await the router's work.  The tracked promise resolves when
+   * the load settles — success or failure — and never rejects.
+   */
+  function scheduleAdapterLoad(
+    input: string | URL,
+    mode: NavigationMode,
+  ): void {
+    const load = performLoad(input, 0, true, mode);
+
+    adapter?.trackLoad?.(
+      load.then(
+        () => undefined,
+        () => undefined,
+      ),
+    );
+    void load.catch(ignoreScheduledLoadError);
+  }
+
+  /**
    * Apply a control-flow rejection (redirect / status) that arrived from an
    * async warm hook after its navigation already committed.  Warm is
    * fire-and-forget, so a late arrival is expected: the page may render
@@ -1119,12 +1140,7 @@ export default function createRouter<
             intent.href,
             replace ? { replace: true } : undefined,
           );
-          void performLoad(
-            intent.href,
-            0,
-            true,
-            replace ? "pop" : "push",
-          ).catch(ignoreScheduledLoadError);
+          scheduleAdapterLoad(intent.href, replace ? "pop" : "push");
         },
       };
       notifyBlockerState();
@@ -1134,9 +1150,7 @@ export default function createRouter<
 
     saveScrollPosition();
     syncAdapterLocation(intent.href, replace ? { replace: true } : undefined);
-    void performLoad(intent.href, 0, true, replace ? "pop" : "push").catch(
-      ignoreScheduledLoadError,
-    );
+    scheduleAdapterLoad(intent.href, replace ? "pop" : "push");
 
     return intent;
   }) as NavigateFn<TRoutes>;
@@ -1203,9 +1217,7 @@ export default function createRouter<
     }
 
     syncAdapterLocation(href, replace ? { replace: true } : undefined);
-    void performLoad(href, 0, true, replace ? "pop" : "push").catch(
-      ignoreScheduledLoadError,
-    );
+    scheduleAdapterLoad(href, replace ? "pop" : "push");
   }
 
   const warm: WarmFn<TRoutes> = ((
@@ -1541,9 +1553,7 @@ export default function createRouter<
       }
 
       saveScrollPosition();
-      void performLoad(location, 0, true, "pop").catch(
-        ignoreScheduledLoadError,
-      );
+      scheduleAdapterLoad(location, "pop");
     });
   }
 

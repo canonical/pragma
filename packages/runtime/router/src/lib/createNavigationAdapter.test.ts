@@ -42,6 +42,9 @@ function createFakeNavigationWindow(initialHref = "https://example.com/") {
         }
       },
     },
+    lastInterceptOptions: undefined as
+      | { handler?: () => void | Promise<void> }
+      | undefined,
     dispatchNavigate(nextHref: string, navigationType: string = "traverse") {
       navigationWindow.location.href = nextHref;
       navigateListener?.({
@@ -49,7 +52,9 @@ function createFakeNavigationWindow(initialHref = "https://example.com/") {
         destination: { url: nextHref },
         canIntercept: true,
         hashChange: false,
-        intercept: vi.fn(),
+        intercept: (options?: { handler?: () => void | Promise<void> }) => {
+          navigationWindow.lastInterceptOptions = options;
+        },
       });
     },
     dispatchNavigateRaw(
@@ -199,5 +204,75 @@ describe("createNavigationAdapter (Navigation API)", () => {
     } finally {
       process.off("unhandledRejection", onUnhandled);
     }
+  });
+
+  it("hands the tracked router load to the intercept handler", async () => {
+    const navigationWindow = createFakeNavigationWindow();
+    const adapter = createNavigationAdapter(navigationWindow);
+
+    adapter.subscribe(() => {});
+
+    let releaseLoad!: () => void;
+    const load = new Promise<void>((resolve) => {
+      releaseLoad = resolve;
+    });
+
+    adapter.trackLoad?.(load);
+    navigationWindow.dispatchNavigate("https://example.com/docs", "push");
+
+    const handler = navigationWindow.lastInterceptOptions?.handler;
+
+    expect(handler).toBeTypeOf("function");
+
+    let settled = false;
+    const handled = Promise.resolve(handler?.()).then(() => {
+      settled = true;
+    });
+
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(settled).toBe(false);
+
+    releaseLoad();
+    await handled;
+    expect(settled).toBe(true);
+  });
+
+  it("resolves the intercept handler even when the tracked load rejects", async () => {
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => {
+      unhandled.push(reason);
+    };
+    process.on("unhandledRejection", onUnhandled);
+
+    try {
+      const navigationWindow = createFakeNavigationWindow();
+      const adapter = createNavigationAdapter(navigationWindow);
+
+      adapter.subscribe(() => {});
+      adapter.trackLoad?.(Promise.reject(new Error("load failed")));
+      navigationWindow.dispatchNavigate("https://example.com/docs", "push");
+
+      const handler = navigationWindow.lastInterceptOptions?.handler;
+
+      await expect(Promise.resolve(handler?.())).resolves.toBeUndefined();
+
+      await new Promise((resolve) => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off("unhandledRejection", onUnhandled);
+    }
+  });
+
+  it("resolves the intercept handler when no load was tracked", async () => {
+    const navigationWindow = createFakeNavigationWindow();
+    const adapter = createNavigationAdapter(navigationWindow);
+
+    adapter.subscribe(() => {});
+    navigationWindow.dispatchNavigate("https://example.com/docs", "push");
+
+    const handler = navigationWindow.lastInterceptOptions?.handler;
+
+    await expect(Promise.resolve(handler?.())).resolves.toBeUndefined();
   });
 });
