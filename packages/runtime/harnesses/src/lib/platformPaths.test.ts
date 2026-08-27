@@ -7,6 +7,7 @@ import {
   userConfigBase,
   userDataBase,
   userHome,
+  xdgConfigHome,
 } from "./platformPaths.js";
 
 /** Build a {@link PlatformEnv} fixture, overriding only the fields under test. */
@@ -16,6 +17,30 @@ const platform = (overrides: Partial<PlatformEnv> = {}): PlatformEnv => ({
   home: "/home/tester",
   isWsl: false,
   ...overrides,
+});
+
+describe("xdgConfigHome", () => {
+  it("honours $XDG_CONFIG_HOME on every platform", () => {
+    for (const id of ["linux", "darwin", "win32"] as PlatformId[]) {
+      expect(
+        xdgConfigHome(
+          platform({ platform: id, env: { XDG_CONFIG_HOME: "/xdg/config" } }),
+        ),
+      ).toBe("/xdg/config");
+    }
+  });
+
+  it("falls back to ~/.config, NOT the env-paths config base", () => {
+    // The distinction from `userConfigBase` is the whole point: a tool that
+    // documents `~/.config/<tool>` reads `~/.config` on darwin too, never
+    // `~/Library/Preferences`.
+    expect(xdgConfigHome(platform({ platform: "darwin" }))).toBe(
+      "/home/tester/.config",
+    );
+    expect(userConfigBase(platform({ platform: "darwin" }))).toBe(
+      "/home/tester/Library/Preferences",
+    );
+  });
 });
 
 describe("detectWsl", () => {

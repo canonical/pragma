@@ -54,6 +54,40 @@ describe("checkSignal — directory / file", () => {
     expect(seen).toContain("/project/.cursor");
   });
 
+  it("resolves a $XDG_CONFIG_HOME/ path against the XDG config base", () => {
+    const seen: string[] = [];
+    const result = check(
+      { type: "directory", path: "$XDG_CONFIG_HOME/opencode" },
+      ctx({ platform: platform({ env: { XDG_CONFIG_HOME: "/xdg/config" } }) }),
+      {
+        Exists: existsAt((path) => {
+          seen.push(path);
+          return path === "/xdg/config/opencode";
+        }),
+      },
+    );
+    expect(result).toBe(true);
+    expect(seen).toContain("/xdg/config/opencode");
+  });
+
+  it("falls back to ~/.config for a $XDG_CONFIG_HOME/ path when the var is unset", () => {
+    // The two forms coincide by default; they diverge ONLY for a user who has
+    // moved their config base, which is exactly the user a `~/` resolve loses.
+    const seen: string[] = [];
+    const result = check(
+      { type: "directory", path: "$XDG_CONFIG_HOME/opencode" },
+      ctx(),
+      {
+        Exists: existsAt((path) => {
+          seen.push(path);
+          return path === "/home/tester/.config/opencode";
+        }),
+      },
+    );
+    expect(result).toBe(true);
+    expect(seen).toContain("/home/tester/.config/opencode");
+  });
+
   it("resolves a ~/ path against the platform home", () => {
     const seen: string[] = [];
     const result = check({ type: "file", path: "~/.claude.json" }, ctx(), {

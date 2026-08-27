@@ -146,6 +146,24 @@ export const userConfigBase = (p: PlatformEnv): string => {
 };
 
 /**
+ * The XDG per-user config directory: `$XDG_CONFIG_HOME ?? ~/.config`, on EVERY
+ * platform.
+ *
+ * Distinct from {@link userConfigBase}, which follows the env-paths convention
+ * and branches to `~/Library/Preferences` on darwin and `%APPDATA%` on win32.
+ * A tool that documents its config as `~/.config/<tool>` is following the XDG
+ * convention, not env-paths: it reads `~/.config` on macOS too, and it honours
+ * `$XDG_CONFIG_HOME` when set. Resolving such a path against the home directory
+ * alone silently misses a user who has moved their config base — the harness is
+ * then reported as absent and skipped by `setup`.
+ *
+ * @param p - The captured platform.
+ * @returns The absolute XDG config base path.
+ */
+export const xdgConfigHome = (p: PlatformEnv): string =>
+  p.env.XDG_CONFIG_HOME ?? `${p.home}/.config`;
+
+/**
  * The per-user data base directory for the platform: linux
  * `$XDG_DATA_HOME ?? ~/.local/share`, darwin `~/Library/Application Support`,
  * win32 `%LOCALAPPDATA%` (falling back to `~/AppData/Local`).

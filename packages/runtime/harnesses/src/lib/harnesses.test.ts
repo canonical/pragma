@@ -216,6 +216,43 @@ describe("harnesses registry", () => {
     expect(oc?.skillsPath("/project")).toBe("/project/.agents/skills");
   });
 
+  it("opencode is dual-scope, with the global config its docs name", () => {
+    // Declared project-only, opencode was the one harness the GLOBAL band —
+    // the default, and the band this product focuses on — silently skipped:
+    // `setup mcp` installed every other harness and left this one unconfigured.
+    // https://opencode.ai/docs/config/ lists `~/.config/opencode/opencode.json`
+    // in its precedence order above the project file, and merges the two.
+    const oc = harnesses.find((h) => h.id === "opencode");
+    expect(oc?.scope).toBe("both");
+    expect(oc?.homeConfigPath?.(PLATFORM)).toBe(
+      "/home/tester/.config/opencode/opencode.json",
+    );
+  });
+
+  it("opencode's global config follows $XDG_CONFIG_HOME, not the home dir", () => {
+    // `~/.config/<tool>` is the XDG convention, not env-paths: a user who has
+    // moved their config base keeps NOTHING under `~/.config`, so resolving
+    // against home writes into a file OpenCode never reads.
+    const oc = harnesses.find((h) => h.id === "opencode");
+    expect(
+      oc?.homeConfigPath?.({ ...PLATFORM, env: { XDG_CONFIG_HOME: "/xdg" } }),
+    ).toBe("/xdg/opencode/opencode.json");
+  });
+
+  it("opencode is detectable from the global config dir, not just a project file", () => {
+    // A detector that only looks for `opencode.json` in the project root
+    // cannot see a user who has opencode installed and configured globally —
+    // which is every user before their first project config exists.
+    // Declared in the `$XDG_CONFIG_HOME/` form for the same reason the config
+    // path is: a `~/.config/opencode` signal is invisible to a user who has
+    // moved their config base, and the harness is then skipped entirely.
+    const oc = harnesses.find((h) => h.id === "opencode");
+    expect(oc?.detect).toContainEqual({
+      type: "directory",
+      path: "$XDG_CONFIG_HOME/opencode",
+    });
+  });
+
   it("roo-code skillsPath", () => {
     const roo = harnesses.find((h) => h.id === "roo-code");
     expect(roo?.skillsPath("/project")).toBe("/project/.roo/skills");
