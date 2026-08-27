@@ -108,11 +108,34 @@ const cliOnPath = (candidates: readonly string[]): boolean =>
  */
 const MIN_EXTENSION_VERSION = "0.8.3";
 
+/** {@link MIN_EXTENSION_VERSION}, parsed once. */
+const MINIMUM: number[] = MIN_EXTENSION_VERSION.split(".").map(Number);
+
+/**
+ * A version this check can actually read: dot-separated digit runs, nothing
+ * else. Deliberately strict — see {@link parseVersion}.
+ */
+const NUMERIC_VERSION = /^\d+(?:\.\d+)*$/;
+
+/**
+ * Parse a dotted numeric version, or `undefined` when it is not one.
+ *
+ * `Number.parseInt` is the wrong tool here and quietly breaks the fail-closed
+ * rule this module claims: it accepts numeric PREFIXES, so `1.0.0junk` reads
+ * as `[1, 0, 0]`, and `|| 0` turns a `NaN` component into a zero, so
+ * `1.invalid.0` also reads as `[1, 0, 0]`. Both then compare NEWER than the
+ * minimum and report a broken extension as installed — the exact wrong-skip
+ * this version check exists to prevent, reintroduced by the parser.
+ *
+ * So the whole string is validated before any component is trusted.
+ */
+const parseVersion = (value: string): number[] | undefined =>
+  NUMERIC_VERSION.test(value)
+    ? value.split(".").map((part) => Number(part))
+    : undefined;
+
 /** Compare two dotted numeric versions. Returns <0, 0, >0 like a comparator. */
-const compareVersions = (a: string, b: string): number => {
-  const parse = (v: string): number[] =>
-    v.split(".").map((part) => Number.parseInt(part, 10) || 0);
-  const [left, right] = [parse(a), parse(b)];
+const compareVersions = (left: number[], right: number[]): number => {
   for (let i = 0; i < Math.max(left.length, right.length); i++) {
     const diff = (left[i] ?? 0) - (right[i] ?? 0);
     if (diff !== 0) return diff;
@@ -148,8 +171,9 @@ const extensionInstalled = (
   return entries.some((entry) => {
     const lower = entry.toLowerCase();
     if (!lower.startsWith(prefix)) return false;
-    const version = lower.slice(prefix.length);
-    return compareVersions(version, MIN_EXTENSION_VERSION) >= 0;
+    const version = parseVersion(lower.slice(prefix.length));
+    if (version === undefined) return false; // Unreadable: cannot vouch for it.
+    return compareVersions(version, MINIMUM) >= 0;
   });
 };
 

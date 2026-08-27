@@ -1035,6 +1035,36 @@ describe("setup lsp — prerequisites (bun absent / no editor CLI)", () => {
     }
   });
 
+  it("treats a version it cannot READ as too old, not as newer", async () => {
+    // The fail-closed claim has to survive the parser. `Number.parseInt`
+    // accepts numeric prefixes and a `|| 0` fallback turns NaN into zero, so
+    // `1.invalid.0` and `1.0.0junk` both read as [1,0,0] — comparing NEWER
+    // than the minimum and reporting a broken extension as installed, which
+    // is the wrong skip this check exists to prevent.
+    const prevPath = process.env.PATH;
+    const stubDir = tmp("pragma-badver-path-");
+    writeFileSync(join(stubDir, "code"), "");
+    process.env.PATH = stubDir;
+    try {
+      for (const suffix of ["1.invalid.0", "1.0.0junk", "garbage", ""]) {
+        mkdirSync(
+          join(
+            process.env.HOME ?? "",
+            ".vscode",
+            "extensions",
+            `canonical.terrazzo-lsp-extension-${suffix}`,
+          ),
+          { recursive: true },
+        );
+      }
+      const { detectLsp } = await import("./operations/setupLsp.js");
+      const detected = await detectLsp(tmp("pragma-setup-proj-"));
+      expect(detected.state).not.toBe("installed");
+    } finally {
+      process.env.PATH = prevPath;
+    }
+  });
+
   it("reports already-installed (a true no-op) when every detected editor has the extension", async () => {
     const prevPath = process.env.PATH;
     const stubDir = tmp("pragma-installed-path-");
