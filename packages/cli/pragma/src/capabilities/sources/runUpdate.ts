@@ -32,7 +32,12 @@ import {
 } from "@canonical/task";
 import { VERSION } from "../../constants.js";
 import { cliRecovery, PragmaError } from "../../kernel/error/index.js";
-import { buildPack } from "../../kernel/runtime/graphpack/index.js";
+// DIRECT LEAF IMPORT, not `graphpack/index.js`. The barrel re-exports
+// `embedded.ts`, which statically imports the ~1.9 MB generated pack — and
+// with per-file `tsc` output ESM evaluates that re-export when this module
+// loads. `sources update` builds a USER pack; it must not pay the embedded
+// pack's cost to do it.
+import { buildPack } from "../../kernel/runtime/graphpack/build.js";
 import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { activePackPath, readActivePack } from "../../kernel/runtime/paths.js";
 import type { PackageRef } from "../../kernel/runtime/refs/index.js";
