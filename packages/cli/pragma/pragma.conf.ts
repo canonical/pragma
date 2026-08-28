@@ -143,14 +143,33 @@ const designSystemStories: readonly PackDefinition[] = [
         "  VALUES ?class { ds:Component ds:Pattern ds:Layout ds:Subcomponent }",
         "  ?uri a ?class .",
         "  OPTIONAL { ?uri ds:name ?dsName }",
-        "  OPTIONAL { ?uri ds:tier ?tierUri }",
+        "  OPTIONAL { ?uri ds:tier ?tierUri . OPTIONAL { ?tierUri ds:name ?tierName } }",
         "  OPTIONAL { ?uri ds:hasModifierFamily ?family . ?family ds:name ?modName }",
         '  BIND(COALESCE(?dsName, REPLACE(STR(?uri), "^.*[/#]", "")) AS ?name)',
         '  BIND(LCASE(REPLACE(STR(?class), "^.*[/#]", "")) AS ?type)',
         '  BIND(REPLACE(STR(?tierUri), "^.*[/#]", "") AS ?tier)',
+        // `ORDER BY ?name` alone is not a total order, and 25 names here are
+        // shared by two or three blocks. SPARQL says nothing about tied rows,
+        // so the store's scan decided: ONE run gave `Button` launchpad-first
+        // and `CheckboxInput` global-first. Tier depth, then `STR(?uri)`,
+        // makes it total — the shallower tier leads its name group, and equal
+        // depths fall back to a key that cannot tie.
+        //
+        // The depth is the same one `lookup` ranks by, spelled out because a
+        // list query is declared TEXT the kernel does not compose. Only the
+        // depth: a browse ordered by NAME is not the place to re-litigate which
+        // block the name MEANS (that is `lookup`'s ranking, which also weighs
+        // the block's type), and every row here already prints its own type.
+        //
+        // The depth-0 IF is the store's, not style: oxigraph raises on
+        // `0.2 * 0`, and a raising BIND leaves `?tierRank` unbound — which is
+        // exactly how a top-tier block silently sorted last (see
+        // `sparqlProduct` in kernel/packs/sparql/buildLookupQuery.ts).
+        '  BIND(STRLEN(?tierName) - STRLEN(REPLACE(?tierName, "/", "")) AS ?tierDepth)',
+        "  BIND(COALESCE(IF(?tierDepth = 0, 1, 1 - (0.2 * ?tierDepth)), 0) AS ?tierRank)",
         "}",
-        "GROUP BY ?uri ?name ?type ?tier",
-        "ORDER BY ?name",
+        "GROUP BY ?uri ?name ?type ?tier ?tierRank",
+        "ORDER BY ?name DESC(?tierRank) STR(?uri)",
       ].join("\n"),
       columns: [
         { field: "name", label: "Name" },
@@ -175,9 +194,41 @@ const designSystemStories: readonly PackDefinition[] = [
       // for the query "button" the 86 `…-close_button` subcomponents used to
       // outrank `ds:global.component.button` on the alphabet alone. Weighting
       // them below 1 sinks every one of them under every component at equal
-      // match score, and lowers their `annotations.priority` in the resource
-      // listing by the same declaration.
+      // match score, lowers their `annotations.priority` in the resource
+      // listing, and — since a name resolve now RANKS rather than picks — sorts
+      // them under every component a shared name also reaches.
       weights: { "ds:Subcomponent": 0.6 },
+      // The other half of that judgement, and the reason it is a PRODUCT and
+      // not a tiebreak. 25 live block names are shared by two or three blocks
+      // across tiers, and `weights` alone cannot separate two components; the
+      // alphabet decided, so `Button` answered with Launchpad's and never
+      // mentioned the global one. A tier's DEPTH is what ranks it: `Global` is
+      // depth 1 and worth 1, `Apps/Launchpad` is depth 2 and worth 0.8, so
+      //
+      //   Button    global component 1 × 1   >  launchpad component 1 × 0.8
+      //   TextInput global SUBcomponent 0.6 × 1  <  launchpad component 1 × 0.8
+      //
+      // — the global block wins where both are whole blocks, and the editorial
+      // rule that a whole component beats a part survives the addition. A pure
+      // tier tiebreak would have inverted the second case.
+      //
+      // DERIVED, never enumerated: the depth is the `/` count in the tier's
+      // OWN `ds:name` (`"Apps/Launchpad"`), not in its IRI (`ds:apps_launchpad`
+      // — the slash exists only in the name), so a tier added upstream tomorrow
+      // is ranked correctly without editing anything here.
+      //
+      // Declared as DATA beside `weights` for the same reason `weights` is:
+      // editorial judgement the ontology has not yet made belongs in the config
+      // layer, which "wins every harvest" when upstream is silent. `asserted`
+      // is the exit: the day `ds:tierRank` is asserted upstream it takes
+      // precedence over the derived depth (`COALESCE`), and this whole entry is
+      // deleted with no code change.
+      scopeWeight: {
+        via: "ds:tier",
+        by: "ds:name",
+        falloff: 0.2,
+        asserted: "ds:tierRank",
+      },
       graphqlType: "UIBlock",
       fields: [
         { name: "tier", property: "ds:tier", label: "Tier" },
