@@ -151,6 +151,33 @@ describe("prerelease handling", () => {
 		expect(satisfies("0.36.0-alpha.1", "^0.35.0")).toBe(false);
 		expect(satisfies("0.35.1-alpha.1", "^0.35.1-alpha.0")).toBe(true);
 	});
+
+	test("does not false-positive on the experimental release flow", () => {
+		// tag.yml defaults release_type to "experimental", and the guard now
+		// gates that release before it commits. A false positive here would
+		// block every pre-release, so pin the shapes lerna actually produces.
+		expect(satisfies("0.36.0-experimental.0", "^0.36.0-experimental.0")).toBe(true);
+		expect(satisfies("0.36.0-experimental.1", "^0.36.0-experimental.0")).toBe(true);
+		expect(satisfies("0.36.0", "^0.36.0-experimental.0")).toBe(true);
+		expect(satisfies("0.36.0-rc.1", "^0.36.0-rc.0")).toBe(true);
+		// ...but a different pre-release line is still out of range.
+		expect(satisfies("0.36.0-alpha.0", "^0.36.0-experimental.0")).toBe(false);
+	});
+
+	test("a whole-workspace experimental bump is clean", () => {
+		// The shape of a `release_type: experimental` bump: every package and
+		// every sibling range moves together.
+		expect(
+			findViolations([
+				pkg("a", "0.36.0-experimental.0", {
+					peerDependencies: { b: "^0.36.0-experimental.0" },
+					dependencies: { c: "^0.36.0-experimental.0" },
+				}),
+				pkg("b", "0.36.0-experimental.0"),
+				pkg("c", "0.36.0-experimental.0"),
+			]),
+		).toEqual([]);
+	});
 });
 
 describe("failing loudly instead of silently", () => {

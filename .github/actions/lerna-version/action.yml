@@ -62,6 +62,26 @@ runs:
       shell: bash
       run: ${{ github.action_path }}/refresh-pack.sh "${{ inputs.packs_token }}"
 
+      # LAST GATE BEFORE THE BUMP BECOMES PERMANENT. Everything above has
+      # rewritten versions and ranges in the working tree; nothing has been
+      # committed, tagged, pushed or published yet. This is the only moment at
+      # which a bad bump can still be stopped for free.
+      #
+      # The v0.35.0 bump (5198c5399) moved every package to 0.35.0 and rewrote
+      # sibling ranges in `dependencies` and `devDependencies` but not in
+      # `peerDependencies`, leaving `^0.34.0` ranges that 0.35.0 cannot satisfy
+      # — for a 0.x version the caret pins the MINOR. Bun then stopped linking
+      # those workspace siblings and silently substituted published copies, and
+      # main was red from the moment the bump landed.
+      #
+      # The `check` and `test` jobs in tag.yml cannot catch this: they run
+      # BEFORE this action, on the pre-bump tree, where every range is still
+      # correct. Nor can pr.yml — this commit is pushed straight to main by
+      # git-commit.sh below and never sees a pull request.
+    - name: Verify the bump left every workspace sibling range satisfiable
+      shell: bash
+      run: bun run check:ranges
+
     - name: Setup Git CLI
       uses: ./.github/actions/setup-git
       with:
