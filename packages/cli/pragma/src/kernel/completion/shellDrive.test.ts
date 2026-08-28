@@ -56,13 +56,14 @@ import { emitScripts } from "./emitScripts.js";
  *   `os: ["linux"]`; run on a bash-3.2 macOS box this fails loudly, which is
  *   the intended signal — see `templates/bash.ts` on the mapfile floor.)
  * - **By execution only where the shell is installed:** the same guarantees
- *   for zsh and fish. Those describes `skipIf` the shell is absent, which
- *   includes this development box and, today, CI — so on those machines they
- *   assert NOTHING, and say so by skipping visibly. Every assertion in them
- *   was executed during development against zsh 5.9 and fish 3.7.0 (obtained
- *   with `apt-get download zsh zsh-common fish fish-common` + `dpkg-deb -x`
- *   into a scratch prefix, leaving the box itself untouched). Adding
- *   `zsh fish` to CI's apt step is what would make them continuous.
+ *   for zsh and fish. Those describes `skipIf` the shell is absent, so a
+ *   development box without them asserts NOTHING and says so by skipping
+ *   visibly. CI is no longer such a box: the test jobs in `pr.yml`,
+ *   `push.yml` and `tag.yml` run `install-shells.sh`, which installs zsh and
+ *   fish and then PROBES each one exactly as `hasShell` does, failing the job
+ *   if either is missing — a silently failed install can never again reduce
+ *   these describes to a green no-op. Measured green against zsh 5.9/5.9.1 and
+ *   fish 3.7.0/4.7.1, which brackets what Ubuntu runners ship.
  * - **By static assertion only, everywhere:** that the zsh and fish scripts
  *   contain no `eval`, no backticks, guarded `compadd`, inert value lists and
  *   the exact delegation form — `safety.test.ts`'s script-safety describe. A

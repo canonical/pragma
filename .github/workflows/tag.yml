@@ -78,6 +78,14 @@ jobs:
           INSTALL_PLAYWRIGHT: 'true'
         run: bash .github/actions/setup-env/install-playwright.sh
 
+      # `shellDrive.test.ts` executes the GENERATED zsh and fish completion
+      # scripts in the real interpreter, but `skipIf`s those describes when the
+      # shell is absent — so without this step the only execution proof for
+      # those two script families runs nowhere and the suite still reports
+      # green. The script verifies the install rather than assuming it.
+      - name: Install completion shells (zsh, fish)
+        run: bash .github/actions/setup-env/install-shells.sh
+
       - name: Test
         run: bun run test
 
