@@ -162,7 +162,7 @@ function skillsHealth(
     // step) was reported identically by both surfaces.
     return {
       status: "skip",
-      detail: skillsSkipReason(short, band),
+      detail: skillsSkipReason(short, band, d.rootExists),
       remedy: skillsSkipRemedy(short, band),
     };
   }

@@ -528,16 +528,30 @@ export function composeSkills(d: SkillsDetection): Task<void> {
  * for one condition is how a user ends up unsure whether they are looking at one
  * problem or two.
  *
+ * ABSENT AND EMPTY ARE NOT THE SAME SKIP. `available` is false for both — the
+ * root holds no skill either way — but the parenthetical names a filesystem
+ * fact, and telling a user their directory "is absent" while they are looking
+ * at it is a wrong diagnosis, not a terse one. {@link
+ * SkillsDetection.rootExists} is the flag that separates the two states
+ * everywhere else in this module, so it separates them here too, and both
+ * callers pass it rather than each re-deciding the wording.
+ *
  * @param sourceRoot - The band's skill source root, already root-relative.
  * @param band - The band being reported.
+ * @param rootExists - Whether that root exists ({@link
+ *   SkillsDetection.rootExists}) — an existing root that holds no skill reports
+ *   as empty, never as absent.
  * @returns The reason line.
  */
 export const skillsSkipReason = (
   sourceRoot: string,
   band: ScopeBand,
+  rootExists: boolean,
 ): string =>
   band === "project"
-    ? `no project skills (${sourceRoot} is absent)`
+    ? rootExists
+      ? `no project skills (${sourceRoot} holds none)`
+      : `no project skills (${sourceRoot} is absent)`
     : "no skills installed";
 
 /**

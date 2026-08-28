@@ -308,6 +308,33 @@ describe("doctor — a blocked skill link path is never reported as current", ()
   });
 });
 
+describe("doctor — an EMPTY skills root is not diagnosed as an ABSENT one", () => {
+  it("reports an existing but empty project skills root as holding none", async () => {
+    // doctor publishes a DIAGNOSIS, so a wrong one is worse than a vague one:
+    // the shared skip line told the user `.pragma/skills` "is absent" while
+    // they were looking at the directory. Both surfaces read the same
+    // `rootExists` the detection already carries.
+    const cwd = tmp("pragma-doctor-proj-");
+    mkdirSync(join(cwd, ".pragma", "skills"), { recursive: true });
+
+    const rows = await bandedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    const row = rows.find((r) => r.name === "skills" && r.band === "project");
+    expect(row?.status).toBe("skip"); // still nothing to reconcile...
+    expect(row?.detail).toContain("holds none"); // ...for the true reason
+    expect(row?.detail).not.toContain("is absent");
+  });
+
+  it("still reports a missing project skills root as absent", async () => {
+    const rows = await bandedChecks(
+      bootRuntime(FLAGS, tmp("pragma-doctor-proj-")),
+      "pragma",
+    );
+    const row = rows.find((r) => r.name === "skills" && r.band === "project");
+    expect(row?.status).toBe("skip");
+    expect(row?.detail).toContain("is absent");
+  });
+});
+
 describe("doctor — an unconfigured opt-in integration is available, not a fault", () => {
   it("a detected harness with no MCP entry reports available with the setup command", async () => {
     // Windsurf is detected (project signal) but nothing is configured. A fresh

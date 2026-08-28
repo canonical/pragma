@@ -350,7 +350,7 @@ const skillsTarget = defineTarget<SkillsDetection>({
     const stale = staleSkillLinks(d);
     if (!d.available && stale.length === 0) {
       const short = shortenPath(d.sourceRoot, roots);
-      const reason = skillsSkipReason(short, band);
+      const reason = skillsSkipReason(short, band, d.rootExists);
       // A skip with no remedy is a dead end — this one names the command that
       // fills the band's source root, exactly as the completions and lsp skips
       // beside it name theirs.
