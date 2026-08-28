@@ -97,8 +97,22 @@ const designSystemStories: readonly PackDefinition[] = [
   // Base level mirrors the old summary view (name/tier/summary); the default is
   // `detailed`, matching the old CLI which rendered anatomy and modifiers
   // without a flag. A derived name that maps onto no schema field is omitted
-  // (OPTIONAL parity), so a graph lacking whenToUse/whenNotToUse degrades
-  // gracefully.
+  // (OPTIONAL parity), so a graph missing one of these properties degrades
+  // gracefully rather than erroring.
+  //
+  // That graceful degradation is also how this story went silent: it used to
+  // read `ds:whenToUse`/`ds:whenNotToUse`, which the ontology RETIRED in favour
+  // of a single `ds:usage` — "Subsumes the former whenToUse/whenNotToUse" is
+  // that property's own skos:definition. The shipped pack asserts `ds:usage` on
+  // all 264 blocks and neither retired term on any of them, so every
+  // `block lookup` on every install rendered no usage narrative at all —
+  // silently, because a name that maps onto no schema field is exactly the case
+  // OPTIONAL parity swallows. The retired terms are NOT kept as a fallback:
+  // `ds:usage` subsumes them, so a pack carrying both would print the same
+  // guidance twice, and a declaration no shipped graph can satisfy is
+  // untestable by construction — which is what let the silence ship.
+  // `block.shipped.exec.test.ts` now holds every property declared here to
+  // being asserted in the SHIPPED graph.
   //
   // Disclosure declares the FULL canonical ladder `[summary, standard,
   // detailed]` — the same set `standard` declares — so a config
@@ -168,16 +182,19 @@ const designSystemStories: readonly PackDefinition[] = [
       ],
       sections: [
         { name: "summary", property: "ds:summary", label: "Summary" },
+        // ONE section, because `ds:usage` is ONE property: its literal is
+        // free-text Markdown carrying its own `### When to use` / `### When not
+        // to use` sub-sections (78 and 71 of the 126 non-empty ones do), so
+        // splitting it back into two headings here would mean parsing prose the
+        // graph deliberately keeps whole. The renderer demotes a body's own ATX
+        // headings below the section heading, so those sub-sections nest UNDER
+        // `### Usage` instead of colliding with it. Half the blocks assert an
+        // EMPTY `ds:usage` (138 of 264); the renderer skips empty sections, so
+        // those print no heading rather than an empty one.
         {
-          name: "whenToUse",
-          property: "ds:whenToUse",
-          label: "When to use",
-          level: "detailed",
-        },
-        {
-          name: "whenNotToUse",
-          property: "ds:whenNotToUse",
-          label: "When not to use",
+          name: "usage",
+          property: "ds:usage",
+          label: "Usage",
           level: "detailed",
         },
         {

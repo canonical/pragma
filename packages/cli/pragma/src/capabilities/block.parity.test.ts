@@ -17,8 +17,11 @@
  *   deleted `capabilities/block/parity.test.ts`. Button and Modal resolve with
  *   the same content a direct SPARQL oracle returns (summary, guidance,
  *   anatomy, tier, modifier families with values, properties, subcomponents).
- *   The fixture DECLARES whenToUse/whenNotToUse (which the live graph superseded
- *   with ds:usage), so those sections are exercised here.
+ *   The fixture declares the usage narrative the way the live graph does — one
+ *   `ds:usage` literal — so what is exercised here is the path a real install
+ *   takes. It formerly declared the retired whenToUse/whenNotToUse pair, and
+ *   that divergence is exactly why this suite could assert a "### When to use"
+ *   heading no install had rendered in months.
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -159,10 +162,7 @@ describe("block lookup — Button content parity (GraphQL, detailed)", () => {
 
     // Guidance + anatomy sections — each cross-checked against the graph.
     expect(button.summary).toBe(await oracle(`${DS}button`, "ds:summary"));
-    expect(button.whenToUse).toBe(await oracle(`${DS}button`, "ds:whenToUse"));
-    expect(button.whenNotToUse).toBe(
-      await oracle(`${DS}button`, "ds:whenNotToUse"),
-    );
+    expect(button.usage).toBe(await oracle(`${DS}button`, "ds:usage"));
     expect(button.guidelines).toBe(
       await oracle(`${DS}button`, "ds:guidelines"),
     );
@@ -200,7 +200,13 @@ describe("block lookup — Button content parity (GraphQL, detailed)", () => {
     const out = (await verb("lookup").run({ name: ["Button"] }, rt)) as never;
     const llm = verb("lookup").output.formatters.llm(out);
     expect(llm).toContain("## Button");
-    expect(llm).toContain("### When to use");
+    expect(llm).toContain("### Usage");
+    // The usage literal's OWN headings are demoted below the section heading
+    // they now live under, so `### When to use` renders as a CHILD of Usage
+    // rather than a sibling that reads as an empty section.
+    expect(llm).toContain("#### When to use");
+    expect(llm).toContain("#### When not to use");
+    expect(llm).not.toContain("\n### When to use\n");
     expect(llm).toContain("### Anatomy (DSL)");
     expect(llm).toContain("### Modifier Families");
     expect(llm).toContain("primary");
@@ -213,7 +219,15 @@ describe("block lookup — Modal content parity (GraphQL, detailed)", () => {
     expect(modal.uri).toBe(`${DS}modal`);
     expect(modal.name).toBe("Modal");
     expect(modal.summary).toBe(await oracle(`${DS}modal`, "ds:summary"));
-    expect(modal.whenToUse).toBe(await oracle(`${DS}modal`, "ds:whenToUse"));
+    // Modal asserts an EMPTY `ds:usage` — the shape 138 of the 264 live blocks
+    // have. It resolves (parity with the oracle) and renders NOTHING: an empty
+    // literal must not print a bare "### Usage" heading with no body under it.
+    expect(modal.usage).toBe(await oracle(`${DS}modal`, "ds:usage"));
+    expect(modal.usage).toBe("");
+    const modalLlm = verb("lookup").output.formatters.llm(
+      (await verb("lookup").run({ name: ["Modal"] }, rt)) as never,
+    );
+    expect(modalLlm).not.toContain("### Usage");
     const families = modal.modifierFamilies as {
       name: string;
       values?: string[];
@@ -237,7 +251,7 @@ describe("block lookup — disclosure trims to the base view at summary", () => 
     const button = out.results.at(0) as Record<string, unknown>;
     expect(button.name).toBe("Button");
     expect(button.summary).toBeDefined();
-    expect(button.whenToUse).toBeUndefined();
+    expect(button.usage).toBeUndefined();
     expect(button.anatomyDsl).toBeUndefined();
     expect(button.modifierFamilies).toBeUndefined();
     expect(button.figmaLink).toBeUndefined();
