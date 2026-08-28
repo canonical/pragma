@@ -149,9 +149,22 @@ export type ParamSpec =
  * list-shaped formatters read it; `llm` (the byte-frozen agent contract) and
  * `json` (the envelope) never see it.
  *
- * `emptyNotice` is the empty-state seam: when the data amounts to zero
- * records, return the calm notice. Return `undefined` (or omit the member) for
- * data that has content.
+ * `notice` is the seam for what the DATA cannot say about itself. Return the
+ * calm sentence when the payload would otherwise misrepresent the read; return
+ * `undefined` (or omit the member) when it speaks for itself.
+ *
+ * Two shapes qualify, and they are the same failure. A zero-record result
+ * ("empty ≠ silence"): an unbuilt store, a mistyped filter and a genuinely empty
+ * result were all `{"ok":true,"data":[],"meta":{}}`. And a result that is one of
+ * several it could have been — a `lookup` whose name reached more entities than
+ * the one it answers with. A caller shown Launchpad's `Button` has no way to
+ * discover the global one from a payload that looks exactly like an unambiguous
+ * hit; the notice names the IRIs the answer did not take, which is the only
+ * address that reaches them.
+ *
+ * It was called `emptyNotice` while emptiness was the only case. The channel is
+ * unchanged — same key, same three surfaces — so this is one seam covering both,
+ * not a second one grown beside it.
  *
  * Three surfaces route it, each in its own register — it is one seam, not a
  * plain-mode courtesy:
@@ -178,7 +191,7 @@ export interface Formatters<T> {
   ) => string;
   readonly llm: (d: T) => string;
   readonly json: (d: T) => string;
-  readonly emptyNotice?: (d: T) => string | undefined;
+  readonly notice?: (d: T) => string | undefined;
 }
 
 /** A usage example shown in verb help. */

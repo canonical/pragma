@@ -116,7 +116,7 @@ describe("pack list empty-state (U5, PROTECTED)", () => {
     const { formatters } = listVerb(pack).output;
     // The message + runnable hint live on the empty-state seam — the
     // dispatcher routes them to stderr, keeping plain stdout pure data.
-    const notice = formatters.emptyNotice?.([]);
+    const notice = formatters.notice?.([]);
     expect(notice).toContain(`No ${pack.noun} entries found.`);
     expect(notice).toMatch(hint);
     // JSON is the uniform empty array — unchanged by the message.

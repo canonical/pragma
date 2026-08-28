@@ -87,9 +87,9 @@ describe("skill lookup (storeless)", () => {
 describe("skill list empty-state (U5)", () => {
   it("the empty notice (stderr's text) guides toward package sources", () => {
     // Zero skills: plain stdout is empty (a pipe reads no prose) and the
-    // guidance rides the dispatcher's stderr via `emptyNotice`.
+    // guidance rides the dispatcher's stderr via `notice`.
     expect(skillListFormatters.plain([])).toBe("");
-    const notice = skillListFormatters.emptyNotice?.([]);
+    const notice = skillListFormatters.notice?.([]);
     expect(notice).toContain("No skills found");
     expect(notice).toContain("pragma sources update");
   });

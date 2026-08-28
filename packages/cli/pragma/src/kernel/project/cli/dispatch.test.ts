@@ -219,7 +219,7 @@ describe("--quiet — success is silent, failure is not", () => {
       formatters: {
         ...passthroughFormatters,
         plain: () => "",
-        emptyNotice: () => "No results.",
+        notice: () => "No results.",
       },
     },
     run: async () => [],

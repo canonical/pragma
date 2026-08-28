@@ -170,12 +170,13 @@ function renderData(
 ): DispatchOutcome {
   if (flags.format === "json") {
     const projection = JSON.parse(verb.output.formatters.json(data));
-    // The calm zero-record notice rides `meta` on the machine surfaces, so an
-    // empty result is distinguishable from an unbuilt store or a mistyped
-    // filter. `data` keeps its uniform empty shape, and MCP builds the same key
-    // from the same seam (`mcp/registerVerb.ts#emptyMeta`) — the two machine
-    // surfaces stay byte-equal.
-    const notice = verb.output.formatters.emptyNotice?.(data);
+    // The calm notice rides `meta` on the machine surfaces, so an empty result
+    // is distinguishable from an unbuilt store or a mistyped filter, and an
+    // ambiguous lookup hit from an unambiguous one. `data` keeps its uniform
+    // shape, and MCP builds the same key from the same seam
+    // (`mcp/registerVerb.ts#noticeMeta`) — the two machine surfaces stay
+    // byte-equal.
+    const notice = verb.output.formatters.notice?.(data);
     return {
       stdout: `${JSON.stringify(
         successEnvelope(projection, notice ? { ...meta, notice } : meta),
@@ -192,11 +193,9 @@ function renderData(
     stdoutIsTty: !stdoutIsCaptured(),
   };
   const text = verb.output.formatters.plain(data, context);
-  // The calm zero-record notice is success-path guidance — `--quiet` mutes it.
+  // The calm notice is success-path guidance — `--quiet` mutes it.
   const notice =
-    flags.quiet === true
-      ? undefined
-      : verb.output.formatters.emptyNotice?.(data);
+    flags.quiet === true ? undefined : verb.output.formatters.notice?.(data);
   return {
     stdout: text ? `${text}\n` : "",
     ...(notice ? { stderr: `${notice}\n` } : {}),

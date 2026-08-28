@@ -144,17 +144,18 @@ function withDetail(
 }
 
 /**
- * The empty-state seam, projected into the envelope's `meta`.
+ * The notice seam, projected into the envelope's `meta`.
  *
- * `emptyNotice` existed with exactly ONE consumer: the CLI dispatcher, which
- * writes it to stderr. An agent therefore could not tell an unbuilt store, a
- * mistyped filter and a genuinely empty result apart — all three were
- * `{"ok":true,"data":[],"meta":{}}`. Riding in `meta` keeps `data` the uniform
- * empty shape (`[]` stays `[]`) while making empty ≠ silence, and the CLI's
+ * It existed with exactly ONE consumer: the CLI dispatcher, which writes it to
+ * stderr. An agent therefore could not tell an unbuilt store, a mistyped filter
+ * and a genuinely empty result apart — all three were
+ * `{"ok":true,"data":[],"meta":{}}` — and, later, could not tell an unambiguous
+ * lookup hit from one of three blocks sharing a name. Riding in `meta` keeps
+ * `data` its uniform shape while making both of those ≠ silence, and the CLI's
  * `--format json` carries the same key so the two surfaces stay byte-equal.
  */
-function emptyMeta(verb: VerbSpec, data: unknown): Record<string, unknown> {
-  const notice = verb.output.formatters.emptyNotice?.(data as never);
+function noticeMeta(verb: VerbSpec, data: unknown): Record<string, unknown> {
+  const notice = verb.output.formatters.notice?.(data as never);
   return notice ? { notice } : {};
 }
 
@@ -169,7 +170,7 @@ function readHandler(verb: VerbSpec, runtime: PragmaRuntime) {
       );
       return toolSuccess(
         JSON.parse(verb.output.formatters.json(result)),
-        emptyMeta(verb, result),
+        noticeMeta(verb, result),
       );
     } catch (error) {
       return toolError(asPragmaError(error));

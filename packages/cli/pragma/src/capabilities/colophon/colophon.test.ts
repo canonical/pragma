@@ -146,14 +146,14 @@ describe("colophon — the configured domain's story, and only that", () => {
     // the empty state is pinned here — bare stdout, guidance on stderr.
     const empty: ColophonData = { sections: [] };
     expect(colophonFormatters.plain(empty)).toBe("");
-    const notice = colophonFormatters.emptyNotice?.(empty);
+    const notice = colophonFormatters.notice?.(empty);
     expect(notice).toContain("No colophon declared");
     expect(notice).toContain("sources update");
     // llm returns before the dispatcher's stderr routing, so it says the same
     // thing in its own body rather than emitting nothing.
     expect(colophonFormatters.llm(empty)).toContain("No colophon declared");
     // A populated payload has nothing to be calm about.
-    expect(colophonFormatters.emptyNotice?.(FIXTURE)).toBeUndefined();
+    expect(colophonFormatters.notice?.(FIXTURE)).toBeUndefined();
   });
 });
 
