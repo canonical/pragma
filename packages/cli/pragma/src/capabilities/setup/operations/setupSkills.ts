@@ -221,6 +221,42 @@ function linkTargets(
 }
 
 /**
+ * The GLOBAL band's link directories that ALREADY EXIST — the converge-only set
+ * `sources update` is allowed to refresh.
+ *
+ * The filter is the whole policy, and it is why this is a separate export
+ * rather than `linkTargets` made public. `composeSkills` mkdirs its targets and
+ * `linkTargets` unconditionally appends `~/.agents/skills`, so an update that
+ * reused them would CREATE harness directories on a machine that never asked
+ * for skill linking — and `sources update` is `mcp: { expose: true }` with
+ * `mutates: true`, which would mean an agent, over MCP, after a network fetch,
+ * conjuring `~/.claude/skills` into existence. Refresh what is there; never
+ * bring a directory into being.
+ *
+ * The band is not widened by this: `VERIFIED_GLOBAL_SKILL_HARNESSES` and the
+ * band covenant are exactly the ones `setup skills --global` already honours,
+ * because this is the same `linkTargets` call it makes.
+ *
+ * @param cwd - The invocation's working directory (harness detection reads it).
+ * @returns The existing global link directories.
+ * @note Impure — detects harnesses and stats each candidate directory.
+ */
+export async function existingGlobalSkillDirs(
+  cwd: string,
+): Promise<readonly { dir: string; name: string }[]> {
+  const [{ detectHarnesses, readPlatformEnv, userHome }, { runTask }] =
+    await Promise.all([
+      import("@canonical/harnesses"),
+      import("@canonical/task/node"),
+    ]);
+  const detected = await runTask(detectHarnesses(cwd));
+  const home = userHome(readPlatformEnv());
+  return linkTargets(detected, "global", home).filter((t) =>
+    rootIsPresent(t.dir),
+  );
+}
+
+/**
  * Whether the band's source root exists as a directory.
  *
  * `stat`, not `lstat`: a root the user symlinked into place is still a root.
