@@ -9,8 +9,12 @@
  *
  * - {@link stdoutIsCaptured} reads **stdout**. It governs OUTPUT SHAPE: whether
  *   a consumer is piping the data stream somewhere (the shape an agent
- *   captures), which is what selects the condensed `llm` default and drops the
- *   root-help wordmark.
+ *   captures), which is what AUTO-INFERS the condensed `llm` default. Capture
+ *   is the inference, not the gate: what drops the root-help wordmark is the
+ *   resulting shape — `llm` or `json` — so an explicit `--format plain` through
+ *   a pipe is captured and keeps the art, while `--format llm` on an attended
+ *   terminal is not captured and drops it. Explicit format beats inference, in
+ *   both directions.
  * - {@link canPrompt} reads **stdin AND stderr** — never stdout. The step
  *   sequence renders to stderr and reads stdin, so `<verb> 2>/dev/null` is
  *   non-interactive while `<verb> | cat` is not. Gating this one on stdout
