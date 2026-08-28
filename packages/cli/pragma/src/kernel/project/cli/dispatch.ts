@@ -25,6 +25,7 @@ import {
   renderErrorLlm,
   renderErrorPlain,
 } from "../../error/index.js";
+import { canPrompt, stdoutIsCaptured } from "../../interactivity.js";
 import type { RenderContext } from "../../render/contracts.js";
 import { successEnvelope, writeStdout } from "../../render/index.js";
 import { bootRuntime } from "../../runtime/index.js";
@@ -41,18 +42,6 @@ export interface MutationFlags {
   readonly dryRun: boolean;
   readonly undo: boolean;
   readonly yes: boolean;
-}
-
-/**
- * THE CLI interactivity gate (H3): stdin AND stderr are TTYs. The Ink wizard
- * renders to stderr and reads stdin, so `<verb> 2>/dev/null` must be
- * non-interactive — gating on stdout would mount an invisible render that
- * blocks on stdin. One exported fact: the kernel's interaction context and a
- * mounted subtree's own decision both read it here, so the two callers can
- * never disagree about what "a TTY" means.
- */
-export function cliIsTTY(): boolean {
-  return process.stdin.isTTY === true && process.stderr.isTTY === true;
 }
 
 /**
@@ -171,7 +160,7 @@ export function extractParams(
  * pipe would read as a record. `llm` and `json` keep their own empty shapes
  * on stdout: both are machine contracts whose consumers read one stream.
  *
- * @note Impure — reads `process.stdout.isTTY` for the render context.
+ * @note Impure — reads stdout's capture state for the render context.
  */
 function renderData(
   verb: VerbSpec,
@@ -192,7 +181,7 @@ function renderData(
   }
   const context: RenderContext = {
     headers: flags.noHeaders !== true,
-    stdoutIsTty: process.stdout.isTTY === true,
+    stdoutIsTty: !stdoutIsCaptured(),
   };
   const text = verb.output.formatters.plain(data, context);
   // The calm zero-record notice is success-path guidance — `--quiet` mutes it.
@@ -332,8 +321,8 @@ export async function executeVerb(
     // block on input. `--undo` stays handler-free and untouched by this seam.
     const controller = new AbortController();
     const interaction: InteractionRuntime = {
-      // The shared H3 gate (see cliIsTTY): stderr, never stdout.
-      isTTY: cliIsTTY(),
+      // The shared H3 gate (see `canPrompt`): stdin and stderr, never stdout.
+      isTTY: canPrompt(),
       transport: "cli",
       yes: mutation.yes,
       signal: controller.signal,

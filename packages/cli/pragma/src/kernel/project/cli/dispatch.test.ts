@@ -5,10 +5,11 @@ import { $, fail, gen, log, mkdir, succeed, writeFile } from "@canonical/task";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fixturePreviewModule } from "../../../testing/fixtures/fixtureCapability.js";
 import { PragmaError } from "../../error/PragmaError.js";
+import { canPrompt } from "../../interactivity.js";
 import { bootRuntime } from "../../runtime/boot.js";
 import type { GlobalFlags } from "../../runtime/types.js";
 import type { ParamSpec, VerbSpec } from "../../spec/types.js";
-import { cliIsTTY, dispatch, executeVerb, extractParams } from "./dispatch.js";
+import { dispatch, executeVerb, extractParams } from "./dispatch.js";
 
 /** The read-then-write mutation the honest-preview guards drive. */
 const graft = fixturePreviewModule.verbs[0] as VerbSpec;
@@ -491,7 +492,7 @@ describe("executeVerb — interactivity gate (H3)", () => {
     expect(sink.isTTY).toBe(true);
   });
 
-  it("cliIsTTY IS the stdin+stderr conjunction — the one gate both callers read", () => {
+  it("canPrompt IS the stdin+stderr conjunction — the one gate both callers read", () => {
     // The mount's create decision reads the same exported function this
     // describe drives through executeVerb, so pinning the truth table here
     // pins BOTH callers (nothing is left to keep two copies in step).
@@ -506,7 +507,7 @@ describe("executeVerb — interactivity gate (H3)", () => {
       setTTY(process.stdin, stdin);
       setTTY(process.stderr, stderr);
       setTTY(process.stdout, stdout);
-      expect(cliIsTTY(), `stdin=${stdin} stderr=${stderr}`).toBe(expected);
+      expect(canPrompt(), `stdin=${stdin} stderr=${stderr}`).toBe(expected);
     }
   });
 });

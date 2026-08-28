@@ -12,6 +12,7 @@
  */
 
 import chalk from "chalk";
+import { stdoutIsCaptured } from "../interactivity.js";
 
 /** The palette + gate a renderer consults to beautify the human path. */
 export interface RenderStyle {
@@ -88,17 +89,35 @@ export function forbidsColor(env: NodeJS.ProcessEnv): boolean {
 if (forbidsColor(process.env)) chalk.level = 0;
 
 /**
+ * Whether stdout may carry color: an attended terminal AND a usable chalk
+ * level (zeroed by the module-load check above under `NO_COLOR`).
+ *
+ * The third question of the interactivity vocabulary (`kernel/interactivity.ts`
+ * holds the other two, and its docblock says why this one lives here: it needs
+ * `chalk`, and that module is on the flag-parsing fast path). Both signals are
+ * required — `supports-color` enables color off a TTY in CI, which would paint
+ * escapes into a redirected stream every byte-comparison then has to strip.
+ *
+ * @returns True on a color-capable terminal.
+ * @note Impure — reads stdout's capture state and chalk's color level.
+ */
+export function canColor(): boolean {
+  return !stdoutIsCaptured() && chalk.level > 0;
+}
+
+/**
  * The active style for this process's stdout.
  *
- * Gated on BOTH signals: stdout must be an attended TTY, so piped / redirected /
- * MCP output stays byte-stable even where `supports-color` fires off a TTY (CI
- * sets `GITHUB_ACTIONS`, which chalk honors); AND chalk must report a usable
- * color level, which the module-load check above forces to zero under
- * `NO_COLOR`.
+ * Both signals, asked as one named question ({@link canColor}): stdout must be
+ * an attended TTY, so piped / redirected / MCP output stays byte-stable even
+ * where `supports-color` fires off a TTY (CI sets `GITHUB_ACTIONS`, which chalk
+ * honors); AND chalk must report a usable color level, which the module-load
+ * check above forces to zero under `NO_COLOR`.
  *
  * @returns A colorizing style on a color-capable TTY, else the identity styler.
- * @note Impure — reads `process.stdout.isTTY` and chalk's color level.
+ * @note Impure — {@link canColor} reads stdout's capture state and chalk's
+ *   color level.
  */
 export function defaultStyle(): RenderStyle {
-  return styleFor(process.stdout.isTTY === true && chalk.level > 0);
+  return styleFor(canColor());
 }

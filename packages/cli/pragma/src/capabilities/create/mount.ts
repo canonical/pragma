@@ -47,9 +47,9 @@ import type { Task } from "@canonical/task";
 import { type Command, CommanderError } from "commander";
 import { PragmaError } from "../../kernel/error/index.js";
 import { renderErrorForFormat } from "../../kernel/error/renderError.js";
+import { canPrompt } from "../../kernel/interactivity.js";
 import { MUTATION_FLAG_DOCS } from "../../kernel/project/cli/constants.js";
 import {
-  cliIsTTY,
   dispatchPrepared,
   type MutationFlags,
 } from "../../kernel/project/cli/dispatch.js";
@@ -177,7 +177,7 @@ export function explicitLeafAnswers(
  * The mount's mode resolution — `decideInteraction` over the leaf's five
  * inputs, with the TTY fact INJECTED so the resolution is testable with
  * `tty: true` (no suite can drive a real TTY through a subprocess). The
- * action calls it with {@link cliIsTTY} — the same exported H3 gate the
+ * action calls it with {@link canPrompt} — the same exported H3 gate the
  * kernel's interaction context reads — so the mount and `runCreate` can
  * never disagree about interactivity.
  */
@@ -280,7 +280,7 @@ export function mountCreateTree(parent: Command, host: CliMountHost): void {
         generator.prompts,
         explicit,
         mutation,
-        cliIsTTY(),
+        canPrompt(),
       );
       if (mode === "refuse") {
         writeRefusal(

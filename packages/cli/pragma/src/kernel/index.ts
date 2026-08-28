@@ -10,8 +10,16 @@
  * is high: it must be a declaration the kernel makes about itself rather than
  * a step in any one pipeline.
  *
- * Today that is the declared vocabulary — the distribution's mapping from the
- * roles the CLI knows (a prompt, a resource) onto the RDF terms that actually
+ * Today that is the declared vocabulary and the interactivity vocabulary. The
+ * latter (`interactivity.ts`) names the questions about attended streams — is
+ * stdout captured, may we prompt, may we color (that third one lives with the
+ * styler, for the dependency reason its docblock records) — which render,
+ * dispatch and flag parsing each used to answer with their own inline probe.
+ * They are different questions over different streams, and the names are what
+ * keeps them from being flattened into one flag.
+ *
+ * The declared vocabulary is the distribution's mapping from the roles the
+ * CLI knows (a prompt, a resource) onto the RDF terms that actually
  * carry them in the active graph. It is parsed once at module load and read
  * from the prompt capability, the MCP prompt source, and the pack index
  * builder, none of which owns it and any of which would otherwise hardcode
@@ -22,5 +30,6 @@
  * exporting it here would advertise a runtime API the gate does not have.
  */
 
+export { canPrompt, stdoutIsCaptured } from "./interactivity.js";
 export type { DeclaredVocabulary } from "./vocabulary.js";
 export { VOCABULARY } from "./vocabulary.js";
