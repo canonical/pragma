@@ -78,11 +78,33 @@ ds:token.spacing.medium a ds:Token ;
   ds:valueDark "16px" .
 `;
 
-/** The `cs:` (code standards) section — reused verbatim from `standard/parity.test.ts`'s
- * fixture shape so `code/function/purity`/`react/component/*` are stable, shared
- * anchor names rather than a second invented set. */
+/**
+ * The `cs:` (code standards) section — shaped like the SHIPPED code-standards
+ * graph, not like a convenience fixture.
+ *
+ * Two facts about the real data are reproduced here on purpose, because the
+ * eval harness was blind to both while every fixture standard carried a
+ * `cs:name`:
+ *
+ * 1. **Most standards carry NO `cs:name`.** The shipped graph asserts it on 22
+ *    of 156 (~13%); one of the eight standards below carries one (~13%). The
+ *    ontology says so deliberately — `cs:name` is "an optional human-readable
+ *    display title" that "never participates in identity", the canonical
+ *    identifier being the compact IRI. So the name `standard list` publishes for
+ *    the other seven is SYNTHESIZED from the IRI local name
+ *    (`cs:react.component.props` → `react/component/props`), and a lookup that
+ *    cannot resolve a synthesized name cannot resolve the graph.
+ * 2. **Categories are a two-level SKOS tree.** `cs:testing.unit skos:broader
+ *    cs:testing`, exactly as the shipped graph declares for `testing.*` and
+ *    `ui_blocks.nojs`, and one standard sits DIRECTLY on the parent — the case a
+ *    non-reflexive roll-up (`skos:broader+`) silently drops.
+ *
+ * Anchor names (`code/function/purity`, `react/component/*`) are unchanged; they
+ * are simply reached the way the real graph reaches them.
+ */
 const CS_TTL = `
 @prefix cs: <http://pragma.canonical.com/codestandards#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 
 cs:CodeStandard a owl:Class .
 cs:Category a owl:Class .
@@ -97,27 +119,57 @@ cs:dont a owl:ObjectProperty ; rdfs:domain cs:CodeStandard ; rdfs:range cs:Examp
 cs:language a owl:DatatypeProperty ; rdfs:domain cs:Example ; rdfs:range xsd:string .
 cs:code a owl:DatatypeProperty ; rdfs:domain cs:Example ; rdfs:range xsd:string .
 
-cs:cat.react a cs:Category ; cs:slug "react" .
-cs:cat.code a cs:Category ; cs:slug "code" .
+# ---- Categories: flat roots, plus one two-level branch (testing) ----
+cs:react a cs:Category ; rdfs:label "React" ; cs:slug "react" .
+cs:code a cs:Category ; rdfs:label "Code" ; cs:slug "code" .
+cs:turtle a cs:Category ; rdfs:label "Turtle" ; cs:slug "turtle" .
+cs:testing a cs:Category ; rdfs:label "Testing" ; cs:slug "testing" .
+cs:testing.unit a cs:Category ;
+  rdfs:label "Unit testing" ;
+  cs:slug "testing-unit" ;
+  skos:broader cs:testing .
 
+# ---- Standards. Seven of eight carry NO cs:name (the shipped ~13% split). ----
 cs:react.component.props a cs:CodeStandard ;
-  cs:name "react/component/props" ;
   cs:description "Type component props explicitly." ;
-  cs:hasCategory cs:cat.react ;
+  cs:hasCategory cs:react ;
   cs:do [ a cs:Example ; cs:description "Do type props" ; cs:language "tsx" ; cs:code "interface P {}" ] ;
   cs:dont [ a cs:Example ; cs:description "Avoid any" ; cs:language "tsx" ; cs:code "props: any" ] .
 
 cs:react.component.structure a cs:CodeStandard ;
-  cs:name "react/component/structure" ;
   cs:description "Keep folder structure flat." ;
-  cs:hasCategory cs:cat.react ;
+  cs:hasCategory cs:react ;
   cs:extends cs:react.component.props ;
   cs:do [ a cs:Example ; cs:description "Do flatten" ; cs:language "text" ; cs:code "src/Button.tsx" ] .
 
 cs:code.function.purity a cs:CodeStandard ;
-  cs:name "code/function/purity" ;
   cs:description "Prefer pure functions." ;
-  cs:hasCategory cs:cat.code .
+  cs:hasCategory cs:code .
+
+# The standard sitting DIRECTLY on the parent category: a skos:broader+
+# roll-up loses it, a reflexive skos:broader* keeps it.
+cs:testing.smoke a cs:CodeStandard ;
+  cs:description "Keep one end-to-end smoke path green." ;
+  cs:hasCategory cs:testing .
+
+cs:testing.unit.isolation a cs:CodeStandard ;
+  cs:description "Isolate the unit under test." ;
+  cs:hasCategory cs:testing.unit .
+
+cs:testing.unit.naming a cs:CodeStandard ;
+  cs:description "Name a unit test for the behaviour it pins." ;
+  cs:hasCategory cs:testing.unit ;
+  cs:do [ a cs:Example ; cs:description "Do name the behaviour" ; cs:language "ts" ; cs:code "it(\\"rejects an empty batch\\")" ] .
+
+cs:testing.unit.fixtures a cs:CodeStandard ;
+  cs:description "Share one fixture per behavioural claim." ;
+  cs:hasCategory cs:testing.unit .
+
+# The ~13%: a display title that adds something the IRI does not.
+cs:turtle.naming.local_name_casing a cs:CodeStandard ;
+  cs:name "Turtle local-name casing" ;
+  cs:description "Use snake_case for multi-word local-name segments." ;
+  cs:hasCategory cs:turtle .
 `;
 
 /** The `ds:Prompt` workflow templates — the ONE source both the `prompt_list`/
@@ -255,6 +307,7 @@ ds:implementation.svelte-ds-global.button a ds:ImplementationObject ;
 export const CANONICAL_PREFIXES: Readonly<Record<string, string>> = {
   ...BLOCK_PREFIXES,
   cs: "http://pragma.canonical.com/codestandards#",
+  skos: "http://www.w3.org/2004/02/skos/core#",
 };
 
 /** The full canonical Turtle: PR3's `BLOCK_TTL` verbatim, plus the sections above. */

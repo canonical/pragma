@@ -87,6 +87,73 @@ export const readNounEvalCases: readonly EvalCase[] = [
     },
   },
   {
+    // The journey the reported failure actually walked: browse a category, take
+    // a published `name` VERBATIM, and ask for its content. Every row `list`
+    // publishes must be addressable by `lookup` — otherwise the two-step
+    // grammar the whole read surface is built on has a hole in it, and an agent
+    // that follows the tools' own output gets ENTITY_NOT_FOUND with empty
+    // suggestions and a recovery pointing back at the list it just read.
+    id: "tool-standard-list-names-are-addressable-by-lookup",
+    kind: "tool",
+    input:
+      "every name standard_list {category:react} publishes resolves through standard_lookup {name:[…], detail:detailed}, dos/donts included.",
+    async expect() {
+      await withCanonicalFixture(CANONICAL_CONFIG, async (mcp) => {
+        const list = await mcp.callTool("standard_list", { category: "react" });
+        assert.equal(list.ok, true);
+        const names = (list.data as { name: string }[]).map((row) => row.name);
+        assert.ok(names.length > 0, "expected standard_list to publish rows");
+        let withExamples = 0;
+        for (const name of names) {
+          const result = await mcp.callTool("standard_lookup", {
+            name: [name],
+            detail: "detailed",
+          });
+          assert.equal(
+            result.ok,
+            true,
+            `standard_lookup rejected the name standard_list published: ${name}`,
+          );
+          const entity = (result.data as { results: Record<string, unknown>[] })
+            .results[0];
+          assert.equal(entity?.name, name);
+          if (
+            (entity?.dos as unknown[] | undefined)?.length &&
+            (entity?.donts as unknown[] | undefined)?.length
+          ) {
+            withExamples += 1;
+          }
+        }
+        assert.ok(
+          withExamples > 0,
+          "expected at least one resolved standard to carry both dos and donts",
+        );
+      });
+    },
+  },
+  {
+    // The glob the lookup tool's own description advertises. It matched nothing
+    // on the shipped graph, because the candidate pool was the `cs:name`
+    // population and no asserted name contains a slash.
+    id: "tool-standard-lookup-advertised-glob-matches",
+    kind: "tool",
+    input:
+      'standard_lookup {name:["react/component/*"]} — the glob the tool description advertises — resolves at least one standard.',
+    async expect() {
+      await withCanonicalFixture(CANONICAL_CONFIG, async (mcp) => {
+        const result = await mcp.callTool("standard_lookup", {
+          name: ["react/component/*"],
+        });
+        assert.equal(result.ok, true);
+        const results = (result.data as { results: unknown[] }).results;
+        assert.ok(
+          results.length > 0,
+          "the advertised glob must match at least one standard",
+        );
+      });
+    },
+  },
+  {
     id: "content-canonical-graph-has-4-components",
     kind: "content",
     input:
