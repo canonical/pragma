@@ -42,6 +42,7 @@ import type {
   PackChildRow,
   PackEntity,
   PackLookup,
+  PackRow,
   StorySource,
 } from "./types.js";
 
@@ -53,10 +54,37 @@ export interface LookupError {
   readonly suggestions?: readonly string[];
 }
 
+/**
+ * One lookup argument that reached MORE entities than the one it answered with.
+ *
+ * The whole point is `others`: an IRI is the only address that reaches a block
+ * whose name it shares, so naming them is naming the recovery. Carried on the
+ * output rather than only in the rendered sentence, because the machine surfaces
+ * hand `data` to an agent and a sentence is not an address.
+ */
+export interface AmbiguousQuery {
+  /** The argument as the caller wrote it. */
+  readonly query: string;
+  /** The entity IRI the ranking chose. */
+  readonly chosen: string;
+  /** The entity IRIs it outranked, best first. */
+  readonly others: readonly string[];
+}
+
 /** The result of a (possibly multi-name) lookup. */
 export interface LookupOutput {
   readonly results: PackEntity[];
   readonly errors: LookupError[];
+  /**
+   * The arguments that were ambiguous, PRESENT ONLY when there were any.
+   *
+   * Optional so an unambiguous lookup — every one of the 201 block names that
+   * are unique, and every argument on every other noun — keeps the payload it
+   * always had, byte for byte. A key that appeared as `[]` on every read would
+   * be a uniform shape bought by telling every caller about a case that did not
+   * arise.
+   */
+  readonly ambiguous?: readonly AmbiguousQuery[];
 }
 
 /** What the resolver needs from the runtime: the store + the query facade. */
@@ -97,6 +125,7 @@ export async function resolveLookup(
   );
   const results: PackEntity[] = [];
   const errors: LookupError[] = [...expanded.globErrors];
+  const ambiguous: AmbiguousQuery[] = [];
   const settled = await Promise.allSettled(
     expanded.names.map((query) =>
       lookupOne(rt, lookup, noun, query, source, prefixes, level),
@@ -106,7 +135,14 @@ export async function resolveLookup(
     const query = expanded.names[index];
     if (query === undefined) continue;
     if (outcome.status === "fulfilled") {
-      results.push(outcome.value);
+      results.push(outcome.value.entity);
+      if (outcome.value.others.length > 0) {
+        ambiguous.push({
+          query,
+          chosen: String(outcome.value.entity.uri),
+          others: outcome.value.others,
+        });
+      }
       continue;
     }
     const error = outcome.reason;
@@ -127,7 +163,11 @@ export async function resolveLookup(
       });
     }
   }
-  return { results, errors };
+  return {
+    results,
+    errors,
+    ...(ambiguous.length > 0 ? { ambiguous } : {}),
+  };
 }
 
 /**
@@ -189,7 +229,32 @@ async function expandQueries(
   return { names, globErrors };
 }
 
-/** Look up one entity, dispatching to the pack's declared fetch source. */
+/**
+ * Look up the ONE entity a lookup argument answers with, plus the entities it
+ * OUTRANKED, dispatching to the pack's declared fetch source.
+ *
+ * One argument, one entity. That arity is load-bearing and deliberately
+ * unchanged: it is what the MCP tool shape and the generated reference document,
+ * a glob is the declared multi-entity form, and a lookup that started answering
+ * in arrays would change the payload of every unambiguous read to describe a
+ * case that did not arise.
+ *
+ * What changed is that the entities it does not answer with are no longer
+ * DISCARDED IN SILENCE. The resolve is ranked and unlimited, the best row wins,
+ * and the rest come back as IRIs for {@link resolveLookup} to put in the notice.
+ * That is the whole repair on this seam: 25 live block names reach two or three
+ * blocks apiece, the answer was decided by the alphabet, and the payload looked
+ * exactly like an unambiguous hit — so "address it by IRI", the documented
+ * recovery, could not be reached by anyone who did not already know.
+ *
+ * Fetching stops at the winner: the losers cost one resolve row each, never a
+ * field fetch or an expand. A notice names IRIs, not entities.
+ *
+ * The rows are collapsed to one per `?uri` first. The sparql form projects its
+ * fields in the same SELECT, so a multi-valued field yields one row per value;
+ * that has always been true and `LIMIT 1` merely hid it. Without the collapse
+ * one entity would report itself as several in the notice.
+ */
 async function lookupOne(
   rt: LookupRuntime,
   lookup: PackLookup,
@@ -198,15 +263,15 @@ async function lookupOne(
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
   level: string | undefined,
-): Promise<PackEntity> {
+): Promise<{ entity: PackEntity; others: readonly string[] }> {
   const graphqlSourced = lookup.source === "graphql";
   const rows = await runSelect(
     rt,
     buildResolveQuery(lookup, query, prefixes, level),
     source,
   );
-  const base = rows.at(0);
-  if (!base?.uri) {
+  const bases = firstRowPerEntity(rows);
+  if (bases.length === 0) {
     const candidates = await listEntityNames(rt, lookup, source);
     throw PragmaError.notFound(noun, query, {
       suggestions: suggestNames(query, candidates),
@@ -219,29 +284,47 @@ async function lookupOne(
     });
   }
 
+  const [base, ...outranked] = bases as [PackRow, ...PackRow[]];
+  const others = outranked.map((row) => String(row.uri));
+
   if (graphqlSourced) {
-    return fetchGraphqlLookup(
-      rt,
-      lookup,
-      base.uri,
-      base.name ?? query,
-      // The GraphQL lane's only use of the source is CONFIG_ERROR attribution,
-      // which is right for any origin — so it takes the label, not provenance.
-      source.label,
-      prefixes,
-      level,
-    );
+    return {
+      entity: await fetchGraphqlLookup(
+        rt,
+        lookup,
+        String(base.uri),
+        base.name ?? query,
+        // The GraphQL lane's only use of the source is CONFIG_ERROR attribution,
+        // which is right for any origin — so it takes the label, not provenance.
+        source.label,
+        prefixes,
+        level,
+      ),
+      others,
+    };
   }
 
   const entity: PackEntity = { ...base };
   for (const expand of activeExpands(lookup, level)) {
     entity[expand.name] = (await runSelect(
       rt,
-      buildExpandQuery(expand, base.uri),
+      buildExpandQuery(expand, String(base.uri)),
       source,
     )) as readonly PackChildRow[];
   }
-  return entity;
+  return { entity, others };
+}
+
+/** Collapse a ranked resolve to one row per entity, keeping the best-ranked. */
+function firstRowPerEntity(rows: readonly PackRow[]): PackRow[] {
+  const seen = new Set<string>();
+  const bases: PackRow[] = [];
+  for (const row of rows) {
+    if (!row.uri || seen.has(row.uri)) continue;
+    seen.add(row.uri);
+    bases.push(row);
+  }
+  return bases;
 }
 
 /**

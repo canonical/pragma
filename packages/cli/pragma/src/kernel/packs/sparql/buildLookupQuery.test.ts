@@ -14,6 +14,14 @@
  * derived name, so deriving one for its lookup would make entities addressable
  * — and sampleable — under names the list never handed out. Both directions are
  * pinned below.
+ *
+ * The second half of this file is the ranking a name resolve ORDERS BY, pinned
+ * as EMITTED TEXT with no store. That is deliberate: the store-backed suites
+ * prove which block wins, and a store can only ever prove it for the entities it
+ * holds — the emission is what says the rank is computed from a scope's declared
+ * NAME rather than enumerated, that an asserted rank would take precedence over
+ * the derived one, and that a story declaring no ranking is left exactly as it
+ * was. None of those three survive as an assertion about one graph.
  */
 
 import { describe, expect, it } from "vitest";
@@ -22,6 +30,7 @@ import {
   buildLookupByIriQuery,
   buildLookupNamesQuery,
   buildLookupQuery,
+  buildNameResolveQuery,
 } from "./buildLookupQuery.js";
 
 /** The one story that declares the fallback: `standard`, whose list derives names. */
@@ -135,6 +144,147 @@ describe("the shared ?name binding", () => {
     expect(buildLookupNamesQuery(CONSTRAINED)).not.toContain("COALESCE");
     expect(buildLookupNamesQuery(UNCONSTRAINED)).toContain(
       "?uri ds:name ?name .",
+    );
+  });
+});
+
+/**
+ * The shape the live `block` story declares: several classes, one of them
+ * weighted below the rest, and a scope whose own name carries the hierarchy.
+ * Copied from `pragma.conf.ts` rather than imported so a change THERE shows up
+ * here as a failing assertion about emitted text, not as a silently different
+ * query.
+ */
+const RANKED: PackLookup = {
+  source: "graphql",
+  by: "ds:name",
+  types: ["ds:Component", "ds:Pattern", "ds:Layout", "ds:Subcomponent"],
+  weights: { "ds:Subcomponent": 0.6 },
+  scopeWeight: {
+    via: "ds:tier",
+    by: "ds:name",
+    falloff: 0.2,
+    asserted: "ds:tierRank",
+  },
+};
+
+describe("the ranking a name resolve orders by", () => {
+  it("orders by the score and then by a key that cannot tie", () => {
+    // Both halves matter. Without DESC(?score) the ranking is not read at all;
+    // without the final STR(?uri) two equally-ranked entities are handed back
+    // to the store's scan order, which is the defect one layer up.
+    for (const query of [
+      buildLookupQuery(RANKED, "Button"),
+      buildNameResolveQuery(RANKED, "Button"),
+    ]) {
+      expect(query).toContain("ORDER BY DESC(?score) STR(?uri)");
+    }
+  });
+
+  it("returns the rows it ranked instead of discarding them in the store", () => {
+    // The lookup still ANSWERS with one entity — that arity is the tool's
+    // contract. The limit is gone one layer lower, so the resolver can see what
+    // it is choosing between and name it; under `LIMIT 1` the alternatives never
+    // left the store and no surface could mention what it had not been told.
+    for (const query of [
+      buildLookupQuery(RANKED, "Button"),
+      buildNameResolveQuery(RANKED, "Button"),
+      buildLookupQuery(CONSTRAINED, "spacing.medium"),
+    ]) {
+      expect(query).not.toContain("LIMIT");
+    }
+  });
+
+  it("multiplies the two factors rather than tiebreaking between them", () => {
+    // The editorial ruling, in the one line that implements it. As a TIEBREAK,
+    // the scope would decide before the type ever spoke and a global
+    // SUBcomponent would outrank a whole component elsewhere; as a product it
+    // does not (0.6 × 1 < 1 × 0.8).
+    expect(buildNameResolveQuery(RANKED, "TextInput")).toContain(
+      "BIND(IF(?rankType = 0 || ?rankScopeWeight = 0, 0, ?rankType * ?rankScopeWeight) AS ?score)",
+    );
+  });
+
+  it("DERIVES the scope rank from the scope's declared name, never a list of scopes", () => {
+    const query = buildNameResolveQuery(RANKED, "Button");
+    // The depth is the separator count in the scope's OWN name. The live tiers
+    // spell one scope `ds:apps_launchpad` and "Apps/Launchpad" — only the name
+    // carries the slash — so reading the IRI would rank every tier at depth 1.
+    expect(query).toContain("OPTIONAL { ?rankScope ds:name ?rankScopeName . }");
+    expect(query).toContain(
+      'BIND(STRLEN(?rankScopeName) - STRLEN(REPLACE(?rankScopeName, "/", "")) AS ?rankDepth)',
+    );
+    // No tier is NAMED anywhere in the query: a scope added upstream tomorrow
+    // is ranked by the same expression, with no edit here or in the config.
+    expect(query).not.toContain("apps_launchpad");
+    expect(query).not.toContain("ds:global");
+  });
+
+  it("guards the depth-0 product the top scope always hits", () => {
+    // oxigraph raises on `0.2 * 0`, and a raising BIND leaves its variable
+    // unbound — so the ONE scope that is supposed to win is the one whose
+    // weight silently disappears. Pinned as text because it reads like a
+    // redundant branch and is not.
+    expect(buildNameResolveQuery(RANKED, "Button")).toContain(
+      "BIND(1 - IF(?rankDepth = 0, 0, 0.2 * ?rankDepth) AS ?rankDerived)",
+    );
+  });
+
+  it("lets an ASSERTED rank take precedence over the derived one", () => {
+    // The retirement path, stated in the query itself: the day the ontology
+    // asserts the ranking, the derived depth stops being consulted and the
+    // config declaration is deleted with no code change. Asserting the emitted
+    // COALESCE is the only way to pin this — the shipped graph asserts no
+    // `ds:tierRank` today, which is exactly the state this outlives.
+    expect(buildNameResolveQuery(RANKED, "Button")).toContain(
+      "BIND(COALESCE(?rankAsserted, IF(?rankDerived < 0, 0, ?rankDerived), 1) AS ?rankScopeWeight)",
+    );
+    // …and an entity in no scope at all scores a neutral 1, rather than
+    // sinking below every entity that has one.
+    const { scopeWeight, ...unscoped } = RANKED;
+    expect(scopeWeight).toBeDefined();
+    expect(buildNameResolveQuery(unscoped, "Button")).not.toContain(
+      "?rankScopeWeight",
+    );
+  });
+
+  it("weighs the LOWEST declared type, so a demotion is not cancelled", () => {
+    // The same rule the MCP listing's `effectiveWeight` states in prose. Tested
+    // lowest-first, so an entity in two weighted classes takes the demotion any
+    // membership asked for.
+    expect(buildNameResolveQuery(RANKED, "Button")).toContain(
+      "BIND(IF(EXISTS { ?uri a ds:Subcomponent }, 0.6, 1) AS ?rankType)",
+    );
+  });
+
+  it("leaves a story that declares NO ranking exactly as it was", () => {
+    // Every other noun. The limit is still gone — a name reaching two entities
+    // is answered with two on every story — but nothing else is added, and the
+    // order stays the total `STR(?uri)` it already had.
+    const query = buildLookupQuery(CONSTRAINED, "spacing.medium");
+    expect(query).toContain("ORDER BY STR(?uri)");
+    expect(query).not.toContain("?score");
+    expect(query).not.toContain("?rankType");
+    expect(query).not.toContain("LIMIT");
+  });
+
+  it("keeps the IRI-addressed forms at LIMIT 1, unranked", () => {
+    // An IRI is one entity by construction, so there is nothing to rank and
+    // nothing to discard. Ranking it would be pure cost on the hot path.
+    const byIri = buildLookupByIriQuery(RANKED, "https://ds.canonical.com/a");
+    expect(byIri).toContain("LIMIT 1");
+    expect(byIri).not.toContain("?score");
+  });
+
+  it("does not PROJECT the score it orders by", () => {
+    // `?score` is a ranking artefact, and the sparql path spreads its resolve
+    // row straight into the entity — projecting it would put a stray number in
+    // `--format json` and in the MCP payload.
+    expect(buildNameResolveQuery(RANKED, "Button").split("\n")[0]).toBe(
+      "SELECT ?uri ?name WHERE {",
+    );
+    expect(buildLookupQuery(RANKED, "Button").split("\n")[0]).not.toContain(
+      "?score",
     );
   });
 });

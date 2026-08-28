@@ -178,9 +178,14 @@ ${ROSTER_MEMBERS}
  *
  * It models the three shapes the addressing path gets wrong: two components
  * sharing one `ds:name` (declared zeta-first so the store's enumeration order
- * and IRI order DISAGREE — an unordered `LIMIT 1` picks the zeta one), and a
- * component carrying no `ds:name` at all (reachable only by IRI, the way 131 of
- * the 144 live code standards are).
+ * and IRI order DISAGREE), and a component carrying no `ds:name` at all
+ * (reachable only by IRI, the way 131 of the 144 live code standards are).
+ *
+ * The shared name is a SHAPE probe, not the live ambiguity: neither chip's tier
+ * outranks the other, so this fixture can only prove that both are returned in a
+ * total order — never which of them a reader means. Deciding that is a judgement
+ * about real tiers, and it is asserted where the real tiers are, against the
+ * shipped pack (`capabilities/block.tierRank.exec.test.ts`).
  */
 export const AMBIGUOUS_TTL = `
 ds:apps a ds:Tier ; ds:name "apps" .

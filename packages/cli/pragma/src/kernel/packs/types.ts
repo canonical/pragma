@@ -286,6 +286,43 @@ export interface PackCompletion {
 }
 
 /**
+ * How much an entity's containing SCOPE is worth when a name reaches several
+ * entities at once — the ranking factor {@link PackLookup.scopeWeight} declares.
+ *
+ * DERIVED, never enumerated. The scope's own name is a path (`Global`,
+ * `Apps/Launchpad`), so its DEPTH is a fact the graph already states, and a
+ * scope nobody has heard of yet inherits its place the day it appears. An
+ * enumerated ranking would have to be edited for each new one, and the one
+ * nobody edited would silently rank first.
+ *
+ * The weight falls by {@link falloff} per level below the top, so the top level
+ * is worth 1 and each nesting step costs the same again; floored at 0, so a very
+ * deep scope can never turn negative and invert the type factor it multiplies.
+ *
+ * {@link asserted} is the retirement path, not an extra knob: an asserted value
+ * WINS over the derived one (`COALESCE(?asserted, ?derived)`), so the day the
+ * ontology states the ranking itself, this declaration is deleted and nothing
+ * else changes.
+ */
+export interface PackScopeWeight {
+  /** The entity → scope edge (e.g. `ds:tier`). */
+  readonly via: string;
+  /**
+   * The scope property holding its path-shaped name (e.g. `ds:name`), whose
+   * `/`-separated depth derives the weight.
+   *
+   * It must be the NAME, not the IRI: the live tiers spell the same scope
+   * `ds:apps_launchpad` and `"Apps/Launchpad"`, and only the name carries the
+   * separator that makes the hierarchy legible.
+   */
+  readonly by: string;
+  /** Score cost per level below the top, 0–1 (e.g. 0.2 → 1, 0.8, 0.6, …). */
+  readonly falloff: number;
+  /** An asserted weight on the scope, which WINS over the derived one. */
+  readonly asserted?: string;
+}
+
+/**
  * The lookup half of a pack. The query is generated from `by` and `type`/`types`
  * — user-supplied names are escaped by the generator, never interpolated by the
  * author. The `source` selects the field-fetch strategy; the name→URI resolve is
@@ -340,8 +377,9 @@ export interface PackLookup {
    * Relative importance per addressed type, prefixed type → 0–1 (unlisted types
    * default to 1). Editorial judgement about which of a noun's classes matters
    * most, declared as DATA rather than frozen into the kernel — it feeds the MCP
-   * listing's `annotations.priority` AND breaks ties in URI-completion ranking,
-   * so a `ds:Subcomponent` at 0.6 sinks below every component at equal match.
+   * listing's `annotations.priority`, breaks ties in URI-completion ranking, AND
+   * is one factor of the score a name resolve ORDERS BY, so a `ds:Subcomponent`
+   * at 0.6 sinks below every component at equal match.
    *
    * A separate map rather than an entry shape on `types` so `types` keeps its
    * flat `readonly string[]` form and the addition is non-breaking. A key naming
@@ -349,6 +387,16 @@ export interface PackLookup {
    * is how a weight that never applied survives review.
    */
   readonly weights?: Readonly<Record<string, number>>;
+  /**
+   * The OTHER factor of that score: how much an entity's containing scope is
+   * worth, derived from how DEEP that scope sits in its own hierarchy.
+   *
+   * {@link weights} answers "which KIND of thing did they mean"; this answers
+   * "whose?". They multiply rather than tiebreak, because neither subsumes the
+   * other: a whole component in a narrow scope still beats a mere part of a
+   * block in the widest one.
+   */
+  readonly scopeWeight?: PackScopeWeight;
   /**
    * GraphQL type or interface the generated document's inline fragment targets
    * (`source: "graphql"` only). Defaults to the local name of `type`; required

@@ -233,6 +233,20 @@ const completionSchema = z
   })
   .strict();
 
+/**
+ * The declared scope-ranking factor (`PackScopeWeight`). `falloff` is bounded
+ * the same way `weights` is — a factor outside 0–1 is a promotion, and this
+ * declaration only ever DEMOTES a deeper scope below a shallower one.
+ */
+const scopeWeightSchema = z
+  .object({
+    via: term,
+    by: term,
+    falloff: z.number().min(0).max(1),
+    asserted: term.optional(),
+  })
+  .strict();
+
 const lookupSchema = z
   .object({
     source: z.enum(["sparql", "graphql"]).optional(),
@@ -243,6 +257,7 @@ const lookupSchema = z
     toolDescription: z.string().optional(),
     types: z.array(term).min(1).optional(),
     weights: z.record(term, z.number().min(0).max(1)).optional(),
+    scopeWeight: scopeWeightSchema.optional(),
     graphqlType: graphqlName.optional(),
     fields: z.array(fieldSchema).min(1).optional(),
     sections: z.array(sectionSchema).min(1).optional(),

@@ -89,7 +89,7 @@ export function listFormatters(
     json: (rows) => JSON.stringify(rows, null, 2),
     // Zero rows: the dispatcher routes this to stderr (exit 0) so the plain
     // stdout stream stays pure data; llm/json keep their own empty shapes.
-    emptyNotice: (rows) =>
+    notice: (rows) =>
       rows.length === 0 ? renderListEmptyNotice(options) : undefined,
   };
 }
@@ -132,7 +132,7 @@ export function lookupOptions(
   };
 }
 
-/** Build the lookup formatters (renders every resolved entity, then any errors). */
+/** Build the lookup formatters (every resolved entity, then errors, then the notice). */
 export function lookupFormatters(
   lookup: PackLookup,
   prefixes: Readonly<Record<string, string>>,
@@ -144,7 +144,43 @@ export function lookupFormatters(
     llm: (output) =>
       renderOutput(output, (entity) => renderLookupLlm(entity, options), "llm"),
     json: (output) => JSON.stringify(output, null, 2),
+    notice: (output) => ambiguityNotice(output, prefixes),
   };
+}
+
+/**
+ * The sentence a lookup owes a caller whose name reached more than one entity.
+ *
+ * A lookup answers with ONE entity, and for 25 live block names that entity is
+ * one of two or three. Rendered like any other hit, the payload asserts more
+ * than it knows — and the documented recovery, "address it by prefixed IRI",
+ * cannot be acted on by anyone who has not been told there is a second IRI. So
+ * the notice names them, in the compact spelling the CLI accepts back as an
+ * argument.
+ *
+ * It rides the SAME seam as the zero-record notice — stderr in plain mode,
+ * `meta.notice` on `--format json` and MCP alike — because it is the same
+ * failure: a result that misrepresents itself. A second channel would have to be
+ * routed, muted and tested three more times to say something this one already
+ * says.
+ *
+ * `undefined` for an unambiguous read, so nothing is added to the overwhelming
+ * majority of lookups.
+ */
+function ambiguityNotice(
+  output: LookupOutput,
+  prefixes: Readonly<Record<string, string>>,
+): string | undefined {
+  const ambiguous = output.ambiguous ?? [];
+  if (ambiguous.length === 0) return undefined;
+  return ambiguous
+    .map((entry) => {
+      const others = entry.others
+        .map((uri) => compactUri(uri, prefixes))
+        .join(", ");
+      return `"${entry.query}" also names ${others} — address it by IRI.`;
+    })
+    .join("\n");
 }
 
 /** Build the sample formatters (renders each exemplar, then the follow-ups). */
