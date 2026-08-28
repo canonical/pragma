@@ -223,21 +223,28 @@ A **standard** is one do/don't coding rule, categorized by stack and linked to t
 pragma standard categories
 ```
 
-List a category, search across all of them, or list everything:
+Categories are a hierarchy, and a parent answers for its whole branch — `--category testing` returns all 8 testing standards, not only the one filed directly on `testing`:
 
 ```bash
 pragma standard list
-pragma standard list --category react
+pragma standard list --category testing
 pragma standard list --search naming
 ```
+
+A slug the graph does not carry is refused, with the ones it does carry named — so a typo is a corrected call, not a silent empty list.
 
 Each row carries the standard's full rule text, so `list` is often all you need. `lookup` adds the worked code examples, gated by detail level — the default is a summary, `--detail standard` adds the **Do** examples, `--detail detailed` adds the **Don't**:
 
 ```bash
-pragma standard lookup 'Local Name Casing Convention' --detail detailed
+pragma standard lookup 'react/component/tsdoc' --detail detailed
 ```
 
-Lookups address a standard by its display name (globs work: `'Local*'`). Not every standard in this distribution carries one yet — for those, `standard list` and `standard sample` are the reliable paths to the same content.
+**The name `list` prints is the name `lookup` answers to.** Take a row's `Name` column verbatim; most standards carry no separate display title (the canonical identifier is the IRI), so that name is derived from the IRI — `cs:react.component.tsdoc` prints, and resolves, as `react/component/tsdoc`. The prefixed IRI works too, and globs work over either spelling:
+
+```bash
+pragma standard lookup 'react/component/*' --detail detailed
+pragma standard lookup 'cs:react.*' --detail detailed
+```
 
 ## Tokens
 
