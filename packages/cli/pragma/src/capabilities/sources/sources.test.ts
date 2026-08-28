@@ -1091,6 +1091,48 @@ describe("sources update — converges the global band (converge-only)", () => {
     expect(lstatSync(join(dir, "stable")).mtimeMs).toBe(before);
   });
 
+  it("is reversible — undo RESTORES a replaced harness link's old target", async () => {
+    // The `created` case below undoes by deletion, because absent is the state
+    // it replaced. A `replaced` link's is not: the path already held a link,
+    // the forward delete carries no undo, and deleting what the symlink
+    // created therefore left the path ABSENT — a state it was never in. So the
+    // undo must delete-then-relink the target detection recorded.
+    const dir = harnessDir();
+    const cwd = tmp("pragma-proj-");
+    const pkg = skillPackage("kept", "other");
+    await update(pkg, cwd);
+
+    // Drift the harness link for `kept` onto a SIBLING inside the installed
+    // root: still owned (so the next plan is entitled to fix it), wrong target
+    // (so the plan calls it `replaced`).
+    const link = join(dir, "kept");
+    const previous = join(installedRoot(), "other");
+    rmSync(link);
+    symlinkSync(previous, link);
+
+    // Two tasks off the SAME pre-run state: `gen` drives one iterator, so a
+    // task that has been run forward cannot also be walked for its undos, and
+    // re-planning after the forward run would see a converged tree with
+    // nothing left to reverse.
+    const runtime = runtimeFor(cwd, [
+      { name: "design-system", source: `file://${pkg}` },
+    ]);
+    const forward = await buildUpdateTask(runtime);
+    const reverse = await buildUpdateTask(runtime);
+
+    await runTask(forward);
+    expect(readlinkSync(link)).toBe(join(installedRoot(), "kept")); // repointed
+
+    const { runUndo } = await import("@canonical/task/node");
+    await runUndo(reverse);
+
+    // `existsSync` FOLLOWS a link and would false-negative on a dangling one —
+    // and, more to the point here, an existence check alone passes the buggy
+    // shape too. The TARGET is the assertion.
+    expect(lstatSync(link).isSymbolicLink()).toBe(true);
+    expect(readlinkSync(link)).toBe(previous);
+  });
+
   it("is reversible — undo removes the harness link it created", async () => {
     const dir = harnessDir();
     const { runUndo } = await import("@canonical/task/node");

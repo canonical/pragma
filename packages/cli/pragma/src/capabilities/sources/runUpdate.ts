@@ -419,12 +419,24 @@ export async function buildUpdateTask(
     // `mkdir`: every directory here was proven to exist at plan time, and
     // creating one is the thing converge-only exists to forbid.
     for (const link of bandLinks) {
+      // A `created` link undoes by deletion — absent IS the state it replaced.
+      // A `replaced` one does not: the path held a link, and the delete above
+      // carries no undo of its own, so deleting what the symlink created would
+      // leave the path ABSENT rather than pointing where it pointed before.
+      // Its undo is therefore the same delete-then-relink shape the prunes
+      // below use, against the target detection recorded — and it clears the
+      // path first because undo collection MOCKS forward effects, so the link
+      // may still be there and `fs.symlink` refuses an existing path.
+      const previous = link.previousTarget;
+      const undoLink =
+        link.action === "replaced" && previous !== undefined
+          ? gen(function* () {
+              yield* $(deleteFile(link.linkPath));
+              yield* $(symlink(previous, link.linkPath));
+            })
+          : deleteFile(link.linkPath);
       if (link.action === "replaced") yield* $(deleteFile(link.linkPath));
-      yield* $(
-        symlink(link.target, link.linkPath, {
-          undo: deleteFile(link.linkPath),
-        }),
-      );
+      yield* $(symlink(link.target, link.linkPath, { undo: undoLink }));
     }
     for (const stale of bandStale) {
       yield* $(

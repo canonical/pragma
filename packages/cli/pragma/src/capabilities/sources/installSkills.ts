@@ -237,6 +237,17 @@ export interface BandLinkAction {
   readonly folderName: string;
   /** The harness directory's display name, for the progress line. */
   readonly dirName: string;
+  /**
+   * The target the link ALREADY holds, recorded only for a `replaced` action so
+   * its undo can put that link back. Without it the undo could only delete what
+   * the forward run created, which restores an ABSENT path — a state that never
+   * existed — instead of the link the run overwrote.
+   *
+   * Stored as `readlink` returned it, not resolved: a relative link is relative
+   * to its own directory, which for a candidate of `dir` is `dir` itself, so
+   * re-linking the raw value reproduces the link exactly as found.
+   */
+  readonly previousTarget?: string;
 }
 
 /**
@@ -306,6 +317,7 @@ export function planBandSkillLinks(
         action: "replaced",
         folderName,
         dirName: name,
+        previousTarget: state.target,
       });
     }
     for (const folderName of retired) {
