@@ -178,6 +178,11 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
     "passed": true,
   },
   {
+    "id": "tool-standard-list-empty-category-is-a-calm-empty-list",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
     "id": "tool-standard-list-names-are-addressable-by-lookup",
     "kind": "tool",
     "passed": true,
@@ -194,6 +199,11 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
   },
   {
     "id": "tool-tier-lookup-lists-scoped-blocks",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-token-lookup-addresses-only-what-list-publishes",
     "kind": "tool",
     "passed": true,
   },

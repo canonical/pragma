@@ -443,6 +443,20 @@ const conceptStory: PackDefinition = {
       {
         param: "type",
         variable: "type",
+        // `ds:ConceptType` is the vocabulary; the concepts are the population.
+        // The shipped graph declares six types and uses two, so validating
+        // against the rows rejected "Decision guide" — a type the ontology
+        // declares — as an invalid argument instead of answering with the
+        // empty list it actually has.
+        vocabulary: {
+          query: [
+            "SELECT DISTINCT ?name WHERE {",
+            "  ?conceptType a ds:ConceptType ;",
+            "               ds:name ?name .",
+            "}",
+          ].join("\n"),
+          variable: "name",
+        },
         description: "Filter by concept type (e.g. Explanation, How-to guide).",
       },
     ],
@@ -544,14 +558,34 @@ const implementationStory: PackDefinition = {
       { field: "uri", label: "IRI" },
     ],
     filters: [
+      // Both vocabularies are read off `ds:ImplementationLibrary`, the subject
+      // that carries them — the same terms `implementation libraries`
+      // enumerates. A library that implements nothing yet still exists, and
+      // asking for it is an empty answer rather than a bad argument.
       {
         param: "platform",
         variable: "platform",
+        vocabulary: {
+          query: [
+            "SELECT DISTINCT ?platform WHERE {",
+            "  ?lib a ds:ImplementationLibrary ;",
+            "       ds:platform ?platform .",
+            "}",
+          ].join("\n"),
+        },
         description: "Filter by platform (e.g. react, svelte, typescript).",
       },
       {
         param: "library",
         variable: "library",
+        vocabulary: {
+          query: [
+            "SELECT DISTINCT ?library WHERE {",
+            "  ?lib a ds:ImplementationLibrary ;",
+            "       ds:libraryName ?library .",
+            "}",
+          ].join("\n"),
+        },
         description: "Filter by implementation library name.",
       },
     ],
@@ -661,6 +695,22 @@ const codeStandardsStories: readonly PackDefinition[] = [
           param: "category",
           variable: "categories",
           match: "set",
+          // The SAME terms `standard categories` enumerates (`cs:Category` /
+          // `cs:slug`), so the slugs that surface hands out are exactly the
+          // slugs this filter accepts. Read from the graph rather than the
+          // returned ROWS: a category the graph declares with no standards
+          // filed under it is reported by `standard categories` with count 0,
+          // and asking for it must be the documented calm empty list, not
+          // INVALID_INPUT.
+          vocabulary: {
+            query: [
+              "SELECT DISTINCT ?slug WHERE {",
+              "  ?cat a cs:Category ;",
+              "       cs:slug ?slug .",
+              "}",
+            ].join("\n"),
+            variable: "slug",
+          },
           description:
             "Filter by category slug. A parent category answers for its whole branch.",
         },
@@ -723,6 +773,16 @@ const codeStandardsStories: readonly PackDefinition[] = [
     lookup: {
       source: "sparql",
       by: "cs:name",
+      // The one story whose `list` PUBLISHES a synthesized name: `cs:name` is
+      // an optional display title (22 of 156 standards carry one), so the row
+      // name for the other ~87% is derived from the IRI local name. Declaring
+      // the fallback here is what keeps the two halves of the two-step grammar
+      // over one population — the same derivation, read from the other side.
+      // It is deliberately NOT declared on `block`/`token`/`tier`/`concept`:
+      // each of those lists REQUIRES its `by` property, so an entity without
+      // one is a row they never publish, and making it addressable (or
+      // sampleable) here would be the mirror of the defect this repairs.
+      nameFallback: "iri",
       type: "cs:CodeStandard",
       description:
         "Look up one or more standards by name, IRI, or glob. --detail standard adds the dos, --detail detailed adds the don'ts.",

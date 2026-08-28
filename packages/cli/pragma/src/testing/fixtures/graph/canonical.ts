@@ -26,6 +26,16 @@
  * ours to pin): 4 `ds:Component` (Button, Modal, LXD Panel, Beta Widget),
  * `importance` family with value `primary`, code standard
  * `code/function/purity`.
+ *
+ * Two of those anchors exist to pin an ABSENCE, and are load-bearing for the
+ * "declared, not inferred" halves of the read grammar:
+ * - `ds:token.legacy.borderRadius` — a `ds:Token` with no `ds:tokenId`, which
+ *   `token list` therefore never publishes and `token lookup`/`token sample`
+ *   must never reach (`PackLookup.nameFallback` is declared by `standard`
+ *   alone).
+ * - `cs:archive` — a `cs:Category` with no standards, which `standard
+ *   categories` reports at count 0 and `standard list --category archive` must
+ *   answer with a calm empty list rather than INVALID_INPUT.
  */
 
 import { BLOCK_PREFIXES, BLOCK_TTL } from "../blockGraph.js";
@@ -76,6 +86,17 @@ ds:token.spacing.medium a ds:Token ;
   ds:tokenType ds:type.spacing ;
   ds:valueLight "16px" ;
   ds:valueDark "16px" .
+
+# A ds:Token carrying NO ds:tokenId — the entity "token list" does not publish,
+# because its query REQUIRES the id. It is here to pin what a lookup may NOT
+# reach: "token lookup" addresses by ds:tokenId, and a story whose list requires
+# its "by" property must not become addressable (or sampleable) under a name
+# derived from its IRI. See PackLookup.nameFallback, declared by the "standard"
+# story alone — the one story whose list DOES publish such a name.
+ds:token.legacy.borderRadius a ds:Token ;
+  ds:tokenType ds:type.spacing ;
+  ds:valueLight "4px" ;
+  ds:valueDark "4px" .
 `;
 
 /**
@@ -128,6 +149,15 @@ cs:testing.unit a cs:Category ;
   rdfs:label "Unit testing" ;
   cs:slug "testing-unit" ;
   skos:broader cs:testing .
+
+# A category the graph DECLARES with no standards filed under it. The
+# "standard categories" verb lists it with count 0, so
+# "standard list --category archive" must be the documented calm empty list — a
+# real slug, an empty answer. Validity read off the returned ROWS instead of the
+# graph called it INVALID_INPUT.
+cs:archive a cs:Category ;
+  rdfs:label "Archive" ;
+  cs:slug "archive" .
 
 # ---- Standards. Seven of eight carry NO cs:name (the shipped ~13% split). ----
 cs:react.component.props a cs:CodeStandard ;

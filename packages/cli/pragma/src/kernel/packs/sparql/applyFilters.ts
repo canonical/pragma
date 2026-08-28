@@ -16,22 +16,40 @@
  * match is.
  *
  * A value-free filter still REJECTS a value the data does not carry, with the
- * observed values as `validOptions` — the same courtesy a declared-`values`
+ * admissible values as `validOptions` — the same courtesy a declared-`values`
  * filter has always extended, without copying the vocabulary into the consumer.
- * The vocabulary is read from the rows the graph just answered with, because the
- * graph IS the vocabulary; a story that hard-coded the slugs would go stale the
- * first time the data grew a category. Before this, a typo'd `--category`
- * returned `{"ok":true,"data":[],"meta":{}}` — indistinguishable, over MCP, from
- * a genuinely empty category.
+ * The vocabulary is read from the graph, because the graph IS the vocabulary; a
+ * story that hard-coded the slugs would go stale the first time the data grew a
+ * category. Before this, a typo'd `--category` returned
+ * `{"ok":true,"data":[],"meta":{}}` — indistinguishable, over MCP, from a
+ * genuinely empty category.
+ *
+ * WHICH part of the graph is the vocabulary matters, and it is NOT the rows.
+ * Rows are a population: a value can be perfectly real while no row carries it —
+ * `standard categories` lists a category with count 0, `ds:ConceptType` declares
+ * "Decision guide" before any concept uses it. Validating against rows called
+ * those `INVALID_INPUT`, when the documented answer is a calm empty list. So a
+ * filter DECLARES where its vocabulary lives ({@link PackFilter.vocabulary},
+ * resolved by the caller and handed in here), and the observed rows are the
+ * fallback for a filter that declares none — the only evidence there is, and
+ * knowingly narrower than the truth.
  */
 
 import { PragmaError } from "../../error/index.js";
 import type { PackFilter, PackRow } from "../types.js";
 
 /**
+ * Authoritative values per filter `param`, read from each filter's declared
+ * `vocabulary`. A param absent from the map falls back to the observed rows.
+ */
+export type FilterVocabularies = ReadonlyMap<string, readonly string[]>;
+
+/**
  * @param rows - Rows produced by the pack's list query.
  * @param filters - Declared filters (absent means no filtering).
  * @param params - Story parameters as provided by the surface.
+ * @param vocabularies - Authoritative values per filter param, resolved from
+ *   each filter's declared `vocabulary` (see {@link FilterVocabularies}).
  * @returns Rows matching every provided filter.
  * @throws PragmaError INVALID_INPUT when a value is not in a filter's declared
  *   set, or when a value-free filter receives a non-string value.
@@ -40,6 +58,7 @@ export function applyPackFilters(
   rows: PackRow[],
   filters: readonly PackFilter[] | undefined,
   params: Record<string, unknown>,
+  vocabularies?: FilterVocabularies,
 ): PackRow[] {
   let result = rows;
   for (const filter of filters ?? []) {
@@ -56,10 +75,16 @@ export function applyPackFilters(
         ? requireStringValue(occurrence, filter).toLowerCase()
         : canonicalizeFilterValue(occurrence, filter, values).toLowerCase(),
     );
-    // Compared against the UNFILTERED rows: a value that exists but is excluded
-    // by a conjunction is a legitimately empty answer, not a bad argument.
+    // The fallback vocabulary is read from the UNFILTERED rows: a value that
+    // exists but is excluded by a conjunction is a legitimately empty answer,
+    // not a bad argument.
     if (values === undefined)
-      rejectUnobserved(rows, filter, occurrences, terms);
+      rejectUnknownValue(
+        vocabularies?.get(filter.param) ?? observedValues(rows, filter),
+        filter,
+        occurrences,
+        terms,
+      );
     result = result.filter((row) =>
       cellValues(row, filter).some((value) =>
         terms.includes(value.toLowerCase()),
@@ -70,22 +95,13 @@ export function applyPackFilters(
 }
 
 /**
- * Reject a value-free filter value the data does not carry, naming the ones it
- * does.
- *
- * Silent when the dimension is empty across every row: an unbuilt or
- * genuinely-empty store is not the caller's mistake, and the list's own
- * `emptyRecovery` is the right voice for it.
- *
- * @throws PragmaError INVALID_INPUT when a term matches none of the observed
- *   values, carrying them as `validOptions`.
+ * The values the rows themselves carry — the fallback vocabulary for a filter
+ * that declares no authoritative one, in the data's own DISPLAY spelling.
  */
-function rejectUnobserved(
+function observedValues(
   rows: readonly PackRow[],
   filter: PackFilter,
-  occurrences: readonly unknown[],
-  terms: readonly string[],
-): void {
+): string[] {
   const observed = new Map<string, string>();
   for (const row of rows) {
     for (const value of cellValues(row, filter)) {
@@ -93,14 +109,44 @@ function rejectUnobserved(
       if (!observed.has(key)) observed.set(key, value);
     }
   }
-  if (observed.size === 0) return;
-  const index = terms.findIndex((term) => !observed.has(term));
+  return [...observed.values()];
+}
+
+/**
+ * Reject a value-free filter value the vocabulary does not admit, naming the
+ * ones it does.
+ *
+ * Silent when the vocabulary is EMPTY: an unbuilt or genuinely-empty store is
+ * not the caller's mistake, and the list's own `emptyRecovery` is the right
+ * voice for it.
+ *
+ * A value the vocabulary admits is never rejected here even when no row carries
+ * it — a real slug with zero standards is a calm empty list, which is what the
+ * tool descriptions document and what `standard categories` reporting count 0
+ * promises.
+ *
+ * @throws PragmaError INVALID_INPUT when a term matches none of the admissible
+ *   values, carrying them as `validOptions`.
+ */
+function rejectUnknownValue(
+  vocabulary: readonly string[],
+  filter: PackFilter,
+  occurrences: readonly unknown[],
+  terms: readonly string[],
+): void {
+  const admissible = new Map<string, string>();
+  for (const value of vocabulary) {
+    const key = value.normalize("NFC").toLowerCase();
+    if (!admissible.has(key)) admissible.set(key, value.normalize("NFC"));
+  }
+  if (admissible.size === 0) return;
+  const index = terms.findIndex((term) => !admissible.has(term));
   if (index === -1) return;
-  const validOptions = [...observed.values()].sort();
+  const validOptions = [...admissible.values()].sort();
   throw PragmaError.invalidInput(filter.param, String(occurrences[index]), {
     validOptions,
     recovery: {
-      message: `Values present for --${filter.param}: ${validOptions.join(", ")}.`,
+      message: `Values allowed for --${filter.param}: ${validOptions.join(", ")}.`,
     },
   });
 }

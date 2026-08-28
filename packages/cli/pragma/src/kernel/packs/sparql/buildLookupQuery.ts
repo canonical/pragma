@@ -8,19 +8,19 @@
  * Matching on the name is exact and case-insensitive.
  *
  * WHAT an entity's name IS lives in one place — {@link nameBinding} — and every
- * form here uses it: the asserted `by` value when the entity carries one, and
- * otherwise the IRI-derived name a class-constrained lookup can vouch for. That
- * single binding is what makes the population a `list` publishes and the
- * population a `lookup` answers to the same population.
+ * form here uses it: the asserted `by` value, plus, for a lookup that DECLARES
+ * `nameFallback: "iri"`, the IRI-derived name its class constraint can vouch
+ * for. That single binding is what makes the population a `list` publishes and
+ * the population a `lookup` answers to the same population.
  *
  * Every name-addressed resolve is TOTALLY ORDERED before its `LIMIT 1`. A name
  * can recur across tiers, and an unordered `LIMIT 1` hands the tie to the
  * store's enumeration order — a different answer on a different machine, or
  * after a repack. `ORDER BY STR(?uri)` is a total, engine-independent order over
  * a variable that is always bound (`?uri` carries the class constraint, or the
- * `by` triple when there is none), so it needs no unbound-value sentinel. It
- * fixes WHICH answer is arbitrary, not WHETHER: declaring a precedence between
- * tiers is an ontology change, tracked separately.
+ * `by` triple when the name is not derived), so it needs no unbound-value
+ * sentinel. It fixes WHICH answer is arbitrary, not WHETHER: declaring a
+ * precedence between tiers is an ontology change, tracked separately.
  */
 
 import { activeExpands, activeFields } from "../disclosure.js";
@@ -89,34 +89,81 @@ const DERIVED_NAME = 'REPLACE(REPLACE(STR(?uri), "^.*[#/]", ""), "\\\\.", "/")';
 /**
  * The `?name` binding shared by every lookup form.
  *
- * Requiring the `by` triple made every entity that carries no name unaddressable
- * by any means at all: 22 of the 156 live code standards have a `cs:name`, and
- * the code-standards ontology says so deliberately — `cs:name` is "an optional
- * human-readable display title" that "never participates in identity". Their
- * displayed name is synthesized from the IRI by the list story, and shell
- * completion offers their IRIs.
+ * By DEFAULT the `by` triple is required, and that is the honest default: `by`
+ * is documented as "the property whose value names the entity", so an entity
+ * without one has no name, is not addressable, and is not drawn by `sample`.
+ * It is also the one thing standing between a typo'd IRI and an empty entity.
  *
- * So wherever a class constraint can vouch for the entity, the `by` triple is
- * OPTIONAL and the name falls back to {@link DERIVED_NAME}. It stays REQUIRED
- * for a lookup that declares no `type`/`types` — there it is the one thing
- * standing between a typo'd IRI and an empty entity, and there is no class to
- * bound a derived-name scan with either.
+ * A story whose `list` SYNTHESIZES a name instead of reading one declares
+ * `nameFallback: "iri"`, and then the triple becomes OPTIONAL with
+ * {@link DERIVED_NAME} behind it. `standard` is the case that exists: 22 of the
+ * 156 live code standards carry a `cs:name`, and the code-standards ontology
+ * says so deliberately — it is "an optional human-readable display title" that
+ * "never participates in identity". `standard list` published
+ * `react/component/tsdoc` while `standard lookup react/component/tsdoc`
+ * answered ENTITY_NOT_FOUND with empty suggestions, because the only
+ * addressable population was the ~13% carrying an asserted name.
  *
- * The relaxation used to apply to the IRI-addressed form ALONE, which is what
- * left the two-step grammar broken in the middle: `standard list` published
- * `react/component/tsdoc` and `standard lookup react/component/tsdoc` answered
- * ENTITY_NOT_FOUND with empty suggestions, because the only addressable
- * population was the ~13% carrying an asserted name. Applied here, one binding
- * serves the name resolve, the IRI resolve, the miss-suggestion pool, glob
- * expansion and `sample`'s draw pool alike.
+ * INFERRING the fallback from the mere PRESENCE of a class constraint is what
+ * this option replaced, and it was over-reach in both directions of the same
+ * defect: `token list` requires `ds:tokenId`, so an inferred fallback made a
+ * `ds:Token` without one addressable and sampleable under a name `token list`
+ * never publishes. The declaration is per story because the list/lookup
+ * agreement is per story.
+ *
+ * The class constraint is still required for the fallback (the schema rejects
+ * the pairing, and this guard keeps a statically-compiled story from generating
+ * a query with nothing bounding `?uri`): a derived name is only as trustworthy
+ * as the class vouching for the entity it came from.
+ *
+ * One binding then serves the name resolve, the miss-suggestion pool, glob
+ * expansion and `sample`'s draw pool alike — every form that decides WHICH
+ * entities a name can reach. (The IRI-addressed forms reach an entity without
+ * going through a name at all: see {@link iriNameBinding}.)
  */
 function nameBinding(lookup: PackLookup): string {
-  const constrained = Boolean(lookup.type ?? lookup.types?.length);
-  if (!constrained) return `  ?uri ${formatTerm(lookup.by)} ?name .`;
+  if (!derivesNames(lookup)) return `  ?uri ${formatTerm(lookup.by)} ?name .`;
   return [
     `  OPTIONAL { ?uri ${formatTerm(lookup.by)} ?byName . }`,
     `  BIND(COALESCE(?byName, ${DERIVED_NAME}) AS ?name)`,
   ].join("\n");
+}
+
+/**
+ * Whether this lookup names an entity that carries no `by` value.
+ *
+ * The class constraint is part of the condition, not merely a schema rule the
+ * builders trust: without one there is no triple bounding `?uri`, so a derived
+ * name would be scanned over the whole graph. The schema rejects the pairing
+ * for declared packs; this keeps a statically-compiled story from generating
+ * that query.
+ */
+function derivesNames(lookup: PackLookup): boolean {
+  return (
+    lookup.nameFallback === "iri" &&
+    Boolean(lookup.type ?? lookup.types?.length)
+  );
+}
+
+/**
+ * The `?name` binding for an IRI-ADDRESSED form.
+ *
+ * An IRI names the entity by itself, so here the `by` value is a LABEL to
+ * project, not the thing that identifies it — and the class constraint is
+ * already a sufficient existence check. So the triple is OPTIONAL wherever a
+ * class vouches for the entity, and `?name` is simply left unbound when there is
+ * no label; it is REQUIRED only for a lookup constraining no class, where it is
+ * the one thing standing between a typo'd IRI and an empty entity.
+ *
+ * A story that {@link derivesNames} gets the same COALESCE the name forms use,
+ * so an entity reached by IRI reports the name `list` published for it rather
+ * than a blank.
+ */
+function iriNameBinding(lookup: PackLookup): string {
+  if (derivesNames(lookup)) return nameBinding(lookup);
+  const named = `?uri ${formatTerm(lookup.by)} ?name .`;
+  const constrained = Boolean(lookup.type ?? lookup.types?.length);
+  return constrained ? `  OPTIONAL { ${named} }` : `  ${named}`;
 }
 
 /**
@@ -170,7 +217,7 @@ export function buildLookupByIriQuery(
     header,
     `  BIND(<${iri}> AS ?uri)`,
     constraint,
-    nameBinding(lookup),
+    iriNameBinding(lookup),
     optionals,
     "}",
     "LIMIT 1",
@@ -216,7 +263,7 @@ export function buildIriResolveQuery(lookup: PackLookup, iri: string): string {
     "SELECT ?uri ?name WHERE {",
     `  BIND(<${iri}> AS ?uri)`,
     buildTypeConstraint(lookup).trimEnd(),
-    nameBinding(lookup),
+    iriNameBinding(lookup),
     "}",
     "LIMIT 1",
   ]

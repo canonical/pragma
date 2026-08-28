@@ -163,8 +163,41 @@ export interface PackFilter {
    * answer, exit 0.
    */
   readonly match?: "exact" | "set";
+  /**
+   * Where the dimension's VOCABULARY lives in the graph, for a filter with no
+   * declared {@link values}.
+   *
+   * A value-free filter rejects a value the data does not carry. The question is
+   * what "the data" means. The rows a list just returned are the wrong answer:
+   * they are a POPULATION, and a value can be real while no row carries it — a
+   * category the graph declares with zero standards filed under it, a
+   * `ds:ConceptType` no concept uses yet. Validating against rows turns those
+   * into `INVALID_INPUT`, when the honest answer is a calm empty list.
+   *
+   * So the vocabulary is read from the graph directly, from the same terms the
+   * surface that ENUMERATES it reads (`standard categories` reads `cs:Category`
+   * / `cs:slug`; so does the `category` filter's vocabulary query). The ruling
+   * this honours is "the graph is the vocabulary, don't hard-code the slugs" —
+   * rows were never the graph, just the part of it that answered.
+   *
+   * Without it a value-free filter falls back to the observed rows, which is the
+   * only evidence available; that is a NARROWER vocabulary than the truth, and a
+   * story whose dimension has an authoritative source should declare it.
+   */
+  readonly vocabulary?: PackFilterVocabulary;
   /** Help text (defaults to a generated description). */
   readonly description?: string;
+}
+
+/** The authoritative value set for a value-free {@link PackFilter}. */
+export interface PackFilterVocabulary {
+  /** SPARQL SELECT producing one row per admissible value. */
+  readonly query: string;
+  /**
+   * SELECT variable carrying the value (without `?`). Defaults to the filter's
+   * own {@link PackFilter.variable}.
+   */
+  readonly variable?: string;
 }
 
 /**
@@ -269,6 +302,29 @@ export interface PackLookup {
   readonly source?: "sparql" | "graphql";
   /** Property whose value names the entity — prefixed name or IRI. */
   readonly by: string;
+  /**
+   * What names an entity that carries no {@link by} value. Absent (the default)
+   * means NOTHING does: the `by` triple is required, and an entity without one
+   * is not addressable by name and never drawn by `sample`.
+   *
+   * `"iri"` opts the family into an IRI-DERIVED name — the local name after the
+   * last `#`/`/`, with dot-separated hierarchy segments published as slashes
+   * (`cs:react.component.props` → `react/component/props`).
+   *
+   * DECLARE IT ONLY WHEN THE STORY'S `list` PUBLISHES THE SAME DERIVED NAME.
+   * The option exists to keep the two halves of the two-step grammar over ONE
+   * population: `standard list` synthesizes a name for the ~87% of code
+   * standards carrying no `cs:name`, so `standard lookup` must answer to it.
+   * Turning it on where the list does NOT publish such a name is the mirror
+   * defect — `token list` requires `ds:tokenId`, so a `ds:Token` without one
+   * would become addressable and sampleable under a name the list never
+   * published.
+   *
+   * Requires a class constraint ({@link type}/{@link types}): the derived name
+   * is only as trustworthy as the class that vouches for the entity, and
+   * without one there is nothing to bound the scan with either.
+   */
+  readonly nameFallback?: "iri";
   /** Optional single class constraint — prefixed name or IRI. */
   readonly type?: string;
   /** CLI description for the lookup command (defaults to a generated one). */

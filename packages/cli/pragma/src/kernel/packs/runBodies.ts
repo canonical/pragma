@@ -19,10 +19,19 @@ import {
   resolveLookup,
 } from "./resolveEntity.js";
 import { parseSampleCount, pickRandom } from "./sample.js";
-import { applyPackFilters } from "./sparql/applyFilters.js";
+import {
+  applyPackFilters,
+  type FilterVocabularies,
+} from "./sparql/applyFilters.js";
 import { applyPackSearch } from "./sparql/applySearch.js";
 import { runSelect } from "./sparql/runSelect.js";
-import type { PackList, PackLookup, PackRow, StorySource } from "./types.js";
+import type {
+  PackFilter,
+  PackList,
+  PackLookup,
+  PackRow,
+  StorySource,
+} from "./types.js";
 
 /** The highest canonical level — sample fetches everything for shape discovery. */
 const HIGHEST_LEVEL = "detailed";
@@ -61,16 +70,64 @@ export function makeListRun(
   shape: PackList,
   meta: ListRunMeta,
 ): (params: Record<string, unknown>, rt: PragmaRuntime) => Promise<PackRow[]> {
-  return async (params, rt) =>
-    applyPackSearch(
-      applyPackFilters(
-        await runSelect(rt, shape.query, meta.source),
-        shape.filters,
-        params,
-      ),
+  return async (params, rt) => {
+    const rows = await runSelect(rt, shape.query, meta.source);
+    const vocabularies = await readFilterVocabularies(
+      rt,
+      shape.filters,
+      params,
+      meta.source,
+    );
+    return applyPackSearch(
+      applyPackFilters(rows, shape.filters, params, vocabularies),
       shape.search,
       params,
     );
+  };
+}
+
+/**
+ * Read the declared vocabulary of each value-free filter the caller actually
+ * used.
+ *
+ * WHY a second query rather than the rows already in hand: the rows are a
+ * population, not a vocabulary. A category the graph declares with no standards
+ * filed under it, or a `ds:ConceptType` no concept uses yet, is a REAL value
+ * that appears in no row — and rejecting it as `INVALID_INPUT` contradicts both
+ * `standard categories` (which lists it, with count 0) and the documented calm
+ * empty list. The query reads the same terms the enumerating surface reads, so
+ * "the graph is the vocabulary" stays true of the graph rather than of whatever
+ * the list happened to return.
+ *
+ * Only for a filter that is DECLARED with a vocabulary, carries no `values`
+ * (a declared set is already the vocabulary), and was actually PROVIDED — an
+ * unfiltered `list` runs exactly the one query it always did.
+ */
+async function readFilterVocabularies(
+  rt: PragmaRuntime,
+  filters: readonly PackFilter[] | undefined,
+  params: Record<string, unknown>,
+  source: StorySource,
+): Promise<FilterVocabularies | undefined> {
+  const needed = (filters ?? []).filter(
+    (filter) =>
+      filter.vocabulary !== undefined &&
+      filter.values === undefined &&
+      params[filter.param] !== undefined,
+  );
+  if (needed.length === 0) return undefined;
+  const resolved = new Map<string, readonly string[]>();
+  for (const filter of needed) {
+    const vocabulary = filter.vocabulary;
+    if (!vocabulary) continue;
+    const variable = vocabulary.variable ?? filter.variable;
+    const rows = await runSelect(rt, vocabulary.query, source);
+    resolved.set(
+      filter.param,
+      rows.map((row) => row[variable] ?? "").filter((value) => value !== ""),
+    );
+  }
+  return resolved;
 }
 
 /** Build the run body for a lookup verb (variadic names → resolved entities). */

@@ -154,6 +154,114 @@ export const readNounEvalCases: readonly EvalCase[] = [
     },
   },
   {
+    // The MIRROR of the addressability case above, and the reason the IRI-name
+    // fallback is DECLARED per story rather than inferred from a class
+    // constraint. `token list` requires `ds:tokenId`, so a `ds:Token` without
+    // one is a row it never publishes — and it must therefore be reachable by
+    // no name at all, and drawn by no sample. Inferring the fallback from the
+    // presence of `type: ds:Token` made it addressable and sampleable under an
+    // IRI-derived name the list never handed out: the same list/lookup
+    // disagreement as the standards defect, pointing the other way.
+    id: "tool-token-lookup-addresses-only-what-list-publishes",
+    kind: "tool",
+    input:
+      "a ds:Token carrying no ds:tokenId appears in no token_list row, resolves through no token_lookup name, and is drawn by no token_sample.",
+    async expect() {
+      await withCanonicalFixture(ALL_VISIBLE_CONFIG, async (mcp) => {
+        const list = await mcp.callTool("token_list");
+        assert.equal(list.ok, true);
+        const published = new Set(
+          (list.data as { name: string }[]).map((row) => row.name),
+        );
+        assert.ok(published.size > 0, "expected token_list to publish rows");
+        // The IRI-derived spellings the fallback would have minted for
+        // `ds:token.legacy.borderRadius` (local name, dots as slashes).
+        for (const derived of [
+          "token.legacy.borderRadius",
+          "token/legacy/borderRadius",
+        ]) {
+          assert.ok(
+            !published.has(derived),
+            `token_list must not publish ${derived}`,
+          );
+          const result = await mcp.callTool("token_lookup", {
+            name: [derived],
+          });
+          assert.equal(
+            result.ok,
+            false,
+            `token_lookup addressed ${derived}, a name token_list never published`,
+          );
+          assert.equal(
+            (result.error as { code: string }).code,
+            "ENTITY_NOT_FOUND",
+          );
+        }
+        // `sample`'s draw pool is the same population, so its reported total is
+        // the published population — not one entity wider.
+        const sample = await mcp.callTool("token_sample", {});
+        assert.equal(sample.ok, true);
+        assert.equal(
+          (sample.data as { totalCount: number }).totalCount,
+          published.size,
+        );
+      });
+    },
+  },
+  {
+    // A slug the graph declares with no standards filed under it. `standard
+    // categories` lists it at count 0 and the tool descriptions document a
+    // filtered list as a plain list, so asking for it is a calm empty answer —
+    // an INVALID_INPUT here tells an agent its own valid slug was a typo.
+    // Validity read off the RETURNED ROWS produced exactly that, because a
+    // category with no standards appears in no row.
+    id: "tool-standard-list-empty-category-is-a-calm-empty-list",
+    kind: "tool",
+    input:
+      "standard_list {category} for a real slug that no standard uses is ok:true with an empty list, not INVALID_INPUT.",
+    async expect() {
+      await withCanonicalFixture(CANONICAL_CONFIG, async (mcp) => {
+        const categories = await mcp.callTool("standard_categories");
+        assert.equal(categories.ok, true);
+        const empty = (categories.data as { name: string; count: string }[])
+          .filter((row) => Number(row.count) === 0)
+          .map((row) => row.name);
+        assert.ok(
+          empty.length > 0,
+          "expected standard_categories to report a zero-count category",
+        );
+        for (const slug of empty) {
+          const result = await mcp.callTool("standard_list", {
+            category: slug,
+          });
+          assert.equal(
+            result.ok,
+            true,
+            `standard_list rejected ${slug}, a slug standard_categories publishes`,
+          );
+          assert.deepEqual(result.data, []);
+        }
+        // The rejection itself still works, and still names the graph's whole
+        // vocabulary — including the categories no standard uses.
+        const rejected = await mcp.callTool("standard_list", {
+          category: "zzz-not-a-slug",
+        });
+        assert.equal(rejected.ok, false);
+        const error = rejected.error as {
+          code: string;
+          validOptions: string[];
+        };
+        assert.equal(error.code, "INVALID_INPUT");
+        for (const slug of empty) {
+          assert.ok(
+            error.validOptions.includes(slug),
+            `validOptions omitted the declared category ${slug}`,
+          );
+        }
+      });
+    },
+  },
+  {
     id: "content-canonical-graph-has-4-components",
     kind: "content",
     input:
