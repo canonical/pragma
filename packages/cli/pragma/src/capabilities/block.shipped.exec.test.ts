@@ -30,6 +30,10 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import {
+  isNestedExpand,
+  type PackExpandSelect,
+} from "../kernel/packs/types.js";
 import { verbKey } from "../kernel/packs/uniqueness.js";
 import { bootRuntime } from "../kernel/runtime/boot.js";
 import type { PragmaRuntime } from "../kernel/runtime/types.js";
@@ -58,16 +62,61 @@ const lookupVerb = blockModule.verbs.find(
  */
 const TYPE_VALUES = (blockLookup.types ?? []).join(" ");
 
+/** One graph term the story names, paired with the site that declares it. */
+interface DeclaredTerm {
+  readonly what: string;
+  readonly property: string;
+}
+
+/**
+ * Every term an `expand.select` names, to whatever depth it nests.
+ *
+ * WALKED, not listed. A hand-maintained enumeration would carry this file's own
+ * defect one level down: `ds:hasModifier`, `ds:propertyType` and `ds:optional`
+ * could be retired exactly the way `ds:whenToUse` was, and `block lookup` would
+ * quietly lose its modifier values and its property table while a list nobody
+ * thought to update stayed green. Recursing over the declaration instead means
+ * a term added to any `select` is covered the moment it is declared, by the
+ * author who declares it and without their help.
+ */
+function selectedTerms(
+  site: string,
+  select: readonly PackExpandSelect[],
+): readonly DeclaredTerm[] {
+  return select.flatMap((entry) =>
+    isNestedExpand(entry)
+      ? [
+          {
+            what: `${site} → nested expand "${entry.name}"`,
+            property: entry.relation,
+          },
+          ...selectedTerms(`${site} → "${entry.name}"`, entry.select),
+        ]
+      : [
+          {
+            what: `${site} → field "${entry.name}"`,
+            property: entry.property,
+          },
+        ],
+  );
+}
+
 /**
  * Every property the story names in the graph, read from the declaration.
  *
- * Fields, sections and expand relations all name graph vocabulary and all fail
- * the same silent way, so all three are held to the same standard.
+ * The identity property, fields, sections, expand relations and everything
+ * selected beneath them all name graph vocabulary and all fail the same silent
+ * way, so all of them are held to the same standard. `by` is included because a
+ * lookup whose identity property the ontology has retired resolves NOTHING —
+ * the loudest form of the same defect, and the one no rendering test would
+ * reach, since there would be no entity to render.
+ *
+ * One case per declaration SITE rather than per distinct term: `ds:name` is
+ * named at six of them, and a failure that names the site it was declared at
+ * is the one a reader can act on.
  */
-const DECLARED_PROPERTIES: readonly {
-  readonly what: string;
-  readonly property: string;
-}[] = [
+const DECLARED_PROPERTIES: readonly DeclaredTerm[] = [
+  { what: "lookup `by`", property: blockLookup.by },
   ...(blockLookup.fields ?? []).map((f) => ({
     what: `field "${f.name}"`,
     property: f.property,
@@ -76,10 +125,10 @@ const DECLARED_PROPERTIES: readonly {
     what: `section "${s.name}"`,
     property: s.property,
   })),
-  ...(blockLookup.expand ?? []).map((e) => ({
-    what: `expand "${e.name}"`,
-    property: e.relation,
-  })),
+  ...(blockLookup.expand ?? []).flatMap((e) => [
+    { what: `expand "${e.name}"`, property: e.relation },
+    ...selectedTerms(`expand "${e.name}"`, e.select),
+  ]),
 ];
 
 /** The IRI of the block whose usage narrative is asserted on below. */

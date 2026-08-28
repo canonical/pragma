@@ -111,8 +111,16 @@ const designSystemStories: readonly PackDefinition[] = [
   // `ds:usage` subsumes them, so a pack carrying both would print the same
   // guidance twice, and a declaration no shipped graph can satisfy is
   // untestable by construction — which is what let the silence ship.
-  // `block.shipped.exec.test.ts` now holds every property declared here to
-  // being asserted in the SHIPPED graph.
+  // `block.shipped.exec.test.ts` now holds every graph term declared here — the
+  // identity property, fields, sections, expand relations, and every term
+  // selected beneath them, walked recursively — to being DEFINED as a property
+  // by the SHIPPED ontology. Defined, not asserted, and the difference is the
+  // whole point: a term the ontology never defines is a story bug that can
+  // never render, on any block, on any install — this defect. A term it defines
+  // that no instance asserts yet (`ds:figmaLink` today) is a content gap
+  // upstream, which the OPTIONAL parity above degrades over gracefully and
+  // which this pack has no business failing on. `ds:usage` alone is ALSO held
+  // to being asserted, on every block, because its absence is what shipped.
   //
   // Disclosure declares the FULL canonical ladder `[summary, standard,
   // detailed]` — the same set `standard` declares — so a config
