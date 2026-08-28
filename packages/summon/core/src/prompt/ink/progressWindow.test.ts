@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  COMPLETED_GLYPH,
   describedWidthBudget,
   formatEffectDuration,
   MAX_PROGRESS_LINE,
@@ -102,25 +103,29 @@ describe("formatEffectDuration", () => {
 });
 
 describe("describedWidthBudget", () => {
-  it("reserves the suffix AND the space before it out of the cap", () => {
+  it("reserves the glyph prefix, the suffix, AND the space before it", () => {
     const suffix = formatEffectDuration(12); // "(12ms)" — 6 columns
-    expect(describedWidthBudget(suffix)).toBe(MAX_PROGRESS_LINE - 7);
+    // 2 columns for `✓ ` + 6 for the suffix + 1 for the gap before it.
+    expect(describedWidthBudget(suffix)).toBe(MAX_PROGRESS_LINE - 9);
   });
 
-  it("keeps description + space + suffix within the one-row cap", () => {
-    // The case the budget exists for: a description that already fills the cap.
+  it("keeps the WHOLE rendered row — glyph included — within the cap", () => {
+    // The case the budget exists for: a description that already fills the cap,
+    // rendered exactly as `Wizard.tsx` renders it.
     const suffix = formatEffectDuration(1234);
     const described = truncateMiddle(
       `Write file: ${"deep/".repeat(40)}Component.tsx (999 bytes)`,
       describedWidthBudget(suffix),
     );
-    expect(measureDisplayWidth(`${described} ${suffix}`)).toBeLessThanOrEqual(
+    const rendered = `${COMPLETED_GLYPH} ${described} ${suffix}`;
+    expect(measureDisplayWidth(rendered)).toBeLessThanOrEqual(
       MAX_PROGRESS_LINE,
     );
   });
 
   it("honours a custom cap and never goes negative", () => {
-    expect(describedWidthBudget("(12ms)", 20)).toBe(13);
+    expect(describedWidthBudget("(12ms)", 20)).toBe(11);
     expect(describedWidthBudget("(123456ms)", 4)).toBe(0);
+    expect(describedWidthBudget("(1ms)", 2)).toBe(0);
   });
 });

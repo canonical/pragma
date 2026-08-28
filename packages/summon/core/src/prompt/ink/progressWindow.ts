@@ -17,7 +17,12 @@
  * A `.ts` sibling of the JSX view so the string math is unit testable.
  */
 
-/** Max display columns a single progress line may occupy before it is truncated. */
+/**
+ * Max display columns a single RENDERED progress line may occupy — status
+ * glyph, description and duration suffix together. Everything but the
+ * description is fixed, so {@link describedWidthBudget} spends what is left of
+ * this cap on the description alone.
+ */
 export const MAX_PROGRESS_LINE = 72;
 
 /** The single-column marker inserted where a truncated middle was elided. */
@@ -29,6 +34,20 @@ export const TRUNCATION_MARKER = "…";
  * reserve it, and a line that forgot it would be one column over the cap.
  */
 const SUFFIX_GAP = 1;
+
+/**
+ * The status glyph a COMPLETED progress line opens with, rendered green by
+ * `Wizard.tsx`. Exported so the view and the budget cannot drift: the columns
+ * the glyph costs are reserved here, and a fork that changed the glyph in the
+ * view alone would silently reopen the overflow this reservation closes.
+ */
+export const COMPLETED_GLYPH = "✓";
+
+/**
+ * The single space between {@link COMPLETED_GLYPH} and the description. Sibling
+ * of {@link SUFFIX_GAP}, and reserved for the same reason.
+ */
+const GLYPH_GAP = 1;
 
 /**
  * Format a completed effect's duration as the suffix its progress line ends
@@ -47,25 +66,37 @@ export function formatEffectDuration(durationMs: number): string {
 }
 
 /**
- * The display columns left for the DESCRIBED half of a progress line once its
- * duration suffix — and the space before it — are reserved out of `max`.
+ * The display columns left for the DESCRIBED middle of a progress line once
+ * everything rendered AROUND it is reserved out of `max`: the leading
+ * {@link COMPLETED_GLYPH} and its space, and the trailing duration suffix and
+ * the space before it.
  *
- * The one-row guarantee is about the WHOLE line, so the description alone can
- * no longer spend the entire cap: appending `(1234ms)` to a line already at
- * {@link MAX_PROGRESS_LINE} would wrap, which is exactly the jitter the
- * truncation exists to prevent. Budgeting here (rather than truncating the
- * joined line) keeps the timing legible — it is the part a middle-truncation
- * would never protect, since it sits at neither end of the description.
+ * The one-row guarantee is about the WHOLE rendered row — that is the thing the
+ * terminal has to fit — so the description alone can no longer spend the entire
+ * cap: appending `(1234ms)` to a line already at {@link MAX_PROGRESS_LINE}
+ * would wrap, which is exactly the jitter the truncation exists to prevent. The
+ * glyph is reserved for the same reason and was the earlier miss: a budget that
+ * covered only the suffix let `Wizard.tsx` emit `MAX_PROGRESS_LINE + 2` columns
+ * — overflowing on precisely the boundary this helper protects.
+ *
+ * Budgeting here (rather than truncating the joined line) keeps the timing
+ * legible — it is the part a middle-truncation would never protect, since it
+ * sits at neither end of the description.
  *
  * @param suffix - The rendered duration suffix, from {@link formatEffectDuration}.
- * @param max - The whole-line width cap; defaults to {@link MAX_PROGRESS_LINE}.
+ * @param max - The whole-ROW width cap; defaults to {@link MAX_PROGRESS_LINE}.
  * @returns The columns the description may occupy, never negative.
  */
 export function describedWidthBudget(
   suffix: string,
   max: number = MAX_PROGRESS_LINE,
 ): number {
-  return Math.max(0, max - measureDisplayWidth(suffix) - SUFFIX_GAP);
+  const around =
+    measureDisplayWidth(COMPLETED_GLYPH) +
+    GLYPH_GAP +
+    SUFFIX_GAP +
+    measureDisplayWidth(suffix);
+  return Math.max(0, max - around);
 }
 
 /**

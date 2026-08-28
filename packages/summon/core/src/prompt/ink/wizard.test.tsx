@@ -469,10 +469,10 @@ describe("progress lines report what each effect cost", () => {
           .find((l) => l.includes("Component.tsx"));
         expect(line).toBeDefined();
         expect(line).toContain("(1234ms)");
-        // The glyph and its space are the only columns beyond the described
-        // budget: description + " " + suffix is what the cap governs.
+        // The cap governs the WHOLE rendered row — `✓ ` prefix, description,
+        // gap and suffix — because that is what the terminal has to fit.
         expect(measureDisplayWidth(line ?? "")).toBeLessThanOrEqual(
-          MAX_PROGRESS_LINE + 2,
+          MAX_PROGRESS_LINE,
         );
       } finally {
         unmount();

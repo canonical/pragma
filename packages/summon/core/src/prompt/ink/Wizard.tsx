@@ -9,6 +9,7 @@ import { describeEffect, type Effect } from "@canonical/task";
 import { Box, Static, Text, useInput } from "ink";
 import { useEffect, useState } from "react";
 import {
+  COMPLETED_GLYPH,
   describedWidthBudget,
   formatEffectDuration,
   truncateMiddle,
@@ -97,8 +98,9 @@ const EffectsSummary = ({ effects }: { effects: readonly Effect[] }) => {
  * The trailing `(12ms)` is the duration the seam already delivers per effect
  * (`SessionController.reportEffectComplete`) — same spelling as the summon
  * binary's timed view. The description is truncated against a budget that has
- * the suffix reserved out of it ({@link describedWidthBudget}), so timing a
- * line can never push it onto a second row.
+ * everything rendered around it — the `✓ ` prefix as well as the suffix —
+ * reserved out of it ({@link describedWidthBudget}), so neither the glyph nor
+ * the timing can push the row past the one-line cap.
  */
 const Progress = ({ state }: { state: WizardState }) => {
   const shown = state.progress.filter(
@@ -120,7 +122,7 @@ const Progress = ({ state }: { state: WizardState }) => {
           return (
             // biome-ignore lint/suspicious/noArrayIndexKey: append-only progress; a path may repeat
             <Text key={`${t.effect._tag}-${i}`}>
-              <Text color="green">✓</Text>{" "}
+              <Text color="green">{COMPLETED_GLYPH}</Text>{" "}
               {truncateMiddle(
                 describeEffect(t.effect),
                 describedWidthBudget(duration),
