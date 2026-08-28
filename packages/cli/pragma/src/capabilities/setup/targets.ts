@@ -47,7 +47,7 @@ import {
   type LspDetection,
   lspEditorNames,
   lspSkipReason,
-  lspUninstallRemedy,
+  ownedLspEditors,
 } from "./operations/setupLsp.js";
 import {
   composeMcp,
@@ -241,14 +241,34 @@ const lspTarget = defineTarget<LspDetection>({
       children,
     };
   },
-  removalPlan: (d) => ({
-    action: "skip",
-    detail: "not removed",
-    reason: "an extension install cannot be reversed from here",
-    remedy:
-      lspUninstallRemedy(d) ??
-      "no editor CLI is on PATH — uninstall it from your editor",
-  }),
+  removalPlan: (d) => {
+    // No editor CLI on PATH is the SAME named skip the forward plan reports:
+    // there is nothing on this machine to run an uninstall with.
+    if (d.state === "unknown") {
+      return {
+        action: "skip",
+        detail: lspSkipReason(d),
+        reason: lspSkipReason(d),
+        remedy: LSP_SKIP_REMEDY,
+      };
+    }
+    // Removal is composed from what detection says we OWN — a copy that is
+    // present, whatever its version. The forward plan's version gate would let
+    // a dead pre-0.8.3 copy this command installed survive its own `--undo`.
+    const owned = ownedLspEditors(d);
+    if (owned.length === 0) {
+      return { action: "none", detail: "no editor carries the extension" };
+    }
+    return {
+      action: "remove",
+      detail: `${owned.length} ${owned.length === 1 ? "editor" : "editors"}`,
+      children: owned.map((e) => ({
+        key: e.editor.cli,
+        label: `${e.editor.cli} — ${e.editor.name}`,
+        action: "update" as const,
+      })),
+    };
+  },
   compose: (d, chosen) => composeLsp(d, chosen),
   composeRemoval: (d) => composeLspRemoval(d),
 });

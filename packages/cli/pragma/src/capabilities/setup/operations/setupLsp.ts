@@ -12,9 +12,10 @@
  * VSCodium/Cursor/Windsurf/Antigravity machines unable to install at all.
  *
  * `detectLsp` probes FOR REAL up front, and spawns NOTHING: an editor is
- * "present" when its CLI resolves on PATH (the `editorClis` registry names
- * them), and "installed" when its extensions dir holds a
- * `canonical.terrazzo-lsp-extension-<version>/` entry. Running
+ * detected when its CLI resolves on PATH (the `editorClis` registry names
+ * them), carries the extension when its extensions dir holds a
+ * `canonical.terrazzo-lsp-extension-<version>/` entry, and is "installed" when
+ * that entry is also new enough to work. Running
  * `--list-extensions` instead would be the natural probe, but Cursor's Linux
  * launcher OPENS THE EDITOR on that flag — a detection step must never launch
  * an app, so the fs is the source of truth. The full extension id is matched
@@ -50,10 +51,31 @@ const EXTENSION_ID = "canonical.terrazzo-lsp-extension";
 /** The npm package whose tarball bundles the VSIX. */
 const LSP_PACKAGE = "@canonical/terrazzo-lsp-extension";
 
-/** One detected editor: its registry row + whether the extension is present. */
+/**
+ * One detected editor: its registry row, its extensions directory, and the two
+ * DIFFERENT questions about the extension.
+ *
+ * `present` and `installed` are deliberately separate, and collapsing them is a
+ * silent wrong-removal. `installed` is version-gated — an entry older than
+ * {@link MIN_EXTENSION_VERSION} reports false, because the forward plan and
+ * doctor must treat a copy that cannot start as not installed. But a REMOVAL
+ * keyed on that same boolean would walk past a dead pre-0.8.3 copy that pragma
+ * itself put there, report "nothing to remove", and leave it behind forever.
+ * So removal keys on `present` (any matching entry at all) and everything else
+ * keys on `installed` (present AND new enough to work).
+ */
 export interface DetectedEditor {
   readonly editor: EditorCliDefinition;
+  /** Any `canonical.terrazzo-lsp-extension-*` entry, whatever its version. */
+  readonly present: boolean;
+  /** Present AND at least {@link MIN_EXTENSION_VERSION} — i.e. it works. */
   readonly installed: boolean;
+  /**
+   * The editor's extensions directory. Kept because the removal's forward
+   * carrier needs a path that DEMONSTRABLY already exists (see
+   * {@link composeLspRemoval}); when `present` is true, this is that path.
+   */
+  readonly extensionsDir: string;
 }
 
 /**
@@ -144,37 +166,44 @@ const compareVersions = (left: number[], right: number[]): number => {
 };
 
 /**
- * Whether an editor's extensions dir holds a copy new enough to WORK.
+ * The two facts an editor's extensions dir answers: is a copy THERE, and is it
+ * new enough to WORK.
  *
- * Version-aware on purpose. Matching any `canonical.terrazzo-lsp-extension-*`
- * entry meant a machine carrying a build whose server cannot start reported
- * `installed`, so `setup lsp` skipped it and `doctor` called it healthy —
- * a wrong skip that reads as correct, which is worse than a wrong failure and
- * is exactly the trap this module's docblock warns about elsewhere. Everyone
- * who ran `setup lsp` before {@link MIN_EXTENSION_VERSION} would have kept a
- * dead language server forever, with nothing telling them why.
+ * `current` is version-aware on purpose. Matching any
+ * `canonical.terrazzo-lsp-extension-*` entry meant a machine carrying a build
+ * whose server cannot start reported `installed`, so `setup lsp` skipped it and
+ * `doctor` called it healthy — a wrong skip that reads as correct, which is
+ * worse than a wrong failure. Everyone who ran `setup lsp` before
+ * {@link MIN_EXTENSION_VERSION} would have kept a dead language server forever,
+ * with nothing telling them why. An unparseable suffix counts as too old: a
+ * directory this function cannot read the version of is one it cannot vouch for.
  *
- * An unparseable suffix counts as too old: a directory this function cannot
- * read the version of is one it cannot vouch for.
+ * `present` is the same probe WITHOUT the version gate, and it exists because
+ * removal asks a different question. A pre-0.8.3 copy is not `current`, but it
+ * is unquestionably there, and it is a copy this command installed — so a
+ * removal keyed on `current` would leave the dead extension on disk while
+ * reporting success. See {@link DetectedEditor}.
  */
-const extensionInstalled = (
+const extensionState = (
   editor: EditorCliDefinition,
   platform: PlatformEnv,
-): boolean => {
+): { present: boolean; current: boolean } => {
   let entries: string[];
   try {
     entries = readdirSync(editor.extensionsDir(platform));
   } catch {
-    return false; // No extensions dir — nothing installed.
+    return { present: false, current: false }; // No dir — nothing installed.
   }
   const prefix = `${EXTENSION_ID}-`;
-  return entries.some((entry) => {
-    const lower = entry.toLowerCase();
-    if (!lower.startsWith(prefix)) return false;
-    const version = parseVersion(lower.slice(prefix.length));
+  const matching = entries.filter((entry) =>
+    entry.toLowerCase().startsWith(prefix),
+  );
+  const current = matching.some((entry) => {
+    const version = parseVersion(entry.toLowerCase().slice(prefix.length));
     if (version === undefined) return false; // Unreadable: cannot vouch for it.
     return compareVersions(version, MINIMUM) >= 0;
   });
+  return { present: matching.length > 0, current };
 };
 
 /**
@@ -191,10 +220,15 @@ export async function detectLsp(_cwd: string): Promise<LspDetection> {
   const platform = readPlatformEnv();
   const editors: DetectedEditor[] = editorClis
     .filter((editor) => cliOnPath(executableCandidates(editor.cli, platform)))
-    .map((editor) => ({
-      editor,
-      installed: extensionInstalled(editor, platform),
-    }));
+    .map((editor) => {
+      const { present, current } = extensionState(editor, platform);
+      return {
+        editor,
+        present,
+        installed: current,
+        extensionsDir: editor.extensionsDir(platform),
+      };
+    });
   const state: LspState =
     editors.length === 0
       ? "unknown"
@@ -327,29 +361,87 @@ export function composeLsp(
 }
 
 /**
- * Compose the removal — deliberately empty. An extension install is an `exec`,
- * and an `exec` carries no reversal: pretending otherwise is what made
- * `setup lsp --undo` report a step count for work it never did. The honest
- * answer is the plan row's, which names the editor CLI that CAN uninstall it
- * (see {@link lspUninstallRemedy}) or states that this machine has none.
+ * The editors this command OWNS an extension copy in right now — every detected
+ * editor whose extensions dir holds a `canonical.terrazzo-lsp-extension-*`
+ * entry, version-gate deliberately NOT applied (see {@link DetectedEditor}).
  *
- * @param _d - The detection (unused; the shape is the table's).
- * @returns An empty Task.
+ * Named and shaped like `ownedMcpGroups` and `ownedSkillLinks`, and for the
+ * same reason those exist: a reversal is composed from what detection says this
+ * command owns, never from what a fresh forward plan would create.
+ *
+ * @param d - The detection gathered up front.
+ * @returns The editors carrying a copy.
  */
-export function composeLspRemoval(_d: LspDetection): Task<void> {
-  return sequence_([]);
+export const ownedLspEditors = (d: LspDetection): readonly DetectedEditor[] =>
+  d.editors.filter((e) => e.present);
+
+/**
+ * Compose the removal: one `<editor cli> --uninstall-extension <id>` per owned
+ * editor, carried as the `undo` of a forward no-op.
+ *
+ * The docblock this replaces claimed "an `exec` carries no reversal". That was
+ * factually wrong about the effect model — `Exec` has an `undo` slot and `exec`
+ * takes `UndoOptions`. What is true is that `exec` has no DEFAULT undo; the
+ * caller supplies one, exactly as `composeMcpRemoval` does for its `mkdir`.
+ *
+ * The carrier is copied from `composeMcpRemoval`, and its trap is the reason
+ * for the shape: `runUndo` collects undos by walking the FORWARD task with
+ * effects MOCKED, so the forward side must be walkable without reading or
+ * mutating anything. A `mkdir` of the editor's own extensions directory — which
+ * `present` proves already exists — reads nothing and is a genuine no-op. Phase
+ * two then runs the uninstall against the real editor.
+ *
+ * @param d - The detection gathered up front.
+ * @returns A Task whose undo uninstalls the extension from each owned editor.
+ */
+export function composeLspRemoval(d: LspDetection): Task<void> {
+  const owned = ownedLspEditors(d);
+  // Nothing on this machine carries a copy — there is no honest work to model,
+  // and the plan row says so. Same shape as the other rows' empty removals.
+  if (owned.length === 0) return sequence_([]);
+  return sequence_(
+    owned.map(({ editor, extensionsDir }) => {
+      const command = `${editor.cli} --uninstall-extension ${EXTENSION_ID}`;
+      return mkdir(extensionsDir, true, {
+        undo: guardMissingBinary(
+          editor.cli,
+          {
+            message: `The \`${editor.cli}\` CLI disappeared from PATH mid-run — restore it, then run \`${BIN_NAME} setup lsp --undo\` again.`,
+          },
+          flatMap(
+            exec(
+              editor.cli,
+              ["--uninstall-extension", EXTENSION_ID],
+              extensionsDir,
+            ),
+            (result) =>
+              checkExecOk(command, result as ExecResult, {
+                message:
+                  `${editor.name} refused the uninstall (its output is above). ` +
+                  `Remove it by hand with \`${command}\`.`,
+              }),
+          ),
+        ),
+      });
+    }),
+  );
 }
 
 /**
  * The uninstall instruction for a detection — a command that runs on THIS
- * machine, or `undefined` when no editor CLI was found and there is therefore
- * nothing honest to print.
+ * machine, or `undefined` when nothing here carries the extension and there is
+ * therefore nothing honest to print.
+ *
+ * It names an OWNING editor. Reading `d.editors.at(0)` named the first editor
+ * on PATH instead, so a machine with Cursor installed and the extension only in
+ * VSCodium printed a command against the wrong editor — one that would report
+ * success having uninstalled nothing.
  *
  * @param d - The detection gathered up front.
  * @returns The uninstall command, or undefined.
  */
 export function lspUninstallRemedy(d: LspDetection): string | undefined {
-  const cli = d.editors.at(0)?.editor.cli;
+  const cli = ownedLspEditors(d).at(0)?.editor.cli;
   return cli === undefined
     ? undefined
     : `${cli} --uninstall-extension ${EXTENSION_ID}`;

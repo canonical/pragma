@@ -28,7 +28,12 @@ import {
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { execute } from "@canonical/summon-core";
-import { dryRun, type Effect, type Task } from "@canonical/task";
+import {
+  collectUndos,
+  dryRun,
+  type Effect,
+  type Task,
+} from "@canonical/task";
 import { runTask, runUndo } from "@canonical/task/node";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BIN_NAME } from "../../constants.js";
@@ -607,6 +612,202 @@ describe("setup lsp — per-editor multiselect (child rows)", () => {
     const detected = await detectLsp(tmp("pragma-setup-proj-"));
     const { effects } = dryRun(composeLsp(detected, []));
     expect(effects.some((e) => e._tag === "Exec")).toBe(false);
+  });
+
+  it("the removal is `none` when no editor carries the extension", async () => {
+    // Both forks are on PATH, neither has a copy — there is nothing this
+    // command owns, so a removal has honestly nothing to do.
+    const { detectLsp, composeLspRemoval, ownedLspEditors } = await import(
+      "./operations/setupLsp.js"
+    );
+    const detected = await detectLsp(tmp("pragma-setup-proj-"));
+    expect(ownedLspEditors(detected)).toEqual([]);
+    expect(collectUndos(composeLspRemoval(detected))).toEqual([]);
+
+    const { plan } = await buildSetupRun(
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      "lsp",
+      "global",
+      true,
+    );
+    const row = plan.rows.find((r) => r.target === "lsp");
+    expect(row?.action).toBe("none");
+    expect(row?.detail).toBe("no editor carries the extension");
+  });
+});
+
+describe("setup lsp — the removal contract the other four rows implement", () => {
+  let prevPath: string | undefined;
+  let stubDir = "";
+  beforeEach(() => {
+    prevPath = process.env.PATH;
+    stubDir = stubPath();
+    writeFileSync(join(stubDir, "code"), "");
+    writeFileSync(join(stubDir, "codium"), "");
+    process.env.PATH = stubDir;
+  });
+  afterEach(() => {
+    process.env.PATH = prevPath;
+  });
+
+  /** Seed a versioned extension copy in an editor's extensions dir. */
+  const seedExtension = (dir: string, version: string): void => {
+    mkdirSync(
+      join(
+        process.env.HOME ?? "",
+        dir,
+        "extensions",
+        `canonical.terrazzo-lsp-extension-${version}`,
+      ),
+      { recursive: true },
+    );
+  };
+
+  it("carries one `--uninstall-extension` exec per OWNED editor as its undo", async () => {
+    // The row hardcoded a skip behind a docblock claiming "an `exec` carries no
+    // reversal" — factually wrong: `Exec` has an `undo` slot, and the sibling
+    // `composeMcpRemoval` already uses this exact carrier shape.
+    seedExtension(".vscode", "1.2.3");
+    const { detectLsp, composeLspRemoval } = await import(
+      "./operations/setupLsp.js"
+    );
+    const detected = await detectLsp(tmp("pragma-setup-proj-"));
+
+    // The FORWARD side must be walkable with every effect mocked: it is a
+    // `mkdir` of the editor's own extensions dir, which reads nothing.
+    const forward = dryRun(composeLspRemoval(detected));
+    expect(forward.effects.map((e) => e._tag)).toEqual(["MakeDir"]);
+    expect(forward.effects.some((e) => e._tag === "Exec")).toBe(false);
+
+    const undos = collectUndos(composeLspRemoval(detected));
+    expect(undos).toHaveLength(1);
+    const execs = undos
+      .flatMap((u) => dryRun(u).effects)
+      .filter((e) => e._tag === "Exec") as (Effect & {
+      _tag: "Exec";
+      command: string;
+      args: string[];
+    })[];
+    expect(execs.map((e) => e.command)).toEqual(["code"]);
+    expect(execs[0].args).toEqual([
+      "--uninstall-extension",
+      "canonical.terrazzo-lsp-extension",
+    ]);
+  });
+
+  it("REGRESSION: a pre-0.8.3 copy still plans `install` forward but `remove` back", async () => {
+    // The conflation that would have caused a silent wrong-skip.
+    // `extensionInstalled` was version-gated, so an editor carrying a dead
+    // pre-0.8.3 copy — one this command itself installed — reported
+    // `installed: false`, and a removal keyed on it would have walked past the
+    // dead extension while reporting success.
+    seedExtension(".vscode", "0.8.1");
+    const { detectLsp, composeLspRemoval, ownedLspEditors } = await import(
+      "./operations/setupLsp.js"
+    );
+    const detected = await detectLsp(tmp("pragma-setup-proj-"));
+    const code = detected.editors.find((e) => e.editor.cli === "code");
+    // Present, but not current — the two facts stay separate.
+    expect(code?.present).toBe(true);
+    expect(code?.installed).toBe(false);
+
+    // Forward is UNCHANGED by this fix: the dead copy is still "not installed".
+    const forward = await buildSetupRun(
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      "lsp",
+      "global",
+    );
+    expect(forward.plan.rows.find((r) => r.target === "lsp")?.action).toBe(
+      "install",
+    );
+
+    // Removal keys on ownership, so the dead copy IS removed.
+    expect(ownedLspEditors(detected).map((e) => e.editor.cli)).toEqual([
+      "code",
+    ]);
+    const { plan } = await buildSetupRun(
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      "lsp",
+      "global",
+      true,
+    );
+    const row = plan.rows.find((r) => r.target === "lsp");
+    expect(row?.action).toBe("remove");
+    expect(row?.children?.map((c) => c.key)).toEqual(["code"]);
+    expect(
+      collectUndos(composeLspRemoval(detected))
+        .flatMap((u) => dryRun(u).effects)
+        .filter((e) => e._tag === "Exec"),
+    ).toHaveLength(1);
+  });
+
+  it("the remedy names an OWNING editor, not the first one on PATH", async () => {
+    // With Cursor (or here: `code`) installed and the extension only in
+    // VSCodium, the printed remedy named the wrong editor — a command that
+    // would report success having uninstalled nothing.
+    seedExtension(".vscode-oss", "1.2.3"); // codium's extensions dir
+    const { detectLsp, lspUninstallRemedy } = await import(
+      "./operations/setupLsp.js"
+    );
+    const detected = await detectLsp(tmp("pragma-setup-proj-"));
+    expect(detected.editors[0]?.editor.cli).toBe("code"); // first on PATH
+    expect(lspUninstallRemedy(detected)).toBe(
+      "codium --uninstall-extension canonical.terrazzo-lsp-extension",
+    );
+  });
+
+  it("still SKIPS with the named reason when no editor CLI is on PATH", async () => {
+    process.env.PATH = stubPath(); // no editor CLI at all
+    const { plan } = await buildSetupRun(
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      "lsp",
+      "global",
+      true,
+    );
+    const row = plan.rows.find((r) => r.target === "lsp");
+    expect(row?.action).toBe("skip");
+    expect(row?.reason).toContain("no VS Code-family editor CLI on PATH");
+  });
+
+  it("end to end: `setup lsp --undo` reports `Undid 1 step(s)` against a STUB cli", async () => {
+    // The reported symptom was `Undid 0 step(s).` at exit 0. The stub is a
+    // marker-writing script — never a real editor: an undo test must not be
+    // able to mutate the machine running it.
+    const marker = join(tmp("pragma-lsp-undo-"), "uninstalled");
+    const dir = stubPath();
+    writeFileSync(
+      join(dir, "code"),
+      `#!/bin/sh\nprintf '%s\\n' "$@" > ${marker}\n`,
+      { mode: 0o755 },
+    );
+    process.env.PATH = dir;
+    seedExtension(".vscode", "1.2.3");
+
+    const outcome = await executeVerb(
+      verbOf("lsp"),
+      {},
+      UNDO,
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+    );
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).toBe("Undid 1 step(s).\n");
+    expect(readFileSync(marker, "utf-8")).toBe(
+      "--uninstall-extension\ncanonical.terrazzo-lsp-extension\n",
+    );
+    // NON-GOAL guard: the staging dir is a cache, not this removal's business.
+    // Nothing here deletes it, and nothing here touches the VSIX.
+    const { detectLsp, composeLspRemoval } = await import(
+      "./operations/setupLsp.js"
+    );
+    const detected = await detectLsp(tmp("pragma-setup-proj-"));
+    const all = [
+      ...dryRun(composeLspRemoval(detected)).effects,
+      ...collectUndos(composeLspRemoval(detected)).flatMap(
+        (u) => dryRun(u).effects,
+      ),
+    ];
+    expect(all.some((e) => e._tag === "DeleteFile")).toBe(false);
+    expect(all.some((e) => e._tag === "DeleteDirectory")).toBe(false);
   });
 });
 
