@@ -26,9 +26,20 @@
  * accurate; the composed Task performs only the symlink/delete effects.
  */
 
-import { existsSync, lstatSync, readdirSync, readlinkSync } from "node:fs";
+import {
+  existsSync,
+  lstatSync,
+  readdirSync,
+  readlinkSync,
+  statSync,
+} from "node:fs";
 import { basename, join, resolve } from "node:path";
 import type { ResolvedPackage } from "../../kernel/runtime/refs/index.js";
+// The ownership test, imported rather than reimplemented: `setup skills` and
+// this module must not be able to disagree about which links belong to pragma.
+// `setupSkills.ts` reaches `@canonical/harnesses` only through a DYNAMIC
+// import, so this edge adds no static one (`capabilities/lazy.test.ts`).
+import { withinRoot } from "../setup/operations/setupSkills.js";
 import { installedSkillsDir } from "../skill/discover.js";
 
 /** One planned skill symlink into the installed-skills root. */
@@ -94,7 +105,11 @@ function packageSkillDirs(root: string): string[] {
   for (const name of names) {
     const dir = join(skillsDir, name);
     try {
-      if (lstatSync(dir).isDirectory() && existsSync(join(dir, "SKILL.md"))) {
+      // `stat`, not `lstat`: a package that ships `skills/<name>` as a SYMLINK
+      // — the ordinary pnpm / monorepo / `file:` layout — contributed nothing
+      // at all, silently, because `lstat` reports the link and not the
+      // directory behind it. Discovery uses `stat`; so does this now.
+      if (statSync(dir).isDirectory() && existsSync(join(dir, "SKILL.md"))) {
         out.push(dir);
       }
     } catch {
@@ -176,10 +191,17 @@ export function planSkillInstall(
       seen.add(folderName);
       const linkPath = resolve(dest, folderName);
       const state = linkState(linkPath);
+      // Already correct means the link RESOLVES to the skill dir, not that its
+      // raw `readlink` string equals an absolute path. A relative link was
+      // therefore never "already correct": it was torn down and rebuilt on
+      // every single update, and the sibling planner reported it as drift.
+      const resolvesToSkill =
+        state.kind === "symlink" &&
+        resolve(dest, state.target) === resolve(skillDir);
       const action: SkillLinkAction["action"] =
         state.kind === "absent"
           ? "created"
-          : state.kind === "symlink" && state.target === skillDir
+          : resolvesToSkill
             ? "skipped"
             : state.kind === "symlink"
               ? "replaced"
@@ -198,4 +220,119 @@ export function planSkillInstall(
   // install pass decided to leave its entry alone.
   actions.push(...planStaleLinkPrunes(dest, seen));
   return actions;
+}
+
+/**
+ * One planned link action in a HARNESS skills directory (layer 2).
+ *
+ * Layer 1 (`<installedSkillsDir>/<name>` → the package's folder) is what
+ * {@link planSkillInstall} owns. This is the layer above it: the links inside
+ * `~/.claude/skills` and `~/.agents/skills` that point AT layer 1 — a link to a
+ * link — and that `setup skills` owns.
+ */
+export interface BandLinkAction {
+  readonly target: string;
+  readonly linkPath: string;
+  readonly action: "created" | "replaced" | "pruned";
+  readonly folderName: string;
+  /** The harness directory's display name, for the progress line. */
+  readonly dirName: string;
+  /**
+   * The target the link ALREADY holds, recorded only for a `replaced` action so
+   * its undo can put that link back. Without it the undo could only delete what
+   * the forward run created, which restores an ABSENT path — a state that never
+   * existed — instead of the link the run overwrote.
+   *
+   * Stored as `readlink` returned it, not resolved: a relative link is relative
+   * to its own directory, which for a candidate of `dir` is `dir` itself, so
+   * re-linking the raw value reproduces the link exactly as found.
+   */
+  readonly previousTarget?: string;
+}
+
+/**
+ * Plan the CONVERGE-ONLY refresh of the global band's harness skill links.
+ *
+ * The reported bug lives here. `sources update` installed and pruned layer 1
+ * and stopped, so a new pack skill reached no harness directory until the user
+ * separately ran `setup skills`, and a dropped one left its layer-2 link
+ * dangling with nothing that would ever clear it. This closes the loop, under
+ * two rules that are the entire safety argument:
+ *
+ * 1. CONVERGE-ONLY. `dirs` are directories that already exist — this function
+ *    never creates one, and the caller composes no `mkdir`. A `sources update`
+ *    that materialised `~/.claude/skills` would be litter, and would silently
+ *    opt the user into linking they never asked for.
+ * 2. OWNERSHIP, by the SAME test `setup skills` uses. A path is this command's
+ *    to touch only when it holds a symlink resolving INSIDE the installed root
+ *    (`withinRoot`, a pure path-SEGMENT test that reads nothing — so it still
+ *    answers correctly after the layer-1 target is gone, which is exactly the
+ *    stale case). A real directory is a hand-installed skill; a symlink
+ *    pointing anywhere else is the user's own; a `<root>-backup/foo` sibling is
+ *    not "inside" despite sharing a string prefix. None is ever removed.
+ *
+ * The plan is derived from the layer-1 plan rather than from a filesystem
+ * re-read, because at planning time the layer-1 writes have not happened yet:
+ * `surviving` is the post-update truth, and reading the disk would see the
+ * pre-update state.
+ *
+ * @param dirs - The EXISTING global link directories.
+ * @param dest - The installed-skills root (layer 1), which is also the
+ *   ownership root every candidate link is tested against.
+ * @param surviving - Folder names layer 1 will hold after this update.
+ * @param retired - Folder names layer 1 is pruning in this update.
+ * @returns The layer-2 actions, for the plan and its effects.
+ * @note Impure — lstats each candidate link path.
+ */
+export function planBandSkillLinks(
+  dirs: readonly { dir: string; name: string }[],
+  dest: string,
+  surviving: readonly string[],
+  retired: readonly string[],
+): BandLinkAction[] {
+  const out: BandLinkAction[] = [];
+  for (const { dir, name } of dirs) {
+    for (const folderName of surviving) {
+      const linkPath = resolve(dir, folderName);
+      const target = resolve(dest, folderName);
+      const state = linkState(linkPath);
+      if (state.kind === "other") continue; // A hand-placed entry — never ours.
+      if (state.kind === "absent") {
+        out.push({
+          target,
+          linkPath,
+          action: "created",
+          folderName,
+          dirName: name,
+        });
+        continue;
+      }
+      if (resolve(dir, state.target) === target) continue; // Already correct.
+      // A symlink pointing outside the installed root is the user's own link
+      // into their own checkout. Unplanned does not make it ours to replace.
+      if (!withinRoot(dest, linkPath, state.target)) continue;
+      out.push({
+        target,
+        linkPath,
+        action: "replaced",
+        folderName,
+        dirName: name,
+        previousTarget: state.target,
+      });
+    }
+    for (const folderName of retired) {
+      const linkPath = resolve(dir, folderName);
+      const state = linkState(linkPath);
+      if (state.kind !== "symlink") continue;
+      if (!withinRoot(dest, linkPath, state.target)) continue;
+      out.push({
+        target: resolve(dir, state.target),
+        linkPath,
+        action: "pruned",
+        folderName,
+        dirName: name,
+      });
+    }
+  }
+  return out;
 }

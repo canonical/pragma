@@ -714,14 +714,25 @@ describe("sources update — installs package skills (U10)", () => {
     return pkg;
   }
 
+  let savedHome: string | undefined;
+  let home: string;
+
   beforeEach(() => {
     savedDataHome = process.env.XDG_DATA_HOME;
     dataHome = tmp("pragma-datahome-");
     process.env.XDG_DATA_HOME = dataHome;
+    // HOME is isolated because an update now converges the GLOBAL band, and
+    // the global band's link directories live under it. A test that read the
+    // real home would be writing into the developer's own harness folders.
+    savedHome = process.env.HOME;
+    home = tmp("pragma-home-");
+    process.env.HOME = home;
   });
   afterEach(() => {
     if (savedDataHome === undefined) delete process.env.XDG_DATA_HOME;
     else process.env.XDG_DATA_HOME = savedDataHome;
+    if (savedHome === undefined) delete process.env.HOME;
+    else process.env.HOME = savedHome;
   });
 
   it("symlinks a package skill into the installed root so `skill list` finds it", async () => {
@@ -919,6 +930,223 @@ describe("sources update — installs package skills (U10)", () => {
     await runTask(await buildUpdateTask(runtime));
 
     expect(readdirSync(join(dataHome, "pragma", "skills"))).toEqual(["foo"]);
+  });
+
+  it("sees a package that ships `skills/<name>` as a SYMLINK", async () => {
+    // `lstat().isDirectory()` reports the LINK, not the directory behind it, so
+    // a pnpm / monorepo / `file:` layout contributed nothing at all, silently.
+    const real = tmp("pragma-realskill-");
+    mkdirSync(join(real, "linked-skill"), { recursive: true });
+    writeFileSync(
+      join(real, "linked-skill", "SKILL.md"),
+      "---\nname: linked-skill\ndescription: Behind a link.\n---\n",
+    );
+    const pkg = filePackage();
+    mkdirSync(join(pkg, "skills"), { recursive: true });
+    symlinkSync(
+      join(real, "linked-skill"),
+      join(pkg, "skills", "linked-skill"),
+    );
+
+    const cwd = tmp("pragma-proj-");
+    await runTask(
+      await buildUpdateTask(
+        runtimeFor(cwd, [{ name: "pkg-a", source: `file://${pkg}` }]),
+      ),
+    );
+    expect(discoverSkills(cwd).map((s) => s.name)).toContain("linked-skill");
+  });
+});
+
+describe("sources update — converges the global band (converge-only)", () => {
+  let savedDataHome: string | undefined;
+  let savedHome: string | undefined;
+  let dataHome: string;
+  let home: string;
+
+  /** A local package that also ships `skills/<name>/SKILL.md`. */
+  function skillPackage(...skillNames: string[]): string {
+    const pkg = filePackage();
+    for (const skillName of skillNames) {
+      const skillDir = join(pkg, "skills", skillName);
+      mkdirSync(skillDir, { recursive: true });
+      writeFileSync(
+        join(skillDir, "SKILL.md"),
+        `---\nname: ${skillName}\ndescription: From a package.\n---\nBody.`,
+      );
+    }
+    return pkg;
+  }
+
+  beforeEach(() => {
+    savedDataHome = process.env.XDG_DATA_HOME;
+    savedHome = process.env.HOME;
+    dataHome = tmp("pragma-datahome-");
+    home = tmp("pragma-home-");
+    process.env.XDG_DATA_HOME = dataHome;
+    process.env.HOME = home;
+  });
+  afterEach(() => {
+    if (savedDataHome === undefined) delete process.env.XDG_DATA_HOME;
+    else process.env.XDG_DATA_HOME = savedDataHome;
+    if (savedHome === undefined) delete process.env.HOME;
+    else process.env.HOME = savedHome;
+  });
+
+  /** The installed root (layer 1). */
+  const installedRoot = (): string => join(dataHome, "pragma", "skills");
+  /** The cross-client harness dir (layer 2), created so it is convergeable. */
+  const harnessDir = (): string => {
+    const dir = join(home, ".agents", "skills");
+    mkdirSync(dir, { recursive: true });
+    return dir;
+  };
+  /** Retire a skill from the package IN PLACE — how a pack upgrade drops one. */
+  const dropSkill = (pkg: string, name: string): void => {
+    rmSync(join(pkg, "skills", name), { recursive: true, force: true });
+  };
+  const update = async (pkg: string, cwd: string): Promise<void> => {
+    await runTask(
+      await buildUpdateTask(
+        runtimeFor(cwd, [{ name: "design-system", source: `file://${pkg}` }]),
+      ),
+    );
+  };
+
+  it("a NEW pack skill reaches the harness folder in one step", async () => {
+    // The two-step: `sources update` wrote layer 1 and stopped, so a new pack
+    // skill appeared in no harness directory until the user separately ran
+    // `setup skills`.
+    const dir = harnessDir();
+    await update(skillPackage("added"), tmp("pragma-proj-"));
+    expect(readlinkSync(join(dir, "added"))).toBe(
+      join(installedRoot(), "added"),
+    );
+  });
+
+  it("a DROPPED pack skill has its harness link removed (the reported case)", async () => {
+    const dir = harnessDir();
+    const cwd = tmp("pragma-proj-");
+    const pkg = skillPackage("kept", "dropped");
+    // 0.1.2 shipped both...
+    await update(pkg, cwd);
+    expect(existsSync(join(dir, "dropped"))).toBe(true);
+    // ...0.2.0 drops one, in place, so the layer-1 link now dangles and its
+    // prune fires. Layer 2 must follow it.
+    dropSkill(pkg, "dropped");
+    await update(pkg, cwd);
+    // `existsSync` FOLLOWS a link, so a dangling one false-negatives — lstat.
+    expect(() => lstatSync(join(dir, "dropped"))).toThrow();
+    expect(readlinkSync(join(dir, "kept"))).toBe(join(installedRoot(), "kept"));
+  });
+
+  it("CONVERGE-ONLY: a machine that never ran `setup skills` gets no new dirs", async () => {
+    // The operator ruling, and the reason this is safe to expose over MCP:
+    // `sources update` is `mutates: true` AND `expose: true`, so an agent must
+    // not be able to make it conjure `~/.claude/skills` into existence.
+    await update(skillPackage("added"), tmp("pragma-proj-"));
+    expect(existsSync(join(home, ".agents"))).toBe(false);
+    expect(existsSync(join(home, ".claude"))).toBe(false);
+    // Layer 1 is still installed — only the band convergence stood down.
+    expect(existsSync(join(installedRoot(), "added"))).toBe(true);
+  });
+
+  it("SAFETY: a real dir, a resolving user link and a `-backup` sibling all survive", async () => {
+    const dir = harnessDir();
+    const cwd = tmp("pragma-proj-");
+    const pkg = skillPackage("kept", "dropped");
+    await update(pkg, cwd);
+
+    // A hand-placed skill directory, at a name the pack also provides.
+    const real = join(dir, "hand-placed");
+    mkdirSync(real, { recursive: true });
+    writeFileSync(join(real, "SKILL.md"), "hand-placed\n");
+    // Someone's own link into their own checkout.
+    const mine = join(tmp("pragma-mine-"), "mine");
+    mkdirSync(mine, { recursive: true });
+    symlinkSync(mine, join(dir, "mine"));
+    // A link into a SIBLING whose name merely EXTENDS the root's — the old
+    // string-prefix bug classified this as ours and deleted it.
+    const backup = join(`${installedRoot()}-backup`, "dropped");
+    mkdirSync(backup, { recursive: true });
+    rmSync(join(dir, "dropped"));
+    symlinkSync(backup, join(dir, "dropped"));
+
+    dropSkill(pkg, "dropped"); // retired upstream
+    await update(pkg, cwd);
+
+    expect(readFileSync(join(real, "SKILL.md"), "utf-8")).toBe("hand-placed\n");
+    expect(readlinkSync(join(dir, "mine"))).toBe(mine);
+    // Not ours despite sharing a string prefix with the installed root.
+    expect(readlinkSync(join(dir, "dropped"))).toBe(backup);
+  });
+
+  it("is idempotent — a second update re-links nothing", async () => {
+    const dir = harnessDir();
+    const cwd = tmp("pragma-proj-");
+    const pkg = skillPackage("stable");
+    await update(pkg, cwd);
+    const before = lstatSync(join(dir, "stable")).mtimeMs;
+    await update(pkg, cwd);
+    expect(lstatSync(join(dir, "stable")).mtimeMs).toBe(before);
+  });
+
+  it("is reversible — undo RESTORES a replaced harness link's old target", async () => {
+    // The `created` case below undoes by deletion, because absent is the state
+    // it replaced. A `replaced` link's is not: the path already held a link,
+    // the forward delete carries no undo, and deleting what the symlink
+    // created therefore left the path ABSENT — a state it was never in. So the
+    // undo must delete-then-relink the target detection recorded.
+    const dir = harnessDir();
+    const cwd = tmp("pragma-proj-");
+    const pkg = skillPackage("kept", "other");
+    await update(pkg, cwd);
+
+    // Drift the harness link for `kept` onto a SIBLING inside the installed
+    // root: still owned (so the next plan is entitled to fix it), wrong target
+    // (so the plan calls it `replaced`).
+    const link = join(dir, "kept");
+    const previous = join(installedRoot(), "other");
+    rmSync(link);
+    symlinkSync(previous, link);
+
+    // Two tasks off the SAME pre-run state: `gen` drives one iterator, so a
+    // task that has been run forward cannot also be walked for its undos, and
+    // re-planning after the forward run would see a converged tree with
+    // nothing left to reverse.
+    const runtime = runtimeFor(cwd, [
+      { name: "design-system", source: `file://${pkg}` },
+    ]);
+    const forward = await buildUpdateTask(runtime);
+    const reverse = await buildUpdateTask(runtime);
+
+    await runTask(forward);
+    expect(readlinkSync(link)).toBe(join(installedRoot(), "kept")); // repointed
+
+    const { runUndo } = await import("@canonical/task/node");
+    await runUndo(reverse);
+
+    // `existsSync` FOLLOWS a link and would false-negative on a dangling one —
+    // and, more to the point here, an existence check alone passes the buggy
+    // shape too. The TARGET is the assertion.
+    expect(lstatSync(link).isSymbolicLink()).toBe(true);
+    expect(readlinkSync(link)).toBe(previous);
+  });
+
+  it("is reversible — undo removes the harness link it created", async () => {
+    const dir = harnessDir();
+    const { runUndo } = await import("@canonical/task/node");
+    await runUndo(
+      await buildUpdateTask(
+        runtimeFor(tmp("pragma-proj-"), [
+          {
+            name: "design-system",
+            source: `file://${skillPackage("added")}`,
+          },
+        ]),
+      ),
+    );
+    expect(existsSync(join(dir, "added"))).toBe(false);
   });
 });
 

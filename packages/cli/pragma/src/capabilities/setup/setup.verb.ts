@@ -43,12 +43,17 @@ import type {
 } from "../../kernel/spec/index.js";
 import { resolveSetupMode, setupModeInput } from "./mode.js";
 import {
+  isActionable,
   planExitFailed,
   planTally,
   type SetupPlan,
   TARGET_IDS,
 } from "./plan.js";
-import { renderProgressLine, renderRecap } from "./plan.render.js";
+import {
+  renderDetectionSummary,
+  renderProgressLine,
+  renderRecap,
+} from "./plan.render.js";
 import { renderDryRun, setupFormatters } from "./setup.render.js";
 import type { ScopeBand, ScopeSelection, SetupMode } from "./types.js";
 
@@ -203,11 +208,50 @@ async function runSetup(
   // to know which of the two it is.
   const previewing = interactionMode === "batch-dry-run";
 
+  // A CONVERGED machine has no question to ask. Every row is `none` or `skip`,
+  // so nothing composes an effect — and the wizard's confirm gate then mounted
+  // Ink to render summon-core's "No operations planned." above a "Proceed?"
+  // over an empty tally. For a sub-verb, whose prompt list is empty, that
+  // contentless gate was the FIRST AND ONLY thing the user ever saw. The
+  // explanation existed the whole time (each row's `none` detail, one child row
+  // per file/editor marked `unchanged`) and was dropped at the render seam.
+  //
+  // So: report the plan instead of asking a question with no content. There is
+  // no `preview: true` here — the run really did complete. `applied({})` marks
+  // each `none` row `{status:"noop", note:"unchanged"}`, `wasApplied` is then
+  // true, and `setupFormatters.plain` renders the recap. That also retires a
+  // second defect: a non-interactive converged run used to print the misleading
+  // "Nothing was applied. Run again with --yes to apply." over an all-`none`
+  // plan. A run whose every DETECTION threw is not converged in this sense —
+  // its rows are skips that report `failed` — so it falls through to the normal
+  // path, which is the one that raises.
+  if (!previewing && run.plan.rows.every((row) => !isActionable(row.action))) {
+    const converged = run.applied({});
+    if (!planExitFailed(converged)) return pure<SetupPlan>(converged);
+  }
+
   // Adaptation (b): a non-interactive run without `--yes` previews rather than
   // mutating. It is the same plan the dry-run prints, plus one hint line, at
   // exit 0 — the invocation completed a real read-only unit of work.
   if (interactionMode === "refuse") {
     return pure<SetupPlan>({ ...run.plan, preview: true });
+  }
+
+  // Say what was DETECTED before asking anything about it. The data has been
+  // sitting in `run.plan` since before the prompt list was built — `inkPrompt`
+  // mounts no React until the first Prompt effect — so this is a rendering gap,
+  // not an ordering one, and closing it is nearly free.
+  //
+  // It MUST be emitted here, before `execute` is driven: the summary and the
+  // Ink frame both write to stderr, and only a line written first lands in
+  // scrollback ABOVE the frame. `rt.report` is the non-Ink seam — `--quiet`
+  // silences it and it is a no-op over MCP — so no React is loaded to print it.
+  // A preview says nothing here: the plan table IS its output.
+  if (!previewing) {
+    const summary = renderDetectionSummary(run.plan, {
+      verbose: rt.globalFlags.verbose,
+    });
+    if (summary !== undefined) rt.report?.(summary);
   }
 
   const { transport, yes, signal, abort } = rt.interaction ?? {

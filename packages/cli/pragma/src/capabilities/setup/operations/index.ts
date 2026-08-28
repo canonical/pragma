@@ -54,6 +54,7 @@ export {
   lspEditorNames,
   lspSkipReason,
   lspUninstallRemedy,
+  ownedLspEditors,
 } from "./setupLsp.js";
 export type { McpDetection } from "./setupMcp.js";
 export {
@@ -71,4 +72,7 @@ export {
   detectSkills,
   ownedSkillLinks,
   skillsSkipReason,
+  skillsSkipRemedy,
+  staleSkillLinks,
+  withinRoot,
 } from "./setupSkills.js";

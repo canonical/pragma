@@ -28,7 +28,7 @@ import {
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { execute } from "@canonical/summon-core";
-import { dryRun, type Effect, type Task } from "@canonical/task";
+import { collectUndos, dryRun, type Effect, type Task } from "@canonical/task";
 import { runTask, runUndo } from "@canonical/task/node";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BIN_NAME } from "../../constants.js";
@@ -49,6 +49,7 @@ import {
   detectSkills,
   ownedSkillLinks,
 } from "./operations/setupSkills.js";
+import { DRY_RUN_HINT, PREVIEW_HINT } from "./setup.render.js";
 import { setupModule } from "./setup.verb.js";
 import { completionScriptPath, detectShell, type ShellId } from "./shell.js";
 
@@ -482,25 +483,32 @@ describe("setup mcp — scope & dedup", () => {
   });
 });
 
-describe("setup mcp — customize opt-in gate (Item 6)", () => {
-  it("gates the per-file multiselect behind an explicit customize=true", async () => {
+describe("setup mcp — the per-file question, asked directly", () => {
+  it("asks the per-file multiselect with NO `customize` meta-question in front", async () => {
+    // `answers.customize` was read in exactly one place in the repo — this
+    // prompt's `when` — and by nothing else: not `generate`, not `applied`, not
+    // any plan, recap, renderer or JSON projection. Answering no just meant the
+    // child prompt went unasked, its key was absent, and the compose bodies
+    // read that as "all" — so everything detected was configured anyway.
     const cwd = tmp("pragma-setup-proj-");
-    mkdirSync(join(cwd, ".cursor"), { recursive: true }); // ⇒ one MCP target group
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    mkdirSync(join(cwd, ".gemini"), { recursive: true }); // 2 children ⇒ narrowable
     const { generator } = await buildSetupRun(
       bootRuntime(FLAGS, cwd),
       "mcp",
-      "both",
+      "project",
     );
-    const customize = generator.prompts.find((p) => p.name === "customize");
+    expect(generator.prompts.map((p) => p.name)).not.toContain("customize");
     const targets = generator.prompts.find((p) => p.name === "mcpTargets");
-    // The gate is an opt-in confirm that defaults to NOT customizing.
-    expect(customize?.type).toBe("confirm");
-    expect(customize?.default).toBe(false);
-    // The per-file multiselect only surfaces after an explicit yes — so the
-    // "all" default configures every deduped file without an extra question.
-    expect(targets?.when?.({})).toBe(false);
-    expect(targets?.when?.({ customize: false })).toBe(false);
-    expect(targets?.when?.({ customize: true })).toBe(true);
+    expect(targets).toBeDefined();
+    // It is asked whenever its row is in the run — the row's own selection is
+    // the only gate, and the choices carry the detected state per file.
+    expect(targets?.when?.({})).toBe(true);
+    expect(
+      (targets?.choices as { label: string }[]).every((c) =>
+        /— (add|update|unchanged)$/.test(c.label),
+      ),
+    ).toBe(true);
   });
 
   it("recaps the files the run KEPT, not the ones it offered", async () => {
@@ -517,7 +525,6 @@ describe("setup mcp — customize opt-in gate (Item 6)", () => {
 
     const applied = run.applied({
       targets: ["project:mcp"],
-      customize: true,
       mcpTargets: [kept],
     });
     expect(applied.rows.find((r) => r.target === "mcp")?.outcome?.note).toBe(
@@ -573,20 +580,18 @@ describe("setup lsp — per-editor multiselect (child rows)", () => {
     expect(children?.find((c) => c.key === "codium")?.action).toBe("add");
   });
 
-  it("gates the per-editor multiselect behind the same customize confirm", async () => {
+  it("asks the per-editor multiselect directly, with both forks pre-selected", async () => {
     const { generator } = await buildSetupRun(
       bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
       "lsp",
       "global",
     );
-    const customize = generator.prompts.find((p) => p.name === "customize");
+    expect(generator.prompts.map((p) => p.name)).not.toContain("customize");
     const editors = generator.prompts.find((p) => p.name === "lspEditors");
-    expect(customize?.default).toBe(false);
-    // Both pending editors are pre-selected, so the default path installs into
-    // every fork without an extra question.
+    // Both pending editors are pre-selected, so pressing enter installs into
+    // every fork — the same default the meta-question used to stand for.
     expect(editors?.default).toEqual(["code", "codium"]);
-    expect(editors?.when?.({ customize: false })).toBe(false);
-    expect(editors?.when?.({ customize: true })).toBe(true);
+    expect(editors?.when?.({})).toBe(true);
   });
 
   it("sideloads only into the editors the user kept", async () => {
@@ -607,6 +612,202 @@ describe("setup lsp — per-editor multiselect (child rows)", () => {
     const detected = await detectLsp(tmp("pragma-setup-proj-"));
     const { effects } = dryRun(composeLsp(detected, []));
     expect(effects.some((e) => e._tag === "Exec")).toBe(false);
+  });
+
+  it("the removal is `none` when no editor carries the extension", async () => {
+    // Both forks are on PATH, neither has a copy — there is nothing this
+    // command owns, so a removal has honestly nothing to do.
+    const { detectLsp, composeLspRemoval, ownedLspEditors } = await import(
+      "./operations/setupLsp.js"
+    );
+    const detected = await detectLsp(tmp("pragma-setup-proj-"));
+    expect(ownedLspEditors(detected)).toEqual([]);
+    expect(collectUndos(composeLspRemoval(detected))).toEqual([]);
+
+    const { plan } = await buildSetupRun(
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      "lsp",
+      "global",
+      true,
+    );
+    const row = plan.rows.find((r) => r.target === "lsp");
+    expect(row?.action).toBe("none");
+    expect(row?.detail).toBe("no editor carries the extension");
+  });
+});
+
+describe("setup lsp — the removal contract the other four rows implement", () => {
+  let prevPath: string | undefined;
+  let stubDir = "";
+  beforeEach(() => {
+    prevPath = process.env.PATH;
+    stubDir = stubPath();
+    writeFileSync(join(stubDir, "code"), "");
+    writeFileSync(join(stubDir, "codium"), "");
+    process.env.PATH = stubDir;
+  });
+  afterEach(() => {
+    process.env.PATH = prevPath;
+  });
+
+  /** Seed a versioned extension copy in an editor's extensions dir. */
+  const seedExtension = (dir: string, version: string): void => {
+    mkdirSync(
+      join(
+        process.env.HOME ?? "",
+        dir,
+        "extensions",
+        `canonical.terrazzo-lsp-extension-${version}`,
+      ),
+      { recursive: true },
+    );
+  };
+
+  it("carries one `--uninstall-extension` exec per OWNED editor as its undo", async () => {
+    // The row hardcoded a skip behind a docblock claiming "an `exec` carries no
+    // reversal" — factually wrong: `Exec` has an `undo` slot, and the sibling
+    // `composeMcpRemoval` already uses this exact carrier shape.
+    seedExtension(".vscode", "1.2.3");
+    const { detectLsp, composeLspRemoval } = await import(
+      "./operations/setupLsp.js"
+    );
+    const detected = await detectLsp(tmp("pragma-setup-proj-"));
+
+    // The FORWARD side must be walkable with every effect mocked: it is a
+    // `mkdir` of the editor's own extensions dir, which reads nothing.
+    const forward = dryRun(composeLspRemoval(detected));
+    expect(forward.effects.map((e) => e._tag)).toEqual(["MakeDir"]);
+    expect(forward.effects.some((e) => e._tag === "Exec")).toBe(false);
+
+    const undos = collectUndos(composeLspRemoval(detected));
+    expect(undos).toHaveLength(1);
+    const execs = undos
+      .flatMap((u) => dryRun(u).effects)
+      .filter((e) => e._tag === "Exec") as (Effect & {
+      _tag: "Exec";
+      command: string;
+      args: string[];
+    })[];
+    expect(execs.map((e) => e.command)).toEqual(["code"]);
+    expect(execs[0].args).toEqual([
+      "--uninstall-extension",
+      "canonical.terrazzo-lsp-extension",
+    ]);
+  });
+
+  it("REGRESSION: a pre-0.8.3 copy still plans `install` forward but `remove` back", async () => {
+    // The conflation that would have caused a silent wrong-skip.
+    // `extensionInstalled` was version-gated, so an editor carrying a dead
+    // pre-0.8.3 copy — one this command itself installed — reported
+    // `installed: false`, and a removal keyed on it would have walked past the
+    // dead extension while reporting success.
+    seedExtension(".vscode", "0.8.1");
+    const { detectLsp, composeLspRemoval, ownedLspEditors } = await import(
+      "./operations/setupLsp.js"
+    );
+    const detected = await detectLsp(tmp("pragma-setup-proj-"));
+    const code = detected.editors.find((e) => e.editor.cli === "code");
+    // Present, but not current — the two facts stay separate.
+    expect(code?.present).toBe(true);
+    expect(code?.installed).toBe(false);
+
+    // Forward is UNCHANGED by this fix: the dead copy is still "not installed".
+    const forward = await buildSetupRun(
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      "lsp",
+      "global",
+    );
+    expect(forward.plan.rows.find((r) => r.target === "lsp")?.action).toBe(
+      "install",
+    );
+
+    // Removal keys on ownership, so the dead copy IS removed.
+    expect(ownedLspEditors(detected).map((e) => e.editor.cli)).toEqual([
+      "code",
+    ]);
+    const { plan } = await buildSetupRun(
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      "lsp",
+      "global",
+      true,
+    );
+    const row = plan.rows.find((r) => r.target === "lsp");
+    expect(row?.action).toBe("remove");
+    expect(row?.children?.map((c) => c.key)).toEqual(["code"]);
+    expect(
+      collectUndos(composeLspRemoval(detected))
+        .flatMap((u) => dryRun(u).effects)
+        .filter((e) => e._tag === "Exec"),
+    ).toHaveLength(1);
+  });
+
+  it("the remedy names an OWNING editor, not the first one on PATH", async () => {
+    // With Cursor (or here: `code`) installed and the extension only in
+    // VSCodium, the printed remedy named the wrong editor — a command that
+    // would report success having uninstalled nothing.
+    seedExtension(".vscode-oss", "1.2.3"); // codium's extensions dir
+    const { detectLsp, lspUninstallRemedy } = await import(
+      "./operations/setupLsp.js"
+    );
+    const detected = await detectLsp(tmp("pragma-setup-proj-"));
+    expect(detected.editors[0]?.editor.cli).toBe("code"); // first on PATH
+    expect(lspUninstallRemedy(detected)).toBe(
+      "codium --uninstall-extension canonical.terrazzo-lsp-extension",
+    );
+  });
+
+  it("still SKIPS with the named reason when no editor CLI is on PATH", async () => {
+    process.env.PATH = stubPath(); // no editor CLI at all
+    const { plan } = await buildSetupRun(
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      "lsp",
+      "global",
+      true,
+    );
+    const row = plan.rows.find((r) => r.target === "lsp");
+    expect(row?.action).toBe("skip");
+    expect(row?.reason).toContain("no VS Code-family editor CLI on PATH");
+  });
+
+  it("end to end: `setup lsp --undo` reports `Undid 1 step(s)` against a STUB cli", async () => {
+    // The reported symptom was `Undid 0 step(s).` at exit 0. The stub is a
+    // marker-writing script — never a real editor: an undo test must not be
+    // able to mutate the machine running it.
+    const marker = join(tmp("pragma-lsp-undo-"), "uninstalled");
+    const dir = stubPath();
+    writeFileSync(
+      join(dir, "code"),
+      `#!/bin/sh\nprintf '%s\\n' "$@" > ${marker}\n`,
+      { mode: 0o755 },
+    );
+    process.env.PATH = dir;
+    seedExtension(".vscode", "1.2.3");
+
+    const outcome = await executeVerb(
+      verbOf("lsp"),
+      {},
+      UNDO,
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+    );
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).toBe("Undid 1 step(s).\n");
+    expect(readFileSync(marker, "utf-8")).toBe(
+      "--uninstall-extension\ncanonical.terrazzo-lsp-extension\n",
+    );
+    // NON-GOAL guard: the staging dir is a cache, not this removal's business.
+    // Nothing here deletes it, and nothing here touches the VSIX.
+    const { detectLsp, composeLspRemoval } = await import(
+      "./operations/setupLsp.js"
+    );
+    const detected = await detectLsp(tmp("pragma-setup-proj-"));
+    const all = [
+      ...dryRun(composeLspRemoval(detected)).effects,
+      ...collectUndos(composeLspRemoval(detected)).flatMap(
+        (u) => dryRun(u).effects,
+      ),
+    ];
+    expect(all.some((e) => e._tag === "DeleteFile")).toBe(false);
+    expect(all.some((e) => e._tag === "DeleteDirectory")).toBe(false);
   });
 });
 
@@ -702,6 +903,83 @@ describe("setup skills", () => {
     expect(outcome.exitCode).toBe(0);
     expect(outcome.stdout).toContain("skills");
     expect(outcome.stdout).toContain("no project skills");
+    // The skip is no longer a dead end: it names the action that settles it on
+    // THIS machine. The reason does NOT invert — the row still skips.
+    expect(outcome.stdout).toContain("SKILL.md, then run this again");
+  });
+
+  it("an EXISTING but empty project skills root is not reported as absent", async () => {
+    // `available` is false for an absent root and for an empty one alike, so
+    // the shared reason line said "is absent" about a directory the user is
+    // looking at. `rootExists` is the flag that already separates those two
+    // states everywhere else in the module; the wording now honours it.
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".pragma", "skills"), { recursive: true });
+
+    const { plan } = await buildSetupRun(
+      bootRuntime(FLAGS, cwd),
+      "skills",
+      "project",
+    );
+    const row = plan.rows.find((r) => r.target === "skills");
+    expect(row?.action).toBe("skip"); // still nothing to do...
+    expect(row?.reason).toContain("holds none"); // ...for the honest reason
+    expect(row?.reason).not.toContain("is absent");
+  });
+
+  it("a genuinely MISSING project skills root still reports absent", async () => {
+    // The other half of the distinction: the empty-root wording must not have
+    // been bought by making every skip vague.
+    const { plan } = await buildSetupRun(
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      "skills",
+      "project",
+    );
+    const row = plan.rows.find((r) => r.target === "skills");
+    expect(row?.action).toBe("skip");
+    expect(row?.reason).toContain("is absent");
+  });
+
+  it("the GLOBAL skip names `sources update`, the command that fills its root", async () => {
+    // Skills ship in the configured packages, not in this CLI, and the global
+    // band's source root is written only by `sources update`. Saying "no skills
+    // installed" and stopping there left the user with no next step at all.
+    const prevData = process.env.XDG_DATA_HOME;
+    process.env.XDG_DATA_HOME = tmp("pragma-skills-data-");
+    try {
+      const { plan } = await buildSetupRun(
+        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+        "skills",
+        "global",
+      );
+      const row = plan.rows.find((r) => r.target === "skills");
+      expect(row?.action).toBe("skip");
+      expect(row?.reason).toBe("no skills installed");
+
+      // BOTH assertions belong inside the jail. The end-to-end invocation is
+      // asserting the SAME empty-global-root condition, so it has to read the
+      // empty root this test established — restoring `XDG_DATA_HOME` first
+      // handed it back to whatever the ambient environment points at, and an
+      // ambient root that happens to hold a skill stops exercising the skip.
+      // A skip stays exit 0 — and the recap carries the remedy beneath the row.
+      const outcome = await executeVerb(
+        verbOf("skills"),
+        {},
+        YES,
+        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      );
+      expect(outcome.exitCode).toBe(0);
+      expect(outcome.stdout).toContain("no skills installed");
+      expect(outcome.stdout).toContain(`${BIN_NAME} sources update`);
+    } finally {
+      // `process.env.X = undefined` STORES THE STRING "undefined"; it does not
+      // unset. The variable is always set here (`setupXdgIsolation.ts` gives
+      // every test file its own XDG root), so this restores rather than
+      // deletes in practice — but a test must not leave a poisoned path behind
+      // for the files that run after it if that ever stops being true.
+      if (prevData === undefined) delete process.env.XDG_DATA_HOME;
+      else process.env.XDG_DATA_HOME = prevData;
+    }
   });
 
   it("detects a created action and composes a symlink carrying an undo", async () => {
@@ -877,9 +1155,160 @@ describe("setup skills", () => {
     const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
     const action = detected.actions.find((a) => a.linkPath === linkPath);
     expect(action?.owned).toBe(true);
+    // A relative link that RESOLVES to the skill is already correct. Comparing
+    // the raw `readlink` string to an absolute path classified it `replaced`,
+    // so it churned on every run and doctor called it "points elsewhere".
+    expect(action?.action).toBe("skipped");
+    expect(dryRun(composeSkills(detected)).effects).toEqual([]);
 
     await runUndo(composeSkillsRemoval(detected));
     expect(existsSync(linkPath)).toBe(false);
+  });
+});
+
+describe("setup skills — the forward pass is a RECONCILE", () => {
+  /** Seed one project skill and return its source dir. */
+  const seed = (cwd: string, name: string): string => {
+    const dir = join(cwd, ".pragma", "skills", name);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "SKILL.md"),
+      `---\nname: ${name}\ndescription: A skill.\n---\n`,
+    );
+    return dir;
+  };
+
+  it("removes the link a dropped skill left behind, without --undo", async () => {
+    // The reported bug. `d.orphans` was computed and read ONLY by `--undo`,
+    // which removes every owned link rather than the stale ones — so no command
+    // reconciled, and a skill dropped upstream kept its link forever.
+    const cwd = tmp("pragma-setup-proj-");
+    const kept = seed(cwd, "kept");
+    const dropped = seed(cwd, "dropped");
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    symlinkSync(kept, join(linkDir, "kept"));
+    symlinkSync(dropped, join(linkDir, "dropped"));
+    rmSync(dropped, { recursive: true, force: true }); // retired upstream
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    expect(detected.orphans.map((o) => o.skillName)).toEqual(["dropped"]);
+
+    await runTask(composeSkills(detected));
+    // `existsSync` FOLLOWS a link, so a dangling one false-negatives — lstat.
+    expect(() => lstatSync(join(linkDir, "dropped"))).toThrow();
+    expect(readlinkSync(join(linkDir, "kept"))).toBe(kept);
+  });
+
+  it("plans the sweep as an ACTIONABLE row, not a deselected `none`", async () => {
+    // An orphan-only tree planned `none` → `defaultSelected(none)` is false →
+    // the row was never composed, so even the fixed reconcile would not run.
+    const cwd = tmp("pragma-setup-proj-");
+    const dropped = seed(cwd, "dropped");
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    symlinkSync(dropped, join(linkDir, "dropped"));
+    rmSync(dropped, { recursive: true, force: true });
+
+    const { plan } = await buildSetupRun(
+      bootRuntime(FLAGS, cwd),
+      "skills",
+      "project",
+    );
+    const row = plan.rows.find((r) => r.target === "skills");
+    expect(row?.action).toBe("update");
+    expect(row?.selected).toBe(true);
+    expect(row?.detail).toContain("1 stale link to remove");
+  });
+
+  it("the sweep is reversible — undo puts the stale link back", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    const dropped = seed(cwd, "dropped");
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    const linkPath = join(linkDir, "dropped");
+    symlinkSync(dropped, linkPath);
+    rmSync(dropped, { recursive: true, force: true });
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    const { undoCount } = await runUndo(composeSkills(detected));
+    expect(undoCount).toBeGreaterThan(0);
+    expect(readlinkSync(linkPath)).toBe(dropped);
+  });
+
+  it("is idempotent — a second pass composes zero effects", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    const dropped = seed(cwd, "dropped");
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    symlinkSync(dropped, join(linkDir, "dropped"));
+    rmSync(dropped, { recursive: true, force: true });
+
+    await runTask(
+      composeSkills(await detectSkills(bootRuntime(FLAGS, cwd), "project")),
+    );
+    const second = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    expect(dryRun(composeSkills(second)).effects).toEqual([]);
+  });
+
+  it("SAFETY: an ABSENT source root means no opinion — nothing is swept", async () => {
+    // `available` conflated "the root is empty" with "the root does not exist".
+    // Sweeping on that alone would wipe every pragma link out of the harness
+    // dirs on any machine where XDG_DATA_HOME moved or sources update never ran.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = seed(cwd, "gone");
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    const linkPath = join(linkDir, "gone");
+    symlinkSync(skillDir, linkPath);
+    // The whole source ROOT disappears, not just one skill.
+    rmSync(join(cwd, ".pragma", "skills"), { recursive: true, force: true });
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    expect(detected.rootExists).toBe(false);
+    expect(detected.available).toBe(false);
+    expect(detected.orphans).toEqual([]);
+    expect(dryRun(composeSkills(detected)).effects).toEqual([]);
+
+    await runTask(composeSkills(detected));
+    expect(readlinkSync(linkPath)).toBe(skillDir);
+  });
+
+  it("SAFETY: a real dir, a resolving user link and a `-backup` sibling all survive", async () => {
+    // The three shapes the sweep must never touch, in one tree: a hand-placed
+    // directory, a link into someone's own checkout, and a link into a SIBLING
+    // whose name merely EXTENDS the root's (the old string-prefix bug).
+    const cwd = tmp("pragma-setup-proj-");
+    const root = join(cwd, ".pragma", "skills");
+    mkdirSync(root, { recursive: true }); // exists, but holds no skill
+    const backup = join(cwd, ".pragma", "skills-backup", "sibling");
+    mkdirSync(backup, { recursive: true });
+    writeFileSync(join(backup, "SKILL.md"), "the user's own copy\n");
+    const elsewhere = join(cwd, "elsewhere", "mine");
+    mkdirSync(elsewhere, { recursive: true });
+
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    const realDir = join(linkDir, "hand-placed");
+    mkdirSync(realDir, { recursive: true });
+    writeFileSync(join(realDir, "SKILL.md"), "hand-placed\n");
+    symlinkSync(elsewhere, join(linkDir, "mine"));
+    symlinkSync(backup, join(linkDir, "sibling"));
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    expect(detected.rootExists).toBe(true); // the sweep IS entitled to act
+    expect(detected.orphans).toEqual([]); // ...and finds nothing of its own
+    expect(dryRun(composeSkills(detected)).effects).toEqual([]);
+
+    await runTask(composeSkills(detected));
+    expect(readFileSync(join(realDir, "SKILL.md"), "utf-8")).toBe(
+      "hand-placed\n",
+    );
+    expect(readlinkSync(join(linkDir, "mine"))).toBe(elsewhere);
+    expect(readlinkSync(join(linkDir, "sibling"))).toBe(backup);
+    expect(readFileSync(join(backup, "SKILL.md"), "utf-8")).toBe(
+      "the user's own copy\n",
+    );
   });
 });
 
@@ -1406,6 +1835,219 @@ describe("setup (run-all wizard)", () => {
     expect(outcome.stdout).toContain("skills");
     expect(outcome.stdout).toContain("no skills installed");
     expect(outcome.stdout).toContain("lsp");
+  });
+});
+
+describe("setup — a converged machine is reported, never asked", () => {
+  // A converged run composes ZERO effects, and the confirm gate then mounted
+  // Ink to render summon-core's "No operations planned." above "Proceed?".
+  // On a sub-verb, whose prompt list is empty, that contentless gate was the
+  // first and only thing the user ever saw.
+  let prevPath: string | undefined;
+  beforeEach(() => {
+    prevPath = process.env.PATH;
+    process.env.PATH = stubPath(); // no editor CLI ⇒ lsp skips
+  });
+  afterEach(() => {
+    process.env.PATH = prevPath;
+  });
+
+  const NO = { dryRun: false, undo: false, yes: false };
+
+  it("non-interactive + no --yes: the recap, NOT the `run again with --yes` hint", async () => {
+    // The compounding defect: a converged plan printed "Nothing was applied.
+    // Run again with --yes to apply." over a machine where there was nothing
+    // to apply in the first place.
+    const outcome = await executeVerb(
+      verbOf("lsp"),
+      {},
+      NO,
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+    );
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).not.toContain("Run again with --yes");
+    expect(outcome.stdout).not.toContain("Setup plan");
+    // It says what was detected and what happened to it — doctor's house shape.
+    expect(outcome.stdout).toContain("skipped");
+    expect(outcome.stdout).toContain("no VS Code-family editor CLI on PATH");
+  });
+
+  it("a converged TTY run without --yes mounts NO Ink and prints the recap", async () => {
+    // The acceptance case. Faking a terminal on both streams is what makes
+    // `cliIsTTY()` true, which is the ONLY gate between this run and the wizard.
+    const prevIn = process.stdin.isTTY;
+    const prevErr = process.stderr.isTTY;
+    (process.stdin as { isTTY?: boolean }).isTTY = true;
+    (process.stderr as { isTTY?: boolean }).isTTY = true;
+    let outcome: Awaited<ReturnType<typeof executeVerb>>;
+    try {
+      outcome = await executeVerb(
+        verbOf("lsp"),
+        {},
+        NO,
+        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      );
+    } finally {
+      (process.stdin as { isTTY?: boolean }).isTTY = prevIn;
+      (process.stderr as { isTTY?: boolean }).isTTY = prevErr;
+    }
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).not.toContain("Proceed");
+    expect(outcome.stdout).toContain("skipped");
+    // The same lazy-React probe the PROTECTED guard below uses: had the
+    // contentless gate mounted, Ink would be in the module cache.
+    const isReactPkg = (k: string) =>
+      /[\\/](react|react-dom|ink)@\d/.test(k) ||
+      /[\\/]node_modules[\\/](react|react-dom|ink)[\\/]/.test(k);
+    expect(Object.keys(require.cache ?? {}).filter(isReactPkg)).toEqual([]);
+  });
+
+  it("--dry-run is untouched — it still ends with the dry-run hint", async () => {
+    // The guard sits AFTER the `previewing` computation precisely so a preview
+    // keeps saying it was a preview.
+    const outcome = await executeVerb(
+      verbOf("lsp"),
+      {},
+      DRY,
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+    );
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).toContain("Setup plan");
+    expect(outcome.stdout).toContain(DRY_RUN_HINT);
+  });
+
+  it("a PARTIALLY converged plan is NOT short-circuited", async () => {
+    // One actionable row is enough: the run goes through `execute` as before,
+    // so the wizard is still reachable on a machine with something to do.
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    const outcome = await executeVerb(
+      verbOf("mcp"),
+      { local: true },
+      NO,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(outcome.exitCode).toBe(0);
+    // Non-interactive without --yes ⇒ still the preview, hint and all.
+    expect(outcome.stdout).toContain("Setup plan");
+    expect(outcome.stdout).toContain(PREVIEW_HINT);
+  });
+
+  it("the run-all on a fully converged machine recaps every row at exit 0", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    // First pass configures whatever this machine can hold...
+    await executeVerb(setupSelfVerb, {}, YES, bootRuntime(FLAGS, cwd));
+    // ...the second has nothing left to do.
+    const outcome = await executeVerb(
+      setupSelfVerb,
+      {},
+      NO,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).not.toContain("Run again with --yes");
+    expect(outcome.stdout).toContain("targets configured");
+  });
+});
+
+describe("setup — the detection summary", () => {
+  let prevPath: string | undefined;
+  beforeEach(() => {
+    prevPath = process.env.PATH;
+    process.env.PATH = stubPath();
+  });
+  afterEach(() => {
+    process.env.PATH = prevPath;
+  });
+
+  /**
+   * Drive a run, capturing STDERR — which is where the report seam writes, and
+   * the same stream the Ink frame would use. The dispatcher builds its own
+   * runtime for a mutation, so an `rt.report` set on the boot runtime is
+   * replaced; capturing the stream is what actually pins the behaviour.
+   */
+  const onStderr = async (
+    verb: VerbSpec,
+    params: Record<string, unknown>,
+    flags: GlobalFlags,
+    cwd: string,
+    mutation = YES,
+  ): Promise<string[]> => {
+    const chunks: string[] = [];
+    const spy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation((chunk: unknown): boolean => {
+        chunks.push(String(chunk));
+        return true;
+      });
+    try {
+      await executeVerb(verb, params, mutation, bootRuntime(flags, cwd));
+    } finally {
+      spy.mockRestore();
+    }
+    return chunks;
+  };
+
+  /** The one write the report seam made for the summary block, if any. */
+  const summaryOf = (chunks: readonly string[]): string =>
+    chunks.find((c) => c.startsWith("Detected —")) ?? "";
+
+  it("names what was detected BEFORE anything is asked, detected rows only", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    const chunks = await onStderr(setupSelfVerb, { local: true }, FLAGS, cwd);
+    // The report seam writes the block as ONE write, before the generator is
+    // driven — so it is also the first thing on the stream.
+    expect(chunks[0]?.startsWith("Detected —")).toBe(true);
+    const summary = summaryOf(chunks);
+    // FIRST — the Ink frame and this line both go to stderr, so only a line
+    // written before `execute` lands above the frame in scrollback.
+    expect(summary).toContain("Detected —");
+    expect(summary).toContain("mcp");
+    // A skip is "nothing detected here", so it is out of the default view...
+    expect(summary).not.toContain("user-level only");
+    expect(summary).toContain("--verbose lists them");
+  });
+
+  it("--verbose widens it to every row, with no `not detected` footer", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    const summary = summaryOf(
+      await onStderr(
+        setupSelfVerb,
+        { local: true },
+        { ...FLAGS, verbose: true },
+        cwd,
+      ),
+    );
+    // ...and back in under `--verbose`, which consumes the EXISTING global flag
+    // rather than adding a signal.
+    expect(summary).toContain("user-level only");
+    expect(summary).not.toContain("--verbose lists them");
+  });
+
+  it("says nothing on a --dry-run — the plan table IS that run's output", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    const chunks = await onStderr(
+      setupSelfVerb,
+      { local: true },
+      FLAGS,
+      cwd,
+      DRY,
+    );
+    expect(summaryOf(chunks)).toBe("");
+  });
+
+  it("is silent over MCP — `rt.report` is a no-op there, so no Ink and no noise", async () => {
+    // The seam is the point: a plain-string report, not an Ink mount, is what
+    // keeps this off the React graph AND out of the MCP data stream.
+    const cwd = tmp("pragma-setup-proj-");
+    const mcp = await projectMcp([setupModule], cwd);
+    const result = await mcp.callTool("setup", { confirm: true });
+    await mcp.cleanup();
+    expect(result.ok).toBe(true);
+    expect(JSON.stringify(result.data)).not.toContain("Detected —");
   });
 });
 
