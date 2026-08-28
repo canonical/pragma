@@ -150,10 +150,26 @@ export type ParamSpec =
  * `json` (the envelope) never see it.
  *
  * `emptyNotice` is the empty-state seam: when the data amounts to zero
- * records, return the calm notice — the dispatcher routes it to STDERR with
- * exit 0, keeping the stdout data stream free of human sentences a pipe
- * would read as records. Return `undefined` (or omit the member) for data
- * that has content; only the plain mode routes it.
+ * records, return the calm notice. Return `undefined` (or omit the member) for
+ * data that has content.
+ *
+ * Three surfaces route it, each in its own register — it is one seam, not a
+ * plain-mode courtesy:
+ * - `plain`: the dispatcher writes it to STDERR with exit 0, keeping the stdout
+ *   data stream free of human sentences a pipe would read as records. `--quiet`
+ *   mutes it (success-path guidance).
+ * - `--format json` AND the MCP tool result: it rides the envelope as
+ *   `meta.notice` (`project/cli/dispatch.ts#renderData`,
+ *   `project/mcp/registerVerb.ts#emptyMeta` — the same key from the same seam,
+ *   so the two MACHINE surfaces stay byte-equal). `data` keeps its uniform empty
+ *   shape; `[]` stays `[]`. Without it an agent could not tell an unbuilt store,
+ *   a mistyped filter and a genuinely empty result apart — all three were
+ *   `{"ok":true,"data":[],"meta":{}}`.
+ * - `llm` (the byte-frozen agent contract) is the ONE mode that still ignores
+ *   it: it renders one stream and its bytes are frozen.
+ *
+ * The formatters themselves never see the notice: `json(d)` renders the data
+ * alone, and the ENVELOPE layer carries the notice beside it.
  */
 export interface Formatters<T> {
   readonly plain: (
