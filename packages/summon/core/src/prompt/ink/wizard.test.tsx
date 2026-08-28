@@ -21,12 +21,17 @@
  */
 
 import { promptEffect, writeFile, writeFileEffect } from "@canonical/task";
+import chalk from "chalk";
 import { render } from "ink-testing-library";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { CONFIRM_ANSWER_KEY } from "../../execute/execute.js";
 import type GeneratorDefinition from "../../types/GeneratorDefinition.js";
 import type { PromptEffect } from "../types.js";
-import { MAX_PROGRESS_LINE, measureDisplayWidth } from "./progressWindow.js";
+import {
+  MAX_PROGRESS_LINE,
+  measureDisplayWidth,
+  stripStyles,
+} from "./progressWindow.js";
 import { SessionController } from "./session.js";
 import { Wizard } from "./Wizard.js";
 
@@ -422,16 +427,44 @@ describe("degenerate-choice prompt wiring (C4)", () => {
   );
 });
 
-describe("progress lines report what each effect cost", () => {
+/**
+ * The two colour states Ink can render the same frame in. Ink styles through
+ * `chalk`, and `chalk` decides at import time whether the process's stdout looks
+ * like a terminal: a bare `vitest` run gets NO escapes, while a run under a task
+ * runner that allocates a pseudo-terminal — which is exactly how CI invokes this
+ * suite, via `nx affected -t test` — gets them. That is an accident of the
+ * invoking shell, not of the wizard, so these tests PIN it instead of inheriting
+ * it: every progress assertion below runs once bare and once styled, and must
+ * hold identically in both. Leaving it inherited is what let a row that measured
+ * 72 columns locally measure 91 in CI.
+ */
+const COLOUR_LEVELS = [
+  { name: "no colour", level: 0 },
+  { name: "16-colour", level: 1 },
+] as const;
+
+describe.each(
+  COLOUR_LEVELS,
+)("progress lines report what each effect cost ($name)", ({ level }) => {
   // Rendered from an ALREADY-complete controller: a single static frame, no
   // input loop (the completed lines live under `<Static>`, which the test
   // renderer captures in the frame alongside the live region).
+  //
+  // `chalk.level` is a process-global that Ink reads on every render, so it is
+  // set per test and restored after — the surrounding suites assert on plain
+  // substrings and must keep whatever the environment gave them.
+  const inherited = chalk.level;
+  afterEach(() => {
+    chalk.level = inherited;
+  });
+
   it(
     "prints the duration the seam delivered, in the timed view's spelling",
     async () => {
+      chalk.level = level;
       const c = new SessionController(gen);
-      // The duration the interpreter measured for this one effect — fractional,
-      // as `performance.now()` deltas are, and rendered as whole milliseconds.
+      // The duration the interpreter measured for this one effect —
+      // fractional, as `performance.now()` deltas are, rendered as whole ms.
       c.reportEffectComplete(writeFileEffect("src/a.ts", "x"), 4.6);
       c.markComplete();
       const { lastFrame, unmount } = render(<Wizard controller={c} />);
@@ -439,7 +472,11 @@ describe("progress lines report what each effect cost", () => {
         await waitFor(() =>
           (lastFrame() ?? "").includes("Generation complete"),
         );
-        expect(lastFrame()).toMatch(/✓ Write file: src\/a\.ts .*\(5ms\)/);
+        // Asserted on the PRINTED characters: styling puts an `ESC[39m`
+        // between the glyph and the space, which says nothing about the row.
+        expect(stripStyles(lastFrame() ?? "")).toMatch(
+          /✓ Write file: src\/a\.ts .*\(5ms\)/,
+        );
       } finally {
         unmount();
       }
@@ -450,6 +487,7 @@ describe("progress lines report what each effect cost", () => {
   it(
     "keeps a long path on ONE row once the duration is appended",
     async () => {
+      chalk.level = level;
       const c = new SessionController(gen);
       // A path well past the cap, timed with a four-digit duration: the
       // description is truncated against a budget that already reserves the
@@ -470,7 +508,9 @@ describe("progress lines report what each effect cost", () => {
         expect(line).toBeDefined();
         expect(line).toContain("(1234ms)");
         // The cap governs the WHOLE rendered row — `✓ ` prefix, description,
-        // gap and suffix — because that is what the terminal has to fit.
+        // gap and suffix — because that is what the terminal has to fit. The
+        // cap itself is exact: no tolerance is added for the styling, because
+        // styling costs no columns.
         expect(measureDisplayWidth(line ?? "")).toBeLessThanOrEqual(
           MAX_PROGRESS_LINE,
         );

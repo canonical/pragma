@@ -14,6 +14,12 @@
  * wide glyphs overflow and wrap. {@link measureDisplayWidth} is the shared
  * width approximation both concerns rely on.
  *
+ * Width is also STYLE-invariant: SGR escape sequences (the bytes `chalk` emits
+ * for `<Text color="green">`) occupy no cells, so {@link stripStyles} removes
+ * them before anything is counted. Whether the process happens to have colour
+ * enabled therefore cannot change how wide a row measures — see that helper for
+ * why that mattered.
+ *
  * A `.ts` sibling of the JSX view so the string math is unit testable.
  */
 
@@ -155,17 +161,62 @@ function decodeCodePoint(char: string): number {
 }
 
 /**
+ * An ANSI CSI escape sequence — `ESC [`, parameter and intermediate bytes, then
+ * a final byte. Built with `RegExp` rather than written as a literal because the
+ * pattern must contain a raw control character (`ESC`), which a regex literal
+ * may not carry.
+ *
+ * Broad on purpose: the styling `chalk` emits is all SGR (`…m`), but a captured
+ * frame can also carry cursor and erase sequences, and none of them occupy a
+ * terminal cell.
+ */
+const ANSI_ESCAPE = new RegExp(
+  `${String.fromCharCode(27)}\\[[0-9;:?]*[ -/]*[@-~]`,
+  "g",
+);
+
+/**
+ * Remove ANSI escape sequences, leaving only the characters a terminal actually
+ * prints.
+ *
+ * The rendered frame is styled — `Wizard.tsx` wraps the status glyph in
+ * `<Text color="green">` and the duration in `<Text dimColor>`, and Ink renders
+ * those through `chalk` — so a completed progress row reaches a reader (or a
+ * test) as `ESC[32m✓ESC[39m … ESC[2m(5ms)ESC[22m`. Those 19 bytes are
+ * instructions to the terminal, not columns in it.
+ *
+ * Whether they are present at all depends on the environment: `chalk` enables
+ * colour only when it believes the stream is a terminal, so the SAME frame is
+ * bare under a plain `vitest` run and styled when the task runs under a task
+ * runner that allocates a pseudo-terminal (which is how CI invokes this suite).
+ * Counting the escapes as columns therefore made the measured width of one
+ * fixed row swing between 72 and 91 — a one-row guarantee that held or failed
+ * on the shape of the invoking shell. Stripping first makes the measurement say
+ * the same thing everywhere.
+ *
+ * @param text - Possibly styled text, e.g. a captured Ink frame.
+ * @returns `text` with every ANSI escape sequence removed.
+ */
+export function stripStyles(text: string): string {
+  return text.replace(ANSI_ESCAPE, "");
+}
+
+/**
  * Measure the terminal-column width of a string, summing per-code-point widths:
  * one column for most code points, two for East Asian Wide / emoji ones (see
  * {@link isWideCodePoint}). Iterating code points rather than UTF-16 code units
  * means a surrogate pair counts once, as the single glyph it renders to.
  *
- * @param text - The string to measure.
+ * Styling is discounted first ({@link stripStyles}): an escape sequence costs
+ * bytes but no cells, so the width of a row is the same number whether or not
+ * colour is enabled.
+ *
+ * @param text - The string to measure; may carry ANSI styling.
  * @returns The approximate number of terminal columns `text` occupies.
  */
 export function measureDisplayWidth(text: string): number {
   let width = 0;
-  for (const char of text) {
+  for (const char of stripStyles(text)) {
     width += isWideCodePoint(decodeCodePoint(char)) ? 2 : 1;
   }
   return width;
@@ -202,6 +253,11 @@ function collectWithinWidth(chars: readonly string[], budget: number): string {
  * Width is measured and cut by {@link measureDisplayWidth}, iterating whole
  * code points, so the one-row guarantee holds for multibyte and wide (CJK /
  * emoji) paths and a surrogate pair is never split into a lone-surrogate `�`.
+ *
+ * `line` must be UNSTYLED text — the description `Wizard.tsx` truncates before
+ * handing it to Ink, which applies the colour. Cutting a line that already
+ * carried escape sequences could sever one mid-sequence; the styling is applied
+ * around the truncated text precisely so that cannot arise.
  *
  * @param line - The described-effect line (e.g. `Write file: a/b/c.ts (12 bytes)`).
  * @param max - The width cap, in columns; defaults to {@link MAX_PROGRESS_LINE}.

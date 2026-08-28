@@ -5,9 +5,13 @@ import {
   formatEffectDuration,
   MAX_PROGRESS_LINE,
   measureDisplayWidth,
+  stripStyles,
   TRUNCATION_MARKER,
   truncateMiddle,
 } from "./progressWindow.js";
+
+/** `ESC`, as a string — a regex literal may not carry a raw control byte. */
+const ESC = String.fromCharCode(27);
 
 /** Whether any code unit in `text` is an unpaired surrogate (a broken glyph). */
 const hasLoneSurrogate = (text: string): boolean =>
@@ -86,6 +90,38 @@ describe("measureDisplayWidth", () => {
     // One code point (two UTF-16 units) → two columns, not `.length` (2) × 1.
     expect("🎉".length).toBe(2);
     expect(measureDisplayWidth("🎉")).toBe(2);
+  });
+});
+
+describe("stripStyles", () => {
+  it("leaves unstyled text untouched", () => {
+    expect(stripStyles("Write file: a.ts")).toBe("Write file: a.ts");
+    expect(stripStyles("")).toBe("");
+  });
+
+  it("removes the SGR sequences Ink renders a completed row with", () => {
+    // Exactly what `Wizard.tsx` produces once chalk has colour enabled: green
+    // glyph, dim duration.
+    const styled = `${ESC}[32m✓${ESC}[39m Write file: a.ts ${ESC}[2m(5ms)${ESC}[22m`;
+    expect(stripStyles(styled)).toBe("✓ Write file: a.ts (5ms)");
+  });
+
+  it("removes non-SGR escapes a captured frame can also carry", () => {
+    // Cursor and erase sequences are instructions, not cells, just the same.
+    expect(stripStyles(`${ESC}[2K${ESC}[1;5Hdone`)).toBe("done");
+  });
+});
+
+describe("measureDisplayWidth is style-invariant", () => {
+  it("counts an escape sequence as zero columns", () => {
+    // The regression this closes: the SAME rendered row measured 72 columns
+    // unstyled and 91 styled, so a one-row guarantee held or failed on whether
+    // the invoking shell happened to be a terminal.
+    const bare = "✓ Write file: a.ts (5ms)";
+    const styled = `${ESC}[32m✓${ESC}[39m Write file: a.ts ${ESC}[2m(5ms)${ESC}[22m`;
+    expect(styled.length).toBeGreaterThan(bare.length);
+    expect(measureDisplayWidth(styled)).toBe(measureDisplayWidth(bare));
+    expect(measureDisplayWidth(styled)).toBe(24);
   });
 });
 
