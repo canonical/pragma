@@ -74,7 +74,7 @@ pragma setup skills
 pragma setup lsp
 ```
 
-**`setup mcp`** registers the pragma MCP server in every AI harness it detects — Claude Code, OpenCode, Gemini CLI, and others. Each write targets one config file; where two harnesses share a file, each one's entries are preserved. Detection classifies every target file up front — no pragma entry yet, already configured, or drifted — and on a terminal an already-configured file is deselected by default, so a re-run offers to fix drift rather than rewrite what is current. It asks one opt-in question ("Customize which files?") before showing the per-file list; declining configures every detected file. `--scope`, `--global`, and `--local` apply here too:
+**`setup mcp`** registers the pragma MCP server in every AI harness it detects — Claude Code, OpenCode, Gemini CLI, and others. Each write targets one config file; where two harnesses share a file, each one's entries are preserved. Detection classifies every target file up front — no pragma entry yet, already configured, or drifted — and on a terminal an already-configured file is deselected by default, so a re-run offers to fix drift rather than rewrite what is current. Every run opens by naming what it detected — detected targets only, or the whole table under `--verbose` — and where there is more than one config file it then asks which of them to configure, each listed with its own state (`add`, `update`, `unchanged`). Pressing enter keeps the defaults, which configure every file that needs it. `--scope`, `--global`, and `--local` apply here too:
 
 ```bash
 pragma setup mcp --scope project

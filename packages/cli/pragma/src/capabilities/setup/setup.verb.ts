@@ -49,7 +49,11 @@ import {
   type SetupPlan,
   TARGET_IDS,
 } from "./plan.js";
-import { renderProgressLine, renderRecap } from "./plan.render.js";
+import {
+  renderDetectionSummary,
+  renderProgressLine,
+  renderRecap,
+} from "./plan.render.js";
 import { renderDryRun, setupFormatters } from "./setup.render.js";
 import type { ScopeBand, ScopeSelection, SetupMode } from "./types.js";
 
@@ -234,6 +238,23 @@ async function runSetup(
   // exit 0 — the invocation completed a real read-only unit of work.
   if (interactionMode === "refuse") {
     return pure<SetupPlan>({ ...run.plan, preview: true });
+  }
+
+  // Say what was DETECTED before asking anything about it. The data has been
+  // sitting in `run.plan` since before the prompt list was built — `inkPrompt`
+  // mounts no React until the first Prompt effect — so this is a rendering gap,
+  // not an ordering one, and closing it is nearly free.
+  //
+  // It MUST be emitted here, before `execute` is driven: the summary and the
+  // Ink frame both write to stderr, and only a line written first lands in
+  // scrollback ABOVE the frame. `rt.report` is the non-Ink seam — `--quiet`
+  // silences it and it is a no-op over MCP — so no React is loaded to print it.
+  // A preview says nothing here: the plan table IS its output.
+  if (!previewing) {
+    const summary = renderDetectionSummary(run.plan, {
+      verbose: rt.globalFlags.verbose,
+    });
+    if (summary !== undefined) rt.report?.(summary);
   }
 
   const { transport, yes, signal, abort } = rt.interaction ?? {

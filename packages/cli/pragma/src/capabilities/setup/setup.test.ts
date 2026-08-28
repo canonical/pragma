@@ -488,25 +488,32 @@ describe("setup mcp — scope & dedup", () => {
   });
 });
 
-describe("setup mcp — customize opt-in gate (Item 6)", () => {
-  it("gates the per-file multiselect behind an explicit customize=true", async () => {
+describe("setup mcp — the per-file question, asked directly", () => {
+  it("asks the per-file multiselect with NO `customize` meta-question in front", async () => {
+    // `answers.customize` was read in exactly one place in the repo — this
+    // prompt's `when` — and by nothing else: not `generate`, not `applied`, not
+    // any plan, recap, renderer or JSON projection. Answering no just meant the
+    // child prompt went unasked, its key was absent, and the compose bodies
+    // read that as "all" — so everything detected was configured anyway.
     const cwd = tmp("pragma-setup-proj-");
-    mkdirSync(join(cwd, ".cursor"), { recursive: true }); // ⇒ one MCP target group
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    mkdirSync(join(cwd, ".gemini"), { recursive: true }); // 2 children ⇒ narrowable
     const { generator } = await buildSetupRun(
       bootRuntime(FLAGS, cwd),
       "mcp",
-      "both",
+      "project",
     );
-    const customize = generator.prompts.find((p) => p.name === "customize");
+    expect(generator.prompts.map((p) => p.name)).not.toContain("customize");
     const targets = generator.prompts.find((p) => p.name === "mcpTargets");
-    // The gate is an opt-in confirm that defaults to NOT customizing.
-    expect(customize?.type).toBe("confirm");
-    expect(customize?.default).toBe(false);
-    // The per-file multiselect only surfaces after an explicit yes — so the
-    // "all" default configures every deduped file without an extra question.
-    expect(targets?.when?.({})).toBe(false);
-    expect(targets?.when?.({ customize: false })).toBe(false);
-    expect(targets?.when?.({ customize: true })).toBe(true);
+    expect(targets).toBeDefined();
+    // It is asked whenever its row is in the run — the row's own selection is
+    // the only gate, and the choices carry the detected state per file.
+    expect(targets?.when?.({})).toBe(true);
+    expect(
+      (targets?.choices as { label: string }[]).every((c) =>
+        /— (add|update|unchanged)$/.test(c.label),
+      ),
+    ).toBe(true);
   });
 
   it("recaps the files the run KEPT, not the ones it offered", async () => {
@@ -523,7 +530,6 @@ describe("setup mcp — customize opt-in gate (Item 6)", () => {
 
     const applied = run.applied({
       targets: ["project:mcp"],
-      customize: true,
       mcpTargets: [kept],
     });
     expect(applied.rows.find((r) => r.target === "mcp")?.outcome?.note).toBe(
@@ -579,20 +585,18 @@ describe("setup lsp — per-editor multiselect (child rows)", () => {
     expect(children?.find((c) => c.key === "codium")?.action).toBe("add");
   });
 
-  it("gates the per-editor multiselect behind the same customize confirm", async () => {
+  it("asks the per-editor multiselect directly, with both forks pre-selected", async () => {
     const { generator } = await buildSetupRun(
       bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
       "lsp",
       "global",
     );
-    const customize = generator.prompts.find((p) => p.name === "customize");
+    expect(generator.prompts.map((p) => p.name)).not.toContain("customize");
     const editors = generator.prompts.find((p) => p.name === "lspEditors");
-    expect(customize?.default).toBe(false);
-    // Both pending editors are pre-selected, so the default path installs into
-    // every fork without an extra question.
+    // Both pending editors are pre-selected, so pressing enter installs into
+    // every fork — the same default the meta-question used to stand for.
     expect(editors?.default).toEqual(["code", "codium"]);
-    expect(editors?.when?.({ customize: false })).toBe(false);
-    expect(editors?.when?.({ customize: true })).toBe(true);
+    expect(editors?.when?.({})).toBe(true);
   });
 
   it("sideloads only into the editors the user kept", async () => {
@@ -1902,6 +1906,101 @@ describe("setup — a converged machine is reported, never asked", () => {
     expect(outcome.exitCode).toBe(0);
     expect(outcome.stdout).not.toContain("Run again with --yes");
     expect(outcome.stdout).toContain("targets configured");
+  });
+});
+
+describe("setup — the detection summary", () => {
+  let prevPath: string | undefined;
+  beforeEach(() => {
+    prevPath = process.env.PATH;
+    process.env.PATH = stubPath();
+  });
+  afterEach(() => {
+    process.env.PATH = prevPath;
+  });
+
+  /**
+   * Drive a run, capturing STDERR — which is where the report seam writes, and
+   * the same stream the Ink frame would use. The dispatcher builds its own
+   * runtime for a mutation, so an `rt.report` set on the boot runtime is
+   * replaced; capturing the stream is what actually pins the behaviour.
+   */
+  const onStderr = async (
+    verb: VerbSpec,
+    params: Record<string, unknown>,
+    flags: GlobalFlags,
+    cwd: string,
+    mutation = YES,
+  ): Promise<string[]> => {
+    const chunks: string[] = [];
+    const spy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation((chunk: unknown): boolean => {
+        chunks.push(String(chunk));
+        return true;
+      });
+    try {
+      await executeVerb(verb, params, mutation, bootRuntime(flags, cwd));
+    } finally {
+      spy.mockRestore();
+    }
+    return chunks;
+  };
+
+  /** The one write the report seam made for the summary block, if any. */
+  const summaryOf = (chunks: readonly string[]): string =>
+    chunks.find((c) => c.startsWith("Detected —")) ?? "";
+
+  it("names what was detected BEFORE anything is asked, detected rows only", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    const chunks = await onStderr(setupSelfVerb, { local: true }, FLAGS, cwd);
+    // The report seam writes the block as ONE write, before the generator is
+    // driven — so it is also the first thing on the stream.
+    expect(chunks[0]?.startsWith("Detected —")).toBe(true);
+    const summary = summaryOf(chunks);
+    // FIRST — the Ink frame and this line both go to stderr, so only a line
+    // written before `execute` lands above the frame in scrollback.
+    expect(summary).toContain("Detected —");
+    expect(summary).toContain("mcp");
+    // A skip is "nothing detected here", so it is out of the default view...
+    expect(summary).not.toContain("user-level only");
+    expect(summary).toContain("--verbose lists them");
+  });
+
+  it("--verbose widens it to every row, with no `not detected` footer", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    const summary = summaryOf(
+      await onStderr(
+        setupSelfVerb,
+        { local: true },
+        { ...FLAGS, verbose: true },
+        cwd,
+      ),
+    );
+    // ...and back in under `--verbose`, which consumes the EXISTING global flag
+    // rather than adding a signal.
+    expect(summary).toContain("user-level only");
+    expect(summary).not.toContain("--verbose lists them");
+  });
+
+  it("says nothing on a --dry-run — the plan table IS that run's output", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    const chunks = await onStderr(setupSelfVerb, { local: true }, FLAGS, cwd, DRY);
+    expect(summaryOf(chunks)).toBe("");
+  });
+
+  it("is silent over MCP — `rt.report` is a no-op there, so no Ink and no noise", async () => {
+    // The seam is the point: a plain-string report, not an Ink mount, is what
+    // keeps this off the React graph AND out of the MCP data stream.
+    const cwd = tmp("pragma-setup-proj-");
+    const mcp = await projectMcp([setupModule], cwd);
+    const result = await mcp.callTool("setup", { confirm: true });
+    await mcp.cleanup();
+    expect(result.ok).toBe(true);
+    expect(JSON.stringify(result.data)).not.toContain("Detected —");
   });
 });
 

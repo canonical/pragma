@@ -142,6 +142,65 @@ export function renderPlanTable(
 }
 
 /**
+ * What was DETECTED, rendered before anything is asked.
+ *
+ * The gap this closes is a rendering one, not an ordering one: detection is
+ * complete before the prompt array is even constructed (`buildSetupRun` does
+ * resolveRoots → detectTargets → buildPlan, and only then builds `prompts`), and
+ * the Ink view mounts no React until the FIRST prompt effect. So the facts were
+ * sitting in `run.plan` the whole time with nothing rendering them — the wizard
+ * leaked detection only through prompt-label suffixes, and `renderPlanTable` is
+ * reached only by `--dry-run` or the non-interactive preview. A wizard run
+ * never rendered it at all, and the confirm gate shows an EFFECTS summary, not
+ * a detection one.
+ *
+ * It is a plain-string formatter on purpose. It rides `rt.report` — the non-Ink
+ * stderr seam, `--quiet`-aware and a no-op over MCP — because pragma contains no
+ * React and no Ink, and three PROTECTED tests exist to keep it that way.
+ *
+ * The default lists DETECTED rows only; `--verbose` lists everything. "Detected"
+ * is `action !== "skip"`, which is not a new partition: it is exactly the
+ * predicate the row multiselect already uses to build its choices, so the
+ * summary and the question that follows it describe the same set.
+ *
+ * @param plan - The plan as detected (no outcomes yet).
+ * @param options - `verbose` widens detected-only to the whole table.
+ * @param style - Injected for tests; defaults to the shared TTY seam.
+ * @returns The rendered block, or `undefined` when there is nothing to say.
+ */
+export function renderDetectionSummary(
+  plan: SetupPlan,
+  options: { verbose?: boolean } = {},
+  style: RenderStyle = defaultStyle(),
+): string | undefined {
+  const shown = options.verbose
+    ? plan.rows
+    : plan.rows.filter((row) => row.action !== "skip");
+  if (shown.length === 0) return undefined;
+  const hidden = plan.rows.length - shown.length;
+  const idWidth = widthOf(shown, (row) => row.target);
+  const actionWidth = widthOf(shown, actionCell);
+  const lines = [style.bold(header(plan, "Detected")), ""];
+  for (const [band, rows] of byBand({ ...plan, rows: shown })) {
+    if (plan.scope === "both") lines.push(style.bold(BAND_LABELS[band]));
+    for (const row of rows) {
+      lines.push(
+        `  ${row.target.padEnd(idWidth)}  ${actionCell(row).padEnd(actionWidth)}  ${style.dim(detailCell(row))}`,
+      );
+    }
+  }
+  if (hidden > 0) {
+    lines.push(
+      "",
+      style.dim(
+        `${hidden} target${hidden === 1 ? "" : "s"} not detected here — --verbose lists them`,
+      ),
+    );
+  }
+  return lines.join("\n");
+}
+
+/**
  * One progress line, emitted as a row's outcome lands. Same columns as the
  * recap, so a reader watching the run and a reader reading the recap afterwards
  * see the same sentence about the same row.

@@ -211,23 +211,23 @@ const buildRowsPrompt = (plan: SetupPlan): PromptDefinition => {
   };
 };
 
-/** The opt-in "customize which files" gate — defaults to false. */
-const buildCustomizePrompt = (
-  when?: PromptDefinition["when"],
-): PromptDefinition => ({
-  name: "customize",
-  type: "confirm",
-  message: `Customize which files ${BIN_NAME} configures?`,
-  default: false,
-  when,
-});
-
 /**
  * The per-file MCP multiselect — one row per deduplicated config file, across
  * every band the run covers. An already-current file is DEFAULT-DESELECTED; a
- * file that is absent or drifted stays selected. Retained unchanged from the
- * landed opt-in narrowing: it is row-level CHILD selection, which is exactly
- * what the plan's child rows are.
+ * file that is absent or drifted stays selected. It is row-level CHILD
+ * selection, which is exactly what the plan's child rows are.
+ *
+ * It used to sit behind a meta-question — "Customize which files pragma
+ * configures?", answered no by default. That gate was read in exactly ONE place
+ * in the repo (this prompt's `when`) and nowhere else: not by `generate`, not by
+ * `applied`, not by any plan, recap, renderer or JSON projection. Answering no
+ * meant the child prompt was never asked, its key was absent from the answer
+ * bag, `readList` returned `undefined`, and the compose bodies read that as
+ * "all" — so everything detected was configured anyway. A meta-question in front
+ * of a direct question is one more thing to answer and no more control; the
+ * choices below already carry the detected state per child (`— unchanged`,
+ * `— add`, `— update`), which is the answer the meta-question was standing in
+ * front of.
  */
 const buildChildPrompt = (
   plan: SetupPlan,
@@ -350,30 +350,21 @@ export async function buildSetupRun(
     ] as const
   ).filter(([target]) => !removal && childrenOf(plan, target).length > 1);
 
-  if (narrowable.length > 0) {
-    const anyChosen = (answers: Record<string, unknown>): boolean => {
+  for (const [target, message] of narrowable) {
+    // Asked whenever the row it narrows is in the run — one direct question,
+    // no meta-question in front of it. Removing a prompt cannot break the
+    // non-interactive paths: `autoPrompt`/`mcpPrompt` return each question's
+    // default, so a smaller prompt list means a smaller answer bag, and the
+    // compose bodies already read an absent child answer as "all". (The
+    // asymmetry is the reason this direction is safe: ADDING a defaultless
+    // prompt would hard-fail with MISSING_REQUIRED_ANSWER.)
+    const rowChosen = (answers: Record<string, unknown>): boolean => {
       const chosen = readList(answers, ROWS_ANSWER);
-      return narrowable.some(([target]) =>
-        plan.rows.some((row) => row.target === target && isChosen(row, chosen)),
+      return plan.rows.some(
+        (row) => row.target === target && isChosen(row, chosen),
       );
     };
-    prompts.push(buildCustomizePrompt(anyChosen));
-    for (const [target, message] of narrowable) {
-      const rowChosen = (answers: Record<string, unknown>): boolean => {
-        const chosen = readList(answers, ROWS_ANSWER);
-        return plan.rows.some(
-          (row) => row.target === target && isChosen(row, chosen),
-        );
-      };
-      prompts.push(
-        buildChildPrompt(
-          plan,
-          target,
-          message,
-          (answers) => answers.customize === true && rowChosen(answers),
-        ),
-      );
-    }
+    prompts.push(buildChildPrompt(plan, target, message, rowChosen));
   }
 
   /** The detection behind a row, for composing and for re-reading its draft. */
