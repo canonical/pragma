@@ -179,3 +179,68 @@ describe("doctor render — color ON (attended TTY)", () => {
     });
   });
 });
+
+/**
+ * The harness inventory renders through the EXISTING check-with-items
+ * primitive — a listing needs no new machinery, only a check whose `items` are
+ * harnesses. This pins that it reads as an inventory in both formats: named
+ * harnesses under their band, mixed per-item glyphs, and NO `fix:` line (the
+ * `mcp`/`skills` rows own every action a harness can need).
+ */
+const INVENTORY_DATA: DoctorData = {
+  checks: [
+    {
+      name: "harnesses",
+      status: "pass",
+      detail: "1 detected · 1 registered · 3 known",
+      band: "global",
+      items: [
+        {
+          label: "Claude Code",
+          status: "pass",
+          detail: "registered — ~/.claude.json",
+        },
+        { label: "Cursor", status: "skip", detail: "not detected" },
+        { label: "VS Code", status: "skip", detail: "no Global band" },
+      ],
+    },
+  ],
+  passed: 1,
+  failed: 0,
+  available: 0,
+  skipped: 0,
+};
+
+describe("doctor render — the harness inventory", () => {
+  it("renders one aligned sub-item per harness, with no fix line", () => {
+    const out = doctorFormatters.plain(INVENTORY_DATA);
+    expect(out).toContain("Global");
+    expect(out).toContain("harnesses");
+    expect(out).toContain("1 detected · 1 registered · 3 known");
+    expect(out).toContain("· ✓ Claude Code  registered — ~/.claude.json");
+    expect(out).toContain("· ○ Cursor       not detected");
+    expect(out).toContain("· ○ VS Code      no Global band");
+    // A listing proposes nothing — and never renders a failure glyph.
+    expect(out).not.toContain("fix:");
+    expect(out).not.toContain("✗");
+  });
+
+  it("nests the harnesses under the check in the llm format", () => {
+    const out = doctorFormatters.llm(INVENTORY_DATA);
+    expect(out).toContain("### Global");
+    expect(out).toContain(
+      "- ✓ **harnesses**: 1 detected · 1 registered · 3 known",
+    );
+    expect(out).toContain("  - ✓ Claude Code: registered — ~/.claude.json");
+    expect(out).toContain("  - ○ VS Code: no Global band");
+    expect(out).not.toContain("_fix:_");
+  });
+
+  it("round-trips through json with every row intact", () => {
+    const parsed = JSON.parse(
+      doctorFormatters.json(INVENTORY_DATA),
+    ) as DoctorData;
+    expect(parsed).toEqual(INVENTORY_DATA);
+    expect(parsed.checks[0]?.items).toHaveLength(3);
+  });
+});

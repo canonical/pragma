@@ -132,7 +132,13 @@ describe("detectHarnesses", () => {
     expect(ids).not.toContain("cline");
   });
 
-  it("detects Cline when its saoudrizwan.claude-dev extension is installed", () => {
+  // AMENDED (was `not.toContain("vscode")`): `~/.vscode/extensions` is now a
+  // VS Code INSTALLATION signal, and it is exactly the directory a Cline
+  // extension lives in — so the two must co-detect. Asserting otherwise
+  // asserted the false negative this pairing exists to rule out. The invariant
+  // that actually matters (a bare `.vscode` PROJECT dir must not detect Cline)
+  // is the test above and is untouched.
+  it("detects BOTH Cline and VS Code from an extension in ~/.vscode/extensions", () => {
     const result = dryRunWith(
       detectHarnesses("/project", PLATFORM),
       new Map<string, (effect: Effect) => unknown>([
@@ -156,8 +162,18 @@ describe("detectHarnesses", () => {
     const cline = result.value.find((d) => d.harness.id === "cline");
     expect(cline).toBeDefined();
     expect(cline?.confidence).toBe("medium");
-    // A bare extension must not drag in VS Code (no `.vscode` dir here).
-    expect(result.value.map((d) => d.harness.id)).not.toContain("vscode");
+
+    const vscode = result.value.find((d) => d.harness.id === "vscode");
+    expect(vscode).toBeDefined();
+    // The extensions DIRECTORY is a `directory` signal, so it scores high.
+    expect(vscode?.confidence).toBe("high");
+
+    // They still group to the ONE file, under their two distinct keys — the
+    // two-level dedup documented on the `cline` row.
+    expect(cline?.configPath).toBe("/project/.vscode/mcp.json");
+    expect(vscode?.configPath).toBe("/project/.vscode/mcp.json");
+    expect(cline?.harness.mcpKey).toBe("mcpServers");
+    expect(vscode?.harness.mcpKey).toBe("servers");
   });
 
   it("reports configExists as false when config file is missing", () => {
@@ -175,5 +191,151 @@ describe("detectHarnesses", () => {
     const result = dryRun(detectHarnesses("/project"));
     expect(result.effects.length).toBeGreaterThan(0);
     expect(Array.isArray(result.value)).toBe(true);
+  });
+});
+
+/**
+ * VS Code installation detection. Each case drives EXACTLY ONE of the row's
+ * five signals so the probes can never be quietly collapsed into an AND: a
+ * machine with the editor installed but no committed `.vscode/` must still be
+ * seen. `dryRunWith` over a `Map` keyed by effect tag is the whole seam — no
+ * colleague's machine required.
+ */
+describe("detectHarnesses — VS Code installation signals", () => {
+  const withPath = (path: string): PlatformEnv => ({
+    ...PLATFORM,
+    env: { ...PLATFORM.env, PATH: path },
+  });
+
+  const only = (
+    wanted: string,
+    seen?: string[],
+  ): Map<string, (effect: Effect) => unknown> =>
+    new Map([
+      [
+        "Exists",
+        (effect: Effect): unknown => {
+          const { path } = effect as Effect & { _tag: "Exists"; path: string };
+          seen?.push(path);
+          return path === wanted;
+        },
+      ],
+    ]);
+
+  it("detects a snap install from /snap/bin/code alone", () => {
+    const result = dryRunWith(
+      detectHarnesses("/project", withPath("/usr/bin:/bin:/snap/bin")),
+      only("/snap/bin/code"),
+    );
+
+    expect(result.value.map((d) => d.harness.id)).toEqual(["vscode"]);
+    // `code` on PATH means "installed", not "this project uses it".
+    expect(result.value[0]?.confidence).toBe("medium");
+    expect(result.value[0]?.configExists).toBe(false);
+  });
+
+  it("detects a deb install from /usr/bin/code alone", () => {
+    const result = dryRunWith(
+      detectHarnesses("/project", PLATFORM),
+      only("/usr/bin/code"),
+    );
+
+    expect(result.value.map((d) => d.harness.id)).toEqual(["vscode"]);
+    expect(result.value[0]?.confidence).toBe("medium");
+  });
+
+  it("detects the user config directory alone, at high confidence", () => {
+    const result = dryRunWith(
+      detectHarnesses("/project", PLATFORM),
+      only("/home/tester/.config/Code/User"),
+    );
+
+    expect(result.value.map((d) => d.harness.id)).toEqual(["vscode"]);
+    expect(result.value[0]?.confidence).toBe("high");
+  });
+
+  it("honours $XDG_CONFIG_HOME and never probes ~/.config for the config dir", () => {
+    const seen: string[] = [];
+    const platform: PlatformEnv = {
+      ...PLATFORM,
+      env: { ...PLATFORM.env, XDG_CONFIG_HOME: "/xdg/config" },
+    };
+    const result = dryRunWith(
+      detectHarnesses("/project", platform),
+      only("/xdg/config/Code/User", seen),
+    );
+
+    expect(result.value.map((d) => d.harness.id)).toEqual(["vscode"]);
+    expect(result.value[0]?.confidence).toBe("high");
+    expect(seen).toContain("/xdg/config/Code/User");
+    expect(seen).not.toContain("/home/tester/.config/Code/User");
+  });
+
+  /**
+   * The macOS host. VS Code keeps its user data under
+   * `~/Library/Application Support` (env-paths' DATA base), which is not where
+   * `$XDG_CONFIG_HOME` resolves on darwin — `xdgConfigHome` falls back to
+   * `~/.config` on every platform, deliberately, because a tool documenting
+   * `~/.config/<tool>` reads that path on macOS too. A default macOS install
+   * also puts no `code` on PATH (the palette's "Install 'code' command in
+   * PATH" is opt-in), and a fresh install has no `~/.vscode/extensions` yet —
+   * so this directory is the only probe that can see such a machine.
+   */
+  const DARWIN: PlatformEnv = {
+    platform: "darwin",
+    env: { PATH: "/usr/bin:/bin" },
+    home: "/Users/tester",
+    isWsl: false,
+  };
+
+  it("detects a macOS install from ~/Library/Application Support alone", () => {
+    const seen: string[] = [];
+    const result = dryRunWith(
+      detectHarnesses("/project", DARWIN),
+      only("/Users/tester/Library/Application Support/Code/User", seen),
+    );
+
+    expect(result.value.map((d) => d.harness.id)).toEqual(["vscode"]);
+    // A config DIRECTORY, so the same `high` tier the linux probe scores.
+    expect(result.value[0]?.confidence).toBe("high");
+    expect(result.value[0]?.configPath).toBe("/project/.vscode/mcp.json");
+    // ...and it is genuinely a SECOND location, not the XDG one under another
+    // name: that probe ran too, and on darwin it looks under `~/.config`.
+    expect(seen).toContain("/Users/tester/.config/Code/User");
+  });
+
+  it("detects the extensions directory alone, without Cline", () => {
+    const result = dryRunWith(
+      detectHarnesses("/project", PLATFORM),
+      only("/home/tester/.vscode/extensions"),
+    );
+
+    const ids = result.value.map((d) => d.harness.id);
+    expect(ids).toContain("vscode");
+    // The directory exists but holds no matching extension, so no `Glob` hit.
+    expect(ids).not.toContain("cline");
+    expect(ids).not.toContain("roo-code");
+  });
+
+  /**
+   * The hostile guard. A POPULATED `PATH` and a `Glob` that matches ANY
+   * pattern, but nothing exists on disk ⇒ nothing is detected. This proves the
+   * `process` arm probes the filesystem rather than the PATH string, and that a
+   * permissive glob cannot manufacture an extension hit through the `exists`
+   * gate `checkExtension` puts in front of it.
+   */
+  it("detects nothing from a populated PATH and a permissive glob when nothing exists", () => {
+    const result = dryRunWith(
+      detectHarnesses(
+        "/project",
+        withPath("/usr/bin:/bin:/snap/bin:/usr/local/bin"),
+      ),
+      new Map<string, (effect: Effect) => unknown>([
+        ["Exists", () => false],
+        ["Glob", () => ["anything-1.0.0/package.json"]],
+      ]),
+    );
+
+    expect(result.value).toEqual([]);
   });
 });

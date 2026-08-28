@@ -16,6 +16,13 @@
  * Doctor's UNBANDED environment checks (Node version, the CLI's own version,
  * pack refs, the store) diagnose things setup cannot install and stay outside
  * this list.
+ *
+ * ONE banded row is not a target: `harnesses`, the per-band inventory. It is an
+ * inventory of the machine the targets are measured against, not a target that
+ * can be set up, so it deliberately carries no `fix:` and can never be `fail`
+ * or `available` — see {@link inventoryChecks}. The bijection between the other
+ * rows and the setup table is untouched: `harnesses` is not a `TargetId`, and
+ * nothing derives a command from it.
  */
 
 import { MCP_SERVER_NAME } from "../../../constants.js";
@@ -36,6 +43,7 @@ import {
   lspSkipReason,
   type McpDetection,
   mcpGroupState,
+  mcpWriteState,
   type SkillsDetection,
   skillsSkipReason,
   skillsSkipRemedy,
@@ -43,6 +51,12 @@ import {
 import { shortenPath, TARGET_IDS } from "../../setup/plan.js";
 import type { CheckItem, CheckResult, ScopeBand } from "../types.js";
 import { checkShellCompletions } from "./checkShellCompletions.js";
+import {
+  harnessInventory,
+  type InventoryGroup,
+  type InventoryHarness,
+  inventoryHealth,
+} from "./harnessInventory.js";
 import { commandResolves } from "./mcpCommand.js";
 
 /** What a row reports before its name, band and `fix:` line are attached. */
@@ -241,6 +255,116 @@ async function healthOf(
   }
 }
 
+/** The banded inventory row's name — a LISTING, not a setup target id. */
+export const INVENTORY_CHECK = "harnesses";
+
+/**
+ * The `harnesses` row for one band: what this machine has, and where pragma
+ * stands in each.
+ *
+ * It is the one banded row that is NOT a target, and it earns that by never
+ * competing with the ones that are. Its status is only `pass` or `skip`, so it
+ * adds no failure and no `available` to the tally, and it derives no `fix:` —
+ * the `mcp` and `skills` rows beside it already name every command a harness
+ * needs, and repeating them here would be the same finding seen twice.
+ *
+ * The registry is the only thing detection could not supply: `detectHarnesses`
+ * filters to hits, so "Windsurf is not on this machine" was unrepresentable
+ * until the universe came from somewhere. Everything else — which harnesses
+ * share which file, and whether each one's own entry in it is current — is read
+ * straight off the `mcp` detection this report already ran. The projection to
+ * {@link InventoryGroup} is deliberate: `McpDetection` holds
+ * `writeMcpConfigTargets`/`removeMcpConfigFrom` as live functions, and a
+ * `mutates: false` command should be unable to reach a writer, not merely
+ * trusted not to.
+ *
+ * This is also where the harness↔`mcpKey` association is REJOINED, because it
+ * is the one place that holds both halves: `TargetGroup` records the names
+ * sharing a file and, separately, one write per distinct `mcpKey`, and the
+ * registry is what says which key a given harness writes. Without that join the
+ * only state available per harness is the file's aggregate — and a
+ * `.vscode/mcp.json` where VS Code's `servers` entry is current while Cline's
+ * `mcpServers` is absent aggregates to `drifted`, which would report BOTH
+ * harnesses as drifted when neither one is.
+ *
+ * @param rt - The per-invocation runtime (read for `--verbose`).
+ * @param rows - Every detected row, both bands, as `bandedChecks` has them.
+ * @param roots - The roots every path renders relative to.
+ * @returns One inventory {@link CheckResult} per band, global then project.
+ * @note Impure — dynamically imports the harness registry.
+ */
+async function inventoryChecks(
+  rt: PragmaRuntime,
+  rows: readonly DetectedRow[],
+  roots: { global: string; project: string },
+): Promise<CheckResult[]> {
+  const { harnesses, isHarnessInBand } = await import("@canonical/harnesses");
+  const verbose = rt.globalFlags.verbose;
+  const bands: readonly ScopeBand[] = ["global", "project"];
+  // The key each harness NAME writes under — the half of the association
+  // `groupConfigTargets` consumed and did not record. Names are the only
+  // identity a group carries, and the registry's are unique.
+  const keyByName = new Map(harnesses.map((h) => [h.name, h.mcpKey]));
+
+  return bands.map((band): CheckResult => {
+    // `isHarnessInBand(scope, band, band)` — the band as its OWN selection — is
+    // exactly "does this harness have a config location here", which is the
+    // question `detectMcp` already answers for that band. Asking it under the
+    // `both` selection would instead answer "who writes here when both bands
+    // run", and report every dual-scope harness as having no global band.
+    const registry: InventoryHarness[] = harnesses.map((harness) => ({
+      id: harness.id,
+      name: harness.name,
+      inBand: isHarnessInBand(harness.scope, band, band),
+    }));
+
+    const mcpRow = rows.find(
+      (row) => row.target.id === "mcp" && row.band === band,
+    );
+    if (mcpRow === undefined || detectionFailure(mcpRow) !== undefined) {
+      return {
+        name: INVENTORY_CHECK,
+        status: "skip",
+        detail: "harness detection did not settle — see the `mcp` row",
+        band,
+      };
+    }
+
+    const detection = mcpRow.detection as McpDetection;
+    const groups: InventoryGroup[] = detection.groups.map((group) => ({
+      path: shortenPath(group.path, roots),
+      harnesses: group.harnessNames.map((name) => {
+        // The harness's OWN write in this file. A name the registry does not
+        // know (or a key no write carries — impossible while the group was
+        // built from the same registry) falls back to the file's aggregate:
+        // strictly no worse than the state before this join existed.
+        const write = group.writes.find(
+          (w) => w.mcpKey === keyByName.get(name),
+        );
+        return {
+          name,
+          state:
+            write === undefined
+              ? mcpGroupState(detection, group.path)
+              : mcpWriteState(detection, write),
+        };
+      }),
+    }));
+
+    const health = inventoryHealth(
+      harnessInventory(registry, groups, band),
+      verbose,
+    );
+    return {
+      name: INVENTORY_CHECK,
+      status: health.status,
+      detail: health.detail,
+      band,
+      ...(health.items.length === 0 ? {} : { items: health.items }),
+    };
+  });
+}
+
 /**
  * The command that repairs a row — derived from its id and band, never
  * authored. This is the bijection made mechanical: a row exists because a
@@ -253,11 +377,18 @@ export const fixCommandFor = (
 ): string => `${bin} setup ${id}${band === "project" ? " --local" : ""}`;
 
 /**
- * Run every banded check: the target table, both bands, in table order.
+ * Run every banded check: the target table, both bands, in table order, then
+ * each band's harness inventory.
+ *
+ * The inventory rows come LAST within the array, and the renderer partitions by
+ * band while preserving order, so each band's section ends with the listing of
+ * what that band actually holds — the targets first, then the machine they were
+ * measured against. They ride on the SAME detection pass: no target is probed a
+ * second time to produce them.
  *
  * @param rt - The per-invocation runtime.
  * @param bin - The binary name the `fix:` lines are derived from.
- * @returns One {@link CheckResult} per (target, band) the machine can hold.
+ * @returns One {@link CheckResult} per (target, band), plus one per band.
  * @note Impure — every target's detection reads the real filesystem.
  */
 export async function bandedChecks(
@@ -266,26 +397,30 @@ export async function bandedChecks(
 ): Promise<CheckResult[]> {
   const roots = await resolveRoots(rt);
   const detected = await detectTargets(rt, [...TARGET_IDS], "both");
-  return Promise.all(
-    detected.map(async (row): Promise<CheckResult> => {
-      const health = await healthOf(row, rt, roots);
-      const needsFix =
-        health.status === "fail" || health.status === "available";
-      // A `skip` gets no DERIVED fix — re-running the target's own setup command
-      // would reproduce the skip. But a skip that AUTHORED a remedy has found a
-      // real next step on this machine (fill the band's skill root, say), and
-      // dropping it is what made the skip a dead end on both surfaces.
-      const remedy = needsFix
-        ? (health.remedy ?? fixCommandFor(row.target.id, row.band, bin))
-        : health.remedy;
-      return {
-        name: row.target.id,
-        status: health.status,
-        detail: health.detail,
-        band: row.band,
-        ...(health.items === undefined ? {} : { items: health.items }),
-        ...(remedy === undefined ? {} : { remedy }),
-      };
-    }),
-  );
+  const [targetRows, inventoryRows] = await Promise.all([
+    Promise.all(
+      detected.map(async (row): Promise<CheckResult> => {
+        const health = await healthOf(row, rt, roots);
+        const needsFix =
+          health.status === "fail" || health.status === "available";
+        // A `skip` gets no DERIVED fix — re-running the target's own setup command
+        // would reproduce the skip. But a skip that AUTHORED a remedy has found a
+        // real next step on this machine (fill the band's skill root, say), and
+        // dropping it is what made the skip a dead end on both surfaces.
+        const remedy = needsFix
+          ? (health.remedy ?? fixCommandFor(row.target.id, row.band, bin))
+          : health.remedy;
+        return {
+          name: row.target.id,
+          status: health.status,
+          detail: health.detail,
+          band: row.band,
+          ...(health.items === undefined ? {} : { items: health.items }),
+          ...(remedy === undefined ? {} : { remedy }),
+        };
+      }),
+    ),
+    inventoryChecks(rt, detected, roots),
+  ]);
+  return [...targetRows, ...inventoryRows];
 }

@@ -88,7 +88,7 @@ pragma setup mcp --scope project
 
 ## `pragma doctor`
 
-`pragma doctor` runs nine health checks and prints pass / fail / skip, each failure with the command that fixes it. It is storeless by default — the one store check boots lazily and a broken store never aborts the run — so it works before you have built anything.
+`pragma doctor` runs its health checks and prints pass / fail / skip, each failure with the command that fixes it. It is storeless by default — the one store check boots lazily and a broken store never aborts the run — so it works before you have built anything.
 
 ```console
 $ pragma doctor

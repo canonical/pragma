@@ -21,7 +21,11 @@ import type { DoctorData } from "./types.js";
 const doctorVerb: VerbSpec<Record<string, unknown>, DoctorData> = {
   path: ["doctor"],
   summary: "Check environment health and every setup target, in both bands.",
-  doc: "Reports the environment checks and then one row per setup target in each band, as pass, fail, available (an opt-in integration not yet set up), or skip, with inline remedies. Every banded row is named after the setup target that repairs it. Storeless by default; the store check boots lazily and never fails the run.",
+  // Two house rules constrain this string and both are PROTECTED: it may not
+  // name the distribution (`identity.test.ts`) and it may not spell a CLI flag
+  // (`toolDescriptions.test.ts`), so the inventory's widening is described as
+  // "the verbose global flag" rather than by its spelling.
+  doc: "Reports the environment checks and then one row per setup target in each band, as pass, fail, available (an opt-in integration not yet set up), or skip, with inline remedies. Every banded row is named after the setup target that repairs it, except the `harnesses` row: a per-band inventory of the AI harnesses detected on this machine and whether this CLI's MCP server is registered in each — the detected ones only, or every known harness under the verbose global flag. Storeless by default; the store check boots lazily and never fails the run.",
   params: [],
   output: { formatters: doctorFormatters },
   examples: [

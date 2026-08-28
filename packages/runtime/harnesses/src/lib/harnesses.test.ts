@@ -35,6 +35,14 @@ describe("harnesses registry", () => {
     }
   });
 
+  // `TargetGroup` records the sharing harnesses by NAME, not by id, so every
+  // consumer that maps a group back to a registry row (doctor's inventory) is
+  // relying on names being a key. Two rows sharing a name would silently merge.
+  it("ids and display names are both unique", () => {
+    expect(new Set(harnesses.map((h) => h.id)).size).toBe(harnesses.length);
+    expect(new Set(harnesses.map((h) => h.name)).size).toBe(harnesses.length);
+  });
+
   it("declares a valid scope, and global/both harnesses have a home config", () => {
     for (const h of harnesses) {
       expect(h.scope).toMatch(/^(project|global|both)$/);

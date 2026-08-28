@@ -62,6 +62,7 @@ export {
   composeMcpRemoval,
   detectMcp,
   mcpGroupState,
+  mcpWriteState,
   ownedMcpGroups,
   selectedGroups,
 } from "./setupMcp.js";
