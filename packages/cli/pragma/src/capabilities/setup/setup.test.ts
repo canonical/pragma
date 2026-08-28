@@ -908,6 +908,38 @@ describe("setup skills", () => {
     expect(outcome.stdout).toContain("SKILL.md, then run this again");
   });
 
+  it("an EXISTING but empty project skills root is not reported as absent", async () => {
+    // `available` is false for an absent root and for an empty one alike, so
+    // the shared reason line said "is absent" about a directory the user is
+    // looking at. `rootExists` is the flag that already separates those two
+    // states everywhere else in the module; the wording now honours it.
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".pragma", "skills"), { recursive: true });
+
+    const { plan } = await buildSetupRun(
+      bootRuntime(FLAGS, cwd),
+      "skills",
+      "project",
+    );
+    const row = plan.rows.find((r) => r.target === "skills");
+    expect(row?.action).toBe("skip"); // still nothing to do...
+    expect(row?.reason).toContain("holds none"); // ...for the honest reason
+    expect(row?.reason).not.toContain("is absent");
+  });
+
+  it("a genuinely MISSING project skills root still reports absent", async () => {
+    // The other half of the distinction: the empty-root wording must not have
+    // been bought by making every skip vague.
+    const { plan } = await buildSetupRun(
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      "skills",
+      "project",
+    );
+    const row = plan.rows.find((r) => r.target === "skills");
+    expect(row?.action).toBe("skip");
+    expect(row?.reason).toContain("is absent");
+  });
+
   it("the GLOBAL skip names `sources update`, the command that fills its root", async () => {
     // Skills ship in the configured packages, not in this CLI, and the global
     // band's source root is written only by `sources update`. Saying "no skills
@@ -923,19 +955,31 @@ describe("setup skills", () => {
       const row = plan.rows.find((r) => r.target === "skills");
       expect(row?.action).toBe("skip");
       expect(row?.reason).toBe("no skills installed");
+
+      // BOTH assertions belong inside the jail. The end-to-end invocation is
+      // asserting the SAME empty-global-root condition, so it has to read the
+      // empty root this test established — restoring `XDG_DATA_HOME` first
+      // handed it back to whatever the ambient environment points at, and an
+      // ambient root that happens to hold a skill stops exercising the skip.
+      // A skip stays exit 0 — and the recap carries the remedy beneath the row.
+      const outcome = await executeVerb(
+        verbOf("skills"),
+        {},
+        YES,
+        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      );
+      expect(outcome.exitCode).toBe(0);
+      expect(outcome.stdout).toContain("no skills installed");
+      expect(outcome.stdout).toContain(`${BIN_NAME} sources update`);
     } finally {
-      process.env.XDG_DATA_HOME = prevData;
+      // `process.env.X = undefined` STORES THE STRING "undefined"; it does not
+      // unset. The variable is always set here (`setupXdgIsolation.ts` gives
+      // every test file its own XDG root), so this restores rather than
+      // deletes in practice — but a test must not leave a poisoned path behind
+      // for the files that run after it if that ever stops being true.
+      if (prevData === undefined) delete process.env.XDG_DATA_HOME;
+      else process.env.XDG_DATA_HOME = prevData;
     }
-    // A skip stays exit 0 — and the recap carries the remedy beneath the row.
-    const outcome = await executeVerb(
-      verbOf("skills"),
-      {},
-      YES,
-      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
-    );
-    expect(outcome.exitCode).toBe(0);
-    expect(outcome.stdout).toContain("no skills installed");
-    expect(outcome.stdout).toContain(`${BIN_NAME} sources update`);
   });
 
   it("detects a created action and composes a symlink carrying an undo", async () => {
