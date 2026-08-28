@@ -173,6 +173,16 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
     "passed": true,
   },
   {
+    "id": "tool-standard-list-names-are-addressable-by-lookup",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-standard-lookup-advertised-glob-matches",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
     "id": "tool-standard-lookup-has-dos-and-donts",
     "kind": "tool",
     "passed": true,

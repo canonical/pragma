@@ -5,15 +5,22 @@
  * and which properties to read; the query text is generated here so
  * user-supplied names are always escaped SPARQL string literals, and level-gated
  * fields below the active level are excluded from the projection (fetch-gating).
- * Matching on the `by` property is exact and case-insensitive.
+ * Matching on the name is exact and case-insensitive.
+ *
+ * WHAT an entity's name IS lives in one place — {@link nameBinding} — and every
+ * form here uses it: the asserted `by` value when the entity carries one, and
+ * otherwise the IRI-derived name a class-constrained lookup can vouch for. That
+ * single binding is what makes the population a `list` publishes and the
+ * population a `lookup` answers to the same population.
  *
  * Every name-addressed resolve is TOTALLY ORDERED before its `LIMIT 1`. A name
  * can recur across tiers, and an unordered `LIMIT 1` hands the tie to the
  * store's enumeration order — a different answer on a different machine, or
  * after a repack. `ORDER BY STR(?uri)` is a total, engine-independent order over
- * a variable that is always bound (`?uri` carries the `by` triple), so it needs
- * no unbound-value sentinel. It fixes WHICH answer is arbitrary, not WHETHER:
- * declaring a precedence between tiers is an ontology change, tracked separately.
+ * a variable that is always bound (`?uri` carries the class constraint, or the
+ * `by` triple when there is none), so it needs no unbound-value sentinel. It
+ * fixes WHICH answer is arbitrary, not WHETHER: declaring a precedence between
+ * tiers is an ontology change, tracked separately.
  */
 
 import { activeExpands, activeFields } from "../disclosure.js";
@@ -43,11 +50,15 @@ function buildTypeConstraint(lookup: PackLookup): string {
  * differ ONLY in how `?uri` is bound (a `FILTER` on the escaped name vs a `BIND`
  * of the resolved IRI), so both thread the active level through here and gate
  * identically — an IRI-addressed lookup honours `--detail` just like a name one.
+ *
+ * `constraint` and `optionals` are handed back SEPARATELY because the `?name`
+ * binding has to sit between them: it reads `?uri`, which the class constraint
+ * binds, and a SPARQL `BIND` may only name variables already in scope.
  */
 function lookupProjection(
   lookup: PackLookup,
   level: string | undefined,
-): { header: string; body: string } {
+): { header: string; constraint: string; optionals: string } {
   const fields = activeFields(lookup, level);
   const vars = fields.map((field) => `?${field.name}`).join(" ");
   const optionals = fields
@@ -58,8 +69,54 @@ function lookupProjection(
     .join("\n");
   return {
     header: `SELECT ?uri ?name${vars.length > 0 ? ` ${vars}` : ""} WHERE {`,
-    body: buildTypeConstraint(lookup) + optionals,
+    constraint: buildTypeConstraint(lookup).trimEnd(),
+    optionals,
   };
+}
+
+/**
+ * The IRI-derived display name, in ONE spelling every relaxed form shares.
+ *
+ * The local name is everything after the last `#` or `/`, and its dot-separated
+ * hierarchy segments are published with slashes — `cs:react.component.props` →
+ * `react/component/props`. That is not an invention here: it is the derivation
+ * the `standard` list story already performs to PUBLISH a row's name, so this is
+ * the same rule read from the other side. Written once, so the name a list hands
+ * out and the name a lookup answers to cannot drift apart.
+ */
+const DERIVED_NAME = 'REPLACE(REPLACE(STR(?uri), "^.*[#/]", ""), "\\\\.", "/")';
+
+/**
+ * The `?name` binding shared by every lookup form.
+ *
+ * Requiring the `by` triple made every entity that carries no name unaddressable
+ * by any means at all: 22 of the 156 live code standards have a `cs:name`, and
+ * the code-standards ontology says so deliberately — `cs:name` is "an optional
+ * human-readable display title" that "never participates in identity". Their
+ * displayed name is synthesized from the IRI by the list story, and shell
+ * completion offers their IRIs.
+ *
+ * So wherever a class constraint can vouch for the entity, the `by` triple is
+ * OPTIONAL and the name falls back to {@link DERIVED_NAME}. It stays REQUIRED
+ * for a lookup that declares no `type`/`types` — there it is the one thing
+ * standing between a typo'd IRI and an empty entity, and there is no class to
+ * bound a derived-name scan with either.
+ *
+ * The relaxation used to apply to the IRI-addressed form ALONE, which is what
+ * left the two-step grammar broken in the middle: `standard list` published
+ * `react/component/tsdoc` and `standard lookup react/component/tsdoc` answered
+ * ENTITY_NOT_FOUND with empty suggestions, because the only addressable
+ * population was the ~13% carrying an asserted name. Applied here, one binding
+ * serves the name resolve, the IRI resolve, the miss-suggestion pool, glob
+ * expansion and `sample`'s draw pool alike.
+ */
+function nameBinding(lookup: PackLookup): string {
+  const constrained = Boolean(lookup.type ?? lookup.types?.length);
+  if (!constrained) return `  ?uri ${formatTerm(lookup.by)} ?name .`;
+  return [
+    `  OPTIONAL { ?uri ${formatTerm(lookup.by)} ?byName . }`,
+    `  BIND(COALESCE(?byName, ${DERIVED_NAME}) AS ?name)`,
+  ].join("\n");
 }
 
 /**
@@ -75,11 +132,12 @@ export function buildLookupQuery(
   name: string,
   level?: string,
 ): string {
-  const { header, body } = lookupProjection(lookup, level);
+  const { header, constraint, optionals } = lookupProjection(lookup, level);
   return [
     header,
-    `  ?uri ${formatTerm(lookup.by)} ?name .`,
-    body,
+    constraint,
+    nameBinding(lookup),
+    optionals,
     `  FILTER (LCASE(STR(?name)) = LCASE("${escapeSparqlString(name)}"))`,
     "}",
     "ORDER BY STR(?uri)",
@@ -87,25 +145,6 @@ export function buildLookupQuery(
   ]
     .filter((line) => line !== "")
     .join("\n");
-}
-
-/**
- * The `?name` clause for an IRI-addressed form.
- *
- * An IRI names the entity by itself, so the `by` value is a LABEL to project,
- * not the thing that identifies it — and a class constraint is already a
- * sufficient existence check. Requiring the `by` triple here made every entity
- * that carries no name unaddressable by any means at all: 131 of the 144 live
- * code standards have no `cs:name` (their displayed name is synthesized from the
- * IRI by the list story), and shell completion offers their IRIs. So the triple
- * is OPTIONAL wherever a class constraint can vouch for the entity, and
- * REQUIRED only for a lookup that declares no `type`/`types` — where it is the
- * one thing standing between a typo'd IRI and an empty entity.
- */
-function iriNameClause(lookup: PackLookup): string {
-  const named = `?uri ${formatTerm(lookup.by)} ?name .`;
-  const constrained = Boolean(lookup.type ?? lookup.types?.length);
-  return constrained ? `  OPTIONAL { ${named} }` : `  ${named}`;
 }
 
 /**
@@ -126,12 +165,13 @@ export function buildLookupByIriQuery(
   iri: string,
   level?: string,
 ): string {
-  const { header, body } = lookupProjection(lookup, level);
+  const { header, constraint, optionals } = lookupProjection(lookup, level);
   return [
     header,
     `  BIND(<${iri}> AS ?uri)`,
-    iriNameClause(lookup),
-    body,
+    constraint,
+    nameBinding(lookup),
+    optionals,
     "}",
     "LIMIT 1",
   ]
@@ -151,8 +191,8 @@ export function buildNameResolveQuery(
 ): string {
   return [
     "SELECT ?uri ?name WHERE {",
-    `  ?uri ${formatTerm(lookup.by)} ?name .`,
     buildTypeConstraint(lookup).trimEnd(),
+    nameBinding(lookup),
     `  FILTER (LCASE(STR(?name)) = LCASE("${escapeSparqlString(name)}"))`,
     "}",
     "ORDER BY STR(?uri)",
@@ -175,8 +215,8 @@ export function buildIriResolveQuery(lookup: PackLookup, iri: string): string {
   return [
     "SELECT ?uri ?name WHERE {",
     `  BIND(<${iri}> AS ?uri)`,
-    iriNameClause(lookup),
     buildTypeConstraint(lookup).trimEnd(),
+    nameBinding(lookup),
     "}",
     "LIMIT 1",
   ]
@@ -239,8 +279,12 @@ export function buildLookupNamesQuery(lookup: PackLookup): string {
     // `block lookup 'Butt*'` listed one Button twice while the other Button
     // never appeared at all.
     "SELECT DISTINCT ?name WHERE {",
-    `  ?uri ${formatTerm(lookup.by)} ?name .`,
     buildTypeConstraint(lookup).trimEnd(),
+    // Same {@link nameBinding} the resolves use, so the addressable population
+    // and the resolvable population are the same population. When they were
+    // not, a name a miss-suggestion offered could itself miss, and a glob
+    // expanded over a pool the resolve could not answer from.
+    nameBinding(lookup),
     "}",
   ]
     .filter((line) => line !== "")
