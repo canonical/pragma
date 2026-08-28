@@ -9,4 +9,4 @@ ds:implementation.library.react-ds-global a ds:ImplementationLibrary;
     ds:link "https://github.com/canonical/pragma/tree/main/packages/react/ds-global";
     ds:documentation "https://pragma.canonical.com/react";
     ds:libraryTier ds:global;
-    ds:version "0.34.0".
+    ds:version "0.35.0".

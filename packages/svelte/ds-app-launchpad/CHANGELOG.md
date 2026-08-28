@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
+
+
+### Features
+
+* **SideNavigation:** migrate to design tokens ([#949](https://github.com/canonical/pragma/issues/949)) ([b29eda9](https://github.com/canonical/pragma/commit/b29eda90af9c58c70bf87d9e934fe26bd2e946b8))
+
+
+
+
+
 # [0.34.0](https://github.com/canonical/pragma/compare/v0.33.0...v0.34.0) (2026-08-21)
 
 

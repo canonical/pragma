@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
+
+
+### Bug Fixes
+
+* **deps:** batch package dependency updates ([#963](https://github.com/canonical/pragma/issues/963)) ([923f482](https://github.com/canonical/pragma/commit/923f4825325ecd1afc93ec9bbeca7437a4a4569f)), closes [#958](https://github.com/canonical/pragma/issues/958) [#935](https://github.com/canonical/pragma/issues/935) [#919](https://github.com/canonical/pragma/issues/919) [#918](https://github.com/canonical/pragma/issues/918) [#894](https://github.com/canonical/pragma/issues/894)
+* **harnesses:** install OpenCode in the global band, where its config lives ([#1031](https://github.com/canonical/pragma/issues/1031)) ([4f172e9](https://github.com/canonical/pragma/commit/4f172e98b177e6a0458d5d8645bf8026517dfb57))
+* **harnesses:** undo restores the prior state instead of leaving a husk ([#1032](https://github.com/canonical/pragma/issues/1032)) ([016cfe1](https://github.com/canonical/pragma/commit/016cfe1829f701d43ec2abeaf198af7a4bc46276))
+
+
+
+
+
 # [0.34.0](https://github.com/canonical/pragma/compare/v0.33.0...v0.34.0) (2026-08-21)
 
 **Note:** Version bump only for package @canonical/harnesses

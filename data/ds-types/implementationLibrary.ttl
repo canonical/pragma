@@ -10,4 +10,4 @@ ds:implementation.library.ds-types a ds:ImplementationLibrary;
     ds:summary "Types and related type utilities for Pragma.";
     ds:documentation "https://pragma.canonical.com/typescript";
     ds:libraryTier ds:global;
-    ds:version "0.34.0".
+    ds:version "0.35.0".

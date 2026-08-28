@@ -10,4 +10,4 @@ ds:implementation.library.svelte-ds-global a ds:ImplementationLibrary;
     ds:summary "Global components for the Pragma design system.";
     ds:documentation "https://pragma.canonical.com/svelte";
     ds:libraryTier ds:global;
-    ds:version "0.34.0".
+    ds:version "0.35.0".

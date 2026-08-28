@@ -3,6 +3,125 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
+
+
+### Bug Fixes
+
+* **deps:** batch package dependency updates ([#963](https://github.com/canonical/pragma/issues/963)) ([923f482](https://github.com/canonical/pragma/commit/923f4825325ecd1afc93ec9bbeca7437a4a4569f)), closes [#958](https://github.com/canonical/pragma/issues/958) [#935](https://github.com/canonical/pragma/issues/935) [#919](https://github.com/canonical/pragma/issues/919) [#918](https://github.com/canonical/pragma/issues/918) [#894](https://github.com/canonical/pragma/issues/894)
+* **pragma-cli:** render one plan, on both surfaces ([#1020](https://github.com/canonical/pragma/issues/1020)) ([f4b4f90](https://github.com/canonical/pragma/commit/f4b4f90db5766d75bcd8f3afbedcdcb647bb7f34))
+* **summon-core:** drop the dead broken builtins and the phantom discovery default ([#985](https://github.com/canonical/pragma/issues/985)) ([a4e8d0c](https://github.com/canonical/pragma/commit/a4e8d0c895e44531b8efcb1549fb38947c1737f9))
+
+
+* feat(pragma)!: mount summon's generators instead of mirroring them (#1005) ([299e206](https://github.com/canonical/pragma/commit/299e206a4dd76b62fc48a6d436d33d06652e6fdf)), closes [#1005](https://github.com/canonical/pragma/issues/1005)
+
+
+### Features
+
+* **summon:** preview the undo plan and confirm before reversing ([#974](https://github.com/canonical/pragma/issues/974)) ([3c8d8d6](https://github.com/canonical/pragma/commit/3c8d8d6cc6c4aafacd1fe81c60183b497d479763)), closes [#988](https://github.com/canonical/pragma/issues/988)
+
+
+### BREAKING CHANGES
+
+* summon-core no longer exposes an embedded template store —
+callers pass a real path to `loadTemplate`. `GeneratorCliHost`,
+`registerGeneratorCommands` on the main projection subpath, the
+`writeUsageError` hook and the message-only usage-error exports are gone.
+`summon application react` no longer accepts `--no-ssr`/`--no-router`.
+
+* feat(pragma)!: mount summon's generators instead of mirroring them
+
+pragma's `create` verb hand-maintained a copy of summon's generator surface —
+a flag list in `constants.ts`, an adapter that mapped it back, and a PROTECTED
+test asserting the copy still matched. Every generator change had to be made
+twice, and that test was the only thing between a drifted mirror and a
+silently wrong CLI.
+
+`mount.ts` replaces all of it, adapting the projection summon-core now exposes
+onto pragma's kernel: synthesising VerbSpecs, wiring dispatch and completion,
+enforcing the path jail, and emitting the generated reference. There is one
+description of a generator's surface and both binaries read it. `--intl`
+arriving on application/react needed no edit here at all; under the mirror it
+would have needed two.
+
+Kernel changes that made the mount possible: `kernel/spec` gains the types and
+emitters for a synthesised verb, `dispatch` and `completion/model` handle a
+verb tree resolved at runtime, and `error/types`/`renderError` carry the
+generator error codes so an invalid answer exits 2 rather than surfacing as an
+internal error.
+
+`create` help now renders in pragma's house style like every other noun —
+previously it emitted no colour at all and bypassed the style seam, so
+`NO_COLOR` and theming never reached it. Because presentation is now
+deliberately host-owned, the cross-CLI contract's help cells assert structural
+parity (same groups, rows, order, defaults) with a non-empty guard, while
+every other cell stays byte-for-byte.
+
+Also here: the perf gate's `globalSetup` builds `dist` once behind a
+cross-process lock instead of once per worker, `scripts/codegen.ts` generates
+the create surface the covenant checks against, and the retired-flag migration
+handler no longer matches commands that never carried the flag.
+* `--ssr` and `--router` are gone from `pragma create
+application` — the generator no longer declares them. The
+`@canonical/summon-component/embedded` subpath export is removed along with
+its last consumer.
+
+* fix(pragma-cli,summon): make build-lock waiters re-acquire before re-statting freshness
+
+The waiter arm of buildUnderLock (pragma-cli src/testing/perf/
+globalSetup.ts:187, summon twin src/testing/globalSetup.ts:142) paired a
+lock-free existsSync with an isFresh() stat — two unsynchronised
+observations. After existsSync saw no lock, a new holder could acquire it
+and begin an in-place rebuild; the waiter then read mid-flight mtimes as
+fresh and consumed the torn artifact the lock exists to prevent. The
+waiter now always loops back to acquire the lock and re-stats only under
+it, in both TWIN copies, keeping their shared docblock in step.
+
+The contention test's driver isFresh is now also an ownership sentinel:
+it drops a violation file whenever it runs while the lockfile is absent
+or carries another pid, so any freshness observation outside the
+waiter's own lock goes red deterministically (verified red against the
+removed fast path).
+
+* fix(pragma-cli): stop offering mutation flags on mounted namespace completions
+
+toMountedEntry (src/kernel/completion/model.ts:250) stamped the owning
+verb's mutates onto every node of a mounted subtree, so the completion
+walk offered --dry-run/--undo/--yes at a namespace position — but
+registerGeneratorCommands registers the host mutation trio on runnable
+leaves only, so an accepted suggestion like `create component --dry-run
+react` exits 2 as an unknown option (verified live). A node with
+children is now non-mutating for completion; the verb's mutability
+descends to the leaves. The literal namespace-tier pin and the
+emitSurface agreement assertion are updated to the registered grammar.
+
+* fix(pragma-cli): complete registered positional-prompt flags on create leaves
+
+leafChild (src/capabilities/create/mount.ts:466) filtered positional
+prompts out of a leaf's completion flag list, but addPromptOptions
+(summon-core registerGeneratorCommands.ts:94) registers EVERY prompt as
+an option with no positional filter — `--component-path <value>` and
+`--app-path <value>` are real registered flags (they appear in the
+leaf's own --help) that completion silently withheld. Every prompt now
+contributes its flag; the positional argument stays an additional
+spelling. The literal leaf-tier pins gain the positional-prompt flags.
+
+* fix(pragma-cli): stop retired-flag detection reading past the option terminator
+
+handleProgramError's retired-grammar scan (src/bin.ts:314) matched
+--framework anywhere in stripped argv, so a parse failure on `create
+component react --bogus -- --framework` — where --framework is an
+operand — emitted the R1 migration message instead of the real
+`unknown option '--bogus'` (verified live). The scan now reuses
+globalFlags' option-terminator concept via the newly exported
+selectScanSpan (src/kernel/project/cli/globalFlags.ts), restricting
+detection to the pre-`--` span; a subprocess regression test pins the
+honest error.
+
+
+
+
+
 # Unreleased
 
 ### BREAKING CHANGES
