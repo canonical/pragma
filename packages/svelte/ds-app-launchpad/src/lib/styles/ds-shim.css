@@ -2,6 +2,7 @@
   --ds-transition-duration-fast: 165ms;
   --ds-transition-duration-snap: 100ms;
   --ds-transition-duration-brisk: 333ms;
+  --ds-transition-duration-slow: 500ms;
   --ds-transition-timing-ease-in: cubic-bezier(0.55, 0.055, 0.675, 0.19);
   --ds-transition-timing-ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
   --ds-color-foreground-tooltip: light-dark(
@@ -97,5 +98,6 @@
     --ds-transition-duration-fast: 0ms;
     --ds-transition-duration-snap: 0ms;
     --ds-transition-duration-brisk: 0ms;
+    --ds-transition-duration-slow: 0ms;
   }
 }
