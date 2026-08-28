@@ -225,10 +225,7 @@ async function runSetup(
   // plan. A run whose every DETECTION threw is not converged in this sense —
   // its rows are skips that report `failed` — so it falls through to the normal
   // path, which is the one that raises.
-  if (
-    !previewing &&
-    run.plan.rows.every((row) => !isActionable(row.action))
-  ) {
+  if (!previewing && run.plan.rows.every((row) => !isActionable(row.action))) {
     const converged = run.applied({});
     if (!planExitFailed(converged)) return pure<SetupPlan>(converged);
   }

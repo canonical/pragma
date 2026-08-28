@@ -287,14 +287,26 @@ export function planBandSkillLinks(
       const state = linkState(linkPath);
       if (state.kind === "other") continue; // A hand-placed entry — never ours.
       if (state.kind === "absent") {
-        out.push({ target, linkPath, action: "created", folderName, dirName: name });
+        out.push({
+          target,
+          linkPath,
+          action: "created",
+          folderName,
+          dirName: name,
+        });
         continue;
       }
       if (resolve(dir, state.target) === target) continue; // Already correct.
       // A symlink pointing outside the installed root is the user's own link
       // into their own checkout. Unplanned does not make it ours to replace.
       if (!withinRoot(dest, linkPath, state.target)) continue;
-      out.push({ target, linkPath, action: "replaced", folderName, dirName: name });
+      out.push({
+        target,
+        linkPath,
+        action: "replaced",
+        folderName,
+        dirName: name,
+      });
     }
     for (const folderName of retired) {
       const linkPath = resolve(dir, folderName);

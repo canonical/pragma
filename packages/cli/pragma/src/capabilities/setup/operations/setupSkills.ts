@@ -455,8 +455,7 @@ export async function detectSkills(
  */
 export const staleSkillLinks = (
   d: SkillsDetection,
-): readonly SymlinkAction[] =>
-  d.rootExists ? d.orphans : [];
+): readonly SymlinkAction[] => (d.rootExists ? d.orphans : []);
 
 /**
  * Compose the (re)link effects from a detection (builds ABSOLUTE link paths

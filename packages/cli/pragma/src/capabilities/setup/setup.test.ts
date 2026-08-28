@@ -28,12 +28,7 @@ import {
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { execute } from "@canonical/summon-core";
-import {
-  collectUndos,
-  dryRun,
-  type Effect,
-  type Task,
-} from "@canonical/task";
+import { collectUndos, dryRun, type Effect, type Task } from "@canonical/task";
 import { runTask, runUndo } from "@canonical/task/node";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BIN_NAME } from "../../constants.js";
@@ -1205,7 +1200,9 @@ describe("setup skills — the forward pass is a RECONCILE", () => {
     symlinkSync(dropped, join(linkDir, "dropped"));
     rmSync(dropped, { recursive: true, force: true });
 
-    await runTask(composeSkills(await detectSkills(bootRuntime(FLAGS, cwd), "project")));
+    await runTask(
+      composeSkills(await detectSkills(bootRuntime(FLAGS, cwd), "project")),
+    );
     const second = await detectSkills(bootRuntime(FLAGS, cwd), "project");
     expect(dryRun(composeSkills(second)).effects).toEqual([]);
   });
@@ -1988,7 +1985,13 @@ describe("setup — the detection summary", () => {
   it("says nothing on a --dry-run — the plan table IS that run's output", async () => {
     const cwd = tmp("pragma-setup-proj-");
     mkdirSync(join(cwd, ".cursor"), { recursive: true });
-    const chunks = await onStderr(setupSelfVerb, { local: true }, FLAGS, cwd, DRY);
+    const chunks = await onStderr(
+      setupSelfVerb,
+      { local: true },
+      FLAGS,
+      cwd,
+      DRY,
+    );
     expect(summaryOf(chunks)).toBe("");
   });
 

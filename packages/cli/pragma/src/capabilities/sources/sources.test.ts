@@ -735,13 +735,6 @@ describe("sources update — installs package skills (U10)", () => {
     else process.env.HOME = savedHome;
   });
 
-  /** The cross-client harness skills dir, pre-created so it is convergeable. */
-  const crossClientDir = (): string => {
-    const dir = join(home, ".agents", "skills");
-    mkdirSync(dir, { recursive: true });
-    return dir;
-  };
-
   it("symlinks a package skill into the installed root so `skill list` finds it", async () => {
     const pkg = skillPackage("foo");
     const cwd = tmp("pragma-proj-");
@@ -950,7 +943,10 @@ describe("sources update — installs package skills (U10)", () => {
     );
     const pkg = filePackage();
     mkdirSync(join(pkg, "skills"), { recursive: true });
-    symlinkSync(join(real, "linked-skill"), join(pkg, "skills", "linked-skill"));
+    symlinkSync(
+      join(real, "linked-skill"),
+      join(pkg, "skills", "linked-skill"),
+    );
 
     const cwd = tmp("pragma-proj-");
     await runTask(
