@@ -43,6 +43,7 @@ import type {
 } from "../../kernel/spec/index.js";
 import { resolveSetupMode, setupModeInput } from "./mode.js";
 import {
+  isActionable,
   planExitFailed,
   planTally,
   type SetupPlan,
@@ -202,6 +203,31 @@ async function runSetup(
   // — that is what makes the preview honest — so anything it says out loud has
   // to know which of the two it is.
   const previewing = interactionMode === "batch-dry-run";
+
+  // A CONVERGED machine has no question to ask. Every row is `none` or `skip`,
+  // so nothing composes an effect — and the wizard's confirm gate then mounted
+  // Ink to render summon-core's "No operations planned." above a "Proceed?"
+  // over an empty tally. For a sub-verb, whose prompt list is empty, that
+  // contentless gate was the FIRST AND ONLY thing the user ever saw. The
+  // explanation existed the whole time (each row's `none` detail, one child row
+  // per file/editor marked `unchanged`) and was dropped at the render seam.
+  //
+  // So: report the plan instead of asking a question with no content. There is
+  // no `preview: true` here — the run really did complete. `applied({})` marks
+  // each `none` row `{status:"noop", note:"unchanged"}`, `wasApplied` is then
+  // true, and `setupFormatters.plain` renders the recap. That also retires a
+  // second defect: a non-interactive converged run used to print the misleading
+  // "Nothing was applied. Run again with --yes to apply." over an all-`none`
+  // plan. A run whose every DETECTION threw is not converged in this sense —
+  // its rows are skips that report `failed` — so it falls through to the normal
+  // path, which is the one that raises.
+  if (
+    !previewing &&
+    run.plan.rows.every((row) => !isActionable(row.action))
+  ) {
+    const converged = run.applied({});
+    if (!planExitFailed(converged)) return pure<SetupPlan>(converged);
+  }
 
   // Adaptation (b): a non-interactive run without `--yes` previews rather than
   // mutating. It is the same plan the dry-run prints, plus one hint line, at

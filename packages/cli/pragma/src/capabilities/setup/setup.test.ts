@@ -54,6 +54,7 @@ import {
   detectSkills,
   ownedSkillLinks,
 } from "./operations/setupSkills.js";
+import { DRY_RUN_HINT, PREVIEW_HINT } from "./setup.render.js";
 import { setupModule } from "./setup.verb.js";
 import { completionScriptPath, detectShell, type ShellId } from "./shell.js";
 
@@ -1789,6 +1790,118 @@ describe("setup (run-all wizard)", () => {
     expect(outcome.stdout).toContain("skills");
     expect(outcome.stdout).toContain("no skills installed");
     expect(outcome.stdout).toContain("lsp");
+  });
+});
+
+describe("setup — a converged machine is reported, never asked", () => {
+  // A converged run composes ZERO effects, and the confirm gate then mounted
+  // Ink to render summon-core's "No operations planned." above "Proceed?".
+  // On a sub-verb, whose prompt list is empty, that contentless gate was the
+  // first and only thing the user ever saw.
+  let prevPath: string | undefined;
+  beforeEach(() => {
+    prevPath = process.env.PATH;
+    process.env.PATH = stubPath(); // no editor CLI ⇒ lsp skips
+  });
+  afterEach(() => {
+    process.env.PATH = prevPath;
+  });
+
+  const NO = { dryRun: false, undo: false, yes: false };
+
+  it("non-interactive + no --yes: the recap, NOT the `run again with --yes` hint", async () => {
+    // The compounding defect: a converged plan printed "Nothing was applied.
+    // Run again with --yes to apply." over a machine where there was nothing
+    // to apply in the first place.
+    const outcome = await executeVerb(
+      verbOf("lsp"),
+      {},
+      NO,
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+    );
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).not.toContain("Run again with --yes");
+    expect(outcome.stdout).not.toContain("Setup plan");
+    // It says what was detected and what happened to it — doctor's house shape.
+    expect(outcome.stdout).toContain("skipped");
+    expect(outcome.stdout).toContain("no VS Code-family editor CLI on PATH");
+  });
+
+  it("a converged TTY run without --yes mounts NO Ink and prints the recap", async () => {
+    // The acceptance case. Faking a terminal on both streams is what makes
+    // `cliIsTTY()` true, which is the ONLY gate between this run and the wizard.
+    const prevIn = process.stdin.isTTY;
+    const prevErr = process.stderr.isTTY;
+    (process.stdin as { isTTY?: boolean }).isTTY = true;
+    (process.stderr as { isTTY?: boolean }).isTTY = true;
+    let outcome: Awaited<ReturnType<typeof executeVerb>>;
+    try {
+      outcome = await executeVerb(
+        verbOf("lsp"),
+        {},
+        NO,
+        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      );
+    } finally {
+      (process.stdin as { isTTY?: boolean }).isTTY = prevIn;
+      (process.stderr as { isTTY?: boolean }).isTTY = prevErr;
+    }
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).not.toContain("Proceed");
+    expect(outcome.stdout).toContain("skipped");
+    // The same lazy-React probe the PROTECTED guard below uses: had the
+    // contentless gate mounted, Ink would be in the module cache.
+    const isReactPkg = (k: string) =>
+      /[\\/](react|react-dom|ink)@\d/.test(k) ||
+      /[\\/]node_modules[\\/](react|react-dom|ink)[\\/]/.test(k);
+    expect(Object.keys(require.cache ?? {}).filter(isReactPkg)).toEqual([]);
+  });
+
+  it("--dry-run is untouched — it still ends with the dry-run hint", async () => {
+    // The guard sits AFTER the `previewing` computation precisely so a preview
+    // keeps saying it was a preview.
+    const outcome = await executeVerb(
+      verbOf("lsp"),
+      {},
+      DRY,
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+    );
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).toContain("Setup plan");
+    expect(outcome.stdout).toContain(DRY_RUN_HINT);
+  });
+
+  it("a PARTIALLY converged plan is NOT short-circuited", async () => {
+    // One actionable row is enough: the run goes through `execute` as before,
+    // so the wizard is still reachable on a machine with something to do.
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    const outcome = await executeVerb(
+      verbOf("mcp"),
+      { local: true },
+      NO,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(outcome.exitCode).toBe(0);
+    // Non-interactive without --yes ⇒ still the preview, hint and all.
+    expect(outcome.stdout).toContain("Setup plan");
+    expect(outcome.stdout).toContain(PREVIEW_HINT);
+  });
+
+  it("the run-all on a fully converged machine recaps every row at exit 0", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    // First pass configures whatever this machine can hold...
+    await executeVerb(setupSelfVerb, {}, YES, bootRuntime(FLAGS, cwd));
+    // ...the second has nothing left to do.
+    const outcome = await executeVerb(
+      setupSelfVerb,
+      {},
+      NO,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).not.toContain("Run again with --yes");
+    expect(outcome.stdout).toContain("targets configured");
   });
 });
 
