@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  describedWidthBudget,
+  formatEffectDuration,
   MAX_PROGRESS_LINE,
   measureDisplayWidth,
   TRUNCATION_MARKER,
@@ -83,5 +85,42 @@ describe("measureDisplayWidth", () => {
     // One code point (two UTF-16 units) → two columns, not `.length` (2) × 1.
     expect("🎉".length).toBe(2);
     expect(measureDisplayWidth("🎉")).toBe(2);
+  });
+});
+
+describe("formatEffectDuration", () => {
+  it("spells a duration exactly as the summon binary's timed view does", () => {
+    expect(formatEffectDuration(12)).toBe("(12ms)");
+  });
+
+  it("rounds to whole milliseconds", () => {
+    // The interpreter measures with `performance.now()`, so the value arrives
+    // fractional; a progress line is not a benchmark.
+    expect(formatEffectDuration(3.7)).toBe("(4ms)");
+    expect(formatEffectDuration(0.2)).toBe("(0ms)");
+  });
+});
+
+describe("describedWidthBudget", () => {
+  it("reserves the suffix AND the space before it out of the cap", () => {
+    const suffix = formatEffectDuration(12); // "(12ms)" — 6 columns
+    expect(describedWidthBudget(suffix)).toBe(MAX_PROGRESS_LINE - 7);
+  });
+
+  it("keeps description + space + suffix within the one-row cap", () => {
+    // The case the budget exists for: a description that already fills the cap.
+    const suffix = formatEffectDuration(1234);
+    const described = truncateMiddle(
+      `Write file: ${"deep/".repeat(40)}Component.tsx (999 bytes)`,
+      describedWidthBudget(suffix),
+    );
+    expect(measureDisplayWidth(`${described} ${suffix}`)).toBeLessThanOrEqual(
+      MAX_PROGRESS_LINE,
+    );
+  });
+
+  it("honours a custom cap and never goes negative", () => {
+    expect(describedWidthBudget("(12ms)", 20)).toBe(13);
+    expect(describedWidthBudget("(123456ms)", 4)).toBe(0);
   });
 });

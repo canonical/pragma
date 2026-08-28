@@ -8,7 +8,11 @@
 import { describeEffect, type Effect } from "@canonical/task";
 import { Box, Static, Text, useInput } from "ink";
 import { useEffect, useState } from "react";
-import { truncateMiddle } from "./progressWindow.js";
+import {
+  describedWidthBudget,
+  formatEffectDuration,
+  truncateMiddle,
+} from "./progressWindow.js";
 import { AnswersTable, ProgressHeader, QuestionView } from "./prompts.js";
 import { Spinner } from "./Spinner.js";
 import type { SessionController, WizardState } from "./session.js";
@@ -82,13 +86,19 @@ const EffectsSummary = ({ effects }: { effects: readonly Effect[] }) => {
 };
 
 /**
- * Live progress: the file effects completed so far.
+ * Live progress: the file effects completed so far, each with what it cost.
  *
  * The completed lines render under Ink's `<Static>` (C7): each is printed ONCE,
  * to the scrollback above the live region, instead of the whole history being
  * re-rendered on every new effect — the flicker/scroll a big scaffold otherwise
  * caused. Each line is middle-truncated so a long path stays on ONE row. Only
  * the trailing spinner remains in the live (re-rendered) frame.
+ *
+ * The trailing `(12ms)` is the duration the seam already delivers per effect
+ * (`SessionController.reportEffectComplete`) — same spelling as the summon
+ * binary's timed view. The description is truncated against a budget that has
+ * the suffix reserved out of it ({@link describedWidthBudget}), so timing a
+ * line can never push it onto a second row.
  */
 const Progress = ({ state }: { state: WizardState }) => {
   const shown = state.progress.filter(
@@ -105,13 +115,20 @@ const Progress = ({ state }: { state: WizardState }) => {
   return (
     <Box flexDirection="column">
       <Static items={shown}>
-        {(t, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: append-only progress; a path may repeat
-          <Text key={`${t.effect._tag}-${i}`}>
-            <Text color="green">✓</Text>{" "}
-            {truncateMiddle(describeEffect(t.effect))}
-          </Text>
-        )}
+        {(t, i) => {
+          const duration = formatEffectDuration(t.duration);
+          return (
+            // biome-ignore lint/suspicious/noArrayIndexKey: append-only progress; a path may repeat
+            <Text key={`${t.effect._tag}-${i}`}>
+              <Text color="green">✓</Text>{" "}
+              {truncateMiddle(
+                describeEffect(t.effect),
+                describedWidthBudget(duration),
+              )}{" "}
+              <Text dimColor>{duration}</Text>
+            </Text>
+          );
+        }}
       </Static>
       {state.phase === "executing" && (
         <Box>

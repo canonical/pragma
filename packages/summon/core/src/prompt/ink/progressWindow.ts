@@ -24,6 +24,51 @@ export const MAX_PROGRESS_LINE = 72;
 export const TRUNCATION_MARKER = "…";
 
 /**
+ * The single space that separates a completed effect's description from its
+ * trailing duration suffix. Named because {@link describedWidthBudget} must
+ * reserve it, and a line that forgot it would be one column over the cap.
+ */
+const SUFFIX_GAP = 1;
+
+/**
+ * Format a completed effect's duration as the suffix its progress line ends
+ * with — `(12ms)`, whole milliseconds.
+ *
+ * The spelling is deliberately IDENTICAL to the summon binary's own timed
+ * progress view (`ExecutionProgress.tsx`): the two binaries render the same
+ * run, and a reader who has seen one must not have to learn a second dialect
+ * for the same fact.
+ *
+ * @param durationMs - The effect's measured duration, in milliseconds.
+ * @returns The parenthesised suffix, e.g. `(12ms)`.
+ */
+export function formatEffectDuration(durationMs: number): string {
+  return `(${durationMs.toFixed(0)}ms)`;
+}
+
+/**
+ * The display columns left for the DESCRIBED half of a progress line once its
+ * duration suffix — and the space before it — are reserved out of `max`.
+ *
+ * The one-row guarantee is about the WHOLE line, so the description alone can
+ * no longer spend the entire cap: appending `(1234ms)` to a line already at
+ * {@link MAX_PROGRESS_LINE} would wrap, which is exactly the jitter the
+ * truncation exists to prevent. Budgeting here (rather than truncating the
+ * joined line) keeps the timing legible — it is the part a middle-truncation
+ * would never protect, since it sits at neither end of the description.
+ *
+ * @param suffix - The rendered duration suffix, from {@link formatEffectDuration}.
+ * @param max - The whole-line width cap; defaults to {@link MAX_PROGRESS_LINE}.
+ * @returns The columns the description may occupy, never negative.
+ */
+export function describedWidthBudget(
+  suffix: string,
+  max: number = MAX_PROGRESS_LINE,
+): number {
+  return Math.max(0, max - measureDisplayWidth(suffix) - SUFFIX_GAP);
+}
+
+/**
  * East Asian Wide / Fullwidth / emoji code-point ranges, each an inclusive
  * `[low, high]` pair. A code point inside any range is rendered by terminals in
  * two columns rather than one. This is a compact approximation of a full

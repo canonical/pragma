@@ -26,6 +26,7 @@ import { describe, expect, it, vi } from "vitest";
 import { CONFIRM_ANSWER_KEY } from "../../execute/execute.js";
 import type GeneratorDefinition from "../../types/GeneratorDefinition.js";
 import type { PromptEffect } from "../types.js";
+import { MAX_PROGRESS_LINE, measureDisplayWidth } from "./progressWindow.js";
 import { SessionController } from "./session.js";
 import { Wizard } from "./Wizard.js";
 
@@ -414,6 +415,66 @@ describe("degenerate-choice prompt wiring (C4)", () => {
         expect(submitSpy).not.toHaveBeenCalled();
       } finally {
         submitSpy.mockRestore();
+        unmount();
+      }
+    },
+    TEST_TIMINGS.testBudgetMs,
+  );
+});
+
+describe("progress lines report what each effect cost", () => {
+  // Rendered from an ALREADY-complete controller: a single static frame, no
+  // input loop (the completed lines live under `<Static>`, which the test
+  // renderer captures in the frame alongside the live region).
+  it(
+    "prints the duration the seam delivered, in the timed view's spelling",
+    async () => {
+      const c = new SessionController(gen);
+      // The duration the interpreter measured for this one effect — fractional,
+      // as `performance.now()` deltas are, and rendered as whole milliseconds.
+      c.reportEffectComplete(writeFileEffect("src/a.ts", "x"), 4.6);
+      c.markComplete();
+      const { lastFrame, unmount } = render(<Wizard controller={c} />);
+      try {
+        await waitFor(() =>
+          (lastFrame() ?? "").includes("Generation complete"),
+        );
+        expect(lastFrame()).toMatch(/✓ Write file: src\/a\.ts .*\(5ms\)/);
+      } finally {
+        unmount();
+      }
+    },
+    TEST_TIMINGS.testBudgetMs,
+  );
+
+  it(
+    "keeps a long path on ONE row once the duration is appended",
+    async () => {
+      const c = new SessionController(gen);
+      // A path well past the cap, timed with a four-digit duration: the
+      // description is truncated against a budget that already reserves the
+      // suffix, so the whole line still fits a single row.
+      c.reportEffectComplete(
+        writeFileEffect(`${"deep/".repeat(40)}Component.tsx`, "x"),
+        1234,
+      );
+      c.markComplete();
+      const { lastFrame, unmount } = render(<Wizard controller={c} />);
+      try {
+        await waitFor(() =>
+          (lastFrame() ?? "").includes("Generation complete"),
+        );
+        const line = (lastFrame() ?? "")
+          .split("\n")
+          .find((l) => l.includes("Component.tsx"));
+        expect(line).toBeDefined();
+        expect(line).toContain("(1234ms)");
+        // The glyph and its space are the only columns beyond the described
+        // budget: description + " " + suffix is what the cap governs.
+        expect(measureDisplayWidth(line ?? "")).toBeLessThanOrEqual(
+          MAX_PROGRESS_LINE + 2,
+        );
+      } finally {
         unmount();
       }
     },

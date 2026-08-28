@@ -39,6 +39,13 @@ export type WizardPhase =
 export interface TimedEffect {
   readonly effect: Effect;
   readonly timestamp: number;
+  /**
+   * How long the effect itself took, in milliseconds, as measured by the
+   * interpreter and handed to the seam's `onEffectComplete`. KEPT rather than
+   * dropped: the live view renders it as `✓ <effect> (12ms)` — the spelling
+   * the summon binary's own progress view already uses.
+   */
+  readonly duration: number;
 }
 
 /** The immutable snapshot the React view renders. A new object per change. */
@@ -238,13 +245,17 @@ export class SessionController {
     // No-op: the live view is driven by reportEffectComplete.
   }
 
-  /** Record a completed effect for the live progress view. */
-  reportEffectComplete(effect: Effect, _duration: number): void {
+  /**
+   * Record a completed effect — and what it cost — for the live progress view.
+   * The seam delivers a per-effect `duration`; it is stored, not discarded, so
+   * the view can say how long each step took.
+   */
+  reportEffectComplete(effect: Effect, duration: number): void {
     const timestamp =
       this.executionStart > 0 ? performance.now() - this.executionStart : 0;
     this.set({
       phase: this.current.phase === "cancelled" ? "cancelled" : "executing",
-      progress: [...this.current.progress, { effect, timestamp }],
+      progress: [...this.current.progress, { effect, timestamp, duration }],
     });
   }
 
