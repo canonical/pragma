@@ -15,7 +15,7 @@ The package ships compiled JavaScript and runs on **Node.js 22.18+ or 23.6+** (a
 pragma doctor
 ```
 
-`pragma doctor` prints pass / fail / skip for nine health checks, each failure with the command that fixes it. Nothing needs to pass before your first read — it is there so you know the state of things.
+`pragma doctor` prints pass / fail / skip for every health check, each failure with the command that fixes it. Nothing needs to pass before your first read — it is there so you know the state of things.
 
 ## First read
 

@@ -194,7 +194,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### doctor
 
-Reports the environment checks and then one row per setup target in each band, as pass, fail, available (an opt-in integration not yet set up), or skip, with inline remedies. Every banded row is named after the setup target that repairs it. Storeless by default; the store check boots lazily and never fails the run.
+Reports the environment checks and then one row per setup target in each band, as pass, fail, available (an opt-in integration not yet set up), or skip, with inline remedies. Every banded row is named after the setup target that repairs it, except the `harnesses` row: a per-band inventory of the AI harnesses detected on this machine and whether this CLI's MCP server is registered in each — the detected ones only, or every known harness under the verbose global flag. Storeless by default; the store check boots lazily and never fails the run.
 
 Read-only.
 

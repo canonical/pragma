@@ -229,9 +229,31 @@ const harnesses: readonly HarnessDefinition[] = [
     name: "VS Code",
     version: "*",
     scope: "project",
+    // The first two signals are PROJECT-relative (`resolveFsPath` resolves an
+    // unprefixed path against `ctx.projectRoot`), so on their own this row can
+    // only see "this repo carries a committed `.vscode/`" — a developer with
+    // VS Code installed and `.vscode/` gitignored, the common case, was
+    // invisible. The three that follow are the user-level and binary probes
+    // every sibling GUI-editor row already has:
+    // - `$XDG_CONFIG_HOME/Code/User` is VS Code's user config dir on Linux. It
+    //   is spelled in XDG form deliberately (see `resolveFsPath`'s docblock): a
+    //   user who sets `$XDG_CONFIG_HOME` keeps nothing under `~/.config`, so a
+    //   `~/.config/Code/User` literal would report the editor absent.
+    // - `~/.vscode/extensions` is present on any install with ≥1 extension, and
+    //   is the same directory `checkExtension` already globs on behalf of Cline
+    //   and Roo Code.
+    // - `code` on PATH covers `/usr/bin/code` (deb), `/snap/bin/code` (the snap
+    //   is CLASSIC confinement, so its home and PATH are the real ones) and
+    //   `code.cmd` on win32 — `executableCandidates` owns those rules.
+    // Tiers fall out of `toSignalTier` correctly: the dirs score `high`, the
+    // process `medium` — right, since `code` on PATH means "installed", not
+    // "this project uses it".
     detect: [
       { type: "directory", path: ".vscode" },
       { type: "file", path: ".vscode/mcp.json" },
+      { type: "directory", path: "$XDG_CONFIG_HOME/Code/User" },
+      { type: "directory", path: "~/.vscode/extensions" },
+      { type: "process", name: "code" },
     ],
     configPath: (root) => `${root}/.vscode/mcp.json`,
     configFormat: "json",

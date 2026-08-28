@@ -5,9 +5,12 @@
  * Two kinds of finding live in one report and they are not the same kind. The
  * ENVIRONMENT checks — the Node version, this CLI's own version, pack refs, the
  * store — diagnose things `setup` cannot install; they carry no band and stay
- * their own section. The BANDED rows are exactly the setup targets, in both
- * bands, named with the target ids verbatim and repaired by the target's own
- * command. Adding a target adds its rows here for free.
+ * their own section. The BANDED rows are the setup targets, in both bands,
+ * named with the target ids verbatim and repaired by the target's own command
+ * — plus, per band, the `harnesses` inventory row: a listing of what this
+ * machine holds and where pragma stands in it, which is the thing the targets
+ * are measured against rather than a target itself. Adding a target adds its
+ * rows here for free.
  *
  * Checks are started eagerly (they run concurrently) and collected in
  * declaration order for a deterministic report. Each is guarded so a thrown

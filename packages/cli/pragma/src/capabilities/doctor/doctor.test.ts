@@ -120,10 +120,11 @@ const byName = (data: DoctorData, name: string) =>
 describe("doctor — shape & spread", () => {
   it("returns the environment checks plus one row per banded target", async () => {
     const data = await runChecks(bootRuntime(FLAGS, tmp("pragma-proj-")));
-    // Four unbanded environment checks, then the target table in both bands:
-    // all five targets are global, mcp and skills are also project.
-    expect(data.checks).toHaveLength(11);
-    expect(data.passed + data.failed + data.available + data.skipped).toBe(11);
+    // Four unbanded environment checks, then the target table in both bands
+    // (all five targets are global, mcp and skills are also project) = 11,
+    // plus the two `harnesses` inventory rows, one per band = 13.
+    expect(data.checks).toHaveLength(13);
+    expect(data.passed + data.failed + data.available + data.skipped).toBe(13);
     for (const check of data.checks) {
       expect(["pass", "fail", "available", "skip"]).toContain(check.status);
     }
@@ -138,7 +139,9 @@ describe("doctor — shape & spread", () => {
 
     // The banded rows carry the TARGET IDS verbatim — `mcp`, not "MCP
     // configured" — because the row name IS the fix command's argument. The
-    // environment checks stay unbanded.
+    // environment checks stay unbanded. `harnesses` is the ONE banded row that
+    // is not a target: an inventory of the machine, not something to set up, so
+    // it sits last in each band and derives no `fix:`.
     const banded = data.checks.filter((c) => c.band !== undefined);
     expect(banded.map((c) => `${c.band}:${c.name}`)).toEqual([
       "global:config",
@@ -148,6 +151,8 @@ describe("doctor — shape & spread", () => {
       "global:skills",
       "project:mcp",
       "project:skills",
+      "global:harnesses",
+      "project:harnesses",
     ]);
     // Every row that wants action names the exact command that repairs it,
     // band included — the bijection, derived rather than authored.
@@ -155,6 +160,13 @@ describe("doctor — shape & spread", () => {
       if (check.status === "fail" || check.status === "available") {
         expect(check.remedy).toBeDefined();
       }
+    }
+    // The inventory never inflates the failure or the action count: it is only
+    // ever `pass` (this band holds harnesses) or `skip` (it holds none), and it
+    // proposes nothing — the `mcp`/`skills` rows own every harness action.
+    for (const check of banded.filter((c) => c.name === "harnesses")) {
+      expect(["pass", "skip"]).toContain(check.status);
+      expect(check.remedy).toBeUndefined();
     }
     // No harnesses in an empty HOME/cwd, so both mcp rows skip; the project
     // band is opt-in, so its absence is never a fault.
@@ -200,7 +212,7 @@ describe("doctor — the pack-refs check", () => {
 describe("doctor — the store check", () => {
   it("a store that fails to boot is an attributable fail, not a crash", async () => {
     const data = await runChecks(throwingStoreRuntime(tmp("pragma-proj-")));
-    expect(data.checks).toHaveLength(11);
+    expect(data.checks).toHaveLength(13);
     const store = byName(data, "store");
     expect(store?.status).toBe("fail");
     expect(store?.remedy).toBeTruthy();
@@ -242,7 +254,7 @@ describe("doctor — dispatch & MCP", () => {
     const envelope = await mcp.callTool("doctor");
     await mcp.cleanup();
     expect(envelope.ok).toBe(true);
-    expect((envelope.data as DoctorData).checks).toHaveLength(11);
+    expect((envelope.data as DoctorData).checks).toHaveLength(13);
   });
 });
 
@@ -281,6 +293,103 @@ describe("doctor — the banded rows can see the GLOBAL band", () => {
     // ...and the project band stays an opt-in skip, never a fault.
     const project = rows.find((r) => r.name === "mcp" && r.band === "project");
     expect(project?.status).toBe("skip");
+  });
+});
+
+describe("doctor — the harness inventory", () => {
+  const VERBOSE: GlobalFlags = { ...FLAGS, verbose: true };
+  const inventory = (rows: Awaited<ReturnType<typeof bandedChecks>>) => ({
+    global: rows.find((r) => r.name === "harnesses" && r.band === "global"),
+    project: rows.find((r) => r.name === "harnesses" && r.band === "project"),
+  });
+
+  it("lists ONLY detected harnesses by default, by name and with their location", async () => {
+    const cwd = tmp("pragma-doctor-proj-");
+    mkdirSync(join(cwd, ".vscode"), { recursive: true }); // ⇒ VS Code detected
+
+    const rows = await bandedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    const { global, project } = inventory(rows);
+
+    // The project band holds the hit — by NAME, with the file it resolves to.
+    expect(project?.status).toBe("pass");
+    expect(project?.detail).toBe("1 detected · 0 registered");
+    expect(project?.items?.map((i) => i.label)).toEqual(["VS Code"]);
+    expect(project?.items?.[0]?.status).toBe("available");
+    expect(project?.items?.[0]?.detail).toContain("detected, not registered");
+    expect(project?.items?.[0]?.detail).toContain(".vscode/mcp.json");
+
+    // Nothing detected in the global band, and that is a skip — not a fault.
+    expect(global?.status).toBe("skip");
+    expect(global?.detail).toBe("no harnesses detected");
+    expect(global?.items).toBeUndefined();
+  });
+
+  it("--verbose lists every registry harness, undetected ones as a NON-failing skip", async () => {
+    const cwd = tmp("pragma-doctor-proj-");
+    mkdirSync(join(cwd, ".vscode"), { recursive: true });
+
+    const rows = await bandedChecks(bootRuntime(VERBOSE, cwd), "pragma");
+    const { global, project } = inventory(rows);
+
+    // Every harness the registry knows, in both bands.
+    expect(project?.items).toHaveLength(12);
+    expect(global?.items).toHaveLength(12);
+    expect(project?.detail).toBe("1 detected · 0 registered · 12 known");
+
+    // `types.ts` forbids inflating the failure count: a machine that simply
+    // does not have Cursor is not a broken machine.
+    for (const check of [global, project]) {
+      expect(["pass", "skip"]).toContain(check?.status);
+      for (const item of check?.items ?? []) {
+        expect(item.status).not.toBe("fail");
+        expect(["pass", "available", "skip"]).toContain(item.status);
+      }
+    }
+
+    const cursor = project?.items?.find((i) => i.label === "Cursor");
+    expect(cursor?.status).toBe("skip");
+    expect(cursor?.detail).toBe("not detected");
+  });
+
+  it("states 'no <band> band' for a harness that band cannot hold, rather than omitting it", async () => {
+    // `vscode` is `scope: "project"`, so it can NEVER carry a global entry. A
+    // verbose global listing that silently dropped it would read as a bug in
+    // the listing; the row says why instead. The mirror case is Windsurf, which
+    // is `scope: "global"` and so has no project band.
+    const rows = await bandedChecks(
+      bootRuntime(VERBOSE, tmp("pragma-doctor-proj-")),
+      "pragma",
+    );
+    const { global, project } = inventory(rows);
+
+    const vscodeGlobal = global?.items?.find((i) => i.label === "VS Code");
+    expect(vscodeGlobal?.detail).toBe("no Global band");
+    expect(vscodeGlobal?.status).toBe("skip");
+
+    const windsurfProject = project?.items?.find((i) => i.label === "Windsurf");
+    expect(windsurfProject?.detail).toBe("no Project band");
+    expect(windsurfProject?.status).toBe("skip");
+  });
+
+  it("reports a harness whose pragma entry is current as registered", async () => {
+    const cwd = tmp("pragma-doctor-proj-");
+    mkdirSync(join(cwd, ".vscode"), { recursive: true });
+    // Byte-for-byte what a project-band `setup mcp` writes for VS Code: its
+    // `servers` key, and the `cwd` a project registration pins.
+    writeFileSync(
+      join(cwd, ".vscode", "mcp.json"),
+      JSON.stringify({
+        servers: { pragma: { command: "pragma", args: ["mcp", "serve"], cwd } },
+      }),
+    );
+
+    const rows = await bandedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    const { project } = inventory(rows);
+    expect(project?.detail).toBe("1 detected · 1 registered");
+    const vscode = project?.items?.find((i) => i.label === "VS Code");
+    expect(vscode?.status).toBe("pass");
+    expect(vscode?.detail).toContain("registered");
+    expect(vscode?.detail).not.toContain("not registered");
   });
 });
 

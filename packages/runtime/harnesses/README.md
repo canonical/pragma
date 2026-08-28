@@ -37,13 +37,19 @@ Each harness defines detection signals:
 
 | Signal type | Confidence | Example |
 |-------------|------------|---------|
-| `directory` | high | `~/.claude` exists |
+| `directory` | high | `~/.vscode/extensions` exists |
 | `file` | high | `.mcp.json` exists |
 | `extension` | medium | VS Code extension installed |
-| `process` | medium | Running process name |
+| `process` | medium | `code` resolves on `PATH` |
 | `env` | low | Environment variable hint |
 
-Multiple harnesses can be detected simultaneously — a developer may use both Claude Code and Cursor.
+A `directory`/`file` path is resolved by prefix: `$XDG_CONFIG_HOME/…` against the XDG config base, `~/…` against the platform home, **anything else against the project root**. The XDG form is spelled out rather than written `~/.config/…` — a user who sets `$XDG_CONFIG_HOME` keeps nothing under `~/.config`.
+
+A `process` signal is a `PATH` resolution, not a process-table scan: the named binary is tested for existence under every `PATH` directory (and, on win32, every `PATHEXT` suffix — `code.cmd`, not `code.exe`). It never launches anything unless the signal declares a `verify`.
+
+A row should carry both project-relative *and* user-level signals where the harness has them. Project-relative signals alone answer only "does this repo carry a committed config", which misses the common case of an installed editor with the config directory gitignored.
+
+Multiple harnesses can be detected simultaneously — a developer may use both Claude Code and Cursor, and a VS Code install with a Cline extension detects **both** `vscode` and `cline` (they share `.vscode/mcp.json` under two different `mcpKey`s).
 
 ## MCP Configuration
 
