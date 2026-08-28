@@ -768,7 +768,7 @@ describe("the refusal cell through dispatchPrepared (in-process)", () => {
 describe("the mount's mode resolution — TTY driven through the seam", () => {
   // No suite can hand a subprocess a real TTY, so the §L rows that depend on
   // isTTY: true are pinned HERE, through the exported resolver the action
-  // itself calls (with cliIsTTY()). The OLD decision block routed TTY
+  // itself calls (with canPrompt()). The OLD decision block routed TTY
   // dry-run/undo into Ink; these rows keep that from silently returning.
   const prompts = CREATE_SURFACE["component/react"]?.prompts ?? [];
   const flags = (dryRun: boolean, undo: boolean, yes: boolean) => ({

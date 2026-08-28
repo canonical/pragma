@@ -298,7 +298,14 @@ export function buildProgram(
   program.enablePositionalOptions();
   program.exitOverride();
   useDesignedHelp(program, () =>
-    formatRootHelp(programName, description, live, version, issuesUrl),
+    formatRootHelp(
+      programName,
+      description,
+      live,
+      version,
+      issuesUrl,
+      options.globalFlags,
+    ),
   );
 
   const groups = new Map<string, VerbSpec[]>();

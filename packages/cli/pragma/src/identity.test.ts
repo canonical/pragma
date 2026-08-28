@@ -123,6 +123,9 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
       ],
       "9.9.9",
       "https://recipes.test/issues",
+      // A human at a terminal: the fork's own art (it declares none) would
+      // print here, so the assertions below see the widest page.
+      { llm: false, format: "plain", verbose: false },
     );
 
     expect(help).not.toMatch(THIS_DISTRIBUTION);

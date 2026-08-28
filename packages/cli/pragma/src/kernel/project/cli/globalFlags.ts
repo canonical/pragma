@@ -25,6 +25,7 @@
  */
 
 import { DETAIL_LEVELS, type DetailLevel } from "../../../constants.js";
+import { stdoutIsCaptured } from "../../interactivity.js";
 import type { GlobalFlags } from "../../runtime/index.js";
 
 /** The end-of-options separator: nothing after it is a flag of this program. */
@@ -153,7 +154,9 @@ export interface OutputEnvironment {
 /** Read the real stdout/env output environment. @note Impure — reads process. */
 function readOutputEnvironment(): OutputEnvironment {
   return {
-    isTty: process.stdout.isTTY === true,
+    // The OUTPUT-SHAPE question, on stdout — not the prompting one. A run whose
+    // stdout is captured may still have a terminal to prompt on (`canPrompt`).
+    isTty: !stdoutIsCaptured(),
     noAutoLlm: Boolean(process.env.PRAGMA_NO_AUTO_LLM),
   };
 }

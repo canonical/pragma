@@ -85,6 +85,9 @@ describe("SessionController", () => {
     c.reportEffectStart(writeFileEffect("a.txt", "x"));
     c.reportEffectComplete(writeFileEffect("a.txt", "x"), 3);
     expect(c.getSnapshot().progress.length).toBe(1);
+    // The seam's per-effect duration is KEPT, not dropped: the live view
+    // renders it, so a run says what each step cost.
+    expect(c.getSnapshot().progress[0]?.duration).toBe(3);
   });
 
   it("keeps the cancelled phase if an effect completes after cancel", () => {

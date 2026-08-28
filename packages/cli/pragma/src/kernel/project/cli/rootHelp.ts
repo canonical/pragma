@@ -11,6 +11,7 @@
  */
 
 import { PROGRAM_LOGO } from "../../../constants.js";
+import type { GlobalFlags } from "../../runtime/index.js";
 import type { VerbSpec } from "../../spec/index.js";
 import {
   helpColumns,
@@ -133,6 +134,27 @@ function summarizeNoun(noun: string, verbs: readonly VerbSpec[]): string {
 }
 
 /**
+ * Whether this reader is worth spending the wordmark on.
+ *
+ * An AUDIENCE question, not a data question: the art is 11 lines and ~200
+ * tokens — roughly a third of what `--help` costs an agent — and it says
+ * nothing an agent can act on. Both captured shapes are excluded:
+ * `llm` (requested, or inferred from a non-interactive stdout — the shape an
+ * agent captures) and `json`. `--format plain` therefore keeps the art even
+ * down a pipe, and `--format llm` drops it even on a terminal: explicit beats
+ * inference, the same inferred-vs-explicit split `renderErrorForFormat` uses.
+ *
+ * The DECISION is passed in as data — both call sites already hold the parsed
+ * flags — so this module still reads no `process` state and stays testable.
+ *
+ * @param flags - The invocation's global flags.
+ * @returns `true` when a human is reading and the wordmark should print.
+ */
+function wordmarkSuitsReader(flags: GlobalFlags): boolean {
+  return flags.llm !== true && flags.format !== "json";
+}
+
+/**
  * Build the curated root help string.
  *
  * @param programName - The CLI binary name (the distribution's `name`).
@@ -144,6 +166,9 @@ function summarizeNoun(noun: string, verbs: readonly VerbSpec[]): string {
  *   read here so it is the SAME string `--version` prints: `buildProgram`
  *   resolves `options.version ?? VERSION`, and a host that overrides one must
  *   not be able to leave the other saying something else.
+ * @param globalFlags - The invocation's global flags, read only to decide who
+ *   is reading (see {@link wordmarkSuitsReader}). Passed rather than probed: the
+ *   help layer must not learn to read `process`.
  * @returns The formatted, colorized help text.
  */
 export function formatRootHelp(
@@ -152,6 +177,7 @@ export function formatRootHelp(
   verbs: readonly VerbSpec[],
   version: string,
   issuesUrl: string,
+  globalFlags: GlobalFlags,
 ): string {
   const present = nounsFrom(verbs);
   const kernel = buildKernelGroups(programName);
@@ -181,9 +207,16 @@ export function formatRootHelp(
   );
 
   const lines: string[] = [
-    // The wordmark leads when the distribution declares one. A fork ships its
-    // own art or none, so its front door is never branded with someone else's.
-    ...(PROGRAM_LOGO.length > 0 ? [...PROGRAM_LOGO.map(helpLogo), ""] : []),
+    // The wordmark leads when the distribution declares one AND a human is
+    // reading it. A fork ships its own art or none, so its front door is never
+    // branded with someone else's; and a captured run drops the art entirely
+    // rather than charging an agent ~200 tokens for a picture of the name it
+    // just typed (see `wordmarkSuitsReader`). The LINES go, not their colour:
+    // chalk already emits no escapes off a TTY, so dimming would save nobody
+    // anything.
+    ...(PROGRAM_LOGO.length > 0 && wordmarkSuitsReader(globalFlags)
+      ? [...PROGRAM_LOGO.map(helpLogo), ""]
+      : []),
     // `<name> v<version> — <blurb>`, the spelling `info` and `capabilities`
     // already use, so the front door names the build the same way every other
     // surface does. Dimmed: it answers "which build am I on" for someone who
