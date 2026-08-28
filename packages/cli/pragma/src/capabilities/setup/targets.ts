@@ -65,6 +65,8 @@ import {
   ownedSkillLinks,
   type SkillsDetection,
   skillsSkipReason,
+  skillsSkipRemedy,
+  staleSkillLinks,
 } from "./operations/setupSkills.js";
 import {
   type PlanAction,
@@ -320,14 +322,37 @@ const skillsTarget = defineTarget<SkillsDetection>({
   bands: ["global", "project"],
   detect: (rt, band) => detectSkills(rt, band),
   plan: (d, band, roots) => {
-    if (!d.available) {
-      const reason = skillsSkipReason(shortenPath(d.sourceRoot, roots), band);
-      return { action: "skip", detail: reason, reason };
+    // A forward run RECONCILES: stale links this band owns are its work too, so
+    // an orphan-only tree is actionable rather than a row that plans `none` and
+    // is then deselected into doing nothing. `staleSkillLinks` carries the
+    // absent-root safety gate, so a machine whose source root does not exist
+    // contributes no sweep and the row falls back to the honest skip.
+    const stale = staleSkillLinks(d);
+    if (!d.available && stale.length === 0) {
+      const short = shortenPath(d.sourceRoot, roots);
+      const reason = skillsSkipReason(short, band);
+      // A skip with no remedy is a dead end — this one names the command that
+      // fills the band's source root, exactly as the completions and lsp skips
+      // beside it name theirs.
+      return {
+        action: "skip",
+        detail: reason,
+        reason,
+        remedy: skillsSkipRemedy(short, band),
+      };
     }
     const dirs = d.targets.map((t) => shortenPath(t.dir, roots)).join(", ");
     const where = `${d.skillCount} ${d.skillCount === 1 ? "skill" : "skills"} → ${d.targets.length} ${d.targets.length === 1 ? "dir" : "dirs"} (${dirs})`;
+    const detail =
+      stale.length === 0
+        ? where
+        : `${where}, ${stale.length} stale ${stale.length === 1 ? "link" : "links"} to remove`;
     const pending = d.actions.filter((a) => a.action !== "skipped");
-    return { action: pending.length === 0 ? "none" : "link", detail: where };
+    if (pending.length > 0) return { action: "link", detail };
+    // Nothing to link, but something to retire: `update` is the table's word
+    // for "this row has work that is not a fresh install".
+    if (stale.length > 0) return { action: "update", detail };
+    return { action: "none", detail };
   },
   removalPlan: (d, _band, roots) => {
     const owned = ownedSkillLinks(d);

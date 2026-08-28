@@ -38,6 +38,7 @@ import {
   mcpGroupState,
   type SkillsDetection,
   skillsSkipReason,
+  skillsSkipRemedy,
 } from "../../setup/operations/index.js";
 import { shortenPath, TARGET_IDS } from "../../setup/plan.js";
 import type { CheckItem, CheckResult, ScopeBand } from "../types.js";
@@ -151,10 +152,24 @@ function skillsHealth(
   band: ScopeBand,
   roots: { global: string; project: string },
 ): Health {
-  if (!d.available) {
+  const short = shortenPath(d.sourceRoot, roots);
+  // Stale links this band owns are work even when the root holds no skill, so
+  // the row is only a skip once there is nothing left to reconcile either.
+  const orphans = d.rootExists ? d.orphans.length : 0;
+  if (!d.available && orphans === 0) {
+    // The skip carries a remedy — `setup`'s row and this row are the same
+    // finding, and the dead-end version of it ("no skills installed", no next
+    // step) was reported identically by both surfaces.
     return {
       status: "skip",
-      detail: skillsSkipReason(shortenPath(d.sourceRoot, roots), band),
+      detail: skillsSkipReason(short, band),
+      remedy: skillsSkipRemedy(short, band),
+    };
+  }
+  if (orphans > 0) {
+    return {
+      status: "available",
+      detail: `${orphans} link${orphans === 1 ? "" : "s"} point at a skill that is gone`,
     };
   }
   const stale = d.actions.filter((a) => a.action === "replaced").length;
@@ -256,18 +271,20 @@ export async function bandedChecks(
       const health = await healthOf(row, rt, roots);
       const needsFix =
         health.status === "fail" || health.status === "available";
+      // A `skip` gets no DERIVED fix — re-running the target's own setup command
+      // would reproduce the skip. But a skip that AUTHORED a remedy has found a
+      // real next step on this machine (fill the band's skill root, say), and
+      // dropping it is what made the skip a dead end on both surfaces.
+      const remedy = needsFix
+        ? (health.remedy ?? fixCommandFor(row.target.id, row.band, bin))
+        : health.remedy;
       return {
         name: row.target.id,
         status: health.status,
         detail: health.detail,
         band: row.band,
         ...(health.items === undefined ? {} : { items: health.items }),
-        ...(needsFix
-          ? {
-              remedy:
-                health.remedy ?? fixCommandFor(row.target.id, row.band, bin),
-            }
-          : {}),
+        ...(remedy === undefined ? {} : { remedy }),
       };
     }),
   );

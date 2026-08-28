@@ -71,4 +71,7 @@ export {
   detectSkills,
   ownedSkillLinks,
   skillsSkipReason,
+  skillsSkipRemedy,
+  staleSkillLinks,
+  withinRoot,
 } from "./setupSkills.js";

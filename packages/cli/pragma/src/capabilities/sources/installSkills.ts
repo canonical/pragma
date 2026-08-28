@@ -176,10 +176,17 @@ export function planSkillInstall(
       seen.add(folderName);
       const linkPath = resolve(dest, folderName);
       const state = linkState(linkPath);
+      // Already correct means the link RESOLVES to the skill dir, not that its
+      // raw `readlink` string equals an absolute path. A relative link was
+      // therefore never "already correct": it was torn down and rebuilt on
+      // every single update, and the sibling planner reported it as drift.
+      const resolvesToSkill =
+        state.kind === "symlink" &&
+        resolve(dest, state.target) === resolve(skillDir);
       const action: SkillLinkAction["action"] =
         state.kind === "absent"
           ? "created"
-          : state.kind === "symlink" && state.target === skillDir
+          : resolvesToSkill
             ? "skipped"
             : state.kind === "symlink"
               ? "replaced"

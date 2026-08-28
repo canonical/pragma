@@ -702,6 +702,39 @@ describe("setup skills", () => {
     expect(outcome.exitCode).toBe(0);
     expect(outcome.stdout).toContain("skills");
     expect(outcome.stdout).toContain("no project skills");
+    // The skip is no longer a dead end: it names the action that settles it on
+    // THIS machine. The reason does NOT invert — the row still skips.
+    expect(outcome.stdout).toContain("SKILL.md, then run this again");
+  });
+
+  it("the GLOBAL skip names `sources update`, the command that fills its root", async () => {
+    // Skills ship in the configured packages, not in this CLI, and the global
+    // band's source root is written only by `sources update`. Saying "no skills
+    // installed" and stopping there left the user with no next step at all.
+    const prevData = process.env.XDG_DATA_HOME;
+    process.env.XDG_DATA_HOME = tmp("pragma-skills-data-");
+    try {
+      const { plan } = await buildSetupRun(
+        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+        "skills",
+        "global",
+      );
+      const row = plan.rows.find((r) => r.target === "skills");
+      expect(row?.action).toBe("skip");
+      expect(row?.reason).toBe("no skills installed");
+    } finally {
+      process.env.XDG_DATA_HOME = prevData;
+    }
+    // A skip stays exit 0 — and the recap carries the remedy beneath the row.
+    const outcome = await executeVerb(
+      verbOf("skills"),
+      {},
+      YES,
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+    );
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).toContain("no skills installed");
+    expect(outcome.stdout).toContain(`${BIN_NAME} sources update`);
   });
 
   it("detects a created action and composes a symlink carrying an undo", async () => {
@@ -877,9 +910,158 @@ describe("setup skills", () => {
     const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
     const action = detected.actions.find((a) => a.linkPath === linkPath);
     expect(action?.owned).toBe(true);
+    // A relative link that RESOLVES to the skill is already correct. Comparing
+    // the raw `readlink` string to an absolute path classified it `replaced`,
+    // so it churned on every run and doctor called it "points elsewhere".
+    expect(action?.action).toBe("skipped");
+    expect(dryRun(composeSkills(detected)).effects).toEqual([]);
 
     await runUndo(composeSkillsRemoval(detected));
     expect(existsSync(linkPath)).toBe(false);
+  });
+});
+
+describe("setup skills — the forward pass is a RECONCILE", () => {
+  /** Seed one project skill and return its source dir. */
+  const seed = (cwd: string, name: string): string => {
+    const dir = join(cwd, ".pragma", "skills", name);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "SKILL.md"),
+      `---\nname: ${name}\ndescription: A skill.\n---\n`,
+    );
+    return dir;
+  };
+
+  it("removes the link a dropped skill left behind, without --undo", async () => {
+    // The reported bug. `d.orphans` was computed and read ONLY by `--undo`,
+    // which removes every owned link rather than the stale ones — so no command
+    // reconciled, and a skill dropped upstream kept its link forever.
+    const cwd = tmp("pragma-setup-proj-");
+    const kept = seed(cwd, "kept");
+    const dropped = seed(cwd, "dropped");
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    symlinkSync(kept, join(linkDir, "kept"));
+    symlinkSync(dropped, join(linkDir, "dropped"));
+    rmSync(dropped, { recursive: true, force: true }); // retired upstream
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    expect(detected.orphans.map((o) => o.skillName)).toEqual(["dropped"]);
+
+    await runTask(composeSkills(detected));
+    // `existsSync` FOLLOWS a link, so a dangling one false-negatives — lstat.
+    expect(() => lstatSync(join(linkDir, "dropped"))).toThrow();
+    expect(readlinkSync(join(linkDir, "kept"))).toBe(kept);
+  });
+
+  it("plans the sweep as an ACTIONABLE row, not a deselected `none`", async () => {
+    // An orphan-only tree planned `none` → `defaultSelected(none)` is false →
+    // the row was never composed, so even the fixed reconcile would not run.
+    const cwd = tmp("pragma-setup-proj-");
+    const dropped = seed(cwd, "dropped");
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    symlinkSync(dropped, join(linkDir, "dropped"));
+    rmSync(dropped, { recursive: true, force: true });
+
+    const { plan } = await buildSetupRun(
+      bootRuntime(FLAGS, cwd),
+      "skills",
+      "project",
+    );
+    const row = plan.rows.find((r) => r.target === "skills");
+    expect(row?.action).toBe("update");
+    expect(row?.selected).toBe(true);
+    expect(row?.detail).toContain("1 stale link to remove");
+  });
+
+  it("the sweep is reversible — undo puts the stale link back", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    const dropped = seed(cwd, "dropped");
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    const linkPath = join(linkDir, "dropped");
+    symlinkSync(dropped, linkPath);
+    rmSync(dropped, { recursive: true, force: true });
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    const { undoCount } = await runUndo(composeSkills(detected));
+    expect(undoCount).toBeGreaterThan(0);
+    expect(readlinkSync(linkPath)).toBe(dropped);
+  });
+
+  it("is idempotent — a second pass composes zero effects", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    const dropped = seed(cwd, "dropped");
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    symlinkSync(dropped, join(linkDir, "dropped"));
+    rmSync(dropped, { recursive: true, force: true });
+
+    await runTask(composeSkills(await detectSkills(bootRuntime(FLAGS, cwd), "project")));
+    const second = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    expect(dryRun(composeSkills(second)).effects).toEqual([]);
+  });
+
+  it("SAFETY: an ABSENT source root means no opinion — nothing is swept", async () => {
+    // `available` conflated "the root is empty" with "the root does not exist".
+    // Sweeping on that alone would wipe every pragma link out of the harness
+    // dirs on any machine where XDG_DATA_HOME moved or sources update never ran.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = seed(cwd, "gone");
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    const linkPath = join(linkDir, "gone");
+    symlinkSync(skillDir, linkPath);
+    // The whole source ROOT disappears, not just one skill.
+    rmSync(join(cwd, ".pragma", "skills"), { recursive: true, force: true });
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    expect(detected.rootExists).toBe(false);
+    expect(detected.available).toBe(false);
+    expect(detected.orphans).toEqual([]);
+    expect(dryRun(composeSkills(detected)).effects).toEqual([]);
+
+    await runTask(composeSkills(detected));
+    expect(readlinkSync(linkPath)).toBe(skillDir);
+  });
+
+  it("SAFETY: a real dir, a resolving user link and a `-backup` sibling all survive", async () => {
+    // The three shapes the sweep must never touch, in one tree: a hand-placed
+    // directory, a link into someone's own checkout, and a link into a SIBLING
+    // whose name merely EXTENDS the root's (the old string-prefix bug).
+    const cwd = tmp("pragma-setup-proj-");
+    const root = join(cwd, ".pragma", "skills");
+    mkdirSync(root, { recursive: true }); // exists, but holds no skill
+    const backup = join(cwd, ".pragma", "skills-backup", "sibling");
+    mkdirSync(backup, { recursive: true });
+    writeFileSync(join(backup, "SKILL.md"), "the user's own copy\n");
+    const elsewhere = join(cwd, "elsewhere", "mine");
+    mkdirSync(elsewhere, { recursive: true });
+
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    const realDir = join(linkDir, "hand-placed");
+    mkdirSync(realDir, { recursive: true });
+    writeFileSync(join(realDir, "SKILL.md"), "hand-placed\n");
+    symlinkSync(elsewhere, join(linkDir, "mine"));
+    symlinkSync(backup, join(linkDir, "sibling"));
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    expect(detected.rootExists).toBe(true); // the sweep IS entitled to act
+    expect(detected.orphans).toEqual([]); // ...and finds nothing of its own
+    expect(dryRun(composeSkills(detected)).effects).toEqual([]);
+
+    await runTask(composeSkills(detected));
+    expect(readFileSync(join(realDir, "SKILL.md"), "utf-8")).toBe(
+      "hand-placed\n",
+    );
+    expect(readlinkSync(join(linkDir, "mine"))).toBe(elsewhere);
+    expect(readlinkSync(join(linkDir, "sibling"))).toBe(backup);
+    expect(readFileSync(join(backup, "SKILL.md"), "utf-8")).toBe(
+      "the user's own copy\n",
+    );
   });
 });
 
