@@ -6,7 +6,7 @@
   import Announcement from "./Announcement.svelte";
 
   const { Story } = defineMeta({
-    title: "_work_in_progress/Components/Announcement",
+    title: "_work_in_progress/component/Announcement",
     component: Announcement,
     tags: ["autodocs"],
     argTypes: {
@@ -116,7 +116,7 @@
   }}
   asChild
 >
-  <div dir="rtl">
+  <div dir="rtl" lang="ar">
     <Announcement criticality="information" heading="صيانة النظام">
       من المقرر إجراء صيانة الليلة، 12 نوفمبر، من الساعة 11 مساءً حتى 2 صباحًا بتوقيت المحيط الهادئ. قد تكون بعض الخدمات غير متوفرة.
     </Announcement>
