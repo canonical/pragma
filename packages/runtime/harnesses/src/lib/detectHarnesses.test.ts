@@ -271,6 +271,39 @@ describe("detectHarnesses — VS Code installation signals", () => {
     expect(seen).not.toContain("/home/tester/.config/Code/User");
   });
 
+  /**
+   * The macOS host. VS Code keeps its user data under
+   * `~/Library/Application Support` (env-paths' DATA base), which is not where
+   * `$XDG_CONFIG_HOME` resolves on darwin — `xdgConfigHome` falls back to
+   * `~/.config` on every platform, deliberately, because a tool documenting
+   * `~/.config/<tool>` reads that path on macOS too. A default macOS install
+   * also puts no `code` on PATH (the palette's "Install 'code' command in
+   * PATH" is opt-in), and a fresh install has no `~/.vscode/extensions` yet —
+   * so this directory is the only probe that can see such a machine.
+   */
+  const DARWIN: PlatformEnv = {
+    platform: "darwin",
+    env: { PATH: "/usr/bin:/bin" },
+    home: "/Users/tester",
+    isWsl: false,
+  };
+
+  it("detects a macOS install from ~/Library/Application Support alone", () => {
+    const seen: string[] = [];
+    const result = dryRunWith(
+      detectHarnesses("/project", DARWIN),
+      only("/Users/tester/Library/Application Support/Code/User", seen),
+    );
+
+    expect(result.value.map((d) => d.harness.id)).toEqual(["vscode"]);
+    // A config DIRECTORY, so the same `high` tier the linux probe scores.
+    expect(result.value[0]?.confidence).toBe("high");
+    expect(result.value[0]?.configPath).toBe("/project/.vscode/mcp.json");
+    // ...and it is genuinely a SECOND location, not the XDG one under another
+    // name: that probe ran too, and on darwin it looks under `~/.config`.
+    expect(seen).toContain("/Users/tester/.config/Code/User");
+  });
+
   it("detects the extensions directory alone, without Cline", () => {
     const result = dryRunWith(
       detectHarnesses("/project", PLATFORM),

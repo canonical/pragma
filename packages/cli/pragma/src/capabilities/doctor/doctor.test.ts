@@ -391,6 +391,59 @@ describe("doctor — the harness inventory", () => {
     expect(vscode?.detail).toContain("registered");
     expect(vscode?.detail).not.toContain("not registered");
   });
+
+  it("reports two harnesses sharing ONE file by their own keys, not by the file", async () => {
+    // The co-detection case. `.vscode/mcp.json` is written under TWO keys —
+    // VS Code's `servers` and Cline's `mcpServers` — and registering pragma
+    // for VS Code alone leaves the FILE half-configured, which `detectMcp`
+    // aggregates to `drifted` (correctly: a write is still owed). That
+    // aggregate is not either harness's standing, and reporting it per harness
+    // said both had a stale entry when one was current and the other had none.
+    const cwd = tmp("pragma-doctor-proj-");
+    mkdirSync(join(cwd, ".vscode"), { recursive: true });
+    // Cline is detected ONLY by its installed extension, in the same directory
+    // that also proves VS Code is installed — so the two co-detect.
+    mkdirSync(
+      join(
+        process.env.HOME as string,
+        ".vscode",
+        "extensions",
+        "saoudrizwan.claude-dev-3.20.0",
+      ),
+      { recursive: true },
+    );
+    writeFileSync(
+      join(
+        process.env.HOME as string,
+        ".vscode",
+        "extensions",
+        "saoudrizwan.claude-dev-3.20.0",
+        "package.json",
+      ),
+      "{}",
+    );
+    // Only VS Code's key is registered; Cline's `mcpServers` is absent.
+    writeFileSync(
+      join(cwd, ".vscode", "mcp.json"),
+      JSON.stringify({
+        servers: { pragma: { command: "pragma", args: ["mcp", "serve"], cwd } },
+      }),
+    );
+
+    const rows = await bandedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    const { project } = inventory(rows);
+    expect(project?.detail).toBe("2 detected · 1 registered");
+
+    const vscode = project?.items?.find((i) => i.label === "VS Code");
+    expect(vscode?.status).toBe("pass");
+    expect(vscode?.detail).toContain("registered — ");
+    expect(vscode?.detail).not.toContain("differs");
+
+    const cline = project?.items?.find((i) => i.label === "Cline");
+    expect(cline?.status).toBe("available");
+    expect(cline?.detail).toContain("detected, not registered");
+    expect(cline?.detail).not.toContain("differs");
+  });
 });
 
 describe("doctor — a blocked skill link path is never reported as current", () => {

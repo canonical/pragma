@@ -43,6 +43,7 @@ import {
   lspSkipReason,
   type McpDetection,
   mcpGroupState,
+  mcpWriteState,
   type SkillsDetection,
   skillsSkipReason,
   skillsSkipRemedy,
@@ -270,12 +271,21 @@ export const INVENTORY_CHECK = "harnesses";
  * The registry is the only thing detection could not supply: `detectHarnesses`
  * filters to hits, so "Windsurf is not on this machine" was unrepresentable
  * until the universe came from somewhere. Everything else — which harnesses
- * share which file, and whether that file already carries pragma's current
- * entry — is read straight off the `mcp` detection this report already ran.
- * The projection to {@link InventoryGroup} is deliberate: `McpDetection` holds
+ * share which file, and whether each one's own entry in it is current — is read
+ * straight off the `mcp` detection this report already ran. The projection to
+ * {@link InventoryGroup} is deliberate: `McpDetection` holds
  * `writeMcpConfigTargets`/`removeMcpConfigFrom` as live functions, and a
  * `mutates: false` command should be unable to reach a writer, not merely
  * trusted not to.
+ *
+ * This is also where the harness↔`mcpKey` association is REJOINED, because it
+ * is the one place that holds both halves: `TargetGroup` records the names
+ * sharing a file and, separately, one write per distinct `mcpKey`, and the
+ * registry is what says which key a given harness writes. Without that join the
+ * only state available per harness is the file's aggregate — and a
+ * `.vscode/mcp.json` where VS Code's `servers` entry is current while Cline's
+ * `mcpServers` is absent aggregates to `drifted`, which would report BOTH
+ * harnesses as drifted when neither one is.
  *
  * @param rt - The per-invocation runtime (read for `--verbose`).
  * @param rows - Every detected row, both bands, as `bandedChecks` has them.
@@ -291,6 +301,10 @@ async function inventoryChecks(
   const { harnesses, isHarnessInBand } = await import("@canonical/harnesses");
   const verbose = rt.globalFlags.verbose;
   const bands: readonly ScopeBand[] = ["global", "project"];
+  // The key each harness NAME writes under — the half of the association
+  // `groupConfigTargets` consumed and did not record. Names are the only
+  // identity a group carries, and the registry's are unique.
+  const keyByName = new Map(harnesses.map((h) => [h.name, h.mcpKey]));
 
   return bands.map((band): CheckResult => {
     // `isHarnessInBand(scope, band, band)` — the band as its OWN selection — is
@@ -319,8 +333,22 @@ async function inventoryChecks(
     const detection = mcpRow.detection as McpDetection;
     const groups: InventoryGroup[] = detection.groups.map((group) => ({
       path: shortenPath(group.path, roots),
-      harnessNames: group.harnessNames,
-      state: mcpGroupState(detection, group.path),
+      harnesses: group.harnessNames.map((name) => {
+        // The harness's OWN write in this file. A name the registry does not
+        // know (or a key no write carries — impossible while the group was
+        // built from the same registry) falls back to the file's aggregate:
+        // strictly no worse than the state before this join existed.
+        const write = group.writes.find(
+          (w) => w.mcpKey === keyByName.get(name),
+        );
+        return {
+          name,
+          state:
+            write === undefined
+              ? mcpGroupState(detection, group.path)
+              : mcpWriteState(detection, write),
+        };
+      }),
     }));
 
     const health = inventoryHealth(

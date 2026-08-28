@@ -5,11 +5,19 @@
  * Every fact this needs was ALREADY COMPUTED and thrown away.
  * `TargetGroup.harnessNames` carries every harness sharing a config file and
  * both consumers reduced it to `shortenPath(group.path)`; `McpDetection`
- * carries the per-file `absent`/`configured`/`drifted` classification keyed by
- * that same path. The only thing detection could NOT answer is the negative —
+ * carries the `absent`/`configured`/`drifted` classification of every WRITE in
+ * that file. The only thing detection could NOT answer is the negative —
  * `detectHarnesses` filters to hits, so a harness the machine does not have was
  * unrepresentable — which is why the roll-up takes the REGISTRY alongside the
  * groups: the registry supplies the universe, the groups supply the state.
+ *
+ * The state arrives PER HARNESS, never per file. A shared `.vscode/mcp.json`
+ * holds VS Code's `servers` and Cline's `mcpServers` as two independent
+ * entries, so the file's aggregate — `drifted`, when one key is current and the
+ * other absent — is the standing of NEITHER harness. Pairing each name with
+ * the write it owns is the caller's job (it holds the registry's `mcpKey`s and
+ * the group's writes); by the time a group reaches this module the association
+ * is resolved and every name carries its own state.
  *
  * Three deliberate constraints:
  *
@@ -86,14 +94,26 @@ export interface InventoryHarness {
   readonly inBand: boolean;
 }
 
+/** The prior state of one harness's own write, as detection classified it. */
+export type WriteState = "absent" | "configured" | "drifted";
+
+/** One harness's share of a config file: the state of the write IT owns. */
+export interface InventoryMember {
+  readonly name: string;
+  readonly state: WriteState;
+}
+
 /**
  * One detected config file, narrowed off {@link McpDetection}: the group's
- * already-shortened path, the harness names sharing it, and its prior state.
+ * already-shortened path, and every harness sharing it WITH ITS OWN state.
+ *
+ * Per harness, not per file — see the module docblock. A file-level state here
+ * would report both harnesses sharing `.vscode/mcp.json` as drifted the moment
+ * either one of them is registered alone.
  */
 export interface InventoryGroup {
   readonly path: string;
-  readonly harnessNames: readonly string[];
-  readonly state: "absent" | "configured" | "drifted";
+  readonly harnesses: readonly InventoryMember[];
 }
 
 /** Whether a state means "this harness is on the machine". */
@@ -111,7 +131,8 @@ export const isDetectedState = (state: InventoryState): boolean =>
  * whatever a group happened to say.
  *
  * @param registry - Every known harness, each flagged for band membership.
- * @param groups - This band's detected config files (narrowed, path-shortened).
+ * @param groups - This band's detected config files (narrowed, path-shortened),
+ *   each naming the harnesses that share it with their own per-write state.
  * @param band - The band being rolled up.
  * @returns One row per registry harness, in registry order.
  * @note Pure — it reads no filesystem and holds no live effect.
@@ -121,20 +142,22 @@ export function harnessInventory(
   groups: readonly InventoryGroup[],
   band: ScopeBand,
 ): InventoryRow[] {
-  const states = new Map<string, InventoryGroup["state"]>();
+  const states = new Map<string, WriteState>();
   const locations = new Map<string, string[]>();
   for (const group of groups) {
-    for (const name of group.harnessNames) {
-      const paths = locations.get(name) ?? [];
+    for (const member of group.harnesses) {
+      const paths = locations.get(member.name) ?? [];
       paths.push(group.path);
-      locations.set(name, paths);
+      locations.set(member.name, paths);
       // A harness sharing two files is registered only where EVERY one of them
       // carries the current entry — the same "all or nothing" rule
-      // `classifyGroup` applies within a single file.
-      const prior = states.get(name);
+      // `aggregateMcpStates` applies across the writes within a single file.
+      const prior = states.get(member.name);
       states.set(
-        name,
-        prior === undefined || prior === group.state ? group.state : "drifted",
+        member.name,
+        prior === undefined || prior === member.state
+          ? member.state
+          : "drifted",
       );
     }
   }

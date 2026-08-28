@@ -12,10 +12,12 @@ import {
   harnessInventory,
   type InventoryGroup,
   type InventoryHarness,
+  type InventoryMember,
   type InventoryRow,
   inventoryHealth,
   inventoryItems,
   isDetectedState,
+  type WriteState,
 } from "./harnessInventory.js";
 
 const REGISTRY: InventoryHarness[] = [
@@ -23,6 +25,12 @@ const REGISTRY: InventoryHarness[] = [
   { id: "cursor", name: "Cursor", inBand: true },
   { id: "vscode", name: "VS Code", inBand: false },
 ];
+
+/** One harness's share of a file — its OWN write's state, never the file's. */
+const named = (name: string, state: WriteState): InventoryMember => ({
+  name,
+  state,
+});
 
 const roll = (groups: InventoryGroup[]): InventoryRow[] =>
   harnessInventory(REGISTRY, groups, "global");
@@ -32,10 +40,9 @@ describe("harnessInventory — the roll-up", () => {
     const rows = roll([
       {
         path: "~/.claude.json",
-        harnessNames: ["Claude Code"],
-        state: "configured",
+        harnesses: [named("Claude Code", "configured")],
       },
-      { path: "~/.cursor/mcp.json", harnessNames: ["Cursor"], state: "absent" },
+      { path: "~/.cursor/mcp.json", harnesses: [named("Cursor", "absent")] },
     ]);
 
     expect(rows.map((r) => `${r.harnessId}:${r.state}`)).toEqual([
@@ -61,11 +68,7 @@ describe("harnessInventory — the roll-up", () => {
 
   it("reports a drifted group as drifted, not as registered", () => {
     const rows = roll([
-      {
-        path: "~/.claude.json",
-        harnessNames: ["Claude Code"],
-        state: "drifted",
-      },
+      { path: "~/.claude.json", harnesses: [named("Claude Code", "drifted")] },
     ]);
     expect(rows[0]?.state).toBe("drifted");
   });
@@ -74,8 +77,8 @@ describe("harnessInventory — the roll-up", () => {
     const both = harnessInventory(
       REGISTRY,
       [
-        { path: "a.json", harnessNames: ["Cursor"], state: "configured" },
-        { path: "b.json", harnessNames: ["Cursor"], state: "configured" },
+        { path: "a.json", harnesses: [named("Cursor", "configured")] },
+        { path: "b.json", harnesses: [named("Cursor", "configured")] },
       ],
       "global",
     );
@@ -85,19 +88,49 @@ describe("harnessInventory — the roll-up", () => {
     const mixed = harnessInventory(
       REGISTRY,
       [
-        { path: "a.json", harnessNames: ["Cursor"], state: "configured" },
-        { path: "b.json", harnessNames: ["Cursor"], state: "absent" },
+        { path: "a.json", harnesses: [named("Cursor", "configured")] },
+        { path: "b.json", harnesses: [named("Cursor", "absent")] },
       ],
       "global",
     );
     expect(mixed[1]?.state).toBe("drifted");
   });
 
+  it("gives each harness sharing ONE file its own state, not the file's", () => {
+    // The co-detection case, and the reason a group carries per-harness state:
+    // `.vscode/mcp.json` holds VS Code's `servers` and Cline's `mcpServers` as
+    // two independent entries. Register pragma for VS Code alone and the FILE
+    // classifies as drifted — one key current, one absent — but neither
+    // harness is drifted: VS Code is registered and Cline is merely detected.
+    // A fixture with one harness per file cannot see this.
+    const shared: InventoryHarness[] = [
+      { id: "cline", name: "Cline", inBand: true },
+      { id: "vscode", name: "VS Code", inBand: true },
+    ];
+    const rows = harnessInventory(
+      shared,
+      [
+        {
+          path: ".vscode/mcp.json",
+          harnesses: [named("Cline", "absent"), named("VS Code", "configured")],
+        },
+      ],
+      "project",
+    );
+
+    expect(rows.map((r) => `${r.harnessId}:${r.state}`)).toEqual([
+      "cline:detected",
+      "vscode:registered",
+    ]);
+    // Both are located in the same file — the sharing itself is unchanged.
+    for (const row of rows) expect(row.locations).toEqual([".vscode/mcp.json"]);
+  });
+
   it("ignores a group naming a harness the registry does not know", () => {
     // The inventory reports on the REGISTRY; a group is evidence, not a source
     // of rows, so an unknown name adds nothing rather than inventing an entry.
     const rows = roll([
-      { path: "x.json", harnessNames: ["Ghost Editor"], state: "configured" },
+      { path: "x.json", harnesses: [named("Ghost Editor", "configured")] },
     ]);
     expect(rows).toHaveLength(REGISTRY.length);
     expect(rows.map((r) => r.harnessName)).not.toContain("Ghost Editor");
@@ -111,11 +144,7 @@ describe("harnessInventory — the roll-up", () => {
 
 describe("harnessInventory — the listing", () => {
   const rows = roll([
-    {
-      path: "~/.claude.json",
-      harnessNames: ["Claude Code"],
-      state: "configured",
-    },
+    { path: "~/.claude.json", harnesses: [named("Claude Code", "configured")] },
   ]);
 
   it("shows detected harnesses only by default", () => {
@@ -166,11 +195,7 @@ describe("harnessInventory — the listing", () => {
 
   it("counts a drifted harness as detected but not as registered", () => {
     const drifted = roll([
-      {
-        path: "~/.claude.json",
-        harnessNames: ["Claude Code"],
-        state: "drifted",
-      },
+      { path: "~/.claude.json", harnesses: [named("Claude Code", "drifted")] },
     ]);
     expect(inventoryHealth(drifted, false).detail).toBe(
       "1 detected · 0 registered",

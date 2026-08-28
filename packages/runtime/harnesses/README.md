@@ -47,6 +47,8 @@ A `directory`/`file` path is resolved by prefix: `$XDG_CONFIG_HOME/…` against 
 
 A `process` signal is a `PATH` resolution, not a process-table scan: the named binary is tested for existence under every `PATH` directory (and, on win32, every `PATHEXT` suffix — `code.cmd`, not `code.exe`). It never launches anything unless the signal declares a `verify`.
 
+A location that differs by platform is declared as one signal per platform, since any single match detects the harness: VS Code's user directory is `$XDG_CONFIG_HOME/Code/User` on Linux and `~/Library/Application Support/Code/User` on macOS, and the row carries both. (`$XDG_CONFIG_HOME` resolves under `~/.config` on macOS too, by design, so it does *not* cover the second.)
+
 A row should carry both project-relative *and* user-level signals where the harness has them. Project-relative signals alone answer only "does this repo carry a committed config", which misses the common case of an installed editor with the config directory gitignored.
 
 Multiple harnesses can be detected simultaneously — a developer may use both Claude Code and Cursor, and a VS Code install with a Cline extension detects **both** `vscode` and `cline` (they share `.vscode/mcp.json` under two different `mcpKey`s).

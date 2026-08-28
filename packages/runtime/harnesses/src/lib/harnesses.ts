@@ -233,25 +233,44 @@ const harnesses: readonly HarnessDefinition[] = [
     // unprefixed path against `ctx.projectRoot`), so on their own this row can
     // only see "this repo carries a committed `.vscode/`" — a developer with
     // VS Code installed and `.vscode/` gitignored, the common case, was
-    // invisible. The three that follow are the user-level and binary probes
+    // invisible. The four that follow are the user-level and binary probes
     // every sibling GUI-editor row already has:
     // - `$XDG_CONFIG_HOME/Code/User` is VS Code's user config dir on Linux. It
     //   is spelled in XDG form deliberately (see `resolveFsPath`'s docblock): a
     //   user who sets `$XDG_CONFIG_HOME` keeps nothing under `~/.config`, so a
     //   `~/.config/Code/User` literal would report the editor absent.
-    // - `~/.vscode/extensions` is present on any install with ≥1 extension, and
-    //   is the same directory `checkExtension` already globs on behalf of Cline
-    //   and Roo Code.
+    // - `~/Library/Application Support/Code/User` is the SAME directory on
+    //   macOS, and needs its own row because nothing else here finds it: the
+    //   XDG probe above resolves to `~/.config` on darwin (`xdgConfigHome` is
+    //   platform-independent BY DESIGN — a tool documenting `~/.config/<tool>`
+    //   reads it on macOS too), and a default macOS install puts no `code` on
+    //   PATH until the user runs "Install 'code' command in PATH" from the
+    //   palette. Written as a `~/…` literal rather than through
+    //   `platformPaths`, because VS Code's user dir follows env-paths' DATA
+    //   base on darwin (`~/Library/Application Support`) and the XDG CONFIG
+    //   base on linux — no single helper spans both, and `userConfigBase`'s
+    //   darwin arm (`~/Library/Preferences`) is the wrong one. The literal is
+    //   inert on linux/win32: the path simply never exists there.
+    // - `~/.vscode/extensions` is present on any install with ≥1 extension —
+    //   on macOS as well as linux, it is the same path — and is the directory
+    //   `checkExtension` already globs on behalf of Cline and Roo Code. A
+    //   FRESH install has none, which is exactly the gap the two config-dir
+    //   probes above cover: both are created on first launch.
     // - `code` on PATH covers `/usr/bin/code` (deb), `/snap/bin/code` (the snap
     //   is CLASSIC confinement, so its home and PATH are the real ones) and
     //   `code.cmd` on win32 — `executableCandidates` owns those rules.
     // Tiers fall out of `toSignalTier` correctly: the dirs score `high`, the
     // process `medium` — right, since `code` on PATH means "installed", not
     // "this project uses it".
+    // Win32's user dir (`%APPDATA%\Code\User`) has no row: the signal grammar
+    // expands `~` and `$XDG_CONFIG_HOME` only, so a `~/AppData/Roaming` literal
+    // would silently miss a relocated `%APPDATA%`. It belongs with the rest of
+    // the unvalidated win32 surface in AV-287 (see `platformPaths.ts`).
     detect: [
       { type: "directory", path: ".vscode" },
       { type: "file", path: ".vscode/mcp.json" },
       { type: "directory", path: "$XDG_CONFIG_HOME/Code/User" },
+      { type: "directory", path: "~/Library/Application Support/Code/User" },
       { type: "directory", path: "~/.vscode/extensions" },
       { type: "process", name: "code" },
     ],

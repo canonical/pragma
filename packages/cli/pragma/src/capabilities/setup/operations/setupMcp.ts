@@ -21,6 +21,7 @@
 
 import { dirname } from "node:path";
 import type {
+  ConfigTarget,
   McpServerConfig,
   PlatformEnv,
   TargetGroup,
@@ -41,15 +42,25 @@ type RemoveMcpConfigFrom =
 /**
  * The detected MCP state: the per-file target groups (already scoped to the
  * requested `--scope`), a by-path map of each group's prior
- * {@link McpTargetState} (read up front), the project root, and the
- * (dynamically imported) target-based writer the pure `composeMcp` needs
- * synchronously. Keeping `groups` a plain {@link TargetGroup}[] leaves every
- * existing `.groups` consumer (path/harnessNames/scope) unchanged; the state
- * rides alongside, keyed by the group's `path`.
+ * {@link McpTargetState} (read up front), the same states at PER-WRITE
+ * resolution, the project root, and the (dynamically imported) target-based
+ * writer the pure `composeMcp` needs synchronously. Keeping `groups` a plain
+ * {@link TargetGroup}[] leaves every existing `.groups` consumer
+ * (path/harnessNames/scope) unchanged; the state rides alongside, keyed by the
+ * group's `path`.
+ *
+ * `stateByPath` is what the WRITE side needs — a file is written unless every
+ * key in it is already current — and it is the aggregate of `stateByWrite`
+ * (see {@link aggregateMcpStates}), so the two can never disagree.
+ * `stateByWrite` is the finer grain a per-HARNESS report needs: two harnesses
+ * sharing one file own two different keys in it, and the file's aggregate is
+ * not either harness's standing.
  */
 export interface McpDetection {
   readonly groups: readonly TargetGroup[];
   readonly stateByPath: ReadonlyMap<string, McpTargetState>;
+  /** Each write's own state, keyed by {@link mcpWriteKey} — see the docblock. */
+  readonly stateByWrite: ReadonlyMap<string, McpTargetState>;
   readonly cwd: string;
   readonly platform: PlatformEnv;
   readonly writeMcpConfigTargets: WriteMcpConfigTargets;
@@ -98,25 +109,30 @@ export function pragmaMcpEntry(cwd: string, band: ScopeBand): McpServerConfig {
 }
 
 /**
- * Classify one target group against its on-disk config: `absent` when no pragma
- * entry exists in ANY of the group's writes, `configured` when EVERY write
- * already carries a matching pragma entry, `drifted` otherwise (present in at
- * least one write but not matching everywhere). Reads each write's file for real
- * via `readMcpConfigFrom`, and matches each raw entry against what THAT write's
+ * Classify ONE write against its on-disk config: `absent` when the file carries
+ * no pragma entry under this write's `mcpKey`, `configured` when the entry
+ * already matches what this write would emit, `drifted` when one is there and
+ * differs. Reads the file for real via `readMcpConfigFrom` (which reads only
+ * this write's key), and matches the raw entry against what THAT write's
  * per-harness serializer would emit for the group's BAND (`mcpEntryMatches`
  * compares the serializer's controlled fields — so a global entry still
  * pinning a `cwd` reads as drifted — and ignores extra keys a harness or user
  * added, so we never churn a file we did not author).
  *
- * @param group - The target group whose writes to inspect.
+ * The write, not the file, is the unit that can be classified honestly: a
+ * shared `.vscode/mcp.json` holds VS Code's `servers` and Cline's `mcpServers`
+ * as two independent entries, and "the file" has no single state when one is
+ * current and the other is missing.
+ *
+ * @param write - The resolved config target to inspect.
  * @param want - The canonical pragma entry for the group's band.
  * @param harnessesApi - The dynamically imported harnesses module.
  * @param runTask - The node Task interpreter.
- * @returns The group's {@link McpTargetState}.
- * @note Impure — reads each write's config file.
+ * @returns This write's {@link McpTargetState}.
+ * @note Impure — reads the write's config file.
  */
-async function classifyGroup(
-  group: TargetGroup,
+async function classifyWrite(
+  write: ConfigTarget,
   want: McpServerConfig,
   harnessesApi: Pick<
     typeof import("@canonical/harnesses"),
@@ -124,21 +140,44 @@ async function classifyGroup(
   >,
   runTask: typeof import("@canonical/task/node").runTask,
 ): Promise<McpTargetState> {
-  let present = 0;
-  let matching = 0;
-  for (const write of group.writes) {
-    const servers = await runTask(harnessesApi.readMcpConfigFrom(write));
-    const existing = servers[MCP_SERVER_NAME];
-    if (existing === undefined) continue;
-    present += 1;
-    if (harnessesApi.mcpEntryMatches(existing, want, write.serializeEntry)) {
-      matching += 1;
-    }
-  }
-  if (present === 0) return "absent";
-  if (matching === group.writes.length) return "configured";
-  return "drifted";
+  const servers = await runTask(harnessesApi.readMcpConfigFrom(write));
+  const existing = servers[MCP_SERVER_NAME];
+  if (existing === undefined) return "absent";
+  return harnessesApi.mcpEntryMatches(existing, want, write.serializeEntry)
+    ? "configured"
+    : "drifted";
 }
+
+/**
+ * The state of a whole FILE, aggregated from its writes: `absent` when no write
+ * carries the entry, `configured` when every write already carries a matching
+ * one, `drifted` otherwise. This is the rule the write side needs — a file is
+ * rewritten unless it is `configured` everywhere — and it is deliberately the
+ * only place the per-write states are collapsed, so nothing else re-derives it.
+ *
+ * @param states - Each write's own state, in the group's write order.
+ * @returns The group's {@link McpTargetState}.
+ */
+const aggregateMcpStates = (
+  states: readonly McpTargetState[],
+): McpTargetState => {
+  if (states.every((state) => state === "absent")) return "absent";
+  if (states.every((state) => state === "configured")) return "configured";
+  return "drifted";
+};
+
+/**
+ * The key one write's state is recorded under: the file it lands in AND the
+ * `mcpKey` it owns there. `(path, mcpKey)` is exactly the write-dedup key
+ * `groupConfigTargets` builds its `writes` from, so the map has one entry per
+ * write and no two harnesses sharing a file can collide. The separator is NUL
+ * because a config path may legally contain everything else.
+ *
+ * @param write - The resolved config target.
+ * @returns Its lookup key in {@link McpDetection.stateByWrite}.
+ */
+const mcpWriteKey = (write: ConfigTarget): string =>
+  `${write.path}\u0000${write.mcpKey}`;
 
 /**
  * Detect the AI harnesses present in the project (real reads, up front),
@@ -180,23 +219,39 @@ export async function detectMcp(
   // and the default selection reflect true prior state — the same discipline
   // `detectSkills` uses for its per-link create/skip/replace decision. The
   // wanted entry is BAND-shaped (a global entry omits `cwd`), so it is built
-  // per group, not once.
+  // per group, not once. Each WRITE is classified and kept; the file's state is
+  // their aggregate, so the coarse view is derived from the fine one rather
+  // than measured separately.
   const stateByPath = new Map<string, McpTargetState>();
+  const stateByWrite = new Map<string, McpTargetState>();
   await Promise.all(
     groups.map(async (group) => {
-      const state = await classifyGroup(
-        group,
-        pragmaMcpEntry(cwd, group.scope),
-        { readMcpConfigFrom, mcpEntryMatches },
-        runTask,
+      const want = pragmaMcpEntry(cwd, group.scope);
+      const classified = await Promise.all(
+        group.writes.map(async (write) => ({
+          write,
+          state: await classifyWrite(
+            write,
+            want,
+            { readMcpConfigFrom, mcpEntryMatches },
+            runTask,
+          ),
+        })),
       );
-      stateByPath.set(group.path, state);
+      for (const { write, state } of classified) {
+        stateByWrite.set(mcpWriteKey(write), state);
+      }
+      stateByPath.set(
+        group.path,
+        aggregateMcpStates(classified.map((c) => c.state)),
+      );
     }),
   );
 
   return {
     groups,
     stateByPath,
+    stateByWrite,
     cwd,
     platform,
     writeMcpConfigTargets,
@@ -210,6 +265,22 @@ export async function detectMcp(
  */
 export function mcpGroupState(d: McpDetection, path: string): McpTargetState {
   return d.stateByPath.get(path) ?? "absent";
+}
+
+/**
+ * The prior state of ONE write — the state of the single harness key it owns,
+ * not of the file it shares. Defaults to `absent` for an unknown write, the
+ * same way {@link mcpGroupState} does for an unknown path.
+ *
+ * @param d - The detection gathered up front.
+ * @param write - One of a group's {@link ConfigTarget} writes.
+ * @returns That write's {@link McpTargetState}.
+ */
+export function mcpWriteState(
+  d: McpDetection,
+  write: ConfigTarget,
+): McpTargetState {
+  return d.stateByWrite.get(mcpWriteKey(write)) ?? "absent";
 }
 
 /** The target groups the user selected (by path), or all when none recorded. */
