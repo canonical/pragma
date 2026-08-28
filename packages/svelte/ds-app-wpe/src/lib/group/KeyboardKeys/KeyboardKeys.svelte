@@ -34,5 +34,5 @@ elements (e.g., individual keys) as children, forming a single grouped keystroke
 </KeyboardKeys>
 ```
 
-@implements dso:global.group.keyboard_keys
+@implements ds:global.group.keyboard_keys
 -->
