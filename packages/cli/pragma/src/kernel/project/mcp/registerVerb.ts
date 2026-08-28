@@ -143,6 +143,21 @@ function withDetail(
   };
 }
 
+/**
+ * The empty-state seam, projected into the envelope's `meta`.
+ *
+ * `emptyNotice` existed with exactly ONE consumer: the CLI dispatcher, which
+ * writes it to stderr. An agent therefore could not tell an unbuilt store, a
+ * mistyped filter and a genuinely empty result apart — all three were
+ * `{"ok":true,"data":[],"meta":{}}`. Riding in `meta` keeps `data` the uniform
+ * empty shape (`[]` stays `[]`) while making empty ≠ silence, and the CLI's
+ * `--format json` carries the same key so the two surfaces stay byte-equal.
+ */
+function emptyMeta(verb: VerbSpec, data: unknown): Record<string, unknown> {
+  const notice = verb.output.formatters.emptyNotice?.(data as never);
+  return notice ? { notice } : {};
+}
+
 /** The tool handler for a read verb: run, project, envelope. */
 function readHandler(verb: VerbSpec, runtime: PragmaRuntime) {
   return async (args: Record<string, unknown>): Promise<CallToolResult> => {
@@ -152,7 +167,10 @@ function readHandler(verb: VerbSpec, runtime: PragmaRuntime) {
       const result = await Promise.resolve(
         verb.run(params, withDetail(verb, runtime, args)) as Promise<unknown>,
       );
-      return toolSuccess(JSON.parse(verb.output.formatters.json(result)));
+      return toolSuccess(
+        JSON.parse(verb.output.formatters.json(result)),
+        emptyMeta(verb, result),
+      );
     } catch (error) {
       return toolError(asPragmaError(error));
     }

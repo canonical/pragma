@@ -181,8 +181,16 @@ function renderData(
 ): DispatchOutcome {
   if (flags.format === "json") {
     const projection = JSON.parse(verb.output.formatters.json(data));
+    // The calm zero-record notice rides `meta` on the machine surfaces, so an
+    // empty result is distinguishable from an unbuilt store or a mistyped
+    // filter. `data` keeps its uniform empty shape, and MCP builds the same key
+    // from the same seam (`mcp/registerVerb.ts#emptyMeta`) — the two machine
+    // surfaces stay byte-equal.
+    const notice = verb.output.formatters.emptyNotice?.(data);
     return {
-      stdout: `${JSON.stringify(successEnvelope(projection, meta))}\n`,
+      stdout: `${JSON.stringify(
+        successEnvelope(projection, notice ? { ...meta, notice } : meta),
+      )}\n`,
       exitCode: 0,
     };
   }

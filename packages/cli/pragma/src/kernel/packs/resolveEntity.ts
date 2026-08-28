@@ -80,6 +80,9 @@ export async function resolveLookup(
     throw PragmaError.invalidInput("names", "(empty)", {
       recovery: cliRecovery(`${noun} list`, `List available ${noun} entries.`, {
         tool: `${noun}_list`,
+        // A concrete, valid argument bag rather than a bare tool name: an
+        // agent can call the recovery as written instead of guessing one.
+        params: {},
       }),
     });
   }
@@ -209,6 +212,9 @@ async function lookupOne(
       suggestions: suggestNames(query, candidates),
       recovery: cliRecovery(`${noun} list`, `List available ${noun} entries.`, {
         tool: `${noun}_list`,
+        // A concrete, valid argument bag rather than a bare tool name: an
+        // agent can call the recovery as written instead of guessing one.
+        params: {},
       }),
     });
   }

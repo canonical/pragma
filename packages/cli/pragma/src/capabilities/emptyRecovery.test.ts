@@ -88,7 +88,12 @@ const listVerb = (pack: PackDefinition): VerbSpec =>
 const PACK_LISTS: readonly { pack: PackDefinition; hint: RegExp }[] = [
   { pack: storyFor("modifier"), hint: /pragma sources update/ },
   { pack: storyFor("token"), hint: /pragma sources update/ },
-  { pack: storyFor("standard"), hint: /broaden the filter/ },
+  // CHANGED DELIBERATELY. `standard` used to fall through to the generic
+  // build/broaden hint, and the build half of it is actively WRONG for this
+  // noun: the code standards ride the embedded snapshot and answer with no
+  // `sources update` at all. It now authors its own, pointing at the one
+  // surface that reads the category vocabulary out of the graph.
+  { pack: storyFor("standard"), hint: /pragma standard categories/ },
 ];
 
 const REAL = { dryRun: false, undo: false, yes: false };

@@ -11,9 +11,10 @@
  *    a total miss; only a PARTIAL batch reports the miss while staying
  *    `ok:true` (that shape is B1's job, `agentSession.mcp.test.ts`). See
  *    PARITY_GAPS `single-lookup-miss-fails-batch-partial-reports`.
- * 2. A filtered list narrowed to zero rows is `{ok:true, data:[], meta:{}}` —
- *    there is no `meta.count` field on any read envelope (`dispatch.ts`
- *    always renders reads with `meta:{}`). See PARITY_GAPS
+ * 2. A filtered list narrowed to zero rows is `{ok:true, data:[]}` — there is
+ *    still no `meta.count` field on any read envelope. `meta` is no longer
+ *    always `{}` on a read, though: a zero-record read carries the list's own
+ *    `emptyNotice` as `meta.notice`, on BOTH machine surfaces. See PARITY_GAPS
  *    `read-meta-always-empty`.
  */
 
@@ -88,7 +89,21 @@ describe("lookup miss — total miss fails the call (B3, adapted)", () => {
   });
 });
 
-describe("list — a narrowing filter to zero rows is a plain empty list (B3, adapted)", () => {
+/**
+ * CHANGED DELIBERATELY. This used to assert that ANY filter value narrowed to a
+ * plain `{"ok":true,"data":[],"meta":{}}`, which was written when no value-free
+ * filter could tell a typo from an empty answer. It could: the rows it is
+ * filtering carry the vocabulary. Over MCP the old shape made a mistyped
+ * `--category`, an unbuilt store and a genuinely empty category byte-identical —
+ * the silence a model has no way to recover from.
+ *
+ * A value the data does not carry is now INVALID_INPUT with the observed values
+ * as `validOptions`, exactly as a filter declaring `values` has always behaved;
+ * the difference is that the vocabulary is READ FROM THE GRAPH rather than
+ * copied into the story. Zero rows for a value that DOES exist stays a calm
+ * empty list — that is a real answer, not a bad argument.
+ */
+describe("list — a filter value the graph does not carry is INVALID_INPUT (B3, adapted)", () => {
   it("has at least one filtered list verb to sweep", () => {
     // A guard, not a no-op: if this ever goes empty the sweep below silently
     // covers nothing, which would be a silent coverage loss worth noticing.
@@ -97,16 +112,49 @@ describe("list — a narrowing filter to zero rows is a plain empty list (B3, ad
 
   it.each(
     filteredListVerbs,
-  )("$tool: an unmatched filter value narrows to [] (no EMPTY_RESULTS)", async ({
+  )("$tool: an unobserved filter value is rejected, naming the observed ones", async ({
     tool,
     param,
   }) => {
     const result = await mcp.callTool(tool, {
       [param]: "zzz-definitely-not-a-real-value",
     });
+    expect(result.ok).toBe(false);
+    const error = result.error as { code: string; validOptions?: string[] };
+    expect(error.code).toBe("INVALID_INPUT");
+    expect(error.validOptions?.length).toBeGreaterThan(0);
+    expect(error.validOptions).not.toContain("zzz-definitely-not-a-real-value");
+  });
+
+  it.each(
+    filteredListVerbs,
+  )("$tool: a value the graph DOES carry still narrows to a calm list", async ({
+    tool,
+    param,
+  }) => {
+    const rejected = await mcp.callTool(tool, { [param]: "zzz-nope" });
+    const observed = (rejected.error as { validOptions: string[] })
+      .validOptions[0] as string;
+    const result = await mcp.callTool(tool, { [param]: observed });
+    expect(result.ok).toBe(true);
+    expect((result.data as unknown[]).length).toBeGreaterThan(0);
+  });
+});
+
+describe("empty ≠ silence on the machine surfaces", () => {
+  it("carries the list's empty-state guidance in the envelope meta", async () => {
+    // `emptyNotice` had exactly one consumer — the CLI dispatcher's stderr — so
+    // an agent received `{"ok":true,"data":[],"meta":{}}` and nothing else. The
+    // search path is the honest way to reach an empty list without a bad
+    // argument.
+    const result = await mcp.callTool("standard_list", {
+      search: "zzz-nothing-matches-this",
+    });
     expect(result.ok).toBe(true);
     expect(result.data).toEqual([]);
-    expect(result.meta).toEqual({});
+    const notice = (result.meta as { notice?: string }).notice ?? "";
+    expect(notice).toContain("No standard entries found.");
+    expect(notice).toContain("pragma standard categories");
   });
 });
 

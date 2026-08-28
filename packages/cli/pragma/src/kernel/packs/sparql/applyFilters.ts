@@ -14,6 +14,15 @@
  * to several values of at once (a category and its ancestors, say). The
  * comparison is otherwise identical, so exactly one code path decides what a
  * match is.
+ *
+ * A value-free filter still REJECTS a value the data does not carry, with the
+ * observed values as `validOptions` — the same courtesy a declared-`values`
+ * filter has always extended, without copying the vocabulary into the consumer.
+ * The vocabulary is read from the rows the graph just answered with, because the
+ * graph IS the vocabulary; a story that hard-coded the slugs would go stale the
+ * first time the data grew a category. Before this, a typo'd `--category`
+ * returned `{"ok":true,"data":[],"meta":{}}` — indistinguishable, over MCP, from
+ * a genuinely empty category.
  */
 
 import { PragmaError } from "../../error/index.js";
@@ -47,24 +56,71 @@ export function applyPackFilters(
         ? requireStringValue(occurrence, filter).toLowerCase()
         : canonicalizeFilterValue(occurrence, filter, values).toLowerCase(),
     );
+    // Compared against the UNFILTERED rows: a value that exists but is excluded
+    // by a conjunction is a legitimately empty answer, not a bad argument.
+    if (values === undefined)
+      rejectUnobserved(rows, filter, occurrences, terms);
     result = result.filter((row) =>
-      cellValues(row, filter).some((value) => terms.includes(value)),
+      cellValues(row, filter).some((value) =>
+        terms.includes(value.toLowerCase()),
+      ),
     );
   }
   return result;
 }
 
 /**
- * The comparable values a row offers for one filter, lowercased.
+ * Reject a value-free filter value the data does not carry, naming the ones it
+ * does.
+ *
+ * Silent when the dimension is empty across every row: an unbuilt or
+ * genuinely-empty store is not the caller's mistake, and the list's own
+ * `emptyRecovery` is the right voice for it.
+ *
+ * @throws PragmaError INVALID_INPUT when a term matches none of the observed
+ *   values, carrying them as `validOptions`.
+ */
+function rejectUnobserved(
+  rows: readonly PackRow[],
+  filter: PackFilter,
+  occurrences: readonly unknown[],
+  terms: readonly string[],
+): void {
+  const observed = new Map<string, string>();
+  for (const row of rows) {
+    for (const value of cellValues(row, filter)) {
+      const key = value.toLowerCase();
+      if (!observed.has(key)) observed.set(key, value);
+    }
+  }
+  if (observed.size === 0) return;
+  const index = terms.findIndex((term) => !observed.has(term));
+  if (index === -1) return;
+  const validOptions = [...observed.values()].sort();
+  throw PragmaError.invalidInput(filter.param, String(occurrences[index]), {
+    validOptions,
+    recovery: {
+      message: `Values present for --${filter.param}: ${validOptions.join(", ")}.`,
+    },
+  });
+}
+
+/**
+ * The values a row offers for one filter, in their DISPLAY spelling (NFC).
  *
  * One value for an ordinary filter; every space-separated member for a `"set"`
- * one. A row lacking the variable offers none, so it never matches.
+ * one. A row lacking the variable offers none, so it never matches. Kept in the
+ * data's own casing because these are also what an INVALID_INPUT lists back as
+ * `validOptions` — lowercasing here would hand the caller a value the graph does
+ * not spell that way. Comparison lowercases at the point of comparison instead.
  */
 function cellValues(row: PackRow, filter: PackFilter): string[] {
   const cell = row[filter.variable];
   if (cell === undefined) return [];
-  const normalized = cell.normalize("NFC").toLowerCase();
-  if (filter.match !== "set") return [normalized];
+  const normalized = cell.normalize("NFC");
+  if (filter.match !== "set") {
+    return normalized === "" ? [] : [normalized];
+  }
   return normalized.split(/\s+/).filter((value) => value !== "");
 }
 

@@ -27,6 +27,22 @@ import type { PackList, PackLookup, PackRow, StorySource } from "./types.js";
 /** The highest canonical level — sample fetches everything for shape discovery. */
 const HIGHEST_LEVEL = "detailed";
 
+/**
+ * The recovery every lookup-shaped miss carries: browse the noun's list.
+ *
+ * `mcp.params` is populated rather than left off. A bare tool NAME is only half
+ * an instruction to an agent — it still has to guess an argument bag, and a
+ * guess that misses returns `-32602 Invalid arguments`, which reads like the
+ * recovery itself was wrong. `{}` is the concrete, valid call: every compiled
+ * list verb's params are optional, so the recovery is now copy-pasteable.
+ */
+function listRecovery(noun: string) {
+  return cliRecovery(`${noun} list`, `List available ${noun} entries.`, {
+    tool: `${noun}_list`,
+    params: {},
+  });
+}
+
 /** Facts a list-shaped run body needs beyond its `shape`. */
 export interface ListRunMeta {
   readonly source: StorySource;
@@ -88,11 +104,7 @@ export function makeLookupRun(
           code: first.code as PragmaError["code"],
           message: first.message,
           suggestions: first.suggestions ? [...first.suggestions] : undefined,
-          recovery: cliRecovery(
-            `${noun} list`,
-            `List available ${noun} entries.`,
-            { tool: `${noun}_list` },
-          ),
+          recovery: listRecovery(noun),
         });
       }
     }
@@ -119,11 +131,7 @@ export function makeSampleRun(
     if (names.length === 0) {
       throw PragmaError.emptyResults(noun, {
         message: `No ${noun} entries to sample.`,
-        recovery: cliRecovery(
-          `${noun} list`,
-          `List available ${noun} entries.`,
-          { tool: `${noun}_list` },
-        ),
+        recovery: listRecovery(noun),
       });
     }
     const selected = pickRandom(names, count);
