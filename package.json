@@ -34,6 +34,8 @@
   "scripts": {
     "collect": "bun scripts/collect-implementations.ts",
     "collect:check": "bun run collect && git diff --exit-code -- data/",
+    "check:ranges": "bun scripts/check-workspace-ranges.ts",
+    "check:ranges:test": "bun test scripts/check-workspace-ranges.test.ts",
     "build": "lerna run build",
     "prepare": "bun run build",
     "lerna": "lerna",
