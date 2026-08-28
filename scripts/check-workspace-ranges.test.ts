@@ -61,6 +61,30 @@ describe("the regression that broke main", () => {
 	});
 });
 
+describe("caret semantics from 1.0.0 up", () => {
+	// The 0.x trap above is one half of the caret; this is the other. Getting
+	// this half wrong would make the guard reject legitimate 1.x sibling
+	// ranges, and it runs inside lerna-version — a false positive here blocks
+	// the release rather than letting a bad one through.
+	test("^1.2.3 is >=1.2.3 <2.0.0", () => {
+		expect(satisfies("1.2.3", "^1.2.3")).toBe(true);
+		expect(satisfies("1.2.2", "^1.2.3")).toBe(false);
+		expect(satisfies("1.99.99", "^1.2.3")).toBe(true);
+		expect(satisfies("2.0.0", "^1.2.3")).toBe(false);
+	});
+
+	test("a 1.x sibling a minor ahead of its caret range is not a violation", () => {
+		// The exact shape of the 5198c5399 bump, had the packages been at 1.x:
+		// everything moves to 1.35.0 and the stale ^1.34.0 still admits it.
+		expect(
+			findViolations([
+				pkg("a", "1.35.0", { peerDependencies: { b: "^1.34.0" } }),
+				pkg("b", "1.35.0"),
+			]),
+		).toEqual([]);
+	});
+});
+
 describe("field-agnosticism", () => {
 	// The bump forgot peerDependencies. The next tool will forget a different
 	// field, so the guard must not privilege any of them.

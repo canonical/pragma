@@ -152,10 +152,13 @@ const COMPARATOR_RE = /^(<=|>=|<|>|=|)\s*v?(.+)$/;
 /**
  * Expand `^` / `~` into an explicit `>= <` pair.
  *
- * Caret is the one that bit us: below 1.0.0 the caret does NOT float the
- * minor, so `^0.34.0` is `>=0.34.0 <0.35.0` and a 0.35.0 sibling falls
- * outside it. Above 1.0.0 it would have been `>=0.34.0 <1.0.0` and nobody
- * would have noticed.
+ * Caret is the one that bit us, because its upper bound moves with the
+ * leading zero. From 1.0.0 up, the caret pins the major and floats the
+ * minor: `^1.2.3` is `>=1.2.3 <2.0.0`. Below 1.0.0 the minor IS the
+ * breaking position, so the caret pins that instead: `^0.34.0` is
+ * `>=0.34.0 <0.35.0`, and a 0.35.0 sibling falls outside it. Had these
+ * packages been at 1.x, `^1.34.0` would have been `>=1.34.0 <2.0.0`, the
+ * 1.35.0 bump would have stayed inside it, and nobody would have noticed.
  */
 function expandRangeOperator(prefix: "^" | "~", v: SemVer): Comparator[] {
 	const lower: Comparator = { op: ">=", version: v };
