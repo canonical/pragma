@@ -3,6 +3,7 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 import { VERSION } from "../../../constants.js";
 import { fixtureModule } from "../../../testing/fixtures/fixtureCapability.js";
 import { projectCli } from "../../../testing/helpers/projectCli.js";
+import type { GlobalFlags } from "../../runtime/index.js";
 import type { CapabilityModule, VerbSpec } from "../../spec/types.js";
 import { formatRootHelp } from "./rootHelp.js";
 
@@ -486,8 +487,26 @@ describe("buildProgram — sub-verb-only noun invoked bare (U2)", () => {
   });
 });
 
-describe("formatRootHelp — grouping", () => {
-  const help = formatRootHelp(
+/** The global flags of a human at a terminal: plain output, nothing inferred. */
+const HUMAN_FLAGS: GlobalFlags = {
+  llm: false,
+  format: "plain",
+  verbose: false,
+};
+
+/** A run whose stdout is captured: `llm`, inferred or asked for. */
+const CAPTURED_FLAGS: GlobalFlags = {
+  llm: true,
+  autoLlm: true,
+  format: "plain",
+  verbose: false,
+};
+
+/** The first line of the wordmark art — present iff the wordmark printed. */
+const WORDMARK_LINE = "(___,";
+
+const rootHelpFor = (flags: GlobalFlags): string =>
+  formatRootHelp(
     "pragma",
     "pragma test",
     [
@@ -497,7 +516,59 @@ describe("formatRootHelp — grouping", () => {
     ],
     "1.2.3",
     "https://example.test/issues",
+    flags,
   );
+
+describe("formatRootHelp — the wordmark is gated on the AUDIENCE", () => {
+  // Asserted on the ART, never on styling: `golden.ts` strips ANSI and this
+  // suite pins `chalk.level = 0`, so a colour-only change would be invisible
+  // here — and chalk emits no escapes off a TTY anyway, so it would save an
+  // agent nothing. The lines have to go.
+  it("prints the art for a human reading plain output", () => {
+    expect(rootHelpFor(HUMAN_FLAGS)).toContain(WORDMARK_LINE);
+  });
+
+  it("drops the art — every line of it — when stdout is captured", () => {
+    const help = rootHelpFor(CAPTURED_FLAGS);
+    expect(help).not.toContain(WORDMARK_LINE);
+    // No leading blank line either: the header IS the first line.
+    expect(help.startsWith("pragma v1.2.3 — pragma test")).toBe(true);
+    // Only the art goes; the page itself is untouched.
+    expect(help).toContain("Usage: pragma <command> [subcommand] [flags]");
+    expect(help).toContain("Global flags");
+  });
+
+  it("drops the art for `--format json` too", () => {
+    expect(
+      rootHelpFor({ llm: false, format: "json", verbose: false }),
+    ).not.toContain(WORDMARK_LINE);
+  });
+
+  it("keeps the art for an EXPLICIT `--format plain` down a pipe", () => {
+    // Explicit beats inference: asking for the human shape gets the human page,
+    // captured or not. (`parseGlobalFlags` leaves `llm` false whenever
+    // `--format` was requested.)
+    expect(
+      rootHelpFor({
+        llm: false,
+        autoLlm: false,
+        format: "plain",
+        verbose: false,
+      }),
+    ).toContain(WORDMARK_LINE);
+  });
+
+  it("differs ONLY by the wordmark block", () => {
+    const human = rootHelpFor(HUMAN_FLAGS).split("\n");
+    const captured = rootHelpFor(CAPTURED_FLAGS).split("\n");
+    // 10 art lines + the blank that separates them from the header.
+    expect(human.length - captured.length).toBe(11);
+    expect(human.slice(11)).toEqual(captured);
+  });
+});
+
+describe("formatRootHelp — grouping", () => {
+  const help = rootHelpFor(HUMAN_FLAGS);
 
   it("leads with the uncurated nouns, untitled, under the usage line", () => {
     // `block` is not in the kernel's curated table, so it leads the page with

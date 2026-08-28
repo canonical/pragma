@@ -76,7 +76,12 @@ type OutputFormat = (typeof OUTPUT_FORMATS)[number];
 const DEFAULT_DETAIL_LEVEL: DetailLevel = "standard";
 
 /**
- * The wordmark `--help` opens with, as raw ASCII-art lines.
+ * The wordmark `--help` opens with FOR A HUMAN READER, as raw ASCII-art lines.
+ *
+ * Whether it prints is decided at the one emit site (`rootHelp.ts`) from the
+ * invocation's global flags: a captured run (`--format llm`/`json`, including
+ * the `llm` a non-interactive stdout infers) gets the bare header instead. This
+ * constant is the ART, not the policy.
  *
  * PROJECTED from the distribution config, exactly like {@link BIN_NAME} and
  * {@link PROGRAM_DESCRIPTION} — a wordmark spells a name, so it is identity, and

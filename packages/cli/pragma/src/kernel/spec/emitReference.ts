@@ -541,7 +541,7 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
   logo: {
     type: "string[] (optional)",
     notes:
-      "Distribution-only — see below. ASCII-art wordmark lines shown above the header on root `--help`, tinted with the terminal palette's orange slot. Declared content, not code: a wordmark spells the distribution's name, so a fork ships its own art or omits the field and gets no wordmark. Omit or leave empty for a bare header.",
+      "Distribution-only — see below. ASCII-art wordmark lines shown above the header on root `--help`, tinted with the terminal palette's orange slot. Shown to a HUMAN reader only: the front door omits the art whenever the output is being captured — `--format llm` or `--format json`, including the `llm` a non-interactive stdout infers — so a piped `--help` spends none of an agent's budget on a picture of the name it just typed. Declared content, not code: a wordmark spells the distribution's name, so a fork ships its own art or omits the field and gets no wordmark. Omit or leave empty for a bare header.",
   },
   colophon: {
     type: "object (optional)",
