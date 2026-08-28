@@ -68,7 +68,11 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
       (t) => t.name === "standard_categories",
     )?.description;
     await mcp.cleanup();
-    expect(desc).toBe("List all code standard categories.");
+    // The authored prose reaches the extra verb's tool, whole. Asserted by
+    // fragment rather than by exact string: the wiring is what this pins, and
+    // tool descriptions are explicitly not frozen (`registerVerb.ts:324-326`).
+    expect(desc).toContain("List all code standard categories");
+    expect(desc).toContain("Example: standard_categories {}");
   });
 
   it("CLI --help shows the rich prose but NEVER the MCP tool-call syntax", () => {
@@ -121,6 +125,36 @@ describe("a tool-call example names a parameter the tool ACCEPTS (PROTECTED)", (
         tools.filter((t) => /Example:\s*\w+\s*\{/.test(t.description ?? ""))
           .length,
       ).toBeGreaterThan(0);
+    } finally {
+      await mcp.cleanup();
+    }
+  });
+});
+
+describe("every story tool CARRIES a call example (PROTECTED)", () => {
+  // The check above only polices examples that exist. `standard` authored NONE,
+  // and the auto-generated one fires only for a filter declaring `values` —
+  // which the category filter deliberately does not, because the graph is the
+  // vocabulary. So the four `standard_*` tools shipped with no worked call at
+  // all, and the model that could not form one had nothing to copy.
+  //
+  // This asserts the gap cannot reappear on a future story: a compiled story
+  // tool must show an agent one call it can make, spelled with its OWN name so
+  // the example cannot be copied from a sibling tool and left stale.
+  it("names its own tool in an `Example: <tool_name> {…}` fragment", async () => {
+    const mcp = await projectMcp([...storyModules.values()]);
+    try {
+      const tools = await mcp.listTools();
+      expect(tools.length).toBeGreaterThan(0);
+      const missing = tools
+        .filter(
+          (tool) =>
+            !new RegExp(`Example:\\s*${tool.name}\\s*\\{`).test(
+              tool.description ?? "",
+            ),
+        )
+        .map((tool) => tool.name);
+      expect(missing).toEqual([]);
     } finally {
       await mcp.cleanup();
     }

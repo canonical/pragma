@@ -164,9 +164,11 @@ const READ_CASES: readonly ReadCase[] = [
   },
   { command: "pragma standard list", key: "standard list", params: {} },
   {
-    command: "pragma standard list --category react",
+    // The doc's headline example, and the one the roll-up is about: a parent
+    // category answering for its whole branch.
+    command: "pragma standard list --category testing",
     key: "standard list",
-    params: { category: ["react"] },
+    params: { category: ["testing"] },
   },
   {
     command: "pragma standard categories",

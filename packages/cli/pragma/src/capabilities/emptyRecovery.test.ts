@@ -35,6 +35,9 @@ function storyFor(noun: string): PackDefinition {
 const PREFIXES = {
   ds: "https://ds.canonical.com/",
   cs: "https://ds.canonical.com/code-standards/",
+  // The `standard` list query names `skos:broader` for its category roll-up —
+  // a CORE prefix on the real build path, which this in-memory helper bypasses.
+  skos: "http://www.w3.org/2004/02/skos/core#",
   owl: "http://www.w3.org/2002/07/owl#",
   rdfs: "http://www.w3.org/2000/01/rdf-schema#",
   xsd: "http://www.w3.org/2001/XMLSchema#",
@@ -85,7 +88,12 @@ const listVerb = (pack: PackDefinition): VerbSpec =>
 const PACK_LISTS: readonly { pack: PackDefinition; hint: RegExp }[] = [
   { pack: storyFor("modifier"), hint: /pragma sources update/ },
   { pack: storyFor("token"), hint: /pragma sources update/ },
-  { pack: storyFor("standard"), hint: /broaden the filter/ },
+  // CHANGED DELIBERATELY. `standard` used to fall through to the generic
+  // build/broaden hint, and the build half of it is actively WRONG for this
+  // noun: the code standards ride the embedded snapshot and answer with no
+  // `sources update` at all. It now authors its own, pointing at the one
+  // surface that reads the category vocabulary out of the graph.
+  { pack: storyFor("standard"), hint: /pragma standard categories/ },
 ];
 
 const REAL = { dryRun: false, undo: false, yes: false };

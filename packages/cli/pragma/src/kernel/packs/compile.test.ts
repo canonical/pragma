@@ -485,6 +485,98 @@ describe("weights validation (a weight that can never apply is rejected)", () =>
   });
 });
 
+describe("nameFallback validation (a derived name needs a class to vouch for it)", () => {
+  it("accepts the fallback beside a class constraint", () => {
+    const definition = {
+      noun: "gadget",
+      lookup: { by: "ex:name", nameFallback: "iri", type: "ex:Widget" },
+    };
+    expect(parsePackDefinition(definition, "t")).toEqual(definition);
+  });
+
+  it("REJECTS the fallback with no class constraint", () => {
+    // Without one there is no triple bounding `?uri`, so the derived-name
+    // population would be scanned over the whole graph — and a derived name is
+    // only as trustworthy as the class vouching for the entity it came from.
+    expect(() =>
+      parsePackDefinition(
+        { noun: "gadget", lookup: { by: "ex:name", nameFallback: "iri" } },
+        "t",
+      ),
+    ).toThrow(/nameFallback/);
+  });
+});
+
+describe("filter vocabulary validation (where a value-free filter's values live)", () => {
+  const listShape = {
+    query: "SELECT ?uri ?kind WHERE { ?uri a ex:Widget ; ex:kind ?kind }",
+    columns: [{ field: "uri" }],
+  };
+
+  it("accepts a vocabulary SELECT on a value-free filter", () => {
+    const definition = {
+      noun: "widget",
+      list: {
+        ...listShape,
+        filters: [
+          {
+            param: "kind",
+            variable: "kind",
+            vocabulary: { query: "SELECT ?kind WHERE { ?k a ex:Kind }" },
+          },
+        ],
+      },
+    };
+    expect(parsePackDefinition(definition, "t")).toEqual(definition);
+  });
+
+  it("REJECTS a vocabulary beside a declared `values` set", () => {
+    // A declared set IS the vocabulary — the filter projects it as an enum and
+    // canonicalizes against it. A second, graph-read one alongside is a silent
+    // no-op at best and a disagreement at worst.
+    expect(() =>
+      parsePackDefinition(
+        {
+          noun: "widget",
+          list: {
+            ...listShape,
+            filters: [
+              {
+                param: "kind",
+                variable: "kind",
+                values: ["a", "b"],
+                vocabulary: { query: "SELECT ?kind WHERE { ?k a ex:Kind }" },
+              },
+            ],
+          },
+        },
+        "t",
+      ),
+    ).toThrow(/mutually exclusive/);
+  });
+
+  it("REJECTS a vocabulary query that is not a SELECT", () => {
+    expect(() =>
+      parsePackDefinition(
+        {
+          noun: "widget",
+          list: {
+            ...listShape,
+            filters: [
+              {
+                param: "kind",
+                variable: "kind",
+                vocabulary: { query: "ASK { ?k a ex:Kind }" },
+              },
+            ],
+          },
+        },
+        "t",
+      ),
+    ).toThrow(/SELECT/);
+  });
+});
+
 describe("compileListable — absolute IRIs reach the prefixed contract", () => {
   it("compacts an absolute lookup type, and its weight key with it", () => {
     // `PackLookup.type`/`types` accept a prefixed name OR an absolute IRI, but

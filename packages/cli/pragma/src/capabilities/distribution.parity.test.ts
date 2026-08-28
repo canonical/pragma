@@ -30,6 +30,10 @@ if (!standardPack) {
 const CS = "http://pragma.canonical.com/codestandards#";
 const PREFIXES = {
   cs: CS,
+  // The store the fixture builds is queried with the story queries verbatim,
+  // and the category roll-up names `skos:broader` — a CORE prefix on the real
+  // build path (`buildPackPrefixes`), which this in-memory helper does not use.
+  skos: "http://www.w3.org/2004/02/skos/core#",
   owl: "http://www.w3.org/2002/07/owl#",
   rdfs: "http://www.w3.org/2000/01/rdf-schema#",
   xsd: "http://www.w3.org/2001/XMLSchema#",

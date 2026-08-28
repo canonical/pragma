@@ -42,13 +42,13 @@ export const PARITY_GAPS: readonly ParityGapEntry[] = [
     id: "read-meta-always-empty",
     area: "envelope",
     description:
-      "`dispatch.ts#executeVerb`'s read branch always renders with `meta: {}` — there is no `meta.count`/`meta.total` field on a list/lookup envelope (verified empirically). An empty (possibly filtered) list is `{ok:true, data:[], meta:{}}`; the only way to know it's empty is `data.length === 0`, not a meta field.",
+      "NARROWED: a read envelope still carries no `meta.count`/`meta.total` — the only way to know a list is empty is `data.length === 0`, not a count field. But `meta` is no longer ALWAYS `{}` on a read. A zero-record read now carries the verb's own `emptyNotice` as `meta.notice` on BOTH machine surfaces (`project/cli/dispatch.ts#renderData` for `--format json`, `project/mcp/registerVerb.ts#emptyMeta` for MCP — one seam, the same key, so the two stay byte-equal). `data` keeps its uniform empty shape; `[]` is still `[]`. The divergence this entry records is the ABSENCE of counts, not the emptiness of `meta`: without the notice an agent could not tell an unbuilt store, a mistyped filter and a genuinely empty result apart, all three being `{ok:true,data:[],meta:{}}`.",
   },
   {
     id: "no-empty-hook-on-free-filter",
     area: "pack list / empty-state",
     description:
-      "A zero-row pack list — whether narrowed by a declared filter, an unmatched `--search`, or unconditionally empty — returns `ok:true, data:[], meta:{}` at exit 0 with a calm `emptyMessage`/`emptyHint`; pragma v2 never raises a typed EMPTY_RESULTS error for an empty list. (U5 removed the former enum-filter-only `buildListEmptyError` hook, making the empty-state uniform across every list verb.)",
+      "STILL TRUE OF EMPTINESS, NARROWED ON BAD ARGUMENTS. A zero-row pack list — narrowed by a declared filter, by an unmatched `--search`, or unconditionally empty — is a SUCCESS: `ok:true, data:[]` at exit 0 with a calm notice (stderr in plain mode, `meta.notice` on the machine surfaces). pragma v2 still never raises EMPTY_RESULTS for an empty list, and U5's removal of the enum-filter-only `buildListEmptyError` hook stands. What is no longer true is that an UNMATCHED free-filter value stays successful: a value-free filter now rejects a value its vocabulary does not admit with INVALID_INPUT and the admissible values as `validOptions`, the same courtesy a declared-`values` filter always extended (`packs/sparql/applyFilters.ts`). The vocabulary is the graph's, not the returned rows' — a filter declares where it lives (`PackFilter.vocabulary`), so a real value that happens to match no row (a category with zero standards, a `ds:ConceptType` no concept uses) is a calm empty list, and only a value the graph does not know is an error.",
   },
   {
     id: "raw-iri-in-data",

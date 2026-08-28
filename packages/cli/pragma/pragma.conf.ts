@@ -246,7 +246,7 @@ const designSystemStories: readonly PackDefinition[] = [
       sample: {
         fixedCount: true,
         toolDescription:
-          "Return randomly selected complete design-system blocks as exemplars. Use BEFORE writing queries to see actual data shapes, anatomy, and property names.",
+          "Return randomly selected complete design-system blocks as exemplars. Use BEFORE writing queries to see actual data shapes, anatomy, and property names. Example: block_sample {}.",
       },
     },
   },
@@ -303,7 +303,7 @@ const designSystemStories: readonly PackDefinition[] = [
       sample: {
         fixedCount: true,
         toolDescription:
-          "Return randomly selected complete design tokens (with theme values) as exemplars. Use BEFORE writing queries to see actual data shapes.",
+          "Return randomly selected complete design tokens (with theme values) as exemplars. Use BEFORE writing queries to see actual data shapes. Example: token_sample {}.",
       },
     },
   },
@@ -361,7 +361,7 @@ const designSystemStories: readonly PackDefinition[] = [
       sample: {
         fixedCount: true,
         toolDescription:
-          "Return randomly selected complete modifier families (with value lists) as exemplars. Use BEFORE writing queries to see actual data shapes.",
+          "Return randomly selected complete modifier families (with value lists) as exemplars. Use BEFORE writing queries to see actual data shapes. Example: modifier_sample {}.",
       },
     },
   },
@@ -421,7 +421,7 @@ const conceptStory: PackDefinition = {
   noun: "concept",
   description: "List design-system concepts.",
   toolDescription:
-    "List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search.",
+    'List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search. Example: concept_list { type: "Explanation" }.',
   list: {
     query: [
       "SELECT ?uri ?name ?type ?summary",
@@ -443,6 +443,20 @@ const conceptStory: PackDefinition = {
       {
         param: "type",
         variable: "type",
+        // `ds:ConceptType` is the vocabulary; the concepts are the population.
+        // The shipped graph declares six types and uses two, so validating
+        // against the rows rejected "Decision guide" — a type the ontology
+        // declares — as an invalid argument instead of answering with the
+        // empty list it actually has.
+        vocabulary: {
+          query: [
+            "SELECT DISTINCT ?name WHERE {",
+            "  ?conceptType a ds:ConceptType ;",
+            "               ds:name ?name .",
+            "}",
+          ].join("\n"),
+          variable: "name",
+        },
         description: "Filter by concept type (e.g. Explanation, How-to guide).",
       },
     ],
@@ -463,7 +477,7 @@ const conceptStory: PackDefinition = {
     description:
       "Look up a concept's full documentation by name, IRI, or glob.",
     toolDescription:
-      "Get a design-system concept's full Markdown documentation. Address concepts by name, prefixed name (ds:concept.…), absolute IRI, or glob pattern.",
+      'Get a design-system concept\'s full Markdown documentation. Address concepts by the name concept_list publishes, by prefixed name (ds:concept.…), by absolute IRI, or by a glob. Example: concept_lookup { name: ["Foundations: Grid"] }.',
     fields: [
       { name: "type", property: "ds:conceptType/ds:name", label: "Type" },
       { name: "tier", property: "ds:tier", label: "Tier" },
@@ -544,14 +558,34 @@ const implementationStory: PackDefinition = {
       { field: "uri", label: "IRI" },
     ],
     filters: [
+      // Both vocabularies are read off `ds:ImplementationLibrary`, the subject
+      // that carries them — the same terms `implementation libraries`
+      // enumerates. A library that implements nothing yet still exists, and
+      // asking for it is an empty answer rather than a bad argument.
       {
         param: "platform",
         variable: "platform",
+        vocabulary: {
+          query: [
+            "SELECT DISTINCT ?platform WHERE {",
+            "  ?lib a ds:ImplementationLibrary ;",
+            "       ds:platform ?platform .",
+            "}",
+          ].join("\n"),
+        },
         description: "Filter by platform (e.g. react, svelte, typescript).",
       },
       {
         param: "library",
         variable: "library",
+        vocabulary: {
+          query: [
+            "SELECT DISTINCT ?library WHERE {",
+            "  ?lib a ds:ImplementationLibrary ;",
+            "       ds:libraryName ?library .",
+            "}",
+          ].join("\n"),
+        },
         description: "Filter by implementation library name.",
       },
     ],
@@ -618,10 +652,16 @@ const codeStandardsStories: readonly PackDefinition[] = [
     noun: "standard",
     description: "List all code standards.",
     toolDescription:
-      "List code standards. Optionally filter by category or search term.",
+      'List code standards: one ROW per standard — its IRI, name, category and description — not the standards themselves. Take a row\'s `name` VERBATIM to standard_lookup for the dos and donts. Optionally filter by category slug (a parent slug answers for its whole branch; standard_categories lists them) or by search term. Example: standard_list { category: "react" }.',
     list: {
       query: [
+        // `?category` is the LEAF a standard is filed under — what a row
+        // displays. `?categories` is that leaf plus every ancestor, which is
+        // what `--category` matches against, so asking for a parent answers for
+        // the whole branch. The traversal is written ONCE, here, rather than
+        // repeated by each consumer.
         "SELECT ?uri ?name ?category ?description",
+        '       (GROUP_CONCAT(DISTINCT ?ancestorSlug; SEPARATOR=" ") AS ?categories)',
         "WHERE {",
         "  ?uri a cs:CodeStandard ;",
         "       cs:description ?description .",
@@ -630,8 +670,18 @@ const codeStandardsStories: readonly PackDefinition[] = [
         "  OPTIONAL {",
         "    ?uri cs:hasCategory ?cat .",
         "    ?cat cs:slug ?category .",
+        // `skos:broader` is deliberately NOT transitive, and this store
+        // (oxigraph) has no reasoner — so `skos:broaderTransitive` returns zero
+        // rows and hand-asserting it would be materialisation wearing a
+        // standards badge. `broader*` is the only thing that works.
+        // The `*` is REFLEXIVE and that is load-bearing: `+` would silently
+        // drop every standard filed DIRECTLY on the category being asked for
+        // (one of the 8 under `testing` today). Do not "correct" it.
+        "    ?cat skos:broader* ?ancestor .",
+        "    ?ancestor cs:slug ?ancestorSlug .",
         "  }",
         "}",
+        "GROUP BY ?uri ?name ?category ?description",
         "ORDER BY ?name",
       ].join("\n"),
       columns: [
@@ -643,28 +693,64 @@ const codeStandardsStories: readonly PackDefinition[] = [
       filters: [
         {
           param: "category",
-          variable: "category",
-          description: "Filter by category name.",
+          variable: "categories",
+          match: "set",
+          // The SAME terms `standard categories` enumerates (`cs:Category` /
+          // `cs:slug`), so the slugs that surface hands out are exactly the
+          // slugs this filter accepts. Read from the graph rather than the
+          // returned ROWS: a category the graph declares with no standards
+          // filed under it is reported by `standard categories` with count 0,
+          // and asking for it must be the documented calm empty list, not
+          // INVALID_INPUT.
+          vocabulary: {
+            query: [
+              "SELECT DISTINCT ?slug WHERE {",
+              "  ?cat a cs:Category ;",
+              "       cs:slug ?slug .",
+              "}",
+            ].join("\n"),
+            variable: "slug",
+          },
+          description:
+            "Filter by category slug. A parent category answers for its whole branch.",
         },
       ],
       search: {
         variables: ["name", "description"],
         description: "Search in name and description.",
       },
+      // Deliberately NOT `sources update`: the code standards ship in the
+      // embedded snapshot and answer with no update at all, so the generic
+      // build hint is actively wrong here. An empty result on this noun means
+      // the filter, and the vocabulary it must be drawn from lives in the graph
+      // — which is what `standard categories` reads out.
+      emptyRecovery: {
+        message:
+          "Category slugs come from the graph, and a parent slug answers for its whole branch — read them out rather than guessing.",
+        cli: "standard categories",
+      },
     },
     verbs: [
       {
         verb: "categories",
-        description: "List all standard categories with counts.",
-        toolDescription: "List all code standard categories.",
+        description:
+          "List all standard categories with counts (a parent counts its whole branch).",
+        toolDescription:
+          "List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering. Example: standard_categories {}.",
         query: [
-          "SELECT ?name (COUNT(?standard) AS ?count)",
+          // The same reflexive roll-up `list` filters with — written the other
+          // way round (every category whose broader-chain reaches ?cat), so the
+          // count a category reports and the rows `--category` returns are the
+          // same set. `COUNT(DISTINCT ?standard)`: a standard reachable by two
+          // paths is still one standard.
+          "SELECT ?name (COUNT(DISTINCT ?standard) AS ?count)",
           "WHERE {",
           "  ?cat a cs:Category ;",
           "       cs:slug ?name .",
           "  OPTIONAL {",
+          "    ?descendant skos:broader* ?cat .",
           "    ?standard a cs:CodeStandard ;",
-          "              cs:hasCategory ?cat .",
+          "              cs:hasCategory ?descendant .",
           "  }",
           "}",
           "GROUP BY ?name",
@@ -674,16 +760,34 @@ const codeStandardsStories: readonly PackDefinition[] = [
           { field: "name", label: "Category" },
           { field: "count", label: "Standards" },
         ],
+        // Also not `sources update`. The categories ride the same embedded
+        // snapshot, so zero rows means the store did not load — a health
+        // question, not a staleness one.
+        emptyRecovery: {
+          message:
+            "The code standards ship in the embedded snapshot, so no categories at all means the store did not load rather than that it is out of date.",
+          cli: "doctor",
+        },
       },
     ],
     lookup: {
       source: "sparql",
       by: "cs:name",
+      // The one story whose `list` PUBLISHES a synthesized name: `cs:name` is
+      // an optional display title (22 of 156 standards carry one), so the row
+      // name for the other ~87% is derived from the IRI local name. Declaring
+      // the fallback here is what keeps the two halves of the two-step grammar
+      // over one population — the same derivation, read from the other side.
+      // It is deliberately NOT declared on `block`/`token`/`tier`/`concept`:
+      // each of those lists REQUIRES its `by` property, so an entity without
+      // one is a row they never publish, and making it addressable (or
+      // sampleable) here would be the mirror of the defect this repairs.
+      nameFallback: "iri",
       type: "cs:CodeStandard",
       description:
-        "Look up detailed information for a standard by name, IRI, or glob.",
+        "Look up one or more standards by name, IRI, or glob. --detail standard adds the dos, --detail detailed adds the don'ts.",
       toolDescription:
-        "Get detailed information about one or more code standards including dos and donts with code examples. Address standards by name, prefixed name (cs:…), absolute IRI, or glob pattern (react/component/*).",
+        'Get one or more code standards in full, with dos and don\'ts as code examples. `detail` DEFAULTS to "summary", which returns neither: pass detail: "standard" for the dos and detail: "detailed" for dos AND don\'ts. Address a standard by the name standard_list publishes (`react/component/tsdoc`), by prefixed name (`cs:react.component.tsdoc`), by absolute IRI, or by a glob over any of those. Example: standard_lookup { name: ["react/component/tsdoc"], detail: "detailed" }.',
       fields: [
         {
           name: "category",
@@ -729,7 +833,7 @@ const codeStandardsStories: readonly PackDefinition[] = [
         description:
           "Return randomly selected complete standard instances as exemplars for shape discovery.",
         toolDescription:
-          "Return 1–5 randomly selected complete code standard instances as exemplars. Use BEFORE writing queries to see actual data shapes, property names, and value formats. Each call returns different instances.",
+          "Return 1–5 randomly selected complete code standard instances as exemplars. Use BEFORE writing queries to see actual data shapes, property names, and value formats. Each call returns different instances. Example: standard_sample { count: 2 }.",
       },
     },
   },

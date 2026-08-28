@@ -87,6 +87,181 @@ export const readNounEvalCases: readonly EvalCase[] = [
     },
   },
   {
+    // The journey the reported failure actually walked: browse a category, take
+    // a published `name` VERBATIM, and ask for its content. Every row `list`
+    // publishes must be addressable by `lookup` — otherwise the two-step
+    // grammar the whole read surface is built on has a hole in it, and an agent
+    // that follows the tools' own output gets ENTITY_NOT_FOUND with empty
+    // suggestions and a recovery pointing back at the list it just read.
+    id: "tool-standard-list-names-are-addressable-by-lookup",
+    kind: "tool",
+    input:
+      "every name standard_list {category:react} publishes resolves through standard_lookup {name:[…], detail:detailed}, dos/donts included.",
+    async expect() {
+      await withCanonicalFixture(CANONICAL_CONFIG, async (mcp) => {
+        const list = await mcp.callTool("standard_list", { category: "react" });
+        assert.equal(list.ok, true);
+        const names = (list.data as { name: string }[]).map((row) => row.name);
+        assert.ok(names.length > 0, "expected standard_list to publish rows");
+        let withExamples = 0;
+        for (const name of names) {
+          const result = await mcp.callTool("standard_lookup", {
+            name: [name],
+            detail: "detailed",
+          });
+          assert.equal(
+            result.ok,
+            true,
+            `standard_lookup rejected the name standard_list published: ${name}`,
+          );
+          const entity = (result.data as { results: Record<string, unknown>[] })
+            .results[0];
+          assert.equal(entity?.name, name);
+          if (
+            (entity?.dos as unknown[] | undefined)?.length &&
+            (entity?.donts as unknown[] | undefined)?.length
+          ) {
+            withExamples += 1;
+          }
+        }
+        assert.ok(
+          withExamples > 0,
+          "expected at least one resolved standard to carry both dos and donts",
+        );
+      });
+    },
+  },
+  {
+    // The glob the lookup tool's own description advertises. It matched nothing
+    // on the shipped graph, because the candidate pool was the `cs:name`
+    // population and no asserted name contains a slash.
+    id: "tool-standard-lookup-advertised-glob-matches",
+    kind: "tool",
+    input:
+      'standard_lookup {name:["react/component/*"]} — the glob the tool description advertises — resolves at least one standard.',
+    async expect() {
+      await withCanonicalFixture(CANONICAL_CONFIG, async (mcp) => {
+        const result = await mcp.callTool("standard_lookup", {
+          name: ["react/component/*"],
+        });
+        assert.equal(result.ok, true);
+        const results = (result.data as { results: unknown[] }).results;
+        assert.ok(
+          results.length > 0,
+          "the advertised glob must match at least one standard",
+        );
+      });
+    },
+  },
+  {
+    // The MIRROR of the addressability case above, and the reason the IRI-name
+    // fallback is DECLARED per story rather than inferred from a class
+    // constraint. `token list` requires `ds:tokenId`, so a `ds:Token` without
+    // one is a row it never publishes — and it must therefore be reachable by
+    // no name at all, and drawn by no sample. Inferring the fallback from the
+    // presence of `type: ds:Token` made it addressable and sampleable under an
+    // IRI-derived name the list never handed out: the same list/lookup
+    // disagreement as the standards defect, pointing the other way.
+    id: "tool-token-lookup-addresses-only-what-list-publishes",
+    kind: "tool",
+    input:
+      "a ds:Token carrying no ds:tokenId appears in no token_list row, resolves through no token_lookup name, and is drawn by no token_sample.",
+    async expect() {
+      await withCanonicalFixture(ALL_VISIBLE_CONFIG, async (mcp) => {
+        const list = await mcp.callTool("token_list");
+        assert.equal(list.ok, true);
+        const published = new Set(
+          (list.data as { name: string }[]).map((row) => row.name),
+        );
+        assert.ok(published.size > 0, "expected token_list to publish rows");
+        // The IRI-derived spellings the fallback would have minted for
+        // `ds:token.legacy.borderRadius` (local name, dots as slashes).
+        for (const derived of [
+          "token.legacy.borderRadius",
+          "token/legacy/borderRadius",
+        ]) {
+          assert.ok(
+            !published.has(derived),
+            `token_list must not publish ${derived}`,
+          );
+          const result = await mcp.callTool("token_lookup", {
+            name: [derived],
+          });
+          assert.equal(
+            result.ok,
+            false,
+            `token_lookup addressed ${derived}, a name token_list never published`,
+          );
+          assert.equal(
+            (result.error as { code: string }).code,
+            "ENTITY_NOT_FOUND",
+          );
+        }
+        // `sample`'s draw pool is the same population, so its reported total is
+        // the published population — not one entity wider.
+        const sample = await mcp.callTool("token_sample", {});
+        assert.equal(sample.ok, true);
+        assert.equal(
+          (sample.data as { totalCount: number }).totalCount,
+          published.size,
+        );
+      });
+    },
+  },
+  {
+    // A slug the graph declares with no standards filed under it. `standard
+    // categories` lists it at count 0 and the tool descriptions document a
+    // filtered list as a plain list, so asking for it is a calm empty answer —
+    // an INVALID_INPUT here tells an agent its own valid slug was a typo.
+    // Validity read off the RETURNED ROWS produced exactly that, because a
+    // category with no standards appears in no row.
+    id: "tool-standard-list-empty-category-is-a-calm-empty-list",
+    kind: "tool",
+    input:
+      "standard_list {category} for a real slug that no standard uses is ok:true with an empty list, not INVALID_INPUT.",
+    async expect() {
+      await withCanonicalFixture(CANONICAL_CONFIG, async (mcp) => {
+        const categories = await mcp.callTool("standard_categories");
+        assert.equal(categories.ok, true);
+        const empty = (categories.data as { name: string; count: string }[])
+          .filter((row) => Number(row.count) === 0)
+          .map((row) => row.name);
+        assert.ok(
+          empty.length > 0,
+          "expected standard_categories to report a zero-count category",
+        );
+        for (const slug of empty) {
+          const result = await mcp.callTool("standard_list", {
+            category: slug,
+          });
+          assert.equal(
+            result.ok,
+            true,
+            `standard_list rejected ${slug}, a slug standard_categories publishes`,
+          );
+          assert.deepEqual(result.data, []);
+        }
+        // The rejection itself still works, and still names the graph's whole
+        // vocabulary — including the categories no standard uses.
+        const rejected = await mcp.callTool("standard_list", {
+          category: "zzz-not-a-slug",
+        });
+        assert.equal(rejected.ok, false);
+        const error = rejected.error as {
+          code: string;
+          validOptions: string[];
+        };
+        assert.equal(error.code, "INVALID_INPUT");
+        for (const slug of empty) {
+          assert.ok(
+            error.validOptions.includes(slug),
+            `validOptions omitted the declared category ${slug}`,
+          );
+        }
+      });
+    },
+  },
+  {
     id: "content-canonical-graph-has-4-components",
     kind: "content",
     input:
@@ -146,24 +321,85 @@ export const readNounEvalCases: readonly EvalCase[] = [
     },
   },
   {
-    id: "content-standard-list-length-equals-category-count-sum",
+    // The cross-surface count-parity invariant, stated for a HIERARCHY. Summing
+    // the category counts stopped being the right arithmetic the moment a
+    // parent counted its branch (a standard under `testing-unit` is counted by
+    // both `testing-unit` and `testing`); what must hold — and what actually
+    // catches the reported defect — is that each category's count and the rows
+    // `--category` returns for it are the same set. Before the roll-up,
+    // `testing` reported 1 and `standard list --category testing` returned 1 of
+    // the 8 standards in the branch: a silently wrong answer, exit 0.
+    id: "content-standard-category-counts-match-filtered-list",
     kind: "content",
     input:
-      "standard_list length equals the sum of standard_categories counts (the cross-surface count-parity invariant).",
+      "every standard_categories count equals the length of standard_list {category: <slug>}, and a parent category answers for its whole branch.",
     async expect() {
       await withCanonicalFixture(CANONICAL_CONFIG, async (mcp) => {
         const list = await mcp.callTool("standard_list");
         const categories = await mcp.callTool("standard_categories");
-        const listLength = (list.data as unknown[]).length;
-        const categorySum = (categories.data as { count: string }[]).reduce(
-          (sum, row) => sum + Number(row.count),
-          0,
+        const rows = categories.data as { name: string; count: string }[];
+        assert.ok(
+          (list.data as unknown[]).length > 0 && rows.length > 0,
+          "both surfaces must be non-empty for the parity invariant to bite",
+        );
+        let rolledUp = 0;
+        for (const row of rows) {
+          const filtered = await mcp.callTool("standard_list", {
+            category: row.name,
+          });
+          assert.equal(
+            (filtered.data as unknown[]).length,
+            Number(row.count),
+            `standard_list --category ${row.name} disagrees with its count`,
+          );
+          // A parent whose branch is bigger than its own direct membership:
+          // the roll-up is doing something, so this case cannot pass vacuously.
+          const direct = (list.data as { category?: string }[]).filter(
+            (r) => r.category === row.name,
+          ).length;
+          if (Number(row.count) > direct) rolledUp += 1;
+        }
+        assert.ok(
+          rolledUp > 0,
+          "expected at least one parent category to answer for its descendants",
+        );
+      });
+    },
+  },
+  {
+    // The reflexive half of `skos:broader*`. `broader+` looks equivalent and
+    // silently drops every standard filed DIRECTLY on the category asked for —
+    // one of the 8 under `testing` in the shipped graph.
+    id: "content-standard-category-rollup-keeps-the-direct-member",
+    kind: "content",
+    input:
+      "standard_list {category: <parent>} includes both the standard filed directly on the parent and those filed on its child.",
+    async expect() {
+      await withCanonicalFixture(CANONICAL_CONFIG, async (mcp) => {
+        const parent = await mcp.callTool("standard_list", {
+          category: "testing",
+        });
+        const child = await mcp.callTool("standard_list", {
+          category: "testing-unit",
+        });
+        const parentRows = parent.data as { name: string; category: string }[];
+        const childNames = new Set(
+          (child.data as { name: string }[]).map((r) => r.name),
         );
         assert.ok(
-          listLength > 0,
-          "standard_list must be non-empty for the count-parity invariant to be meaningful",
+          childNames.size > 0,
+          "expected the child category to be used",
         );
-        assert.equal(listLength, categorySum);
+        for (const name of childNames) {
+          assert.ok(
+            parentRows.some((r) => r.name === name),
+            `the parent category dropped its descendant ${name}`,
+          );
+        }
+        assert.ok(
+          parentRows.some((r) => r.category === "testing"),
+          "the parent category dropped the standard filed directly on it",
+        );
       });
     },
   },
