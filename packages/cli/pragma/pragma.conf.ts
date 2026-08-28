@@ -621,7 +621,13 @@ const codeStandardsStories: readonly PackDefinition[] = [
       "List code standards. Optionally filter by category or search term.",
     list: {
       query: [
+        // `?category` is the LEAF a standard is filed under — what a row
+        // displays. `?categories` is that leaf plus every ancestor, which is
+        // what `--category` matches against, so asking for a parent answers for
+        // the whole branch. The traversal is written ONCE, here, rather than
+        // repeated by each consumer.
         "SELECT ?uri ?name ?category ?description",
+        '       (GROUP_CONCAT(DISTINCT ?ancestorSlug; SEPARATOR=" ") AS ?categories)',
         "WHERE {",
         "  ?uri a cs:CodeStandard ;",
         "       cs:description ?description .",
@@ -630,8 +636,18 @@ const codeStandardsStories: readonly PackDefinition[] = [
         "  OPTIONAL {",
         "    ?uri cs:hasCategory ?cat .",
         "    ?cat cs:slug ?category .",
+        // `skos:broader` is deliberately NOT transitive, and this store
+        // (oxigraph) has no reasoner — so `skos:broaderTransitive` returns zero
+        // rows and hand-asserting it would be materialisation wearing a
+        // standards badge. `broader*` is the only thing that works.
+        // The `*` is REFLEXIVE and that is load-bearing: `+` would silently
+        // drop every standard filed DIRECTLY on the category being asked for
+        // (one of the 8 under `testing` today). Do not "correct" it.
+        "    ?cat skos:broader* ?ancestor .",
+        "    ?ancestor cs:slug ?ancestorSlug .",
         "  }",
         "}",
+        "GROUP BY ?uri ?name ?category ?description",
         "ORDER BY ?name",
       ].join("\n"),
       columns: [
@@ -643,8 +659,10 @@ const codeStandardsStories: readonly PackDefinition[] = [
       filters: [
         {
           param: "category",
-          variable: "category",
-          description: "Filter by category name.",
+          variable: "categories",
+          match: "set",
+          description:
+            "Filter by category slug. A parent category answers for its whole branch.",
         },
       ],
       search: {
@@ -655,16 +673,24 @@ const codeStandardsStories: readonly PackDefinition[] = [
     verbs: [
       {
         verb: "categories",
-        description: "List all standard categories with counts.",
-        toolDescription: "List all code standard categories.",
+        description:
+          "List all standard categories with counts (a parent counts its whole branch).",
+        toolDescription:
+          "List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering. Example: standard_categories {}.",
         query: [
-          "SELECT ?name (COUNT(?standard) AS ?count)",
+          // The same reflexive roll-up `list` filters with — written the other
+          // way round (every category whose broader-chain reaches ?cat), so the
+          // count a category reports and the rows `--category` returns are the
+          // same set. `COUNT(DISTINCT ?standard)`: a standard reachable by two
+          // paths is still one standard.
+          "SELECT ?name (COUNT(DISTINCT ?standard) AS ?count)",
           "WHERE {",
           "  ?cat a cs:Category ;",
           "       cs:slug ?name .",
           "  OPTIONAL {",
+          "    ?descendant skos:broader* ?cat .",
           "    ?standard a cs:CodeStandard ;",
-          "              cs:hasCategory ?cat .",
+          "              cs:hasCategory ?descendant .",
           "  }",
           "}",
           "GROUP BY ?name",

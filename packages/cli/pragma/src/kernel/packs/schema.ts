@@ -54,6 +54,7 @@ const filterSchema = z
     param: z.string().regex(FILTER_PARAM_PATTERN),
     variable: fieldName,
     values: z.array(z.string()).min(1).optional(),
+    match: z.enum(["exact", "set"]).optional(),
     description: z.string().optional(),
   })
   .strict()

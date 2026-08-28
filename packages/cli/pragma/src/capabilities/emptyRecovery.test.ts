@@ -35,6 +35,9 @@ function storyFor(noun: string): PackDefinition {
 const PREFIXES = {
   ds: "https://ds.canonical.com/",
   cs: "https://ds.canonical.com/code-standards/",
+  // The `standard` list query names `skos:broader` for its category roll-up —
+  // a CORE prefix on the real build path, which this in-memory helper bypasses.
+  skos: "http://www.w3.org/2004/02/skos/core#",
   owl: "http://www.w3.org/2002/07/owl#",
   rdfs: "http://www.w3.org/2000/01/rdf-schema#",
   xsd: "http://www.w3.org/2001/XMLSchema#",

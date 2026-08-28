@@ -924,9 +924,9 @@ pragma sources update --skip-invalid  # build from the parseable sources, warnin
 
 ### pragma standard categories
 
-List all standard categories with counts.
+List all standard categories with counts (a parent counts its whole branch).
 
-List all code standard categories.
+List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering. Example: standard_categories {}.
 
 ```
 pragma standard categories
@@ -956,7 +956,7 @@ pragma standard list [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--category` | `<string>` | Filter by category name. |
+| `--category` | `<string>` | Filter by category slug. A parent category answers for its whole branch. |
 | `--search` | `<string>` | Search in name and description. |
 
 - Store: reads the local store (`pragma sources update` builds it).

@@ -213,24 +213,85 @@ export const readNounEvalCases: readonly EvalCase[] = [
     },
   },
   {
-    id: "content-standard-list-length-equals-category-count-sum",
+    // The cross-surface count-parity invariant, stated for a HIERARCHY. Summing
+    // the category counts stopped being the right arithmetic the moment a
+    // parent counted its branch (a standard under `testing-unit` is counted by
+    // both `testing-unit` and `testing`); what must hold — and what actually
+    // catches the reported defect — is that each category's count and the rows
+    // `--category` returns for it are the same set. Before the roll-up,
+    // `testing` reported 1 and `standard list --category testing` returned 1 of
+    // the 8 standards in the branch: a silently wrong answer, exit 0.
+    id: "content-standard-category-counts-match-filtered-list",
     kind: "content",
     input:
-      "standard_list length equals the sum of standard_categories counts (the cross-surface count-parity invariant).",
+      "every standard_categories count equals the length of standard_list {category: <slug>}, and a parent category answers for its whole branch.",
     async expect() {
       await withCanonicalFixture(CANONICAL_CONFIG, async (mcp) => {
         const list = await mcp.callTool("standard_list");
         const categories = await mcp.callTool("standard_categories");
-        const listLength = (list.data as unknown[]).length;
-        const categorySum = (categories.data as { count: string }[]).reduce(
-          (sum, row) => sum + Number(row.count),
-          0,
+        const rows = categories.data as { name: string; count: string }[];
+        assert.ok(
+          (list.data as unknown[]).length > 0 && rows.length > 0,
+          "both surfaces must be non-empty for the parity invariant to bite",
+        );
+        let rolledUp = 0;
+        for (const row of rows) {
+          const filtered = await mcp.callTool("standard_list", {
+            category: row.name,
+          });
+          assert.equal(
+            (filtered.data as unknown[]).length,
+            Number(row.count),
+            `standard_list --category ${row.name} disagrees with its count`,
+          );
+          // A parent whose branch is bigger than its own direct membership:
+          // the roll-up is doing something, so this case cannot pass vacuously.
+          const direct = (list.data as { category?: string }[]).filter(
+            (r) => r.category === row.name,
+          ).length;
+          if (Number(row.count) > direct) rolledUp += 1;
+        }
+        assert.ok(
+          rolledUp > 0,
+          "expected at least one parent category to answer for its descendants",
+        );
+      });
+    },
+  },
+  {
+    // The reflexive half of `skos:broader*`. `broader+` looks equivalent and
+    // silently drops every standard filed DIRECTLY on the category asked for —
+    // one of the 8 under `testing` in the shipped graph.
+    id: "content-standard-category-rollup-keeps-the-direct-member",
+    kind: "content",
+    input:
+      "standard_list {category: <parent>} includes both the standard filed directly on the parent and those filed on its child.",
+    async expect() {
+      await withCanonicalFixture(CANONICAL_CONFIG, async (mcp) => {
+        const parent = await mcp.callTool("standard_list", {
+          category: "testing",
+        });
+        const child = await mcp.callTool("standard_list", {
+          category: "testing-unit",
+        });
+        const parentRows = parent.data as { name: string; category: string }[];
+        const childNames = new Set(
+          (child.data as { name: string }[]).map((r) => r.name),
         );
         assert.ok(
-          listLength > 0,
-          "standard_list must be non-empty for the count-parity invariant to be meaningful",
+          childNames.size > 0,
+          "expected the child category to be used",
         );
-        assert.equal(listLength, categorySum);
+        for (const name of childNames) {
+          assert.ok(
+            parentRows.some((r) => r.name === name),
+            `the parent category dropped its descendant ${name}`,
+          );
+        }
+        assert.ok(
+          parentRows.some((r) => r.category === "testing"),
+          "the parent category dropped the standard filed directly on it",
+        );
       });
     },
   },

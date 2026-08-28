@@ -68,7 +68,11 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
       (t) => t.name === "standard_categories",
     )?.description;
     await mcp.cleanup();
-    expect(desc).toBe("List all code standard categories.");
+    // The authored prose reaches the extra verb's tool, whole. Asserted by
+    // fragment rather than by exact string: the wiring is what this pins, and
+    // tool descriptions are explicitly not frozen (`registerVerb.ts:324-326`).
+    expect(desc).toContain("List all code standard categories");
+    expect(desc).toContain("Example: standard_categories {}");
   });
 
   it("CLI --help shows the rich prose but NEVER the MCP tool-call syntax", () => {

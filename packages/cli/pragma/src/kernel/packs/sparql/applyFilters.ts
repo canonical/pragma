@@ -8,6 +8,12 @@
  * the input is a free term matched the same way. A row lacking the variable never
  * matches. Several filters combine conjunctively; several values for one
  * filter (a repeated flag) combine as a union.
+ *
+ * A filter declaring `match: "set"` reads its cell as a space-separated SET and
+ * matches any member — the shape a query produces for a dimension a row belongs
+ * to several values of at once (a category and its ancestors, say). The
+ * comparison is otherwise identical, so exactly one code path decides what a
+ * match is.
  */
 
 import { PragmaError } from "../../error/index.js";
@@ -41,12 +47,25 @@ export function applyPackFilters(
         ? requireStringValue(occurrence, filter).toLowerCase()
         : canonicalizeFilterValue(occurrence, filter, values).toLowerCase(),
     );
-    result = result.filter((row) => {
-      const cell = row[filter.variable]?.normalize("NFC").toLowerCase();
-      return cell !== undefined && terms.includes(cell);
-    });
+    result = result.filter((row) =>
+      cellValues(row, filter).some((value) => terms.includes(value)),
+    );
   }
   return result;
+}
+
+/**
+ * The comparable values a row offers for one filter, lowercased.
+ *
+ * One value for an ordinary filter; every space-separated member for a `"set"`
+ * one. A row lacking the variable offers none, so it never matches.
+ */
+function cellValues(row: PackRow, filter: PackFilter): string[] {
+  const cell = row[filter.variable];
+  if (cell === undefined) return [];
+  const normalized = cell.normalize("NFC").toLowerCase();
+  if (filter.match !== "set") return [normalized];
+  return normalized.split(/\s+/).filter((value) => value !== "");
 }
 
 /** @throws PragmaError INVALID_INPUT when a value-free filter value is not a string. */

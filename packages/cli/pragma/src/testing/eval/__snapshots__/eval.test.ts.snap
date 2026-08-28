@@ -63,7 +63,12 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
     "passed": true,
   },
   {
-    "id": "content-standard-list-length-equals-category-count-sum",
+    "id": "content-standard-category-counts-match-filtered-list",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "content-standard-category-rollup-keeps-the-direct-member",
     "kind": "content",
     "passed": true,
   },

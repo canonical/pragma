@@ -405,7 +405,7 @@ Mutation — plan-first (set `confirm: true` to apply).
 
 ### standard_categories
 
-List all code standard categories.
+List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering. Example: standard_categories {}.
 
 Read-only.
 
@@ -423,7 +423,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `category` | string | no | Filter by category name. |
+| `category` | string | no | Filter by category slug. A parent category answers for its whole branch. |
 | `search` | string | no | Search in name and description. |
 
 ### standard_lookup

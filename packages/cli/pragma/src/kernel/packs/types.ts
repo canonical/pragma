@@ -150,6 +150,19 @@ export interface PackFilter {
    * string matched case-insensitively against the variable).
    */
   readonly values?: readonly string[];
+  /**
+   * How a provided value is compared to the row's cell.
+   *
+   * `"exact"` (the default) compares the whole cell. `"set"` reads the cell as
+   * a SPACE-SEPARATED set and matches when ANY member equals the provided
+   * value — the shape a `GROUP_CONCAT` produces, for a dimension where one row
+   * legitimately belongs to several values at once. The standing case is a
+   * hierarchy: a standard filed under `testing-unit` is, by the definition of
+   * the hierarchy, also a `testing` standard, and a filter that compared only
+   * the leaf answered `--category testing` with 1 of 8 — a silently wrong
+   * answer, exit 0.
+   */
+  readonly match?: "exact" | "set";
   /** Help text (defaults to a generated description). */
   readonly description?: string;
 }
