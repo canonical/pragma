@@ -377,6 +377,28 @@ describe("path-shape helpers (win32 shapes exercised, not host-validated)", () =
     ).toBeUndefined();
   });
 
+  it("ephemeralRunner ignores ordinary directories that merely share a name (REGRESSION)", () => {
+    // The patterns are anchored to each runner's real cache layout. Matching a
+    // bare segment anywhere would reclassify a project living under a directory
+    // called `dlx`, `_npx` or `bunx-something` as ephemeral — and since that
+    // verdict is reached before the workspace check, it wins even with a
+    // lockfile beside the root, leaving the user with no upgrade command and no
+    // error explaining why.
+    expect(
+      ephemeralRunner("/work/dlx/app/node_modules/@canonical/pragma-cli"),
+    ).toBeUndefined();
+    expect(
+      ephemeralRunner("/srv/_npx/site/node_modules/@canonical/pragma-cli"),
+    ).toBeUndefined();
+    expect(
+      ephemeralRunner("/home/u/bunx-tools/node_modules/@canonical/pragma-cli"),
+    ).toBeUndefined();
+    // `dlx` outside a pnpm cache, and `_npx` outside npm's, stay ordinary.
+    expect(
+      ephemeralRunner("/home/u/.cache/yarn/dlx/abc/node_modules/x/bin.js"),
+    ).toBeUndefined();
+  });
+
   it("ephemeralRunner reads npx/bunx/dlx cache shapes on both separator styles", () => {
     expect(
       ephemeralRunner(

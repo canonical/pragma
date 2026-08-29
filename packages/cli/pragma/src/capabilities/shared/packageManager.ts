@@ -223,12 +223,30 @@ export function managerFromPath(path: string): PackageManager | undefined {
   return undefined;
 }
 
-/** The ephemeral runner a path's cache shape names, if any. */
+/**
+ * The ephemeral runner a path's cache shape names, if any.
+ *
+ * Each pattern is anchored to the runner's ACTUAL cache layout, not to a bare
+ * directory name appearing anywhere in the path. A loose match reclassifies an
+ * ordinary project — `/work/dlx/app`, or anything under a directory someone
+ * named `_npx` — as ephemeral, and because that verdict is reached BEFORE the
+ * workspace containment check it wins even when a lockfile sits beside the
+ * root. The failure is quiet rather than loud: an ephemeral install correctly
+ * offers no upgrade command, so the user simply never learns how to update.
+ */
 export function ephemeralRunner(path: string): EphemeralRunner | undefined {
   const segments = splitPath(path);
-  if (segments.includes("_npx")) return "npx";
-  if (segments.some((s) => s.startsWith("bunx-"))) return "bunx";
-  if (segments.includes("dlx")) return "pnpm dlx";
+  // npx caches at `<npm cache>/_npx/<hash>/…` — `~/.npm` on unix,
+  // `%LOCALAPPDATA%\npm-cache` on Windows.
+  const npx = segments.indexOf("_npx");
+  const npxParent = npx > 0 ? segments[npx - 1] : undefined;
+  if (npxParent === ".npm" || npxParent === "npm-cache") return "npx";
+  // bunx materialises `$TMPDIR/bunx-<uid>-<pkg>@<ver>/…`; requiring the uid
+  // keeps a hand-made `bunx-tools` directory from matching.
+  if (segments.some((s) => /^bunx-\d+-/.test(s))) return "bunx";
+  // pnpm caches at `<pnpm cache>/dlx/<hash>/…`.
+  const dlx = segments.indexOf("dlx");
+  if (dlx > 0 && segments[dlx - 1] === "pnpm") return "pnpm dlx";
   return undefined;
 }
 
