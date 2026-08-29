@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
+
+
+### Bug Fixes
+
+* **pragma-cli:** make every setup row actionable, reversible and honestly reported ([#1044](https://github.com/canonical/pragma/issues/1044)) ([4e8d5ed](https://github.com/canonical/pragma/commit/4e8d5ede0bb36b66a682d2098f3db93ac57ed015))
+
+
+
+
+
 # [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
 
 

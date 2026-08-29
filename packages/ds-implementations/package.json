@@ -1,7 +1,7 @@
 {
   "name": "@canonical/ds-implementations",
   "description": "Implementation libraries and implementations of the Canonical design system, as Turtle (RDF) for the knowledge graph.",
-  "version": "0.35.0",
+  "version": "0.36.0",
   "type": "module",
   "files": [
     "data"

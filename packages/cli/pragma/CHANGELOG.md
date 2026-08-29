@@ -3,6 +3,186 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
+
+
+### Bug Fixes
+
+* **pragma-cli:** detect the install source from the filesystem, and name the linked state ([#1053](https://github.com/canonical/pragma/issues/1053)) ([8897dbb](https://github.com/canonical/pragma/commit/8897dbbb996d4004d691c524fdc7fcbef9df9a87))
+* **pragma-cli:** make every setup row actionable, reversible and honestly reported ([#1044](https://github.com/canonical/pragma/issues/1044)) ([4e8d5ed](https://github.com/canonical/pragma/commit/4e8d5ede0bb36b66a682d2098f3db93ac57ed015))
+* **pragma-cli:** make the code standards reachable in one call ([#1047](https://github.com/canonical/pragma/issues/1047)) ([fff26ef](https://github.com/canonical/pragma/commit/fff26ef00b36bd48068c994a0f0b7e4054372596))
+* **pragma-cli:** rank a shared block name by tier depth, and stop discarding the rest ([#1050](https://github.com/canonical/pragma/issues/1050)) ([58eb157](https://github.com/canonical/pragma/commit/58eb1573cc852121cf80bdf52eca3c77d8147255))
+* **pragma-cli:** read ds:usage in block lookup, the vocabulary the graph has ([#1049](https://github.com/canonical/pragma/issues/1049)) ([003d8db](https://github.com/canonical/pragma/commit/003d8dbb112865888f9c86c03e1caf3c61c58731))
+
+
+### Features
+
+* **harnesses:** register the pragma MCP server with Charm's Crush ([#1055](https://github.com/canonical/pragma/issues/1055)) ([1719dbb](https://github.com/canonical/pragma/commit/1719dbbad56c7e95c50315fada3cfabba0d4207c))
+* **pragma-cli:** detect VS Code by installation, and report a harness inventory ([#1043](https://github.com/canonical/pragma/issues/1043)) ([cc08d6b](https://github.com/canonical/pragma/commit/cc08d6b60c2fa434ceb44a13808910c374224536))
+* **pragma-cli:** ship the packs' skills with the release ([#1051](https://github.com/canonical/pragma/issues/1051)) ([ea272dd](https://github.com/canonical/pragma/commit/ea272dd5a9e71c23a24f654956d56237056e64c4))
+* **pragma-cli:** show setup's wizard progress as the plan's rows, not the effect transcript ([#1054](https://github.com/canonical/pragma/issues/1054)) ([b601ae8](https://github.com/canonical/pragma/commit/b601ae8f377618adbd0e51d640d1dc4bb63639c2))
+* **pragma-cli:** show the timings the wizard already has, and the wordmark only when read ([#1046](https://github.com/canonical/pragma/issues/1046)) ([c094f8b](https://github.com/canonical/pragma/commit/c094f8b2c242d47c9b7184985e531049c425ded6))
+
+
+### BREAKING CHANGES
+
+* **pragma-cli:** a lookup argument may answer with more than one entity, so
+`results` can be longer than the arguments that produced it. Unique names are
+unaffected — an array of one is the payload they always had. `LookupOutput`
+loses `ambiguous`, and the ambiguity notice with it; the zero-record notice is
+untouched.
+
+Claude-Session: https://claude.ai/code/session_011B8Z3Lq1eARN1wLfKGvzqC
+
+* fix(pragma-cli): give each pack its own row in doctor
+
+Drive-by, unrelated to the ranking.
+
+`pack refs` printed its whole provenance as one line — four packs and two
+forty-character SHAs comma-joined — in a report where every other multi-part
+check already uses sub-items:
+
+  pack refs: embedded snapshot @ @canonical/design-system@git:d6d8a6c8268cf2bd
+  103e956a2540d6e36bd08d72, @canonical/anatomy-dsl@npm:0.2.2, @canonical/code-
+  standards@git:ab7ae14024f3e52dd19e378eec5861dbc4b9ba72, @canonical/ds-
+  implementations@self:v0.34.0 — 657 entities · `pragma sources update` …
+
+Now the headline counts what answered and each pack gets a row saying which
+revision it is, with git hashes cut to seven:
+
+  pack refs: embedded snapshot — 4 packs, 657 entities · `pragma sources update` …
+    @canonical/design-system: git d6d8a6c
+    @canonical/anatomy-dsl: npm 0.2.2
+
+A ref that parses as no scheme passes through whole rather than being dropped —
+an unreadable provenance is still provenance, and hiding it would be the one
+failure this check exists to prevent. The update hint stays in the detail
+because the renderer prints a remedy only under `fail` and `available`, and a
+snapshot that is answering reads correctly is neither.
+
+Claude-Session: https://claude.ai/code/session_011B8Z3Lq1eARN1wLfKGvzqC
+
+* fix(summon-core): give each wizard question its own widget instance
+
+`pragma setup` failed a real (non-dry) run:
+
+  Error: Invalid --mcp-targets "global:completions".
+  Valid values: /home/adrian/.claude.json, …
+
+`global:completions` is a row id from the PREVIOUS question. Every question
+widget seeds its state from `question.default` with `useState`, which runs on
+MOUNT only — and `QuestionView` rendered them unkeyed, so React reused one
+instance across consecutive questions of the same type. The second multiselect
+inherited the first's selection instead of its own default, and submitted the
+first question's values under the second question's name.
+
+Keying on the question name forces a remount per question.
+
+The bug is older than the run that exposed it. A `customize` confirm used to sit
+between "which targets" and "configure MCP for which files"; a different widget
+type forces a remount, so the carry-over could not happen. Removing that confirm
+did not cause this — it stopped hiding it, which is why a change that deleted a
+question broke one that never mentioned it.
+
+The test drives two adjacent multiselects with different defaults and asserts on
+the SELECTION MARKERS, not the values: the widget renders labels, so a frame
+check for the first question's values passes either way. Confirmed red without
+the key — `expected '› ○ ~/.claude.json' to contain '◉'` — the second question
+rendering every row unselected because it holds a set matching none of its own
+choices.
+
+Claude-Session: https://claude.ai/code/session_011B8Z3Lq1eARN1wLfKGvzqC
+
+* refactor(pragma-cli)!: say `global` and `local project`, and plan in verbs
+
+Two vocabulary problems, one pass over every command touched today.
+
+"Band" was the repository's private word for the two config scopes and it
+had reached the front of the setup plan's headline, doctor's section
+headers, six flag docs and the emitted reference. Nobody outside the
+project has ever called a config scope a band. Both surfaces now say
+`global` and `local project` — the words the `--global` and `--local`
+flags already made the user type, so `Local project` sits above a row
+whose fix is `pragma setup mcp --local`. The TYPE layer is deliberately
+untouched: `ScopeBand`, `bands.ts` and the `band` field on a plan row are
+a wider rename, and nothing there now leaks into a sentence.
+
+The setup plan's middle column was a column of status codes. It reads as
+verbs:
+
+  - `none` said equally "already correct" and "nothing found". It is now
+    `no change`, with the detail beside it saying which of the two.
+  - `skip` never said why. It is `nothing to do`, and every reason names
+    what was found — `nothing to link — no skills installed yet; they
+    arrive with the packs `pragma sources update` builds`.
+  - `3 files` is a count, not an action, and it was in the action column.
+    The verb goes there, taken from the row's children when they agree so
+    a row that will ADD three entries no longer reads `update`.
+  - `installed (VSCodium)` beside `codium — VSCodium (unchanged)` said
+    the editor's name twice and "nothing happens" twice. Children print
+    their own action only when they disagree with each other.
+
+Doctor computed a next step for a skip, carried it through the check,
+published it in `--format json`, and then dropped it one line before it
+reached the reader: `skills` reported "no skills installed" and stopped.
+Every row that carries an instruction now prints it, labelled `fix:`
+where something is broken or unfinished and `next:` on a skip — a skip is
+not a fault, and calling its instruction a fix is the reading the
+`available` glyph exists to prevent.
+
+Jargon out of the rows themselves: "resolver OK" is now "pragma answers
+`<TAB>`", "embedded snapshot" is "shipped with the CLI", "no Global band"
+is "keeps no global config — it is per-project only", and the five
+`setup` sub-verb summaries say what you get rather than naming the
+mechanism.
+
+Goldens moved deliberately, not blanket-updated. `doctor.render.test`
+and `setup.render.test` keep every structural assertion they had — the
+banding, the ordering, the ANSI gate, the neutral marker on an unrun row
+— and gain one: no user-facing string may contain the word "band". The
+`checkShellCompletions` gate-1 test still proves the resolver ran; it
+just matches the sentence a reader gets instead of the one the build did.
+
+Behaviour is unchanged. `PlanAction` values, `--scope` values, config
+keys, JSON field names and `PARITY_GAPS` ids are all as they were; the
+action words are a display mapping over the untouched token.
+
+Claude-Session: https://claude.ai/code/session_011B8Z3Lq1eARN1wLfKGvzqC
+
+* fix(pragma-cli): key `standard` list and lookup on the same property
+
+`standard list` derived its row `name` from `cs:name` while `lookup.by`
+had moved to `rdfs:label`. Both COALESCE over their property with the
+same IRI-derived fallback, so they agreed for every entity carrying
+both or neither — and diverged for exactly the 16 standards in the
+shipped snapshot that carry `cs:name` and no label. Those rows
+published `Turtle local-name casing`; lookup bound the derived slug and
+answered ENTITY_NOT_FOUND.
+
+That is the two-step grammar breaking in the documented way: the tool
+description tells an agent to take a row's `name` VERBATIM to
+`standard_lookup`, and for 16 of 148 standards that instruction could
+not be followed. It is the same defect class the `nameFallback: "iri"`
+docblock was written for, reintroduced from the other side.
+
+Point the list query at `rdfs:label` so one property and one fallback
+serve both halves, and say in the query why the two must move together.
+
+The 16 rows now display their IRI-derived slug rather than a human
+title until the snapshot is rebuilt from a pack generation that carries
+labels (upstream v0.1.5 has 148/148 `rdfs:label`, 0 `cs:name`; the
+shipped embed has 1, 16, and 131 with neither). A consistent slug beats
+a title that cannot be looked up.
+
+Also stop `journeys.packageStories` asserting over ALL `pack refs`
+items. Provenance now contributes one passing row per pack, so the test
+pins the FAILING items — which is what "lists each ignored story as a
+failing item" actually claims.
+
+
+
+
+
 # [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
 
 

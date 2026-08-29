@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
+
+
+### Bug Fixes
+
+* **ci:** guard against workspace sibling ranges the sibling has outgrown ([#1045](https://github.com/canonical/pragma/issues/1045)) ([7b404ef](https://github.com/canonical/pragma/commit/7b404ef3772983776f708027d6f78735235f1485))
+
+
+
+
+
 # [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
 
 

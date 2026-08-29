@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
+
+
+### Features
+
+* **harnesses:** register the pragma MCP server with Charm's Crush ([#1055](https://github.com/canonical/pragma/issues/1055)) ([1719dbb](https://github.com/canonical/pragma/commit/1719dbbad56c7e95c50315fada3cfabba0d4207c))
+* **pragma-cli:** detect VS Code by installation, and report a harness inventory ([#1043](https://github.com/canonical/pragma/issues/1043)) ([cc08d6b](https://github.com/canonical/pragma/commit/cc08d6b60c2fa434ceb44a13808910c374224536))
+
+
+
+
+
 # [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
 
 
