@@ -300,7 +300,30 @@ function judgeGitPack(
 export function findParity(input: ParityInput): Finding[] {
   const findings: Finding[] = [];
   const entries = parseSourceRef(input.manifest.sourceRef);
-  const byName = new Map(entries.map((entry) => [entry.name, entry]));
+  // Built entry by entry rather than with the Map constructor, which keeps
+  // only the LAST entry per key: a manifest carrying both a stale and a
+  // current entry for the same pack would have had its duplicate silently
+  // collapsed, and whichever entry survived would face the remaining checks
+  // alone — a gate that promises exactly one provenance entry per declared
+  // pack must treat a second one as the violation it is. The FIRST entry is
+  // retained (deterministically) so the per-pack checks still run and can
+  // surface anything else wrong with it.
+  const byName = new Map<string, ProvenanceEntry>();
+  for (const entry of entries) {
+    if (byName.has(entry.name)) {
+      findings.push({
+        pack: entry.name,
+        kind: "coverage",
+        fatal: true,
+        message:
+          "appears more than once in the shipped snapshot's provenance — a manifest " +
+          "with duplicate entries for one pack cannot say which revision the graph " +
+          "was built from; rebuild it (`bun run bundle`)",
+      });
+      continue;
+    }
+    byName.set(entry.name, entry);
+  }
 
   for (const pack of input.declared) {
     const entry = byName.get(pack.name);

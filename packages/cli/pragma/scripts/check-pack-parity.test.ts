@@ -272,6 +272,39 @@ describe("coverage and lanes", () => {
     ]);
   });
 
+  test("duplicate provenance entries for one pack are fatal, not collapsed", () => {
+    // A stale AND a current entry for the same pack. A Map built with the
+    // constructor keeps only the last one, so this manifest used to PASS —
+    // whichever entry survived looked healthy, and the gate promised
+    // "exactly one entry per declared pack" while enforcing nothing of the
+    // kind. The first entry is retained for the per-pack checks, so the
+    // duplicate is reported ALONGSIDE anything else wrong, not instead of it.
+    const duplicated = `${sourceRef(STALE_SHA, "0.36.0")}, @canonical/code-standards@git:${TAG_SHA}`;
+    const findings = findParity({
+      declared: DECLARED,
+      manifest: { version: "0.36.0", sourceRef: duplicated },
+      overrideNames: OVERRIDES,
+      selfPack: SELF,
+      resolve: RESOLUTIONS,
+    });
+
+    const bad = fatal(findings);
+    expect(bad).toContainEqual(
+      expect.objectContaining({
+        pack: "@canonical/code-standards",
+        kind: "coverage",
+      }),
+    );
+    // The retained FIRST entry is the stale one, and it still fails the pin
+    // check — the duplicate finding does not shadow the mismatch.
+    expect(bad).toContainEqual(
+      expect.objectContaining({
+        pack: "@canonical/code-standards",
+        kind: "pin-mismatch",
+      }),
+    );
+  });
+
   test("a declared tag that no longer exists upstream is fatal even locally", () => {
     const findings = findParity({
       declared: DECLARED,
