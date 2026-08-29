@@ -68,6 +68,7 @@ export type {
   PromptHandler,
   PromptQuestion,
   SelectPrompt,
+  StepReport,
   TextPrompt,
 } from "./prompt/index.js";
 export {

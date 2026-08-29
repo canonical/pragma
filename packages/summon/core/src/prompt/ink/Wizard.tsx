@@ -17,7 +17,11 @@ import {
 } from "./progressWindow.js";
 import { AnswersTable, ProgressHeader, QuestionView } from "./prompts.js";
 import { Spinner } from "./Spinner.js";
-import type { SessionController, WizardState } from "./session.js";
+import type {
+  SessionController,
+  StepProgress,
+  WizardState,
+} from "./session.js";
 
 /** A compact summary of the effects the confirm gate is about to apply. */
 const EffectsSummary = ({ effects }: { effects: readonly Effect[] }) => {
@@ -103,6 +107,56 @@ const EffectsSummary = ({ effects }: { effects: readonly Effect[] }) => {
  * reserved out of it ({@link describedWidthBudget}), so neither the glyph nor
  * the timing can push the row past the one-line cap.
  */
+/**
+ * Live progress in the HOST's units — rendered whenever the host has reported
+ * steps ({@link SessionController.reportStep}), in place of the per-effect
+ * transcript below. One row per step: a settled row wears the shared outcome
+ * glyph and its wall time, the running one a spinner. The glyphs, the duration
+ * spelling and the one-row truncation are the transcript's own — the two views
+ * share one dialect; they differ only in what a row IS.
+ *
+ * Rendered in the LIVE region, never under `<Static>`, and that is
+ * load-bearing: `execute` walks `generate` on the mock interpreter once after
+ * consent (the outcome summary's file list), so the board fills with
+ * near-zero-duration rows once before the real drive resets and repaints it
+ * (see {@link SessionController.reportStep}) — and a static row cannot be
+ * taken back. The list is bounded by the host's own step count (one row per
+ * setup target), so the full-repaint cost `<Static>` exists to avoid does not
+ * arise.
+ */
+const StepRow = ({ step }: { step: StepProgress }) => {
+  if (step.status === "running") {
+    return (
+      <Box>
+        <Spinner
+          color="blue"
+          label={truncateMiddle(step.label, describedWidthBudget(""))}
+        />
+      </Box>
+    );
+  }
+  const duration = formatEffectDuration(step.duration ?? 0);
+  return (
+    <Text>
+      {step.status === "failed" ? (
+        <Text color="red">{FAILURE_GLYPH}</Text>
+      ) : (
+        <Text color="green">{COMPLETED_GLYPH}</Text>
+      )}{" "}
+      {truncateMiddle(step.label, describedWidthBudget(duration))}{" "}
+      <Text dimColor>{duration}</Text>
+    </Text>
+  );
+};
+
+const StepsProgress = ({ state }: { state: WizardState }) => (
+  <Box flexDirection="column">
+    {state.steps.map((step) => (
+      <StepRow key={step.key} step={step} />
+    ))}
+  </Box>
+);
+
 const Progress = ({ state }: { state: WizardState }) => {
   const shown = state.progress.filter(
     (t) =>
@@ -232,11 +286,21 @@ export const Wizard = ({ controller }: WizardProps) => {
         </Box>
       )}
 
-      {(state.phase === "executing" || state.phase === "complete") && (
-        <Progress state={state} />
-      )}
+      {(state.phase === "executing" || state.phase === "complete") &&
+        (state.steps.length > 0 ? (
+          <StepsProgress state={state} />
+        ) : (
+          <Progress state={state} />
+        ))}
 
-      {state.phase === "complete" && (
+      {/*
+        The banner belongs to the DEFAULT transcript only. A host that narrates
+        its run in its own steps also owns its own epilogue (pragma's `setup`
+        prints its recap right after the unmount), and "Generation complete!"
+        over a run that is not a generation was exactly the vocabulary leak the
+        step rows exist to close.
+      */}
+      {state.phase === "complete" && state.steps.length === 0 && (
         <Box marginTop={1}>
           <Text color="green">{COMPLETED_GLYPH} Generation complete!</Text>
         </Box>

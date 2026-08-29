@@ -416,17 +416,22 @@ export async function executeVerb(
     }
     // Real execution: spread the verb's runner options into the node
     // interpreter (prompt handler, stamping/progress callbacks, log routing,
-    // signal). Teardown (e.g. unmount an Ink render) runs in `finally`.
+    // signal). Teardown (e.g. unmount an Ink render) runs in `finally` —
+    // BEFORE the outcome is rendered: an interactive session's closing frame
+    // flushes on its dispose, so printing the result first put the verb's
+    // stdout recap ABOVE a frame that then repainted stale beneath it. Tear
+    // the UI down, then report; the error path gets the same order for free.
     const exec = mutationRuntime.exec ?? {};
     const onSigint = (): void => controller.abort();
     process.once("SIGINT", onSigint);
+    let value: unknown;
     try {
-      const value = await runTask(task, { onLog: logSink(flags), ...exec });
-      return renderData(verb, flags, value, {});
+      value = await runTask(task, { onLog: logSink(flags), ...exec });
     } finally {
       process.removeListener("SIGINT", onSigint);
       await exec.dispose?.();
     }
+    return renderData(verb, flags, value, {});
   }
 
   const data = await Promise.resolve(

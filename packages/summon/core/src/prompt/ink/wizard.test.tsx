@@ -486,6 +486,118 @@ describe("degenerate-choice prompt wiring (C4)", () => {
   );
 });
 
+describe("host step rows replace the effect transcript", () => {
+  // A host whose unit of work is coarser than one effect (pragma's `setup`:
+  // one step = one configured target spanning a dozen effects) reports steps,
+  // and the wizard renders THOSE rows — the effect transcript would render
+  // eighteen symlink lines for the row the host calls `skills  9 skills → 2
+  // folders`. Rendered from an already-driven controller: a static frame.
+  const drive = async (c: SessionController): Promise<void> => {
+    const consent = c.request(gate());
+    c.submitConfirm(true);
+    // Consent is released once the gate's preview walk settles; only then is
+    // the session executing — the one phase step reports land in.
+    await consent;
+  };
+
+  it(
+    "renders one row per step — the host's sentence, the shared glyph, the wall time",
+    async () => {
+      const c = new SessionController(gen);
+      await drive(c);
+      c.reportStep({
+        key: "global:skills",
+        label: "skills  9 skills → 2 folders",
+        status: "start",
+      });
+      // The effects the step spans still stream through the seam; with steps
+      // present they must NOT paint their own rows.
+      c.reportEffectComplete(writeFileEffect("src/a.ts", "x"), 4);
+      c.reportStep({
+        key: "global:skills",
+        label: "skills  9 skills → 2 folders — linked",
+        status: "done",
+      });
+      c.markComplete();
+      const { lastFrame, unmount } = render(<Wizard controller={c} />);
+      try {
+        await waitFor(() => (lastFrame() ?? "").includes("linked"));
+        const frame = stripStyles(lastFrame() ?? "");
+        expect(frame).toMatch(
+          /✓ skills {2}9 skills → 2 folders — linked \(\d+ms\)/,
+        );
+        expect(frame).not.toContain("Write file:");
+        // The host owns its own epilogue (pragma prints its recap after the
+        // unmount) — the framework's banner would misname the run.
+        expect(frame).not.toContain("Generation complete");
+      } finally {
+        unmount();
+      }
+    },
+    TEST_TIMINGS.testBudgetMs,
+  );
+
+  it(
+    "marks a failed step with the failure glyph, keeping completed siblings",
+    async () => {
+      const c = new SessionController(gen);
+      await drive(c);
+      c.reportStep({ key: "a", label: "config  ~/.config", status: "start" });
+      c.reportStep({
+        key: "a",
+        label: "config  ~/.config — installed",
+        status: "done",
+      });
+      c.reportStep({ key: "b", label: "lsp  codium", status: "start" });
+      c.reportStep({
+        key: "b",
+        label: "lsp  codium — `bun` is not found",
+        status: "failed",
+      });
+      c.markComplete();
+      const { lastFrame, unmount } = render(<Wizard controller={c} />);
+      try {
+        await waitFor(() => (lastFrame() ?? "").includes("bun"));
+        const frame = stripStyles(lastFrame() ?? "");
+        expect(frame).toContain("✓ config  ~/.config — installed");
+        expect(frame).toContain("✗ lsp  codium — `bun` is not found");
+      } finally {
+        unmount();
+      }
+    },
+    TEST_TIMINGS.testBudgetMs,
+  );
+
+  it(
+    "keeps a long step row on ONE line once the duration is appended",
+    async () => {
+      const c = new SessionController(gen);
+      await drive(c);
+      const label = `skills  ${"deep/".repeat(30)}skills — linked`;
+      c.reportStep({ key: "k", label, status: "start" });
+      c.reportStep({ key: "k", label, status: "done" });
+      c.markComplete();
+      const { lastFrame, unmount } = render(<Wizard controller={c} />);
+      try {
+        await waitFor(() => (lastFrame() ?? "").includes("skills"));
+        // Trimmed: the live region sits inside the wizard's one-column frame
+        // padding, which is layout, not row content.
+        const line = (lastFrame() ?? "")
+          .split("\n")
+          .map((l) => stripStyles(l).trim())
+          .find((l) => l.startsWith("✓ skills"));
+        expect(line).toBeDefined();
+        expect(measureDisplayWidth(line ?? "")).toBeLessThanOrEqual(
+          MAX_PROGRESS_LINE,
+        );
+      } finally {
+        unmount();
+      }
+    },
+    TEST_TIMINGS.testBudgetMs,
+  );
+});
+
 /**
  * The two colour states Ink can render the same frame in. Ink styles through
  * `chalk`, and `chalk` decides at import time whether the process's stdout looks

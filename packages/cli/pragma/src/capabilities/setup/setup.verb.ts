@@ -271,6 +271,19 @@ async function runSetup(
       signal,
       onCancel: abort,
     });
+    // Live progress in the PLAN's units, not the interpreter's: the wizard's
+    // default execution view is the per-effect transcript — right for `create`,
+    // whose unit of work IS the file, and wrong here, where one unit is one
+    // configured target and the transcript renders eighteen symlink rows for
+    // the row the plan called `skills  link  9 skills → 2 folders`. Each row
+    // event carries the SAME sentence `renderProgressLine` prints, so the
+    // watcher and the recap reader see one dialect. `--verbose` withholds the
+    // listener, which falls the wizard back to the full effect transcript —
+    // the same detected-only-unless-verbose rule the detection summary and
+    // doctor already follow.
+    if (rt.globalFlags.verbose !== true) {
+      run.setRowListener((event) => session.reportStep(event));
+    }
     rt.exec = {
       promptHandler: session.promptHandler,
       onEffectStart: session.onEffectStart,

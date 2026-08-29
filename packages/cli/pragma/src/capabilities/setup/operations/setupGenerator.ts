@@ -76,6 +76,24 @@ const CHILD_ANSWER: Partial<Record<TargetId, string>> = {
 const rowKey = (scope: Scope, target: TargetId): string => `${scope}:${target}`;
 
 /**
+ * One live row-progress event: a plan row starting, finishing, or failing,
+ * reported WHILE the composed task is being interpreted. `label` is the row's
+ * progress sentence — the same `target  detail — note` shape
+ * `renderProgressLine` prints — so the listener (the Ink wizard's step view)
+ * shows the run in the plan's own vocabulary, not the effect transcript's.
+ *
+ * Structurally identical to summon-core's `StepReport` ON PURPOSE: the wizard
+ * branch forwards these events verbatim, and this module must not import
+ * summon-core values (it stays behind the verb's lazy import).
+ */
+export interface RowEvent {
+  /** The row's stable identity — `scope:target`. */
+  readonly key: string;
+  readonly label: string;
+  readonly status: "start" | "done" | "failed";
+}
+
+/**
  * A ready-to-run setup invocation: the plan as detected, the synthesized
  * generator, and a projection from the completed answers back onto the plan with
  * outcomes filled in — the recap, and the `--format json` body.
@@ -85,6 +103,15 @@ export interface SetupRun {
   readonly generator: GeneratorDefinition;
   /** The plan with the wizard's selection and the run's outcomes applied. */
   applied(answers: Record<string, unknown>): SetupPlan;
+  /**
+   * Register THE live row listener (the Ink wizard's step adapter). The
+   * composed rows emit through it while they are interpreted — which means
+   * EVERY interpretation fires it, the confirm gate's honest preview included;
+   * the receiving session drops reports outside its executing phase, exactly
+   * as the {@link OutcomeSink} relies on last-drive-wins for its records. No
+   * listener registered (a `--yes` run, `--dry-run`, MCP) costs nothing.
+   */
+  setRowListener(listener: (event: RowEvent) => void): void;
 }
 
 /**
@@ -143,25 +170,50 @@ const rowPragmaError = (error: TaskError): PragmaError =>
  * throw bypasses the trampoline's recovery frames — which is why the row bodies
  * raise via `checkExecOk`/`failPragma`, never a bare throw. Interruption bypasses
  * recovery by interpreter invariant, so Ctrl-C still stops the whole run.
+ *
+ * Each row is also BRACKETED with {@link RowEvent}s — `start` as its body is
+ * entered, `done`/`failed` as it settles — emitted from the continuations,
+ * which run at interpretation time. Like the sink writes beside them, the
+ * emits capture nothing IN the task: the composition stays pure and
+ * re-interpretable, and each drive simply narrates itself as it runs.
  */
 const runRowsIsolated = (
   sink: OutcomeSink,
-  rows: readonly { key: string; task: Task<void> }[],
+  rows: readonly {
+    key: string;
+    label: string;
+    doneLabel: string;
+    task: Task<void>;
+  }[],
+  emit: (event: RowEvent) => void,
 ): Task<void> =>
   flatMap(pure(undefined), (): Task<void> => {
     sink.clear();
     return sequence_(
-      rows.map(({ key, task }) =>
-        recover(task, (error) =>
-          flatMap(
-            warn(
-              `The ${key.split(":")[1]} step did not complete — continuing with the remaining targets.`,
-            ),
-            () => {
-              sink.record(key, error);
+      rows.map(({ key, label, doneLabel, task }) =>
+        recover(
+          flatMap(pure(undefined), () => {
+            emit({ key, label, status: "start" });
+            return flatMap(task, () => {
+              emit({ key, label: doneLabel, status: "done" });
               return pure(undefined);
-            },
-          ),
+            });
+          }),
+          (error) =>
+            flatMap(
+              warn(
+                `The ${key.split(":")[1]} step did not complete — continuing with the remaining targets.`,
+              ),
+              () => {
+                sink.record(key, error);
+                emit({
+                  key,
+                  label: `${label} — ${rowPragmaError(error).message}`,
+                  status: "failed",
+                });
+                return pure(undefined);
+              },
+            ),
         ),
       ),
     );
@@ -370,6 +422,31 @@ export async function buildSetupRun(
   const detectionFor = (row: PlanRow): DetectedRow | undefined =>
     detected.find((d) => d.target.id === row.target && d.scope === row.scope);
 
+  /**
+   * The success note a row's completion carries — ONE derivation for the
+   * recap's outcome and the live row event's `done` label, so the sentence a
+   * watcher saw land is the sentence the recap repeats. A removal never
+   * borrows the forward child summary: its children are the files the entry is
+   * being taken OUT of, and counting them as `1 updated` described the
+   * opposite of what the run had just done.
+   */
+  const noteFor = (
+    row: PlanRow,
+    answers: Record<string, unknown>,
+  ): string | undefined => {
+    if (removal) return ACTION_NOTES[row.action];
+    const childKey = CHILD_ANSWER[row.target];
+    const kept =
+      childKey === undefined ? undefined : readList(answers, childKey);
+    return childNote(row, kept) ?? ACTION_NOTES[row.action];
+  };
+
+  /** The live row listener, when a wizard is watching. See {@link SetupRun}. */
+  let rowListener: ((event: RowEvent) => void) | undefined;
+
+  /** The id column width — the recap's own rule, so the columns agree. */
+  const idWidth = Math.max(...plan.rows.map((row) => row.target.length));
+
   const generator: GeneratorDefinition = {
     meta: buildMeta(
       rt,
@@ -389,9 +466,21 @@ export async function buildSetupRun(
         const task = removal
           ? hit.target.composeRemoval(hit.detection)
           : hit.target.compose(hit.detection, children);
-        return [{ key: rowKey(row.scope, row.target), task }];
+        // The row's progress sentence — the `target  detail — note` shape
+        // `renderProgressLine` prints — so the live view and the recap say the
+        // same thing about the same row.
+        const label = `${row.target.padEnd(idWidth)}  ${row.detail}`;
+        const note = noteFor(row, answers);
+        return [
+          {
+            key: rowKey(row.scope, row.target),
+            label,
+            doneLabel: note === undefined ? label : `${label} — ${note}`,
+            task,
+          },
+        ];
       });
-      return runRowsIsolated(sink, tasks);
+      return runRowsIsolated(sink, tasks, (event) => rowListener?.(event));
     },
   };
 
@@ -434,15 +523,7 @@ export async function buildSetupRun(
       };
     }
     if (!isActionable(row.action)) return { status: "noop" };
-    // A removal never borrows the forward child summary: its children are the
-    // files the entry is being taken OUT of, and counting them as "1 updated"
-    // described the opposite of what the run had just done.
-    const childKey = CHILD_ANSWER[row.target];
-    const kept =
-      childKey === undefined ? undefined : readList(answers, childKey);
-    const note = removal
-      ? ACTION_NOTES[row.action]
-      : (childNote(row, kept) ?? ACTION_NOTES[row.action]);
+    const note = noteFor(row, answers);
     return {
       status: removal ? "removed" : "done",
       ...(note === undefined ? {} : { note }),
@@ -452,6 +533,9 @@ export async function buildSetupRun(
   return {
     plan,
     generator,
+    setRowListener: (listener) => {
+      rowListener = listener;
+    },
     applied: (answers) => {
       const chosen = readList(answers, ROWS_ANSWER);
       return withRows(
