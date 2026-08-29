@@ -381,9 +381,9 @@ pragma create package --name @canonical/my-tool --no-run-install
 
 ### pragma doctor
 
-Check environment health and every setup target, in both bands.
+Check your environment and every setup target, globally and in this project.
 
-Reports the environment checks and then one row per setup target in each band, as pass, fail, available (an opt-in integration not yet set up), or skip, with inline remedies. Every banded row is named after the setup target that repairs it, except the `harnesses` row: a per-band inventory of the AI harnesses detected on this machine and whether this CLI's MCP server is registered in each — the detected ones only, or every known harness under the verbose global flag. Storeless by default; the store check boots lazily and never fails the run.
+Reports the environment checks first, then one row per setup target — once for your home directory, once for this project. Each row is pass, fail, available (an optional integration you have not set up yet), or skip (nothing to do here, and the row says why), with the next step printed inline. Every row is named after the setup target that repairs it, except `harnesses`: a listing, per scope, of the AI harnesses found on this machine and whether this CLI's MCP server is registered in each — the ones actually found, or every harness it knows about under the verbose global flag. Needs no store; the store check boots lazily and never fails the run.
 
 ```
 pragma doctor
@@ -700,7 +700,7 @@ pragma prompt lookup <name>
 
 ### pragma setup completions
 
-Install the shell-completion script for your shell.
+Install TAB completion for the shell you are running.
 
 ```
 pragma setup completions [options]
@@ -710,9 +710,9 @@ pragma setup completions [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: global (the default), project, or both. (one of: project, global, both) (default: global) |
-| `--global` | — | Shorthand for --scope global (configure the user/home band). |
-| `--local` | — | Shorthand for --scope project (configure the per-project band). |
+| `--scope` | `<project\|global\|both>` | Where to configure: global (your home directory, the default), project (this repository), or both. (one of: project, global, both) (default: global) |
+| `--global` | — | Shorthand for --scope global — configure your home directory. |
+| `--local` | — | Shorthand for --scope project — configure this project only. |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -720,7 +720,7 @@ pragma setup completions [options]
 
 ### pragma setup config
 
-Create the global config file with its defaults.
+Create your global config file, filled in with the defaults.
 
 ```
 pragma setup config [options]
@@ -730,9 +730,9 @@ pragma setup config [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: global (the default), project, or both. (one of: project, global, both) (default: global) |
-| `--global` | — | Shorthand for --scope global (configure the user/home band). |
-| `--local` | — | Shorthand for --scope project (configure the per-project band). |
+| `--scope` | `<project\|global\|both>` | Where to configure: global (your home directory, the default), project (this repository), or both. (one of: project, global, both) (default: global) |
+| `--global` | — | Shorthand for --scope global — configure your home directory. |
+| `--local` | — | Shorthand for --scope project — configure this project only. |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -740,7 +740,7 @@ pragma setup config [options]
 
 ### pragma setup lsp
 
-Ensure the Terrazzo LSP VS Code extension is installed.
+Install the Terrazzo design-token extension into your VS Code-family editors.
 
 ```
 pragma setup lsp [options]
@@ -750,9 +750,9 @@ pragma setup lsp [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: global (the default), project, or both. (one of: project, global, both) (default: global) |
-| `--global` | — | Shorthand for --scope global (configure the user/home band). |
-| `--local` | — | Shorthand for --scope project (configure the per-project band). |
+| `--scope` | `<project\|global\|both>` | Where to configure: global (your home directory, the default), project (this repository), or both. (one of: project, global, both) (default: global) |
+| `--global` | — | Shorthand for --scope global — configure your home directory. |
+| `--local` | — | Shorthand for --scope project — configure this project only. |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -760,7 +760,7 @@ pragma setup lsp [options]
 
 ### pragma setup mcp
 
-Register the pragma MCP server in detected AI harnesses.
+Register the pragma MCP server with the AI harnesses on this machine.
 
 ```
 pragma setup mcp [options]
@@ -770,9 +770,9 @@ pragma setup mcp [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: global (the default), project, or both. (one of: project, global, both) (default: global) |
-| `--global` | — | Shorthand for --scope global (configure the user/home band). |
-| `--local` | — | Shorthand for --scope project (configure the per-project band). |
+| `--scope` | `<project\|global\|both>` | Where to configure: global (your home directory, the default), project (this repository), or both. (one of: project, global, both) (default: global) |
+| `--global` | — | Shorthand for --scope global — configure your home directory. |
+| `--local` | — | Shorthand for --scope project — configure this project only. |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -780,9 +780,9 @@ pragma setup mcp [options]
 
 ### pragma setup
 
-Configure the global config, completions, the LSP, MCP, and skills.
+Set up your config file, TAB completion, the editor extension, MCP, and skills.
 
-Plans every target in the selected band, then applies the ones you keep. The user/home band is the default; the scope option chooses the per-project band, or both. A run with no attended terminal prints the plan and applies nothing unless the run is confirmed.
+Shows what each target needs, then applies the ones you keep. Everything is configured in your home directory by default; the scope option moves the run to this project alone, or covers both. Without an attended terminal the plan is printed and nothing is written unless the run is explicitly confirmed.
 
 ```
 pragma setup [options]
@@ -792,9 +792,9 @@ pragma setup [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: global (the default), project, or both. (one of: project, global, both) (default: global) |
-| `--global` | — | Shorthand for --scope global (configure the user/home band). |
-| `--local` | — | Shorthand for --scope project (configure the per-project band). |
+| `--scope` | `<project\|global\|both>` | Where to configure: global (your home directory, the default), project (this repository), or both. (one of: project, global, both) (default: global) |
+| `--global` | — | Shorthand for --scope global — configure your home directory. |
+| `--local` | — | Shorthand for --scope project — configure this project only. |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -804,14 +804,14 @@ pragma setup [options]
 
 ```bash
 pragma setup
-pragma setup --dry-run  # print the plan, write nothing
-pragma setup --local  # configure the project band instead
-pragma setup mcp  # just the MCP server registration
+pragma setup --dry-run  # show the plan, write nothing
+pragma setup --local  # configure this project instead of your home directory
+pragma setup mcp  # only register the MCP server
 ```
 
 ### pragma setup skills
 
-Symlink discovered skills into each AI harness.
+Link the skills you have installed into every AI harness that reads them.
 
 ```
 pragma setup skills [options]
@@ -821,9 +821,9 @@ pragma setup skills [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: global (the default), project, or both. (one of: project, global, both) (default: global) |
-| `--global` | — | Shorthand for --scope global (configure the user/home band). |
-| `--local` | — | Shorthand for --scope project (configure the per-project band). |
+| `--scope` | `<project\|global\|both>` | Where to configure: global (your home directory, the default), project (this repository), or both. (one of: project, global, both) (default: global) |
+| `--global` | — | Shorthand for --scope global — configure your home directory. |
+| `--local` | — | Shorthand for --scope project — configure this project only. |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -897,7 +897,7 @@ pragma sources status --format json  # the full envelope
 
 Resolve configured packs and build the local store from them.
 
-Resolves each configured pack (git/file/npm) and builds one content-addressed pack, which every later boot reads with no network access. Pin a revision by putting a commit SHA in the pack's source ref.
+Resolves each configured pack (git, file, or npm) and builds one local pack from them, which every later run reads without touching the network. Put a commit SHA in a pack source ref to pin it to that revision.
 
 ```
 pragma sources update [options]
@@ -907,7 +907,7 @@ pragma sources update [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--skip-invalid` | — | Skip sources that fail to parse (warning about each) and build from the rest, instead of failing the whole update. |
+| `--skip-invalid` | — | Build from the sources that parse, warning about each one that does not, instead of failing the whole update. |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -917,7 +917,7 @@ pragma sources update [options]
 
 ```bash
 pragma sources update  # resolve and build
-pragma sources update --skip-invalid  # build from the parseable sources, warning about any dropped
+pragma sources update --skip-invalid  # build from the sources that parse, and name the ones dropped
 ```
 
 ## standard

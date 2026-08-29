@@ -14,7 +14,7 @@
  * 2. A filtered list narrowed to zero rows is `{ok:true, data:[]}` — there is
  *    still no `meta.count` field on any read envelope, which is the divergence
  *    `read-meta-always-empty` now records (it no longer claims `meta` is always
- *    `{}`: a zero-record read carries the list's own `emptyNotice` as
+ *    `{}`: a zero-record read carries the list's own `notice` as
  *    `meta.notice` on both machine surfaces, asserted below).
  * 3. A value-free filter given a value its vocabulary does not admit is
  *    INVALID_INPUT, not a successful empty list — the narrowing recorded in
@@ -198,7 +198,7 @@ describe("list — a filter value the graph does not carry is INVALID_INPUT (B3,
 
 describe("empty ≠ silence on the machine surfaces", () => {
   it("carries the list's empty-state guidance in the envelope meta", async () => {
-    // `emptyNotice` had exactly one consumer — the CLI dispatcher's stderr — so
+    // `notice` had exactly one consumer — the CLI dispatcher's stderr — so
     // an agent received `{"ok":true,"data":[],"meta":{}}` and nothing else. The
     // search path is the honest way to reach an empty list without a bad
     // argument.

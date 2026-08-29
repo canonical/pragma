@@ -142,9 +142,9 @@ ds:Component a owl:Class .
       const rows = (await verb("list").run({}, emptyRt)) as PackRow[];
       expect(rows).toEqual([]);
       // The same semantics, on the empty-state seam: the calm message + its
-      // runnable hint now reach the user via stderr (`emptyNotice`), keeping
+      // runnable hint now reach the user via stderr (`notice`), keeping
       // plain stdout pure data.
-      const notice = verb("list").output.formatters.emptyNotice?.(rows);
+      const notice = verb("list").output.formatters.notice?.(rows);
       expect(notice).toContain("No blocks in the store.");
       expect(notice).toContain("pragma sources update");
     } finally {

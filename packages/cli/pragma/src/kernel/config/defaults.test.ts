@@ -62,7 +62,8 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
       },
       {
         name: "@canonical/code-standards",
-        source: "git+https://github.com/canonical/web-code-standards.git#main",
+        source:
+          "git+https://github.com/canonical/web-code-standards.git#v0.1.5",
       },
       {
         name: "@canonical/ds-implementations",

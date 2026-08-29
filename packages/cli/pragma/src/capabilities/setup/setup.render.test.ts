@@ -25,7 +25,7 @@ import { PREVIEW_HINT, renderDryRun, setupFormatters } from "./setup.render.js";
 
 const ROOTS = { global: "/home/u", project: "/home/u/src/app" };
 
-/** The five rows a first global-band run produces on a machine with no editor. */
+/** The five rows a first global run produces on a machine with no editor. */
 const ROWS: PlanRow[] = [
   {
     target: "config",
@@ -55,7 +55,7 @@ const ROWS: PlanRow[] = [
     target: "mcp",
     band: "global",
     action: "update",
-    detail: "2 files",
+    detail: "2 config files",
     children: [
       { key: "/home/u/.claude.json", label: "~/.claude.json", action: "add" },
       {
@@ -70,7 +70,7 @@ const ROWS: PlanRow[] = [
     target: "skills",
     band: "global",
     action: "link",
-    detail: "2 skills → 2 dirs (~/.claude/skills, ~/.agents/skills)",
+    detail: "2 skills → 2 folders (~/.claude/skills, ~/.agents/skills)",
     selected: true,
   },
 ];
@@ -103,19 +103,28 @@ const APPLIED: SetupPlan = {
 };
 
 describe("the setup plan renders as one table", () => {
-  it("names the band and both roots once, then one row per target", () => {
+  it("names the scope and both roots once, then one row per target", () => {
     // The header carries the roots so no row repeats an absolute prefix, and
     // EVERY target is a row — including the one that will skip, which is the
     // whole point: a target that cannot be offered is named, not omitted.
+    //
+    // The middle column is a column of VERBS. Three things are pinned here that
+    // it used to get wrong: `mcp` reads `install` rather than `2 files` (a count
+    // is not an action, and the row-level token `update` disagreed with every
+    // one of its own `(add)` children); a row whose children all do the same
+    // thing prints their labels bare, because the verb has already said what
+    // happens to them; and the two quiet outcomes are told apart in words —
+    // `no change` for something already correct, `nothing to do` for something
+    // there is nothing to act on — with the reason beside each.
     expect(renderPlanTable(PLAN, { lead: "Setup plan" })).toBe(
       [
-        "Setup plan — global band (~ · project: ~/src/app)",
+        "Setup plan — global (home: ~ · project: ~/src/app)",
         "",
-        "  config       none     ~/.config/pragma/config.json — present",
-        "  completions  install  bash → ~/.local/share/bash-completion/completions/pragma",
-        "  lsp          skip     no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
-        "  mcp          2 files  ~/.claude.json (add) · ~/.codeium/windsurf/mcp_config.json (add)",
-        "  skills       link     2 skills → 2 dirs (~/.claude/skills, ~/.agents/skills)",
+        "  config       no change      ~/.config/pragma/config.json — present",
+        "  completions  install        bash → ~/.local/share/bash-completion/completions/pragma",
+        "  lsp          nothing to do  no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
+        "  mcp          install        ~/.claude.json · ~/.codeium/windsurf/mcp_config.json",
+        "  skills       link           2 skills → 2 folders (~/.claude/skills, ~/.agents/skills)",
       ].join("\n"),
     );
   });
@@ -133,11 +142,11 @@ describe("the setup plan renders as one table", () => {
 
   it("a non-interactive run without consent previews and says so", () => {
     const preview = setupFormatters.plain({ ...PLAN, preview: true });
-    expect(preview).toContain("Setup plan — global band");
+    expect(preview).toContain("Setup plan — global");
     expect(preview.endsWith(`\n\n${PREVIEW_HINT}`)).toBe(true);
   });
 
-  it("groups the rows under band headings when a run covers both", () => {
+  it("groups the rows under scope headings when a run covers both", () => {
     const both: SetupPlan = {
       scope: "both",
       roots: ROOTS,
@@ -147,17 +156,19 @@ describe("the setup plan renders as one table", () => {
           target: "mcp",
           band: "project",
           action: "skip",
-          detail: "no harness config location in this band",
-          reason:
-            "no AI harness in this project writes a per-repository config",
+          detail: "no AI harness in this project keeps a per-project config",
+          reason: "no AI harness in this project keeps a per-project config",
           selected: false,
         },
       ],
     };
     const out = renderPlanTable(both, { lead: "Setup plan" });
     expect(out).toContain("Global");
-    expect(out).toContain("Project");
-    expect(out).toContain("both bands");
+    expect(out).toContain("Local project");
+    expect(out).toContain("global and local project");
+    // "band" is the type layer's word for this partition. It never reaches a
+    // reader, in any of the three renders.
+    expect(out).not.toMatch(/\bbands?\b/);
   });
 });
 
@@ -165,15 +176,15 @@ describe("the recap is the plan replayed", () => {
   it("counts the rows it took responsibility for and carries each row's outcome", () => {
     expect(renderRecap(APPLIED)).toBe(
       [
-        "Setup: 4 of 4 targets configured — global band",
+        "Setup: 4 of 4 targets configured — global",
         "  ✓ config       ~/.config/pragma/config.json — present",
         "  ✓ completions  bash → ~/.local/share/bash-completion/completions/pragma — installed",
-        "  ○ lsp          skipped — no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
+        "  ○ lsp          skipped: no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
         "      no action is possible on this machine yet — install VS Code or VSCodium, then run this again",
-        "  ✓ mcp          2 files — 2 added",
-        "  ✓ skills       2 skills → 2 dirs (~/.claude/skills, ~/.agents/skills) — linked",
+        "  ✓ mcp          2 config files — 2 added",
+        "  ✓ skills       2 skills → 2 folders (~/.claude/skills, ~/.agents/skills) — linked",
         "",
-        "verify anytime: pragma doctor",
+        "Check this again any time with `pragma doctor`.",
       ].join("\n"),
     );
   });
@@ -181,7 +192,7 @@ describe("the recap is the plan replayed", () => {
   it("a skip carries its reason and never counts as a failure", () => {
     const lsp = APPLIED.rows.find((row) => row.target === "lsp") as PlanRow;
     expect(renderProgressLine(lsp, 11)).toBe(
-      "○ lsp          skipped — no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
+      "○ lsp          skipped: no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
     );
   });
 

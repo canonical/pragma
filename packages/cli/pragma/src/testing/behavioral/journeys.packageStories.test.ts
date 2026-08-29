@@ -138,12 +138,15 @@ describe("the two recoveries still run with bad stories in the pack", () => {
     // The pack DOES answer reads, so the check passes…
     expect(check?.status).toBe("pass");
     expect(check?.detail).toContain("2 stories ignored");
-    // …with the unusable stories named underneath it.
-    expect(check?.items?.map((item) => item.label).sort()).toEqual([
+    // …with the unusable stories named underneath it. The items also carry
+    // one PASSING row per pack the answer was built from, so this pins the
+    // FAILING ones: what a story problem contributes is a failing item, and
+    // that claim must not break every time provenance gains a row.
+    const failing = (check?.items ?? []).filter((i) => i.status === "fail");
+    expect(failing.map((item) => item.label).sort()).toEqual([
       "fixture/stories/broken.json",
       "fixture/stories/invalid.json",
     ]);
-    for (const item of check?.items ?? []) expect(item.status).toBe("fail");
   });
 });
 

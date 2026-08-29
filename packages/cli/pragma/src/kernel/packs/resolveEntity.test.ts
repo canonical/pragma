@@ -7,8 +7,18 @@
  * and nothing else — as accepting a name, a prefixed name, an absolute IRI, or
  * a glob. These assert that the resolver honours the shape it is handed rather
  * than the source its pack declares, that an entity is addressable by IRI even
- * when it carries no `by` value, and that an ambiguous name resolves to the
- * same entity on every store and every machine.
+ * when it carries no `by` value, and that an ambiguous name answers with the
+ * same entity on every store and every machine — while NAMING the ones it did
+ * not answer with.
+ *
+ * That last clause is a REVERSAL, signed off by the owner. It used to read "an
+ * ambiguous name resolves to the SAME entity every time", and the suite proved
+ * it: a total `ORDER BY` under a `LIMIT 1` does make the answer reproducible.
+ * It just made it reproducibly SILENT — `block lookup button` answered with
+ * Launchpad's Button on every machine, because `apps_launchpad…` sorts before
+ * `global…`, and nothing in the payload said the global one existed. The arity
+ * is unchanged and deliberately so; what the old assertions took for the whole
+ * property, determinism, was only half of it.
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -20,7 +30,7 @@ import {
 import { buildFixtureRuntime } from "../../testing/helpers/packRuntime.js";
 import type { PragmaRuntime } from "../runtime/types.js";
 import { compilePack } from "./compile.js";
-import { lookupOptions } from "./renderPack.js";
+import { lookupFormatters, lookupOptions } from "./renderPack.js";
 import type { LookupOutput } from "./resolveEntity.js";
 import type { PackDefinition, PackLookup } from "./types.js";
 import { distributionSource } from "./types.js";
@@ -78,6 +88,14 @@ describe("pack lookup addressing (PROTECTED)", () => {
     if (!verb) throw new Error("no lookup verb");
     return verb.run({ name }, rt) as Promise<LookupOutput>;
   };
+
+  const lookupNoticeVia = (
+    definition: PackDefinition,
+    out: LookupOutput,
+  ): string | undefined =>
+    lookupFormatters(definition.lookup as PackLookup, BLOCK_PREFIXES).notice?.(
+      out,
+    );
 
   const uris = (out: LookupOutput): string[] =>
     out.results.map((entity) => String(entity.uri));
@@ -182,32 +200,75 @@ describe("pack lookup addressing (PROTECTED)", () => {
     });
   });
 
-  describe("an ambiguous name resolves to the SAME entity every time", () => {
+  describe("an ambiguous name answers with EVERY entity it reaches", () => {
     // `ds:zeta.chip` is declared BEFORE `ds:alpha.chip` in the fixture, so the
-    // store enumerates it first while IRI order puts `alpha` first. Without an
-    // explicit ORDER BY the winner is whichever the store happens to yield —
-    // exactly the cross-tier `Button` ambiguity in the live graph.
-    it("picks the lowest IRI on the sparql path", async () => {
+    // store enumerates it first while IRI order puts `alpha` first. Neither of
+    // these stories declares a ranking, so the order is the total `STR(?uri)`
+    // it always was — what changed is that BOTH chips come back. Both paths,
+    // because the resolve is generated SPARQL either way and only the field
+    // fetch differs.
+    it("answers with both, best first, on the sparql path", async () => {
       const out = await lookupVia(SPQ, "Chip");
-      expect(uris(out)).toEqual([`${DS}alpha.chip`]);
+      expect(uris(out)).toEqual([`${DS}alpha.chip`, `${DS}zeta.chip`]);
     });
 
-    it("picks the lowest IRI on the graphql path", async () => {
+    it("answers with both, best first, on the graphql path", async () => {
       const out = await lookupVia(GQL, "Chip");
-      expect(uris(out)).toEqual([`${DS}alpha.chip`]);
+      expect(uris(out)).toEqual([`${DS}alpha.chip`, `${DS}zeta.chip`]);
     });
 
     it("agrees with itself across repeated resolves", async () => {
+      // Determinism was never the property in question — `LIMIT 1` over a total
+      // order was already deterministic. It is pinned because the order now
+      // carries the ranking's judgement, and an order that varied by store
+      // would make the first result mean nothing.
       const runs = await Promise.all([
         lookupVia(SPQ, "Chip"),
         lookupVia(SPQ, "chip"),
         lookupVia(GQL, "CHIP"),
       ]);
       expect(runs.map(uris)).toEqual([
-        [`${DS}alpha.chip`],
-        [`${DS}alpha.chip`],
-        [`${DS}alpha.chip`],
+        [`${DS}alpha.chip`, `${DS}zeta.chip`],
+        [`${DS}alpha.chip`, `${DS}zeta.chip`],
+        [`${DS}alpha.chip`, `${DS}zeta.chip`],
       ]);
+    });
+
+    it("answers with ONE entity for an unambiguous name", async () => {
+      // The plural case costs the singular one nothing: a unique name still
+      // returns an array of one, which is the payload it always had.
+      const out = await lookupVia(GQL, "Modal");
+      expect(uris(out)).toEqual([`${DS}modal`]);
+    });
+
+    it("answers with ONE entity for an IRI, even a shared name's IRI", async () => {
+      // An IRI is one entity by construction, so the IRI form keeps its
+      // `LIMIT 1`: there is nothing to rank and nothing else to reach.
+      const out = await lookupVia(SPQ, "ds:zeta.chip");
+      expect(uris(out)).toEqual([`${DS}zeta.chip`]);
+    });
+
+    it("reaches both entities when a GLOB expands onto the shared name", async () => {
+      // The glob population is DISTINCT names, so "Chip" expands to ONE
+      // candidate — a glob was never the escape a shared name needs. Live,
+      // `block lookup 'Butt*'` listed Launchpad's Button and ButtonLink while
+      // the global Button appeared nowhere. Now the shared name reaches both
+      // through the glob for the same reason it does through a plain name.
+      const out = await lookupVia(SPQ, "Chi*");
+      expect(uris(out)).toEqual([`${DS}alpha.chip`, `${DS}zeta.chip`]);
+    });
+
+    it("adds no notice — the payload IS the address", async () => {
+      // An earlier draft kept the arity and named the outranked IRIs in a
+      // notice. With every entity returned there is nothing set aside to name,
+      // and a sentence restating what the payload already carries is noise.
+      // The zero-record notice is untouched; only the ambiguity one is gone.
+      expect(
+        lookupNoticeVia(SPQ, await lookupVia(SPQ, "Chip")),
+      ).toBeUndefined();
+      expect(
+        lookupNoticeVia(SPQ, await lookupVia(SPQ, "Modal")),
+      ).toBeUndefined();
     });
   });
 });

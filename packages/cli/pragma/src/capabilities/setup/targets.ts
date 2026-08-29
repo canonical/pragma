@@ -144,7 +144,7 @@ const configTarget = defineTarget<ConfigDetection>({
       return {
         action: "skip",
         detail: path,
-        reason: "kept — it holds your settings",
+        reason: `it holds your own settings, so ${path} stays`,
       };
     }
     return { action: "remove", detail: path };
@@ -189,7 +189,12 @@ const completionsTarget = defineTarget<CompletionsDetection>({
       };
     }
     const where = `${d.shell} → ${shortenPath(d.path, roots)}`;
-    if (d.state === "installed") return { action: "none", detail: where };
+    // A no-op row says what it FOUND, not just where it looked: `no change`
+    // beside a bare path leaves the reader to guess whether the script is
+    // there and current or missing and unreachable.
+    if (d.state === "installed") {
+      return { action: "none", detail: `${where} — already up to date` };
+    }
     return {
       action: d.state === "stale" ? "update" : "install",
       detail: where,
@@ -227,17 +232,23 @@ const lspTarget = defineTarget<LspDetection>({
       label: `${e.editor.cli} — ${e.editor.name}`,
       action: e.installed ? ("unchanged" as const) : ("add" as const),
     }));
+    // The detail names WHAT is being placed and WHERE — never the row's own
+    // state, which the action column already carries. `installed (VSCodium)`
+    // beside a child row reading `codium — VSCodium (unchanged)` said the
+    // editor's name twice and "nothing happens here" twice.
     if (d.state === "installed") {
       return {
         action: "none",
-        detail: `installed (${lspEditorNames(d).join(", ")})`,
+        detail: `Terrazzo extension in ${lspEditorNames(d).join(", ")}`,
         children,
       };
     }
     const pending = d.editors.filter((e) => !e.installed);
     return {
       action: "install",
-      detail: `${pending.length} ${pending.length === 1 ? "editor" : "editors"}`,
+      detail: `Terrazzo extension → ${pending
+        .map((e) => e.editor.name)
+        .join(", ")}`,
       children,
     };
   },
@@ -261,7 +272,9 @@ const lspTarget = defineTarget<LspDetection>({
     }
     return {
       action: "remove",
-      detail: `${owned.length} ${owned.length === 1 ? "editor" : "editors"}`,
+      detail: `Terrazzo extension from ${owned
+        .map((e) => e.editor.name)
+        .join(", ")}`,
       children: owned.map((e) => ({
         key: e.editor.cli,
         label: `${e.editor.cli} — ${e.editor.name}`,
@@ -272,6 +285,17 @@ const lspTarget = defineTarget<LspDetection>({
   compose: (d, chosen) => composeLsp(d, chosen),
   composeRemoval: (d) => composeLspRemoval(d),
 });
+
+/**
+ * Why the `mcp` row has nothing to write in a scope — authored once, because
+ * `setup`'s row and `doctor`'s row are the same finding and must not word it
+ * differently. Neither sentence says "band": the two scopes are `global` and
+ * `local project`, after the `--global` / `--local` flags that select them.
+ */
+export const MCP_NO_LOCATION: Record<ScopeBand, string> = {
+  global: "no AI harness on this machine keeps a global config",
+  project: "no AI harness in this project keeps a per-project config",
+};
 
 /** One MCP file as a plan child: its path, the harnesses sharing it, its state. */
 const mcpChild = (
@@ -301,18 +325,17 @@ const mcpTarget = defineTarget<McpDetection>({
     if (d.groups.length === 0) {
       return {
         action: "skip",
-        detail: "no harness config location in this band",
-        reason:
-          band === "project"
-            ? "no AI harness in this project writes a per-repository config"
-            : "no detected AI harness declares a user-level config location",
+        detail: MCP_NO_LOCATION[band],
+        reason: MCP_NO_LOCATION[band],
       };
     }
     const children = d.groups.map((group) => mcpChild(d, group, roots));
     const pending = children.filter((c) => c.action !== "unchanged");
     return {
       action: pending.length === 0 ? "none" : "update",
-      detail: `${d.groups.length} ${d.groups.length === 1 ? "file" : "files"}`,
+      detail: `${d.groups.length} ${
+        d.groups.length === 1 ? "config file" : "config files"
+      }`,
       children,
     };
   },
@@ -323,7 +346,7 @@ const mcpTarget = defineTarget<McpDetection>({
     }
     return {
       action: "remove",
-      detail: `${owned.length} ${owned.length === 1 ? "file" : "files"}`,
+      detail: `${owned.length} ${owned.length === 1 ? "config file" : "config files"}`,
       children: owned.map((group) => ({
         key: group.path,
         label: shortenPath(group.path, roots),
@@ -362,7 +385,7 @@ const skillsTarget = defineTarget<SkillsDetection>({
       };
     }
     const dirs = d.targets.map((t) => shortenPath(t.dir, roots)).join(", ");
-    const where = `${d.skillCount} ${d.skillCount === 1 ? "skill" : "skills"} → ${d.targets.length} ${d.targets.length === 1 ? "dir" : "dirs"} (${dirs})`;
+    const where = `${d.skillCount} ${d.skillCount === 1 ? "skill" : "skills"} → ${d.targets.length} ${d.targets.length === 1 ? "folder" : "folders"} (${dirs})`;
     const detail =
       stale.length === 0
         ? where

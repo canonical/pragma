@@ -66,6 +66,5 @@ export const colophonFormatters: Formatters<ColophonData> = {
 
   // Zero sections: the dispatcher routes this to stderr (exit 0) so plain
   // stdout stays empty; llm/json keep their own empty shapes.
-  emptyNotice: (data) =>
-    data.sections.length === 0 ? EMPTY_NOTICE : undefined,
+  notice: (data) => (data.sections.length === 0 ? EMPTY_NOTICE : undefined),
 };

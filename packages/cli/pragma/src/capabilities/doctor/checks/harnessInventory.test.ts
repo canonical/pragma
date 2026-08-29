@@ -161,8 +161,12 @@ describe("harnessInventory — the listing", () => {
       "VS Code",
     ]);
     expect(items[1]?.detail).toBe("not detected");
-    // Band-aware, and it uses the ONE band vocabulary (`BAND_LABELS`).
-    expect(items[2]?.detail).toBe("no Global band");
+    // Scope-aware, and it states the FACT rather than naming a partition:
+    // VS Code keeps its MCP config per project, so there is no global file for
+    // pragma to be in. `no Global band` named an internal word for that.
+    expect(items[2]?.detail).toBe(
+      "keeps no global config — it is per-project only",
+    );
   });
 
   it("never renders any state as a failure", () => {

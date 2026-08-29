@@ -205,7 +205,7 @@ describe("setup completions", () => {
       // The dry-run renders the PLAN through the verb's formatPlan seam, not the
       // kernel's raw effect dump: one row, the shell it detected, and the script
       // path rendered against the header's roots instead of repeated absolutely.
-      expect(outcome.stdout).toContain("Setup plan — global band");
+      expect(outcome.stdout).toContain("Setup plan — global");
       expect(outcome.stdout).toMatch(
         new RegExp(`completions\\s+install\\s+${SHELL} →`),
       );
@@ -853,11 +853,13 @@ describe("setup (run-all wizard) — scope threading", () => {
     );
     expect(outcome.exitCode).toBe(0);
     const plan = outcome.stdout ?? "";
-    // A band FILTERS the run-all: the out-of-band targets are still named, as
-    // rows saying why they are not in this run, so nothing is silently absent.
-    expect(plan).toContain("completions  skip");
-    expect(plan).toContain("user-level only — it has no project band");
-    // The project-band steps remain: MCP into .cursor, skills into .agents/skills.
+    // A scope FILTERS the run-all: the out-of-scope targets are still named, as
+    // rows saying why they are not in this run, so nothing is silently absent —
+    // and the reason names the flag that WOULD reach them, so the row is not a
+    // dead end either.
+    expect(plan).toContain("completions  nothing to do");
+    expect(plan).toContain("this one is global only — run it with `--global`");
+    // The per-project steps remain: MCP into .cursor, skills into .agents/skills.
     expect(plan).toContain("mcp.json");
     expect(plan).toContain(".agents/skills");
   });
@@ -902,7 +904,7 @@ describe("setup skills", () => {
     );
     expect(outcome.exitCode).toBe(0);
     expect(outcome.stdout).toContain("skills");
-    expect(outcome.stdout).toContain("no project skills");
+    expect(outcome.stdout).toContain("this project holds no skills");
     // The skip is no longer a dead end: it names the action that settles it on
     // THIS machine. The reason does NOT invert — the row still skips.
     expect(outcome.stdout).toContain("SKILL.md, then run this again");
@@ -923,8 +925,8 @@ describe("setup skills", () => {
     );
     const row = plan.rows.find((r) => r.target === "skills");
     expect(row?.action).toBe("skip"); // still nothing to do...
-    expect(row?.reason).toContain("holds none"); // ...for the honest reason
-    expect(row?.reason).not.toContain("is absent");
+    expect(row?.reason).toContain("is empty"); // ...for the honest reason
+    expect(row?.reason).not.toContain("does not exist");
   });
 
   it("a genuinely MISSING project skills root still reports absent", async () => {
@@ -937,7 +939,7 @@ describe("setup skills", () => {
     );
     const row = plan.rows.find((r) => r.target === "skills");
     expect(row?.action).toBe("skip");
-    expect(row?.reason).toContain("is absent");
+    expect(row?.reason).toContain("does not exist");
   });
 
   it("the GLOBAL skip names `sources update`, the command that fills its root", async () => {
@@ -954,7 +956,9 @@ describe("setup skills", () => {
       );
       const row = plan.rows.find((r) => r.target === "skills");
       expect(row?.action).toBe("skip");
-      expect(row?.reason).toBe("no skills installed");
+      expect(row?.reason).toBe(
+        "nothing to link — no skills installed yet; they arrive with the packs `pragma sources update` builds",
+      );
 
       // BOTH assertions belong inside the jail. The end-to-end invocation is
       // asserting the SAME empty-global-root condition, so it has to read the
@@ -969,7 +973,7 @@ describe("setup skills", () => {
         bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
       );
       expect(outcome.exitCode).toBe(0);
-      expect(outcome.stdout).toContain("no skills installed");
+      expect(outcome.stdout).toContain("no skills installed yet");
       expect(outcome.stdout).toContain(`${BIN_NAME} sources update`);
     } finally {
       // `process.env.X = undefined` STORES THE STRING "undefined"; it does not
@@ -2022,7 +2026,7 @@ describe("setup — the detection summary", () => {
     );
     // ...and back in under `--verbose`, which consumes the EXISTING global flag
     // rather than adding a signal.
-    expect(summary).toContain("user-level only");
+    expect(summary).toContain("this one is global only");
     expect(summary).not.toContain("--verbose lists them");
   });
 

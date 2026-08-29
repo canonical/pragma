@@ -403,6 +403,65 @@ describe("degenerate-choice prompt wiring (C4)", () => {
   );
 
   it(
+    "gives each question its OWN default, even back-to-back with the same widget",
+    async () => {
+      // A shipped defect, exactly reproduced. Every widget seeds its state from
+      // `question.default` with `useState`, which runs on MOUNT — so without a
+      // key React reuses one instance across consecutive questions of the same
+      // type and the second inherits the first's selection. `pragma setup` asks
+      // "which targets" then "configure MCP for which files" and answered the
+      // second with the first's row ids: `Invalid --mcp-targets
+      // "global:completions"`. A confirm used to sit between them, whose
+      // different widget type forced a remount and hid it.
+      const c = new SessionController(gen);
+      const { lastFrame, unmount } = render(<Wizard controller={c} />);
+      const frame = (): string => lastFrame() ?? "";
+      try {
+        await waitFor(() => frame().includes("component/react"));
+
+        const first = multiselect("targets", "Which targets?", [
+          { label: "completions", value: "global:completions" },
+          { label: "mcp", value: "global:mcp" },
+        ]);
+        (first.question as { default?: unknown }).default = [
+          "global:completions",
+        ];
+        void c.request(first);
+        await waitFor(() => frame().includes("Which targets?"));
+        c.submitAnswer(["global:completions"]);
+
+        const second = multiselect("mcpTargets", "Which files?", [
+          { label: "~/.claude.json", value: "/home/u/.claude.json" },
+          { label: "~/.gemini.json", value: "/home/u/.gemini.json" },
+        ]);
+        (second.question as { default?: unknown }).default = [
+          "/home/u/.claude.json",
+        ];
+        void c.request(second);
+        await waitFor(() => frame().includes("Which files?"));
+
+        // Assert on the SELECTION MARKERS, not on the values: the widget
+        // renders labels, so a frame check for the first question.s values
+        // would pass either way — a green test proving nothing, which is the
+        // exact failure this suite exists to catch.
+        //
+        // Correctly remounted, the second question seeds from ITS OWN default
+        // and marks `.claude.json` selected. Reusing the instance carries the
+        // first question.s set — values that match none of these choices — so
+        // every row renders unselected.
+        const claude = frame()
+          .split("\n")
+          .find((line) => line.includes(".claude.json"));
+        expect(claude).toBeDefined();
+        expect(claude).toContain("◉");
+      } finally {
+        unmount();
+      }
+    },
+    TEST_TIMINGS.testBudgetMs,
+  );
+
+  it(
     "renders a clear error for a zero-choice multiselect instead of a silent dead-end",
     async () => {
       const c = new SessionController(gen);

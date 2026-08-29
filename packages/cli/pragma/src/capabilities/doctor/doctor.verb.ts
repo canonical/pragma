@@ -20,12 +20,13 @@ import type { DoctorData } from "./types.js";
 
 const doctorVerb: VerbSpec<Record<string, unknown>, DoctorData> = {
   path: ["doctor"],
-  summary: "Check environment health and every setup target, in both bands.",
+  summary:
+    "Check your environment and every setup target, globally and in this project.",
   // Two house rules constrain this string and both are PROTECTED: it may not
   // name the distribution (`identity.test.ts`) and it may not spell a CLI flag
   // (`toolDescriptions.test.ts`), so the inventory's widening is described as
   // "the verbose global flag" rather than by its spelling.
-  doc: "Reports the environment checks and then one row per setup target in each band, as pass, fail, available (an opt-in integration not yet set up), or skip, with inline remedies. Every banded row is named after the setup target that repairs it, except the `harnesses` row: a per-band inventory of the AI harnesses detected on this machine and whether this CLI's MCP server is registered in each — the detected ones only, or every known harness under the verbose global flag. Storeless by default; the store check boots lazily and never fails the run.",
+  doc: "Reports the environment checks first, then one row per setup target — once for your home directory, once for this project. Each row is pass, fail, available (an optional integration you have not set up yet), or skip (nothing to do here, and the row says why), with the next step printed inline. Every row is named after the setup target that repairs it, except `harnesses`: a listing, per scope, of the AI harnesses found on this machine and whether this CLI's MCP server is registered in each — the ones actually found, or every harness it knows about under the verbose global flag. Needs no store; the store check boots lazily and never fails the run.",
   params: [],
   output: { formatters: doctorFormatters },
   examples: [

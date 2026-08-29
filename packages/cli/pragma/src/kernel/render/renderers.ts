@@ -85,7 +85,7 @@ function emptyBody<T>(options: RenderListOptions<T>): string {
  * The empty-list notice a dispatcher routes to STDERR (exit 0): zero rows is
  * a calm success, and stdout — the data stream — must not carry a human
  * sentence a pipe would read as a record. Exported for the formatter seam's
- * `emptyNotice`; the plain renderer itself no longer prints it.
+ * `notice`; the plain renderer itself no longer prints it.
  */
 export function renderListEmptyNotice<T>(
   options: RenderListOptions<T>,

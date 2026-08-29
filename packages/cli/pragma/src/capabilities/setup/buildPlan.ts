@@ -123,22 +123,26 @@ export async function detectTargets(
 }
 
 /**
- * The dim row a target gets when the SELECTED band cannot hold it — `setup
- * --local` still shows `completions`, saying why it is not in this run. A band
- * merely filters the run-all: the user asked for a band, not for that target, so
+ * The dim row a target gets when the SELECTED scope cannot hold it — `setup
+ * --local` still shows `completions`, saying why it is not in this run. A scope
+ * merely filters the run-all: the user asked for a scope, not for that target, so
  * nothing errors, but nothing is silently absent either. (Asking for the
- * impossible band on the SUB-VERB is a different thing entirely — a typed
+ * impossible scope on the SUB-VERB is a different thing entirely — a typed
  * contradiction, and a usage error.)
+ *
+ * The reason names the flag that WOULD reach the target, so the row is not a
+ * dead end: a reader who wanted `completions` under `--local` is told in the
+ * same line that `--global` is where it lives.
  */
 const outOfBandRow = (target: AnyTarget, band: ScopeBand): PlanRow => ({
   target: target.id,
   band,
   action: "skip",
-  detail: "not in this band",
+  detail: "not part of this scope",
   reason:
     band === "project"
-      ? "user-level only — it has no project band"
-      : "project-level only — it has no global band",
+      ? "this one is global only — run it with `--global`"
+      : "this one is per-project only — run it with `--local`",
   selected: false,
 });
 

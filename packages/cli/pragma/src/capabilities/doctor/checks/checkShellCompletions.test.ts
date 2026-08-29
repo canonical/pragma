@@ -94,10 +94,12 @@ function wireZfunc(): void {
 describe("checkShellCompletions — effect test (gate 1)", () => {
   it("passes the resolver gate: `pragma <TAB>` resolves nouns", async () => {
     // No shell → skip, but only AFTER the resolver answered — the detail proves
-    // the effect test ran and succeeded.
+    // the effect test ran and succeeded. The proof is the same fact worded for
+    // a reader ("pragma answers `<TAB>`") rather than as "resolver OK": the
+    // gate it pins is unchanged, only the sentence that reports it.
     const result = await check(tmp(), null);
     expect(result.status).toBe("skip");
-    expect(result.detail).toMatch(/resolver OK/);
+    expect(result.detail).toMatch(/answers `<TAB>`/);
   });
 });
 
@@ -137,7 +139,7 @@ describe("checkShellCompletions — install probe (gate 2)", () => {
     const result = await check(tmp(), "bash");
     expect(result.status).toBe("pass");
     expect(result.detail).toMatch(
-      /bash \(the shell in use\) up to date and resolving/,
+      /bash \(the shell you are in\) — installed, up to date, and completing/,
     );
   });
 
@@ -200,7 +202,7 @@ describe("checkShellCompletions — zsh fpath activation (gate 3)", () => {
     const result = await check(tmp(), "zsh");
     expect(result.status).toBe("pass");
     expect(result.detail).toMatch(
-      /zsh \(the shell in use\) up to date and resolving/,
+      /zsh \(the shell you are in\) — installed, up to date, and completing/,
     );
   });
 });

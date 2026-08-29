@@ -42,6 +42,7 @@ import type {
   PackChildRow,
   PackEntity,
   PackLookup,
+  PackRow,
   StorySource,
 } from "./types.js";
 
@@ -53,7 +54,15 @@ export interface LookupError {
   readonly suggestions?: readonly string[];
 }
 
-/** The result of a (possibly multi-name) lookup. */
+/**
+ * The result of a (possibly multi-name) lookup.
+ *
+ * `results` may be LONGER than the arguments that produced it: a name several
+ * entities share answers with all of them, ranked. There is no companion field
+ * naming the ones not answered with, because there are none — an earlier draft
+ * kept the single-entity arity and carried the rest as IRIs in a notice, which
+ * is a sentence about an address where the payload is the address.
+ */
 export interface LookupOutput {
   readonly results: PackEntity[];
   readonly errors: LookupError[];
@@ -106,7 +115,7 @@ export async function resolveLookup(
     const query = expanded.names[index];
     if (query === undefined) continue;
     if (outcome.status === "fulfilled") {
-      results.push(outcome.value);
+      results.push(...outcome.value);
       continue;
     }
     const error = outcome.reason;
@@ -189,7 +198,35 @@ async function expandQueries(
   return { names, globErrors };
 }
 
-/** Look up one entity, dispatching to the pack's declared fetch source. */
+/**
+ * Look up every entity a lookup argument reaches, dispatching to the pack's
+ * declared fetch source.
+ *
+ * One argument, EVERY entity it reaches — ranked, best first.
+ *
+ * `lookup` is deliberately one tool for the singular and the plural case. An
+ * agent that had to decide up front whether a name is unique would pay two
+ * round trips to find out, and the answer is not knowable from the name: 25
+ * live block names reach two or three blocks apiece, and the caller cannot
+ * tell which until it asks. Returning them all costs the caller nothing when a
+ * name is unique — the array is one long — and saves a whole exchange when it
+ * is not.
+ *
+ * That is why the `LIMIT 1` had to go rather than be compensated for. With it,
+ * `block lookup button` answered with Launchpad's Button and gave no sign the
+ * global one existed, because `apps_launchpad…` sorts before `global…`. An
+ * earlier draft of this change kept the arity and named the losers in a notice;
+ * a notice is a sentence about an address, and the payload is the address.
+ *
+ * Ranking still matters, and matters more: it is now what ORDERS the answer
+ * rather than what silently picks it. The best row leads, so a caller reading
+ * only the first gets the entity the ranking believes was meant.
+ *
+ * The rows are collapsed to one per `?uri` first. The sparql form projects its
+ * fields in the same SELECT, so a multi-valued field yields one row per value;
+ * that has always been true and `LIMIT 1` merely hid it. Without the collapse
+ * one entity would report itself as several.
+ */
 async function lookupOne(
   rt: LookupRuntime,
   lookup: PackLookup,
@@ -198,15 +235,15 @@ async function lookupOne(
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
   level: string | undefined,
-): Promise<PackEntity> {
+): Promise<PackEntity[]> {
   const graphqlSourced = lookup.source === "graphql";
   const rows = await runSelect(
     rt,
     buildResolveQuery(lookup, query, prefixes, level),
     source,
   );
-  const base = rows.at(0);
-  if (!base?.uri) {
+  const bases = firstRowPerEntity(rows);
+  if (bases.length === 0) {
     const candidates = await listEntityNames(rt, lookup, source);
     throw PragmaError.notFound(noun, query, {
       suggestions: suggestNames(query, candidates),
@@ -220,28 +257,49 @@ async function lookupOne(
   }
 
   if (graphqlSourced) {
-    return fetchGraphqlLookup(
-      rt,
-      lookup,
-      base.uri,
-      base.name ?? query,
-      // The GraphQL lane's only use of the source is CONFIG_ERROR attribution,
-      // which is right for any origin — so it takes the label, not provenance.
-      source.label,
-      prefixes,
-      level,
+    return Promise.all(
+      bases.map((base) =>
+        fetchGraphqlLookup(
+          rt,
+          lookup,
+          String(base.uri),
+          base.name ?? query,
+          // The GraphQL lane's only use of the source is CONFIG_ERROR
+          // attribution, which is right for any origin — so it takes the label,
+          // not provenance.
+          source.label,
+          prefixes,
+          level,
+        ),
+      ),
     );
   }
 
-  const entity: PackEntity = { ...base };
-  for (const expand of activeExpands(lookup, level)) {
-    entity[expand.name] = (await runSelect(
-      rt,
-      buildExpandQuery(expand, base.uri),
-      source,
-    )) as readonly PackChildRow[];
+  const entities: PackEntity[] = [];
+  for (const base of bases) {
+    const entity: PackEntity = { ...base };
+    for (const expand of activeExpands(lookup, level)) {
+      entity[expand.name] = (await runSelect(
+        rt,
+        buildExpandQuery(expand, String(base.uri)),
+        source,
+      )) as readonly PackChildRow[];
+    }
+    entities.push(entity);
   }
-  return entity;
+  return entities;
+}
+
+/** Collapse a ranked resolve to one row per entity, keeping the best-ranked. */
+function firstRowPerEntity(rows: readonly PackRow[]): PackRow[] {
+  const seen = new Set<string>();
+  const bases: PackRow[] = [];
+  for (const row of rows) {
+    if (!row.uri || seen.has(row.uri)) continue;
+    seen.add(row.uri);
+    bases.push(row);
+  }
+  return bases;
 }
 
 /**

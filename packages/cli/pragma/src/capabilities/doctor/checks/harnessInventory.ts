@@ -46,7 +46,6 @@
  * band type — the moment `setup`'s detection summary becomes the second caller.
  */
 
-import { BAND_LABELS } from "../../shared/index.js";
 import type { CheckItem, CheckStatus, ScopeBand } from "../types.js";
 
 /**
@@ -194,7 +193,15 @@ const STATE_STATUS: Record<InventoryState, CheckStatus> = {
   unbanded: "skip",
 };
 
-/** The phrase each state reads as, band-aware for the unbanded case. */
+/**
+ * The phrase each state reads as, scope-aware for the unbanded case.
+ *
+ * The unbanded line says WHERE the harness keeps its config rather than naming
+ * an internal partition. `no Global band` told the reader nothing: "band" is
+ * this repository's word, and the fact underneath it — VS Code stores its MCP
+ * config per project, so there is no global file for pragma to be in — is the
+ * thing that explains the row.
+ */
 const stateDetail = (row: InventoryRow): string => {
   switch (row.state) {
     case "registered":
@@ -206,7 +213,9 @@ const stateDetail = (row: InventoryRow): string => {
     case "undetected":
       return "not detected";
     case "unbanded":
-      return `no ${BAND_LABELS[row.band]} band`;
+      return row.band === "global"
+        ? "keeps no global config — it is per-project only"
+        : "keeps no per-project config — it is global only";
   }
 };
 

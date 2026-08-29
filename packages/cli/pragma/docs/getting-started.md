@@ -15,7 +15,7 @@ The package ships compiled JavaScript and runs on **Node.js 22.18+ or 23.6+** (a
 pragma doctor
 ```
 
-`pragma doctor` prints pass / fail / skip for every health check, each failure with the command that fixes it. Nothing needs to pass before your first read — it is there so you know the state of things.
+`pragma doctor` prints one row per check, with the next step inline wherever there is one. Nothing needs to pass before your first read — it is there so you know the state of things.
 
 ## First read
 
@@ -31,7 +31,7 @@ pragma block lookup Button
 ## Where to go next
 
 - [The design system graph](./design-system.md) — blocks, tiers, modifiers, standards, and how to read a block's anatomy tree. Start here to learn what the graph can tell you.
-- [Setup and health](./setup.md) — the `pragma setup` wizard (completions, MCP, skills, LSP), project vs global scope, and `pragma doctor` in depth.
+- [Setup and health](./setup.md) — the `pragma setup` wizard (config, completions, MCP, skills, the editor extension), global vs local project scope, and `pragma doctor` in depth.
 - [MCP integration](./mcp-integration.md) — run pragma as an MCP server and give your AI agent the same graph.
 - [Configuration model](./config-model.md) — the layered configuration, and pointing pragma at your own design system.
 - [Command & tool reference](./reference/index.md) — every command, flag, and tool.

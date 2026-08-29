@@ -55,7 +55,7 @@ export interface RenderMeta {
  * list on a BUILT store (a cold store would have failed with STORE_UNAVAILABLE
  * first) means "nothing matched", so point at both possible fixes.
  */
-const DEFAULT_EMPTY_HINT = `Build the store with \`${BIN_NAME} sources update\`, or broaden the filter or channel.`;
+const DEFAULT_EMPTY_HINT = `Either nothing matched — try a wider filter — or the store has nothing in it yet: build it with \`${BIN_NAME} sources update\`.`;
 
 /** Build the list formatters for a list-shaped verb (list or an extra verb). */
 export function listFormatters(
@@ -89,7 +89,7 @@ export function listFormatters(
     json: (rows) => JSON.stringify(rows, null, 2),
     // Zero rows: the dispatcher routes this to stderr (exit 0) so the plain
     // stdout stream stays pure data; llm/json keep their own empty shapes.
-    emptyNotice: (rows) =>
+    notice: (rows) =>
       rows.length === 0 ? renderListEmptyNotice(options) : undefined,
   };
 }
@@ -132,7 +132,7 @@ export function lookupOptions(
   };
 }
 
-/** Build the lookup formatters (renders every resolved entity, then any errors). */
+/** Build the lookup formatters (every resolved entity, then errors, then the notice). */
 export function lookupFormatters(
   lookup: PackLookup,
   prefixes: Readonly<Record<string, string>>,

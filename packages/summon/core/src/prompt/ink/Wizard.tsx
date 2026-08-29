@@ -189,7 +189,24 @@ export const Wizard = ({ controller }: WizardProps) => {
         <Box flexDirection="column">
           <ProgressHeader current={state.step} total={state.total} />
           <AnswersTable prompts={generator.prompts} answers={state.answers} />
+          {/*
+            KEYED BY QUESTION NAME, and it is load-bearing. Every question
+            widget seeds its state from `question.default` with `useState`,
+            which runs on MOUNT only. Without a key React reuses one instance
+            across consecutive questions of the same type, so the second one
+            inherits the first one's state instead of its own default — two
+            adjacent multiselects, and the answers cross.
+
+            That is not hypothetical: `pragma setup` asks "which targets" and
+            then "configure MCP for which files", and it shipped a run where the
+            second answered with the FIRST's row ids
+            (`Invalid --mcp-targets "global:completions"`). It was invisible for
+            as long as a confirm sat between the two — a different widget type
+            forces a remount — so removing that confirm did not cause the bug,
+            it stopped hiding it.
+          */}
           <QuestionView
+            key={state.activeQuestion.question.name}
             question={state.activeQuestion.question}
             validate={
               generator.prompts.find(

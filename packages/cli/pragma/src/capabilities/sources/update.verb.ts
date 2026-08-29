@@ -25,12 +25,12 @@ export const updateVerb: VerbSpec<
 > = {
   path: ["sources", "update"],
   summary: "Resolve configured packs and build the local store from them.",
-  doc: "Resolves each configured pack (git/file/npm) and builds one content-addressed pack, which every later boot reads with no network access. Pin a revision by putting a commit SHA in the pack's source ref.",
+  doc: "Resolves each configured pack (git, file, or npm) and builds one local pack from them, which every later run reads without touching the network. Put a commit SHA in a pack source ref to pin it to that revision.",
   params: [
     {
       kind: "boolean",
       name: "skipInvalid",
-      doc: "Skip sources that fail to parse (warning about each) and build from the rest, instead of failing the whole update.",
+      doc: "Build from the sources that parse, warning about each one that does not, instead of failing the whole update.",
     },
   ],
   output: { formatters: updateFormatters },
@@ -38,7 +38,7 @@ export const updateVerb: VerbSpec<
     { cmd: `${BIN_NAME} sources update`, note: "resolve and build" },
     {
       cmd: `${BIN_NAME} sources update --skip-invalid`,
-      note: "build from the parseable sources, warning about any dropped",
+      note: "build from the sources that parse, and name the ones dropped",
     },
   ],
   capability: {

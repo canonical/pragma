@@ -13,14 +13,39 @@
  * for. That single binding is what makes the population a `list` publishes and
  * the population a `lookup` answers to the same population.
  *
- * Every name-addressed resolve is TOTALLY ORDERED before its `LIMIT 1`. A name
- * can recur across tiers, and an unordered `LIMIT 1` hands the tie to the
- * store's enumeration order — a different answer on a different machine, or
- * after a repack. `ORDER BY STR(?uri)` is a total, engine-independent order over
- * a variable that is always bound (`?uri` carries the class constraint, or the
- * `by` triple when the name is not derived), so it needs no unbound-value
- * sentinel. It fixes WHICH answer is arbitrary, not WHETHER: declaring a
- * precedence between tiers is an ontology change, tracked separately.
+ * A name-addressed resolve RANKS, and returns every row it ranked. A name can
+ * reach several entities (25 of the live design system's block names do), and
+ * the `LIMIT 1` that used to sit under the ordering discarded all but the first
+ * inside the STORE, where nothing downstream could see that it had happened —
+ * `block lookup button` answered with Launchpad's Button and gave no sign the
+ * global one existed, because `apps_launchpad…` sorts before `global…`.
+ *
+ * The limit is gone from the NAME forms so the resolver can see what it is
+ * choosing between. It still answers with one entity — the arity is the tool's
+ * contract — but the rows it did not take become the IRIs of its notice, which
+ * is the only address that reaches them. (An IRI-addressed form keeps its
+ * `LIMIT 1`: an IRI is one entity by construction, so there is nothing to rank
+ * and nothing set aside.)
+ *
+ * The losers are NOT free, and an earlier draft of this comment claimed they
+ * were. `lookupProjection`'s optionals sit in the same SELECT as the ranking, so
+ * every matching URI has its declared fields projected, and a multi-valued field
+ * multiplies rows per entity before `firstRowPerEntity` throws them away. On the
+ * live graph that is small — 25 shared names, two entities each — but it is a
+ * product, not a constant, and the honest shape is a two-phase resolve: rank the
+ * URIs in a minimal SELECT, then project fields for the ones actually answered
+ * with. That restructure is deliberately not done here: it is the same query the
+ * pending no-limit change would rewrite again, and doing it twice would land two
+ * migrations on one seam.
+ *
+ * The order is {@link rankingClause}'s `?score`, then `STR(?uri)`. The score
+ * multiplies the two things a pack may declare about which entity a bare name
+ * MEANS — `weights` (which KIND of thing) and `scopeWeight` (WHOSE) — and a
+ * story that declares neither falls through to `STR(?uri)` alone, a total,
+ * engine-independent order over a variable that is always bound (`?uri` carries
+ * the class constraint, or the `by` triple when the name is not derived), so it
+ * needs no unbound-value sentinel. That final key is what makes the ranking a
+ * TOTAL order rather than a better arbitrary one.
  */
 
 import { activeExpands, activeFields } from "../disclosure.js";
@@ -167,12 +192,166 @@ function iriNameBinding(lookup: PackLookup): string {
 }
 
 /**
- * Build the SELECT retrieving one named entity with its declared fields.
+ * Render a declared weight as a SPARQL numeric literal (never exponential).
+ *
+ * `toFixed` is the wrong instrument twice over, and both bite inside the 0–1
+ * range the schema allows. It ROUNDS — `0.1234567` became `0.123457`, silently
+ * altering a ranking a pack author declared — and stripping the trailing zeros
+ * off its output turns `0.0000001` into `0.`, which is not a numeric literal at
+ * all and makes the query a parse error rather than a wrong answer.
+ *
+ * `String` already prints the shortest exact round-trip, so it is the right
+ * source of digits; the only thing it does that SPARQL cannot read is
+ * exponent notation, which xsd:decimal's grammar has no form for. Expand that
+ * case and pass everything else through untouched.
+ */
+function sparqlNumber(value: number): string {
+  if (Number.isInteger(value)) return String(value);
+  const text = String(value);
+  const exponent = /e-(\d+)$/i.exec(text);
+  if (exponent === null) return text;
+  // `1e-7` / `1.5e-7`: the decimal places needed are the exponent plus whatever
+  // the mantissa already carried, which is exact — no rounding can occur.
+  const mantissaPlaces = text.split("e")[0]?.split(".")[1]?.length ?? 0;
+  return value.toFixed(Number(exponent[1]) + mantissaPlaces);
+}
+
+/**
+ * `left * right`, guarded where an operand may be ZERO.
+ *
+ * Not defensiveness — a MEASURED engine defect, and the top scope hits it every
+ * time. oxigraph raises on an xsd:decimal times a zero (`0.2 * 0` errors, while
+ * `0.2 * 1` is `0.2`), and a raising expression inside a `BIND` leaves its
+ * variable unbound. Written the arithmetic way, the depth-0 scope — the one that
+ * is supposed to WIN — is the only one whose weight never binds, and what
+ * happens next is decided by whatever the surrounding `COALESCE` falls back to.
+ * The same expression on the `block list` side fell back to 0 and sorted every
+ * top-tier row LAST, which is how this was found. Both sides now say what they
+ * mean. Only VARIABLE operands are tested; a declared literal is resolved at
+ * build time by the callers.
+ */
+function sparqlProduct(left: string, right: string): string {
+  const guards = [left, right]
+    .filter((operand) => operand.startsWith("?"))
+    .map((operand) => `${operand} = 0`);
+  const product = `${left} * ${right}`;
+  return guards.length === 0
+    ? product
+    : `IF(${guards.join(" || ")}, 0, ${product})`;
+}
+
+/**
+ * The type factor: the LOWEST weight declared for any class the entity belongs
+ * to, 1 when none is.
+ *
+ * An IF-ladder over `EXISTS` rather than a weight column on the class VALUES,
+ * because a join would multiply rows for an entity in two weighted classes and
+ * the resolve now returns every row it finds. Lowest weight tested FIRST, so the
+ * ladder means MIN — the same rule the MCP listing's `effectiveWeight` states in
+ * prose: a demotion any membership asks for is not cancelled by a membership
+ * that asked for nothing.
+ */
+function typeWeightBind(lookup: PackLookup): string {
+  const declared = Object.entries(lookup.weights ?? {});
+  if (declared.length === 0) return "";
+  const ladder = [...declared]
+    .sort(([aType, aWeight], [bType, bWeight]) =>
+      aWeight === bWeight ? aType.localeCompare(bType) : aWeight - bWeight,
+    )
+    .reduceRight(
+      (fallback, [type, weight]) =>
+        `IF(EXISTS { ?uri a ${formatTerm(type)} }, ${sparqlNumber(weight)}, ${fallback})`,
+      "1",
+    );
+  return `  BIND(${ladder} AS ?rankType)`;
+}
+
+/**
+ * The scope factor: how much the entity's containing scope is worth, DERIVED
+ * from the depth of that scope's own path-shaped name.
+ *
+ * Nested OPTIONALs, not a flat sequence: `?rankScope` is unbound for an entity
+ * outside any scope, and a following top-level `OPTIONAL { ?rankScope <by> ?n }`
+ * would then match every such triple in the graph and multiply the row.
+ *
+ * The depth is the separator count, so nothing is enumerated and a scope the
+ * ontology adds tomorrow inherits its place. `COALESCE` states the retirement
+ * path in the query itself: an ASSERTED weight wins, the derived one answers
+ * until there is one, and an entity with no scope at all scores a neutral 1
+ * rather than dropping below entities that have one.
+ */
+function scopeWeightBinds(lookup: PackLookup): string {
+  const scope = lookup.scopeWeight;
+  if (!scope) return "";
+  const name = "?rankScopeName";
+  const asserted = scope.asserted
+    ? [
+        `    OPTIONAL { ?rankScope ${formatTerm(scope.asserted)} ?rankAsserted . }`,
+      ]
+    : [];
+  // A falloff of 0 ranks every scope alike, so the derived weight is the
+  // constant — and the depth it would multiply is never computed.
+  const derived =
+    scope.falloff === 0
+      ? "1"
+      : `1 - ${sparqlProduct(sparqlNumber(scope.falloff), "?rankDepth")}`;
+  return [
+    "  OPTIONAL {",
+    `    ?uri ${formatTerm(scope.via)} ?rankScope .`,
+    `    OPTIONAL { ?rankScope ${formatTerm(scope.by)} ${name} . }`,
+    ...asserted,
+    "  }",
+    `  BIND(STRLEN(${name}) - STRLEN(REPLACE(${name}, "/", "")) AS ?rankDepth)`,
+    `  BIND(${derived} AS ?rankDerived)`,
+    // Floored at 0: a scope deep enough to drive the factor negative would
+    // otherwise INVERT the type factor it multiplies, promoting a part of a
+    // block above a whole one.
+    `  BIND(COALESCE(${scope.asserted ? "?rankAsserted, " : ""}IF(?rankDerived < 0, 0, ?rankDerived), 1) AS ?rankScopeWeight)`,
+  ].join("\n");
+}
+
+/**
+ * The `?score` a name resolve orders by, and the ORDER BY that reads it.
+ *
+ * The two factors MULTIPLY rather than tiebreak, and that is the editorial
+ * ruling, not an implementation convenience: neither question subsumes the
+ * other. A whole component in a nested scope (1 × 0.8) outranks a mere PART of a
+ * block in the widest one (0.6 × 1), while two components of equal kind are
+ * separated by their scopes alone (1 × 1 beats 1 × 0.8). Both live cases fall
+ * out of one product.
+ *
+ * @returns The BIND lines to splice into the WHERE clause, and the ORDER BY
+ *   line — a story declaring neither factor gets no BINDs and `STR(?uri)` alone.
+ */
+function rankingClause(lookup: PackLookup): {
+  binds: string;
+  orderBy: string;
+} {
+  const factors = [typeWeightBind(lookup), scopeWeightBinds(lookup)].filter(
+    (line) => line !== "",
+  );
+  if (factors.length === 0) return { binds: "", orderBy: "ORDER BY STR(?uri)" };
+  const terms = [
+    lookup.weights && Object.keys(lookup.weights).length > 0 ? "?rankType" : "",
+    lookup.scopeWeight ? "?rankScopeWeight" : "",
+  ].filter((term) => term !== "");
+  return {
+    binds: [
+      ...factors,
+      `  BIND(${terms.length === 2 ? sparqlProduct(terms[0] as string, terms[1] as string) : terms.join("")} AS ?score)`,
+    ].join("\n"),
+    orderBy: "ORDER BY DESC(?score) STR(?uri)",
+  };
+}
+
+/**
+ * Build the SELECT retrieving the entities a name reaches, with their declared
+ * fields, best first. The caller answers with the first and names the rest.
  *
  * @param lookup - The pack's lookup declaration.
  * @param name - User-supplied entity name (escaped here).
  * @param level - Active canonical level; gated fields below it are excluded.
- * @returns SPARQL SELECT text.
+ * @returns SPARQL SELECT text, ranked and unlimited.
  */
 export function buildLookupQuery(
   lookup: PackLookup,
@@ -180,15 +359,16 @@ export function buildLookupQuery(
   level?: string,
 ): string {
   const { header, constraint, optionals } = lookupProjection(lookup, level);
+  const ranking = rankingClause(lookup);
   return [
     header,
     constraint,
     nameBinding(lookup),
+    ranking.binds,
     optionals,
     `  FILTER (LCASE(STR(?name)) = LCASE("${escapeSparqlString(name)}"))`,
     "}",
-    "ORDER BY STR(?uri)",
-    "LIMIT 1",
+    ranking.orderBy,
   ]
     .filter((line) => line !== "")
     .join("\n");
@@ -229,21 +409,28 @@ export function buildLookupByIriQuery(
 /**
  * Build the minimal name→URI resolve for a graphql-sourced lookup (and the
  * shared entry point for the sparql path's name form): maps the user-supplied
- * name to the entity IRI, everything else comes from the field fetch. The name
+ * name to the entity IRIs, everything else comes from the field fetch. The name
  * is an escaped literal; all terms are validated pack terms.
+ *
+ * Ranked and unlimited, exactly like {@link buildLookupQuery} — the two paths
+ * differ in where the VALUES come from, never in which entities a name reaches.
+ * `?score` is deliberately NOT projected: it orders the rows and is none of the
+ * caller's business, and projecting it would leak a ranking artefact into
+ * `--format json`.
  */
 export function buildNameResolveQuery(
   lookup: PackLookup,
   name: string,
 ): string {
+  const ranking = rankingClause(lookup);
   return [
     "SELECT ?uri ?name WHERE {",
     buildTypeConstraint(lookup).trimEnd(),
     nameBinding(lookup),
+    ranking.binds,
     `  FILTER (LCASE(STR(?name)) = LCASE("${escapeSparqlString(name)}"))`,
     "}",
-    "ORDER BY STR(?uri)",
-    "LIMIT 1",
+    ranking.orderBy,
   ]
     .filter((line) => line !== "")
     .join("\n");

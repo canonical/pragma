@@ -9,8 +9,9 @@
  * it should move back. What survives is the environment the CLI reports on but
  * does not own — how it was installed, what the registry says about it,
  * whether a subprocess it ran actually succeeded — plus the one piece of
- * vocabulary (`BAND_LABELS`) that keeps `setup` and `doctor` calling the two
- * config bands by the same names users meet in the flags.
+ * vocabulary (`BAND_LABELS`/`SCOPE_PHRASES`) that keeps `setup` and `doctor`
+ * calling the two config scopes by the same names users meet in the flags —
+ * `global` and `local project`, after `--global` and `--local`.
  *
  * The exec guard is exported as the pair a caller needs together: `checkExecOk`
  * to classify a result inside a Task and `assertExecOk` to throw on one
@@ -25,7 +26,7 @@ export {
   checkExecOk,
   guardMissingBinary,
 } from "./assertExecOk.js";
-export { BAND_LABELS } from "./bands.js";
+export { BAND_LABELS, SCOPE_PHRASES } from "./bands.js";
 export type { InstallSource } from "./packageManager.js";
 export { detectInstallSource, pmUpdateCommand } from "./packageManager.js";
 export type { RegistryCheckResult } from "./registry.js";

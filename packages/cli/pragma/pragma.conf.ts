@@ -143,14 +143,33 @@ const designSystemStories: readonly PackDefinition[] = [
         "  VALUES ?class { ds:Component ds:Pattern ds:Layout ds:Subcomponent }",
         "  ?uri a ?class .",
         "  OPTIONAL { ?uri ds:name ?dsName }",
-        "  OPTIONAL { ?uri ds:tier ?tierUri }",
+        "  OPTIONAL { ?uri ds:tier ?tierUri . OPTIONAL { ?tierUri ds:name ?tierName } }",
         "  OPTIONAL { ?uri ds:hasModifierFamily ?family . ?family ds:name ?modName }",
         '  BIND(COALESCE(?dsName, REPLACE(STR(?uri), "^.*[/#]", "")) AS ?name)',
         '  BIND(LCASE(REPLACE(STR(?class), "^.*[/#]", "")) AS ?type)',
         '  BIND(REPLACE(STR(?tierUri), "^.*[/#]", "") AS ?tier)',
+        // `ORDER BY ?name` alone is not a total order, and 25 names here are
+        // shared by two or three blocks. SPARQL says nothing about tied rows,
+        // so the store's scan decided: ONE run gave `Button` launchpad-first
+        // and `CheckboxInput` global-first. Tier depth, then `STR(?uri)`,
+        // makes it total — the shallower tier leads its name group, and equal
+        // depths fall back to a key that cannot tie.
+        //
+        // The depth is the same one `lookup` ranks by, spelled out because a
+        // list query is declared TEXT the kernel does not compose. Only the
+        // depth: a browse ordered by NAME is not the place to re-litigate which
+        // block the name MEANS (that is `lookup`'s ranking, which also weighs
+        // the block's type), and every row here already prints its own type.
+        //
+        // The depth-0 IF is the store's, not style: oxigraph raises on
+        // `0.2 * 0`, and a raising BIND leaves `?tierRank` unbound — which is
+        // exactly how a top-tier block silently sorted last (see
+        // `sparqlProduct` in kernel/packs/sparql/buildLookupQuery.ts).
+        '  BIND(STRLEN(?tierName) - STRLEN(REPLACE(?tierName, "/", "")) AS ?tierDepth)',
+        "  BIND(COALESCE(IF(?tierDepth = 0, 1, 1 - (0.2 * ?tierDepth)), 0) AS ?tierRank)",
         "}",
-        "GROUP BY ?uri ?name ?type ?tier",
-        "ORDER BY ?name",
+        "GROUP BY ?uri ?name ?type ?tier ?tierRank",
+        "ORDER BY ?name DESC(?tierRank) STR(?uri)",
       ].join("\n"),
       columns: [
         { field: "name", label: "Name" },
@@ -175,9 +194,41 @@ const designSystemStories: readonly PackDefinition[] = [
       // for the query "button" the 86 `…-close_button` subcomponents used to
       // outrank `ds:global.component.button` on the alphabet alone. Weighting
       // them below 1 sinks every one of them under every component at equal
-      // match score, and lowers their `annotations.priority` in the resource
-      // listing by the same declaration.
+      // match score, lowers their `annotations.priority` in the resource
+      // listing, and — since a name resolve now RANKS rather than picks — sorts
+      // them under every component a shared name also reaches.
       weights: { "ds:Subcomponent": 0.6 },
+      // The other half of that judgement, and the reason it is a PRODUCT and
+      // not a tiebreak. 25 live block names are shared by two or three blocks
+      // across tiers, and `weights` alone cannot separate two components; the
+      // alphabet decided, so `Button` answered with Launchpad's and never
+      // mentioned the global one. A tier's DEPTH is what ranks it: `Global` is
+      // depth 1 and worth 1, `Apps/Launchpad` is depth 2 and worth 0.8, so
+      //
+      //   Button    global component 1 × 1   >  launchpad component 1 × 0.8
+      //   TextInput global SUBcomponent 0.6 × 1  <  launchpad component 1 × 0.8
+      //
+      // — the global block wins where both are whole blocks, and the editorial
+      // rule that a whole component beats a part survives the addition. A pure
+      // tier tiebreak would have inverted the second case.
+      //
+      // DERIVED, never enumerated: the depth is the `/` count in the tier's
+      // OWN `ds:name` (`"Apps/Launchpad"`), not in its IRI (`ds:apps_launchpad`
+      // — the slash exists only in the name), so a tier added upstream tomorrow
+      // is ranked correctly without editing anything here.
+      //
+      // Declared as DATA beside `weights` for the same reason `weights` is:
+      // editorial judgement the ontology has not yet made belongs in the config
+      // layer, which "wins every harvest" when upstream is silent. `asserted`
+      // is the exit: the day `ds:tierRank` is asserted upstream it takes
+      // precedence over the derived depth (`COALESCE`), and this whole entry is
+      // deleted with no code change.
+      scopeWeight: {
+        via: "ds:tier",
+        by: "ds:name",
+        falloff: 0.2,
+        asserted: "ds:tierRank",
+      },
       graphqlType: "UIBlock",
       fields: [
         { name: "tier", property: "ds:tier", label: "Tier" },
@@ -690,7 +741,15 @@ const codeStandardsStories: readonly PackDefinition[] = [
         "WHERE {",
         "  ?uri a cs:CodeStandard ;",
         "       cs:description ?description .",
-        "  OPTIONAL { ?uri cs:name ?n . }",
+        // `rdfs:label`, matching `lookup.by` below. Both COALESCE over the
+        // SAME property with the SAME IRI fallback, and that agreement IS the
+        // two-step grammar: a row's `name` goes VERBATIM to lookup. Keyed on
+        // different properties they diverge for exactly the entities carrying
+        // one and not the other — 16 standards in the shipped snapshot
+        // published `Turtle local-name casing` from `cs:name` while lookup,
+        // reading `rdfs:label`, bound the derived slug and answered
+        // ENTITY_NOT_FOUND. Change one, change both.
+        "  OPTIONAL { ?uri rdfs:label ?n . }",
         '  BIND(COALESCE(?n, REPLACE(STRAFTER(STR(?uri), "#"), "\\\\.", "/")) AS ?name)',
         "  OPTIONAL {",
         "    ?uri cs:hasCategory ?cat .",
@@ -790,23 +849,32 @@ const codeStandardsStories: readonly PackDefinition[] = [
         // question, not a staleness one.
         emptyRecovery: {
           message:
-            "The code standards ship in the embedded snapshot, so no categories at all means the store did not load rather than that it is out of date.",
+            "The code standards ship with the CLI itself, so no categories at all means the store did not load — not that it is out of date.",
           cli: "doctor",
         },
       },
     ],
     lookup: {
       source: "sparql",
-      by: "cs:name",
-      // The one story whose `list` PUBLISHES a synthesized name: `cs:name` is
-      // an optional display title (22 of 156 standards carry one), so the row
-      // name for the other ~87% is derived from the IRI local name. Declaring
-      // the fallback here is what keeps the two halves of the two-step grammar
-      // over one population — the same derivation, read from the other side.
-      // It is deliberately NOT declared on `block`/`token`/`tier`/`concept`:
-      // each of those lists REQUIRES its `by` property, so an entity without
-      // one is a row they never publish, and making it addressable (or
-      // sampleable) here would be the mirror of the defect this repairs.
+      // `rdfs:label`, not `cs:name`. The pack pin above moved to v0.1.5, which
+      // retired the bespoke `cs:name` for the standard property every RDF
+      // consumer already reads — measured against that tag: 0 standards carry
+      // `cs:name`, 148 of 148 carry exactly one `rdfs:label`. Left keyed on the
+      // retired property, this story would still ANSWER — every title would
+      // simply stop reaching a reader and each row would fall back to its
+      // IRI-derived name, with nothing raised. That is the same silent shape as
+      // reading a retired `ds:whenToUse`, one noun over.
+      by: "rdfs:label",
+      // The fallback stays, and is now near-inert rather than load-bearing: it
+      // covered the ~87% of standards that carried no display title at all, and
+      // v0.1.5 gives every one of them a curated label. It remains declared
+      // because a pack is data — a future release that drops a label should
+      // degrade to the IRI-derived name, not become unaddressable.
+      //
+      // Deliberately NOT declared on `block`/`token`/`tier`/`concept`: each of
+      // those lists REQUIRES its `by` property, so an entity without one is a
+      // row they never publish, and making it addressable (or sampleable) here
+      // would be the mirror of the defect this repairs.
       nameFallback: "iri",
       type: "cs:CodeStandard",
       description:
@@ -914,9 +982,19 @@ Made by the Canonical Webteam — https://canonical.com.`,
       name: "@canonical/anatomy-dsl",
       source: "git+https://github.com/canonical/anatomy-dsl.git#main",
     },
+    // Pinned to a TAG, and the only source here that is. The standards are the
+    // pack an agent is most likely to quote back at a human as policy, so which
+    // revision answered a query has to be recoverable — a floating ref makes
+    // "the CLI told me this was the rule" unfalsifiable. The other three still
+    // float: they are read for shape and identity, where the newest answer is
+    // the right one.
+    //
+    // Bump this deliberately. `sources update` resolves the tag, so a new
+    // upstream release reaches users only when this line moves — which is the
+    // point, and the cost.
     {
       name: "@canonical/code-standards",
-      source: "git+https://github.com/canonical/web-code-standards.git#main",
+      source: "git+https://github.com/canonical/web-code-standards.git#v0.1.5",
       stories: codeStandardsStories,
     },
     // The implementation graph: ds:ImplementationLibrary / ds:ImplementationObject

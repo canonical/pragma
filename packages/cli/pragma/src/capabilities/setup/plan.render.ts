@@ -16,8 +16,9 @@
 import chalk from "chalk";
 import { BIN_NAME } from "../../constants.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
-import { BAND_LABELS } from "../shared/index.js";
+import { BAND_LABELS, SCOPE_PHRASES } from "../shared/index.js";
 import {
+  type PlanAction,
   type PlanChildRow,
   type PlanRow,
   planTally,
@@ -63,35 +64,88 @@ const withRed = (style: RenderStyle): PlanStyle => ({
   red: style.enabled ? (text) => chalk.red(text) : (text) => text,
 });
 
-/** The header's band phrase: `global band`, `project band`, or `both bands`. */
-const scopePhrase = (scope: SetupPlan["scope"]): string =>
-  scope === "both" ? "both bands" : `${scope} band`;
+/** The header's scope phrase: `global`, `local project`, or both of them. */
+const scopePhrase = (scope: SetupPlan["scope"]): string => SCOPE_PHRASES[scope];
 
 /**
- * The header line. It names the band and BOTH roots exactly once, which is what
+ * The header line. It names the scope and BOTH roots exactly once, which is what
  * frees every row below to render its paths root-relative instead of repeating
- * a 120-character prefix per line.
+ * a 120-character prefix per line. The roots are LABELLED (`home:`, `project:`)
+ * because the `~` and `.` markers the rows use are only legible once something
+ * has said what they stand for.
  */
 function header(plan: SetupPlan, lead: string): string {
   const project = shortenPath(plan.roots.project, {
     global: plan.roots.global,
     project: "",
   });
-  return `${lead} — ${scopePhrase(plan.scope)} (~ · project: ${project})`;
+  return `${lead} — ${scopePhrase(plan.scope)} (home: ~ · project: ${project})`;
 }
 
-/** The middle column: the per-file count when a row has children, else its action. */
-const actionCell = (row: PlanRow): string =>
-  row.children && row.children.length > 0 ? row.detail : row.action;
+/**
+ * The plain verb each action reads as. The middle column is a column of VERBS:
+ * what this row will do. It used to render the raw {@link PlanAction} token, so
+ * it read as a column of status codes — and `none` was the worst of them,
+ * standing equally for "already correct" and "nothing found here". The two are
+ * now told apart by the pair: the word says nothing will happen, the detail
+ * beside it says what was found.
+ *
+ * `none` and `skip` are worded direction-neutrally on purpose. The SAME renderer
+ * draws the `--undo` plan, where a target-specific negation ("nothing to create"
+ * on the `config` row) would be plainly false — there the row is not creating
+ * anything, it is declining to delete.
+ *
+ * The token itself is untouched: `action` is the machine field `--format json`
+ * publishes, and this is the display layer over it.
+ */
+const ACTION_WORDS: Record<PlanAction, string> = {
+  install: "install",
+  update: "update",
+  link: "link",
+  remove: "remove",
+  none: "no change",
+  skip: "nothing to do",
+};
 
-/** One child rendered inline: `~/.claude.json (add)`. */
-const childCell = (child: PlanChildRow): string =>
-  `${child.label} (${child.action})`;
+/** The distinct actions a row's children carry (empty when it has none). */
+const childActions = (row: PlanRow): Set<PlanChildRow["action"]> =>
+  new Set((row.children ?? []).map((child) => child.action));
+
+/**
+ * The middle column.
+ *
+ * A row with children takes its word from THEM when they agree, because the
+ * row-level token can disagree with every one of its own files: registering the
+ * MCP server in three files that have never held it plans as `update` (the
+ * table's word for "this row has work that is not a fresh install"), and
+ * printing `update` over three `(add)` children described the opposite of what
+ * the run would do. Before this the cell held the row's DETAIL instead — `3
+ * files`, which is a count, not an action, and left the plan with no column
+ * that said what would happen.
+ */
+function actionCell(row: PlanRow): string {
+  const kinds = childActions(row);
+  if (row.action === "update" && kinds.size === 1 && kinds.has("add")) {
+    return ACTION_WORDS.install;
+  }
+  return ACTION_WORDS[row.action];
+}
+
+/**
+ * One child rendered inline. The per-child action is printed only when the
+ * children DISAGREE — when they all do the same thing the row's own verb has
+ * just said it, and `lsp  no change  codium — VSCodium (unchanged)` said
+ * "nothing happens here" twice in two columns.
+ */
+const childCell = (row: PlanRow, child: PlanChildRow): string =>
+  childActions(row).size === 1
+    ? child.label
+    : `${child.label} (${child.action})`;
 
 /** The right column: the children joined, or the row's own detail. */
 const detailCell = (row: PlanRow): string =>
   row.children && row.children.length > 0
-    ? row.children.map(childCell).join(" · ")
+    ? row.children.map((child) => childCell(row, child)).join(" · ")
     : row.action === "skip"
       ? (row.reason ?? row.detail)
       : row.detail;
@@ -235,7 +289,11 @@ export function renderProgressLine(
   const note = outcome.note;
   const body =
     outcome.status === "skipped"
-      ? `skipped — ${row.reason ?? row.detail}`
+      ? // A colon, not a dash: the reasons carry their own em-dash clause
+        // ("no skills installed yet — pack skills arrive with …"), and two
+        // dashes in one line read as one run-on sentence rather than a label
+        // in front of a reason.
+        `skipped: ${row.reason ?? row.detail}`
       : note
         ? `${row.detail} — ${note}`
         : row.detail;
@@ -274,7 +332,10 @@ export function renderRecap(
       if (remedy) lines.push(`      ${style.dim(remedy)}`);
     }
   }
-  lines.push("", style.dim(`verify anytime: ${BIN_NAME} doctor`));
+  lines.push(
+    "",
+    style.dim(`Check this again any time with \`${BIN_NAME} doctor\`.`),
+  );
   return lines.join("\n");
 }
 
@@ -292,9 +353,15 @@ export function renderPlanLlm(plan: SetupPlan, lead = "Setup"): string {
       `- ${glyph} **${row.target}** (${row.band}): ${state} — ${detailCell(row)}`,
     );
     for (const child of row.children ?? []) {
-      lines.push(`  - ${childCell(child)}`);
+      lines.push(`  - ${childCell(row, child)}`);
     }
-    if (row.outcome?.remedy) lines.push(`  - _fix:_ ${row.outcome.remedy}`);
+    // `fix:` for a row that failed, `next:` for one that skipped — a skip is
+    // not a fault, and labelling its instruction as a repair is what teaches a
+    // reader to treat skips as failures.
+    if (row.outcome?.remedy) {
+      const label = row.outcome.status === "failed" ? "fix" : "next";
+      lines.push(`  - _${label}:_ ${row.outcome.remedy}`);
+    }
   }
   return lines.join("\n");
 }

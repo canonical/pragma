@@ -37,9 +37,9 @@ function formatTriples(
 
 export const queryFormatters: Formatters<QueryResult> = {
   // Zero rows/triples: plain stdout stays empty — the notice is
-  // `emptyNotice`, routed to stderr (exit 0) by the dispatcher so a pipe
+  // `notice`, routed to stderr (exit 0) by the dispatcher so a pipe
   // reads no prose. ASK always has a result and never goes empty.
-  emptyNotice(result) {
+  notice(result) {
     if (result.type === "select" && result.bindings.length === 0) {
       return "No results.";
     }

@@ -536,8 +536,14 @@ export function composeSkills(d: SkillsDetection): Task<void> {
  * everywhere else in this module, so it separates them here too, and both
  * callers pass it rather than each re-deciding the wording.
  *
- * @param sourceRoot - The band's skill source root, already root-relative.
- * @param band - The band being reported.
+ * The GLOBAL sentence names where skills come from, because "no skills
+ * installed" on its own is a dead end: a reader has no way to know that skills
+ * arrive inside the configured packs rather than inside this CLI. The scope is
+ * named as `local project`, never as a "band" — the word the `--local` flag
+ * that selects it would lead anyone to.
+ *
+ * @param sourceRoot - The scope's skill source root, already root-relative.
+ * @param band - The scope being reported.
  * @param rootExists - Whether that root exists ({@link
  *   SkillsDetection.rootExists}) — an existing root that holds no skill reports
  *   as empty, never as absent.
@@ -550,9 +556,9 @@ export const skillsSkipReason = (
 ): string =>
   band === "project"
     ? rootExists
-      ? `no project skills (${sourceRoot} holds none)`
-      : `no project skills (${sourceRoot} is absent)`
-    : "no skills installed";
+      ? `nothing to link — this project holds no skills (${sourceRoot} is empty)`
+      : `nothing to link — this project holds no skills (${sourceRoot} does not exist)`
+    : `nothing to link — no skills installed yet; they arrive with the packs \`${BIN_NAME} sources update\` builds`;
 
 /**
  * The remedy beneath that skip — {@link skillsSkipReason}'s twin, and authored
@@ -561,14 +567,19 @@ export const skillsSkipReason = (
  *
  * A skip with no remedy is a dead end. `setup` printed "no skills installed",
  * exited 0 claiming success, and gave the user no next step — while the
- * completions and lsp skips beside it each named an action. The band decides
- * which action that is, because the band decides where the skills come from:
- * the global band's root is filled ONLY by `sources update` (skills ship in the
- * configured packages, not in this CLI), and the project band's is a directory
+ * completions and lsp skips beside it each named an action. The scope decides
+ * which action that is, because the scope decides where the skills come from:
+ * the global root is filled ONLY by `sources update` (skills ship in the
+ * configured packages, not in this CLI), and the local project's is a directory
  * the user fills by hand.
  *
- * @param sourceRoot - The band's skill source root, already root-relative.
- * @param band - The band being reported.
+ * It is the IMPERATIVE half of the pair. {@link skillsSkipReason} states the
+ * finding and where skills come from; this line is the command to type, so a
+ * surface that renders both reads as a fact followed by a next step rather than
+ * as the same sentence twice.
+ *
+ * @param sourceRoot - The scope's skill source root, already root-relative.
+ * @param band - The scope being reported.
  * @returns The remedy line — an action that works on THIS machine now.
  */
 export const skillsSkipRemedy = (
@@ -577,7 +588,7 @@ export const skillsSkipRemedy = (
 ): string =>
   band === "project"
     ? `add a skill at ${sourceRoot}/<name>/SKILL.md, then run this again`
-    : `run \`${BIN_NAME} sources update\` to install the skills your configured packages ship, then run this again`;
+    : `run \`${BIN_NAME} sources update\`, then run this again`;
 
 export const ownedSkillLinks = (
   d: SkillsDetection,
