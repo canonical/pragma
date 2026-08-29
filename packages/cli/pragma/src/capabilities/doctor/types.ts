@@ -2,26 +2,17 @@
  * Data shapes for `pragma doctor` (ported verbatim from the old shell).
  */
 
-/**
- * One of the two config bands a check can concern. Mirrors the harnesses
- * `ScopeBand` structurally but is redeclared here so this statically-reachable
- * type module never pulls the harnesses runtime into the fast-path module graph.
- */
-export type ScopeBand = "project" | "global";
+// The scope and status types are part of the rendering vocabulary — the one
+// module that owns both the states and the words (and glyphs) for them.
+// Re-exported here so doctor's type surface stays complete; the definitions,
+// the `available` tier's rationale, and the structural pin against
+// `@canonical/harnesses` live with the vocabulary.
+import type { CheckStatus, Scope } from "../../kernel/render/vocabulary.js";
 
-/**
- * Status of a doctor check or one of its sub-items.
- *
- * `available` is the tier between fail and skip that keeps the report honest:
- * an opt-in integration (MCP registration, skills symlinks, a completion
- * script) that is detected and installable but that the user has not set up.
- * Nothing is broken — a fresh install is HEALTHY with several availables — so
- * reporting these as `fail` would teach users that the failure count is noise.
- * `fail` stays reserved for a real fault: something set up that no longer
- * works, or an environment the CLI cannot run correctly in. `skip` remains
- * "nothing to check here" (no shell detected, no harnesses present).
- */
-export type CheckStatus = "pass" | "fail" | "available" | "skip";
+export type {
+  CheckStatus,
+  Scope as ScopeBand,
+} from "../../kernel/render/vocabulary.js";
 
 /**
  * A structured sub-item under a check — e.g. one resolved package under
@@ -58,7 +49,7 @@ export interface CheckResult {
    * banded checks into Global/Project sections; environment checks (Node,
    * versions, store) carry no band.
    */
-  readonly band?: ScopeBand;
+  readonly band?: Scope;
 }
 
 /** Aggregated results from all doctor checks — one count per status tier. */

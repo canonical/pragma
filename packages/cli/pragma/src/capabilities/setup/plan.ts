@@ -18,6 +18,7 @@
  */
 
 import { isAbsolute, relative, sep } from "node:path";
+import type { OutcomeStatus } from "../../kernel/render/vocabulary.js";
 import type { ScopeBand, ScopeSelection } from "./types.js";
 
 /** The five setup targets, in table (and therefore display) order. */
@@ -45,14 +46,11 @@ export type PlanAction =
   | "none"
   | "skip";
 
-/** How one row ended. `skipped` is NOT a failure — see {@link planExitFailed}. */
-export type OutcomeStatus =
-  | "done"
-  | "noop"
-  | "skipped"
-  | "failed"
-  | "removed"
-  | "kept";
+// How one row ended. Defined with the rendering vocabulary (one module owns
+// the states and their glyphs); re-exported here because the plan is where
+// every other consumer meets it. `skipped` is NOT a failure — see
+// {@link planExitFailed}.
+export type { OutcomeStatus } from "../../kernel/render/vocabulary.js";
 
 /** Per-file / per-link detail under a row (MCP files; skill link dirs). */
 export interface PlanChildRow {

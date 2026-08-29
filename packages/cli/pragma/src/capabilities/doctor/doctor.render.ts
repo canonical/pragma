@@ -12,27 +12,16 @@
 
 import { BIN_NAME } from "../../constants.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
+import {
+  CHECK_GLYPHS,
+  checkRemedyWord,
+  FIX_ARROW,
+  SCOPE_LABELS,
+  SUB_BULLET,
+  SUB_INDENT,
+} from "../../kernel/render/vocabulary.js";
 import type { Formatters } from "../../kernel/spec/index.js";
-import { BAND_LABELS } from "../shared/index.js";
 import type { CheckResult, CheckStatus, DoctorData } from "./types.js";
-
-/**
- * Uncolored status glyphs — tinted at render time (never baked at module load).
- * `available` gets its own glyph, distinct from ✗: an opt-in integration that
- * is not set up is not a fault, and rendering it as one would train users to
- * ignore the failure count. The glyph pairs with the word in the tally, so the
- * distinction survives with color stripped.
- */
-const STATUS_GLYPHS: Record<CheckStatus, string> = {
-  pass: "✓",
-  fail: "✗",
-  available: "◇",
-  skip: "○",
-};
-
-const SUB_BULLET = "·";
-const FIX_ARROW = "↳";
-const INDENT = "     "; // aligns sub-lines under the check name
 
 /**
  * Tint a status glyph by meaning — green pass, red fail, cyan available
@@ -40,24 +29,12 @@ const INDENT = "     "; // aligns sub-lines under the check name
  * yellow skip.
  */
 function paintGlyph(status: CheckStatus, style: RenderStyle): string {
-  const glyph = STATUS_GLYPHS[status];
+  const glyph = CHECK_GLYPHS[status];
   if (status === "pass") return style.green(glyph);
   if (status === "fail") return style.red(glyph);
   if (status === "available") return style.cyan(glyph);
   return style.yellow(glyph);
 }
-
-/**
- * The word in front of a row's instruction, chosen by what the row IS.
- *
- * A `fail` and an `available` are things to repair or switch on, so they read
- * `fix:`. A `skip` is neither — nothing is wrong and nothing is off; the row
- * simply has nothing to act on yet — so labelling its instruction `fix:` would
- * be the same "a skip is a fault" reading the `available` glyph exists to
- * prevent. It reads `next:`, which is what the line actually is.
- */
-const remedyLabel = (status: CheckStatus): string =>
-  status === "skip" ? "next:" : "fix:";
 
 /**
  * Render one check as terminal lines: a headline row (icon, aligned name,
@@ -87,7 +64,7 @@ function formatCheckPlain(
       const itemLabel = item.detail ? item.label.padEnd(itemWidth) : item.label;
       const detail = item.detail ? `  ${style.dim(item.detail)}` : "";
       lines.push(
-        `${INDENT}${style.dim(SUB_BULLET)} ${icon}${itemLabel}${detail}`,
+        `${SUB_INDENT}${style.dim(SUB_BULLET)} ${icon}${itemLabel}${detail}`,
       );
     }
   }
@@ -103,7 +80,7 @@ function formatCheckPlain(
   // nothing that was not deliberately written for this machine.
   if (check.remedy) {
     lines.push(
-      `${INDENT}${style.cyan(FIX_ARROW)} ${style.cyan(remedyLabel(check.status))} ${check.remedy}`,
+      `${SUB_INDENT}${style.cyan(FIX_ARROW)} ${style.cyan(`${checkRemedyWord(check.status)}:`)} ${check.remedy}`,
     );
   }
 
@@ -168,8 +145,8 @@ export const doctorFormatters: Formatters<DoctorData> = {
     // Environment checks lead (no header); Global then Local project are the
     // two scoped sections before the tally.
     section("", environment);
-    section(BAND_LABELS.global, machine);
-    section(BAND_LABELS.project, project);
+    section(SCOPE_LABELS.global, machine);
+    section(SCOPE_LABELS.project, project);
     lines.push(formatSummary(data, style));
     return lines.join("\n");
   },
@@ -177,10 +154,10 @@ export const doctorFormatters: Formatters<DoctorData> = {
   llm(data) {
     const renderCheck = (check: CheckResult): string[] => {
       const out = [
-        `- ${STATUS_GLYPHS[check.status]} **${check.name}**: ${check.detail}`,
+        `- ${CHECK_GLYPHS[check.status]} **${check.name}**: ${check.detail}`,
       ];
       for (const item of check.items ?? []) {
-        const itemIcon = item.status ? `${STATUS_GLYPHS[item.status]} ` : "";
+        const itemIcon = item.status ? `${CHECK_GLYPHS[item.status]} ` : "";
         const detail = item.detail ? `: ${item.detail}` : "";
         out.push(`  - ${itemIcon}${item.label}${detail}`);
       }
@@ -192,8 +169,8 @@ export const doctorFormatters: Formatters<DoctorData> = {
       if (check.remedy) {
         out.push(
           check.status === "skip"
-            ? `  - _next:_ ${check.remedy}`
-            : `  - _fix:_ \`${check.remedy}\``,
+            ? `  - _${checkRemedyWord(check.status)}:_ ${check.remedy}`
+            : `  - _${checkRemedyWord(check.status)}:_ \`${check.remedy}\``,
         );
       }
       return out;
@@ -207,8 +184,8 @@ export const doctorFormatters: Formatters<DoctorData> = {
       for (const check of checks) lines.push(...renderCheck(check));
     };
     section("", environment);
-    section(BAND_LABELS.global, machine);
-    section(BAND_LABELS.project, project);
+    section(SCOPE_LABELS.global, machine);
+    section(SCOPE_LABELS.project, project);
     lines.push(
       "",
       `_${data.passed} passed, ${data.failed} failed, ${data.available} available, ${data.skipped} skipped_`,
