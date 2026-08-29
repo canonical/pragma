@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import harnesses from "./harnesses.js";
-import { opendesignMcpEntry } from "./mcpEntries.js";
+import { crushMcpEntry, opendesignMcpEntry } from "./mcpEntries.js";
 
 describe("harnesses registry", () => {
   it("contains all known harnesses", () => {
-    expect(harnesses).toHaveLength(12);
+    expect(harnesses).toHaveLength(13);
     const ids = harnesses.map((h) => h.id);
     expect(ids).toEqual([
       "claude-code",
@@ -19,6 +19,7 @@ describe("harnesses registry", () => {
       "antigravity",
       "vscode",
       "opendesign",
+      "crush",
     ]);
   });
 
@@ -259,6 +260,82 @@ describe("harnesses registry", () => {
       type: "directory",
       path: "$XDG_CONFIG_HOME/opencode",
     });
+  });
+
+  it("crush is dual-scope: project crush.json, global under $XDG_CONFIG_HOME/crush", () => {
+    // Crush merges a global config with project files (lookupConfigs,
+    // load.go @7944b8e); a project-only row would be skipped by the DEFAULT
+    // global band entirely — the same hole opencode and vscode fell into.
+    const crush = harnesses.find((h) => h.id === "crush");
+    expect(crush?.scope).toBe("both");
+    expect(crush?.configPath("/project")).toBe("/project/crush.json");
+    expect(crush?.homeConfigPath?.(PLATFORM)).toBe(
+      "/home/tester/.config/crush/crush.json",
+    );
+    expect(crush?.skillsPath("/project")).toBe("/project/.agents/skills");
+  });
+
+  it("crush's global config follows $XDG_CONFIG_HOME on every platform, and $CRUSH_GLOBAL_CONFIG wins", () => {
+    // Crush's home.Config() is `$XDG_CONFIG_HOME ?? ~/.config` with NO
+    // platform switch — macOS included, there is no ~/Library arm — and
+    // GlobalConfig() prefers $CRUSH_GLOBAL_CONFIG as the DIRECTORY holding
+    // crush.json.
+    const crush = harnesses.find((h) => h.id === "crush");
+    expect(
+      crush?.homeConfigPath?.({
+        ...PLATFORM,
+        env: { XDG_CONFIG_HOME: "/xdg" },
+      }),
+    ).toBe("/xdg/crush/crush.json");
+    expect(
+      crush?.homeConfigPath?.({
+        ...PLATFORM,
+        platform: "darwin",
+        home: "/Users/tester",
+      }),
+    ).toBe("/Users/tester/.config/crush/crush.json");
+    expect(
+      crush?.homeConfigPath?.({
+        ...PLATFORM,
+        env: { CRUSH_GLOBAL_CONFIG: "/custom" },
+      }),
+    ).toBe("/custom/crush.json");
+  });
+
+  it("crush uses the top-level `mcp` key and the type-carrying entry shape", () => {
+    // The JSON key is `mcp`, not `mcpServers` (config.go `MCP MCPs
+    // json:"mcp"`), and the entry MUST carry `type` — without it Crush's
+    // createTransport errors "unsupported mcp type" and the server silently
+    // never starts.
+    const crush = harnesses.find((h) => h.id === "crush");
+    expect(crush?.mcpKey).toBe("mcp");
+    expect(crush?.mcpEntry).toBe(crushMcpEntry);
+  });
+
+  it("crush is detectable from the global config dir, not just a project file", () => {
+    // Same reasoning as opencode: before the first project config exists,
+    // the only filesystem trace of an installed Crush is its global config
+    // dir — declared in $XDG_CONFIG_HOME form so a relocated config base
+    // still resolves.
+    const crush = harnesses.find((h) => h.id === "crush");
+    expect(crush?.detect).toContainEqual({
+      type: "directory",
+      path: "$XDG_CONFIG_HOME/crush",
+    });
+  });
+
+  it("crush never keys detection on Crush's own state files", () => {
+    // `.crush/` (the data DIRECTORY) is a truthful "Crush ran here" signal
+    // with a single owner, but `.crush/crush.json` and the machine-owned
+    // data config are Crush's write targets — pragma neither probes nor
+    // writes those files.
+    const crush = harnesses.find((h) => h.id === "crush");
+    const paths = (crush?.detect ?? []).flatMap((s) =>
+      "path" in s ? [s.path] : [],
+    );
+    expect(paths).toContain(".crush");
+    expect(paths).not.toContain(".crush/crush.json");
+    expect(paths.some((p) => p.includes(".local/share"))).toBe(false);
   });
 
   it("roo-code skillsPath", () => {

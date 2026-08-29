@@ -20,6 +20,10 @@
  *   `type: "stdio"` + `command` + optional `args`/`env`).
  * - Copilot CLI: https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers
  *   (local entries: `type: "local"`, `command`, `args`, `env`, `tools`).
+ * - Crush: source @7944b8e (`internal/config/config.go` `MCPConfig` —
+ *   `type` required with enum `stdio|sse|http` and NO load-time default;
+ *   `command`, `args`, `env`; no `cwd` field; published `schema.json` stamps
+ *   `additionalProperties: false`).
  */
 
 import type { McpServerConfig } from "./types.js";
@@ -89,6 +93,29 @@ export const copilotMcpEntry: McpEntrySerializer = (config) => ({
   ...defaultMcpEntry(config),
   tools: ["*"],
 });
+
+/**
+ * Crush's `MCPConfig` (crush @7944b8e, `internal/config/config.go`): the
+ * `type` discriminator is REQUIRED — the published schema declares
+ * `required: ["type"]` and Go applies no default on load, so an entry
+ * without it reaches `createTransport`'s default arm and errors
+ * "unsupported mcp type: " (`internal/agent/tools/mcp/init.go`). The config
+ * then LOOKS correct and the server silently never starts — which is why the
+ * default shape cannot serve here. `cwd` is dropped, not passed through: the
+ * schema has no such field and stamps `additionalProperties: false`, so a
+ * `$schema`-validating editor would flag it, and at runtime Crush ignores it
+ * anyway (a project-band server runs from Crush's own working dir, which IS
+ * the project). `args`/`env` keep their canonical spellings.
+ */
+export const crushMcpEntry: McpEntrySerializer = (config) => {
+  const entry: Record<string, unknown> = {
+    type: "stdio",
+    command: config.command,
+  };
+  if (config.args !== undefined) entry.args = [...config.args];
+  if (config.env !== undefined) entry.env = { ...config.env };
+  return entry;
+};
 
 /**
  * OpenDesign requires the entry's `env` to be present as a JSON object/map —

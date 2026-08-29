@@ -339,3 +339,101 @@ describe("detectHarnesses — VS Code installation signals", () => {
     expect(result.value).toEqual([]);
   });
 });
+
+/**
+ * Crush's signal set, one probe per case (the same discipline as the VS Code
+ * block above): a project config name Crush itself looks up, the per-project
+ * data directory, the global XDG config dir, and the binary on PATH. The
+ * hostile guard at the end proves the set cannot false-positive: with a
+ * populated PATH and nothing on disk, no signal fires.
+ */
+describe("detectHarnesses — Crush signals", () => {
+  const withPath = (path: string): PlatformEnv => ({
+    ...PLATFORM,
+    env: { ...PLATFORM.env, PATH: path },
+  });
+
+  const only = (
+    wanted: string,
+    seen?: string[],
+  ): Map<string, (effect: Effect) => unknown> =>
+    new Map([
+      [
+        "Exists",
+        (effect: Effect): unknown => {
+          const { path } = effect as Effect & { _tag: "Exists"; path: string };
+          seen?.push(path);
+          return path === wanted;
+        },
+      ],
+    ]);
+
+  it("detects Crush from a project crush.json alone, at high confidence", () => {
+    const result = dryRunWith(
+      detectHarnesses("/project", PLATFORM),
+      only("/project/crush.json"),
+    );
+
+    expect(result.value.map((d) => d.harness.id)).toEqual(["crush"]);
+    expect(result.value[0]?.confidence).toBe("high");
+    expect(result.value[0]?.configExists).toBe(true);
+    expect(result.value[0]?.configPath).toBe("/project/crush.json");
+  });
+
+  it("detects Crush from its .crush data directory alone", () => {
+    // `.crush/` is state Crush itself creates — a true "Crush ran in this
+    // repo" signal with a single owner. Detection only: nothing here reads
+    // or writes `.crush/crush.json`, Crush's own workspace-state file.
+    const result = dryRunWith(
+      detectHarnesses("/project", PLATFORM),
+      only("/project/.crush"),
+    );
+
+    expect(result.value.map((d) => d.harness.id)).toEqual(["crush"]);
+    expect(result.value[0]?.confidence).toBe("high");
+  });
+
+  it("honours $XDG_CONFIG_HOME for the global config dir and never probes ~/.config", () => {
+    const seen: string[] = [];
+    const platform: PlatformEnv = {
+      ...PLATFORM,
+      env: { ...PLATFORM.env, XDG_CONFIG_HOME: "/xdg/config" },
+    };
+    const result = dryRunWith(
+      detectHarnesses("/project", platform),
+      only("/xdg/config/crush", seen),
+    );
+
+    expect(result.value.map((d) => d.harness.id)).toEqual(["crush"]);
+    expect(result.value[0]?.confidence).toBe("high");
+    expect(seen).toContain("/xdg/config/crush");
+    expect(seen).not.toContain("/home/tester/.config/crush");
+  });
+
+  it("detects an installed Crush from the binary on PATH alone", () => {
+    const result = dryRunWith(
+      detectHarnesses("/project", withPath("/usr/bin:/bin:/usr/local/bin")),
+      only("/usr/local/bin/crush"),
+    );
+
+    expect(result.value.map((d) => d.harness.id)).toEqual(["crush"]);
+    // On PATH means "installed", not "this project uses it".
+    expect(result.value[0]?.confidence).toBe("medium");
+    expect(result.value[0]?.configExists).toBe(false);
+  });
+
+  it("detects nothing from a populated PATH when nothing exists on disk", () => {
+    const result = dryRunWith(
+      detectHarnesses(
+        "/project",
+        withPath("/usr/bin:/bin:/snap/bin:/usr/local/bin"),
+      ),
+      new Map<string, (effect: Effect) => unknown>([
+        ["Exists", () => false],
+        ["Glob", () => ["anything-1.0.0/package.json"]],
+      ]),
+    );
+
+    expect(result.value).toEqual([]);
+  });
+});
