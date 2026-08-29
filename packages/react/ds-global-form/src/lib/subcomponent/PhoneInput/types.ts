@@ -14,6 +14,13 @@ export type {
 
 /** Props for the presentational Phone input (controlled, no react-hook-form). */
 export type PhoneInputProps = BaseProps & {
+  /**
+   * Name for the national-number input. The field tier supplies this; it is what
+   * gives the control a name in a plain HTML submission, so the entry is not
+   * silently dropped when scripting is unavailable.
+   */
+  name?: string;
+
   /** Controlled value — E.164 string or structured object. */
   value?: string | PhoneValue;
 
@@ -61,13 +68,14 @@ export type PhoneInputProps = BaseProps & {
   countryDisplay?: "code" | "name" | "flag";
 
   /**
-   * Opt in to live national-number formatting using the selected country's
-   * display mask (cosmetic spacing/dashes; see {@link CountryData.format}).
-   * Defaults to `false` — the number is shown as raw digits and `applyPhoneMask`
-   * is not invoked. The submitted value is always raw digits / E.164 regardless
-   * of this option. (The RHF-side `removePhoneMask` / `phoneRegisterOptions`
-   * helpers are separate opt-in modules, so they are tree-shaken out unless
-   * imported.)
+   * Opt in to live national-number grouping using the selected country's display
+   * pattern (cosmetic spacing/dashes; see {@link CountryData.format}). Defaults
+   * to `false`, which shows the number as raw digits.
+   *
+   * The submitted value is always raw digits / E.164 either way — the grouping is
+   * a display projection only, applied through `utils/formatter` and kept
+   * caret-stable by `useFormattedValue`, so the number stays editable in the
+   * middle rather than forcing the cursor to the end.
    */
   mask?: boolean;
 
