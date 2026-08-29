@@ -741,7 +741,15 @@ const codeStandardsStories: readonly PackDefinition[] = [
         "WHERE {",
         "  ?uri a cs:CodeStandard ;",
         "       cs:description ?description .",
-        "  OPTIONAL { ?uri cs:name ?n . }",
+        // `rdfs:label`, matching `lookup.by` below. Both COALESCE over the
+        // SAME property with the SAME IRI fallback, and that agreement IS the
+        // two-step grammar: a row's `name` goes VERBATIM to lookup. Keyed on
+        // different properties they diverge for exactly the entities carrying
+        // one and not the other — 16 standards in the shipped snapshot
+        // published `Turtle local-name casing` from `cs:name` while lookup,
+        // reading `rdfs:label`, bound the derived slug and answered
+        // ENTITY_NOT_FOUND. Change one, change both.
+        "  OPTIONAL { ?uri rdfs:label ?n . }",
         '  BIND(COALESCE(?n, REPLACE(STRAFTER(STR(?uri), "#"), "\\\\.", "/")) AS ?name)',
         "  OPTIONAL {",
         "    ?uri cs:hasCategory ?cat .",
