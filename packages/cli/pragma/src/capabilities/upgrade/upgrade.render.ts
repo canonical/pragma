@@ -33,8 +33,12 @@ export const upgradeFormatters: Formatters<UpgradeData> = {
         "",
         `Updated to ${data.latest}.`,
       );
-    } else {
+    } else if (data.command) {
       lines.push(`Run: ${chalk.cyan(data.command)}`);
+    } else {
+      // No sanctioned command for this install (linked / ephemeral /
+      // workspace / unknown) — the guidance sentence is the whole story.
+      lines.push(`No automatic upgrade for this install: ${data.guidance}`);
     }
     return lines.join("\n");
   },
@@ -45,7 +49,10 @@ export const upgradeFormatters: Formatters<UpgradeData> = {
       return `Already at the latest version (${data.current}).`;
     }
     if (data.executed) return `Upgraded: ${data.current} → ${data.latest}`;
-    return `Update available: ${data.current} → ${data.latest} (\`${data.command}\`)`;
+    if (data.command) {
+      return `Update available: ${data.current} → ${data.latest} (\`${data.command}\`)`;
+    }
+    return `Update available: ${data.current} → ${data.latest} — ${data.guidance}`;
   },
 
   json(data) {

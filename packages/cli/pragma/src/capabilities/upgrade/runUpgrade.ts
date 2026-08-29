@@ -13,6 +13,11 @@
  *   by `assertExecOk` as an actionable UNSUPPORTED (exit 1) — the interpreter
  *   RESOLVES on a nonzero exit, so the check is the consumer's job.
  * - offline / already-latest carry NO exec — a real run just returns the status.
+ * - a non-global install (linked / ephemeral / workspace / unknown) also
+ *   carries NO exec even when an update exists: there is no command pragma may
+ *   run for it, so the task reports the delta plus the state's guidance and
+ *   mutates nothing. `pmUpdateCommand` only accepts the global arm, so this is
+ *   enforced by the types, not by convention.
  *
  * The whole registry read is preview-safe, so no `mutation.preview` gating is
  * needed here (unlike `sources update`, whose heavy resolve must be gated).
@@ -29,6 +34,7 @@ import {
   guardMissingBinary,
   PRAGMA_PACKAGE,
   pmUpdateCommand,
+  updateGuidance,
 } from "../shared/index.js";
 import type { UpgradeData } from "./types.js";
 
@@ -46,8 +52,15 @@ export async function runUpgrade(
 ): Promise<Task<UpgradeData>> {
   const { channel } = (await rt.loadConfig()).config;
   const install = detectInstallSource();
-  const command = pmUpdateCommand(install.pm, PRAGMA_PACKAGE);
+  // Only a GLOBAL install has a sanctioned update command — the type of
+  // `pmUpdateCommand` enforces the narrowing. A linked checkout in particular
+  // must never be handed `npm i -g`: it would overwrite the development link.
+  const command =
+    install.kind === "global"
+      ? pmUpdateCommand(install, PRAGMA_PACKAGE)
+      : undefined;
   const pm = install.label;
+  const kind = install.kind;
   const current = rt.version;
 
   const registry = await checkRegistryVersion(PRAGMA_PACKAGE, channel);
@@ -55,9 +68,10 @@ export async function runUpgrade(
   if (registry === undefined) {
     const data: UpgradeData = {
       pm,
+      kind,
       current,
       latest: undefined,
-      command,
+      ...(command !== undefined ? { command } : {}),
       offline: true,
       alreadyLatest: false,
       executed: false,
@@ -71,9 +85,10 @@ export async function runUpgrade(
   if (registry.latest === current) {
     const data: UpgradeData = {
       pm,
+      kind,
       current,
       latest: registry.latest,
-      command,
+      ...(command !== undefined ? { command } : {}),
       offline: false,
       alreadyLatest: true,
       executed: false,
@@ -84,16 +99,40 @@ export async function runUpgrade(
     });
   }
 
+  if (install.kind !== "global") {
+    // An update exists, but this install has no command pragma may run for
+    // it — say so honestly and run NOTHING. (The discriminant narrowing is
+    // what lets `updateGuidance` accept `install` here.)
+    const guidance = updateGuidance(install);
+    const data: UpgradeData = {
+      pm,
+      kind,
+      current,
+      latest: registry.latest,
+      guidance,
+      offline: false,
+      alreadyLatest: false,
+      executed: false,
+    };
+    return gen(function* () {
+      yield* $(info(`${current} → ${registry.latest}`));
+      yield* $(warn(`No automatic upgrade for this install: ${guidance}`));
+      return data;
+    });
+  }
+
+  const updateCommand = pmUpdateCommand(install, PRAGMA_PACKAGE);
   const data: UpgradeData = {
     pm,
+    kind,
     current,
     latest: registry.latest,
-    command,
+    command: updateCommand,
     offline: false,
     alreadyLatest: false,
     executed: true,
   };
-  const parts = command.split(" ");
+  const parts = updateCommand.split(" ");
   const bin = parts[0] ?? "npm";
   const args = parts.slice(1);
   // Guard the spawn: an absent package manager (`bin` not on PATH) REJECTS the
@@ -112,7 +151,7 @@ export async function runUpgrade(
       // so inspect the result: a failed install (e.g. EACCES on a global
       // `npm i -g`) must fail loudly, not report a silent success.
       const result = yield* $(exec(bin, args, rt.cwd));
-      assertExecOk(command, result);
+      assertExecOk(updateCommand, result);
       return data;
     }),
   );
