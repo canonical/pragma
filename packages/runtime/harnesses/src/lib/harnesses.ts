@@ -8,6 +8,7 @@
 
 import {
   copilotMcpEntry,
+  crushMcpEntry,
   cursorMcpEntry,
   opencodeMcpEntry,
   opendesignMcpEntry,
@@ -302,6 +303,68 @@ const harnesses: readonly HarnessDefinition[] = [
     configFormat: "json",
     mcpKey: "mcpServers",
     skillsPath: (root) => `${root}/.od/skills`,
+  },
+  {
+    id: "crush",
+    name: "Crush",
+    version: "*",
+    // All paths below verified against Crush's source @7944b8e
+    // (charmbracelet/crush, `internal/config/load.go` + `config.go`), not its
+    // README. Crush merges a GLOBAL config with project files walked from cwd
+    // to the git root, later layers overriding earlier — a project-only row
+    // would be excluded from setup's DEFAULT global band entirely (the
+    // opencode/vscode lesson), so: both.
+    scope: "both",
+    detect: [
+      // The two JSON config names Crush itself looks up per project
+      // directory (`configNames`, load.go — `.crush.json` outranks
+      // `crush.json`; the `crushrc`/`.crushrc` pair are BASH scripts pragma
+      // never writes and never keys on).
+      { type: "file", path: "crush.json" },
+      { type: "file", path: ".crush.json" },
+      // Crush's per-project DATA directory (`defaultDataDirectory`,
+      // config.go). State-derived and usually gitignored, but Crush and
+      // nothing else creates it — "Crush ran in this repo" is a true signal
+      // with a single owner, unlike a bare `.vscode/`. Detection ONLY:
+      // `.crush/crush.json` is Crush's own workspace-state write target,
+      // never pragma's.
+      { type: "directory", path: ".crush" },
+      // The global config dir, in `$XDG_CONFIG_HOME/` form for the usual
+      // reason (see `resolveFsPath`): a user who relocates the config base
+      // keeps nothing under `~/.config`. (`$CRUSH_GLOBAL_CONFIG` is honoured
+      // on the write path below; the signal grammar has no env-prefix form,
+      // and a user who sets it has `crush` on PATH for the process probe.)
+      { type: "directory", path: "$XDG_CONFIG_HOME/crush" },
+      { type: "process", name: "crush" },
+    ],
+    configPath: (root) => `${root}/crush.json`,
+    // `GlobalConfig()` (load.go): `$CRUSH_GLOBAL_CONFIG` names the DIRECTORY
+    // holding crush.json when set; else `$XDG_CONFIG_HOME/crush/crush.json`.
+    // Through `xdgConfigHome`, not `userHome` — and on EVERY platform:
+    // Crush's `home.Config()` has no platform switch, so there is no
+    // `~/Library/Application Support` or `%APPDATA%` config arm to cover.
+    homeConfigPath: (p) =>
+      `${p.env.CRUSH_GLOBAL_CONFIG ?? `${xdgConfigHome(p)}/crush`}/crush.json`,
+    configFormat: "json",
+    // Top-level `mcp`, not `mcpServers` (config.go: `MCP MCPs json:"mcp"`).
+    mcpKey: "mcp",
+    // Crush REQUIRES the `type` discriminator — an entry without it reaches
+    // `createTransport`'s default arm ("unsupported mcp type") and silently
+    // never starts, so the default `{command, args, cwd}` shape would write
+    // a dead server. See `crushMcpEntry` (it also drops the schema-unknown
+    // `cwd`).
+    mcpEntry: crushMcpEntry,
+    // First of Crush's `projectSkillSubdirs` (load.go); it also reads
+    // `.crush/skills`, `.claude/skills` and `.cursor/skills`, but
+    // `.agents/skills` is the cross-client directory `setup skills` links.
+    skillsPath: (root) => `${root}/.agents/skills`,
+    // Shadowing caveats, not reasons to decline: a `crushrc` beside the
+    // global crush.json (`shellConfigSibling`), or a
+    // `.crushrc`/`crushrc`/`.crush.json` beside the project one, merges
+    // ABOVE it, so a conflicting server name there wins (disjoint names
+    // merge fine); and Crush's own state
+    // (`.crush/crush.json`, `$XDG_DATA_HOME/crush/crush.json`) merges above
+    // everything. Both state files are Crush's write targets, never ours.
   },
 ];
 

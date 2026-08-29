@@ -237,6 +237,100 @@ describe("writeMcpConfig", () => {
   });
 });
 
+describe("Crush config (crush.json)", () => {
+  const crush = findHarnessById("crush") as (typeof harnesses)[number];
+
+  it("writes under the top-level `mcp` key with the REQUIRED type discriminator, and no cwd", () => {
+    // Crush requires `type` on every MCP entry and applies no default on
+    // load — a typeless entry LOOKS configured but hits createTransport's
+    // "unsupported mcp type" arm and silently never starts. This asserts on
+    // the WRITTEN FILE, so a regression to the default serializer (which
+    // emits no `type` and a schema-unknown `cwd`) fails here.
+    const result = dryRunWith(
+      writeMcpConfig(crush, "/project", "pragma", {
+        command: "pragma",
+        args: ["mcp"],
+        cwd: "/project",
+      }),
+      buildMocks({
+        Exists: existsMock(() => false),
+        MakeDir: mkdirMock,
+        WriteFile: writeMock,
+      }),
+    );
+
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    expect(writeEffects.length).toBe(1);
+    expect(writeEffects[0].path).toBe("/project/crush.json");
+
+    const written = JSON.parse(writeEffects[0].content);
+    expect(written.mcp.pragma).toEqual({
+      type: "stdio",
+      command: "pragma",
+      args: ["mcp"],
+    });
+    expect(written).not.toHaveProperty("mcpServers");
+  });
+
+  it("merges into an existing `mcp` block preserving the user's other servers", () => {
+    const existingConfig = JSON.stringify({
+      $schema: "https://charm.land/crush.json",
+      mcp: {
+        context7: { type: "http", url: "https://mcp.context7.com/mcp" },
+      },
+      options: { debug: true },
+    });
+
+    const result = dryRunWith(
+      writeMcpConfig(crush, "/project", "pragma", {
+        command: "pragma",
+        args: ["mcp"],
+      }),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(existingConfig),
+        WriteFile: writeMock,
+      }),
+    );
+
+    const written = JSON.parse(
+      filterEffects(result.effects, "WriteFile")[0].content,
+    );
+    expect(written.mcp.context7).toEqual({
+      type: "http",
+      url: "https://mcp.context7.com/mcp",
+    });
+    expect(written.mcp.pragma).toEqual({
+      type: "stdio",
+      command: "pragma",
+      args: ["mcp"],
+    });
+    expect(written.$schema).toBe("https://charm.land/crush.json");
+    expect(written.options).toEqual({ debug: true });
+  });
+
+  it("writes the global band into $XDG_CONFIG_HOME/crush/crush.json", () => {
+    const result = dryRunWith(
+      writeMcpConfig(
+        crush,
+        "/project",
+        "pragma",
+        { command: "pragma" },
+        "global",
+        { ...PLATFORM, env: { XDG_CONFIG_HOME: "/xdg" } },
+      ),
+      buildMocks({
+        Exists: existsMock(() => false),
+        MakeDir: mkdirMock,
+        WriteFile: writeMock,
+      }),
+    );
+
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    expect(writeEffects[0].path).toBe("/xdg/crush/crush.json");
+  });
+});
+
 describe("removeMcpConfig", () => {
   it("is a no-op when config file does not exist", () => {
     const result = dryRunWith(

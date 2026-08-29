@@ -348,9 +348,9 @@ describe("doctor — the harness inventory", () => {
     const { global, project } = inventory(rows);
 
     // Every harness the registry knows, in both scopes.
-    expect(project?.items).toHaveLength(12);
-    expect(global?.items).toHaveLength(12);
-    expect(project?.detail).toBe("1 detected · 0 registered · 12 known");
+    expect(project?.items).toHaveLength(13);
+    expect(global?.items).toHaveLength(13);
+    expect(project?.detail).toBe("1 detected · 0 registered · 13 known");
 
     // `types.ts` forbids inflating the failure count: a machine that simply
     // does not have Cursor is not a broken machine.

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   copilotMcpEntry,
+  crushMcpEntry,
   cursorMcpEntry,
   defaultMcpEntry,
   mcpEntryMatches,
@@ -83,6 +84,40 @@ describe("copilotMcpEntry", () => {
       args: ["mcp"],
       tools: ["*"],
     });
+  });
+});
+
+describe("crushMcpEntry", () => {
+  it('ALWAYS emits the required `type: "stdio"` discriminator', () => {
+    // The one assertion that makes this row work at all: Crush's MCPConfig
+    // requires `type` and applies no default on load — an entry without it
+    // hits createTransport's "unsupported mcp type" arm and silently never
+    // starts.
+    expect(crushMcpEntry({ command: "pragma" })).toEqual({
+      type: "stdio",
+      command: "pragma",
+    });
+  });
+
+  it("keeps args and env under their canonical spellings", () => {
+    expect(
+      crushMcpEntry({
+        command: "pragma",
+        args: ["mcp"],
+        env: { KEY: "value" },
+      }),
+    ).toEqual({
+      type: "stdio",
+      command: "pragma",
+      args: ["mcp"],
+      env: { KEY: "value" },
+    });
+  });
+
+  it("drops `cwd` — Crush's schema has no such field and rejects unknowns", () => {
+    expect(
+      crushMcpEntry({ command: "pragma", cwd: "/project" }),
+    ).not.toHaveProperty("cwd");
   });
 });
 
