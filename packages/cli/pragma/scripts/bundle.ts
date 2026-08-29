@@ -1,5 +1,5 @@
 /**
- * Compile the embedded pack from `pragma.conf.ts`.
+ * Compile the embedded pack — and the bundled skills — from `pragma.conf.ts`.
  *
  * Resolves the distribution's own declared packs through the PRODUCT's pipeline
  * (`parsePackDeclaration` → `resolvePackage` → `buildPack`, with `sources
@@ -21,6 +21,19 @@
  * on every test run), and deleting `pack.generated.ts` forces a full
  * regeneration.
  *
+ * THE SAME RESOLUTION ALSO SHIPS THE PACKS' SKILLS. Every pack this script
+ * clones has its `skills/<name>/SKILL.md` on disk at the moment the graph is
+ * read out of it, and until now that was thrown away with the throwaway cache:
+ * a fresh install answered `block lookup` offline and listed ZERO skills.
+ * {@link writeBundledSkills} copies them into the committed `bundled-skills/`
+ * directory at the package root — the skills half of the snapshot the graph
+ * already had. It runs OUTSIDE the unchanged-skip below, for two reasons: a
+ * directory copy IS byte-reproducible (unlike the n-quads), so re-running
+ * against unchanged upstream still produces a zero diff without a skip; and the
+ * manifest's `contentHash` covers the resolved TTL inputs ONLY, so a pack that
+ * edits a SKILL.md and no `.ttl` is invisible to it — skipping on that hash
+ * would silently ship the previous release's skills forever.
+ *
  * Needs the network (a shallow clone per git pack), so it is NOT part of
  * `build` / `build:all`: a PR build must not clone three repositories, and the
  * artifacts are committed. It runs in exactly two places — a maintainer's
@@ -32,14 +45,17 @@
  */
 
 import {
+  cpSync,
   existsSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildPackPrefixes } from "../src/capabilities/sources/runUpdate.js";
 import { VERSION } from "../src/constants.js";
@@ -106,9 +122,121 @@ const indexOutPath = join(embeddedDir, "pack.index.generated.ts");
 // putting them in `pack.generated.ts` would load its ~1.9 MB of n-quads with
 // them (a measured +28 ms on every invocation).
 const storiesOutPath = join(embeddedDir, "pack.stories.generated.ts");
+/**
+ * The committed skills snapshot, at the PACKAGE ROOT (not `dist/`, not `src/`).
+ *
+ * `dist/` is wrong because nothing committed produces it: `bundle` is a
+ * release-time step deliberately outside `build`, so an artifact only `bundle`
+ * writes has to live where git holds it — exactly as `pack.generated.ts` does.
+ * `src/` is wrong because `tsc` copies no non-TS file into `dist/`, and because
+ * biome's include list covers everything under `src`, which would start linting
+ * whatever JSON an upstream skill happens to ship. The package root is the same place a design-system
+ * pack puts its own `skills/`, which is the layout this is a snapshot OF.
+ * `package.json`'s `files` allowlists the directory by name.
+ */
+const skillsOutDir = join(packageRoot, "bundled-skills");
 
 const entryName = (entry: PackDeclaration): string =>
   typeof entry === "string" ? entry : entry.name;
+
+/**
+ * A package's skill folders: immediate children of `<root>/skills` that hold a
+ * `SKILL.md`, sorted so the copy order is deterministic.
+ *
+ * `statSync`, not `lstatSync`, and it is the same call
+ * `capabilities/sources/installSkills.ts` makes for the same reason: a package
+ * that ships `skills/<name>` as a SYMLINK (the ordinary pnpm / monorepo /
+ * `file:` layout) contributed nothing at all, silently, under `lstat`.
+ */
+function packageSkillDirs(root: string): string[] {
+  const skillsDir = join(root, "skills");
+  let names: string[];
+  try {
+    names = readdirSync(skillsDir);
+  } catch {
+    return []; // No `skills/` dir — a pack that ships none.
+  }
+  return names
+    .sort()
+    .map((name) => join(skillsDir, name))
+    .filter((dir) => {
+      try {
+        return statSync(dir).isDirectory() && existsSync(join(dir, "SKILL.md"));
+      } catch {
+        return false; // Unreadable entry — skip, as discovery does.
+      }
+    });
+}
+
+/** Total bytes of a directory tree, for the packaging figure this logs. */
+function treeBytes(dir: string): number {
+  let total = 0;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    total += entry.isDirectory() ? treeBytes(path) : statSync(path).size;
+  }
+  return total;
+}
+
+/**
+ * Copy every resolved pack's `skills/*` into the committed `bundled-skills/`
+ * root, replacing whatever was there.
+ *
+ * ALL FOUR DECLARED PACKS contribute, for the same reason the graph snapshot
+ * takes all four: the packs are the distribution's declared content, and a
+ * subset would mean the shipped skills and the shipped graph disagreed about
+ * which packs this release is. (`@canonical/anatomy-dsl` resolves through
+ * {@link SOURCE_OVERRIDES} from `node_modules` here, so its skills — if it ever
+ * ships any — come from the npm tarball rather than the git ref, the identical
+ * caveat the manifest's `sourceRef` already records for its triples.)
+ *
+ * COPIED, not linked: the artifact is committed and published in a tarball, and
+ * neither git nor npm can carry a link into a build machine's ref cache.
+ *
+ * The whole directory is REMOVED first, which is what retires a skill a pack has
+ * since dropped — the copy pass walks the packages and so can only ever visit a
+ * skill that still exists, the same blind spot `planStaleLinkPrunes` exists to
+ * cover at run time. Rewriting rather than patching is safe here precisely
+ * because a file copy is byte-reproducible: unchanged upstream ⇒ zero git diff.
+ *
+ * @param packs - The resolved packages, in declaration order.
+ * @returns The folder names copied, and the total bytes written.
+ * @throws When the packs yielded no skills at all — shipping none is the defect
+ *   this artifact exists to fix, so it fails loudly rather than committing an
+ *   empty directory that would look like a working snapshot.
+ * @note Impure — deletes and rewrites `bundled-skills/`.
+ */
+function writeBundledSkills(packs: readonly { name: string; root: string }[]): {
+  folders: string[];
+  bytes: number;
+} {
+  rmSync(skillsOutDir, { recursive: true, force: true });
+  const seen = new Set<string>();
+  for (const pkg of packs) {
+    for (const dir of packageSkillDirs(pkg.root)) {
+      const folder = basename(dir);
+      // First-seen wins on a folder-name clash across packs — the SAME rule
+      // `planSkillInstall` applies when installing them for real, so the
+      // snapshot cannot disagree with what a `sources update` would produce.
+      if (seen.has(folder)) continue;
+      seen.add(folder);
+      // `dereference`: a pack whose `skills/<name>` (or a file beneath it) is a
+      // symlink must contribute its CONTENT, never a link that resolves only on
+      // the build machine.
+      cpSync(dir, join(skillsOutDir, folder), {
+        recursive: true,
+        dereference: true,
+      });
+    }
+  }
+  const folders = [...seen].sort();
+  if (folders.length === 0) {
+    throw new Error(
+      `The ${packs.length} resolved pack(s) provided 0 skills — refusing to commit an empty bundled-skills/ snapshot.`,
+    );
+  }
+  return { folders, bytes: treeBytes(skillsOutDir) };
+}
 
 /** The committed embed's manifest JSON, or `undefined` when there is none. */
 async function readCommittedManifest(): Promise<string | undefined> {
@@ -238,6 +366,14 @@ export const manifestJson = ${JSON.stringify(read(MANIFEST_FILE))};
       body: `export const storiesJson = ${JSON.stringify(read(STORIES_FILE))};\n`,
     },
   ];
+
+  // Unconditional, and deliberately ahead of the unchanged-skip: see the module
+  // docblock — the manifest hash cannot see a skills-only upstream change, and a
+  // file copy needs no skip to stay diff-free.
+  const skills = writeBundledSkills(resolved);
+  console.log(
+    `Bundled ${skills.folders.length} skill(s) → bundled-skills/ (${(skills.bytes / 1024).toFixed(1)} KiB): ${skills.folders.join(", ")}`,
+  );
 
   const committed = await readCommittedManifest();
   const unchanged =

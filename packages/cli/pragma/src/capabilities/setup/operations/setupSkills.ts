@@ -5,9 +5,14 @@
  * the two always match.
  *
  * - global (the default): INSTALLED skills (`$XDG_DATA_HOME/<bin>/skills`, where
- *   `sources update` puts package skills) link into user-level harness skill
- *   directories — the cross-client `~/.agents/skills`, plus the user-level
+ *   `sources update` puts package skills) AND the BUNDLED snapshot this package
+ *   ships (`bundled-skills/`, last in precedence) link into user-level harness
+ *   skill directories — the cross-client `~/.agents/skills`, plus the user-level
  *   directory of each detected harness whose user-level location is verified.
+ *   The global band is therefore a root SET, and every rule below that used to
+ *   read one `sourceRoot` ranges over it: what a skill resolves to (first-seen
+ *   wins, so an installed skill beats the shipped copy), what this command
+ *   OWNS, and what its stale sweep is entitled to touch.
  * - project (`--local`): PROJECT skills (`<cwd>/.<bin>/skills`) link into the
  *   project's harness directories — the checked-in, team-shared arrangement.
  *
@@ -15,6 +20,29 @@
  * repository's directories leaks machine state into a checkout, and linking a
  * repository's skills into the home directory applies one project's skills
  * machine-wide. Neither is ever what the user asked for.
+ *
+ * A BUNDLED SKILL IS LINKED, NOT COPIED, and that is a decision about who owns
+ * the target directory. Every other link this command writes points into a
+ * directory pragma controls (`$XDG_DATA_HOME/<bin>/skills`, or the user's own
+ * repository); a bundled one points into the package directory, which the
+ * PACKAGE MANAGER owns and may move or delete without telling us — a pnpm or
+ * npx layout puts the version in the path, so an upgrade leaves the link
+ * dangling. Copying would avoid that and cost more than it saves: `linkState`
+ * classifies a real directory as `other`, and this module treats `other` as
+ * hand-placed and never touches it. So a copied skill could never be updated,
+ * never be retired, and never be removed by `--undo` — pragma would be writing
+ * permanent, silently stale directories into `~/.claude/skills`.
+ *
+ * A dangling link, by contrast, the reconcile ALREADY repairs, and this was
+ * checked rather than assumed: `detectSkills` classifies a link that does not
+ * resolve to the current skill as `replaced` (delete + relink) whatever it
+ * points at, so the next `setup skills` — or the layer-2 pass `sources update`
+ * runs — moves it onto the new package directory. The one thing that had to
+ * change is ownership: `withinRoot` against the installed root alone read a
+ * bundled-pointing link as somebody else's and skipped it, so the sweep and the
+ * relink both range over the root SET now ({@link withinAnyRoot}). The residual
+ * window is between an upgrade and the next reconcile, which is the same window
+ * a `sources update` link into a cleared ref cache already has.
  *
  * Split into `detectSkills` (discovery, harness detection, and the per-link
  * create/skip/replace DECISION, all against the real filesystem up front, so
@@ -85,11 +113,24 @@ export interface SymlinkAction {
  */
 export interface SkillsDetection {
   readonly band: ScopeBand;
-  /** The band's source root — the directory skills are discovered from. */
+  /**
+   * The band's source roots, in PRECEDENCE order — the directories skills are
+   * discovered from, and the set every ownership test ranges over. One entry
+   * for the project band; installed-then-bundled for the global one.
+   */
+  readonly sourceRoots: readonly string[];
+  /**
+   * The band's PRIMARY source root — `sourceRoots[0]`, and the one the skip
+   * reason and the doctor row name. It is the root a user can DO something
+   * about: the project directory they fill by hand, or the installed root
+   * `sources update` writes. Naming the bundled snapshot instead would point
+   * them at a directory inside their node_modules that they must never edit.
+   */
   readonly sourceRoot: string;
   /**
-   * Whether the source root EXISTS on disk — deliberately NOT the same question
-   * as {@link available}, which asks only whether the root holds a skill.
+   * Whether ANY of {@link sourceRoots} exists on disk — deliberately NOT the
+   * same question as {@link available}, which asks only whether they hold a
+   * skill.
    *
    * The two were one flag, and conflating them is a wipe hazard. A run where
    * `XDG_DATA_HOME` points somewhere else, or where `sources update` has never
@@ -154,6 +195,29 @@ export function withinRoot(
     !rel.startsWith(`..${sep}`) &&
     !isAbsolute(rel)
   );
+}
+
+/**
+ * Whether a link's destination lives inside ANY of the band's skill roots.
+ *
+ * The band ownership test, once the global band stopped being a single
+ * directory. Every caller that used to ask {@link withinRoot} about one path
+ * asks this about the set, so a link into the bundled snapshot is as much this
+ * command's to maintain as one into the installed root — and a link into
+ * neither is still nobody's business but the user's.
+ *
+ * @param roots - The band's skill source roots, absolute.
+ * @param linkPath - The absolute path of the link being classified.
+ * @param rawTarget - The link's destination exactly as `readlink` reported it.
+ * @returns Whether the destination is a path under one of the roots.
+ * @note Pure — {@link withinRoot} reads nothing, and neither does this.
+ */
+export function withinAnyRoot(
+  roots: readonly string[],
+  linkPath: string,
+  rawTarget: string,
+): boolean {
+  return roots.some((root) => withinRoot(root, linkPath, rawTarget));
 }
 
 /**
@@ -293,20 +357,28 @@ function rootIsPresent(root: string): boolean {
  * target is gone; the root's own existence is the separate question of whether
  * this command is entitled to answer at all.
  *
+ * THE GATE IS PER ROOT, not per band. A band with two roots must not let one
+ * of them vouch for the other: if the installed root is deleted (or
+ * `XDG_DATA_HOME` points elsewhere for one invocation) while the bundled
+ * snapshot — which ships inside the package and so is essentially always there
+ * — still exists, a band-wide "some root exists" gate would hand the sweep every
+ * link into the vanished root and call it stale. So `existingRoots` is passed
+ * already filtered, and a link is orphanable only when the root it points into
+ * is one of them.
+ *
  * @param targets - The band's link directories.
- * @param sourceRoot - The band's skill source root.
- * @param rootExists - Whether that root exists (false ⇒ no orphans at all).
+ * @param existingRoots - The band's source roots that EXIST (empty ⇒ no
+ *   orphans at all).
  * @param covered - Link paths the per-skill pass already decided.
  * @returns The owned links no current skill accounts for.
  * @note Impure — reads each target directory and lstats its entries.
  */
 function orphanedLinks(
   targets: readonly { dir: string; name: string }[],
-  sourceRoot: string,
-  rootExists: boolean,
+  existingRoots: readonly string[],
   covered: ReadonlySet<string>,
 ): SymlinkAction[] {
-  if (!rootExists) return [];
+  if (existingRoots.length === 0) return [];
   const orphans: SymlinkAction[] = [];
   for (const { dir, name } of targets) {
     let entries: string[];
@@ -320,7 +392,7 @@ function orphanedLinks(
       if (covered.has(linkPath)) continue;
       const state = linkState(linkPath);
       if (state.kind !== "symlink") continue;
-      if (!withinRoot(sourceRoot, linkPath, state.target)) continue;
+      if (!withinAnyRoot(existingRoots, linkPath, state.target)) continue;
       orphans.push({
         skillName: entry,
         target: resolve(dirname(linkPath), state.target),
@@ -354,7 +426,7 @@ export async function detectSkills(
 ): Promise<SkillsDetection> {
   const cwd = rt.cwd;
   const [
-    { discoverSkillsFrom, installedSkillsDir, projectSkillsDir },
+    { discoverSkillsFrom, globalSkillRoots, projectSkillsDir },
     { detectHarnesses, readPlatformEnv, userHome },
     { runTask },
   ] = await Promise.all([
@@ -363,11 +435,18 @@ export async function detectSkills(
     import("@canonical/task/node"),
   ]);
 
-  const sourceRoot =
-    band === "project" ? projectSkillsDir(cwd) : installedSkillsDir();
+  // The band picks the root SET; `globalSkillRoots` owns the global band's
+  // order (installed, then bundled) so this module and `sources update` cannot
+  // drift on which directories the band is.
+  const sourceRoots =
+    band === "project" ? [projectSkillsDir(cwd)] : globalSkillRoots();
+  const sourceRoot = sourceRoots[0] as string;
   const linkRoot = band === "project" ? cwd : userHome(readPlatformEnv());
-  const skills = discoverSkillsFrom([sourceRoot]);
-  const rootExists = rootIsPresent(sourceRoot);
+  // First-seen wins, so an installed skill shadows the bundled copy of the same
+  // name: someone who ran `sources update` links the CURRENT skill.
+  const skills = discoverSkillsFrom(sourceRoots);
+  const existingRoots = sourceRoots.filter(rootIsPresent);
+  const rootExists = existingRoots.length > 0;
   const detected = await runTask(detectHarnesses(cwd));
   const targets = linkTargets(detected, band, linkRoot);
 
@@ -405,7 +484,7 @@ export async function detectSkills(
         blocked: state.kind === "other",
         owned:
           state.kind === "symlink" &&
-          withinRoot(sourceRoot, linkPath, state.target),
+          withinAnyRoot(sourceRoots, linkPath, state.target),
       });
     }
   }
@@ -418,15 +497,19 @@ export async function detectSkills(
 
   return {
     band,
+    sourceRoots,
     sourceRoot,
     rootExists,
     available: skills.length > 0,
     targets,
     actions,
+    // Ownership above spans EVERY root (a pure string test that reads nothing,
+    // so it still answers after a target is gone); the sweep below spans only
+    // the roots that EXIST. Those are two different questions and the split is
+    // deliberate — see {@link orphanedLinks}.
     orphans: orphanedLinks(
       targets,
-      sourceRoot,
-      rootExists,
+      existingRoots,
       new Set(actions.map((a) => a.linkPath)),
     ),
     skillCount: skills.length,

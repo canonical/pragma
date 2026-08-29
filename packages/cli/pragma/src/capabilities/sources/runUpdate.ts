@@ -53,7 +53,7 @@ import {
 // band covenant — so `sources update` cannot drift away from what
 // `setup skills --global` links, or widen the band on its own.
 import { existingGlobalSkillDirs } from "../setup/operations/setupSkills.js";
-import { installedSkillsDir } from "../skill/discover.js";
+import { globalSkillRoots, installedSkillsDir } from "../skill/discover.js";
 import { planBandSkillLinks, planSkillInstall } from "./installSkills.js";
 import type { SourcesUpdateData } from "./types.js";
 
@@ -361,12 +361,14 @@ export async function buildUpdateTask(
   // `~/.claude/skills` into being and opting the user into linking they never
   // asked for. Refresh what is there; never bring a directory into existence.
   //
-  // Ownership is the SAME `withinRoot` test `setup skills` applies, so a real
-  // directory, a still-resolving link into the user's own checkout, and a
-  // `<root>-backup/foo` sibling are all left exactly as found.
+  // Ownership is the SAME `withinAnyRoot` test `setup skills` applies, over the
+  // SAME root set (`globalSkillRoots`), so a real directory, a still-resolving
+  // link into the user's own checkout, and a `<root>-backup/foo` sibling are all
+  // left exactly as found — while a link still pointing at the BUNDLED snapshot
+  // for a skill this update just installed is ours, and is moved onto it.
   const bandPlan = planBandSkillLinks(
     await existingGlobalSkillDirs(runtime.cwd),
-    installedSkillsDir(),
+    globalSkillRoots(),
     skillPlan
       .filter((link) => link.action !== "pruned")
       .map((link) => link.folderName),

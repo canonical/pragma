@@ -217,15 +217,25 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     // `$XDG_DATA_HOME/pragma/skills` and one `<cwd>/.pragma/skills`, so a fork
     // read the other's skills and could not install its own without collision.
     process.env.XDG_DATA_HOME = join(tmpdir(), "identity-data");
-    const { skillRoots, installedSkillsDir } = await import(
+    const { skillRoots, installedSkillsDir, bundledSkillsDir } = await import(
       "./capabilities/skill/discover.js"
     );
     expect(installedSkillsDir().endsWith(join("recipes", "skills"))).toBe(true);
-    expect(skillRoots("/work")).toEqual([
+    // The two roots that live on SHARED ground — the user's data home and the
+    // user's repository — are the ones a fork must namespace.
+    const namespaced = [
       join("/work", ".recipes", "skills"),
       installedSkillsDir(),
-    ]);
-    for (const root of skillRoots("/work")) {
+    ];
+    // The bundled snapshot is the third, and it is deliberately NOT namespaced
+    // by the bin name: it is the distribution's OWN package directory, which is
+    // already private to the install. A fork is a different package and ships
+    // its own `bundled-skills/`, so there is no shared ground to collide on —
+    // and it is exempt from the check below for exactly that reason, since the
+    // path this repository's package sits at necessarily says "pragma".
+    expect(bundledSkillsDir()).toBeDefined();
+    expect(skillRoots("/work")).toEqual([...namespaced, bundledSkillsDir()]);
+    for (const root of namespaced) {
       expect(root).not.toMatch(THIS_DISTRIBUTION);
     }
   });

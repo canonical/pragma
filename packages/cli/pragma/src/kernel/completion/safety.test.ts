@@ -331,15 +331,22 @@ describe("storeless guarantee (PROTECTED)", () => {
       runComplete(["tier", "lookup", "ap"], capabilities, env),
     ).resolves.toContain("ds:apps");
 
-    // skills (no skills root here) and prompt labels (this graph carries no
-    // prompt entities) have nothing to offer, and the honest storeless answer
-    // is an empty list rather than a store boot.
-    for (const words of [
-      ["skill", "lookup", "do"],
-      ["prompt", "lookup", "bu"],
-    ]) {
-      await expect(runComplete(words, capabilities, env)).resolves.toEqual([]);
-    }
+    // skills: the BUNDLED snapshot ships inside the package, so even this
+    // fresh cwd with an empty XDG data home completes REAL skill names — and
+    // does it storelessly, which is the whole point of the cell. (It used to
+    // assert `[]` here, which was true only because a fresh machine had no
+    // skills at all; that is the defect the snapshot fixes.) The names are not
+    // spelled out: an empty prefix asks for all of them.
+    await expect(
+      runComplete(["skill", "lookup", ""], capabilities, env),
+    ).resolves.not.toHaveLength(0);
+
+    // prompt labels: this graph carries no prompt entities and no shipped skill
+    // declares `prompt: true`, so the honest storeless answer is still an empty
+    // list rather than a store boot.
+    await expect(
+      runComplete(["prompt", "lookup", "bu"], capabilities, env),
+    ).resolves.toEqual([]);
 
     expect(vi.mocked(createStore)).not.toHaveBeenCalled();
   });
