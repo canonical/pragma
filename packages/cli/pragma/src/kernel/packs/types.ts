@@ -299,10 +299,16 @@ export interface PackCompletion {
  * is worth 1 and each nesting step costs the same again; floored at 0, so a very
  * deep scope can never turn negative and invert the type factor it multiplies.
  *
- * {@link asserted} is the retirement path, not an extra knob: an asserted value
- * WINS over the derived one (`COALESCE(?asserted, ?derived)`), so the day the
- * ontology states the ranking itself, this declaration is deleted and nothing
- * else changes.
+ * {@link asserted} is the retirement path for the DERIVATION, not for this
+ * declaration: an asserted value wins over the derived one
+ * (`COALESCE(?asserted, ?derived)`), so the day the ontology states the ranking
+ * itself, the depth heuristic stops mattering and `falloff` becomes inert.
+ *
+ * The declaration itself must stay. Every read of {@link asserted} is reached
+ * through this object, so deleting it does not fall back to the ontology's rank
+ * — it removes scope ranking from the query altogether and silently returns the
+ * lookup to `STR(?uri)` order, which is the defect this exists to fix. What
+ * retires is the derivation, and what remains is `via` plus `asserted`.
  */
 export interface PackScopeWeight {
   /** The entity → scope edge (e.g. `ds:tier`). */

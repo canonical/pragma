@@ -848,16 +848,25 @@ const codeStandardsStories: readonly PackDefinition[] = [
     ],
     lookup: {
       source: "sparql",
-      by: "cs:name",
-      // The one story whose `list` PUBLISHES a synthesized name: `cs:name` is
-      // an optional display title (22 of 156 standards carry one), so the row
-      // name for the other ~87% is derived from the IRI local name. Declaring
-      // the fallback here is what keeps the two halves of the two-step grammar
-      // over one population — the same derivation, read from the other side.
-      // It is deliberately NOT declared on `block`/`token`/`tier`/`concept`:
-      // each of those lists REQUIRES its `by` property, so an entity without
-      // one is a row they never publish, and making it addressable (or
-      // sampleable) here would be the mirror of the defect this repairs.
+      // `rdfs:label`, not `cs:name`. The pack pin above moved to v0.1.5, which
+      // retired the bespoke `cs:name` for the standard property every RDF
+      // consumer already reads — measured against that tag: 0 standards carry
+      // `cs:name`, 148 of 148 carry exactly one `rdfs:label`. Left keyed on the
+      // retired property, this story would still ANSWER — every title would
+      // simply stop reaching a reader and each row would fall back to its
+      // IRI-derived name, with nothing raised. That is the same silent shape as
+      // reading a retired `ds:whenToUse`, one noun over.
+      by: "rdfs:label",
+      // The fallback stays, and is now near-inert rather than load-bearing: it
+      // covered the ~87% of standards that carried no display title at all, and
+      // v0.1.5 gives every one of them a curated label. It remains declared
+      // because a pack is data — a future release that drops a label should
+      // degrade to the IRI-derived name, not become unaddressable.
+      //
+      // Deliberately NOT declared on `block`/`token`/`tier`/`concept`: each of
+      // those lists REQUIRES its `by` property, so an entity without one is a
+      // row they never publish, and making it addressable (or sampleable) here
+      // would be the mirror of the defect this repairs.
       nameFallback: "iri",
       type: "cs:CodeStandard",
       description:

@@ -23,10 +23,20 @@
  * The limit is gone from the NAME forms so the resolver can see what it is
  * choosing between. It still answers with one entity — the arity is the tool's
  * contract — but the rows it did not take become the IRIs of its notice, which
- * is the only address that reaches them. The extra rows cost one resolve row
- * each and no field fetch. (An IRI-addressed form keeps its `LIMIT 1`: an IRI is
- * one entity by construction, so there is nothing to rank and nothing set
- * aside.)
+ * is the only address that reaches them. (An IRI-addressed form keeps its
+ * `LIMIT 1`: an IRI is one entity by construction, so there is nothing to rank
+ * and nothing set aside.)
+ *
+ * The losers are NOT free, and an earlier draft of this comment claimed they
+ * were. `lookupProjection`'s optionals sit in the same SELECT as the ranking, so
+ * every matching URI has its declared fields projected, and a multi-valued field
+ * multiplies rows per entity before `firstRowPerEntity` throws them away. On the
+ * live graph that is small — 25 shared names, two entities each — but it is a
+ * product, not a constant, and the honest shape is a two-phase resolve: rank the
+ * URIs in a minimal SELECT, then project fields for the ones actually answered
+ * with. That restructure is deliberately not done here: it is the same query the
+ * pending no-limit change would rewrite again, and doing it twice would land two
+ * migrations on one seam.
  *
  * The order is {@link rankingClause}'s `?score`, then `STR(?uri)`. The score
  * multiplies the two things a pack may declare about which entity a bare name
@@ -181,10 +191,29 @@ function iriNameBinding(lookup: PackLookup): string {
   return constrained ? `  OPTIONAL { ${named} }` : `  ${named}`;
 }
 
-/** Render a declared weight as a SPARQL numeric literal (never exponential). */
+/**
+ * Render a declared weight as a SPARQL numeric literal (never exponential).
+ *
+ * `toFixed` is the wrong instrument twice over, and both bite inside the 0–1
+ * range the schema allows. It ROUNDS — `0.1234567` became `0.123457`, silently
+ * altering a ranking a pack author declared — and stripping the trailing zeros
+ * off its output turns `0.0000001` into `0.`, which is not a numeric literal at
+ * all and makes the query a parse error rather than a wrong answer.
+ *
+ * `String` already prints the shortest exact round-trip, so it is the right
+ * source of digits; the only thing it does that SPARQL cannot read is
+ * exponent notation, which xsd:decimal's grammar has no form for. Expand that
+ * case and pass everything else through untouched.
+ */
 function sparqlNumber(value: number): string {
   if (Number.isInteger(value)) return String(value);
-  return value.toFixed(6).replace(/0+$/, "");
+  const text = String(value);
+  const exponent = /e-(\d+)$/i.exec(text);
+  if (exponent === null) return text;
+  // `1e-7` / `1.5e-7`: the decimal places needed are the exponent plus whatever
+  // the mantissa already carried, which is exact — no rounding can occur.
+  const mantissaPlaces = text.split("e")[0]?.split(".")[1]?.length ?? 0;
+  return value.toFixed(Number(exponent[1]) + mantissaPlaces);
 }
 
 /**
