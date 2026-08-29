@@ -76,42 +76,18 @@ import {
   detectPrefixClashes,
   resolvePackage,
 } from "../src/kernel/runtime/refs/resolve.js";
-
-/**
- * Build-environment source overrides: a declared pack whose source is not
- * reachable from the machine that compiles the embed.
- *
- * `@canonical/anatomy-dsl` is unreachable here; the published npm package ships
- * the SAME `definitions/ontology.ttl` + `definitions/shapes.ttl`. The override
- * resolves it from `node_modules` (pinned in devDependencies) and the manifest's
- * `sourceRef` records `npm:<version>` rather than `git:<sha>`, so the artifact
- * never claims a provenance it does not have. `pragma.conf.ts` keeps its git
- * source, which is the correct ref for real users — a published package carries no
- * `node_modules`. Delete the entry once the remote is reachable from the build.
- */
-const SOURCE_OVERRIDES: Readonly<Record<string, PackDeclaration>> = {
-  "@canonical/anatomy-dsl": { name: "@canonical/anatomy-dsl" }, // no `source` ⇒ npm
-};
-
-/**
- * The pack this repository IS.
- *
- * `@canonical/ds-implementations` is COLLECTED FROM this monorepo into the root
- * `data/` directory, and `pragma.conf.ts` declares it as a git ref on `#main` —
- * the correct source for a real user, and the wrong one for this script at
- * release time. The version job regenerates that data with the new version and
- * its `versionedLink`s and THEN bundles, all BEFORE `git-commit.sh` makes the
- * commit and tag, so a clone of `#main` would embed the PREVIOUS release's
- * implementation graph into the artifact tagged for this one. The self-pack
- * therefore reads the working tree, which is exactly the tree that becomes the
- * tag.
- *
- * Nothing machine-specific reaches the artifact: the provenance recorded is
- * `self:v<version>` — the tag this bundle is for — never the checkout path.
- * That is also why this bypasses the `file:` refusal below rather than relaxing
- * it: every OTHER local path would pin a developer's filesystem.
- */
-const SELF_PACK = "@canonical/ds-implementations";
+// The build-environment source decisions — which declared pack resolves from
+// npm here (`SOURCE_OVERRIDES`) and which one IS this repository (`SELF_PACK`)
+// — live in `embedSources.ts`, SHARED with the release parity gate
+// (the sibling `check-pack-parity.ts`) so the bundler and the
+// gate can never disagree about which provenance is legitimate.
+//
+// Nothing machine-specific reaches the artifact through either decision: the
+// self pack's recorded provenance is `self:v<version>` — the tag this bundle
+// is for — never the checkout path. That is also why the self pack bypasses
+// the `file:` refusal below rather than relaxing it: every OTHER local path
+// would pin a developer's filesystem.
+import { SELF_PACK, SOURCE_OVERRIDES } from "./embedSources.js";
 
 const packageRoot = fileURLToPath(new URL("../", import.meta.url));
 const embeddedDir = join(packageRoot, "src/kernel/runtime/graphpack/embedded");

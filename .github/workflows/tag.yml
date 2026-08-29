@@ -14,6 +14,16 @@ on:
           - "beta"
           - "rc"
           - "stable"
+      accept_committed_snapshot:
+        description: >-
+          Ship the committed embedded pack without refreshing or verifying it
+          against its declared sources. The parity gate otherwise fails a
+          release whose snapshot was not rebuilt (or whose pinned sources it
+          cannot resolve); this is the explicit, visible waiver — it never
+          covers a proven mismatch.
+        default: false
+        required: false
+        type: boolean
 env:
   MAIN_BRANCH: "refs/heads/main"
 
@@ -102,10 +112,13 @@ jobs:
         uses: ./.github/actions/lerna-version
         with:
           release_type: ${{ github.event.inputs.release_type }}
-          # Optional. The pack repositories are internal and this job's deploy
-          # key does not reach them, so the embedded-pack refresh is skipped
-          # (loudly) until a token that can read them exists.
+          # Optional — but no longer silently so. The pack repositories are
+          # internal and this job's deploy key does not reach them; without a
+          # token the embedded-pack refresh is skipped and the parity gate in
+          # the action FAILS the release, unless the dispatching human checked
+          # accept_committed_snapshot below.
           packs_token: ${{ secrets.PACKS_READ_TOKEN }}
+          accept_committed_snapshot: ${{ github.event.inputs.accept_committed_snapshot }}
 
   publish:
     name: Publish packages
