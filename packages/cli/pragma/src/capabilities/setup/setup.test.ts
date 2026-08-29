@@ -1296,6 +1296,40 @@ describe("setup skills", () => {
     expect(() => lstatSync(linkPath)).toThrow();
   });
 
+  it("the removal plan's children are the FOLDERS the links live in, deduped", async () => {
+    // `dirs` mapped `a.linkPath` — one path per LINK — so the `new Set(…)`
+    // deduped nothing and the removal preview printed an N-path wall where
+    // the forward plan says `N skills → M folders`. The folders are the
+    // links' parent directories.
+    const cwd = tmp("pragma-setup-proj-");
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    for (const name of ["s1", "s2"]) {
+      const skillDir = join(cwd, ".pragma", "skills", name);
+      mkdirSync(skillDir, { recursive: true });
+      writeFileSync(
+        join(skillDir, "SKILL.md"),
+        `---\nname: ${name}\ndescription: A test skill.\n---\n`,
+      );
+      symlinkSync(skillDir, join(linkDir, name));
+    }
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    expect(ownedSkillLinks(detected)).toHaveLength(2);
+
+    const { findTarget } = await import("./targets.js");
+    const draft = findTarget("skills")?.removalPlan(
+      detected as never,
+      "project",
+      { global: process.env.HOME ?? "", project: cwd },
+    );
+    expect(draft?.action).toBe("remove");
+    expect(draft?.detail).toBe("2 links");
+    // TWO links, ONE folder: the children name the folder once, not each link.
+    expect(draft?.children?.map((c) => c.label)).toEqual([
+      `.${sep}${join(".agents", "skills")}`,
+    ]);
+  });
+
   it("owns a RELATIVE link into the skill root, resolved against the link dir", async () => {
     // `readlink` reports the raw target, which may be relative — resolving it
     // against the link's own directory is what makes the containment test

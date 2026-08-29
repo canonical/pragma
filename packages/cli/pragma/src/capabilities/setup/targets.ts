@@ -24,6 +24,7 @@
  * doctor's), so nothing here lands on the `--help`/`__complete` fast path.
  */
 
+import { dirname } from "node:path";
 import type { Task } from "@canonical/task";
 import { BIN_NAME } from "../../constants.js";
 import type { PragmaRuntime } from "../../kernel/runtime/index.js";
@@ -402,7 +403,12 @@ const skillsTarget = defineTarget<SkillsDetection>({
     if (owned.length === 0) {
       return { action: "none", detail: "no link to remove" };
     }
-    const dirs = [...new Set(owned.map((a) => shortenPath(a.linkPath, roots)))];
+    // Dedupe to the FOLDERS the links live in — `linkPath` itself is one path
+    // per link, so a Set over it deduped nothing and the removal preview
+    // printed an 18-path wall where the forward plan says `… → 2 folders`.
+    const dirs = [
+      ...new Set(owned.map((a) => shortenPath(dirname(a.linkPath), roots))),
+    ];
     return {
       action: "remove",
       detail: `${owned.length} ${owned.length === 1 ? "link" : "links"}`,
