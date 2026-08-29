@@ -30,26 +30,55 @@ function Harness({
     <>
       <input type="text" aria-label="field" {...formatted} />
       <output data-testid="model">{model}</output>
+      {/* Stands in for an external write — an RHF reset, or a sibling setting
+          this field — so a commit the hook did not cause can be exercised. */}
+      <button type="button" onClick={() => setModel("9999999999")}>
+        reset
+      </button>
     </>
   );
 }
 
 const getField = () => screen.getByLabelText("field") as HTMLInputElement;
 
-/** Type `text` at `at`, as the browser would: splice it in, then fire change. */
+/**
+ * Dispatch the edit the browser would: an `input` event carrying `inputType`,
+ * which is the only thing distinguishing a backspace from a forward delete once
+ * the value and caret have settled. React's onChange is driven by this event.
+ */
+function edit(
+  input: HTMLInputElement,
+  value: string,
+  caret: number,
+  inputType: string,
+) {
+  fireEvent.input(input, {
+    target: { value, selectionStart: caret },
+    inputType,
+  });
+}
+
+/** Type `text` at `at`, as the browser would: splice it in, then fire the edit. */
 function typeAt(input: HTMLInputElement, text: string, at: number) {
   const next = input.value.slice(0, at) + text + input.value.slice(at);
-  fireEvent.change(input, {
-    target: { value: next, selectionStart: at + text.length },
-  });
+  edit(input, next, at + text.length, "insertText");
 }
 
 /** Backspace the character before `at`. */
 function backspaceAt(input: HTMLInputElement, at: number) {
   const next = input.value.slice(0, at - 1) + input.value.slice(at);
-  fireEvent.change(input, {
-    target: { value: next, selectionStart: at - 1 },
-  });
+  edit(input, next, at - 1, "deleteContentBackward");
+}
+
+/** Press Delete with the caret at `at`, removing the character ahead of it. */
+function deleteForwardAt(input: HTMLInputElement, at: number) {
+  const next = input.value.slice(0, at) + input.value.slice(at + 1);
+  edit(input, next, at, "deleteContentForward");
+}
+
+/** Select the whole value and paste `text` over it, as one edit. */
+function pasteOver(input: HTMLInputElement, text: string) {
+  edit(input, text, text.length, "insertFromPaste");
 }
 
 describe("useFormattedValue", () => {
@@ -104,6 +133,48 @@ describe("useFormattedValue", () => {
     expect(screen.getByTestId("model")).toHaveTextContent("551234567");
     expect(input).toHaveValue("(551) 234-567");
     expect(input.selectionStart).toBe(3);
+  });
+
+  it("keeps every digit when a paste replaces the value with an equivalent", () => {
+    render(<Harness initial="5551234567" />);
+    const input = getField();
+    input.focus();
+
+    // Pasting the same digits over the formatted value produces the same model
+    // from a shorter string. Reading that as a deleted separator would quietly
+    // drop the last digit — the shape browser autofill also arrives in.
+    pasteOver(input, "5551234567");
+
+    expect(screen.getByTestId("model")).toHaveTextContent("5551234567");
+    expect(input).toHaveValue("(555) 123-4567");
+  });
+
+  it("takes the digit ahead of the caret on a forward delete", () => {
+    render(<Harness initial="5551234567" />);
+    const input = getField();
+    input.focus();
+
+    // "(555) 123-4567": Delete with the caret in front of the hyphen. The value
+    // and caret afterwards are identical to a backspace one place to the right,
+    // so only the event tells them apart — read as a backspace, this eats the 3.
+    deleteForwardAt(input, 9);
+
+    expect(screen.getByTestId("model")).toHaveTextContent("555123567");
+    expect(input.selectionStart).toBe(9);
+  });
+
+  it("leaves the caret alone when the model is replaced from outside", () => {
+    render(<Harness initial="555" />);
+    const input = getField();
+    input.focus();
+    input.setSelectionRange(2, 2);
+    const setSelectionRange = vi.spyOn(input, "setSelectionRange");
+
+    // A commit this hook did not cause — a form-level reset, say.
+    fireEvent.click(screen.getByText("reset"));
+
+    expect(input).toHaveValue("(999) 999-9999");
+    expect(setSelectionRange).not.toHaveBeenCalled();
   });
 
   it("rejects a character the formatter cannot represent", () => {

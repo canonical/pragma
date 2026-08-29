@@ -6,12 +6,21 @@ import type {
   UseFormattedValueResult,
 } from "./types.js";
 
+/** What the user did to the value, as far as the caret is concerned. */
+type EditIntent = "insert" | "deleteBackward" | "deleteForward";
+
 /** The model an edit produces, and where the caret sits within that model. */
 type ResolvedEdit = {
   /** The model the edit implies. */
   model: string;
   /** How many model characters precede the caret. */
   offset: number;
+};
+
+/** A caret to restore, and the exact view it was computed against. */
+type PendingCaret = {
+  offset: number;
+  view: string;
 };
 
 // `useLayoutEffect` has no meaning on the server and React warns when it is
@@ -27,6 +36,26 @@ const useIsomorphicLayoutEffect =
  */
 function removeModelCharAt(model: string, index: number): string {
   return model.slice(0, index) + model.slice(index + 1);
+}
+
+/**
+ * Classify an edit as an insertion or a deletion, and which way the deletion
+ * ran. Backspace and forward Delete over a separator produce an identical value
+ * and caret, so the event is the only thing that tells them apart.
+ *
+ * Falls back to backspace when `inputType` is absent — synthetic events dispatch
+ * a plain `Event`, and backspace is the only deletion worth assuming.
+ *
+ * @note Pure.
+ */
+function readEditIntent(
+  event: React.ChangeEvent<HTMLInputElement>,
+): EditIntent {
+  const { inputType } = event.nativeEvent as Partial<InputEvent>;
+  if (inputType === undefined) return "deleteBackward";
+  if (inputType.includes("Forward")) return "deleteForward";
+  if (inputType.startsWith("delete")) return "deleteBackward";
+  return "insert";
 }
 
 /**
@@ -60,7 +89,13 @@ function findCaretOffset(
  *
  * Deleting a separator is the case worth naming: it leaves the model untouched,
  * so a reformat would put the character straight back and the keystroke would
- * appear to do nothing. The model character before the caret is removed instead.
+ * appear to do nothing. A model character is removed instead — the one behind
+ * the caret for a backspace, the one ahead of it for a forward delete.
+ *
+ * That substitution applies only when a deletion removed exactly one display
+ * character. A wider edit — a paste, or a range replaced with equivalent text —
+ * can legitimately produce the same model from a shorter string, and must not be
+ * read as "take a digit instead".
  *
  * @note Pure.
  */
@@ -69,18 +104,26 @@ function resolveEdit(
   model: string,
   view: string,
   caret: number,
+  intent: EditIntent,
 ): ResolvedEdit {
   const offset = formatter.parse(view.slice(0, caret)).length;
   const parsed = formatter.parse(view);
 
-  const deletedSeparator =
-    parsed === model &&
-    view.length < formatter.format(model).length &&
-    offset > 0;
+  const removedOneCharacter =
+    view.length === formatter.format(model).length - 1;
+  if (parsed !== model || intent === "insert" || !removedOneCharacter) {
+    return { model: parsed, offset };
+  }
 
-  return deletedSeparator
+  if (intent === "deleteForward") {
+    // The caret does not move: the character it was sitting in front of goes.
+    return offset < model.length
+      ? { model: removeModelCharAt(model, offset), offset }
+      : { model, offset };
+  }
+  return offset > 0
     ? { model: removeModelCharAt(model, offset - 1), offset: offset - 1 }
-    : { model: parsed, offset };
+    : { model, offset };
 }
 
 /**
@@ -120,6 +163,14 @@ function restoreRejectedEdit(
  * The value is owned by the caller: this hook never holds it in state, so it
  * composes with react-hook-form, a `useState` above it, or any other source.
  *
+ * The `formatter` must satisfy the contract on {@link Formatter} — in
+ * particular `parse(format(m)) === m`. A `parse` that truncates or is not a left
+ * inverse will strand the caret at the end and can make a deletion remove the
+ * wrong character.
+ *
+ * Only for inputs that support text selection. `setSelectionRange` throws on
+ * `type="number"` and `type="email"`.
+ *
  * @note Impure — moves the caret on the element behind `ref`, which is the whole
  * point of the hook and cannot be expressed as a return value.
  */
@@ -129,13 +180,18 @@ export default function useFormattedValue({
   onModelChange,
 }: UseFormattedValueProps): UseFormattedValueResult {
   const ref = useRef<HTMLInputElement | null>(null);
-  // Model characters before the caret, awaiting translation back into a display
-  // offset once the reformatted value has been committed.
-  const pendingOffset = useRef<number | null>(null);
+  // The caret to restore once the reformatted value has been committed, stamped
+  // with the view it belongs to so an unrelated commit cannot consume it.
+  const pending = useRef<PendingCaret | null>(null);
   const composing = useRef(false);
   // The raw text an IME is composing, rendered verbatim so the element is not
   // rewritten mid-composition. Null whenever no composition is in progress.
   const [composingView, setComposingView] = useState<string | null>(null);
+
+  const commit = (next: string, offset: number) => {
+    pending.current = { offset, view: formatter.format(next) };
+    onModelChange(next);
+  };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const node = event.target;
@@ -149,15 +205,20 @@ export default function useFormattedValue({
     }
 
     const caret = node.selectionStart ?? node.value.length;
-    const edit = resolveEdit(formatter, model, node.value, caret);
+    const edit = resolveEdit(
+      formatter,
+      model,
+      node.value,
+      caret,
+      readEditIntent(event),
+    );
 
     if (edit.model === model) {
       restoreRejectedEdit(node, formatter, model, edit.offset);
       return;
     }
 
-    pendingOffset.current = edit.offset;
-    onModelChange(edit.model);
+    commit(edit.model, edit.offset);
   };
 
   const handleCompositionStart = () => {
@@ -168,22 +229,28 @@ export default function useFormattedValue({
     event: React.CompositionEvent<HTMLInputElement>,
   ) => {
     composing.current = false;
-    const composed = event.currentTarget.value;
+    const node = event.currentTarget;
+    const composed = node.value;
+    const caret = node.selectionStart ?? composed.length;
     setComposingView(null);
+
     const parsed = formatter.parse(composed);
-    if (parsed !== model) onModelChange(parsed);
+    if (parsed === model) return;
+    commit(parsed, formatter.parse(composed.slice(0, caret)).length);
   };
 
-  // Runs after every commit; the pending offset gates the work, so a render the
-  // user did not cause (an external `reset()`, say) never moves their cursor.
+  // Runs after every commit, but acts only on the one this hook's own edit
+  // produced — matching the committed view against the caret's stamp. A render
+  // the user did not cause (an external `reset()`, say) never moves their cursor.
   useIsomorphicLayoutEffect(() => {
     const node = ref.current;
-    const offset = pendingOffset.current;
-    pendingOffset.current = null;
-    if (node === null || offset === null) return;
+    const target = pending.current;
+    if (node === null || target === null) return;
+    if (node.value !== target.view) return;
+    pending.current = null;
     if (document.activeElement !== node) return;
 
-    const position = findCaretOffset(formatter, node.value, offset);
+    const position = findCaretOffset(formatter, node.value, target.offset);
     node.setSelectionRange(position, position);
   });
 
