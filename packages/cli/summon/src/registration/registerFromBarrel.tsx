@@ -164,6 +164,23 @@ async function runBatchUndo(
       return;
     }
     const result = await runCollectedUndos(undos);
+    // A failed undo no longer aborts the ones still pending — every step is
+    // attempted and reported in `outcomes` — so the aggregate verdict is
+    // decided HERE, from the outcomes. Printing "Undo complete" over a
+    // partial reversal would claim work that did not happen.
+    const failed = result.outcomes.filter((o) => o.status === "failed");
+    if (failed.length > 0) {
+      process.stderr.write(
+        `${failed.length} step${failed.length === 1 ? "" : "s"} could not be reversed:\n${failed
+          .map((o) => `  - ${o.error.message}`)
+          .join("\n")}\n`,
+      );
+      console.error(
+        `Undo incomplete (${result.undoCount} of ${result.outcomes.length} step${result.outcomes.length === 1 ? "" : "s"} reversed).`,
+      );
+      process.exitCode = 1;
+      return;
+    }
     console.log(
       `Undo complete (${result.undoCount} step${result.undoCount === 1 ? "" : "s"} reversed).`,
     );

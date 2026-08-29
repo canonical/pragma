@@ -8,6 +8,7 @@
  * that are actually populated by the time it runs.
  */
 
+import type { UndoOutcome } from "@canonical/task/node";
 import type { DetailLevel, OutputFormat } from "../../constants.js";
 import type { ConfigLayers } from "../config/types.js";
 
@@ -221,4 +222,20 @@ export interface PragmaRuntime {
    * plan of its own, which is what keeps the raw-effect render the default.
    */
   planData?: unknown;
+  /**
+   * The post-undo projection seam. `--undo` is two-phase: the undo
+   * interpreter WALKS the verb's task with every effect mocked to collect the
+   * reversals, and only then executes what it collected — so nothing the task
+   * body says while it is interpreted describes what the reversals did (the
+   * body only ever runs under the mocked walk). What DOES describe them is
+   * the interpreter's own per-undo outcomes, correlated by the `undoKey` each
+   * reversal was declared with. A verb that reports per-target results sets
+   * this (the same way it sets `exec`/`planData`, before returning its Task);
+   * the projector's undo branch awaits it with those outcomes AFTER the
+   * collected undos executed and before the `Undid N step(s).` line, so the
+   * verb projects them onto its own rows through the same path its forward
+   * run uses. A throw here is rendered as the run's error (nonzero exit) —
+   * the honest outcome when a reversal did not take.
+   */
+  undoReport?: (outcomes: readonly UndoOutcome[]) => void | Promise<void>;
 }

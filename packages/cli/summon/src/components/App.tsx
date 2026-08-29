@@ -909,8 +909,30 @@ export const App = ({
     ) => {
       (async () => {
         try {
-          const { undoCount } = await runCollectedUndos(undos);
-          setState({ phase: "undone", undoCount, unreversible });
+          const result = await runCollectedUndos(undos);
+          // Failure no longer aborts the pending undos — every step is
+          // attempted and reported in `outcomes` — so the verdict is read
+          // off the outcomes here: any failed step fails the undo, naming
+          // each cause, instead of a green "complete" over partial work.
+          const failed = result.outcomes.filter((o) => o.status === "failed");
+          if (failed.length > 0) {
+            setState({
+              phase: "error",
+              error: {
+                code: "UNDO_ERROR",
+                message: `${failed.length} of ${result.outcomes.length} undo step${result.outcomes.length === 1 ? "" : "s"} did not complete: ${failed
+                  .map((o) => o.error.message)
+                  .join("; ")}`,
+              },
+              answers: promptAnswers,
+            });
+            return;
+          }
+          setState({
+            phase: "undone",
+            undoCount: result.undoCount,
+            unreversible,
+          });
         } catch (err) {
           setState({
             phase: "error",

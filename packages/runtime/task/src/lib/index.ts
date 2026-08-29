@@ -37,6 +37,7 @@ export type {
   TextPrompt,
   TraceResult,
   TraceSpan,
+  UndoTask,
 } from "./types.js";
 
 // =============================================================================

@@ -411,7 +411,29 @@ export async function executeVerb(
       }
     }
     if (mutation.undo) {
-      const { undoCount } = await runUndo(task, { onLog: logSink(flags) });
+      // The truth seam. `runUndo`'s collection phase drove the verb's task
+      // with every effect mocked, so anything the task body reported was a
+      // narration of the mocked walk, not of the reversals — which have only
+      // JUST run, each isolated, each with its own outcome. Those outcomes
+      // are the one honest record of what the undo did: a verb that reports
+      // per-target results sets `undoReport` (like `exec`/`planData`) and
+      // projects them onto its own rows; a throw from it renders as the
+      // run's error, exactly like a failed real run. Verbs without a
+      // projector of their own still may not exit 0 over a failed reversal,
+      // so the outcomes are re-checked here as the backstop.
+      const { undoCount, outcomes } = await runUndo(task, {
+        onLog: logSink(flags),
+      });
+      await mutationRuntime.undoReport?.(outcomes);
+      const failed = outcomes.filter((o) => o.status === "failed");
+      if (failed.length > 0) {
+        throw new PragmaError({
+          code: "UNSUPPORTED",
+          message: `${failed.length} of ${outcomes.length} undo step(s) did not complete: ${failed
+            .map((o) => o.error.message)
+            .join("; ")}`,
+        });
+      }
       return renderUndo(flags, undoCount);
     }
     // Real execution: spread the verb's runner options into the node

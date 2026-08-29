@@ -24,6 +24,7 @@
  * doctor's), so nothing here lands on the `--help`/`__complete` fast path.
  */
 
+import { dirname } from "node:path";
 import type { Task } from "@canonical/task";
 import { BIN_NAME } from "../../constants.js";
 import type { PragmaRuntime } from "../../kernel/runtime/index.js";
@@ -112,8 +113,12 @@ export interface TargetDefinition<D> {
    * paths); a row without children ignores it.
    */
   compose(detection: D, chosen?: readonly string[]): Task<void>;
-  /** The removal effects: forward re-assertion carrying the reversal as `undo`. */
-  composeRemoval(detection: D): Task<void>;
+  /**
+   * The removal effects: forward re-assertion carrying the reversal as
+   * `undo`. `undoKey` (the row's identity) is stamped on every reversal so
+   * the undo interpreter's outcomes can be read back per row.
+   */
+  composeRemoval(detection: D, undoKey?: string): Task<void>;
 }
 
 /** A table row with its detection type erased — how every consumer holds one. */
@@ -150,7 +155,7 @@ const configTarget = defineTarget<ConfigDetection>({
     return { action: "remove", detail: path };
   },
   compose: (d) => composeConfigFile(d),
-  composeRemoval: (d) => composeConfigRemoval(d),
+  composeRemoval: (d, undoKey) => composeConfigRemoval(d, undoKey),
 });
 
 const completionsTarget = defineTarget<CompletionsDetection>({
@@ -207,7 +212,7 @@ const completionsTarget = defineTarget<CompletionsDetection>({
     return { action: "remove", detail: shortenPath(d.path, roots) };
   },
   compose: (d) => composeCompletions(d),
-  composeRemoval: (d) => composeCompletionsRemoval(d),
+  composeRemoval: (d, undoKey) => composeCompletionsRemoval(d, undoKey),
 });
 
 const lspTarget = defineTarget<LspDetection>({
@@ -283,7 +288,7 @@ const lspTarget = defineTarget<LspDetection>({
     };
   },
   compose: (d, chosen) => composeLsp(d, chosen),
-  composeRemoval: (d) => composeLspRemoval(d),
+  composeRemoval: (d, undoKey) => composeLspRemoval(d, undoKey),
 });
 
 /**
@@ -356,7 +361,7 @@ const mcpTarget = defineTarget<McpDetection>({
   },
   compose: (d, chosen) =>
     composeMcp(d, chosen ? selectedGroups(d, chosen) : d.groups),
-  composeRemoval: (d) => composeMcpRemoval(d),
+  composeRemoval: (d, undoKey) => composeMcpRemoval(d, undoKey),
 });
 
 const skillsTarget = defineTarget<SkillsDetection>({
@@ -402,7 +407,12 @@ const skillsTarget = defineTarget<SkillsDetection>({
     if (owned.length === 0) {
       return { action: "none", detail: "no link to remove" };
     }
-    const dirs = [...new Set(owned.map((a) => shortenPath(a.linkPath, roots)))];
+    // Dedupe to the FOLDERS the links live in — `linkPath` itself is one path
+    // per link, so a Set over it deduped nothing and the removal preview
+    // printed an 18-path wall where the forward plan says `… → 2 folders`.
+    const dirs = [
+      ...new Set(owned.map((a) => shortenPath(dirname(a.linkPath), roots))),
+    ];
     return {
       action: "remove",
       detail: `${owned.length} ${owned.length === 1 ? "link" : "links"}`,
@@ -414,7 +424,7 @@ const skillsTarget = defineTarget<SkillsDetection>({
     };
   },
   compose: (d) => composeSkills(d),
-  composeRemoval: (d) => composeSkillsRemoval(d),
+  composeRemoval: (d, undoKey) => composeSkillsRemoval(d, undoKey),
 });
 
 /** THE table, in display order. */

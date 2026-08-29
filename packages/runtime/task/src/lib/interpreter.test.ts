@@ -1294,6 +1294,43 @@ describe("Interpreter - executeEffect for Exists", () => {
       rmSync(tempDir, { recursive: true, force: true });
     }
   });
+
+  it("a dangling symlink is absent by default but PRESENT with followSymlinks: false", async () => {
+    // The two semantics answer different questions: `fs.access` follows the
+    // link (is the TARGET reachable?), `lstat` sees the entry itself (does a
+    // `readdir` of the parent list it?). A postcondition mirroring a
+    // readdir-based detection needs the entry answer, or a dangling symlink
+    // makes the check quietly pass over an artifact that is still there.
+    const tempDir = mkdtempSync(join(tmpdir(), "task-exists-lstat-"));
+
+    try {
+      const linkPath = join(tempDir, "dangling");
+      symlinkSync(join(tempDir, "no-such-target"), linkPath);
+
+      expect(
+        await executeEffect({ _tag: "Exists", path: linkPath }, new Map()),
+      ).toBe(false);
+      expect(
+        await executeEffect(
+          { _tag: "Exists", path: linkPath, followSymlinks: false },
+          new Map(),
+        ),
+      ).toBe(true);
+      // A genuinely missing entry is absent under both semantics.
+      expect(
+        await executeEffect(
+          {
+            _tag: "Exists",
+            path: join(tempDir, "missing"),
+            followSymlinks: false,
+          },
+          new Map(),
+        ),
+      ).toBe(false);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
 });
 
 // =============================================================================
@@ -1401,8 +1438,12 @@ describe("Interpreter - executeEffect for Exec", () => {
     expect(result.exitCode).toBe(42);
   });
 
-  it("returns zero exit code when process is killed by signal", async () => {
-    // When a process is killed by a signal, Node.js close event passes null code
+  it("returns a NONZERO exit code when the process is killed by a signal", async () => {
+    // A signal-killed child closes with `code === null` (the signal name rides
+    // the second argument). This used to map to 0 — reporting a killed process
+    // as a successful exec, which let exit-code gates wave through work the
+    // child never finished. There is no numeric code to forward, so the
+    // interpreter reports the conventional failure exit instead.
     const result = (await executeEffect(
       {
         _tag: "Exec",
@@ -1413,8 +1454,7 @@ describe("Interpreter - executeEffect for Exec", () => {
       new Map(),
     )) as ExecResult;
 
-    // code ?? 0 — process killed by signal, code is null, falls back to 0
-    expect(result.exitCode).toBe(0);
+    expect(result.exitCode).toBe(1);
   });
 
   it("respects cwd option", async () => {

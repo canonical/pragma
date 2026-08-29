@@ -209,6 +209,18 @@ describe("Effect Constructors - File System", () => {
 
       expect(effect._tag).toBe("Exists");
       expect((effect as { path: string }).path).toBe("/path/to/check");
+      // Without the option the effect stays byte-identical to the old shape.
+      expect("followSymlinks" in effect).toBe(false);
+    });
+
+    it("carries followSymlinks only when the declaration sets it", () => {
+      const effect = existsEffect("/path/to/check", { followSymlinks: false });
+
+      expect(effect).toMatchObject({
+        _tag: "Exists",
+        path: "/path/to/check",
+        followSymlinks: false,
+      });
     });
   });
 

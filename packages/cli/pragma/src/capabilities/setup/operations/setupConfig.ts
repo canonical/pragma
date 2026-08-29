@@ -110,12 +110,17 @@ export function composeConfigFile(d: ConfigDetection): Task<void> {
  * delete as its `undo`, which is what the undo interpreter executes.
  *
  * @param d - The detection gathered up front.
+ * @param undoKey - Correlation key stamped on the reversal(s), echoed on
+ *   their undo outcomes so the caller can read results back per row.
  * @returns A Task whose undo removes a seed-only config, or an empty Task.
  */
-export function composeConfigRemoval(d: ConfigDetection): Task<void> {
+export function composeConfigRemoval(
+  d: ConfigDetection,
+  undoKey?: string,
+): Task<void> {
   if (!d.exists || !d.isSeed) return sequence_([]);
   return sequence_([
-    writeFile(d.path, SEED_CONFIG, { undo: deleteFile(d.path) }),
+    writeFile(d.path, SEED_CONFIG, { undo: deleteFile(d.path), undoKey }),
   ]);
 }
 
