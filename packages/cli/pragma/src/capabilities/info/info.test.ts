@@ -17,8 +17,25 @@ import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags, PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
+import type { InstallSource } from "../shared/index.js";
 import { infoModule } from "./index.js";
 import type { InfoData } from "./types.js";
+
+// Pin the install-source detection: the real detector reads THIS process
+// (whose entry is a source checkout — an honest `unknown`), and these tests
+// are about the enrichment around it, not the detection itself (covered by
+// `shared/packageManager.test.ts`). The holder lets a case retarget it.
+const detection = vi.hoisted(() => ({ install: undefined as unknown }));
+vi.mock("../shared/index.js", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  detectInstallSource: () => detection.install,
+}));
+
+const GLOBAL_NPM: InstallSource = {
+  kind: "global",
+  pm: "npm",
+  label: "npm (global)",
+};
 
 const infoVerb = infoModule.verbs[0] as VerbSpec;
 const FLAGS_JSON: GlobalFlags = {
@@ -54,6 +71,7 @@ let prevXdg: string | undefined;
 beforeEach(() => {
   prevXdg = process.env.XDG_CONFIG_HOME;
   process.env.XDG_CONFIG_HOME = tmpCwd();
+  detection.install = GLOBAL_NPM;
 });
 afterEach(() => {
   process.env.XDG_CONFIG_HOME = prevXdg;
@@ -74,10 +92,28 @@ describe("info — update-check enrichment", () => {
     const data = await collect(rt);
 
     expect(data.update).toMatchObject({ current: VERSION, latest: "99.0.0" });
-    expect(data.update?.command).toContain("@canonical/pragma-cli");
+    expect(data.update?.command).toBe("npm i -g @canonical/pragma-cli");
+    expect(data.installSource).toBe("npm (global)");
+    expect(data.installKind).toBe("global");
     expect(data.updateSkipped).toBe(false);
     // The storeless invariant: the enrichment must NOT boot the store.
     expect(rt.store.booted).toBe(false);
+  });
+
+  it("a LINKED install gets guidance, never a command (would clobber the link)", async () => {
+    detection.install = {
+      kind: "linked",
+      pm: "npm",
+      target: "/home/u/code/pragma/packages/cli/pragma",
+      label: "npm link (development checkout)",
+    } satisfies InstallSource;
+    stubRegistry("99.0.0");
+    const data = await collect(bootRuntime(FLAGS_JSON, tmpCwd()));
+
+    expect(data.installKind).toBe("linked");
+    expect(data.installSource).toBe("npm link (development checkout)");
+    expect(data.update?.command).toBeUndefined();
+    expect(data.update?.guidance).toMatch(/development checkout/i);
   });
 
   it("marks `updateSkipped` when the registry is unreachable", async () => {

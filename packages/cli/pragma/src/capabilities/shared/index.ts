@@ -27,7 +27,17 @@ export {
   checkExecOk,
   guardMissingBinary,
 } from "./assertExecOk.js";
-export type { InstallSource } from "./packageManager.js";
-export { detectInstallSource, pmUpdateCommand } from "./packageManager.js";
+export type {
+  EphemeralRunner,
+  GlobalInstall,
+  InstallProbe,
+  InstallSource,
+  PackageManager,
+} from "./packageManager.js";
+export {
+  detectInstallSource,
+  pmUpdateCommand,
+  updateGuidance,
+} from "./packageManager.js";
 export type { RegistryCheckResult } from "./registry.js";
 export { checkRegistryVersion, PRAGMA_PACKAGE } from "./registry.js";

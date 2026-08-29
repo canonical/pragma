@@ -209,3 +209,68 @@ export const OUTCOME_GLYPHS: Record<OutcomeStatus, string> = {
  */
 export const outcomeRemedyWord = (status: OutcomeStatus): "fix" | "next" =>
   status === "failed" ? "fix" : "next";
+
+// =============================================================================
+// Install-source states
+// =============================================================================
+
+/**
+ * How the running CLI got onto the machine — the state `info`, `upgrade`, and
+ * doctor's `pragma version` row all report, so its words live here with the
+ * other shared states. Only a `global` install has a sanctioned update
+ * command; the type layer in `capabilities/shared/packageManager.ts` makes the
+ * others structurally command-less, and {@link INSTALL_UPDATE_GUIDANCE} is
+ * what those states say instead. `linked` in particular must never be handed
+ * an install command: `npm i -g` against a linked checkout would overwrite the
+ * link to the development tree the user is working in.
+ */
+export type InstallKind =
+  | "global"
+  | "workspace"
+  | "linked"
+  | "ephemeral"
+  | "unknown";
+
+/** The install kinds that carry NO update command (everything but `global`). */
+export type NoCommandInstallKind = Exclude<InstallKind, "global">;
+
+/**
+ * The display label for an install source, e.g. `npm (global)`, `bun link
+ * (development checkout)`, `npx (ephemeral)`, `unknown (node runtime)`. The
+ * `via` word is the manager/runner/runtime name the detector resolved —
+ * absent only for a `workspace`/`linked` install whose manager could not be
+ * told, which then reads as the bare state.
+ */
+export const installSourceLabel = (kind: InstallKind, via?: string): string => {
+  switch (kind) {
+    case "global":
+      return `${via} (global)`;
+    case "workspace":
+      return via ? `${via} (local project)` : "local project dependency";
+    case "linked":
+      return via
+        ? `${via} link (development checkout)`
+        : "linked (development checkout)";
+    case "ephemeral":
+      return `${via} (ephemeral)`;
+    case "unknown":
+      return `unknown (${via} runtime)`;
+  }
+};
+
+/**
+ * What each command-less install state says when a newer release exists —
+ * honest guidance in place of a command that would be wrong to run. The
+ * `linked` sentence is the load-bearing one: it replaces the `npm i -g` that
+ * would clobber the development link.
+ */
+export const INSTALL_UPDATE_GUIDANCE: Record<NoCommandInstallKind, string> = {
+  workspace:
+    "Installed as a project dependency — update it through the project's package.json.",
+  linked:
+    "Linked development checkout — update it from its source tree, or unlink it before installing a release.",
+  ephemeral:
+    "Ephemeral run — invoke it again with an explicit @latest version to pick up the newest release.",
+  unknown:
+    "The install method cannot be determined — update it the same way it was installed.",
+};
