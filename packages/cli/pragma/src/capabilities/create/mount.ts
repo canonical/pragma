@@ -175,8 +175,9 @@ export function explicitLeafAnswers(
 
 /**
  * The mount's mode resolution — `decideInteraction` over the leaf's five
- * inputs, with the TTY fact INJECTED so the resolution is testable with
- * `tty: true` (no suite can drive a real TTY through a subprocess). The
+ * inputs, with the TTY fact INJECTED so the resolution is testable in-process
+ * with `tty: true` (the real-terminal half is exercised end to end by the
+ * pty journeys in `testing/behavioral/journeys.interactiveTty.e2e.test.ts`). The
  * action calls it with {@link canPrompt} — the same exported H3 gate the
  * kernel's interaction context reads — so the mount and `runCreate` can
  * never disagree about interactivity.

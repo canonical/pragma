@@ -9,7 +9,16 @@ export default defineConfig({
     // timing the shipped entry inside this parallel, coverage-instrumented run
     // measures CPU contention, not the binary, so the ceilings flake red. They
     // stay ENFORCED, just out of this pass.
-    exclude: [...configDefaults.exclude, "src/testing/perf/**"],
+    exclude: [
+      ...configDefaults.exclude,
+      "src/testing/perf/**",
+      // The pty-driven TTY journeys are likewise isolated into their own
+      // SERIAL pass (vitest.tty.config.ts / the `test:tty` script): they
+      // spawn the shipped entry under a real pseudo-terminal and wait on
+      // wall-clock deadlines, which the parallel coverage run starves into
+      // flakes. They stay ENFORCED, just out of this pass.
+      "src/testing/behavioral/journeys.interactiveTty.e2e.test.ts",
+    ],
     // safety.test.ts's storeless-guarantee guards spawn the shipped entry
     // — a correctness check (exit/stdout), not a timing one, so it belongs in
     // this pass. Reuse the perf suite's "emit once if missing"

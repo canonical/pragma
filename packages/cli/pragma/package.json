@@ -41,9 +41,10 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "test": "bun run test:vitest && bun run test:perf",
+    "test": "bun run test:vitest && bun run test:perf && bun run test:tty",
     "test:vitest": "vitest run --coverage",
     "test:perf": "vitest run --config vitest.perf.config.ts",
+    "test:tty": "vitest run --config vitest.tty.config.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "eval": "bun run src/testing/eval/report.ts"
