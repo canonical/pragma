@@ -20,6 +20,14 @@ const componentCssClassName = "ds input phone chrome";
 const EMPTY_COUNTRIES_MESSAGE =
   "PhoneInput requires a non-empty `countries` list.";
 
+// Digits plus every separator the bundled masks actually use — space, parens,
+// hyphen and the dot that `##.##.##` needs. The constraint applies to the string
+// on screen, which carries those separators whenever `mask` is on, so a
+// digits-only pattern would reject a correctly formatted number outright.
+// Parens are escaped because `pattern` is compiled with the `v` flag first,
+// where they are reserved inside a character class.
+const ALLOWED_NUMBER_CHARACTERS = "[0-9+\\(\\)\\-\\.\\s]*";
+
 /**
  * Derive the emoji flag for an ISO 3166-1 alpha-2 code by mapping each of its
  * two letters to its regional-indicator symbol (U+1F1E6–U+1F1FF). Non-alpha-2
@@ -77,6 +85,7 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
       name,
       value,
       onChange,
+      onBlur,
       defaultCountry = "US",
       preferredCountries = [],
       filteredCountries,
@@ -213,14 +222,13 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
           name={name}
           inputMode="tel"
           autoComplete="tel-national"
-          // Deliberately permissive: the constraint applies to the string on
-          // screen, which carries the mask's separators when `mask` is on, so a
-          // digits-only pattern would reject valid entries.
-          pattern="[0-9()+\-\s]*"
+          pattern={ALLOWED_NUMBER_CHARACTERS}
+          title="Digits, and the spacing characters used by the number's format."
           value={number.value}
           onChange={number.onChange}
           onCompositionStart={number.onCompositionStart}
           onCompositionEnd={number.onCompositionEnd}
+          onBlur={onBlur}
           ref={mergeRefs(number.ref, ref)}
           disabled={disabled}
           aria-label="Phone number"

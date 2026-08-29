@@ -27,6 +27,13 @@ export type PhoneInputProps = BaseProps & {
   /** Called with the next value in the configured `valueFormat`. */
   onChange?: (value: string | PhoneValue) => void;
 
+  /**
+   * Called when the national-number input loses focus. The field tier supplies
+   * this; without it react-hook-form never marks the field touched, so
+   * `mode: "onTouched"` never validates it and a touched-gated error never shows.
+   */
+  onBlur?: React.FocusEventHandler<HTMLInputElement>;
+
   /** Default country (a known ISO 3166-1 alpha-2 code from the dataset). */
   defaultCountry?: KnownCountryCode;
 
