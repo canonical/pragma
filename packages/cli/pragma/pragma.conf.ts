@@ -965,9 +965,19 @@ Made by the Canonical Webteam — https://canonical.com.`,
       name: "@canonical/anatomy-dsl",
       source: "git+https://github.com/canonical/anatomy-dsl.git#main",
     },
+    // Pinned to a TAG, and the only source here that is. The standards are the
+    // pack an agent is most likely to quote back at a human as policy, so which
+    // revision answered a query has to be recoverable — a floating ref makes
+    // "the CLI told me this was the rule" unfalsifiable. The other three still
+    // float: they are read for shape and identity, where the newest answer is
+    // the right one.
+    //
+    // Bump this deliberately. `sources update` resolves the tag, so a new
+    // upstream release reaches users only when this line moves — which is the
+    // point, and the cost.
     {
       name: "@canonical/code-standards",
-      source: "git+https://github.com/canonical/web-code-standards.git#main",
+      source: "git+https://github.com/canonical/web-code-standards.git#v0.1.5",
       stories: codeStandardsStories,
     },
     // The implementation graph: ds:ImplementationLibrary / ds:ImplementationObject
