@@ -11,7 +11,7 @@
 import type { Effect, LogLevel } from "@canonical/task";
 import { render } from "ink";
 import type GeneratorDefinition from "../../types/GeneratorDefinition.js";
-import type { InkPromptOptions } from "../inkPrompt.js";
+import type { InkPromptOptions, StepReport } from "../inkPrompt.js";
 import type { PromptEffect } from "../types.js";
 import { SessionController } from "./session.js";
 import { Wizard } from "./Wizard.js";
@@ -22,7 +22,8 @@ export interface MountedSession {
   reportEffectStart: (effect: Effect) => void;
   reportEffectComplete: (effect: Effect, duration: number) => void;
   reportLog: (level: LogLevel, message: string) => void;
-  dispose: () => void;
+  reportStep: (report: StepReport) => void;
+  dispose: () => Promise<void>;
 }
 
 /**
@@ -64,11 +65,18 @@ export function mountPromptSession(
     reportEffectComplete: (effect, duration) =>
       controller.reportEffectComplete(effect, duration),
     reportLog: (level, message) => controller.reportLog(level, message),
-    dispose: () => {
+    reportStep: (report) => controller.reportStep(report),
+    dispose: async () => {
       if (disposed) return;
       disposed = true;
       controller.markComplete();
       signal?.removeEventListener("abort", onAbort);
+      // Let React COMMIT the state just reported (markComplete, and a run's
+      // last effect/step — its scheduler commits on a macrotask) before the
+      // unmount flushes the final frame. Unmounting in the same continuation
+      // flushed the previously committed tree, so the last row of a run was
+      // permanently painted as still in progress.
+      await new Promise((resolve) => setImmediate(resolve));
       instance.unmount();
     },
   };

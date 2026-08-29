@@ -230,6 +230,103 @@ describe("SessionController", () => {
     expect(c.getSnapshot().phase).toBe("cancelled");
   });
 
+  it("folds host step reports into live rows, measuring wall time per step", () => {
+    const c = new SessionController(gen);
+    void c.request(confirm());
+    c.submitConfirm(true); // enters "executing" — the only phase steps land in
+    c.reportStep({ key: "global:mcp", label: "mcp  3 files", status: "start" });
+    expect(c.getSnapshot().steps).toEqual([
+      { key: "global:mcp", label: "mcp  3 files", status: "running" },
+    ]);
+    c.reportStep({
+      key: "global:mcp",
+      label: "mcp  3 files — 3 added",
+      status: "done",
+    });
+    const [step] = c.getSnapshot().steps;
+    // Completion REPLACES the running row (same key), carries the completion
+    // label, and the duration is the controller's own start→done measurement.
+    expect(c.getSnapshot().steps.length).toBe(1);
+    expect(step).toMatchObject({
+      status: "done",
+      label: "mcp  3 files — 3 added",
+    });
+    expect(step?.duration).toBeGreaterThanOrEqual(0);
+  });
+
+  it("drops step reports outside the executing phase (the preview walks too)", async () => {
+    // Step reports originate INSIDE the host's task composition, so the
+    // confirm gate's honest preview fires them while the phase is still
+    // `confirming` — before the user has consented. Those must not paint rows.
+    const c = new SessionController(gen);
+    const gate = c.request(confirm());
+    expect(c.getSnapshot().phase).toBe("confirming");
+    c.reportStep({ key: "k", label: "previewed", status: "start" });
+    expect(c.getSnapshot().steps).toEqual([]);
+    // A report after cancel is likewise inert.
+    c.cancel();
+    await expect(gate).rejects.toMatchObject({ code: "GENERATOR_CANCELLED" });
+    c.reportStep({ key: "k", label: "late", status: "done" });
+    expect(c.getSnapshot().steps).toEqual([]);
+  });
+
+  it("a start for a settled key resets the board — execute's mock walk paints first", () => {
+    // After consent, `execute` synchronously walks `generate` on the MOCK
+    // interpreter (the outcome summary's file list), so a full set of settled
+    // steps lands in-phase with ~0ms durations before the real drive begins.
+    // Sequential steps have per-walk-unique keys, so a `start` on a settled
+    // key can only mean a new interpretation: the board starts over.
+    const c = new SessionController(gen);
+    void c.request(confirm());
+    c.submitConfirm(true);
+    // The mock walk: both steps settle instantly.
+    c.reportStep({ key: "a", label: "a", status: "start" });
+    c.reportStep({ key: "a", label: "a — installed", status: "done" });
+    c.reportStep({ key: "b", label: "b", status: "start" });
+    c.reportStep({ key: "b", label: "b — linked", status: "done" });
+    expect(c.getSnapshot().steps.length).toBe(2);
+    // The real drive starts over with the same first key.
+    c.reportStep({ key: "a", label: "a", status: "start" });
+    expect(c.getSnapshot().steps).toEqual([
+      { key: "a", label: "a", status: "running" },
+    ]);
+    c.reportStep({ key: "a", label: "a — installed", status: "done" });
+    c.reportStep({ key: "b", label: "b", status: "start" });
+    c.reportStep({ key: "b", label: "b — linked", status: "done" });
+    expect(c.getSnapshot().steps.map((s) => s.status)).toEqual([
+      "done",
+      "done",
+    ]);
+  });
+
+  it("a completion whose start was gated away still lands, with no timing claim", () => {
+    // The overlap case: a step STARTED during the confirm gate's preview walk
+    // (dropped by the phase gate) can complete after consent. The row is
+    // real — it appends — but there is no start to measure from, so the
+    // duration is 0 rather than an invented number.
+    const c = new SessionController(gen);
+    void c.request(confirm());
+    c.submitConfirm(true);
+    c.reportStep({ key: "k", label: "k — installed", status: "done" });
+    expect(c.getSnapshot().steps).toEqual([
+      { key: "k", label: "k — installed", status: "done", duration: 0 },
+    ]);
+  });
+
+  it("marks a failed step failed, keeping its completed siblings", () => {
+    const c = new SessionController(gen);
+    void c.request(confirm());
+    c.submitConfirm(true);
+    c.reportStep({ key: "a", label: "a ok", status: "start" });
+    c.reportStep({ key: "a", label: "a ok — installed", status: "done" });
+    c.reportStep({ key: "b", label: "b bad", status: "start" });
+    c.reportStep({ key: "b", label: "b bad — no bun", status: "failed" });
+    expect(c.getSnapshot().steps.map((s) => s.status)).toEqual([
+      "done",
+      "failed",
+    ]);
+  });
+
   it("ignores answer/confirm submitted against the wrong pending kind", () => {
     const c = new SessionController(gen);
     c.submitAnswer("noop"); // nothing pending

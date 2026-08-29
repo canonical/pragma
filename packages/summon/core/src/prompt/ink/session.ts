@@ -23,6 +23,7 @@ import {
   GENERATOR_CANCELLED,
 } from "../../execute/execute.js";
 import type GeneratorDefinition from "../../types/GeneratorDefinition.js";
+import type { StepReport } from "../inkPrompt.js";
 import type { PromptEffect } from "../types.js";
 
 /** The wizard's coarse lifecycle phase. */
@@ -48,6 +49,20 @@ export interface TimedEffect {
   readonly duration: number;
 }
 
+/**
+ * One host-named step's live state — a {@link StepReport} folded into the
+ * view model. `duration` is measured HERE, from the step's `start` report to
+ * its completion report, so it covers the step's whole wall time (every effect
+ * it spans) rather than any single effect's.
+ */
+export interface StepProgress {
+  readonly key: string;
+  readonly label: string;
+  readonly status: "running" | "done" | "failed";
+  /** Wall-clock ms from `start` to completion; set on `done`/`failed`. */
+  readonly duration?: number;
+}
+
 /** The immutable snapshot the React view renders. A new object per change. */
 export interface WizardState {
   readonly phase: WizardPhase;
@@ -63,6 +78,12 @@ export interface WizardState {
   readonly previewEffects: readonly Effect[];
   /** Effects completed so far during execution. */
   readonly progress: readonly TimedEffect[];
+  /**
+   * Host-named steps reported so far ({@link SessionController.reportStep}).
+   * Non-empty ONLY for a host that narrates its run in its own units; the
+   * view then renders these rows instead of the per-effect transcript.
+   */
+  readonly steps: readonly StepProgress[];
   /** A failure, when `phase === "error"`. */
   readonly error?: TaskError;
 }
@@ -145,6 +166,7 @@ export class SessionController {
       total: countApplicable(generator, { ...initialAnswers }),
       previewEffects: [],
       progress: [],
+      steps: [],
     };
   }
 
@@ -261,6 +283,59 @@ export class SessionController {
 
   /** A task log line (kept for parity; not surfaced by the default view). */
   reportLog(_level: LogLevel, _message: string): void {}
+
+  /** Per-step `start` timestamps, so completion can measure wall time. */
+  private readonly stepStarts = new Map<string, number>();
+
+  /**
+   * Fold a host step report into the live view (see {@link StepProgress}).
+   *
+   * GATED to the executing phase, unlike {@link reportEffectComplete}: effect
+   * callbacks only ever arrive from the real interpreter through the seam, but
+   * step reports originate INSIDE the host's task composition, so every
+   * interpretation of it fires them — including the confirm gate's own honest
+   * preview, which walks the same task before the user has consented. Dropping
+   * reports outside `executing` (entered at `submitConfirm(true)`, strictly
+   * after the preview walk began) is what keeps a previewed step from painting
+   * itself as work in progress.
+   *
+   * The phase gate alone is not enough: `execute` walks `generate` once more
+   * on the MOCK interpreter right after consent — synchronously, to give the
+   * outcome summary its file list — so a full set of settled steps arrives
+   * (in-phase, near-zero durations) before the real drive begins. Steps run
+   * sequentially with per-walk-unique keys, so a `start` for a key that has
+   * ALREADY settled can only mean a new interpretation: the board resets and
+   * the real walk repaints it with real timings. This is also why the view
+   * renders steps in the LIVE region, never under `<Static>` — a static row
+   * cannot be taken back, and the mock walk's rows must be.
+   */
+  reportStep(report: StepReport): void {
+    if (this.current.phase !== "executing") return;
+    let steps = [...this.current.steps];
+    const at = steps.findIndex((step) => step.key === report.key);
+    let entry: StepProgress;
+    if (report.status === "start") {
+      if (at >= 0 && steps[at]?.status !== "running") {
+        // A settled key starting again: a fresh walk. Reset the board.
+        steps = [];
+        this.stepStarts.clear();
+      }
+      this.stepStarts.set(report.key, performance.now());
+      entry = { key: report.key, label: report.label, status: "running" };
+    } else {
+      const started = this.stepStarts.get(report.key);
+      entry = {
+        key: report.key,
+        label: report.label,
+        status: report.status,
+        duration: started === undefined ? 0 : performance.now() - started,
+      };
+    }
+    const target = steps.findIndex((step) => step.key === report.key);
+    if (target >= 0) steps[target] = entry;
+    else steps.push(entry);
+    this.set({ steps });
+  }
 
   /** Mark the run complete (the view flashes a completion summary). */
   markComplete(): void {
