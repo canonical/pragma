@@ -121,13 +121,17 @@ const DERIVED_NAME = 'REPLACE(REPLACE(STR(?uri), "^.*[#/]", ""), "\\\\.", "/")';
  *
  * A story whose `list` SYNTHESIZES a name instead of reading one declares
  * `nameFallback: "iri"`, and then the triple becomes OPTIONAL with
- * {@link DERIVED_NAME} behind it. `standard` is the case that exists: 22 of the
- * 156 live code standards carry a `cs:name`, and the code-standards ontology
- * says so deliberately — it is "an optional human-readable display title" that
- * "never participates in identity". `standard list` published
- * `react/component/tsdoc` while `standard lookup react/component/tsdoc`
- * answered ENTITY_NOT_FOUND with empty suggestions, because the only
- * addressable population was the ~13% carrying an asserted name.
+ * {@link DERIVED_NAME} behind it. `standard` is the case that exists. When the
+ * defect was measured, 22 of the then-156 live code standards carried a
+ * `cs:name`, and the code-standards ontology said so deliberately — "an
+ * optional human-readable display title" that "never participates in
+ * identity". `standard list` published `react/component/tsdoc` while
+ * `standard lookup react/component/tsdoc` answered ENTITY_NOT_FOUND with
+ * empty suggestions, because the only addressable population was the ~13%
+ * carrying an asserted name. (Upstream has since retired `cs:name` for
+ * `rdfs:label`, which every standard carries; the fallback stays because a
+ * pack is data, and a dropped label must degrade to the derived name rather
+ * than become unaddressable.)
  *
  * INFERRING the fallback from the mere PRESENCE of a class constraint is what
  * this option replaced, and it was over-reach in both directions of the same

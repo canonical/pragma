@@ -871,10 +871,23 @@ const codeStandardsStories: readonly PackDefinition[] = [
       // because a pack is data — a future release that drops a label should
       // degrade to the IRI-derived name, not become unaddressable.
       //
-      // Deliberately NOT declared on `block`/`token`/`tier`/`concept`: each of
-      // those lists REQUIRES its `by` property, so an entity without one is a
-      // row they never publish, and making it addressable (or sampleable) here
-      // would be the mirror of the defect this repairs.
+      // Deliberately NOT declared on `token`/`modifier`/`tier`/`concept`:
+      // each of those lists REQUIRES its `by` property, so an entity without
+      // one is a row they never publish, and making it addressable (or
+      // sampleable) here would be the mirror of the defect this repairs.
+      //
+      // `block` is NOT in that set, though an earlier version of this comment
+      // claimed it was: its list COALESCEs an OPTIONAL `ds:name` with an
+      // IRI-derived fallback, so a block without a `ds:name` WOULD be
+      // published under a name its lookup cannot resolve. Every shipped block
+      // carries `ds:name` today, so the divergence is latent — and pinned:
+      // `listLookup.shipped.exec.test.ts` runs the whole corpus through both
+      // halves on every test run, and goes red the moment upstream ships an
+      // unnamed block. Fix it THEN, by choosing deliberately between requiring
+      // the name in the list and declaring a fallback pair whose derivations
+      // actually agree (the list keeps the IRI's dots; the shared
+      // `nameFallback` derivation converts them to slashes — declaring the
+      // fallback alone would trade one mismatch for another).
       nameFallback: "iri",
       type: "cs:CodeStandard",
       description:
