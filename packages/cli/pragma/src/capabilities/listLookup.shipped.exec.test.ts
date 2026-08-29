@@ -63,10 +63,15 @@ const NOUNS: readonly string[] = [...declaredStories]
 
 /**
  * Nouns whose shipped corpus is empty TODAY (`ds:Token` has no instances in
- * the current packs), tolerated as vacuously green rather than allowed to fail
- * a data-content gap this suite does not own. Delete an entry the moment
- * upstream ships instances — an entry that no longer belongs here hides a
- * silently emptied corpus.
+ * the current packs) — a data-content gap this suite does not own.
+ *
+ * The allowlist EXPIRES BY CONSTRUCTION: an entry here is asserted to have
+ * ZERO rows, so the moment upstream ships instances the entry goes red and
+ * must be deleted. A list that merely skipped the non-empty assertion would
+ * be a permanent blind spot — `token` gains data, nobody removes the entry,
+ * a later regression back to zero rows stays vacuously green — which is
+ * exactly the hidden-empty case this guard exists to prevent, sitting inside
+ * the guard itself.
  */
 const EMPTY_CORPUS_TODAY: readonly string[] = ["token"];
 
@@ -158,7 +163,14 @@ describe("every list-published name resolves through lookup, whole corpus (PROTE
   )("%s: every published name round-trips, and its corpus is not silently empty", async (noun) => {
     const module = storyModules.get(noun) as CapabilityModule;
     const names = await publishedNames(rt, module, noun);
-    if (!EMPTY_CORPUS_TODAY.includes(noun)) {
+    if (EMPTY_CORPUS_TODAY.includes(noun)) {
+      // Asserted empty, not skipped: this is what expires the allowlist.
+      expect(
+        names,
+        `${noun} is allowlisted as an empty corpus but published rows — ` +
+          "delete it from EMPTY_CORPUS_TODAY so a later regression to zero rows cannot hide behind the entry",
+      ).toEqual([]);
+    } else {
       expect(
         names.length,
         `${noun} list published no rows at all from the shipped pack`,
