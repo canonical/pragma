@@ -50,7 +50,13 @@
  * only the symlink/delete effects the dry-run interpreter mocks.
  */
 
-import { lstatSync, readdirSync, readlinkSync, statSync } from "node:fs";
+import {
+  existsSync,
+  lstatSync,
+  readdirSync,
+  readlinkSync,
+  statSync,
+} from "node:fs";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import {
   deleteFile,
@@ -218,6 +224,50 @@ export function withinAnyRoot(
   rawTarget: string,
 ): boolean {
   return roots.some((root) => withinRoot(root, linkPath, rawTarget));
+}
+
+/**
+ * The directory a release's bundled skills live in, inside the package.
+ *
+ * Named here because it is the ONE shape that identifies a link as pragma's
+ * without asking where the package currently sits.
+ */
+const BUNDLED_DIR_SEGMENT = "bundled-skills";
+
+/**
+ * Whether this link is pragma's to rewrite or remove.
+ *
+ * Residence in a current root is not sufficient, in EITHER direction.
+ *
+ * Too narrow: after an upgrade under a version-stamped layout (pnpm, npx,
+ * volta) a link points into `…/pragma-cli@0.34.0/bundled-skills/<name>`, a
+ * directory that no longer exists and is inside no current root. Ownership by
+ * residence alone reads pragma's own link as somebody else's, so the sweep
+ * declines it and the per-skill pass cannot reach it once the skill is gone —
+ * the dangling link then survives every reconcile, invisible to setup and to
+ * doctor. The path SHAPE still says whose it is.
+ *
+ * Too wide: the bundled root is present on every install now, so a folder name
+ * that collides with a bundled skill is reachable with no user action at all.
+ * A user's own `~/.claude/skills/design-auditor -> ~/work/design-auditor`
+ * must not become this command's to delete just because a bundled skill shares
+ * its name. That is the same rule a hand-placed real directory already gets.
+ *
+ * @param roots - The band's source roots.
+ * @param linkPath - The link's own path, absolute.
+ * @param rawTarget - Its unresolved `readlink` value.
+ * @returns Whether pragma created this link.
+ * @note Pure — resolves strings, reads nothing.
+ */
+function ownsLink(
+  roots: readonly string[],
+  linkPath: string,
+  rawTarget: string,
+): boolean {
+  if (withinAnyRoot(roots, linkPath, rawTarget)) return true;
+  return resolve(dirname(linkPath), rawTarget)
+    .split(sep)
+    .includes(BUNDLED_DIR_SEGMENT);
 }
 
 /**
@@ -392,7 +442,11 @@ function orphanedLinks(
       if (covered.has(linkPath)) continue;
       const state = linkState(linkPath);
       if (state.kind !== "symlink") continue;
-      if (!withinAnyRoot(existingRoots, linkPath, state.target)) continue;
+      // `ownsLink`, not `withinAnyRoot`: a link into a REMOVED version-stamped
+      // package directory is inside no current root, and once its skill is gone
+      // from the release no per-skill action covers the path either. Residence
+      // alone would leave it dangling forever.
+      if (!ownsLink(existingRoots, linkPath, state.target)) continue;
       orphans.push({
         skillName: entry,
         target: resolve(dirname(linkPath), state.target),
@@ -467,12 +521,32 @@ export async function detectSkills(
       const resolvesToSkill =
         state.kind === "symlink" &&
         resolve(dirname(linkPath), state.target) === skill.sourcePath;
+      const owned =
+        state.kind === "symlink" &&
+        ownsLink(sourceRoots, linkPath, state.target);
+      // A link is FOREIGN when it resolves to something real that pragma does
+      // not own — a user's own `~/.claude/skills/design-auditor ->
+      // ~/work/design-auditor`. That is `skipped`, the same answer a
+      // hand-placed real directory gets: `composeSkills` composes every
+      // non-skipped row, so calling it `replaced` would delete the link. The
+      // bundled root is on every install now, so a name collision with a
+      // shipped skill is reachable with no user action at all.
+      //
+      // A DANGLING link is replaced regardless of where it pointed. Nothing
+      // depends on a broken link, so deleting it destroys nothing — while
+      // leaving it blocks the skill forever and, for pragma's own link into a
+      // cleared cache or a replaced package directory, is the repair. An
+      // unresolvable target cannot vouch for its owner either way.
+      const foreign =
+        state.kind === "symlink" &&
+        !owned &&
+        existsSync(resolve(dirname(linkPath), state.target));
       const action: SymlinkAction["action"] =
         state.kind === "absent"
           ? "created"
           : resolvesToSkill
             ? "skipped"
-            : state.kind === "symlink"
+            : state.kind === "symlink" && !foreign
               ? "replaced"
               : "skipped";
       actions.push({
@@ -482,9 +556,7 @@ export async function detectSkills(
         action,
         harnessName: name,
         blocked: state.kind === "other",
-        owned:
-          state.kind === "symlink" &&
-          withinAnyRoot(sourceRoots, linkPath, state.target),
+        owned,
       });
     }
   }

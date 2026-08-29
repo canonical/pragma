@@ -50,12 +50,13 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, join } from "node:path";
+import { basename, isAbsolute, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildPackPrefixes } from "../src/capabilities/sources/runUpdate.js";
 import { VERSION } from "../src/constants.js";
@@ -206,6 +207,55 @@ function treeBytes(dir: string): number {
  *   empty directory that would look like a working snapshot.
  * @note Impure — deletes and rewrites `bundled-skills/`.
  */
+/**
+ * Fail unless every symlink beneath `dir` resolves inside the pack.
+ *
+ * Walked with `lstat` so the check sees links rather than their targets, and
+ * compared on REAL paths so neither a symlinked pack root nor `..` in a target
+ * can walk out unnoticed. A broken link fails too — it cannot be shown to be
+ * contained, and `cpSync` with `dereference` would throw on it regardless.
+ *
+ * @param dir - The skill directory being copied, absolute.
+ * @param packRoot - The pack's root; nothing may resolve outside it.
+ * @param packName - Named in the error, so the offending pack is obvious.
+ * @throws When any entry beneath `dir` escapes `packRoot`.
+ * @note Impure — walks and `realpath`s the real filesystem.
+ */
+function assertContainedSymlinks(
+  dir: string,
+  packRoot: string,
+  packName: string,
+): void {
+  const root = realpathSync(packRoot);
+  const contained = (real: string): boolean => {
+    const rel = relative(root, real);
+    return rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
+  };
+  const walk = (current: string): void => {
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      const child = join(current, entry.name);
+      if (entry.isSymbolicLink()) {
+        let real: string;
+        try {
+          real = realpathSync(child);
+        } catch {
+          throw new Error(
+            `${packName}: ${child} is a broken symlink — refusing to bundle it.`,
+          );
+        }
+        if (!contained(real)) {
+          throw new Error(
+            `${packName}: ${child} resolves to ${real}, outside the pack — refusing to bundle it.`,
+          );
+        }
+        continue;
+      }
+      if (entry.isDirectory()) walk(child);
+    }
+  };
+  walk(dir);
+}
+
 function writeBundledSkills(packs: readonly { name: string; root: string }[]): {
   folders: string[];
   bytes: number;
@@ -222,7 +272,13 @@ function writeBundledSkills(packs: readonly { name: string; root: string }[]): {
       seen.add(folder);
       // `dereference`: a pack whose `skills/<name>` (or a file beneath it) is a
       // symlink must contribute its CONTENT, never a link that resolves only on
-      // the build machine.
+      // the build machine. But dereferencing follows a link ANYWHERE, so an
+      // entry pointing outside the pack would copy a release-host file into a
+      // committed, published artifact — a symlink to a credential file becomes
+      // its contents. Every link is checked against the pack's real root first,
+      // and an escaping one FAILS the bundle rather than being skipped: a
+      // silently dropped file would ship an incomplete skill that looks whole.
+      assertContainedSymlinks(dir, pkg.root, pkg.name);
       cpSync(dir, join(skillsOutDir, folder), {
         recursive: true,
         dereference: true,

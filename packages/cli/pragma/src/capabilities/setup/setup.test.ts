@@ -1033,6 +1033,77 @@ describe("setup skills", () => {
     expect(existsSync(join(cwd, ".agents", "skills", "my-skill"))).toBe(false);
   });
 
+  it("NEVER deletes a user's own symlink that collides with a shipped skill (REGRESSION)", async () => {
+    // Bundled skills ship on every install, so a folder-name collision with a
+    // user's own link is reachable with NO user action — where previously an
+    // empty skill set meant no action was ever composed for that path.
+    // `composeSkills` composes every non-skipped row, so classifying a
+    // resolving foreign link as `replaced` deletes the user's link.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = join(cwd, ".pragma", "skills", "my-skill");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: my-skill\ndescription: A test skill.\n---\n",
+    );
+
+    // Somewhere entirely outside every pragma root, and it RESOLVES.
+    const mine = join(cwd, "my-own-work", "my-skill");
+    mkdirSync(mine, { recursive: true });
+    writeFileSync(join(mine, "SKILL.md"), "---\nname: mine\n---\n");
+
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    const linkPath = join(linkDir, "my-skill");
+    symlinkSync(mine, linkPath);
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    const action = detected.actions.find((a) => a.linkPath === linkPath);
+    expect(action?.action).toBe("skipped");
+    expect(action?.owned).toBe(false);
+
+    // Neither the preview nor the real run may touch it.
+    const { effects } = dryRun(composeSkills(detected));
+    expect(
+      effects.filter(
+        (e) =>
+          e._tag === "DeleteFile" && (e as { path?: string }).path === linkPath,
+      ),
+    ).toHaveLength(0);
+
+    await runTask(composeSkills(detected));
+    expect(readlinkSync(linkPath)).toBe(mine);
+    expect(existsSync(join(linkPath, "SKILL.md"))).toBe(true);
+  });
+
+  it("sweeps a link into a REMOVED package directory once its skill is gone (REGRESSION)", async () => {
+    // The upgrade shape under a version-stamped layout (pnpm, npx, volta): the
+    // link points into `…@0.34.0/bundled-skills/<name>`, a directory the
+    // upgrade replaced. Ownership by residence in a CURRENT root cannot see it,
+    // and once the release drops that skill no per-skill action covers the path
+    // either — so the dangling link would survive every reconcile, invisible to
+    // setup and to doctor alike.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = join(cwd, ".pragma", "skills", "still-here");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: still-here\ndescription: A test skill.\n---\n",
+    );
+
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    // Never created: this is the point — the old package directory is gone.
+    const retired = join(cwd, "pragma-cli@0.34.0", "bundled-skills", "retired");
+    const linkPath = join(linkDir, "retired");
+    symlinkSync(retired, linkPath);
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    const orphan = detected.orphans.find((o) => o.linkPath === linkPath);
+    expect(orphan).toBeDefined();
+    expect(orphan?.owned).toBe(true);
+  });
+
   it("classifies a DANGLING symlink as replaced and repairs it (S1-2)", async () => {
     // `existsSync` FOLLOWS a symlink, so a dangling link used to read as
     // "absent" → plan `created` → the real symlink() crashed EEXIST labeled

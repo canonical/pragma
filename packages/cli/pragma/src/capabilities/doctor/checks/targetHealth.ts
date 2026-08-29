@@ -202,6 +202,22 @@ function skillsHealth(
   // and reporting the two the same way made this row say "links current" where
   // no link exists at all. Setup will never clear such a path — it is not this
   // command's to delete — so the row carries the only remedy that settles it.
+  // A symlink pointing outside every root pragma owns is `skipped` so setup
+  // will never delete it — which would make this row claim "links current" over
+  // a path where the user's own link shadows a shipped skill. `skipped` also
+  // covers an already-correct link (owned) and a real directory (blocked), so
+  // the foreign case is what is left.
+  const foreign = d.actions.filter(
+    (a) => a.action === "skipped" && !a.owned && !a.blocked,
+  ).length;
+  if (foreign > 0) {
+    return {
+      status: "available",
+      detail: `${foreign} of ${d.actions.length} link paths hold a symlink pragma does not own`,
+      remedy:
+        "Move or delete the symlink at that path, then link the skills again.",
+    };
+  }
   const blocked = d.actions.filter((a) => a.blocked).length;
   if (blocked > 0) {
     return {
