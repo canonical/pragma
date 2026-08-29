@@ -83,6 +83,14 @@ function buildKernelGroups(programName: string): readonly HelpGroup[] {
         },
         { noun: "info", summary: "Show version, config, and update status" },
         { noun: "version", summary: "Print the CLI version" },
+        // A colophon is the note at the back of a book: the typeface, the
+        // press, the paper. Nothing depends on it, which is the point — so
+        // this line does not argue for it. Every other summary in this column
+        // promises work done; this one just invites you to look. It sits with
+        // the other commands that describe the distribution rather than act on
+        // it; "For AI agents" is for surfaces an agent drives, and credits are
+        // for a person reading.
+        { noun: "colophon", summary: "Read the credits" },
         {
           noun: "upgrade",
           summary: `Upgrade the ${programName} CLI to the latest version`,
@@ -96,11 +104,6 @@ function buildKernelGroups(programName: string): readonly HelpGroup[] {
           noun: "capabilities",
           summary: "Discover conventions, tools, and the discovery sequence",
         },
-        // A colophon is the note at the back of a book: the typeface, the
-        // press, the paper. Nothing depends on it, which is the point — so
-        // this line does not argue for it. Every other summary in this column
-        // promises work done; this one just invites you to look.
-        { noun: "colophon", summary: "Read the credits" },
         { noun: "skill", summary: "Browse agent skills from the active packs" },
         { noun: "prompt", summary: "Browse reusable prompt templates" },
         // Curated for PLACEMENT, not for existence: `mcp serve` is an
