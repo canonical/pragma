@@ -9,4 +9,4 @@ export type {
   TargetId,
 } from "./plan.js";
 export { setupModule } from "./setup.verb.js";
-export type { ScopeBand, ScopeSelection } from "./types.js";
+export type { Scope, ScopeSelection } from "./types.js";

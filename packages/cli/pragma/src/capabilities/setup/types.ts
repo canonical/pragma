@@ -15,31 +15,23 @@ export type SetupMode =
   | "mcp"
   | "skills";
 
-/**
- * One of the two config bands: the per-user/home `global` band or the per-repo
- * `project` band. Mirrors `@canonical/harnesses`' `ScopeBand` structurally, but
- * is redeclared here so this statically-reachable type module never pulls the
- * harnesses runtime into the fast-path module graph (the lazy-dispatch invariant).
- */
-export type ScopeBand = "project" | "global";
-
-/**
- * The resolved `--scope` selection: which config band(s) a run touches.
- * `global` is the DEFAULT — the user/home band a machine-level installer
- * configures; `project` is the opt-in per-repository band; `both` is the
- * explicit "run each band in one invocation". Structurally mirrors the
- * harnesses `ScopeSelection`.
- */
-export type ScopeSelection = "project" | "global" | "both";
+// The scope types are part of the rendering vocabulary — the one module that
+// owns both the states and the words for them. Re-exported here so setup's
+// type surface stays complete; the definitions (and the structural pin against
+// `@canonical/harnesses`) live with the vocabulary.
+export type {
+  Scope,
+  ScopeSelection,
+} from "../../kernel/render/vocabulary.js";
 
 /**
  * The prior state of an MCP target file, read up front by `detectMcp`:
- * `absent` (no pragma entry yet), `configured` (a matching pragma entry already
+ * `absent` (no pragma entry yet), `registered` (a matching pragma entry already
  * present in every write — a re-run skips it), or `drifted` (a pragma entry
  * exists but differs, so a write updates it). Mirrors the skills step's
  * created/skipped/replaced idempotency at the file grain.
  */
-export type McpTargetState = "absent" | "configured" | "drifted";
+export type McpTargetState = "absent" | "registered" | "drifted";
 
 /**
  * The prior on-disk state of the shell-completion script, read up front by

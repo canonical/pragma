@@ -5,7 +5,7 @@
  * gate, live progress, colours, and the shared cancel fixes by construction.
  *
  * The shape mirrors `create`: detection runs FOR REAL up front (once per
- * target/band, in `detectTargets`), then a PURE `generate` composes only the
+ * target/scope, in `detectTargets`), then a PURE `generate` composes only the
  * effects for the SELECTED rows. `generate` must stay re-interpretable —
  * `execute` invokes it more than once (the confirm-gate preview and the build) —
  * so it is composed from combinators and does no reads of its own.
@@ -55,7 +55,7 @@ import {
   type TargetId,
   withRows,
 } from "../plan.js";
-import type { ScopeBand, ScopeSelection, SetupMode } from "../types.js";
+import type { Scope, ScopeSelection, SetupMode } from "../types.js";
 
 /** The answer key the run-all's row multiselect writes. */
 const ROWS_ANSWER = "targets";
@@ -72,9 +72,8 @@ const CHILD_ANSWER: Partial<Record<TargetId, string>> = {
   lsp: LSP_EDITORS_ANSWER,
 };
 
-/** A row's identity in an answer bag: band-qualified, so `both` stays unambiguous. */
-const rowKey = (band: ScopeBand, target: TargetId): string =>
-  `${band}:${target}`;
+/** A row's identity in an answer bag: scope-qualified, so `both` stays unambiguous. */
+const rowKey = (scope: Scope, target: TargetId): string => `${scope}:${target}`;
 
 /**
  * A ready-to-run setup invocation: the plan as detected, the synthesized
@@ -198,7 +197,7 @@ const buildRowsPrompt = (plan: SetupPlan): PromptDefinition => {
     .filter((row) => row.action !== "skip")
     .map((row) => ({
       label: `${row.target} — ${row.detail}${row.action === "none" ? " (already configured)" : ""}`,
-      value: rowKey(row.band, row.target),
+      value: rowKey(row.scope, row.target),
     }));
   return {
     name: ROWS_ANSWER,
@@ -207,13 +206,13 @@ const buildRowsPrompt = (plan: SetupPlan): PromptDefinition => {
     choices,
     default: plan.rows
       .filter((row) => row.selected)
-      .map((row) => rowKey(row.band, row.target)),
+      .map((row) => rowKey(row.scope, row.target)),
   };
 };
 
 /**
  * The per-file MCP multiselect — one row per deduplicated config file, across
- * every band the run covers. An already-current file is DEFAULT-DESELECTED; a
+ * every scope the run covers. An already-current file is DEFAULT-DESELECTED; a
  * file that is absent or drifted stays selected. It is row-level CHILD
  * selection, which is exactly what the plan's child rows are.
  *
@@ -251,7 +250,7 @@ const buildChildPrompt = (
   };
 };
 
-/** Every child row a target contributes, across the bands in the plan. */
+/** Every child row a target contributes, across the scopes in the plan. */
 const childrenOf = (
   plan: SetupPlan,
   target: TargetId,
@@ -268,7 +267,7 @@ const isChosen = (
   row.action !== "skip" &&
   (chosen === undefined
     ? row.selected
-    : chosen.includes(rowKey(row.band, row.target)));
+    : chosen.includes(rowKey(row.scope, row.target)));
 
 /**
  * What a row DID, as a past-tense word. The row's detail says what and where;
@@ -320,7 +319,7 @@ function childNote(
  *
  * @param rt - The per-invocation runtime.
  * @param mode - The entry point: the run-all, or one target.
- * @param scope - The resolved band selection.
+ * @param scope - The resolved scope selection.
  * @param removal - Compose the removal (`--undo`) instead of the install.
  * @returns The plan, the generator, and the answers-to-plan projection.
  * @note Impure — runs every selected target's real detection.
@@ -369,7 +368,7 @@ export async function buildSetupRun(
 
   /** The detection behind a row, for composing and for re-reading its draft. */
   const detectionFor = (row: PlanRow): DetectedRow | undefined =>
-    detected.find((d) => d.target.id === row.target && d.band === row.band);
+    detected.find((d) => d.target.id === row.target && d.scope === row.scope);
 
   const generator: GeneratorDefinition = {
     meta: buildMeta(
@@ -390,7 +389,7 @@ export async function buildSetupRun(
         const task = removal
           ? hit.target.composeRemoval(hit.detection)
           : hit.target.compose(hit.detection, children);
-        return [{ key: rowKey(row.band, row.target), task }];
+        return [{ key: rowKey(row.scope, row.target), task }];
       });
       return runRowsIsolated(sink, tasks);
     },
@@ -423,7 +422,7 @@ export async function buildSetupRun(
     // Convergence is a real result: one quiet line per row, zero writes.
     if (row.action === "none") return { status: "noop", note: "unchanged" };
     if (!isChosen(row, chosen)) return undefined;
-    const error = sink.get(rowKey(row.band, row.target));
+    const error = sink.get(rowKey(row.scope, row.target));
     if (error !== undefined) {
       const pragma = rowPragmaError(error);
       return {

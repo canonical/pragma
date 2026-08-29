@@ -49,12 +49,12 @@ import {
   redactUrl,
   resolvePackage,
 } from "../../kernel/runtime/refs/index.js";
-// The global band's EXISTING link directories, from the module that owns the
-// band covenant — so `sources update` cannot drift away from what
-// `setup skills --global` links, or widen the band on its own.
+// The global scope's EXISTING link directories, from the module that owns the
+// scope covenant — so `sources update` cannot drift away from what
+// `setup skills --global` links, or widen the scope on its own.
 import { existingGlobalSkillDirs } from "../setup/operations/setupSkills.js";
 import { globalSkillRoots, installedSkillsDir } from "../skill/discover.js";
-import { planBandSkillLinks, planSkillInstall } from "./installSkills.js";
+import { planHarnessSkillLinks, planSkillInstall } from "./installSkills.js";
 import type { SourcesUpdateData } from "./types.js";
 
 /** Generic-core prefixes; config `prefixes` merge over them (config wins). */
@@ -347,7 +347,7 @@ export async function buildUpdateTask(
       `Removing ${staleLinks.length} skill link(s) no longer provided by any package`,
     );
 
-  // Converge the GLOBAL band (layer 2). Layer 1 above is the installed root;
+  // Converge the GLOBAL scope (layer 2). Layer 1 above is the installed root;
   // the harness directories link AT it, and until now nothing here touched
   // them — a new pack skill reached no harness directory until the user
   // separately ran `setup skills`, and a dropped one left a dangling link that
@@ -366,7 +366,7 @@ export async function buildUpdateTask(
   // link into the user's own checkout, and a `<root>-backup/foo` sibling are all
   // left exactly as found — while a link still pointing at the BUNDLED snapshot
   // for a skill this update just installed is ours, and is moved onto it.
-  const bandPlan = planBandSkillLinks(
+  const harnessPlan = planHarnessSkillLinks(
     await existingGlobalSkillDirs(runtime.cwd),
     globalSkillRoots(),
     skillPlan
@@ -374,14 +374,16 @@ export async function buildUpdateTask(
       .map((link) => link.folderName),
     staleLinks.map((link) => link.folderName),
   );
-  const bandLinks = bandPlan.filter((link) => link.action !== "pruned");
-  const bandStale = bandPlan.filter((link) => link.action === "pruned");
-  if (bandLinks.length > 0)
-    report?.(`Linking ${bandLinks.length} skill(s) into your harness folders`);
-  if (bandStale.length > 0)
-    report?.(`Removing ${bandStale.length} stale harness skill link(s)`);
+  const harnessLinks = harnessPlan.filter((link) => link.action !== "pruned");
+  const harnessStale = harnessPlan.filter((link) => link.action === "pruned");
+  if (harnessLinks.length > 0)
+    report?.(
+      `Linking ${harnessLinks.length} skill(s) into your harness folders`,
+    );
+  if (harnessStale.length > 0)
+    report?.(`Removing ${harnessStale.length} stale harness skill link(s)`);
   if (verbose)
-    for (const link of bandPlan)
+    for (const link of harnessPlan)
       report?.(`  ${link.action} ${link.folderName} in ${link.dirName}`);
 
   report?.(`Pointing ${runtime.cwd} at pack ${built.contentHash.slice(0, 12)}`);
@@ -420,7 +422,7 @@ export async function buildUpdateTask(
     // Layer 2, in the same Task and so under the same `--undo`. Still no
     // `mkdir`: every directory here was proven to exist at plan time, and
     // creating one is the thing converge-only exists to forbid.
-    for (const link of bandLinks) {
+    for (const link of harnessLinks) {
       // A `created` link undoes by deletion — absent IS the state it replaced.
       // A `replaced` one does not: the path held a link, and the delete above
       // carries no undo of its own, so deleting what the symlink created would
@@ -440,7 +442,7 @@ export async function buildUpdateTask(
       if (link.action === "replaced") yield* $(deleteFile(link.linkPath));
       yield* $(symlink(link.target, link.linkPath, { undo: undoLink }));
     }
-    for (const stale of bandStale) {
+    for (const stale of harnessStale) {
       yield* $(
         deleteFile(stale.linkPath, {
           undo: gen(function* () {

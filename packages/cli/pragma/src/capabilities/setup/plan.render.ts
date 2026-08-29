@@ -13,10 +13,15 @@
  * a piped run renders byte-for-byte plain.
  */
 
-import chalk from "chalk";
 import { BIN_NAME } from "../../constants.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
-import { BAND_LABELS, SCOPE_PHRASES } from "../shared/index.js";
+import {
+  NOT_RUN_GLYPH,
+  OUTCOME_GLYPHS,
+  outcomeRemedyWord,
+  SCOPE_LABELS,
+  SCOPE_PHRASES,
+} from "../../kernel/render/vocabulary.js";
 import {
   type PlanAction,
   type PlanChildRow,
@@ -25,44 +30,7 @@ import {
   type SetupPlan,
   shortenPath,
 } from "./plan.js";
-import type { ScopeBand } from "./types.js";
-
-/** The glyph for a row's outcome. */
-const GLYPHS = {
-  done: "✓",
-  noop: "✓",
-  removed: "✓",
-  kept: "○",
-  skipped: "○",
-  failed: "✗",
-} as const;
-
-/**
- * The marker for a row that carries NO outcome — one the user deselected, so it
- * was neither done nor skipped-for-cause. It must not be a ✓: a green check
- * against work that never ran is the same lie the old recap told when it
- * reported "Setup complete" over a target it had dropped.
- */
-const NOT_RUN_GLYPH = "·";
-
-/** The TTY styler plus `red` — the one tint {@link RenderStyle} does not carry. */
-interface PlanStyle extends RenderStyle {
-  red(text: string): string;
-}
-
-/**
- * Widen a {@link RenderStyle} with a `red` gated on the SAME colour decision, so
- * a failure tint appears only on a colour-capable TTY. Mirrors `doctor`'s own
- * styler, which is deliberate: a failed setup row and a failed doctor row are
- * the same finding seen twice, and they are tinted alike.
- *
- * @param style - The shared styler.
- * @returns The styler plus `red`.
- */
-const withRed = (style: RenderStyle): PlanStyle => ({
-  ...style,
-  red: style.enabled ? (text) => chalk.red(text) : (text) => text,
-});
+import type { Scope } from "./types.js";
 
 /** The header's scope phrase: `global`, `local project`, or both of them. */
 const scopePhrase = (scope: SetupPlan["scope"]): string => SCOPE_PHRASES[scope];
@@ -154,13 +122,13 @@ const detailCell = (row: PlanRow): string =>
 const widthOf = (rows: readonly PlanRow[], pick: (row: PlanRow) => string) =>
   Math.max(0, ...rows.map((row) => pick(row).length));
 
-/** Group rows by band, in the plan's own band order. */
-function byBand(plan: SetupPlan): [ScopeBand, PlanRow[]][] {
-  const bands: ScopeBand[] = ["global", "project"];
-  return bands
-    .map((band): [ScopeBand, PlanRow[]] => [
-      band,
-      plan.rows.filter((row) => row.band === band),
+/** Group rows by scope, in the plan's own scope order. */
+function byScope(plan: SetupPlan): [Scope, PlanRow[]][] {
+  const scopes: Scope[] = ["global", "project"];
+  return scopes
+    .map((scope): [Scope, PlanRow[]] => [
+      scope,
+      plan.rows.filter((row) => row.scope === scope),
     ])
     .filter(([, rows]) => rows.length > 0);
 }
@@ -182,9 +150,9 @@ export function renderPlanTable(
   const idWidth = widthOf(plan.rows, (row) => row.target);
   const actionWidth = widthOf(plan.rows, actionCell);
   const lines = [style.bold(header(plan, options.lead)), ""];
-  const groups = byBand(plan);
-  for (const [band, rows] of groups) {
-    if (plan.scope === "both") lines.push(style.bold(BAND_LABELS[band]));
+  const groups = byScope(plan);
+  for (const [scope, rows] of groups) {
+    if (plan.scope === "both") lines.push(style.bold(SCOPE_LABELS[scope]));
     for (const row of rows) {
       lines.push(
         `  ${row.target.padEnd(idWidth)}  ${actionCell(row).padEnd(actionWidth)}  ${style.dim(detailCell(row))}`,
@@ -235,8 +203,8 @@ export function renderDetectionSummary(
   const idWidth = widthOf(shown, (row) => row.target);
   const actionWidth = widthOf(shown, actionCell);
   const lines = [style.bold(header(plan, "Detected")), ""];
-  for (const [band, rows] of byBand({ ...plan, rows: shown })) {
-    if (plan.scope === "both") lines.push(style.bold(BAND_LABELS[band]));
+  for (const [scope, rows] of byScope({ ...plan, rows: shown })) {
+    if (plan.scope === "both") lines.push(style.bold(SCOPE_LABELS[scope]));
     for (const row of rows) {
       lines.push(
         `  ${row.target.padEnd(idWidth)}  ${actionCell(row).padEnd(actionWidth)}  ${style.dim(detailCell(row))}`,
@@ -269,23 +237,22 @@ export function renderProgressLine(
   idWidth: number,
   style: RenderStyle = defaultStyle(),
 ): string {
-  const painted = withRed(style);
   const outcome = row.outcome;
 
   // No outcome at all: the row was offered and left unselected. It is neither a
   // success nor a skip-for-cause, and painting it green would claim work that
   // never happened, so it gets a neutral marker and says plainly what it is.
   if (outcome === undefined) {
-    return `${painted.dim(NOT_RUN_GLYPH)} ${row.target.padEnd(idWidth)}  ${painted.dim(`${row.detail} — not selected`)}`;
+    return `${style.dim(NOT_RUN_GLYPH)} ${row.target.padEnd(idWidth)}  ${style.dim(`${row.detail} — not selected`)}`;
   }
 
-  const glyph = GLYPHS[outcome.status];
+  const glyph = OUTCOME_GLYPHS[outcome.status];
   const tinted =
     outcome.status === "failed"
-      ? painted.red(glyph)
+      ? style.red(glyph)
       : outcome.status === "skipped" || outcome.status === "kept"
-        ? painted.yellow(glyph)
-        : painted.green(glyph);
+        ? style.yellow(glyph)
+        : style.green(glyph);
   const note = outcome.note;
   const body =
     outcome.status === "skipped"
@@ -324,8 +291,9 @@ export function renderRecap(
       `${lead}: ${configured} of ${accountable} targets configured — ${scopePhrase(plan.scope)}`,
     ),
   ];
-  for (const [band, rows] of byBand(plan)) {
-    if (plan.scope === "both") lines.push(style.bold(`  ${BAND_LABELS[band]}`));
+  for (const [scope, rows] of byScope(plan)) {
+    if (plan.scope === "both")
+      lines.push(style.bold(`  ${SCOPE_LABELS[scope]}`));
     for (const row of rows) {
       lines.push(`  ${renderProgressLine(row, idWidth, style)}`);
       const remedy = row.outcome?.remedy;
@@ -347,10 +315,10 @@ export function renderPlanLlm(plan: SetupPlan, lead = "Setup"): string {
     // Before a run there is no outcome to report, so the row shows its ACTION
     // behind a neutral marker. Reusing the `noop` glyph here painted every row
     // of an unapplied plan — skips included — with a green check.
-    const glyph = status === undefined ? NOT_RUN_GLYPH : GLYPHS[status];
+    const glyph = status === undefined ? NOT_RUN_GLYPH : OUTCOME_GLYPHS[status];
     const state = status ?? row.action;
     lines.push(
-      `- ${glyph} **${row.target}** (${row.band}): ${state} — ${detailCell(row)}`,
+      `- ${glyph} **${row.target}** (${row.scope}): ${state} — ${detailCell(row)}`,
     );
     for (const child of row.children ?? []) {
       lines.push(`  - ${childCell(row, child)}`);
@@ -359,8 +327,9 @@ export function renderPlanLlm(plan: SetupPlan, lead = "Setup"): string {
     // not a fault, and labelling its instruction as a repair is what teaches a
     // reader to treat skips as failures.
     if (row.outcome?.remedy) {
-      const label = row.outcome.status === "failed" ? "fix" : "next";
-      lines.push(`  - _${label}:_ ${row.outcome.remedy}`);
+      lines.push(
+        `  - _${outcomeRemedyWord(row.outcome.status)}:_ ${row.outcome.remedy}`,
+      );
     }
   }
   return lines.join("\n");

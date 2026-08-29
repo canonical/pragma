@@ -28,6 +28,8 @@ export interface RenderStyle {
   green(text: string): string;
   /** Tint a status that wants attention. */
   yellow(text: string): string;
+  /** Tint a real fault — a failed check or a failed row, nothing milder. */
+  red(text: string): string;
 }
 
 /** The identity styler — every function returns its input unchanged. */
@@ -38,6 +40,7 @@ const PLAIN_STYLE: RenderStyle = {
   cyan: (text) => text,
   green: (text) => text,
   yellow: (text) => text,
+  red: (text) => text,
 };
 
 /**
@@ -56,6 +59,7 @@ export function styleFor(enabled: boolean): RenderStyle {
     cyan: (text) => chalk.cyan(text),
     green: (text) => chalk.green(text),
     yellow: (text) => chalk.yellow(text),
+    red: (text) => chalk.red(text),
   };
 }
 
@@ -76,8 +80,8 @@ export function forbidsColor(env: NodeJS.ProcessEnv): boolean {
 }
 
 // Applied to the SHARED chalk instance at module load, not inside
-// `defaultStyle()`, because four modules reach for `chalk` directly rather than
-// through `RenderStyle` — help formatting, doctor, upgrade and the colophon's
+// `defaultStyle()`, because three modules reach for `chalk` directly rather
+// than through `RenderStyle` — help formatting, upgrade and the colophon's
 // Markdown renderer. Gating only the style seam would leave every one of them
 // still emitting escapes. Zeroing the level once covers them by construction,
 // including any site added later.

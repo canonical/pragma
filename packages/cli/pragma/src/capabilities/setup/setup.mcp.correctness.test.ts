@@ -74,7 +74,7 @@ afterEach(() => {
   roots.length = 0;
 });
 
-/** A project with Cursor detected — one project-band file, `.cursor/mcp.json`. */
+/** A project with Cursor detected — one project-scope file, `.cursor/mcp.json`. */
 const cursorProject = (): { cwd: string; config: string } => {
   const cwd = tmp("pragma-mcpc-proj-");
   mkdirSync(join(cwd, ".cursor"), { recursive: true });
@@ -122,7 +122,7 @@ describe("installing twice never produces a second entry", () => {
     const { cwd, config } = cursorProject();
     await install(cwd);
     const detection = await detectMcp(bootRuntime(FLAGS, cwd), "project");
-    expect(mcpGroupState(detection, config)).toBe("configured");
+    expect(mcpGroupState(detection, config)).toBe("registered");
   });
 });
 
@@ -278,7 +278,7 @@ describe("every drift shape converges in one write, then stays converged", () =>
     const repaired = readFileSync(config, "utf-8");
 
     const after = await detectMcp(bootRuntime(FLAGS, cwd), "project");
-    expect(mcpGroupState(after, config)).toBe("configured");
+    expect(mcpGroupState(after, config)).toBe("registered");
 
     // A second run after the repair changes nothing.
     await install(cwd);
@@ -341,7 +341,7 @@ describe("every drift shape converges in one write, then stays converged", () =>
     expect(entry).toEqual({ command: "pragma", args: ["mcp", "serve"] });
     expect(entry).not.toHaveProperty("cwd");
     const after = await detectMcp(bootRuntime(FLAGS, cwd), "global");
-    expect(mcpGroupState(after, config)).toBe("configured");
+    expect(mcpGroupState(after, config)).toBe("registered");
   });
 
   it("leaves extra keys on OUR entry alone — they are not ours to drop", async () => {
@@ -355,7 +355,7 @@ describe("every drift shape converges in one write, then stays converged", () =>
     writeFileSync(config, `${JSON.stringify(parsed, null, 2)}\n`);
 
     const detection = await detectMcp(bootRuntime(FLAGS, cwd), "project");
-    expect(mcpGroupState(detection, config)).toBe("configured");
+    expect(mcpGroupState(detection, config)).toBe("registered");
 
     await install(cwd);
     expect(
@@ -363,8 +363,8 @@ describe("every drift shape converges in one write, then stays converged", () =>
     ).toBe(5000);
   });
 
-  it("keeps the two bands of one harness independent", async () => {
-    // Cursor has both a project file and a home file. Writing one band must
+  it("keeps the two scopes of one harness independent", async () => {
+    // Cursor has both a project file and a home file. Writing one scope must
     // not touch the other, and each converges on its own terms — the project
     // entry records a cwd, the global entry omits it.
     const cwd = tmp("pragma-mcpc-proj-");
@@ -380,13 +380,13 @@ describe("every drift shape converges in one write, then stays converged", () =>
     const projectBytes = readFileSync(projectConfig, "utf-8");
     expect(existsSync(globalConfig)).toBe(true);
 
-    // Each band carries its own shape.
+    // Each scope carries its own shape.
     expect(JSON.parse(projectBytes).mcpServers.pragma.cwd).toBe(cwd);
     expect(
       JSON.parse(readFileSync(globalConfig, "utf-8")).mcpServers.pragma,
     ).not.toHaveProperty("cwd");
 
-    // Undoing one band leaves the other intact.
+    // Undoing one scope leaves the other intact.
     await undo(cwd, GLOBAL);
     expect(readFileSync(projectConfig, "utf-8")).toBe(projectBytes);
   });

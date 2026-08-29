@@ -230,7 +230,7 @@ export function planSkillInstall(
  * `~/.claude/skills` and `~/.agents/skills` that point AT layer 1 — a link to a
  * link — and that `setup skills` owns.
  */
-export interface BandLinkAction {
+export interface HarnessLinkAction {
   readonly target: string;
   readonly linkPath: string;
   readonly action: "created" | "replaced" | "pruned";
@@ -251,7 +251,7 @@ export interface BandLinkAction {
 }
 
 /**
- * Plan the CONVERGE-ONLY refresh of the global band's harness skill links.
+ * Plan the CONVERGE-ONLY refresh of the global scope's harness skill links.
  *
  * The reported bug lives here. `sources update` installed and pruned layer 1
  * and stopped, so a new pack skill reached no harness directory until the user
@@ -265,7 +265,7 @@ export interface BandLinkAction {
  *    opt the user into linking they never asked for.
  * 2. OWNERSHIP, by the SAME test `setup skills` uses. A path is this command's
  *    to touch only when it holds a symlink resolving INSIDE one of the global
- *    band's roots (`withinAnyRoot`, a pure path-SEGMENT test that reads nothing
+ *    scope's roots (`withinAnyRoot`, a pure path-SEGMENT test that reads nothing
  *    — so it still answers correctly after the layer-1 target is gone, which is
  *    exactly the stale case). A real directory is a hand-installed skill; a
  *    symlink pointing anywhere else is the user's own; a `<root>-backup/foo`
@@ -293,7 +293,7 @@ export interface BandLinkAction {
  * provides at all is deleted.
  *
  * @param dirs - The EXISTING global link directories.
- * @param roots - The global band's source roots in PRECEDENCE order.
+ * @param roots - The global scope's source roots in PRECEDENCE order.
  *   `roots[0]` is the installed root (layer 1) every surviving name targets;
  *   the rest are fallbacks a retired name may still resolve in. The whole set
  *   is the ownership set.
@@ -303,12 +303,12 @@ export interface BandLinkAction {
  * @note Impure — lstats each candidate link path, and stats the fallback roots
  *   for each retired name.
  */
-export function planBandSkillLinks(
+export function planHarnessSkillLinks(
   dirs: readonly { dir: string; name: string }[],
   roots: readonly string[],
   surviving: readonly string[],
   retired: readonly string[],
-): BandLinkAction[] {
+): HarnessLinkAction[] {
   const dest = resolve(roots[0] as string);
   /** The first FALLBACK root that still holds `folderName`, if any. */
   const fallback = (folderName: string): string | undefined =>
@@ -316,7 +316,7 @@ export function planBandSkillLinks(
       .slice(1)
       .map((root) => resolve(root, folderName))
       .find((candidate) => existsSync(candidate));
-  const out: BandLinkAction[] = [];
+  const out: HarnessLinkAction[] = [];
   for (const { dir, name } of dirs) {
     for (const folderName of surviving) {
       const linkPath = resolve(dir, folderName);
@@ -334,7 +334,7 @@ export function planBandSkillLinks(
         continue;
       }
       if (resolve(dir, state.target) === target) continue; // Already correct.
-      // A symlink pointing outside every band root is the user's own link into
+      // A symlink pointing outside every scope root is the user's own link into
       // their own checkout. Unplanned does not make it ours to replace.
       if (!withinAnyRoot(roots, linkPath, state.target)) continue;
       out.push({

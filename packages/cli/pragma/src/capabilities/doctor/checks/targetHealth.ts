@@ -1,7 +1,7 @@
 /**
- * The banded doctor rows, derived from the setup target table.
+ * The scoped doctor rows, derived from the setup target table.
  *
- * `doctor` and `setup` are the SAME LIST. Every banded row here carries a
+ * `doctor` and `setup` are the SAME LIST. Every scoped row here carries a
  * target id verbatim — `completions`, not "Shell completions"; `mcp`, not "MCP
  * configured" — because the row name IS the fix command's argument, and a user
  * who reads `✗ mcp` beside `fix: pragma setup mcp` can see that they are the
@@ -11,13 +11,13 @@
  *
  * Every row's detection comes from the target table's own `detect`, so the two
  * surfaces cannot disagree about what they looked at, and every `fix:` is
- * derived from the row's id and band rather than authored per check.
+ * derived from the row's id and scope rather than authored per check.
  *
- * Doctor's UNBANDED environment checks (Node version, the CLI's own version,
+ * Doctor's UNSCOPED environment checks (Node version, the CLI's own version,
  * pack refs, the store) diagnose things setup cannot install and stay outside
  * this list.
  *
- * ONE banded row is not a target: `harnesses`, the per-band inventory. It is an
+ * ONE scoped row is not a target: `harnesses`, the per-scope inventory. It is an
  * inventory of the machine the targets are measured against, not a target that
  * can be set up, so it deliberately carries no `fix:` and can never be `fail`
  * or `available` — see {@link inventoryChecks}. The bijection between the other
@@ -50,7 +50,7 @@ import {
 } from "../../setup/operations/index.js";
 import { shortenPath, TARGET_IDS } from "../../setup/plan.js";
 import { MCP_NO_LOCATION } from "../../setup/targets.js";
-import type { CheckItem, CheckResult, ScopeBand } from "../types.js";
+import type { CheckItem, CheckResult, Scope } from "../types.js";
 import { checkShellCompletions } from "./checkShellCompletions.js";
 import {
   harnessInventory,
@@ -60,7 +60,7 @@ import {
 } from "./harnessInventory.js";
 import { commandResolves } from "./mcpCommand.js";
 
-/** What a row reports before its name, band and `fix:` line are attached. */
+/** What a row reports before its name, scope and `fix:` line are attached. */
 interface Health {
   readonly status: CheckResult["status"];
   readonly detail: string;
@@ -107,12 +107,12 @@ const lspHealth = (d: LspDetection): Health => {
  */
 async function mcpHealth(
   d: McpDetection,
-  band: ScopeBand,
+  scope: Scope,
   cwd: string,
   roots: { global: string; project: string },
 ): Promise<Health> {
   if (d.groups.length === 0) {
-    return { status: "skip", detail: MCP_NO_LOCATION[band] };
+    return { status: "skip", detail: MCP_NO_LOCATION[scope] };
   }
   const resolves = await commandResolves(MCP_SERVER_NAME, cwd);
   const items: CheckItem[] = d.groups.map((group) => {
@@ -145,7 +145,7 @@ async function mcpHealth(
     // Absence in the LOCAL PROJECT is not a failure: registering there is
     // opt-in, so a repository with no checked-in MCP config is healthy. The
     // line says so rather than leaving "(opt-in)" to be decoded.
-    return band === "project"
+    return scope === "project"
       ? {
           status: "skip",
           detail:
@@ -167,11 +167,11 @@ async function mcpHealth(
 /** The `skills` row: every expected link present, lstat-verified, none stale. */
 function skillsHealth(
   d: SkillsDetection,
-  band: ScopeBand,
+  scope: Scope,
   roots: { global: string; project: string },
 ): Health {
   const short = shortenPath(d.sourceRoot, roots);
-  // Stale links this band owns are work even when the root holds no skill, so
+  // Stale links this scope owns are work even when the root holds no skill, so
   // the row is only a skip once there is nothing left to reconcile either.
   const orphans = d.rootExists ? d.orphans.length : 0;
   if (!d.available && orphans === 0) {
@@ -180,8 +180,8 @@ function skillsHealth(
     // step) was reported identically by both surfaces.
     return {
       status: "skip",
-      detail: skillsSkipReason(short, band, d.rootExists),
-      remedy: skillsSkipRemedy(short, band),
+      detail: skillsSkipReason(short, scope, d.rootExists),
+      remedy: skillsSkipRemedy(short, scope),
     };
   }
   if (orphans > 0) {
@@ -247,7 +247,7 @@ async function healthOf(
   roots: { global: string; project: string },
 ): Promise<Health> {
   // A detection that threw is reported as ITS OWN failing row. Letting the
-  // rejection escape took the whole banded section of the report with it, so a
+  // rejection escape took the whole scoped section of the report with it, so a
   // single unreadable config file left the user with no rows at all — the one
   // moment the report is most worth having.
   const failure = detectionFailure(row);
@@ -269,20 +269,20 @@ async function healthOf(
     case "lsp":
       return lspHealth(row.detection as LspDetection);
     case "mcp":
-      return mcpHealth(row.detection as McpDetection, row.band, rt.cwd, roots);
+      return mcpHealth(row.detection as McpDetection, row.scope, rt.cwd, roots);
     default:
-      return skillsHealth(row.detection as SkillsDetection, row.band, roots);
+      return skillsHealth(row.detection as SkillsDetection, row.scope, roots);
   }
 }
 
-/** The banded inventory row's name — a LISTING, not a setup target id. */
+/** The scoped inventory row's name — a LISTING, not a setup target id. */
 export const INVENTORY_CHECK = "harnesses";
 
 /**
- * The `harnesses` row for one band: what this machine has, and where pragma
+ * The `harnesses` row for one scope: what this machine has, and where pragma
  * stands in each.
  *
- * It is the one banded row that is NOT a target, and it earns that by never
+ * It is the one scoped row that is NOT a target, and it earns that by never
  * competing with the ones that are. Its status is only `pass` or `skip`, so it
  * adds no failure and no `available` to the tally, and it derives no `fix:` —
  * the `mcp` and `skills` rows beside it already name every command a harness
@@ -308,9 +308,9 @@ export const INVENTORY_CHECK = "harnesses";
  * harnesses as drifted when neither one is.
  *
  * @param rt - The per-invocation runtime (read for `--verbose`).
- * @param rows - Every detected row, both bands, as `bandedChecks` has them.
+ * @param rows - Every detected row, both scopes, as `scopedChecks` has them.
  * @param roots - The roots every path renders relative to.
- * @returns One inventory {@link CheckResult} per band, global then project.
+ * @returns One inventory {@link CheckResult} per scope, global then project.
  * @note Impure — dynamically imports the harness registry.
  */
 async function inventoryChecks(
@@ -320,33 +320,34 @@ async function inventoryChecks(
 ): Promise<CheckResult[]> {
   const { harnesses, isHarnessInBand } = await import("@canonical/harnesses");
   const verbose = rt.globalFlags.verbose;
-  const bands: readonly ScopeBand[] = ["global", "project"];
+  const scopes: readonly Scope[] = ["global", "project"];
   // The key each harness NAME writes under — the half of the association
   // `groupConfigTargets` consumed and did not record. Names are the only
   // identity a group carries, and the registry's are unique.
   const keyByName = new Map(harnesses.map((h) => [h.name, h.mcpKey]));
 
-  return bands.map((band): CheckResult => {
-    // `isHarnessInBand(scope, band, band)` — the band as its OWN selection — is
+  return scopes.map((scope): CheckResult => {
+    // `isHarnessInBand(harness.scope, scope, scope)` — the scope asked for as
+    // its OWN selection ("band" is the harnesses package's name for it) — is
     // exactly "does this harness have a config location here", which is the
-    // question `detectMcp` already answers for that band. Asking it under the
-    // `both` selection would instead answer "who writes here when both bands
-    // run", and report every dual-scope harness as having no global band.
+    // question `detectMcp` already answers for that scope. Asking it under the
+    // `both` selection would instead answer "who writes here when both scopes
+    // run", and report every dual-scope harness as having no global location.
     const registry: InventoryHarness[] = harnesses.map((harness) => ({
       id: harness.id,
       name: harness.name,
-      inBand: isHarnessInBand(harness.scope, band, band),
+      inScope: isHarnessInBand(harness.scope, scope, scope),
     }));
 
     const mcpRow = rows.find(
-      (row) => row.target.id === "mcp" && row.band === band,
+      (row) => row.target.id === "mcp" && row.scope === scope,
     );
     if (mcpRow === undefined || detectionFailure(mcpRow) !== undefined) {
       return {
         name: INVENTORY_CHECK,
         status: "skip",
         detail: "harness detection did not settle — see the `mcp` row",
-        band,
+        scope,
       };
     }
 
@@ -372,46 +373,43 @@ async function inventoryChecks(
     }));
 
     const health = inventoryHealth(
-      harnessInventory(registry, groups, band),
+      harnessInventory(registry, groups, scope),
       verbose,
     );
     return {
       name: INVENTORY_CHECK,
       status: health.status,
       detail: health.detail,
-      band,
+      scope,
       ...(health.items.length === 0 ? {} : { items: health.items }),
     };
   });
 }
 
 /**
- * The command that repairs a row — derived from its id and band, never
+ * The command that repairs a row — derived from its id and scope, never
  * authored. This is the bijection made mechanical: a row exists because a
  * target exists, and its fix is that target's own invocation.
  */
-export const fixCommandFor = (
-  id: string,
-  band: ScopeBand,
-  bin: string,
-): string => `${bin} setup ${id}${band === "project" ? " --local" : ""}`;
+export const fixCommandFor = (id: string, scope: Scope, bin: string): string =>
+  `${bin} setup ${id}${scope === "project" ? " --local" : ""}`;
 
 /**
- * Run every banded check: the target table, both bands, in table order, then
- * each band's harness inventory.
+ * Run every scoped check: the target table, both scopes, in table order, then
+ * each scope's harness inventory.
  *
  * The inventory rows come LAST within the array, and the renderer partitions by
- * band while preserving order, so each band's section ends with the listing of
- * what that band actually holds — the targets first, then the machine they were
+ * scope while preserving order, so each scope's section ends with the listing of
+ * what that scope actually holds — the targets first, then the machine they were
  * measured against. They ride on the SAME detection pass: no target is probed a
  * second time to produce them.
  *
  * @param rt - The per-invocation runtime.
  * @param bin - The binary name the `fix:` lines are derived from.
- * @returns One {@link CheckResult} per (target, band), plus one per band.
+ * @returns One {@link CheckResult} per (target, scope), plus one per scope.
  * @note Impure — every target's detection reads the real filesystem.
  */
-export async function bandedChecks(
+export async function scopedChecks(
   rt: PragmaRuntime,
   bin: string,
 ): Promise<CheckResult[]> {
@@ -425,16 +423,16 @@ export async function bandedChecks(
           health.status === "fail" || health.status === "available";
         // A `skip` gets no DERIVED fix — re-running the target's own setup command
         // would reproduce the skip. But a skip that AUTHORED a remedy has found a
-        // real next step on this machine (fill the band's skill root, say), and
+        // real next step on this machine (fill the scope's skill root, say), and
         // dropping it is what made the skip a dead end on both surfaces.
         const remedy = needsFix
-          ? (health.remedy ?? fixCommandFor(row.target.id, row.band, bin))
+          ? (health.remedy ?? fixCommandFor(row.target.id, row.scope, bin))
           : health.remedy;
         return {
           name: row.target.id,
           status: health.status,
           detail: health.detail,
-          band: row.band,
+          scope: row.scope,
           ...(health.items === undefined ? {} : { items: health.items }),
           ...(remedy === undefined ? {} : { remedy }),
         };

@@ -16,6 +16,14 @@
  * in either host.
  */
 
+// The wizard's outcome glyphs. Re-exported off this LIGHT seam (progressWindow
+// imports nothing) so a host can pin its own rendering vocabulary against the
+// wizard's without loading summon-core proper — the pragma CLI's
+// renderVocabularySync test does exactly that.
+export {
+  COMPLETED_GLYPH,
+  FAILURE_GLYPH,
+} from "../prompt/ink/progressWindow.js";
 export type { EffectColor, EffectStyle } from "./effects.js";
 export {
   buildReplayCommand,

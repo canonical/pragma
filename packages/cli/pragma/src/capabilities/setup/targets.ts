@@ -1,14 +1,14 @@
 /**
  * THE target table — the one list `setup` and `doctor` both read.
  *
- * Five rows, each with a band column. This table drives the `setup <target>`
+ * Five rows, each with a scope column. This table drives the `setup <target>`
  * sub-verbs, the wizard's choices, the `--dry-run` plan, the progress lines, the
  * recap, the doctor rows, and each doctor row's `fix:` line. Adding a sixth
  * target is one row here — not a new sub-verb, a new check, a new recap branch
  * and a new fix string that four separate files have to agree about.
  *
  * A row owns: its identity (`id` is BOTH the sub-verb argument and the doctor
- * row name, so `mcp` and `setup mcp` visibly share a token), which bands it can
+ * row name, so `mcp` and `setup mcp` visibly share a token), which scopes it can
  * be installed into, how to DETECT its current state, how to PLAN a run from
  * that detection, and how to COMPOSE the forward and removal effects. Detection
  * runs once per invocation and feeds every reader, so setup and doctor cannot
@@ -75,7 +75,7 @@ import {
   shortenPath,
   type TargetId,
 } from "./plan.js";
-import type { ScopeBand } from "./types.js";
+import type { Scope } from "./types.js";
 
 /** What a target contributes to one plan row, before selection is applied. */
 export interface TargetDraft {
@@ -100,13 +100,13 @@ export interface TargetDefinition<D> {
   readonly id: TargetId;
   /** Human title, used where a sentence needs one; the id is the row name. */
   readonly title: string;
-  readonly bands: readonly ScopeBand[];
-  /** Real reads, up front, once per (target, band) per invocation. */
-  detect(rt: PragmaRuntime, band: ScopeBand): Promise<D>;
+  readonly scopes: readonly Scope[];
+  /** Real reads, up front, once per (target, scope) per invocation. */
+  detect(rt: PragmaRuntime, scope: Scope): Promise<D>;
   /** What a forward run would do. */
-  plan(detection: D, band: ScopeBand, roots: Roots): TargetDraft;
+  plan(detection: D, scope: Scope, roots: Roots): TargetDraft;
   /** What a removal would do — composed from what detection says we own. */
-  removalPlan(detection: D, band: ScopeBand, roots: Roots): TargetDraft;
+  removalPlan(detection: D, scope: Scope, roots: Roots): TargetDraft;
   /**
    * The forward effects. `chosen` is the row's per-child selection (MCP file
    * paths); a row without children ignores it.
@@ -130,14 +130,14 @@ const defineTarget = <D>(target: TargetDefinition<D>): AnyTarget =>
 const configTarget = defineTarget<ConfigDetection>({
   id: "config",
   title: "Global configuration",
-  bands: ["global"],
+  scopes: ["global"],
   detect: () => detectConfigFile(),
-  plan: (d, _band, roots) => {
+  plan: (d, _scope, roots) => {
     const path = shortenPath(d.path, roots);
     if (!d.exists) return { action: "install", detail: path };
     return { action: "none", detail: `${path} — present` };
   },
-  removalPlan: (d, _band, roots) => {
+  removalPlan: (d, _scope, roots) => {
     const path = shortenPath(d.path, roots);
     if (!d.exists) return { action: "none", detail: `${path} — absent` };
     if (!d.isSeed) {
@@ -156,9 +156,9 @@ const configTarget = defineTarget<ConfigDetection>({
 const completionsTarget = defineTarget<CompletionsDetection>({
   id: "completions",
   title: "Shell completions",
-  bands: ["global"],
+  scopes: ["global"],
   detect: (rt) => detectCompletions(rt.cwd),
-  plan: (d, _band, roots) => {
+  plan: (d, _scope, roots) => {
     // Never guess a shell. Installing for the wrong one is invisible until the
     // user presses TAB and nothing happens, so an unresolved shell is a named
     // skip whose remedy is the one action that DOES settle it.
@@ -200,7 +200,7 @@ const completionsTarget = defineTarget<CompletionsDetection>({
       detail: where,
     };
   },
-  removalPlan: (d, _band, roots) => {
+  removalPlan: (d, _scope, roots) => {
     if (d.path === null || d.state === "absent") {
       return { action: "none", detail: "no script installed" };
     }
@@ -213,7 +213,7 @@ const completionsTarget = defineTarget<CompletionsDetection>({
 const lspTarget = defineTarget<LspDetection>({
   id: "lsp",
   title: "Terrazzo LSP extension",
-  bands: ["global"],
+  scopes: ["global"],
   detect: (rt) => detectLsp(rt.cwd),
   plan: (d) => {
     if (d.state === "unknown") {
@@ -289,10 +289,10 @@ const lspTarget = defineTarget<LspDetection>({
 /**
  * Why the `mcp` row has nothing to write in a scope — authored once, because
  * `setup`'s row and `doctor`'s row are the same finding and must not word it
- * differently. Neither sentence says "band": the two scopes are `global` and
+ * differently. Neither sentence says "scope": the two scopes are `global` and
  * `local project`, after the `--global` / `--local` flags that select them.
  */
-export const MCP_NO_LOCATION: Record<ScopeBand, string> = {
+export const MCP_NO_LOCATION: Record<Scope, string> = {
   global: "no AI harness on this machine keeps a global config",
   project: "no AI harness in this project keeps a per-project config",
 };
@@ -308,7 +308,7 @@ const mcpChild = (
     key: group.path,
     label: shortenPath(group.path, roots),
     action:
-      state === "configured"
+      state === "registered"
         ? "unchanged"
         : state === "drifted"
           ? "update"
@@ -319,14 +319,14 @@ const mcpChild = (
 const mcpTarget = defineTarget<McpDetection>({
   id: "mcp",
   title: "MCP server registration",
-  bands: ["global", "project"],
-  detect: (rt, band) => detectMcp(rt, band),
-  plan: (d, band, roots) => {
+  scopes: ["global", "project"],
+  detect: (rt, scope) => detectMcp(rt, scope),
+  plan: (d, scope, roots) => {
     if (d.groups.length === 0) {
       return {
         action: "skip",
-        detail: MCP_NO_LOCATION[band],
-        reason: MCP_NO_LOCATION[band],
+        detail: MCP_NO_LOCATION[scope],
+        reason: MCP_NO_LOCATION[scope],
       };
     }
     const children = d.groups.map((group) => mcpChild(d, group, roots));
@@ -339,7 +339,7 @@ const mcpTarget = defineTarget<McpDetection>({
       children,
     };
   },
-  removalPlan: (d, _band, roots) => {
+  removalPlan: (d, _scope, roots) => {
     const owned = ownedMcpGroups(d);
     if (owned.length === 0) {
       return { action: "none", detail: "no entry to remove" };
@@ -362,10 +362,10 @@ const mcpTarget = defineTarget<McpDetection>({
 const skillsTarget = defineTarget<SkillsDetection>({
   id: "skills",
   title: "Skill symlinks",
-  bands: ["global", "project"],
-  detect: (rt, band) => detectSkills(rt, band),
-  plan: (d, band, roots) => {
-    // A forward run RECONCILES: stale links this band owns are its work too, so
+  scopes: ["global", "project"],
+  detect: (rt, scope) => detectSkills(rt, scope),
+  plan: (d, scope, roots) => {
+    // A forward run RECONCILES: stale links this scope owns are its work too, so
     // an orphan-only tree is actionable rather than a row that plans `none` and
     // is then deselected into doing nothing. `staleSkillLinks` carries the
     // absent-root safety gate, so a machine whose source root does not exist
@@ -373,15 +373,15 @@ const skillsTarget = defineTarget<SkillsDetection>({
     const stale = staleSkillLinks(d);
     if (!d.available && stale.length === 0) {
       const short = shortenPath(d.sourceRoot, roots);
-      const reason = skillsSkipReason(short, band, d.rootExists);
+      const reason = skillsSkipReason(short, scope, d.rootExists);
       // A skip with no remedy is a dead end — this one names the command that
-      // fills the band's source root, exactly as the completions and lsp skips
+      // fills the scope's source root, exactly as the completions and lsp skips
       // beside it name theirs.
       return {
         action: "skip",
         detail: reason,
         reason,
-        remedy: skillsSkipRemedy(short, band),
+        remedy: skillsSkipRemedy(short, scope),
       };
     }
     const dirs = d.targets.map((t) => shortenPath(t.dir, roots)).join(", ");
@@ -397,7 +397,7 @@ const skillsTarget = defineTarget<SkillsDetection>({
     if (stale.length > 0) return { action: "update", detail };
     return { action: "none", detail };
   },
-  removalPlan: (d, _band, roots) => {
+  removalPlan: (d, _scope, roots) => {
     const owned = ownedSkillLinks(d);
     if (owned.length === 0) {
       return { action: "none", detail: "no link to remove" };
@@ -430,6 +430,6 @@ export const TARGETS: readonly AnyTarget[] = [
 export const findTarget = (id: string): AnyTarget | undefined =>
   TARGETS.find((target) => target.id === id);
 
-/** Whether a target can be installed into a band. */
-export const supportsBand = (target: AnyTarget, band: ScopeBand): boolean =>
-  target.bands.includes(band);
+/** Whether a target can be installed into a scope. */
+export const supportsScope = (target: AnyTarget, scope: Scope): boolean =>
+  target.scopes.includes(scope);

@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import {
   COMPLETED_GLYPH,
   describedWidthBudget,
+  FAILURE_GLYPH,
   formatEffectDuration,
   truncateMiddle,
 } from "./progressWindow.js";
@@ -237,7 +238,7 @@ export const Wizard = ({ controller }: WizardProps) => {
 
       {state.phase === "complete" && (
         <Box marginTop={1}>
-          <Text color="green">✓ Generation complete!</Text>
+          <Text color="green">{COMPLETED_GLYPH} Generation complete!</Text>
         </Box>
       )}
 
@@ -253,7 +254,7 @@ export const Wizard = ({ controller }: WizardProps) => {
           ).length;
           return (
             <Text color="yellow">
-              ✗ Cancelled.{" "}
+              {FAILURE_GLYPH} Cancelled.{" "}
               {written === 0
                 ? "No files were written."
                 : `${written} file(s) were written.`}
@@ -262,7 +263,9 @@ export const Wizard = ({ controller }: WizardProps) => {
         })()}
 
       {state.phase === "error" && (
-        <Text color="red">✗ Error: {state.error?.message}</Text>
+        <Text color="red">
+          {FAILURE_GLYPH} Error: {state.error?.message}
+        </Text>
       )}
     </Box>
   );

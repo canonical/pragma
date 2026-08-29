@@ -1,7 +1,7 @@
 /**
  * The harness inventory roll-up — the pure half, driven by fixtures.
  *
- * `doctor.test.ts` covers the wiring (both bands, `--verbose`, the real
+ * `doctor.test.ts` covers the wiring (both scopes, `--verbose`, the real
  * registry). What is unit-tested here is the classification itself: the
  * registry supplies the universe so the NEGATIVE is representable, the groups
  * supply the state, and no combination of the two may ever produce a `fail`.
@@ -21,9 +21,9 @@ import {
 } from "./harnessInventory.js";
 
 const REGISTRY: InventoryHarness[] = [
-  { id: "claude-code", name: "Claude Code", inBand: true },
-  { id: "cursor", name: "Cursor", inBand: true },
-  { id: "vscode", name: "VS Code", inBand: false },
+  { id: "claude-code", name: "Claude Code", inScope: true },
+  { id: "cursor", name: "Cursor", inScope: true },
+  { id: "vscode", name: "VS Code", inScope: false },
 ];
 
 /** One harness's share of a file — its OWN write's state, never the file's. */
@@ -36,11 +36,11 @@ const roll = (groups: InventoryGroup[]): InventoryRow[] =>
   harnessInventory(REGISTRY, groups, "global");
 
 describe("harnessInventory — the roll-up", () => {
-  it("classifies each registry harness against the band's groups", () => {
+  it("classifies each registry harness against the scope's groups", () => {
     const rows = roll([
       {
         path: "~/.claude.json",
-        harnesses: [named("Claude Code", "configured")],
+        harnesses: [named("Claude Code", "registered")],
       },
       { path: "~/.cursor/mcp.json", harnesses: [named("Cursor", "absent")] },
     ]);
@@ -48,22 +48,22 @@ describe("harnessInventory — the roll-up", () => {
     expect(rows.map((r) => `${r.harnessId}:${r.state}`)).toEqual([
       "claude-code:registered",
       "cursor:detected",
-      // Not detected AND has no location in this band at all — the two are
+      // Not detected AND has no location in this scope at all — the two are
       // different facts and the row says which one applies.
-      "vscode:unbanded",
+      "vscode:unscoped",
     ]);
     expect(rows[0]?.locations).toEqual(["~/.claude.json"]);
     expect(rows[2]?.locations).toEqual([]);
   });
 
-  it("keeps 'undetected' and 'unbanded' apart", () => {
+  it("keeps 'undetected' and 'unscoped' apart", () => {
     // Same absence, two different reasons: Cursor could be here and is not,
     // VS Code could never be here at all.
     const rows = roll([]);
     expect(rows.find((r) => r.harnessId === "cursor")?.state).toBe(
       "undetected",
     );
-    expect(rows.find((r) => r.harnessId === "vscode")?.state).toBe("unbanded");
+    expect(rows.find((r) => r.harnessId === "vscode")?.state).toBe("unscoped");
   });
 
   it("reports a drifted group as drifted, not as registered", () => {
@@ -77,8 +77,8 @@ describe("harnessInventory — the roll-up", () => {
     const both = harnessInventory(
       REGISTRY,
       [
-        { path: "a.json", harnesses: [named("Cursor", "configured")] },
-        { path: "b.json", harnesses: [named("Cursor", "configured")] },
+        { path: "a.json", harnesses: [named("Cursor", "registered")] },
+        { path: "b.json", harnesses: [named("Cursor", "registered")] },
       ],
       "global",
     );
@@ -88,7 +88,7 @@ describe("harnessInventory — the roll-up", () => {
     const mixed = harnessInventory(
       REGISTRY,
       [
-        { path: "a.json", harnesses: [named("Cursor", "configured")] },
+        { path: "a.json", harnesses: [named("Cursor", "registered")] },
         { path: "b.json", harnesses: [named("Cursor", "absent")] },
       ],
       "global",
@@ -104,15 +104,15 @@ describe("harnessInventory — the roll-up", () => {
     // harness is drifted: VS Code is registered and Cline is merely detected.
     // A fixture with one harness per file cannot see this.
     const shared: InventoryHarness[] = [
-      { id: "cline", name: "Cline", inBand: true },
-      { id: "vscode", name: "VS Code", inBand: true },
+      { id: "cline", name: "Cline", inScope: true },
+      { id: "vscode", name: "VS Code", inScope: true },
     ];
     const rows = harnessInventory(
       shared,
       [
         {
           path: ".vscode/mcp.json",
-          harnesses: [named("Cline", "absent"), named("VS Code", "configured")],
+          harnesses: [named("Cline", "absent"), named("VS Code", "registered")],
         },
       ],
       "project",
@@ -130,21 +130,21 @@ describe("harnessInventory — the roll-up", () => {
     // The inventory reports on the REGISTRY; a group is evidence, not a source
     // of rows, so an unknown name adds nothing rather than inventing an entry.
     const rows = roll([
-      { path: "x.json", harnesses: [named("Ghost Editor", "configured")] },
+      { path: "x.json", harnesses: [named("Ghost Editor", "registered")] },
     ]);
     expect(rows).toHaveLength(REGISTRY.length);
     expect(rows.map((r) => r.harnessName)).not.toContain("Ghost Editor");
   });
 
-  it("names every row with the band it was rolled up for", () => {
+  it("names every row with the scope it was rolled up for", () => {
     const rows = harnessInventory(REGISTRY, [], "project");
-    expect(rows.every((r) => r.band === "project")).toBe(true);
+    expect(rows.every((r) => r.scope === "project")).toBe(true);
   });
 });
 
 describe("harnessInventory — the listing", () => {
   const rows = roll([
-    { path: "~/.claude.json", harnesses: [named("Claude Code", "configured")] },
+    { path: "~/.claude.json", harnesses: [named("Claude Code", "registered")] },
   ]);
 
   it("shows detected harnesses only by default", () => {
@@ -179,7 +179,7 @@ describe("harnessInventory — the listing", () => {
     }
   });
 
-  it("is a listing, not a verdict: pass when the band holds harnesses, skip when it does not", () => {
+  it("is a listing, not a verdict: pass when the scope holds harnesses, skip when it does not", () => {
     expect(inventoryHealth(rows, false).status).toBe("pass");
     expect(inventoryHealth(rows, false).detail).toBe(
       "1 detected · 1 registered",
@@ -214,6 +214,6 @@ describe("isDetectedState", () => {
     expect(isDetectedState("drifted")).toBe(true);
     expect(isDetectedState("detected")).toBe(true);
     expect(isDetectedState("undetected")).toBe(false);
-    expect(isDetectedState("unbanded")).toBe(false);
+    expect(isDetectedState("unscoped")).toBe(false);
   });
 });

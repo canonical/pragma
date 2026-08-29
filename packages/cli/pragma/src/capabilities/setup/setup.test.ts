@@ -252,7 +252,7 @@ describe("setup mcp — recap gate", () => {
     mkdirSync(join(cwd, ".cursor"), { recursive: true }); // makes Cursor detected
     const configPath = join(cwd, ".cursor", "mcp.json");
 
-    // `--local`: the project band is opt-in now, so a bare `setup mcp` would
+    // `--local`: the project scope is opt-in now, so a bare `setup mcp` would
     // write the HOME config and leave this repository untouched.
     const outcome = await executeVerb(
       verbOf("mcp"),
@@ -408,7 +408,7 @@ describe("setup mcp — scope & dedup", () => {
     // A per-user server must not be pinned to whatever directory `setup mcp
     // --global` happened to run from (a registration made from ~/Downloads
     // used to serve ~/Downloads forever, and re-running from repo B flipped
-    // the machine band to repo B).
+    // the machine scope to repo B).
     const home = process.env.HOME ?? "";
     const configPath = join(home, ".codeium", "windsurf", "mcp_config.json");
     const register = async (cwd: string): Promise<string> => {
@@ -464,9 +464,9 @@ describe("setup mcp — scope & dedup", () => {
     expect(
       JSON.parse(readFileSync(configPath, "utf-8")).mcpServers.pragma,
     ).toEqual({ command: "pragma", args: ["mcp", "serve"] });
-    // ...and it stays `configured` afterwards (no churn on every run).
+    // ...and it stays `registered` afterwards (no churn on every run).
     const after = await detectMcp(bootRuntime(FLAGS, cwd), "global");
-    expect(mcpGroupState(after, configPath)).toBe("configured");
+    expect(mcpGroupState(after, configPath)).toBe("registered");
   });
 
   it("a PROJECT entry still records the project root as cwd", async () => {
@@ -833,7 +833,7 @@ describe("setup (run-all wizard) — scope threading", () => {
     writeFileSync(join(editorPath, "code"), "");
   };
 
-  /** Seed a discoverable skill so the project-band skills step is offerable. */
+  /** Seed a discoverable skill so the project-scope skills step is offerable. */
   const seedSkill = (cwd: string): void => {
     const dir = join(cwd, ".pragma", "skills", "s");
     mkdirSync(dir, { recursive: true });
@@ -843,10 +843,10 @@ describe("setup (run-all wizard) — scope threading", () => {
     );
   };
 
-  it("--local omits the global-band completions + lsp steps, keeping project steps", async () => {
+  it("--local omits the global-scope completions + lsp steps, keeping project steps", async () => {
     const cwd = tmp("pragma-setup-proj-");
-    mkdirSync(join(cwd, ".cursor"), { recursive: true }); // project-band MCP target
-    seedSkill(cwd); // project-band skills step
+    mkdirSync(join(cwd, ".cursor"), { recursive: true }); // project-scope MCP target
+    seedSkill(cwd); // project-scope skills step
     const outcome = await executeVerb(
       setupSelfVerb,
       { local: true },
@@ -867,7 +867,7 @@ describe("setup (run-all wizard) — scope threading", () => {
   });
 
   withShell(
-    "--global omits the project-band skills step, keeping global steps",
+    "--global omits the project-scope skills step, keeping global steps",
     async () => {
       const cwd = tmp("pragma-setup-proj-");
       seedSkill(cwd); // WOULD be offered under the default `both`
@@ -880,16 +880,16 @@ describe("setup (run-all wizard) — scope threading", () => {
       );
       expect(outcome.exitCode).toBe(0);
       const plan = outcome.stdout ?? "";
-      // The global-band steps are present under --global. Paths render against
+      // The global-scope steps are present under --global. Paths render against
       // the header's roots, so the row shows `~/.zfunc/_pragma`, not an absolute
       // prefix repeated on every line.
       expect(plan).toMatch(new RegExp(`completions\\s+install\\s+${SHELL} →`));
       expect(plan).toContain("lsp");
-      // The project-band skills step is gone (the bug: it used to run under
+      // The project-scope skills step is gone (the bug: it used to run under
       // --global). `shortenPath` renders a project path as `./…` and a global
-      // one as `~/…`, and the two bands' cross-client directories differ only
+      // one as `~/…`, and the two scopes' cross-client directories differ only
       // by that marker — so the covenant is asserted on the PROJECT spelling.
-      // A bare "not .agents/skills" no longer separates them: the global band
+      // A bare "not .agents/skills" no longer separates them: the global scope
       // legitimately links its own `~/.agents/skills` now that the bundled
       // snapshot gives it skills on a machine that has run nothing.
       expect(plan).not.toContain(`.${sep}.agents${sep}skills`);
@@ -951,11 +951,11 @@ describe("setup skills", () => {
     expect(row?.reason).toContain("does not exist");
   });
 
-  it("the GLOBAL band OFFERS skills on a machine that has run nothing", async () => {
-    // THE BEHAVIOUR CHANGE, asserted at the band that used to be empty. The
-    // global band's only source was the installed root, so an empty
+  it("the GLOBAL scope OFFERS skills on a machine that has run nothing", async () => {
+    // THE BEHAVIOUR CHANGE, asserted at the scope that used to be empty. The
+    // global scope's only source was the installed root, so an empty
     // `XDG_DATA_HOME` — a fresh install — planned `skip` and told the user to
-    // go and run `sources update` first. The bundled snapshot is the band's
+    // go and run `sources update` first. The bundled snapshot is the scope's
     // second root, so the row is actionable with no network and no prior
     // command. The empty-root WORDING this replaces is still asserted, on the
     // pure reason/remedy pair, in the cell below.
@@ -1415,7 +1415,7 @@ describe("setup — detections settle independently", () => {
   it("gives a rejecting detection its own failed row, leaving the rest planned", async () => {
     // The targets are independent, and one `Promise.all` made them share a
     // fate: a single rejecting detection prevented a run being built at all,
-    // so NONE of the other targets ran and doctor rendered no banded rows.
+    // so NONE of the other targets ran and doctor rendered no scoped rows.
     const { TARGETS } = await import("./targets.js");
     const lsp = TARGETS.find((t) => t.id === "lsp") as (typeof TARGETS)[number];
     const spy = vi
@@ -1892,8 +1892,8 @@ describe("setup (run-all wizard)", () => {
     let thrown: unknown;
     try {
       // `--scope both`: the failing target (lsp) is global-only, and the two
-      // that must survive it write the project band, so the run has to cover
-      // both. A bare run-all is the GLOBAL band now and would not touch this
+      // that must survive it write the project scope, so the run has to cover
+      // both. A bare run-all is the GLOBAL scope now and would not touch this
       // repository at all.
       await executeVerb(
         setupSelfVerb,
@@ -1920,14 +1920,14 @@ describe("setup (run-all wizard)", () => {
   });
 
   it("omits skills gracefully when none are discovered (no mid-wizard EMPTY_RESULTS)", async () => {
-    // A run-all in a band with no skills must NOT throw — it just doesn't offer
+    // A run-all in a scope with no skills must NOT throw — it just doesn't offer
     // the skills step. Reaching a clean plan proves the graceful degrade.
     //
     // POINTED AT THE PROJECT BAND, which is where an empty skills root is still
-    // an ordinary condition: the global band now always has the bundled
+    // an ordinary condition: the global scope now always has the bundled
     // snapshot behind it, so a run-all there can no longer produce the empty
     // row this cell exists to survive. The condition is the same one; only the
-    // band that can still reach it has changed.
+    // scope that can still reach it has changed.
     const outcome = await executeVerb(
       setupSelfVerb,
       { local: true },
@@ -1944,7 +1944,7 @@ describe("setup (run-all wizard)", () => {
 
   it("the GLOBAL run-all offers the skills row on a fresh machine", async () => {
     // The other side of the same graceful-degrade question, and the one a fresh
-    // install actually meets: a bare run-all is the global band, whose skills
+    // install actually meets: a bare run-all is the global scope, whose skills
     // row is now offerable from the bundled snapshot rather than skipped with a
     // remedy the user has to go away and run.
     const prevData = process.env.XDG_DATA_HOME;

@@ -182,4 +182,10 @@ export const PARITY_GAPS: readonly ParityGapEntry[] = [
     description:
       "The native MCP `prompts/list` (and the `prompt_list`/`prompt_lookup` content tools) project `ds:Prompt` KG entities read from the ACTIVE pack index (`kernel/project/mcp/prompts/source.ts#listPromptSummaries`) — project-supplied data, NOT shipped in the embedded/bundled pack. A bare install (no project-authored `ds:Prompt`) advertises the prompts capability but lists ZERO prompts, never booting the store on the list path. Non-empty listings are exercised only against the seeded fixture graph (`testing/fixtures/graph/canonical.ts`); the storeless empty-by-default case is pinned by `prompts.test.ts` ('lists zero prompts … when no prompt entities exist').",
   },
+  {
+    id: "scope-not-band-in-machine-output",
+    area: "setup / doctor `--format json`",
+    description:
+      "A setup plan row and a doctor check carry their config scope under the key `scope` (values `global`/`project`), not `band`. The old shell's type layer said `band` (`ScopeBand`, `PlanRow.band`, `CheckResult.band`) while every user-facing string had already moved to the scope vocabulary the `--global`/`--local` flags use; the type-layer rename (kernel/render/vocabulary.ts) finished the move, and `--format json`/MCP emit the model verbatim, so the machine key moved with it. Any consumer reading `.band` off `setup --format json` or `doctor --format json` reads `.scope` now — `setup.render.test.ts` pins that neither spelling of `band` can return through any render, JSON included.",
+  },
 ] as const;

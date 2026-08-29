@@ -1,5 +1,5 @@
 /**
- * `pragma doctor` — the environment checks plus the banded target rows.
+ * `pragma doctor` — the environment checks plus the scoped target rows.
  *
  * Runs against isolated HOME/cwd/XDG so the harness/config/completion checks are
  * deterministic (no harnesses, no config, no rc files). Covers the shape, a
@@ -34,7 +34,7 @@ import {
 } from "../../testing/fixtures/graph/canonical.js";
 import { bootFixtureRuntime } from "../../testing/helpers/fixtureGraph.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
-import { bandedChecks } from "./checks/targetHealth.js";
+import { scopedChecks } from "./checks/targetHealth.js";
 import { doctorModule } from "./index.js";
 import { runChecks } from "./runChecks.js";
 import type { DoctorData } from "./types.js";
@@ -118,11 +118,11 @@ const byName = (data: DoctorData, name: string) =>
   data.checks.find((c) => c.name === name);
 
 describe("doctor — shape & spread", () => {
-  it("returns the environment checks plus one row per banded target", async () => {
+  it("returns the environment checks plus one row per scoped target", async () => {
     const data = await runChecks(bootRuntime(FLAGS, tmp("pragma-proj-")));
-    // Four unbanded environment checks, then the target table in both bands
+    // Four unscoped environment checks, then the target table in both scopes
     // (all five targets are global, mcp and skills are also project) = 11,
-    // plus the two `harnesses` inventory rows, one per band = 13.
+    // plus the two `harnesses` inventory rows, one per scope = 13.
     expect(data.checks).toHaveLength(13);
     expect(data.passed + data.failed + data.available + data.skipped).toBe(13);
     for (const check of data.checks) {
@@ -149,13 +149,13 @@ describe("doctor — shape & spread", () => {
       expect(item.detail ?? "").not.toMatch(/[0-9a-f]{40}/);
     }
 
-    // The banded rows carry the TARGET IDS verbatim — `mcp`, not "MCP
+    // The scoped rows carry the TARGET IDS verbatim — `mcp`, not "MCP
     // configured" — because the row name IS the fix command's argument. The
-    // environment checks stay unbanded. `harnesses` is the ONE banded row that
+    // environment checks stay unscoped. `harnesses` is the ONE scoped row that
     // is not a target: an inventory of the machine, not something to set up, so
-    // it sits last in each band and derives no `fix:`.
-    const banded = data.checks.filter((c) => c.band !== undefined);
-    expect(banded.map((c) => `${c.band}:${c.name}`)).toEqual([
+    // it sits last in each scope and derives no `fix:`.
+    const scoped = data.checks.filter((c) => c.scope !== undefined);
+    expect(scoped.map((c) => `${c.scope}:${c.name}`)).toEqual([
       "global:config",
       "global:completions",
       "global:lsp",
@@ -167,23 +167,23 @@ describe("doctor — shape & spread", () => {
       "project:harnesses",
     ]);
     // Every row that wants action names the exact command that repairs it,
-    // band included — the bijection, derived rather than authored.
-    for (const check of banded) {
+    // scope included — the bijection, derived rather than authored.
+    for (const check of scoped) {
       if (check.status === "fail" || check.status === "available") {
         expect(check.remedy).toBeDefined();
       }
     }
     // The inventory never inflates the failure or the action count: it is only
-    // ever `pass` (this band holds harnesses) or `skip` (it holds none), and it
+    // ever `pass` (this scope holds harnesses) or `skip` (it holds none), and it
     // proposes nothing — the `mcp`/`skills` rows own every harness action.
-    for (const check of banded.filter((c) => c.name === "harnesses")) {
+    for (const check of scoped.filter((c) => c.name === "harnesses")) {
       expect(["pass", "skip"]).toContain(check.status);
       expect(check.remedy).toBeUndefined();
     }
     // No harnesses in an empty HOME/cwd, so both mcp rows skip; the project
-    // band is opt-in, so its absence is never a fault.
+    // scope is opt-in, so its absence is never a fault.
     expect(
-      banded.find((c) => c.band === "project" && c.name === "mcp")?.status,
+      scoped.find((c) => c.scope === "project" && c.name === "mcp")?.status,
     ).toBe("skip");
     // No global config in the isolated XDG — an opt-in that is not set up yet.
     expect(byName(data, "config")?.status).toBe("available");
@@ -274,19 +274,19 @@ describe("doctor — dispatch & MCP", () => {
   });
 });
 
-describe("doctor — the banded rows can see the GLOBAL band", () => {
-  it("reports a configured global-band entry as configured, not missing", async () => {
+describe("doctor — the scoped rows can see the GLOBAL scope", () => {
+  it("reports a configured global-scope entry as configured, not missing", async () => {
     // The regression this closes: detection recorded only each harness's
-    // DEFAULT band, so a server registered by `setup mcp --global` was invisible
+    // DEFAULT scope, so a server registered by `setup mcp --global` was invisible
     // and doctor reported it not-configured forever. The rows now come from the
-    // same target table `setup` writes through, enumerated in BOTH bands, so the
+    // same target table `setup` writes through, enumerated in BOTH scopes, so the
     // two surfaces cannot disagree about what they looked at.
     const cwd = tmp("pragma-doctor-proj-");
     mkdirSync(join(cwd, ".windsurf"), { recursive: true }); // ⇒ Windsurf detected
     const home = process.env.HOME ?? "";
     const wsDir = join(home, ".codeium", "windsurf");
     mkdirSync(wsDir, { recursive: true });
-    // Exactly what a global-band `setup mcp` writes: no `cwd`, so the entry is
+    // Exactly what a global-scope `setup mcp` writes: no `cwd`, so the entry is
     // not pinned to whatever directory the registration ran from.
     writeFileSync(
       join(wsDir, "mcp_config.json"),
@@ -300,33 +300,33 @@ describe("doctor — the banded rows can see the GLOBAL band", () => {
     writeFileSync(join(binDir, "pragma"), "#!/bin/sh\nexit 0\n");
     chmodSync(join(binDir, "pragma"), 0o755);
 
-    const rows = await bandedChecks(bootRuntime(FLAGS, cwd), "pragma");
-    const global = rows.find((r) => r.name === "mcp" && r.band === "global");
+    const rows = await scopedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    const global = rows.find((r) => r.name === "mcp" && r.scope === "global");
     expect(global?.status).toBe("pass");
     expect(
       global?.items?.some((i) => i.label.includes("mcp_config.json")),
     ).toBe(true);
-    // ...and the project band stays an opt-in skip, never a fault.
-    const project = rows.find((r) => r.name === "mcp" && r.band === "project");
+    // ...and the project scope stays an opt-in skip, never a fault.
+    const project = rows.find((r) => r.name === "mcp" && r.scope === "project");
     expect(project?.status).toBe("skip");
   });
 });
 
 describe("doctor — the harness inventory", () => {
   const VERBOSE: GlobalFlags = { ...FLAGS, verbose: true };
-  const inventory = (rows: Awaited<ReturnType<typeof bandedChecks>>) => ({
-    global: rows.find((r) => r.name === "harnesses" && r.band === "global"),
-    project: rows.find((r) => r.name === "harnesses" && r.band === "project"),
+  const inventory = (rows: Awaited<ReturnType<typeof scopedChecks>>) => ({
+    global: rows.find((r) => r.name === "harnesses" && r.scope === "global"),
+    project: rows.find((r) => r.name === "harnesses" && r.scope === "project"),
   });
 
   it("lists ONLY detected harnesses by default, by name and with their location", async () => {
     const cwd = tmp("pragma-doctor-proj-");
     mkdirSync(join(cwd, ".vscode"), { recursive: true }); // ⇒ VS Code detected
 
-    const rows = await bandedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    const rows = await scopedChecks(bootRuntime(FLAGS, cwd), "pragma");
     const { global, project } = inventory(rows);
 
-    // The project band holds the hit — by NAME, with the file it resolves to.
+    // The project scope holds the hit — by NAME, with the file it resolves to.
     expect(project?.status).toBe("pass");
     expect(project?.detail).toBe("1 detected · 0 registered");
     expect(project?.items?.map((i) => i.label)).toEqual(["VS Code"]);
@@ -334,7 +334,7 @@ describe("doctor — the harness inventory", () => {
     expect(project?.items?.[0]?.detail).toContain("detected, not registered");
     expect(project?.items?.[0]?.detail).toContain(".vscode/mcp.json");
 
-    // Nothing detected in the global band, and that is a skip — not a fault.
+    // Nothing detected in the global scope, and that is a skip — not a fault.
     expect(global?.status).toBe("skip");
     expect(global?.detail).toBe("no harnesses detected");
     expect(global?.items).toBeUndefined();
@@ -344,10 +344,10 @@ describe("doctor — the harness inventory", () => {
     const cwd = tmp("pragma-doctor-proj-");
     mkdirSync(join(cwd, ".vscode"), { recursive: true });
 
-    const rows = await bandedChecks(bootRuntime(VERBOSE, cwd), "pragma");
+    const rows = await scopedChecks(bootRuntime(VERBOSE, cwd), "pragma");
     const { global, project } = inventory(rows);
 
-    // Every harness the registry knows, in both bands.
+    // Every harness the registry knows, in both scopes.
     expect(project?.items).toHaveLength(12);
     expect(global?.items).toHaveLength(12);
     expect(project?.detail).toBe("1 detected · 0 registered · 12 known");
@@ -375,7 +375,7 @@ describe("doctor — the harness inventory", () => {
     //
     // The sentence states the FACT, not the partition: `no Global band` named
     // an internal word for the answer instead of giving it.
-    const rows = await bandedChecks(
+    const rows = await scopedChecks(
       bootRuntime(VERBOSE, tmp("pragma-doctor-proj-")),
       "pragma",
     );
@@ -397,7 +397,7 @@ describe("doctor — the harness inventory", () => {
   it("reports a harness whose pragma entry is current as registered", async () => {
     const cwd = tmp("pragma-doctor-proj-");
     mkdirSync(join(cwd, ".vscode"), { recursive: true });
-    // Byte-for-byte what a project-band `setup mcp` writes for VS Code: its
+    // Byte-for-byte what a project-scope `setup mcp` writes for VS Code: its
     // `servers` key, and the `cwd` a project registration pins.
     writeFileSync(
       join(cwd, ".vscode", "mcp.json"),
@@ -406,7 +406,7 @@ describe("doctor — the harness inventory", () => {
       }),
     );
 
-    const rows = await bandedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    const rows = await scopedChecks(bootRuntime(FLAGS, cwd), "pragma");
     const { project } = inventory(rows);
     expect(project?.detail).toBe("1 detected · 1 registered");
     const vscode = project?.items?.find((i) => i.label === "VS Code");
@@ -453,7 +453,7 @@ describe("doctor — the harness inventory", () => {
       }),
     );
 
-    const rows = await bandedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    const rows = await scopedChecks(bootRuntime(FLAGS, cwd), "pragma");
     const { project } = inventory(rows);
     expect(project?.detail).toBe("2 detected · 1 registered");
 
@@ -484,8 +484,8 @@ describe("doctor — a blocked skill link path is never reported as current", ()
     // A hand-placed directory sitting exactly where the link would go.
     mkdirSync(join(cwd, ".agents", "skills", "my-skill"), { recursive: true });
 
-    const rows = await bandedChecks(bootRuntime(FLAGS, cwd), "pragma");
-    const row = rows.find((r) => r.name === "skills" && r.band === "project");
+    const rows = await scopedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    const row = rows.find((r) => r.name === "skills" && r.scope === "project");
     expect(row?.status).not.toBe("pass");
     expect(row?.detail).toContain("real directory");
     // And the remedy is the one that settles it — rerunning setup skips it.
@@ -502,19 +502,19 @@ describe("doctor — an EMPTY skills root is not diagnosed as an ABSENT one", ()
     const cwd = tmp("pragma-doctor-proj-");
     mkdirSync(join(cwd, ".pragma", "skills"), { recursive: true });
 
-    const rows = await bandedChecks(bootRuntime(FLAGS, cwd), "pragma");
-    const row = rows.find((r) => r.name === "skills" && r.band === "project");
+    const rows = await scopedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    const row = rows.find((r) => r.name === "skills" && r.scope === "project");
     expect(row?.status).toBe("skip"); // still nothing to reconcile...
     expect(row?.detail).toContain("is empty"); // ...for the true reason
     expect(row?.detail).not.toContain("does not exist");
   });
 
   it("still reports a missing project skills root as absent", async () => {
-    const rows = await bandedChecks(
+    const rows = await scopedChecks(
       bootRuntime(FLAGS, tmp("pragma-doctor-proj-")),
       "pragma",
     );
-    const row = rows.find((r) => r.name === "skills" && r.band === "project");
+    const row = rows.find((r) => r.name === "skills" && r.scope === "project");
     expect(row?.status).toBe("skip");
     expect(row?.detail).toContain("does not exist");
   });
@@ -529,11 +529,11 @@ describe("doctor — an unconfigured opt-in integration is available, not a faul
     const cwd = tmp("pragma-doctor-proj-");
     mkdirSync(join(cwd, ".windsurf"), { recursive: true }); // ⇒ Windsurf detected
 
-    const rows = await bandedChecks(bootRuntime(FLAGS, cwd), "pragma");
-    const check = rows.find((r) => r.name === "mcp" && r.band === "global");
+    const rows = await scopedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    const check = rows.find((r) => r.name === "mcp" && r.scope === "global");
     expect(check?.status).toBe("available");
     expect(check?.detail).toContain("not registered");
-    // The fix is the target's own invocation, derived from the row's id + band.
+    // The fix is the target's own invocation, derived from the row's id + scope.
     expect(check?.remedy).toBe("pragma setup mcp");
   });
 });

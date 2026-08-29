@@ -50,6 +50,17 @@ const SUFFIX_GAP = 1;
 export const COMPLETED_GLYPH = "✓";
 
 /**
+ * The status glyph for a run that did NOT complete — the error and cancel
+ * lines `Wizard.tsx` ends on. Named beside {@link COMPLETED_GLYPH} so the
+ * wizard's outcome marks are one vocabulary in one place rather than literals
+ * scattered through the view — and exported (via `@canonical/summon-core/
+ * format`) so the pragma CLI's render-vocabulary sync test can pin both marks
+ * to byte equality with its own: the two binaries narrate the same run, and a
+ * reader must not have to learn a second dialect for the same fact.
+ */
+export const FAILURE_GLYPH = "✗";
+
+/**
  * The single space between {@link COMPLETED_GLYPH} and the description. Sibling
  * of {@link SUFFIX_GAP}, and reserved for the same reason.
  */

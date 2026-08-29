@@ -11,9 +11,8 @@
  */
 
 import chalk from "chalk";
+import { INDENT } from "../../render/vocabulary.js";
 
-/** Two-space indent for every list body row. */
-const INDENT = "  ";
 /** Two-space gap between a term column and its description. */
 const GAP = "  ";
 

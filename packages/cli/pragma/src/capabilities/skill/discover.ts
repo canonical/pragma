@@ -125,8 +125,8 @@ export function installedSkillsDir(): string {
 /**
  * The project skills root: `<cwd>/.<bin>/skills` — skills that belong to THIS
  * repository and travel with it. Named separately from {@link skillRoots}
- * because the two roots are also the two setup BANDS: `setup skills --local`
- * links this root into the project's harness directories, while the global band
+ * because the two roots are also the two setup SCOPES: `setup skills --local`
+ * links this root into the project's harness directories, while the global scope
  * links {@link installedSkillsDir} into the user-level ones. Mixing them leaks
  * machine state into a repository's directories, or applies one repository's
  * skills machine-wide.
@@ -213,17 +213,17 @@ export function skillRoots(cwd: string): string[] {
 }
 
 /**
- * The GLOBAL band's source roots, in precedence order: the INSTALLED root
+ * The GLOBAL scope's source roots, in precedence order: the INSTALLED root
  * (`sources update`'s output) first, then the BUNDLED snapshot.
  *
  * Named separately from {@link skillRoots} for the reason
  * {@link projectSkillsDir} is: these are the two roots `setup skills --global`
  * links into the user-level harness directories, and `skillRoots` is discovery,
- * which spans both bands. Reading the project root for the global band is
- * exactly the cross-band leak the band split exists to prevent.
+ * which spans both scopes. Reading the project root for the global scope is
+ * exactly the cross-scope leak the scope split exists to prevent.
  *
  * A BAND CAN HOLD MORE THAN ONE ROOT, and this is where that became true. The
- * global band's ownership test and its stale-link sweep therefore range over
+ * global scope's ownership test and its stale-link sweep therefore range over
  * the SET (see `setup/operations/setupSkills.ts`), never over one path.
  */
 export function globalSkillRoots(): string[] {
@@ -254,10 +254,10 @@ function subdirs(root: string): string[] {
  * Discover every skill reachable from an EXPLICIT list of roots, in precedence
  * order (first-seen wins on a duplicate name).
  *
- * Split out of {@link discoverSkills} so a caller that owns one band can read
- * exactly that band's root: `setup skills` links the project root into project
+ * Split out of {@link discoverSkills} so a caller that owns one scope can read
+ * exactly that scope's root: `setup skills` links the project root into project
  * harness directories and the installed root into user-level ones, and reading
- * both roots for either band is what used to mix the two.
+ * both roots for either scope is what used to mix the two.
  *
  * @param roots - The roots to read, in precedence order.
  * @returns Discovered skills, sorted by name; malformed ones are skipped.
