@@ -58,7 +58,7 @@ export function mountPromptSession(
   const onAbort = (): void => controller.cancel();
   signal?.addEventListener("abort", onAbort);
 
-  let disposed = false;
+  let disposal: Promise<void> | undefined;
   return {
     answerPrompt: (effect) => controller.request(effect),
     reportEffectStart: (effect) => controller.reportEffectStart(effect),
@@ -66,18 +66,24 @@ export function mountPromptSession(
       controller.reportEffectComplete(effect, duration),
     reportLog: (level, message) => controller.reportLog(level, message),
     reportStep: (report) => controller.reportStep(report),
-    dispose: async () => {
-      if (disposed) return;
-      disposed = true;
-      controller.markComplete();
-      signal?.removeEventListener("abort", onAbort);
-      // Let React COMMIT the state just reported (markComplete, and a run's
-      // last effect/step — its scheduler commits on a macrotask) before the
-      // unmount flushes the final frame. Unmounting in the same continuation
-      // flushed the previously committed tree, so the last row of a run was
-      // permanently painted as still in progress.
-      await new Promise((resolve) => setImmediate(resolve));
-      instance.unmount();
+    dispose: () => {
+      // MEMOIZED, not boolean-guarded: every caller — however many, however
+      // concurrent — gets THE one disposal. A guard that returned early made
+      // a second concurrent dispose() resolve BEFORE the first had flushed
+      // the final frame, which breaks the contract awaiting dispose() exists
+      // for: a caller could print into a still-mounted UI.
+      disposal ??= (async () => {
+        controller.markComplete();
+        signal?.removeEventListener("abort", onAbort);
+        // Let React COMMIT the state just reported (markComplete, and a run's
+        // last effect/step — its scheduler commits on a macrotask) before the
+        // unmount flushes the final frame. Unmounting in the same continuation
+        // flushed the previously committed tree, so the last row of a run was
+        // permanently painted as still in progress.
+        await new Promise((resolve) => setImmediate(resolve));
+        instance.unmount();
+      })();
+      return disposal;
     },
   };
 }

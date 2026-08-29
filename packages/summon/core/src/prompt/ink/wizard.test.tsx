@@ -492,16 +492,19 @@ describe("host step rows replace the effect transcript", () => {
   // and the wizard renders THOSE rows — the effect transcript would render
   // eighteen symlink lines for the row the host calls `skills  9 skills → 2
   // folders`. Rendered from an already-driven controller: a static frame.
-  const drive = (c: SessionController): void => {
-    void c.request(gate());
-    c.submitConfirm(true); // "executing" — the only phase steps land in
+  const drive = async (c: SessionController): Promise<void> => {
+    const consent = c.request(gate());
+    c.submitConfirm(true);
+    // Consent is released once the gate's preview walk settles; only then is
+    // the session executing — the one phase step reports land in.
+    await consent;
   };
 
   it(
     "renders one row per step — the host's sentence, the shared glyph, the wall time",
     async () => {
       const c = new SessionController(gen);
-      drive(c);
+      await drive(c);
       c.reportStep({
         key: "global:skills",
         label: "skills  9 skills → 2 folders",
@@ -538,7 +541,7 @@ describe("host step rows replace the effect transcript", () => {
     "marks a failed step with the failure glyph, keeping completed siblings",
     async () => {
       const c = new SessionController(gen);
-      drive(c);
+      await drive(c);
       c.reportStep({ key: "a", label: "config  ~/.config", status: "start" });
       c.reportStep({
         key: "a",
@@ -569,7 +572,7 @@ describe("host step rows replace the effect transcript", () => {
     "keeps a long step row on ONE line once the duration is appended",
     async () => {
       const c = new SessionController(gen);
-      drive(c);
+      await drive(c);
       const label = `skills  ${"deep/".repeat(30)}skills — linked`;
       c.reportStep({ key: "k", label, status: "start" });
       c.reportStep({ key: "k", label, status: "done" });

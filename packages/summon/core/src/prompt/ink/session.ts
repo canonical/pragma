@@ -245,7 +245,14 @@ export class SessionController {
     } catch {
       previewEffects = [];
     }
-    if (this.current.phase !== "confirming") return;
+    // Stale once the gate is no longer both showing AND unanswered. The phase
+    // check alone stopped covering the second half when submitConfirm began
+    // deferring the executing transition on this very promise: consent clears
+    // `pending` immediately but flips the phase only after this settles, so a
+    // result landing in that window would repaint a pane already answered.
+    if (this.current.phase !== "confirming" || this.pending === undefined) {
+      return;
+    }
     this.set({ previewEffects });
   }
 
@@ -295,13 +302,17 @@ export class SessionController {
    * step reports originate INSIDE the host's task composition, so every
    * interpretation of it fires them — including the confirm gate's own honest
    * preview, which walks the same task before the user has consented. Dropping
-   * reports outside `executing` (entered at `submitConfirm(true)`, strictly
-   * after the preview walk began) is what keeps a previewed step from painting
-   * itself as work in progress.
+   * reports outside `executing` keeps a previewed step from painting itself
+   * as work in progress — and the gate is sound only because of the pairing
+   * invariant {@link submitConfirm} enforces: `executing` begins strictly
+   * AFTER the preview walk has completed (consent is released on
+   * `previewSettled()`), so no pre-consent walk can still be emitting once
+   * reports are accepted. Testing arrival time alone could not close that —
+   * a report says nothing about which walk produced it.
    *
-   * The phase gate alone is not enough: `execute` walks `generate` once more
-   * on the MOCK interpreter right after consent — synchronously, to give the
-   * outcome summary its file list — so a full set of settled steps arrives
+   * The phase gate alone is still not enough: `execute` walks `generate` once
+   * more on the MOCK interpreter right after consent — synchronously, to give
+   * the outcome summary its file list — so a full set of settled steps arrives
    * (in-phase, near-zero durations) before the real drive begins. Steps run
    * sequentially with per-walk-unique keys, so a `start` for a key that has
    * ALREADY settled can only mean a new interpretation: the board resets and
@@ -368,14 +379,53 @@ export class SessionController {
     pending.resolve(value);
   }
 
-  /** The user answered the confirm gate. */
+  /**
+   * The user answered the confirm gate.
+   *
+   * Consent does NOT begin execution by itself. The gate's honest preview
+   * ({@link loadPreview}) walks the same `generate` the run will, and it is
+   * async — a fast Y can land while that walk is still in flight. Entering
+   * `executing` at that instant re-opened the gap {@link reportStep}'s phase
+   * gate exists to close: the pre-consent walk's late step reports arrived
+   * in-phase and were accepted, and one naming a key the real walk had
+   * already settled hit the fresh-walk reset and cleared the board mid-run.
+   * Step reports carry no walk identity — they are plain closures fired from
+   * task continuations — so the sound closure is to ensure NO pre-consent
+   * walk survives into the executing phase: consent is released only once
+   * {@link previewSettled} resolves, which is `runPreview` COMPLETING its
+   * walk (loadPreview catches its failure), not merely having started it.
+   * The pane has usually settled long before the user answers, so the
+   * deferral is normally one microtask.
+   *
+   * A cancel that lands while consent waits on the preview rejects the gate
+   * here, with the same `GENERATOR_CANCELLED` an at-prompt cancel carries —
+   * {@link cancel} cannot reach it, this method already claimed the pending
+   * slot — so the task fails cleanly instead of hanging on a prompt that
+   * would otherwise never settle.
+   */
   submitConfirm(proceed: boolean): void {
     const pending = this.pending;
     if (!pending || !pending.isConfirm) return;
     this.pending = undefined;
-    if (proceed) this.executionStart = performance.now();
-    this.set({ phase: proceed ? "executing" : "cancelled" });
-    pending.resolve(proceed);
+    if (!proceed) {
+      this.set({ phase: "cancelled" });
+      pending.resolve(false);
+      return;
+    }
+    void this.previewSettled().then(() => {
+      if (this.current.phase === "cancelled") {
+        pending.reject(
+          new TaskExecutionError({
+            code: GENERATOR_CANCELLED,
+            message: "Cancelled.",
+          }),
+        );
+        return;
+      }
+      this.executionStart = performance.now();
+      this.set({ phase: "executing" });
+      pending.resolve(true);
+    });
   }
 
   /**
