@@ -42,7 +42,7 @@ import { projectCli } from "../../testing/helpers/projectCli.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { capabilities } from "../index.js";
 import { detectCompletions } from "./operations/setupCompletions.js";
-import { buildSetupRun } from "./operations/setupGenerator.js";
+import { buildSetupRun, type RowEvent } from "./operations/setupGenerator.js";
 import {
   composeSkills,
   composeSkillsRemoval,
@@ -532,6 +532,67 @@ describe("setup mcp — the per-file question, asked directly", () => {
     expect(applied.rows.find((r) => r.target === "mcp")?.outcome?.note).toBe(
       "1 added",
     );
+  });
+});
+
+describe("setup — live row events (the wizard's step feed)", () => {
+  it("brackets each row with start/done, in the recap's own sentence", async () => {
+    // The wizard's live progress renders the PLAN's rows, not the effect
+    // transcript — one `start` as a row's body is entered, one `done` carrying
+    // the same `target  detail — note` sentence the recap will print, so the
+    // watcher and the recap reader see one dialect.
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    const run = await buildSetupRun(bootRuntime(FLAGS, cwd), "mcp", "project");
+    const events: RowEvent[] = [];
+    run.setRowListener((event) => events.push(event));
+    await runTask(run.generator.generate({}), { onLog: () => {} });
+    expect(events.map((event) => event.status)).toEqual(["start", "done"]);
+    expect(events[0]?.key).toBe("project:mcp");
+    // The start label is the row without an outcome; the done label appends
+    // the SAME note `applied()` puts on the recap row.
+    const applied = run.applied({});
+    const note = applied.rows.find((r) => r.target === "mcp")?.outcome?.note;
+    expect(note).toBe("1 added");
+    expect(events[1]?.label).toBe(`${events[0]?.label} — ${note}`);
+  });
+
+  it("no listener registered costs nothing — the run is unchanged", async () => {
+    // `--yes`, `--dry-run` and MCP never register one; the bracket emits into
+    // the void and the composed effects are identical.
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    const run = await buildSetupRun(bootRuntime(FLAGS, cwd), "mcp", "project");
+    await runTask(run.generator.generate({}), { onLog: () => {} });
+    expect(existsSync(join(cwd, ".cursor", "mcp.json"))).toBe(true);
+  });
+
+  it("a failing row reports `failed` with its cause, and its siblings still bracket", async () => {
+    // Same arrangement as the S1-1 isolation test: an editor on PATH with no
+    // `bun`, so the LSP row's compose fails. The event stream must name the
+    // failure — the wizard paints that row ✗ live — while the run continues.
+    const prevPath = process.env.PATH;
+    const prevData = process.env.XDG_DATA_HOME;
+    process.env.XDG_DATA_HOME = tmp("pragma-rowevents-data-");
+    const dir = stubPath();
+    writeFileSync(join(dir, "code"), "");
+    process.env.PATH = dir;
+    try {
+      const run = await buildSetupRun(
+        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+        "lsp",
+        "global",
+      );
+      const events: RowEvent[] = [];
+      run.setRowListener((event) => events.push(event));
+      await runTask(run.generator.generate({}), { onLog: () => {} });
+      expect(events.map((event) => event.status)).toEqual(["start", "failed"]);
+      expect(events[1]?.label).toContain("bun");
+    } finally {
+      process.env.PATH = prevPath;
+      if (prevData === undefined) delete process.env.XDG_DATA_HOME;
+      else process.env.XDG_DATA_HOME = prevData;
+    }
   });
 });
 
