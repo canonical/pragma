@@ -1,6 +1,7 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
 import { type UseComboboxStateChange, useCombobox } from "downshift";
 import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
+import mergeRefs from "../../utils/mergeRefs.js";
 import type { Option } from "../types.js";
 import { List, ResetButton } from "./common/index.js";
 import { VALUE_KEY } from "./constants.js";
@@ -9,7 +10,6 @@ import {
   convertItemToString as defaultConvertItemToString,
   convertValueToItem as defaultConvertValueToItem,
   filterItems as defaultFilterItems,
-  mergeRefs,
 } from "./utils/index.js";
 import "./styles.css";
 const componentCssClassName = "ds form-combobox";
