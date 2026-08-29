@@ -15,17 +15,56 @@
 
 import { existsSync } from "node:fs";
 import * as path from "node:path";
+import { TaskExecutionError } from "./errors.js";
 import { type RunTaskOptions, runTask } from "./interpreter.js";
-import type { Task } from "./types.js";
+import type { Task, TaskError, UndoTask } from "./types.js";
 import { collectUndos } from "./undo.js";
 
 // =============================================================================
 // Undo Result
 // =============================================================================
 
+/**
+ * How one collected undo ended — a discriminated union, so the type itself
+ * enforces that a failed outcome always carries its cause and a successful
+ * one never does: no consumer needs an "unknown cause" fallback, and no
+ * producer can report a failure without saying what failed.
+ *
+ * `key` is the correlation key the undo's declaration supplied
+ * (`UndoOptions.undoKey`), echoed verbatim — absent when the declaration
+ * carried none. It is the ONLY correlation contract: outcomes are reported in
+ * execution (LIFO) order, which is not the order a caller composed its
+ * effects in, so reading them back by index is wrong by construction.
+ */
+export type UndoOutcome =
+  | {
+      /** Echoed from the undo declaration's `undoKey`, when it had one. */
+      readonly key?: string;
+      readonly status: "undone";
+    }
+  | {
+      /** Echoed from the undo declaration's `undoKey`, when it had one. */
+      readonly key?: string;
+      readonly status: "failed";
+      /** The structured failure — always present on a failed outcome. */
+      readonly error: TaskError;
+    };
+
 export interface UndoResult {
-  /** Number of undo tasks that were collected and executed */
+  /**
+   * Number of undo tasks that completed successfully — the honest count for
+   * a "reversed N step(s)" line. Failures are not steps that were undone, so
+   * they are excluded here and reported in `outcomes` instead; a caller that
+   * wants "attempted" reads `outcomes.length`.
+   */
   undoCount: number;
+  /**
+   * One entry per attempted undo, in execution (LIFO) order. A failed undo
+   * does not abort the ones still pending — a reversal's job is to undo as
+   * much as it can and report what it could not — so the caller decides the
+   * aggregate outcome (typically: exit non-zero when any entry failed).
+   */
+  outcomes: readonly UndoOutcome[];
 }
 
 // =============================================================================
@@ -69,7 +108,7 @@ export const hostExistsResolver =
  * @param task - The task to undo (same task that was originally run forward)
  * @param options - RunTaskOptions passed to the undo execution phase; `cwd`
  *   also anchors the collection walk's `Exists` resolution
- * @returns The number of undo steps executed
+ * @returns The per-undo outcomes and the count of undos that succeeded
  *
  * @example
  * ```typescript
@@ -102,23 +141,56 @@ export const runUndo = async <A>(
  * the plan or ask for confirmation — and must not walk the task a second
  * time (collect once, then execute exactly what was shown).
  *
+ * Each undo runs ISOLATED: a failure is recorded as a `failed`
+ * {@link UndoOutcome} and the remaining undos still run. Aborting a reversal
+ * at its first failure is wrong for a reversal — every skipped undo is an
+ * artifact knowingly left behind — so failure here is data for the caller,
+ * not an abort. The one exception is interruption (`TASK_INTERRUPTED`):
+ * cancellation must stop the run, exactly as the interpreter's recovery
+ * frames refuse to swallow it, so it rethrows and the pending undos are not
+ * attempted.
+ *
  * @param undos - Undo tasks in forward execution order (as `collectUndos`
- *   returns them); executed here in reverse
+ *   returns them, each possibly carrying its declaration's `undoKey`);
+ *   executed here in reverse
  * @param options - RunTaskOptions passed to each undo execution
- * @returns The number of undo steps executed
+ * @returns The per-undo outcomes (in execution order) and the count of undos
+ *   that succeeded
  */
 export const runCollectedUndos = async (
-  undos: readonly Task<void>[],
+  undos: readonly UndoTask[],
   options?: RunTaskOptions,
 ): Promise<UndoResult> => {
-  if (undos.length === 0) {
-    return { undoCount: 0 };
+  const outcomes: UndoOutcome[] = [];
+  let undoCount = 0;
+
+  for (const undoTask of [...undos].reverse()) {
+    const key = undoTask.undoKey === undefined ? {} : { key: undoTask.undoKey };
+    try {
+      await runTask(undoTask, options);
+      undoCount += 1;
+      outcomes.push({ ...key, status: "undone" });
+    } catch (error) {
+      if (
+        error instanceof TaskExecutionError &&
+        error.taskError.code === "TASK_INTERRUPTED"
+      ) {
+        throw error;
+      }
+      // Normalise the throw to the structured TaskError the framework already
+      // speaks (same rule as the interpreter's Parallel branch), so consumers
+      // read one error shape whether the undo failed via the task failure
+      // channel or via a raw synchronous throw.
+      outcomes.push({
+        ...key,
+        status: "failed",
+        error:
+          error instanceof TaskExecutionError
+            ? error.taskError
+            : { code: "INTERNAL", message: String(error) },
+      });
+    }
   }
 
-  const reversed = [...undos].reverse();
-  for (const undoTask of reversed) {
-    await runTask(undoTask, options);
-  }
-
-  return { undoCount: reversed.length };
+  return { undoCount, outcomes };
 };

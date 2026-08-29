@@ -1294,6 +1294,43 @@ describe("Interpreter - executeEffect for Exists", () => {
       rmSync(tempDir, { recursive: true, force: true });
     }
   });
+
+  it("a dangling symlink is absent by default but PRESENT with followSymlinks: false", async () => {
+    // The two semantics answer different questions: `fs.access` follows the
+    // link (is the TARGET reachable?), `lstat` sees the entry itself (does a
+    // `readdir` of the parent list it?). A postcondition mirroring a
+    // readdir-based detection needs the entry answer, or a dangling symlink
+    // makes the check quietly pass over an artifact that is still there.
+    const tempDir = mkdtempSync(join(tmpdir(), "task-exists-lstat-"));
+
+    try {
+      const linkPath = join(tempDir, "dangling");
+      symlinkSync(join(tempDir, "no-such-target"), linkPath);
+
+      expect(
+        await executeEffect({ _tag: "Exists", path: linkPath }, new Map()),
+      ).toBe(false);
+      expect(
+        await executeEffect(
+          { _tag: "Exists", path: linkPath, followSymlinks: false },
+          new Map(),
+        ),
+      ).toBe(true);
+      // A genuinely missing entry is absent under both semantics.
+      expect(
+        await executeEffect(
+          {
+            _tag: "Exists",
+            path: join(tempDir, "missing"),
+            followSymlinks: false,
+          },
+          new Map(),
+        ),
+      ).toBe(false);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
 });
 
 // =============================================================================

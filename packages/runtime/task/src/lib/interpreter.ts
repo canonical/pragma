@@ -233,7 +233,14 @@ export const executeEffect = async (
 
     case "Exists": {
       try {
-        await fs.access(at(effect.path));
+        // `followSymlinks: false` asks about the directory ENTRY (`lstat`),
+        // not the target behind it (`access`) — a dangling symlink is then
+        // present, matching what a `readdir` of its parent reports.
+        if (effect.followSymlinks === false) {
+          await fs.lstat(at(effect.path));
+        } else {
+          await fs.access(at(effect.path));
+        }
         return true;
       } catch {
         return false;

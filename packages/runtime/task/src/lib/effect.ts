@@ -5,7 +5,13 @@
  * Effects are pure data that describe operations without performing them.
  */
 
-import type { Effect, LogLevel, PromptQuestion, Task } from "./types.js";
+import type {
+  Effect,
+  LogLevel,
+  PromptQuestion,
+  Task,
+  UndoTask,
+} from "./types.js";
 
 // =============================================================================
 // Undo Options
@@ -20,6 +26,18 @@ import type { Effect, LogLevel, PromptQuestion, Task } from "./types.js";
  */
 export interface UndoOptions {
   undo?: Task<void> | null;
+  /**
+   * Correlation key for this effect's undo, echoed back on the
+   * `UndoOutcome` the undo interpreter reports for it. Outcomes come back
+   * in execution order, not declaration order, so a caller that composes
+   * many effects and needs to know WHICH reversal failed tags each one
+   * here and reads the outcomes back by key — never by index arithmetic.
+   * Keys need not be unique: several effects may share one (e.g. all the
+   * steps of one logical unit), and the caller aggregates. Applies to the
+   * default undo as much as to an explicit one; ignored when the undo is
+   * disabled with `undo: null`.
+   */
+  undoKey?: string;
 }
 
 /**
@@ -27,14 +45,20 @@ export interface UndoOptions {
  * - explicit Task → use it
  * - null → no undo (disabled)
  * - undefined → use the default
+ *
+ * A resolved undo is tagged with the declaration's `undoKey` (when given) so
+ * the key travels ON the task the undo interpreter later executes — see
+ * {@link UndoTask}.
  */
 const resolveUndo = (
   option: Task<void> | null | undefined,
   defaultUndo: Task<void> | undefined,
-): Task<void> | undefined => {
-  if (option === null) return undefined;
-  if (option !== undefined) return option;
-  return defaultUndo;
+  key?: string,
+): UndoTask | undefined => {
+  const resolved =
+    option === null ? undefined : option !== undefined ? option : defaultUndo;
+  if (resolved === undefined || key === undefined) return resolved;
+  return { ...resolved, undoKey: key };
 };
 
 /**
@@ -65,7 +89,11 @@ export const writeFileEffect = (
   path,
   content,
   ...(opts?.verbatim !== undefined ? { verbatim: opts.verbatim } : {}),
-  undo: resolveUndo(opts?.undo, bareTask({ _tag: "DeleteFile", path })),
+  undo: resolveUndo(
+    opts?.undo,
+    bareTask({ _tag: "DeleteFile", path }),
+    opts?.undoKey,
+  ),
 });
 
 export const appendFileEffect = (
@@ -78,7 +106,7 @@ export const appendFileEffect = (
   path,
   content,
   createIfMissing,
-  undo: resolveUndo(opts?.undo, undefined),
+  undo: resolveUndo(opts?.undo, undefined, opts?.undoKey),
 });
 
 export const transformFileEffect = (
@@ -92,7 +120,7 @@ export const transformFileEffect = (
   // No default undo: the original contents are not captured anywhere, so there
   // is nothing to restore automatically. Provide `{ undo }` (e.g. an inverse
   // transform) to make it reversible.
-  undo: resolveUndo(opts?.undo, undefined),
+  undo: resolveUndo(opts?.undo, undefined, opts?.undoKey),
 });
 
 export const copyFileEffect = (
@@ -103,7 +131,11 @@ export const copyFileEffect = (
   _tag: "CopyFile",
   source,
   dest,
-  undo: resolveUndo(opts?.undo, bareTask({ _tag: "DeleteFile", path: dest })),
+  undo: resolveUndo(
+    opts?.undo,
+    bareTask({ _tag: "DeleteFile", path: dest }),
+    opts?.undoKey,
+  ),
 });
 
 export const copyDirectoryEffect = (
@@ -117,13 +149,14 @@ export const copyDirectoryEffect = (
   undo: resolveUndo(
     opts?.undo,
     bareTask({ _tag: "DeleteDirectory", path: dest }),
+    opts?.undoKey,
   ),
 });
 
 export const deleteFileEffect = (path: string, opts?: UndoOptions): Effect => ({
   _tag: "DeleteFile",
   path,
-  undo: resolveUndo(opts?.undo, undefined),
+  undo: resolveUndo(opts?.undo, undefined, opts?.undoKey),
 });
 
 export const deleteDirectoryEffect = (
@@ -133,7 +166,7 @@ export const deleteDirectoryEffect = (
   _tag: "DeleteDirectory",
   path,
   onlyIfEmpty: opts?.onlyIfEmpty,
-  undo: resolveUndo(opts?.undo, undefined),
+  undo: resolveUndo(opts?.undo, undefined, opts?.undoKey),
 });
 
 export const makeDirEffect = (
@@ -153,12 +186,19 @@ export const makeDirEffect = (
   undo: resolveUndo(
     opts?.undo,
     bareTask({ _tag: "DeleteDirectory", path, onlyIfEmpty: true }),
+    opts?.undoKey,
   ),
 });
 
-export const existsEffect = (path: string): Effect => ({
+export const existsEffect = (
+  path: string,
+  opts?: { followSymlinks?: boolean },
+): Effect => ({
   _tag: "Exists",
   path,
+  ...(opts?.followSymlinks === undefined
+    ? {}
+    : { followSymlinks: opts.followSymlinks }),
 });
 
 export const symlinkEffect = (
@@ -169,7 +209,11 @@ export const symlinkEffect = (
   _tag: "Symlink",
   target,
   path,
-  undo: resolveUndo(opts?.undo, bareTask({ _tag: "DeleteFile", path })),
+  undo: resolveUndo(
+    opts?.undo,
+    bareTask({ _tag: "DeleteFile", path }),
+    opts?.undoKey,
+  ),
 });
 
 export const globEffect = (pattern: string, cwd: string): Effect => ({
@@ -192,7 +236,7 @@ export const execEffect = (
   command,
   args,
   cwd,
-  undo: resolveUndo(opts?.undo, undefined),
+  undo: resolveUndo(opts?.undo, undefined, opts?.undoKey),
 });
 
 // =============================================================================

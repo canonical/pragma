@@ -1,4 +1,11 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -810,6 +817,180 @@ describe("runCollectedUndos", () => {
   it("returns undoCount 0 for an empty plan", async () => {
     const result = await runCollectedUndos([]);
     expect(result.undoCount).toBe(0);
+    expect(result.outcomes).toEqual([]);
+  });
+});
+
+// =============================================================================
+// Per-undo outcomes and failure isolation
+// =============================================================================
+
+describe("runCollectedUndos - per-undo outcomes and failure isolation", () => {
+  it("attempts EVERY undo when one fails, and reports each outcome", async () => {
+    // The red cell against the abort-on-first-failure loop: three collected
+    // undos, the middle one fails. A reversal's job is to undo as much as it
+    // can and report what it could not — so both healthy undos must run
+    // against the real filesystem, and the failure must come back as data.
+    const tempDir = mkdtempSync(join(tmpdir(), "task-undo-isolation-"));
+    const a = join(tempDir, "a.txt");
+    const b = join(tempDir, "b.txt");
+    const c = join(tempDir, "c.txt");
+    try {
+      for (const p of [a, b, c]) writeFileSync(p, "seeded");
+      const task = sequence_([
+        writeFile(a, "a"), // default undo: delete a
+        writeFile(b, "b", {
+          undo: fail({ code: "EXEC_FAILED", message: "the middle undo broke" }),
+        }),
+        writeFile(c, "c"), // default undo: delete c
+      ]);
+
+      const result = await runCollectedUndos(collectUndos(task));
+
+      // Execution (LIFO) order: c's undo, b's failing undo, a's undo.
+      expect(result.outcomes.map((o) => o.status)).toEqual([
+        "undone",
+        "failed",
+        "undone",
+      ]);
+      expect(result.undoCount).toBe(2);
+      expect(result.outcomes[1].error).toMatchObject({
+        code: "EXEC_FAILED",
+        message: "the middle undo broke",
+      });
+      // Both healthy undos really ran — the failure consumed neither of them.
+      expect(existsSync(a)).toBe(false);
+      expect(existsSync(c)).toBe(false);
+      expect(existsSync(b)).toBe(true);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("echoes each undo declaration's `undoKey` on its outcome", async () => {
+    // Correlation is by key, never by index: outcomes come back in execution
+    // order, which is the reverse of declaration order.
+    const task = sequence_([
+      writeFile("/tmp/x.txt", "x", {
+        undo: fail({ code: "EXEC_FAILED", message: "boom" }),
+        undoKey: "unit:x",
+      }),
+      writeFile("/tmp/y.txt", "y", {
+        undo: pure(undefined),
+        undoKey: "unit:y",
+      }),
+      writeFile("/tmp/z.txt", "z", { undo: pure(undefined) }), // unkeyed
+    ]);
+
+    const undos = collectUndos(task);
+    // The key rides the collected undo task itself, so a caller previewing
+    // the plan can already see which unit each step belongs to.
+    expect(undos.map((u) => u.undoKey)).toEqual([
+      "unit:x",
+      "unit:y",
+      undefined,
+    ]);
+
+    const result = await runCollectedUndos(undos);
+    expect(result.outcomes).toEqual([
+      { status: "undone" },
+      { key: "unit:y", status: "undone" },
+      { key: "unit:x", status: "failed", error: expect.anything() },
+    ]);
+  });
+
+  it("a key without an undo declares nothing to correlate", () => {
+    // `exec` has no default undo, and `null` disables one — in both cases the
+    // declaration carries no reversal, so the key is inert and nothing is
+    // collected for it.
+    expect(collectUndos(exec("noop", [], undefined, { undoKey: "k" }))).toEqual(
+      [],
+    );
+    expect(
+      collectUndos(writeFile("/tmp/w.txt", "w", { undo: null, undoKey: "k" })),
+    ).toEqual([]);
+  });
+
+  it("tags the DEFAULT undo with the declaration's key too", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-undo-key-"));
+    const p = join(tempDir, "keyed.txt");
+    try {
+      writeFileSync(p, "seeded");
+      const result = await runCollectedUndos(
+        collectUndos(writeFile(p, "keyed", { undoKey: "row:1" })),
+      );
+      expect(result.outcomes).toEqual([{ key: "row:1", status: "undone" }]);
+      expect(existsSync(p)).toBe(false);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("normalises a raw (non-task) throw into an INTERNAL TaskError", async () => {
+    const rawThrow = flatMap(pure(undefined), (): Task<void> => {
+      throw new Error("raw boom");
+    });
+    const result = await runCollectedUndos(
+      collectUndos(writeFile("/tmp/raw.txt", "raw", { undo: rawThrow })),
+    );
+    expect(result.undoCount).toBe(0);
+    expect(result.outcomes).toEqual([
+      {
+        status: "failed",
+        error: { code: "INTERNAL", message: "Error: raw boom" },
+      },
+    ]);
+  });
+
+  it("rethrows interruption and leaves the pending undos unattempted", async () => {
+    // Cancellation is the one failure isolation must NOT absorb — the same
+    // invariant the interpreter's recovery frames hold. A pre-aborted signal
+    // interrupts the first undo; the rest must never run.
+    const tempDir = mkdtempSync(join(tmpdir(), "task-undo-interrupt-"));
+    const a = join(tempDir, "a.txt");
+    try {
+      writeFileSync(a, "seeded");
+      const controller = new AbortController();
+      controller.abort();
+
+      await expect(
+        runCollectedUndos(collectUndos(writeFile(a, "a")), {
+          signal: controller.signal,
+        }),
+      ).rejects.toMatchObject({ code: "TASK_INTERRUPTED" });
+      expect(existsSync(a)).toBe(true);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("runUndo surfaces the same outcomes end to end", async () => {
+    // The two-phase entry point returns the execution phase's outcomes, so a
+    // caller that never touches `collectUndos` still gets per-undo truth.
+    const tempDir = mkdtempSync(join(tmpdir(), "task-run-undo-outcomes-"));
+    const kept = join(tempDir, "kept.txt");
+    try {
+      writeFileSync(kept, "seeded");
+      const task = sequence_([
+        writeFile(kept, "kept", { undoKey: "row:kept" }),
+        mkdir(join(tempDir, "made"), true, {
+          undo: fail({ code: "EXEC_FAILED", message: "cannot remove" }),
+          undoKey: "row:made",
+        }),
+      ]);
+      mkdirSync(join(tempDir, "made"), { recursive: true });
+
+      const result = await runUndo(task);
+
+      expect(result.undoCount).toBe(1);
+      expect(result.outcomes).toEqual([
+        { key: "row:made", status: "failed", error: expect.anything() },
+        { key: "row:kept", status: "undone" },
+      ]);
+      expect(existsSync(kept)).toBe(false);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });
 

@@ -1,7 +1,7 @@
 import driveSync from "./driveSync.js";
 import { mockEffectWithFs } from "./dry-run.js";
 import { TaskExecutionError } from "./errors.js";
-import type { Effect, Task } from "./types.js";
+import type { Effect, Task, UndoTask } from "./types.js";
 
 /**
  * Options for {@link collectUndos}.
@@ -67,7 +67,7 @@ interface WalkState {
   /** Paths created by write-like effects earlier in this attempt. */
   virtualFs: Set<string>;
   /** Undos collected this attempt, in forward order. */
-  undos: Task<void>[];
+  undos: UndoTask[];
   /** Leaf forward effects of this attempt, in forward order. */
   forwardEffects: Effect[];
   /** Free `Exists` decisions in encounter order. */
@@ -95,6 +95,11 @@ interface WalkState {
  * base entry; executing the collected undos against the host is `runUndo`'s
  * job (`@canonical/task/node`).
  *
+ * Each collected undo is the `undo` task exactly as its effect carries it —
+ * including the correlation `undoKey` its declaration may have tagged it with
+ * (see {@link UndoTask}) — so executing the collected plan can echo each
+ * undo's key on its outcome.
+ *
  * @param task - The task to collect undos from
  * @param options - Optional host-state resolution, see {@link CollectUndosOptions}
  * @returns Array of undo tasks in forward execution order
@@ -102,7 +107,7 @@ interface WalkState {
 export const collectUndos = <A>(
   task: Task<A>,
   options?: CollectUndosOptions,
-): Task<void>[] => {
+): UndoTask[] => {
   const walk = (
     overrides: readonly boolean[],
   ): { state: WalkState; error: TaskExecutionError | null } => {
