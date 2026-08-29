@@ -1401,8 +1401,12 @@ describe("Interpreter - executeEffect for Exec", () => {
     expect(result.exitCode).toBe(42);
   });
 
-  it("returns zero exit code when process is killed by signal", async () => {
-    // When a process is killed by a signal, Node.js close event passes null code
+  it("returns a NONZERO exit code when the process is killed by a signal", async () => {
+    // A signal-killed child closes with `code === null` (the signal name rides
+    // the second argument). This used to map to 0 — reporting a killed process
+    // as a successful exec, which let exit-code gates wave through work the
+    // child never finished. There is no numeric code to forward, so the
+    // interpreter reports the conventional failure exit instead.
     const result = (await executeEffect(
       {
         _tag: "Exec",
@@ -1413,8 +1417,7 @@ describe("Interpreter - executeEffect for Exec", () => {
       new Map(),
     )) as ExecResult;
 
-    // code ?? 0 — process killed by signal, code is null, falls back to 0
-    expect(result.exitCode).toBe(0);
+    expect(result.exitCode).toBe(1);
   });
 
   it("respects cwd option", async () => {

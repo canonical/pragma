@@ -294,7 +294,14 @@ export const executeEffect = async (
         });
 
         child.on("close", (code) => {
-          resolve({ stdout, stderr, exitCode: code ?? 0 });
+          // A child killed by a signal closes with `code === null` (the
+          // signal name rides the second argument; exactly one of the two is
+          // non-null). Mapping that null to 0 reported a killed process as a
+          // SUCCESSFUL exec — an exit-code gate (`checkExecOk` and friends)
+          // then waved through work the child never finished. There is no
+          // numeric exit code to forward, so a signal-killed child reports
+          // the conventional failure exit instead.
+          resolve({ stdout, stderr, exitCode: code ?? 1 });
         });
         child.on("error", reject);
       });
