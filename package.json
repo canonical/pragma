@@ -44,6 +44,8 @@
     "test": "lerna run test",
     "test:coverage": "lerna run test:coverage",
     "publish:status": "bun scripts/publish-status.ts",
+    "publish:reconcile": "bun scripts/publish-reconcile.ts",
+    "publish:reconcile:test": "bun test scripts/publish-reconcile.test.ts",
     "special:clean": "bun run nx reset && lerna clean --yes && rm -rf node_modules **/dist **/node_modules"
   },
   "devDependencies": {
