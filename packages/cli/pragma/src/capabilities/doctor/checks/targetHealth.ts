@@ -49,6 +49,7 @@ import {
   skillsSkipRemedy,
 } from "../../setup/operations/index.js";
 import { shortenPath, TARGET_IDS } from "../../setup/plan.js";
+import { MCP_NO_LOCATION } from "../../setup/targets.js";
 import type { CheckItem, CheckResult, ScopeBand } from "../types.js";
 import { checkShellCompletions } from "./checkShellCompletions.js";
 import {
@@ -79,7 +80,8 @@ const configHealth = (
   roots: { global: string; project: string },
 ): Health => {
   const path = shortenPath(d.path, roots);
-  if (!d.exists) return { status: "available", detail: `${path} not created` };
+  if (!d.exists)
+    return { status: "available", detail: `${path} does not exist yet` };
   if (!d.parses) {
     return { status: "fail", detail: `${path} cannot be parsed as JSON` };
   }
@@ -93,8 +95,8 @@ const lspHealth = (d: LspDetection): Health => {
   }
   const editors = lspEditorNames(d).join(", ");
   return d.state === "installed"
-    ? { status: "pass", detail: `installed (${editors})` }
-    : { status: "available", detail: `not installed (${editors})` };
+    ? { status: "pass", detail: `installed in ${editors}` }
+    : { status: "available", detail: `not installed in ${editors}` };
 };
 
 /**
@@ -110,17 +112,14 @@ async function mcpHealth(
   roots: { global: string; project: string },
 ): Promise<Health> {
   if (d.groups.length === 0) {
-    return {
-      status: "skip",
-      detail: "no harness config location in this band",
-    };
+    return { status: "skip", detail: MCP_NO_LOCATION[band] };
   }
   const resolves = await commandResolves(MCP_SERVER_NAME, cwd);
   const items: CheckItem[] = d.groups.map((group) => {
     const state = mcpGroupState(d, group.path);
     const label = shortenPath(group.path, roots);
     if (state === "absent") {
-      return { label, status: "available", detail: "not configured" };
+      return { label, status: "available", detail: "not registered" };
     }
     if (state === "drifted") {
       return { label, status: "fail", detail: "entry differs from current" };
@@ -129,8 +128,8 @@ async function mcpHealth(
       label,
       status: resolves ? "pass" : "fail",
       detail: resolves
-        ? `entry current, \`${MCP_SERVER_NAME}\` resolves`
-        : `entry current, \`${MCP_SERVER_NAME}\` is not on PATH`,
+        ? `registered, and \`${MCP_SERVER_NAME}\` is on PATH`
+        : `registered, but \`${MCP_SERVER_NAME}\` is not on PATH`,
     };
   });
   const configured = items.filter((item) => item.status === "pass").length;
@@ -138,24 +137,29 @@ async function mcpHealth(
   if (failing > 0) {
     return {
       status: "fail",
-      detail: `${failing} of ${items.length} need attention`,
+      detail: `${failing} of ${items.length} config files need attention`,
       items,
     };
   }
   if (configured === 0) {
-    // Project-band absence is not a failure: the band is opt-in, so a
-    // repository with no checked-in MCP config is a healthy repository.
+    // Absence in the LOCAL PROJECT is not a failure: registering there is
+    // opt-in, so a repository with no checked-in MCP config is healthy. The
+    // line says so rather than leaving "(opt-in)" to be decoded.
     return band === "project"
-      ? { status: "skip", detail: "not configured for this project (opt-in)" }
+      ? {
+          status: "skip",
+          detail:
+            "not registered for this project — per-project registration is opt-in",
+        }
       : {
           status: "available",
-          detail: `${items.length} not configured`,
+          detail: `not registered in any of ${items.length} config files`,
           items,
         };
   }
   return {
     status: configured === items.length ? "pass" : "available",
-    detail: `${configured} of ${items.length} current`,
+    detail: `registered in ${configured} of ${items.length} config files`,
     items,
   };
 }

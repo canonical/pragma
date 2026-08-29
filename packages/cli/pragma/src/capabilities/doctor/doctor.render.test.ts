@@ -1,14 +1,16 @@
 /**
- * Render goldens for `pragma doctor` — the band-grouped report AND the plain-path
- * color gate (F1).
+ * Render goldens for `pragma doctor` — the scope-grouped report AND the
+ * plain-path color gate (F1).
  *
- * The banded Global/Project grouping (`partitionByBand` → sections) is pinned for
- * both the plain and llm formatters, locking the unified Global/Project
- * vocabulary (the report no longer says MACHINE/PROJECT). Separately, the plain
+ * The Global / Local project grouping (`partitionByBand` → sections) is pinned
+ * for both the plain and llm formatters, locking the vocabulary the flags
+ * already use — `--global` and `--local`. It is neither MACHINE/PROJECT (the
+ * first spelling) nor "band" (the second): "band" is this repository's word for
+ * the partition and nobody else's. Separately, the plain
  * formatter tints ONLY on a color-capable TTY: `supports-color` reports a
  * non-zero `chalk.level` off a TTY under `GITHUB_ACTIONS` / `FORCE_COLOR`, so the
  * `isTTY` gate (via the shared style seam) keeps ANSI out of
- * `doctor --format plain | tee`. `beforeEach` forces color OFF so the banded
+ * `doctor --format plain | tee`. `beforeEach` forces color OFF so the section
  * goldens stay deterministic; the color tests opt a level back in explicitly.
  */
 
@@ -98,28 +100,30 @@ afterAll(() => {
   chalk.level = prevLevel;
 });
 
-describe("doctor render — banded plain report", () => {
-  it("groups checks under Global then Project headers (unified labels)", () => {
+describe("doctor render — scoped plain report", () => {
+  it("groups checks under Global then Local project headers", () => {
     const out = doctorFormatters.plain(BANDED_DATA);
     const lines = out.split("\n");
-    // The two banded section headers use the unified Global/Project vocabulary.
+    // The two section headers use the words the flags use.
     expect(lines).toContain("Global");
-    expect(lines).toContain("Project");
-    // The superseded MACHINE/PROJECT labels are gone.
+    expect(lines).toContain("Local project");
+    // The superseded MACHINE/PROJECT labels are gone — and so is "band", which
+    // no user-facing string in this report may say.
     expect(out).not.toContain("MACHINE");
     expect(out).not.toMatch(/^PROJECT$/m);
+    expect(out).not.toMatch(/\bbands?\b/);
   });
 
-  it("orders environment → Global → Project, banding each check correctly", () => {
+  it("orders environment → Global → Local project, placing each check correctly", () => {
     const out = doctorFormatters.plain(BANDED_DATA);
-    // Environment check leads with no header; the two global-band checks sit
-    // under Global; the project-band check sits under Project.
+    // Environment check leads with no header; the two global checks sit under
+    // Global; the per-project check sits under Local project.
     const at = (needle: string): number => out.indexOf(needle);
     expect(at("Node version")).toBeGreaterThanOrEqual(0);
     expect(at("Node version")).toBeLessThan(at("Global"));
     expect(at("Global")).toBeLessThan(at("Shell completions"));
-    expect(at("MCP configured")).toBeLessThan(at("Project"));
-    expect(at("Project")).toBeLessThan(at("Skills symlinked"));
+    expect(at("MCP configured")).toBeLessThan(at("Local project"));
+    expect(at("Local project")).toBeLessThan(at("Skills symlinked"));
     // An available banded check keeps its inline setup command under its band.
     expect(out).toContain("fix: pragma setup mcp");
     // The tally closes the report.
@@ -127,18 +131,18 @@ describe("doctor render — banded plain report", () => {
   });
 });
 
-describe("doctor render — banded llm report", () => {
-  it("groups checks under ### Global then ### Project headers", () => {
+describe("doctor render — scoped llm report", () => {
+  it("groups checks under ### Global then ### Local project headers", () => {
     const out = doctorFormatters.llm(BANDED_DATA);
     expect(out).toContain("### Global");
-    expect(out).toContain("### Project");
+    expect(out).toContain("### Local project");
     expect(out).not.toContain("### Machine");
     const at = (needle: string): number => out.indexOf(needle);
-    // Environment leads (no section header), then the two banded sections.
+    // Environment leads (no section header), then the two scoped sections.
     expect(at("Node version")).toBeLessThan(at("### Global"));
     expect(at("### Global")).toBeLessThan(at("Shell completions"));
-    expect(at("Shell completions")).toBeLessThan(at("### Project"));
-    expect(at("### Project")).toBeLessThan(at("Skills symlinked"));
+    expect(at("Shell completions")).toBeLessThan(at("### Local project"));
+    expect(at("### Local project")).toBeLessThan(at("Skills symlinked"));
     expect(out).toContain("_2 passed, 0 failed, 1 available, 1 skipped_");
   });
 });
@@ -184,7 +188,7 @@ describe("doctor render — color ON (attended TTY)", () => {
  * The harness inventory renders through the EXISTING check-with-items
  * primitive — a listing needs no new machinery, only a check whose `items` are
  * harnesses. This pins that it reads as an inventory in both formats: named
- * harnesses under their band, mixed per-item glyphs, and NO `fix:` line (the
+ * harnesses under their scope, mixed per-item glyphs, and NO `fix:` line (the
  * `mcp`/`skills` rows own every action a harness can need).
  */
 const INVENTORY_DATA: DoctorData = {
@@ -201,7 +205,11 @@ const INVENTORY_DATA: DoctorData = {
           detail: "registered — ~/.claude.json",
         },
         { label: "Cursor", status: "skip", detail: "not detected" },
-        { label: "VS Code", status: "skip", detail: "no Global band" },
+        {
+          label: "VS Code",
+          status: "skip",
+          detail: "keeps no global config",
+        },
       ],
     },
   ],
@@ -219,7 +227,7 @@ describe("doctor render — the harness inventory", () => {
     expect(out).toContain("1 detected · 1 registered · 3 known");
     expect(out).toContain("· ✓ Claude Code  registered — ~/.claude.json");
     expect(out).toContain("· ○ Cursor       not detected");
-    expect(out).toContain("· ○ VS Code      no Global band");
+    expect(out).toContain("· ○ VS Code      keeps no global config");
     // A listing proposes nothing — and never renders a failure glyph.
     expect(out).not.toContain("fix:");
     expect(out).not.toContain("✗");
@@ -232,7 +240,7 @@ describe("doctor render — the harness inventory", () => {
       "- ✓ **harnesses**: 1 detected · 1 registered · 3 known",
     );
     expect(out).toContain("  - ✓ Claude Code: registered — ~/.claude.json");
-    expect(out).toContain("  - ○ VS Code: no Global band");
+    expect(out).toContain("  - ○ VS Code: keeps no global config");
     expect(out).not.toContain("_fix:_");
   });
 

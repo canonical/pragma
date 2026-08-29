@@ -69,9 +69,21 @@ function paintGlyph(status: CheckStatus, style: DoctorStyle): string {
 }
 
 /**
+ * The word in front of a row's instruction, chosen by what the row IS.
+ *
+ * A `fail` and an `available` are things to repair or switch on, so they read
+ * `fix:`. A `skip` is neither — nothing is wrong and nothing is off; the row
+ * simply has nothing to act on yet — so labelling its instruction `fix:` would
+ * be the same "a skip is a fault" reading the `available` glyph exists to
+ * prevent. It reads `next:`, which is what the line actually is.
+ */
+const remedyLabel = (status: CheckStatus): string =>
+  status === "skip" ? "next:" : "fix:";
+
+/**
  * Render one check as terminal lines: a headline row (icon, aligned name,
- * detail), an optional indented breakdown of sub-items, and — for failures — an
- * inline remedial instruction.
+ * detail), an optional indented breakdown of sub-items, and — whenever the
+ * check carries one — an inline instruction.
  */
 function formatCheckPlain(
   check: CheckResult,
@@ -101,14 +113,18 @@ function formatCheckPlain(
     }
   }
 
-  // Both actionable tiers keep their inline instruction: a fail's remedy is
-  // the repair, an available's remedy is the setup command that enables it.
-  if (
-    (check.status === "fail" || check.status === "available") &&
-    check.remedy
-  ) {
+  // Every row that HAS an instruction prints it. A fail's remedy is the
+  // repair, an available's is the setup command that enables it — and a skip's,
+  // when it authored one, is the only thing standing between the reader and a
+  // dead end. Skips were dropped here, so `skills` reported "no skills
+  // installed" with the next step (`sources update`) computed, carried through
+  // the check, published in `--format json`, and then thrown away one line
+  // before it reached the person reading. A skip never DERIVES a remedy
+  // (`bandedChecks` only passes through an authored one), so this prints
+  // nothing that was not deliberately written for this machine.
+  if (check.remedy) {
     lines.push(
-      `${INDENT}${style.cyan(FIX_ARROW)} ${style.cyan("fix:")} ${check.remedy}`,
+      `${INDENT}${style.cyan(FIX_ARROW)} ${style.cyan(remedyLabel(check.status))} ${check.remedy}`,
     );
   }
 
@@ -141,9 +157,9 @@ function formatSummary(data: DoctorData, style: DoctorStyle): string {
 }
 
 /**
- * Partition checks into ordered bands: environment (no band), then the global
- * and project bands. Declaration order is preserved within each band, so the
- * report stays deterministic.
+ * Partition checks into ordered sections: environment (no scope), then the
+ * global and local-project scopes. Declaration order is preserved within each,
+ * so the report stays deterministic.
  */
 function partitionByBand(checks: readonly CheckResult[]): {
   environment: CheckResult[];
@@ -170,8 +186,8 @@ export const doctorFormatters: Formatters<DoctorData> = {
         lines.push(...formatCheckPlain(check, nameWidth, style));
       lines.push("");
     };
-    // Environment checks lead (no header); the global then project bands are the
-    // two banded sections before the tally.
+    // Environment checks lead (no header); Global then Local project are the
+    // two scoped sections before the tally.
     section("", environment);
     section(BAND_LABELS.global, machine);
     section(BAND_LABELS.project, project);
@@ -189,13 +205,17 @@ export const doctorFormatters: Formatters<DoctorData> = {
         const detail = item.detail ? `: ${item.detail}` : "";
         out.push(`  - ${itemIcon}${item.label}${detail}`);
       }
-      // Same rule as the plain path: fail and available both carry their
-      // inline instruction (the repair, or the setup command).
-      if (
-        (check.status === "fail" || check.status === "available") &&
-        check.remedy
-      ) {
-        out.push(`  - _fix:_ \`${check.remedy}\``);
+      // Same rule as the plain path: every row that carries an instruction
+      // prints it, under the label its status earns. Only a `fix:` is code-set
+      // — a derived remedy is a bare command, while a skip's authored `next:`
+      // is a sentence that may quote a command of its own, and wrapping that in
+      // backticks nests one code span inside another.
+      if (check.remedy) {
+        out.push(
+          check.status === "skip"
+            ? `  - _next:_ ${check.remedy}`
+            : `  - _fix:_ \`${check.remedy}\``,
+        );
       }
       return out;
     };

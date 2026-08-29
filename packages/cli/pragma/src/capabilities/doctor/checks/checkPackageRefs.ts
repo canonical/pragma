@@ -151,10 +151,13 @@ export async function checkPackageRefs(
     return {
       name,
       status: "pass",
-      // The update hint stays in the DETAIL rather than moving to `remedy`: the
-      // renderer prints a remedy only under `fail` and `available`, and an
-      // embedded snapshot answering reads correctly is neither.
-      detail: `embedded snapshot — ${composition} · \`${BIN_NAME} sources update\` to build from the configured packs`,
+      // The update hint stays in the DETAIL rather than moving to `remedy`:
+      // the renderer prints a remedy only where there is something to fix or
+      // to finish, and a snapshot that is answering reads correctly is
+      // neither. "shipped with the CLI" rather than "embedded snapshot" — the
+      // reader needs to know where these packs came from, not what the build
+      // calls the artefact.
+      detail: `shipped with the CLI — ${composition} · run \`${BIN_NAME} sources update\` to build from your own configured packs instead`,
       ...(items.length > 0 ? { items } : {}),
     };
   }

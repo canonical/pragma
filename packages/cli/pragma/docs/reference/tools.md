@@ -194,7 +194,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### doctor
 
-Reports the environment checks and then one row per setup target in each band, as pass, fail, available (an opt-in integration not yet set up), or skip, with inline remedies. Every banded row is named after the setup target that repairs it, except the `harnesses` row: a per-band inventory of the AI harnesses detected on this machine and whether this CLI's MCP server is registered in each — the detected ones only, or every known harness under the verbose global flag. Storeless by default; the store check boots lazily and never fails the run.
+Reports the environment checks first, then one row per setup target — once for your home directory, once for this project. Each row is pass, fail, available (an optional integration you have not set up yet), or skip (nothing to do here, and the row says why), with the next step printed inline. Every row is named after the setup target that repairs it, except `harnesses`: a listing, per scope, of the AI harnesses found on this machine and whether this CLI's MCP server is registered in each — the ones actually found, or every harness it knows about under the verbose global flag. Needs no store; the store check boots lazily and never fails the run.
 
 Read-only.
 
@@ -343,7 +343,7 @@ Read-only.
 
 ### setup
 
-Plans every target in the selected band, then applies the ones you keep. The user/home band is the default; the scope option chooses the per-project band, or both. A run with no attended terminal prints the plan and applies nothing unless the run is confirmed.
+Shows what each target needs, then applies the ones you keep. Everything is configured in your home directory by default; the scope option moves the run to this project alone, or covers both. Without an attended terminal the plan is printed and nothing is written unless the run is explicitly confirmed.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
@@ -351,9 +351,9 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `scope` | enum(project, global, both) | no | Which config band(s) to configure: global (the default), project, or both. (one of: project, global, both) (default: global) |
-| `global` | boolean | no | Shorthand for --scope global (configure the user/home band). |
-| `local` | boolean | no | Shorthand for --scope project (configure the per-project band). |
+| `scope` | enum(project, global, both) | no | Where to configure: global (your home directory, the default), project (this repository), or both. (one of: project, global, both) (default: global) |
+| `global` | boolean | no | Shorthand for --scope global — configure your home directory. |
+| `local` | boolean | no | Shorthand for --scope project — configure this project only. |
 | `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
 | `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
 
@@ -391,7 +391,7 @@ _No input parameters._
 
 ### sources_update
 
-Resolves each configured pack (git/file/npm) and builds one content-addressed pack, which every later boot reads with no network access. Pin a revision by putting a commit SHA in the pack's source ref.
+Resolves each configured pack (git, file, or npm) and builds one local pack from them, which every later run reads without touching the network. Put a commit SHA in a pack source ref to pin it to that revision.
 
 Mutation — plan-first (set `confirm: true` to apply).
 
@@ -399,7 +399,7 @@ Mutation — plan-first (set `confirm: true` to apply).
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `skipInvalid` | boolean | no | Skip sources that fail to parse (warning about each) and build from the rest, instead of failing the whole update. |
+| `skipInvalid` | boolean | no | Build from the sources that parse, warning about each one that does not, instead of failing the whole update. |
 | `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
 | `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
 

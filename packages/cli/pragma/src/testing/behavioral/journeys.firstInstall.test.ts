@@ -158,10 +158,15 @@ describe("first install — the surfaces say where the answers come from", () =>
     expect(status.entityCount).toBeGreaterThan(0);
   });
 
-  it("doctor passes, naming the embedded snapshot rather than the config", async () => {
+  it("doctor passes, saying the packs came with the CLI rather than from the config", async () => {
     const result = await checkPackageRefs(bootRuntime(JSON_FLAGS, emptyCwd()));
     expect(result.status).toBe("pass");
-    expect(result.detail).toContain("embedded snapshot @ ");
+    // What is pinned is the DISTINCTION — a fresh install reads packs it
+    // shipped with, not packs this project configured — and that the row says
+    // how to change that. The wording is the reader's ("shipped with the CLI"),
+    // not the build's ("embedded snapshot"); the per-pack revisions moved to
+    // the row's sub-items when each pack got its own line.
+    expect(result.detail).toContain("shipped with the CLI");
     expect(result.detail).toContain("pragma sources update");
   });
 });

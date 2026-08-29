@@ -841,7 +841,7 @@ const codeStandardsStories: readonly PackDefinition[] = [
         // question, not a staleness one.
         emptyRecovery: {
           message:
-            "The code standards ship in the embedded snapshot, so no categories at all means the store did not load rather than that it is out of date.",
+            "The code standards ship with the CLI itself, so no categories at all means the store did not load — not that it is out of date.",
           cli: "doctor",
         },
       },

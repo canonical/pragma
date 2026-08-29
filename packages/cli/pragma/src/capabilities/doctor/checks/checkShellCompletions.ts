@@ -126,7 +126,7 @@ export async function checkShellCompletions(
     return {
       name: NAME,
       status: "fail",
-      detail: `completion resolver failed: ${reason}`,
+      detail: `${BIN_NAME} cannot answer \`<TAB>\`: ${reason}`,
       remedy: `Report this as a bug — \`${BIN_NAME} __complete\` should never throw.`,
     };
   }
@@ -134,7 +134,7 @@ export async function checkShellCompletions(
     return {
       name: NAME,
       status: "fail",
-      detail: `completion resolver returned no candidates for \`${BIN_NAME} <TAB>\``,
+      detail: `${BIN_NAME} answered \`<TAB>\` with nothing to complete`,
       remedy: "Report this as a bug — the noun context is always non-empty.",
     };
   }
@@ -147,7 +147,7 @@ export async function checkShellCompletions(
     return {
       name: NAME,
       status: "skip",
-      detail: `resolver OK; the running shell cannot be identified (SHELL names ${d.detection.login}, the login shell)`,
+      detail: `${BIN_NAME} answers \`<TAB>\`, but the running shell cannot be identified — SHELL names ${d.detection.login}, which is your login shell`,
       remedy: `Run \`${INSTALL_REMEDY}\` from the shell you want completions in.`,
     };
   }
@@ -155,7 +155,7 @@ export async function checkShellCompletions(
     return {
       name: NAME,
       status: "skip",
-      detail: "resolver OK; no bash, zsh, or fish in this process tree",
+      detail: `${BIN_NAME} answers \`<TAB>\`, but no bash, zsh, or fish was found in this process tree`,
     };
   }
   // The installed script delegates every name context to the binary. A script
@@ -174,7 +174,7 @@ export async function checkShellCompletions(
       status: installed ? "fail" : "available",
       detail: installed
         ? `${shell} script installed, but \`${BIN_NAME}\` is not on PATH — the script cannot run it`
-        : `resolver OK; \`${BIN_NAME}\` is not on PATH — an installed script cannot run it`,
+        : `${BIN_NAME} answers \`<TAB>\`, but is not on PATH — an installed script cannot run it`,
       remedy: `Put \`${BIN_NAME}\` on your PATH.`,
     };
   }
@@ -186,7 +186,7 @@ export async function checkShellCompletions(
     return {
       name: NAME,
       status: "available",
-      detail: `resolver OK; ${shell} script not installed`,
+      detail: `${BIN_NAME} answers \`<TAB>\`; the ${shell} script is not installed`,
       remedy: INSTALL_REMEDY,
     };
   }
@@ -194,7 +194,7 @@ export async function checkShellCompletions(
     return {
       name: NAME,
       status: "fail",
-      detail: `resolver OK; ${shell} script at ${path} is out of date`,
+      detail: `${BIN_NAME} answers \`<TAB>\`; the ${shell} script at ${path} is out of date`,
       remedy: INSTALL_REMEDY,
     };
   }
@@ -212,6 +212,6 @@ export async function checkShellCompletions(
   return {
     name: NAME,
     status: "pass",
-    detail: `${shell} (the shell in use) up to date and resolving (${candidates} nouns)`,
+    detail: `${shell} (the shell you are in) — installed, up to date, and completing ${candidates} commands`,
   };
 }

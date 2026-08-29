@@ -70,19 +70,19 @@ const SCOPE_PARAMS: readonly ParamSpec[] = [
   {
     kind: "enum",
     name: "scope",
-    doc: "Which config band(s) to configure: global (the default), project, or both.",
+    doc: "Where to configure: global (your home directory, the default), project (this repository), or both.",
     values: ["project", "global", "both"],
     default: "global",
   },
   {
     kind: "boolean",
     name: "global",
-    doc: "Shorthand for --scope global (configure the user/home band).",
+    doc: "Shorthand for --scope global — configure your home directory.",
   },
   {
     kind: "boolean",
     name: "local",
-    doc: "Shorthand for --scope project (configure the per-project band).",
+    doc: "Shorthand for --scope project — configure this project only.",
   },
 ];
 
@@ -121,14 +121,15 @@ async function assertBandIsPossible(
   const target = findTarget(mode);
   if (target === undefined || target.bands.includes(scope as ScopeBand)) return;
   const only = target.bands[0] as ScopeBand;
-  const level = only === "global" ? "user-level" : "project-level";
+  const level = only === "global" ? "global only" : "per-project only";
+  const asked = scope === "global" ? "globally" : "per project";
   const corrected =
     only === "global"
       ? `${BIN_NAME} setup ${mode}`
       : `${BIN_NAME} setup ${mode} --local`;
   throw new PragmaError({
     code: "INVALID_INPUT",
-    message: `${mode} is ${level} — it has no ${scope} band.`,
+    message: `${mode} is ${level} — it cannot be configured ${asked}.`,
     recovery: { message: `Run: ${corrected}` },
   });
 }
@@ -389,24 +390,24 @@ function setupVerb(
 
 const setupAllVerb = setupVerb(
   ["setup"],
-  "Configure the global config, completions, the LSP, MCP, and skills.",
+  "Set up your config file, TAB completion, the editor extension, MCP, and skills.",
   "all",
   SELF_CAPABILITY,
   {
-    doc: "Plans every target in the selected band, then applies the ones you keep. The user/home band is the default; the scope option chooses the per-project band, or both. A run with no attended terminal prints the plan and applies nothing unless the run is confirmed.",
+    doc: "Shows what each target needs, then applies the ones you keep. Everything is configured in your home directory by default; the scope option moves the run to this project alone, or covers both. Without an attended terminal the plan is printed and nothing is written unless the run is explicitly confirmed.",
     examples: [
       { cmd: `${BIN_NAME} setup` },
       {
         cmd: `${BIN_NAME} setup --dry-run`,
-        note: "print the plan, write nothing",
+        note: "show the plan, write nothing",
       },
       {
         cmd: `${BIN_NAME} setup --local`,
-        note: "configure the project band instead",
+        note: "configure this project instead of your home directory",
       },
       {
         cmd: `${BIN_NAME} setup mcp`,
-        note: "just the MCP server registration",
+        note: "only register the MCP server",
       },
     ],
   },
@@ -414,35 +415,35 @@ const setupAllVerb = setupVerb(
 
 const configVerb = setupVerb(
   ["setup", "config"],
-  "Create the global config file with its defaults.",
+  "Create your global config file, filled in with the defaults.",
   "config",
   SUB_CAPABILITY,
 );
 
 const mcpVerb = setupVerb(
   ["setup", "mcp"],
-  `Register the ${BIN_NAME} MCP server in detected AI harnesses.`,
+  `Register the ${BIN_NAME} MCP server with the AI harnesses on this machine.`,
   "mcp",
   SUB_CAPABILITY,
 );
 
 const completionsVerb = setupVerb(
   ["setup", "completions"],
-  "Install the shell-completion script for your shell.",
+  "Install TAB completion for the shell you are running.",
   "completions",
   SUB_CAPABILITY,
 );
 
 const skillsVerb = setupVerb(
   ["setup", "skills"],
-  "Symlink discovered skills into each AI harness.",
+  "Link the skills you have installed into every AI harness that reads them.",
   "skills",
   SUB_CAPABILITY,
 );
 
 const lspVerb = setupVerb(
   ["setup", "lsp"],
-  "Ensure the Terrazzo LSP VS Code extension is installed.",
+  "Install the Terrazzo design-token extension into your VS Code-family editors.",
   "lsp",
   SUB_CAPABILITY,
 );

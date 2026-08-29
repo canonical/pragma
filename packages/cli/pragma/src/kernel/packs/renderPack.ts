@@ -55,7 +55,7 @@ export interface RenderMeta {
  * list on a BUILT store (a cold store would have failed with STORE_UNAVAILABLE
  * first) means "nothing matched", so point at both possible fixes.
  */
-const DEFAULT_EMPTY_HINT = `Build the store with \`${BIN_NAME} sources update\`, or broaden the filter or channel.`;
+const DEFAULT_EMPTY_HINT = `Either nothing matched — try a wider filter — or the store has nothing in it yet: build it with \`${BIN_NAME} sources update\`.`;
 
 /** Build the list formatters for a list-shaped verb (list or an extra verb). */
 export function listFormatters(

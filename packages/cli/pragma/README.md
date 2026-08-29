@@ -147,7 +147,7 @@ pragma setup
 pragma doctor
 ```
 
-`pragma setup` is one wizard for the whole environment: MCP registration, shell completions, agent skills, and the LSP extension. Each installer can target your project's configuration, your user-level (global) configuration, or both — `--scope project|global|both`, with `--global`/`--local` as shorthands. Preview everything it would write with `pragma setup --dry-run`, or run one installer directly: `pragma setup mcp`, `setup completions`, `setup skills`, `setup lsp`.
+`pragma setup` is one wizard for the whole environment: your config file, MCP registration, TAB completion, agent skills, and the editor extension. Each installer can configure your home directory (global, the default), this project alone, or both — `--scope project|global|both`, with `--global`/`--local` as shorthands. Preview everything it would write with `pragma setup --dry-run`, or run one installer directly: `pragma setup mcp`, `setup completions`, `setup skills`, `setup lsp`.
 
 The LSP step installs the Terrazzo extension, and the extension's own log is the fastest way to confirm it took. Open your editor's Output panel, select the `terrazzo-lsp` channel, and look for a startup block like this (timestamps dropped, paths shortened):
 
@@ -162,7 +162,7 @@ The LSP step installs the Terrazzo extension, and the extension's own log is the
 
 The token count is the line to read: `terrazzo-lsp ready` says the server started, but a run that loaded 0 tokens resolved its artifact path to nothing and will complete nothing. With tokens loaded, type `color: var(--` in a stylesheet — the design tokens should appear as completions.
 
-`pragma doctor` checks the environment (Node version, store health, registrations) and says what to fix. `pragma info` shows the version, the configuration in effect, and update status; `pragma upgrade` updates the CLI itself.
+`pragma doctor` checks the environment (Node version, store health, registrations) globally and in this project, and names the next step on every row that has one. `pragma info` shows the version, the configuration in effect, and update status; `pragma upgrade` updates the CLI itself.
 
 ## Point it at your own design system
 
