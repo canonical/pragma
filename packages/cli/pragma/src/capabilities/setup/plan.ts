@@ -60,7 +60,14 @@ export interface PlanChildRow {
    * from {@link label}, which is display text and may be re-worded freely.
    */
   readonly key: string;
-  /** Display text, e.g. `~/.claude.json — Claude Code`. */
+  /**
+   * Display text as the producers actually emit it: the MCP row's children
+   * carry the file's shortened path alone (`~/.claude.json`), the LSP row's
+   * carry `cli — Editor Name` (`codium — VSCodium`). This doc once promised
+   * a path-plus-harness pairing (`~/.claude.json — Claude Code`) that no
+   * producer ever emitted; the harness names sharing an MCP file are the
+   * doctor inventory row's to report, not this label's.
+   */
   readonly label: string;
   readonly action: "add" | "update" | "unchanged" | "skip";
   /** REQUIRED when the action is `skip` — the named reason. */

@@ -159,7 +159,6 @@ export interface SkillsDetection {
    */
   readonly orphans: readonly SymlinkAction[];
   readonly skillCount: number;
-  readonly harnessCount: number;
   readonly warnings: readonly string[];
 }
 
@@ -585,7 +584,6 @@ export async function detectSkills(
       new Set(actions.map((a) => a.linkPath)),
     ),
     skillCount: skills.length,
-    harnessCount: targets.length,
     warnings,
   };
 }

@@ -125,7 +125,7 @@ export function installedSkillsDir(): string {
 /**
  * The project skills root: `<cwd>/.<bin>/skills` — skills that belong to THIS
  * repository and travel with it. Named separately from {@link skillRoots}
- * because the two roots are also the two setup BANDS: `setup skills --local`
+ * because the two roots are also the two setup SCOPES: `setup skills --local`
  * links this root into the project's harness directories, while the global scope
  * links {@link installedSkillsDir} into the user-level ones. Mixing them leaks
  * machine state into a repository's directories, or applies one repository's

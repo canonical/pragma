@@ -11,9 +11,9 @@
  *
  * Detection ALSO reads each group's existing config (via `readMcpConfigFrom`,
  * FOR REAL up front) and classifies every group as `absent` (no pragma entry
- * yet), `configured` (the pragma entry already matches what we'd write), or
+ * yet), `registered` (the pragma entry already matches what we'd write), or
  * `drifted` (a pragma entry exists but differs). The wizard shows that prior
- * state in each row and DEFAULT-DESELECTS the already-`configured` files; the
+ * state in each row and DEFAULT-DESELECTS the already-`registered` files; the
  * write itself stays idempotent (a re-merge of the identical entry is
  * byte-for-byte), so a re-run is a no-op the recap reports as "unchanged" — the
  * same state-awareness `setup skills` has always had.
@@ -85,9 +85,9 @@ const MCP_SERVE_ARGV = ["mcp", "serve"] as const;
 /**
  * The pragma MCP server entry we register — the SINGLE source of truth both the
  * classifier (does the existing entry match this?) and the writer (`composeMcp`)
- * consume, so "already configured" means byte-for-byte what a write would emit.
+ * consume, so "already registered" means byte-for-byte what a write would emit.
  *
- * The entry is BAND-shaped: a project-scope entry records the project root as
+ * The entry is SCOPE-shaped: a project-scope entry records the project root as
  * `cwd` (that binding is the point of a per-repo registration), while a
  * global-scope entry OMITS `cwd` entirely — a per-user server must not be
  * pinned to whatever directory `setup mcp --global` happened to run from
@@ -110,11 +110,11 @@ export function pragmaMcpEntry(cwd: string, scope: Scope): McpServerConfig {
 
 /**
  * Classify ONE write against its on-disk config: `absent` when the file carries
- * no pragma entry under this write's `mcpKey`, `configured` when the entry
+ * no pragma entry under this write's `mcpKey`, `registered` when the entry
  * already matches what this write would emit, `drifted` when one is there and
  * differs. Reads the file for real via `readMcpConfigFrom` (which reads only
  * this write's key), and matches the raw entry against what THAT write's
- * per-harness serializer would emit for the group's BAND (`mcpEntryMatches`
+ * per-harness serializer would emit for the group's SCOPE (`mcpEntryMatches`
  * compares the serializer's controlled fields — so a global entry still
  * pinning a `cwd` reads as drifted — and ignores extra keys a harness or user
  * added, so we never churn a file we did not author).
@@ -144,15 +144,15 @@ async function classifyWrite(
   const existing = servers[MCP_SERVER_NAME];
   if (existing === undefined) return "absent";
   return harnessesApi.mcpEntryMatches(existing, want, write.serializeEntry)
-    ? "configured"
+    ? "registered"
     : "drifted";
 }
 
 /**
  * The state of a whole FILE, aggregated from its writes: `absent` when no write
- * carries the entry, `configured` when every write already carries a matching
+ * carries the entry, `registered` when every write already carries a matching
  * one, `drifted` otherwise. This is the rule the write side needs — a file is
- * rewritten unless it is `configured` everywhere — and it is deliberately the
+ * rewritten unless it is `registered` everywhere — and it is deliberately the
  * only place the per-write states are collapsed, so nothing else re-derives it.
  *
  * @param states - Each write's own state, in the group's write order.
@@ -162,7 +162,7 @@ const aggregateMcpStates = (
   states: readonly McpTargetState[],
 ): McpTargetState => {
   if (states.every((state) => state === "absent")) return "absent";
-  if (states.every((state) => state === "configured")) return "configured";
+  if (states.every((state) => state === "registered")) return "registered";
   return "drifted";
 };
 
@@ -182,8 +182,8 @@ const mcpWriteKey = (write: ConfigTarget): string =>
 /**
  * Detect the AI harnesses present in the project (real reads, up front),
  * resolve+dedup their config targets for the chosen scope, AND read each
- * group's existing config to classify it `absent`/`configured`/`drifted` — so
- * the wizard can show prior state and default-deselect already-`configured`
+ * group's existing config to classify it `absent`/`registered`/`drifted` — so
+ * the wizard can show prior state and default-deselect already-`registered`
  * files.
  *
  * @param rt - The per-invocation runtime.
@@ -218,7 +218,7 @@ export async function detectMcp(
   // Read each group's existing config (for real, up front) so the recap/preview
   // and the default selection reflect true prior state — the same discipline
   // `detectSkills` uses for its per-link create/skip/replace decision. The
-  // wanted entry is BAND-shaped (a global entry omits `cwd`), so it is built
+  // wanted entry is SCOPE-shaped (a global entry omits `cwd`), so it is built
   // per group, not once. Each WRITE is classified and kept; the file's state is
   // their aggregate, so the coarse view is derived from the fine one rather
   // than measured separately.
@@ -293,7 +293,7 @@ export function selectedGroups(
 
 /**
  * Compose the per-target config writes for the SELECTED groups (pure —
- * re-runnable; builds ABSOLUTE config paths itself). An already-`configured`
+ * re-runnable; builds ABSOLUTE config paths itself). An already-`registered`
  * group composes NOTHING: the entry on disk is byte-for-byte what a write would
  * emit, so re-writing it would only move an mtime. Removal no longer depends on
  * the forward plan having written something ({@link composeMcpRemoval}), which
@@ -312,9 +312,9 @@ export function composeMcp(
   // Re-runnable combinators (NOT a single-use `gen`): `execute` interprets the
   // task twice (preview + perform). One combined write per file keeps a shared
   // file (VS Code + Cline) a single read-modify-write — dry-run safe. The
-  // written entry is BAND-shaped per group (a global entry omits `cwd`).
+  // written entry is SCOPE-shaped per group (a global entry omits `cwd`).
   const pending = groups.filter(
-    (group) => mcpGroupState(d, group.path) !== "configured",
+    (group) => mcpGroupState(d, group.path) !== "registered",
   );
   return sequence_(
     pending.map((group) =>
@@ -329,7 +329,7 @@ export function composeMcp(
 
 /**
  * The groups this scope OWNS right now — every file where detection classifies a
- * pragma entry as present (`configured` or `drifted`). Removal acts on exactly
+ * pragma entry as present (`registered` or `drifted`). Removal acts on exactly
  * this set, so a file that never carried the entry is never rewritten and a
  * foreign server in a file that does is never touched.
  */

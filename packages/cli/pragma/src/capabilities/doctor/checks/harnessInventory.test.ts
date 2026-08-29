@@ -40,7 +40,7 @@ describe("harnessInventory — the roll-up", () => {
     const rows = roll([
       {
         path: "~/.claude.json",
-        harnesses: [named("Claude Code", "configured")],
+        harnesses: [named("Claude Code", "registered")],
       },
       { path: "~/.cursor/mcp.json", harnesses: [named("Cursor", "absent")] },
     ]);
@@ -77,8 +77,8 @@ describe("harnessInventory — the roll-up", () => {
     const both = harnessInventory(
       REGISTRY,
       [
-        { path: "a.json", harnesses: [named("Cursor", "configured")] },
-        { path: "b.json", harnesses: [named("Cursor", "configured")] },
+        { path: "a.json", harnesses: [named("Cursor", "registered")] },
+        { path: "b.json", harnesses: [named("Cursor", "registered")] },
       ],
       "global",
     );
@@ -88,7 +88,7 @@ describe("harnessInventory — the roll-up", () => {
     const mixed = harnessInventory(
       REGISTRY,
       [
-        { path: "a.json", harnesses: [named("Cursor", "configured")] },
+        { path: "a.json", harnesses: [named("Cursor", "registered")] },
         { path: "b.json", harnesses: [named("Cursor", "absent")] },
       ],
       "global",
@@ -112,7 +112,7 @@ describe("harnessInventory — the roll-up", () => {
       [
         {
           path: ".vscode/mcp.json",
-          harnesses: [named("Cline", "absent"), named("VS Code", "configured")],
+          harnesses: [named("Cline", "absent"), named("VS Code", "registered")],
         },
       ],
       "project",
@@ -130,7 +130,7 @@ describe("harnessInventory — the roll-up", () => {
     // The inventory reports on the REGISTRY; a group is evidence, not a source
     // of rows, so an unknown name adds nothing rather than inventing an entry.
     const rows = roll([
-      { path: "x.json", harnesses: [named("Ghost Editor", "configured")] },
+      { path: "x.json", harnesses: [named("Ghost Editor", "registered")] },
     ]);
     expect(rows).toHaveLength(REGISTRY.length);
     expect(rows.map((r) => r.harnessName)).not.toContain("Ghost Editor");
@@ -144,7 +144,7 @@ describe("harnessInventory — the roll-up", () => {
 
 describe("harnessInventory — the listing", () => {
   const rows = roll([
-    { path: "~/.claude.json", harnesses: [named("Claude Code", "configured")] },
+    { path: "~/.claude.json", harnesses: [named("Claude Code", "registered")] },
   ]);
 
   it("shows detected harnesses only by default", () => {

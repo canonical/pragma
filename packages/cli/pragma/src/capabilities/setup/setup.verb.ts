@@ -9,7 +9,7 @@
  * only the self-verb is an MCP tool. `destructive: false` keeps MCP from
  * advertising the tool as destructive.
  *
- * THE BAND DEFAULT IS GLOBAL. `--scope` used to default to `both`, and `both`
+ * THE SCOPE DEFAULT IS GLOBAL. `--scope` used to default to `both`, and `both`
  * runs each harness's own default scope — which is `project` for most of the
  * registry — so a bare `setup` scattered `.mcp.json`, `.gemini/settings.json`
  * and `opencode.json` into whatever directory you happened to be standing in.

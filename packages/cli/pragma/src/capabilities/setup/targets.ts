@@ -308,7 +308,7 @@ const mcpChild = (
     key: group.path,
     label: shortenPath(group.path, roots),
     action:
-      state === "configured"
+      state === "registered"
         ? "unchanged"
         : state === "drifted"
           ? "update"

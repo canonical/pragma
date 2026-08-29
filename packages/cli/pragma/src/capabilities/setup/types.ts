@@ -26,12 +26,12 @@ export type {
 
 /**
  * The prior state of an MCP target file, read up front by `detectMcp`:
- * `absent` (no pragma entry yet), `configured` (a matching pragma entry already
+ * `absent` (no pragma entry yet), `registered` (a matching pragma entry already
  * present in every write — a re-run skips it), or `drifted` (a pragma entry
  * exists but differs, so a write updates it). Mirrors the skills step's
  * created/skipped/replaced idempotency at the file grain.
  */
-export type McpTargetState = "absent" | "configured" | "drifted";
+export type McpTargetState = "absent" | "registered" | "drifted";
 
 /**
  * The prior on-disk state of the shell-completion script, read up front by

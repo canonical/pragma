@@ -13,7 +13,7 @@
  * surfaces cannot disagree about what they looked at, and every `fix:` is
  * derived from the row's id and scope rather than authored per check.
  *
- * Doctor's UNBANDED environment checks (Node version, the CLI's own version,
+ * Doctor's UNSCOPED environment checks (Node version, the CLI's own version,
  * pack refs, the store) diagnose things setup cannot install and stay outside
  * this list.
  *

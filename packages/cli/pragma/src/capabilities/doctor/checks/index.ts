@@ -6,7 +6,7 @@
  * them apart from the report body is what lets `runChecks` stay a composition
  * — it orders and awaits, and knows nothing about what any check looks at.
  *
- * Two kinds live here, and the barrel exposes them differently. The UNBANDED
+ * Two kinds live here, and the barrel exposes them differently. The UNSCOPED
  * checks diagnose what `setup` cannot install — the Node floor, the CLI's own
  * version and install source, the pack answering this project's reads, and the
  * store — so each is its own named entry point. The SCOPED rows are derived

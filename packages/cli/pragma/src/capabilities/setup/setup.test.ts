@@ -464,9 +464,9 @@ describe("setup mcp — scope & dedup", () => {
     expect(
       JSON.parse(readFileSync(configPath, "utf-8")).mcpServers.pragma,
     ).toEqual({ command: "pragma", args: ["mcp", "serve"] });
-    // ...and it stays `configured` afterwards (no churn on every run).
+    // ...and it stays `registered` afterwards (no churn on every run).
     const after = await detectMcp(bootRuntime(FLAGS, cwd), "global");
-    expect(mcpGroupState(after, configPath)).toBe("configured");
+    expect(mcpGroupState(after, configPath)).toBe("registered");
   });
 
   it("a PROJECT entry still records the project root as cwd", async () => {

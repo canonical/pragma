@@ -5,7 +5,7 @@
  * Every fact this needs was ALREADY COMPUTED and thrown away.
  * `TargetGroup.harnessNames` carries every harness sharing a config file and
  * both consumers reduced it to `shortenPath(group.path)`; `McpDetection`
- * carries the `absent`/`configured`/`drifted` classification of every WRITE in
+ * carries the `absent`/`registered`/`drifted` classification of every WRITE in
  * that file. The only thing detection could NOT answer is the negative —
  * `detectHarnesses` filters to hits, so a harness the machine does not have was
  * unrepresentable — which is why the roll-up takes the REGISTRY alongside the
@@ -51,11 +51,15 @@ import type { CheckItem, CheckStatus, Scope } from "../types.js";
 /**
  * What the inventory says about one harness in one scope.
  *
- * The vocabulary is deliberately NOT "installed". The codebase carries two
- * different things under that word — `DetectedHarness.configExists` ("the
- * harness's own config file exists") and `McpTargetState.configured` ("pragma
- * is registered in it") — and they are not the same claim. Every state here
- * names the PRAGMA-ENTRY meaning, and `configExists` is never surfaced.
+ * The vocabulary is deliberately NOT "installed". Two different claims used
+ * to share that word — `DetectedHarness.configExists` ("the harness's own
+ * config file exists", a harnesses-package field this module never surfaces)
+ * and the pragma-entry state (`McpTargetState`, which now says `registered`
+ * for exactly this reason). Every state here names the PRAGMA-ENTRY meaning.
+ * One name per claim, held across the reports: "installed" is reserved for
+ * artifacts the CLI itself places (the completion script, the LSP extension),
+ * "registered" for pragma's entry in someone else's config, "linked" for
+ * skill symlinks.
  *
  * - `registered` — detected, and pragma's MCP entry in this scope is current.
  * - `drifted` — detected, and a pragma entry exists but differs from what a
@@ -94,7 +98,7 @@ export interface InventoryHarness {
 }
 
 /** The prior state of one harness's own write, as detection classified it. */
-export type WriteState = "absent" | "configured" | "drifted";
+export type WriteState = "absent" | "registered" | "drifted";
 
 /** One harness's share of a config file: the state of the write IT owns. */
 export interface InventoryMember {
@@ -169,7 +173,7 @@ export function harnessInventory(
         ? harness.inScope
           ? "undetected"
           : "unscoped"
-        : detected === "configured"
+        : detected === "registered"
           ? "registered"
           : detected === "drifted"
             ? "drifted"
