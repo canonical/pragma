@@ -13,9 +13,7 @@
  * build matrix already cover. Do NOT copy `scripts/check-workspace-ranges.ts`
  * here as a precedent for a root script + dedicated pr.yml job: that guard is
  * a genuine repo-wide invariant over every workspace sibling, which is what
- * earns shared CI infrastructure. Release mode runs from
- * `.github/actions/lerna-version/action.yml`, beside `check:ranges`, where a
- * red bar still stops the tag for free.
+ * earns shared CI infrastructure.
  *
  * Why this exists
  * ---------------
@@ -60,19 +58,29 @@
  * bundler is committed to (`embedSources.ts`) — git for a git source, npm for
  * an overridden one, self for the repository's own pack.
  *
- * The no-token release
- * --------------------
- * Without a pack-source token the refresh skips, freshness fails, and the pin
- * cannot be resolved — so the release STOPS, which reverses #1042's default.
- * The escape hatch is explicit and visible, not silent: dispatching the
- * release with `accept_committed_snapshot: true` waives freshness and
- * unverifiability (both are then reported, loudly, in the job summary), but
- * NEVER a coverage violation or a pin mismatch the gate managed to prove — a
- * human may accept "possibly stale", no one may accept "provably wrong".
+ * Release mode — a tested capability, deliberately NOT wired into the release
+ * ---------------------------------------------------------------------------
+ * `--release-version <v>` adds the freshness predicate above and makes an
+ * unresolvable pin fatal; `--accept-committed-snapshot` waives freshness and
+ * unverifiability — NEVER a coverage violation or a pin mismatch the gate
+ * managed to prove: a human may accept "possibly stale", no one may accept
+ * "provably wrong". Nothing in CI passes these flags: wiring this into the
+ * release pipeline (`.github/actions/lerna-version`, where the pack refresh
+ * runs) was considered and deliberately left out — CI workflow changes are
+ * global infrastructure with their own bar (see AGENTS.md). What that leaves
+ * OPEN, stated plainly: `refresh-pack.sh` still skips loudly without a token,
+ * and a release can still ship a snapshot that does not match its declared
+ * sources with no bar turning red. Until that wiring exists, the release-mode
+ * flags are the MANUAL check: run
+ * `bun run check:packs --release-version <v>` before cutting a release. The
+ * mode stays (rather than being stripped) because its semantics — the
+ * tag/branch asymmetry, the waiver rules — are pinned by this script's bun
+ * suite, so the future wiring is a one-step action change instead of a
+ * re-derivation.
  *
  * Usage:
- *   bun run check:packs                          # local / PR mode
- *   bun run check:packs --release-version 0.37.0 # release gate
+ *   bun run check:packs                          # local mode (runs in `check`)
+ *   bun run check:packs --release-version 0.37.0 # release mode (manual today)
  *   bun run check:packs --release-version 0.37.0 --accept-committed-snapshot
  *
  * Exit codes: 0 = parity holds (as strongly as each declared ref allows),
@@ -457,8 +465,8 @@ export function findParity(input: ParityInput): Finding[] {
           `was built for v${input.manifest.version}, not the v${input.releaseVersion} being released — ` +
           "this release would ship a snapshot inherited from an earlier tag" +
           (input.acceptCommittedSnapshot === true
-            ? " (ACCEPTED by explicit accept_committed_snapshot dispatch input)"
-            : "; supply a pack-source token so the refresh runs, or dispatch with accept_committed_snapshot: true to ship it anyway"),
+            ? " (ACCEPTED by explicit --accept-committed-snapshot)"
+            : "; rebuild it (`bun run bundle`) so the release carries its own snapshot, or pass --accept-committed-snapshot to ship it anyway"),
       });
     }
   }
@@ -470,15 +478,6 @@ export function findParity(input: ParityInput): Finding[] {
 // Live resolution
 // -------------------------------------------------------------------
 
-/**
- * Resolve a declared ref with one `git ls-remote` call, classifying it as a
- * tag (peeled to the commit the bundler would have checked out) or a branch.
- *
- * `GIT_TERMINAL_PROMPT=0` so a private remote fails fast instead of hanging a
- * CI job on a credential prompt; authentication itself is whatever the
- * environment provides (the release job routes it through the same
- * `insteadOf` token config the refresh step installs).
- */
 /** Classify one `git ls-remote` output for `ref` (pure — testable offline). */
 export function classifyLsRemote(output: string, ref: string): RefResolution {
   const rows = new Map(
@@ -506,9 +505,9 @@ export function classifyLsRemote(output: string, ref: string): RefResolution {
  *
  * `GIT_TERMINAL_PROMPT=0` so a private remote fails fast instead of hanging a
  * CI job (or a contributor's offline `check`) on a credential prompt;
- * authentication itself is whatever the environment provides (the release job
- * routes it through the same `insteadOf` token config the refresh step
- * installs). A fully offline machine fails DNS in milliseconds and every pack
+ * authentication itself is whatever the environment provides — a developer's
+ * credential helper, or whatever token config a future release wiring
+ * installs. A fully offline machine fails DNS in milliseconds and every pack
  * degrades to the reported-not-fatal `pin-unverifiable` local-mode finding.
  */
 export async function resolveRefsInParallel(

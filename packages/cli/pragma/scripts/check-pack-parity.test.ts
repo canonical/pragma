@@ -154,7 +154,7 @@ describe("floating sources", () => {
 });
 
 describe("the explicit waiver", () => {
-  test("accept_committed_snapshot waives freshness and unverifiability", () => {
+  test("--accept-committed-snapshot waives freshness and unverifiability", () => {
     const findings = findParity({
       declared: DECLARED,
       manifest: { version: "0.36.0", sourceRef: sourceRef(TAG_SHA, "0.36.0") },

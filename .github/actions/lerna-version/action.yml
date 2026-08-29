@@ -10,21 +10,11 @@ inputs:
     default: "v"
   packs_token:
     description: >-
-      Token with read access to the declared pack repositories, used to refresh
-      the CLI's embedded pack and to verify it against its declared sources.
-      Optional: without it the refresh is skipped — but the parity gate below
-      then FAILS the release unless accept_committed_snapshot is set, because a
-      skipped refresh is how v0.36.0 shipped a snapshot two releases stale.
+      Token with read access to the declared pack repositories, used only to
+      refresh the CLI's embedded pack. Optional: without it the refresh is
+      skipped and the release ships the committed snapshot.
     required: false
     default: ""
-  accept_committed_snapshot:
-    description: >-
-      Explicit, human-dispatched declaration that this release ships the
-      committed embedded pack WITHOUT refreshing or verifying it against its
-      sources. Waives the parity gate's freshness and unverifiability findings
-      (both still reported in the job summary) — never a proven pin mismatch.
-    required: false
-    default: "false"
 outputs:
   VERSION:
     description: "The new latest version number across all packages"
@@ -87,32 +77,6 @@ runs:
     - name: Refresh the CLI embedded pack
       shell: bash
       run: ${{ github.action_path }}/refresh-pack.sh "${{ inputs.packs_token }}"
-
-      # The refresh above is best-effort; this is the gate that makes a skipped
-      # or failed refresh VISIBLE AND BLOCKING instead of a job-summary note.
-      # It runs after the refresh (so it judges the tree that will be
-      # committed) and before commit/tag, where a red bar still costs nothing.
-      #
-      # What it enforces: the embedded snapshot's recorded provenance must
-      # match the sources pragma.conf.ts declares — full commit equality for a
-      # source pinned to a tag/SHA, and release freshness (the snapshot was
-      # rebuilt by THIS release, manifest version == the new version) for
-      # sources floating on a branch, where equality against a moving ref is
-      # not a stable predicate. v0.36.0 shipped a snapshot built for v0.34.0
-      # from a code-standards commit its own config pin no longer resolved to,
-      # and nothing turned red; this step is what turns red.
-      #
-      # ls-remote authenticates through the same insteadOf token config the
-      # refresh step installs, so a release with a token verifies the pin
-      # upstream; one without a token fails here unless the dispatching human
-      # explicitly set accept_committed_snapshot — a visible waiver, and one
-      # that never covers a mismatch the gate managed to prove.
-    - name: Verify the embedded pack matches its declared sources
-      shell: bash
-      working-directory: packages/cli/pragma
-      run: >-
-        bun run check:packs --release-version ${{ steps.lerna_version.outputs.VERSION }}
-        ${{ inputs.accept_committed_snapshot == 'true' && '--accept-committed-snapshot' || '' }}
 
       # LAST GATE BEFORE THE BUMP BECOMES PERMANENT. Everything above has
       # rewritten versions and ranges in the working tree; nothing has been
