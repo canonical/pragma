@@ -26,7 +26,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
 import { execute } from "@canonical/summon-core";
 import { collectUndos, dryRun, type Effect, type Task } from "@canonical/task";
 import { runTask, runUndo } from "@canonical/task/node";
@@ -48,6 +48,8 @@ import {
   composeSkillsRemoval,
   detectSkills,
   ownedSkillLinks,
+  skillsSkipReason,
+  skillsSkipRemedy,
 } from "./operations/setupSkills.js";
 import { DRY_RUN_HINT, PREVIEW_HINT } from "./setup.render.js";
 import { setupModule } from "./setup.verb.js";
@@ -883,8 +885,15 @@ describe("setup (run-all wizard) — scope threading", () => {
       // prefix repeated on every line.
       expect(plan).toMatch(new RegExp(`completions\\s+install\\s+${SHELL} →`));
       expect(plan).toContain("lsp");
-      // The project-band skills step is gone (the bug: it used to run under --global).
-      expect(plan).not.toContain(".agents/skills");
+      // The project-band skills step is gone (the bug: it used to run under
+      // --global). `shortenPath` renders a project path as `./…` and a global
+      // one as `~/…`, and the two bands' cross-client directories differ only
+      // by that marker — so the covenant is asserted on the PROJECT spelling.
+      // A bare "not .agents/skills" no longer separates them: the global band
+      // legitimately links its own `~/.agents/skills` now that the bundled
+      // snapshot gives it skills on a machine that has run nothing.
+      expect(plan).not.toContain(`.${sep}.agents${sep}skills`);
+      expect(plan).toContain(`~${sep}.agents${sep}skills`);
     },
   );
 });
@@ -942,10 +951,14 @@ describe("setup skills", () => {
     expect(row?.reason).toContain("does not exist");
   });
 
-  it("the GLOBAL skip names `sources update`, the command that fills its root", async () => {
-    // Skills ship in the configured packages, not in this CLI, and the global
-    // band's source root is written only by `sources update`. Saying "no skills
-    // installed" and stopping there left the user with no next step at all.
+  it("the GLOBAL band OFFERS skills on a machine that has run nothing", async () => {
+    // THE BEHAVIOUR CHANGE, asserted at the band that used to be empty. The
+    // global band's only source was the installed root, so an empty
+    // `XDG_DATA_HOME` — a fresh install — planned `skip` and told the user to
+    // go and run `sources update` first. The bundled snapshot is the band's
+    // second root, so the row is actionable with no network and no prior
+    // command. The empty-root WORDING this replaces is still asserted, on the
+    // pure reason/remedy pair, in the cell below.
     const prevData = process.env.XDG_DATA_HOME;
     process.env.XDG_DATA_HOME = tmp("pragma-skills-data-");
     try {
@@ -955,17 +968,11 @@ describe("setup skills", () => {
         "global",
       );
       const row = plan.rows.find((r) => r.target === "skills");
-      expect(row?.action).toBe("skip");
-      expect(row?.reason).toBe(
-        "nothing to link — no skills installed yet; they arrive with the packs `pragma sources update` builds",
-      );
+      expect(row?.action).toBe("link");
+      expect(row?.detail).toMatch(/\d+ skills? →/);
 
-      // BOTH assertions belong inside the jail. The end-to-end invocation is
-      // asserting the SAME empty-global-root condition, so it has to read the
-      // empty root this test established — restoring `XDG_DATA_HOME` first
-      // handed it back to whatever the ambient environment points at, and an
-      // ambient root that happens to hold a skill stops exercising the skip.
-      // A skip stays exit 0 — and the recap carries the remedy beneath the row.
+      // End to end, inside the same jail (an ambient data root that happened to
+      // hold a skill would stop this exercising the fresh-machine condition).
       const outcome = await executeVerb(
         verbOf("skills"),
         {},
@@ -973,8 +980,7 @@ describe("setup skills", () => {
         bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
       );
       expect(outcome.exitCode).toBe(0);
-      expect(outcome.stdout).toContain("no skills installed yet");
-      expect(outcome.stdout).toContain(`${BIN_NAME} sources update`);
+      expect(outcome.stdout).not.toContain("no skills installed");
     } finally {
       // `process.env.X = undefined` STORES THE STRING "undefined"; it does not
       // unset. The variable is always set here (`setupXdgIsolation.ts` gives
@@ -984,6 +990,24 @@ describe("setup skills", () => {
       if (prevData === undefined) delete process.env.XDG_DATA_HOME;
       else process.env.XDG_DATA_HOME = prevData;
     }
+  });
+
+  it("the GLOBAL skip still names `sources update` when it does happen", async () => {
+    // The remedy the cell above used to assert end-to-end. That state is no
+    // longer reachable with a snapshot in the package — it takes a build whose
+    // `bundled-skills/` is missing AND an empty installed root — so it is
+    // asserted where it actually lives: on the pure pair that both the setup row
+    // and the doctor row read, which is what stops the two surfaces wording one
+    // finding differently. A skip with no next step is the defect.
+    expect(
+      skillsSkipReason("~/.local/share/pragma/skills", "global", true),
+    ).toBe(
+      "nothing to link — no skills installed yet; they arrive with the packs " +
+        `\`${BIN_NAME} sources update\` builds`,
+    );
+    expect(
+      skillsSkipRemedy("~/.local/share/pragma/skills", "global"),
+    ).toContain(`${BIN_NAME} sources update`);
   });
 
   it("detects a created action and composes a symlink carrying an undo", async () => {
@@ -1007,6 +1031,77 @@ describe("setup skills", () => {
     expect(symlinkEffect).toBeDefined();
     expect(symlinkEffect?.undo).toBeDefined();
     expect(existsSync(join(cwd, ".agents", "skills", "my-skill"))).toBe(false);
+  });
+
+  it("NEVER deletes a user's own symlink that collides with a shipped skill (REGRESSION)", async () => {
+    // Bundled skills ship on every install, so a folder-name collision with a
+    // user's own link is reachable with NO user action — where previously an
+    // empty skill set meant no action was ever composed for that path.
+    // `composeSkills` composes every non-skipped row, so classifying a
+    // resolving foreign link as `replaced` deletes the user's link.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = join(cwd, ".pragma", "skills", "my-skill");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: my-skill\ndescription: A test skill.\n---\n",
+    );
+
+    // Somewhere entirely outside every pragma root, and it RESOLVES.
+    const mine = join(cwd, "my-own-work", "my-skill");
+    mkdirSync(mine, { recursive: true });
+    writeFileSync(join(mine, "SKILL.md"), "---\nname: mine\n---\n");
+
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    const linkPath = join(linkDir, "my-skill");
+    symlinkSync(mine, linkPath);
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    const action = detected.actions.find((a) => a.linkPath === linkPath);
+    expect(action?.action).toBe("skipped");
+    expect(action?.owned).toBe(false);
+
+    // Neither the preview nor the real run may touch it.
+    const { effects } = dryRun(composeSkills(detected));
+    expect(
+      effects.filter(
+        (e) =>
+          e._tag === "DeleteFile" && (e as { path?: string }).path === linkPath,
+      ),
+    ).toHaveLength(0);
+
+    await runTask(composeSkills(detected));
+    expect(readlinkSync(linkPath)).toBe(mine);
+    expect(existsSync(join(linkPath, "SKILL.md"))).toBe(true);
+  });
+
+  it("sweeps a link into a REMOVED package directory once its skill is gone (REGRESSION)", async () => {
+    // The upgrade shape under a version-stamped layout (pnpm, npx, volta): the
+    // link points into `…@0.34.0/bundled-skills/<name>`, a directory the
+    // upgrade replaced. Ownership by residence in a CURRENT root cannot see it,
+    // and once the release drops that skill no per-skill action covers the path
+    // either — so the dangling link would survive every reconcile, invisible to
+    // setup and to doctor alike.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = join(cwd, ".pragma", "skills", "still-here");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: still-here\ndescription: A test skill.\n---\n",
+    );
+
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    // Never created: this is the point — the old package directory is gone.
+    const retired = join(cwd, "pragma-cli@0.34.0", "bundled-skills", "retired");
+    const linkPath = join(linkDir, "retired");
+    symlinkSync(retired, linkPath);
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    const orphan = detected.orphans.find((o) => o.linkPath === linkPath);
+    expect(orphan).toBeDefined();
+    expect(orphan?.owned).toBe(true);
   });
 
   it("classifies a DANGLING symlink as replaced and repairs it (S1-2)", async () => {
@@ -1825,11 +1920,17 @@ describe("setup (run-all wizard)", () => {
   });
 
   it("omits skills gracefully when none are discovered (no mid-wizard EMPTY_RESULTS)", async () => {
-    // A run-all in a project with no skills must NOT throw — it just doesn't
-    // offer the skills step. Reaching a clean plan proves the graceful degrade.
+    // A run-all in a band with no skills must NOT throw — it just doesn't offer
+    // the skills step. Reaching a clean plan proves the graceful degrade.
+    //
+    // POINTED AT THE PROJECT BAND, which is where an empty skills root is still
+    // an ordinary condition: the global band now always has the bundled
+    // snapshot behind it, so a run-all there can no longer produce the empty
+    // row this cell exists to survive. The condition is the same one; only the
+    // band that can still reach it has changed.
     const outcome = await executeVerb(
       setupSelfVerb,
-      {},
+      { local: true },
       DRY,
       bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
     );
@@ -1837,8 +1938,31 @@ describe("setup (run-all wizard)", () => {
     // The skills row is PRESENT and says why it cannot act, rather than being
     // dropped from a plan that then claims completeness.
     expect(outcome.stdout).toContain("skills");
-    expect(outcome.stdout).toContain("no skills installed");
+    expect(outcome.stdout).toContain("this project holds no skills");
     expect(outcome.stdout).toContain("lsp");
+  });
+
+  it("the GLOBAL run-all offers the skills row on a fresh machine", async () => {
+    // The other side of the same graceful-degrade question, and the one a fresh
+    // install actually meets: a bare run-all is the global band, whose skills
+    // row is now offerable from the bundled snapshot rather than skipped with a
+    // remedy the user has to go away and run.
+    const prevData = process.env.XDG_DATA_HOME;
+    process.env.XDG_DATA_HOME = tmp("pragma-runall-data-");
+    try {
+      const outcome = await executeVerb(
+        setupSelfVerb,
+        {},
+        DRY,
+        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      );
+      expect(outcome.exitCode).toBe(0);
+      expect(outcome.stdout).toContain("skills");
+      expect(outcome.stdout).not.toContain("no skills installed");
+    } finally {
+      if (prevData === undefined) delete process.env.XDG_DATA_HOME;
+      else process.env.XDG_DATA_HOME = prevData;
+    }
   });
 });
 

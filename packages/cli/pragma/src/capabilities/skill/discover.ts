@@ -4,15 +4,17 @@
  * A skill is a folder with a `SKILL.md` carrying YAML frontmatter (`name`,
  * `description`, and the #856 `prompt` flag among others). Skills are discovered
  * from conventional roots — project skills under `<cwd>/.pragma/skills`, which
- * take precedence, then installed skills under `$XDG_DATA_HOME/pragma/skills` —
- * with missing files and invalid frontmatter skipped gracefully. Reads only the
+ * take precedence, then installed skills under `$XDG_DATA_HOME/pragma/skills`,
+ * then the BUNDLED snapshot this package ships (`bundled-skills/`) — with
+ * missing files and invalid frontmatter skipped gracefully. Reads only the
  * filesystem, never the graph store, so `skill list`/`lookup` are storeless
  * (needsStore: false).
  */
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { BIN_NAME } from "../../constants.js";
 
 /** Parsed SKILL.md frontmatter. */
@@ -134,14 +136,101 @@ export function projectSkillsDir(cwd: string): string {
 }
 
 /**
+ * The directory name of the SNAPSHOT of pack skills this package ships, at its
+ * own root. Written by `scripts/bundle.ts` and COMMITTED, exactly as
+ * `src/kernel/runtime/graphpack/embedded/pack.generated.ts` is — see
+ * {@link bundledSkillsDir}.
+ */
+const BUNDLED_SKILLS_DIRNAME = "bundled-skills";
+
+/**
+ * How far above this module the package root can be. `src/capabilities/skill`
+ * is three levels up; the emitted `dist/src/capabilities/skill` is four. The
+ * bound exists so a tree that is MISSING the artifact stops at the package
+ * instead of walking to `/` and adopting an unrelated directory.
+ */
+const BUNDLED_SEARCH_DEPTH = 6;
+
+/**
+ * The BUNDLED-skills root: `<package root>/bundled-skills`, the snapshot of the
+ * declared packs' `skills/<name>/` that `scripts/bundle.ts` commits alongside
+ * the embedded graph — `undefined` when this build ships none.
+ *
+ * WHY IT EXISTS. The embedded pack (`pack.generated.ts`) is what lets a fresh
+ * install answer `block lookup` offline. The skills came out of the very same
+ * `resolvePackage` calls and were left on the build machine's disk, so the same
+ * fresh install listed ZERO skills and told the user to run `sources update`
+ * first — a network round trip and two commands for something already resolved
+ * at release time. This is the skills half of the snapshot the graph has had
+ * all along.
+ *
+ * WHY IT IS FOUND BY WALKING UP rather than by a fixed relative path. `files`
+ * ships BOTH `src` and `dist`, and `tsconfig.build.json` sets `rootDir: "."`,
+ * so this module runs from `src/capabilities/skill/` in a source or test run
+ * and from `dist/src/capabilities/skill/` in the shipped one — the package root
+ * is three levels up in one and four in the other, and no single
+ * `new URL("../../..")` is right for both. The walk anchors on the artifact's
+ * own name sitting NEXT TO a `package.json`, which is true only at the package
+ * root: `dist/` carries a `package.json` too (`resolveJsonModule` copies it)
+ * but never the snapshot.
+ *
+ * @returns The bundled root, or `undefined` when no ancestor holds one.
+ * @note Impure — stats up to {@link BUNDLED_SEARCH_DEPTH} ancestor directories.
+ *   Reached from the `__complete` fast path, so it stays `node:fs` /
+ *   `node:path` / `node:url` only and costs a handful of `stat`s.
+ */
+export function bundledSkillsDir(): string | undefined {
+  let dir = dirname(fileURLToPath(import.meta.url));
+  for (let up = 0; up < BUNDLED_SEARCH_DEPTH; up += 1) {
+    const candidate = join(dir, BUNDLED_SKILLS_DIRNAME);
+    if (existsSync(join(dir, "package.json")) && existsSync(candidate)) {
+      return candidate;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return undefined;
+}
+
+/**
  * The conventional roots skills are discovered from, in PRECEDENCE order: the
  * project root (`<cwd>/.<bin>/skills`) FIRST so a project-local skill overrides
  * an installed skill of the same name (`discoverSkills` dedups first-seen-wins),
  * then installed skills under `$XDG_DATA_HOME/<bin>/skills` (where package
- * skills land on `sources update`).
+ * skills land on `sources update`), then the BUNDLED snapshot
+ * ({@link bundledSkillsDir}).
+ *
+ * BUNDLED IS LAST, and that order is the whole contract. The snapshot is as old
+ * as the release; an installed skill came from a `sources update` the user ran
+ * deliberately, and a project skill is the repository's own. So someone who
+ * updates gets the CURRENT skill and never the shipped copy, while a fresh
+ * install — which has neither of the first two roots — still gets the packs'
+ * skills instead of an empty list and a two-command recovery.
  */
 export function skillRoots(cwd: string): string[] {
-  return [projectSkillsDir(cwd), installedSkillsDir()];
+  return [projectSkillsDir(cwd), ...globalSkillRoots()];
+}
+
+/**
+ * The GLOBAL band's source roots, in precedence order: the INSTALLED root
+ * (`sources update`'s output) first, then the BUNDLED snapshot.
+ *
+ * Named separately from {@link skillRoots} for the reason
+ * {@link projectSkillsDir} is: these are the two roots `setup skills --global`
+ * links into the user-level harness directories, and `skillRoots` is discovery,
+ * which spans both bands. Reading the project root for the global band is
+ * exactly the cross-band leak the band split exists to prevent.
+ *
+ * A BAND CAN HOLD MORE THAN ONE ROOT, and this is where that became true. The
+ * global band's ownership test and its stale-link sweep therefore range over
+ * the SET (see `setup/operations/setupSkills.ts`), never over one path.
+ */
+export function globalSkillRoots(): string[] {
+  const bundled = bundledSkillsDir();
+  return bundled === undefined
+    ? [installedSkillsDir()]
+    : [installedSkillsDir(), bundled];
 }
 
 /** Immediate subdirectories of `root` (each a candidate skill folder). */

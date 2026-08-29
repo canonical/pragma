@@ -39,7 +39,7 @@ import type { ResolvedPackage } from "../../kernel/runtime/refs/index.js";
 // this module must not be able to disagree about which links belong to pragma.
 // `setupSkills.ts` reaches `@canonical/harnesses` only through a DYNAMIC
 // import, so this edge adds no static one (`capabilities/lazy.test.ts`).
-import { withinRoot } from "../setup/operations/setupSkills.js";
+import { withinAnyRoot } from "../setup/operations/setupSkills.js";
 import { installedSkillsDir } from "../skill/discover.js";
 
 /** One planned skill symlink into the installed-skills root. */
@@ -264,32 +264,58 @@ export interface BandLinkAction {
  *    that materialised `~/.claude/skills` would be litter, and would silently
  *    opt the user into linking they never asked for.
  * 2. OWNERSHIP, by the SAME test `setup skills` uses. A path is this command's
- *    to touch only when it holds a symlink resolving INSIDE the installed root
- *    (`withinRoot`, a pure path-SEGMENT test that reads nothing — so it still
- *    answers correctly after the layer-1 target is gone, which is exactly the
- *    stale case). A real directory is a hand-installed skill; a symlink
- *    pointing anywhere else is the user's own; a `<root>-backup/foo` sibling is
- *    not "inside" despite sharing a string prefix. None is ever removed.
+ *    to touch only when it holds a symlink resolving INSIDE one of the global
+ *    band's roots (`withinAnyRoot`, a pure path-SEGMENT test that reads nothing
+ *    — so it still answers correctly after the layer-1 target is gone, which is
+ *    exactly the stale case). A real directory is a hand-installed skill; a
+ *    symlink pointing anywhere else is the user's own; a `<root>-backup/foo`
+ *    sibling is not "inside" despite sharing a string prefix. None is removed.
+ *
+ *    THE SET, NOT JUST THE INSTALLED ROOT, and that is what keeps precedence
+ *    true one layer up. A harness link left pointing at the BUNDLED snapshot
+ *    for a skill this update has just installed for real is owned, so it is
+ *    `replaced` onto the installed copy. Tested against the installed root
+ *    alone it read as "someone else's link" and was skipped — and the user who
+ *    deliberately ran `sources update` would have kept running the shipped copy.
  *
  * The plan is derived from the layer-1 plan rather than from a filesystem
  * re-read, because at planning time the layer-1 writes have not happened yet:
  * `surviving` is the post-update truth, and reading the disk would see the
- * pre-update state.
+ * pre-update state. That is also why a surviving name always targets
+ * `roots[0]`: layer 1 is about to hold it, whether or not it does now.
+ *
+ * A RETIRED NAME IS NOT AUTOMATICALLY DEBRIS any more. The fallback roots
+ * (today: the bundled snapshot) are NOT written by this update, so their
+ * contents ARE readable at plan time — and a skill the packages dropped that
+ * the shipped snapshot still carries is still discoverable, still listed by
+ * `skill list`, and so still belongs in the harness directory. Such a link is
+ * RETARGETED onto the surviving root rather than pruned; only a name no root
+ * provides at all is deleted.
  *
  * @param dirs - The EXISTING global link directories.
- * @param dest - The installed-skills root (layer 1), which is also the
- *   ownership root every candidate link is tested against.
+ * @param roots - The global band's source roots in PRECEDENCE order.
+ *   `roots[0]` is the installed root (layer 1) every surviving name targets;
+ *   the rest are fallbacks a retired name may still resolve in. The whole set
+ *   is the ownership set.
  * @param surviving - Folder names layer 1 will hold after this update.
  * @param retired - Folder names layer 1 is pruning in this update.
  * @returns The layer-2 actions, for the plan and its effects.
- * @note Impure — lstats each candidate link path.
+ * @note Impure — lstats each candidate link path, and stats the fallback roots
+ *   for each retired name.
  */
 export function planBandSkillLinks(
   dirs: readonly { dir: string; name: string }[],
-  dest: string,
+  roots: readonly string[],
   surviving: readonly string[],
   retired: readonly string[],
 ): BandLinkAction[] {
+  const dest = resolve(roots[0] as string);
+  /** The first FALLBACK root that still holds `folderName`, if any. */
+  const fallback = (folderName: string): string | undefined =>
+    roots
+      .slice(1)
+      .map((root) => resolve(root, folderName))
+      .find((candidate) => existsSync(candidate));
   const out: BandLinkAction[] = [];
   for (const { dir, name } of dirs) {
     for (const folderName of surviving) {
@@ -308,9 +334,9 @@ export function planBandSkillLinks(
         continue;
       }
       if (resolve(dir, state.target) === target) continue; // Already correct.
-      // A symlink pointing outside the installed root is the user's own link
-      // into their own checkout. Unplanned does not make it ours to replace.
-      if (!withinRoot(dest, linkPath, state.target)) continue;
+      // A symlink pointing outside every band root is the user's own link into
+      // their own checkout. Unplanned does not make it ours to replace.
+      if (!withinAnyRoot(roots, linkPath, state.target)) continue;
       out.push({
         target,
         linkPath,
@@ -324,7 +350,22 @@ export function planBandSkillLinks(
       const linkPath = resolve(dir, folderName);
       const state = linkState(linkPath);
       if (state.kind !== "symlink") continue;
-      if (!withinRoot(dest, linkPath, state.target)) continue;
+      if (!withinAnyRoot(roots, linkPath, state.target)) continue;
+      const surviving = fallback(folderName);
+      if (surviving !== undefined) {
+        // Dropped upstream, still shipped: retarget rather than delete. Already
+        // correct is nothing to do.
+        if (resolve(dir, state.target) === surviving) continue;
+        out.push({
+          target: surviving,
+          linkPath,
+          action: "replaced",
+          folderName,
+          dirName: name,
+          previousTarget: state.target,
+        });
+        continue;
+      }
       out.push({
         target: resolve(dir, state.target),
         linkPath,

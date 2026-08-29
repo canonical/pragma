@@ -15,7 +15,11 @@ import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import { TEST_FLAGS } from "../../testing/helpers/projectCli.js";
-import type { DiscoveredSkill } from "./discover.js";
+import {
+  bundledSkillsDir,
+  type DiscoveredSkill,
+  discoverSkillsFrom,
+} from "./discover.js";
 import { skillModule } from "./index.js";
 import { skillListFormatters } from "./render.js";
 import type { SkillLookup } from "./verbs.js";
@@ -60,7 +64,16 @@ afterAll(() => {
 describe("skill list (storeless)", () => {
   it("discovers skills by name, carrying the prompt flag", async () => {
     const skills = (await listVerb.run({}, rt)) as DiscoveredSkill[];
-    expect(skills.map((s) => s.name)).toEqual(["docx", "pdf"]);
+    // The list is the project root's two skills UNION the bundled snapshot the
+    // package ships (`bundledSkills.test.ts` owns the snapshot's own cells).
+    // Derived from the shipped artifact rather than spelled out, so a release
+    // that changes which skills the packs provide does not rewrite this test.
+    const bundled = discoverSkillsFrom([bundledSkillsDir() as string]).map(
+      (s) => s.name,
+    );
+    expect(skills.map((s) => s.name)).toEqual(
+      [...new Set(["docx", "pdf", ...bundled])].sort(),
+    );
     expect(skills.find((s) => s.name === "pdf")?.frontmatter.prompt).toBe(true);
     expect(
       skills.find((s) => s.name === "docx")?.frontmatter.prompt,
