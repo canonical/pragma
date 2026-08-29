@@ -356,9 +356,14 @@ export const ownedMcpGroups = (d: McpDetection): readonly TargetGroup[] =>
  * same file is never touched.
  *
  * @param d - The detection gathered up front.
+ * @param undoKey - Correlation key stamped on the reversal(s), echoed on
+ *   their undo outcomes so the caller can read results back per row.
  * @returns A Task whose undo removes the pragma entry from each owned file.
  */
-export function composeMcpRemoval(d: McpDetection): Task<void> {
+export function composeMcpRemoval(
+  d: McpDetection,
+  undoKey?: string,
+): Task<void> {
   return sequence_(
     ownedMcpGroups(d).map((group) =>
       mkdir(dirname(group.path), true, {
@@ -367,6 +372,7 @@ export function composeMcpRemoval(d: McpDetection): Task<void> {
             d.removeMcpConfigFrom(write, MCP_SERVER_NAME),
           ),
         ),
+        undoKey,
       }),
     ),
   );

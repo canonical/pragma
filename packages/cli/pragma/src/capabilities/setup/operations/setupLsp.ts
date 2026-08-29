@@ -36,13 +36,21 @@ import type { EditorCliDefinition, PlatformEnv } from "@canonical/harnesses";
 import {
   type ExecResult,
   exec,
+  exists,
   flatMap,
   mkdir,
+  pure,
+  sequence,
   sequence_,
   type Task,
 } from "@canonical/task";
 import { BIN_NAME } from "../../../constants.js";
-import { checkExecOk, guardMissingBinary } from "../../shared/index.js";
+import { PragmaError } from "../../../kernel/error/index.js";
+import {
+  checkExecOk,
+  failPragma,
+  guardMissingBinary,
+} from "../../shared/index.js";
 import type { LspState } from "../types.js";
 
 /** The full extension id, as the editor's extensions dir spells it. */
@@ -76,6 +84,15 @@ export interface DetectedEditor {
    * {@link composeLspRemoval}); when `present` is true, this is that path.
    */
   readonly extensionsDir: string;
+  /**
+   * The matching entry NAMES under {@link extensionsDir} — the artifacts
+   * `present` is true about. The removal's postcondition probes exactly
+   * these after the uninstall (see {@link composeLspRemoval}): the editor
+   * CLI's exit code and the directory listing are DIFFERENT success
+   * criteria, and only the directory is the one detection (and doctor)
+   * believe.
+   */
+  readonly presentEntries: readonly string[];
 }
 
 /**
@@ -187,12 +204,13 @@ const compareVersions = (left: number[], right: number[]): number => {
 const extensionState = (
   editor: EditorCliDefinition,
   platform: PlatformEnv,
-): { present: boolean; current: boolean } => {
+): { present: boolean; current: boolean; entries: string[] } => {
   let entries: string[];
   try {
     entries = readdirSync(editor.extensionsDir(platform));
   } catch {
-    return { present: false, current: false }; // No dir — nothing installed.
+    // No dir — nothing installed.
+    return { present: false, current: false, entries: [] };
   }
   const prefix = `${EXTENSION_ID}-`;
   const matching = entries.filter((entry) =>
@@ -203,7 +221,7 @@ const extensionState = (
     if (version === undefined) return false; // Unreadable: cannot vouch for it.
     return compareVersions(version, MINIMUM) >= 0;
   });
-  return { present: matching.length > 0, current };
+  return { present: matching.length > 0, current, entries: matching };
 };
 
 /**
@@ -221,12 +239,13 @@ export async function detectLsp(_cwd: string): Promise<LspDetection> {
   const editors: DetectedEditor[] = editorClis
     .filter((editor) => cliOnPath(executableCandidates(editor.cli, platform)))
     .map((editor) => {
-      const { present, current } = extensionState(editor, platform);
+      const { present, current, entries } = extensionState(editor, platform);
       return {
         editor,
         present,
         installed: current,
         extensionsDir: editor.extensionsDir(platform),
+        presentEntries: entries,
       };
     });
   const state: LspState =
@@ -377,7 +396,8 @@ export const ownedLspEditors = (d: LspDetection): readonly DetectedEditor[] =>
 
 /**
  * Compose the removal: one `<editor cli> --uninstall-extension <id>` per owned
- * editor, carried as the `undo` of a forward no-op.
+ * editor, carried as the `undo` of a forward no-op — and each uninstall
+ * asserts its own GOAL, not just its exit code.
  *
  * The docblock this replaces claimed "an `exec` carries no reversal". That was
  * factually wrong about the effect model — `Exec` has an `undo` slot and `exec`
@@ -391,37 +411,90 @@ export const ownedLspEditors = (d: LspDetection): readonly DetectedEditor[] =>
  * `present` proves already exists — reads nothing and is a genuine no-op. Phase
  * two then runs the uninstall against the real editor.
  *
+ * THE POSTCONDITION is the removal's real success criterion. The exec's exit
+ * code and the extensions DIRECTORY are two different judges — detection
+ * deliberately reads the directory (probing via the CLI can launch an
+ * editor), and VS Code-family CLIs are known to exit 0 while deferring or
+ * skipping the deletion — so after `checkExecOk` the undo probes the exact
+ * entries detection said this command owns, and FAILS (with the manual
+ * deletion as the remedy — never the command that just claimed success) when
+ * any survived. An in-task failure here is safe precisely because
+ * `runCollectedUndos` executes each undo isolated: it used to abort every
+ * reversal still pending, which is why no removal could afford to assert its
+ * own goal.
+ *
  * @param d - The detection gathered up front.
- * @returns A Task whose undo uninstalls the extension from each owned editor.
+ * @param undoKey - Correlation key stamped on each reversal, echoed on its
+ *   `UndoOutcome` so the caller can read the outcomes back per row.
+ * @returns A Task whose undo uninstalls the extension from each owned editor
+ *   and verifies the copy is gone.
  */
-export function composeLspRemoval(d: LspDetection): Task<void> {
+export function composeLspRemoval(
+  d: LspDetection,
+  undoKey?: string,
+): Task<void> {
   const owned = ownedLspEditors(d);
   // Nothing on this machine carries a copy — there is no honest work to model,
   // and the plan row says so. Same shape as the other rows' empty removals.
   if (owned.length === 0) return sequence_([]);
   return sequence_(
-    owned.map(({ editor, extensionsDir }) => {
+    owned.map(({ editor, extensionsDir, presentEntries }) => {
       const command = `${editor.cli} --uninstall-extension ${EXTENSION_ID}`;
+      const ownedPaths = presentEntries.map((entry) =>
+        join(extensionsDir, entry),
+      );
+      const uninstall = flatMap(
+        exec(
+          editor.cli,
+          ["--uninstall-extension", EXTENSION_ID],
+          extensionsDir,
+        ),
+        (result) =>
+          checkExecOk(command, result as ExecResult, {
+            message:
+              `${editor.name} refused the uninstall (its output is above). ` +
+              `Remove it by hand with \`${command}\`.`,
+          }),
+      );
+      // The probe must apply DETECTION'S presence criterion, or the check can
+      // quietly stop checking: `extensionState` calls an entry present when
+      // `readdirSync` lists it, and a default `exists` (`fs.access`) follows
+      // symlinks — so a dangling matching symlink would be "installed" to
+      // detection and "absent" here, and an editor that exits 0 without
+      // removing it would report `undone` while the next detection finds it
+      // again. `followSymlinks: false` is `lstat` semantics: the entry
+      // itself, exactly what the directory listing answers.
+      const verified = flatMap(uninstall, () =>
+        flatMap(
+          sequence(ownedPaths.map((p) => exists(p, { followSymlinks: false }))),
+          (stillThere) => {
+            const survivors = ownedPaths.filter((_, i) => stillThere[i]);
+            if (survivors.length === 0) return pure(undefined);
+            // The remedy presents the surviving paths as DATA, never as a
+            // synthesized shell line: the names come from `readdirSync`, so
+            // no quoting is trustworthy, and one command cannot be right for
+            // every platform the editor registry supports.
+            return failPragma(
+              new PragmaError({
+                code: "UNSUPPORTED",
+                message: `\`${command}\` exited 0, but the extension is still present after the undo ran.`,
+                recovery: {
+                  message: `Delete ${survivors.length === 1 ? "this entry" : "these entries"} from ${editor.name}'s extensions folder by hand, then restart it: ${survivors.join(" · ")}`,
+                },
+              }),
+            );
+          },
+        ),
+      );
       return mkdir(extensionsDir, true, {
         undo: guardMissingBinary(
           editor.cli,
           {
             message: `The \`${editor.cli}\` CLI disappeared from PATH mid-run — restore it, then run \`${BIN_NAME} setup lsp --undo\` again.`,
           },
-          flatMap(
-            exec(
-              editor.cli,
-              ["--uninstall-extension", EXTENSION_ID],
-              extensionsDir,
-            ),
-            (result) =>
-              checkExecOk(command, result as ExecResult, {
-                message:
-                  `${editor.name} refused the uninstall (its output is above). ` +
-                  `Remove it by hand with \`${command}\`.`,
-              }),
-          ),
+          verified,
         ),
+        undoKey,
       });
     }),
   );

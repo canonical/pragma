@@ -209,6 +209,31 @@ async function runSetup(
   // to know which of the two it is.
   const previewing = interactionMode === "batch-dry-run";
 
+  // The undo truth channel. A real `--undo` interprets this verb's task ONLY
+  // as the undo interpreter's mocked collection walk — every exec exits 0,
+  // every prompt answers its default, and the OutcomeSink is never written —
+  // so nothing the task body could report describes what the collected
+  // reversals later did. The body therefore says NOTHING on the undo path
+  // (see the guard in the gen body below); the kernel calls this seam after
+  // the reversals actually ran, handing over the interpreter's per-undo
+  // outcomes, and `appliedUndo` projects them onto the rows through the SAME
+  // sink + `applied` path the forward run reports through. One outcome
+  // model, both directions.
+  if (!previewing && input.undo) {
+    rt.undoReport = (outcomes) => {
+      const applied = run.appliedUndo(outcomes);
+      const width = Math.max(...applied.rows.map((row) => row.target.length));
+      for (const row of applied.rows) {
+        if (row.outcome === undefined) continue;
+        rt.report?.(renderProgressLine(row, width));
+      }
+      if (planExitFailed(applied)) {
+        rt.report?.(renderRecap(applied, "Removed"));
+        raiseFailedRows(applied, true);
+      }
+    };
+  }
+
   // A CONVERGED machine has no question to ask. Every row is `none` or `skip`,
   // so nothing composes an effect — and the wizard's confirm gate then mounted
   // Ink to render summon-core's "No operations planned." above a "Proceed?"
@@ -313,6 +338,16 @@ async function runSetup(
     const result = yield* $(task);
     const applied = run.applied(result.answers);
 
+    // A real `--undo` only ever drives this body under the undo
+    // interpreter's COLLECTION walk, with every effect mocked. `applied` is
+    // then a projection of the mocked walk (`removed` rows for reversals
+    // that have not run yet), so reporting it here printed green checks
+    // before anything happened. Say nothing; the kernel hands the executed
+    // reversals' outcomes to `rt.undoReport` afterwards, and `appliedUndo`
+    // grades the rows from those. (`--undo --dry-run` stays on the shared
+    // preview path below, where the same suppressions already apply.)
+    if (input.undo && !previewing) return applied;
+
     // Progress: one line per row on stderr for an unattended run (the Ink
     // session already draws them for the wizard). stdout stays the data stream.
     //
@@ -333,45 +368,58 @@ async function runSetup(
     // stdout on a failing run.
     if (planExitFailed(applied)) {
       rt.report?.(renderRecap(applied));
-      const failed = applied.rows.filter(
-        (row) => row.outcome?.status === "failed",
-      );
-
-      // ONE failure reports itself. The row already carries the cause it was
-      // given ("`bun` is not found on your PATH") and a remedy that runs on
-      // this machine; replacing them with a count would throw away the only
-      // two sentences that say what is wrong and what to do about it.
-      const only = failed.length === 1 ? failed[0] : undefined;
-      if (only?.outcome !== undefined) {
-        throw new PragmaError({
-          code: "UNSUPPORTED",
-          message: `${only.target}: ${only.outcome.note ?? "the step did not complete"}`,
-          ...(only.outcome.remedy === undefined
-            ? {}
-            : { recovery: { message: only.outcome.remedy } }),
-        });
-      }
-
-      // Several failures: name every one with its own cause, then point at the
-      // recap above. A bare list of target names would make the reader re-run
-      // each one to find out why it failed.
-      const named = failed
-        .map(
-          (row) =>
-            `${row.target} (${row.outcome?.note ?? "no cause recorded"})`,
-        )
-        .join("; ");
-      throw new PragmaError({
-        code: "UNSUPPORTED",
-        message: `${failed.length} of ${planTally(applied).accountable} targets did not complete: ${named}.`,
-        recovery: {
-          message: `The other targets are configured. Re-run the ones that did not complete: ${failed
-            .map((row) => `\`${BIN_NAME} setup ${row.target}\``)
-            .join(", ")}.`,
-        },
-      });
+      raiseFailedRows(applied);
     }
     return applied;
+  });
+}
+
+/**
+ * Raise the run's failure from its rows — shared by the forward run's recap
+ * and the post-undo truth report, so the two paths name a shortfall in the
+ * same words. `undo` only re-words the multi-failure recovery line: the
+ * command that retries a removal is `setup <target> --undo`, not the
+ * installer.
+ *
+ * @param applied - The plan with outcomes filled in (at least one `failed`).
+ * @param undo - Whether the failed run was a removal.
+ * @throws PragmaError naming the failed row(s), always.
+ */
+function raiseFailedRows(applied: SetupPlan, undo = false): never {
+  const failed = applied.rows.filter((row) => row.outcome?.status === "failed");
+
+  // ONE failure reports itself. The row already carries the cause it was
+  // given ("`bun` is not found on your PATH") and a remedy that runs on
+  // this machine; replacing them with a count would throw away the only
+  // two sentences that say what is wrong and what to do about it.
+  const only = failed.length === 1 ? failed[0] : undefined;
+  if (only?.outcome !== undefined) {
+    throw new PragmaError({
+      code: "UNSUPPORTED",
+      message: `${only.target}: ${only.outcome.note ?? "the step did not complete"}`,
+      ...(only.outcome.remedy === undefined
+        ? {}
+        : { recovery: { message: only.outcome.remedy } }),
+    });
+  }
+
+  // Several failures: name every one with its own cause, then point at the
+  // recap above. A bare list of target names would make the reader re-run
+  // each one to find out why it failed.
+  const named = failed
+    .map((row) => `${row.target} (${row.outcome?.note ?? "no cause recorded"})`)
+    .join("; ");
+  throw new PragmaError({
+    code: "UNSUPPORTED",
+    message: `${failed.length} of ${planTally(applied).accountable} targets did not complete: ${named}.`,
+    recovery: {
+      message: `The other targets are ${undo ? "removed" : "configured"}. Re-run the ones that did not complete: ${failed
+        .map(
+          (row) =>
+            `\`${BIN_NAME} setup ${row.target}${undo ? " --undo" : ""}\``,
+        )
+        .join(", ")}.`,
+    },
   });
 }
 

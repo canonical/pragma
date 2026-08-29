@@ -34,6 +34,7 @@ import {
   type TaskError,
   warn,
 } from "@canonical/task";
+import type { UndoOutcome } from "@canonical/task/node";
 import { BIN_NAME } from "../../../constants.js";
 import { PragmaError } from "../../../kernel/error/index.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/index.js";
@@ -103,6 +104,20 @@ export interface SetupRun {
   readonly generator: GeneratorDefinition;
   /** The plan with the wizard's selection and the run's outcomes applied. */
   applied(answers: Record<string, unknown>): SetupPlan;
+  /**
+   * The plan graded by the EXECUTED reversals — `--undo`'s own `applied`.
+   *
+   * A real `--undo` never interprets the composed task for real: the undo
+   * interpreter walks it with every effect mocked (to collect the
+   * reversals), so the {@link OutcomeSink} the forward run fills stays
+   * empty, and only the interpreter's per-undo outcomes — correlated by the
+   * `undoKey` each reversal was stamped with in `generate` — say what
+   * actually happened. This projection writes those outcomes onto the SAME
+   * sink and reads the plan back through the SAME `outcomeFor` the forward
+   * run uses: one outcome model, both directions. An actionable row none of
+   * whose reversals reported back is a failure, never a quiet `removed`.
+   */
+  appliedUndo(outcomes: readonly UndoOutcome[]): SetupPlan;
   /**
    * Register THE live row listener (the Ink wizard's step adapter). The
    * composed rows emit through it while they are interpreted — which means
@@ -463,8 +478,15 @@ export async function buildSetupRun(
         // MCP file paths to every other target's compose.
         const key = CHILD_ANSWER[row.target];
         const children = key === undefined ? undefined : readList(answers, key);
+        // A removal stamps the row's identity on every reversal it composes:
+        // `--undo` executes those reversals in a LATER phase (the undo
+        // interpreter's), whose outcomes come back correlated by this key —
+        // see `appliedUndo`.
         const task = removal
-          ? hit.target.composeRemoval(hit.detection)
+          ? hit.target.composeRemoval(
+              hit.detection,
+              rowKey(row.scope, row.target),
+            )
           : hit.target.compose(hit.detection, children);
         // The row's progress sentence — the `target  detail — note` shape
         // `renderProgressLine` prints — so the live view and the recap say the
@@ -509,7 +531,17 @@ export async function buildSetupRun(
     // outcome at all left a converged re-run with a plan-shaped output that
     // claimed nothing had run — while the row still rendered a bare green ✓.
     // Convergence is a real result: one quiet line per row, zero writes.
-    if (row.action === "none") return { status: "noop", note: "unchanged" };
+    //
+    // On a REMOVAL the same state is `kept`, not `noop`: the run owned
+    // nothing here and deliberately left the machine's state standing (the
+    // config the user edited, the editor with no extension copy). That is
+    // standing aside, which the vocabulary marks inert (○), where `noop`'s
+    // green ✓ would claim removal work that never existed.
+    if (row.action === "none") {
+      return removal
+        ? { status: "kept" }
+        : { status: "noop", note: "unchanged" };
+    }
     if (!isChosen(row, chosen)) return undefined;
     const error = sink.get(rowKey(row.scope, row.target));
     if (error !== undefined) {
@@ -530,25 +562,62 @@ export async function buildSetupRun(
     };
   };
 
+  /** The one answers→plan projection both `applied` faces share. */
+  const project = (answers: Record<string, unknown>): SetupPlan => {
+    const chosen = readList(answers, ROWS_ANSWER);
+    return withRows(
+      plan,
+      plan.rows.map((row): PlanRow => {
+        const outcome = outcomeFor(row, chosen, answers);
+        return {
+          ...row,
+          selected: isChosen(row, chosen),
+          ...(outcome === undefined ? {} : { outcome }),
+        };
+      }),
+    );
+  };
+
   return {
     plan,
     generator,
     setRowListener: (listener) => {
       rowListener = listener;
     },
-    applied: (answers) => {
-      const chosen = readList(answers, ROWS_ANSWER);
-      return withRows(
-        plan,
-        plan.rows.map((row): PlanRow => {
-          const outcome = outcomeFor(row, chosen, answers);
-          return {
-            ...row,
-            selected: isChosen(row, chosen),
-            ...(outcome === undefined ? {} : { outcome }),
-          };
-        }),
+    applied: project,
+    appliedUndo: (outcomes) => {
+      // The undo path's sink fill. The forward run's recover frames write the
+      // sink WHILE the task is interpreted; a real `--undo` interprets the
+      // task only as the mocked collection walk, so the executed reversals'
+      // outcomes land here instead — same sink, same reader (`outcomeFor`),
+      // other direction. The first failure per row wins: it is the earliest
+      // cause, and the row's note should name it, not the knock-on.
+      sink.clear();
+      for (const outcome of outcomes) {
+        if (outcome.status !== "failed" || outcome.key === undefined) continue;
+        if (sink.get(outcome.key) !== undefined) continue;
+        sink.record(outcome.key, outcome.error);
+      }
+      // A row that owed reversals and heard back from NONE of them cannot
+      // report `removed` — nothing proved anything happened. Structurally
+      // every actionable removal row composes at least one keyed reversal,
+      // so this is a guard against a future target breaking that invariant,
+      // not a path any current target takes.
+      const reported = new Set(
+        outcomes.flatMap((o) => (o.key === undefined ? [] : [o.key])),
       );
+      for (const row of plan.rows) {
+        const id = rowKey(row.scope, row.target);
+        if (!isActionable(row.action) || !row.selected) continue;
+        if (reported.has(id) || sink.get(id) !== undefined) continue;
+        sink.record(id, {
+          code: "UNSUPPORTED",
+          message: "no reversal was executed for this target",
+        });
+      }
+      // No answers: `--undo` asks nothing, so every row falls back to its
+      // own default selection — exactly the set `generate` composed from.
+      return project({});
     },
   };
 }

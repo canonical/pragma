@@ -113,8 +113,12 @@ export interface TargetDefinition<D> {
    * paths); a row without children ignores it.
    */
   compose(detection: D, chosen?: readonly string[]): Task<void>;
-  /** The removal effects: forward re-assertion carrying the reversal as `undo`. */
-  composeRemoval(detection: D): Task<void>;
+  /**
+   * The removal effects: forward re-assertion carrying the reversal as
+   * `undo`. `undoKey` (the row's identity) is stamped on every reversal so
+   * the undo interpreter's outcomes can be read back per row.
+   */
+  composeRemoval(detection: D, undoKey?: string): Task<void>;
 }
 
 /** A table row with its detection type erased — how every consumer holds one. */
@@ -151,7 +155,7 @@ const configTarget = defineTarget<ConfigDetection>({
     return { action: "remove", detail: path };
   },
   compose: (d) => composeConfigFile(d),
-  composeRemoval: (d) => composeConfigRemoval(d),
+  composeRemoval: (d, undoKey) => composeConfigRemoval(d, undoKey),
 });
 
 const completionsTarget = defineTarget<CompletionsDetection>({
@@ -208,7 +212,7 @@ const completionsTarget = defineTarget<CompletionsDetection>({
     return { action: "remove", detail: shortenPath(d.path, roots) };
   },
   compose: (d) => composeCompletions(d),
-  composeRemoval: (d) => composeCompletionsRemoval(d),
+  composeRemoval: (d, undoKey) => composeCompletionsRemoval(d, undoKey),
 });
 
 const lspTarget = defineTarget<LspDetection>({
@@ -284,7 +288,7 @@ const lspTarget = defineTarget<LspDetection>({
     };
   },
   compose: (d, chosen) => composeLsp(d, chosen),
-  composeRemoval: (d) => composeLspRemoval(d),
+  composeRemoval: (d, undoKey) => composeLspRemoval(d, undoKey),
 });
 
 /**
@@ -357,7 +361,7 @@ const mcpTarget = defineTarget<McpDetection>({
   },
   compose: (d, chosen) =>
     composeMcp(d, chosen ? selectedGroups(d, chosen) : d.groups),
-  composeRemoval: (d) => composeMcpRemoval(d),
+  composeRemoval: (d, undoKey) => composeMcpRemoval(d, undoKey),
 });
 
 const skillsTarget = defineTarget<SkillsDetection>({
@@ -420,7 +424,7 @@ const skillsTarget = defineTarget<SkillsDetection>({
     };
   },
   compose: (d) => composeSkills(d),
-  composeRemoval: (d) => composeSkillsRemoval(d),
+  composeRemoval: (d, undoKey) => composeSkillsRemoval(d, undoKey),
 });
 
 /** THE table, in display order. */

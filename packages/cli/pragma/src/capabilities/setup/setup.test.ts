@@ -101,6 +101,14 @@ const stubPath = (): string => {
   return dir;
 };
 
+/**
+ * The machine's real PATH, captured before the suite isolates it. A stub
+ * editor script that has to run a real utility (`rm`) restores this INSIDE
+ * itself — hardcoding `/bin:/usr/bin` breaks on hosts that keep coreutils
+ * elsewhere, and the isolated PATH the tests run under has no `rm`.
+ */
+const HOST_PATH = process.env.PATH ?? "";
+
 let prevHome: string | undefined;
 let prevPath: string | undefined;
 beforeEach(() => {
@@ -835,12 +843,16 @@ describe("setup lsp — the removal contract the other four rows implement", () 
   it("end to end: `setup lsp --undo` reports `Undid 1 step(s)` against a STUB cli", async () => {
     // The reported symptom was `Undid 0 step(s).` at exit 0. The stub is a
     // marker-writing script — never a real editor: an undo test must not be
-    // able to mutate the machine running it.
+    // able to mutate the machine running it. It DOES delete the seeded
+    // extension entry (inside this test's temp HOME), because the removal now
+    // asserts its own goal against the extensions directory: a stub that
+    // exits 0 leaving the entry behind is the LYING-editor case, pinned as a
+    // failure below.
     const marker = join(tmp("pragma-lsp-undo-"), "uninstalled");
     const dir = stubPath();
     writeFileSync(
       join(dir, "code"),
-      `#!/bin/sh\nprintf '%s\\n' "$@" > ${marker}\n`,
+      `#!/bin/sh\nprintf '%s\\n' "$@" > ${marker}\nPATH='${HOST_PATH}' rm -rf "$HOME/.vscode/extensions/canonical.terrazzo-lsp-extension-"*\n`,
       { mode: 0o755 },
     );
     process.env.PATH = dir;
@@ -871,6 +883,205 @@ describe("setup lsp — the removal contract the other four rows implement", () 
     ];
     expect(all.some((e) => e._tag === "DeleteFile")).toBe(false);
     expect(all.some((e) => e._tag === "DeleteDirectory")).toBe(false);
+  });
+
+  /** Drive `setup lsp --undo` capturing stderr (where the row lines land). */
+  const undoLspCapturing = async (): Promise<{
+    chunks: string[];
+    outcome?: { stdout?: string; stderr?: string; exitCode: number };
+    thrown?: unknown;
+  }> => {
+    const chunks: string[] = [];
+    const spy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation((chunk: unknown): boolean => {
+        chunks.push(String(chunk));
+        return true;
+      });
+    try {
+      const outcome = await executeVerb(
+        verbOf("lsp"),
+        {},
+        UNDO,
+        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      );
+      return { chunks, outcome };
+    } catch (thrown) {
+      return { chunks, thrown };
+    } finally {
+      spy.mockRestore();
+    }
+  };
+
+  it("HEADLINE: an uninstall that exits 0 leaving the extension on disk reports FAILED, never `✓ removed`", async () => {
+    // The observed field defect: VS Code-family CLIs can exit 0 while
+    // deferring or skipping the deletion. The reversal's success criterion
+    // was that exit code; detection's criterion is the extensions DIRECTORY.
+    // The two disagreed permanently and the run printed `✓ … removed` over an
+    // extension that was still installed. The removal now asserts its own
+    // goal in-task — probe the owned entries after the uninstall — and the
+    // run reports the survival as a failure with a manual remedy.
+    const dir = stubPath();
+    writeFileSync(join(dir, "code"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    process.env.PATH = dir;
+    seedExtension(".vscode", "1.2.3");
+    const survivor = join(
+      process.env.HOME ?? "",
+      ".vscode",
+      "extensions",
+      "canonical.terrazzo-lsp-extension-1.2.3",
+    );
+
+    const { chunks, outcome, thrown } = await undoLspCapturing();
+    const stderrText = chunks.join("");
+
+    // The world: the artifact survived, and the run must not claim otherwise.
+    expect(existsSync(survivor)).toBe(true);
+    expect(stderrText).not.toContain("— removed");
+    expect(outcome).toBeUndefined();
+    expect(thrown).toBeDefined();
+    const err = asPragmaError(thrown);
+    expect(err.code).toBe("UNSUPPORTED");
+    expect(err.message).toContain("lsp");
+    expect(err.message).toContain("still present after the undo ran");
+    // The remedy names the surviving path as DATA for a manual deletion —
+    // not the CLI command that has just demonstrably done nothing while
+    // reporting success, and not a synthesized shell line (the entry names
+    // come off the filesystem, so no quoting is trustworthy, and one command
+    // cannot be right for every supported platform).
+    expect(err.recovery?.message ?? "").toContain(survivor);
+    expect(err.recovery?.message ?? "").not.toContain("rm -rf");
+    expect(err.recovery?.message ?? "").not.toContain("--uninstall-extension");
+    // The truthful row is reported (stderr), naming the survival.
+    expect(stderrText).toContain("still present after the undo ran");
+  });
+
+  it("a DANGLING matching symlink still counts as a survivor — the probe uses detection's criterion", async () => {
+    // Detection calls an entry present when `readdirSync` lists it. A probe
+    // built on default `exists` (`fs.access`) FOLLOWS symlinks, so a dangling
+    // matching symlink would be "installed" to detection and "absent" to the
+    // probe: an editor that exits 0 without removing it would report
+    // `undone`, and the next detection would find it again — the exact
+    // "reports success it did not achieve" this fix exists to close, rebuilt
+    // inside the fix. The probe therefore asks about the entry itself
+    // (lstat semantics), the same question the directory listing answers.
+    const dir = stubPath();
+    writeFileSync(join(dir, "code"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    process.env.PATH = dir;
+    const extensionsDir = join(process.env.HOME ?? "", ".vscode", "extensions");
+    mkdirSync(extensionsDir, { recursive: true });
+    const entry = join(extensionsDir, "canonical.terrazzo-lsp-extension-1.2.3");
+    symlinkSync(join(extensionsDir, "no-such-target"), entry);
+
+    const { chunks, outcome, thrown } = await undoLspCapturing();
+
+    expect(lstatSync(entry).isSymbolicLink()).toBe(true); // still there
+    expect(chunks.join("")).not.toContain("— removed");
+    expect(outcome).toBeUndefined();
+    const err = asPragmaError(thrown);
+    expect(err.message).toContain("still present after the undo ran");
+    expect(err.recovery?.message ?? "").toContain(entry);
+  });
+
+  it("a truthful uninstall reports its `removed` row from the executed reversal", async () => {
+    // The positive half of the headline: when the editor really deletes the
+    // entry, the in-task postcondition passes, the reversal's outcome comes
+    // back `undone`, and the row reports `removed` — same sentence as before
+    // the fix, now derived from what ran instead of from the plan.
+    const dir = stubPath();
+    writeFileSync(
+      join(dir, "code"),
+      `#!/bin/sh\nPATH='${HOST_PATH}' rm -rf "$HOME/.vscode/extensions/canonical.terrazzo-lsp-extension-"*\n`,
+      { mode: 0o755 },
+    );
+    process.env.PATH = dir;
+    seedExtension(".vscode", "1.2.3");
+
+    const { chunks, outcome, thrown } = await undoLspCapturing();
+    expect(thrown).toBeUndefined();
+    expect(outcome?.exitCode).toBe(0);
+    expect(outcome?.stdout).toBe("Undid 1 step(s).\n");
+    expect(chunks.join("")).toContain("— removed");
+  });
+
+  it("the `✓ … removed` rows cannot be produced by the collection walk alone", async () => {
+    // The collection walk mocks every exec to exit 0 and every prompt to its
+    // default — under the old code that was enough to print the whole green
+    // recap before one real process had spawned. With an uninstall that
+    // GENUINELY fails (exit 1), the executed reversal fails; if any `removed`
+    // row still appeared on stderr, it could only have come from the mocked
+    // walk.
+    const dir = stubPath();
+    writeFileSync(join(dir, "code"), "#!/bin/sh\nexit 1\n", { mode: 0o755 });
+    process.env.PATH = dir;
+    seedExtension(".vscode", "1.2.3");
+
+    const { chunks, outcome, thrown } = await undoLspCapturing();
+    expect(chunks.join("")).not.toContain("— removed");
+    expect(outcome).toBeUndefined();
+    expect(thrown).toBeDefined();
+    const err = asPragmaError(thrown);
+    expect(err.message).toContain("--uninstall-extension");
+    expect(err.message).toContain("exited with code 1");
+  });
+
+  it("appliedUndo grades rows from the outcomes — one model, both directions", async () => {
+    // The projection unit: the sink the FORWARD run fills is fed by the undo
+    // interpreter's outcomes instead, and the same `outcomeFor` reads it
+    // back. A failed outcome keyed to the row fails the row (carrying the
+    // reversal's own remedy); an actionable row that no reversal reported
+    // back for cannot claim `removed`; a run with clean outcomes reports
+    // `removed`.
+    seedExtension(".vscode", "1.2.3");
+    const run = await buildSetupRun(
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      "lsp",
+      "global",
+      true,
+    );
+
+    const clean = run.appliedUndo([{ key: "global:lsp", status: "undone" }]);
+    expect(clean.rows.find((r) => r.target === "lsp")?.outcome).toMatchObject({
+      status: "removed",
+      note: "removed",
+    });
+
+    const failed = run.appliedUndo([
+      {
+        key: "global:lsp",
+        status: "failed",
+        error: { code: "UNSUPPORTED", message: "still there" },
+      },
+    ]);
+    expect(failed.rows.find((r) => r.target === "lsp")?.outcome).toMatchObject({
+      status: "failed",
+      note: "still there",
+    });
+
+    // No reversal reported back at all for an actionable row: never `removed`.
+    const silent = run.appliedUndo([]);
+    expect(silent.rows.find((r) => r.target === "lsp")?.outcome).toMatchObject({
+      status: "failed",
+      note: "no reversal was executed for this target",
+    });
+  });
+
+  it("a removal row with nothing owned reports `kept`, not a green noop", async () => {
+    // The `kept` status was declared in the vocabulary and counted by
+    // `planTally` but no producer ever emitted it. On a removal, a `none`
+    // row IS the kept case: the run owned nothing here and deliberately left
+    // the machine's state standing — standing aside (○), not work done (✓).
+    const run = await buildSetupRun(
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      "lsp",
+      "global",
+      true,
+    );
+    expect(run.plan.rows.find((r) => r.target === "lsp")?.action).toBe("none");
+    const kept = run.appliedUndo([]);
+    expect(kept.rows.find((r) => r.target === "lsp")?.outcome).toEqual({
+      status: "kept",
+    });
   });
 });
 

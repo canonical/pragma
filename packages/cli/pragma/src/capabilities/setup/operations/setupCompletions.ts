@@ -204,11 +204,18 @@ export function composeCompletions(d: CompletionsDetection): Task<void> {
  * machine that never installed one reverses zero steps and says so.
  *
  * @param d - The detection gathered up front.
+ * @param undoKey - Correlation key stamped on the reversal(s), echoed on
+ *   their undo outcomes so the caller can read results back per row.
  * @returns A Task whose undo deletes the installed script.
  */
-export function composeCompletionsRemoval(d: CompletionsDetection): Task<void> {
+export function composeCompletionsRemoval(
+  d: CompletionsDetection,
+  undoKey?: string,
+): Task<void> {
   if (d.path === null || d.script === null || d.state === "absent") {
     return sequence_([]);
   }
-  return sequence_([writeFile(d.path, d.script, { undo: deleteFile(d.path) })]);
+  return sequence_([
+    writeFile(d.path, d.script, { undo: deleteFile(d.path), undoKey }),
+  ]);
 }

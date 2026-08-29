@@ -25,6 +25,7 @@
 export {
   assertExecOk,
   checkExecOk,
+  failPragma,
   guardMissingBinary,
 } from "./assertExecOk.js";
 export type {

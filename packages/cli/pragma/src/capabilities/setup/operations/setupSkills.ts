@@ -754,14 +754,19 @@ export const ownedSkillLinks = (
  * this command owns, never from what a fresh forward plan would create.
  *
  * @param d - The detection gathered up front.
+ * @param undoKey - Correlation key stamped on the reversal(s), echoed on
+ *   their undo outcomes so the caller can read results back per row.
  * @returns A Task whose undo removes every owned link.
  */
-export function composeSkillsRemoval(d: SkillsDetection): Task<void> {
+export function composeSkillsRemoval(
+  d: SkillsDetection,
+  undoKey?: string,
+): Task<void> {
   const owned = ownedSkillLinks(d);
   if (owned.length === 0) return sequence_([]);
   return sequence_(
     owned.map((a) =>
-      symlink(a.target, a.linkPath, { undo: deleteFile(a.linkPath) }),
+      symlink(a.target, a.linkPath, { undo: deleteFile(a.linkPath), undoKey }),
     ),
   );
 }
