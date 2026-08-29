@@ -134,8 +134,20 @@ describe("doctor — shape & spread", () => {
     // snapshot answers reads and the check passes, naming what it is reading.
     const pkgRefs = byName(data, "pack refs");
     expect(pkgRefs?.status).toBe("pass");
-    expect(pkgRefs?.detail).toContain("embedded snapshot @ ");
+    expect(pkgRefs?.detail).toContain("embedded snapshot");
     expect(pkgRefs?.remedy).toBeUndefined();
+    // Provenance is one ITEM PER PACK, not a comma-joined string in the
+    // headline: four packs and two forty-character SHAs on one line was
+    // unreadable, and every other multi-part check here already uses items.
+    // The headline counts them; the items say which revision each one is.
+    expect(pkgRefs?.detail).toContain("packs");
+    expect((pkgRefs?.items?.length ?? 0) > 1).toBe(true);
+    for (const item of pkgRefs?.items ?? []) {
+      expect(item.label).not.toContain(",");
+      // A git hash is cut to seven — the length every other tool in this
+      // workflow prints, and short enough that four rows stay scannable.
+      expect(item.detail ?? "").not.toMatch(/[0-9a-f]{40}/);
+    }
 
     // The banded rows carry the TARGET IDS verbatim — `mcp`, not "MCP
     // configured" — because the row name IS the fix command's argument. The
@@ -202,8 +214,12 @@ describe("doctor — the pack-refs check", () => {
     const data = await runChecks(fixture.runtime);
     const pkgRefs = byName(data, "pack refs");
     expect(pkgRefs?.status).toBe("pass");
-    // The fixture pack's own provenance label, not the embedded snapshot's.
-    expect(pkgRefs?.detail).toContain("fixture");
+    // The fixture pack's own provenance label, not the embedded snapshot's —
+    // now carried as an item rather than inline, and passed through WHOLE
+    // because it parses as no scheme. An unreadable provenance is still
+    // provenance; dropping it would be the one failure this check exists to
+    // prevent.
+    expect(pkgRefs?.items?.map((item) => item.label)).toContain("fixture");
     expect(pkgRefs?.detail).not.toContain("embedded snapshot");
     await fixture.dispose();
   });
