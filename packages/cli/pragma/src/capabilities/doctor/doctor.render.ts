@@ -10,7 +10,6 @@
  * Glyphs are plain constants tinted at render time; nothing is baked at load.
  */
 
-import chalk from "chalk";
 import { BIN_NAME } from "../../constants.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
 import type { Formatters } from "../../kernel/spec/index.js";
@@ -35,32 +34,12 @@ const SUB_BULLET = "·";
 const FIX_ARROW = "↳";
 const INDENT = "     "; // aligns sub-lines under the check name
 
-/** The TTY styler plus `red` — the one tint {@link RenderStyle} does not carry. */
-interface DoctorStyle extends RenderStyle {
-  red(text: string): string;
-}
-
-/**
- * Build the doctor styler for this process's stdout: the shared TTY seam, plus a
- * `red` gated on the SAME decision, so a fail tint appears only on a color TTY.
- *
- * @returns A colorizing styler on a color-capable TTY, else the identity styler.
- * @note Impure — {@link defaultStyle} reads `process.stdout.isTTY` + chalk level.
- */
-function doctorStyle(): DoctorStyle {
-  const style = defaultStyle();
-  return {
-    ...style,
-    red: style.enabled ? (text) => chalk.red(text) : (text) => text,
-  };
-}
-
 /**
  * Tint a status glyph by meaning — green pass, red fail, cyan available
  * (actionable-but-optional, the same tint as the `fix:` arrow it points at),
  * yellow skip.
  */
-function paintGlyph(status: CheckStatus, style: DoctorStyle): string {
+function paintGlyph(status: CheckStatus, style: RenderStyle): string {
   const glyph = STATUS_GLYPHS[status];
   if (status === "pass") return style.green(glyph);
   if (status === "fail") return style.red(glyph);
@@ -88,7 +67,7 @@ const remedyLabel = (status: CheckStatus): string =>
 function formatCheckPlain(
   check: CheckResult,
   nameWidth: number,
-  style: DoctorStyle,
+  style: RenderStyle,
 ): string[] {
   const name = check.name.padEnd(nameWidth);
   const label = check.status === "fail" ? style.red(name) : style.bold(name);
@@ -136,7 +115,7 @@ function formatCheckPlain(
  * `available` is counted apart from `failed` so a healthy install with
  * integrations left to opt into never reports failures it does not have.
  */
-function formatSummary(data: DoctorData, style: DoctorStyle): string {
+function formatSummary(data: DoctorData, style: RenderStyle): string {
   const parts = [style.green(`${data.passed} passed`)];
   parts.push(
     data.failed > 0
@@ -175,7 +154,7 @@ function partitionByBand(checks: readonly CheckResult[]): {
 
 export const doctorFormatters: Formatters<DoctorData> = {
   plain(data) {
-    const style = doctorStyle();
+    const style = defaultStyle();
     const nameWidth = Math.max(...data.checks.map((c) => c.name.length), 0);
     const lines: string[] = [style.bold(`${BIN_NAME} doctor`), ""];
     const { environment, machine, project } = partitionByBand(data.checks);

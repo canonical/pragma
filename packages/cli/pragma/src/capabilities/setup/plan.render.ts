@@ -13,7 +13,6 @@
  * a piped run renders byte-for-byte plain.
  */
 
-import chalk from "chalk";
 import { BIN_NAME } from "../../constants.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
 import { BAND_LABELS, SCOPE_PHRASES } from "../shared/index.js";
@@ -44,25 +43,6 @@ const GLYPHS = {
  * reported "Setup complete" over a target it had dropped.
  */
 const NOT_RUN_GLYPH = "·";
-
-/** The TTY styler plus `red` — the one tint {@link RenderStyle} does not carry. */
-interface PlanStyle extends RenderStyle {
-  red(text: string): string;
-}
-
-/**
- * Widen a {@link RenderStyle} with a `red` gated on the SAME colour decision, so
- * a failure tint appears only on a colour-capable TTY. Mirrors `doctor`'s own
- * styler, which is deliberate: a failed setup row and a failed doctor row are
- * the same finding seen twice, and they are tinted alike.
- *
- * @param style - The shared styler.
- * @returns The styler plus `red`.
- */
-const withRed = (style: RenderStyle): PlanStyle => ({
-  ...style,
-  red: style.enabled ? (text) => chalk.red(text) : (text) => text,
-});
 
 /** The header's scope phrase: `global`, `local project`, or both of them. */
 const scopePhrase = (scope: SetupPlan["scope"]): string => SCOPE_PHRASES[scope];
@@ -269,23 +249,22 @@ export function renderProgressLine(
   idWidth: number,
   style: RenderStyle = defaultStyle(),
 ): string {
-  const painted = withRed(style);
   const outcome = row.outcome;
 
   // No outcome at all: the row was offered and left unselected. It is neither a
   // success nor a skip-for-cause, and painting it green would claim work that
   // never happened, so it gets a neutral marker and says plainly what it is.
   if (outcome === undefined) {
-    return `${painted.dim(NOT_RUN_GLYPH)} ${row.target.padEnd(idWidth)}  ${painted.dim(`${row.detail} — not selected`)}`;
+    return `${style.dim(NOT_RUN_GLYPH)} ${row.target.padEnd(idWidth)}  ${style.dim(`${row.detail} — not selected`)}`;
   }
 
   const glyph = GLYPHS[outcome.status];
   const tinted =
     outcome.status === "failed"
-      ? painted.red(glyph)
+      ? style.red(glyph)
       : outcome.status === "skipped" || outcome.status === "kept"
-        ? painted.yellow(glyph)
-        : painted.green(glyph);
+        ? style.yellow(glyph)
+        : style.green(glyph);
   const note = outcome.note;
   const body =
     outcome.status === "skipped"
