@@ -1,13 +1,13 @@
 /**
- * The `doctor` run body: the unbanded environment checks plus the banded rows
+ * The `doctor` run body: the unscoped environment checks plus the scoped rows
  * the setup target table derives.
  *
  * Two kinds of finding live in one report and they are not the same kind. The
  * ENVIRONMENT checks — the Node version, this CLI's own version, pack refs, the
- * store — diagnose things `setup` cannot install; they carry no band and stay
- * their own section. The BANDED rows are the setup targets, in both bands,
+ * store — diagnose things `setup` cannot install; they carry no scope and stay
+ * their own section. The SCOPED rows are the setup targets, in both scopes,
  * named with the target ids verbatim and repaired by the target's own command
- * — plus, per band, the `harnesses` inventory row: a listing of what this
+ * — plus, per scope, the `harnesses` inventory row: a listing of what this
  * machine holds and where pragma stands in it, which is the thing the targets
  * are measured against rather than a target itself. Adding a target adds its
  * rows here for free.
@@ -25,11 +25,11 @@ import { checkKeStore } from "./checks/checkKeStore.js";
 import { checkNodeVersion } from "./checks/checkNodeVersion.js";
 import { checkPackageRefs } from "./checks/checkPackageRefs.js";
 import { checkPragmaVersion } from "./checks/checkPragmaVersion.js";
-import { bandedChecks } from "./checks/targetHealth.js";
+import { scopedChecks } from "./checks/targetHealth.js";
 import type { CheckResult, DoctorData } from "./types.js";
 
 /**
- * The unbanded environment checks, each paired with the display name used if it
+ * The unscoped environment checks, each paired with the display name used if it
  * rejects. The fallback name matches the `name` each check returns on success,
  * so a thrown check reports the same label and stays correlatable.
  */
@@ -70,16 +70,16 @@ async function guarded(
  * @note Impure — the checks read the fs, boot the store, and detect harnesses.
  */
 export async function runChecks(rt: PragmaRuntime): Promise<DoctorData> {
-  // The banded rows come back as a batch (one detection pass over the table),
+  // The scoped rows come back as a batch (one detection pass over the table),
   // so they are guarded as a batch: a detection that throws becomes one
   // attributable failure instead of taking the environment section with it.
-  const [environmentResults, bandedResults] = await Promise.all([
+  const [environmentResults, scopedResults] = await Promise.all([
     Promise.all(
       buildEnvironmentChecks(rt).map(([name, promise]) =>
         guarded(name, promise),
       ),
     ),
-    bandedChecks(rt, BIN_NAME).catch((error: unknown): CheckResult[] => [
+    scopedChecks(rt, BIN_NAME).catch((error: unknown): CheckResult[] => [
       {
         name: "setup targets",
         status: "fail",
@@ -91,7 +91,7 @@ export async function runChecks(rt: PragmaRuntime): Promise<DoctorData> {
     ]),
   ]);
 
-  const checks: CheckResult[] = [...environmentResults, ...bandedResults];
+  const checks: CheckResult[] = [...environmentResults, ...scopedResults];
   return {
     checks,
     passed: checks.filter((c) => c.status === "pass").length,

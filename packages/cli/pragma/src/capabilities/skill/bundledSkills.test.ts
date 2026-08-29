@@ -36,7 +36,7 @@ import { BIN_NAME } from "../../constants.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import { runCli } from "../../testing/helpers/runCli.js";
-import { bandedChecks } from "../doctor/checks/targetHealth.js";
+import { scopedChecks } from "../doctor/checks/targetHealth.js";
 import {
   composeSkills,
   detectSkills,
@@ -131,7 +131,7 @@ describe("bundled skills — a fresh install, through the shipped entry", () => 
   });
 
   it("`setup --dry-run` OFFERS a skills row instead of skipping it", () => {
-    // The other half of the same defect: the global band's only source was the
+    // The other half of the same defect: the global scope's only source was the
     // installed root, so a fresh machine's setup plan skipped skills entirely
     // and pointed at `sources update` as the remedy.
     const cwd = mkdtempSync(join(tmpdir(), "pragma-fresh-setup-"));
@@ -230,7 +230,7 @@ describe("bundled skills — the upgrade hazard", () => {
     prevDataHome = process.env.XDG_DATA_HOME;
     home = mkdtempSync(join(tmpdir(), "pragma-upgrade-home-"));
     process.env.HOME = home;
-    // An empty installed root, so the bundled snapshot is the band's only
+    // An empty installed root, so the bundled snapshot is the scope's only
     // source — exactly a fresh install that has never run `sources update`.
     process.env.XDG_DATA_HOME = mkdtempSync(
       join(tmpdir(), "pragma-upgrade-data-"),
@@ -302,8 +302,8 @@ describe("bundled skills — the upgrade hazard", () => {
     );
 
     const cwd = mkdtempSync(join(tmpdir(), "pragma-upgrade-doctor-"));
-    const rows = await bandedChecks(bootRuntime(FLAGS, cwd), BIN_NAME);
-    const row = rows.find((r) => r.name === "skills" && r.band === "global");
+    const rows = await scopedChecks(bootRuntime(FLAGS, cwd), BIN_NAME);
+    const row = rows.find((r) => r.name === "skills" && r.scope === "global");
     expect(row?.status).toBe("fail");
     expect(row?.detail).toContain("point elsewhere");
     // No AUTHORED remedy on this branch: the row takes the derived one, which

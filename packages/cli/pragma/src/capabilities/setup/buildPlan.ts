@@ -19,16 +19,16 @@ import {
 } from "./plan.js";
 import {
   type AnyTarget,
-  supportsBand,
+  supportsScope,
   TARGETS,
   type TargetDraft,
 } from "./targets.js";
-import type { ScopeBand, ScopeSelection } from "./types.js";
+import type { Scope, ScopeSelection } from "./types.js";
 
 /** One detection, kept beside the row that produced it (and can read it back). */
 export interface DetectedRow {
   readonly target: AnyTarget;
-  readonly band: ScopeBand;
+  readonly scope: Scope;
   readonly detection: never;
   /**
    * Why this row's detection did not settle, when it threw. `detection` is then
@@ -48,8 +48,8 @@ export interface DetectedPlan {
   readonly detected: readonly DetectedRow[];
 }
 
-/** The bands a `--scope` selection runs, global before project. */
-export const bandsForScope = (scope: ScopeSelection): readonly ScopeBand[] =>
+/** The scopes a `--scope` selection runs, global before project. */
+export const scopesForSelection = (scope: ScopeSelection): readonly Scope[] =>
   scope === "both" ? ["global", "project"] : [scope];
 
 /**
@@ -72,7 +72,7 @@ const messageOf = (reason: unknown): string =>
   reason instanceof Error ? reason.message : String(reason);
 
 /**
- * Detect every requested target in every band the scope runs.
+ * Detect every requested target in every scope the scope runs.
  *
  * Detections are started together and SETTLED INDEPENDENTLY: they are
  * independent reads, and a run-all that probed five targets serially paid for
@@ -82,13 +82,13 @@ const messageOf = (reason: unknown): string =>
  * unreadable config, a permission-denied directory — takes only its own row
  * down. Awaiting them as one `Promise.all` meant the first rejection prevented
  * a run from being built at all: none of the other targets ran, and doctor
- * rendered no banded rows whatsoever. The failed row carries its cause and is
+ * rendered no scoped rows whatsoever. The failed row carries its cause and is
  * reported as a row, which is the same shape a failed COMPOSE already has.
  *
  * @param rt - The per-invocation runtime.
  * @param ids - The targets to plan (all five for the run-all).
- * @param scope - The resolved band selection.
- * @returns One entry per (target, band) the scope actually runs.
+ * @param scope - The resolved scope selection.
+ * @returns One entry per (target, scope) the scope actually runs.
  * @note Impure — every target's `detect` reads the real filesystem.
  */
 export async function detectTargets(
@@ -97,25 +97,25 @@ export async function detectTargets(
   scope: ScopeSelection,
 ): Promise<DetectedRow[]> {
   const wanted = TARGETS.filter((target) => ids.includes(target.id));
-  const pairs = bandsForScope(scope).flatMap((band) =>
+  const pairs = scopesForSelection(scope).flatMap((scope) =>
     wanted
-      .filter((target) => supportsBand(target, band))
+      .filter((target) => supportsScope(target, scope))
       .map((target) => ({
         target,
-        band,
+        scope,
       })),
   );
   const settled = await Promise.allSettled(
-    pairs.map(({ target, band }) => target.detect(rt, band)),
+    pairs.map(({ target, scope }) => target.detect(rt, scope)),
   );
-  return pairs.map(({ target, band }, index) => {
+  return pairs.map(({ target, scope }, index) => {
     const outcome = settled[index] as PromiseSettledResult<unknown>;
     if (outcome.status === "fulfilled") {
-      return { target, band, detection: outcome.value as never };
+      return { target, scope, detection: outcome.value as never };
     }
     return {
       target,
-      band,
+      scope,
       detection: undefined as never,
       failure: messageOf(outcome.reason),
     };
@@ -134,13 +134,13 @@ export async function detectTargets(
  * dead end: a reader who wanted `completions` under `--local` is told in the
  * same line that `--global` is where it lives.
  */
-const outOfBandRow = (target: AnyTarget, band: ScopeBand): PlanRow => ({
+const outOfScopeRow = (target: AnyTarget, scope: Scope): PlanRow => ({
   target: target.id,
-  band,
+  scope,
   action: "skip",
   detail: "not part of this scope",
   reason:
-    band === "project"
+    scope === "project"
       ? "this one is global only — run it with `--global`"
       : "this one is per-project only — run it with `--local`",
   selected: false,
@@ -155,11 +155,11 @@ const outOfBandRow = (target: AnyTarget, band: ScopeBand): PlanRow => ({
  */
 const failedDetectionRow = (
   target: AnyTarget,
-  band: ScopeBand,
+  scope: Scope,
   failure: string,
 ): PlanRow => ({
   target: target.id,
-  band,
+  scope,
   action: "skip",
   detail: "detection did not complete",
   reason: failure,
@@ -183,51 +183,51 @@ export function draftFor(
   removal: boolean,
 ): TargetDraft {
   return removal
-    ? hit.target.removalPlan(hit.detection, hit.band, roots)
-    : hit.target.plan(hit.detection, hit.band, roots);
+    ? hit.target.removalPlan(hit.detection, hit.scope, roots)
+    : hit.target.plan(hit.detection, hit.scope, roots);
 }
 
 /**
  * Project detections into plan rows.
  *
- * @param scope - The resolved band selection (named in the header).
+ * @param selection - The resolved scope selection (named in the header).
  * @param roots - The two named roots every path renders relative to.
- * @param detected - The detections, in table order per band.
- * @param ids - The targets that were REQUESTED, so an out-of-band one still
+ * @param detected - The detections, in table order per scope.
+ * @param ids - The targets that were REQUESTED, so an out-of-scope one still
  *   gets a visible row.
  * @param removal - Build the removal plan (`--undo`) instead of the forward one.
  * @returns The plan.
  */
 export function buildPlan(
-  scope: ScopeSelection,
+  selection: ScopeSelection,
   roots: SetupPlan["roots"],
   detected: readonly DetectedRow[],
   ids: readonly TargetId[],
   removal = false,
 ): SetupPlan {
   const rows: PlanRow[] = [];
-  for (const band of bandsForScope(scope)) {
+  for (const scope of scopesForSelection(selection)) {
     for (const target of TARGETS) {
       if (!ids.includes(target.id)) continue;
       const hit = detected.find(
-        (d) => d.target.id === target.id && d.band === band,
+        (d) => d.target.id === target.id && d.scope === scope,
       );
       if (hit === undefined) {
-        // Only worth a line when the target has no row in ANY selected band —
+        // Only worth a line when the target has no row in ANY selected scope —
         // under `--scope both` a global-only target already appears above.
         const elsewhere = detected.some((d) => d.target.id === target.id);
-        if (!elsewhere) rows.push(outOfBandRow(target, band));
+        if (!elsewhere) rows.push(outOfScopeRow(target, scope));
         continue;
       }
       const failure = detectionFailure(hit);
       if (failure !== undefined) {
-        rows.push(failedDetectionRow(target, band, failure));
+        rows.push(failedDetectionRow(target, scope, failure));
         continue;
       }
       const draft = draftFor(hit, roots, removal);
       rows.push({
         target: target.id,
-        band,
+        scope,
         action: draft.action,
         detail: draft.detail,
         ...(draft.reason === undefined ? {} : { reason: draft.reason }),
@@ -236,5 +236,5 @@ export function buildPlan(
       });
     }
   }
-  return { scope, roots, rows };
+  return { scope: selection, roots, rows };
 }

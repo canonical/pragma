@@ -76,7 +76,7 @@ function formatCheckPlain(
   // installed" with the next step (`sources update`) computed, carried through
   // the check, published in `--format json`, and then thrown away one line
   // before it reached the person reading. A skip never DERIVES a remedy
-  // (`bandedChecks` only passes through an authored one), so this prints
+  // (`scopedChecks` only passes through an authored one), so this prints
   // nothing that was not deliberately written for this machine.
   if (check.remedy) {
     lines.push(
@@ -117,15 +117,15 @@ function formatSummary(data: DoctorData, style: RenderStyle): string {
  * global and local-project scopes. Declaration order is preserved within each,
  * so the report stays deterministic.
  */
-function partitionByBand(checks: readonly CheckResult[]): {
+function partitionByScope(checks: readonly CheckResult[]): {
   environment: CheckResult[];
-  machine: CheckResult[];
+  global: CheckResult[];
   project: CheckResult[];
 } {
   return {
-    environment: checks.filter((c) => c.band === undefined),
-    machine: checks.filter((c) => c.band === "global"),
-    project: checks.filter((c) => c.band === "project"),
+    environment: checks.filter((c) => c.scope === undefined),
+    global: checks.filter((c) => c.scope === "global"),
+    project: checks.filter((c) => c.scope === "project"),
   };
 }
 
@@ -134,7 +134,7 @@ export const doctorFormatters: Formatters<DoctorData> = {
     const style = defaultStyle();
     const nameWidth = Math.max(...data.checks.map((c) => c.name.length), 0);
     const lines: string[] = [style.bold(`${BIN_NAME} doctor`), ""];
-    const { environment, machine, project } = partitionByBand(data.checks);
+    const { environment, global, project } = partitionByScope(data.checks);
     const section = (heading: string, checks: CheckResult[]): void => {
       if (checks.length === 0) return;
       if (heading) lines.push(style.bold(heading));
@@ -145,7 +145,7 @@ export const doctorFormatters: Formatters<DoctorData> = {
     // Environment checks lead (no header); Global then Local project are the
     // two scoped sections before the tally.
     section("", environment);
-    section(SCOPE_LABELS.global, machine);
+    section(SCOPE_LABELS.global, global);
     section(SCOPE_LABELS.project, project);
     lines.push(formatSummary(data, style));
     return lines.join("\n");
@@ -177,14 +177,14 @@ export const doctorFormatters: Formatters<DoctorData> = {
     };
 
     const lines: string[] = ["## Doctor", ""];
-    const { environment, machine, project } = partitionByBand(data.checks);
+    const { environment, global, project } = partitionByScope(data.checks);
     const section = (heading: string, checks: CheckResult[]): void => {
       if (checks.length === 0) return;
       if (heading) lines.push(`### ${heading}`, "");
       for (const check of checks) lines.push(...renderCheck(check));
     };
     section("", environment);
-    section(SCOPE_LABELS.global, machine);
+    section(SCOPE_LABELS.global, global);
     section(SCOPE_LABELS.project, project);
     lines.push(
       "",

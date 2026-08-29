@@ -16,7 +16,9 @@
  * point — the report names the flag that repairs it. (Earlier these surfaces
  * said MACHINE/PROJECT, and later "global band"/"project band": a third and a
  * fourth term for the same two things, and "band" is a word nobody outside
- * this repository has ever used for a config scope.)
+ * this repository has ever used for a config scope. The type layer carried
+ * "band" longest — `ScopeBand`, `PlanRow.band`, a `bands.ts` — and the render
+ * tests now guard against either spelling coming back.)
  *
  * The GLYPHS are one small alphabet with fixed meanings, so the same mark
  * never says two things: `✓` is work done or verified, `✗` is a real fault,

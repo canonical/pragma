@@ -30,7 +30,7 @@ import {
   type SetupPlan,
   shortenPath,
 } from "./plan.js";
-import type { ScopeBand } from "./types.js";
+import type { Scope } from "./types.js";
 
 /** The header's scope phrase: `global`, `local project`, or both of them. */
 const scopePhrase = (scope: SetupPlan["scope"]): string => SCOPE_PHRASES[scope];
@@ -122,13 +122,13 @@ const detailCell = (row: PlanRow): string =>
 const widthOf = (rows: readonly PlanRow[], pick: (row: PlanRow) => string) =>
   Math.max(0, ...rows.map((row) => pick(row).length));
 
-/** Group rows by band, in the plan's own band order. */
-function byBand(plan: SetupPlan): [ScopeBand, PlanRow[]][] {
-  const bands: ScopeBand[] = ["global", "project"];
-  return bands
-    .map((band): [ScopeBand, PlanRow[]] => [
-      band,
-      plan.rows.filter((row) => row.band === band),
+/** Group rows by scope, in the plan's own scope order. */
+function byScope(plan: SetupPlan): [Scope, PlanRow[]][] {
+  const scopes: Scope[] = ["global", "project"];
+  return scopes
+    .map((scope): [Scope, PlanRow[]] => [
+      scope,
+      plan.rows.filter((row) => row.scope === scope),
     ])
     .filter(([, rows]) => rows.length > 0);
 }
@@ -150,9 +150,9 @@ export function renderPlanTable(
   const idWidth = widthOf(plan.rows, (row) => row.target);
   const actionWidth = widthOf(plan.rows, actionCell);
   const lines = [style.bold(header(plan, options.lead)), ""];
-  const groups = byBand(plan);
-  for (const [band, rows] of groups) {
-    if (plan.scope === "both") lines.push(style.bold(SCOPE_LABELS[band]));
+  const groups = byScope(plan);
+  for (const [scope, rows] of groups) {
+    if (plan.scope === "both") lines.push(style.bold(SCOPE_LABELS[scope]));
     for (const row of rows) {
       lines.push(
         `  ${row.target.padEnd(idWidth)}  ${actionCell(row).padEnd(actionWidth)}  ${style.dim(detailCell(row))}`,
@@ -203,8 +203,8 @@ export function renderDetectionSummary(
   const idWidth = widthOf(shown, (row) => row.target);
   const actionWidth = widthOf(shown, actionCell);
   const lines = [style.bold(header(plan, "Detected")), ""];
-  for (const [band, rows] of byBand({ ...plan, rows: shown })) {
-    if (plan.scope === "both") lines.push(style.bold(SCOPE_LABELS[band]));
+  for (const [scope, rows] of byScope({ ...plan, rows: shown })) {
+    if (plan.scope === "both") lines.push(style.bold(SCOPE_LABELS[scope]));
     for (const row of rows) {
       lines.push(
         `  ${row.target.padEnd(idWidth)}  ${actionCell(row).padEnd(actionWidth)}  ${style.dim(detailCell(row))}`,
@@ -291,9 +291,9 @@ export function renderRecap(
       `${lead}: ${configured} of ${accountable} targets configured — ${scopePhrase(plan.scope)}`,
     ),
   ];
-  for (const [band, rows] of byBand(plan)) {
+  for (const [scope, rows] of byScope(plan)) {
     if (plan.scope === "both")
-      lines.push(style.bold(`  ${SCOPE_LABELS[band]}`));
+      lines.push(style.bold(`  ${SCOPE_LABELS[scope]}`));
     for (const row of rows) {
       lines.push(`  ${renderProgressLine(row, idWidth, style)}`);
       const remedy = row.outcome?.remedy;
@@ -318,7 +318,7 @@ export function renderPlanLlm(plan: SetupPlan, lead = "Setup"): string {
     const glyph = status === undefined ? NOT_RUN_GLYPH : OUTCOME_GLYPHS[status];
     const state = status ?? row.action;
     lines.push(
-      `- ${glyph} **${row.target}** (${row.band}): ${state} — ${detailCell(row)}`,
+      `- ${glyph} **${row.target}** (${row.scope}): ${state} — ${detailCell(row)}`,
     );
     for (const child of row.children ?? []) {
       lines.push(`  - ${childCell(row, child)}`);

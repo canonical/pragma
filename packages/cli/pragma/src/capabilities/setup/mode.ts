@@ -20,8 +20,8 @@
  * who forgot `--yes` reads the hint on the very output they are capturing.
  *
  * An MCP tool call is programmatic consent: `transport === "mcp"` resolves as if
- * `--yes` were passed. The band default applies there too — the tool writes the
- * global band unless told otherwise.
+ * `--yes` were passed. The scope default applies there too — the tool writes the
+ * global scope unless told otherwise.
  */
 
 import type { InteractionMode } from "@canonical/summon-core/projection";

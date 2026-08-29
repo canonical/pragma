@@ -4,7 +4,7 @@
  *
  * The plan REPLACED a tagged result union with one member per sub-verb, each
  * rendering its own sentence in its own vocabulary. That union could not
- * describe a run that touched several targets in two bands, so the run-all
+ * describe a run that touched several targets in two scopes, so the run-all
  * reported a list of step names and nothing about what any of them did. One
  * structure with one renderer is what makes the preview, the progress lines and
  * the recap agree by construction rather than by review.

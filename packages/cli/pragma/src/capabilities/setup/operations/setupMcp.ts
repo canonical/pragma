@@ -29,7 +29,7 @@ import type {
 import { mkdir, sequence_, type Task } from "@canonical/task";
 import { MCP_SERVER_NAME } from "../../../constants.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/index.js";
-import type { McpTargetState, ScopeBand } from "../types.js";
+import type { McpTargetState, Scope } from "../types.js";
 
 /** The `writeMcpConfigTargets` builder, captured from the dynamic harness import. */
 type WriteMcpConfigTargets =
@@ -87,23 +87,23 @@ const MCP_SERVE_ARGV = ["mcp", "serve"] as const;
  * classifier (does the existing entry match this?) and the writer (`composeMcp`)
  * consume, so "already configured" means byte-for-byte what a write would emit.
  *
- * The entry is BAND-shaped: a project-band entry records the project root as
+ * The entry is BAND-shaped: a project-scope entry records the project root as
  * `cwd` (that binding is the point of a per-repo registration), while a
- * global-band entry OMITS `cwd` entirely — a per-user server must not be
+ * global-scope entry OMITS `cwd` entirely — a per-user server must not be
  * pinned to whatever directory `setup mcp --global` happened to run from
  * (observed: a global registration from `~/Downloads` permanently served
  * `~/Downloads`, and re-running from repo B "repaired" it to repo B,
- * ping-ponging the machine band between projects). The per-harness
+ * ping-ponging the machine scope between projects). The per-harness
  * serializers already omit an undefined `cwd`, and the matcher treats an
  * omitted controlled field as must-be-absent, so a stale global entry still
  * carrying a `cwd` classifies as `drifted` and converges on the next write.
  *
- * @param cwd - The project root (recorded only on project-band entries).
- * @param band - The config band the entry is written to.
+ * @param cwd - The project root (recorded only on project-scope entries).
+ * @param scope - The config scope the entry is written to.
  * @returns The pragma {@link McpServerConfig}.
  */
-export function pragmaMcpEntry(cwd: string, band: ScopeBand): McpServerConfig {
-  return band === "project"
+export function pragmaMcpEntry(cwd: string, scope: Scope): McpServerConfig {
+  return scope === "project"
     ? { command: MCP_SERVER_NAME, args: [...MCP_SERVE_ARGV], cwd }
     : { command: MCP_SERVER_NAME, args: [...MCP_SERVE_ARGV] };
 }
@@ -125,7 +125,7 @@ export function pragmaMcpEntry(cwd: string, band: ScopeBand): McpServerConfig {
  * current and the other is missing.
  *
  * @param write - The resolved config target to inspect.
- * @param want - The canonical pragma entry for the group's band.
+ * @param want - The canonical pragma entry for the group's scope.
  * @param harnessesApi - The dynamically imported harnesses module.
  * @param runTask - The node Task interpreter.
  * @returns This write's {@link McpTargetState}.
@@ -187,13 +187,13 @@ const mcpWriteKey = (write: ConfigTarget): string =>
  * files.
  *
  * @param rt - The per-invocation runtime.
- * @param band - The band being planned (global or project).
- * @returns The band's target groups, their prior states, + the config writer.
+ * @param scope - The scope being planned (global or project).
+ * @returns The scope's target groups, their prior states, + the config writer.
  * @note Impure — reads the filesystem via `detectHarnesses` + `readMcpConfigFrom`.
  */
 export async function detectMcp(
   rt: PragmaRuntime,
-  band: ScopeBand,
+  scope: Scope,
 ): Promise<McpDetection> {
   const cwd = rt.cwd;
   const [
@@ -213,7 +213,7 @@ export async function detectMcp(
   ]);
   const platform = readPlatformEnv();
   const detected = await runTask(detectHarnesses(cwd, platform));
-  const groups = groupTargetsForScope(detected, cwd, band, platform);
+  const groups = groupTargetsForScope(detected, cwd, scope, platform);
 
   // Read each group's existing config (for real, up front) so the recap/preview
   // and the default selection reflect true prior state — the same discipline
@@ -328,7 +328,7 @@ export function composeMcp(
 }
 
 /**
- * The groups this band OWNS right now — every file where detection classifies a
+ * The groups this scope OWNS right now — every file where detection classifies a
  * pragma entry as present (`configured` or `drifted`). Removal acts on exactly
  * this set, so a file that never carried the entry is never rewritten and a
  * foreign server in a file that does is never touched.

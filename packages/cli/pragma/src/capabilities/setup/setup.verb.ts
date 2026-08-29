@@ -10,17 +10,17 @@
  * advertising the tool as destructive.
  *
  * THE BAND DEFAULT IS GLOBAL. `--scope` used to default to `both`, and `both`
- * runs each harness's own default band — which is `project` for most of the
+ * runs each harness's own default scope — which is `project` for most of the
  * registry — so a bare `setup` scattered `.mcp.json`, `.gemini/settings.json`
  * and `opencode.json` into whatever directory you happened to be standing in.
- * The user band is what a machine-level installer configures; the project band
+ * The user scope is what a machine-level installer configures; the project scope
  * is a deliberate, checked-in, team-shared choice, and is now chosen with
  * `--local` rather than assumed.
  *
- * Every sub-verb registers the scope flags UNIFORMLY. That is what lets the band
+ * Every sub-verb registers the scope flags UNIFORMLY. That is what lets the scope
  * answer come from the table instead of per-verb flag wiring — previously
  * `setup completions --local` died as an unknown option, while `setup mcp
- * --local` worked, for no reason a user could see. Asking a target for a band it
+ * --local` worked, for no reason a user could see. Asking a target for a scope it
  * cannot honour is a usage error (exit 2) with the corrected command; asking the
  * RUN-ALL for such a band merely filters, and the out-of-band target still shows
  * as a named row.
@@ -55,13 +55,13 @@ import {
   renderRecap,
 } from "./plan.render.js";
 import { renderDryRun, setupFormatters } from "./setup.render.js";
-import type { ScopeBand, ScopeSelection, SetupMode } from "./types.js";
+import type { Scope, ScopeSelection, SetupMode } from "./types.js";
 
 /**
  * The `--scope` flag + its `--global`/`--local` boolean sugars. Registered by
- * EVERY setup verb, including the single-band ones: a flag that exists on some
- * sub-verbs and not others is a grammar the user has to memorise, and the band
- * a single-band target can honour is a question the target table answers.
+ * EVERY setup verb, including the single-scope ones: a flag that exists on some
+ * sub-verbs and not others is a grammar the user has to memorise, and the scope
+ * a single-scope target can honour is a question the target table answers.
  *
  * `--global` is a synonym of the default; it stays for scripts and for symmetry
  * with `--local`.
@@ -101,26 +101,26 @@ function resolveScope(params: Record<string, unknown>): ScopeSelection {
 }
 
 /**
- * Reject a sub-verb asked for a band its target cannot hold.
+ * Reject a sub-verb asked for a scope its target cannot hold.
  *
  * This is a usage error, not a skip: the user typed a contradiction, and
- * correcting it is exactly what exit 2 means. The message names the band the
+ * correcting it is exactly what exit 2 means. The message names the scope the
  * target DOES have and prints the command that works, so the correction is one
  * paste rather than one manual page.
  *
  * @param mode - The sub-verb's target, or `all`.
  * @param scope - The resolved selection.
- * @throws PragmaError INVALID_INPUT when the target has no such band.
+ * @throws PragmaError INVALID_INPUT when the target has no such scope.
  */
-async function assertBandIsPossible(
+async function assertScopeIsPossible(
   mode: SetupMode,
   scope: ScopeSelection,
 ): Promise<void> {
   if (mode === "all" || scope === "both") return;
   const { findTarget } = await import("./targets.js");
   const target = findTarget(mode);
-  if (target === undefined || target.bands.includes(scope as ScopeBand)) return;
-  const only = target.bands[0] as ScopeBand;
+  if (target === undefined || target.scopes.includes(scope as Scope)) return;
+  const only = target.scopes[0] as Scope;
   const level = only === "global" ? "global only" : "per-project only";
   const asked = scope === "global" ? "globally" : "per project";
   const corrected =
@@ -175,7 +175,7 @@ const SUB_CAPABILITY = {
  *
  * @param mode - Which entry point (`all` or one target).
  * @param rt - The per-invocation runtime (mutated: `rt.exec` and `rt.planData`).
- * @param scope - The resolved band selection.
+ * @param scope - The resolved scope selection.
  * @returns The `Task<SetupPlan>` the dispatcher/MCP handler interprets.
  * @note Impure — runs every target's real detection before returning a Task.
  */
@@ -184,7 +184,7 @@ async function runSetup(
   rt: PragmaRuntime,
   scope: ScopeSelection,
 ): Promise<Task<SetupPlan>> {
-  await assertBandIsPossible(mode, scope);
+  await assertScopeIsPossible(mode, scope);
 
   // Lazy dynamic imports (lazy-React discipline): summon-core's barrel is
   // React-free, and the non-TTY branch picks autoPrompt/mcpPrompt (never mounts

@@ -721,8 +721,8 @@ describe("sources update — installs package skills (U10)", () => {
     savedDataHome = process.env.XDG_DATA_HOME;
     dataHome = tmp("pragma-datahome-");
     process.env.XDG_DATA_HOME = dataHome;
-    // HOME is isolated because an update now converges the GLOBAL band, and
-    // the global band's link directories live under it. A test that read the
+    // HOME is isolated because an update now converges the GLOBAL scope, and
+    // the global scope's link directories live under it. A test that read the
     // real home would be writing into the developer's own harness folders.
     savedHome = process.env.HOME;
     home = tmp("pragma-home-");
@@ -958,7 +958,7 @@ describe("sources update — installs package skills (U10)", () => {
   });
 });
 
-describe("sources update — converges the global band (converge-only)", () => {
+describe("sources update — converges the global scope (converge-only)", () => {
   let savedDataHome: string | undefined;
   let savedHome: string | undefined;
   let dataHome: string;
@@ -1047,7 +1047,7 @@ describe("sources update — converges the global band (converge-only)", () => {
     await update(skillPackage("added"), tmp("pragma-proj-"));
     expect(existsSync(join(home, ".agents"))).toBe(false);
     expect(existsSync(join(home, ".claude"))).toBe(false);
-    // Layer 1 is still installed — only the band convergence stood down.
+    // Layer 1 is still installed — only the scope convergence stood down.
     expect(existsSync(join(installedRoot(), "added"))).toBe(true);
   });
 

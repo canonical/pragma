@@ -20,7 +20,7 @@ export type SetupMode =
 // type surface stays complete; the definitions (and the structural pin against
 // `@canonical/harnesses`) live with the vocabulary.
 export type {
-  Scope as ScopeBand,
+  Scope,
   ScopeSelection,
 } from "../../kernel/render/vocabulary.js";
 

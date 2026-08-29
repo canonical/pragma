@@ -2,10 +2,10 @@
  * Render goldens for `pragma doctor` — the scope-grouped report AND the
  * plain-path color gate (F1).
  *
- * The Global / Local project grouping (`partitionByBand` → sections) is pinned
+ * The Global / Local project grouping (`partitionByScope` → sections) is pinned
  * for both the plain and llm formatters, locking the vocabulary the flags
  * already use — `--global` and `--local`. It is neither MACHINE/PROJECT (the
- * first spelling) nor "band" (the second): "band" is this repository's word for
+ * first spelling) nor "band" (the second): "band" was this repository's word for
  * the partition and nobody else's. Separately, the plain
  * formatter tints ONLY on a color-capable TTY: `supports-color` reports a
  * non-zero `chalk.level` off a TTY under `GITHUB_ACTIONS` / `FORCE_COLOR`, so the
@@ -19,28 +19,28 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { doctorFormatters } from "./doctor.render.js";
 import type { DoctorData } from "./types.js";
 
-/** A fixture spanning all three groups: environment (no band), global, project. */
-const BANDED_DATA: DoctorData = {
+/** A fixture spanning all three groups: environment (no scope), global, project. */
+const SCOPED_DATA: DoctorData = {
   checks: [
     { name: "Node version", status: "pass", detail: "v20 detected" },
     {
       name: "Shell completions",
       status: "pass",
       detail: "zsh up to date and resolving",
-      band: "global",
+      scope: "global",
     },
     {
       name: "MCP configured",
       status: "available",
       detail: "not set up for Windsurf",
       remedy: "pragma setup mcp",
-      band: "global",
+      scope: "global",
     },
     {
       name: "Skills symlinked",
       status: "skip",
       detail: "no AI harnesses detected",
-      band: "project",
+      scope: "project",
     },
   ],
   passed: 2,
@@ -102,7 +102,7 @@ afterAll(() => {
 
 describe("doctor render — scoped plain report", () => {
   it("groups checks under Global then Local project headers", () => {
-    const out = doctorFormatters.plain(BANDED_DATA);
+    const out = doctorFormatters.plain(SCOPED_DATA);
     const lines = out.split("\n");
     // The two section headers use the words the flags use.
     expect(lines).toContain("Global");
@@ -115,7 +115,7 @@ describe("doctor render — scoped plain report", () => {
   });
 
   it("orders environment → Global → Local project, placing each check correctly", () => {
-    const out = doctorFormatters.plain(BANDED_DATA);
+    const out = doctorFormatters.plain(SCOPED_DATA);
     // Environment check leads with no header; the two global checks sit under
     // Global; the per-project check sits under Local project.
     const at = (needle: string): number => out.indexOf(needle);
@@ -124,7 +124,7 @@ describe("doctor render — scoped plain report", () => {
     expect(at("Global")).toBeLessThan(at("Shell completions"));
     expect(at("MCP configured")).toBeLessThan(at("Local project"));
     expect(at("Local project")).toBeLessThan(at("Skills symlinked"));
-    // An available banded check keeps its inline setup command under its band.
+    // An available scoped check keeps its inline setup command under its scope.
     expect(out).toContain("fix: pragma setup mcp");
     // The tally closes the report.
     expect(out).toContain("2 passed");
@@ -133,7 +133,7 @@ describe("doctor render — scoped plain report", () => {
 
 describe("doctor render — scoped llm report", () => {
   it("groups checks under ### Global then ### Local project headers", () => {
-    const out = doctorFormatters.llm(BANDED_DATA);
+    const out = doctorFormatters.llm(SCOPED_DATA);
     expect(out).toContain("### Global");
     expect(out).toContain("### Local project");
     expect(out).not.toContain("### Machine");
@@ -149,7 +149,10 @@ describe("doctor render — scoped llm report", () => {
 
 describe("doctor render — json", () => {
   it("is the exact DoctorData round-trip", () => {
-    expect(JSON.parse(doctorFormatters.json(BANDED_DATA))).toEqual(BANDED_DATA);
+    expect(JSON.parse(doctorFormatters.json(SCOPED_DATA))).toEqual(SCOPED_DATA);
+    // The machine surface uses the scope vocabulary too — the retired word
+    // cannot survive as a JSON key.
+    expect(doctorFormatters.json(SCOPED_DATA)).not.toMatch(/\bbands?\b/);
   });
 });
 
@@ -197,7 +200,7 @@ const INVENTORY_DATA: DoctorData = {
       name: "harnesses",
       status: "pass",
       detail: "1 detected · 1 registered · 3 known",
-      band: "global",
+      scope: "global",
       items: [
         {
           label: "Claude Code",

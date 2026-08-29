@@ -29,21 +29,21 @@ const ROOTS = { global: "/home/u", project: "/home/u/src/app" };
 const ROWS: PlanRow[] = [
   {
     target: "config",
-    band: "global",
+    scope: "global",
     action: "none",
     detail: "~/.config/pragma/config.json — present",
     selected: false,
   },
   {
     target: "completions",
-    band: "global",
+    scope: "global",
     action: "install",
     detail: "bash → ~/.local/share/bash-completion/completions/pragma",
     selected: true,
   },
   {
     target: "lsp",
-    band: "global",
+    scope: "global",
     action: "skip",
     detail:
       "no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
@@ -53,7 +53,7 @@ const ROWS: PlanRow[] = [
   },
   {
     target: "mcp",
-    band: "global",
+    scope: "global",
     action: "update",
     detail: "2 config files",
     children: [
@@ -68,7 +68,7 @@ const ROWS: PlanRow[] = [
   },
   {
     target: "skills",
-    band: "global",
+    scope: "global",
     action: "link",
     detail: "2 skills → 2 folders (~/.claude/skills, ~/.agents/skills)",
     selected: true,
@@ -154,7 +154,7 @@ describe("the setup plan renders as one table", () => {
         ROWS[3] as PlanRow,
         {
           target: "mcp",
-          band: "project",
+          scope: "project",
           action: "skip",
           detail: "no AI harness in this project keeps a per-project config",
           reason: "no AI harness in this project keeps a per-project config",
@@ -166,8 +166,8 @@ describe("the setup plan renders as one table", () => {
     expect(out).toContain("Global");
     expect(out).toContain("Local project");
     expect(out).toContain("global and local project");
-    // "band" is the type layer's word for this partition. It never reaches a
-    // reader, in any of the three renders.
+    // "band" was the type layer's word for this partition; the vocabulary
+    // retired it, and it may not return through any of the three renders.
     expect(out).not.toMatch(/\bbands?\b/);
   });
 });
@@ -211,7 +211,7 @@ describe("a row that did not run never renders as one that did", () => {
     // "Setup complete" over a target it had quietly dropped.
     const row: PlanRow = {
       target: "mcp",
-      band: "global",
+      scope: "global",
       action: "update",
       detail: "1 file",
       selected: false,
@@ -229,7 +229,7 @@ describe("a row that did not run never renders as one that did", () => {
       rows: [
         {
           target: "config",
-          band: "global",
+          scope: "global",
           action: "none",
           detail: "~/.config/pragma/config.json — present",
           selected: false,
@@ -246,7 +246,7 @@ describe("a row that did not run never renders as one that did", () => {
   it("a failed row carries the failure glyph and its remedy", () => {
     const failed: PlanRow = {
       target: "lsp",
-      band: "global",
+      scope: "global",
       action: "install",
       detail: "via code",
       selected: true,
@@ -272,14 +272,17 @@ describe("a row that did not run never renders as one that did", () => {
 });
 
 describe("the machine-readable projections carry the same rows", () => {
-  it("json is the plan round-tripped, band and all", () => {
+  it("json is the plan round-tripped, scope and all", () => {
     expect(JSON.parse(setupFormatters.json(APPLIED))).toEqual(APPLIED);
+    // The type-layer rename reaches the machine surface too: the model is
+    // emitted verbatim, so the retired word cannot survive as a JSON key.
+    expect(setupFormatters.json(APPLIED)).not.toMatch(/\bbands?\b/);
   });
 
-  it("llm names every row with its band and state", () => {
+  it("llm names every row with its scope and state", () => {
     const out = setupFormatters.llm(APPLIED);
     for (const row of APPLIED.rows) {
-      expect(out).toContain(`**${row.target}** (${row.band})`);
+      expect(out).toContain(`**${row.target}** (${row.scope})`);
     }
   });
 });
@@ -303,7 +306,7 @@ describe("shortenPath — containment, on the host's own separator", () => {
     expect(shortenPath(roots.project, roots)).toBe(".");
   });
 
-  it("renders a global-band path under `~`", () => {
+  it("renders a global-scope path under `~`", () => {
     expect(shortenPath(join(roots.global, ".config", "x.json"), roots)).toBe(
       `~${sep}${join(".config", "x.json")}`,
     );

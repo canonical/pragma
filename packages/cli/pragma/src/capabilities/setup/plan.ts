@@ -19,7 +19,7 @@
 
 import { isAbsolute, relative, sep } from "node:path";
 import type { OutcomeStatus } from "../../kernel/render/vocabulary.js";
-import type { ScopeBand, ScopeSelection } from "./types.js";
+import type { Scope, ScopeSelection } from "./types.js";
 
 /** The five setup targets, in table (and therefore display) order. */
 export const TARGET_IDS = [
@@ -80,10 +80,10 @@ export interface PlanOutcome {
   readonly remedy?: string;
 }
 
-/** One row of the plan: one target in one band. */
+/** One row of the plan: one target in one scope. */
 export interface PlanRow {
   readonly target: TargetId;
-  readonly band: ScopeBand;
+  readonly scope: Scope;
   readonly action: PlanAction;
   /** Right-hand column: what and where, rendered root-relative. */
   readonly detail: string;

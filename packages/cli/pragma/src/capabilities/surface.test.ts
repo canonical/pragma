@@ -257,8 +257,8 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
   it("emits setup as a mixed self+sub noun (self is a tool, sub-verbs are mcp:false)", () => {
     // The one covenant noun both directly runnable AND with sub-verbs. The self
     // verb is the `setup` tool; the four installers are CLI-only (mcp:false).
-    // The band-aware verbs (setup/mcp/skills) carry the --scope/--global/--local
-    // flags; completions/lsp are single-band installers with no scope.
+    // The scope-aware verbs (setup/mcp/skills) carry the --scope/--global/--local
+    // flags; completions/lsp are single-scope installers with no scope.
     expect(emitted.nouns.setup?.verbs).toEqual([
       {
         v: "setup",

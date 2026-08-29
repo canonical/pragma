@@ -13,7 +13,7 @@
  *
  * The detection types are part of the surface, not an implementation leak: a
  * detection is the value passed from the read half to the compose half and on
- * to the plan rows, so `doctor`'s banded checks name the same records `setup`
+ * to the plan rows, so `doctor`'s scoped checks name the same records `setup`
  * acts on. The presentation helpers travel with them for the same reason — a
  * skip reason or an uninstall remedy is derived from one detection, and
  * deriving it twice is how the two surfaces start disagreeing about the same

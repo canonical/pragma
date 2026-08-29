@@ -1,7 +1,7 @@
 /**
  * `setup skills` — symlink discovered skills into harness skill directories.
  *
- * BAND-MATCHED: the band picks the source root AND the link destination, and
+ * SCOPE-MATCHED: the scope picks the source root AND the link destination, and
  * the two always match.
  *
  * - global (the default): INSTALLED skills (`$XDG_DATA_HOME/<bin>/skills`, where
@@ -9,14 +9,14 @@
  *   ships (`bundled-skills/`, last in precedence) link into user-level harness
  *   skill directories — the cross-client `~/.agents/skills`, plus the user-level
  *   directory of each detected harness whose user-level location is verified.
- *   The global band is therefore a root SET, and every rule below that used to
+ *   The global scope is therefore a root SET, and every rule below that used to
  *   read one `sourceRoot` ranges over it: what a skill resolves to (first-seen
  *   wins, so an installed skill beats the shipped copy), what this command
  *   OWNS, and what its stale sweep is entitled to touch.
  * - project (`--local`): PROJECT skills (`<cwd>/.<bin>/skills`) link into the
  *   project's harness directories — the checked-in, team-shared arrangement.
  *
- * Cross-band linking is what this replaces: linking installed skills into a
+ * Cross-scope linking is what this replaces: linking installed skills into a
  * repository's directories leaks machine state into a checkout, and linking a
  * repository's skills into the home directory applies one project's skills
  * machine-wide. Neither is ever what the user asked for.
@@ -67,7 +67,7 @@ import {
 } from "@canonical/task";
 import { BIN_NAME } from "../../../constants.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/index.js";
-import type { ScopeBand } from "../types.js";
+import type { Scope } from "../types.js";
 
 /** Cross-client skill directory, shared across all harnesses. */
 const CROSS_CLIENT_DIR = ".agents/skills";
@@ -75,7 +75,7 @@ const CROSS_CLIENT_DIR = ".agents/skills";
 /**
  * The harnesses whose USER-LEVEL skills directory is verified against the
  * harness's own documentation, and therefore safe to link into on the global
- * band. A harness absent from this set simply contributes no global link
+ * scope. A harness absent from this set simply contributes no global link
  * directory: an invented `~/.<something>/skills` would be a directory nothing
  * reads, and creating it would be litter dressed up as configuration.
  *
@@ -95,7 +95,7 @@ export interface SymlinkAction {
   readonly action: "created" | "skipped" | "replaced";
   readonly harnessName: string;
   /**
-   * Whether this link path currently holds a symlink INTO the band's skill
+   * Whether this link path currently holds a symlink INTO the scope's skill
    * root — the ownership test removal turns on. A link pointing anywhere else
    * is the user's and is never this command's to delete, and a real (non-link)
    * entry is never touched at all.
@@ -113,20 +113,20 @@ export interface SymlinkAction {
 }
 
 /**
- * The detected skill-linking plan for ONE band: the source root, the target
+ * The detected skill-linking plan for ONE scope: the source root, the target
  * directories, the decided per-link actions, and the counts the plan row
- * reports. `available` is false when the band's root holds no skills.
+ * reports. `available` is false when the scope's root holds no skills.
  */
 export interface SkillsDetection {
-  readonly band: ScopeBand;
+  readonly scope: Scope;
   /**
-   * The band's source roots, in PRECEDENCE order — the directories skills are
+   * The scope's source roots, in PRECEDENCE order — the directories skills are
    * discovered from, and the set every ownership test ranges over. One entry
-   * for the project band; installed-then-bundled for the global one.
+   * for the project scope; installed-then-bundled for the global one.
    */
   readonly sourceRoots: readonly string[];
   /**
-   * The band's PRIMARY source root — `sourceRoots[0]`, and the one the skip
+   * The scope's PRIMARY source root — `sourceRoots[0]`, and the one the skip
    * reason and the doctor row name. It is the root a user can DO something
    * about: the project directory they fill by hand, or the installed root
    * `sources update` writes. Naming the bundled snapshot instead would point
@@ -142,7 +142,7 @@ export interface SkillsDetection {
    * `XDG_DATA_HOME` points somewhere else, or where `sources update` has never
    * run, discovers zero skills — and a reconcile keyed on that alone would read
    * every link in `~/.claude/skills` as garbage and delete it. An ABSENT root
-   * means this command has NO OPINION about the band and touches nothing. Only
+   * means this command has NO OPINION about the scope and touches nothing. Only
    * an EXISTING root that no longer holds a given skill is evidence the skill
    * was retired, which is the one thing the sweep is entitled to act on.
    */
@@ -151,7 +151,7 @@ export interface SkillsDetection {
   readonly targets: readonly { readonly dir: string; readonly name: string }[];
   readonly actions: readonly SymlinkAction[];
   /**
-   * Links this band OWNS that no CURRENT skill accounts for: the source root
+   * Links this scope OWNS that no CURRENT skill accounts for: the source root
    * emptied, or one skill removed upstream. They are not part of the forward
    * plan — there is nothing left to link them to — but they are exactly what
    * removal exists to clear, and deriving removal from the per-skill actions
@@ -170,7 +170,7 @@ type LinkState =
   | { readonly kind: "other" };
 
 /**
- * Whether a link's destination lives INSIDE the band's skill root — the
+ * Whether a link's destination lives INSIDE the scope's skill root — the
  * ownership test, and the one that decides what `--undo` deletes.
  *
  * A raw `readlink` target may be relative, so it is resolved against the link's
@@ -182,7 +182,7 @@ type LinkState =
  * The root itself is not "inside" it: a link pointing AT the root is not one of
  * the per-skill links this command writes.
  *
- * @param root - The band's skill source root, absolute.
+ * @param root - The scope's skill source root, absolute.
  * @param linkPath - The absolute path of the link being classified.
  * @param rawTarget - The link's destination exactly as `readlink` reported it.
  * @returns Whether the destination is a path under the root.
@@ -204,15 +204,15 @@ export function withinRoot(
 }
 
 /**
- * Whether a link's destination lives inside ANY of the band's skill roots.
+ * Whether a link's destination lives inside ANY of the scope's skill roots.
  *
- * The band ownership test, once the global band stopped being a single
+ * The scope ownership test, once the global scope stopped being a single
  * directory. Every caller that used to ask {@link withinRoot} about one path
  * asks this about the set, so a link into the bundled snapshot is as much this
  * command's to maintain as one into the installed root — and a link into
  * neither is still nobody's business but the user's.
  *
- * @param roots - The band's skill source roots, absolute.
+ * @param roots - The scope's skill source roots, absolute.
  * @param linkPath - The absolute path of the link being classified.
  * @param rawTarget - The link's destination exactly as `readlink` reported it.
  * @returns Whether the destination is a path under one of the roots.
@@ -253,7 +253,7 @@ const BUNDLED_DIR_SEGMENT = "bundled-skills";
  * must not become this command's to delete just because a bundled skill shares
  * its name. That is the same rule a hand-placed real directory already gets.
  *
- * @param roots - The band's source roots.
+ * @param roots - The scope's source roots.
  * @param linkPath - The link's own path, absolute.
  * @param rawTarget - Its unresolved `readlink` value.
  * @returns Whether pragma created this link.
@@ -296,29 +296,29 @@ function linkState(linkPath: string): LinkState {
 }
 
 /**
- * The link directories for a band. Project: every detected harness's
+ * The link directories for a scope. Project: every detected harness's
  * project-rooted skills directory plus the cross-client one, exactly as
  * before. Global: the same construction rooted at the user's home directory,
  * but only for the harnesses in {@link VERIFIED_GLOBAL_SKILL_HARNESSES} —
  * plus the cross-client directory, which every client reads by convention.
  *
  * @param detected - The detected harnesses.
- * @param band - The band being set up.
- * @param root - The band's link root (`cwd` for project, home for global).
+ * @param scope - The scope being set up.
+ * @param root - The scope's link root (`cwd` for project, home for global).
  * @returns The deduplicated target directories, first-seen wins.
  */
 function linkTargets(
   detected: readonly {
     harness: { id: string; name: string; skillsPath: (root: string) => string };
   }[],
-  band: ScopeBand,
+  scope: Scope,
   root: string,
 ): { dir: string; name: string }[] {
   const seen = new Set<string>();
   const targets: { dir: string; name: string }[] = [];
   for (const d of detected) {
     if (
-      band === "global" &&
+      scope === "global" &&
       !VERIFIED_GLOBAL_SKILL_HARNESSES.has(d.harness.id)
     ) {
       continue;
@@ -335,7 +335,7 @@ function linkTargets(
 }
 
 /**
- * The GLOBAL band's link directories that ALREADY EXIST — the converge-only set
+ * The GLOBAL scope's link directories that ALREADY EXIST — the converge-only set
  * `sources update` is allowed to refresh.
  *
  * The filter is the whole policy, and it is why this is a separate export
@@ -347,8 +347,8 @@ function linkTargets(
  * conjuring `~/.claude/skills` into existence. Refresh what is there; never
  * bring a directory into being.
  *
- * The band is not widened by this: `VERIFIED_GLOBAL_SKILL_HARNESSES` and the
- * band covenant are exactly the ones `setup skills --global` already honours,
+ * The scope is not widened by this: `VERIFIED_GLOBAL_SKILL_HARNESSES` and the
+ * scope covenant are exactly the ones `setup skills --global` already honours,
  * because this is the same `linkTargets` call it makes.
  *
  * @param cwd - The invocation's working directory (harness detection reads it).
@@ -371,13 +371,13 @@ export async function existingGlobalSkillDirs(
 }
 
 /**
- * Whether the band's source root exists as a directory.
+ * Whether the scope's source root exists as a directory.
  *
  * `stat`, not `lstat`: a root the user symlinked into place is still a root.
  * Every failure — absent, unreadable, not a directory — answers false, which is
  * the fail-closed direction: the sweep then declines to act at all.
  *
- * @param root - The band's skill source root, absolute.
+ * @param root - The scope's skill source root, absolute.
  * @returns Whether it is a directory this run can have an opinion about.
  * @note Impure — stats the real filesystem.
  */
@@ -407,17 +407,17 @@ function rootIsPresent(root: string): boolean {
  * target is gone; the root's own existence is the separate question of whether
  * this command is entitled to answer at all.
  *
- * THE GATE IS PER ROOT, not per band. A band with two roots must not let one
+ * THE GATE IS PER ROOT, not per scope. A scope with two roots must not let one
  * of them vouch for the other: if the installed root is deleted (or
  * `XDG_DATA_HOME` points elsewhere for one invocation) while the bundled
  * snapshot — which ships inside the package and so is essentially always there
- * — still exists, a band-wide "some root exists" gate would hand the sweep every
+ * — still exists, a scope-wide "some root exists" gate would hand the sweep every
  * link into the vanished root and call it stale. So `existingRoots` is passed
  * already filtered, and a link is orphanable only when the root it points into
  * is one of them.
  *
- * @param targets - The band's link directories.
- * @param existingRoots - The band's source roots that EXIST (empty ⇒ no
+ * @param targets - The scope's link directories.
+ * @param existingRoots - The scope's source roots that EXIST (empty ⇒ no
  *   orphans at all).
  * @param covered - Link paths the per-skill pass already decided.
  * @returns The owned links no current skill accounts for.
@@ -462,21 +462,21 @@ function orphanedLinks(
 }
 
 /**
- * Discover the band's skills, detect harnesses, and decide each link action
+ * Discover the scope's skills, detect harnesses, and decide each link action
  * (real filesystem, up front).
  *
- * Target discovery runs even when the band holds NO skills: the directories are
+ * Target discovery runs even when the scope holds NO skills: the directories are
  * where this command's own links live, and a removal has to be able to find
  * them after the source root has been emptied.
  *
  * @param rt - The per-invocation runtime.
- * @param band - Which band to plan: global (installed skills) or project.
- * @returns The band's link plan.
+ * @param scope - Which scope to plan: global (installed skills) or project.
+ * @returns The scope's link plan.
  * @note Impure — reads the filesystem (skills + harnesses + existing links).
  */
 export async function detectSkills(
   rt: PragmaRuntime,
-  band: ScopeBand,
+  scope: Scope,
 ): Promise<SkillsDetection> {
   const cwd = rt.cwd;
   const [
@@ -489,20 +489,20 @@ export async function detectSkills(
     import("@canonical/task/node"),
   ]);
 
-  // The band picks the root SET; `globalSkillRoots` owns the global band's
+  // The scope picks the root SET; `globalSkillRoots` owns the global scope's
   // order (installed, then bundled) so this module and `sources update` cannot
-  // drift on which directories the band is.
+  // drift on which directories the scope is.
   const sourceRoots =
-    band === "project" ? [projectSkillsDir(cwd)] : globalSkillRoots();
+    scope === "project" ? [projectSkillsDir(cwd)] : globalSkillRoots();
   const sourceRoot = sourceRoots[0] as string;
-  const linkRoot = band === "project" ? cwd : userHome(readPlatformEnv());
+  const linkRoot = scope === "project" ? cwd : userHome(readPlatformEnv());
   // First-seen wins, so an installed skill shadows the bundled copy of the same
   // name: someone who ran `sources update` links the CURRENT skill.
   const skills = discoverSkillsFrom(sourceRoots);
   const existingRoots = sourceRoots.filter(rootIsPresent);
   const rootExists = existingRoots.length > 0;
   const detected = await runTask(detectHarnesses(cwd));
-  const targets = linkTargets(detected, band, linkRoot);
+  const targets = linkTargets(detected, scope, linkRoot);
 
   // Decide each action against REAL fs (so the preview is accurate). Dangling
   // or wrong-target symlinks are `replaced` (delete + relink); a real
@@ -568,7 +568,7 @@ export async function detectSkills(
     );
 
   return {
-    band,
+    scope,
     sourceRoots,
     sourceRoot,
     rootExists,
@@ -591,7 +591,7 @@ export async function detectSkills(
 }
 
 /**
- * The links a FORWARD run must retire: the ones this band owns that no current
+ * The links a FORWARD run must retire: the ones this scope owns that no current
  * skill accounts for.
  *
  * The forward pass used to read `d.actions` alone, and `d.actions` enumerates
@@ -623,7 +623,7 @@ export const staleSkillLinks = (
  * NOTHING, so a converged re-run performs zero filesystem mutations.
  *
  * A forward run is a RECONCILE, not an append: it also deletes the links this
- * band owns that no current skill accounts for (see {@link staleSkillLinks}), each
+ * scope owns that no current skill accounts for (see {@link staleSkillLinks}), each
  * carrying its own re-creation as `undo`.
  *
  * @param d - The detection gathered up front.
@@ -670,8 +670,8 @@ export function composeSkills(d: SkillsDetection): Task<void> {
 }
 
 /**
- * The links this band OWNS right now — every existing symlink pointing into the
- * band's skill root, including dangling ones, ones already correct, and the
+ * The links this scope OWNS right now — every existing symlink pointing into the
+ * scope's skill root, including dangling ones, ones already correct, and the
  * ones no current skill accounts for. This is what removal acts on, and it is
  * deliberately NOT the forward plan: undoing a freshly composed forward plan on
  * an already-linked tree reversed the mkdirs and removed nothing, while
@@ -694,11 +694,11 @@ export function composeSkills(d: SkillsDetection): Task<void> {
  * The GLOBAL sentence names where skills come from, because "no skills
  * installed" on its own is a dead end: a reader has no way to know that skills
  * arrive inside the configured packs rather than inside this CLI. The scope is
- * named as `local project`, never as a "band" — the word the `--local` flag
- * that selects it would lead anyone to.
+ * named as `local project` — the phrase the `--local` flag that selects it
+ * points at — never by a type-layer word.
  *
  * @param sourceRoot - The scope's skill source root, already root-relative.
- * @param band - The scope being reported.
+ * @param scope - The scope being reported.
  * @param rootExists - Whether that root exists ({@link
  *   SkillsDetection.rootExists}) — an existing root that holds no skill reports
  *   as empty, never as absent.
@@ -706,10 +706,10 @@ export function composeSkills(d: SkillsDetection): Task<void> {
  */
 export const skillsSkipReason = (
   sourceRoot: string,
-  band: ScopeBand,
+  scope: Scope,
   rootExists: boolean,
 ): string =>
-  band === "project"
+  scope === "project"
     ? rootExists
       ? `nothing to link — this project holds no skills (${sourceRoot} is empty)`
       : `nothing to link — this project holds no skills (${sourceRoot} does not exist)`
@@ -734,14 +734,11 @@ export const skillsSkipReason = (
  * as the same sentence twice.
  *
  * @param sourceRoot - The scope's skill source root, already root-relative.
- * @param band - The scope being reported.
+ * @param scope - The scope being reported.
  * @returns The remedy line — an action that works on THIS machine now.
  */
-export const skillsSkipRemedy = (
-  sourceRoot: string,
-  band: ScopeBand,
-): string =>
-  band === "project"
+export const skillsSkipRemedy = (sourceRoot: string, scope: Scope): string =>
+  scope === "project"
     ? `add a skill at ${sourceRoot}/<name>/SKILL.md, then run this again`
     : `run \`${BIN_NAME} sources update\`, then run this again`;
 

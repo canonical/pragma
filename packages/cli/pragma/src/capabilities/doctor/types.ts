@@ -11,7 +11,7 @@ import type { CheckStatus, Scope } from "../../kernel/render/vocabulary.js";
 
 export type {
   CheckStatus,
-  Scope as ScopeBand,
+  Scope,
 } from "../../kernel/render/vocabulary.js";
 
 /**
@@ -43,13 +43,13 @@ export interface CheckResult {
    */
   readonly remedy?: string;
   /**
-   * Which config band the check concerns, if any: `global` for the user/home
+   * Which config scope the check concerns, if any: `global` for the user/home
    * level (shell completions), `project` for per-repo config (skills). The MCP
-   * checks derive their band from the harnesses they found. The renderer groups
-   * banded checks into Global/Project sections; environment checks (Node,
-   * versions, store) carry no band.
+   * checks derive their scope from the harnesses they found. The renderer groups
+   * scoped checks into Global/Project sections; environment checks (Node,
+   * versions, store) carry no scope.
    */
-  readonly band?: Scope;
+  readonly scope?: Scope;
 }
 
 /** Aggregated results from all doctor checks — one count per status tier. */
