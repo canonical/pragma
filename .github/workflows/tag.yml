@@ -133,7 +133,25 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
+        # The publish converges on REGISTRY state, not manifest state: after a
+        # partial failure the repo is already tagged and every manifest already
+        # claims the new version, so the only truthful definition of "what
+        # needs publishing" is "public packages whose manifest version the
+        # registry does not have". `lerna publish from-package` (below)
+        # publishes exactly that set; this step prints the same diff first so
+        # the log states the plan even when lerna's own reporting fails
+        # (v0.36.0: it died with `errno "undefined" is not a valid exit code`
+        # and no statement of which of the 55 packages had published).
+      - name: Plan the publish against the registry
+        run: bun scripts/publish-reconcile.ts
+
       - name: Publish packages
+        id: lerna_publish
+        # The verify step below is this job's verdict, so a lerna failure must
+        # not end the job before the outcome is reported. lerna's exit code
+        # conflates real failures with its own error plumbing, and a partial
+        # publish is exactly the state that needs a legible report.
+        continue-on-error: true
         # Route pre-releases to a dist-tag named after their pre-release
         # identifier (e.g. 0.30.0-experimental.1 -> "experimental") so they
         # never take over npm's `latest`; stable releases go to `latest`.
@@ -152,6 +170,18 @@ jobs:
           fi
           echo "Publishing $VERSION to dist-tag '$DIST_TAG'"
           lerna publish --yes --no-private --dist-tag "$DIST_TAG" from-package
+
+        # THE VERDICT: the job succeeds iff every public package is on the
+        # registry at its manifest version. Running it unconditionally makes
+        # the job idempotent end to end — a re-run after a partial failure
+        # publishes only the missing packages (from-package computes the same
+        # registry diff) and then goes green here; a re-run after full success
+        # is a clean no-op. It also writes the per-package outcome to the job
+        # summary, so a partial failure names what published and what did not.
+      - name: Verify the registry converged
+        env:
+          PUBLISH_STEP_OUTCOME: ${{ steps.lerna_publish.outcome }}
+        run: bun scripts/publish-reconcile.ts --verify
 
       - name: Create GitHub Release with artifacts
         uses: ./.github/actions/github-release
