@@ -6,6 +6,8 @@ import {
 	type WorkspacePackage,
 	findViolations,
 	loadWorkspacePackages,
+	repairedRange,
+	rewriteDeclaration,
 	satisfies,
 } from "./check-workspace-ranges";
 
@@ -236,5 +238,88 @@ describe("against the real repository", () => {
 		expect(
 			violations.map((v) => `${v.file} ${v.field}.${v.sibling} = ${v.range} (actual ${v.actual})`),
 		).toEqual([]);
+	});
+});
+
+describe("repairing what a bump left behind", () => {
+	test("a caret range moves to the sibling's new version", () => {
+		expect(repairedRange("^0.35.0", "0.36.0")).toBe("^0.36.0");
+	});
+
+	test("a tilde range STAYS a tilde range", () => {
+		// A package that pinned with `~` asked for patch-only drift. Repairing it
+		// into `^` would silently widen a deliberate constraint — the fix must
+		// make the range satisfiable, not make it permissive.
+		expect(repairedRange("~0.35.0", "0.36.0")).toBe("~0.36.0");
+	});
+
+	test("a bare version becomes a caret range", () => {
+		expect(repairedRange("0.35.0", "0.36.0")).toBe("^0.36.0");
+	});
+
+	test("a `workspace:` wrapper survives the repair", () => {
+		// The protocol changes who resolves the range, not what it means.
+		expect(repairedRange("workspace:^0.35.0", "0.36.0")).toBe(
+			"workspace:^0.36.0",
+		);
+	});
+
+	test("`workspace:*` is left alone — it links by construction", () => {
+		expect(repairedRange("workspace:*", "0.36.0")).toBeNull();
+	});
+});
+
+describe("rewriting a declaration in a manifest", () => {
+	const manifest = [
+		"{",
+		'  "name": "@canonical/summon-component",',
+		'  "dependencies": {',
+		'    "@canonical/task": "^0.35.0"',
+		"  },",
+		'  "peerDependencies": {',
+		'    "@canonical/summon-core": "^0.35.0",',
+		'    "@canonical/task": "^0.35.0"',
+		"  }",
+		"}",
+	].join("\n");
+
+	test("rewrites the named field only, not the same sibling elsewhere", () => {
+		// `@canonical/task` appears in BOTH blocks with the same range. A rewrite
+		// that matched the first occurrence would move the wrong declaration and
+		// leave the violation in place — while reporting success.
+		const out = rewriteDeclaration(
+			manifest,
+			"peerDependencies",
+			"@canonical/task",
+			"^0.35.0",
+			"^0.36.0",
+		);
+		expect(out).not.toBeNull();
+		const text = out ?? "";
+		expect(text).toContain('"dependencies": {\n    "@canonical/task": "^0.35.0"');
+		expect(text).toContain('"@canonical/task": "^0.36.0"');
+		// The sibling declared beside it is untouched.
+		expect(text).toContain('"@canonical/summon-core": "^0.35.0"');
+	});
+
+	test("leaves everything else byte-identical", () => {
+		const out =
+			rewriteDeclaration(
+				manifest,
+				"peerDependencies",
+				"@canonical/summon-core",
+				"^0.35.0",
+				"^0.36.0",
+			) ?? "";
+		expect(out).toBe(manifest.replace('"@canonical/summon-core": "^0.35.0"', '"@canonical/summon-core": "^0.36.0"'));
+	});
+
+	test("answers null when the declaration is not there", () => {
+		expect(
+			rewriteDeclaration(manifest, "peerDependencies", "@canonical/ke", "^0.35.0", "^0.36.0"),
+		).toBeNull();
+		expect(
+			rewriteDeclaration(manifest, "optionalDependencies", "@canonical/task", "^0.35.0", "^0.36.0"),
+		).toBeNull();
 	});
 });

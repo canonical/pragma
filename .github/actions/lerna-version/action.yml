@@ -27,6 +27,22 @@ runs:
       id: lerna_version
       run: ${{ github.action_path }}/version.sh ${{ inputs.release_type }} ${{ inputs.tag_prefix }}
 
+      # `lerna version` rewrites sibling ranges in dependencies, devDependencies
+      # and optionalDependencies — but NOT peerDependencies. For a 0.x line every
+      # bump is breaking under caret semantics, so a package that peer-depends on
+      # a sibling is left declaring a range its sibling has just outgrown, and
+      # `check:ranges` below stops the release. That is not hypothetical: it is
+      # how v0.35.0 shipped a broken main, and how v0.36.0 was blocked.
+      #
+      # This runs the SAME script as the verification step, in `--fix` mode, so
+      # the repair and the guard can never disagree about what a satisfiable
+      # range is. It runs BEFORE the lockfile update so `bun install` resolves
+      # against the corrected ranges. Anything it cannot repair — an unparseable
+      # range states an intent no rule can infer — survives to fail the guard.
+    - name: Repair sibling ranges lerna does not rewrite
+      shell: bash
+      run: bun run check:ranges --fix
+
       # `lerna version` updates package numbers, so we must update the root lockfile.
       # This can be removed once https://github.com/lerna/lerna/issues/4234 is closed.
     - name: Update lockfile

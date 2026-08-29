@@ -38,7 +38,7 @@
  *   bun scripts/check-workspace-ranges.ts --help
  */
 
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 // -------------------------------------------------------------------
@@ -386,6 +386,68 @@ export function findViolations(packages: WorkspacePackage[]): Violation[] {
 }
 
 /**
+ * The range to write in place of one a bump has outgrown.
+ *
+ * The leading operator is PRESERVED rather than normalised: a package that
+ * pinned a sibling with `~` asked for patch-only drift and a fix must not
+ * silently widen that to `^`. Anything else — a bare version, a range with no
+ * recognised operator — becomes `^`, which is what every sibling range in this
+ * repo already uses and what the report has always told people to write.
+ *
+ * A `workspace:` wrapper is carried across untouched: it changes who resolves
+ * the range, not what the range means.
+ *
+ * @param range - The declared range, exactly as the manifest carries it.
+ * @param actual - The sibling's real in-repo version.
+ * @returns The replacement range, or null when the shape is not one to rewrite.
+ */
+export function repairedRange(range: string, actual: string): string | null {
+	const wsPrefix = range.startsWith("workspace:") ? "workspace:" : "";
+	const bare = range.slice(wsPrefix.length);
+	// `workspace:*` / `workspace:~` / `workspace:^` link by construction and are
+	// never violations, so reaching here with one means something is off.
+	if (bare === "" || bare === "*") return null;
+	const op = bare.startsWith("~") ? "~" : bare.startsWith("^") ? "^" : "^";
+	return `${wsPrefix}${op}${actual}`;
+}
+
+/**
+ * Rewrite one sibling range inside one manifest, textually.
+ *
+ * Textual and field-scoped rather than parse-and-reserialise: a manifest holds
+ * ordering, spacing and comments-by-convention that a round-trip through
+ * `JSON.parse` would silently reflow, turning a one-line release fix into a
+ * whole-file diff. Scoping to the field matters because the same sibling
+ * legitimately appears in several of them with different ranges — rewriting the
+ * first match would move the wrong one.
+ *
+ * @returns The updated text, or null when the expected declaration was absent.
+ */
+export function rewriteDeclaration(
+	text: string,
+	field: DependencyField,
+	sibling: string,
+	range: string,
+	replacement: string,
+): string | null {
+	const esc = (v: string): string =>
+		v.replace(/[.*+?^${}()|[\]\\]/g, (m) => `\\${m}`);
+	// Dependency blocks hold no nested objects, so `[^}]*` is a safe body match.
+	const block = new RegExp(`("${field}"\\s*:\\s*\\{)([^}]*)(\\})`);
+	const found = block.exec(text);
+	if (found === null) return null;
+	const [whole, open, body, close] = found as unknown as [
+		string,
+		string,
+		string,
+		string,
+	];
+	const decl = new RegExp(`("${esc(sibling)}"\\s*:\\s*")${esc(range)}(")`);
+	if (!decl.test(body)) return null;
+	return text.replace(whole, `${open}${body.replace(decl, `$1${replacement}$2`)}${close}`);
+}
+
+/**
  * Human-readable report. Written for someone who hits this in CI at 2am and
  * will not read this file: it names the manifest, the field, the range, the
  * sibling's real version, and the edit to make.
@@ -454,6 +516,53 @@ export function formatViolations(violations: Violation[]): string {
 // -------------------------------------------------------------------
 
 /** Walk up from `start` until a directory holds a package.json with workspaces. */
+/**
+ * Rewrite every repairable violation in place, one manifest read/write per file.
+ *
+ * Only ranges this tool UNDERSTANDS are touched: an unparseable range states an
+ * intent no rule here can infer, so it is left exactly as written and reported
+ * by the caller's second pass. Repairing what it can and re-reporting the rest
+ * is deliberate — a release should not be blocked by the mechanical half of a
+ * problem, and it must still stop for the half that needs a person.
+ *
+ * @param rootDir - The repository root.
+ * @param violations - The violations from a completed check pass.
+ * @returns How many declarations were actually rewritten.
+ * @note Impure — reads and writes package manifests.
+ */
+async function repairViolations(
+	rootDir: string,
+	violations: readonly Violation[],
+): Promise<number> {
+	const byFile = new Map<string, Violation[]>();
+	for (const v of violations) {
+		if (v.unparseable === true) continue;
+		byFile.set(v.file, [...(byFile.get(v.file) ?? []), v]);
+	}
+
+	let count = 0;
+	for (const [file, items] of byFile) {
+		const path = join(rootDir, file);
+		let text = await readFile(path, "utf8");
+		for (const v of items) {
+			const replacement = repairedRange(v.range, v.actual);
+			if (replacement === null) continue;
+			const next = rewriteDeclaration(
+				text,
+				v.field,
+				v.sibling,
+				v.range,
+				replacement,
+			);
+			if (next === null) continue;
+			text = next;
+			count++;
+		}
+		if (count > 0) await writeFile(path, text);
+	}
+	return count;
+}
+
 async function findRepoRoot(start: string): Promise<string> {
 	let dir = start;
 	for (;;) {
@@ -473,11 +582,13 @@ async function main(): Promise<number> {
 	if (process.argv.includes("--help") || process.argv.includes("-h")) {
 		console.log(
 			[
-				"Usage: bun scripts/check-workspace-ranges.ts",
+				"Usage: bun scripts/check-workspace-ranges.ts [--fix]",
 				"",
 				"Fails when a workspace package declares a dependency range on a workspace",
 				"sibling that the sibling's current version does not satisfy, across",
 				`${DEPENDENCY_FIELDS.join(", ")}.`,
+				"",
+				"--fix rewrites every repairable range in place, then reports what is left.",
 				"",
 				"Exit codes: 0 = every sibling range is satisfiable, 1 = at least one is not.",
 			].join("\n"),
@@ -487,7 +598,18 @@ async function main(): Promise<number> {
 
 	const rootDir = await findRepoRoot(resolve(import.meta.dir, ".."));
 	const packages = await loadWorkspacePackages(rootDir);
-	const violations = findViolations(packages);
+	let violations = findViolations(packages);
+
+	if (process.argv.includes("--fix") && violations.length > 0) {
+		const repaired = await repairViolations(rootDir, violations);
+		if (repaired > 0) {
+			console.log(
+				`Rewrote ${repaired} sibling range${repaired === 1 ? "" : "s"} to match the ` +
+					"sibling's current version.",
+			);
+			violations = findViolations(await loadWorkspacePackages(rootDir));
+		}
+	}
 
 	if (violations.length === 0) {
 		console.log(
