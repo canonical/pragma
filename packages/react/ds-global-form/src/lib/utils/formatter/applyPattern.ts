@@ -9,7 +9,7 @@
  * returned as they are.
  *
  * This is display-only — callers keep the digits as the source of truth and
- * recover them with {@link ./stripToDigits.js | stripToDigits}.
+ * recover them with {@link stripToDigits}.
  *
  * @note Pure.
  */
