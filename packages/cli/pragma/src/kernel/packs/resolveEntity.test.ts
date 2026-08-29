@@ -100,10 +100,6 @@ describe("pack lookup addressing (PROTECTED)", () => {
   const uris = (out: LookupOutput): string[] =>
     out.results.map((entity) => String(entity.uri));
 
-  /** The IRIs a lookup set aside, flattened across the batch. */
-  const outranked = (out: LookupOutput): string[] =>
-    (out.ambiguous ?? []).flatMap((entry) => [...entry.others]);
-
   describe("an IRI addresses an entity on EVERY pack, not just sparql ones", () => {
     it("resolves a prefixed name on a graphql-sourced pack", async () => {
       const out = await lookupVia(GQL, "ds:button");
@@ -204,87 +200,72 @@ describe("pack lookup addressing (PROTECTED)", () => {
     });
   });
 
-  describe("an ambiguous name answers with ONE entity, and names the rest", () => {
+  describe("an ambiguous name answers with EVERY entity it reaches", () => {
     // `ds:zeta.chip` is declared BEFORE `ds:alpha.chip` in the fixture, so the
     // store enumerates it first while IRI order puts `alpha` first. Neither of
-    // these stories declares a ranking, so the winner is the total `STR(?uri)`
-    // it always was — what changed is that the chip it did NOT answer with is
-    // now named. Both paths, because the resolve is generated SPARQL either way
-    // and only the field fetch differs.
-    it("answers the lowest IRI, and names the other, on the sparql path", async () => {
+    // these stories declares a ranking, so the order is the total `STR(?uri)`
+    // it always was — what changed is that BOTH chips come back. Both paths,
+    // because the resolve is generated SPARQL either way and only the field
+    // fetch differs.
+    it("answers with both, best first, on the sparql path", async () => {
       const out = await lookupVia(SPQ, "Chip");
-      expect(uris(out)).toEqual([`${DS}alpha.chip`]);
-      expect(outranked(out)).toEqual([`${DS}zeta.chip`]);
+      expect(uris(out)).toEqual([`${DS}alpha.chip`, `${DS}zeta.chip`]);
     });
 
-    it("answers the lowest IRI, and names the other, on the graphql path", async () => {
+    it("answers with both, best first, on the graphql path", async () => {
       const out = await lookupVia(GQL, "Chip");
-      expect(uris(out)).toEqual([`${DS}alpha.chip`]);
-      expect(outranked(out)).toEqual([`${DS}zeta.chip`]);
-    });
-
-    it("records the argument AS TYPED, not the name it matched", async () => {
-      // The notice quotes it back, and quoting back a spelling the caller did
-      // not use ("Chip" for a typed "chip") reads as a different question.
-      const out = await lookupVia(SPQ, "chip");
-      expect(out.ambiguous?.map((entry) => entry.query)).toEqual(["chip"]);
-      expect(out.ambiguous?.at(0)?.chosen).toBe(`${DS}alpha.chip`);
+      expect(uris(out)).toEqual([`${DS}alpha.chip`, `${DS}zeta.chip`]);
     });
 
     it("agrees with itself across repeated resolves", async () => {
+      // Determinism was never the property in question — `LIMIT 1` over a total
+      // order was already deterministic. It is pinned because the order now
+      // carries the ranking's judgement, and an order that varied by store
+      // would make the first result mean nothing.
       const runs = await Promise.all([
         lookupVia(SPQ, "Chip"),
         lookupVia(SPQ, "chip"),
         lookupVia(GQL, "CHIP"),
       ]);
       expect(runs.map(uris)).toEqual([
-        [`${DS}alpha.chip`],
-        [`${DS}alpha.chip`],
-        [`${DS}alpha.chip`],
-      ]);
-      expect(runs.map(outranked)).toEqual([
-        [`${DS}zeta.chip`],
-        [`${DS}zeta.chip`],
-        [`${DS}zeta.chip`],
+        [`${DS}alpha.chip`, `${DS}zeta.chip`],
+        [`${DS}alpha.chip`, `${DS}zeta.chip`],
+        [`${DS}alpha.chip`, `${DS}zeta.chip`],
       ]);
     });
 
-    it("says NOTHING for an unambiguous name", async () => {
-      // The arity did not change, and neither does the payload of the reads
-      // that were never ambiguous — 201 of the live block names, and every
-      // argument on every other noun. `ambiguous` is absent, not empty.
+    it("answers with ONE entity for an unambiguous name", async () => {
+      // The plural case costs the singular one nothing: a unique name still
+      // returns an array of one, which is the payload it always had.
       const out = await lookupVia(GQL, "Modal");
       expect(uris(out)).toEqual([`${DS}modal`]);
-      expect(out.ambiguous).toBeUndefined();
     });
 
-    it("says nothing for an IRI, even a shared name's IRI", async () => {
-      // An IRI is one entity by construction — it IS the recovery the notice
-      // hands out, so it must not itself report an ambiguity.
+    it("answers with ONE entity for an IRI, even a shared name's IRI", async () => {
+      // An IRI is one entity by construction, so the IRI form keeps its
+      // `LIMIT 1`: there is nothing to rank and nothing else to reach.
       const out = await lookupVia(SPQ, "ds:zeta.chip");
       expect(uris(out)).toEqual([`${DS}zeta.chip`]);
-      expect(out.ambiguous).toBeUndefined();
     });
 
-    it("names the other entity when a GLOB expands onto the shared name", async () => {
+    it("reaches both entities when a GLOB expands onto the shared name", async () => {
       // The glob population is DISTINCT names, so "Chip" expands to ONE
-      // candidate and a glob is not the escape a shared name needs: live,
+      // candidate — a glob was never the escape a shared name needs. Live,
       // `block lookup 'Butt*'` listed Launchpad's Button and ButtonLink while
-      // the global Button appeared nowhere. The notice reaches through the glob
-      // for the same reason it reaches through a plain name.
+      // the global Button appeared nowhere. Now the shared name reaches both
+      // through the glob for the same reason it does through a plain name.
       const out = await lookupVia(SPQ, "Chi*");
-      expect(uris(out)).toEqual([`${DS}alpha.chip`]);
-      expect(outranked(out)).toEqual([`${DS}zeta.chip`]);
+      expect(uris(out)).toEqual([`${DS}alpha.chip`, `${DS}zeta.chip`]);
     });
 
-    it("renders the outranked IRIs as the verb's notice", async () => {
-      // The seam, end to end: what the resolver set aside becomes the sentence
-      // the dispatcher puts on stderr and both machine surfaces put in
-      // `meta.notice` — in the COMPACT spelling, because the notice's only job
-      // is to hand back an address the CLI accepts as an argument.
-      const notice = lookupNoticeVia(SPQ, await lookupVia(SPQ, "Chip"));
-      expect(notice).toContain("ds:zeta.chip");
-      expect(notice).toContain("address it by IRI");
+    it("adds no notice — the payload IS the address", async () => {
+      // An earlier draft kept the arity and named the outranked IRIs in a
+      // notice. With every entity returned there is nothing set aside to name,
+      // and a sentence restating what the payload already carries is noise.
+      // The zero-record notice is untouched; only the ambiguity one is gone.
+      expect(
+        lookupNoticeVia(SPQ, await lookupVia(SPQ, "Chip")),
+      ).toBeUndefined();
       expect(
         lookupNoticeVia(SPQ, await lookupVia(SPQ, "Modal")),
       ).toBeUndefined();

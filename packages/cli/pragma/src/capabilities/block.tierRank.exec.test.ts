@@ -8,10 +8,10 @@
  * Launchpad's Button — `apps_launchpad…` sorts before `global…` — and an agent
  * had no way to learn that the block everybody means also existed.
  *
- * Two properties, both asserted here: the answer is the RANKED one, and the
- * blocks it outranked are NAMED. Either alone leaves a caller stuck — a better
- * arbitrary pick is still arbitrary, and a notice under a wrong answer is still
- * a wrong answer.
+ * Two properties, both asserted here: EVERY block the name reaches comes back,
+ * and they come back RANKED. Either alone leaves a caller stuck — a better
+ * arbitrary pick is still arbitrary, and an unordered list of two makes the
+ * reader do the ranking the graph already knows how to do.
  *
  * This suite is deliberately NOT fixture-backed, and that is the whole point of
  * it. The two nearest specimens in this package show why: `journeys.livePack`
@@ -83,16 +83,14 @@ async function rows(query: string): Promise<Record<string, string>[]> {
 /** One `block lookup <name>`: the IRI it answered with, and the ones it did not. */
 async function lookup(
   name: string,
-): Promise<{ chosen: string; others: string[]; notice: string | undefined }> {
+): Promise<{ chosen: string; others: string[] }> {
   const out = (await lookupVerb.run({ name: [name] }, rt)) as {
     results: { uri?: string }[];
-    ambiguous?: { others: readonly string[] }[];
   };
-  return {
-    chosen: String(out.results.at(0)?.uri),
-    others: (out.ambiguous ?? []).flatMap((entry) => [...entry.others]),
-    notice: lookupVerb.output.formatters.notice?.(out as never),
-  };
+  // Every entity the name reached, best first. `chosen` is simply the head —
+  // the ranking orders the answer now, it does not select it.
+  const [chosen, ...others] = out.results.map((entity) => String(entity.uri));
+  return { chosen: String(chosen), others };
 }
 
 /**
@@ -156,9 +154,6 @@ describe("a shared block name reaches every block that carries it (PROTECTED)", 
     expect(out.others).toEqual([
       "https://ds.canonical.com/apps_launchpad.component.button",
     ]);
-    // And in the sentence a caller actually sees, as an address they can type
-    // back: "address it by IRI" is not a recovery if no IRI is given.
-    expect(out.notice).toContain("ds:apps_launchpad.component.button");
   });
 
   it("answers `TextInput` with the LAUNCHPAD one — a whole block beats a part", async () => {
@@ -211,11 +206,6 @@ describe("a shared block name reaches every block that carries it (PROTECTED)", 
         [out.chosen, ...out.others].sort(),
         `block lookup ${name}`,
       ).toEqual(entries.map((entry) => entry.uri).sort());
-      for (const other of out.others) {
-        expect(out.notice, `notice for ${name}`).toContain(
-          other.replace("https://ds.canonical.com/", "ds:"),
-        );
-      }
     }
   });
 
