@@ -23,6 +23,7 @@ import {
   GENERATOR_CANCELLED,
 } from "../../execute/execute.js";
 import type GeneratorDefinition from "../../types/GeneratorDefinition.js";
+import { MISSING_REQUIRED_ANSWER } from "../autoPrompt.js";
 import type { StepReport } from "../inkPrompt.js";
 import type { PromptEffect } from "../types.js";
 
@@ -454,6 +455,42 @@ export class SessionController {
       new TaskExecutionError({
         code: GENERATOR_CANCELLED,
         message: "Cancelled.",
+      }),
+    );
+  }
+
+  /**
+   * The user sent EOF (Ctrl-D) — input has ENDED (C3). Distinct from a
+   * decline: a Ctrl-C at a prompt is a user CHOOSING not to proceed (a clean
+   * cancel, exit 0), while an EOF says the input source can never produce the
+   * pending answer. The pending prompt therefore rejects with the SAME
+   * `MISSING_REQUIRED_ANSWER` code the non-interactive strategy raises for an
+   * absent answer — the CLI boundary maps it to a usage error (exit 2) with a
+   * message that names the unanswered prompt, instead of hanging a wizard
+   * whose stdin has nothing more to say. Before this method existed the \x04
+   * byte was not handled at all: Ink handed it to the focused text input as a
+   * literal character and the wizard waited forever.
+   *
+   * With NO prompt pending (an EOF mid-execution), it defers to {@link cancel}
+   * — work already underway aborts exactly as a Ctrl-C would (exit 130).
+   */
+  eof(): void {
+    const pending = this.pending;
+    if (pending === undefined) {
+      this.cancel();
+      return;
+    }
+    this.pending = undefined;
+    // Abort the run too: the reject fails the current Prompt effect, and the
+    // abort stops the drive loop at its next `checkInterrupted` — same pairing
+    // as cancel(), so a generator with follow-up work cannot keep running
+    // against an input source that has ended.
+    this.onUserCancel?.();
+    this.set({ phase: "cancelled" });
+    pending.reject(
+      new TaskExecutionError({
+        code: MISSING_REQUIRED_ANSWER,
+        message: `Input ended (EOF) before "${pending.effect.question.name}" was answered. Provide the answer as a flag, or pass --yes to accept the defaults.`,
       }),
     );
   }

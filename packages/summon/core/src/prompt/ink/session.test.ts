@@ -230,6 +230,35 @@ describe("SessionController", () => {
     expect(c.getSnapshot().phase).toBe("cancelled");
   });
 
+  it("eof rejects the pending prompt as MISSING_REQUIRED_ANSWER, naming it (C3)", async () => {
+    let aborts = 0;
+    const c = new SessionController(gen, () => aborts++);
+    const p = c.request(ask("path"));
+    c.eof();
+    // NOT GENERATOR_CANCELLED: an EOF is not a decline. The code is what the
+    // CLI boundary maps to a usage error (exit 2) instead of a clean exit 0 —
+    // and instead of the pre-fix behaviour, which was no handling at all (the
+    // \x04 byte fell through to the focused text input and the wizard hung).
+    await expect(p).rejects.toMatchObject({
+      code: "MISSING_REQUIRED_ANSWER",
+      message: expect.stringContaining('Input ended (EOF) before "path"'),
+    });
+    // The run aborts too — a generator with follow-up work must not keep
+    // running against an input source that has ended.
+    expect(aborts).toBe(1);
+    expect(c.getSnapshot().phase).toBe("cancelled");
+  });
+
+  it("eof with nothing pending defers to cancel — an abort, not a reject (C3)", () => {
+    let aborts = 0;
+    const c = new SessionController(gen, () => aborts++);
+    // Models an EOF DURING execution: no prompt to reject, so the abort is
+    // what stops the run (the interpreter surfaces TASK_INTERRUPTED, 130).
+    c.eof();
+    expect(aborts).toBe(1);
+    expect(c.getSnapshot().phase).toBe("cancelled");
+  });
+
   it("folds host step reports into live rows, measuring wall time per step", async () => {
     const c = new SessionController(gen);
     const gate = c.request(confirm());

@@ -212,8 +212,12 @@ export const Wizard = ({ controller }: WizardProps) => {
 
   // Ctrl-C cancels from any phase (Ink is mounted with exitOnCtrlC:false, so the
   // key reaches here). Cancelling rejects the pending prompt, failing the task.
+  // Ctrl-D is EOF (C3): input has ENDED, so a pending prompt resolves to a
+  // usage error naming the unanswered question rather than hanging (and, with
+  // nothing pending, aborts like a cancel) — see SessionController.eof.
   useInput((input, key) => {
     if (key.ctrl && input === "c") controller.cancel();
+    else if (key.ctrl && input === "d") controller.eof();
   });
 
   useInput(

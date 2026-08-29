@@ -328,6 +328,45 @@ describe("keyboard bindings (one prompt, one render each)", () => {
     },
     TEST_TIMINGS.testBudgetMs,
   );
+
+  it(
+    "text prompt: Ctrl-D (EOF) resolves to MISSING_REQUIRED_ANSWER, no hang (C3)",
+    async () => {
+      const c = new SessionController(gen);
+      const { lastFrame, stdin, unmount } = render(<Wizard controller={c} />);
+      const frame = (): string => lastFrame() ?? "";
+      const wedged = describeWedge(c, frame);
+      try {
+        const pending = c.request(
+          text("componentPath", "Component path:", "src/components/Button"),
+        );
+        // Idempotent: a late duplicate \x04 finds nothing pending and defers
+        // to cancel(), which re-sets the already-cancelled phase - no state
+        // can change, so the fake stdin's late-delivery caveat is satisfied.
+        pending.catch(() => {
+          // The rejection is asserted below; this handler only keeps a
+          // pre-assertion rejection from surfacing as unhandled.
+        });
+        await waitFor(() => frame().includes("Component path:"), wedged);
+        await pressUntil(
+          stdin,
+          "\u0004",
+          () => c.getSnapshot().phase === "cancelled",
+          wedged,
+        );
+        // The pre-fix wizard had NO \x04 handling: Ink handed the byte to the
+        // focused text input as a literal character and this promise never
+        // settled. The code (not GENERATOR_CANCELLED) is what routes an EOF to
+        // a usage error at the CLI boundary instead of a clean exit 0.
+        await expect(pending).rejects.toMatchObject({
+          code: "MISSING_REQUIRED_ANSWER",
+        });
+      } finally {
+        unmount();
+      }
+    },
+    TEST_TIMINGS.testBudgetMs,
+  );
 });
 
 describe("cancelled frame is truthful about files written (H2)", () => {
