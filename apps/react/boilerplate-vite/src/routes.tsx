@@ -102,7 +102,7 @@ function NotFoundPage(): ReactElement {
 
 const notFoundRoute = route({
   url: "/not-found",
-  component: NotFoundPage,
+  content: NotFoundPage,
 });
 
 const [guide, home] = group(publicLayout, [

@@ -4,7 +4,7 @@ import ContactPage from "./ContactPage.js";
 const routes = {
   contact: route({
     url: "/contact",
-    component: ContactPage,
+    content: ContactPage,
   }),
 } as const;
 

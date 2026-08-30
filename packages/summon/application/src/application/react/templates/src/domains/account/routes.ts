@@ -45,12 +45,12 @@ const routes = {
   account: route({
     url: "/account",
     search: accountSearchSchema,
-    component: AccountPage,
+    content: AccountPage,
   }),
   login: route({
     url: "/login",
     search: loginSearchSchema,
-    component: LoginPage,
+    content: LoginPage,
   }),
 } as const;
 

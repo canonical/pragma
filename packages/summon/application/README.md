@@ -153,7 +153,7 @@ src/domains/billing/
 The generator locates the `routes` object with the TypeScript AST and splices in both the import and the full entry:
 
 ```ts
-invoices: route({ url: "/billing/invoices", component: InvoicesPage }),
+invoices: route({ url: "/billing/invoices", content: InvoicesPage }),
 ```
 
 Running with `--undo` removes that entry and import again — safe when the insertion actually added a new key. If the route key already existed the insertion was a no-op, and `--undo` would remove the pre-existing route (the generator help documents the same caveat). Create the domain first with `summon domain <name>`.
@@ -243,14 +243,14 @@ Routes are flat objects using `route()` from `@canonical/router-core`:
 const routes = {
   invoices: route({
     url: "/billing/invoices",
-    component: InvoicesPage,
+    content: InvoicesPage,
   }),
 } as const;
 
 export default routes;
 ```
 
-- `component` receives the component directly (not a wrapper function)
+- `content` receives the component directly (not a wrapper function)
 - Pages use `useHead()` from `@canonical/react-head` for title and meta
 - No `fetch()` / `warm()` unless needed for cache warming
 - No `.error` — use React error boundaries
