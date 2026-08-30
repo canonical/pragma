@@ -64,7 +64,9 @@ export const useLensShortcuts = (): ShortcutAllocation<
   // parameterless — no longer by assumption but by `collectShortcuts`' own
   // invariant, which throws on a `:param` route that claims a key — so
   // collapsing the intersection to the union member's shape is sound.
-  const navigate = router.navigate as (to: string) => unknown;
+  const navigate = router.navigate as (
+    to: RouteName<RegisteredRouteMap>,
+  ) => unknown;
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {

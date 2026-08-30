@@ -27,8 +27,11 @@ export const routeShortcutFacet = defineFacet<
   string,
   typeof ROUTE_SHORTCUT_META_KEY
 >(ROUTE_SHORTCUT_META_KEY, (value, key) => {
-  // Code points, not UTF-16 units: `KeyboardEvent.key` for a printable key
-  // is one grapheme, which `.length` would miscount above the BMP.
+  // Code points, not UTF-16 units: `KeyboardEvent.key` for a printable key is
+  // one code point, and `.length` would miscount it above the BMP (an
+  // astral character is two UTF-16 units). Deliberately NOT grapheme
+  // segmentation: a ZWJ sequence spans several code points and is rejected
+  // here, which is correct — it is not a key a keydown handler will ever match.
   if (typeof value !== "string" || [...value].length !== 1) {
     throw new Error(
       `route meta ${key} is not a single-character key (got ${JSON.stringify(value)})`,
