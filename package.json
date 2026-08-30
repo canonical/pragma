@@ -19,7 +19,7 @@
   "workspaces": [
     "configs/*",
     "packages/*",
-    "packages/docsite/*",
+    "packages/prism/*",
     "packages/react/*",
     "packages/runtime/*",
     "packages/storybook/*",

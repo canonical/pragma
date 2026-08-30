@@ -34,7 +34,7 @@
  * diverge. If a deployment ever needs an override it is added HERE, behind
  * the same export.
  *
- * THE ACCEPTANCE GATE MUST NEVER READ IT. `packages/docsite/graph-example`
+ * THE ACCEPTANCE GATE MUST NEVER READ IT. `packages/prism/graph-example`
  * supplies its own binding (`metro:Station`) through
  * `LENS_OPERATION_VARIABLES`. The two never meet, and that is the point:
  * the gate proves the OPERATION is neutral, this module proves the

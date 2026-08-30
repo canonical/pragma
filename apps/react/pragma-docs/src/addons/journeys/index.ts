@@ -20,7 +20,7 @@
 // WHY IT MOVED HERE. An owner decision, recorded verbatim: "keep it on side
 // for now, it will be an add-on plugin not a core view." The relocation
 // follows the RECLASSIFICATION; it is not a way of getting a red gate to look
-// green. Read `packages/docsite/graph-example/src/testing/integration/
+// green. Read `packages/prism/graph-example/src/testing/integration/
 // lensOperations.test.ts` before concluding otherwise — moving any operation
 // that is still meant to be core out of the lens tree is expressly forbidden
 // there, and remains so.

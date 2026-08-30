@@ -114,7 +114,7 @@ spreads it.
 
 **The app needs a graph, and it runs as its own process.** `bun run graph`
 (`src/server/graph.ts`) starts the pragma provider
-([`@canonical/prism-pragma-provider`](../../../packages/docsite/pragma-provider))
+([`@canonical/prism-pragma-provider`](../../../packages/prism/pragma-provider))
 and serves its compiled schema at `http://127.0.0.1:5175/graphql` — nothing
 else, no HTML. **The app assembles no provider of its own**: the ref-package
 list, the ontology exclusions, the custom field mapping and the compiler
@@ -133,10 +133,10 @@ one.
 cache, so `~/.cache/pragma/refs/@canonical` must be populated (`pragma sources
 update`, or point `PRAGMA_REFS_DIR` at a cache) before any server script serves
 data. See
-[the provider's README](../../../packages/docsite/pragma-provider/README.md)
+[the provider's README](../../../packages/prism/pragma-provider/README.md)
 for the source layout it expects. This is a prerequisite of *that provider*,
 not of this app: any provider implementing `@canonical/prism-contract` can take
-its place — see [`packages/docsite/graph-example`](../../../packages/docsite/graph-example)
+its place — see [`packages/prism/graph-example`](../../../packages/prism/graph-example)
 and set `VITE_GRAPHQL_URL`.
 
 **Generated artifacts are committed.** The Vite plugin runs with
