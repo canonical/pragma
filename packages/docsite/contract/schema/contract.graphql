@@ -58,7 +58,9 @@ interface Node {
 Self-describing TBox access attached to every Node, plus the generic
 descriptive fields a lens renders without knowing the concrete type. `title`
 is total: the provider computes a fallback chain whose tail is the IRI LOCAL
-NAME, never the full IRI (`…#Film` answers "Film"). `label`, `comment`, and
+NAME (`…#Film` answers "Film"), with the whole IRI below it for the degenerate
+case of an IRI that ends in a separator and so has no local name. `label`,
+`comment`, and
 `definition` are asserted-only and null when nothing is asserted.
 
 `curie` is the DISPLAY form of `uri`, and it lives here rather than beside

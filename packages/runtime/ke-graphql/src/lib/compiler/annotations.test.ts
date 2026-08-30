@@ -3,8 +3,9 @@
 // A002 targets, A003 values, A004 recognition/applicability, A005 config
 // shadowing), the prefix path (namespace re-keying, value validation), and
 // the overlay application of every v1 term. Crafted RawExtractions, rows in
-// the (target, term, kind, value) order the extractor guarantees. The
+// the (target, term, value, kind) order the extractor guarantees. The
 // effective-map injectivity guard lives in build.ts and is tested there.
+// (Row order is `[target, term, value, kind]`, per GraphqlAnnotationRow.)
 // =============================================================================
 
 import { describe, expect, it } from "vitest";

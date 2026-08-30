@@ -49,7 +49,7 @@ unchanged; only the statistic it is asserted against was made reliable.
 | `pragma __complete`       | 46.1 ms | 51.3 ms | 100 ms  | 2× median (50 ms target)  |
 | `config show`              | 63.5 ms | 68.9 ms | —       | reference (storeless run) |
 | project config load (warm) | < 1 ms  | < 1 ms  | 10 ms   | cache hit (in-process)    |
-| `__store-probe` (store)    | ~147 ms | ~176 ms | 500 ms  | re-derived (see below)    |
+| `__store-probe` (store)    | ~147 ms | ~176 ms | 1200 ms | re-derived twice (below)  |
 
 The store-backed verb budget (`__store-probe`: oxigraph WASM load + n-quads
 cache load + `compileFromExtraction` + a SPARQL count, in the compiled binary)
@@ -117,7 +117,40 @@ Three things this shows.
    put. The median of the five within-repetition multipliers — each measured
    under conditions identical for both binaries — is **2.83×**.
 
-### `BUDGET_WARM_STORE_MS`: 300 → 500
+### `BUDGET_WARM_STORE_MS`: 300 → 500 → 1200
+
+The 500 ms derivation below stands **for the reference box**, and still measures
+green there (8/8, median ≈ 295 ms). It does not hold on the GitHub-hosted CI
+runner class, which is where the gate is actually enforced: three independent
+measurements of this test reported medians of **696.3, 786.9 and 795.9 ms**.
+
+Re-derived 2026-08-30 by the same method, from the worst observed median rather
+than the best:
+
+```
+observed CI median (worst of 3)                                = 795.9 ms
+reference p95/median for this command = 176 / 147              = 1.197
+projected p95                 = 795.9 × 1.197                  = 952.7 ms
+ceiling                       = ceil(952.7 × 1.25 / 50) × 50   = 1200 ms
+```
+
+The 1.25× margin and the 50 ms rounding are unchanged; the only input that moved
+is the measured median, which is the honest statement of what changed — the
+hardware, not the code. A round 900 was considered and rejected: it clears the
+observed medians but not the p95 they imply.
+
+**Known incomplete.** At 1200 ms the test stops failing its budget and starts
+failing vitest's 5 s per-test timeout instead: 15 spawns (12 runs + 3 warmups)
+at ~800 ms is ~12 s of measurement. In the same run `pragma --help` also went
+red on this runner class (130 ms ceiling; observed 138.4 / 184.1 / 197.8 ms).
+Both say the same thing — **the perf contract as a whole does not hold on
+GitHub-hosted runners**, and raising ceilings one at a time as each turns red is
+not a derivation, it is a chase. What this file cannot settle alone: whether the
+contract becomes runner-class-conditional, whether the timeout moves with the
+measurement it wraps, or whether perf gates leave PR CI for a machine whose
+numbers mean something.
+
+#### The original reference-box derivation (500 ms)
 
 The arithmetic, from named inputs, in full. Reference-box inputs are the two
 rows of the table above this section: `--version` 45.5 ms median / 50.1 ms p95,

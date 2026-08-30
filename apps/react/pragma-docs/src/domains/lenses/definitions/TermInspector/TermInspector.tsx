@@ -271,8 +271,9 @@ const PropertyTable = ({
  * `ontologies { prefix namespace }` — no new variable, no new round trip.
  *
  * The displayed name is `_meta.title`, which is TOTAL by construction (the
- * provider computes a fallback chain whose tail is the IRI local name,
- * never the full IRI). There is no `?? curie` branch because there is no
+ * provider computes a fallback chain ending in the IRI local name, with the
+ * whole IRI below it when there is no local name). There is no `?? curie`
+ * branch because there is no
  * case that reaches it — a fallback on a total field is unreachable code
  * wearing defence's clothes.
  *
