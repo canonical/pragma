@@ -36,7 +36,7 @@ const routes = {
   definitions: route({
     url: "/definitions",
     content: DefinitionsPage,
-    prefetch: (params, search) => {
+    warm: (params, search) => {
       warmRouteQuery(definitionsRouteEntry, params, search);
     },
     meta: {
@@ -48,7 +48,7 @@ const routes = {
   definitionsTerm: route({
     url: "/definitions/:term",
     content: DefinitionsPage,
-    prefetch: (params, search) => {
+    warm: (params, search) => {
       warmRouteQuery(definitionsRouteEntry, params, search);
     },
     meta: {

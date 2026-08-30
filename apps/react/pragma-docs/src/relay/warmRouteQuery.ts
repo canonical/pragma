@@ -2,7 +2,7 @@
  * Warm the client Relay store for a route's query — the execution half of
  * the P-5 prefetch seam. A route module builds its `RouteQueryEntry` once
  * and parks it under BOTH `meta[ROUTE_QUERY_META_KEY]` (the server prepare
- * contract, P-2) and `prefetch: (params, search) => warmRouteQuery(entry,
+ * contract, P-2) and `warm: (params, search) => warmRouteQuery(entry,
  * params, search)` (this seam), so hover-prefetch (router-react's `Link`
  * calls `router.prefetch()` on mouseenter) and the initial hydration load
  * both funnel through one code path.

@@ -19,6 +19,7 @@
   "workspaces": [
     "configs/*",
     "packages/*",
+    "packages/docsite/*",
     "packages/react/*",
     "packages/runtime/*",
     "packages/storybook/*",

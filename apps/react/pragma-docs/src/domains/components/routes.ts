@@ -45,7 +45,7 @@ const routes = {
   components: route({
     url: "/components",
     content: ComponentsCatalogPage,
-    prefetch: (params, search) => {
+    warm: (params, search) => {
       warmRouteQuery(componentsCatalogRouteEntry, params, search);
     },
     meta: {
@@ -57,7 +57,7 @@ const routes = {
   componentEntity: route({
     url: "/components/:uri",
     content: ComponentEntityPage,
-    prefetch: (params, search) => {
+    warm: (params, search) => {
       warmRouteQuery(componentEntityRouteEntry, params, search);
     },
     meta: {

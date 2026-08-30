@@ -46,7 +46,7 @@ const routes = {
   journeys: route({
     url: "/journeys",
     content: JourneysPage,
-    prefetch: (params, search) => {
+    warm: (params, search) => {
       warmRouteQuery(journeysRouteEntry, params, search);
     },
     meta: {
@@ -58,7 +58,7 @@ const routes = {
   journeysJob: route({
     url: "/journeys/:job",
     content: JourneysPage,
-    prefetch: (params, search) => {
+    warm: (params, search) => {
       warmRouteQuery(journeysRouteEntry, params, search);
     },
     meta: {

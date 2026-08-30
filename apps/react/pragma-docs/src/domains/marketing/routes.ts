@@ -43,7 +43,7 @@ const routes = {
   home: route({
     url: "/",
     content: HomePage,
-    prefetch: (params, search) => {
+    warm: (params, search) => {
       warmRouteQuery(lobbyRouteEntry, params, search);
     },
     meta: {

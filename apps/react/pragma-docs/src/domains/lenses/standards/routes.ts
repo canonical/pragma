@@ -48,7 +48,7 @@ const routes = {
   standards: route({
     url: "/standards",
     content: StandardsPage,
-    prefetch: (params, search) => {
+    warm: (params, search) => {
       warmRouteQuery(standardsIndexRouteEntry, params, search);
     },
     meta: {
@@ -60,7 +60,7 @@ const routes = {
   standardEntity: route({
     url: "/standards/:uri",
     content: StandardReadingPage,
-    prefetch: (params, search) => {
+    warm: (params, search) => {
       warmRouteQuery(standardEntityRouteEntry, params, search);
     },
     meta: {

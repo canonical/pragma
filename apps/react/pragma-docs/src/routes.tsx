@@ -52,11 +52,11 @@ export function withAuth(loginPath: string): RouteMiddleware {
       return currentRoute;
     }
 
-    const currentPrefetch = currentRoute.prefetch;
+    const currentPrefetch = currentRoute.warm;
 
     return {
       ...currentRoute,
-      prefetch: (
+      warm: (
         params: unknown,
         search: unknown,
         context: NavigationContext,
