@@ -1,5 +1,11 @@
-import type { ReactElement, ReactNode } from "react";
-import { Suspense, useCallback, useRef, useSyncExternalStore } from "react";
+import type { ComponentType, ReactElement, ReactNode } from "react";
+import {
+  createElement,
+  Suspense,
+  useCallback,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import useRouter from "../hooks/useRouter.js";
 import type { OutletProps } from "./types.js";
 
@@ -49,7 +55,39 @@ export default function Outlet({ fallback = null }: OutletProps): ReactElement {
     match && "name" in match && typeof match.name === "string"
       ? match.name
       : undefined;
-  const rendered = router.render() as ReactNode;
+  // Build ELEMENTS instead of calling `router.render()`.
+  //
+  // Core's `render()` INVOKES the route's component and its wrappers as
+  // plain functions — `content({ params, search })`, `wrapper.component({
+  // children })` — so any hooks they declare run inside THIS component's
+  // hook list. Navigating between two routes whose components use different
+  // numbers of hooks then throws "Rendered fewer hooks than expected",
+  // because React sees Outlet's own hook count change between renders.
+  //
+  // `createElement` gives each component its own fiber, so its hooks belong
+  // to it. Core's `render()` is left alone: it is the correct shape for a
+  // non-React consumer, and this is a React-layer concern.
+  let rendered: ReactNode = null;
+
+  if (match && "route" in match && match.route.content) {
+    const contentElement = createElement(
+      match.route.content as ComponentType<{
+        readonly params: unknown;
+        readonly search: unknown;
+      }>,
+      { params: match.params, search: match.search },
+    );
+
+    rendered = (
+      match.route.wrappers as readonly {
+        readonly component: ComponentType<{ readonly children: ReactNode }>;
+      }[]
+    ).reduceRight<ReactNode>(
+      (children, currentWrapper) =>
+        createElement(currentWrapper.component, null, children),
+      contentElement,
+    );
+  }
 
   return (
     <Suspense key={routeKey} fallback={fallback}>
