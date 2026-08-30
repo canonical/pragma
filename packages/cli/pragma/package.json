@@ -68,7 +68,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@canonical/anatomy-dsl": "^0.2.2",
+    "@canonical/anatomy-dsl": "^0.3.0",
     "@canonical/biome-config": "^0.36.0",
     "@canonical/summon": "^0.36.0",
     "@canonical/typescript-config": "^0.36.0",
