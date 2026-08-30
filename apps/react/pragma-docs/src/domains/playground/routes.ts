@@ -12,7 +12,7 @@ import {
 const routes = {
   playground: route({
     url: "/playground",
-    component: PlaygroundPage,
+    content: PlaygroundPage,
     // The server bricks POST this entry to the graph server before rendering
     // and serialise the resulting store into `__INITIAL_DATA__.relay.records`
     // (see src/server/prepareRelayData.ts). The route has no params and no

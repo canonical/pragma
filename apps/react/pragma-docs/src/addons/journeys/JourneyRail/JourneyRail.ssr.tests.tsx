@@ -3,7 +3,7 @@
  * the complete keyboard path through the lens exists before any client JS.
  */
 
-import { createStaticRouter } from "@canonical/router-core";
+import createStaticRouter from "../../../lib/router/createStaticRouter.js";
 import { RouterProvider } from "@canonical/router-react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";

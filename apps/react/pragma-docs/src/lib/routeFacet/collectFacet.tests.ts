@@ -17,13 +17,13 @@ describe("collectFacet", () => {
     const routes = {
       first: route({
         url: "/first",
-        component: page,
+        content: page,
         meta: badgeFacet.of("a"),
       }),
-      plain: route({ url: "/plain", component: page }),
+      plain: route({ url: "/plain", content: page }),
       third: route({
         url: "/third",
-        component: page,
+        content: page,
         meta: badgeFacet.of("c"),
       }),
     } as const;
@@ -37,7 +37,7 @@ describe("collectFacet", () => {
 
   it("hands back the route itself, not just its value", () => {
     const routes = {
-      only: route({ url: "/only", component: page, meta: badgeFacet.of("a") }),
+      only: route({ url: "/only", content: page, meta: badgeFacet.of("a") }),
     } as const;
     const [bearer] = collectFacet(badgeFacet, routes);
     expect(bearer?.route).toBe(routes.only);
@@ -50,7 +50,7 @@ describe("collectFacet", () => {
     const routes = {
       other: route({
         url: "/other",
-        component: page,
+        content: page,
         meta: otherFacet.of("a"),
       }),
     } as const;
@@ -65,8 +65,8 @@ describe("collectFacet", () => {
     // Same conviction as `collectRouteQueries`: a bad annotation is a bug to
     // surface, never a route that quietly drops out of the set.
     const routes = {
-      good: route({ url: "/good", component: page, meta: badgeFacet.of("a") }),
-      bad: route({ url: "/bad", component: page, meta: { badge: 7 } }),
+      good: route({ url: "/good", content: page, meta: badgeFacet.of("a") }),
+      bad: route({ url: "/bad", content: page, meta: { badge: 7 } }),
     } as const;
     expect(() => collectFacet(badgeFacet, routes)).toThrow(
       "route meta badge is not a string",

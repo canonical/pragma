@@ -10,7 +10,7 @@
  */
 
 import { HeadProvider } from "@canonical/react-head";
-import { createStaticRouter } from "@canonical/router-core";
+import createStaticRouter from "../lib/router/createStaticRouter.js";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 import { act } from "react";
 import type { Root } from "react-dom/client";

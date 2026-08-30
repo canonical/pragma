@@ -13,7 +13,7 @@ import { allNamespacesFilter } from "../lensFilter.js";
 import TermRail from "./TermRail.js";
 
 const bareRoutes = {
-  definitionsTerm: route({ url: "/definitions/:term", component: () => null }),
+  definitionsTerm: route({ url: "/definitions/:term", content: () => null }),
 } as const;
 
 /**

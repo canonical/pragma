@@ -10,7 +10,7 @@ import { allNamespacesFilter } from "../lensFilter.js";
 import HierarchyWell from "./HierarchyWell.js";
 
 const bareRoutes = {
-  definitionsTerm: route({ url: "/definitions/:term", component: () => null }),
+  definitionsTerm: route({ url: "/definitions/:term", content: () => null }),
 } as const;
 
 /**

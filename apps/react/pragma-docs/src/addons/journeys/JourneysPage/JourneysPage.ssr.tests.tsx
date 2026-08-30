@@ -4,7 +4,7 @@
  */
 
 import { HeadProvider } from "@canonical/react-head";
-import { createStaticRouter } from "@canonical/router-core";
+import createStaticRouter from "../../../lib/router/createStaticRouter.js";
 import { RouterProvider } from "@canonical/router-react";
 import { renderToString } from "react-dom/server";
 import { RelayEnvironmentProvider } from "react-relay";

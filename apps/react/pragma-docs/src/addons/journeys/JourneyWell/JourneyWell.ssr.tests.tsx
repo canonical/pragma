@@ -8,7 +8,7 @@
  * those is a real constraint, so each is asserted here rather than trusted.
  */
 
-import { createStaticRouter } from "@canonical/router-core";
+import createStaticRouter from "../../../lib/router/createStaticRouter.js";
 import { RouterProvider } from "@canonical/router-react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";

@@ -23,7 +23,7 @@
  * `nodeCssNoop.ts` with them.
  */
 
-import { createStaticRouter } from "@canonical/router-core";
+import createStaticRouter from "../lib/router/createStaticRouter.js";
 import type { Variables } from "relay-runtime";
 import {
   type RouteQueryEntry,

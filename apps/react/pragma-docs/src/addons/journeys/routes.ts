@@ -45,7 +45,7 @@ import { journeysStripSlots } from "./stripSlots.js";
 const routes = {
   journeys: route({
     url: "/journeys",
-    component: JourneysPage,
+    content: JourneysPage,
     prefetch: (params, search) => {
       warmRouteQuery(journeysRouteEntry, params, search);
     },
@@ -57,7 +57,7 @@ const routes = {
   }),
   journeysJob: route({
     url: "/journeys/:job",
-    component: JourneysPage,
+    content: JourneysPage,
     prefetch: (params, search) => {
       warmRouteQuery(journeysRouteEntry, params, search);
     },

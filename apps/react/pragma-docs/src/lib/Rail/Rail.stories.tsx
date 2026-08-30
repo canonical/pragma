@@ -23,36 +23,36 @@ import Rail from "./Rail.js";
 const bareRoutes = {
   home: route({
     url: "/",
-    component: () => null,
+    content: () => null,
     meta: routeShortcutFacet.of("1"),
   }),
   components: route({
     url: "/components",
-    component: () => null,
+    content: () => null,
     meta: routeShortcutFacet.of("2"),
   }),
   definitions: route({
     url: "/definitions",
-    component: () => null,
+    content: () => null,
     meta: routeShortcutFacet.of("3"),
   }),
   standards: route({
     url: "/standards",
-    component: () => null,
+    content: () => null,
     meta: routeShortcutFacet.of("4"),
   }),
   journeys: route({
     url: "/journeys",
-    component: () => null,
+    content: () => null,
     meta: routeShortcutFacet.of("5"),
   }),
   guides: route({
     url: "/guides",
-    component: () => null,
+    content: () => null,
     meta: routeShortcutFacet.of("6"),
   }),
-  playground: route({ url: "/playground", component: () => null }),
-  account: route({ url: "/account", component: () => null }),
+  playground: route({ url: "/playground", content: () => null }),
+  account: route({ url: "/account", content: () => null }),
 } as const;
 
 const meta: Meta<typeof Rail> = {

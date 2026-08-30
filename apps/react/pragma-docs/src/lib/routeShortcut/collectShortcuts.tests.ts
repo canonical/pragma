@@ -14,13 +14,13 @@ describe("collectShortcuts", () => {
     const routes = {
       home: route({
         url: "/",
-        component: page,
+        content: page,
         meta: routeShortcutFacet.of("1"),
       }),
-      quiet: route({ url: "/quiet", component: page }),
+      quiet: route({ url: "/quiet", content: page }),
       docs: route({
         url: "/docs",
-        component: page,
+        content: page,
         meta: routeShortcutFacet.of("2"),
       }),
     } as const;
@@ -31,7 +31,7 @@ describe("collectShortcuts", () => {
 
   it("returns empty maps when no route claims a key", () => {
     const routes = {
-      quiet: route({ url: "/quiet", component: page }),
+      quiet: route({ url: "/quiet", content: page }),
     } as const;
     const { byKey, byRoute } = collectShortcuts(routes);
     expect(byKey.size).toBe(0);
@@ -45,12 +45,12 @@ describe("collectShortcuts", () => {
     const routes = {
       definitions: route({
         url: "/definitions",
-        component: page,
+        content: page,
         meta: routeShortcutFacet.of("3"),
       }),
       dictionary: route({
         url: "/dictionary",
-        component: page,
+        content: page,
         meta: routeShortcutFacet.of("3"),
       }),
     } as const;
@@ -64,7 +64,7 @@ describe("collectShortcuts", () => {
     const routes = {
       term: route({
         url: "/definitions/:term",
-        component: page,
+        content: page,
         meta: routeShortcutFacet.of("3"),
       }),
     } as const;
@@ -77,14 +77,14 @@ describe("collectShortcuts", () => {
     const numeric = {
       home: route({
         url: "/",
-        component: page,
+        content: page,
         meta: { [ROUTE_SHORTCUT_META_KEY]: 3 },
       }),
     } as const;
     const multiple = {
       home: route({
         url: "/",
-        component: page,
+        content: page,
         meta: { [ROUTE_SHORTCUT_META_KEY]: "ab" },
       }),
     } as const;

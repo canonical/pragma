@@ -11,7 +11,7 @@ import CatalogList from "./CatalogList.js";
 /** Name-compatible bare route so card links resolve without mounting the
  * app's real pages. */
 const bareRoutes = {
-  componentEntity: route({ url: "/components/:uri", component: () => null }),
+  componentEntity: route({ url: "/components/:uri", content: () => null }),
 } as const;
 
 /**

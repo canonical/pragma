@@ -47,7 +47,7 @@ const StandardsContext = makeLensContext({
 const routes = {
   standards: route({
     url: "/standards",
-    component: StandardsPage,
+    content: StandardsPage,
     prefetch: (params, search) => {
       warmRouteQuery(standardsIndexRouteEntry, params, search);
     },
@@ -59,7 +59,7 @@ const routes = {
   }),
   standardEntity: route({
     url: "/standards/:uri",
-    component: StandardReadingPage,
+    content: StandardReadingPage,
     prefetch: (params, search) => {
       warmRouteQuery(standardEntityRouteEntry, params, search);
     },
