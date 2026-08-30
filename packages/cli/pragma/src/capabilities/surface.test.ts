@@ -1,11 +1,13 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { MCP_SERVER_NAME, VERSION } from "../constants.js";
 import { emitSurface } from "../kernel/spec/emitSurface.js";
 import {
   assertConforms,
   type Covenant,
 } from "../kernel/spec/surfaceConformance.js";
+import { projectMcp } from "../testing/helpers/projectMcp.js";
 import { capabilities } from "./index.js";
 
 /** The committed covenant, read from disk exactly as a consumer would. */
@@ -229,5 +231,24 @@ describe("surface COMPLETE — emitted == covenant (PROTECTED)", () => {
     expect(emitted.mcpSurface.instructions).toBe(
       golden.mcpSurface.instructions,
     );
+  });
+
+  // The L-PR6 covenant edit (PRA-107 ruling): the wire-identity RULE. The
+  // covenant states serverInfo as placeholders — a PROJECTION, deliberately not
+  // live values, so a release does not churn the covenant — and the live
+  // handshake is asserted to follow it: the server introduces itself with the
+  // distribution's declared name and the package version. The fork half of the
+  // same rule (a renamed distribution introduces itself under ITS name) is
+  // pinned in identity.test.ts, where the conf is mocked.
+  it("states the serverInfo projection rule and serves it on the wire", async () => {
+    expect(golden.mcpSurface.serverInfo).toEqual({
+      name: "<the declared distribution name>",
+      version: "<the package version>",
+    });
+
+    const mcp = await projectMcp([]);
+    const wire = mcp.serverInfo();
+    await mcp.cleanup();
+    expect(wire).toEqual({ name: MCP_SERVER_NAME, version: VERSION });
   });
 });

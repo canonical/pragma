@@ -3,6 +3,602 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
+
+
+### Bug Fixes
+
+* **svelte-ds-app-launchpad:** suppress "upgrade to modal" close event ([#887](https://github.com/canonical/pragma/issues/887)) ([92df40e](https://github.com/canonical/pragma/commit/92df40e5aa8ecdb52576c9df7da637669a05d5c4))
+
+
+### chore
+
+* **next:** scaffold @canonical/pragma-next package + CI wiring + budgets skeleton ([#874](https://github.com/canonical/pragma/issues/874)) ([f48c379](https://github.com/canonical/pragma/commit/f48c379b91dab4fda8a7afbc0fed818b3ae0df25))
+
+
+* feat(cli)!: CLI surface consistency (verb/flag renames) + output model (--llm removal) (#875) ([50b66b9](https://github.com/canonical/pragma/commit/50b66b9d71b374e58eb5566699bb9c1d707459b7)), closes [#875](https://github.com/canonical/pragma/issues/875) [#874](https://github.com/canonical/pragma/issues/874)
+* feat(cli)!: setup --scope band model + doctor local/global grouping (#868) ([b60c194](https://github.com/canonical/pragma/commit/b60c194b5212bf23b9b93cc403397f2722b9c55f)), closes [#868](https://github.com/canonical/pragma/issues/868) [#868](https://github.com/canonical/pragma/issues/868)
+* feat(harnesses)!: AI-harness detection — platform paths, live signals, scope model, dedup + OpenDesign (#867) ([6e0df18](https://github.com/canonical/pragma/commit/6e0df1806cfd1d941c094c4f83a31488c36958cc)), closes [#867](https://github.com/canonical/pragma/issues/867)
+
+
+### Features
+
+* **cli:** pragma setup detects already-present config (idempotent, state-aware) ([#883](https://github.com/canonical/pragma/issues/883)) ([55f0afb](https://github.com/canonical/pragma/commit/55f0afb1bc08e96590584a1b5e03e2e3279ca110))
+* **DescriptionList:** migrate to design tokens ([#888](https://github.com/canonical/pragma/issues/888)) ([24fe66c](https://github.com/canonical/pragma/commit/24fe66cb0b4b72fb2b34d048b7434d3fdc7803b2))
+* **svelte-ds-app:** Port React core layouts ([#660](https://github.com/canonical/pragma/issues/660)) ([d85002e](https://github.com/canonical/pragma/commit/d85002e307af828c090b340e8494d5e5c3a1d2f8))
+* **svelte-wpe:** Add KeyboardKey component ([#878](https://github.com/canonical/pragma/issues/878)) ([464939b](https://github.com/canonical/pragma/commit/464939b321618b3f15ace224c955d3cd6343c6ea))
+* **svelte-wpe:** add Spinner subcomponent ([#886](https://github.com/canonical/pragma/issues/886)) ([4da56e0](https://github.com/canonical/pragma/commit/4da56e0bed25f52a0c0642905597a22bfa3131e1))
+* **UserAvatar:** migrate to design tokens ([#892](https://github.com/canonical/pragma/issues/892)) ([446fc46](https://github.com/canonical/pragma/commit/446fc466a05eaa4ca257e842fc145d8a69817b6a))
+
+
+### BREAKING CHANGES
+
+* the covenant tool `ontology_show` is superseded by
+`ontology_lookup` as the primary by-name ontology read. `ontology_show`
+remains callable as a deprecated alias but should be migrated to
+`ontology_lookup`; the covenant tool count changes 40 -> 41.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* feat(cli)!: retire config field-verbs in favor of config set
+
+Remove the per-field `config tier` / `config channel` / `config detail`
+setters (tools `config_tier`/`config_channel`/`config_detail`) in favour of
+the single `config set <key> <value>` command. `config set tier <v>` /
+`config set channel <v>` / `config set detail <v>` are the migration path;
+`config show` and `config set` are unchanged. The soft-deprecation hint added
+earlier is now moot and removed.
+
+The `CONFIG_FIELDS` table survives as the shared source of truth that drives
+`config set` (its `<key>` enum, reset sentinels, enum validation, positional
+shaping) via `runSet` -> `runField`; only the verb generation is gone.
+
+- fields.ts: drop `fieldVerb`/`configFieldVerbs`/`fieldPositional`/the
+  `preferSetHint` nudge; keep `CONFIG_FIELDS` + `ConfigFieldSpec`.
+- show.verb.ts: the config module is now just `show` + `set`.
+- surface.v2.json: remove the 3 field-verbs + 3 tools (41 -> 38).
+- hints.ts / catalog.ts / doctor checkConfigFile: retarget the removed tools
+  and the migration prose at `config set`.
+- tests: delete field.test.ts (its coverage is mirrored by set.test.ts),
+  retarget the config completion list, the eval cases, and the frozen
+  tool count (38); regenerate the eval snapshot.
+* the covenant tools `config_tier`, `config_channel`, and
+`config_detail` (and the CLI verbs `config tier|channel|detail`) are removed.
+Use `config set <field> <value>` instead (e.g. `config set tier apps/lxd`,
+`config set channel experimental`); the covenant tool count changes 41 -> 38.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* feat(cli)!: unify create include-flags on the --with-X convention
+
+Rename `create application`'s bare include-flags `--ssr`/`--router`/`--forms`
+to `--with-ssr`/`--with-router`/`--with-forms`, matching the `--with-X`
+convention already used by `create component` (`--with-styles`, ...) and
+`create package` (`--with-react`, ...).
+
+The summon generator prompt names (`ssr`/`router`/`forms`) — and their
+embedded templates and byte-equality goldens — are kept STABLE: the CLI
+grammar exposes the `--with-X` params (`withSsr`/`withRouter`/`withForms`) and
+`runCreate` normalizes them back to the generator prompt names at the single
+CLI↔generator boundary (`toGeneratorAnswers` / `INCLUDE_FLAG_ALIASES`). No
+cross-package churn; the summon-* packages are untouched.
+
+- create.verb.ts: rename the application mirror to the `--with-X` names; add
+  the alias map + boundary normalizer; every summon call reads the
+  generator-facing `answers` bag.
+- surface.v2.json: `create application` flags -> `--with-ssr`/`--with-router`/
+  `--with-forms` (tool count unchanged).
+- create.test.ts: bridge the parity comparison through the alias (kinds +
+  defaults still checked against the real generator) and guard the rename.
+- byteEquality.test.ts: the pragma path receives the `--with-X` params, the
+  summon path the bare prompt names — both write the byte-identical tree,
+  proving the boundary remap.
+
+Note: `--relay` (opt-in, default false) is intentionally left as-is per the
+approved scope, so it remains a bare boolean include-flag.
+* `create application`'s `--ssr`, `--router`, and `--forms`
+flags are renamed to `--with-ssr`, `--with-router`, and `--with-forms`. The
+covenant `create application` flag set changes accordingly (the
+`create_application` tool name is unchanged).
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* feat(cli)!: unify --relay on the --with-X convention
+
+Complete AV-228 B8: rename `create application`'s last bare include-flag
+`--relay` to `--with-relay`, so all four application include-flags
+(`--with-ssr`/`--with-router`/`--with-forms`/`--with-relay`) are on the single
+`--with-X` convention.
+
+Uses the mechanism already in place: the CLI grammar exposes the `withRelay`
+param and `runCreate` normalizes it back to the summon generator's stable
+prompt name `relay` at the one CLI↔generator boundary
+(`INCLUDE_FLAG_ALIASES.application`). The generator prompt name and its
+embedded templates / byte-equality goldens are untouched — no summon-package
+churn.
+
+- create.verb.ts: rename the application mirror `relay` -> `withRelay`; add
+  `withRelay: "relay"` to the alias map; update the usage example
+  (`--relay` -> `--with-relay`).
+- surface.v2.json: `create application` flags -> `--with-relay` (tool count
+  unchanged).
+- byteEquality.test.ts: the pragma path receives `withRelay`, the summon path
+  the bare `relay` — both write the byte-identical tree.
+- create.test.ts: extend the parity bridge + rename guard to cover withRelay.
+* `create application`'s `--relay` flag is renamed to
+`--with-relay`. The covenant `create application` flag set changes accordingly
+(the `create_application` tool name is unchanged).
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* feat(cli)!: remove --llm flag, auto-detect output, beautify TTY
+
+Fold the dedicated `--llm` global flag into `--format {plain|llm|json}`:
+non-interactive stdout still auto-selects the condensed form via the existing
+autoLlm detection (now the sole implicit trigger), `--format llm` forces it on
+a TTY, and `--format plain` forces human output down a pipe. Ratifies the new
+frozen globalFlags surface, updating the conformance golden, the help/completion
+projections, and every --llm-referencing test.
+
+Beautify the human (TTY) path only: `config show`, `sources status`, and the
+shared lookup renderer gain alignment + subtle color through a chalk-backed
+RenderStyle seam. Piped / MCP / redirected output stays byte-identical — the
+styler is inert off a TTY, so the agent contract is unchanged.
+
+Also folds AV-228 B2 (tier/prompt lookups now head at H2 like every other
+entity read, with H3 sub-sections) and B7 (tier/prompt plain lookups gain the
+shared ═ underline rule).
+* the `--llm` global flag is removed. Use `--format llm` for
+condensed Markdown, or rely on auto-detection when stdout is non-interactive.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* fix(cli): gate doctor/colophon plain color behind stdout isTTY (F1)
+
+`doctor --format plain` and `colophon --format plain` gated their color on
+`chalk.level` alone. `supports-color` reports a non-zero level with no TTY under
+GITHUB_ACTIONS / FORCE_COLOR, so a piped `pragma doctor --format plain | tee`
+leaked ANSI into the byte-stable plain contract this lane established. Worse,
+doctor baked `chalk.green("✓")` and friends at MODULE LOAD, freezing ANSI into
+the glyphs whenever the module first loaded under color.
+
+Route both plain paths through the shared `kernel/render/style.ts` seam
+(`defaultStyle()` gates on `process.stdout.isTTY === true` AND a non-zero chalk
+level), so piped / redirected / CI output renders the color-free form byte-for-
+byte while an attended terminal stays fully colored. Doctor glyphs are now plain
+constants tinted at render time (never baked); markdownTerminal threads a
+`RenderStyle` (H1 underline reaches for chalk only when enabled). New/updated
+tests pin ZERO ANSI off a TTY even at chalk.level 3, and color ON an attended
+TTY, for both verbs.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* fix(cli): single-source tier/prompt lookup frame + TTY styling (F3)
+
+The tier and prompt lookups hand-replicated the shared `##`/`═` frame inline
+instead of delegating to `renderLookupPlain`, so (a) the contract could drift
+from block/skill lookups and (b) they never consulted the style seam — on a TTY
+a tier/prompt lookup title stayed unstyled while block/skill titles were bold
+with a dim rule.
+
+- tier plain now delegates to the shared `renderLookupPlain` (title `name (uri)`
+  + a single `blocks` inline field), single-sourcing the frame AND the TTY tint.
+  Blocks are `ds:name` display strings, so the renderer's URI compaction is a
+  no-op and piped output stays byte-stable. The tier llm path is a byte-frozen,
+  never-styled agent contract that diverges from the generic renderer (H2 `name`
+  title, backtick-wrapped IRI/blocks), so it is kept inline with a note.
+- prompt plain routes the title, rule, and field label through the SAME style
+  seam. Full delegation is infeasible here (the description line has no field
+  label and the template body is appended raw), so the bespoke body stays inline
+  while the title finally styles on a TTY.
+
+Off a TTY the styler is inert, so both piped paths remain byte-identical; new
+tests pin ANSI-on-TTY and byte-stable-off-TTY for both.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* test(cli): pin that the removed --llm flag is now an unknown option (F2)
+
+The output-model lane's whole premise is that the dedicated `--llm` flag is gone,
+folded into `--format llm` (and the piped auto-default). Add a spawn-observed
+covenant test that a REAL command — `pragma block list --llm` — fails as a usage
+error (exit 2, "unknown option '--llm'") rather than silently accepting or
+ignoring the flag. Commander rejects the unknown option during parse, before the
+action runs, so no store is needed.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* test(cli): refresh format validOptions fixtures to plain/llm/json (F4)
+
+The invalid-`--format` error the CLI actually raises (bin.ts) now carries
+`["plain", "llm", "json"]`, but the PragmaError factory and error-matrix fixtures
+still constructed the two-element `["plain", "json"]`. Update them to the live
+three-element set so the fixtures mirror the real error.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* docs(cli): retarget CLI.mdx output modes to the --format model (F5)
+
+The v2 CLI doc still presented `--llm` as a flag. Replace the output-modes table
+with the `--format {plain|llm|json}` model and document the auto-detect note:
+when `--format` is omitted, an interactive terminal gets `plain` while a non-
+interactive stdout (pipe / redirect / MCP capture) auto-selects `llm`, and
+`--format plain` forces human output down a pipe. Doc-only.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* fix(cli): reconcile docs + guards with main after rebase (--format llm, config set)
+
+Rebasing the surface lane onto main — which now carries the v2 doc set + drift
+* **next:** the v2 CLI reshapes the command surface — the `data` noun
+becomes `sources`, `update-refs` folds into `sources update`, the `llm`
+orientation tool is retired in favour of the MCP handshake instructions and the
+`capabilities` tool, the plural `tokens` noun/tools become singular `token`, and
+`--format text` is renamed `--format plain`. See the changelog migration table.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* test(cli): extend doc-example grammar checks and add a fast reference regen
+
+Broaden the Tier 1 doc-example test to grammar-check the fenced `pragma`
+examples in every hand-written doc (README, getting-started, mcp-integration,
+config-model, architecture, skills), not just the first two. Present the manual
+MCP launch as a harness JSON config so the hidden `pragma mcp` entry is shown
+without tripping the (hidden-excluding) grammar check.
+
+Add `scripts/genReference.ts` (and a `gen:reference` package script): the same
+`writeReferenceDocs` step the build runs, isolated so a doc refresh needs no
+binary compile.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* fix(cli): call the discovery sequence four-stage in the capabilities doc
+
+`buildDiscoverySequence` returns FOUR stages (capabilities → sources_status →
+*_sample → domain tools), but the `capabilities` verb's `doc` string still
+called it a "3-stage" sequence. Correct the source doc-string and regenerate
+the reference so `docs/reference/commands.md` and `tools.md` re-sync — the
+number now matches the actual sequence the catalog builds and the MCP handshake
+renders.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* docs: fix discovery-sequence stage count and scope the setup preview
+
+Two hand-written docs echoed the stale "three-stage discovery sequence" wording;
+correct both to "four-stage" to match `buildDiscoverySequence`. Also point the
+MCP preview line at `pragma setup mcp --dry-run` (the precise preview for the
+`pragma setup mcp` step it teaches) instead of `pragma setup --dry-run`, which
+previews the whole wizard.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* fix(cli): prune orphaned reference pages and sharpen a tie-break comment
+
+`writeReferenceDocs` only ever wrote pages; a `.md` for a removed noun would
+linger until the drift-guard flagged it. After writing the emitted set, unlink
+any top-level `.md` the emitter no longer produces (deterministic, sorted), so
+the reference tree self-heals on the next build. No-op on today's tree.
+
+Also tighten the `compareDocVerbs` v8-ignore reason to state the real invariant:
+no registered grammar produces a `[noun, noun]` path (a verb equal to its own
+noun), so within one noun every verb-label is unique and the equal tie-break is
+unreachable.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* test(cli): cover the resource, prompt, and non-destructive render paths
+
+`fixtureReferenceModule` claimed to exercise every `emitReference` render path,
+but three had no independent assertion: `renderNonToolSurface`'s Resources and
+Prompts bullets (no fixture set `mcpResources`/`mcpPrompts`) and
+`formatToolAnnotations`'s "Non-destructive." line (no `mutates:true,
+destructive:false` verb). Extend the fixture with an `mcpResources` template
+surface, an `mcpPrompts` native surface, and a non-destructive mutating `gizmo
+tidy` verb (no-op `register` hooks — the emitter reads neither), making the
+docstring's claim true, and assert all three rendered strings directly.
+
+Also add a non-circular exhaustiveness check over `errors.md`: iterate the
+closed `ERROR_CODES` tuple and assert each code's catalog row is present, so a
+code added to the kernel without a description fails here — not just the two
+spot-checked codes.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* test(cli): derive Tier-2 doc-example params from the real CLI parser
+
+Tier-2 hand-supplied each read's param bag, so a documented positional in the
+wrong slot would still pass (the bag ignored the string's token order). Parse
+the documented command through the real grammar instead — a `preAction` hook
+captures the routed verb and Commander operands/options and throws before
+dispatch (no runtime boots), then `extractParams` derives the bag. Assert the
+routed key and derived bag against the oracle, then execute the DERIVED bag
+against the canonical fixture graph. A mis-slotted token now routes elsewhere or
+yields a different bag and fails.
+
+Also note in `staleCommands.test.ts` that CHANGELOG.md is deliberately exempt
+from the retired-vocabulary scan (its migration table legitimately cites `data`,
+`update-refs`, and plural `tokens`), making the "every doc" intent explicit.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+* `HarnessDefinition` now requires a `scope` field, and
+global/both harnesses must declare `homeConfigPath`.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* feat(harnesses): config-target dedup + re-enable Cline (project scope)
+
+Add `configTargets.ts`: `groupConfigTargets` deduplicates detected harnesses'
+resolved targets two ways — prompt-dedup by path (one choice per shared file,
+labelled with every harness) and write-dedup by (path, mcpKey) (one write per
+distinct key, each preserving the other). The scope→band mapping
+(`bandsForScope`, `harnessInBand`, `harnessesForBand`, `groupTargetsForScope`)
+implements 7f: `both` runs both bands with dual-scope writing project only;
+`global`/`project` run a single band. Re-enable Cline (scope project,
+mcpKey mcpServers) — it and VS Code both write .vscode/mcp.json under different
+keys (VERIFY(7a)). Registry is 9 harnesses.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* fix(harnesses): guard extension glob against a missing extensions dir
+
+Globbing a non-existent `~/.vscode/extensions` throws ENOENT under the real
+interpreter, which would abort detection (and every setup/doctor run in a
+project without VS Code extensions). Check the directory exists first, else the
+extension signal is simply absent.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* feat(harnesses): single-write multi-key writer for shared config files
+
+`writeMcpConfigTargets(targets, name, config)` writes one server entry under
+every mcpKey of a group of targets that share ONE file (VS Code `servers` +
+Cline `mcpServers` in .vscode/mcp.json) in a SINGLE read-modify-write. This
+preserves each key and — crucially — is dry-run safe: two sequential
+writeMcpConfigTo calls to the same new file made the second read the file the
+first virtually created (mock content → false "unparseable" abort under the
+recap preview). `writeMcpConfigTo` now delegates to the shared multi-key core.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* feat(harnesses): add OpenDesign harness (dual-scope) + env map normalization
+
+Add the `opendesign` entry (scope both): detects a `.od` dir or an `od` binary
+whose --version identifies OpenDesign (a `verify` guard against the Unix `od`
+octal-dump false positive, VERIFY(7g)); project config `.od/mcp-config.json`,
+home config `~/.od/mcp-config.json`, skills `.od/skills`, mcpKey mcpServers.
+`normalizeEnv: true` forces a written server entry's `env` to a JSON object/map
+(OpenDesign rejects a non-map env) via `normalizeOdEnv`, threaded through the
+target-based writers. Registry is 10 harnesses.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* fix(harnesses): guard verify-exec, probe PATHEXT on win32, drop Cline false-positive
+
+Address the crash/false-positive review findings on the harness-detection work:
+
+- checkProcess: wrap the `verify` exec in recover(...=>pure(false)) so a spawn
+  failure (ENOENT/EACCES, or the probed binary erroring) resolves to an
+  unverified `false` instead of rejecting all of detectHarnesses — one harness's
+  probe must never crash `setup`/`doctor` (the `od --version` verify runs every
+  detection pass).
+- checkProcess: probe every PATHEXT suffix on win32, not just `.exe` — npm
+  installs CLI harnesses (`claude`, `codex`, `od`…) as `.cmd`/`.bat` shims, which
+  an `.exe`-only probe missed entirely on Windows.
+- harnesses: detect Cline ONLY by its saoudrizwan.claude-dev extension. The
+  `.vscode` directory belongs to VS Code, so keying off it false-detected Cline
+  (and wrote an inert `mcpServers` block) in every VS Code project.
+
+harnesses: 184 tests, 100% coverage.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* fix(harnesses): review cleanup — fork detection, darwin config path, dead code, verb-first names
+
+Follow-up review polish on the harness-detection work:
+
+- signals: broaden `checkExtension` to the whole VS Code family — Cursor
+  (~/.cursor), VSCodium (~/.vscode-oss), Windsurf (~/.windsurf) alongside stock
+  ~/.vscode. Any match counts; each dir is exists-guarded before globbing.
+- platformPaths: delete the dead `windowsHostUserBase` (nothing resolved through
+  it); fix the darwin `userConfigBase` collision — `~/Library/Preferences`, now
+  distinct from the data base (`~/Library/Application Support`); extract the pure
+  `buildPlatformEnv` core so the OS-family + WSL branches stay coverage-checked
+  and the `v8 ignore` wraps only the live host read; reword the header to be
+  honest that 100% coverage proves the code RAN, not that the darwin/win32/WSL
+  guesses are correct (real-host validation tracked in AV-287).
+- verb-first renames (web-code-standards): signalTier -> toSignalTier,
+  bandsForScope -> resolveBandsForScope, harnessInBand -> isHarnessInBand,
+  harnessesForBand -> listHarnessesForBand. No external consumers; no aliases.
+
+harnesses: 188 tests, 100% coverage.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* fix(harnesses): match extension dirs by manifest, not directory name
+
+The `glob` effect lists files only, so checkExtension's bare `<id>-<version>`
+directory pattern never matched a real extension directory — extension detection
+silently never fired. Exposed by making Cline extension-only (it would otherwise
+be undetectable). Glob for the `package.json` manifest that every VS Code
+extension carries at its root, under each versioned directory, so an installed
+extension actually resolves.
+
+harnesses: 188 tests, 100% coverage.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* feat(cli)!: --scope band selection for setup, band-grouped doctor report
+
+Add a `--scope {project,global,both}` enum (default both) plus `--global`/
+`--local` boolean sugars to `setup`/`setup mcp`/`setup skills` (not
+completions/lsp). The resolved scope threads runSetup → buildSetupPlan:
+availableSteps drops steps whose band the scope doesn't run (completions/lsp
+are global, skills project, MCP spans both via its groups); MCP targets are the
+deduped per-file TargetGroups for the scope, written once per file. The MCP
+result carries {name, band, path} per target and the recap groups them
+MACHINE/PROJECT; composeMcp/composeSkills emit band-prefixed manifest lines.
+Item 6: per-file narrowing is opt-in — a "customize?" gate (default no) guards
+the per-file multiselect, so "all" configures every deduped file. Doctor: each
+check carries an optional band (MCP/skills project, completions global); the
+report renders MACHINE/PROJECT sections before the tally. Covenant: the three
+band-aware verbs gain the scope flags in surface.v2.json (globalFlags
+untouched); the scope/band types are redeclared CLI-side so the lazy module
+graph never statically pulls @canonical/harnesses.
+
+Global-band skills are deferred — FOLLOW-UP(AV-284).
+* `pragma setup`/`setup mcp`/`setup skills` add the
+--scope/--global/--local flags; the `setup mcp` JSON result gains a `targets`
+array.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* fix(cli): address setup/doctor scope review findings + reconcile Cline detection
+* `HarnessDefinition` now requires a `scope` field, and
+global/both harnesses must declare `homeConfigPath`.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* feat(harnesses): config-target dedup + re-enable Cline (project scope)
+
+Add `configTargets.ts`: `groupConfigTargets` deduplicates detected harnesses'
+resolved targets two ways — prompt-dedup by path (one choice per shared file,
+labelled with every harness) and write-dedup by (path, mcpKey) (one write per
+distinct key, each preserving the other). The scope→band mapping
+(`bandsForScope`, `harnessInBand`, `harnessesForBand`, `groupTargetsForScope`)
+implements 7f: `both` runs both bands with dual-scope writing project only;
+`global`/`project` run a single band. Re-enable Cline (scope project,
+mcpKey mcpServers) — it and VS Code both write .vscode/mcp.json under different
+keys (VERIFY(7a)). Registry is 9 harnesses.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* fix(harnesses): guard extension glob against a missing extensions dir
+
+Globbing a non-existent `~/.vscode/extensions` throws ENOENT under the real
+interpreter, which would abort detection (and every setup/doctor run in a
+project without VS Code extensions). Check the directory exists first, else the
+extension signal is simply absent.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* feat(harnesses): single-write multi-key writer for shared config files
+
+`writeMcpConfigTargets(targets, name, config)` writes one server entry under
+every mcpKey of a group of targets that share ONE file (VS Code `servers` +
+Cline `mcpServers` in .vscode/mcp.json) in a SINGLE read-modify-write. This
+preserves each key and — crucially — is dry-run safe: two sequential
+writeMcpConfigTo calls to the same new file made the second read the file the
+first virtually created (mock content → false "unparseable" abort under the
+recap preview). `writeMcpConfigTo` now delegates to the shared multi-key core.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* feat(harnesses): add OpenDesign harness (dual-scope) + env map normalization
+
+Add the `opendesign` entry (scope both): detects a `.od` dir or an `od` binary
+whose --version identifies OpenDesign (a `verify` guard against the Unix `od`
+octal-dump false positive, VERIFY(7g)); project config `.od/mcp-config.json`,
+home config `~/.od/mcp-config.json`, skills `.od/skills`, mcpKey mcpServers.
+`normalizeEnv: true` forces a written server entry's `env` to a JSON object/map
+(OpenDesign rejects a non-map env) via `normalizeOdEnv`, threaded through the
+target-based writers. Registry is 10 harnesses.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* fix(harnesses): guard verify-exec, probe PATHEXT on win32, drop Cline false-positive
+
+Address the crash/false-positive review findings on the harness-detection work:
+
+- checkProcess: wrap the `verify` exec in recover(...=>pure(false)) so a spawn
+  failure (ENOENT/EACCES, or the probed binary erroring) resolves to an
+  unverified `false` instead of rejecting all of detectHarnesses — one harness's
+  probe must never crash `setup`/`doctor` (the `od --version` verify runs every
+  detection pass).
+- checkProcess: probe every PATHEXT suffix on win32, not just `.exe` — npm
+  installs CLI harnesses (`claude`, `codex`, `od`…) as `.cmd`/`.bat` shims, which
+  an `.exe`-only probe missed entirely on Windows.
+- harnesses: detect Cline ONLY by its saoudrizwan.claude-dev extension. The
+  `.vscode` directory belongs to VS Code, so keying off it false-detected Cline
+  (and wrote an inert `mcpServers` block) in every VS Code project.
+
+harnesses: 184 tests, 100% coverage.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* fix(harnesses): review cleanup — fork detection, darwin config path, dead code, verb-first names
+
+Follow-up review polish on the harness-detection work:
+
+- signals: broaden `checkExtension` to the whole VS Code family — Cursor
+  (~/.cursor), VSCodium (~/.vscode-oss), Windsurf (~/.windsurf) alongside stock
+  ~/.vscode. Any match counts; each dir is exists-guarded before globbing.
+- platformPaths: delete the dead `windowsHostUserBase` (nothing resolved through
+  it); fix the darwin `userConfigBase` collision — `~/Library/Preferences`, now
+  distinct from the data base (`~/Library/Application Support`); extract the pure
+  `buildPlatformEnv` core so the OS-family + WSL branches stay coverage-checked
+  and the `v8 ignore` wraps only the live host read; reword the header to be
+  honest that 100% coverage proves the code RAN, not that the darwin/win32/WSL
+  guesses are correct (real-host validation tracked in AV-287).
+- verb-first renames (web-code-standards): signalTier -> toSignalTier,
+  bandsForScope -> resolveBandsForScope, harnessInBand -> isHarnessInBand,
+  harnessesForBand -> listHarnessesForBand. No external consumers; no aliases.
+
+harnesses: 188 tests, 100% coverage.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+* fix(harnesses): match extension dirs by manifest, not directory name
+
+The `glob` effect lists files only, so checkExtension's bare `<id>-<version>`
+directory pattern never matched a real extension directory — extension detection
+silently never fired. Exposed by making Cline extension-only (it would otherwise
+be undetectable). Glob for the `package.json` manifest that every VS Code
+extension carries at its root, under each versioned directory, so an installed
+extension actually resolves.
+
+harnesses: 188 tests, 100% coverage.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012B41xiqaum5nwecX5mVghF
+
+
+
+
+
 # [0.32.0](https://github.com/canonical/pragma/compare/v0.31.0...v0.32.0) (2026-07-20)
 
 

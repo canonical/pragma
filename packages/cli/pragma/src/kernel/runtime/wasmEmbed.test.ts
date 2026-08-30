@@ -1,15 +1,10 @@
 import { spawnSync } from "node:child_process";
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { embeddedManifest } from "./graphpack/embedded.js";
 
 /**
  * The store-boot path only fully lives in the standalone binary: this is the
@@ -74,8 +69,11 @@ describe("oxigraph WASM + embedded pack embed in the compiled binary (PROTECTED)
       triples: string;
     };
     expect(out.ok).toBe(true);
-    expect(out.entities).toBe(6);
-    expect(Number(out.triples)).toBeGreaterThan(0);
+    // The compiled binary is the only place this is worth asserting: the store
+    // it booted from the inlined `data.nq` must hold exactly what the committed
+    // `manifest.json` claims was built into it.
+    expect(Number(out.triples)).toBe(embeddedManifest().tripleCount);
+    expect(out.entities).toBeGreaterThan(0);
   });
 
   it("dist binary runs storeless sources status", () => {
@@ -83,18 +81,17 @@ describe("oxigraph WASM + embedded pack embed in the compiled binary (PROTECTED)
     expect(run.status, run.stderr).toBe(0);
     const envelope = JSON.parse(run.stdout.trim()) as {
       ok: boolean;
-      data: { lockPresent: boolean; cached: boolean };
+      data: { store: string };
     };
     expect(envelope.ok).toBe(true);
-    // A fresh install: no lock, store not yet built.
-    expect(envelope.data.lockPresent).toBe(false);
-    expect(envelope.data.cached).toBe(false);
+    // A fresh install: nothing built here, so the embedded pack answers reads.
+    expect(envelope.data.store).toBe("embedded");
   });
 
   // Regression guard: `sources update` walks a package's TTL directories. The
   // compiled binary's node:fs globSync mishandles `**` (returns bogus paths),
   // which the in-process suite could not catch — so exercise the real binary.
-  it("dist binary runs sources update end-to-end (build + lock + status)", () => {
+  it("dist binary runs sources update end-to-end (build + point + status)", () => {
     const pkg = join(workdir, "pkg");
     const proj = join(workdir, "proj");
     mkdirSync(join(pkg, "definitions"), { recursive: true });
@@ -110,7 +107,7 @@ ex:one a ex:Widget ; rdfs:label "One" .
     );
     writeFileSync(
       join(proj, "pragma.config.ts"),
-      `export default { packages: [{ name: "pkg-a", source: "file://${pkg}" }] };\n`,
+      `export default { packs: [{ name: "pkg-a", source: "file://${pkg}" }] };\n`,
     );
 
     const env = {
@@ -129,14 +126,20 @@ ex:one a ex:Widget ; rdfs:label "One" .
 
     const update = inProj(["sources", "update", "--yes", "--format", "json"]);
     expect(update.status, update.stderr).toBe(0);
-    expect(existsSync(join(proj, "pragma.lock.json"))).toBe(true);
+    const built = (
+      JSON.parse(update.stdout.trim()) as {
+        data: { contentHash: string };
+      }
+    ).data.contentHash;
+    expect(built).toMatch(/^[0-9a-f]{64}$/);
 
     const status = inProj(["sources", "status", "--format", "json"]);
     const envelope = JSON.parse(status.stdout.trim()) as {
-      data: { lockPresent: boolean; cached: boolean; entityCount: number };
+      data: { store: string; contentHash: string; entityCount: number };
     };
-    expect(envelope.data.lockPresent).toBe(true);
-    expect(envelope.data.cached).toBe(true);
+    // The project now reads its OWN pack — the one the update just built.
+    expect(envelope.data.store).toBe("built");
+    expect(envelope.data.contentHash).toBe(built);
     // Distinct abox subjects: the one individual (ex:one). The ex:Widget class
     // is tbox schema, not an entity — the raw entity count would double this (A1).
     expect(envelope.data.entityCount).toBe(1);

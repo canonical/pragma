@@ -5,6 +5,7 @@
  * later PR — this ships only the reader.
  */
 
+import { BIN_NAME, PROJECT_CONFIG_FILENAME } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { CapabilityModule, VerbSpec } from "../../kernel/spec/types.js";
 import { configSetVerb } from "./set.verb.js";
@@ -14,12 +15,12 @@ import type { ConfigShowData } from "./types.js";
 const showVerb: VerbSpec<Record<string, unknown>, ConfigShowData> = {
   path: ["config", "show"],
   summary: "Show the resolved config and per-field provenance.",
-  doc: "Merges built-in defaults, the global XDG config, and the nearest pragma.config.ts, marking which layer supplied each value.",
+  doc: `Merges built-in defaults, the global XDG config, and the nearest ${PROJECT_CONFIG_FILENAME}, marking which layer supplied each value.`,
   params: [],
   output: { formatters: configShowFormatters },
   examples: [
-    { cmd: "pragma config show" },
-    { cmd: "pragma config show --format json" },
+    { cmd: `${BIN_NAME} config show` },
+    { cmd: `${BIN_NAME} config show --format json` },
   ],
   capability: {
     needsStore: false,

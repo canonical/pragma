@@ -66,6 +66,18 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
 
+        # The full suite always includes the browser suites — no detection.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
+      - name: Install Playwright browsers
+        env:
+          INSTALL_PLAYWRIGHT: 'true'
+        run: bash .github/actions/setup-env/install-playwright.sh
+
       - name: Test
         run: bun run test
 

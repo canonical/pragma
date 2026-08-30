@@ -19,7 +19,7 @@ import {
   symlink,
   type Task,
 } from "@canonical/task";
-import { RECOVERY_CLI_PREFIX } from "../../../constants.js";
+import { BIN_NAME } from "../../../constants.js";
 import { PragmaError } from "../../../kernel/error/PragmaError.js";
 import { cliRecovery } from "../../../kernel/error/recovery.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
@@ -198,8 +198,8 @@ export function skillsEmptyError(): PragmaError {
   return PragmaError.emptyResults("skill", {
     message: "No skills found to link.",
     recovery: cliRecovery(
-      `${RECOVERY_CLI_PREFIX}sources update`,
-      "Add a design-system package that ships skills to your config, then run `pragma sources update` to install them.",
+      "sources update",
+      `Add a design-system package that ships skills to your config, then run \`${BIN_NAME} sources update\` to install them.`,
     ),
   });
 }

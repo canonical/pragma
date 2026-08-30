@@ -236,7 +236,7 @@ describe("buildCompletionModel — flags and sources", () => {
             positional: true,
             complete: {
               kind: "names",
-              source: { from: "tiers" },
+              source: { from: "index", type: "ex:Tier", field: "altNames" },
               enabled: false,
             },
           },

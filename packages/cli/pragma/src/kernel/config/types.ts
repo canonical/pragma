@@ -13,14 +13,47 @@ export const CHANNELS = ["normal", "experimental", "prerelease"] as const;
 /** A release channel name. */
 export type Channel = (typeof CHANNELS)[number];
 
-/** The object form of a package source declaration. */
-export interface PackageDeclaration {
+/**
+ * Progressive-disclosure levels, least to most detail. Declared HERE, beside
+ * {@link CHANNELS}, because the config validator closes `detail` over this set
+ * and this module is the one config module the storeless fast path may reach
+ * (`completion/safety.test.ts` positive-lists it; `capabilities/lazy.test.ts`
+ * pins it inert). `src/constants.ts` re-exports it for every other reader.
+ */
+export const DETAIL_LEVELS = ["summary", "standard", "detailed"] as const;
+
+/** A progressive-disclosure level. */
+export type DetailLevel = (typeof DETAIL_LEVELS)[number];
+
+/** The object form of a pack source declaration. */
+export interface PackSource {
   readonly name: string;
   readonly source?: string;
+  /**
+   * Declarative read stories this pack supplies, in the pack grammar
+   * (`kernel/packs/types.PackDefinition`). OPAQUE here on purpose — the config
+   * layer does not know that grammar; `parsePackDefinition` validates it at
+   * dispatch. Declared beside the pack so a story can move out to the package's
+   * own `stories/*.json` by deleting this field and nothing else.
+   */
+  readonly stories?: readonly unknown[];
 }
 
-/** A `packages` entry: a bare npm name or a `{ name, source }` declaration. */
-export type PackageEntry = string | PackageDeclaration;
+/** A `packs` entry: a bare npm name or a `{ name, source }` declaration. */
+export type PackDeclaration = string | PackSource;
+
+/**
+ * The toolchain colophon the distribution declares — CONTENT, not machinery.
+ * The `colophon` verb renders whatever is declared here as its first section,
+ * titled with the distribution's name; a fork tells its own story by editing
+ * its config. Both strings are Markdown BODIES with no leading H1 (the
+ * renderer supplies the heading). `summary` is the condensed `--format llm`
+ * form; omitted, the full `markdown` serves both.
+ */
+export interface ColophonDeclaration {
+  readonly markdown: string;
+  readonly summary?: string;
+}
 
 /**
  * Completion policy, read at `setup completions` emit time (never on the
@@ -31,28 +64,41 @@ export type PackageEntry = string | PackageDeclaration;
 export interface CompletionConfig {
   /** Minimum typed chars before the shell execs `__complete` (default 2). */
   readonly minChars?: number;
-  /** Match case-sensitively (default false — loose match, canonical emit). */
-  readonly caseSensitive?: boolean;
   /** Per-family opt-out: a noun mapped to `false` drops its name completion. */
   readonly families?: Readonly<Record<string, boolean>>;
 }
 
-/** The effective, resolved configuration. `channel` always has a value. */
+/**
+ * The effective, resolved configuration. `channel` always has a value.
+ *
+ * IDENTITY IS NOT HERE. `name`, `help` and `issuesUrl` are read from
+ * `pragma.conf.ts` by `src/constants.ts` at module load, because the surfaces
+ * that need them — `--help`, `__complete`, the MCP handshake, first-run
+ * onboarding — all run before or without the config layer; `colophon` is read
+ * from the same file at render time by the `colophon` verb. They stay in
+ * {@link RawConfig} (the distribution config is `satisfies RawConfig`), but
+ * merging them into the effective config only bought `config show` a
+ * `[project]` marker the kernel does not honour.
+ */
 export interface PragmaConfig {
   /** Active tier path, or absent when no tier is configured. */
   readonly tier?: string;
   /** Release channel controlling component visibility. */
   readonly channel: Channel;
   /** Default progressive-disclosure level. */
-  readonly detail?: string;
-  /** Semantic package sources; replaces (does not merge) across layers. */
-  readonly packages?: readonly PackageEntry[];
-  /** Declarative read stories compiled at boot (experimental; opaque here). */
+  readonly detail?: DetailLevel;
+  /** Semantic pack sources; replaces (does not merge) across layers. */
+  readonly packs?: readonly PackDeclaration[];
+  /** Declarative read stories, compiled at DISPATCH (opaque here). */
   readonly stories?: readonly unknown[];
-  /** Additional namespace prefixes merged over the built-in map. */
+  /**
+   * Namespace prefixes the pack is built with — they win every harvest, so a
+   * layer here decides what the store binds and what the index is keyed under.
+   * The DISTRIBUTION layer's entries additionally seed the compiled-in
+   * `DEFAULT_PREFIX_MAP`; a project layer's do not, because that map is read on
+   * the storeless fast path where no config layer exists.
+   */
   readonly prefixes?: Readonly<Record<string, string>>;
-  /** Named prompt overrides (global machine state). */
-  readonly prompts?: Readonly<Record<string, unknown>>;
   /** Completion policy (read at `setup completions` emit time). */
   readonly completion?: CompletionConfig;
 }
@@ -61,15 +107,24 @@ export interface PragmaConfig {
  * The fields a single config layer (global JSON or project TS) may declare. A
  * key is present only when that layer sets it — presence drives which layer
  * wins during the merge.
+ *
+ * WIDER than {@link PragmaConfig}: the DISTRIBUTION layer (`pragma.conf.ts`)
+ * is `satisfies RawConfig` and declares the four identity fields, which are
+ * read statically and never merged. A global or project layer declaring one is
+ * accepted by the validator and has no effect — `docs/reference/config.md`
+ * says so, and `readConfig.test.ts` pins it.
  */
 export interface RawConfig {
+  readonly name?: string;
+  readonly help?: string;
+  readonly colophon?: ColophonDeclaration;
+  readonly issuesUrl?: string;
   readonly tier?: string;
   readonly channel?: Channel;
-  readonly detail?: string;
-  readonly packages?: readonly PackageEntry[];
+  readonly detail?: DetailLevel;
+  readonly packs?: readonly PackDeclaration[];
   readonly stories?: readonly unknown[];
   readonly prefixes?: Readonly<Record<string, string>>;
-  readonly prompts?: Readonly<Record<string, unknown>>;
   readonly completion?: CompletionConfig;
 }
 
@@ -81,10 +136,9 @@ export interface ConfigOrigins {
   readonly tier: ConfigOrigin;
   readonly channel: ConfigOrigin;
   readonly detail: ConfigOrigin;
-  readonly packages: ConfigOrigin;
+  readonly packs: ConfigOrigin;
   readonly stories: ConfigOrigin;
   readonly prefixes: ConfigOrigin;
-  readonly prompts: ConfigOrigin;
 }
 
 /** A resolved config layer's file location and existence. */

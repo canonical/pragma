@@ -1,19 +1,21 @@
 /**
- * The `tier` capability module — the bundled flat-list pack compiled to `list`.
+ * The `tier` capability module — a COMPOSITE: the declared story's flat `list`
+ * plus the bespoke single-name `lookup`.
+ *
+ * `tier lookup` stays hand-written because the covenant freezes it with a single
+ * `<name>` positional, where a pack lookup emits the variadic `<name...>`;
+ * retiring it is a covenant change, not a migration.
  */
 
-import { compilePack } from "../../kernel/packs/compile.js";
-import { DEFAULT_PREFIX_MAP } from "../../kernel/render/prefixes.js";
 import type { CapabilityModule } from "../../kernel/spec/types.js";
+import { storyModules } from "../distribution.js";
 import { tierLookupVerb } from "./lookup.verb.js";
-import { tierPack } from "./pack.js";
 
-/** The `tier` capability module — the bundled flat-list pack plus the bespoke
- * single-name `lookup` (a pack lookup would emit the variadic `<name...>`). */
+const story = storyModules.get("tier");
+
+/** The `tier` capability module (the declared list + the bespoke lookup). */
 export const tierModule: CapabilityModule = {
   name: "tier",
-  verbs: [
-    ...compilePack(tierPack, "bundled:tier", DEFAULT_PREFIX_MAP),
-    tierLookupVerb,
-  ],
+  story: true,
+  verbs: [...(story?.verbs ?? []), tierLookupVerb],
 };

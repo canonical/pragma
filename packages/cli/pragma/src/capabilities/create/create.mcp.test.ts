@@ -14,7 +14,7 @@ import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
-import { createComponentVerb } from "./create.verb.js";
+import { createVerbs } from "./create.verb.js";
 import { createModule } from "./index.js";
 
 const FLAGS: GlobalFlags = {
@@ -117,7 +117,7 @@ describe("create over MCP (PROTECTED)", () => {
       const mcpPlan = (mcpResult.data as { plan: string[] }).plan;
 
       const cliOutcome = await executeVerb(
-        createComponentVerb as VerbSpec,
+        createVerbs.component as VerbSpec,
         {
           framework: "react",
           componentPath: "src/components/Button",

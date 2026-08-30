@@ -3,10 +3,14 @@
  *
  * Listing zero rows is a calm SUCCESS, not an error. The run body returns `[]`
  * (no throw), dispatch renders a non-blank message and exits 0, and JSON stays
- * `[]`. A pack's authored `emptyRecovery` becomes that message's HINT — the v2
- * story still points at `pragma sources update` — but as guidance on the
- * success path, never a thrown EMPTY_RESULTS (which maps to exit 1 and would
- * break the uniform `ok:true` list contract).
+ * `[]`. A story's declared `emptyRecovery` becomes that message's HINT — but as
+ * guidance on the success path, never a thrown EMPTY_RESULTS (which maps to
+ * exit 1 and would break the uniform `ok:true` list contract).
+ *
+ * The story declares the command WITHOUT a binary name (`sources update`); the
+ * renderer prepends the CONSUMING distribution's. The hints asserted below are
+ * therefore the JOINED string, which is what a user reads — a story that named
+ * a binary itself would render it twice, and the grammar now refuses one.
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -18,9 +22,14 @@ import { DEFAULT_PREFIX_MAP } from "../kernel/render/prefixes.js";
 import type { PragmaRuntime } from "../kernel/runtime/types.js";
 import type { VerbSpec } from "../kernel/spec/types.js";
 import { buildFixtureRuntime } from "../testing/helpers/packRuntime.js";
-import { modifierPack } from "./modifier/pack.js";
-import { standardPack } from "./standard/pack.js";
-import { tokenPack } from "./token/pack.js";
+import { declaredStories } from "./distribution.js";
+
+/** A story `pragma.conf.ts` declares — absent means it was renamed or dropped. */
+function storyFor(noun: string): PackDefinition {
+  const story = declaredStories.get(noun);
+  if (!story) throw new Error(`pragma.conf.ts declares no story for "${noun}"`);
+  return story;
+}
 
 const PREFIXES = {
   ds: "https://ds.canonical.com/",
@@ -61,19 +70,19 @@ afterAll(async () => {
 });
 
 const listVerb = (pack: PackDefinition): VerbSpec =>
-  compilePack(pack, `bundled:${pack.noun}`, DEFAULT_PREFIX_MAP).find(
+  compilePack(pack, "pragma.conf.ts", DEFAULT_PREFIX_MAP).find(
     (v) => verbKey(v.path) === `${pack.noun} list`,
   ) as VerbSpec;
 
 /**
- * Every bundled pack list verb, with the hint expected in its empty message:
+ * Every declared story's list verb, with the hint expected in its empty message:
  * an authored `emptyRecovery` surfaces `pragma sources update`; the others fall
  * back to the generic build/broaden hint.
  */
 const PACK_LISTS: readonly { pack: PackDefinition; hint: RegExp }[] = [
-  { pack: modifierPack, hint: /pragma sources update/ },
-  { pack: tokenPack, hint: /pragma sources update/ },
-  { pack: standardPack, hint: /broaden your filter/ },
+  { pack: storyFor("modifier"), hint: /pragma sources update/ },
+  { pack: storyFor("token"), hint: /pragma sources update/ },
+  { pack: storyFor("standard"), hint: /broaden your filter/ },
 ];
 
 const REAL = { dryRun: false, undo: false, yes: false };
@@ -104,7 +113,12 @@ describe("pack list empty-state (U5, PROTECTED)", () => {
   });
 
   it("dispatch prints the empty message on stdout and exits 0 (end-to-end)", async () => {
-    const outcome = await executeVerb(listVerb(modifierPack), {}, REAL, rt);
+    const outcome = await executeVerb(
+      listVerb(storyFor("modifier")),
+      {},
+      REAL,
+      rt,
+    );
     expect(outcome.exitCode).toBe(0);
     expect(outcome.stdout).toContain("No modifier entries found.");
     expect(outcome.stdout).toContain("pragma sources update");

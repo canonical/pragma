@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import type { DetectedHarness } from "@canonical/harnesses";
 import { detectHarnesses } from "@canonical/harnesses";
 import { runTask } from "@canonical/task/node";
+import { BIN_NAME } from "../../../constants.js";
 import type { CheckResult } from "../types.js";
 
 /**
@@ -21,7 +22,7 @@ export async function checkSkillsSymlinked(cwd: string): Promise<CheckResult> {
       name: "Skills symlinked",
       status: "fail",
       detail: "harness detection failed",
-      remedy: "pragma setup skills",
+      remedy: `${BIN_NAME} setup skills`,
     };
   }
 
@@ -55,6 +56,6 @@ export async function checkSkillsSymlinked(cwd: string): Promise<CheckResult> {
     name: "Skills symlinked",
     status: "fail",
     detail: `missing for ${missing.join(", ")}`,
-    remedy: "pragma setup skills",
+    remedy: `${BIN_NAME} setup skills`,
   };
 }

@@ -1,7 +1,7 @@
 name: "react-ds-app-launchpad/chromatic"
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
     paths:
       - configs/storybook/**
       - packages/ds-assets/**
@@ -10,6 +10,10 @@ on:
       - packages/utils/**
       - packages/react/ds-global/**
       - packages/react/ds-app-launchpad/**
+      - "!packages/react/ds-global/**/*.stories.*"
+      - "!**/*.test.*"
+      - "!**/*.md"
+      - "!**/*.mdx"
   push:
     branches:
       - main
@@ -21,6 +25,10 @@ on:
       - packages/utils/**
       - packages/react/ds-global/**
       - packages/react/ds-app-launchpad/**
+      - "!packages/react/ds-global/**/*.stories.*"
+      - "!**/*.test.*"
+      - "!**/*.md"
+      - "!**/*.mdx"
 jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml
@@ -31,8 +39,8 @@ jobs:
       externals: '[
         "configs/storybook/**",
         "packages/ds-assets/**",
-        "packages/tokens/**",
-        "packages/styles/**",
-        "packages/utils/**",
-        "packages/react/ds-global/**"
+        "packages/tokens/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
+        "packages/styles/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
+        "packages/utils/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
+        "packages/react/ds-global/**/!(*.test.*|*.stories.*|*.md|*.mdx)"
       ]'

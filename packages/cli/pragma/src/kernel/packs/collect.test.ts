@@ -2,15 +2,25 @@
  * Dynamic pack precedence + uniqueness (PROTECTED).
  *
  * Default config ⇒ effective == static (the golden holds, no config read cost on
- * the fast path). A config story overrides a bundled-pack noun or introduces a
- * new one; a story claiming a non-pack authored noun, a duplicate noun, or any
- * surviving `(noun, verb)` collision is rejected.
+ * the fast path, and the distribution's own declarations are compiled exactly
+ * once). A config story overrides a story-backed noun or introduces a new one;
+ * a story claiming an authored non-story noun, a duplicate noun within one
+ * config tier, or any surviving `(noun, verb)` collision is rejected. Across the
+ * two config tiers the closer declaration WINS rather than erroring.
  */
 
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { capabilities } from "../../capabilities/index.js";
 import type { ConfigLayers } from "../config/types.js";
 import type { CapabilityModule, VerbSpec } from "../spec/types.js";
-import { assembleEffectiveModules } from "./collect.js";
+import {
+  assembleEffectiveModules,
+  loadEffectiveModules,
+  validateStories,
+} from "./collect.js";
 import { assertUniqueVerbs } from "./uniqueness.js";
 
 /** A trivial storeless verb for a fake authored module. */
@@ -33,7 +43,9 @@ function fakeVerb(noun: string, verb?: string): VerbSpec {
 
 const STATIC: CapabilityModule[] = [
   { name: "config", verbs: [fakeVerb("config", "show")] },
-  { name: "standard", verbs: [fakeVerb("standard", "list")] },
+  // `story: true` marks a module compiled from a declared story — the ONLY
+  // kind a config/package story may replace.
+  { name: "standard", story: true, verbs: [fakeVerb("standard", "list")] },
 ];
 
 function layers(stories: unknown[]): ConfigLayers {
@@ -43,13 +55,33 @@ function layers(stories: unknown[]): ConfigLayers {
       tier: "default",
       channel: "default",
       detail: "default",
-      packages: "default",
+      packs: "default",
       stories: stories.length > 0 ? "project" : "default",
       prefixes: "default",
-      prompts: "default",
     },
     global: { path: "", exists: false },
     project: { exists: false },
+  };
+}
+
+/**
+ * Config layers where the PROJECT declares `packs`, with stories on the pack
+ * entry and optionally at the top level (the stronger tier).
+ */
+function packLayers(
+  packStories: unknown[],
+  topLevel: unknown[] = [],
+): ConfigLayers {
+  const base = layers(topLevel);
+  return {
+    ...base,
+    config: {
+      ...base.config,
+      packs: [
+        { name: "recipes", source: "file:///recipes", stories: packStories },
+      ],
+    },
+    origins: { ...base.origins, packs: "project" },
   };
 }
 
@@ -66,13 +98,13 @@ describe("assembleEffectiveModules (PROTECTED)", () => {
     expect(assembleEffectiveModules(STATIC, layers([]))).toBe(STATIC);
   });
 
-  it("a config story overrides a bundled-pack noun", () => {
+  it("a config story overrides a story-backed noun", () => {
     const effective = assembleEffectiveModules(
       STATIC,
       layers([validPack("standard")]),
     );
     const standard = effective.find((m) => m.name === "standard");
-    // The bundled `standard` module was replaced by the config pack (source
+    // The static `standard` module was replaced by the config pack (source
     // "config"); it still owns exactly `standard list`.
     expect(standard?.verbs.map((v) => v.path.join(" "))).toEqual([
       "standard list",
@@ -104,13 +136,13 @@ describe("assembleEffectiveModules (PROTECTED)", () => {
     expect(plain.find((m) => m.name === "stew")?.colophon).toBeUndefined();
   });
 
-  it("rejects a story claiming a non-pack authored noun", () => {
+  it("rejects a story claiming an authored non-story noun", () => {
     expect(() =>
       assembleEffectiveModules(STATIC, layers([validPack("config")])),
     ).toThrow(/built-in command/);
   });
 
-  it("rejects a duplicate story noun", () => {
+  it("rejects a duplicate story noun within one config tier", () => {
     expect(() =>
       assembleEffectiveModules(
         STATIC,
@@ -119,10 +151,157 @@ describe("assembleEffectiveModules (PROTECTED)", () => {
     ).toThrow(/Duplicate/);
   });
 
+  it("a story declared on a config pack contributes its noun", () => {
+    const effective = assembleEffectiveModules(
+      STATIC,
+      packLayers([validPack("recipe")]),
+    );
+    expect(effective.map((m) => m.name).sort()).toEqual([
+      "config",
+      "recipe",
+      "standard",
+    ]);
+  });
+
+  it("the top-level stories tier overrides packs[].stories for one noun", () => {
+    // Two config sources naming one noun is a REFINEMENT, not a conflict: the
+    // more specific (top-level) declaration wins and nothing throws.
+    const effective = assembleEffectiveModules(
+      STATIC,
+      packLayers(
+        [{ ...validPack("recipe"), colophon: "declared on the pack" }],
+        [{ ...validPack("recipe"), colophon: "declared by the project" }],
+      ),
+    );
+    expect(effective.filter((m) => m.name === "recipe")).toHaveLength(1);
+    expect(effective.find((m) => m.name === "recipe")?.colophon).toBe(
+      "declared by the project",
+    );
+  });
+
   it("rejects an invalid story pack (via the zod validator)", () => {
     expect(() =>
       assembleEffectiveModules(STATIC, layers([{ noun: "Bad Noun" }])),
     ).toThrow(/Invalid story/);
+  });
+});
+
+describe("validateStories — package stories NEVER throw (PROTECTED)", () => {
+  const record = (source: string, content: string) => ({ source, content });
+
+  it("drops an unparseable AND a schema-invalid story, keeping the valid one", () => {
+    // Both bad shapes in ONE case, deliberately: guarding the malformed file
+    // and letting the schema-invalid one through is exactly how a third-party
+    // story once bricked every command, `sources update` and `doctor` included.
+    const result = validateStories(
+      [
+        record("pkg/stories/broken.json", "{ not json"),
+        record("pkg/stories/invalid.json", '{"noun":"Bad Noun","list":{}}'),
+        record("pkg/stories/recipe.json", JSON.stringify(validPack("recipe"))),
+      ],
+      STATIC,
+    );
+    expect(result.entries.map((entry) => entry.definition.noun)).toEqual([
+      "recipe",
+    ]);
+    expect(result.problems.map((problem) => problem.source)).toEqual([
+      "pkg/stories/broken.json",
+      "pkg/stories/invalid.json",
+    ]);
+  });
+
+  it("last declaration wins for a noun, and the shadowed file is reported", () => {
+    const result = validateStories(
+      [
+        record("a/stories/recipe.json", JSON.stringify(validPack("recipe"))),
+        record(
+          "b/stories/recipe.json",
+          JSON.stringify({ ...validPack("recipe"), colophon: "from b" }),
+        ),
+      ],
+      STATIC,
+    );
+    expect(result.entries).toHaveLength(1);
+    expect(result.entries.at(0)?.source).toBe("b/stories/recipe.json");
+    expect(result.problems.at(0)?.source).toBe("a/stories/recipe.json");
+  });
+
+  it("refuses ANY noun the CLI already ships, without throwing", () => {
+    // Authored (`config`) and story-backed (`standard`) alike. A package may
+    // only ADD a noun: `assembleEffectiveModules` replaces a noun WHOLESALE, so
+    // a package claiming `token`/`block`/`tier` would delete the hand-written
+    // verb those composites exist for (`token add-config` is a MUTATION,
+    // `tier lookup` is frozen by the covenant) from a user who did nothing but
+    // declare a dependency. Overriding a shipped noun stays a config decision.
+    const result = validateStories(
+      [
+        record("pkg/stories/config.json", JSON.stringify(validPack("config"))),
+        record(
+          "pkg/stories/standard.json",
+          JSON.stringify(validPack("standard")),
+        ),
+      ],
+      STATIC,
+    );
+    expect(result.entries).toEqual([]);
+    expect(result.problems.map((problem) => problem.message)).toEqual([
+      'its noun "config" is a command this CLI already ships and cannot be replaced by a package.',
+      'its noun "standard" is a command this CLI already ships and cannot be replaced by a package.',
+    ]);
+  });
+
+  it("leaves a composite noun's hand-written verbs intact", () => {
+    // The real registry, not a fixture: `token` is a composite whose module
+    // carries the `add-config` mutation next to the declared story's reads.
+    const before = capabilities.find((module) => module.name === "token");
+    const { entries, problems } = validateStories(
+      [record("pkg/stories/token.json", JSON.stringify(validPack("token")))],
+      capabilities,
+    );
+    expect(entries).toEqual([]);
+    expect(problems.at(0)?.source).toBe("pkg/stories/token.json");
+    const after = assembleEffectiveModules(capabilities, layers([]), entries);
+    expect(
+      after
+        .find((module) => module.name === "token")
+        ?.verbs.map((verb) => verb.path.join(" ")),
+    ).toEqual(before?.verbs.map((verb) => verb.path.join(" ")));
+    expect(
+      before?.verbs.some((verb) => verb.path.join(" ") === "token add-config"),
+    ).toBe(true);
+  });
+
+  it("a config story still REPLACES a package one for the same noun", () => {
+    const { entries } = validateStories(
+      [record("pkg/stories/recipe.json", JSON.stringify(validPack("recipe")))],
+      STATIC,
+    );
+    const effective = assembleEffectiveModules(
+      STATIC,
+      layers([{ ...validPack("recipe"), colophon: "from the project" }]),
+      entries,
+    );
+    expect(effective.filter((m) => m.name === "recipe")).toHaveLength(1);
+    expect(effective.find((m) => m.name === "recipe")?.colophon).toBe(
+      "from the project",
+    );
+  });
+});
+
+describe("the default layer's stories are compiled exactly once (PROTECTED)", () => {
+  it("a fresh cwd's effective modules ARE the static capabilities", async () => {
+    // `pragma.conf.ts` declares the distribution's own stories on its packs,
+    // and `capabilities/distribution.ts` has already compiled them into the
+    // static set — that is what keeps those nouns on the `--help`/`__complete`
+    // fast path. Re-merging them at dispatch would recompile and re-validate
+    // them on every command, and would put the distribution's own declarations
+    // behind a validator whose failure is fatal. Identity (`toBe`), not
+    // equality, is the assertion: nothing was rebuilt.
+    const cwd = mkdtempSync(join(tmpdir(), "pragma-carve-out-"));
+    const { modules, problems } = await loadEffectiveModules(capabilities, cwd);
+    expect(modules).toBe(capabilities);
+    // The embedded snapshot carries no package stories, so nothing to report.
+    expect(problems).toEqual([]);
   });
 });
 

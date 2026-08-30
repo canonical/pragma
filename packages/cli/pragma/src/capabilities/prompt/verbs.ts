@@ -12,10 +12,13 @@
  * formatters).
  */
 
+import { BIN_NAME } from "../../constants.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
+import { cliRecovery } from "../../kernel/error/recovery.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
+import { VOCABULARY } from "../../kernel/vocabulary.js";
 import {
   promptListFormatters,
   promptLookupFormatters,
@@ -34,10 +37,10 @@ const READ_CAPABILITY = {
 const listVerb: VerbSpec<Record<string, unknown>, PromptListData> = {
   path: ["prompt", "list"],
   summary: "List the workflow prompt templates the design system offers.",
-  doc: "Browse the ds:Prompt entities in the active graph — name, description, and argument names. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.",
+  doc: `Browse the prompt entities the active graph declares (${VOCABULARY.prompt.type} in this distribution) — name, description, and argument names. This distribution's graph carries none today. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.`,
   params: [],
   output: { formatters: promptListFormatters },
-  examples: [{ cmd: "pragma prompt list" }],
+  examples: [{ cmd: `${BIN_NAME} prompt list` }],
   capability: READ_CAPABILITY,
   run: (_params: Record<string, unknown>, rt: PragmaRuntime) =>
     import("../../kernel/project/mcp/prompts/source.js").then(async (m) => {
@@ -55,19 +58,31 @@ const listVerb: VerbSpec<Record<string, unknown>, PromptListData> = {
 const lookupVerb: VerbSpec<Record<string, unknown>, PromptLookupData> = {
   path: ["prompt", "lookup"],
   summary: "Show one workflow prompt template's body and arguments by name.",
-  doc: "Fetch a single ds:Prompt entity's full template body (with {{arg}} placeholders) and its declared arguments.",
+  doc: "Fetch a single prompt entity's full template body (with {{arg}} placeholders) and its declared arguments. A prompt is addressed by its label; prompt_list names the ones the active graph carries.",
   params: [
     {
       kind: "string",
       name: "name",
-      doc: "The prompt name (e.g. build-a-block).",
+      doc: "The prompt name, as `prompt list` reports it.",
       positional: true,
       required: true,
-      complete: { kind: "names", source: { from: "prompts" } },
+      // A prompt is addressed by its `rdfs:label`, which the index carries as
+      // `label`, and the index reader offers no substitute for a prompt that
+      // carries none. Not a total guarantee: `label` is the first of several
+      // label predicates the index accepts, so an entity labelled ONLY by
+      // `skos:prefLabel` would still complete without resolving. That gap is
+      // the index's label preference order, not this ref.
+      complete: {
+        kind: "names",
+        source: { from: "index", type: VOCABULARY.prompt.type, field: "label" },
+      },
     },
   ],
   output: { formatters: promptLookupFormatters },
-  examples: [{ cmd: "pragma prompt lookup build-a-block" }],
+  // No example command: this distribution's graph declares no prompt, so any
+  // name quoted here exits 1 with ENTITY_NOT_FOUND — and this is the GENERATED
+  // reference, published as machine-derived truth.
+  examples: [],
   capability: READ_CAPABILITY,
   run: (params: Record<string, unknown>, rt: PragmaRuntime) =>
     import("../../kernel/project/mcp/prompts/source.js").then(async (m) => {
@@ -77,11 +92,9 @@ const lookupVerb: VerbSpec<Record<string, unknown>, PromptLookupData> = {
         const available = await m.readPrompts(rt);
         throw PragmaError.notFound("prompt", name, {
           suggestions: available.map((prompt) => prompt.name),
-          recovery: {
-            message: "List available prompts.",
-            cli: "pragma prompt list",
-            mcp: { tool: "prompt_list" },
-          },
+          recovery: cliRecovery("prompt list", "List available prompts.", {
+            tool: "prompt_list",
+          }),
         });
       }
       return entry;

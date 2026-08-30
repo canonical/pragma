@@ -21,6 +21,7 @@
 
 import type { GeneratorResult } from "@canonical/summon-core";
 import { $, gen, type Task } from "@canonical/task";
+import { BIN_NAME } from "../../constants.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type {
@@ -207,20 +208,26 @@ const setupAllVerb = setupVerb(
     params: SCOPE_PARAMS,
     doc: "Runs the shell-completions, LSP, MCP, and skills installers as a single wizard: pick the steps, review the recap, then apply. The scope option targets the project band, the user/home band, or both.",
     examples: [
-      { cmd: "pragma setup" },
-      { cmd: "pragma setup --dry-run", note: "preview every step's effects" },
+      { cmd: `${BIN_NAME} setup` },
       {
-        cmd: "pragma setup --global",
+        cmd: `${BIN_NAME} setup --dry-run`,
+        note: "preview every step's effects",
+      },
+      {
+        cmd: `${BIN_NAME} setup --global`,
         note: "configure only the user/home band",
       },
-      { cmd: "pragma setup mcp", note: "just the MCP server registration" },
+      {
+        cmd: `${BIN_NAME} setup mcp`,
+        note: "just the MCP server registration",
+      },
     ],
   },
 );
 
 const mcpVerb = setupVerb(
   ["setup", "mcp"],
-  "Register the pragma MCP server in detected AI harnesses.",
+  `Register the ${BIN_NAME} MCP server in detected AI harnesses.`,
   "mcp",
   SUB_CAPABILITY,
   { params: SCOPE_PARAMS },

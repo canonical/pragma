@@ -9,4 +9,14 @@
     var(--typography-text-secondary-bold-font-size) /
     var(--typography-text-secondary-bold-line-height)
     var(--typography-text-secondary-bold-font-family);
+  --ds-typography-text-primary-bold:
+    var(--typography-text-primary-bold-font-weight)
+    var(--typography-text-primary-bold-font-size) /
+    var(--typography-text-primary-bold-line-height)
+    var(--typography-text-primary-bold-font-family);
+  --ds-typography-heading-5:
+    var(--typography-heading-5-font-weight)
+    var(--typography-heading-5-font-size) /
+    var(--typography-heading-5-line-height)
+    var(--typography-heading-5-font-family);
 }

@@ -7,12 +7,21 @@
  * counts) is deliberately DROPPED here (it would require a store boot at
  * orientation) and lives in `info` / `config show` / `sources status` instead.
  *
- * `run` is a lazy thunk that dynamic-imports the catalog + the capability
- * registry barrel, so building the command tree never pulls the derivation onto
- * the `--help`/`__complete` fast path, and the tool never boots the store
- * (`store.booted` stays false — the storeless-spy invariant).
+ * `run` is a lazy thunk that dynamic-imports the catalog, the capability
+ * registry barrel and the dispatch-time merge, so building the command tree
+ * never pulls the derivation onto the `--help`/`__complete` fast path, and the
+ * tool never boots the store (`store.booted` stays false — the storeless-spy
+ * invariant).
+ *
+ * It reports the EFFECTIVE modules, not the static registry: the MCP server
+ * registers its tools from the same merge, so a catalog built from the static
+ * set would omit exactly the config- and package-declared nouns `tools/list`
+ * advertises — the hand-maintained drift this catalog exists to end. With no
+ * declared stories the merge returns the registry by identity, so the payload is
+ * unchanged.
  */
 
+import { BIN_NAME } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import { capabilitiesFormatters } from "./capabilities.render.js";
@@ -20,14 +29,16 @@ import type { CapabilitiesData } from "./types.js";
 
 const capabilitiesVerb: VerbSpec<Record<string, unknown>, CapabilitiesData> = {
   path: ["capabilities"],
-  summary:
-    "Discover pragma conventions, the annotated tool catalog, and the discovery sequence.",
+  summary: `Discover ${BIN_NAME} conventions, the annotated tool catalog, and the discovery sequence.`,
   doc: "Storeless orientation for agents. Returns the conventions (KG / tier-channel / SPARQL model), a four-stage discovery sequence, and every live tool with a behavioural use_when hint and category — all derived from the live grammar, so it never drifts. Call it first at session start.",
   params: [],
   output: { formatters: capabilitiesFormatters },
   examples: [
-    { cmd: "pragma capabilities", note: "the annotated tool catalog" },
-    { cmd: "pragma capabilities --format json", note: "the structured map" },
+    { cmd: `${BIN_NAME} capabilities`, note: "the annotated tool catalog" },
+    {
+      cmd: `${BIN_NAME} capabilities --format json`,
+      note: "the structured map",
+    },
   ],
   capability: {
     needsStore: false,
@@ -37,11 +48,18 @@ const capabilitiesVerb: VerbSpec<Record<string, unknown>, CapabilitiesData> = {
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
   },
-  run: (_params, _runtime) =>
-    Promise.all([import("./catalog.js"), import("../index.js")]).then(
-      ([catalog, registry]) =>
-        catalog.buildCapabilitiesData(registry.capabilities),
-    ),
+  run: async (_params, runtime) => {
+    const [catalog, registry, collect] = await Promise.all([
+      import("./catalog.js"),
+      import("../index.js"),
+      import("../../kernel/packs/collect.js"),
+    ]);
+    const { modules } = await collect.loadEffectiveModules(
+      registry.capabilities,
+      runtime.cwd,
+    );
+    return catalog.buildCapabilitiesData(modules);
+  },
 };
 
 /** The `capabilities` verb, widened for registry composition. */

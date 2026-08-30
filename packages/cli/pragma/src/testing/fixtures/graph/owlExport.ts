@@ -1,10 +1,11 @@
 /**
  * A realistic multi-typed OWL / Protégé-export fixture graph.
  *
- * The embedded `sample.ttl` (Button/Card/Dialog, each typed by exactly ONE
- * domain class, every block tiered, every label untagged) is a TOY: it never
- * exercises the counters/classifiers the way a real vocabulary does. This graph
- * deliberately carries the shapes that only bite real packs (audit backlog A):
+ * The other fixture graphs (`canonical.ts`, `defaultPack.ts` — Button/Card/
+ * Dialog, each typed by exactly ONE domain class, every block tiered, every
+ * label untagged) are TOYS: they never exercise the counters/classifiers the way
+ * a real vocabulary does. This graph deliberately carries the shapes that only
+ * bite real packs (audit backlog A):
  *
  * - Protégé DUAL-typing: an individual asserted as its domain class AND
  *   `owl:NamedIndividual` — the multiset that made `entityTotal` run ~2× (A1).

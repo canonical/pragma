@@ -4,8 +4,9 @@
  *
  * 1. {@link contentHash} — a SHA-256 (ke-graphql's `sha256Hex`) over the
  *    canonicalized *source inputs* (sorted by path, path + content joined with
- *    fixed delimiters). It names the pack's cache directory and is pinned in the
- *    lock, so the same sources always resolve to the same directory and a
+ *    fixed delimiters). It names the pack's cache directory and is what a
+ *    project's active-pack pointer holds, so the same sources always resolve to
+ *    the same directory and a
  *    changed source is a new directory (free invalidation). Hashing the sorted
  *    TTL *inputs* — never the `data.nq` dump, whose n-quads line order is not
  *    canonical — keeps it deterministic.

@@ -36,6 +36,14 @@ export interface Covenant {
     readonly resources?: readonly string[];
     readonly prompts?: boolean;
     readonly instructions?: boolean;
+    /**
+     * The wire-identity RULE (L-PR6 covenant extension): `serverInfo` projects
+     * from the distribution, stated as placeholders rather than live values so
+     * the covenant does not churn per release. Documentation for conformance —
+     * `assertConforms` does not deep-check it; `surface.test.ts` pins the rule
+     * text and the live handshake, `identity.test.ts` pins it from a fork.
+     */
+    readonly serverInfo?: { readonly name: string; readonly version: string };
   };
   readonly [section: string]: unknown;
 }

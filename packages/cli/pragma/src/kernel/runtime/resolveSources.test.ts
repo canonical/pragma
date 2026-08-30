@@ -1,11 +1,10 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { ConfigLayers } from "../config/types.js";
 import { loadStoreSession } from "./loadSession.js";
-import { writeLock } from "./lock.js";
-import { packDir } from "./paths.js";
+import { activePackPath, packDir } from "./paths.js";
 import { resolveSources } from "./resolveSources.js";
 
 /**
@@ -21,24 +20,21 @@ const tmp = (): string => {
   return dir;
 };
 
-/** Config layers whose only relevant knob is the `packages` origin. */
-function layersWith(packagesOrigin: "default" | "project"): ConfigLayers {
+/** Config layers whose only relevant knob is the `packs` origin. */
+function layersWith(packsOrigin: "default" | "project"): ConfigLayers {
   return {
     config: {
       channel: "normal",
-      packages:
-        packagesOrigin === "project"
-          ? [{ name: "x", source: "file:///x" }]
-          : [],
+      packs:
+        packsOrigin === "project" ? [{ name: "x", source: "file:///x" }] : [],
     },
     origins: {
       tier: "default",
       channel: "default",
       detail: "default",
-      packages: packagesOrigin,
+      packs: packsOrigin,
       stories: "default",
       prefixes: "default",
-      prompts: "default",
     },
     global: { path: "/nonexistent", exists: false },
     project: { exists: false },
@@ -67,8 +63,16 @@ function writeCompletePack(hash: string): string {
   writeFileSync(join(dir, "data.nq"), "<urn:s> <urn:p> <urn:o> .\n");
   writeFileSync(join(dir, "schema.json"), "{}");
   writeFileSync(join(dir, "index.json"), "{}");
+  writeFileSync(join(dir, "stories.json"), "[]");
   writeManifest(dir, hash);
   return dir;
+}
+
+/** Plant the active-pack pointer a `sources update` would have written. */
+function writePointer(cwd: string, content: string): void {
+  const path = activePackPath(cwd);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, content);
 }
 
 beforeEach(() => {
@@ -79,11 +83,11 @@ afterEach(() => {
 });
 
 describe("resolveSources decision table", () => {
-  it("lock present + pack cached → load the locked pack", () => {
+  it("pointer present + pack cached → load the built pack", () => {
     const cwd = tmp();
     const hash = "a".repeat(64);
     const dir = writeCompletePack(hash);
-    writeLock(cwd, { version: 1, contentHash: hash, packs: [] });
+    writePointer(cwd, hash);
 
     expect(resolveSources(layersWith("default"), cwd)).toEqual({
       kind: "pack",
@@ -92,46 +96,64 @@ describe("resolveSources decision table", () => {
     });
   });
 
-  it("lock present + pack evicted → STORE_UNAVAILABLE", () => {
+  it("pointer present + pack evicted → STORE_UNAVAILABLE", () => {
     const cwd = tmp();
-    // A lock whose content-addressed pack is absent from the cache.
-    writeLock(cwd, { version: 1, contentHash: "b".repeat(64), packs: [] });
+    // A pointer whose content-addressed pack is absent from the cache.
+    writePointer(cwd, "b".repeat(64));
 
     expect(resolveSources(layersWith("default"), cwd)).toEqual({
       kind: "unavailable",
-      reason: "the locked pack is missing from the cache",
+      reason: "the built pack is missing from the cache",
     });
   });
 
-  it("lock present + pack with a torn schema/index → STORE_UNAVAILABLE", () => {
+  it("pointer present + pack with a torn schema/index → STORE_UNAVAILABLE", () => {
     const cwd = tmp();
     const hash = "c".repeat(64);
     // manifest + non-empty dump present, but the extracted schema/index are
     // missing (a torn or partially-evicted pack). This used to slip through
     // `packIsComplete` and then crash at read time as an INTERNAL error; it must
-    // now be treated as not-built so the boot surfaces STORE_UNAVAILABLE.
+    // now be treated as not-built so the boot surfaces STORE_UNAVAILABLE — and
+    // say INCOMPLETE, not "missing", because the directory is right there. This
+    // is also the shape every pack built before `stories.json` now takes.
     const dir = packDir(hash);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "data.nq"), "<urn:s> <urn:p> <urn:o> .\n");
     writeManifest(dir, hash);
-    writeLock(cwd, { version: 1, contentHash: hash, packs: [] });
+    writePointer(cwd, hash);
 
     expect(resolveSources(layersWith("default"), cwd)).toEqual({
       kind: "unavailable",
-      reason: "the locked pack is missing from the cache",
+      reason: "the built pack is incomplete — an older or torn build",
     });
   });
 
-  it("no lock + default packages → embedded fallback", () => {
+  it("a malformed pointer is treated as absent, not as a pack name", () => {
+    // A truncated/garbage pointer must never name a cache directory. With
+    // default packs it falls through to the embedded row, exactly as no
+    // pointer at all would.
+    const cwd = tmp();
+    writePointer(cwd, "not-a-content-hash\n");
+
+    expect(resolveSources(layersWith("default"), cwd)).toEqual({
+      kind: "embedded",
+    });
+    expect(resolveSources(layersWith("project"), cwd)).toEqual({
+      kind: "unavailable",
+      reason: "packs are configured but the store has not been built",
+    });
+  });
+
+  it("no pointer + default packs → embedded fallback", () => {
     expect(resolveSources(layersWith("default"), tmp())).toEqual({
       kind: "embedded",
     });
   });
 
-  it("no lock + packages configured → STORE_UNAVAILABLE", () => {
+  it("no pointer + packs configured → STORE_UNAVAILABLE", () => {
     expect(resolveSources(layersWith("project"), tmp())).toEqual({
       kind: "unavailable",
-      reason: "packages are configured but the store has not been built",
+      reason: "packs are configured but the store has not been built",
     });
   });
 });

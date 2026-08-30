@@ -10,24 +10,53 @@
  * prepare step — talks to it over the wire at
  * {@link DEFAULT_GRAPHQL_URL} (or `GRAPH_PORT`).
  *
+ * **The provider is no longer assembled here.** It comes from
+ * `@canonical/prism-pragma-provider`, which owns pragma's ref-package list,
+ * its semantic-package list, the shim-concept exclusion, the `anatomy:uri`
+ * mapping and the compiler options — every fact about pragma's specific
+ * ontologies that used to live in this app's `src/server/graphql.ts`. What is
+ * left in this file is TRANSPORT: the port, the hostname, the `/graphql`-only
+ * routing and the per-request hit log. This app depends on no knowledge engine
+ * at all: neither `@canonical/ke` nor `@canonical/ke-graphql` appears in its
+ * dependencies. Point it at any provider implementing
+ * `@canonical/prism-contract` with `VITE_GRAPHQL_URL` and none of this
+ * changes.
+ *
  * **Named `graph.ts`, not `graph.bun.ts`.** The `.bun` / `.express` suffix in
  * this directory encodes the 2×3 server matrix (two modes × three targets).
  * The graph has no matrix: there is exactly one of it, it always runs under
  * Bun, and neither the mode nor the web target changes it.
  *
- * **Boots EAGERLY.** `getGraphqlBackend()` is awaited BEFORE `Bun.serve`, so
- * "listening" means "schema compiled" — a launcher that races readiness gets
- * an honest answer instead of a socket that accepts and then spends thirty
- * seconds parsing Turtle. A boot failure exits non-zero carrying the
- * backend's own actionable message (the refs-cache hint), rather than
- * serving 500s forever.
+ * **Boots EAGERLY.** `createPragmaProvider()` is awaited BEFORE `Bun.serve`,
+ * so "listening" means "schema compiled" — a launcher that races readiness
+ * gets an honest answer instead of a socket that accepts and then spends
+ * thirty seconds parsing Turtle. A boot failure exits non-zero carrying the
+ * provider's own actionable message (the refs-cache hint), rather than
+ * serving 500s forever. The provider used to memoise itself behind a lazy
+ * `getGraphqlBackend()`; there is exactly one boot and this line is it, so
+ * the singleton went away with the module it lived in.
  *
  * **Serves only `/graphql`.** Every other path is a JSON 404 — never HTML.
  * A consumer that has been misconfigured to point at the web server (or vice
  * versa) then fails on content type instead of silently parsing a page.
  */
+import { fileURLToPath } from "node:url";
+import { createPragmaProvider } from "@canonical/prism-pragma-provider";
 import { DEFAULT_GRAPHQL_URL } from "#relay/graphqlEndpoint.js";
-import { getGraphqlBackend } from "./graphql.js";
+
+/**
+ * The emitted SDL destination — the file relay-compiler reads.
+ *
+ * It lives HERE, not in the provider package: the path belongs to THIS app's
+ * source tree, and a provider that derived it from its own `import.meta.url`
+ * would resolve it inside the package (or inside `node_modules`) with no type
+ * error, no lint error and no test failure — only a boot would reveal it, and
+ * a boot needs a populated refs cache. So `sdlOutput` is an argument with no
+ * default: the provider takes a path or it writes nothing at all.
+ */
+const SDL_OUTPUT_PATH = fileURLToPath(
+  new URL("../relay/schema.graphql", import.meta.url),
+);
 
 /** The listen port: `GRAPH_PORT`, else the one port literal in the app. */
 const PORT =
@@ -51,7 +80,9 @@ const HOSTNAME = new URL(DEFAULT_GRAPHQL_URL).hostname;
 // line in sync with GRAPHQL_HIT_MARKER in test/e2e/servers.e2e.ts.
 let hits = 0;
 
-const backend = await getGraphqlBackend().catch((error: unknown): never => {
+const backend = await createPragmaProvider({
+  sdlOutput: SDL_OUTPUT_PATH,
+}).catch((error: unknown): never => {
   console.error(
     "[graph] the GraphQL backend failed to boot:",
     error instanceof Error ? error.message : error,

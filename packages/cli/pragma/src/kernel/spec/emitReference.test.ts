@@ -6,8 +6,8 @@ import {
 import { ERROR_CODES } from "../error/constants.js";
 import { emitReference } from "./emitReference.js";
 
-/** The four pages every reference doc set carries. */
-const PAGES = ["index.md", "commands.md", "tools.md", "errors.md"];
+/** The five pages every reference doc set carries. */
+const PAGES = ["index.md", "commands.md", "tools.md", "errors.md", "config.md"];
 
 describe("emitReference", () => {
   const docs = emitReference([fixtureReferenceModule]);
@@ -16,7 +16,7 @@ describe("emitReference", () => {
   const tools = docs.get("tools.md") ?? "";
   const errors = docs.get("errors.md") ?? "";
 
-  it("emits exactly the four reference pages", () => {
+  it("emits exactly the five reference pages", () => {
     expect([...docs.keys()].sort()).toEqual([...PAGES].sort());
   });
 

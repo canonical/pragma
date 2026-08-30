@@ -2,8 +2,8 @@
  * Harness-foundation smoke tests (commit 1).
  *
  * Validates the framework pieces PR4 adds — NOT per-noun behavior (that's
- * commits 2/4's job). Proves: (1) `bootFixtureRuntime` boots a real,
- * lock-backed store that BOTH the CLI and MCP surfaces resolve identically
+ * commits 2/4's job). Proves: (1) `bootFixtureRuntime` boots a real, built-pack
+ * store that BOTH the CLI and MCP surfaces resolve identically
  * (via the shared canonical graph, one real lookup); (2) the compiler/runtime
  * is ontology-agnostic — a pack over the foreign `ex:` recipe namespace
  * registers its 2 tools and resolves on both surfaces; (3) `runCli` can spawn
@@ -32,7 +32,7 @@ import { assertCliMcpParity } from "../helpers/parity.js";
 import { runCli } from "../helpers/runCli.js";
 
 describe("bootFixtureRuntime — the shared canonical graph (commit-1 smoke)", () => {
-  it("boots a lock-backed store both CLI and MCP resolve identically", async () => {
+  it("boots a built-pack store both CLI and MCP resolve identically", async () => {
     const fixture = await bootFixtureRuntime({
       ttl: CANONICAL_TTL,
       config: CANONICAL_CONFIG,

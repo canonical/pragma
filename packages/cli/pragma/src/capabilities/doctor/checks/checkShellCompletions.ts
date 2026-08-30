@@ -1,19 +1,47 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { BIN_NAME } from "../../../constants.js";
 import {
+  emitScripts,
   indexCompletionEnv,
   runComplete,
 } from "../../../kernel/completion/index.js";
 import { capabilities } from "../../index.js";
-import {
-  activationHint,
-  completionScriptPath,
-  detectShell,
-} from "../../setup/shell.js";
+import { detectCompletions } from "../../setup/operations/setupCompletions.js";
+import { activationHint, type ShellId } from "../../setup/shell.js";
 import type { CheckResult } from "../types.js";
 
 const NAME = "Shell completions";
+
+/** The one remedy for an absent or out-of-date script. */
+const INSTALL_REMEDY = `${BIN_NAME} setup completions`;
+
+/**
+ * Whether the installed script is the config-free emit — the body
+ * `setup completions` writes when no `completion` config tunes it.
+ *
+ * The completion script is ONE file per user, but the `completion` config it is
+ * rendered from is layered per project. So `detectCompletions(cwd)`'s `stale`
+ * means only "not what THIS directory would write", and on its own it would let
+ * any project that tunes `minChars` call a globally-correct script out of date
+ * from every other directory — a `doctor` verdict that flips with `cd`, and a
+ * remedy that just moves the failure to the project you came from. A script
+ * that matches neither this project's body nor the untuned one is the one that
+ * is genuinely stale.
+ *
+ * @param path - The install path.
+ * @param shell - The detected shell.
+ * @returns Whether the file there is byte-identical to the untuned emit.
+ * @note Impure — reads the install path. An unreadable file counts as `false`.
+ */
+function isUntunedScript(path: string, shell: ShellId): boolean {
+  try {
+    return readFileSync(path, "utf-8") === emitScripts(capabilities)[shell];
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Whether the user's `.zshrc` puts `~/.zfunc` on `$fpath` — the activation step
@@ -53,23 +81,28 @@ async function completeProbe(cwd: string): Promise<number> {
 }
 
 /**
- * Check that shell completions are installed AND functional.
+ * Check that shell completions are installed AND up to date AND functional.
  *
  * Three gates, in order:
  * 1. The resolver answers (`completeProbe` drives `runComplete` end to end) —
  *    the effect every installed script depends on. A failure here is a real
  *    regression, so it fails even when nothing is installed.
- * 2. The script file exists at the shell's real install path (`shell.ts`) —
- *    NOT a `"pragma"` substring in an RC file, which `setup completions` never
- *    writes.
+ * 2. The installed script is present AND is a script `setup completions` would
+ *    write. Bytes, not existence: a file that merely exists proves nothing — a
+ *    user upgrading across a grammar change keeps the old script, loses the
+ *    moved nouns from TAB, and used to be told everything was fine. The path
+ *    and this project's body come from `detectCompletions`, the ONE owner of
+ *    that decision; {@link isUntunedScript} is what keeps a per-project
+ *    `completion` config from condemning a global file (see its docblock).
  * 3. For zsh, `~/.zfunc` is on `$fpath` — the activation step setup can only
  *    hint. Installed-but-unwired reports a distinct remedy.
  *
- * @param cwd - The project directory (for the resolver's entity seam).
- * @returns A CheckResult: pass (installed + wired + answering), fail (with the
+ * @param cwd - The project directory (the resolver's entity seam, and the
+ *   `completion` config gate 2 renders this project's body from).
+ * @returns A CheckResult: pass (up to date + wired + answering), fail (with the
  *   attributable remedy), or skip (shell undetected).
- * @note Impure — reads `$SHELL`, the install path, `.zshrc`, and drives the
- *   storeless resolver.
+ * @note Impure — reads `$SHELL`, the install path, the config layers, `.zshrc`,
+ *   and drives the storeless resolver.
  */
 export async function checkShellCompletions(cwd: string): Promise<CheckResult> {
   // 1. Effect test: the resolver the scripts delegate to must actually answer.
@@ -82,34 +115,41 @@ export async function checkShellCompletions(cwd: string): Promise<CheckResult> {
       name: NAME,
       status: "fail",
       detail: `completion resolver failed: ${reason}`,
-      remedy: "Report this as a bug — `pragma __complete` should never throw.",
+      remedy: `Report this as a bug — \`${BIN_NAME} __complete\` should never throw.`,
     };
   }
   if (candidates === 0) {
     return {
       name: NAME,
       status: "fail",
-      detail: "completion resolver returned no candidates for `pragma <TAB>`",
+      detail: `completion resolver returned no candidates for \`${BIN_NAME} <TAB>\``,
       remedy: "Report this as a bug — the noun context is always non-empty.",
     };
   }
 
-  // 2. The script file exists at the shell's real install path.
-  const shell = detectShell();
-  if (!shell) {
+  // 2. The installed script is a script `setup completions` would write.
+  const { shell, path, state } = await detectCompletions(cwd);
+  if (shell === null || path === null) {
     return {
       name: NAME,
       status: "skip",
       detail: "resolver OK; shell not detected ($SHELL unset)",
     };
   }
-  const path = completionScriptPath(shell);
-  if (!existsSync(path)) {
+  if (state === "absent") {
     return {
       name: NAME,
       status: "fail",
       detail: `resolver OK; ${shell} script not installed`,
-      remedy: "pragma setup completions",
+      remedy: INSTALL_REMEDY,
+    };
+  }
+  if (state === "stale" && !isUntunedScript(path, shell)) {
+    return {
+      name: NAME,
+      status: "fail",
+      detail: `resolver OK; ${shell} script at ${path} is out of date`,
+      remedy: INSTALL_REMEDY,
     };
   }
 
@@ -126,6 +166,6 @@ export async function checkShellCompletions(cwd: string): Promise<CheckResult> {
   return {
     name: NAME,
     status: "pass",
-    detail: `${shell} installed and resolving (${candidates} nouns)`,
+    detail: `${shell} up to date and resolving (${candidates} nouns)`,
   };
 }

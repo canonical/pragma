@@ -129,16 +129,25 @@ async function main(): Promise<void> {
     return;
   }
 
-  // A real command merges config-declared story packs into the tree (DISPATCH
-  // only); `--help` stays on the static, storeless capabilities so its budget
-  // and the golden hold. An invalid config story surfaces as a rendered error.
+  // A real command merges the package- and config-declared story packs into the
+  // tree (DISPATCH only); `--help` stays on the static, storeless capabilities
+  // so its budget and the golden hold. An invalid CONFIG story surfaces as a
+  // rendered error; a package story that cannot be used is named on stderr and
+  // the command carries on (it is third-party data, and failing here would take
+  // `sources update` and `doctor` — the only recoveries — down with it).
   let modules = capabilities;
   if (!explicitHelp) {
     try {
       const { loadEffectiveModules } = await import(
         "./kernel/packs/collect.js"
       );
-      modules = await loadEffectiveModules(capabilities, process.cwd());
+      const effective = await loadEffectiveModules(capabilities, process.cwd());
+      modules = effective.modules;
+      for (const problem of effective.problems) {
+        process.stderr.write(
+          `Ignored story ${problem.source}: ${problem.message}\n`,
+        );
+      }
     } catch (error) {
       await renderStartupError(error, globalFlags.format === "json");
       return;

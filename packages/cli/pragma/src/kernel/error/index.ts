@@ -8,7 +8,7 @@
 
 export { ERROR_CODES } from "./constants.js";
 export { PragmaError } from "./PragmaError.js";
-export { assertRecoveryCli, cliRecovery } from "./recovery.js";
+export { cliRecovery } from "./recovery.js";
 export {
   renderErrorJson,
   renderErrorLlm,

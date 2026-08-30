@@ -14,6 +14,7 @@
  */
 
 import type { Task } from "@canonical/task";
+import { BIN_NAME } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { CapabilityModule, VerbSpec } from "../../kernel/spec/types.js";
 import type { UpgradeData } from "./types.js";
@@ -21,13 +22,16 @@ import { upgradeFormatters } from "./upgrade.render.js";
 
 const upgradeVerb: VerbSpec<Record<string, unknown>, UpgradeData> = {
   path: ["upgrade"],
-  summary: "Upgrade the pragma CLI to the latest version.",
+  summary: `Upgrade the ${BIN_NAME} CLI to the latest version.`,
   doc: "Checks the registry for the active channel's latest release and runs your package manager's global-update command. Preview the update before applying it.",
   params: [],
   output: { formatters: upgradeFormatters },
   examples: [
-    { cmd: "pragma upgrade" },
-    { cmd: "pragma upgrade --dry-run", note: "show the delta and the command" },
+    { cmd: `${BIN_NAME} upgrade` },
+    {
+      cmd: `${BIN_NAME} upgrade --dry-run`,
+      note: "show the delta and the command",
+    },
   ],
   capability: {
     needsStore: false,

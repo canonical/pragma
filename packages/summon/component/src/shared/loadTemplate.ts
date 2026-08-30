@@ -55,9 +55,10 @@ export function setEmbeddedTemplates(
  * `templates/` segment (never expected for a real template).
  *
  * The `component/` prefix is correct because this loader is used ONLY by the
- * component generators; the shared manifest additionally carries `package/…` and
- * `application/…` entries (embedded for a future compiled-binary rollout of
- * those nouns), which this loader never queries.
+ * component generators, and the manifest carries ONLY `component/…` entries: the
+ * pragma CLI embeds the templates of exactly those generators that read through
+ * this loader. The `package` / `application` generators pass a `source` path to
+ * `template()` and read from disk, so no manifest entry could serve them.
  */
 function qualifiedKey(source: string): string | undefined {
   const marker = "/templates/";

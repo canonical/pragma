@@ -4,8 +4,10 @@
  * A verb renders at one of {@link DETAIL_LEVELS}. The effective level is chosen
  * from four sources, most specific first: the `--detail` flag, the resolved
  * config's `detail`, the verb's own `disclosure.default`, and finally the
- * built-in `"standard"`. Unknown values (a stale config, a typo) fall back to
- * the default rather than erroring, so output never fails on disclosure.
+ * built-in `"standard"`. Every source is validated upstream (the flag by
+ * `readDetail`, the config field by `z.enum` at load, a spec default by the
+ * pack grammar), so the fall-back here is a last belt against a source added
+ * later without validation — output never fails on disclosure.
  */
 
 import {

@@ -21,6 +21,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { capabilities } from "../../capabilities/index.js";
 import { readPackIndex } from "../../kernel/completion/entitySource.js";
+import type { PackIndex } from "../../kernel/runtime/graphpack/types.js";
+import { resolveSources } from "../../kernel/runtime/resolveSources.js";
 import {
   ALL_VISIBLE_CONFIG,
   CANONICAL_TTL,
@@ -41,6 +43,8 @@ let mcp: Awaited<ReturnType<typeof projectMcp>>;
 let firstNameByNoun: Map<string, string>;
 /** The registered tool list, fetched once (annotations are call-invariant). */
 let registeredTools: Awaited<ReturnType<typeof mcp.listTools>>;
+/** The index of the pack the fixture's boot decision names. */
+let activeIndex: PackIndex | undefined;
 
 beforeAll(async () => {
   fixture = await bootFixtureRuntime({
@@ -49,6 +53,9 @@ beforeAll(async () => {
   });
   mcp = await projectMcp(capabilities, fixture.cwd);
   registeredTools = await mcp.listTools();
+  activeIndex = readPackIndex(
+    resolveSources(await fixture.runtime.loadConfig(), fixture.cwd),
+  );
 
   firstNameByNoun = new Map();
   for (const v of listVerbs) {
@@ -81,15 +88,13 @@ function representativeValue(
   param: LiveVerb["spec"]["params"][number],
 ): unknown {
   if (param.name === "prefix") {
-    const prefix = Object.keys(readPackIndex(fixture.cwd)?.prefixes ?? {}).find(
+    const prefix = Object.keys(activeIndex?.prefixes ?? {}).find(
       (p) => p !== "owl" && p !== "rdfs" && p !== "rdf" && p !== "xsd",
     );
     return prefix ?? "ds";
   }
   if (param.name === "uri") {
-    const entity = readPackIndex(fixture.cwd)?.entities.find(
-      (e) => e.box === "abox",
-    );
+    const entity = activeIndex?.entities.find((e) => e.box === "abox");
     return entity?.prefixed ?? entity?.name ?? "";
   }
   // An enum positional (e.g. `config set <key>`) must

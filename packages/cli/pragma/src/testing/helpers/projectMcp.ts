@@ -42,6 +42,8 @@ export interface McpHarness {
   completeResource(partial: string): Promise<string[]>;
   /** The server capabilities negotiated at initialize (tools/resources/prompts). */
   serverCapabilities(): ServerCapabilities | undefined;
+  /** The `serverInfo` the server introduced itself with at initialize. */
+  serverInfo(): { name: string; version: string } | undefined;
   /** The server `instructions` string sent at initialize. */
   instructions(): string | undefined;
   /** List the native MCP prompts (`prompts/list`). */
@@ -119,6 +121,10 @@ export async function projectMcp(
     },
     serverCapabilities() {
       return client.getServerCapabilities();
+    },
+    serverInfo() {
+      const info = client.getServerVersion();
+      return info ? { name: info.name, version: info.version } : undefined;
     },
     instructions() {
       return client.getInstructions();

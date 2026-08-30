@@ -14,3 +14,4 @@ Machine-generated reference for the `pragma` CLI and MCP server, projected from 
 - [CLI command reference](./commands.md) — every `pragma <noun> <verb>`, its arguments, flags, and examples.
 - [MCP tool reference](./tools.md) — every exposed tool, its input schema, and the non-tool surface.
 - [Errors & exit codes](./errors.md) — the exit-code table, response envelope, and error catalog.
+- [Configuration reference](./config.md) — every config field, the three layers, and how they combine.

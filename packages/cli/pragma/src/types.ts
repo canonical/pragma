@@ -12,8 +12,8 @@ export type { DetailLevel, OutputFormat } from "./constants.js";
 // — Config authoring ————————————————————————————————————————————————————————
 export type {
   Channel,
-  PackageDeclaration,
-  PackageEntry,
+  PackDeclaration,
+  PackSource,
   PragmaConfig,
 } from "./kernel/config/types.js";
 // — Error model —————————————————————————————————————————————————————————————

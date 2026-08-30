@@ -11,6 +11,7 @@
  */
 
 import chalk from "chalk";
+import { BIN_NAME } from "../../constants.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
 import type { Formatters } from "../../kernel/spec/types.js";
 import { BAND_LABELS } from "../shared/bands.js";
@@ -134,7 +135,7 @@ export const doctorFormatters: Formatters<DoctorData> = {
   plain(data) {
     const style = doctorStyle();
     const nameWidth = Math.max(...data.checks.map((c) => c.name.length), 0);
-    const lines: string[] = [style.bold("pragma doctor"), ""];
+    const lines: string[] = [style.bold(`${BIN_NAME} doctor`), ""];
     const { environment, machine, project } = partitionByBand(data.checks);
     const section = (heading: string, checks: CheckResult[]): void => {
       if (checks.length === 0) return;

@@ -1,0 +1,20 @@
+/**
+ * Card.Header styles
+ * @implements ds:global.subcomponent.card-header
+ */
+:root {
+  --card-header-gap: var(--dimension-200);
+  --card-header-padding-block: var(--dimension-200);
+  --card-header-padding-inline: var(--dimension-200);
+}
+
+.ds.card-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--card-header-gap);
+
+  padding-block: var(--card-header-padding-block);
+  padding-inline: var(--card-header-padding-inline);
+}

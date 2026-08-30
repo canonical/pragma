@@ -1,0 +1,20 @@
+/**
+ * Card.Content styles
+ * @implements ds:global.subcomponent.card-content
+ */
+:root {
+  --card-content-gap: var(--dimension-100);
+  --card-content-padding-block-start: var(--dimension-100);
+  --card-content-padding-block-end: var(--dimension-200);
+  --card-content-padding-inline: var(--dimension-200);
+}
+
+.ds.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-content-gap);
+
+  padding-block-start: var(--card-content-padding-block-start);
+  padding-block-end: var(--card-content-padding-block-end);
+  padding-inline: var(--card-content-padding-inline);
+}

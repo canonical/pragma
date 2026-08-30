@@ -1,0 +1,12 @@
+# Instance data for the first root.
+#
+# `ds:.subcomponent.button-label` is a CHANNEL-DOTTED reference: a valid IRI
+# but invalid Turtle, since a PN_LOCAL may not start with an unescaped dot.
+# Nothing here parses unless `escapeChannelDottedRefs` rewrote it first — which
+# is the point of keeping it in the corpus.
+
+@prefix ds: <https://design.example.org/ontology#> .
+
+ds:button a ds:Component ;
+    ds:tier "core" ;
+    ds:refines ds:.subcomponent.button-label .

@@ -12,6 +12,7 @@
  * `doctor-exit-zero-with-failures`.
  */
 
+import { BIN_NAME } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { CapabilityModule, VerbSpec } from "../../kernel/spec/types.js";
 import { doctorFormatters } from "./doctor.render.js";
@@ -24,8 +25,11 @@ const doctorVerb: VerbSpec<Record<string, unknown>, DoctorData> = {
   params: [],
   output: { formatters: doctorFormatters },
   examples: [
-    { cmd: "pragma doctor" },
-    { cmd: "pragma doctor --format json", note: "machine-readable checks" },
+    { cmd: `${BIN_NAME} doctor` },
+    {
+      cmd: `${BIN_NAME} doctor --format json`,
+      note: "machine-readable checks",
+    },
   ],
   capability: {
     needsStore: false,

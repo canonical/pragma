@@ -94,3 +94,56 @@
     onerror: () => {},
   }}
 />
+
+<Story
+  name="Surface elevation"
+  tags={["!autodocs"]}
+  args={{ userName: "John Doe" }}
+>
+  {#snippet template(args)}
+    <div class="stack">
+      <div class="box dashed">
+        <code>no .surface</code>
+        <UserAvatar {...args} />
+      </div>
+
+      <div class="surface box">
+        <code>.surface</code>
+        <UserAvatar {...args} />
+
+        <div class="surface box">
+          <code>.surface .surface</code>
+          <UserAvatar {...args} />
+
+          <div class="surface box">
+            <code>.surface .surface .surface</code>
+            <UserAvatar {...args} />
+          </div>
+        </div>
+      </div>
+    </div>
+  {/snippet}
+</Story>
+
+<style>
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 34rem;
+  }
+
+  .box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1.25rem;
+    border: 1px solid var(--color-border);
+    background-color: var(--surface-color-background);
+  }
+
+  .dashed {
+    border-style: dashed;
+    background-color: transparent;
+  }
+</style>

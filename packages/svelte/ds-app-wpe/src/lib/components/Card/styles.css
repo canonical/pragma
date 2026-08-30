@@ -1,0 +1,52 @@
+/**
+ * Card styles
+ * @implements ds:global.component.card
+ *
+ * A Card is a ROW SUBGRID spanning four fixed section tracks
+ * (image / header / content / footer), inheriting them from the parent grid.
+ * Inside a `Cards` group the shared tracks align sections across every card in
+ * the row. The card sets no background of its own (it is not a surface).
+ */
+:root {
+  --card-color-border: var(--color-border-muted);
+  --card-border-width: var(--dimension-stroke-thickness-medium);
+  --card-border-radius: var(--dimension-radius-medium);
+}
+
+.ds.card {
+  grid-column: span var(--card-span, 1);
+  grid-row: span 4;
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-template-columns: minmax(0, 1fr);
+
+  border: var(--card-border-width) solid var(--card-color-border);
+  border-radius: var(--card-border-radius);
+  overflow: hidden;
+}
+
+.ds.card > .card-image {
+  grid-row: 1;
+  grid-column: 1 / -1;
+}
+.ds.card > .card-header {
+  grid-row: 2;
+  grid-column: 1 / -1;
+}
+.ds.card > .card-content {
+  grid-row: 3;
+  grid-column: 1 / -1;
+}
+.ds.card > .card-footer {
+  grid-row: 4;
+  grid-column: 1 / -1;
+}
+
+.ds.card > :is(.card-content, .card-footer, .card-image):not(:last-child) {
+  border-block-end: var(--card-border-width) solid var(--card-color-border);
+}
+
+/* Collapse the header/content seam so title and body read as one region. */
+.ds.card > .card-header:has(+ .card-content) {
+  padding-block-end: 0;
+}

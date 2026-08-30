@@ -1,10 +1,10 @@
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { listPromptSummaries } from "../../kernel/project/mcp/prompts/source.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
-import { writeLock } from "../../kernel/runtime/lock.js";
+import { resolveSources } from "../../kernel/runtime/resolveSources.js";
 import type { GlobalFlags } from "../../kernel/spec/types.js";
 import { CANONICAL_TTL } from "../../testing/fixtures/graph/canonical.js";
 import {
@@ -116,7 +116,9 @@ describe("prompt — native MCP prompts surface (PROTECTED)", () => {
 describe("prompt — storeless native listing (PROTECTED)", () => {
   it("listing the prompts does NOT boot the store", async () => {
     const runtime = bootRuntime(FLAGS, fixture.cwd);
-    const summaries = listPromptSummaries(runtime);
+    const summaries = listPromptSummaries(
+      resolveSources(await runtime.loadConfig(), runtime.cwd),
+    );
     expect(summaries.map((s) => s.name).sort()).toEqual(EXPECTED);
     expect(runtime.store.booted).toBe(false);
   });
@@ -127,15 +129,19 @@ describe("prompt — storeless native listing (PROTECTED)", () => {
  * (`needsStore`), so a cold store throws STORE_UNAVAILABLE through its pre-check;
  * native `prompts/list`/`prompts/get` must present the SAME diagnostic rather
  * than silently listing a stale index (D1) or reporting a bogus "not found"
- * (D4). A lock pointing at an evicted pack is the cold "configured but unbuilt"
- * store (the pack is absent from the XDG-isolated cache).
+ * (D4). A project that declares its own packs and has never built them is the
+ * cold "configured but unbuilt" store — the row of the boot decision table
+ * that must never be served the distribution's embedded graph.
  */
 describe("prompt — cold-store convergence, tool + native agree (D1/D4)", () => {
   let cold: McpHarness;
 
   beforeAll(async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pragma-prompt-cold-"));
-    writeLock(cwd, { version: 1, contentHash: "b".repeat(64), packs: [] });
+    writeFileSync(
+      join(cwd, "pragma.config.ts"),
+      `export default { packs: [{ name: "unbuilt", source: "file:///pragma-never-built" }] };\n`,
+    );
     cold = await projectMcp(capabilities, cwd);
   });
   afterAll(async () => {

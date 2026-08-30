@@ -6,10 +6,12 @@
  * the npm registry — this deliberately REVERSES PR1's networkless-D11 stance for
  * `info` (the reversal IS the enrichment), unconditional because the covenant
  * `info` verb carries no flag, 3s timeout, silent-fail — and (b) a storeless
- * entity total from the pack index (`readPackIndex`, the same reader `sources
- * status` uses). Neither enrichment boots the store, so the storeless-guarantee
- * spy still sees `store.booted === false`. Kept out of the spec module so
- * building the command tree never pulls it onto the `--help` fast path.
+ * entity total, read from the index of whichever pack the boot decision names
+ * (`resolveSources` → `readPackIndex`, the same predicate `sources status` and
+ * `doctor` switch on) so `info` never counts a graph this project's reads
+ * refuse. Neither enrichment boots the store, so the storeless-guarantee spy
+ * still sees `store.booted === false`. Kept out of the spec module so building
+ * the command tree never pulls it onto the `--help` fast path.
  */
 
 import {
@@ -17,6 +19,7 @@ import {
   readPackIndex,
 } from "../../kernel/completion/entitySource.js";
 import { readConfig } from "../../kernel/config/readConfig.js";
+import { resolveSources } from "../../kernel/runtime/resolveSources.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import {
   detectInstallSource,
@@ -50,8 +53,9 @@ export async function collectInfo(runtime: PragmaRuntime): Promise<InfoData> {
       : undefined;
   const updateSkipped = registry === undefined;
 
-  // Entity total: storeless — the same pack-index reader `sources status` uses.
-  const index = readPackIndex(runtime.cwd);
+  // Entity total: storeless, over the pack the boot decision names — so a
+  // configured-but-unbuilt project reports no total rather than the snapshot's.
+  const index = readPackIndex(resolveSources(layers, runtime.cwd));
   const entities = index ? entityTotal(index) : undefined;
 
   return {

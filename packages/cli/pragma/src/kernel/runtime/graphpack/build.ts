@@ -39,6 +39,7 @@ import {
   MANIFEST_FILE,
   type Manifest,
   SCHEMA_FILE,
+  STORIES_FILE,
 } from "./types.js";
 
 /** One RDF source to build into a pack. */
@@ -53,10 +54,17 @@ export interface BuildPackInput {
 export interface BuildPackOptions {
   readonly name: string;
   readonly version: string;
-  /** The config `packages` ref (verbatim) or a label. */
+  /** The config `packs` ref (verbatim) or a label. */
   readonly sourceRef: string;
   /** Prefixes the store (and every query) is built with. */
   readonly prefixes?: Readonly<Record<string, string>>;
+  /**
+   * The `stories/*.json` files the resolved packages ship, as raw text. Hash
+   * inputs like any other source — a story-only edit is a new pack, and a set
+   * of packages shipping none keeps the hash it had before stories existed, so
+   * no cached pack is invalidated by rehashing.
+   */
+  readonly stories?: readonly BuildPackInput[];
 }
 
 /** The outcome of a pack build (or cache hit). */
@@ -72,7 +80,8 @@ export interface BuildPackResult {
  * Build (or reuse) the pack for a set of source inputs.
  *
  * @param inputs - The RDF sources (path + content).
- * @param options - Provenance and the prefixes to build with.
+ * @param options - Provenance, the prefixes to build with, and the packages'
+ *   carried read stories.
  * @returns The pack directory, its content hash, and whether it was reused.
  * @note Impure — creates a store, compiles the schema, writes the pack.
  */
@@ -80,8 +89,12 @@ export async function buildPack(
   inputs: readonly BuildPackInput[],
   options: BuildPackOptions,
 ): Promise<BuildPackResult> {
+  const stories = options.stories ?? [];
   const hash = await contentHash(
-    inputs.map((input) => ({ path: input.path, content: input.content })),
+    [...inputs, ...stories].map((input) => ({
+      path: input.path,
+      content: input.content,
+    })),
   );
   const dir = packDir(hash);
 
@@ -120,6 +133,19 @@ export async function buildPack(
 
       const index = await buildIndex(store, store.prefixes, hash);
       writeFileSync(join(temp, INDEX_FILE), JSON.stringify(index));
+
+      // Written UNCONDITIONALLY (`[]` when the packages ship none): the artifact
+      // set is FIVE AND ONLY FIVE, and `packIsComplete` gates on it, so a pack
+      // whose hash covers stories always holds them.
+      writeFileSync(
+        join(temp, STORIES_FILE),
+        JSON.stringify(
+          stories.map((story) => ({
+            source: story.path,
+            content: story.content,
+          })),
+        ),
+      );
 
       const tripleCount = await countTriples(store);
       // Distinct abox subjects — the same figure `entityTotal` reports (A10),

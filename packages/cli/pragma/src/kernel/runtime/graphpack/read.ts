@@ -16,7 +16,6 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createStore } from "@canonical/ke";
 import { compileFromExtraction } from "@canonical/ke-graphql";
-import { RECOVERY_CLI_PREFIX } from "../../../constants.js";
 import { PragmaError } from "../../error/PragmaError.js";
 import { cliRecovery } from "../../error/recovery.js";
 import type { StoreSession } from "../types.js";
@@ -28,12 +27,41 @@ import {
   SCHEMA_FILE,
 } from "./types.js";
 
+/**
+ * The one custom mapping the embedded pack cannot boot without.
+ *
+ * `anatomy:uri` is an ordinary `owl:DatatypeProperty` on the anatomy DSL's
+ * `NamedNode` class, and it maps to the GraphQL field name `uri` — which the
+ * converged ke-graphql compiler RESERVES: `uri: ID!` is the primary key it
+ * injects on every Node implementer. The old compiler renamed such a collision
+ * silently (M002, which is where the name `anatomyUri` came from); the
+ * converged compiler removed that branch, because a silent rename breaks the
+ * consumer's query without telling them which IRI did it. It now reports M005
+ * — DROPPED, severity `error` — and `runPasses` refuses to hand out a schema
+ * carrying any error, so the whole store boot dies.
+ *
+ * The remedy the diagnostic names is a custom mapping, and this is it. The name
+ * it restores is exactly the one the schema already carried, so nothing
+ * downstream moves. (`prefixing: "all"`, the other remedy, would rename EVERY
+ * field in the schema to clear this one collision.)
+ *
+ * This is the SAME mapping, for the same IRI and the same reason, that the
+ * docsite backend applies (`apps/react/pragma-docs/src/server/graphql.ts`).
+ * Both are stopgaps: `mappings` is deprecated in favour of a `graphql:name`
+ * annotation on the term itself — the right home, since the collision is a fact
+ * about the anatomy ontology, not about either consumer. That ontology lives
+ * outside this repo, so the annotation is an upstream change; when it lands,
+ * delete both.
+ */
+const ANATOMY_URI = "http://anatomy-dsl.example.org/ontology#uri";
+const CUSTOM_MAPPINGS = { [ANATOMY_URI]: { graphqlName: "anatomyUri" } };
+
 /** STORE_UNAVAILABLE with the canonical `pragma sources update` recovery (CLI + MCP). */
 function packUnavailable(reason: string): PragmaError {
   return PragmaError.storeUnavailable(reason, {
     recovery: cliRecovery(
-      `${RECOVERY_CLI_PREFIX}sources update`,
-      "Rebuild the local store from the configured packages.",
+      "sources update",
+      "Rebuild the local store from the configured packs.",
       // An agent recovers by calling the tool, then retrying (PR9 C1 cold-store
       // retry makes the post-update retry succeed).
       { tool: "sources_update" },
@@ -67,7 +95,7 @@ export async function readPack(dir: string): Promise<StoreSession> {
   // store never mutates between reloads. PR7 relies on it.
   const compiled = compileFromExtraction(
     readFileSync(join(dir, SCHEMA_FILE), "utf-8"),
-    { loaderCache: "process" },
+    { loaderCache: "process", mappings: CUSTOM_MAPPINGS },
   );
   const index = packIndexSchema.parse(
     JSON.parse(readFileSync(join(dir, INDEX_FILE), "utf-8")),

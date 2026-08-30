@@ -13,6 +13,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, join } from "node:path";
+import { BIN_NAME } from "../../constants.js";
 
 /** Parsed SKILL.md frontmatter. */
 export interface SkillFrontmatter {
@@ -103,26 +104,31 @@ export function parseFrontmatter(content: string): SkillFrontmatter | null {
 }
 
 /**
- * The installed-skills root: `$XDG_DATA_HOME/pragma/skills`. This is where
+ * The installed-skills root: `$XDG_DATA_HOME/<bin>/skills`. This is where
  * `sources update` INSTALLS package-provided skills (U10) — a symlink per skill
  * — and the second discovery root below reads them back. The single source of
  * truth for both, so the install target and the discovery root can never drift.
+ *
+ * Namespaced by {@link BIN_NAME}, like config, state and cache: two
+ * distributions installed side by side owned ONE skills root, so a `recipes`
+ * build served skills a `pragma` build had installed and could not install its
+ * own without colliding.
  */
 export function installedSkillsDir(): string {
   const dataHome =
     process.env.XDG_DATA_HOME ?? join(homedir(), ".local", "share");
-  return join(dataHome, "pragma", "skills");
+  return join(dataHome, BIN_NAME, "skills");
 }
 
 /**
  * The conventional roots skills are discovered from, in PRECEDENCE order: the
- * project root (`<cwd>/.pragma/skills`) FIRST so a project-local skill overrides
+ * project root (`<cwd>/.<bin>/skills`) FIRST so a project-local skill overrides
  * an installed skill of the same name (`discoverSkills` dedups first-seen-wins),
- * then installed skills under `$XDG_DATA_HOME/pragma/skills` (where package
+ * then installed skills under `$XDG_DATA_HOME/<bin>/skills` (where package
  * skills land on `sources update`).
  */
 export function skillRoots(cwd: string): string[] {
-  return [join(cwd, ".pragma", "skills"), installedSkillsDir()];
+  return [join(cwd, `.${BIN_NAME}`, "skills"), installedSkillsDir()];
 }
 
 /** Immediate subdirectories of `root` (each a candidate skill folder). */

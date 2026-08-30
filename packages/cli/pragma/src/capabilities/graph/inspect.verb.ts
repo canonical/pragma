@@ -8,6 +8,7 @@
  * name or absolute IRI addresses the subject exactly.
  */
 
+import { BIN_NAME } from "../../constants.js";
 import type { InspectResult } from "../../kernel/runtime/readEntity.js";
 import { readEntity } from "../../kernel/runtime/readEntity.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
@@ -32,8 +33,8 @@ const inspectVerb: VerbSpec<Record<string, unknown>, InspectResult> = {
   ],
   output: { formatters: inspectFormatters },
   examples: [
-    { cmd: "pragma graph inspect ds:button" },
-    { cmd: "pragma graph inspect https://ds.canonical.com/button" },
+    { cmd: `${BIN_NAME} graph inspect ds:button` },
+    { cmd: `${BIN_NAME} graph inspect https://ds.canonical.com/button` },
   ],
   capability: {
     needsStore: true,

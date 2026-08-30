@@ -1,14 +1,14 @@
 /**
- * Parse a config `packages` entry into a typed {@link PackageRef}.
+ * Parse a config `packs` declaration into a typed {@link PackageRef}.
  *
  * Ported from the v1 refs domain. Three resolution strategies, discriminated by
  * `kind`: `npm` (a bare package name, resolved via `require.resolve`), `file`
  * (a `file://` local path override), and `git` (a `git+<proto>://…#ref` shallow
- * clone). The `source` string is kept verbatim so the lock records exactly what
- * the config declared.
+ * clone). The `source` string is kept verbatim so `sources status` reports
+ * exactly what the config declared.
  */
 
-import type { PackageEntry } from "../../config/types.js";
+import type { PackDeclaration } from "../../config/types.js";
 import { PragmaError } from "../../error/PragmaError.js";
 
 /** A parsed, validated package reference — discriminated by `kind`. */
@@ -29,13 +29,13 @@ export type PackageRef =
     };
 
 /**
- * Parse a config `packages` entry into a {@link PackageRef}.
+ * Parse a config `packs` declaration into a {@link PackageRef}.
  *
  * @param entry - A bare npm name, or a `{ name, source }` declaration.
  * @returns The parsed reference (with the verbatim `source`).
  * @throws PragmaError CONFIG_ERROR on an invalid `source`.
  */
-export function parsePackageEntry(entry: PackageEntry): PackageRef {
+export function parsePackDeclaration(entry: PackDeclaration): PackageRef {
   if (typeof entry === "string") {
     return { kind: "npm", pkg: entry, source: entry };
   }
@@ -43,7 +43,7 @@ export function parsePackageEntry(entry: PackageEntry): PackageRef {
   const { name, source } = entry;
   if (typeof name !== "string" || name.length === 0) {
     throw PragmaError.configError(
-      'Package entry must have a non-empty "name".',
+      'Pack declaration must have a non-empty "name".',
     );
   }
   if (source === undefined) {

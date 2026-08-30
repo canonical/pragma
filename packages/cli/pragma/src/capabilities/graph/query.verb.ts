@@ -9,6 +9,7 @@
  * query surfaces as INVALID_INPUT with a recovery pointer to `ontology list`.
  */
 
+import { BIN_NAME } from "../../constants.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
@@ -35,11 +36,11 @@ const queryVerb: VerbSpec<Record<string, unknown>, QueryResult> = {
   output: { formatters: queryFormatters },
   examples: [
     {
-      cmd: 'pragma graph query "SELECT ?s WHERE { ?s a ds:Component }"',
+      cmd: `${BIN_NAME} graph query "SELECT ?s WHERE { ?s a ds:Component }"`,
       note: "list every component subject",
     },
     {
-      cmd: 'pragma graph query "ASK { ds:button a ds:Component }" --format json',
+      cmd: `${BIN_NAME} graph query "ASK { ds:button a ds:Component }" --format json`,
     },
   ],
   capability: {

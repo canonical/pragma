@@ -14,14 +14,15 @@ type ErrorCode = (typeof ERROR_CODES)[number];
 /**
  * Structured recovery hint attached to a {@link PragmaError}.
  *
- * `cli` — when present — is the exact command the user can run to recover; it
- * always begins with the literal `pragma ` prefix (D5), enforced by
- * {@link assertRecoveryCli}.
+ * `cli` — when present — is the command as a user would type it: this
+ * distribution's own bin name (`RECOVERY_CLI_PREFIX`) plus a grammar path (D5).
+ * `cliRecovery` takes the path alone and prepends the prefix, so there is no
+ * assertion to make — see the docblock on `error/recovery.ts`.
  */
 interface Recovery {
   /** Human-readable recovery guidance. */
   message: string;
-  /** CLI command the user can run to recover (starts with `pragma `). */
+  /** CLI command the user can run to recover, bin name included. */
   cli?: string;
   /** MCP tool invocation an agent can call to recover. */
   mcp?: { tool: string; params?: Record<string, unknown> };

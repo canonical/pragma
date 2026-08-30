@@ -8,6 +8,7 @@
  */
 
 import { PragmaError } from "../error/PragmaError.js";
+import { cliRecovery } from "../error/recovery.js";
 
 /** Characters not allowed inside a SPARQL `<IRI>`. */
 const UNSAFE_IRI_PATTERN = /[<>"{}|\\^`\s]/;
@@ -39,8 +40,7 @@ export function resolveUri(
   if (colonIdx === -1) {
     throw PragmaError.invalidInput("uri", uri, {
       recovery: {
-        message:
-          'Use a prefixed URI (e.g. "ds:global.component.button") or a full URI.',
+        message: 'Use a prefixed URI (e.g. "prefix:name") or a full URI.',
       },
     });
   }
@@ -60,11 +60,9 @@ export function resolveUri(
 
   throw PragmaError.invalidInput("prefix", prefix, {
     validOptions: Object.keys(prefixes),
-    recovery: {
-      message: "List known ontology prefixes.",
-      cli: "pragma ontology list",
-      mcp: { tool: "ontology_list" },
-    },
+    recovery: cliRecovery("ontology list", "List known ontology prefixes.", {
+      tool: "ontology_list",
+    }),
   });
 }
 

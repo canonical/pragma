@@ -16,6 +16,7 @@
  */
 
 import { PragmaError } from "../error/PragmaError.js";
+import { cliRecovery } from "../error/recovery.js";
 import { resolveUri } from "../packs/iri.js";
 import type { PragmaRuntime } from "./types.js";
 
@@ -57,11 +58,11 @@ export async function readEntity(
 
   if (result.type !== "select" || result.bindings.length === 0) {
     throw PragmaError.notFound("entity", uri, {
-      recovery: {
-        message: "Check the URI, or list known entities.",
-        cli: "pragma graph query 'SELECT ?s WHERE { ?s ?p ?o } LIMIT 10'",
-        mcp: { tool: "graph_query" },
-      },
+      recovery: cliRecovery(
+        `graph query 'SELECT ?s WHERE { ?s ?p ?o } LIMIT 10'`,
+        "Check the URI, or list known entities.",
+        { tool: "graph_query" },
+      ),
     });
   }
 

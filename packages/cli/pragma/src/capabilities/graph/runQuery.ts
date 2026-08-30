@@ -11,6 +11,7 @@
 
 import type { QueryResult } from "@canonical/ke";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
+import { cliRecovery } from "../../kernel/error/recovery.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 
 /**
@@ -39,11 +40,13 @@ export async function runQuery(
       message: detail
         ? `Invalid SPARQL query: ${detail}`
         : "Invalid SPARQL query.",
-      recovery: {
-        message: "Check your SPARQL syntax and the loaded namespaces.",
-        cli: "pragma ontology list",
-        mcp: { tool: "ontology_list" },
-      },
+      recovery: cliRecovery(
+        "ontology list",
+        "Check your SPARQL syntax and the loaded namespaces.",
+        {
+          tool: "ontology_list",
+        },
+      ),
     });
   }
 }

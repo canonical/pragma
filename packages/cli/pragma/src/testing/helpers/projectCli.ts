@@ -7,6 +7,7 @@
  */
 
 import type { Command } from "commander";
+import { BIN_NAME } from "../../constants.js";
 import { buildProgram } from "../../kernel/project/cli/buildProgram.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import type { CapabilityModule, VerbSpec } from "../../kernel/spec/types.js";
@@ -31,5 +32,5 @@ export function projectCli(
   globalFlags: GlobalFlags = TEST_FLAGS,
 ): Command {
   const verbs: VerbSpec[] = modules.flatMap((module) => [...module.verbs]);
-  return buildProgram(verbs, { globalFlags, programName: "pragma" });
+  return buildProgram(verbs, { globalFlags, programName: BIN_NAME });
 }

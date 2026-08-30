@@ -1,13 +1,27 @@
 /**
- * The embedded fallback pack: a small, self-contained pack compiled into the
- * binary as inlined strings (`pack.generated.ts`, produced by
- * `scripts/genEmbedded.ts`). It is the store the CLI boots when no packages are
- * configured beyond the defaults and no lock has been written yet — so a fresh
- * install answers store-backed reads without a network round-trip.
+ * The embedded pack: the distribution's own graph, compiled from the packs
+ * `pragma.conf.ts` declares and inlined into the binary as escaped strings
+ * (`pack.generated.ts`, produced by `scripts/bundle.ts`). It is the store the
+ * CLI boots when the user has not pinned their own packs and has not built
+ * anything yet — so a fresh install answers real store-backed reads with no
+ * network, no cache, and no git credentials.
+ *
+ * It is a SNAPSHOT, not a substitute for `sources update`: the manifest records
+ * which upstream revisions it was compiled from, and both `sources status` and
+ * `doctor` report that rather than claiming the store is up to date. A project
+ * that declares its own packs and has not built them is never served this graph:
+ * every read, `info`, `sources status`, `doctor` and the MCP prompt/resource
+ * surfaces take {@link resolveSources}' answer and refuse. The one exception is
+ * the shell-completion fast path, which cannot read config at all (see
+ * `kernel/completion/entitySource.ts`) and so still offers this graph's names as
+ * completion candidates — candidates, never content.
  *
  * The inlined strings are materialized into the ordinary content-addressed pack
  * cache on first use and then read back through {@link readPack}, so the
- * embedded pack and a built pack share one boot path. Inlining as JS strings
+ * embedded pack and a built pack share one boot path. The story records live in
+ * their OWN generated module (like the index): dispatch reads them on every
+ * command, and pulling them out of `pack.generated.ts` would load its ~1.9 MB
+ * of n-quads with them — a measured +28 ms on every invocation. Inlining as JS strings
  * (rather than file assets) guarantees the content survives `bun build
  * --compile` with no asset-embedding step.
  */
@@ -24,18 +38,29 @@ import { join } from "node:path";
 import { packDir, packsCacheDir } from "../paths.js";
 import { dataNq, manifestJson, schemaJson } from "./embedded/pack.generated.js";
 import { indexJson } from "./embedded/pack.index.generated.js";
+import { storiesJson } from "./embedded/pack.stories.generated.js";
 import { packIsComplete } from "./manifest.js";
 import {
   DATA_FILE,
   INDEX_FILE,
   MANIFEST_FILE,
+  type Manifest,
   manifestSchema,
   SCHEMA_FILE,
+  STORIES_FILE,
 } from "./types.js";
 
-/** The embedded pack's content hash (its cache-directory name). */
-export function embeddedContentHash(): string {
-  return manifestSchema.parse(JSON.parse(manifestJson)).contentHash;
+/**
+ * The embedded pack's manifest, parsed from the inlined string.
+ *
+ * Carries the provenance `sources status` and `doctor` report — `sourceRef`
+ * (which upstream revisions the snapshot was compiled from), `createdAt`, the
+ * counts — plus the `contentHash` that names its cache directory. Reading it
+ * costs one `JSON.parse` of a ~1 KB string, so neither surface has to
+ * materialize the 1.9 MB pack just to describe it.
+ */
+export function embeddedManifest(): Manifest {
+  return manifestSchema.parse(JSON.parse(manifestJson));
 }
 
 /**
@@ -48,7 +73,7 @@ export function embeddedContentHash(): string {
  * @note Impure — writes the inlined pack files into the cache.
  */
 export function materializeEmbeddedPack(): string {
-  const dir = packDir(embeddedContentHash());
+  const dir = packDir(embeddedManifest().contentHash);
   if (packIsComplete(dir)) return dir;
 
   mkdirSync(packsCacheDir(), { recursive: true });
@@ -57,6 +82,7 @@ export function materializeEmbeddedPack(): string {
     writeFileSync(join(temp, DATA_FILE), dataNq);
     writeFileSync(join(temp, SCHEMA_FILE), schemaJson);
     writeFileSync(join(temp, INDEX_FILE), indexJson);
+    writeFileSync(join(temp, STORIES_FILE), storiesJson);
     // Written last — the completeness marker.
     writeFileSync(join(temp, MANIFEST_FILE), manifestJson);
     if (!packIsComplete(dir)) {

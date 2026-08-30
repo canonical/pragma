@@ -16,10 +16,9 @@ function originMarker(origin: ConfigOrigin): string {
   return origin === "default" ? "" : ` [${origin}]`;
 }
 
-/** Summarize the `packages` list as a comma-separated set of names. */
-function packageNames(data: ConfigShowData): string {
-  const packages = data.config.packages ?? [];
-  const names = packages.map((entry) =>
+/** Summarize a list of named entries as a comma-separated set of names. */
+function entryNames(entries: readonly (string | { name: string })[]): string {
+  const names = entries.map((entry) =>
     typeof entry === "string" ? entry : entry.name,
   );
   return names.length > 0 ? names.join(", ") : "(none)";
@@ -39,7 +38,7 @@ function configRows(data: ConfigShowData): readonly ConfigRow[] {
     ],
     ["channel", config.channel, originMarker(origins.channel)],
     ["detail", config.detail ?? "standard", originMarker(origins.detail)],
-    ["packages", packageNames(data), originMarker(origins.packages)],
+    ["packs", entryNames(config.packs ?? []), originMarker(origins.packs)],
     [
       "global config",
       `${data.globalConfigPath}${data.globalExists ? "" : " (not found)"}`,
@@ -92,7 +91,7 @@ export const configShowFormatters: Formatters<ConfigShowData> = {
       `- **Tier:** ${config.tier ?? "none (all tiers)"}${originMarker(origins.tier)}`,
       `- **Channel:** ${config.channel}${originMarker(origins.channel)}`,
       `- **Detail:** ${config.detail ?? "standard"}${originMarker(origins.detail)}`,
-      `- **Packages:** ${packageNames(data)}${originMarker(origins.packages)}`,
+      `- **Packs:** ${entryNames(config.packs ?? [])}${originMarker(origins.packs)}`,
       `- **Global config:** \`${data.globalConfigPath}\``,
     ];
     if (data.projectConfigPath) {

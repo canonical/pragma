@@ -28,6 +28,7 @@ import type {
   PromptDefinition,
 } from "@canonical/summon-core";
 import { sequence_, type Task, when } from "@canonical/task";
+import { BIN_NAME } from "../../../constants.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
 import { guardMissingBinary } from "../../shared/assertExecOk.js";
 import type {
@@ -125,7 +126,7 @@ const buildMeta = (
 ): GeneratorDefinition["meta"] => ({
   name: title,
   displayName: title,
-  description: "Configure pragma for this project",
+  description: `Configure ${BIN_NAME} for this project`,
   version: rt.version,
 });
 
@@ -135,7 +136,7 @@ const buildCustomizePrompt = (
 ): PromptDefinition => ({
   name: "customize",
   type: "confirm",
-  message: "Customize which files pragma configures?",
+  message: `Customize which files ${BIN_NAME} configures?`,
   default: false,
   when,
 });
@@ -282,7 +283,7 @@ function buildRunAllPlan(
   // reads already happened up front). Composing an unchosen step is harmless:
   // `when(false, …)` discards the (side-effect-free) task it was handed.
   const generator: GeneratorDefinition = {
-    meta: buildMeta(rt, "pragma setup"),
+    meta: buildMeta(rt, `${BIN_NAME} setup`),
     prompts,
     generate: (answers) => {
       const chosen = readSteps(answers);
@@ -342,8 +343,11 @@ export async function buildSetupPlan(
     case "completions": {
       const d = await detectCompletions(rt.cwd);
       return {
-        generator: buildSingleStep(rt, "pragma setup completions", [], () =>
-          composeCompletions(d),
+        generator: buildSingleStep(
+          rt,
+          `${BIN_NAME} setup completions`,
+          [],
+          () => composeCompletions(d),
         ),
         toResult: () => ({
           kind: "completions",
@@ -358,7 +362,7 @@ export async function buildSetupPlan(
     case "lsp": {
       const d = await detectLsp(rt.cwd);
       return {
-        generator: buildSingleStep(rt, "pragma setup lsp", [], () =>
+        generator: buildSingleStep(rt, `${BIN_NAME} setup lsp`, [], () =>
           composeGuardedLsp(rt, d.state),
         ),
         toResult: () => ({ kind: "lsp", state: d.state }),
@@ -375,8 +379,11 @@ export async function buildSetupPlan(
             ]
           : [];
       return {
-        generator: buildSingleStep(rt, "pragma setup mcp", prompts, (answers) =>
-          composeMcp(d, selectChosenGroups(d, answers)),
+        generator: buildSingleStep(
+          rt,
+          `${BIN_NAME} setup mcp`,
+          prompts,
+          (answers) => composeMcp(d, selectChosenGroups(d, answers)),
         ),
         toResult: (answers) => {
           const sel = selectChosenGroups(d, answers);
@@ -393,7 +400,7 @@ export async function buildSetupPlan(
       const d = await detectSkills(rt);
       if (!d.available) throw skillsEmptyError();
       return {
-        generator: buildSingleStep(rt, "pragma setup skills", [], () =>
+        generator: buildSingleStep(rt, `${BIN_NAME} setup skills`, [], () =>
           composeSkills(d),
         ),
         toResult: () => ({ kind: "skills", result: toSkillsResult(d) }),

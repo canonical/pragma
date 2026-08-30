@@ -8,18 +8,10 @@
 
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { CapabilityModule } from "../../kernel/spec/types.js";
-import {
-  createApplicationVerb,
-  createComponentVerb,
-  createPackageVerb,
-} from "./create.verb.js";
+import { createVerbs } from "./create.verb.js";
 
 /** The `create` capability module. */
 export const createModule: CapabilityModule = {
   name: "create",
-  verbs: [
-    asVerb(createComponentVerb),
-    asVerb(createPackageVerb),
-    asVerb(createApplicationVerb),
-  ],
+  verbs: Object.values(createVerbs).map(asVerb),
 };

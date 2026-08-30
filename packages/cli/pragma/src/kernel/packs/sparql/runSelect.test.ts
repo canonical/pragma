@@ -1,12 +1,12 @@
 /**
  * `runSelect` — the single choke point for every TRUSTED, generated SPARQL read.
  *
- * Pins the unseeded-store remap: a generated pack query only references the
- * pack's own `ds:`/`cs:` prefixes, so a "Prefix not found" from the facade means
- * the store was never built — an actionable STORE_UNAVAILABLE, NOT a raw error
- * collapsing to INTERNAL_ERROR ("please report this issue"). The recovery carries
- * BOTH the CLI command (`pragma sources update`) and the MCP tool an agent calls
- * (`sources_update`), so either surface can recover.
+ * Pins the remap: a generated query is composed from declared and pack-authored
+ * terms, never from user input, so a "Prefix not found" from the facade means
+ * the store cannot answer this read — an actionable STORE_UNAVAILABLE, NOT a raw
+ * error collapsing to INTERNAL_ERROR ("please report this issue"). The recovery
+ * carries BOTH the CLI command (`pragma sources update`) and the MCP tool an
+ * agent calls (`sources_update`), so either surface can recover.
  */
 
 import { describe, expect, it } from "vitest";
@@ -35,7 +35,7 @@ function selectRuntime(
   };
 }
 
-describe("runSelect — unseeded-store remap (ROOT A)", () => {
+describe("runSelect — unanswerable-store remap (ROOT A)", () => {
   it("remaps a 'Prefix not found' to STORE_UNAVAILABLE with CLI + MCP recovery", async () => {
     let caught: unknown;
     try {
@@ -50,6 +50,12 @@ describe("runSelect — unseeded-store remap (ROOT A)", () => {
 
     // The whole point: it is NOT an unclassified INTERNAL_ERROR.
     expect(caught).toMatchObject({ code: "STORE_UNAVAILABLE" });
+    // …and it claims only what it knows. The same failure reaches a store that
+    // IS built, from a pack whose vocabulary is simply different, so the
+    // message must not tell that user their store is unbuilt.
+    expect((caught as { message: string }).message).toContain(
+      "not built from a pack that defines every term",
+    );
     const recovery = (caught as { recovery?: Record<string, unknown> })
       .recovery;
     expect(recovery?.cli).toBe("pragma sources update");

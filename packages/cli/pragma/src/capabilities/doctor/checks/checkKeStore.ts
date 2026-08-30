@@ -1,3 +1,4 @@
+import { BIN_NAME } from "../../../constants.js";
 import { entityTotal } from "../../../kernel/completion/entitySource.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
 import type { CheckResult } from "../types.js";
@@ -32,8 +33,7 @@ export async function checkKeStore(rt: PragmaRuntime): Promise<CheckResult> {
       name: "ke store",
       status: "fail",
       detail: "failed to boot",
-      remedy:
-        "Ensure design-system packages are installed and run `pragma sources update`.",
+      remedy: `Ensure design-system packs are configured and run \`${BIN_NAME} sources update\`.`,
     };
   }
 }
