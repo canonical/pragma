@@ -17,7 +17,9 @@ import {
   type SchemaPluginApi,
   serializeExtraction,
 } from "../../lib/compiler/index.js";
-import createSchemaPlugin from "../../lib/createSchemaPlugin.js";
+import runPasses from "../../lib/compiler/runPasses.js";
+import { createSchemaPlugin } from "../../lib/index.js";
+import { GRAPHQL_TERMS } from "../../lib/shared/index.js";
 import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "../index.js";
 
 type Cleanup = () => void;
@@ -80,6 +82,104 @@ describe("extraction artifact (DMMF-style boot)", () => {
     expect(extraction.functionals).toEqual(live.extraction.functionals);
     expect(extraction.instanceStats).toEqual(live.extraction.instanceStats);
     expect(extraction.annotations).toEqual(live.extraction.annotations);
+  });
+
+  it("round-trips graphql: vocabulary assertions through the artifact", async () => {
+    const store = await boot(`${MINIMAL_TTL}
+<http://example.org/Thing> <${GRAPHQL_TERMS.name}> "Item" .
+<http://example.org/Thing> <${GRAPHQL_TERMS.titleFrom}> <http://example.org/name> .
+`);
+    const live = await compile(createStoreQueryFn(store), PREFIXES);
+    // Guard against a vacuous pass: the fixture must actually carry rows.
+    expect(live.extraction.graphqlAnnotations.length).toBeGreaterThan(0);
+    const { extraction } = deserializeExtraction(
+      serializeExtraction(live.extraction, "0"),
+    );
+    expect(extraction.graphqlAnnotations).toEqual(
+      live.extraction.graphqlAnnotations,
+    );
+  });
+
+  it("defaults the deferred synthetic-prefix list for an older artifact", async () => {
+    const store = await boot(`${MINIMAL_TTL}
+<http://unreg.test/Widget> a <http://www.w3.org/2002/07/owl#Class> .
+<http://unreg.test/> <${GRAPHQL_TERMS.prefix}> "unr" .
+`);
+    const live = await compile(createStoreQueryFn(store), PREFIXES);
+    // Guard against a vacuous pass: the fixture must actually defer one.
+    expect(live.extraction.deferredSyntheticNamespaces).toEqual([
+      "http://unreg.test/",
+    ]);
+    const artifact = JSON.parse(serializeExtraction(live.extraction, "0"));
+    expect(deserializeExtraction(artifact).extraction).toEqual(live.extraction);
+    // Within the CURRENT format version, a missing field is simply absent and
+    // defaults to the empty list.
+    delete artifact.deferredSyntheticNamespaces;
+    const { extraction } = deserializeExtraction(artifact);
+    expect(extraction.deferredSyntheticNamespaces).toEqual([]);
+    expect(
+      compileFromExtraction(artifact).schema.getType("Thing"),
+    ).toBeDefined();
+  });
+
+  it("REJECTS a genuinely v1 artifact rather than defaulting its way in", async () => {
+    // Defaulting cannot make a v1 artifact equivalent, and this is the case
+    // the test above does NOT cover: it deletes the field from an artifact the
+    // NEW extractor produced. A real v1 artifact was produced by a Pass 1 that
+    // had already folded a resolvable `graphql:prefix` into `namespaces`. Read
+    // back under `mode: "auto"` it would project the annotation-derived prefix
+    // while a live compile of the same unchanged sources projects the
+    // registered or synthetic one — the same source hash yielding two
+    // different schemas depending only on whether a cached artifact happened
+    // to be lying around.
+    //
+    // The fold is lossy, so no migration can recover the pre-overlay map. The
+    // version is bumped and the stale artifact is refused, which costs one
+    // recompile.
+    const store = await boot(MINIMAL_TTL);
+    const live = await compile(createStoreQueryFn(store), PREFIXES);
+    const legacy = JSON.parse(serializeExtraction(live.extraction, "0"));
+    legacy.version = 1;
+    delete legacy.deferredSyntheticNamespaces;
+
+    expect(() => deserializeExtraction(legacy)).toThrow(
+      /version 1 is not supported/,
+    );
+    // And it names the remedy, since the user's move is to rebuild.
+    expect(() => deserializeExtraction(legacy)).toThrow(/regenerate/);
+  });
+
+  it("tolerates an extraction object built without the deferred list", async () => {
+    // The field is optional on the public RawExtraction type: a consumer
+    // constructing extraction objects by hand may omit it entirely, and both
+    // Pass 2 and serialization must treat absence as the empty list.
+    const store = await boot(MINIMAL_TTL);
+    const live = await compile(createStoreQueryFn(store), PREFIXES);
+    const { deferredSyntheticNamespaces: _dropped, ...bare } = live.extraction;
+    const serialized = serializeExtraction(bare, "0");
+    expect(
+      deserializeExtraction(serialized).extraction.deferredSyntheticNamespaces,
+    ).toEqual([]);
+    expect(
+      compileFromExtraction(JSON.parse(serialized)).schema.getType("Thing"),
+    ).toBeDefined();
+    // And the passes accept the bare object directly, not only via the
+    // artifact path (which fills the default in during deserialization).
+    expect(runPasses(bare, {}).schema.getType("Thing")).toBeDefined();
+  });
+
+  it("defaults graphqlAnnotations to [] for a pre-vocabulary artifact", async () => {
+    const store = await boot(MINIMAL_TTL);
+    const live = await compile(createStoreQueryFn(store), PREFIXES);
+    const legacy = JSON.parse(serializeExtraction(live.extraction, "0"));
+    // An artifact serialized before the vocabulary landed has no field at
+    // all — it must still boot (version stays 1; sourcesHash protects the
+    // annotated-sources case by forcing a live recompile on mismatch).
+    delete legacy.graphqlAnnotations;
+    const { extraction } = deserializeExtraction(legacy);
+    expect(extraction.graphqlAnnotations).toEqual([]);
+    const rebuilt = compileFromExtraction(legacy);
+    expect(rebuilt.schema.getType("Thing")).toBeDefined();
   });
 
   it("rejects unknown artifact versions", () => {
@@ -238,7 +338,7 @@ describe("slice-before-hydrate listings", () => {
 
     const page1 = await graphql({
       schema: result.schema,
-      source: `{ tiers(first: 1) { edges { cursor node { id name } } pageInfo { hasNextPage endCursor } } }`,
+      source: `{ tiers(first: 1) { edges { cursor node { uri name } } pageInfo { hasNextPage endCursor } } }`,
       contextValue: result.createContext(store),
     });
     expect(page1.errors).toBeUndefined();

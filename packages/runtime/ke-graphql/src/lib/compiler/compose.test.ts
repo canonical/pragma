@@ -272,6 +272,137 @@ describe("compose full construction", () => {
     ).toContain("extension field Thing.name conflicts with a generated field");
   });
 
+  it("declares exactly uri + _meta on Node and accepts an implementor", () => {
+    // The converged base: Node is identity plus self-description and nothing
+    // else. Everything descriptive is reached through _meta, so a selection
+    // through Query.node(id:) needs no inline fragment for title/label.
+    const thing: TypePlan = {
+      name: "Thing",
+      interfaces: ["Node"],
+      fields: new Map<string, FieldPlan>([
+        [
+          "uri",
+          {
+            name: "uri",
+            type: { base: "ID", kind: "scalar", list: false, nonNull: true },
+          },
+        ],
+        [
+          "_meta",
+          {
+            name: "_meta",
+            type: {
+              base: "EntityMeta",
+              kind: "named",
+              list: false,
+              nonNull: true,
+            },
+          },
+        ],
+      ]),
+      embeddable: false,
+    };
+    const plan = emptyPlan({
+      types: new Map([["Thing", thing]]),
+      queryFields: new Map<string, FieldPlan>([
+        [
+          "node",
+          {
+            name: "node",
+            type: { base: "Node", kind: "named", list: false, nonNull: false },
+          },
+        ],
+      ]),
+    });
+
+    const { output, diagnostics } = compose(plan);
+    expect(diagnostics.filter((d) => d.code === "C003")).toHaveLength(0);
+    expect(output.schema).not.toBeNull();
+    const nodeBlock = /interface Node \{[^}]*\}/.exec(output.sdl)?.[0];
+    expect(nodeBlock).toContain("uri: ID!");
+    expect(nodeBlock).toContain("_meta: EntityMeta!");
+    // nothing else survives on the interface
+    for (const gone of ["id:", "kind:", "label:", "comment:", "definition:"]) {
+      expect(nodeBlock).not.toContain(gone);
+    }
+    expect(output.sdl).toContain("type Thing implements Node");
+  });
+
+  it("prepends the provenance header in contract key order, defaulted", () => {
+    const plan = emptyPlan({
+      types: new Map([
+        [
+          "Thing",
+          objectPlan("Thing", new Map([["name", scalarField("name")]])),
+        ],
+      ]),
+    });
+    const { output } = compose(plan);
+    expect(output.sdl.split("\n").slice(0, 7)).toEqual([
+      "# ke-graphql · canonical SDL",
+      "# graphql-schema-spec: 1",
+      "# provider: unknown",
+      "# mode: annotated",
+      "# validated-store: false",
+      "# revision: 0",
+      "# prefixing: none",
+    ]);
+    // the header is a comment block, so the SDL still parses as SDL
+    expect(output.sdl).toContain("type Thing {");
+  });
+
+  it("stamps the configured mode, provider, revision, and prefixing", () => {
+    const plan = emptyPlan({
+      types: new Map([
+        [
+          "Thing",
+          objectPlan("Thing", new Map([["name", scalarField("name")]])),
+        ],
+      ]),
+    });
+    const { output } = compose(plan, {
+      mode: "explicit",
+      provider: "ds",
+      revision: "a1b2c3",
+      prefixing: "all",
+    });
+    expect(output.sdl.split("\n").slice(0, 7)).toEqual([
+      "# ke-graphql · canonical SDL",
+      "# graphql-schema-spec: 1",
+      "# provider: ds",
+      "# mode: explicit",
+      "# validated-store: false",
+      "# revision: a1b2c3",
+      "# prefixing: all",
+    ]);
+  });
+
+  it("C002 — a generated root field colliding with a TBox root field is dropped", () => {
+    // The plan-vs-tbox merge gets the SAME treatment as a consumer extension:
+    // error + drop, the TBox field survives. (Silently, plan.queryFields used
+    // to overwrite ontologies/ontology/ontologyClass/ontologyProperty.)
+    const plan = emptyPlan({
+      types: new Map([
+        [
+          "Thing",
+          objectPlan("Thing", new Map([["name", scalarField("name")]])),
+        ],
+      ]),
+      queryFields: new Map<string, FieldPlan>([
+        ["ontologies", scalarField("ontologies")],
+      ]),
+    });
+    const { output, diagnostics } = compose(plan);
+    const c002 = diagnostics.filter((d) => d.code === "C002");
+    expect(c002).toHaveLength(1);
+    expect(c002[0]?.severity).toBe("error");
+    expect(c002[0]?.message).toContain("Query.ontologies");
+    expect(c002[0]?.message).toContain("TBox");
+    // The TBox field survives with the TBox type — not the planted String.
+    const field = output.schema?.getQueryType()?.getFields().ontologies;
+    expect(String(field?.type)).toBe("[Ontology!]!");
+  });
+
   it("C001 — object-form extension references an unknown type", () => {
     const thing: TypePlan = {
       name: "Thing",
