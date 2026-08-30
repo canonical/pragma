@@ -14,7 +14,7 @@ import {
   LOBBY_COMPONENT_CLASS,
   LOBBY_PATTERN_CLASS,
   LOBBY_STANDARD_CLASS,
-} from "#domains/marketing/lobbyQuery.js";
+} from "#domains/marketing";
 import { GRAPH_BINDINGS } from "./index.js";
 
 /** `prefix:local` — a declared prefix and a local name, never a scheme. */

@@ -8,12 +8,12 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { FetchFunction, GraphQLResponse } from "relay-runtime";
 import { describe, expect, it, vi } from "vitest";
-import { CATALOG_PAGE_SIZE } from "#domains/components/catalogQuery.js";
 import {
   catalogPage,
   HARNESS_TEST_TIMEOUT_MS,
 } from "../__fixtures__/catalogPageHarness.js";
 import catalogRecords from "../__fixtures__/catalogRecords.js";
+import { CATALOG_PAGE_SIZE } from "../catalogQuery.js";
 
 /** A fetch spy that never settles: any call means "the network was hit". */
 const createFetchSpy = () =>

@@ -42,7 +42,7 @@
  */
 import { fileURLToPath } from "node:url";
 import { createPragmaProvider } from "@canonical/prism-pragma-provider";
-import { DEFAULT_GRAPHQL_URL } from "#relay/graphqlEndpoint.js";
+import { DEFAULT_GRAPHQL_URL } from "#graphql-endpoint";
 
 /**
  * The emitted SDL destination — the file relay-compiler reads.

@@ -96,16 +96,16 @@ import { fileURLToPath } from "node:url";
 import { renderToString } from "react-dom/server";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { describe, expect, it } from "vitest";
-import journeysExplorerRecords from "#addons/journeys/__fixtures__/journeysExplorerRecords.js";
-import journeysExplorerRecordsJob from "#addons/journeys/__fixtures__/journeysExplorerRecordsJob.js";
-import catalogRecords from "#domains/components/__fixtures__/catalogRecords.js";
-import componentEntityRecordsButton from "#domains/components/__fixtures__/componentEntityRecordsButton.js";
-import definitionsExplorerRecords from "#domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
-import standardEntityRecords from "#domains/lenses/standards/__fixtures__/standardEntityRecords.js";
-import standardsIndexRecords from "#domains/lenses/standards/__fixtures__/standardsIndexRecords.js";
-import { LINK_COMPONENT_URI } from "#domains/lenses/standards/__fixtures__/standardsPageHarness.js";
-import lobbyRecords from "#domains/marketing/__fixtures__/lobbyRecords.js";
-import EntryServer from "../../server/entry.js";
+import { EntryServer } from "#server";
+import journeysExplorerRecords from "../../addons/journeys/__fixtures__/journeysExplorerRecords.js";
+import journeysExplorerRecordsJob from "../../addons/journeys/__fixtures__/journeysExplorerRecordsJob.js";
+import catalogRecords from "../../domains/components/__fixtures__/catalogRecords.js";
+import componentEntityRecordsButton from "../../domains/components/__fixtures__/componentEntityRecordsButton.js";
+import definitionsExplorerRecords from "../../domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
+import standardEntityRecords from "../../domains/lenses/standards/__fixtures__/standardEntityRecords.js";
+import standardsIndexRecords from "../../domains/lenses/standards/__fixtures__/standardsIndexRecords.js";
+import { LINK_COMPONENT_URI } from "../../domains/lenses/standards/__fixtures__/standardsPageHarness.js";
+import lobbyRecords from "../../domains/marketing/__fixtures__/lobbyRecords.js";
 
 /** The v1 lens URLs, owner-ruled order. */
 const LENS_URLS = [

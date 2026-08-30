@@ -6,8 +6,10 @@ import { browserslistToTargets } from "lightningcss";
 import { defineConfig } from "vite";
 import relay from "vite-plugin-relay-lite";
 
-// Path aliases (#lib, #domains, #styles) are declared as Node subpath imports
-// in package.json "imports" and resolved natively by Vite — no resolver plugin.
+// Path aliases (#lib/*, #domains/*, #relay, #server, ...) are declared as Node
+// subpath imports in package.json "imports", resolved natively by Vite — no
+// resolver plugin. Each alias points at ONE barrel; the sole wildcard is
+// #relay/__generated__/*, which addresses relay-compiler's output.
 const PORT = Number(process.env.PORT) || undefined;
 
 // `build:server` runs `vite build --mode server` to compile the two server

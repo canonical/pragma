@@ -38,10 +38,10 @@
  * stub route and the copy says so.
  */
 
-import { GRAPH_BINDINGS } from "#lib/graphBindings/index.js";
+import { GRAPH_BINDINGS } from "#lib/graphBindings";
+import type { RouteQueryEntry } from "#relay";
 import type { LobbyQuery$variables } from "#relay/__generated__/LobbyQuery.graphql.js";
 import lobbyQueryNode from "#relay/__generated__/LobbyQuery.graphql.js";
-import type { RouteQueryEntry } from "#relay/routeQuery.js";
 
 /**
  * The class URIs the lobby's counted doors read. Prefixed form: the

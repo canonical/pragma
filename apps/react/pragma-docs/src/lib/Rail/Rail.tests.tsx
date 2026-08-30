@@ -4,10 +4,7 @@ import { createMemoryAdapter, createRouter } from "@canonical/router-core";
 import { RouterProvider } from "@canonical/router-react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import {
-  collectShortcuts,
-  ROUTE_SHORTCUT_META_KEY,
-} from "#lib/routeShortcut/index.js";
+import { collectShortcuts, ROUTE_SHORTCUT_META_KEY } from "#lib/routeShortcut";
 import { appRoutes, notFoundRoute } from "../../routes.js";
 import { LENS_ENTRIES } from "./constants.js";
 import Rail from "./Rail.js";

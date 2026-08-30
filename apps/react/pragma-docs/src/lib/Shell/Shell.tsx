@@ -2,8 +2,8 @@
 
 import { useRouterState } from "@canonical/router-react";
 import type React from "react";
-import { ModeStrip } from "#lib/ModeStrip/index.js";
-import { Rail } from "#lib/Rail/index.js";
+import { ModeStrip } from "#lib/ModeStrip";
+import { Rail } from "#lib/Rail";
 import { CANVAS_ELEMENT_ID } from "./constants.js";
 import { shellStripFacet } from "./stripFacet.js";
 import type { ShellProps } from "./types.js";

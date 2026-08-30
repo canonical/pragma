@@ -1,7 +1,7 @@
 import type React from "react";
 import { useMemo, useState } from "react";
 import { graphql, useFragment } from "react-relay";
-import { Chip } from "#lib/Chip/index.js";
+import { Chip } from "#lib/Chip";
 import type { NeighbourhoodWell_component$key } from "#relay/__generated__/NeighbourhoodWell_component.graphql.js";
 import neighbourhoodWellFragmentNode from "#relay/__generated__/NeighbourhoodWell_component.graphql.js";
 import { buildNeighbourhood } from "./buildNeighbourhood.js";

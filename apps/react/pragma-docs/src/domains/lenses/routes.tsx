@@ -20,7 +20,7 @@
  */
 
 import { route } from "@canonical/router-core";
-import { routeShortcutFacet } from "#lib/routeShortcut/index.js";
+import { routeShortcutFacet } from "#lib/routeShortcut";
 import LensPlaceholder from "./LensPlaceholder.js";
 
 const routes = {

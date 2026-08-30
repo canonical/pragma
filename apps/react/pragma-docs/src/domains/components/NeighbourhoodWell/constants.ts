@@ -1,4 +1,4 @@
-import type { Box, Kind } from "#lib/Chip/encodings.js";
+import type { Box, Kind } from "#lib/Chip";
 
 /** Root CSS class name, `ds`-prefixed per the app-wide convention. */
 export const WELL_CSS_CLASS_NAME = "ds neighbourhood-well";

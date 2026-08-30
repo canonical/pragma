@@ -2,7 +2,7 @@
 
 import { route } from "@canonical/router-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { routeShortcutFacet } from "#lib/routeShortcut/index.js";
+import { routeShortcutFacet } from "#lib/routeShortcut";
 import { withRouter } from "../../../.storybook/decorators/index.js";
 import Rail from "./Rail.js";
 

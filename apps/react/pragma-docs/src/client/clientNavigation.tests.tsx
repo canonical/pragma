@@ -33,13 +33,12 @@ import { RelayEnvironmentProvider } from "react-relay";
 import type { FetchFunction } from "relay-runtime";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import catalogRecords from "#domains/components/__fixtures__/catalogRecords.js";
-import componentEntityRecordsButton from "#domains/components/__fixtures__/componentEntityRecordsButton.js";
-import { createEnvironment } from "#relay/environment.js";
-import { setPrefetchEnvironment } from "#relay/prefetchEnvironment.js";
-import createStaticRouter from "../lib/router/createStaticRouter.js";
+import { createStaticRouter } from "#lib/router";
+import { createEnvironment, setPrefetchEnvironment } from "#relay";
+import type { InitialData } from "#server";
+import catalogRecords from "../domains/components/__fixtures__/catalogRecords.js";
+import componentEntityRecordsButton from "../domains/components/__fixtures__/componentEntityRecordsButton.js";
 import { appRoutes, middleware, notFoundRoute } from "../routes.js";
-import type { InitialData } from "../server/entry.js";
 import { hydrateApp } from "./hydrateApp.js";
 
 (

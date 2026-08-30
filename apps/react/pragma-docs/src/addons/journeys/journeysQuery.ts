@@ -19,9 +19,9 @@
  * coordinate roots the DIAGRAM (ruling R1); the job addresses the VIEW.
  */
 
+import type { RouteQueryEntry } from "#relay";
 import type { JourneysExplorerQuery$variables } from "#relay/__generated__/JourneysExplorerQuery.graphql.js";
 import journeysExplorerQueryNode from "#relay/__generated__/JourneysExplorerQuery.graphql.js";
-import type { RouteQueryEntry } from "#relay/routeQuery.js";
 
 /** The compiled operation (full text under `params.text`, `id: null`). */
 export { journeysExplorerQueryNode };

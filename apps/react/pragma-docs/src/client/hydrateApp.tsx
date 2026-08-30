@@ -16,10 +16,9 @@ import {
   type Root,
 } from "react-dom/client";
 import { RelayEnvironmentProvider } from "react-relay";
-import { createEnvironment } from "#relay/environment.js";
-import { setPrefetchEnvironment } from "#relay/prefetchEnvironment.js";
+import { createEnvironment, setPrefetchEnvironment } from "#relay";
+import type { InitialData } from "#server";
 import { appRoutes, middleware, notFoundRoute } from "../routes.js";
-import type { InitialData } from "../server/entry.js";
 
 /**
  * Hydrate the app into `container`, returning the created root.

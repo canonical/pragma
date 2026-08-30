@@ -2,7 +2,7 @@
 
 import { Link } from "@canonical/router-react";
 import type React from "react";
-import ThemeSelector from "#lib/ThemeSelector/index.js";
+import ThemeSelector from "#lib/ThemeSelector";
 import { LENS_ENTRIES } from "./constants.js";
 import { LENS_ICONS, PlaygroundIcon, SignInIcon } from "./icons.js";
 import type { RailProps } from "./types.js";

@@ -14,9 +14,9 @@
  * of the term-less execution entirely).
  */
 
+import type { RouteQueryEntry } from "#relay";
 import type { DefinitionsExplorerQuery$variables } from "#relay/__generated__/DefinitionsExplorerQuery.graphql.js";
 import definitionsExplorerQueryNode from "#relay/__generated__/DefinitionsExplorerQuery.graphql.js";
-import type { RouteQueryEntry } from "#relay/routeQuery.js";
 
 /** The compiled operation (full text under `params.text`, `id: null`). */
 export { definitionsExplorerQueryNode };

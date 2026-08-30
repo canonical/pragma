@@ -15,7 +15,7 @@
  * this the tenant whose migration proves the helper.
  */
 
-import { defineFacet } from "#lib/routeFacet/index.js";
+import { defineFacet } from "#lib/routeFacet";
 import { SHELL_STRIP_META_KEY } from "./constants.js";
 import type { StripSlotsEntry } from "./types.js";
 

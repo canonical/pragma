@@ -11,7 +11,7 @@
  */
 
 import type { AnyRoute } from "@canonical/router-core";
-import { collectFacet } from "#lib/routeFacet/index.js";
+import { collectFacet } from "#lib/routeFacet";
 import { routeShortcutFacet } from "./shortcutFacet.js";
 
 export interface ShortcutAllocation<TName extends string = string> {

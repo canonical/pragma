@@ -1,8 +1,5 @@
 import { route } from "@canonical/router-core";
-import {
-  ROUTE_QUERY_META_KEY,
-  type RouteQueryEntry,
-} from "#relay/routeQuery.js";
+import { ROUTE_QUERY_META_KEY, type RouteQueryEntry } from "#relay";
 import PlaygroundPage from "./PlaygroundPage.js";
 import {
   componentProbeQueryNode,

@@ -28,7 +28,7 @@ import fs from "node:fs";
 import * as process from "node:process";
 import { viteFetchMiddleware } from "@canonical/react-ssr/server";
 import { createServer as createViteServer } from "vite";
-import { resolveGraphqlUrl } from "#relay/graphqlEndpoint.js";
+import { resolveGraphqlUrl } from "#graphql-endpoint";
 import { prepareRelayData } from "./prepareRelayData.js";
 
 const PORT = Number(process.env.PORT) || 5174;

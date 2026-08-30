@@ -2,7 +2,7 @@ import { useHead } from "@canonical/react-head";
 import type React from "react";
 import { Suspense } from "react";
 import { graphql, useLazyLoadQuery } from "react-relay";
-import ErrorBoundary from "#lib/ErrorBoundary/index.js";
+import ErrorBoundary from "#lib/ErrorBoundary";
 import type { StandardsIndexQuery } from "#relay/__generated__/StandardsIndexQuery.graphql.js";
 import standardsIndexQueryNode from "#relay/__generated__/StandardsIndexQuery.graphql.js";
 import { StandardsIndex } from "../StandardsIndex/index.js";

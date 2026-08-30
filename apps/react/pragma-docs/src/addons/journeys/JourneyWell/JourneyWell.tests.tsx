@@ -3,12 +3,12 @@
  * (ruling R2) asserted where a reader would see it: in the rendered graph.
  */
 
-import "#domains/lenses/definitions/__fixtures__/stubReactFlowGlobals.js";
+import "../../../domains/lenses/definitions/__fixtures__/stubReactFlowGlobals.js";
 import { RouterProvider } from "@canonical/router-react";
 import { render, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { describe, expect, it } from "vitest";
-import createStaticRouter from "../../../lib/router/createStaticRouter.js";
+import { createStaticRouter } from "#lib/router";
 import { appRoutes, middleware, notFoundRoute } from "../../../routes.js";
 import {
   BROWSE_JOB,

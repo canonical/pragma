@@ -34,10 +34,10 @@
  * shape of the work.
  */
 
-import { GRAPH_BINDINGS } from "#lib/graphBindings/index.js";
+import { GRAPH_BINDINGS } from "#lib/graphBindings";
+import type { RouteQueryEntry } from "#relay";
 import type { StandardEntityQuery$variables } from "#relay/__generated__/StandardEntityQuery.graphql.js";
 import standardEntityQueryNode from "#relay/__generated__/StandardEntityQuery.graphql.js";
-import type { RouteQueryEntry } from "#relay/routeQuery.js";
 
 /** The compiled operation (full text under `params.text`, `id: null`). */
 export { standardEntityQueryNode };

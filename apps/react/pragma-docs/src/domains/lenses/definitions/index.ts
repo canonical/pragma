@@ -2,6 +2,19 @@
 
 export * from "./DefinitionsExplorer/index.js";
 export * from "./DefinitionsPage/index.js";
+// The sub-domain's own surface, beside the components above.
+export {
+  definitionsExplorerQueryNode,
+  definitionsExplorerVariables,
+  definitionsRouteEntry,
+  readTermParam,
+} from "./definitionsQuery.js";
 export * from "./HierarchyWell/index.js";
+export type {
+  LensFilterProviderProps,
+  LensFilterValue,
+} from "./lensFilterContext.js";
+export { LensFilterProvider, useLensFilter } from "./lensFilterContext.js";
+export { default as definitionsRoutes } from "./routes.js";
 export * from "./TermInspector/index.js";
 export * from "./TermRail/index.js";

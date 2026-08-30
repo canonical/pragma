@@ -16,8 +16,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { FetchFunction, GraphQLResponse } from "relay-runtime";
 import { describe, expect, it, vi } from "vitest";
-import { STANDARDS_PAGE_SIZE } from "#domains/lenses/standards/standardsIndexQuery.js";
-import { GRAPH_BINDINGS } from "#lib/graphBindings/index.js";
+import { GRAPH_BINDINGS } from "#lib/graphBindings";
 import standardsIndexRecords from "../__fixtures__/standardsIndexRecords.js";
 import {
   CODE_STANDARD_CLASS_URI,
@@ -25,6 +24,7 @@ import {
   STANDARDS_TEST_TIMEOUT_MS,
   standardsIndexPage,
 } from "../__fixtures__/standardsPageHarness.js";
+import { STANDARDS_PAGE_SIZE } from "../standardsIndexQuery.js";
 
 /** A fetch spy that never settles: any call means "the network was hit". */
 const createFetchSpy = () =>

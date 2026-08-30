@@ -1,9 +1,8 @@
 import { route } from "@canonical/router-core";
-import { makeLensContext } from "#lib/LensBreadcrumbs/index.js";
-import { routeShortcutFacet } from "#lib/routeShortcut/index.js";
-import { shellStripFacet } from "#lib/Shell/stripFacet.js";
-import { ROUTE_QUERY_META_KEY } from "#relay/routeQuery.js";
-import { warmRouteQuery } from "#relay/warmRouteQuery.js";
+import { makeLensContext } from "#lib/LensBreadcrumbs";
+import { routeShortcutFacet } from "#lib/routeShortcut";
+import { shellStripFacet } from "#lib/Shell";
+import { ROUTE_QUERY_META_KEY, warmRouteQuery } from "#relay";
 import { StandardReadingPage } from "./StandardReadingPage/index.js";
 import { StandardsPage } from "./StandardsPage/index.js";
 import { standardEntityRouteEntry } from "./standardEntityQuery.js";

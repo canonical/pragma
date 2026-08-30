@@ -18,11 +18,7 @@
  * uris.ts doctrine); when the derivation fails the node stays, inert.
  */
 
-import {
-  detectKindInUri,
-  type Kind,
-  resolveChipHref,
-} from "#lib/Chip/index.js";
+import { detectKindInUri, type Kind, resolveChipHref } from "#lib/Chip";
 import type { NeighbourhoodWell_component$data } from "#relay/__generated__/NeighbourhoodWell_component.graphql.js";
 import { RELATION_SPECS, type RelationSpec } from "./constants.js";
 import type { NeighbourhoodInput, NeighbourInput } from "./types.js";

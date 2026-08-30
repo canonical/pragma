@@ -14,7 +14,7 @@ import type { ReactElement } from "react";
 import { RelayEnvironmentProvider } from "react-relay";
 import type { FetchFunction } from "relay-runtime";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
-import { createEnvironment } from "#relay/environment.js";
+import { createEnvironment } from "#relay";
 import { ComponentEntityPage } from "../ComponentEntityPage/index.js";
 
 /** The two captured exemplars' URIs. */

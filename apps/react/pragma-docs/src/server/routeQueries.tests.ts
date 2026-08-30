@@ -9,25 +9,21 @@
  */
 
 import { describe, expect, it } from "vitest";
-import {
-  JOB_PAGE_SIZE,
-  PAIRING_PAGE_SIZE,
-} from "#addons/journeys/journeysQuery.js";
-import { CATALOG_PAGE_SIZE } from "#domains/components/catalogQuery.js";
-import { RELATION_PAGE_SIZE } from "#domains/components/entityQuery.js";
-import { STANDARDS_PAGE_SIZE } from "#domains/lenses/standards/standardsIndexQuery.js";
+import { JOB_PAGE_SIZE, PAIRING_PAGE_SIZE } from "#addons/journeys";
+import { CATALOG_PAGE_SIZE, RELATION_PAGE_SIZE } from "#domains/components";
+import { STANDARDS_PAGE_SIZE } from "#domains/lenses/standards";
 import {
   LOBBY_COMPONENT_CLASS,
   LOBBY_EXEMPLAR_COUNT,
   LOBBY_PATTERN_CLASS,
   LOBBY_STANDARD_CLASS,
-} from "#domains/marketing/lobbyQuery.js";
+} from "#domains/marketing";
 import {
   RELATION_PAGE_SIZE as PROBE_RELATION_PAGE_SIZE,
   PROBE_URI,
-} from "#domains/playground/probeQuery.js";
-import { resolveChipHref } from "#lib/Chip/index.js";
-import { GRAPH_BINDINGS } from "#lib/graphBindings/index.js";
+} from "#domains/playground";
+import { resolveChipHref } from "#lib/Chip";
+import { GRAPH_BINDINGS } from "#lib/graphBindings";
 import { appRoutes } from "../routes.js";
 import { matchRouteQuery } from "./routeQueries.js";
 

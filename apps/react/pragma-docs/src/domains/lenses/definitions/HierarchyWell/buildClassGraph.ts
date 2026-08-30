@@ -34,7 +34,7 @@ import {
   selfLoop,
   settle,
   type WellBox,
-} from "#lib/WellGeometry/index.js";
+} from "#lib/WellGeometry";
 import { type OntologyNamespace, toPrefixedUri } from "../uris.js";
 import type { ClusterExtent, TermFlowEdge, TermFlowNode } from "./types.js";
 
