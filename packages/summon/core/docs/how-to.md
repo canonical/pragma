@@ -465,18 +465,18 @@ summon my-gen --name=auto --yes           # same as -y
 For fully automated execution in CI/CD:
 
 ```bash
-# Provide ALL required prompts as flags + -y
+# Provide ALL required prompts as flags + -y. The confirm prompts are
+# default-on, so only the path is required here; a default-true confirm
+# registers ONLY its --no- form (opt out with e.g. --no-with-styles).
 summon component react \
   --component-path=src/components/Button \
-  --with-styles \
-  --with-stories \
-  --with-ssr-tests \
   -y
 ```
 
 Key flags:
 - `-y` / `--yes` — Skip all confirmation prompts AND the file preview step
-- All prompt values as flags (check `summon <generator> --help` for available flags)
+- All prompt values as REGISTERED flags (check `summon <generator> --help`
+  for the exact spellings — a default-true confirm has only a `--no-` form)
 
 ### LLM-Optimized Output
 
@@ -522,11 +522,24 @@ This outputs complete file contents with line numbers:
 │    ... (truncated after 50 lines)
 ```
 
-### Current Limitation: TTY Requirement
+### Non-TTY Runs Refuse Without Complete Input
 
-Summon's interactive UI (built with Ink) requires a TTY for keyboard input. When running in non-TTY environments (CI, LLM coding assistants like Claude Code):
+The interactive UI (built with Ink) needs a TTY; without one, summon never
+tries to mount it. A non-TTY run (CI, a pipe, an LLM coding assistant)
+without `--yes`, `--dry-run`, `--undo`, or a complete set of answer flags
+**refuses with exit 2**:
 
-**Workaround**: Ensure all prompt values are provided via flags. With `--yes` and all values specified, the interactive UI is minimally invoked.
+```
+Refusing to scaffold in a non-interactive run without complete input. Pass --yes to accept defaults, --dry-run to preview, or provide every answer as a flag. Missing: --component-path, ...
+```
+
+The recovery is in the message: pass `--yes` to accept defaults, `--dry-run`
+to preview without writing, or provide every remaining answer as a flag (a
+fully-explicit non-TTY run executes without `--yes`). The full decision
+table — all 32 input combinations, shared verbatim with `pragma create` — is
+pinned by the cross-CLI matrix
+(`packages/cli/pragma/src/capabilities/create/crossCli.subprocess.test.ts`),
+which runs both CLIs over the same argv.
 
 **Alternative**: For complex component generation that integrates with design system ontologies, consider using the `component-from-ontology` skill in `/skills/component-from-ontology/SKILL.md`, which provides LLM-guided generation without TTY requirements.
 

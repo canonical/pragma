@@ -15,7 +15,7 @@ import type {
 } from "react";
 
 /**
- * Route-building options shared by `Link`, `navigate()`, and `prefetch()`.
+ * Route-building options shared by `Link`, `navigate()`, and `warm()`.
  */
 export type LinkBuildOptions<TRoute extends AnyRoute> = {
   /** Optional URL hash fragment without the leading `#`. */
@@ -40,7 +40,7 @@ export type LinkProps<
     readonly download?: AnchorHTMLAttributes<HTMLAnchorElement>["download"];
     /** Optional click handler called before router interception runs. */
     readonly onClick?: MouseEventHandler<HTMLAnchorElement>;
-    /** Optional hover handler called before router prefetching runs. */
+    /** Optional hover handler called before router warming runs. */
     readonly onMouseEnter?: MouseEventHandler<HTMLAnchorElement>;
     /** Ref forwarded to the underlying anchor element. */
     readonly ref?: Ref<HTMLAnchorElement>;

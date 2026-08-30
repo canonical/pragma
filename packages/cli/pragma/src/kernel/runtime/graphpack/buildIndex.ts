@@ -29,7 +29,7 @@
  *   stays completable instead of vanishing behind the tbox facet.
  */
 
-import { compactUri } from "../../render/compactUri.js";
+import { compactUri } from "../../render/index.js";
 import { VOCABULARY } from "../../vocabulary.js";
 import type { PackIndex, PackIndexEntity } from "./types.js";
 

@@ -1,4 +1,9 @@
-import { createHashRouter, type RouteMap, route } from "@canonical/router-core";
+import {
+  createHashAdapter,
+  createRouter,
+  type RouteMap,
+  route,
+} from "@canonical/router-core";
 import { RouterProvider } from "@canonical/router-react";
 import type {
   Renderer,
@@ -33,15 +38,33 @@ export interface WithHashRouterOptions {
  * Requires the optional peer deps `@canonical/router-core` and
  * `@canonical/router-react`.
  *
+ * The returned decorator's `context` parameter is optional (the story
+ * function stays required), so it doubles as a plain "wrap this subtree in a
+ * hash router" helper for decorators that need to render something extra
+ * *inside* the provider (an `<Outlet />`, a `useRoute()` bridge) without
+ * fabricating a `StoryContext`. That keeps `createRouter` +
+ * `createHashAdapter` + `RouterProvider` owned here instead of being
+ * hand-rolled per call site.
+ *
  * @example
  * const meta = {
  *   component: SideNavigation,
  *   decorators: [withHashRouter()],
  * } satisfies Meta<typeof SideNavigation>;
+ *
+ * @example
+ * // Composed: extra content inside the same provider.
+ * const withRouter: Decorator = (Story) =>
+ *   withHashRouter()(() => (
+ *     <>
+ *       <Story />
+ *       <Outlet />
+ *     </>
+ *   ));
  */
 export const withHashRouter =
   ({ routes = defaultRoutes }: WithHashRouterOptions = {}) =>
-  (StoryFn: StoryFunction<Renderer>, _context: StoryContext<Renderer>) => {
-    const router = createHashRouter(routes);
+  (StoryFn: StoryFunction<Renderer>, _context?: StoryContext<Renderer>) => {
+    const router = createRouter(routes, { adapter: createHashAdapter() });
     return <RouterProvider router={router}>{StoryFn()}</RouterProvider>;
   };

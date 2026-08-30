@@ -7,7 +7,7 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
-import type { Formatters } from "../../kernel/spec/types.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 import type { CapabilitiesData, ToolCategory } from "./types.js";
 
 /** Category display order for grouped tool listings. */

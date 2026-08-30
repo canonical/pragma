@@ -1,6 +1,6 @@
 import type React from "react";
 import { useEffect, useRef } from "react";
-import mergeRefs from "../../utils/mergeRefs.js";
+import mergeRefs from "../../../../utils/mergeRefs.js";
 import type { ListProps } from "./types.js";
 import "./styles.css";
 

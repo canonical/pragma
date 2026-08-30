@@ -32,7 +32,7 @@ type BaseProps = SvelteHTMLElements["nav"];
 /**
  * Props for the Breadcrumbs component
  *
- * @implements dso:global.pattern.breadcrumbs
+ * @implements ds:global.component.breadcrumbs
  */
 export interface BreadcrumbsProps extends BaseProps {
   /**

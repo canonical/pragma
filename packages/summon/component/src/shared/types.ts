@@ -21,10 +21,6 @@ export interface TemplateContext {
   name: string;
   /** Component name in kebab-case (e.g., my-component) */
   kebabName: string;
-  /** Generator name for comments */
-  generatorName: string;
-  /** Generator version */
-  version: string;
   /** Include styles */
   withStyles: boolean;
   /** Include stories */

@@ -49,6 +49,8 @@ export {
   execute,
   GENERATOR_CANCELLED,
   GENERATOR_INVALID_ANSWER,
+  invalidAnswersError,
+  isInvalidAnswersError,
   validateAnswers,
 } from "./execute/index.js";
 
@@ -66,6 +68,7 @@ export type {
   PromptHandler,
   PromptQuestion,
   SelectPrompt,
+  StepReport,
   TextPrompt,
 } from "./prompt/index.js";
 export {
@@ -83,6 +86,7 @@ export {
 
 export {
   buildReplayCommand,
+  effectStyleFor,
   formatContentPreview,
   formatEffectLine,
   formatEffectWithContent,
@@ -96,6 +100,7 @@ export {
   getLlmActionLabel,
   getLlmEffectPath,
   isVisibleEffect,
+  visiblePlanEffects,
 } from "./format/index.js";
 export type { RunGeneratorTaskOptions } from "./run/index.js";
 export { runGeneratorTask } from "./run/index.js";
@@ -105,6 +110,8 @@ export { runGeneratorTask } from "./run/index.js";
 // =============================================================================
 
 export type {
+  LoadedTemplate,
+  RawFileOptions,
   TemplateDirOptions,
   TemplateOptions,
   TemplatingEngine,
@@ -114,7 +121,10 @@ export {
   generateStamp,
   generatorComment,
   getCommentStyle,
+  loadTemplate,
+  loadTemplateSync,
   prependStamp,
+  rawFile,
   renderFile,
   renderString,
   renderStringAsync,

@@ -47,6 +47,20 @@ describe("loadTemplate", () => {
     expect(result.source).toBe(missingPath);
   });
 
+  it("resolves a Windows-style backslash source against the manifest", async () => {
+    // path.join yields backslashes on win32; the manifest keys are always
+    // forward-slash, so the lookup must normalize before matching.
+    setEmbeddedTemplates({
+      "component/react/types.ts.ejs": "EMBEDDED CONTENT",
+    });
+
+    const result = await loadTemplate(
+      "C:\\pkg\\dist\\esm\\templates\\react\\types.ts.ejs",
+    );
+
+    expect(result.content).toBe("EMBEDDED CONTENT");
+  });
+
   it("resolves the shared/ styles template by its qualified key", async () => {
     // react pulls its stylesheet from templates/shared/, not templates/react/.
     const missingPath = join(dir, "templates", "shared", "styles.css.ejs");

@@ -1,9 +1,25 @@
-import { promptEffect, writeFile, writeFileEffect } from "@canonical/task";
+import { mkdtempSync, readdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+  $,
+  type Effect,
+  exists,
+  gen as gen_,
+  promptEffect,
+  readFile,
+  writeFile,
+  writeFileEffect,
+} from "@canonical/task";
 import { describe, expect, it } from "vitest";
 import { CONFIRM_ANSWER_KEY } from "../../execute/execute.js";
 import type GeneratorDefinition from "../../types/GeneratorDefinition.js";
 import type { PromptEffect } from "../types.js";
 import { SessionController } from "./session.js";
+
+/** The paths a plan writes, in order. */
+const paths = (effects: readonly Effect[]): string[] =>
+  effects.flatMap((e) => (e._tag === "WriteFile" ? [e.path] : []));
 
 const gen: GeneratorDefinition = {
   meta: { name: "g", displayName: "g", description: "d", version: "1.0.0" },
@@ -30,10 +46,12 @@ const confirm = (): PromptEffect =>
   }) as PromptEffect;
 
 describe("SessionController", () => {
-  it("starts idle with the applicable-prompt count", () => {
+  it("starts idle with the applicable-prompt count", async () => {
     const c = new SessionController(gen);
     expect(c.getSnapshot().phase).toBe("idle");
     expect(c.getSnapshot().total).toBe(1); // `extra` gated off (path !== 'y')
+    // No gate has opened, so there is no preview to wait for.
+    await expect(c.previewSettled()).resolves.toBeUndefined();
   });
 
   it("drives a prompt request → answer, accumulating state", async () => {
@@ -55,7 +73,10 @@ describe("SessionController", () => {
     void c.request(ask("path"));
     c.submitAnswer("out.txt");
     const gate = c.request(confirm());
+    // The gate renders immediately; the honest preview fills the pane in.
     expect(c.getSnapshot().phase).toBe("confirming");
+    expect(c.getSnapshot().previewEffects).toEqual([]);
+    await c.previewSettled();
     expect(c.getSnapshot().previewEffects.length).toBeGreaterThan(0);
     c.submitConfirm(true);
     await expect(gate).resolves.toBe(true);
@@ -64,6 +85,9 @@ describe("SessionController", () => {
     c.reportEffectStart(writeFileEffect("a.txt", "x"));
     c.reportEffectComplete(writeFileEffect("a.txt", "x"), 3);
     expect(c.getSnapshot().progress.length).toBe(1);
+    // The seam's per-effect duration is KEPT, not dropped: the live view
+    // renders it, so a run says what each step cost.
+    expect(c.getSnapshot().progress[0]?.duration).toBe(3);
   });
 
   it("keeps the cancelled phase if an effect completes after cancel", () => {
@@ -83,9 +107,78 @@ describe("SessionController", () => {
     const c = new SessionController(throwing);
     const gate = c.request(confirm());
     expect(c.getSnapshot().phase).toBe("confirming");
+    await c.previewSettled();
     expect(c.getSnapshot().previewEffects).toEqual([]);
     c.submitConfirm(true);
     await expect(gate).resolves.toBe(true);
+  });
+
+  it("the pane's plan is HONEST: it reads real files and writes none", async () => {
+    // The mock this replaced answered every read with a placeholder, so a
+    // generator branching on the filesystem could promise the wrong plan.
+    const dir = mkdtempSync(join(tmpdir(), "summon-pane-"));
+    writeFileSync(join(dir, "present.txt"), "here");
+    const branching: GeneratorDefinition = {
+      ...gen,
+      generate: () =>
+        gen_(function* () {
+          const found = yield* $(exists("present.txt"));
+          yield* $(writeFile(found ? "found.txt" : "missing.txt", "x"));
+        }),
+    };
+
+    const inDir = new SessionController(branching, undefined, dir);
+    void inDir.request(confirm());
+    await inDir.previewSettled();
+    expect(paths(inDir.getSnapshot().previewEffects)).toEqual(["found.txt"]);
+    // Nothing was written: the pane is shown BEFORE the user consents.
+    expect(readdirSync(dir)).toEqual(["present.txt"]);
+
+    // The same generator against an empty tree plans the other branch — proof
+    // the pane reads the cwd it was given, not a mock.
+    const empty = mkdtempSync(join(tmpdir(), "summon-pane-"));
+    const inEmpty = new SessionController(branching, undefined, empty);
+    void inEmpty.request(confirm());
+    await inEmpty.previewSettled();
+    expect(paths(inEmpty.getSnapshot().previewEffects)).toEqual([
+      "missing.txt",
+    ]);
+    expect(readdirSync(empty)).toEqual([]);
+  });
+
+  it("shows an empty pane when the preview FAILS, and never a fiction", async () => {
+    // A generator whose first read cannot succeed is a run that will fail. The
+    // gate says nothing rather than promising a plan the run cannot deliver.
+    const dir = mkdtempSync(join(tmpdir(), "summon-pane-"));
+    const reading: GeneratorDefinition = {
+      ...gen,
+      generate: () =>
+        gen_(function* () {
+          const body = yield* $(readFile("nope.txt"));
+          yield* $(writeFile("copy.txt", body));
+        }),
+    };
+    const c = new SessionController(reading, undefined, dir);
+    const gate = c.request(confirm());
+    await c.previewSettled();
+    expect(c.getSnapshot().previewEffects).toEqual([]);
+    // The decision is still the user's to make.
+    c.submitConfirm(true);
+    await expect(gate).resolves.toBe(true);
+  });
+
+  it("drops a preview that resolves after the gate moved on", async () => {
+    const c = new SessionController(gen);
+    void c.request(ask("path"));
+    c.submitAnswer("out.txt");
+    const gate = c.request(confirm());
+    // Answer before the in-flight preview resolves: its result is stale and
+    // must not repaint a pane the wizard has already left.
+    c.submitConfirm(true);
+    await expect(gate).resolves.toBe(true);
+    await c.previewSettled();
+    expect(c.getSnapshot().phase).toBe("executing");
+    expect(c.getSnapshot().previewEffects).toEqual([]);
   });
 
   it("declining the gate resolves false and cancels", async () => {
@@ -135,6 +228,146 @@ describe("SessionController", () => {
     c.cancel();
     expect(aborts).toBe(1);
     expect(c.getSnapshot().phase).toBe("cancelled");
+  });
+
+  it("folds host step reports into live rows, measuring wall time per step", async () => {
+    const c = new SessionController(gen);
+    const gate = c.request(confirm());
+    c.submitConfirm(true);
+    // Consent is released once the gate's preview walk settles; only then is
+    // the session executing — the one phase step reports land in.
+    await gate;
+    c.reportStep({ key: "global:mcp", label: "mcp  3 files", status: "start" });
+    expect(c.getSnapshot().steps).toEqual([
+      { key: "global:mcp", label: "mcp  3 files", status: "running" },
+    ]);
+    c.reportStep({
+      key: "global:mcp",
+      label: "mcp  3 files — 3 added",
+      status: "done",
+    });
+    const [step] = c.getSnapshot().steps;
+    // Completion REPLACES the running row (same key), carries the completion
+    // label, and the duration is the controller's own start→done measurement.
+    expect(c.getSnapshot().steps.length).toBe(1);
+    expect(step).toMatchObject({
+      status: "done",
+      label: "mcp  3 files — 3 added",
+    });
+    expect(step?.duration).toBeGreaterThanOrEqual(0);
+  });
+
+  it("drops step reports outside the executing phase (the preview walks too)", async () => {
+    // Step reports originate INSIDE the host's task composition, so the
+    // confirm gate's honest preview fires them while the phase is still
+    // `confirming` — before the user has consented. Those must not paint rows.
+    const c = new SessionController(gen);
+    const gate = c.request(confirm());
+    expect(c.getSnapshot().phase).toBe("confirming");
+    c.reportStep({ key: "k", label: "previewed", status: "start" });
+    expect(c.getSnapshot().steps).toEqual([]);
+    // A report after cancel is likewise inert.
+    c.cancel();
+    await expect(gate).rejects.toMatchObject({ code: "GENERATOR_CANCELLED" });
+    c.reportStep({ key: "k", label: "late", status: "done" });
+    expect(c.getSnapshot().steps).toEqual([]);
+  });
+
+  it("consent does not enter executing while the gate's preview can still emit", async () => {
+    // THE preview race: loadPreview walks the same `generate` the run will,
+    // asynchronously — a fast Y lands while that walk is still in flight.
+    // Flipping to `executing` at the instant of consent accepted the
+    // pre-consent walk's late reports as live rows (and a late `start` on a
+    // key the real walk had settled reset the board mid-run). Consent must be
+    // released only once the preview walk has COMPLETED, so in the consent
+    // tick the session is still `confirming` and a straggler report — this
+    // one stands in for the pre-consent walk's — is dropped.
+    const c = new SessionController(gen);
+    const gate = c.request(confirm());
+    c.submitConfirm(true);
+    expect(c.getSnapshot().phase).toBe("confirming");
+    c.reportStep({ key: "a", label: "phantom", status: "start" });
+    expect(c.getSnapshot().steps).toEqual([]);
+    await expect(gate).resolves.toBe(true);
+    expect(c.getSnapshot().phase).toBe("executing");
+    // Reports from the walks consent released ARE accepted.
+    c.reportStep({ key: "a", label: "real", status: "start" });
+    expect(c.getSnapshot().steps).toEqual([
+      { key: "a", label: "real", status: "running" },
+    ]);
+  });
+
+  it("a cancel while consent waits on the preview rejects the gate cleanly", async () => {
+    // submitConfirm(true) claims the pending slot before deferring on the
+    // preview, so cancel() finds nothing to reject — the deferred consent
+    // must settle the gate itself, with the same code an at-prompt cancel
+    // carries, or the task would hang on a prompt that never resolves.
+    const c = new SessionController(gen);
+    const gate = c.request(confirm());
+    c.submitConfirm(true);
+    c.cancel();
+    await expect(gate).rejects.toMatchObject({ code: "GENERATOR_CANCELLED" });
+    expect(c.getSnapshot().phase).toBe("cancelled");
+  });
+
+  it("a start for a settled key resets the board — execute's mock walk paints first", async () => {
+    // After consent, `execute` synchronously walks `generate` on the MOCK
+    // interpreter (the outcome summary's file list), so a full set of settled
+    // steps lands in-phase with ~0ms durations before the real drive begins.
+    // Sequential steps have per-walk-unique keys, so a `start` on a settled
+    // key can only mean a new interpretation: the board starts over.
+    const c = new SessionController(gen);
+    const gate = c.request(confirm());
+    c.submitConfirm(true);
+    await gate;
+    // The mock walk: both steps settle instantly.
+    c.reportStep({ key: "a", label: "a", status: "start" });
+    c.reportStep({ key: "a", label: "a — installed", status: "done" });
+    c.reportStep({ key: "b", label: "b", status: "start" });
+    c.reportStep({ key: "b", label: "b — linked", status: "done" });
+    expect(c.getSnapshot().steps.length).toBe(2);
+    // The real drive starts over with the same first key.
+    c.reportStep({ key: "a", label: "a", status: "start" });
+    expect(c.getSnapshot().steps).toEqual([
+      { key: "a", label: "a", status: "running" },
+    ]);
+    c.reportStep({ key: "a", label: "a — installed", status: "done" });
+    c.reportStep({ key: "b", label: "b", status: "start" });
+    c.reportStep({ key: "b", label: "b — linked", status: "done" });
+    expect(c.getSnapshot().steps.map((s) => s.status)).toEqual([
+      "done",
+      "done",
+    ]);
+  });
+
+  it("a completion whose start was gated away still lands, with no timing claim", async () => {
+    // Defensive: with consent deferred on the preview settling, no known walk
+    // can deliver a `done` without its `start` any more — but a report stream
+    // that misbehaves must degrade to a row with no timing claim (duration 0),
+    // never to an invented number or a crash.
+    const c = new SessionController(gen);
+    const gate = c.request(confirm());
+    c.submitConfirm(true);
+    await gate;
+    c.reportStep({ key: "k", label: "k — installed", status: "done" });
+    expect(c.getSnapshot().steps).toEqual([
+      { key: "k", label: "k — installed", status: "done", duration: 0 },
+    ]);
+  });
+
+  it("marks a failed step failed, keeping its completed siblings", async () => {
+    const c = new SessionController(gen);
+    const gate = c.request(confirm());
+    c.submitConfirm(true);
+    await gate;
+    c.reportStep({ key: "a", label: "a ok", status: "start" });
+    c.reportStep({ key: "a", label: "a ok — installed", status: "done" });
+    c.reportStep({ key: "b", label: "b bad", status: "start" });
+    c.reportStep({ key: "b", label: "b bad — no bun", status: "failed" });
+    expect(c.getSnapshot().steps.map((s) => s.status)).toEqual([
+      "done",
+      "failed",
+    ]);
   });
 
   it("ignores answer/confirm submitted against the wrong pending kind", () => {

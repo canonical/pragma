@@ -18,6 +18,8 @@ const componentCssClassName = "ds input time chrome";
  * @returns {ReactElement} - Rendered TimeInput
  *
  * `import { TimeInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.time_input
  */
 export const TimeInput = forwardRef<HTMLInputElement, TimeInputProps>(
   function TimeInput(

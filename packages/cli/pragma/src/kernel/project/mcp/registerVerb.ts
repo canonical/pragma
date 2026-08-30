@@ -7,21 +7,23 @@
  * capability, and a mutating verb gains the plan-first `confirm` flow: without
  * `confirm`, the verb's `Task` is dry-run and a plan is returned
  * (`{ planOnly: true, confirmRequired: true }`); with `confirm: true`, it runs
- * for real.
+ * for real. That plan is rendered through the SAME shared effect formatter the
+ * CLI preview uses, so the agent-facing and human-facing surfaces describe one
+ * plan rather than two views of it.
  */
 
 import { statSync } from "node:fs";
 import { isAbsolute } from "node:path";
-import { describeEffect, dryRun, type Task } from "@canonical/task";
-import { runTask } from "@canonical/task/node";
+import { describeEffect, type Task } from "@canonical/task";
+import { runPreview, runTask } from "@canonical/task/node";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { asPragmaError } from "../../error/fromTaskError.js";
-import { PragmaError } from "../../error/PragmaError.js";
+import { PragmaError } from "../../error/index.js";
 import type { InteractionRuntime, PragmaRuntime } from "../../runtime/types.js";
-import { toolName } from "../../spec/emitSurface.js";
-import type { McpAnnotations, ParamSpec, VerbSpec } from "../../spec/types.js";
+import type { McpAnnotations, ParamSpec, VerbSpec } from "../../spec/index.js";
+import { toolName } from "../../spec/index.js";
 import { toolError, toolSuccess } from "./envelope.js";
 
 /**
@@ -141,6 +143,22 @@ function withDetail(
   };
 }
 
+/**
+ * The notice seam, projected into the envelope's `meta`.
+ *
+ * It existed with exactly ONE consumer: the CLI dispatcher, which writes it to
+ * stderr. An agent therefore could not tell an unbuilt store, a mistyped filter
+ * and a genuinely empty result apart — all three were
+ * `{"ok":true,"data":[],"meta":{}}` — and, later, could not tell an unambiguous
+ * lookup hit from one of three blocks sharing a name. Riding in `meta` keeps
+ * `data` its uniform shape while making both of those ≠ silence, and the CLI's
+ * `--format json` carries the same key so the two surfaces stay byte-equal.
+ */
+function noticeMeta(verb: VerbSpec, data: unknown): Record<string, unknown> {
+  const notice = verb.output.formatters.notice?.(data as never);
+  return notice ? { notice } : {};
+}
+
 /** The tool handler for a read verb: run, project, envelope. */
 function readHandler(verb: VerbSpec, runtime: PragmaRuntime) {
   return async (args: Record<string, unknown>): Promise<CallToolResult> => {
@@ -150,7 +168,10 @@ function readHandler(verb: VerbSpec, runtime: PragmaRuntime) {
       const result = await Promise.resolve(
         verb.run(params, withDetail(verb, runtime, args)) as Promise<unknown>,
       );
-      return toolSuccess(JSON.parse(verb.output.formatters.json(result)));
+      return toolSuccess(
+        JSON.parse(verb.output.formatters.json(result)),
+        noticeMeta(verb, result),
+      );
     } catch (error) {
       return toolError(asPragmaError(error));
     }
@@ -190,7 +211,7 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
       const mutationRuntime: PragmaRuntime = {
         ...runtime,
         cwd: effectiveCwd,
-        mutation: { preview },
+        mutation: { preview, undo: false },
         interaction,
       };
       const task = await Promise.resolve(
@@ -199,10 +220,53 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
           | Promise<Task<unknown>>,
       );
       if (preview) {
-        const plan = dryRun(task)
-          .effects.filter((effect) => effect._tag !== "Prompt")
-          .map(describeEffect);
-        return toolSuccess({ plan }, { planOnly: true, confirmRequired: true });
+        // The HONEST preview (PR7), the same interpreter `--dry-run` uses:
+        // reads are real, writes are recorded and never executed. A tool call
+        // whose confirmed run would fail now returns that error instead of a
+        // confident plan, so plan-first predicts rather than reassures.
+        //
+        // NO `onLog`: a preview that PERFORMS an effect is not a preview of
+        // that effect, and the recorded `Log`s are already about to be listed.
+        // The interpreter prints nothing of its own when it is absent.
+        const previewExec = mutationRuntime.exec ?? {};
+        try {
+          const { effects } = await runPreview(task, {
+            cwd: previewExec.cwd,
+            onEffectStart: previewExec.onEffectStart,
+          });
+          // This payload is read by an LLM on a token budget, so it carries
+          // the plan a person is shown rather than the interpreter's
+          // transcript: the same `visiblePlanEffects` filter the CLI preview
+          // applies, from the same module. Without it every internal
+          // `Check exists:` and every repeat of the output directory spent
+          // tokens burying the real artifacts.
+          //
+          // The FILTER is what the surfaces share; the ROW FORMAT is not.
+          // These strings are structured data, so they stay `describeEffect` —
+          // the description `@canonical/task` gives its own effects, which
+          // carries byte counts, has no terminal chrome, and cannot embed an
+          // ANSI escape however the editor that spawned this server configured
+          // colour. That also lets the CLI's `--format json` plan and this one
+          // be compared string for string, which is the A6 invariant.
+          //
+          // Loaded lazily, and from the LIGHT `/format` subpath: the kernel
+          // keeps summon-core proper (and React) off its static import graph.
+          const { visiblePlanEffects } = await import(
+            "@canonical/summon-core/format"
+          );
+          const plan = visiblePlanEffects(
+            effects,
+            runtime.globalFlags.verbose === true,
+          ).map(describeEffect);
+          return toolSuccess(
+            { plan },
+            { planOnly: true, confirmRequired: true },
+          );
+        } finally {
+          // No `store.invalidate()`: a preview cannot have changed disk. Only
+          // the verb's own teardown (e.g. an interactive session) runs here.
+          await previewExec.dispose?.();
+        }
       }
       // Real execution: spread the verb's runner options (prompt handler,
       // stamping) into the interpreter; run teardown afterwards.

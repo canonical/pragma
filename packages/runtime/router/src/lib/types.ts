@@ -120,7 +120,7 @@ export type RouteParamValues = Readonly<Record<string, string>>;
 export type InferSearch<TSchema> = InferOutput<TSchema>;
 
 /**
- * The params a route's `content`/`prefetch` receive: the params schema's
+ * The params a route's `content`/`warm` receive: the params schema's
  * output when one is declared, otherwise the raw string params inferred
  * from the path pattern.
  */
@@ -160,7 +160,7 @@ export interface WrapperDefinition<TRendered = unknown> {
     [props: WrapperComponentProps<TRendered>],
     TRendered
   >;
-  readonly prefetch?: BivariantCallback<
+  readonly warm?: BivariantCallback<
     [params: RouteParamValues, context: NavigationContext],
     void | Promise<void>
   >;
@@ -200,44 +200,6 @@ export type AnyRouteContent = BivariantCallback<
   preload?: () => Promise<RouteModule>;
 };
 
-/**
- * The component form of a route's UI slot: a component that receives
- * `{ params, search }` props.
- *
- * Structurally identical to `RouteContent` — the difference is contractual.
- * Framework adapters (e.g. `router-react`'s `Outlet`) render `component` as a
- * real component with its own fiber (hooks are legal); core never invokes it
- * during matching. The shape is expressed as a plain callback so core stays
- * framework-agnostic; any function component satisfies it.
- */
-export type RouteComponent<
-  TPath extends string = string,
-  TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
-  TRendered = unknown,
-  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
-> = RouteContent<TPath, TSearchSchema, TRendered, TParamsSchema>;
-
-/** The untyped form of `RouteComponent`, mirroring `AnyRouteContent`. */
-export type AnyRouteComponent = AnyRouteContent;
-
-/** Props received by a route's `errorComponent`. */
-export interface RouteErrorComponentProps {
-  readonly error: unknown;
-}
-
-/**
- * A component rendered in place of a route's UI when rendering it throws.
- *
- * Framework adapters (e.g. `router-react`'s `Outlet`) compose it behind an
- * error boundary that resets when the matched route changes. Expressed as a
- * plain callback so core stays framework-agnostic; any function component
- * satisfies it.
- */
-export type RouteErrorComponent = BivariantCallback<
-  [props: RouteErrorComponentProps],
-  unknown
->;
-
 export interface DataRouteInput<
   TPath extends string = string,
   TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
@@ -246,27 +208,13 @@ export interface DataRouteInput<
   TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
 > {
   readonly url: TPath;
-  /**
-   * The route's UI as a component receiving `{ params, search }` props.
-   * Exactly one of `component` or `content` must be declared.
-   */
-  readonly component?: RouteComponent<
+  readonly content: RouteContent<
     TPath,
     TSearchSchema,
     TRendered,
     TParamsSchema
   >;
-  /**
-   * @deprecated Render-function form; prefer `component` — see AV-340.
-   * Exactly one of `component` or `content` must be declared.
-   */
-  readonly content?: RouteContent<
-    TPath,
-    TSearchSchema,
-    TRendered,
-    TParamsSchema
-  >;
-  readonly prefetch?: BivariantCallback<
+  readonly warm?: BivariantCallback<
     [
       params: InferParams<TPath, TParamsSchema>,
       search: InferSearch<TSearchSchema>,
@@ -278,19 +226,6 @@ export interface DataRouteInput<
   readonly search?: TSearchSchema;
   readonly wrappers?: TWrappers;
   readonly meta?: Readonly<Record<string, unknown>>;
-  /**
-   * Adapter-interpreted pending UI shown while the route's suspended output
-   * resolves, overriding the outlet-level default. In `router-react` this is
-   * a `ReactNode` (matching `Outlet`'s `fallback` prop); core treats it as
-   * an opaque slot.
-   */
-  readonly fallback?: unknown;
-  /**
-   * Component rendered in place of the route's UI when rendering it throws.
-   * Receives `{ error }`. Composed behind a route-keyed error boundary by
-   * framework adapters; core never invokes it.
-   */
-  readonly errorComponent?: RouteErrorComponent;
 }
 
 export type StaticRedirectStatus = 301 | 308;
@@ -327,27 +262,13 @@ export interface DataRouteDefinition<
   TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
 > extends RouteCodec<TPath, InferParams<TPath, TParamsSchema>> {
   readonly url: TPath;
-  /**
-   * The route's UI as a component receiving `{ params, search }` props.
-   * Exactly one of `component` or `content` is present.
-   */
-  readonly component?: RouteComponent<
+  readonly content: RouteContent<
     TPath,
     TSearchSchema,
     TRendered,
     TParamsSchema
   >;
-  /**
-   * @deprecated Render-function form; prefer `component` — see AV-340.
-   * Exactly one of `component` or `content` is present.
-   */
-  readonly content?: RouteContent<
-    TPath,
-    TSearchSchema,
-    TRendered,
-    TParamsSchema
-  >;
-  readonly prefetch?: BivariantCallback<
+  readonly warm?: BivariantCallback<
     [
       params: InferParams<TPath, TParamsSchema>,
       search: InferSearch<TSearchSchema>,
@@ -359,18 +280,6 @@ export interface DataRouteDefinition<
   readonly search?: TSearchSchema;
   readonly wrappers: TWrappers;
   readonly meta?: Readonly<Record<string, unknown>>;
-  /**
-   * Adapter-interpreted pending UI shown while the route's suspended output
-   * resolves, overriding the outlet-level default. In `router-react` this is
-   * a `ReactNode`; core treats it as an opaque slot.
-   */
-  readonly fallback?: unknown;
-  /**
-   * Component rendered in place of the route's UI when rendering it throws.
-   * Receives `{ error }`. Composed behind a route-keyed error boundary by
-   * framework adapters; core never invokes it.
-   */
-  readonly errorComponent?: RouteErrorComponent;
 }
 
 export interface RedirectRouteDefinition<
@@ -405,9 +314,8 @@ export type RouteDefinition<
 
 export interface AnyRoute {
   readonly url: string;
-  readonly component?: AnyRouteComponent;
   readonly content?: AnyRouteContent;
-  readonly prefetch?: BivariantCallback<
+  readonly warm?: BivariantCallback<
     [params: unknown, search: unknown, context: NavigationContext],
     void | Promise<void>
   >;
@@ -417,8 +325,6 @@ export interface AnyRoute {
   readonly status?: number;
   readonly wrappers: readonly AnyWrapper[];
   readonly meta?: Readonly<Record<string, unknown>>;
-  readonly fallback?: unknown;
-  readonly errorComponent?: RouteErrorComponent;
   parse(url: string | URL): Readonly<Record<string, unknown>> | null;
   render(params: Readonly<Record<string, unknown>>): string;
 }
@@ -497,7 +403,7 @@ export type NavigateFn<TRoutes extends RouteMap> = UnionToIntersection<
   }[RouteName<TRoutes>]
 >;
 
-export type PrefetchFn<TRoutes extends RouteMap> = UnionToIntersection<
+export type WarmFn<TRoutes extends RouteMap> = UnionToIntersection<
   {
     [TName in RouteName<TRoutes>]: (
       name: TName,
@@ -716,9 +622,21 @@ export interface RouterStore<
   ): () => void;
 }
 
-export interface RouterBlocker {
-  readonly id: string;
-  readonly isActive: () => boolean;
+/** Handle returned by `router.block()` controlling one navigation blocker. */
+export interface RouterBlockerHandle {
+  /** `"blocked"` while a navigation is intercepted and awaiting a decision. */
+  readonly state: "idle" | "blocked";
+  /** Continue the blocked navigation. */
+  proceed(): void;
+  /** Discard the blocked navigation and stay on the current page. */
+  cancel(): void;
+  /** Subscribe to blocked/idle transitions. */
+  subscribe(listener: (state: "idle" | "blocked") => void): () => void;
+  /**
+   * Remove the blocker. A navigation currently blocked on it is discarded,
+   * not resumed.
+   */
+  dispose(): void;
 }
 
 export interface PlatformNavigateOptions {
@@ -730,6 +648,13 @@ export interface PlatformAdapter {
   getLocation(): string | URL;
   navigate(url: string, options?: PlatformNavigateOptions): void;
   subscribe(callback: (location: string | URL) => void): () => void;
+  /**
+   * Optional: receive the in-flight load the router scheduled for the most
+   * recent adapter-visible navigation, so platform loading UI can await it
+   * (the Navigation API adapter passes it to `event.intercept()`). The
+   * promise settles when the load settles and never rejects.
+   */
+  trackLoad?(load: Promise<void>): void;
 }
 
 export interface MemoryAdapter extends PlatformAdapter {
@@ -848,7 +773,6 @@ export interface Router<
   readonly routes: TRoutes;
   readonly notFound: TNotFound;
   readonly adapter: PlatformAdapter | null;
-  readonly store: RouterStore<TRoutes, TNotFound>;
   getRoute<TName extends RouteName<TRoutes>>(
     name: TName,
   ): RouteOf<TRoutes, TName>;
@@ -865,21 +789,14 @@ export interface Router<
   load(url: string | URL): Promise<RouterLoadResult<TRoutes, TNotFound>>;
   match(url: string | URL): RouterMatch<TRoutes, TNotFound> | null;
   navigate: NavigateFn<TRoutes>;
-  prefetch: PrefetchFn<TRoutes>;
-  registerBlocker(blocker: RouterBlocker): void;
-  unregisterBlocker(id: string): void;
-  readonly blockerState: "idle" | "blocked";
-  proceedNavigation(): void;
-  cancelNavigation(): void;
+  warm: WarmFn<TRoutes>;
   /**
-   * Invoke the matched route's `content` and `wrappers` as plain function
-   * calls and return the composed result.
-   *
-   * React consumers must NOT call this during a component render: any hooks
-   * the content or wrapper functions call would attach to the calling
-   * component's fiber, corrupting hook order across navigations.
-   * `router-react`'s `Outlet` constructs elements from the match instead.
+   * Register a navigation blocker. While `isActive()` returns true,
+   * `navigate()` is intercepted and held until the returned handle's
+   * `proceed()` or `cancel()` decides it. Blockers cover `navigate()` only —
+   * `setSearchParams()` and adapter-driven back/forward are not intercepted.
    */
+  block(isActive: () => boolean): RouterBlockerHandle;
   render(result?: RouterLoadResult<TRoutes, TNotFound> | null): unknown;
   setSearchParams(
     params:

@@ -1,5 +1,5 @@
-import { createHashRouter, route } from "@canonical/router-core";
-import { RouterProvider } from "@canonical/router-react";
+import { route } from "@canonical/router-core";
+import { withHashRouter as withAddonHashRouter } from "@canonical/storybook-addon-utils";
 import type { Decorator } from "@storybook/react-vite";
 import type { ReactNode } from "react";
 import type { LinkComponentProps } from "../../lib/types/link.js";
@@ -32,12 +32,10 @@ const storyRoutes = {
  * Wraps a story in its own hash `RouterProvider` (self-contained, owns the
  * provider), so stories can call `useRoute()` and links resolve against the
  * live location without a server.
+ *
+ * The router wiring itself lives in `@canonical/storybook-addon-utils`; this is
+ * only the Tabs-specific route set bound to it.
  */
-export const withHashRouter: Decorator = (Story) => {
-  const router = createHashRouter(storyRoutes);
-  return (
-    <RouterProvider router={router}>
-      <Story />
-    </RouterProvider>
-  );
-};
+export const withHashRouter: Decorator = withAddonHashRouter({
+  routes: storyRoutes,
+});

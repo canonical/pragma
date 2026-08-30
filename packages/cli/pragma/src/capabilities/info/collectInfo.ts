@@ -18,14 +18,16 @@ import {
   entityTotal,
   readPackIndex,
 } from "../../kernel/completion/entitySource.js";
-import { readConfig } from "../../kernel/config/readConfig.js";
+import { readConfig } from "../../kernel/config/index.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { resolveSources } from "../../kernel/runtime/resolveSources.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import {
+  checkRegistryVersion,
   detectInstallSource,
+  PRAGMA_PACKAGE,
   pmUpdateCommand,
-} from "../shared/packageManager.js";
-import { checkRegistryVersion, PRAGMA_PACKAGE } from "../shared/registry.js";
+  updateGuidance,
+} from "../shared/index.js";
 import type { InfoData, InfoUpdate } from "./types.js";
 
 /**
@@ -43,12 +45,17 @@ export async function collectInfo(runtime: PragmaRuntime): Promise<InfoData> {
 
   // Update-check: unconditional (no flag exists), 3s timeout, silent-fail.
   const registry = await checkRegistryVersion(PRAGMA_PACKAGE, config.channel);
+  // Only a GLOBAL install gets a command; every other state gets the honest
+  // guidance sentence — a confidently wrong `npm i -g` against a linked
+  // checkout would overwrite the development link.
   const update: InfoUpdate | undefined =
     registry && registry.latest !== runtime.version
       ? {
           current: runtime.version,
           latest: registry.latest,
-          command: pmUpdateCommand(install.pm, PRAGMA_PACKAGE),
+          ...(install.kind === "global"
+            ? { command: pmUpdateCommand(install, PRAGMA_PACKAGE) }
+            : { guidance: updateGuidance(install) }),
         }
       : undefined;
   const updateSkipped = registry === undefined;
@@ -61,6 +68,7 @@ export async function collectInfo(runtime: PragmaRuntime): Promise<InfoData> {
   return {
     version: runtime.version,
     installSource: install.label,
+    installKind: install.kind,
     ...(update ? { update } : {}),
     updateSkipped,
     ...(entities !== undefined ? { entities } : {}),

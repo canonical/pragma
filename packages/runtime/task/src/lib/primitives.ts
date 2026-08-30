@@ -41,11 +41,13 @@ export const readFile = (path: string): Task<string> =>
 /**
  * Write content to a file.
  * Default undo: delete the file.
+ * `verbatim: true` marks a carried copy — content transforms on the effect
+ * seam (e.g. generated-file stamping) skip it, so the bytes land unchanged.
  */
 export const writeFile = (
   path: string,
   content: string,
-  opts?: UndoOptions,
+  opts?: UndoOptions & { verbatim?: boolean },
 ): Task<void> => effect(writeFileEffect(path, content, opts));
 
 /**
@@ -129,9 +131,16 @@ export const mkdir = (
 
 /**
  * Check if a file or directory exists.
+ *
+ * Follows symlinks by default (`fs.access` semantics), so a dangling symlink
+ * reports absent. Pass `{ followSymlinks: false }` to ask about the directory
+ * ENTRY itself (`lstat` semantics) — the criterion a `readdir`-based probe
+ * uses, so a postcondition can apply the same presence rule its detection did.
  */
-export const exists = (path: string): Task<boolean> =>
-  effect(existsEffect(path));
+export const exists = (
+  path: string,
+  opts?: { followSymlinks?: boolean },
+): Task<boolean> => effect(existsEffect(path, opts));
 
 /**
  * Create a symbolic link.

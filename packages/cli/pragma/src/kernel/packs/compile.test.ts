@@ -11,10 +11,11 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { RECOVERY_CLI_PREFIX } from "../../constants.js";
 import { buildFixtureRuntime } from "../../testing/helpers/packRuntime.js";
 import type { PragmaRuntime } from "../runtime/types.js";
-import { compilePack } from "./compile.js";
+import { compileListable, compilePack, compileStoryModule } from "./compile.js";
 import type { LookupOutput } from "./resolveEntity.js";
 import { parsePackDefinition } from "./schema.js";
 import type { PackDefinition, PackRow } from "./types.js";
+import { distributionSource } from "./types.js";
 import { assertUniqueVerbs, verbKey } from "./uniqueness.js";
 
 const PREFIXES = {
@@ -108,14 +109,18 @@ describe("pack compiler — round-trip + shape (PROTECTED, storeless)", () => {
       fixed,
     );
     // …and the compiler honours it: no `[count]` positional on the sample verb.
-    const sample = compilePack(fixed, "t", PREFIXES).find(
+    const sample = compilePack(fixed, distributionSource("t"), PREFIXES).find(
       (v) => verbKey(v.path) === "widget sample",
     );
     expect(sample?.params).toEqual([]);
   });
 
   it("projects list, lookup, and sample verbs with unique keys", () => {
-    const verbs = compilePack(WIDGET_PACK, "bundled:widget", PREFIXES);
+    const verbs = compilePack(
+      WIDGET_PACK,
+      distributionSource("bundled:widget"),
+      PREFIXES,
+    );
     expect(verbs.map((v) => verbKey(v.path))).toEqual([
       "widget list",
       "widget lookup",
@@ -125,7 +130,11 @@ describe("pack compiler — round-trip + shape (PROTECTED, storeless)", () => {
   });
 
   it("projects list filters as params (enum) + a search flag", () => {
-    const [list] = compilePack(WIDGET_PACK, "bundled:widget", PREFIXES);
+    const [list] = compilePack(
+      WIDGET_PACK,
+      distributionSource("bundled:widget"),
+      PREFIXES,
+    );
     expect(list?.params.map((p) => p.name)).toEqual(["kind", "search"]);
     const kind = list?.params.find((p) => p.name === "kind");
     expect(kind?.kind).toBe("enum");
@@ -134,7 +143,11 @@ describe("pack compiler — round-trip + shape (PROTECTED, storeless)", () => {
   });
 
   it("projects the lookup as a variadic name-completing positional + disclosure", () => {
-    const verbs = compilePack(WIDGET_PACK, "bundled:widget", PREFIXES);
+    const verbs = compilePack(
+      WIDGET_PACK,
+      distributionSource("bundled:widget"),
+      PREFIXES,
+    );
     const lookup = verbs.find((v) => verbKey(v.path) === "widget lookup");
     const name = lookup?.params.at(0);
     expect(name?.kind).toBe("string[]");
@@ -154,7 +167,7 @@ describe("pack compiler — round-trip + shape (PROTECTED, storeless)", () => {
       PackDefinition["lookup"]
     >;
     const nameParam = (def: PackDefinition) =>
-      compilePack(def, "bundled:widget", PREFIXES)
+      compilePack(def, distributionSource("bundled:widget"), PREFIXES)
         .find((v) => verbKey(v.path) === "widget lookup")
         ?.params.at(0);
 
@@ -266,7 +279,11 @@ describe("the grammar rejects what the compiler cannot build (PROTECTED)", () =>
       },
       "pkg/stories/widget.json",
     );
-    const verbs = compilePack(definition, "pkg/stories/widget.json", PREFIXES);
+    const verbs = compilePack(
+      definition,
+      { label: "pkg/stories/widget.json", origin: "package" },
+      PREFIXES,
+    );
     expect(verbs.map((v) => verbKey(v.path))).toEqual([
       "widget list",
       "widget categories",
@@ -315,9 +332,11 @@ describe("pack compiler — SPARQL fetch path (PROTECTED)", () => {
   });
 
   const run = <R>(verbLabel: string, params: Record<string, unknown>) => {
-    const verb = compilePack(WIDGET_PACK, "bundled:widget", PREFIXES).find(
-      (v) => verbKey(v.path) === `widget ${verbLabel}`,
-    );
+    const verb = compilePack(
+      WIDGET_PACK,
+      distributionSource("bundled:widget"),
+      PREFIXES,
+    ).find((v) => verbKey(v.path) === `widget ${verbLabel}`);
     if (!verb) throw new Error(`no widget ${verbLabel}`);
     return verb.run(params, rt) as Promise<R>;
   };
@@ -362,5 +381,226 @@ describe("pack compiler — SPARQL fetch path (PROTECTED)", () => {
     );
     expect(data.samples).toHaveLength(2);
     expect(data.totalCount).toBe(2);
+  });
+});
+
+/**
+ * The listing a story contributes to the MCP resource surface is DERIVED from
+ * the types its lookup already names — the story author writes the type set
+ * once, for the name resolve, and the resource listing reads that same
+ * declaration. Nothing to keep in sync because there is nothing written twice.
+ */
+describe("declared listing (derived from the lookup's types)", () => {
+  it("derives one collection per declared type, unweighted types at 1", () => {
+    expect(
+      compileListable({
+        noun: "gadget",
+        lookup: { by: "ex:name", types: ["ex:Widget", "ex:Part"] },
+      }),
+    ).toEqual({
+      sources: [
+        { type: "ex:Widget", as: "collection", weight: 1 },
+        { type: "ex:Part", as: "collection", weight: 1 },
+      ],
+    });
+  });
+
+  it("carries a declared weight onto the type it names", () => {
+    const listable = compileListable({
+      noun: "gadget",
+      lookup: {
+        by: "ex:name",
+        types: ["ex:Widget", "ex:Part"],
+        weights: { "ex:Part": 0.6 },
+      },
+    });
+    expect(listable?.sources.map((s) => s.weight)).toEqual([1, 0.6]);
+  });
+
+  it("declares nothing for a list-only noun (it addresses no class)", () => {
+    expect(
+      compileListable({ noun: "gadget", list: { query: "", columns: [] } }),
+    ).toBeUndefined();
+  });
+
+  it("carries the listing onto the compiled module, beside its verbs", () => {
+    const module = compileStoryModule(
+      { noun: "gadget", lookup: { by: "ex:name", type: "ex:Widget" } },
+      distributionSource("t"),
+      PREFIXES,
+    );
+    expect(module.story).toBe(true);
+    expect(module.mcpListable?.sources).toEqual([
+      { type: "ex:Widget", as: "collection", weight: 1 },
+    ]);
+  });
+});
+
+describe("weights validation (a weight that can never apply is rejected)", () => {
+  it("accepts a weight naming a type the lookup addresses", () => {
+    const definition = {
+      noun: "gadget",
+      lookup: {
+        by: "ex:name",
+        types: ["ex:Widget", "ex:Part"],
+        weights: { "ex:Part": 0.6 },
+      },
+    };
+    expect(parsePackDefinition(definition, "t")).toEqual(definition);
+  });
+
+  it("REJECTS a weight naming a type the lookup does not address", () => {
+    // A silent no-op is how a weight that never applied survives review: the
+    // type gets renamed, the weight stays pointed at the old name, and nothing
+    // says so — the ranking simply stops changing.
+    expect(() =>
+      parsePackDefinition(
+        {
+          noun: "gadget",
+          lookup: {
+            by: "ex:name",
+            types: ["ex:Widget"],
+            weights: { "ex:Gone": 0.6 },
+          },
+        },
+        "t",
+      ),
+    ).toThrow(/ex:Gone/);
+  });
+
+  it("REJECTS a weight outside 0–1", () => {
+    expect(() =>
+      parsePackDefinition(
+        {
+          noun: "gadget",
+          lookup: {
+            by: "ex:name",
+            type: "ex:Widget",
+            weights: { "ex:Widget": 2 },
+          },
+        },
+        "t",
+      ),
+    ).toThrow();
+  });
+});
+
+describe("nameFallback validation (a derived name needs a class to vouch for it)", () => {
+  it("accepts the fallback beside a class constraint", () => {
+    const definition = {
+      noun: "gadget",
+      lookup: { by: "ex:name", nameFallback: "iri", type: "ex:Widget" },
+    };
+    expect(parsePackDefinition(definition, "t")).toEqual(definition);
+  });
+
+  it("REJECTS the fallback with no class constraint", () => {
+    // Without one there is no triple bounding `?uri`, so the derived-name
+    // population would be scanned over the whole graph — and a derived name is
+    // only as trustworthy as the class vouching for the entity it came from.
+    expect(() =>
+      parsePackDefinition(
+        { noun: "gadget", lookup: { by: "ex:name", nameFallback: "iri" } },
+        "t",
+      ),
+    ).toThrow(/nameFallback/);
+  });
+});
+
+describe("filter vocabulary validation (where a value-free filter's values live)", () => {
+  const listShape = {
+    query: "SELECT ?uri ?kind WHERE { ?uri a ex:Widget ; ex:kind ?kind }",
+    columns: [{ field: "uri" }],
+  };
+
+  it("accepts a vocabulary SELECT on a value-free filter", () => {
+    const definition = {
+      noun: "widget",
+      list: {
+        ...listShape,
+        filters: [
+          {
+            param: "kind",
+            variable: "kind",
+            vocabulary: { query: "SELECT ?kind WHERE { ?k a ex:Kind }" },
+          },
+        ],
+      },
+    };
+    expect(parsePackDefinition(definition, "t")).toEqual(definition);
+  });
+
+  it("REJECTS a vocabulary beside a declared `values` set", () => {
+    // A declared set IS the vocabulary — the filter projects it as an enum and
+    // canonicalizes against it. A second, graph-read one alongside is a silent
+    // no-op at best and a disagreement at worst.
+    expect(() =>
+      parsePackDefinition(
+        {
+          noun: "widget",
+          list: {
+            ...listShape,
+            filters: [
+              {
+                param: "kind",
+                variable: "kind",
+                values: ["a", "b"],
+                vocabulary: { query: "SELECT ?kind WHERE { ?k a ex:Kind }" },
+              },
+            ],
+          },
+        },
+        "t",
+      ),
+    ).toThrow(/mutually exclusive/);
+  });
+
+  it("REJECTS a vocabulary query that is not a SELECT", () => {
+    expect(() =>
+      parsePackDefinition(
+        {
+          noun: "widget",
+          list: {
+            ...listShape,
+            filters: [
+              {
+                param: "kind",
+                variable: "kind",
+                vocabulary: { query: "ASK { ?k a ex:Kind }" },
+              },
+            ],
+          },
+        },
+        "t",
+      ),
+    ).toThrow(/SELECT/);
+  });
+});
+
+describe("compileListable — absolute IRIs reach the prefixed contract", () => {
+  it("compacts an absolute lookup type, and its weight key with it", () => {
+    // `PackLookup.type`/`types` accept a prefixed name OR an absolute IRI, but
+    // the listing is keyed on the index's prefixed types. Verbatim, such a story
+    // compiled clean and then matched no class and no weight.
+    const listable = compileListable({
+      noun: "widget",
+      lookup: {
+        by: "ds:name",
+        types: ["https://ds.canonical.com/Component", "ds:Pattern"],
+        weights: { "https://ds.canonical.com/Component": 0.4 },
+      },
+    } as PackDefinition);
+
+    expect(listable?.sources.map((s) => s.type)).toEqual([
+      "ds:Component",
+      "ds:Pattern",
+    ]);
+    // The weight followed its type through the same compaction, so it still
+    // applies — keying it on the raw IRI would have silently dropped it.
+    const component = listable?.sources.find((s) => s.type === "ds:Component");
+    expect(component?.weight).toBe(0.4);
+    expect(listable?.sources.find((s) => s.type === "ds:Pattern")?.weight).toBe(
+      1,
+    );
   });
 });

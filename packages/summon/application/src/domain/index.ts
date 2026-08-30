@@ -14,6 +14,8 @@ import {
 } from "@canonical/task";
 import { toCamelCase, toTitleCase } from "@canonical/utils";
 import { normalizeCommandPath } from "../shared/casing.js";
+import { packageVersion } from "../shared/packageVersion.js";
+import { validateCommandPath } from "../shared/validators.js";
 import { printVersions } from "../shared/versions.js";
 
 export interface DomainAnswers {
@@ -27,6 +29,11 @@ const prompts: PromptDefinition[] = [
     message: "Domain name (for example billing):",
     default: "example",
     positional: true,
+    validate: validateCommandPath({
+      label: "Domain name",
+      maxSegments: 1,
+      example: "billing",
+    }),
     group: "Domain",
   },
 ];
@@ -72,7 +79,7 @@ export const generator: GeneratorDefinition<DomainAnswers> = {
     name: "domain",
     displayName: "@canonical/summon-application:domain",
     description: "Create a domain folder with routes and a MainPage",
-    version: "0.1.0",
+    version: packageVersion(),
     help: `Creates a domain directory under src/domains/ with:
   - MainPage.tsx — example page component with useHead()
   - routes.ts — route barrel exporting the domain's routes

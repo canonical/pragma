@@ -50,9 +50,11 @@ import { emitScripts } from "./emitScripts.js";
  *   scripts; the live bash script offers the live grammar's structure with
  *   zero process exec; it hands `__complete` a literal argv and offers back
  *   what it answers; it honours the `minChars` gate. The bash describes are
- *   deliberately NOT gated on a `hasShell` probe — the package pins
- *   `os: ["linux"]`, so a machine with no usable bash should fail this file
- *   loudly rather than skip it and report nothing.
+ *   deliberately NOT gated on a `hasShell` probe — CI runs linux with a modern
+ *   bash, so a machine with no usable bash should fail this file loudly
+ *   rather than skip it and report nothing. (The package no longer pins
+ *   `os: ["linux"]`; run on a bash-3.2 macOS box this fails loudly, which is
+ *   the intended signal — see `templates/bash.ts` on the mapfile floor.)
  * - **By execution only where the shell is installed:** the same guarantees
  *   for zsh and fish. Those describes `skipIf` the shell is absent, which
  *   includes this development box and, today, CI — so on those machines they
@@ -319,7 +321,7 @@ const STRUCTURE = [
     at: "pragma co",
     words: ["pragma", "co"],
     cword: 1,
-    offers: ["colophon", "config"],
+    offers: ["colophon", "concept", "config"],
   },
   {
     at: "pragma block <TAB>",
@@ -331,7 +333,7 @@ const STRUCTURE = [
     at: "pragma setup <TAB>",
     words: ["pragma", "setup", ""],
     cword: 2,
-    offers: ["completions", "lsp", "mcp", "skills"],
+    offers: ["completions", "config", "lsp", "mcp", "skills"],
   },
   {
     at: "pragma create <TAB>",
@@ -349,7 +351,14 @@ const STRUCTURE = [
     at: "pragma block lookup --<TAB>",
     words: ["pragma", "block", "lookup", "--"],
     cword: 3,
-    offers: ["--detail", "--format", "--help", "--verbose"],
+    offers: [
+      "--detail",
+      "--format",
+      "--help",
+      "--no-headers",
+      "--quiet",
+      "--verbose",
+    ],
   },
 ] as const;
 
@@ -362,10 +371,12 @@ const NOUNS = [
   "block",
   "capabilities",
   "colophon",
+  "concept",
   "config",
   "create",
   "doctor",
   "graph",
+  "implementation",
   "info",
   "mcp",
   "modifier",
@@ -378,6 +389,7 @@ const NOUNS = [
   "tier",
   "token",
   "upgrade",
+  "version",
 ] as const;
 
 describe("generated bash — the live grammar's script", () => {
@@ -524,11 +536,11 @@ describe.skipIf(!hasShell("fish"))(
     });
 
     it.each([
-      { line: "pragma co", offers: ["colophon", "config"] },
+      { line: "pragma co", offers: ["colophon", "concept", "config"] },
       { line: "pragma block ", offers: ["list", "lookup", "sample"] },
       {
         line: "pragma setup ",
-        offers: ["completions", "lsp", "mcp", "skills"],
+        offers: ["completions", "config", "lsp", "mcp", "skills"],
       },
       {
         line: "pragma create ",
@@ -558,28 +570,27 @@ describe.skipIf(!hasShell("fish"))(
       expect(reply).toEqual(answersFor("ds:global.component.but"));
     });
 
-    it("answers `--<TAB>` with the flag names, but DOES exec where bash and zsh do not", () => {
-      // The sixth `STRUCTURE` row, which the table above cannot hold because
-      // fish behaves differently here — measured, not assumed. bash and zsh
-      // route a flag-name context through one exclusive `case` arm and exec
-      // nothing; fish evaluates EVERY `complete` rule matching the position, so
-      // the positional's `-a "(pragma __complete -- …)"` fires alongside the
-      // flag-name rules whenever the token clears `minChars` — and `--` is two
-      // characters. The candidates are right either way; the cost is a process
-      // spawn on a purely structural TAB. `emitScripts.ts`'s "structure execs
-      // nothing" is therefore a bash/zsh claim, not a fish one.
+    it("answers `--<TAB>` with the flag names, execing nothing (as bash and zsh do)", () => {
+      // The sixth `STRUCTURE` row, kept apart because it is where fish USED to
+      // differ — measured, not assumed. fish evaluates EVERY `complete` rule
+      // matching a position, not one exclusive `case` arm, so the positional's
+      // `-a "(pragma __complete -- …)"` fired alongside the flag-name rules the
+      // moment the token cleared `minChars` — and `--` is two characters. That
+      // cost a process spawn per TAB on a flag name, and put whatever the
+      // delegate answered for a `--` partial into the user's candidate list.
+      // The name-source positional rule now ANDs `__pragma_notflag`, so fish
+      // holds `emitScripts.ts`'s "structure execs nothing" claim like the other
+      // two families.
       const { reply, calls } = driveFish(live.fish, "pragma block lookup --");
-      expect(calls).toEqual([["__complete", "--", "block", "lookup", "--"]]);
-      // And the exec's answer is OFFERED alongside the flags, so the cost is
-      // not only the spawn: whatever `__complete` returns for a `--` partial
-      // lands in the user's candidate list. (It returns nothing today.)
+      expect(calls).toEqual([]);
       expect(reply.sort()).toEqual(
         [
           "--detail",
           "--format",
           "--help",
+          "--no-headers",
+          "--quiet",
           "--verbose",
-          ...answersFor("--"),
         ].sort(),
       );
     });

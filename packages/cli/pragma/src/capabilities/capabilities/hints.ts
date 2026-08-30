@@ -8,8 +8,8 @@
  *
  * `use_when` strings for the surviving tools are ported verbatim from the old
  * shell's `domains/llm/data/toolCatalog.ts`; the net-new v2 tools (config_set,
- * graph_query, setup, upgrade, doctor, capabilities, prompt_*, token_add-config,
- * sources_*, tier_lookup, create_*) are authored here.
+ * graph_query, setup, upgrade, doctor, capabilities, prompt_*, sources_*,
+ * tier_lookup, create_*) are authored here.
  */
 
 import { BIN_NAME } from "../../constants.js";
@@ -44,7 +44,7 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   block_list: {
     category: "read",
     use_when:
-      "Browsing available components, patterns, layouts under current tier/channel",
+      "Browsing all components, patterns, layouts, and subcomponents in the store",
   },
   block_lookup: {
     category: "read",
@@ -58,11 +58,18 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   },
   colophon: {
     category: "read",
-    use_when: `Understanding how ${BIN_NAME} and the active domain are built — the toolchain + domain colophon, for onboarding or a demo`,
+    use_when:
+      "Understanding how the active domain is built — its declared colophon, for onboarding or a demo",
+  },
+  config_get: {
+    category: "read",
+    use_when:
+      "Reading ONE config field's effective value and the layer it came from — the single-value form of config_show",
   },
   config_show: {
     category: "read",
-    use_when: "Checking active tier and channel before querying",
+    use_when:
+      "Checking the active configuration (tier, channel, detail) and which layer set each field",
   },
   graph_inspect: {
     category: "read",
@@ -98,11 +105,6 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     use_when:
       "Exploring the full schema of a namespace by name — classes, properties, and hierarchy",
   },
-  ontology_show: {
-    category: "read",
-    use_when:
-      "Deprecated alias of ontology_lookup — exploring a namespace's schema (prefer ontology_lookup)",
-  },
   prompt_list: {
     category: "read",
     use_when: "Browsing the workflow prompt templates the active graph offers",
@@ -114,7 +116,7 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   },
   skill_list: {
     category: "read",
-    use_when: "Discovering agent skills provided by installed packages",
+    use_when: "Discovering agent skills provided by installed packs",
   },
   skill_lookup: {
     category: "read",
@@ -139,6 +141,25 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   standard_categories: {
     category: "read",
     use_when: "Discovering which standard categories exist before filtering",
+  },
+  concept_list: {
+    category: "read",
+    use_when:
+      "Browsing long-form design-system concepts (foundations, how-to guides, decision guides)",
+  },
+  concept_lookup: {
+    category: "read",
+    use_when: "Reading a concept's full Markdown documentation by name or IRI",
+  },
+  implementation_list: {
+    category: "read",
+    use_when:
+      "Finding which library implements a block, on which platform, and where its source lives",
+  },
+  implementation_libraries: {
+    category: "read",
+    use_when:
+      "Discovering which implementation libraries exist, and how much of the design system each covers",
   },
   standard_sample: {
     category: "read",
@@ -175,6 +196,11 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     use_when:
       "Setting any config field by name — tier, channel, or detail (e.g. `config set tier apps/lxd`)",
   },
+  config_unset: {
+    category: "write",
+    use_when:
+      'Clearing a config field so the built-in default applies again — no value means "remove", this tool does',
+  },
   create_component: {
     category: "write",
     use_when: "Scaffolding a new component (React, Svelte, or Lit)",
@@ -197,10 +223,6 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     category: "write",
     use_when:
       "Building or refreshing the knowledge-graph pack from the configured packs",
-  },
-  "token_add-config": {
-    category: "write",
-    use_when: "Generating a tokens.config.mjs for the terrazzo token pipeline",
   },
   upgrade: {
     category: "write",

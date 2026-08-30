@@ -12,6 +12,8 @@ const componentCssClassName = "ds input textarea chrome";
  * @returns {ReactElement} - Rendered TextareaInput
  *
  * `import { TextareaInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.textarea_input
  */
 export const TextareaInput = forwardRef<
   HTMLTextAreaElement,

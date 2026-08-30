@@ -49,10 +49,25 @@ app.use(express.static("dist/client", { index: false }));
 
 app.use(async (req, res, next) => {
   try {
-    const renderer =
-      req.path === "/sitemap.xml"
-        ? (createSitemapRenderer as CreateSitemapRenderer)()
-        : (createAppRenderer as CreateAppRenderer)(req);
+    if (req.path === "/sitemap.xml") {
+      const renderer = (createSitemapRenderer as CreateSitemapRenderer)();
+      const result = renderer.renderToPipeableStream();
+
+      await renderer.statusReady;
+      res.status(renderer.statusCode);
+      res.setHeader("content-type", renderer.contentType);
+      result.pipe(res);
+      return;
+    }
+
+    const appResult = await (createAppRenderer as CreateAppRenderer)(req);
+
+    if (appResult.kind === "redirect") {
+      res.redirect(appResult.status, appResult.location);
+      return;
+    }
+
+    const renderer = appResult.renderer;
     const result = renderer.renderToPipeableStream();
 
     await renderer.statusReady;

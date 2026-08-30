@@ -2,6 +2,7 @@ import getEntryPoints from "./config/getEntryPoints.js";
 import getLicense from "./config/getLicense.js";
 import getRuleset from "./config/getRuleset.js";
 import getPackageShortName from "./getPackageShortName.js";
+import { packageVersion } from "./packageVersion.js";
 import type { MonorepoInfo, PackageAnswers, TemplateContext } from "./types.js";
 
 /**
@@ -23,16 +24,11 @@ export default function createTemplateContext(
     type: answers.type,
     version,
     license: getLicense(answers.type),
-    module: entryPoints.module,
-    types: entryPoints.types,
-    files: entryPoints.files,
     needsBuild: entryPoints.needsBuild,
+    canonicalVersion: packageVersion(),
     ruleset: getRuleset(answers.type, answers.withReact),
     withReact: answers.withReact,
     withStorybook: answers.withStorybook,
     withCli: answers.withCli,
-    monorepoVersion: monorepoInfo.version,
-    generatorName: "@canonical/summon-package",
-    generatorVersion: "0.1.0",
   };
 }

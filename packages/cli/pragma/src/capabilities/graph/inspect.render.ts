@@ -1,38 +1,86 @@
 /**
- * Formatters for `graph inspect` — predicate/object groups, prefix-compacted.
+ * Formatters for `graph inspect` — the entity's neighbourhood in three shapes.
+ *
+ * Terms arrive ALREADY compacted and named: the reader does it against the
+ * store's own merged prefix map, which is the map the graph was actually built
+ * with, so these formatters neither carry a prefix map nor re-derive one. They
+ * choose between the forms the reader supplies and nothing more.
  */
 
-import { compactUri } from "../../kernel/render/compactUri.js";
-import { DEFAULT_PREFIX_MAP } from "../../kernel/render/prefixes.js";
-import type { InspectResult } from "../../kernel/runtime/readEntity.js";
-import type { Formatters } from "../../kernel/spec/types.js";
+import { toTurtle } from "../../kernel/render/turtle.js";
+import type {
+  InboundGroup,
+  InspectResult,
+  ReadTerm,
+} from "../../kernel/runtime/readEntity.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 
-const compact = (value: string): string =>
-  compactUri(value, DEFAULT_PREFIX_MAP);
+/** The short form of a term: prefixed when there is one, else the raw value. */
+const short = (term: ReadTerm): string => term.prefixed ?? term.value;
+
+/** A term as a reader should see it — short form, with its name when known. */
+const named = (term: ReadTerm): string =>
+  term.title ? `${short(term)} (${term.title})` : short(term);
+
+/**
+ * `predicate (330, sample of 5)` — the count is the truth, the list is not.
+ *
+ * A roster and a truncated relation read differently on purpose: "sample of"
+ * tells a reader that paging will not produce the rest and the noun's list verb
+ * is where the full set lives, where "showing" invites them to ask for more.
+ */
+function inboundHeading(group: InboundGroup): string {
+  if (group.sampled) {
+    return `${short(group.predicate)} (${group.count}, sample of ${group.subjects.length})`;
+  }
+  const suffix = group.truncated
+    ? `${group.count}, showing ${group.subjects.length}`
+    : `${group.count}`;
+  return `${short(group.predicate)} (${suffix})`;
+}
 
 export const inspectFormatters: Formatters<InspectResult> = {
   plain(data) {
     const title = data.label
-      ? `${compact(data.uri)} — ${data.label}`
-      : compact(data.uri);
+      ? `${short({ termType: "NamedNode", value: data.uri, ...(data.prefixed ? { prefixed: data.prefixed } : {}) })} — ${data.label}`
+      : (data.prefixed ?? data.uri);
     const lines = [title, "═".repeat(Math.max(title.length, 24)), ""];
     for (const group of data.groups) {
-      lines.push(`  ${compact(group.predicate)}:`);
-      for (const object of group.objects) lines.push(`    ${compact(object)}`);
+      lines.push(`  ${short(group.predicate)}:`);
+      for (const object of group.objects) lines.push(`    ${named(object)}`);
+    }
+    for (const [via, rows] of Object.entries(data.nested)) {
+      lines.push("", `  ${via}:`);
+      for (const row of rows) {
+        // Values are TERMS; `String(term)` rendered every nested field as
+        // `[object Object]`, which made the whole plain-format record unreadable.
+        const fields = Object.entries(row)
+          .map(([key, value]) => `${key}=${named(value)}`)
+          .join("  ");
+        lines.push(`    ${fields}`);
+      }
+    }
+    if (data.inbound.length > 0) {
+      lines.push("", "  Referenced by:");
+      for (const group of data.inbound) {
+        lines.push(`    ${inboundHeading(group)}`);
+        for (const subject of group.subjects) {
+          lines.push(`      ${named(subject)}`);
+        }
+      }
     }
     return lines.join("\n").trimEnd();
   },
-  llm(data) {
-    const lines = [
-      `## ${compact(data.uri)}${data.label ? ` — ${data.label}` : ""}`,
-      "",
-    ];
-    for (const group of data.groups) {
-      lines.push(
-        `- **${compact(group.predicate)}**: ${group.objects.map(compact).join(", ")}`,
-      );
-    }
-    return lines.join("\n").trimEnd();
-  },
+  /**
+   * The agent-facing format IS Turtle — same bytes the `pragma:{+uri}` resource
+   * read serves, which is what keeps the mirror contract meaningful now that the
+   * two are no longer both JSON. Measured on one button: 15.8 KB of JSON against
+   * 4.5 KB of Turtle for the same neighbourhood.
+   *
+   * `prefixes` comes from the reader, not from this formatter: it compacted the
+   * terms against the store's own merged map, so re-deriving a map here could
+   * only disagree with the names already in the payload.
+   */
+  llm: (data) => toTurtle(data, data.prefixes),
   json: (data) => JSON.stringify(data, null, 2),
 };

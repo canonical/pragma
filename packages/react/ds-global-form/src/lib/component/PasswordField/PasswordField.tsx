@@ -11,6 +11,8 @@ import type { PasswordFieldProps } from "./types.js";
  * secret value, masked by default, with a reveal/mask toggle.
  *
  * `import { PasswordField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.password_field
  */
 export default withWrapper<PasswordFieldProps>(
   bindField<PasswordFieldProps>(PasswordInput, "native"),

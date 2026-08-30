@@ -4,7 +4,7 @@
 
 import { BIN_NAME } from "../../constants.js";
 import type { ConfigOrigin } from "../../kernel/config/types.js";
-import type { Formatters } from "../../kernel/spec/types.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 import type { InfoData } from "./types.js";
 
 /** A `[layer]` marker for values a config file supplied (blank for defaults). */
@@ -37,7 +37,9 @@ export const infoFormatters: Formatters<InfoData> = {
       lines.push(
         "",
         `Update available: ${data.update.current} → ${data.update.latest}`,
-        `  Run: ${data.update.command}`,
+        data.update.command
+          ? `  Run: ${data.update.command}`
+          : `  ${data.update.guidance}`,
       );
     }
     return lines.join("\n");
@@ -61,7 +63,9 @@ export const infoFormatters: Formatters<InfoData> = {
     }
     if (data.update) {
       lines.push(
-        `- Update available: ${data.update.current} → ${data.update.latest} (\`${data.update.command}\`)`,
+        data.update.command
+          ? `- Update available: ${data.update.current} → ${data.update.latest} (\`${data.update.command}\`)`
+          : `- Update available: ${data.update.current} → ${data.update.latest} — ${data.update.guidance}`,
       );
     }
     return lines.join("\n");

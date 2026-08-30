@@ -20,13 +20,15 @@ import {
   entityTotal,
   readPackIndex,
 } from "../../../kernel/completion/entitySource.js";
-import { validateStories } from "../../../kernel/packs/collect.js";
-import { embeddedManifest } from "../../../kernel/runtime/graphpack/embedded.js";
-import { readManifest } from "../../../kernel/runtime/graphpack/manifest.js";
+import { validateStories } from "../../../kernel/packs/index.js";
+import {
+  embeddedManifest,
+  readManifest,
+} from "../../../kernel/runtime/graphpack/index.js";
 import { activeStories } from "../../../kernel/runtime/graphpack/stories.js";
+import type { PragmaRuntime } from "../../../kernel/runtime/index.js";
 import type { SourcesDecision } from "../../../kernel/runtime/resolveSources.js";
 import { resolveSources } from "../../../kernel/runtime/resolveSources.js";
-import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
 import type { CheckItem, CheckResult } from "../types.js";
 
 /**
@@ -59,6 +61,51 @@ function ignoredSuffix(items: readonly CheckItem[]): string {
 }
 
 /**
+ * The answering pack's provenance, one item per pack it was built from.
+ *
+ * `sourceRef` is a single comma-joined string — `@canonical/design-system@git:
+ * d6d8a6c8268cf2bd103e956a2540d6e36bd08d72, @canonical/anatomy-dsl@npm:0.2.2,
+ * …` — and printing it whole put four packs and two forty-character SHAs on one
+ * line, in a report whose every other multi-part check (`mcp`, `harnesses`)
+ * uses the sub-item mechanism. Provenance is the thing a reader is here for
+ * when they read this line at all: which revision of which pack answered.
+ *
+ * The scheme (`git`/`npm`/`self`/`file`) is kept because it says how to move
+ * the pin, and a git hash is cut to the seven characters every other tool in
+ * this workflow shows. A ref that does not parse is passed through whole rather
+ * than dropped — an unreadable provenance is still provenance, and hiding it
+ * would be the one failure this check exists to prevent.
+ *
+ * @param sourceRef - The manifest's comma-joined provenance string.
+ * @returns One passing item per pack, in the order the pack records them.
+ */
+function packItems(sourceRef: string): CheckItem[] {
+  return sourceRef
+    .split(",")
+    .map((ref) => ref.trim())
+    .filter((ref) => ref !== "")
+    .map((ref) => {
+      const parsed = /^(.+)@(git|npm|self|file|link):(.+)$/.exec(ref);
+      if (parsed === null) return { label: ref, status: "pass" as const };
+      const [, pack, scheme, revision] = parsed as unknown as [
+        string,
+        string,
+        string,
+        string,
+      ];
+      const short =
+        scheme === "git" && /^[0-9a-f]{40}$/.test(revision)
+          ? revision.slice(0, 7)
+          : revision;
+      return {
+        label: pack,
+        detail: `${scheme} ${short}`,
+        status: "pass" as const,
+      };
+    });
+}
+
+/**
  * Report which pack answers reads, its provenance, and its entity total.
  *
  * @param rt - The per-invocation runtime.
@@ -87,13 +134,30 @@ export async function checkPackageRefs(
   // The pack DOES answer reads, so the check itself passes; the ignored stories
   // are failing sub-items under it. (A `warn` status would ripple through the
   // renderer and the DoctorData counts to buy an icon.)
-  const items = await ignoredStoryItems(decision);
-  const suffix = ignoredSuffix(items);
+  const ignored = await ignoredStoryItems(decision);
+  const suffix = ignoredSuffix(ignored);
+  const sourceRef =
+    decision.kind === "embedded"
+      ? embeddedManifest().sourceRef
+      : (readManifest(decision.dir)?.sourceRef ?? "");
+  // Packs first, then anything wrong with them: the composition is the answer to
+  // "which revision am I reading", and a failing story is a note about one of
+  // the rows above it.
+  const packs = packItems(sourceRef);
+  const items = [...packs, ...ignored];
+  const composition = `${packs.length} ${packs.length === 1 ? "pack" : "packs"}, ${entities} entities${suffix}`;
+
   if (decision.kind === "embedded") {
     return {
       name,
       status: "pass",
-      detail: `embedded snapshot @ ${embeddedManifest().sourceRef} — ${entities} entities${suffix} · \`${BIN_NAME} sources update\` to build from the configured packs`,
+      // The update hint stays in the DETAIL rather than moving to `remedy`:
+      // the renderer prints a remedy only where there is something to fix or
+      // to finish, and a snapshot that is answering reads correctly is
+      // neither. "shipped with the CLI" rather than "embedded snapshot" — the
+      // reader needs to know where these packs came from, not what the build
+      // calls the artefact.
+      detail: `shipped with the CLI — ${composition} · run \`${BIN_NAME} sources update\` to build from your own configured packs instead`,
       ...(items.length > 0 ? { items } : {}),
     };
   }
@@ -101,7 +165,10 @@ export async function checkPackageRefs(
   return {
     name,
     status: "pass",
-    detail: `${manifest?.sourceRef ?? decision.contentHash.slice(0, 12)} — ${entities} entities, built ${manifest?.createdAt ?? "?"}${suffix}`,
+    detail:
+      packs.length > 0
+        ? `built ${manifest?.createdAt ?? "?"} — ${composition}`
+        : `${decision.contentHash.slice(0, 12)} — ${composition}, built ${manifest?.createdAt ?? "?"}`,
     ...(items.length > 0 ? { items } : {}),
   };
 }

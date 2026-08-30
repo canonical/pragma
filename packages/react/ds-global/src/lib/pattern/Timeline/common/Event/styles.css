@@ -1,6 +1,6 @@
 /**
  * Timeline.Event styles
- * @implements dso:global.subcomponent.timeline-event
+ * @implements ds:global.subcomponent.timeline-event
  *
  * DSL anatomy mapping:
  * - layout.type: flow -> display: flex

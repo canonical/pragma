@@ -17,7 +17,10 @@ type ErrorCode = (typeof ERROR_CODES)[number];
  * `cli` — when present — is the command as a user would type it: this
  * distribution's own bin name (`RECOVERY_CLI_PREFIX`) plus a grammar path (D5).
  * `cliRecovery` takes the path alone and prepends the prefix, so there is no
- * assertion to make — see the docblock on `error/recovery.ts`.
+ * assertion to make; the one COMPUTED producer (the create mount) derives
+ * the prefix from the program's own name, pinned by a test expectation
+ * COMPOSED from `RECOVERY_CLI_PREFIX` — the routes are enumerated in the
+ * docblock on `error/recovery.ts`.
  */
 interface Recovery {
   /** Human-readable recovery guidance. */
@@ -54,6 +57,23 @@ interface PragmaErrorData {
 interface ErrorPayload {
   readonly code: ErrorCode;
   readonly message: string;
+  /**
+   * Fuzzy-matched alternative names — BARE candidate tokens the caller can
+   * substitute for the one token it typed (a verb, a tree segment), never
+   * full invocations. The FUZZY tiers serialize this one convention:
+   * bin.ts's unknown-command tier emits the candidate name (`block`) and
+   * the create mount's unknown-segment tier the candidate segment
+   * (`react`); the corrected full command line, when one is shown, lives
+   * in the default prose did-you-mean rendering, not in this field. An
+   * excess positional is NOT a fuzzy match — its matched operand may be
+   * the very token its message calls unexpected, or one the message never
+   * names — so that producer omits this field entirely and instead ships
+   * the runnable corrected command as `recovery.cli` WHEN an operand
+   * names a sibling or child segment resolving to a declared runnable
+   * leaf (the prose did-you-mean condition, narrowed to runnable — a
+   * matched namespace keeps the prose hint but ships no recovery); with
+   * no runnable match the envelope carries neither optional field.
+   */
   readonly suggestions?: readonly string[];
   readonly recovery?: Recovery;
   readonly validOptions?: readonly string[];

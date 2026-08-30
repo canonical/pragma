@@ -14,6 +14,8 @@ export interface TemplateOptions {
    * Use this when the template is embedded or pre-loaded (e.g. compiled binaries).
    */
   content?: string;
+  /** Applied to the rendered content before it is written. */
+  transform?: (content: string) => string;
 }
 
 export interface TemplateDirOptions {

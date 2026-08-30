@@ -19,7 +19,7 @@
     class: className,
     value,
     variant = "capped",
-    severity,
+    criticality,
     ...rest
   }: BadgeProps = $props();
 
@@ -34,7 +34,7 @@
   });
 </script>
 
-<span class={[componentCssClassName, className, severity]} {...rest}>
+<span class={[componentCssClassName, className, criticality]} {...rest}>
   {displayValue}
 </span>
 
@@ -43,7 +43,7 @@
 
 ## Example Usage
 ```svelte
-<Badge value={42} severity="caution" />
+<Badge value={42} criticality="warning" />
 <Badge value={2351} variant="rounded" />
 ```
 -->

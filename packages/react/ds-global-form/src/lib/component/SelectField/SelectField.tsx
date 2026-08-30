@@ -8,6 +8,8 @@ import type { SelectFieldProps } from "./types.js";
  * (label, description, error) and middleware/conditional-display support.
  *
  * `import { SelectField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.select_field
  */
 export default withWrapper<SelectFieldProps>(
   bindField<SelectFieldProps>(SelectInput, "native"),

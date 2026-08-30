@@ -86,6 +86,8 @@ describe("parseWords — flag names (PROTECTED)", () => {
       "--format",
       "--verbose",
       "--detail",
+      "--no-headers",
+      "--quiet",
       "--help",
       "--version",
     ]);
@@ -107,6 +109,8 @@ describe("parseWords — flag names (PROTECTED)", () => {
       "--format",
       "--verbose",
       "--detail",
+      "--no-headers",
+      "--quiet",
       "--help",
     ]);
   });
@@ -322,13 +326,6 @@ describe("parseWords — self-verb nouns (PROTECTED)", () => {
     // "acc" is not a sub-verb of standard → self-verb positional 0 consumed;
     // the current word is positional index 1 → exhausted (one positional).
     expect(parse(["standard", "acc", ""]).context).toEqual({
-      kind: "nothing",
-      reason: "positionals exhausted",
-    });
-  });
-
-  it("the injected mcp noun completes but offers nothing after", () => {
-    expect(parse(["mcp", ""]).context).toEqual({
       kind: "nothing",
       reason: "positionals exhausted",
     });

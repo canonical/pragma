@@ -51,6 +51,8 @@ const fileConstraintRules = ({
  * being silently dropped in the input.
  *
  * `import { FileUploadField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.file_upload_field
  */
 export default withWrapper<FileUploadFieldProps>(
   bindField<FileUploadFieldProps>(FileUploadInput, "controlled", {

@@ -16,6 +16,11 @@ import {
 } from "./config.js";
 import findHarnessById from "./findHarnessById.js";
 import harnesses from "./harnesses.js";
+import {
+  defaultMcpEntry,
+  opencodeMcpEntry,
+  opendesignMcpEntry,
+} from "./mcpEntries.js";
 import type { PlatformEnv } from "./platformPaths.js";
 import type { ConfigTarget } from "./types.js";
 
@@ -232,6 +237,100 @@ describe("writeMcpConfig", () => {
   });
 });
 
+describe("Crush config (crush.json)", () => {
+  const crush = findHarnessById("crush") as (typeof harnesses)[number];
+
+  it("writes under the top-level `mcp` key with the REQUIRED type discriminator, and no cwd", () => {
+    // Crush requires `type` on every MCP entry and applies no default on
+    // load — a typeless entry LOOKS configured but hits createTransport's
+    // "unsupported mcp type" arm and silently never starts. This asserts on
+    // the WRITTEN FILE, so a regression to the default serializer (which
+    // emits no `type` and a schema-unknown `cwd`) fails here.
+    const result = dryRunWith(
+      writeMcpConfig(crush, "/project", "pragma", {
+        command: "pragma",
+        args: ["mcp"],
+        cwd: "/project",
+      }),
+      buildMocks({
+        Exists: existsMock(() => false),
+        MakeDir: mkdirMock,
+        WriteFile: writeMock,
+      }),
+    );
+
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    expect(writeEffects.length).toBe(1);
+    expect(writeEffects[0].path).toBe("/project/crush.json");
+
+    const written = JSON.parse(writeEffects[0].content);
+    expect(written.mcp.pragma).toEqual({
+      type: "stdio",
+      command: "pragma",
+      args: ["mcp"],
+    });
+    expect(written).not.toHaveProperty("mcpServers");
+  });
+
+  it("merges into an existing `mcp` block preserving the user's other servers", () => {
+    const existingConfig = JSON.stringify({
+      $schema: "https://charm.land/crush.json",
+      mcp: {
+        context7: { type: "http", url: "https://mcp.context7.com/mcp" },
+      },
+      options: { debug: true },
+    });
+
+    const result = dryRunWith(
+      writeMcpConfig(crush, "/project", "pragma", {
+        command: "pragma",
+        args: ["mcp"],
+      }),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(existingConfig),
+        WriteFile: writeMock,
+      }),
+    );
+
+    const written = JSON.parse(
+      filterEffects(result.effects, "WriteFile")[0].content,
+    );
+    expect(written.mcp.context7).toEqual({
+      type: "http",
+      url: "https://mcp.context7.com/mcp",
+    });
+    expect(written.mcp.pragma).toEqual({
+      type: "stdio",
+      command: "pragma",
+      args: ["mcp"],
+    });
+    expect(written.$schema).toBe("https://charm.land/crush.json");
+    expect(written.options).toEqual({ debug: true });
+  });
+
+  it("writes the global band into $XDG_CONFIG_HOME/crush/crush.json", () => {
+    const result = dryRunWith(
+      writeMcpConfig(
+        crush,
+        "/project",
+        "pragma",
+        { command: "pragma" },
+        "global",
+        { ...PLATFORM, env: { XDG_CONFIG_HOME: "/xdg" } },
+      ),
+      buildMocks({
+        Exists: existsMock(() => false),
+        MakeDir: mkdirMock,
+        WriteFile: writeMock,
+      }),
+    );
+
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    expect(writeEffects[0].path).toBe("/xdg/crush/crush.json");
+  });
+});
+
 describe("removeMcpConfig", () => {
   it("is a no-op when config file does not exist", () => {
     const result = dryRunWith(
@@ -268,7 +367,10 @@ describe("removeMcpConfig", () => {
     expect(written.mcpServers.figma).toEqual({ command: "figma-mcp" });
   });
 
-  it("handles removing from config with no mcpServers key", () => {
+  it("adds no empty key to a config that never had one", () => {
+    // This used to assert `mcpServers: {}` — an UNDO that left behind a key
+    // the user never wrote. Undo restores the prior state; it does not leave
+    // evidence of itself in a file it was reversing out of.
     const result = dryRunWith(
       removeMcpConfig(claude, "/project", "pragma"),
       buildMocks({
@@ -281,7 +383,90 @@ describe("removeMcpConfig", () => {
     const writeEffects = filterEffects(result.effects, "WriteFile");
     expect(writeEffects.length).toBe(1);
     const written = JSON.parse(writeEffects[0].content);
-    expect(written.mcpServers).toEqual({});
+    expect(written).toEqual({ otherField: true });
+    expect("mcpServers" in written).toBe(false);
+  });
+
+  it("drops the container when the entry it held was the last one", () => {
+    const result = dryRunWith(
+      removeMcpConfig(claude, "/project", "pragma"),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(
+          JSON.stringify({ theme: "dark", mcpServers: { pragma: {} } }),
+        ),
+        WriteFile: writeMock,
+      }),
+    );
+
+    const written = JSON.parse(
+      filterEffects(result.effects, "WriteFile")[0].content,
+    );
+    expect(written).toEqual({ theme: "dark" });
+  });
+
+  it("NEVER removes a file it did not create, however empty it becomes", () => {
+    // Emptiness cannot establish ownership. A user may have had an empty `{}`
+    // config already — and for `.mcp.json` that empty file is itself a
+    // harness-detection signal, so deleting it would change what `doctor`
+    // sees. Removal is decided by the forward write's branch instead; this
+    // path only ever subtracts.
+    const result = dryRunWith(
+      removeMcpConfig(claude, "/project", "pragma"),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(JSON.stringify({ mcpServers: { pragma: {} } })),
+        WriteFile: writeMock,
+      }),
+    );
+
+    expect(filterEffects(result.effects, "DeleteFile")).toHaveLength(0);
+    const written = JSON.parse(
+      filterEffects(result.effects, "WriteFile")[0].content,
+    );
+    expect(written).toEqual({});
+  });
+
+  it("removes no file on any path — ownership is not inferable here", () => {
+    // Guards the boundary this function deliberately stops at. Emptiness does
+    // not prove we created the file, and the forward write's `exists` branch
+    // cannot supply provenance either: the undo re-walk sees a file that
+    // exists by then, so it always takes the merge branch. Deleting from this
+    // path would be a guess about somebody else's config.
+    for (const content of ["{}", '{"mcpServers":{"pragma":{}}}']) {
+      const result = dryRunWith(
+        removeMcpConfig(claude, "/project", "pragma"),
+        buildMocks({
+          Exists: existsMock(() => true),
+          ReadFile: readFileMock(content),
+          WriteFile: writeMock,
+        }),
+      );
+      expect(filterEffects(result.effects, "DeleteFile")).toHaveLength(0);
+    }
+  });
+
+  it("keeps the container, and the file, when another server remains", () => {
+    // The guard on the two above: emptiness is the trigger, and a foreign
+    // server means it is not empty. Nothing of someone else's is removed.
+    const result = dryRunWith(
+      removeMcpConfig(claude, "/project", "pragma"),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(
+          JSON.stringify({
+            mcpServers: { pragma: {}, figma: { command: "f" } },
+          }),
+        ),
+        WriteFile: writeMock,
+      }),
+    );
+
+    expect(filterEffects(result.effects, "DeleteFile")).toHaveLength(0);
+    const written = JSON.parse(
+      filterEffects(result.effects, "WriteFile")[0].content,
+    );
+    expect(written).toEqual({ mcpServers: { figma: { command: "f" } } });
   });
 
   it("dry run collects effects without executing", () => {
@@ -447,8 +632,11 @@ describe("resolveConfigTarget", () => {
   });
 
   it("throws for a global band on a harness with no homeConfigPath", () => {
+    // vscode is a project-only row (its user-profile mcp.json is per-profile,
+    // so no global band is offered) — the assertion's exercising case.
+    const vscode = findHarnessById("vscode") as (typeof harnesses)[number];
     expect(() =>
-      resolveConfigTarget(cursor, "/project", "global", PLATFORM),
+      resolveConfigTarget(vscode, "/project", "global", PLATFORM),
     ).toThrow(/homeConfigPath/);
   });
 });
@@ -524,12 +712,14 @@ describe("writeMcpConfigTargets — shared-file multi-key write", () => {
     configFormat: "json",
     mcpKey: "servers",
     scope: "project",
+    serializeEntry: defaultMcpEntry,
   };
   const clineTarget: ConfigTarget = {
     path: "/project/.vscode/mcp.json",
     configFormat: "json",
     mcpKey: "mcpServers",
     scope: "project",
+    serializeEntry: defaultMcpEntry,
   };
 
   it("creates one file with the server under BOTH keys in a single write", () => {
@@ -579,13 +769,45 @@ describe("writeMcpConfigTargets — shared-file multi-key write", () => {
     ).toThrow(/at least one target/);
   });
 
-  it("forces env to an object for a normalizeEnv (OpenDesign) target (7g)", () => {
+  it("writes OpenCode's own entry shape end-to-end through the registry (S1-3)", () => {
+    const opencode = findHarnessById("opencode") as (typeof harnesses)[number];
+    expect(opencode.mcpEntry).toBe(opencodeMcpEntry);
+    const target = resolveConfigTarget(opencode, "/project", "project", {
+      platform: "linux",
+      env: {},
+      home: "/home/tester",
+      isWsl: false,
+    });
+    const result = dryRunWith(
+      writeMcpConfigTargets([target], "pragma", {
+        command: "pragma",
+        args: ["mcp"],
+        cwd: "/project",
+      }),
+      buildMocks({
+        Exists: existsMock(() => false),
+        MakeDir: mkdirMock,
+        WriteFile: writeMock,
+      }),
+    );
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    const written = JSON.parse(writeEffects[0].content);
+    // McpLocalConfig: type required, command is command+args as ONE string
+    // array, no `args` key (additionalProperties: false rejects it).
+    expect(written.mcp.pragma).toEqual({
+      type: "local",
+      command: ["pragma", "mcp"],
+      cwd: "/project",
+    });
+  });
+
+  it("forces env to an object for an OpenDesign-shaped target (7g)", () => {
     const odTarget: ConfigTarget = {
       path: "/project/.od/mcp-config.json",
       configFormat: "json",
       mcpKey: "mcpServers",
       scope: "both",
-      normalizeEnv: true,
+      serializeEntry: opendesignMcpEntry,
     };
     const result = dryRunWith(
       // pragma writes no env — normalization must add an empty object, not omit it.

@@ -1,10 +1,15 @@
 import {
+  chmodSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   readlinkSync,
   rmSync,
+  statSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -13,6 +18,7 @@ import { describe, expect, it, vi } from "vitest";
 import { parallel, sequence_ } from "./combinators.js";
 import {
   executeEffect,
+  matchesPattern,
   run,
   runTask,
   TaskExecutionError,
@@ -1288,6 +1294,43 @@ describe("Interpreter - executeEffect for Exists", () => {
       rmSync(tempDir, { recursive: true, force: true });
     }
   });
+
+  it("a dangling symlink is absent by default but PRESENT with followSymlinks: false", async () => {
+    // The two semantics answer different questions: `fs.access` follows the
+    // link (is the TARGET reachable?), `lstat` sees the entry itself (does a
+    // `readdir` of the parent list it?). A postcondition mirroring a
+    // readdir-based detection needs the entry answer, or a dangling symlink
+    // makes the check quietly pass over an artifact that is still there.
+    const tempDir = mkdtempSync(join(tmpdir(), "task-exists-lstat-"));
+
+    try {
+      const linkPath = join(tempDir, "dangling");
+      symlinkSync(join(tempDir, "no-such-target"), linkPath);
+
+      expect(
+        await executeEffect({ _tag: "Exists", path: linkPath }, new Map()),
+      ).toBe(false);
+      expect(
+        await executeEffect(
+          { _tag: "Exists", path: linkPath, followSymlinks: false },
+          new Map(),
+        ),
+      ).toBe(true);
+      // A genuinely missing entry is absent under both semantics.
+      expect(
+        await executeEffect(
+          {
+            _tag: "Exists",
+            path: join(tempDir, "missing"),
+            followSymlinks: false,
+          },
+          new Map(),
+        ),
+      ).toBe(false);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
 });
 
 // =============================================================================
@@ -1395,8 +1438,12 @@ describe("Interpreter - executeEffect for Exec", () => {
     expect(result.exitCode).toBe(42);
   });
 
-  it("returns zero exit code when process is killed by signal", async () => {
-    // When a process is killed by a signal, Node.js close event passes null code
+  it("returns a NONZERO exit code when the process is killed by a signal", async () => {
+    // A signal-killed child closes with `code === null` (the signal name rides
+    // the second argument). This used to map to 0 — reporting a killed process
+    // as a successful exec, which let exit-code gates wave through work the
+    // child never finished. There is no numeric code to forward, so the
+    // interpreter reports the conventional failure exit instead.
     const result = (await executeEffect(
       {
         _tag: "Exec",
@@ -1407,8 +1454,7 @@ describe("Interpreter - executeEffect for Exec", () => {
       new Map(),
     )) as ExecResult;
 
-    // code ?? 0 — process killed by signal, code is null, falls back to 0
-    expect(result.exitCode).toBe(0);
+    expect(result.exitCode).toBe(1);
   });
 
   it("respects cwd option", async () => {
@@ -1914,5 +1960,101 @@ describe("Interpreter - interruption bypasses recovery", () => {
 
     // The interrupt bypassed the recover handler entirely.
     expect(handlerCalls).toBe(0);
+  });
+});
+
+describe("matchesPattern — the fallback glob matcher", () => {
+  it("matches everything under a directory with **/*", () => {
+    // Regression: dots were escaped AFTER the ** → .* substitution, turning
+    // the wildcard into `\.*` (zero-or-more literal dots) — glob("**/*")
+    // matched nothing under plain Node.
+    expect(matchesPattern("a.txt", "**/*")).toBe(true);
+    expect(matchesPattern("dir/a.txt", "**/*")).toBe(true);
+    expect(matchesPattern("dir/sub/b.ts", "**/*")).toBe(true);
+  });
+
+  it("keeps * within one path segment", () => {
+    expect(matchesPattern("x.ts", "*.ts")).toBe(true);
+    expect(matchesPattern("dir/x.ts", "*.ts")).toBe(false);
+    expect(matchesPattern("dir/x.ts", "dir/*.ts")).toBe(true);
+  });
+
+  it("treats dots in the pattern literally", () => {
+    expect(matchesPattern("axts", "a.ts")).toBe(false);
+    expect(matchesPattern("a.ts", "a.ts")).toBe(true);
+  });
+});
+
+describe("WriteFile lands atomically", () => {
+  const tmpRoot = mkdtempSync(join(tmpdir(), "task-atomic-"));
+
+  it("writes through a symlink instead of replacing it", async () => {
+    // Dotfile setups symlink a config into a checked-out repository. A rename
+    // over the link would break it and strand the real file.
+    const real = join(tmpRoot, "real.json");
+    const link = join(tmpRoot, "link.json");
+    writeFileSync(real, "old\n");
+    symlinkSync(real, link);
+
+    await runTask(writeFile(link, "new\n"));
+
+    expect(lstatSync(link).isSymbolicLink()).toBe(true);
+    expect(readFileSync(real, "utf-8")).toBe("new\n");
+    expect(readlinkSync(link)).toBe(real);
+  });
+
+  it("writes through a DANGLING symlink instead of replacing it", async () => {
+    // `lstat` succeeds on a dangling link and `realpath` throws ENOENT. One
+    // broad catch around both left the destination as the LINK path, so the
+    // rename destroyed the link — the regression this whole function exists to
+    // prevent, on the very state a fresh dotfiles checkout is in.
+    const missing = join(tmpRoot, "not-yet", "real.json");
+    const link = join(tmpRoot, "dangling.json");
+    symlinkSync(missing, link);
+
+    await runTask(writeFile(link, "new\n"));
+
+    expect(lstatSync(link).isSymbolicLink()).toBe(true);
+    expect(readlinkSync(link)).toBe(missing);
+    expect(readFileSync(missing, "utf-8")).toBe("new\n");
+  });
+
+  it("preserves the mode of the file it replaces", async () => {
+    const path = join(tmpRoot, "moded.json");
+    writeFileSync(path, "old\n");
+    chmodSync(path, 0o640);
+
+    await runTask(writeFile(path, "new\n"));
+
+    expect(statSync(path).mode & 0o777).toBe(0o640);
+    expect(readFileSync(path, "utf-8")).toBe("new\n");
+  });
+
+  it("leaves no temp file beside the target", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "task-atomic-clean-"));
+    await runTask(writeFile(join(dir, "a.json"), "{}\n"));
+    expect(readdirSync(dir)).toEqual(["a.json"]);
+  });
+
+  it("leaves no temp file behind when the rename fails, and still throws", async () => {
+    // The temp file is written to the target's own directory, so a write that
+    // cannot land must not turn a failure into litter beside the user's config.
+    // A directory standing where the file should go makes the rename fail
+    // after the temp file exists — the one ordering that can leave one.
+    const dir = mkdtempSync(join(tmpdir(), "task-atomic-fail-"));
+    const occupied = join(dir, "taken.json");
+    mkdirSync(occupied);
+    writeFileSync(join(occupied, "keep.txt"), "untouched\n");
+
+    await expect(runTask(writeFile(occupied, "new\n"))).rejects.toThrow(
+      TaskExecutionError,
+    );
+
+    // The failure is reported, nothing is left over, and what was already
+    // there is exactly as it was.
+    expect(readdirSync(dir)).toEqual(["taken.json"]);
+    expect(readFileSync(join(occupied, "keep.txt"), "utf-8")).toBe(
+      "untouched\n",
+    );
   });
 });

@@ -4,5 +4,5 @@
   align-items: center;
   flex-wrap: wrap;
 
-  gap: var(--lp-dimension-spacing-inline-m);
+  gap: var(--dimension-200);
 }

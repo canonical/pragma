@@ -11,7 +11,7 @@ This package, at the moment, solely exports the shared config. We might in the f
 ```typescript 
 import { createConfig } from "@canonical/storybook-config";
 
-export default createConfig("react"); // or one of "svelte", "lit"
+export default createConfig("react"); // or one of "svelte", "sveltekit", "lit"
 ```
 
 ## Notes

@@ -7,8 +7,8 @@
 import type { AnyGenerator } from "@canonical/summon-core";
 import { generator as packageGenerator } from "./package/index.js";
 
-export const generators: Record<string, AnyGenerator> = {
-  package: packageGenerator as unknown as AnyGenerator,
-};
+export const generators = {
+  package: packageGenerator,
+} as const satisfies Record<string, AnyGenerator>;
 
 export default generators;

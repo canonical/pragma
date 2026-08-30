@@ -46,11 +46,18 @@ export default function templateDir(options: TemplateDirOptions): Task<void> {
           destFile = renderString(destFile, options.vars, engine);
           const destPath = path.join(options.dest, destFile);
 
+          // Resolve the declared content transformer for this file: an exact
+          // (post-`.ejs`-strip) basename entry wins over an extension entry.
+          const transform =
+            options.transform?.[path.basename(destFile)] ??
+            options.transform?.[path.extname(destFile)];
+
           return template({
             source: sourcePath,
             dest: destPath,
             vars: options.vars,
             engine,
+            transform,
           });
         });
 

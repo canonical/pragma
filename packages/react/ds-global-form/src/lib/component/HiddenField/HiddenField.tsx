@@ -8,6 +8,8 @@ import type { HiddenFieldProps } from "./types.js";
  * description, or error chrome is rendered.
  *
  * `import { HiddenField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.hidden_field
  */
 export default withWrapper<HiddenFieldProps>(
   bindField<HiddenFieldProps>(HiddenInput, "native"),

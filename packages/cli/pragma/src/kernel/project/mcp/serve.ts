@@ -8,8 +8,8 @@
  */
 
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { loadEffectiveModules } from "../../packs/collect.js";
-import type { CapabilityModule } from "../../spec/types.js";
+import { loadEffectiveModules } from "../../packs/index.js";
+import type { CapabilityModule } from "../../spec/index.js";
 import { buildServer } from "./buildServer.js";
 
 /**

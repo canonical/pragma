@@ -13,7 +13,7 @@
  * Representative args are built structurally: a lookup/sample's positional
  * resolves through its noun's OWN `list` (browse-then-address, same as B1); a
  * `prefix`/`uri`-named positional (the grammar's TBox/entity-inspection
- * convention, used today by `ontology show`/`graph inspect`) resolves from the
+ * convention, used today by `ontology lookup`/`graph inspect`) resolves from the
  * pack index generically, not by noun name. A mutating tool is called WITHOUT
  * `confirm` (a safe plan-only preview).
  */

@@ -6,9 +6,12 @@
  * `block` content-parity + `ontology`/`graph inspect` tests are protected
  * against) byte-for-byte and EXTENDS it with the entities the other bundled
  * read nouns (`standard`, `modifier`, `token`, `tier`) need, plus two more
- * blocks that exercise tier-chain inheritance and channel visibility (PR3's
- * hand-written `block list`, Risk5). Because `BLOCK_TTL` is reused verbatim,
- * Button/Modal content can never drift between PR3's fixture and this one.
+ * blocks that used to exercise tier-chain inheritance and channel visibility
+ * (PR3's hand-written `block list`, Risk5). Those two now serve the opposite
+ * purpose: L-OPEN-9 removed the filtering, so a tier-scoped and a
+ * channel-gated block are what prove the declared list hides NEITHER. Because
+ * `BLOCK_TTL` is reused verbatim, Button/Modal content can never drift between
+ * PR3's fixture and this one.
  *
  * Composed as one Turtle document, so ONE store answers every read noun:
  * `block`/`ontology`/`graph inspect` were already provable on `BLOCK_TTL`
@@ -23,6 +26,16 @@
  * ours to pin): 4 `ds:Component` (Button, Modal, LXD Panel, Beta Widget),
  * `importance` family with value `primary`, code standard
  * `code/function/purity`.
+ *
+ * Two of those anchors exist to pin an ABSENCE, and are load-bearing for the
+ * "declared, not inferred" halves of the read grammar:
+ * - `ds:token.legacy.borderRadius` — a `ds:Token` with no `ds:tokenId`, which
+ *   `token list` therefore never publishes and `token lookup`/`token sample`
+ *   must never reach (`PackLookup.nameFallback` is declared by `standard`
+ *   alone).
+ * - `cs:archive` — a `cs:Category` with no standards, which `standard
+ *   categories` reports at count 0 and `standard list --category archive` must
+ *   answer with a calm empty list rather than INVALID_INPUT.
  */
 
 import { BLOCK_PREFIXES, BLOCK_TTL } from "../blockGraph.js";
@@ -73,13 +86,46 @@ ds:token.spacing.medium a ds:Token ;
   ds:tokenType ds:type.spacing ;
   ds:valueLight "16px" ;
   ds:valueDark "16px" .
+
+# A ds:Token carrying NO ds:tokenId — the entity "token list" does not publish,
+# because its query REQUIRES the id. It is here to pin what a lookup may NOT
+# reach: "token lookup" addresses by ds:tokenId, and a story whose list requires
+# its "by" property must not become addressable (or sampleable) under a name
+# derived from its IRI. See PackLookup.nameFallback, declared by the "standard"
+# story alone — the one story whose list DOES publish such a name.
+ds:token.legacy.borderRadius a ds:Token ;
+  ds:tokenType ds:type.spacing ;
+  ds:valueLight "4px" ;
+  ds:valueDark "4px" .
 `;
 
-/** The `cs:` (code standards) section — reused verbatim from `standard/parity.test.ts`'s
- * fixture shape so `code/function/purity`/`react/component/*` are stable, shared
- * anchor names rather than a second invented set. */
+/**
+ * The `cs:` (code standards) section — shaped like the SHIPPED code-standards
+ * graph, not like a convenience fixture.
+ *
+ * Two facts about the real data are reproduced here on purpose, because the
+ * eval harness was blind to both while every fixture standard carried a
+ * `cs:name`:
+ *
+ * 1. **Most standards carry NO `cs:name`.** The shipped graph asserts it on 22
+ *    of 156 (~13%); one of the eight standards below carries one (~13%). The
+ *    ontology says so deliberately — `cs:name` is "an optional human-readable
+ *    display title" that "never participates in identity", the canonical
+ *    identifier being the compact IRI. So the name `standard list` publishes for
+ *    the other seven is SYNTHESIZED from the IRI local name
+ *    (`cs:react.component.props` → `react/component/props`), and a lookup that
+ *    cannot resolve a synthesized name cannot resolve the graph.
+ * 2. **Categories are a two-level SKOS tree.** `cs:testing.unit skos:broader
+ *    cs:testing`, exactly as the shipped graph declares for `testing.*` and
+ *    `ui_blocks.nojs`, and one standard sits DIRECTLY on the parent — the case a
+ *    non-reflexive roll-up (`skos:broader+`) silently drops.
+ *
+ * Anchor names (`code/function/purity`, `react/component/*`) are unchanged; they
+ * are simply reached the way the real graph reaches them.
+ */
 const CS_TTL = `
 @prefix cs: <http://pragma.canonical.com/codestandards#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 
 cs:CodeStandard a owl:Class .
 cs:Category a owl:Class .
@@ -94,27 +140,66 @@ cs:dont a owl:ObjectProperty ; rdfs:domain cs:CodeStandard ; rdfs:range cs:Examp
 cs:language a owl:DatatypeProperty ; rdfs:domain cs:Example ; rdfs:range xsd:string .
 cs:code a owl:DatatypeProperty ; rdfs:domain cs:Example ; rdfs:range xsd:string .
 
-cs:cat.react a cs:Category ; cs:slug "react" .
-cs:cat.code a cs:Category ; cs:slug "code" .
+# ---- Categories: flat roots, plus one two-level branch (testing) ----
+cs:react a cs:Category ; rdfs:label "React" ; cs:slug "react" .
+cs:code a cs:Category ; rdfs:label "Code" ; cs:slug "code" .
+cs:turtle a cs:Category ; rdfs:label "Turtle" ; cs:slug "turtle" .
+cs:testing a cs:Category ; rdfs:label "Testing" ; cs:slug "testing" .
+cs:testing.unit a cs:Category ;
+  rdfs:label "Unit testing" ;
+  cs:slug "testing-unit" ;
+  skos:broader cs:testing .
 
+# A category the graph DECLARES with no standards filed under it. The
+# "standard categories" verb lists it with count 0, so
+# "standard list --category archive" must be the documented calm empty list — a
+# real slug, an empty answer. Validity read off the returned ROWS instead of the
+# graph called it INVALID_INPUT.
+cs:archive a cs:Category ;
+  rdfs:label "Archive" ;
+  cs:slug "archive" .
+
+# ---- Standards. Seven of eight carry NO cs:name (the shipped ~13% split). ----
 cs:react.component.props a cs:CodeStandard ;
-  cs:name "react/component/props" ;
   cs:description "Type component props explicitly." ;
-  cs:hasCategory cs:cat.react ;
+  cs:hasCategory cs:react ;
   cs:do [ a cs:Example ; cs:description "Do type props" ; cs:language "tsx" ; cs:code "interface P {}" ] ;
   cs:dont [ a cs:Example ; cs:description "Avoid any" ; cs:language "tsx" ; cs:code "props: any" ] .
 
 cs:react.component.structure a cs:CodeStandard ;
-  cs:name "react/component/structure" ;
   cs:description "Keep folder structure flat." ;
-  cs:hasCategory cs:cat.react ;
+  cs:hasCategory cs:react ;
   cs:extends cs:react.component.props ;
   cs:do [ a cs:Example ; cs:description "Do flatten" ; cs:language "text" ; cs:code "src/Button.tsx" ] .
 
 cs:code.function.purity a cs:CodeStandard ;
-  cs:name "code/function/purity" ;
   cs:description "Prefer pure functions." ;
-  cs:hasCategory cs:cat.code .
+  cs:hasCategory cs:code .
+
+# The standard sitting DIRECTLY on the parent category: a skos:broader+
+# roll-up loses it, a reflexive skos:broader* keeps it.
+cs:testing.smoke a cs:CodeStandard ;
+  cs:description "Keep one end-to-end smoke path green." ;
+  cs:hasCategory cs:testing .
+
+cs:testing.unit.isolation a cs:CodeStandard ;
+  cs:description "Isolate the unit under test." ;
+  cs:hasCategory cs:testing.unit .
+
+cs:testing.unit.naming a cs:CodeStandard ;
+  cs:description "Name a unit test for the behaviour it pins." ;
+  cs:hasCategory cs:testing.unit ;
+  cs:do [ a cs:Example ; cs:description "Do name the behaviour" ; cs:language "ts" ; cs:code "it(\\"rejects an empty batch\\")" ] .
+
+cs:testing.unit.fixtures a cs:CodeStandard ;
+  cs:description "Share one fixture per behavioural claim." ;
+  cs:hasCategory cs:testing.unit .
+
+# The ~13%: a display title that adds something the IRI does not.
+cs:turtle.naming.local_name_casing a cs:CodeStandard ;
+  cs:name "Turtle local-name casing" ;
+  cs:description "Use snake_case for multi-word local-name segments." ;
+  cs:hasCategory cs:turtle .
 `;
 
 /** The `ds:Prompt` workflow templates — the ONE source both the `prompt_list`/
@@ -157,19 +242,106 @@ ds:prompt.configure a ds:Prompt ;
 ds:prompt.scaffold-component a ds:Prompt ;
   rdfs:label "scaffold-component" ;
   rdfs:comment "Scaffold a new component and align it to the standards." ;
-  ds:promptBody "Scaffold the {{componentName}} component in {{framework}}. Use create_component with the component path and --framework {{framework}}, then review the generated files against the react/component standards via standard_lookup." ;
+  ds:promptBody "Scaffold the {{componentName}} component in {{framework}}. Use create_component with framework {{framework}} and the component path, then review the generated files against the react/component standards via standard_lookup." ;
   ds:promptArgument [ ds:argName "componentName" ; rdfs:comment "Component name/path (e.g. Button)." ; ds:argRequired true ] ;
   ds:promptArgument [ ds:argName "framework" ; rdfs:comment "react | svelte | lit." ; ds:argRequired false ] .
+`;
+
+/** The `ds:Concept` section — long-form documentation entries the `concept`
+ * story reads. Mirrors the real design-system data shape (canonical/design-system#64):
+ * `ds:name`/`ds:summary`/`ds:tier` base, the Markdown body in `ds:content`
+ * (standard disclosure), `ds:knownEdgeCases` (detailed), and `ds:conceptType`
+ * → a named `ds:ConceptType` individual carrying its own `ds:name`. */
+const CONCEPT_TTL = `
+ds:Concept a owl:Class .
+ds:ConceptType a owl:Class .
+ds:content a owl:DatatypeProperty ; rdfs:domain ds:Concept ; rdfs:range xsd:string .
+ds:knownEdgeCases a owl:DatatypeProperty ; rdfs:domain ds:Concept ; rdfs:range xsd:string .
+ds:conceptType a owl:ObjectProperty ; rdfs:domain ds:Concept ; rdfs:range ds:ConceptType .
+
+ds:concepttype.Explanation a ds:ConceptType ;
+  ds:name "Explanation" ;
+  ds:summary "Concept documentation that deepens understanding of a topic." .
+
+ds:concepttype.How-to-guide a ds:ConceptType ;
+  ds:name "How-to guide" ;
+  ds:summary "Concept documentation that walks through solving a problem." .
+
+ds:concept.Foundations-Grid a ds:Concept ;
+  ds:name "Foundations: Grid" ;
+  ds:summary "How the grid system underpins every layout." ;
+  ds:tier ds:global ;
+  ds:conceptType ds:concepttype.Explanation ;
+  ds:content "The grid is the shared spatial contract every block lays out against." ;
+  ds:knownEdgeCases "Nested grids inherit the outer gutter unless re-declared." .
+
+ds:concept.Question-mark-vs-information-icon a ds:Concept ;
+  ds:name "Question mark vs information icon" ;
+  ds:summary "Deciding between the information icon and the question mark icon." ;
+  ds:tier ds:global ;
+  ds:conceptType ds:concepttype.How-to-guide ;
+  ds:content "The information icon offers context proactively; the question mark answers a question the user already has." ;
+  ds:knownEdgeCases "Icon interpretation depends on the user's prior conventions." .
+`;
+
+/**
+ * The implementation graph: two libraries whose `ds:implementsBlock` edges point
+ * at `BLOCK_TTL`'s own Button/Modal IRIs, so a test can prove the cross-pack
+ * join (an implementation collected from source resolving to a block declared by
+ * the design system) rather than just the shape of a row. Button is implemented
+ * TWICE, on two platforms — the case `--platform` has to separate.
+ */
+const IMPLEMENTATION_TTL = `
+ds:ImplementationLibrary a owl:Class .
+ds:ImplementationObject a owl:Class .
+ds:hasImplementation a owl:ObjectProperty ; rdfs:domain ds:ImplementationLibrary ; rdfs:range ds:ImplementationObject .
+ds:implementsBlock a owl:ObjectProperty ; rdfs:domain ds:ImplementationObject ; rdfs:range ds:UIBlock .
+ds:libraryName a owl:DatatypeProperty ; rdfs:domain ds:ImplementationLibrary ; rdfs:range xsd:string .
+ds:platform a owl:DatatypeProperty ; rdfs:domain ds:ImplementationLibrary ; rdfs:range xsd:string .
+ds:libraryTier a owl:ObjectProperty ; rdfs:domain ds:ImplementationLibrary ; rdfs:range ds:Tier .
+ds:implementationCount a owl:DatatypeProperty ; rdfs:domain ds:ImplementationLibrary ; rdfs:range xsd:integer .
+ds:headLink a owl:DatatypeProperty ; rdfs:domain ds:ImplementationObject ; rdfs:range xsd:string .
+ds:versionedLink a owl:DatatypeProperty ; rdfs:domain ds:ImplementationObject ; rdfs:range xsd:string .
+
+ds:implementation.library.react-ds-global a ds:ImplementationLibrary ;
+  ds:libraryName "@canonical/react-ds-global" ;
+  ds:platform "react" ;
+  ds:libraryTier ds:global ;
+  ds:version "0.34.0" ;
+  ds:implementationCount 2 ;
+  ds:hasImplementation ds:implementation.react-ds-global.button,
+                       ds:implementation.react-ds-global.modal .
+
+ds:implementation.react-ds-global.button a ds:ImplementationObject ;
+  ds:implementsBlock ds:button ;
+  ds:headLink "https://example.test/react/Button.tsx" .
+
+ds:implementation.react-ds-global.modal a ds:ImplementationObject ;
+  ds:implementsBlock ds:modal ;
+  ds:headLink "https://example.test/react/Modal.tsx" .
+
+ds:implementation.library.svelte-ds-global a ds:ImplementationLibrary ;
+  ds:libraryName "@canonical/svelte-ds-global" ;
+  ds:platform "svelte" ;
+  ds:libraryTier ds:global ;
+  ds:version "0.34.0" ;
+  ds:implementationCount 1 ;
+  ds:hasImplementation ds:implementation.svelte-ds-global.button .
+
+ds:implementation.svelte-ds-global.button a ds:ImplementationObject ;
+  ds:implementsBlock ds:button ;
+  ds:headLink "https://example.test/svelte/Button.svelte" .
 `;
 
 /** The prefixes the canonical store is built and queried with. */
 export const CANONICAL_PREFIXES: Readonly<Record<string, string>> = {
   ...BLOCK_PREFIXES,
   cs: "http://pragma.canonical.com/codestandards#",
+  skos: "http://www.w3.org/2004/02/skos/core#",
 };
 
 /** The full canonical Turtle: PR3's `BLOCK_TTL` verbatim, plus the sections above. */
-export const CANONICAL_TTL = `${BLOCK_TTL}\n${DS_EXTRA_TTL}\n${CS_TTL}\n${PROMPT_TTL}`;
+export const CANONICAL_TTL = `${BLOCK_TTL}\n${DS_EXTRA_TTL}\n${CS_TTL}\n${PROMPT_TTL}\n${CONCEPT_TTL}\n${IMPLEMENTATION_TTL}`;
 
 /** Default viewing config: no tier set, `normal` channel — drops the beta-only block. */
 export const CANONICAL_CONFIG = { channel: "normal" as const };

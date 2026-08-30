@@ -2,7 +2,7 @@ import { generators as applicationGenerators } from "@canonical/summon-applicati
 import { generators as componentGenerators } from "@canonical/summon-component";
 import type { GeneratorDefinition } from "@canonical/summon-core";
 import { generators as packageGenerators } from "@canonical/summon-package";
-import { PragmaError } from "../../kernel/error/PragmaError.js";
+import { PragmaError } from "../../kernel/error/index.js";
 import { CREATE_GENERATORS } from "./constants.js";
 import type { CreateKind } from "./types.js";
 
@@ -10,11 +10,11 @@ type GeneratorMap = Record<string, GeneratorDefinition | undefined>;
 
 /**
  * The declared packages' generator maps, bound by noun. The STATIC imports above
- * are load-bearing: `bun build --compile` bundles only statically analysable
- * specifiers, so `import(CREATE_GENERATORS[kind].name)` would leave the
- * generators out of the binary (measured: `Cannot find module
- * '@canonical/summon-component' from '/$bunfs/root/…'`). The declaration decides
- * WHICH generator runs; it cannot decide which module is linked.
+ * are load-bearing: a computed `import(CREATE_GENERATORS[kind].name)` is opaque
+ * to every bundler and analyser, and the historical cost was measured — under
+ * `bun build --compile` it left the generators out of the artifact entirely
+ * (`Cannot find module '@canonical/summon-component'`). The declaration decides
+ * WHICH generator runs; it cannot decide which module is reachable.
  *
  * The maps' `generate` is invariant in its (specific) answer type, so they are
  * erased to the base definition via `unknown` — runtime-safe because `execute`
@@ -28,57 +28,30 @@ const GENERATOR_MAPS: Record<CreateKind, GeneratorMap> = {
 };
 
 /**
- * Pick the generator for a `create <kind>` run.
+ * Pick the generator for one FULL COMMAND PATH (`component/react`,
+ * `package`, `application/react`) — a straight lookup over the declared
+ * bindings, no framework axis: the path IS the identity, exactly as summon's
+ * tree keys it. Callers with a kind+framework surface (MCP) map to a path
+ * first.
  *
  * The module this lives in statically imports the summon generator packages'
  * `generators` maps — and importing them pulls summon-core. So it MUST stay
  * behind `create`'s lazy `import()` (R9): the fast paths (`buildProgram` /
- * `__complete` / `--help` / reads) never load it, and `create --yes` never loads
- * React either (summon-core's Ink UI is dynamic-only).
+ * `__complete` / `--help` / reads) never load it, and `create --yes` never
+ * loads React either (summon-core's Ink UI is dynamic-only).
  *
- * `component` is branched on literally: it is the only noun with a framework
- * axis (which is why the verb synthesises a `--framework` enum), and narrowing
- * on `kind` here lets `CREATE_GENERATORS[kind].key` type-check over the
- * remaining nouns without `in`-narrowing gymnastics.
- *
- * @param kind - The create noun.
- * @param params - The coerced params (the `framework` positional on `component`).
+ * @param commandPath - The declared command path to run.
  * @returns The selected generator definition.
- * @throws PragmaError INVALID_INPUT for an unknown component framework.
+ * @throws PragmaError INTERNAL for an undeclared path (callers validate
+ *   user-facing inputs before mapping to a path).
  */
-export function pickGenerator(
-  kind: CreateKind,
-  params: Readonly<Record<string, unknown>>,
-): GeneratorDefinition {
-  if (kind === "component") {
-    // Mirror summon's API exactly: `pragma create component` === `summon
-    // component`, where the framework is a REQUIRED selector, not a
-    // defaulted one. Summon's generator keys are `component/<framework>` with
-    // no default — so pragma must not silently scaffold the first declared
-    // framework when it is omitted. An absent framework is an INVALID_INPUT
-    // that names the choices, the same error summon would raise for a
-    // component with no framework to build. The choices are DERIVED from
-    // `CREATE_GENERATORS`, so they cannot drift from the enum the verb
-    // synthesises.
-    const { frameworks } = CREATE_GENERATORS.component;
-    const framework = params.framework;
-    if (framework === undefined || framework === null || framework === "") {
-      throw PragmaError.invalidInput("framework", String(framework ?? ""), {
-        validOptions: [...frameworks],
-      });
+export function pickGenerator(commandPath: string): GeneratorDefinition {
+  for (const [kind, binding] of Object.entries(CREATE_GENERATORS)) {
+    if ((binding.paths as readonly string[]).includes(commandPath)) {
+      const generator = GENERATOR_MAPS[kind as CreateKind][commandPath];
+      if (generator) return generator;
+      break;
     }
-    const generator =
-      GENERATOR_MAPS.component[`component/${String(framework)}`];
-    if (!generator) {
-      throw PragmaError.invalidInput("framework", String(framework), {
-        validOptions: [...frameworks],
-      });
-    }
-    return generator;
   }
-  const generator = GENERATOR_MAPS[kind][CREATE_GENERATORS[kind].key];
-  if (!generator) {
-    throw PragmaError.internalError(`missing ${kind} generator`);
-  }
-  return generator;
+  throw PragmaError.internalError(`missing generator for ${commandPath}`);
 }

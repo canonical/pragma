@@ -13,9 +13,9 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, relative } from "node:path";
-import { PragmaError } from "../../error/PragmaError.js";
+import { PragmaError } from "../../error/index.js";
 import { refsCacheDir } from "../paths.js";
-import { cloneRef, fetchRef, headCommit, remoteHead } from "./gitOps.js";
+import { cloneRef, fetchRef, headCommit } from "./gitOps.js";
 import { type PackageRef, redactUrl } from "./parseRef.js";
 
 /** A resolved package: its pinned revision and labelled RDF sources. */
@@ -53,28 +53,8 @@ const TTL_DIRS = ["definitions", "data"];
 /** The package subdirectory whose immediate `*.json` children are read stories. */
 const STORIES_DIR = "stories";
 
-/** Sanitize a single ref (branch/tag/SHA) for use as ONE cache path
- * segment: every filesystem-illegal char — INCLUDING `/`, so a branch like
- * `feature/x` stays one segment — collapses to `_`. */
+/** Sanitize a ref for use as a cache path segment. */
 const sanitize = (value: string): string => value.replace(/[/\\:*?"<>|]/g, "_");
-
-/**
- * Sanitize a PACKAGE NAME into a cache path. Unlike {@link sanitize}, the
- * scope separator `/` in `@scope/name` is PRESERVED as a real directory
- * boundary, so `@canonical/design-system` nests to
- * `@canonical/design-system` — matching npm's own `node_modules/@scope/name`
- * layout and, critically, the path the docsite backend (and any other
- * consumer) reads back. Flattening it to `@canonical_design-system` was the
- * bug: `sources update` wrote the flattened dir while readers looked for the
- * nested one, so a freshly-primed cache appeared empty. Each SEGMENT is
- * still sanitized for the other illegal chars; only `/` survives, and only
- * between segments (leading/trailing/empty segments are dropped). */
-export const sanitizePackageName = (value: string): string =>
-  value
-    .split("/")
-    .filter((segment) => segment.length > 0)
-    .map((segment) => segment.replace(/[\\:*?"<>|]/g, "_"))
-    .join("/");
 
 /** A concise reason from a thrown subprocess/parse error: prefer captured
  * stderr (git writes the real reason there under `stdio: "pipe"`), else the
@@ -95,7 +75,7 @@ function errorDetail(error: unknown): string {
 }
 
 /** Recursively collect `*.ttl` files under a directory (a manual walk — the
- * compiled binary's node:fs globSync mishandles `**`, so we avoid it). */
+ * node:fs globSync has mishandled `**` under a shipped runtime, so we avoid it). */
 function walkTtl(
   dir: string,
   base: string,
@@ -115,7 +95,7 @@ function walkTtl(
     // symlinked `.ttl` was silently skipped (L6). Follow the link to recover a
     // symlinked FILE, but NEVER recurse into a symlinked DIRECTORY: a symlink
     // cycle (a link to an ancestor dir) would recurse without bound — a
-    // stack-overflow RangeError surfacing as an INTERNAL "please report" — and a
+    // stack-overflow RangeError surfacing as an INTERNAL "report" — and a
     // linked directory could pull `.ttl` from OUTSIDE the package root. Linking
     // individual source files (all L6 needs) stays supported; a dangling link is
     // skipped, not fatal.
@@ -363,7 +343,7 @@ export async function resolvePackage(
           "0.0.0";
       } catch (error) {
         // A malformed `package.json` for an otherwise-installed package: name it
-        // as a data error, not an INTERNAL_ERROR "please report this issue".
+        // as a data error, not an INTERNAL_ERROR "report this issue".
         throw PragmaError.configError(
           `Package "${ref.pkg}" has an invalid package.json (${pkgJsonPath}): ${errorDetail(error)}`,
         );
@@ -379,31 +359,11 @@ export async function resolvePackage(
     }
 
     case "git": {
-      const dir = join(
-        refsCacheDir(),
-        // The package name NESTS its scope (`@canonical/design-system`), so
-        // the written path matches what the docsite backend reads; only the
-        // ref segment flattens its `/`.
-        sanitizePackageName(ref.pkg),
-        sanitize(ref.ref),
-      );
+      const dir = join(refsCacheDir(), sanitize(ref.pkg), sanitize(ref.ref));
       let resolved: string;
       try {
         if (existsSync(dir)) {
-          // Cached branch/tag: CHECK FIRST, don't fetch blindly. `ls-remote`
-          // asks the remote where the ref points WITHOUT downloading objects;
-          // if the local checkout is already there, skip the full
-          // fetch+checkout. Only when the remote has moved (or ls-remote is
-          // unavailable — `remoteHead` returns undefined, which includes a ref
-          // that is already a commit SHA) do we do the network fetch. This
-          // makes `sources update` idempotent and cheap when the cache is
-          // already current — the "don't clone blindly" fix.
-          const local = headCommit(dir);
-          const remote = remoteHead(ref.url, ref.ref);
-          resolved =
-            remote !== undefined && remote === local
-              ? local
-              : fetchRef(ref.url, ref.ref, dir);
+          resolved = fetchRef(ref.url, ref.ref, dir);
         } else {
           cloneRef(ref.url, ref.ref, dir);
           resolved = headCommit(dir);

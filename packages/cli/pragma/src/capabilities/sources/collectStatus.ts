@@ -12,12 +12,17 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { PackDeclaration } from "../../kernel/config/types.js";
+import type { PackDeclaration } from "../../kernel/config/index.js";
+// DIRECT LEAF IMPORTS, not `graphpack/index.js`. The barrel re-exports
+// `build.ts`/`read.ts` (pulling `@canonical/ke` and `@canonical/ke-graphql`)
+// and `embedded.ts`, whose generated payload is ~1.9 MB. `sources status`
+// reads two manifests and prints them; routing that through the barrel
+// would make a status-only command initialise the whole pack stack.
 import { embeddedManifest } from "../../kernel/runtime/graphpack/embedded.js";
 import { readManifest } from "../../kernel/runtime/graphpack/manifest.js";
 import { INDEX_FILE } from "../../kernel/runtime/graphpack/types.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { resolveSources } from "../../kernel/runtime/resolveSources.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { SourcesStatusData } from "./types.js";
 
 const entryName = (entry: PackDeclaration): string =>

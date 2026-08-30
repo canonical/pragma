@@ -23,6 +23,8 @@ const defaultFormatStarLabel = (value: number, count: number) =>
  * `defaultValue`).
  *
  * `import { RatingInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.rating_input
  */
 export const RatingInput = ({
   id,

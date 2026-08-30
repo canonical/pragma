@@ -42,13 +42,13 @@ export const PARITY_GAPS: readonly ParityGapEntry[] = [
     id: "read-meta-always-empty",
     area: "envelope",
     description:
-      "`dispatch.ts#executeVerb`'s read branch always renders with `meta: {}` — there is no `meta.count`/`meta.total` field on a list/lookup envelope (verified empirically). An empty (possibly filtered) list is `{ok:true, data:[], meta:{}}`; the only way to know it's empty is `data.length === 0`, not a meta field.",
+      "NARROWED: a read envelope still carries no `meta.count`/`meta.total` — the only way to know a list is empty is `data.length === 0`, not a count field. But `meta` is no longer ALWAYS `{}` on a read. A zero-record read now carries the verb's own `notice` as `meta.notice` on BOTH machine surfaces (`project/cli/dispatch.ts#renderData` for `--format json`, `project/mcp/registerVerb.ts#emptyMeta` for MCP — one seam, the same key, so the two stay byte-equal). `data` keeps its uniform empty shape; `[]` is still `[]`. The divergence this entry records is the ABSENCE of counts, not the emptiness of `meta`: without the notice an agent could not tell an unbuilt store, a mistyped filter and a genuinely empty result apart, all three being `{ok:true,data:[],meta:{}}`.",
   },
   {
     id: "no-empty-hook-on-free-filter",
     area: "pack list / empty-state",
     description:
-      "A zero-row pack list — whether narrowed by a declared filter, an unmatched `--search`, or unconditionally empty — returns `ok:true, data:[], meta:{}` at exit 0 with a calm `emptyMessage`/`emptyHint`; pragma v2 never raises a typed EMPTY_RESULTS error for an empty list. (U5 removed the former enum-filter-only `buildListEmptyError` hook, making the empty-state uniform across every list verb.)",
+      "STILL TRUE OF EMPTINESS, NARROWED ON BAD ARGUMENTS. A zero-row pack list — narrowed by a declared filter, by an unmatched `--search`, or unconditionally empty — is a SUCCESS: `ok:true, data:[]` at exit 0 with a calm notice (stderr in plain mode, `meta.notice` on the machine surfaces). pragma v2 still never raises EMPTY_RESULTS for an empty list, and U5's removal of the enum-filter-only `buildListEmptyError` hook stands. What is no longer true is that an UNMATCHED free-filter value stays successful: a value-free filter now rejects a value its vocabulary does not admit with INVALID_INPUT and the admissible values as `validOptions`, the same courtesy a declared-`values` filter always extended (`packs/sparql/applyFilters.ts`). The vocabulary is the graph's, not the returned rows' — a filter declares where it lives (`PackFilter.vocabulary`), so a real value that happens to match no row (a category with zero standards, a `ds:ConceptType` no concept uses) is a calm empty list, and only a value the graph does not know is an error.",
   },
   {
     id: "raw-iri-in-data",
@@ -78,13 +78,19 @@ export const PARITY_GAPS: readonly ParityGapEntry[] = [
     id: "generic-renderers-not-bespoke-templates",
     area: "render",
     description:
-      "Every noun's plain/llm output — including the one hand-written verb, `block list` — renders through the SAME generic list/lookup renderer (`kernel/render/renderers.ts`), driven by declarative column/field/section metadata. There are no per-noun hand-authored render templates left to keep in parity.",
+      "Every noun's plain/llm output renders through the SAME generic list/lookup renderer (`kernel/render/renderers.ts`), driven by declarative column/field/section metadata. There are no per-noun hand-authored render templates left to keep in parity (the last hand-written verb, `block list`, became declared content in L-OPEN-9).",
   },
   {
     id: "block-lookup-not-tier-scoped",
     area: "block",
     description:
-      "`block lookup` resolves by `ds:name` GLOBALLY, with no tier or channel filtering — only the hand-written `block list` is tier/channel-aware (PR3 Risk5, `capabilities/block/tierChain.ts`). A same-named block declared at two tiers cannot be disambiguated by `block lookup` alone (the old shell's tier-scoped lookup disambiguation has no v2 equivalent).",
+      "CLOSED, by REVERSAL of the entry it used to be. This gap read: `block lookup` resolves by `ds:name` globally, a same-named block at two tiers cannot be disambiguated by plain name, address it by prefixed IRI instead. That was accepted while the answer was merely arbitrary; it stopped being acceptable once measured — 25 live block names are carried by 2–3 blocks, and EVERY one of them was answered with whichever IRI sorted first and no sign the others existed (`block lookup button` returned Launchpad's Button, because `apps_launchpad…` precedes `global…`). 'Address it by IRI' is not a recovery an agent can reach when nothing tells it there is a second block to address. Two things replace it, and neither is a change of arity — one name still answers with one entity, and a glob is still the declared multi-entity form. (1) The discard is no longer SILENT: the resolve is unlimited, the winner is answered with, and the IRIs it outranked ride the verb's `notice` — the same seam a zero-record read uses (stderr in plain mode, `meta.notice` on `--format json` and MCP), because an ambiguous hit is the same failure as an empty one, a result that misrepresents itself. `LookupOutput.ambiguous` carries them in `data` for the machine surfaces, and is ABSENT (not `[]`) when nothing was ambiguous, so every unambiguous read keeps the payload it had. Note the recovery is not reachable any other way: a glob expands over DISTINCT names, so `block lookup 'Butt*'` returned Launchpad's Button and ButtonLink and the global Button appeared nowhere. (2) The order is a declared, derived RANKING (`PackLookup.scopeWeight` in `pragma.conf.ts`, generated by `packs/sparql/buildLookupQuery.ts#rankingClause`): a tier's depth comes from the `/` count in its OWN `ds:name` (`\"Apps/Launchpad\"` → 2, never from the `_` in `ds:apps_launchpad`), and it MULTIPLIES the existing type weight rather than tiebreaking above it, so a whole component in a nested tier still outranks a global SUBcomponent (`TextInput`). Nothing is enumerated, so a tier added upstream is placed without an edit here; an asserted `ds:tierRank` would take precedence over the derived depth and retire the config declaration with no code change. WHAT REMAINS a gap: `lookup` is still not tier-SCOPED — there is no way to ask for one tier's answer only, the ranking merely decides which comes first — and since L-OPEN-9 nothing is tier/channel-FILTERED (the hand-written `block list` went with its `tierChain.ts`; see `block-list-unfiltered`). Two top-level tiers still cannot be ordered against each other by depth alone, which today leaves `Navigation` (`global` vs `apps`) and `InfoTable` (`global` vs `sites`) decided by the IRI fallback; naming a precedence among the depth-1 tiers is an ontology question, deliberately NOT invented here.",
+  },
+  {
+    id: "block-list-unfiltered",
+    area: "block",
+    description:
+      "L-OPEN-9 (owner-signed): `block list` is the block story's compiled, UNFILTERED list — it shows every block, including experimental/alpha ones, for everyone, until filtering returns in declared form. The old tier-chain inheritance, channel visibility, and `--all-tiers` escape were hand-written filtering the pack grammar has no term for, and the ruling removed them rather than growing the grammar to keep them. `config.tier` consequently scopes nothing (reported by `config show`/`info` only); `config.channel` keeps only its npm dist-tag role for `upgrade`/`info`.",
   },
   {
     id: "graph-query-deferred",
@@ -175,5 +181,11 @@ export const PARITY_GAPS: readonly ParityGapEntry[] = [
     area: "mcp/prompts",
     description:
       "The native MCP `prompts/list` (and the `prompt_list`/`prompt_lookup` content tools) project `ds:Prompt` KG entities read from the ACTIVE pack index (`kernel/project/mcp/prompts/source.ts#listPromptSummaries`) — project-supplied data, NOT shipped in the embedded/bundled pack. A bare install (no project-authored `ds:Prompt`) advertises the prompts capability but lists ZERO prompts, never booting the store on the list path. Non-empty listings are exercised only against the seeded fixture graph (`testing/fixtures/graph/canonical.ts`); the storeless empty-by-default case is pinned by `prompts.test.ts` ('lists zero prompts … when no prompt entities exist').",
+  },
+  {
+    id: "scope-not-band-in-machine-output",
+    area: "setup / doctor `--format json`",
+    description:
+      "A setup plan row and a doctor check carry their config scope under the key `scope` (values `global`/`project`), not `band`. The old shell's type layer said `band` (`ScopeBand`, `PlanRow.band`, `CheckResult.band`) while every user-facing string had already moved to the scope vocabulary the `--global`/`--local` flags use; the type-layer rename (kernel/render/vocabulary.ts) finished the move, and `--format json`/MCP emit the model verbatim, so the machine key moved with it. Any consumer reading `.band` off `setup --format json` or `doctor --format json` reads `.scope` now — `setup.render.test.ts` pins that neither spelling of `band` can return through any render, JSON included.",
   },
 ] as const;

@@ -14,8 +14,8 @@
  * @example
  * ```bash
  * summon component svelte --component-path=src/lib/components/Button
- * summon component svelte --component-path=src/lib/components/Card --with-stories
- * summon component svelte --component-path=src/lib/components/Modal --with-stories --use-ts-stories
+ * summon component svelte --component-path=src/lib/components/Card --no-with-stories
+ * summon component svelte --component-path=src/lib/components/Modal --use-ts-stories
  * ```
  *
  * @module
@@ -23,19 +23,23 @@
 
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { type GeneratorDefinition, template } from "@canonical/summon-core";
+import {
+  type GeneratorDefinition,
+  loadTemplateSync,
+  template,
+} from "@canonical/summon-core";
 import { debug, info, mkdir, sequence_, when } from "@canonical/task";
-
 import {
   appendExportToParentIndex,
   createComponentPathPrompt,
   createTemplateContext,
+  failIfComponentExists,
   getComponentName,
   getParentDir,
   PACKAGE_NAME,
+  packageVersion,
   sharedPrompts,
 } from "../shared/index.js";
-import { loadTemplateSync } from "../shared/loadTemplate.js";
 import type { SvelteComponentAnswers } from "./types.js";
 
 // =============================================================================
@@ -99,7 +103,7 @@ const generator = {
     displayName: `${PACKAGE_NAME}:svelte`,
     description:
       "Generate a Svelte 5 component with TypeScript, tests, stories, and styles",
-    version: "0.1.0",
+    version: packageVersion(),
     help: `Generate a Svelte 5 component with TypeScript, tests, stories, and styles.
 
 FEATURES:
@@ -115,8 +119,8 @@ The component name is extracted from the path and must be PascalCase.
 For example, 'src/lib/components/Button' creates a 'Button' component.`,
     examples: [
       "summon component svelte --component-path=src/lib/components/Button",
-      "summon component svelte --component-path=src/lib/components/Card --with-styles --with-stories",
-      "summon component svelte --component-path=src/lib/components/Modal --with-stories --use-ts-stories",
+      "summon component svelte --component-path=src/lib/components/Card --no-with-styles --no-with-stories",
+      "summon component svelte --component-path=src/lib/components/Modal --use-ts-stories",
       "summon component svelte --component-path=src/lib/components/Button --dry-run",
     ],
   },
@@ -138,11 +142,15 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
     const componentName = getComponentName(answers.componentPath);
     const componentDir = answers.componentPath;
     const parentDir = getParentDir(answers.componentPath);
-    const ctx = createTemplateContext(answers, "svelte");
+    const ctx = createTemplateContext(answers);
     const t = svelteTemplates();
 
     return sequence_([
       info(`Generating Svelte component: ${componentName}`),
+
+      // Refuse to scaffold over an existing component: the writes' delete
+      // undos would otherwise let --undo destroy pre-existing files.
+      failIfComponentExists(componentDir),
 
       debug("Creating component directory"),
       mkdir(componentDir),

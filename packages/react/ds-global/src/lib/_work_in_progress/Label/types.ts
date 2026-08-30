@@ -4,7 +4,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 /**
  * Props for the Label component
  *
- * @implements dso:global.component.label
+ * @implements ds:global.component.label
  *
  * Anatomy (from DSL):
  * - layout.display: inline

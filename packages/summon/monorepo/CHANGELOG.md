@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
+
+**Note:** Version bump only for package @canonical/summon-monorepo
+
+
+
+
+
+# [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
+
+
+### Bug Fixes
+
+* **deps:** batch package dependency updates ([#963](https://github.com/canonical/pragma/issues/963)) ([923f482](https://github.com/canonical/pragma/commit/923f4825325ecd1afc93ec9bbeca7437a4a4569f)), closes [#958](https://github.com/canonical/pragma/issues/958) [#935](https://github.com/canonical/pragma/issues/935) [#919](https://github.com/canonical/pragma/issues/919) [#918](https://github.com/canonical/pragma/issues/918) [#894](https://github.com/canonical/pragma/issues/894)
+* **summon-monorepo:** working publish auth, honest metadata, resolvable root deps ([#983](https://github.com/canonical/pragma/issues/983)) ([77a8173](https://github.com/canonical/pragma/commit/77a817364724c8a3faa157bcc6502bd8ee3dcbe2))
+
+
+
+
+
+# [0.34.0](https://github.com/canonical/pragma/compare/v0.33.0...v0.34.0) (2026-08-21)
+
+
+### Bug Fixes
+
+* **summon:** compile summon-monorepo and summon-package to JavaScript ([#913](https://github.com/canonical/pragma/issues/913)) ([8a46245](https://github.com/canonical/pragma/commit/8a462450fffead7f0cd0c9b7126101832779b3ec))
+
+
+
+
+
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 
 **Note:** Version bump only for package @canonical/summon-monorepo

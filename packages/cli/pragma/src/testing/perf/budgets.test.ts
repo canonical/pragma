@@ -15,8 +15,19 @@ import {
 } from "./budgets.js";
 import { measureCommand, percentile, trimmedMean } from "./measure.js";
 
-/** The compiled binary the perf globalSetup guarantees exists. */
-const BINARY = fileURLToPath(new URL("../../../dist/pragma", import.meta.url));
+/**
+ * The shipped entry the perf globalSetup guarantees exists, spawned through
+ * `node` — which is what a consumer's `pragma` does, so node's own startup is
+ * inside every sample rather than excluded from it. The budgets below are
+ * ceilings on what a user waits, not on what a bundler produced.
+ */
+const NODE = process.execPath;
+const ENTRY = fileURLToPath(
+  new URL("../../../dist/src/bin.js", import.meta.url),
+);
+
+/** Argv for one CLI invocation through the shipped entry. */
+const cli = (...args: string[]): string[] => [ENTRY, ...args];
 
 /** Fresh XDG dirs so spawned runs never touch real state (and first-run is isolated). */
 const perfEnv = {
@@ -25,7 +36,7 @@ const perfEnv = {
 };
 
 /**
- * Protected budget suite. Spawns the standalone `dist/pragma`, discards
+ * Protected budget suite. Spawns the shipped entry through `node`, discards
  * warmups, and asserts median + p95 against the ceilings in budgets.ts. Given
  * spawn-time variance, each spawn case retries.
  */
@@ -45,7 +56,7 @@ describe("perf budgets (PROTECTED)", () => {
   });
 
   it("pragma --help stays under budget", { retry: 2 }, () => {
-    const result = measureCommand(BINARY, ["--help"], {
+    const result = measureCommand(NODE, cli("--help"), {
       runs: 15,
       warmups: 3,
       env: perfEnv,
@@ -55,7 +66,7 @@ describe("perf budgets (PROTECTED)", () => {
   });
 
   it("pragma __complete stays under budget", { retry: 3 }, () => {
-    const result = measureCommand(BINARY, ["__complete", "config"], {
+    const result = measureCommand(NODE, cli("__complete", "config"), {
       runs: 30,
       warmups: 5,
       env: perfEnv,
@@ -77,8 +88,8 @@ describe("perf budgets (PROTECTED)", () => {
     // dir → an empty walk, but it exercises the discoverSkills path per spawn;
     // enforce the same robust statistic as the noun case.
     const result = measureCommand(
-      BINARY,
-      ["__complete", "skill", "lookup", "do"],
+      NODE,
+      cli("__complete", "skill", "lookup", "do"),
       {
         runs: 30,
         warmups: 5,
@@ -94,13 +105,13 @@ describe("perf budgets (PROTECTED)", () => {
 
   it("warm store-backed verb stays under budget", { retry: 2 }, () => {
     // __store-probe boots the embedded pack from its n-quads cache and queries
-    // it — the full store-backed verb cost in the compiled binary. The first
+    // it — the full store-backed verb cost through the shipped entry. The first
     // spawn materializes the pack; warmups absorb it, then it is a cache hit.
     // Note that with 9 kept samples a nearest-rank p95 IS the maximum (see
     // BUDGETS.md's p95-stabilization section) — deliberately kept, because the
     // honest statistic here is the one that catches real cost, and the ceiling
     // is sized with a 1.25× margin over a projected p95 to absorb it.
-    const result = measureCommand(BINARY, ["__store-probe"], {
+    const result = measureCommand(NODE, cli("__store-probe"), {
       runs: 12,
       warmups: 3,
       env: {

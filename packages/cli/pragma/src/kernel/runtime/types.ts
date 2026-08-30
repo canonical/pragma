@@ -8,6 +8,7 @@
  * that are actually populated by the time it runs.
  */
 
+import type { UndoOutcome } from "@canonical/task/node";
 import type { DetailLevel, OutputFormat } from "../../constants.js";
 import type { ConfigLayers } from "../config/types.js";
 
@@ -21,10 +22,14 @@ export interface GlobalFlags {
   readonly llm: boolean;
   /** True when `llm` was inferred from a non-interactive stdout, not requested. */
   readonly autoLlm?: boolean;
-  /** Selected output format; `--format text` is normalised to `plain`. */
+  /** Selected output format (`plain`, `llm`, or `json` — the full set). */
   readonly format: OutputFormat;
   /** Diagnostic output to stderr. */
   readonly verbose: boolean;
+  /** True when `--no-headers` suppressed the plain-table header row. */
+  readonly noHeaders?: boolean;
+  /** True when `--quiet` suppresses success/progress output (errors keep printing). */
+  readonly quiet?: boolean;
   /** Explicit progressive-disclosure level from `--detail`, if any. */
   readonly detail?: DetailLevel;
 }
@@ -94,6 +99,8 @@ export interface QueryFacade {
 export interface MutationRuntime {
   /** True for a plan-only preview; false for a real execution. */
   readonly preview: boolean;
+  /** True when this invocation reverses a previous run (`--undo`). */
+  readonly undo?: boolean;
 }
 
 /**
@@ -207,4 +214,28 @@ export interface PragmaRuntime {
    * returning the Task, and the projector reads it back on the real-run branch.
    */
   exec?: RunnerOptions;
+  /**
+   * Structured plan data a mutating verb stashes for the `--dry-run` branch to
+   * render through its `output.formatPlan` seam, and to carry verbatim in the
+   * JSON dry-run envelope. NOT readonly, and set the same way `exec` is: the
+   * verb writes it before returning its Task. Unset on every verb that has no
+   * plan of its own, which is what keeps the raw-effect render the default.
+   */
+  planData?: unknown;
+  /**
+   * The post-undo projection seam. `--undo` is two-phase: the undo
+   * interpreter WALKS the verb's task with every effect mocked to collect the
+   * reversals, and only then executes what it collected — so nothing the task
+   * body says while it is interpreted describes what the reversals did (the
+   * body only ever runs under the mocked walk). What DOES describe them is
+   * the interpreter's own per-undo outcomes, correlated by the `undoKey` each
+   * reversal was declared with. A verb that reports per-target results sets
+   * this (the same way it sets `exec`/`planData`, before returning its Task);
+   * the projector's undo branch awaits it with those outcomes AFTER the
+   * collected undos executed and before the `Undid N step(s).` line, so the
+   * verb projects them onto its own rows through the same path its forward
+   * run uses. A throw here is rendered as the run's error (nonzero exit) —
+   * the honest outcome when a reversal did not take.
+   */
+  undoReport?: (outcomes: readonly UndoOutcome[]) => void | Promise<void>;
 }

@@ -16,11 +16,19 @@
  *
  * LIMITATION (accepted, per the review fold): a *transitively*-imported file
  * (e.g. `./pkgs.ts`) edited without touching the entry's mtime is not detected
- * across processes. The fix that would catch it — `bun build --bundle` the config
- * and key on the bundle hash — is unavailable: Bun's bundler cannot run inside
- * the `bun build --compile` binary (no source filesystem at `/$bunfs/root`), and
- * bundling on every load would also blow the warm-load budget. Touch the entry
- * (or bump VERSION) to force a rebuild.
+ * across processes. The fix that would catch it — bundling the config and keying
+ * on the bundle hash — would blow the warm-load budget on every load. Touch the
+ * entry (or bump VERSION) to force a rebuild.
+ *
+ * THE CONFIG IS THE CONSUMER'S OWN TYPESCRIPT, and this is the one place the
+ * distribution executes code it did not author. `pragma` ships on a `node`
+ * shebang, so that import is served by node's type STRIPPING — which erases
+ * annotations and refuses syntax that would need real emit (`enum`, `namespace`,
+ * parameter properties). Those are rejected with `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX`,
+ * which {@link evaluateProjectConfig} names specifically rather than letting it
+ * arrive as an anonymous load failure. The `engines` floor (node >= 22.18) is what
+ * makes stripping default-on — and the range excludes 23.0-23.5, which satisfy
+ * a bare `>=22.18` but predate the 23.x line's own default-on release (23.6).
  */
 
 import { createHash } from "node:crypto";
@@ -34,7 +42,7 @@ import {
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { PROJECT_CONFIG_FILENAME, VERSION } from "../../constants.js";
-import { PragmaError } from "../error/PragmaError.js";
+import { PragmaError } from "../error/index.js";
 import { configCacheDir } from "./paths.js";
 import { parseRawConfig } from "./schema.js";
 import type { RawConfig } from "./types.js";
@@ -94,7 +102,7 @@ export async function evaluateProjectConfig(path: string): Promise<RawConfig> {
   const url = `${pathToFileURL(path).href}?v=${key}`;
   // Evaluating real TypeScript can throw for reasons `parseRawConfig` never sees:
   // a syntax error, a bad import, or a top-level throw in the config module. Left
-  // unwrapped, that raw throw collapses to INTERNAL_ERROR ("please report this
+  // unwrapped, that raw throw collapses to INTERNAL_ERROR ("report this
   // issue") on EVERY command that reads config. Name it: a CONFIG_ERROR that
   // identifies the offending file and the underlying reason.
   let module: { default?: unknown };
@@ -103,8 +111,23 @@ export async function evaluateProjectConfig(path: string): Promise<RawConfig> {
   } catch (error) {
     if (error instanceof PragmaError) throw error;
     const reason = error instanceof Error ? error.message : String(error);
+    // Node strips types rather than compiling them, so a config using syntax that
+    // needs real emit fails here with a message naming neither the constraint nor
+    // the fix. Say both — this is a supported config that simply must be written
+    // in erasable TypeScript, and the author has no other way to learn that.
+    const { code } = (error ?? {}) as { code?: unknown };
+    if (code === "ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX") {
+      throw PragmaError.configError(
+        `Your ${PROJECT_CONFIG_FILENAME} uses TypeScript syntax that cannot be erased: ${reason}`,
+        {
+          recovery: {
+            message: `Rewrite it in erasable TypeScript — types, interfaces and \`satisfies\` are fine; \`enum\`, \`namespace\` and constructor parameter properties are not. A plain object literal with a \`default\` export always works.`,
+          },
+        },
+      );
+    }
     throw PragmaError.configError(
-      `Could not load project config ${path}: ${reason}`,
+      `Cannot load project config ${path}: ${reason}`,
       {
         recovery: {
           message: `Fix the error in your ${PROJECT_CONFIG_FILENAME} (it must evaluate to a default export), then try again.`,

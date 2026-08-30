@@ -2,7 +2,21 @@ import type { RelayParameters } from "@canonical/storybook-addon-relay";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Suspense } from "react";
 import { expect } from "storybook/test";
+import { catalogs } from "#i18n/index.js";
 import Component from "./ProductList.js";
+
+/**
+ * The locale toolbar rerenders every story in the selected locale, so play
+ * assertions must never hard-code English copy. Data values (product and
+ * viewer names) are locale-independent; translated chrome is asserted
+ * against the active locale's own catalog, and counts structurally.
+ */
+const messagesFor = (locale: unknown): Record<string, unknown> =>
+  catalogs[
+    (typeof locale === "string" && locale in catalogs
+      ? locale
+      : "en") as keyof typeof catalogs
+  ];
 
 const meta = {
   title: "Catalog/ProductList",
@@ -65,18 +79,24 @@ export const Default: Story = {
       },
     } satisfies RelayParameters,
   },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, globals }) => {
+    const messages = messagesFor(globals.locale);
+
     await expect(
       await canvas.findByText("Aurora Dev Board"),
     ).toBeInTheDocument();
     await expect(canvas.getByText("Ada Lovelace")).toBeInTheDocument();
-    await expect(
-      canvas.getByText(/showing 2 of 5 products/),
-    ).toBeInTheDocument();
+    // Both resolved products render as cards; the summary line is plural-
+    // formatted per locale, so the count is asserted structurally.
+    await expect(canvas.getAllByRole("article")).toHaveLength(2);
     // The Polar Sensor Kit is the story's out-of-stock product.
-    await expect(canvas.getByText(/out of stock/)).toBeInTheDocument();
     await expect(
-      canvas.getByText("More products are available."),
+      canvas.getByText(String(messages["catalog.outOfStock"]), {
+        exact: false,
+      }),
+    ).toBeInTheDocument();
+    await expect(
+      canvas.getByText(String(messages["catalog.more"])),
     ).toBeInTheDocument();
   },
 };
@@ -94,10 +114,15 @@ export const EmptyCatalog: Story = {
       },
     } satisfies RelayParameters,
   },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, globals }) => {
+    const messages = messagesFor(globals.locale);
+
+    // The list section rendered (its accessible label is locale-scoped)…
     await expect(
-      await canvas.findByText(/showing 0 of 0 products/),
+      await canvas.findByLabelText(String(messages["catalog.listLabel"])),
     ).toBeInTheDocument();
+    // …with no product cards; the summary line is plural-formatted per
+    // locale, so emptiness is asserted structurally.
     await expect(canvas.queryByRole("article")).not.toBeInTheDocument();
   },
 };

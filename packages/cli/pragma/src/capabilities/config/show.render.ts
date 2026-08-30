@@ -8,7 +8,7 @@
 
 import type { ConfigOrigin } from "../../kernel/config/types.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
-import type { Formatters } from "../../kernel/spec/types.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 import type { ConfigShowData } from "./types.js";
 
 /** A `[layer]` marker for values a config file supplied (blank for defaults). */
@@ -31,11 +31,7 @@ type ConfigRow = readonly [label: string, value: string, marker: string];
 function configRows(data: ConfigShowData): readonly ConfigRow[] {
   const { config, origins } = data;
   return [
-    [
-      "tier",
-      config.tier ?? "(none — all tiers visible)",
-      originMarker(origins.tier),
-    ],
+    ["tier", config.tier ?? "(none)", originMarker(origins.tier)],
     ["channel", config.channel, originMarker(origins.channel)],
     ["detail", config.detail ?? "standard", originMarker(origins.detail)],
     ["packs", entryNames(config.packs ?? []), originMarker(origins.packs)],
@@ -88,7 +84,7 @@ export const configShowFormatters: Formatters<ConfigShowData> = {
     const lines = [
       "## Configuration",
       "",
-      `- **Tier:** ${config.tier ?? "none (all tiers)"}${originMarker(origins.tier)}`,
+      `- **Tier:** ${config.tier ?? "none"}${originMarker(origins.tier)}`,
       `- **Channel:** ${config.channel}${originMarker(origins.channel)}`,
       `- **Detail:** ${config.detail ?? "standard"}${originMarker(origins.detail)}`,
       `- **Packs:** ${entryNames(config.packs ?? [])}${originMarker(origins.packs)}`,

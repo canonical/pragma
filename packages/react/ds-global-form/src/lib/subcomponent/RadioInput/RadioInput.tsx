@@ -16,6 +16,8 @@ const componentCssClassName = "ds form-radio";
  * @returns {ReactElement} - Rendered RadioInput
  *
  * `import { RadioInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.radio_input
  */
 export const RadioInput = forwardRef<HTMLInputElement, RadioInputProps>(
   function RadioInput(

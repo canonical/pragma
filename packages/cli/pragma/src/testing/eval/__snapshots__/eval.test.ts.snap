@@ -3,6 +3,11 @@
 exports[`eval harness — seed gate > runs the full seed (stable + read-noun) cases clean 1`] = `
 [
   {
+    "id": "content-block-list-is-channel-independent",
+    "kind": "content",
+    "passed": true,
+  },
+  {
     "id": "content-canonical-graph-has-4-components",
     "kind": "content",
     "passed": true,
@@ -58,12 +63,12 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
     "passed": true,
   },
   {
-    "id": "content-normal-channel-drops-beta-only-block",
+    "id": "content-standard-category-counts-match-filtered-list",
     "kind": "content",
     "passed": true,
   },
   {
-    "id": "content-standard-list-length-equals-category-count-sum",
+    "id": "content-standard-category-rollup-keeps-the-direct-member",
     "kind": "content",
     "passed": true,
   },
@@ -113,7 +118,7 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
     "passed": true,
   },
   {
-    "id": "prompt-tokens-config-maps-to-token-add-config",
+    "id": "prompt-tokens-config-maps-to-nothing",
     "kind": "prompt",
     "passed": true,
   },
@@ -173,6 +178,21 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
     "passed": true,
   },
   {
+    "id": "tool-standard-list-empty-category-is-a-calm-empty-list",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-standard-list-names-are-addressable-by-lookup",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-standard-lookup-advertised-glob-matches",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
     "id": "tool-standard-lookup-has-dos-and-donts",
     "kind": "tool",
     "passed": true,
@@ -183,7 +203,12 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
     "passed": true,
   },
   {
-    "id": "tool-token-add-config-is-plan-first",
+    "id": "tool-token-lookup-addresses-only-what-list-publishes",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-token-noun-is-read-only",
     "kind": "tool",
     "passed": true,
   },

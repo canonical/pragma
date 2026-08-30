@@ -112,15 +112,27 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     const { upgradeModule } = await import("./capabilities/upgrade/index.js");
     const { colophonModule } = await import("./capabilities/colophon/index.js");
 
-    const help = formatRootHelp(BIN_NAME, PROGRAM_DESCRIPTION, [
-      dishList,
-      ...configModule.verbs,
-      ...upgradeModule.verbs,
-      ...colophonModule.verbs,
-    ]);
+    const help = formatRootHelp(
+      BIN_NAME,
+      PROGRAM_DESCRIPTION,
+      [
+        dishList,
+        ...configModule.verbs,
+        ...upgradeModule.verbs,
+        ...colophonModule.verbs,
+      ],
+      "9.9.9",
+      "https://recipes.test/issues",
+      // A human at a terminal: the fork's own art (it declares none) would
+      // print here, so the assertions below see the widest page.
+      { llm: false, format: "plain", verbose: false },
+    );
 
     expect(help).not.toMatch(THIS_DISTRIBUTION);
-    expect(help).toMatch(/^recipes — Explore the recipe graph$/m);
+    // The fork's own name and its own version — the header stamps the build
+    // exactly as `--version` reports it, and neither half names this
+    // distribution.
+    expect(help).toMatch(/^recipes v9\.9\.9 — Explore the recipe graph$/m);
     // The pack noun leads the page untitled, and the blurb is not repeated as
     // a heading three lines under the header that already carries it.
     expect(help).toMatch(/^Usage: recipes .*\n\n {2}dish\b/m);
@@ -151,29 +163,28 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     expect(text.startsWith("recipes — Explore the recipe graph (")).toBe(true);
   });
 
-  it("greets a first-time user with the fork's issues URL and config file", async () => {
+  it("hints at a first-time user in the fork's own name", async () => {
     process.env.XDG_CONFIG_HOME = mkdtempSync(join(tmpdir(), "identity-"));
-    const { ensureFirstRun } = await import("./kernel/config/firstRun.js");
+    const { setupHintLines } = await import("./kernel/config/firstRun.js");
     const { globalConfigPath } = await import("./kernel/config/paths.js");
 
-    const lines: string[] = [];
-    await ensureFirstRun((line) => lines.push(line));
-    const greeting = lines.join("\n");
+    const hint = setupHintLines().join("\n");
 
-    // Nothing is masked: the resolved config path is IN the greeting, so the
-    // XDG namespace has to follow the fork's name too or this assertion fails.
-    expect(greeting).not.toMatch(THIS_DISTRIBUTION);
-    expect(greeting).toContain(globalConfigPath());
+    // The hint names the fork's issues URL and its own setup command; the XDG
+    // namespace has to follow the fork's name too or the path assertion fails.
+    expect(hint).not.toMatch(THIS_DISTRIBUTION);
     expect(globalConfigPath()).toContain("/recipes/");
-    expect(greeting).toContain("https://example.invalid/recipes/issues");
-    expect(greeting).toContain("`recipes.config.ts`");
+    expect(hint).toContain("https://example.invalid/recipes/issues");
+    expect(hint).toContain("recipes setup");
   });
 
   it("narrates the colophon the fork declares, titled with the fork's name", async () => {
     // The toolchain colophon is DECLARED content (`pragma.conf.ts#colophon`),
     // not authored code: the collector must render the fork's declaration
-    // under the fork's own name. With no packs declared, the fork's whole
-    // colophon is its own story. `kind: "pragma"` is asserted AS the literal:
+    // under the fork's own name. This is also where the FALLBACK is pinned —
+    // the toolchain's own section prints when no pack tells a domain story,
+    // and a fork with no packs is the distribution that has none.
+    // `kind: "pragma"` is asserted AS the literal:
     // it is the frozen JSON discriminant every distribution serves (wire
     // compatibility, like the resource scheme), deliberately NOT derived.
     process.env.XDG_CONFIG_HOME = mkdtempSync(join(tmpdir(), "identity-"));
@@ -206,15 +217,25 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     // `$XDG_DATA_HOME/pragma/skills` and one `<cwd>/.pragma/skills`, so a fork
     // read the other's skills and could not install its own without collision.
     process.env.XDG_DATA_HOME = join(tmpdir(), "identity-data");
-    const { skillRoots, installedSkillsDir } = await import(
+    const { skillRoots, installedSkillsDir, bundledSkillsDir } = await import(
       "./capabilities/skill/discover.js"
     );
     expect(installedSkillsDir().endsWith(join("recipes", "skills"))).toBe(true);
-    expect(skillRoots("/work")).toEqual([
+    // The two roots that live on SHARED ground — the user's data home and the
+    // user's repository — are the ones a fork must namespace.
+    const namespaced = [
       join("/work", ".recipes", "skills"),
       installedSkillsDir(),
-    ]);
-    for (const root of skillRoots("/work")) {
+    ];
+    // The bundled snapshot is the third, and it is deliberately NOT namespaced
+    // by the bin name: it is the distribution's OWN package directory, which is
+    // already private to the install. A fork is a different package and ships
+    // its own `bundled-skills/`, so there is no shared ground to collide on —
+    // and it is exempt from the check below for exactly that reason, since the
+    // path this repository's package sits at necessarily says "pragma".
+    expect(bundledSkillsDir()).toBeDefined();
+    expect(skillRoots("/work")).toEqual([...namespaced, bundledSkillsDir()]);
+    for (const root of namespaced) {
       expect(root).not.toMatch(THIS_DISTRIBUTION);
     }
   });
@@ -246,10 +267,16 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     const { pragmaMcpEntry } = await import(
       "./capabilities/setup/operations/setupMcp.js"
     );
-    expect(pragmaMcpEntry("/work")).toEqual({
+    expect(pragmaMcpEntry("/work", "project")).toEqual({
       command: "recipes",
-      args: ["mcp"],
+      args: ["mcp", "serve"],
       cwd: "/work",
+    });
+    // The global scope omits `cwd` (a per-user server is not project-pinned)
+    // but still runs the fork's own binary.
+    expect(pragmaMcpEntry("/work", "global")).toEqual({
+      command: "recipes",
+      args: ["mcp", "serve"],
     });
   });
 
@@ -263,9 +290,10 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     // ONE exemption, the same one the MCP orientation case above makes and for
     // the same reason: the `pragma:` resource scheme is covenant-frozen PROTOCOL
     // identity (`surface.v2.json`), inherited by a fork along with the
-    // `pragma/box` and `pragma/instanceCount` `_meta` keys it travels with, and
-    // `tools.md` reports it truthfully. Masked from the emitted surface, not by
-    // a literal, so a leak the kernel authored itself still fails here.
+    // `pragma/box`, `pragma/instanceCount` and `pragma/type` `_meta` keys it
+    // travels with, and `tools.md` reports it truthfully. Masked from the
+    // emitted surface, not by a literal, so a leak the kernel authored itself
+    // still fails here.
     const { emitReference } = await import("./kernel/spec/emitReference.js");
     const { emitSurface } = await import("./kernel/spec/emitSurface.js");
     const { capabilities } = await import("./capabilities/index.js");
@@ -289,7 +317,7 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     // hardcoded term still passes every other test in this suite: the fixtures
     // on both sides would simply agree. So capture what the readers EMIT.
     const { DEFAULT_PREFIX_MAP } = await import("./kernel/render/prefixes.js");
-    const { runTierLookup } = await import("./capabilities/tier/runLookup.js");
+    const { VOCABULARY } = await import("./kernel/vocabulary.js");
     const { readPrompts } = await import(
       "./kernel/project/mcp/prompts/source.js"
     );
@@ -302,13 +330,17 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
       "http://www.w3.org/2000/01/rdf-schema#",
     );
 
-    // The tier noun's LIST query is no longer code: it is a story the
-    // distribution declares, so a fork writes its own terms into it directly
-    // and there is nothing here for a hardcoded term to hide in.
-    // `distribution.test.ts` holds this distribution's declaration to the same
-    // class and property the tier code below reads.
-    //
-    // The two generated reads, captured off a stub facade.
+    // The tier noun is no longer code AT ALL (L-OPEN-9): both its verbs are a
+    // story the distribution declares, so a fork writes its own terms into the
+    // declaration directly and there is nothing left in the kernel for a
+    // hardcoded tier term to hide in. `distribution.test.ts` holds this
+    // distribution's declaration coherent with the vocabulary. What the KERNEL
+    // still reads domain terms with is the vocabulary projection (the index
+    // builder interpolates `VOCABULARY.altName`) and the prompts reader —
+    // captured below.
+    expect(VOCABULARY.altName).toBe("rcp:name");
+
+    // The generated prompt read, captured off a stub facade.
     const queries: string[] = [];
     const recorder = {
       query: {
@@ -319,13 +351,9 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
       },
     } as never;
 
-    await expect(runTierLookup(recorder, "Starters")).rejects.toMatchObject({
-      code: "ENTITY_NOT_FOUND",
-    });
     await expect(readPrompts(recorder)).resolves.toEqual([]);
 
     const emitted = queries.join("\n");
-    expect(emitted).toContain("rcp:name");
     expect(emitted).toContain("rcp:Prompt");
     expect(emitted).toContain("rcp:promptBody");
     expect(emitted).not.toMatch(THIS_DISTRIBUTION);

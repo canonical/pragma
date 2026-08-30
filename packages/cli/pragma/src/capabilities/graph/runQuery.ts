@@ -10,9 +10,8 @@
  */
 
 import type { QueryResult } from "@canonical/ke";
-import { PragmaError } from "../../kernel/error/PragmaError.js";
-import { cliRecovery } from "../../kernel/error/recovery.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
+import { cliRecovery, PragmaError } from "../../kernel/error/index.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 
 /**
  * Execute a raw SPARQL query against the booted store.

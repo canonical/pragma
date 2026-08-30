@@ -7,46 +7,41 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { embeddedManifest } from "./graphpack/embedded.js";
 
 /**
- * The store-boot path only fully lives in the standalone binary: this is the
- * one thing vitest's in-process suite cannot catch — whether oxigraph's WASM
- * and the embedded pack survive `bun build --compile`. So compile a fresh
- * binary from the current source and spawn it. If the WASM did not embed, the
- * probe crashes and this fails loudly (rather than the compiled CLI silently
- * failing every store-backed command in production).
+ * The store-boot path at the PROCESS BOUNDARY: whether oxigraph's WASM and the
+ * embedded pack actually load from the shipped artifact. vitest's in-process
+ * suite cannot catch this — it imports the source tree directly, so a break in
+ * how the emit resolves the WASM or the inlined pack would leave it green while
+ * every store-backed command failed for a consumer.
+ *
+ * It used to compile a `bun build --compile` binary and spawn that, because the
+ * shipped artifact WAS that binary and the question was whether the WASM
+ * survived embedding. The package now ships emitted JavaScript, so the same
+ * guard points at the same place it always did — what a consumer runs — which is
+ * `node dist/src/bin.js`. Compiling a binary here would test an artifact nobody
+ * receives.
+ *
+ * Every spawn runs in a scratch cwd with `HOME` and all three XDG roots inside
+ * it, so anything the CLI answers it answered from its own shipped state.
  */
-const packageRoot = fileURLToPath(new URL("../../../", import.meta.url));
-
 let workdir: string;
-let binary: string;
+
+/** The shipped entry, provisioned by `testing/perf/globalSetup.ts`. */
+const shippedEntry = fileURLToPath(
+  new URL("../../../dist/src/bin.js", import.meta.url),
+);
 
 beforeAll(() => {
   workdir = mkdtempSync(join(tmpdir(), "pragma-wasm-smoke-"));
-  binary = join(workdir, "pragma-smoke");
-  const build = spawnSync(
-    "bun",
-    [
-      "build",
-      "--compile",
-      "--target=bun-linux-x64",
-      "src/bin.ts",
-      "--outfile",
-      binary,
-    ],
-    { cwd: packageRoot, stdio: "pipe", encoding: "utf-8" },
-  );
-  if (build.status !== 0) {
-    throw new Error(`smoke build failed:\n${build.stderr}`);
-  }
-}, 120_000);
+});
 
 afterAll(() => {
   rmSync(workdir, { recursive: true, force: true });
 });
 
-/** Run the compiled binary in a scratch cwd with isolated XDG dirs (no local
- * node_modules, no real cache) — proves the binary is self-contained. */
+/** Run the shipped entry in a scratch cwd with isolated XDG dirs (no real
+ * config, cache or state) — anything it answers, it answered from itself. */
 const runBinary = (args: string[]) =>
-  spawnSync(binary, args, {
+  spawnSync(process.execPath, [shippedEntry, ...args], {
     cwd: workdir,
     stdio: "pipe",
     encoding: "utf-8",
@@ -59,8 +54,8 @@ const runBinary = (args: string[]) =>
     },
   });
 
-describe("oxigraph WASM + embedded pack embed in the compiled binary (PROTECTED)", () => {
-  it("dist binary boots the embedded store via __store-probe (needsStore path)", () => {
+describe("oxigraph WASM + embedded pack load from the shipped entry (PROTECTED)", () => {
+  it("the shipped entry boots the embedded store via __store-probe (needsStore path)", () => {
     const run = runBinary(["__store-probe"]);
     expect(run.status, run.stderr).toBe(0);
     const out = JSON.parse(run.stdout.trim()) as {
@@ -69,14 +64,14 @@ describe("oxigraph WASM + embedded pack embed in the compiled binary (PROTECTED)
       triples: string;
     };
     expect(out.ok).toBe(true);
-    // The compiled binary is the only place this is worth asserting: the store
-    // it booted from the inlined `data.nq` must hold exactly what the committed
+    // Worth asserting only across the process boundary: the store booted from
+    // the inlined `data.nq` must hold exactly what the committed
     // `manifest.json` claims was built into it.
     expect(Number(out.triples)).toBe(embeddedManifest().tripleCount);
     expect(out.entities).toBeGreaterThan(0);
   });
 
-  it("dist binary runs storeless sources status", () => {
+  it("the shipped entry runs storeless sources status", () => {
     const run = runBinary(["sources", "status", "--format", "json"]);
     expect(run.status, run.stderr).toBe(0);
     const envelope = JSON.parse(run.stdout.trim()) as {
@@ -88,10 +83,13 @@ describe("oxigraph WASM + embedded pack embed in the compiled binary (PROTECTED)
     expect(envelope.data.store).toBe("embedded");
   });
 
-  // Regression guard: `sources update` walks a package's TTL directories. The
-  // compiled binary's node:fs globSync mishandles `**` (returns bogus paths),
-  // which the in-process suite could not catch — so exercise the real binary.
-  it("dist binary runs sources update end-to-end (build + point + status)", () => {
+  // Regression guard: `sources update` walks a package's TTL directories with
+  // `node:fs` globSync, whose `**` handling has broken under a shipped runtime
+  // before (returning bogus paths) where the in-process suite stayed green — so
+  // exercise it through the real entry. This case also writes a real
+  // `pragma.config.ts`, which the shipped entry loads through node's TypeScript
+  // type stripping: the one test that exercises that path end-to-end.
+  it("the shipped entry runs sources update end-to-end (build + point + status)", () => {
     const pkg = join(workdir, "pkg");
     const proj = join(workdir, "proj");
     mkdirSync(join(pkg, "definitions"), { recursive: true });
@@ -117,7 +115,7 @@ ex:one a ex:Widget ; rdfs:label "One" .
       XDG_CONFIG_HOME: join(workdir, "config"),
     };
     const inProj = (args: string[]) =>
-      spawnSync(binary, args, {
+      spawnSync(process.execPath, [shippedEntry, ...args], {
         cwd: proj,
         stdio: "pipe",
         encoding: "utf-8",

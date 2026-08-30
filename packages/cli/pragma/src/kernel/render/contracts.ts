@@ -7,6 +7,27 @@
  * option bags and hand them to {@link renderers}.
  */
 
+/**
+ * Presentation context the dispatcher threads into a verb's PLAIN formatter.
+ *
+ * Only list-shaped formatters read it: the header row is a plain-table
+ * concern (`llm` is the byte-frozen agent contract, `json` the envelope), so
+ * rather than a second formatter family the plain formatter takes this
+ * optional second argument. Absent context reads as an interactive terminal
+ * with headers on — the shape every pre-existing caller assumed.
+ */
+export interface RenderContext {
+  /** False when `--no-headers` suppressed the list header row. */
+  readonly headers: boolean;
+  /**
+   * Whether stdout is an interactive terminal. A piped plain EMPTY list
+   * prints its header row as a zero-record table so field-splitting
+   * consumers stay well-formed; a terminal prints nothing (the empty notice
+   * goes to stderr).
+   */
+  readonly stdoutIsTty: boolean;
+}
+
 /** A single column in a list rendering. */
 export interface ColumnDef<T> {
   readonly key: keyof T & string;

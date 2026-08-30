@@ -33,11 +33,13 @@
  * - The embedded fallback is read from `pack.index.generated` — its OWN
  *   generated module (only the index string) — so the storeless `__complete`
  *   path never EVALUATES the n-quads/schema/manifest strings that live in
- *   `pack.generated`. It does not avoid parsing them: `bun build --compile`
- *   emits one script, so the whole embed is parsed at process start on every
- *   invocation (~+25 ms here, measured on `--version` against a toy-embed
- *   binary; BUDGETS.md records it). What the split buys is that a completion
- *   never allocates the 1.87 MB.
+ *   `pack.generated`. Under the compiled binary it did not avoid PARSING them
+ *   either — one emitted script meant the whole embed was parsed at process
+ *   start on every invocation (~+25 ms, measured on `--version`; BUDGETS.md
+ *   records it), and the split bought only that a completion never allocated
+ *   the 1.87 MB. Shipping per-module output changed that: `pack.generated` is
+ *   a separate module the fast path never imports, so it is no longer parsed
+ *   at all there. The split now buys both.
  * - The active pack is resolved through `kernel/runtime/paths` — a LEAF module
  *   (node builtins only) that shares the pointer read with `resolveSources`.
  *   `resolveSources` itself is unreachable from here: it pulls the graphpack
@@ -62,7 +64,7 @@ import { discoverSkills } from "../../capabilities/skill/discover.js";
 // Inlined embedded index — its OWN generated module (only the index string), so
 // the storeless `__complete` path never pulls the n-quads/schema/manifest
 // strings that live in `pack.generated.ts`.
-import { DEFAULT_PREFIX_MAP } from "../render/prefixes.js";
+import { DEFAULT_PREFIX_MAP } from "../render/index.js";
 import { indexJson as EMBEDDED_INDEX_JSON } from "../runtime/graphpack/embedded/pack.index.generated.js";
 import type { PackIndex, PackIndexEntity } from "../runtime/graphpack/types.js";
 import { packDir, readActivePack } from "../runtime/paths.js";
@@ -156,8 +158,19 @@ function loadActiveIndex(cwd: string): PackIndex | undefined {
     : readIndexFile(packDir(contentHash));
 }
 
-/** Whether an entity matches a prefixed type filter (primary type or any type). */
-function matchesType(entity: PackIndexEntity, type: string): boolean {
+/**
+ * Whether an entity matches a prefixed type filter (primary type or any type).
+ *
+ * Exported because the MCP resource listing addresses the index by the SAME
+ * vocabulary a completion source does (`McpListableRef` reuses
+ * `CompletionSourceRef`'s fields), and "which entities is this type?" must be
+ * ONE rule — two would let a type list entities its completion refuses.
+ *
+ * @param entity - The indexed entity to test.
+ * @param type - A prefixed type filter; empty matches every entity.
+ * @returns Whether the entity carries that type.
+ */
+export function matchesType(entity: PackIndexEntity, type: string): boolean {
   if (!type) return true;
   if (entity.type === type) return true;
   return Array.isArray(entity.types) && entity.types.includes(type);

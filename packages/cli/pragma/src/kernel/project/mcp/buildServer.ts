@@ -16,9 +16,9 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { MCP_SERVER_NAME, VERSION } from "../../../constants.js";
-import { bootRuntime } from "../../runtime/boot.js";
-import type { GlobalFlags } from "../../runtime/types.js";
-import type { CapabilityModule } from "../../spec/types.js";
+import type { GlobalFlags } from "../../runtime/index.js";
+import { bootRuntime } from "../../runtime/index.js";
+import type { CapabilityModule } from "../../spec/index.js";
 import { buildInstructions } from "./instructions.js";
 import { registerVerb } from "./registerVerb.js";
 
@@ -66,7 +66,10 @@ export async function buildServer(
       }
     }
     // A module's optional resource surface (NOT a tool) — the `{+uri}` template.
-    await module.mcpResources?.register(server, runtime);
+    // The WHOLE module set goes with it: the listing the provider installs is
+    // the union of every module's declared `mcpListable` slices, which the
+    // declaring module cannot see from where it sits.
+    await module.mcpResources?.register(server, runtime, modules);
     // A module's optional native prompt surface (NOT a tool) — `prompts/*`.
     await module.mcpPrompts?.register(server, runtime);
   }

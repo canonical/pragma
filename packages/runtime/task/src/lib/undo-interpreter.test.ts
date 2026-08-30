@@ -1,10 +1,18 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { parallel, sequence_, when } from "./combinators.js";
+import { ifElseM, parallel, sequence_, when } from "./combinators.js";
 import { dryRun } from "./dry-run.js";
 import { TaskExecutionError } from "./errors.js";
+import { runTask } from "./interpreter.js";
 import {
   appendFile,
   copyDirectory,
@@ -15,12 +23,17 @@ import {
   mkdir,
   readFile,
   symlink,
+  transformFile,
   writeFile,
 } from "./primitives.js";
 import { $, effect, fail, flatMap, gen, map, pure, recover } from "./task.js";
 import type { Task } from "./types.js";
 import { collectUndos } from "./undo.js";
-import { runUndo } from "./undo-interpreter.js";
+import {
+  hostExistsResolver,
+  runCollectedUndos,
+  runUndo,
+} from "./undo-interpreter.js";
 
 // =============================================================================
 // collectUndos
@@ -573,6 +586,478 @@ describe("collectUndos - lazy node handling", () => {
 // =============================================================================
 // collectUndos - Parallel result value is readable by a continuation
 // =============================================================================
+
+describe("collectUndos - host-backed Exists resolution", () => {
+  // The regression this pins: a task that branches on pre-existing host state
+  // (append-if-exists / create-if-missing) must collect the undo of the branch
+  // the forward run actually took. Without a resolver every Exists is false,
+  // so collection always picks the create branch — whose default undo deletes
+  // the pre-existing file.
+  const appendOrCreate = (indexPath: string, line: string): Task<void> =>
+    ifElseM(
+      exists(indexPath),
+      appendFile(indexPath, line, true, { undo: info("remove appended line") }),
+      writeFile(indexPath, line),
+    );
+
+  it("collects the append branch's undo when the resolver reports the path", () => {
+    const undos = collectUndos(appendOrCreate("/idx.ts", "line\n"), {
+      resolveExists: (p) => p === "/idx.ts",
+    });
+
+    expect(undos).toHaveLength(1);
+    const effects = dryRun(undos[0]).effects;
+    expect(effects[0]._tag).toBe("Log");
+  });
+
+  it("collects the create branch's undo when the resolver denies the path", () => {
+    const undos = collectUndos(appendOrCreate("/idx.ts", "line\n"), {
+      resolveExists: () => false,
+    });
+
+    expect(undos).toHaveLength(1);
+    const effects = dryRun(undos[0]).effects;
+    expect(effects[0]._tag).toBe("DeleteFile");
+  });
+
+  it("keeps the legacy blank-filesystem behavior without a resolver", () => {
+    const undos = collectUndos(appendOrCreate("/idx.ts", "line\n"));
+
+    expect(undos).toHaveLength(1);
+    const effects = dryRun(undos[0]).effects;
+    expect(effects[0]._tag).toBe("DeleteFile");
+  });
+
+  it("composes the resolver with the walk's own virtual writes", () => {
+    // The walk itself creates /a; a denying resolver must not hide it.
+    const task = gen(function* () {
+      yield* $(writeFile("/a.txt", "a"));
+      const found = yield* $(exists("/a.txt"));
+      if (found) {
+        yield* $(writeFile("/b.txt", "b"));
+      }
+    });
+    const undos = collectUndos(task, { resolveExists: () => false });
+
+    expect(undos).toHaveLength(2);
+  });
+});
+
+describe("collectUndos - fail-backtracking", () => {
+  // The run being undone succeeded, so collection must not end in a Fail: a
+  // forward-only guard (fail-if-present on a file the run itself created)
+  // reads as failing under host resolution, and the walk must flip that
+  // Exists decision and continue instead of aborting.
+  it("flips an Exists decision that steers into a guard failure", () => {
+    const task = ifElseM(
+      exists("/page.tsx"),
+      fail({ code: "PAGE_EXISTS", message: "already there" }),
+      writeFile("/page.tsx", "content"),
+    );
+
+    const undos = collectUndos(task, { resolveExists: () => true });
+
+    expect(undos).toHaveLength(1);
+    expect(dryRun(undos[0]).effects[0]._tag).toBe("DeleteFile");
+  });
+
+  it("flips only the failing decision in a route-style guard chain", () => {
+    // Domain must exist (true is fine), page must not (true fails): only the
+    // page decision gets flipped.
+    const task = flatMap(exists("/routes.ts"), (domainPresent) =>
+      !domainPresent
+        ? fail({ code: "DOMAIN_MISSING", message: "no domain" })
+        : flatMap(exists("/page.tsx"), (pagePresent) =>
+            pagePresent
+              ? fail({ code: "PAGE_EXISTS", message: "already there" })
+              : sequence_([
+                  writeFile("/page.tsx", "content"),
+                  writeFile("/routes.ts", "routes", {
+                    undo: info("un-insert route"),
+                  }),
+                ]),
+          ),
+    );
+
+    const undos = collectUndos(task, { resolveExists: () => true });
+
+    expect(undos).toHaveLength(2);
+    expect(dryRun(undos[0]).effects[0]._tag).toBe("DeleteFile");
+    expect(dryRun(undos[1]).effects[0]._tag).toBe("Log");
+  });
+
+  it("backtracks even without a resolver", () => {
+    // Legacy preference is false everywhere; a fail on the false branch still
+    // flips rather than aborting collection.
+    const task = ifElseM(
+      exists("/idx.ts"),
+      appendFile("/idx.ts", "line\n", true, { undo: info("remove line") }),
+      fail({ code: "MUST_EXIST", message: "missing" }),
+    );
+
+    const undos = collectUndos(task);
+
+    expect(undos).toHaveLength(1);
+    expect(dryRun(undos[0]).effects[0]._tag).toBe("Log");
+  });
+
+  /**
+   * A re-interpretable chain of `count` free Exists decisions ending in an
+   * unavoidable failure — every branch assignment fails.
+   */
+  const alwaysFailingTree = (count: number): Task<unknown> => {
+    let tail: Task<unknown> = fail({ code: "ALWAYS", message: "every leaf" });
+    for (let i = count - 1; i >= 0; i--) {
+      const rest = tail;
+      tail = flatMap(exists(`/decision-${i}`), () => rest);
+    }
+    return tail;
+  };
+
+  it("rethrows when no flip can avoid the failure", () => {
+    // 2 decisions → 4 assignments, all failing: the search exhausts and the
+    // genuine failure surfaces.
+    expect(() =>
+      collectUndos(alwaysFailingTree(2), { resolveExists: () => true }),
+    ).toThrow(TaskExecutionError);
+  });
+
+  it("still rethrows an unconditional failure immediately", () => {
+    expect(() =>
+      collectUndos(fail({ code: "ERR", message: "boom" }), {
+        resolveExists: () => true,
+      }),
+    ).toThrow(TaskExecutionError);
+  });
+
+  it("gives up after the walk-attempt cap on a pathological tree", () => {
+    // 7 free decisions with every leaf failing = 128 assignments to exhaust,
+    // above the 64-attempt cap.
+    expect(() => collectUndos(alwaysFailingTree(7))).toThrow(
+      /did not converge/,
+    );
+  });
+
+  it("surfaces the failure for a non-re-interpretable gen() task", () => {
+    // A gen() task closes over a single iterator: the backtracking re-walk
+    // sees a spent generator that yields nothing, which must not read as a
+    // successful, empty undo plan.
+    const task = gen(function* () {
+      yield* $(exists("/a"));
+      yield* $(fail({ code: "GUARD", message: "boom" }));
+    });
+
+    expect(() => collectUndos(task, { resolveExists: () => true })).toThrow(
+      TaskExecutionError,
+    );
+  });
+});
+
+describe("collectUndos - onForwardEffect", () => {
+  it("reports the successful walk's leaf effects in forward order", () => {
+    const seen: string[] = [];
+    const task = sequence_([
+      writeFile("/a.txt", "a"),
+      exec("bun", ["install"]),
+      info("done"),
+    ]);
+
+    collectUndos(task, { onForwardEffect: (e) => seen.push(e._tag) });
+
+    expect(seen).toEqual(["WriteFile", "Exec", "Log"]);
+  });
+
+  it("never reports effects from failed backtracking attempts", () => {
+    const seen: string[] = [];
+    const task = ifElseM(
+      exists("/page.tsx"),
+      fail({ code: "PAGE_EXISTS", message: "already there" }),
+      writeFile("/page.tsx", "content"),
+    );
+
+    collectUndos(task, {
+      resolveExists: () => true,
+      onForwardEffect: (e) => seen.push(e._tag),
+    });
+
+    // Only the surviving (flipped) walk's effects: the Exists probe and the
+    // write — never the failed attempt's duplicates.
+    expect(seen).toEqual(["Exists", "WriteFile"]);
+  });
+});
+
+describe("runCollectedUndos", () => {
+  it("executes a pre-collected plan in reverse without re-walking the task", async () => {
+    const order: string[] = [];
+    const onEffectComplete = (eff: import("./types.js").Effect) => {
+      if (eff._tag === "WriteContext" && typeof eff.key === "string") {
+        order.push(eff.key);
+      }
+    };
+    const marker = (label: string) =>
+      effect<void>({ _tag: "WriteContext", key: label, value: true });
+
+    const task = sequence_([
+      writeFile("/tmp/a.txt", "a", { undo: marker("a") }),
+      writeFile("/tmp/b.txt", "b", { undo: marker("b") }),
+    ]);
+    const undos = collectUndos(task);
+
+    const result = await runCollectedUndos(undos, {
+      context: new Map(),
+      onEffectComplete,
+    });
+
+    expect(result.undoCount).toBe(2);
+    expect(order).toEqual(["b", "a"]);
+    // The caller's forward-order array is not mutated by the LIFO execution.
+    expect(dryRun(undos[0]).effects[0]).toMatchObject({ key: "a" });
+  });
+
+  it("returns undoCount 0 for an empty plan", async () => {
+    const result = await runCollectedUndos([]);
+    expect(result.undoCount).toBe(0);
+    expect(result.outcomes).toEqual([]);
+  });
+});
+
+// =============================================================================
+// Per-undo outcomes and failure isolation
+// =============================================================================
+
+describe("runCollectedUndos - per-undo outcomes and failure isolation", () => {
+  it("attempts EVERY undo when one fails, and reports each outcome", async () => {
+    // The red cell against the abort-on-first-failure loop: three collected
+    // undos, the middle one fails. A reversal's job is to undo as much as it
+    // can and report what it could not — so both healthy undos must run
+    // against the real filesystem, and the failure must come back as data.
+    const tempDir = mkdtempSync(join(tmpdir(), "task-undo-isolation-"));
+    const a = join(tempDir, "a.txt");
+    const b = join(tempDir, "b.txt");
+    const c = join(tempDir, "c.txt");
+    try {
+      for (const p of [a, b, c]) writeFileSync(p, "seeded");
+      const task = sequence_([
+        writeFile(a, "a"), // default undo: delete a
+        writeFile(b, "b", {
+          undo: fail({ code: "EXEC_FAILED", message: "the middle undo broke" }),
+        }),
+        writeFile(c, "c"), // default undo: delete c
+      ]);
+
+      const result = await runCollectedUndos(collectUndos(task));
+
+      // Execution (LIFO) order: c's undo, b's failing undo, a's undo.
+      expect(result.outcomes.map((o) => o.status)).toEqual([
+        "undone",
+        "failed",
+        "undone",
+      ]);
+      expect(result.undoCount).toBe(2);
+      expect(result.outcomes[1].error).toMatchObject({
+        code: "EXEC_FAILED",
+        message: "the middle undo broke",
+      });
+      // Both healthy undos really ran — the failure consumed neither of them.
+      expect(existsSync(a)).toBe(false);
+      expect(existsSync(c)).toBe(false);
+      expect(existsSync(b)).toBe(true);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("echoes each undo declaration's `undoKey` on its outcome", async () => {
+    // Correlation is by key, never by index: outcomes come back in execution
+    // order, which is the reverse of declaration order.
+    const task = sequence_([
+      writeFile("/tmp/x.txt", "x", {
+        undo: fail({ code: "EXEC_FAILED", message: "boom" }),
+        undoKey: "unit:x",
+      }),
+      writeFile("/tmp/y.txt", "y", {
+        undo: pure(undefined),
+        undoKey: "unit:y",
+      }),
+      writeFile("/tmp/z.txt", "z", { undo: pure(undefined) }), // unkeyed
+    ]);
+
+    const undos = collectUndos(task);
+    // The key rides the collected undo task itself, so a caller previewing
+    // the plan can already see which unit each step belongs to.
+    expect(undos.map((u) => u.undoKey)).toEqual([
+      "unit:x",
+      "unit:y",
+      undefined,
+    ]);
+
+    const result = await runCollectedUndos(undos);
+    expect(result.outcomes).toEqual([
+      { status: "undone" },
+      { key: "unit:y", status: "undone" },
+      { key: "unit:x", status: "failed", error: expect.anything() },
+    ]);
+  });
+
+  it("a key without an undo declares nothing to correlate", () => {
+    // `exec` has no default undo, and `null` disables one — in both cases the
+    // declaration carries no reversal, so the key is inert and nothing is
+    // collected for it.
+    expect(collectUndos(exec("noop", [], undefined, { undoKey: "k" }))).toEqual(
+      [],
+    );
+    expect(
+      collectUndos(writeFile("/tmp/w.txt", "w", { undo: null, undoKey: "k" })),
+    ).toEqual([]);
+  });
+
+  it("tags the DEFAULT undo with the declaration's key too", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-undo-key-"));
+    const p = join(tempDir, "keyed.txt");
+    try {
+      writeFileSync(p, "seeded");
+      const result = await runCollectedUndos(
+        collectUndos(writeFile(p, "keyed", { undoKey: "row:1" })),
+      );
+      expect(result.outcomes).toEqual([{ key: "row:1", status: "undone" }]);
+      expect(existsSync(p)).toBe(false);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("normalises a raw (non-task) throw into an INTERNAL TaskError", async () => {
+    const rawThrow = flatMap(pure(undefined), (): Task<void> => {
+      throw new Error("raw boom");
+    });
+    const result = await runCollectedUndos(
+      collectUndos(writeFile("/tmp/raw.txt", "raw", { undo: rawThrow })),
+    );
+    expect(result.undoCount).toBe(0);
+    expect(result.outcomes).toEqual([
+      {
+        status: "failed",
+        error: { code: "INTERNAL", message: "Error: raw boom" },
+      },
+    ]);
+  });
+
+  it("rethrows interruption and leaves the pending undos unattempted", async () => {
+    // Cancellation is the one failure isolation must NOT absorb — the same
+    // invariant the interpreter's recovery frames hold. A pre-aborted signal
+    // interrupts the first undo; the rest must never run.
+    const tempDir = mkdtempSync(join(tmpdir(), "task-undo-interrupt-"));
+    const a = join(tempDir, "a.txt");
+    try {
+      writeFileSync(a, "seeded");
+      const controller = new AbortController();
+      controller.abort();
+
+      await expect(
+        runCollectedUndos(collectUndos(writeFile(a, "a")), {
+          signal: controller.signal,
+        }),
+      ).rejects.toMatchObject({ code: "TASK_INTERRUPTED" });
+      expect(existsSync(a)).toBe(true);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("runUndo surfaces the same outcomes end to end", async () => {
+    // The two-phase entry point returns the execution phase's outcomes, so a
+    // caller that never touches `collectUndos` still gets per-undo truth.
+    const tempDir = mkdtempSync(join(tmpdir(), "task-run-undo-outcomes-"));
+    const kept = join(tempDir, "kept.txt");
+    try {
+      writeFileSync(kept, "seeded");
+      const task = sequence_([
+        writeFile(kept, "kept", { undoKey: "row:kept" }),
+        mkdir(join(tempDir, "made"), true, {
+          undo: fail({ code: "EXEC_FAILED", message: "cannot remove" }),
+          undoKey: "row:made",
+        }),
+      ]);
+      mkdirSync(join(tempDir, "made"), { recursive: true });
+
+      const result = await runUndo(task);
+
+      expect(result.undoCount).toBe(1);
+      expect(result.outcomes).toEqual([
+        { key: "row:made", status: "failed", error: expect.anything() },
+        { key: "row:kept", status: "undone" },
+      ]);
+      expect(existsSync(kept)).toBe(false);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("hostExistsResolver", () => {
+  it("resolves relative paths against the given cwd", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-undo-host-"));
+    try {
+      writeFileSync(join(tempDir, "present.txt"), "x");
+      const resolve = hostExistsResolver(tempDir);
+
+      expect(resolve("present.txt")).toBe(true);
+      expect(resolve("missing.txt")).toBe(false);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("uses paths verbatim without a cwd", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-undo-host-"));
+    try {
+      const filePath = join(tempDir, "present.txt");
+      writeFileSync(filePath, "x");
+      const resolve = hostExistsResolver();
+
+      expect(resolve(filePath)).toBe(true);
+      expect(resolve(join(tempDir, "missing.txt"))).toBe(false);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("runUndo - branch fidelity against the real filesystem", () => {
+  it("un-appends from a pre-existing file instead of deleting it", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-undo-append-"));
+    const indexPath = join(tempDir, "index.ts");
+    const existing = 'export * from "./Old/index.js";\n';
+    const appended = 'export * from "./New/index.js";\n';
+
+    try {
+      writeFileSync(indexPath, existing);
+
+      const makeTask = (): Task<void> =>
+        ifElseM(
+          exists(indexPath),
+          appendFile(indexPath, appended, true, {
+            undo: transformFile(indexPath, (content) =>
+              content.replace(appended, ""),
+            ),
+          }),
+          writeFile(indexPath, appended),
+        );
+
+      await runTask(makeTask());
+      expect(readFileSync(indexPath, "utf-8")).toBe(existing + appended);
+
+      const result = await runUndo(makeTask());
+
+      expect(result.undoCount).toBe(1);
+      // The pre-existing file survives with only the appended line removed —
+      // NOT deleted via the create branch's DeleteFile default undo.
+      expect(readFileSync(indexPath, "utf-8")).toBe(existing);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
 
 describe("collectUndos - Parallel result threaded to continuation", () => {
   it("threads each child's real mocked forward value to a continuation", () => {

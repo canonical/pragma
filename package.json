@@ -34,6 +34,9 @@
   ],
   "scripts": {
     "collect": "bun scripts/collect-implementations.ts",
+    "collect:check": "bun run collect && git diff --exit-code -- data/",
+    "check:ranges": "bun scripts/check-workspace-ranges.ts",
+    "check:ranges:test": "bun test scripts/check-workspace-ranges.test.ts",
     "build": "lerna run build",
     "prepare": "bun run build",
     "lerna": "lerna",
@@ -42,12 +45,16 @@
     "test": "lerna run test",
     "test:coverage": "lerna run test:coverage",
     "publish:status": "bun scripts/publish-status.ts",
+    "publish:reconcile": "bun scripts/publish-reconcile.ts",
+    "publish:reconcile:test": "bun test scripts/publish-reconcile.test.ts",
     "special:clean": "bun run nx reset && lerna clean --yes && rm -rf node_modules **/dist **/node_modules"
   },
   "devDependencies": {
+    "@canonical/design-system": "^0.2.5",
     "@vitest/coverage-v8": "^4.0.18",
     "lerna": "^9.0.5",
-    "nx": "^22.5.4"
+    "nx": "^22.5.4",
+    "tinyglobby": "^0.2.14"
   },
   "msw": {
     "workerDirectory": [
@@ -58,6 +65,7 @@
     "ejs@5.0.1": "patches/ejs@5.0.1.patch",
     "relay-runtime-network@0.1.0": "patches/relay-runtime-network@0.1.0.patch",
     "react-relay@21.0.1": "patches/react-relay@21.0.1.patch",
-    "relay-runtime@21.0.1": "patches/relay-runtime@21.0.1.patch"
+    "relay-runtime@21.0.1": "patches/relay-runtime@21.0.1.patch",
+    "sigstore@4.1.0": "patches/sigstore@4.1.0.patch"
   }
 }

@@ -1,23 +1,53 @@
 import { isSupportedLocale, negotiateLocale } from "@canonical/i18n-core";
 import { I18nProvider } from "@canonical/i18n-react";
 import { HeadProvider } from "@canonical/react-head";
-import { createBrowserRouter } from "@canonical/router-core";
-import { Outlet, RouterProvider } from "@canonical/router-react";
+import { createBrowserAdapter, createRouter } from "@canonical/router-core";
+import {
+  Outlet,
+  RouterProvider,
+  readDehydratedState,
+} from "@canonical/router-react";
 import { hydrateRoot } from "react-dom/client";
 import { RelayEnvironmentProvider } from "react-relay";
 import { catalogs, i18nConfig } from "#i18n/index.js";
-import { createEnvironment } from "#relay/environment.js";
-import { appRoutes, middleware, notFoundRoute } from "../routes.js";
+import { getBrowserEnvironment } from "#relay/environment.js";
+import {
+  appRoutes,
+  middleware,
+  notFoundRoute,
+  resolveRelayPayloads,
+  type SerializedRelayPayload,
+} from "../routes.js";
 import "#styles/index.css";
 
-const router = createBrowserRouter(appRoutes, {
-  middleware: [...middleware],
-  notFound: notFoundRoute,
+// Seed the browser-session Relay environment FIRST — before the router exists
+// — from the server-captured payloads riding __INITIAL_DATA__ (SSR pages) so
+// the first `useLazyLoadQuery` reads the store instead of refetching. In the
+// SPA cells there is no payload and the environment starts empty. Order
+// matters: the first getBrowserEnvironment() caller wins, and router
+// construction below can fire warm hooks that reach for the environment.
+const embeddedRelayPayloads = (
+  window as {
+    __INITIAL_DATA__?: {
+      relayPayloads?: readonly SerializedRelayPayload[];
+    };
+  }
+).__INITIAL_DATA__?.relayPayloads;
+const relayEnvironment = getBrowserEnvironment({
+  payloads: resolveRelayPayloads(embeddedRelayPayloads),
 });
 
-// One Relay environment (network + normalized store) for the whole browser
-// session — module scope, so client-side navigations share the cache.
-const relayEnvironment = createEnvironment();
+// On SSR pages __INITIAL_DATA__ carries the flat dehydrated router state
+// (href/kind/routeId/status); hydrating from it resumes the server-rendered
+// match and skips the duplicate initial load. In the SPA cells there is no
+// payload (or no router fields) and readDehydratedState() returns null, so
+// the router performs a normal initial load.
+const router = createRouter(appRoutes, {
+  adapter: createBrowserAdapter(),
+  middleware: [...middleware],
+  notFound: notFoundRoute,
+  hydratedState: readDehydratedState() ?? undefined,
+});
 
 /**
  * Resolve the locale for the first client render.

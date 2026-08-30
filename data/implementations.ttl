@@ -7,10 +7,20 @@
 
 ds:implementation.library.ds-types
     a ds:ImplementationLibrary;
-    rdfs:seeAlso <packages/ds-types/data/implementationLibrary.ttl>;
-    ds:implementationCount 6.
+    rdfs:seeAlso <https://github.com/canonical/pragma/blob/main/data/ds-types/implementationLibrary.ttl>;
+    ds:implementationCount 8.
 
 ds:implementation.library.react-ds-global
     a ds:ImplementationLibrary;
-    rdfs:seeAlso <packages/react/ds-global/data/implementationLibrary.ttl>;
-    ds:implementationCount 11.
+    rdfs:seeAlso <https://github.com/canonical/pragma/blob/main/data/react-ds-global/implementationLibrary.ttl>;
+    ds:implementationCount 37.
+
+ds:implementation.library.react-ds-global-form
+    a ds:ImplementationLibrary;
+    rdfs:seeAlso <https://github.com/canonical/pragma/blob/main/data/react-ds-global-form/implementationLibrary.ttl>;
+    ds:implementationCount 41.
+
+ds:implementation.library.svelte-ds-global
+    a ds:ImplementationLibrary;
+    rdfs:seeAlso <https://github.com/canonical/pragma/blob/main/data/svelte-ds-global/implementationLibrary.ttl>;
+    ds:implementationCount 3.

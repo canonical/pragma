@@ -1,6 +1,6 @@
 /**
  * The embedded pack: the distribution's own graph, compiled from the packs
- * `pragma.conf.ts` declares and inlined into the binary as escaped strings
+ * `pragma.conf.ts` declares and inlined into the source as escaped strings
  * (`pack.generated.ts`, produced by `scripts/bundle.ts`). It is the store the
  * CLI boots when the user has not pinned their own packs and has not built
  * anything yet — so a fresh install answers real store-backed reads with no
@@ -22,8 +22,8 @@
  * their OWN generated module (like the index): dispatch reads them on every
  * command, and pulling them out of `pack.generated.ts` would load its ~1.9 MB
  * of n-quads with them — a measured +28 ms on every invocation. Inlining as JS strings
- * (rather than file assets) guarantees the content survives `bun build
- * --compile` with no asset-embedding step.
+ * (rather than file assets) means the pack travels with the emitted modules —
+ * it needs no asset step in any build, and no file lookup at run time.
  */
 
 import {
@@ -40,12 +40,12 @@ import { dataNq, manifestJson, schemaJson } from "./embedded/pack.generated.js";
 import { indexJson } from "./embedded/pack.index.generated.js";
 import { storiesJson } from "./embedded/pack.stories.generated.js";
 import { packIsComplete } from "./manifest.js";
+import { manifestSchema } from "./schemas.js";
 import {
   DATA_FILE,
   INDEX_FILE,
   MANIFEST_FILE,
   type Manifest,
-  manifestSchema,
   SCHEMA_FILE,
   STORIES_FILE,
 } from "./types.js";

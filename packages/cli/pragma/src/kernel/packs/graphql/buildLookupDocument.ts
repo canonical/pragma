@@ -23,7 +23,7 @@
  * stays off the storeless fast path).
  */
 
-import { PragmaError } from "../../error/PragmaError.js";
+import { PragmaError } from "../../error/index.js";
 import { activeExpands, activeFields } from "./../sparql/buildLookupQuery.js";
 import type {
   PackExpand,

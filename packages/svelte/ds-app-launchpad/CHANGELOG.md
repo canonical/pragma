@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
+
+
+### Features
+
+* **Log:** migrate to design tokens ([#942](https://github.com/canonical/pragma/issues/942)) ([64baf67](https://github.com/canonical/pragma/commit/64baf67c08ee141967340945cbf748444387923c))
+* **Spinner:** migrate to design tokens ([#940](https://github.com/canonical/pragma/issues/940)) ([0d76ed8](https://github.com/canonical/pragma/commit/0d76ed87b80a09fc2f0714f8296cf4beb0b4b68b))
+* **Switch:** migrate to design tokens ([#948](https://github.com/canonical/pragma/issues/948)) ([672e348](https://github.com/canonical/pragma/commit/672e348370009c9dc8f7c4413ba37af04ad18c91))
+
+
+
+
+
+# [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
+
+
+### Features
+
+* **SideNavigation:** migrate to design tokens ([#949](https://github.com/canonical/pragma/issues/949)) ([b29eda9](https://github.com/canonical/pragma/commit/b29eda90af9c58c70bf87d9e934fe26bd2e946b8))
+
+
+
+
+
+# [0.34.0](https://github.com/canonical/pragma/compare/v0.33.0...v0.34.0) (2026-08-21)
+
+
+### Features
+
+* **DialogContent:** migrate to design tokens ([#920](https://github.com/canonical/pragma/issues/920)) ([73c610a](https://github.com/canonical/pragma/commit/73c610a7f77cb3e97b327150b8d5697cc271f568))
+* **Modal:** migrate to design tokens ([#929](https://github.com/canonical/pragma/issues/929)) ([e77556d](https://github.com/canonical/pragma/commit/e77556d6cf18adee74b39658b7fffd027cf39044))
+* **Timeline:** migrate to design tokens ([#922](https://github.com/canonical/pragma/issues/922)) ([e3cc213](https://github.com/canonical/pragma/commit/e3cc21396adfd705a4610368b75412ddab78971e))
+* **Tooltip:** migrate to design tokens ([#925](https://github.com/canonical/pragma/issues/925)) ([14cc02f](https://github.com/canonical/pragma/commit/14cc02fa6aa18ac4df50f49f68832bfda106c2a3))
+
+
+
+
+
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 
 

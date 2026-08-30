@@ -6,7 +6,7 @@ How to author a pragma configuration. **Every field, its type and its layering b
 
 From lowest to highest precedence:
 
-1. **Built-in defaults** — the distribution config `pragma.conf.ts`, bundled into the binary (identity, default packs and the read stories they supply, `channel: normal`, `detail: standard`).
+1. **Built-in defaults** — the distribution config `pragma.conf.ts`, shipped with the package (identity, default packs and the read stories they supply, `channel: normal`, `detail: standard`).
 2. **Global config** — `$XDG_CONFIG_HOME/pragma/config.json`. Machine-wide state, written by the config setters.
 3. **Project config** — the nearest `pragma.config.ts`, walking up from the current directory. It is *evaluated* (not just parsed), and the result is content-hash cached under `$XDG_STATE_HOME/pragma/config-cache/<sha256>.json` so a re-run skips re-evaluation when the file is unchanged.
 
@@ -14,17 +14,17 @@ A higher layer **replaces** a lower one field by field. No field merges: a proje
 
 ## Read stories
 
-A **read story** is a noun described as data — a SPARQL `list`, a generated `lookup`, and the columns, filters and disclosure levels they project — which the CLI compiles into real commands and MCP tools. Nothing about the story itself is hand-written code; three shipped nouns keep one hand-written verb each alongside their story, listed in [architecture.md](./architecture.md).
+A **read story** is a noun described as data — a SPARQL `list`, a generated `lookup`, and the columns, filters and disclosure levels they project — which the CLI compiles into real commands and MCP tools. Nothing about a story is hand-written code, and since L-OPEN-9 no shipped data noun has any either: each of the five is exactly what its story declares, nothing more (see [architecture.md](./architecture.md)).
 
 Stories reach the CLI from three places, weakest to strongest:
 
 | Tier | Where it is declared | Validation failure |
 | --- | --- | --- |
-| **distribution** | `packs[].stories` in the binary's own `pragma.conf.ts` | compile-time: `tsc` for the shape, plus the `parsePackDefinition` round-trip in `distribution.test.ts` for the grammar |
+| **distribution** | `packs[].stories` in the distribution's own `pragma.conf.ts` | compile-time: `tsc` for the shape, plus the `parsePackDefinition` round-trip in `distribution.test.ts` for the grammar |
 | **package** | `stories/*.json` shipped by a package the active pack was built from | the story is **ignored**, named on stderr and under `doctor`'s `pack refs` |
 | **config** | `packs[].stories`, then the top-level `stories`, in your config | fatal `CONFIG_ERROR` |
 
-Only your **config** may replace a noun the CLI already ships, and then only one that is itself story-backed — never a built-in command such as `config` or `doctor`. A **package** may add a noun the CLI does not have, and nothing else: a package story naming a shipped noun is ignored and reported, because replacing a noun replaces its whole module, and `block`, `token` and `tier` carry a hand-written verb (including the `token add-config` mutation) next to their story.
+Only your **config** may replace a noun the CLI already ships, and then only one that is itself story-backed — never a built-in command such as `config` or `doctor`. A **package** may add a noun the CLI does not have, and nothing else: a package story naming a shipped noun is ignored and reported, because replacing a noun replaces its whole module, so a dependency you merely declared could otherwise swap out this distribution's own design-system reads.
 
 Within your config the top-level `stories` wins over `packs[].stories` for the same noun — declaring it in both is a refinement, not a conflict — and declaring the same noun twice inside your config is an error. Inside one package the last story file wins and `doctor` names the shadowed one.
 
@@ -65,7 +65,7 @@ export const vocabulary = {
 };
 ```
 
-These are the domain terms the generic kernel reads a graph with: the property entities are addressed by (projected into the pack index as `altNames`, which is what a name completion offers and what `tier lookup` matches), and the shape of a prompt entity (which the `prompt_*` tools and the native MCP `prompts/*` surface both read).
+These are the domain terms the generic kernel reads a graph with: the property entities are addressed by (projected into the pack index as `altNames` enrichment by the index builder), and the shape of a prompt entity (which the `prompt_*` tools and the native MCP `prompts/*` surface both read).
 
 It is **not** a config layer field, and cannot be set in a global or project config. Its readers are the storeless `--help`/`__complete` fast path and the pack index builder — neither can reach a config layer at all, so a layered field would be one you could set to no effect. A fork changes these values in its own `pragma.conf.ts` and rebuilds its binary; that, plus `prefixes` and the identity fields, is the whole of what makes the CLI *this* distribution.
 
@@ -87,11 +87,11 @@ The setters write to the **global** layer only — project configs are authored 
 pragma config set tier apps/lxd
 pragma config set channel experimental
 pragma config set detail detailed
-pragma config set tier none
+pragma config unset tier
 ```
 
-- `tier` is a free string with meaningful reset sentinels: `none`, `default`, or `-` clear it.
-- `channel` and `detail` are closed enums; reset them by setting their default (`normal` / `standard`).
-- `config set <key> <value>` is the one-command form of the per-field setters — `key` is one of `tier`, `channel`, or `detail`, and the field's own reset rules still apply.
+- `tier` is a free string. Clearing it is its own command, `config unset tier` — `none`, `default` and `-` are refused as values, because a string that doubles as a remove-marker cannot say "set the tier to the literal none".
+- `channel` and `detail` are closed enums; `config unset` clears them too, so the built-in default (`normal` / `standard`) applies again.
+- `config set <key> <value>` is the one-command form of the per-field setters — `key` is one of `tier`, `channel`, or `detail`, and `config unset <key>` is how any of the three is cleared.
 
 See [getting-started.md](./getting-started.md) for how the tier and channel scope the read commands, the [configuration reference](./reference/config.md) for every field, and the [command reference](./reference/commands.md) for each setter's full signature.

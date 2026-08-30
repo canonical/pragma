@@ -14,6 +14,8 @@ import type { PhoneFieldProps } from "./types.js";
  * presentational PhoneInput defaults defensively from an undefined initial value.
  *
  * `import { PhoneField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.phone_field
  */
 export default withWrapper<PhoneFieldProps>(
   bindField<PhoneFieldProps>(PhoneInput, "controlled"),

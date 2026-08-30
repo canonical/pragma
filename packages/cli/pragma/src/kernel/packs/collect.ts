@@ -24,11 +24,11 @@
  * costs nothing on `--help`/`__complete`.
  */
 
-import type { ConfigLayers } from "../config/types.js";
-import { PragmaError } from "../error/PragmaError.js";
+import type { ConfigLayers } from "../config/index.js";
+import { PragmaError } from "../error/index.js";
 import type { PackStoryRecord } from "../runtime/graphpack/stories.js";
-import type { CapabilityModule } from "../spec/types.js";
-import { compilePack } from "./compile.js";
+import type { CapabilityModule } from "../spec/index.js";
+import { compileStoryModule } from "./compile.js";
 import { parsePackDefinition } from "./schema.js";
 import type { PackDefinition, PackEntry } from "./types.js";
 import { assertUniqueVerbs } from "./uniqueness.js";
@@ -63,13 +63,11 @@ interface ValidatedStories {
  * is reported, through this same channel.
  *
  * A package story may only introduce a NOUN THE CLI DOES NOT HAVE. Every static
- * noun is reserved — not just the authored ones: `block`, `token` and `tier` are
- * COMPOSITES whose module carries a hand-written verb alongside its story
- * (`block list`, `token add-config`, `tier lookup`), and the merge replaces a
- * noun wholesale, so letting a package claim one would silently delete a
- * mutation and a covenant-frozen verb from a user who only declared a
- * dependency. Overriding a shipped noun stays a CONFIG decision — that file is
- * the user's own.
+ * noun is reserved — the kernel's own AND the ones the distribution declares as
+ * stories — because the merge replaces a noun WHOLESALE: a package claiming
+ * `block` would swap this distribution's design-system reads for its own in a
+ * project that did nothing but declare a dependency. Overriding a shipped noun
+ * stays a CONFIG decision — that file is the user's own.
  *
  * @param records - The raw story records the answering pack carries.
  * @param staticModules - The static capabilities, to detect a story claiming a
@@ -174,12 +172,14 @@ export function assembleEffectiveModules(
   // story both on its pack and at the top level is a refinement, not an error.
   const dynamic = new Map<string, CapabilityModule>();
   for (const entry of packageStories) {
-    dynamic.set(entry.definition.noun, {
-      name: entry.definition.noun,
-      story: true,
-      verbs: compilePack(entry.definition, entry.source, prefixes),
-      colophon: entry.definition.colophon,
-    });
+    dynamic.set(
+      entry.definition.noun,
+      compileStoryModule(
+        entry.definition,
+        { label: entry.source, origin: "package" },
+        prefixes,
+      ),
+    );
   }
   for (const tier of tiers) {
     const seen = new Set<string>();
@@ -199,12 +199,14 @@ export function assembleEffectiveModules(
         );
       }
       seen.add(definition.noun);
-      dynamic.set(definition.noun, {
-        name: definition.noun,
-        story: true,
-        verbs: compilePack(definition, "config", prefixes),
-        colophon: definition.colophon,
-      });
+      dynamic.set(
+        definition.noun,
+        compileStoryModule(
+          definition,
+          { label: "config", origin: "config" },
+          prefixes,
+        ),
+      );
     }
   }
 

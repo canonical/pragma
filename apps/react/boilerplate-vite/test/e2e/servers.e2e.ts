@@ -111,6 +111,77 @@ describe("server matrix (2×3) serves correctly", () => {
             expect(arabicHtml).toContain('dir="rtl"');
             expect(arabicHtml).toContain("الرئيسية");
           }
+
+          // SSR cells answer with the router's disposition: a matched
+          // not-found page is a real 404, static redirect routes and the
+          // auth guard are real HTTP redirects, and an authorized request
+          // renders 200. (The SPA cells stay 200-only: Vite's static
+          // fallback serves index.html for every route and cannot express
+          // router statuses.)
+          if (cell.ssr) {
+            const notFound = await fetch(
+              `${server.base}/definitely-not-a-page`,
+            );
+            expect(notFound.status).toBe(404);
+            const notFoundHtml = await notFound.text();
+            expect(notFoundHtml).toContain('id="root"');
+
+            const legacy = await fetch(`${server.base}/home`, {
+              redirect: "manual",
+            });
+            expect(legacy.status).toBe(301);
+            const legacyLocation = legacy.headers.get("location");
+            expect(legacyLocation, "301 must carry a Location").toBeTruthy();
+            expect(
+              new URL(legacyLocation as string, server.base).pathname,
+            ).toBe("/");
+
+            const guarded = await fetch(`${server.base}/account`, {
+              redirect: "manual",
+            });
+            expect(guarded.status).toBe(302);
+            const guardedHeader = guarded.headers.get("location");
+            expect(guardedHeader, "302 must carry a Location").toBeTruthy();
+            const guardedLocation = new URL(
+              guardedHeader as string,
+              server.base,
+            );
+            expect(guardedLocation.pathname).toBe("/login");
+            expect(guardedLocation.searchParams.get("from")).toBe("/account");
+
+            // The auth decision comes from the router's own match, so URL
+            // shapes the router normalizes differently from a raw-URL check
+            // must still redirect: a trailing slash, and duplicate auth
+            // values where the router keeps the last one.
+            const trailing = await fetch(`${server.base}/account/`, {
+              redirect: "manual",
+            });
+            expect(trailing.status).toBe(302);
+
+            const duplicated = await fetch(
+              `${server.base}/account?auth=1&auth=0`,
+              { redirect: "manual" },
+            );
+            expect(duplicated.status).toBe(302);
+
+            const authorized = await fetch(`${server.base}/account?auth=1`);
+            expect(authorized.status).toBe(200);
+          }
+
+          // SSR cells serialize Relay data across the boundary: the catalog
+          // page arrives with server-rendered product markup (a name only
+          // real data produces) and carries the captured operation payloads
+          // for the client to replay — while data-less pages carry none.
+          if (cell.ssr) {
+            const catalog = await fetch(`${server.base}/catalog`);
+            expect(catalog.status).toBe(200);
+            const catalogHtml = await catalog.text();
+            expect(catalogHtml).toContain("Vanguard Workstation");
+            expect(catalogHtml).toContain("relayPayloads");
+
+            const home = await fetch(`${server.base}/`);
+            expect(await home.text()).not.toContain("relayPayloads");
+          }
         } finally {
           await server.stop();
         }

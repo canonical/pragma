@@ -42,7 +42,6 @@ describe("resolveRequest — structural contexts (PROTECTED)", () => {
     await expect(complete(["blo"])).resolves.toEqual(["block"]);
     await expect(complete([""])).resolves.toEqual([
       "block",
-      "mcp",
       "standard",
       "status",
     ]);

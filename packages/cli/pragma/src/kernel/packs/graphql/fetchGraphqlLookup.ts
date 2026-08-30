@@ -14,9 +14,8 @@
  * composed only from validated pack terms and compiled schema names.
  */
 
-import { PragmaError } from "../../error/PragmaError.js";
-import { cliRecovery } from "../../error/recovery.js";
-import type { PragmaRuntime } from "../../runtime/types.js";
+import { cliRecovery, PragmaError } from "../../error/index.js";
+import type { PragmaRuntime } from "../../runtime/index.js";
 import type { PackChildRow, PackEntity, PackLookup } from "../types.js";
 import {
   buildLookupDocument,
@@ -72,7 +71,7 @@ export async function fetchGraphqlLookup(
     // ontology). That is a runtime not-found, not an unavailable store (exit 3).
     throw new PragmaError({
       code: "ENTITY_NOT_FOUND",
-      message: `Could not resolve <${entityUri}> — its rdf:type may be missing from the ontology.`,
+      message: `Cannot resolve <${entityUri}> — its rdf:type may be missing from the ontology.`,
       recovery: cliRecovery(
         `graph inspect ${entityUri}`,
         "Inspect the entity's triples to check its rdf:type.",

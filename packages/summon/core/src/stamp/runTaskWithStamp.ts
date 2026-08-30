@@ -1,11 +1,13 @@
-import type { Effect, Task } from "@canonical/task";
+import type { Task } from "@canonical/task";
 import { runTask } from "@canonical/task/node";
-import applyStamp from "./applyStamp.js";
+import createStampOnEffectStart from "./createStampOnEffectStart.js";
 import type { RunTaskWithStampOptions } from "./types.js";
 
 /**
  * Run a task with stamp support. Wraps `runTask` from @canonical/task,
- * intercepting WriteFile effects to prepend generated-file stamps.
+ * routing every WriteFile through THE stamping transform
+ * ({@link createStampOnEffectStart}) — one transform for both stamping seams,
+ * so the verbatim (carried-copy) skip can never diverge between them.
  */
 export default async function runTaskWithStamp<A>(
   task: Task<A>,
@@ -17,16 +19,8 @@ export default async function runTaskWithStamp<A>(
     return runTask(task, options);
   }
 
-  const onEffectStart = (effect: Effect) => {
-    if (effect._tag === "WriteFile") {
-      (effect as { content: string }).content = applyStamp(
-        effect.path,
-        effect.content,
-        stamp,
-      );
-    }
-    userOnEffectStart?.(effect);
-  };
-
-  return runTask(task, { ...restOptions, onEffectStart });
+  return runTask(task, {
+    ...restOptions,
+    onEffectStart: createStampOnEffectStart(stamp, userOnEffectStart),
+  });
 }

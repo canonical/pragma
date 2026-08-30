@@ -1,7 +1,9 @@
 import type { Effect } from "@canonical/task";
+import chalk from "chalk";
 import { describe, expect, it } from "vitest";
 import {
   buildReplayCommand,
+  effectStyleFor,
   formatContentPreview,
   formatEffectLine,
   formatEffectWithContent,
@@ -15,6 +17,7 @@ import {
   getLlmActionLabel,
   getLlmEffectPath,
   isVisibleEffect,
+  visiblePlanEffects,
 } from "./effects.js";
 
 // =============================================================================
@@ -42,6 +45,11 @@ const symlink: Effect = {
   _tag: "Symlink",
   target: "../shared/utils",
   path: "src/utils",
+};
+const transformFile: Effect = {
+  _tag: "TransformFile",
+  path: "src/index.ts",
+  transform: (source: string) => source,
 };
 const logInfo: Effect = { _tag: "Log", level: "info", message: "Installing" };
 const logDebug: Effect = {
@@ -687,5 +695,146 @@ describe("formatLlmHelp", () => {
     const result = formatLlmHelp(genWithWhen, "test-gen");
     expect(result).toContain("## Required Options");
     expect(result).toContain("## Optional Options");
+  });
+});
+
+describe("buildReplayCommand — shell safety and flag naming", () => {
+  it("quotes values a POSIX shell would split or interpret", () => {
+    const prompts = [
+      { name: "description", message: "?", type: "text" as const },
+    ];
+    const result = buildReplayCommand(
+      "test-gen",
+      { description: "A demo project" },
+      prompts,
+    );
+    expect(result).toContain("--description 'A demo project'");
+  });
+
+  it("leaves plain values unquoted", () => {
+    const prompts = [{ name: "name", message: "?", type: "text" as const }];
+    expect(
+      buildReplayCommand("test-gen", { name: "my-app" }, prompts),
+    ).toContain("--name my-app");
+  });
+
+  it("names flags with the same algorithm help and Commander use", () => {
+    // /[A-Z]/g-style splitting produced --component-u-r-l for componentURL.
+    const prompts = [
+      { name: "componentURL", message: "?", type: "text" as const },
+    ];
+    const result = buildReplayCommand(
+      "test-gen",
+      { componentURL: "x" },
+      prompts,
+    );
+    expect(result).toContain("--component-url x");
+    expect(result).not.toContain("--component-u-r-l");
+  });
+});
+
+describe("formatLlmHelp — select without choices", () => {
+  it("renders a generic value hint instead of crashing", () => {
+    const generator = {
+      meta: {
+        name: "g",
+        displayName: "g",
+        description: "d",
+        version: "1.0.0",
+      },
+      prompts: [{ name: "mode", message: "Mode?", type: "select" as const }],
+      generate: () => {
+        throw new Error("unused");
+      },
+    };
+    // choices is optional on PromptDefinition; this previously threw a
+    // TypeError on --help --llm.
+    const output = formatLlmHelp(generator, "g");
+    expect(output).toContain("`<value>`");
+  });
+});
+
+// =============================================================================
+// TransformFile — the mutation the plan used to drop
+// =============================================================================
+
+describe("TransformFile is a plan row, not an internal effect (PROTECTED)", () => {
+  // `@canonical/task` counts a TransformFile as a write — `isWriteEffect` lists
+  // it and `getAffectedPaths` names its path — and `describeEffect` renders it
+  // as `Transform file: <path>`. Every switch here reached its `default` arm
+  // instead, so the shared filter silently omitted a real mutation while the
+  // raw dump it replaced showed one. The arms are now total over the tag union
+  // and the compiler enforces that; these pin the behaviour the type cannot.
+
+  it("survives the visibility filter", () => {
+    expect(isVisibleEffect(transformFile)).toBe(true);
+    expect(visiblePlanEffects([transformFile])).toEqual([transformFile]);
+  });
+
+  it("is named and pathed, on the terminal surface and the LLM one", () => {
+    expect(getActionLabel(transformFile)).toBe("Transform");
+    expect(getEffectPayload(transformFile)).toBe("src/index.ts");
+    expect(getActionColor(transformFile)).toBe("magenta");
+
+    expect(getLlmActionLabel(transformFile)).toBe("transform");
+    expect(getLlmEffectPath(transformFile)).toBe("src/index.ts");
+  });
+
+  it("renders as a row that names the file it rewrites", () => {
+    const line = formatEffectLine(transformFile, true, effectStyleFor(false));
+    expect(line).toBe("└─ Transform     src/index.ts");
+  });
+});
+
+// =============================================================================
+// effectStyleFor — the colour decision, carried as data
+// =============================================================================
+
+describe("the colour decision is an argument, not the environment", () => {
+  // A row's colour used to be whatever chalk decided at the moment of the call.
+  // Two callers cannot live with that: pragma's CLI preview gates on an
+  // attended stdout as well as chalk's level (nx exports FORCE_COLOR to every
+  // test task, so a piped run would otherwise carry escapes the rest of
+  // pragma's output does not), and the MCP plan payload is structured data for
+  // a model, which must be plain whatever the editor that spawned the server
+  // exported.
+  const ANSI = "\u001B[";
+
+  it("emits no escape at all when the decision is no", () => {
+    const plain = effectStyleFor(false);
+    expect(plain.enabled).toBe(false);
+
+    for (const effect of [writeFile, transformFile, exec, logDebug, logError]) {
+      expect(formatEffectLine(effect, false, plain)).not.toContain(ANSI);
+    }
+    expect(formatEffectWithContent(writeFile, true, plain)).not.toContain(ANSI);
+    expect(formatContentPreview("a\nb\n", 1, plain)).not.toContain(ANSI);
+  });
+
+  it("passes text through unchanged, colour or no colour", () => {
+    const plain = effectStyleFor(false);
+    expect(plain.dim("x")).toBe("x");
+    expect(plain.paint("green", "x")).toBe("x");
+    expect(plain.paint(undefined, "x")).toBe("x");
+  });
+
+  it("colours through chalk when the decision is yes", () => {
+    const styled = effectStyleFor(true);
+    expect(styled.enabled).toBe(true);
+
+    // chalk reports level 0 in a plain test process, which would make a styled
+    // row and a plain one identical and prove nothing. Force a level for the
+    // duration, exactly as the terminal path would have.
+    const level = chalk.level;
+    try {
+      chalk.level = 3;
+      expect(styled.dim("x")).toContain(ANSI);
+      expect(styled.paint("green", "x")).toContain(ANSI);
+      // An effect with no colour of its own is still passed through untinted.
+      expect(styled.paint(undefined, "x")).toBe("x");
+      expect(formatEffectLine(writeFile, false, styled)).toContain(ANSI);
+    } finally {
+      chalk.level = level;
+    }
   });
 });

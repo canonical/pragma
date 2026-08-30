@@ -18,8 +18,7 @@
  */
 
 import type { ConfigLayers } from "../config/types.js";
-import { PragmaError } from "../error/PragmaError.js";
-import { cliRecovery } from "../error/recovery.js";
+import { cliRecovery, PragmaError } from "../error/index.js";
 import { resolveSources } from "./resolveSources.js";
 
 /**

@@ -12,10 +12,13 @@
  *
  * `src/capabilities/**` and `pragma.conf.ts` are OUT of the rule above.
  * `pragma.conf.ts` is the file a fork edits, so it is content by definition;
- * `src/capabilities/**` still carries the hand-written `ds:` residue
- * (`block list`, `token add-config`, `tier lookup`) plus runtime copy no doc
- * publishes, and a guard needing a 65-entry exemption list is a guard that
- * mostly exempts. Two narrower rules reach it instead, at the bottom of this
+ * `src/capabilities/**` carries the kernel's own nouns — their prompts,
+ * setup copy, doctor findings and other runtime copy no doc publishes — and a
+ * guard needing a 65-entry exemption list is a guard that mostly exempts. (The
+ * `ds:` residue the exclusion was originally written for is gone: L-OPEN-9
+ * left no hand-written data verb behind, and `distribution.test.ts` now proves
+ * every data noun is exactly its declared story.) Two narrower rules reach it
+ * instead, at the bottom of this
  * file — *a command a user is told to run is never a literal*, stated once as
  * a POSITION ({@link COMMAND_POSITIONS}, read over raw source so it holds
  * whatever the scanner can see) and once as a SHAPE (a backticked command
@@ -24,6 +27,11 @@
  * exemption: the last one — the colophon narrative, this distribution's voice
  * in a capability source — became content the config declares
  * (`pragma.conf.ts#colophon`), which is what made removing it checkable.
+ *
+ * Beside the naming rules, the same scanner enforces the HOUSE VOICE rules for
+ * user-facing copy ({@link COPY_RULES}, authored as data in `copy.ts`) over
+ * both file sets — the kernel set above and `src/capabilities/**` — in the
+ * last describe of this file. See `copy.ts` for what each rule bans and why.
  *
  * NOTE for a reader of an older revision: this docblock used to say the
  * `examples[].cmd` sweep and the `docs/reference/*.md` regen "have to move
@@ -38,6 +46,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import conf from "../../pragma.conf.js";
 import { BIN_NAME } from "../constants.js";
+import { COPY_RULES } from "./copy.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
@@ -247,13 +256,17 @@ function pushCopy(copy: string[], literal: string): void {
  * `file: literal` for every authored literal matching `pattern`, so a failure
  * names its offenders instead of only counting them.
  *
- * @param pattern - What kernel copy may not contain.
+ * @param pattern - What the copy may not contain.
+ * @param sources - The files to read; the kernel set by default.
  * @returns One entry per offending literal.
- * @note Impure — reads every kernel source.
+ * @note Impure — reads every listed source.
  */
-function findOffenders(pattern: RegExp): string[] {
+function findOffenders(
+  pattern: RegExp,
+  sources: readonly string[] = files,
+): string[] {
   const found: string[] = [];
-  for (const file of files) {
+  for (const file of sources) {
     for (const literal of readCopy(readFileSync(file, "utf-8"))) {
       if (pattern.test(literal)) {
         found.push(`${relative(root, file)}: ${literal}`);
@@ -447,4 +460,24 @@ describe("capability commands (PROTECTED)", () => {
     }
     expect(offenders).toEqual([]);
   });
+});
+
+describe("user-facing copy house style (PROTECTED)", () => {
+  // The voice rules ({@link COPY_RULES}) run over BOTH file sets the naming
+  // rules above read — the kernel set and the capability set — because voice,
+  // unlike the distribution's name, is not content anywhere: a capability's
+  // error is the same product speaking as a kernel diagnostic. `readCopy`
+  // keeps comments, regexes, specifiers and test files out of scope, so a
+  // rule fires only on a string a user can actually be shown.
+  //
+  // One `it` per rule, NAMED by the rule, so a red run states the rule that
+  // fired; the assertion message carries the fix. What a failure prints is the
+  // offender list plus those two strings — everything needed to correct the
+  // copy lives in this repo.
+  const allSources = [...files, ...capabilitySources];
+  for (const { pattern, rule, fix } of COPY_RULES) {
+    it(rule, () => {
+      expect(findOffenders(pattern, allSources), fix).toEqual([]);
+    });
+  }
 });

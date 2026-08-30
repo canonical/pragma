@@ -48,7 +48,6 @@ describe("cross-binary byte-equality (PROTECTED)", () => {
         pragmaBin,
         "create",
         "component",
-        // Framework is the first positional (summon parity), not a flag.
         "react",
         "src/components/Button",
         "--yes",
@@ -66,7 +65,7 @@ import { pickGenerator } from ${JSON.stringify(`file://${pickGen}`)};
 import { execute, autoPrompt, runGeneratorTask, createGeneratorStamp, createStampOnEffectStart } from ${JSON.stringify(`file://${summonCore}`)};
 const dir = process.argv[2];
 const answers = { componentPath: "src/components/Button", withStyles: true, withStories: true, withSsrTests: true };
-const gen = pickGenerator("component", { framework: "react" });
+const gen = pickGenerator("component/react");
 await runGeneratorTask(execute(gen, { prompt: autoPrompt(answers), params: answers }), {
   cwd: dir,
   promptHandler: autoPrompt(answers),

@@ -1,0 +1,16 @@
+/* Component tokens — sourced from @canonical/design-tokens */
+:root {
+  --rule-color-background: var(--color-border-muted);
+  --rule-border-width: 0;
+  --rule-height: 1px;
+  --rule-margin-top: 0;
+  --rule-height-with-margin: var(--spacing-vertical-small);
+}
+
+.ds.rule {
+  background-color: var(--modifier-color-border, var(--rule-color-background));
+  border-width: var(--rule-border-width);
+  height: var(--rule-height);
+  margin-block-start: var(--rule-margin-top);
+  margin-block-end: calc(var(--rule-height-with-margin) - var(--rule-height));
+}

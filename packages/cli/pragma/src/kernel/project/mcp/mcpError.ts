@@ -17,7 +17,7 @@
  */
 
 import type { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
-import type { PragmaError } from "../../error/PragmaError.js";
+import type { PragmaError } from "../../error/index.js";
 
 /** The SDK error primitives a provider dynamic-imports and hands to {@link mcpErrorFrom}. */
 export interface McpErrorPrimitives {

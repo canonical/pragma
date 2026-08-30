@@ -20,6 +20,8 @@ describe("createTemplateContext", () => {
     expect(ctx.license).toBe("LGPL-3.0");
     expect(ctx.typescriptConfig).toBe("@canonical/typescript-config-base");
     expect(ctx.bunVersion).toBe("1.3.9");
-    expect(ctx.generatorName).toBe("@canonical/summon-monorepo");
+    // generatorName/generatorVersion were dead context keys (no template
+    // reads them) whose values disagreed with the real stamp identity.
+    expect(ctx.generatorName).toBeUndefined();
   });
 });

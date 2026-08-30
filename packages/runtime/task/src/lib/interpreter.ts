@@ -7,44 +7,102 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import driveAsync from "./driveAsync.js";
 import { TaskExecutionError } from "./errors.js";
 import type { Effect, ExecResult, Task, TaskError } from "./types.js";
 
 export { TaskExecutionError };
 
-/**
- * Normalise a value thrown while performing an effect into a structured
- * {@link TaskError}, so a real I/O exception can be routed through the
- * interpreter's recovery channel rather than escaping it. A
- * {@link TaskExecutionError} carries its `taskError` through unchanged; a
- * filesystem `ENOENT` maps to `FILE_NOT_FOUND`; anything else becomes
- * `INTERNAL`, preserving the original throw as `cause`.
- *
- * @param thrown - The value thrown while performing an effect.
- * @returns The equivalent structured task error.
- */
-const normalizeThrownError = (thrown: unknown): TaskError => {
-  if (thrown instanceof TaskExecutionError) {
-    return thrown.taskError;
-  }
-
-  const isFileNotFound =
-    typeof thrown === "object" &&
-    thrown !== null &&
-    "code" in thrown &&
-    (thrown as { code: unknown }).code === "ENOENT";
-
-  return {
-    code: isFileNotFound ? "FILE_NOT_FOUND" : "INTERNAL",
-    message: thrown instanceof Error ? thrown.message : String(thrown),
-    cause: thrown,
-    stack: thrown instanceof Error ? thrown.stack : undefined,
-  };
-};
-
 // =============================================================================
 // Effect Executor
 // =============================================================================
+
+/**
+ * Write a file so that a reader never observes a half-written one.
+ *
+ * `fs.writeFile` truncates and then writes: a crash, a full disk, or a killed
+ * process between those two steps leaves a TRUNCATED file. For a generated
+ * artifact that is an annoyance; for a config file this interpreter merges into
+ * — an editor's MCP registry, a shell rc — it is destruction of data the user
+ * did not give us, because the merge read the old contents and the truncated
+ * write is what remains of them.
+ *
+ * So: write a sibling temp file, fsync-free but fully written, then `rename`
+ * over the target. `rename` within one directory is atomic on POSIX and on
+ * Windows (ReplaceFile semantics), so the target is only ever the old bytes or
+ * the new ones.
+ *
+ * Two details that matter:
+ *
+ * - **Symlinks are followed, not replaced.** Dotfile setups routinely symlink
+ *   `~/.claude.json` into a checked-out repository. Renaming over the link
+ *   would silently break that link and strand the user's real file, so the
+ *   target is resolved first and the rename lands on the resolved path.
+ * - **The existing mode is preserved.** A fresh temp file is 0600 by default;
+ *   inheriting the replaced file's mode keeps a config the user (or another
+ *   tool) had widened from silently narrowing.
+ *
+ * @param target - The absolute path to write.
+ * @param content - The bytes to land there.
+ * @note Impure — writes, renames, and stats the filesystem.
+ */
+const writeFileAtomic = async (
+  target: string,
+  content: string,
+): Promise<void> => {
+  // Follow a symlink to its destination so the link itself survives the rename.
+  //
+  // The two probes are kept apart on purpose. `lstat` answers "is there a link
+  // here"; `realpath` answers "where does it lead", and it throws ENOENT for a
+  // link whose destination does not exist yet. Catching both together left
+  // `resolved` as the link path, so the rename replaced THE LINK — the exact
+  // destruction this function exists to prevent. A dangling link is still a
+  // link: the write lands on the destination it names, which is what makes the
+  // link work again.
+  let resolved = target;
+  let link: Awaited<ReturnType<typeof fs.lstat>> | undefined;
+  try {
+    link = await fs.lstat(target);
+  } catch {
+    link = undefined; // No such path yet — the plain path is the destination.
+  }
+  if (link?.isSymbolicLink()) {
+    try {
+      resolved = await fs.realpath(target);
+    } catch {
+      // A link with a missing destination: resolve the target it names itself,
+      // relative to the link's own directory, and create the directories the
+      // rename needs.
+      resolved = path.resolve(path.dirname(target), await fs.readlink(target));
+      await fs.mkdir(path.dirname(resolved), { recursive: true });
+    }
+  }
+
+  // Inherit the mode of the file being replaced, when there is one.
+  let mode: number | undefined;
+  try {
+    mode = (await fs.stat(resolved)).mode & 0o777;
+  } catch {
+    mode = undefined;
+  }
+
+  const temp = `${resolved}.${process.pid}.${Math.random().toString(36).slice(2, 10)}.tmp`;
+  try {
+    await fs.writeFile(temp, content, "utf-8");
+    if (mode !== undefined) await fs.chmod(temp, mode);
+    await fs.rename(temp, resolved);
+  } catch (error) {
+    // Never leave the temp file behind on a failed write. The cleanup is
+    // best-effort on purpose: whatever stopped the write is the error worth
+    // reporting, and a failure to remove a stray temp file must not mask it.
+    try {
+      await fs.rm(temp, { force: true });
+    } catch {
+      // Swallowed deliberately — see above.
+    }
+    throw error;
+  }
+};
 
 /**
  * Execute a single effect and return the result.
@@ -71,7 +129,7 @@ export const executeEffect = async (
     case "WriteFile": {
       const target = at(effect.path);
       await fs.mkdir(path.dirname(target), { recursive: true });
-      await fs.writeFile(target, effect.content, "utf-8");
+      await writeFileAtomic(target, effect.content);
       return undefined;
     }
 
@@ -175,7 +233,14 @@ export const executeEffect = async (
 
     case "Exists": {
       try {
-        await fs.access(at(effect.path));
+        // `followSymlinks: false` asks about the directory ENTRY (`lstat`),
+        // not the target behind it (`access`) — a dangling symlink is then
+        // present, matching what a `readdir` of its parent reports.
+        if (effect.followSymlinks === false) {
+          await fs.lstat(at(effect.path));
+        } else {
+          await fs.access(at(effect.path));
+        }
         return true;
       } catch {
         return false;
@@ -236,7 +301,14 @@ export const executeEffect = async (
         });
 
         child.on("close", (code) => {
-          resolve({ stdout, stderr, exitCode: code ?? 0 });
+          // A child killed by a signal closes with `code === null` (the
+          // signal name rides the second argument; exactly one of the two is
+          // non-null). Mapping that null to 0 reported a killed process as a
+          // SUCCESSFUL exec — an exit-code gate (`checkExecOk` and friends)
+          // then waved through work the child never finished. There is no
+          // numeric exit code to forward, so a signal-killed child reports
+          // the conventional failure exit instead.
+          resolve({ stdout, stderr, exitCode: code ?? 1 });
         });
         child.on("error", reject);
       });
@@ -310,14 +382,29 @@ const simpleGlob = async (pattern: string, cwd: string): Promise<string[]> => {
   return results;
 };
 
-const matchesPattern = (filepath: string, pattern: string): boolean => {
-  // Very simple glob matching - just handles * and **
+/**
+ * The fallback glob matcher — just `*` and `**`. Shared with the preview
+ * interpreter, which uses it to decide whether an overlay-created path joins a
+ * `Glob` effect's (otherwise real) matches.
+ */
+export const matchesPattern = (filepath: string, pattern: string): boolean => {
+  // Callers hand over relative paths from `path.relative`/readdir walks, which
+  // use `\` on Windows; the pattern language is `/`-separated, so normalize
+  // the platform separator before matching.
+  const normalized = filepath.split(path.sep).join("/");
+  // Very simple glob matching - just handles * and **. Dots are escaped FIRST:
+  // escaping them after the `**` → `.*` substitution turned the wildcard into
+  // `\.*` (zero-or-more literal dots), so `glob("**/*")` matched nothing. A
+  // `**/` prefix also matches ZERO directories (standard globstar), so
+  // `**/*` covers top-level files too.
   const regex = pattern
+    .replace(/\./g, "\\.")
+    .replace(/\*\*\//g, "<<GLOBSTARSLASH>>")
     .replace(/\*\*/g, "<<GLOBSTAR>>")
     .replace(/\*/g, "[^/]*")
-    .replace(/<<GLOBSTAR>>/g, ".*")
-    .replace(/\./g, "\\.");
-  return new RegExp(`^${regex}$`).test(filepath);
+    .replace(/<<GLOBSTARSLASH>>/g, "(?:.*/)?")
+    .replace(/<<GLOBSTAR>>/g, ".*");
+  return new RegExp(`^${regex}$`).test(normalized);
 };
 
 // =============================================================================
@@ -353,20 +440,12 @@ export interface RunTaskOptions {
 // =============================================================================
 
 /**
- * A frame on the interpreter's explicit continuation stack: either a pending
- * bind (the `f` of a `FlatMap`) or an installed error-recovery handler (the
- * `handler` of a `Recover`).
- */
-type Frame =
-  | { kind: "bind"; f: (x: unknown) => Task<unknown> }
-  | { kind: "recover"; handler: (error: TaskError) => Task<unknown> };
-
-/**
  * Run a task to completion, executing all effects.
  *
- * Bind and recovery are realised on an explicit continuation/handler-frame
- * stack rather than by recursing through the task structure, so arbitrarily
- * long `flatMap`/`gen` chains run in constant call-stack depth.
+ * Bind and recovery are realised on {@link driveAsync}'s explicit
+ * continuation/handler-frame stack rather than by recursing through the task
+ * structure, so arbitrarily long `flatMap`/`gen` chains run in constant
+ * call-stack depth.
  */
 export const runTask = async <A>(
   task: Task<A>,
@@ -393,16 +472,21 @@ export const runTask = async <A>(
     }
   };
 
+  // Drive a task through the shared trampoline, performing effects for real
+  // and polling the abort signal before every step.
+  const drive = (root: Task<unknown>): Promise<unknown> =>
+    driveAsync(root, performRaw, checkInterrupted);
+
   // Perform a single effect for real and return its result. Structural
   // Parallel/Race effects drive their children through a fresh pass, and every
   // other effect is routed to executeEffect.
-  const performRaw = async (effect: Effect): Promise<unknown> => {
+  async function performRaw(effect: Effect): Promise<unknown> {
     if (effect._tag === "Parallel") {
       onEffectStart?.(effect);
       const startTime = performance.now();
 
       const settled = await Promise.allSettled(
-        effect.tasks.map((child) => drive(child, performRaw)),
+        effect.tasks.map((child) => drive(child)),
       );
 
       const errors: TaskError[] = [];
@@ -438,7 +522,7 @@ export const runTask = async <A>(
       const startTime = performance.now();
 
       const result = await Promise.race(
-        effect.tasks.map((child) => drive(child, performRaw)),
+        effect.tasks.map((child) => drive(child)),
       );
 
       onEffectComplete?.(effect, performance.now() - startTime);
@@ -456,95 +540,9 @@ export const runTask = async <A>(
     );
     onEffectComplete?.(effect, performance.now() - startTime);
     return result;
-  };
+  }
 
-  // The trampoline: drive a task to its final value on an explicit stack of
-  // bind/recover frames, so no node type recurses through the host call stack.
-  // `performEffect` supplies each leaf effect's result.
-  const drive = async (
-    root: Task<unknown>,
-    performEffect: (effect: Effect) => Promise<unknown>,
-  ): Promise<unknown> => {
-    const stack: Frame[] = [];
-    let cur: Task<unknown> = root;
-
-    // Unwind to the nearest recovery frame, discarding pending binds. With no
-    // recovery frame installed the error escapes as a TaskExecutionError.
-    const recoverFrom = (error: TaskError): Task<unknown> => {
-      while (stack.length > 0) {
-        const frame = stack.pop();
-        if (frame?.kind === "recover") {
-          return frame.handler(error);
-        }
-      }
-      throw new TaskExecutionError(error);
-    };
-
-    for (;;) {
-      checkInterrupted();
-
-      switch (cur._tag) {
-        case "FlatMap":
-          stack.push({ kind: "bind", f: cur.f });
-          cur = cur.inner;
-          break;
-
-        case "Recover":
-          stack.push({ kind: "recover", handler: cur.handler });
-          cur = cur.inner;
-          break;
-
-        case "Effect": {
-          // A raw exception from the effect (e.g. ENOENT from a real read, or a
-          // throwing TransformFile transform) is normalised and routed through
-          // the recovery channel, so recover/retry/orElse can see real I/O
-          // failures — not just explicit Fail nodes.
-          let result: unknown;
-          try {
-            result = await performEffect(cur.effect);
-          } catch (thrown) {
-            const taskError = normalizeThrownError(thrown);
-            // Interruption is not recoverable: an abort surfaced from a
-            // Parallel/Race child (whose own guard fired mid-flight) bypasses
-            // recovery, preserving the invariant that a cancelled task cannot
-            // be resurrected by an enclosing recover/orElse/retry.
-            if (taskError.code === "TASK_INTERRUPTED") {
-              throw thrown;
-            }
-            cur = recoverFrom(taskError);
-            break;
-          }
-          cur = cur.cont(result);
-          break;
-        }
-
-        case "Pure": {
-          // Success: unwind to the next bind frame, discarding recovery frames.
-          const value = cur.value;
-          let resumed = false;
-          while (stack.length > 0) {
-            const frame = stack.pop() as Frame;
-            if (frame.kind === "bind") {
-              cur = frame.f(value);
-              resumed = true;
-              break;
-            }
-          }
-          if (!resumed) {
-            return value;
-          }
-          break;
-        }
-
-        case "Fail":
-          // Failure: unwind to the nearest recovery frame, discarding binds.
-          cur = recoverFrom(cur.error);
-          break;
-      }
-    }
-  };
-
-  const result = await drive(task as Task<unknown>, performRaw);
+  const result = await drive(task as Task<unknown>);
 
   return result as A;
 };

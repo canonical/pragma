@@ -25,6 +25,7 @@ import {
   type Task,
   writeFile,
 } from "@canonical/task";
+import { defaultMcpEntry } from "./mcpEntries.js";
 import parseJsonc from "./parseJsonc.js";
 import { type PlatformEnv, readPlatformEnv } from "./platformPaths.js";
 import {
@@ -116,36 +117,29 @@ export const resolveConfigTarget = (
   configFormat: harness.configFormat,
   mcpKey: harness.mcpKey,
   scope: harness.scope,
-  normalizeEnv: harness.normalizeEnv,
+  serializeEntry: harness.mcpEntry ?? defaultMcpEntry,
 });
 
 /**
- * Coerce a server config's `env` to a JSON object/map — dropping a non-object
- * `env` to `{}` — for harnesses (OpenDesign, 7g) that reject a non-map `env`.
- */
-const normalizeOdEnv = (config: McpServerConfig): McpServerConfig => ({
-  ...config,
-  env: asServerRecord(config.env) as Record<string, string>,
-});
-
-/**
- * Read existing MCP server entries from a resolved config target.
+ * Read existing MCP server entries from a resolved config target. Entries come
+ * back RAW (`unknown` values): each harness stores its own entry shape (see
+ * `mcpEntries.ts`), so no single record type is honest here — a caller
+ * classifies an entry against `target.serializeEntry` via `mcpEntryMatches`.
  *
  * @param target - The resolved config location.
- * @returns The server map (empty when the file is absent/unparseable).
+ * @returns The raw server map (empty when the file is absent/unparseable).
  * @note Impure — reads from the filesystem via Task effects.
  */
 export const readMcpConfigFrom = (
   target: ConfigTarget,
-): Task<Record<string, McpServerConfig>> => {
+): Task<Record<string, unknown>> => {
   if (target.configFormat === "toml") {
     return ifElseM(
       exists(target.path),
-      map(readFile(target.path), (content) => {
-        const sections = parseTomlSection(content, target.mcpKey);
-        return sections as unknown as Record<string, McpServerConfig>;
-      }),
-      pure({} as Record<string, McpServerConfig>),
+      map(readFile(target.path), (content) =>
+        parseTomlSection(content, target.mcpKey),
+      ),
+      pure({} as Record<string, unknown>),
     );
   }
 
@@ -153,22 +147,17 @@ export const readMcpConfigFrom = (
     exists(target.path),
     map(readFile(target.path), (content) => {
       const parsed = parseJsonc(content) ?? {};
-      return asServerRecord(parsed[target.mcpKey]) as Record<
-        string,
-        McpServerConfig
-      >;
+      return asServerRecord(parsed[target.mcpKey]);
     }),
-    pure({} as Record<string, McpServerConfig>),
+    pure({} as Record<string, unknown>),
   );
 };
 
-/** The TOML field record for a server config (command + optional args/cwd). */
-const tomlFields = (config: McpServerConfig): Record<string, unknown> => {
-  const fields: Record<string, unknown> = { command: config.command };
-  if (config.args) fields.args = config.args;
-  if (config.cwd) fields.cwd = config.cwd;
-  return fields;
-};
+/** One key's serialized entry within a shared-file write. */
+interface KeyedEntry {
+  readonly mcpKey: string;
+  readonly entry: Record<string, unknown>;
+}
 
 /**
  * Write or merge one server entry under EVERY `mcpKey` of a shared config file,
@@ -180,9 +169,8 @@ const tomlFields = (config: McpServerConfig): Record<string, unknown> => {
  *
  * @param path - The config file path.
  * @param configFormat - Its serialization format.
- * @param mcpKeys - The server-map keys to write the entry under (≥1).
+ * @param entries - One already-serialized entry per server-map key (≥1).
  * @param serverName - The server entry name.
- * @param config - The server config.
  * @param undoTask - The task that reverses this write.
  * @returns A Task performing the merge/create (with an undo).
  * @note Impure — reads and writes the filesystem via Task effects.
@@ -190,27 +178,25 @@ const tomlFields = (config: McpServerConfig): Record<string, unknown> => {
 const writeServerUnderKeys = (
   path: string,
   configFormat: ConfigTarget["configFormat"],
-  mcpKeys: readonly string[],
+  entries: readonly KeyedEntry[],
   serverName: string,
-  rawConfig: McpServerConfig,
-  normalizeEnv: boolean,
   undoTask: Task<void>,
 ): Task<void> => {
-  const config = normalizeEnv ? normalizeOdEnv(rawConfig) : rawConfig;
   if (configFormat === "toml") {
-    const fields = tomlFields(config);
     return ifElseM(
       exists(path),
       flatMap(readFile(path), (content) => {
         let merged = content;
-        for (const key of mcpKeys) {
-          merged = mergeTomlSection(merged, key, serverName, fields);
+        for (const { mcpKey, entry } of entries) {
+          merged = mergeTomlSection(merged, mcpKey, serverName, entry);
         }
         return writeFile(path, merged, { undo: undoTask });
       }),
       flatMap(mkdir(dirname(path), true), () => {
-        const body = mcpKeys
-          .map((key) => serializeTomlSection(key, { [serverName]: fields }))
+        const body = entries
+          .map(({ mcpKey, entry }) =>
+            serializeTomlSection(mcpKey, { [serverName]: entry }),
+          )
           .join("");
         return writeFile(path, body, { undo: undoTask });
       }),
@@ -224,16 +210,18 @@ const writeServerUnderKeys = (
       if (parsed === undefined) {
         return unparseableConfig(path);
       }
-      for (const key of mcpKeys) {
-        const servers = asServerRecord(parsed[key]);
-        servers[serverName] = config;
-        parsed[key] = servers;
+      for (const { mcpKey, entry } of entries) {
+        const servers = asServerRecord(parsed[mcpKey]);
+        servers[serverName] = entry;
+        parsed[mcpKey] = servers;
       }
       return writeFile(path, formatJson(parsed), { undo: undoTask });
     }),
     flatMap(mkdir(dirname(path), true), () => {
       const initial: Record<string, unknown> = {};
-      for (const key of mcpKeys) initial[key] = { [serverName]: config };
+      for (const { mcpKey, entry } of entries) {
+        initial[mcpKey] = { [serverName]: entry };
+      }
       return writeFile(path, formatJson(initial), { undo: undoTask });
     }),
   );
@@ -261,10 +249,8 @@ export const writeMcpConfigTo = (
   writeServerUnderKeys(
     target.path,
     target.configFormat,
-    [target.mcpKey],
+    [{ mcpKey: target.mcpKey, entry: target.serializeEntry(config) }],
     serverName,
-    config,
-    target.normalizeEnv === true,
     removeMcpConfigFrom(target, serverName),
   );
 
@@ -295,10 +281,11 @@ export const writeMcpConfigTargets = (
   return writeServerUnderKeys(
     first.path,
     first.configFormat,
-    targets.map((t) => t.mcpKey),
+    targets.map((t) => ({
+      mcpKey: t.mcpKey,
+      entry: t.serializeEntry(config),
+    })),
     serverName,
-    config,
-    first.normalizeEnv === true,
     undoTask,
   );
 };
@@ -336,7 +323,32 @@ export const removeMcpConfigFrom = (
       }
       const servers = asServerRecord(parsed[target.mcpKey]);
       delete servers[serverName];
-      parsed[target.mcpKey] = servers;
+
+      // Drop the container when our entry was the last one in it, rather than
+      // writing `{"mcpServers": {}}` back into a file that had no such key.
+      //
+      // The FILE is never removed, however empty it becomes.
+      //
+      // Emptiness cannot establish that we created it: a user may have had an
+      // empty `{}` config already, and for `.mcp.json` that empty file is
+      // itself a harness-detection SIGNAL, so removing it would change what
+      // `doctor` sees. Nor can the forward write's `exists` branch serve as
+      // provenance, tempting as it looks: undo collection re-walks the forward
+      // task with its effects MOCKED, and by then the file DOES exist, so the
+      // walk takes the merge branch whichever branch originally ran. Measured,
+      // not assumed — a `deleteFile` hung on the create branch never fires.
+      //
+      // Removing a file this command created therefore needs provenance
+      // RETAINED from the install (a receipt naming what was created), which
+      // is a design change rather than a patch. Until then the container key
+      // is cleaned up and the file is left: a stray `{}` costs far less than
+      // deleting a config somebody else wrote.
+      if (Object.keys(servers).length > 0) {
+        parsed[target.mcpKey] = servers;
+      } else {
+        delete parsed[target.mcpKey];
+      }
+
       return writeFile(target.path, formatJson(parsed));
     }),
     pure(undefined),
@@ -350,7 +362,7 @@ export const removeMcpConfigFrom = (
  * @param projectRoot - The project root.
  * @param band - The band to read (defaults to the harness's default band).
  * @param platform - The captured host (defaults to the live reader).
- * @returns The server map.
+ * @returns The raw server map (see {@link readMcpConfigFrom}).
  * @note Impure — reads from the filesystem via Task effects.
  */
 export const readMcpConfig = (
@@ -358,7 +370,7 @@ export const readMcpConfig = (
   projectRoot: string,
   band: ScopeBand = defaultBandOf(harness),
   platform: PlatformEnv = readPlatformEnv(),
-): Task<Record<string, McpServerConfig>> =>
+): Task<Record<string, unknown>> =>
   readMcpConfigFrom(resolveConfigTarget(harness, projectRoot, band, platform));
 
 /**

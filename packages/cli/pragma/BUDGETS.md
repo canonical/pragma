@@ -1,10 +1,11 @@
 # Performance budgets — `pragma`
 
-The compiled binary must stay fast enough that agents and humans reach for it
-without hesitation. These budgets are enforced by the protected perf tests
-(`src/testing/perf/*`), which spawn the standalone `dist/pragma` binary,
-discard warmups, and assert median/p95 against the ceilings in
-`src/testing/perf/budgets.ts`.
+`pragma` must stay fast enough that agents and humans reach for it without
+hesitation. These budgets are enforced by the protected perf tests
+(`src/testing/perf/*`), which spawn the shipped entry the way a consumer does
+(`node dist/src/bin.js`), discard warmups, and assert median/p95 against the
+ceilings in `src/testing/perf/budgets.ts`. Node's own startup is INSIDE every
+sample, because the user pays it.
 
 > **They do not gate pull requests — owner ruling, 2026-08-30.** `test` no longer
 > chains `test:perf`, and that chain was the only path by which
@@ -47,18 +48,182 @@ discard warmups, and assert median/p95 against the ceilings in
 | project `pragma.config.ts`   | < 10 ms warm    |
 | warm store-backed verb       | < 300 ms        |
 | MCP p95 (warm)               | < 100 ms        |
+| `resources/list` payload     | < 60 KB         |
 | condensed SDL (tool catalog) | ≤ 8000 tokens   |
+
+The `resources/list` ceiling is a SIZE budget, not a latency one, and it is
+enforced where the payload is built rather than by the perf pass:
+`capabilities/resources/resources.test.ts` asserts it both off
+`buildResourceList` and off what actually crosses the wire. Size is what an
+agent pays for twice — once in transfer, once in the context window it can no
+longer spend on the task — and a listing that enumerated all 712 indexed
+entities cost ~155 KB on every connect. The MCP SDK's high-level list handler
+ignores `cursor` and never returns `nextCursor`, so there is no paging to fall
+back on: the listing is curated to the declared collections (~35 KB) and the
+individuals are reached through the `pragma:{+uri}` template's autocomplete.
 
 ## Measured (day-1 perf spike, commit 6)
 
 Environment: Linux x64, Bun v1.3.11, `bun build --compile --minify`
-(`dist/pragma`). Method: `measureCommand` spawns the standalone binary 30×,
+(`dist/pragma`) — the artifact shipped at the time; the distribution has since
+moved to emitted JavaScript on Node, which costs roughly 2× on the fast paths
+and remains inside every ceiling below. Method: `measureCommand` spawns 30×,
 discards 3 warmups, reports median/p95 of wall-clock time. The budget tests
 (un-skipped) re-measure a batch of spawns and assert against the ceilings below.
 
 **The measured numbers below, and the ceilings derived from them, reference this
 day-1 spike hardware (treated as the CI reference box).** A slower box shifts the
 whole distribution up; the ceilings are the covenant, not the observations.
+
+## Re-derived again, for the create surface
+
+The de-compile doubled the fast paths. The create surface's projection then
+added ~46 ms of eager import on top, and the two costs together put both fast
+paths over their ceilings:
+
+| Path | measured (load 1.8) | old ceiling | new ceiling |
+|---|---|---|---|
+| `pragma --help` | ~151 ms | 130 ms | **220 ms** |
+| `pragma __complete` | ~163 ms | 150 ms | **220 ms** |
+
+**Where the 46 ms goes**, since a raised ceiling with no cause is just a lower
+standard. `capabilities/index` barrels every capability, and `create.verb.ts`
+statically value-imports `@canonical/summon-core/projection` —
+`decideInteraction`, `refusalMessage`, `toKebabCase` and friends, the logic this
+CLI shares with summon so the two cannot drift. Both fast paths pay for it and
+neither uses it. `lazy.test.ts` stays green because that subpath is not what it
+guards: summon-core proper, React, zod and oxigraph are all still absent from
+the fast-path graph.
+
+The two ceilings sat together because the two costs were the same cost.
+
+**Both were PROVISIONAL**, sized to hold until the eager import moved behind
+the lazy boundary — which the next section records.
+
+## Recovered: the create registration leaves the fast paths
+
+The provisional 220 ms ceilings existed to cover eager create-surface imports
+on the capabilities barrel. Three changes removed them:
+
+1. **Registered syntax is baked, not derived.** The build already projected
+   the generators into `createSurface.generated.ts`; it now also bakes each
+   prompt's REGISTERED CLI spelling (`CREATE_CLI_SYNTAX`: flag token,
+   takes-value, kebab name), so completion and the reference emitter read
+   data instead of calling the projection's flag-shape authority at import
+   time.
+2. **The mount's registration machinery is deferred.** The projection hook
+   split into a light half on the barrel (`cliProjection.ts` — completion +
+   reference syntax over baked data) and a heavy half (`mount.ts` —
+   summon-core's Commander adapter, the interaction decisions, the kernel
+   dispatcher) loaded by `CliProjection.prepare()`, which only the bin awaits
+   right before `buildProgram`. `create.verb.ts`'s projection helpers moved
+   behind the same lazy `run` import that already guarded summon-core proper.
+3. **The bare-help path no longer loads Commander.** The bin answered
+   `--help`/the front door from the capability registry alone but imported
+   the program builder first; that import now happens after the
+   bare-invocation branch.
+
+The lazy-graph guard in `lazy.test.ts` pins all three: no module on the
+`capabilities/index` static graph may value-import
+`@canonical/summon-core/projection`, its Commander adapter, or `commander`.
+
+**Measured — A/B, both arms built from source and interleaved.** The earlier
+pass asserted the recovery rather than demonstrating it, so this is a paired
+measurement: the pre-refactor tree (`2aaf368`) and this branch's tree were each
+built to their own `dist/`, and every spawn alternates arms case by case, so
+machine drift on a shared box lands on both arms equally instead of on
+whichever was measured second. 40 kept samples per cell (5 warmup rounds),
+`node dist/src/bin.js` through `spawnSync`, fresh XDG dirs, load average ~1.5.
+
+| Path | before (median) | after (median) | ceiling |
+|---|---|---|---|
+| `pragma --help` | 74.6 ms | **64.7 ms** | 130 ms |
+| `pragma __complete config` | 79.1 ms | **69.2 ms** | 150 ms |
+| `pragma __complete skill lookup` | 74.2 ms | **69.3 ms** | 150 ms |
+| `pragma --version` (control) | 25.4 ms | 29.5 ms | — |
+
+Process start is most of every number above, and it is not pragma's to spend,
+so the arms are also compared net of each arm's OWN `--version` control — the
+work the CLI actually does:
+
+| Path | before | after | delta |
+|---|---|---|---|
+| `pragma --help` | 49.3 ms | 35.3 ms | **−14.0 ms (−28%)** |
+| `pragma __complete config` | 53.7 ms | 39.7 ms | **−14.0 ms (−26%)** |
+| `pragma __complete skill lookup` | 48.9 ms | 39.8 ms | **−9.1 ms (−19%)** |
+
+The capabilities barrel's own import, measured the same paired way (25 spawns
+per arm, 5 discarded, timing one dynamic `import()` of `capabilities/index.js`
+and nothing else): **44.0 ms → 37.6 ms**. That 6.4 ms is the eager-import cost
+proper; the remaining ~8 ms on `--help` is the third change — the bare
+invocation answering before the program builder, and therefore before
+Commander, loads at all.
+
+**The eager cost is gone, and the size of it is now on the record rather than
+asserted.** It was never the ~46 ms the provisional 220 ms ceilings were sized
+for: measured end to end here it is ~14 ms of the fast paths' work. The 220 ms
+ceilings were nevertheless right to be provisional, and are right to be down.
+
+### Re-deriving the ceilings
+
+The 2×-median rule against the after arm, on this box:
+
+| Path | after median | 2× median | ceiling |
+|---|---|---|---|
+| `pragma --help` | 64.7 ms | 129.5 ms | **130 ms** |
+| `pragma __complete` (slower of the two cases) | 69.3 ms | 138.5 ms | **150 ms** |
+
+`--help` lands on 130 to within half a millisecond — the standing ceiling IS
+the rule's number, not a number the rule happens to tolerate.
+
+`__complete`'s rule number is 138.5, i.e. below the standing 150. **It is not
+lowered to 140, and the reason is a correction to the method, not a
+preference.** A ceiling is relative to the artifact AND the box (the header of
+`budgets.ts` says so). This box's cold process start is 25–30 ms; the reference
+box in the table under "p95 stabilization" is 45.5 ms. Holding the measured
+work constant and projecting onto the reference box:
+
+- `--help`: 45.5 + 35.3 = **~81 ms** median → 2× = ~162 ms
+- `__complete`: 45.5 + 39.7 = **~85 ms** median → 2× = ~170 ms
+
+Both projections sit ABOVE the standing ceilings. On the box the ceilings have
+to hold on, 130 and 150 are already the tight side of the 2× rule, and CI has
+run `__complete` at a ~100 ms trimmed mean before. So the honest reading of the
+measurement is that these two ceilings are at their floor: the recovery earned
+back the 220 ms, it does not earn a further cut, and a cut made from this box's
+median alone would be a ceiling derived on hardware the suite does not run on.
+
+The designed 50 ms target stays recorded as unmet.
+
+## Re-derived for the shipped entry
+
+Every figure above was measured against a `bun build --compile` executable. The
+distribution now ships JavaScript that `node` executes, which costs roughly 2×
+on the fast paths — so a ceiling set at 2× the *binary's* median lands on the
+*emit's* median, where it can no longer separate a regression from a slow
+runner.
+
+`__complete` demonstrated this rather than merely risking it. Three CI attempts,
+all against the 100 ms ceiling:
+
+| Attempt | trimmed mean |
+|---|---|
+| 1 | 100.37 ms |
+| 2 | 100.20 ms |
+| 3 | 100.15 ms |
+
+That is a ceiling sitting on the median, not above it.
+
+| Budget | Compiled median | Shipped entry | Ceiling | Basis |
+|---|---|---|---|---|
+| `pragma --help` | ~61 ms | ~72 ms local | **130 ms** (unchanged) | still has real headroom to lose |
+| `pragma __complete` | ~46 ms | ~69 ms local · ~100 ms CI trimmed mean | **150 ms** (was 100) | 2× the shipped median, the same rule as before |
+
+**The designed 50 ms target is not met, and is recorded as unmet rather than
+moved.** The shipped entry cannot reach it: node's own start consumes most of
+that number before pragma runs a line. Completion is typed interactively, so
+this is the budget most worth pulling back down — it is the one number the
+packaging change genuinely cost.
 
 ## p95 stabilization (`__complete`)
 
@@ -71,8 +236,10 @@ box. The `__complete` budget test therefore enforces the ceiling on a
 **10%-trimmed mean** (`measure.trimmedMean`) — a robust central estimate the
 occasional spike cannot dominate — over 30 spawns (5 warmups, `retry: 3`), and
 keeps **p95 as a soft check** (asserted with 1.5× headroom) to still catch a
-gross regression. `BUDGET_COMPLETE_MS` stays **100 ms** — the ceiling is
-unchanged; only the statistic it is asserted against was made reliable.
+gross regression. At the time `BUDGET_COMPLETE_MS` stayed **100 ms** — that
+change made the statistic reliable without touching the ceiling. The ceiling
+itself was re-derived later, when the shipped artifact changed; see
+"Re-derived for the shipped entry" below.
 
 | Path                       | Median  | p95     | Budget  | Basis                     |
 | -------------------------- | ------- | ------- | ------- | ------------------------- |
@@ -81,10 +248,11 @@ unchanged; only the statistic it is asserted against was made reliable.
 | `pragma __complete`       | 46.1 ms | 51.3 ms | 100 ms  | 2× median (50 ms target)  |
 | `config show`              | 63.5 ms | 68.9 ms | —       | reference (storeless run) |
 | project config load (warm) | < 1 ms  | < 1 ms  | 10 ms   | cache hit (in-process)    |
-| `__store-probe` (store)    | ~147 ms | ~176 ms | 1200 ms | re-derived twice (below)  |
+| `__store-probe` (store)    | ~147 ms | ~176 ms | 500 ms  | re-derived (see below)    |
 
 The store-backed verb budget (`__store-probe`: oxigraph WASM load + n-quads
-cache load + `compileFromExtraction` + a SPARQL count, in the compiled binary)
+cache load + `compileFromExtraction` + a SPARQL count, across the process
+boundary)
 measured ~147 ms median here — but that timed a boot of the 23-triple
 **placeholder** pack. Against the real embedded graph the store component is
 ~2.8× that; see "The embedded pack becomes the real graph" below, where the
@@ -149,40 +317,7 @@ Three things this shows.
    put. The median of the five within-repetition multipliers — each measured
    under conditions identical for both binaries — is **2.83×**.
 
-### `BUDGET_WARM_STORE_MS`: 300 → 500 → 1200
-
-The 500 ms derivation below stands **for the reference box**, and still measures
-green there (8/8, median ≈ 295 ms). It does not hold on the GitHub-hosted CI
-runner class, which is where the gate is actually enforced: three independent
-measurements of this test reported medians of **696.3, 786.9 and 795.9 ms**.
-
-Re-derived 2026-08-30 by the same method, from the worst observed median rather
-than the best:
-
-```
-observed CI median (worst of 3)                                = 795.9 ms
-reference p95/median for this command = 176 / 147              = 1.197
-projected p95                 = 795.9 × 1.197                  = 952.7 ms
-ceiling                       = ceil(952.7 × 1.25 / 50) × 50   = 1200 ms
-```
-
-The 1.25× margin and the 50 ms rounding are unchanged; the only input that moved
-is the measured median, which is the honest statement of what changed — the
-hardware, not the code. A round 900 was considered and rejected: it clears the
-observed medians but not the p95 they imply.
-
-**Known incomplete.** At 1200 ms the test stops failing its budget and starts
-failing vitest's 5 s per-test timeout instead: 15 spawns (12 runs + 3 warmups)
-at ~800 ms is ~12 s of measurement. In the same run `pragma --help` also went
-red on this runner class (130 ms ceiling; observed 138.4 / 184.1 / 197.8 ms).
-Both say the same thing — **the perf contract as a whole does not hold on
-GitHub-hosted runners**, and raising ceilings one at a time as each turns red is
-not a derivation, it is a chase. What this file cannot settle alone: whether the
-contract becomes runner-class-conditional, whether the timeout moves with the
-measurement it wraps, or whether perf gates leave PR CI for a machine whose
-numbers mean something.
-
-#### The original reference-box derivation (500 ms)
+### `BUDGET_WARM_STORE_MS`: 300 → 500
 
 The arithmetic, from named inputs, in full. Reference-box inputs are the two
 rows of the table above this section: `--version` 45.5 ms median / 50.1 ms p95,
@@ -215,9 +350,10 @@ it is 1.67× the designed 300 ms target, where `--help`'s enforced ceiling is
 the surface covenant and `budgets.$comment` now names it as the third
 designed-vs-enforced divergence.
 
-**Also measured — the per-invocation start tax.** The real embed makes the
-binary ~2.0 MB bigger (104.8 → 106.8 MB), and `bun build --compile` emits one
-script, so the whole embed is *parsed* at process start on every invocation even
+**Also measured — the per-invocation start tax**, on the compiled binary of the
+time. The real embed made it ~2.0 MB bigger (104.8 → 106.8 MB), and
+`bun build --compile` emitted one script, so the whole embed was *parsed* at
+process start on every invocation even
 though `--version` and `--help` import neither generated module. Measured on
 `--version` under the interleaved protocol, which is the only one where the two
 binaries face the same page-cache pressure: **+24.1 / +24.7 / +28.4 ms**. Scaled
@@ -285,8 +421,9 @@ Confirmed by the spike:
   (`complete.test.ts`), no config or store read.
 - **project config is served warm** — `evaluateProjectConfig` returns the
   content-hash cache on a hit without re-importing (`readConfig.test.ts`), and
-  the compiled binary evaluates an external `pragma.config.ts` natively (D7
-  verified — no subprocess fallback needed).
+  the shipped entry evaluates an external `pragma.config.ts` natively — under
+  Node that is type STRIPPING, so the config must be erasable TypeScript
+  (`engines` pins the floor that makes it default-on).
 
 ## Stories in packs — no budget movement (A/B)
 

@@ -12,6 +12,8 @@ const componentCssClassName = "ds input select chrome";
  * @returns {ReactElement} - Rendered Select
  *
  * `import { SelectInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.select_input
  */
 export const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(
   function SelectInput(
