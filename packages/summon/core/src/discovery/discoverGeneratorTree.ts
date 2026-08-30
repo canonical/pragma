@@ -10,7 +10,7 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { fileURLToPath } from "node:url";
+import { pathToFileURL } from "node:url";
 import chalk from "chalk";
 import type { GeneratorDefinition } from "../types/index.js";
 import { generatorCache } from "./generatorCache.js";
@@ -182,7 +182,9 @@ const processPackage = async (
   // Import the package's main entry
   const entryPath = path.join(pkgDir, mainEntry);
   try {
-    const module = await import(entryPath);
+    // pathToFileURL: a raw absolute path is not a valid ESM specifier on
+    // Windows (the drive letter parses as a protocol).
+    const module = await import(pathToFileURL(entryPath).href);
     const generators =
       module.generators ?? module.default ?? ({} as Record<string, unknown>);
 
@@ -406,7 +408,7 @@ const discoverGlobalPackages = async (root: GeneratorNode): Promise<void> => {
 interface DiscoverOptions {
   /** When set, ONLY load from this path (for testing). */
   explicitPath?: string;
-  /** Directory containing built-in generators. Defaults to ../generators relative to this file. */
+  /** Directory containing built-in generators. When omitted, no built-ins are scanned. */
   builtinDir?: string;
 }
 
@@ -415,8 +417,8 @@ interface DiscoverOptions {
  *
  * When `explicitPath` is provided, ONLY load from that path (for testing).
  *
- * Otherwise, priority (highest to lowest, later overrides earlier):
- * 1. Built-in generators from \@canonical/summon
+ * Otherwise, priority (lowest to highest, later overrides earlier):
+ * 1. Built-in generators — only when the caller supplies `builtinDir`
  * 2. Global packages (bun link / npm link locations)
  * 3. Project ./node_modules/summon-* packages (highest priority)
  *
@@ -462,12 +464,14 @@ export default async function discoverGeneratorTree(
 
   // Normal discovery mode (order matters: later sources override earlier)
 
-  // 1. Built-in generators (lowest priority).
-  // Derive the module dir from import.meta.url — `__dirname` is a CommonJS
-  // global that is absent in ESM under Node (bun polyfills it, Node does not).
-  const moduleDir = path.dirname(fileURLToPath(import.meta.url));
-  const defaultBuiltinDir = path.join(moduleDir, "..", "generators");
-  await buildGeneratorTree(builtinDir ?? defaultBuiltinDir, root, "builtin");
+  // 1. Built-in generators (lowest priority) — only when the caller ships
+  // some and says where. The old default (`<moduleDir>/../generators`)
+  // pointed at a directory that exists neither in src nor in dist layout, so
+  // it silently contributed nothing; a host CLI that bundles builtins (the
+  // summon bin does) must pass its own `builtinDir`.
+  if (builtinDir !== undefined) {
+    await buildGeneratorTree(builtinDir, root, "builtin");
+  }
 
   // 2-3. Global packages and generators
   await discoverGlobalPackages(root);

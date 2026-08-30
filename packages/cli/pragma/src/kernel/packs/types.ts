@@ -150,8 +150,54 @@ export interface PackFilter {
    * string matched case-insensitively against the variable).
    */
   readonly values?: readonly string[];
+  /**
+   * How a provided value is compared to the row's cell.
+   *
+   * `"exact"` (the default) compares the whole cell. `"set"` reads the cell as
+   * a SPACE-SEPARATED set and matches when ANY member equals the provided
+   * value — the shape a `GROUP_CONCAT` produces, for a dimension where one row
+   * legitimately belongs to several values at once. The standing case is a
+   * hierarchy: a standard filed under `testing-unit` is, by the definition of
+   * the hierarchy, also a `testing` standard, and a filter that compared only
+   * the leaf answered `--category testing` with 1 of 8 — a silently wrong
+   * answer, exit 0.
+   */
+  readonly match?: "exact" | "set";
+  /**
+   * Where the dimension's VOCABULARY lives in the graph, for a filter with no
+   * declared {@link values}.
+   *
+   * A value-free filter rejects a value the data does not carry. The question is
+   * what "the data" means. The rows a list just returned are the wrong answer:
+   * they are a POPULATION, and a value can be real while no row carries it — a
+   * category the graph declares with zero standards filed under it, a
+   * `ds:ConceptType` no concept uses yet. Validating against rows turns those
+   * into `INVALID_INPUT`, when the honest answer is a calm empty list.
+   *
+   * So the vocabulary is read from the graph directly, from the same terms the
+   * surface that ENUMERATES it reads (`standard categories` reads `cs:Category`
+   * / `cs:slug`; so does the `category` filter's vocabulary query). The ruling
+   * this honours is "the graph is the vocabulary, don't hard-code the slugs" —
+   * rows were never the graph, just the part of it that answered.
+   *
+   * Without it a value-free filter falls back to the observed rows, which is the
+   * only evidence available; that is a NARROWER vocabulary than the truth, and a
+   * story whose dimension has an authoritative source should declare it.
+   */
+  readonly vocabulary?: PackFilterVocabulary;
   /** Help text (defaults to a generated description). */
   readonly description?: string;
+}
+
+/** The authoritative value set for a value-free {@link PackFilter}. */
+export interface PackFilterVocabulary {
+  /** SPARQL SELECT producing one row per admissible value. */
+  readonly query: string;
+  /**
+   * SELECT variable carrying the value (without `?`). Defaults to the filter's
+   * own {@link PackFilter.variable}.
+   */
+  readonly variable?: string;
 }
 
 /**
@@ -240,6 +286,49 @@ export interface PackCompletion {
 }
 
 /**
+ * How much an entity's containing SCOPE is worth when a name reaches several
+ * entities at once — the ranking factor {@link PackLookup.scopeWeight} declares.
+ *
+ * DERIVED, never enumerated. The scope's own name is a path (`Global`,
+ * `Apps/Launchpad`), so its DEPTH is a fact the graph already states, and a
+ * scope nobody has heard of yet inherits its place the day it appears. An
+ * enumerated ranking would have to be edited for each new one, and the one
+ * nobody edited would silently rank first.
+ *
+ * The weight falls by {@link falloff} per level below the top, so the top level
+ * is worth 1 and each nesting step costs the same again; floored at 0, so a very
+ * deep scope can never turn negative and invert the type factor it multiplies.
+ *
+ * {@link asserted} is the retirement path for the DERIVATION, not for this
+ * declaration: an asserted value wins over the derived one
+ * (`COALESCE(?asserted, ?derived)`), so the day the ontology states the ranking
+ * itself, the depth heuristic stops mattering and `falloff` becomes inert.
+ *
+ * The declaration itself must stay. Every read of {@link asserted} is reached
+ * through this object, so deleting it does not fall back to the ontology's rank
+ * — it removes scope ranking from the query altogether and silently returns the
+ * lookup to `STR(?uri)` order, which is the defect this exists to fix. What
+ * retires is the derivation, and what remains is `via` plus `asserted`.
+ */
+export interface PackScopeWeight {
+  /** The entity → scope edge (e.g. `ds:tier`). */
+  readonly via: string;
+  /**
+   * The scope property holding its path-shaped name (e.g. `ds:name`), whose
+   * `/`-separated depth derives the weight.
+   *
+   * It must be the NAME, not the IRI: the live tiers spell the same scope
+   * `ds:apps_launchpad` and `"Apps/Launchpad"`, and only the name carries the
+   * separator that makes the hierarchy legible.
+   */
+  readonly by: string;
+  /** Score cost per level below the top, 0–1 (e.g. 0.2 → 1, 0.8, 0.6, …). */
+  readonly falloff: number;
+  /** An asserted weight on the scope, which WINS over the derived one. */
+  readonly asserted?: string;
+}
+
+/**
  * The lookup half of a pack. The query is generated from `by` and `type`/`types`
  * — user-supplied names are escaped by the generator, never interpolated by the
  * author. The `source` selects the field-fetch strategy; the name→URI resolve is
@@ -256,6 +345,29 @@ export interface PackLookup {
   readonly source?: "sparql" | "graphql";
   /** Property whose value names the entity — prefixed name or IRI. */
   readonly by: string;
+  /**
+   * What names an entity that carries no {@link by} value. Absent (the default)
+   * means NOTHING does: the `by` triple is required, and an entity without one
+   * is not addressable by name and never drawn by `sample`.
+   *
+   * `"iri"` opts the family into an IRI-DERIVED name — the local name after the
+   * last `#`/`/`, with dot-separated hierarchy segments published as slashes
+   * (`cs:react.component.props` → `react/component/props`).
+   *
+   * DECLARE IT ONLY WHEN THE STORY'S `list` PUBLISHES THE SAME DERIVED NAME.
+   * The option exists to keep the two halves of the two-step grammar over ONE
+   * population: `standard list` synthesizes a name for the ~87% of code
+   * standards carrying no `cs:name`, so `standard lookup` must answer to it.
+   * Turning it on where the list does NOT publish such a name is the mirror
+   * defect — `token list` requires `ds:tokenId`, so a `ds:Token` without one
+   * would become addressable and sampleable under a name the list never
+   * published.
+   *
+   * Requires a class constraint ({@link type}/{@link types}): the derived name
+   * is only as trustworthy as the class that vouches for the entity, and
+   * without one there is nothing to bound the scan with either.
+   */
+  readonly nameFallback?: "iri";
   /** Optional single class constraint — prefixed name or IRI. */
   readonly type?: string;
   /** CLI description for the lookup command (defaults to a generated one). */
@@ -267,6 +379,30 @@ export interface PackLookup {
    * VALUES constraint on the name resolve. Mutually exclusive with `type`.
    */
   readonly types?: readonly string[];
+  /**
+   * Relative importance per addressed type, prefixed type → 0–1 (unlisted types
+   * default to 1). Editorial judgement about which of a noun's classes matters
+   * most, declared as DATA rather than frozen into the kernel — it feeds the MCP
+   * listing's `annotations.priority`, breaks ties in URI-completion ranking, AND
+   * is one factor of the score a name resolve ORDERS BY, so a `ds:Subcomponent`
+   * at 0.6 sinks below every component at equal match.
+   *
+   * A separate map rather than an entry shape on `types` so `types` keeps its
+   * flat `readonly string[]` form and the addition is non-breaking. A key naming
+   * a type the lookup does not address is REJECTED, not ignored: a silent no-op
+   * is how a weight that never applied survives review.
+   */
+  readonly weights?: Readonly<Record<string, number>>;
+  /**
+   * The OTHER factor of that score: how much an entity's containing scope is
+   * worth, derived from how DEEP that scope sits in its own hierarchy.
+   *
+   * {@link weights} answers "which KIND of thing did they mean"; this answers
+   * "whose?". They multiply rather than tiebreak, because neither subsumes the
+   * other: a whole component in a narrow scope still beats a mere part of a
+   * block in the widest one.
+   */
+  readonly scopeWeight?: PackScopeWeight;
   /**
    * GraphQL type or interface the generated document's inline fragment targets
    * (`source: "graphql"` only). Defaults to the local name of `type`; required

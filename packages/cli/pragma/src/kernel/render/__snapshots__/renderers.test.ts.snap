@@ -47,8 +47,9 @@ exports[`render matrix (list/lookup/empty × plain/llm/json × detail) > renders
 
 - \`ds:Button\` — **Button** component | Primary action
 - \`ds:Card\` — **Card** pattern",
-      "plain": "ds:Button  Button  component  Primary action
-ds:Card    Card    pattern",
+      "plain": "URI        NAME    KIND       NOTE
+ds:Button  Button  component  Primary action
+ds:Card    Card    pattern    -",
     },
     "lookup": {
       "json": "{"uri":"https://ds.canonical.com/Button","name":"Button","kind":"component","note":"Primary action"}",
@@ -82,7 +83,8 @@ Note:
 
 - **Button** component
 - **Card** pattern",
-      "plain": "Button  component
+      "plain": "NAME    KIND
+Button  component
 Card    pattern",
     },
     "lookup": {
@@ -109,7 +111,8 @@ Card    pattern",
 
 - **Button**
 - **Card**",
-      "plain": "Button
+      "plain": "NAME
+Button
 Card",
     },
     "lookup": {

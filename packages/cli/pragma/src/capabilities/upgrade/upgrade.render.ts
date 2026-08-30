@@ -7,15 +7,15 @@
  */
 
 import chalk from "chalk";
-import type { Formatters } from "../../kernel/spec/types.js";
-import { PRAGMA_PACKAGE } from "../shared/registry.js";
+import type { Formatters } from "../../kernel/spec/index.js";
+import { PRAGMA_PACKAGE } from "../shared/index.js";
 import type { UpgradeData } from "./types.js";
 
 export const upgradeFormatters: Formatters<UpgradeData> = {
   plain(data) {
     const lines = [`Installed via: ${data.pm}`];
     if (data.offline) {
-      lines.push("Could not reach the registry — try again later.");
+      lines.push("Cannot reach the registry — try again later.");
       return lines.join("\n");
     }
     if (data.alreadyLatest) {
@@ -33,20 +33,26 @@ export const upgradeFormatters: Formatters<UpgradeData> = {
         "",
         `Updated to ${data.latest}.`,
       );
-    } else {
+    } else if (data.command) {
       lines.push(`Run: ${chalk.cyan(data.command)}`);
+    } else {
+      // No sanctioned command for this install (linked / ephemeral /
+      // workspace / unknown) — the guidance sentence is the whole story.
+      lines.push(`No automatic upgrade for this install: ${data.guidance}`);
     }
     return lines.join("\n");
   },
 
   llm(data) {
-    if (data.offline)
-      return "Upgrade check failed: could not reach the registry.";
+    if (data.offline) return "Upgrade check failed: cannot reach the registry.";
     if (data.alreadyLatest) {
       return `Already at the latest version (${data.current}).`;
     }
     if (data.executed) return `Upgraded: ${data.current} → ${data.latest}`;
-    return `Update available: ${data.current} → ${data.latest} (\`${data.command}\`)`;
+    if (data.command) {
+      return `Update available: ${data.current} → ${data.latest} (\`${data.command}\`)`;
+    }
+    return `Update available: ${data.current} → ${data.latest} — ${data.guidance}`;
   },
 
   json(data) {

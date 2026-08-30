@@ -10,6 +10,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type {
   CallToolResult,
+  Resource,
   ServerCapabilities,
 } from "@modelcontextprotocol/sdk/types.js";
 import { buildServer } from "../../kernel/project/mcp/buildServer.js";
@@ -34,12 +35,29 @@ export interface McpHarness {
   ): Promise<Record<string, unknown>>;
   /** List the registered tools. */
   listTools(): Promise<ToolInfo[]>;
-  /** List the resources exposed by the `{+uri}` template's list callback. */
-  listResources(): Promise<{ uri: string; name: string }[]>;
+  /**
+   * List the resources exposed by the `{+uri}` template's list callback.
+   *
+   * The WHOLE wire entry (title, annotations, `_meta`, …), not a projection of
+   * it: the listing's cost and its navigability are both properties of what
+   * actually crosses the wire, and a helper that trimmed the entry would hide
+   * exactly the fields under test.
+   */
+  listResources(): Promise<Resource[]>;
   /** Read one resource by URI; returns the first content's parsed/raw text. */
   readResource(uri: string): Promise<{ mimeType?: string; text: string }>;
-  /** Complete a resource-template variable against a partial value. */
-  completeResource(partial: string): Promise<string[]>;
+  /**
+   * Complete a resource-template variable against a partial value.
+   *
+   * Returns the full completion result — `total` and `hasMore` are derived by
+   * the SDK from the callback's array, so they are the only witness that a
+   * truncated result admits to being truncated.
+   */
+  completeResource(partial: string): Promise<{
+    values: string[];
+    total?: number;
+    hasMore?: boolean;
+  }>;
   /** The server capabilities negotiated at initialize (tools/resources/prompts). */
   serverCapabilities(): ServerCapabilities | undefined;
   /** The `serverInfo` the server introduced itself with at initialize. */
@@ -100,7 +118,7 @@ export async function projectMcp(
     },
     async listResources() {
       const { resources } = await client.listResources();
-      return resources.map((r) => ({ uri: r.uri, name: r.name }));
+      return resources;
     },
     async readResource(uri) {
       const result = await client.readResource({ uri });
@@ -117,7 +135,15 @@ export async function projectMcp(
         ref: { type: "ref/resource", uri: "pragma:{+uri}" },
         argument: { name: "uri", value: partial },
       });
-      return result.completion.values;
+      return {
+        values: result.completion.values,
+        ...(result.completion.total === undefined
+          ? {}
+          : { total: result.completion.total }),
+        ...(result.completion.hasMore === undefined
+          ? {}
+          : { hasMore: result.completion.hasMore }),
+      };
     },
     serverCapabilities() {
       return client.getServerCapabilities();

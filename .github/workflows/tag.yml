@@ -102,6 +102,10 @@ jobs:
         uses: ./.github/actions/lerna-version
         with:
           release_type: ${{ github.event.inputs.release_type }}
+          # Optional. The pack repositories are internal and this job's deploy
+          # key does not reach them, so the embedded-pack refresh is skipped
+          # (loudly) until a token that can read them exists.
+          packs_token: ${{ secrets.PACKS_READ_TOKEN }}
 
   publish:
     name: Publish packages
@@ -109,9 +113,10 @@ jobs:
     needs: version
     # OIDC trusted publishing: GitHub mints a short-lived npm token at publish
     # time instead of using a long-lived NPM_AUTH_TOKEN secret.
+    # contents:write lets the job create the GitHub Release for the tag.
     permissions:
       id-token: write
-      contents: read
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -128,7 +133,25 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
+        # The publish converges on REGISTRY state, not manifest state: after a
+        # partial failure the repo is already tagged and every manifest already
+        # claims the new version, so the only truthful definition of "what
+        # needs publishing" is "public packages whose manifest version the
+        # registry does not have". `lerna publish from-package` (below)
+        # publishes exactly that set; this step prints the same diff first so
+        # the log states the plan even when lerna's own reporting fails
+        # (v0.36.0: it died with `errno "undefined" is not a valid exit code`
+        # and no statement of which of the 55 packages had published).
+      - name: Plan the publish against the registry
+        run: bun scripts/publish-reconcile.ts
+
       - name: Publish packages
+        id: lerna_publish
+        # The verify step below is this job's verdict, so a lerna failure must
+        # not end the job before the outcome is reported. lerna's exit code
+        # conflates real failures with its own error plumbing, and a partial
+        # publish is exactly the state that needs a legible report.
+        continue-on-error: true
         # Route pre-releases to a dist-tag named after their pre-release
         # identifier (e.g. 0.30.0-experimental.1 -> "experimental") so they
         # never take over npm's `latest`; stable releases go to `latest`.
@@ -147,3 +170,22 @@ jobs:
           fi
           echo "Publishing $VERSION to dist-tag '$DIST_TAG'"
           lerna publish --yes --no-private --dist-tag "$DIST_TAG" from-package
+
+        # THE VERDICT: the job succeeds iff every public package is on the
+        # registry at its manifest version. Running it unconditionally makes
+        # the job idempotent end to end — a re-run after a partial failure
+        # publishes only the missing packages (from-package computes the same
+        # registry diff) and then goes green here; a re-run after full success
+        # is a clean no-op. It also writes the per-package outcome to the job
+        # summary, so a partial failure names what published and what did not.
+      - name: Verify the registry converged
+        env:
+          PUBLISH_STEP_OUTCOME: ${{ steps.lerna_publish.outcome }}
+        run: bun scripts/publish-reconcile.ts --verify
+
+      - name: Create GitHub Release with artifacts
+        uses: ./.github/actions/github-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          version: ${{ needs.version.outputs.VERSION }}

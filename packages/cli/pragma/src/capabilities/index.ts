@@ -14,7 +14,7 @@
  * `--help`/`__complete` fast paths stay free of the config reader and zod.
  */
 
-import type { CapabilityModule } from "../kernel/spec/types.js";
+import type { CapabilityModule } from "../kernel/spec/index.js";
 import { capabilitiesModule } from "./capabilities/index.js";
 import { colophonModule } from "./colophon/index.js";
 import { configModule } from "./config/index.js";
@@ -30,10 +30,12 @@ import { setupModule } from "./setup/index.js";
 import { skillModule } from "./skill/index.js";
 import { sourcesModule } from "./sources/index.js";
 import { upgradeModule } from "./upgrade/index.js";
+import { versionModule } from "./version/index.js";
 
 /** The modules with hand-written code, in authoring order. */
 const authored: readonly CapabilityModule[] = [
   infoModule,
+  versionModule,
   configModule,
   createModule,
   sourcesModule,

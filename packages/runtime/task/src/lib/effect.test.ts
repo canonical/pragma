@@ -80,6 +80,22 @@ describe("Effect Constructors - File System", () => {
       expect((effect as { content: string }).content).toBe(content);
     });
 
+    it("carries the verbatim marker when opted in", () => {
+      const effect = writeFileEffect("/copied.txt", "bytes", {
+        verbatim: true,
+      });
+      expect((effect as { verbatim?: boolean }).verbatim).toBe(true);
+      // The marker is inert for undo: the default delete-undo still resolves.
+      expect((effect as { undo?: unknown }).undo).toBeDefined();
+    });
+
+    it("omits the verbatim field entirely by default", () => {
+      const effect = writeFileEffect("/plain.txt", "bytes");
+      expect("verbatim" in effect).toBe(false);
+      const withUndo = writeFileEffect("/plain.txt", "bytes", { undo: null });
+      expect("verbatim" in withUndo).toBe(false);
+    });
+
     it("handles large content", () => {
       const content = "x".repeat(100000);
       const effect = writeFileEffect("/large.txt", content);
@@ -193,6 +209,18 @@ describe("Effect Constructors - File System", () => {
 
       expect(effect._tag).toBe("Exists");
       expect((effect as { path: string }).path).toBe("/path/to/check");
+      // Without the option the effect stays byte-identical to the old shape.
+      expect("followSymlinks" in effect).toBe(false);
+    });
+
+    it("carries followSymlinks only when the declaration sets it", () => {
+      const effect = existsEffect("/path/to/check", { followSymlinks: false });
+
+      expect(effect).toMatchObject({
+        _tag: "Exists",
+        path: "/path/to/check",
+        followSymlinks: false,
+      });
     });
   });
 

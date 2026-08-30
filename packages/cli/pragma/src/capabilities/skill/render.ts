@@ -3,7 +3,7 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
-import type { Formatters } from "../../kernel/spec/types.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 import type { DiscoveredSkill } from "./discover.js";
 import type { SkillLookup } from "./verbs.js";
 
@@ -12,15 +12,16 @@ const EMPTY_PLAIN = `No skills found.\nSkills come from design-system packs — 
 const EMPTY_LLM = `## Skills (0)\n\nNo skills found. Skills come from design-system packs — add one to the project config's packs, run \`${BIN_NAME} sources update\`, then \`${BIN_NAME} setup skills\`.`;
 
 export const skillListFormatters: Formatters<DiscoveredSkill[]> = {
+  // Zero skills: plain stdout stays empty — the guidance is `notice`,
+  // which the dispatcher routes to stderr (exit 0) so a pipe reads no prose.
   plain: (skills) =>
-    skills.length === 0
-      ? EMPTY_PLAIN
-      : skills
-          .map(
-            (s) =>
-              `${s.name}${s.frontmatter.prompt ? " (prompt)" : ""}  ${s.description}`,
-          )
-          .join("\n"),
+    skills
+      .map(
+        (s) =>
+          `${s.name}${s.frontmatter.prompt ? " (prompt)" : ""}  ${s.description}`,
+      )
+      .join("\n"),
+  notice: (skills) => (skills.length === 0 ? EMPTY_PLAIN : undefined),
   llm: (skills) =>
     skills.length === 0
       ? EMPTY_LLM

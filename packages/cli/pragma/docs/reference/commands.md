@@ -2,7 +2,7 @@
 
 Every `pragma` command, grouped by noun. Generated from the live capability grammar — do not edit by hand.
 
-Global flags apply to every command: `--format <plain|llm|json>` (auto-detected — the llm/condensed-Markdown form turns on when output is piped), `--verbose`, and `--detail <summary|standard|detailed>`.
+Global flags apply to every command: `--format <plain|llm|json>` (auto-detected — the llm/condensed-Markdown form turns on when output is piped), `--verbose`, `--no-headers`, `--quiet`, and `--detail <summary|standard|detailed>`.
 
 ## block
 
@@ -30,7 +30,7 @@ pragma block list --format llm
 
 Look up block details by name, IRI, or glob.
 
-Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. Use when you need the full spec of specific blocks by name — detail: "summary" trims to the base view. Example: block_lookup { names: ["Button"] }.
+Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. Use when you need the full spec of specific blocks by name — detail: "summary" trims to the base view. Example: block_lookup { name: ["Button"] }.
 
 ```
 pragma block lookup <name...>
@@ -55,7 +55,7 @@ pragma block lookup <name>
 
 Return randomly selected complete block entries as exemplars.
 
-Return randomly selected complete design-system blocks as exemplars. Use BEFORE writing queries to see actual data shapes, anatomy, and property names.
+Return randomly selected complete design-system blocks as exemplars. Use BEFORE writing queries to see actual data shapes, anatomy, and property names. Example: block_sample {}.
 
 ```
 pragma block sample
@@ -96,9 +96,9 @@ pragma capabilities --format json  # the structured map
 
 ### pragma colophon
 
-Narrate how pragma and the active domain are made.
+Narrate how the active domain is made.
 
-Storeless — a colophon for the toolchain. Prints the story the distribution declares for itself (its config's `colophon`) followed by the active pack's domain colophon. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
+Storeless — the colophon each active pack declares for its domain. With no pack telling a story, it prints the one pragma declares for itself instead; with neither, it says so. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
 
 ```
 pragma colophon
@@ -110,17 +110,97 @@ pragma colophon
 **Examples**
 
 ```bash
-pragma colophon  # the toolchain + active domain story
+pragma colophon  # the active domain's story
 pragma colophon --format llm  # condensed Markdown for agents
 ```
 
+## concept
+
+### pragma concept list
+
+List design-system concepts.
+
+List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search. Example: concept_list { type: "Explanation" }.
+
+```
+pragma concept list [options]
+```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--type` | `<string>` | Filter by concept type (e.g. Explanation, How-to guide). |
+| `--search` | `<string>` | Search in name and summary. |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `concept_list` tool.
+
+**Examples**
+
+```bash
+pragma concept list
+pragma concept list --format llm
+```
+
+### pragma concept lookup
+
+Look up a concept's full documentation by name, IRI, or glob.
+
+Get a design-system concept's full Markdown documentation. Address concepts by the name concept_list publishes, by prefixed name (ds:concept.…), by absolute IRI, or by a glob. Example: concept_lookup { name: ["Foundations: Grid"] }.
+
+```
+pragma concept lookup <name...>
+```
+
+**Arguments**
+
+| Argument | Required | Description |
+| --- | --- | --- |
+| `<name...>` | yes | Concept names, prefixed names/IRIs, or glob patterns. |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `concept_lookup` tool.
+
+**Examples**
+
+```bash
+pragma concept lookup <name>
+```
+
 ## config
+
+### pragma config get
+
+Print one resolved config value.
+
+Reads the effective value of a single field after layering — built-in defaults, the global config, and the nearest project config. Prints the bare value (nothing when the field is unset), so the output substitutes directly into a shell.
+
+```
+pragma config get <key>
+```
+
+**Arguments**
+
+| Argument | Required | Description |
+| --- | --- | --- |
+| `<key>` | yes | The config field to read. (one of: tier, channel, detail) |
+
+- Store: storeless.
+- MCP: exposed as the `config_get` tool.
+
+**Examples**
+
+```bash
+pragma config get tier
+pragma config get channel --format json
+```
 
 ### pragma config set
 
 Set a config field by name.
 
-Write a global config field by name — the one-command form of the per-field setters. `key` is one of `tier`, `channel`, or `detail`; the field's own reset rules apply (e.g. `set tier none` clears it). Written to the global layer only — project configs are authored by hand.
+Write a global config field by name. `key` is one of `tier`, `channel`, or `detail`; clearing a field is `config unset <key>`'s job, and the values that used to double as clear-markers are refused. Written to the global layer only — project configs are authored by hand.
 
 ```
 pragma config set <key> <value>
@@ -131,7 +211,7 @@ pragma config set <key> <value>
 | Argument | Required | Description |
 | --- | --- | --- |
 | `<key>` | yes | The config field to write. (one of: tier, channel, detail) |
-| `<value>` | yes | The value to write (or a field's reset sentinel, e.g. `none`). |
+| `<value>` | yes | The value to write. |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -142,7 +222,7 @@ pragma config set <key> <value>
 ```bash
 pragma config set tier apps/lxd  # scope reads to a tier
 pragma config set channel experimental
-pragma config set tier none  # clear the tier
+pragma config unset tier  # clear the tier
 ```
 
 ### pragma config show
@@ -165,33 +245,59 @@ pragma config show
 pragma config show --format json
 ```
 
-## create
+### pragma config unset
 
-### pragma create application
+Clear a config field by name.
 
-Scaffold a full React application with SSR and routing. Source-run only.
-
-Scaffold a full React application with SSR and routing. From the compiled pragma binary, `create application` refuses with `UNSUPPORTED` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that its generator reads templates from disk, which the binary does not carry. Run it from a source checkout, or use the `summon` CLI.
+Removes a field from the global config so the built-in default (or a project config) applies again. The counterpart of `config set` — setting writes a value, unsetting removes one; no value doubles as a remove-marker.
 
 ```
-pragma create application [appPath] [options]
+pragma config unset <key>
 ```
 
 **Arguments**
 
 | Argument | Required | Description |
 | --- | --- | --- |
-| `[appPath]` | no | Application directory. (default: my-app) |
+| `<key>` | yes | The config field to clear. (one of: tier, channel, detail) |
+
+- Store: storeless.
+- Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
+- MCP: exposed as the `config_unset` tool.
+
+**Examples**
+
+```bash
+pragma config unset tier  # read the full graph again
+pragma config unset channel
+```
+
+## create
+
+The `create` surface is a PROJECTION of the summon generator tree: `pragma create <path...>` ≡ `summon <path...>` over the declared bindings — same grammar, same flags, same wizard, byte-identical trees. Tree segments are subcommands (`create component react|svelte|lit`, `create application react`), and every flag derives from the generators' own prompts (a default-on confirm registers only its `--no-` form). The contract is EXECUTED, not written down: `crossCli.subprocess.test.ts` runs both CLIs over the same argv and compares what they emit.
+
+### pragma create application
+
+Scaffold a full React application with SSR and routing.
+
+```
+pragma create application react [app-path] [options]
+```
+
+**Arguments**
+
+| Argument | Required | Description |
+| --- | --- | --- |
+| `[app-path]` | no | Application directory name. (default: my-app) |
 
 **Flags**
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--with-ssr` | — | Include SSR. (default: true) |
-| `--with-router` | — | Include router. (default: true) |
-| `--with-forms` | — | Include form components. (default: true) |
-| `--with-relay` | — | Include a Relay (GraphQL) data layer. (default: false) |
-| `--run-install` | — | Install dependencies now. (default: false) |
+| `--no-forms` | — | Include form components. (default: true) |
+| `--intl` | — | Include internationalisation (locale negotiation, translated UI, locale switcher). (default: false) |
+| `--relay` | — | Include a Relay (GraphQL) data layer with a local mock schema. (default: false) |
+| `--no-run-install` | — | Install dependencies now. (default: true) |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -200,8 +306,8 @@ pragma create application [appPath] [options]
 **Examples**
 
 ```bash
-pragma create application my-app
-pragma create application my-app --with-relay
+pragma create application react my-app
+pragma create application react my-app --relay
 ```
 
 ### pragma create component
@@ -209,23 +315,24 @@ pragma create application my-app --with-relay
 Scaffold a React, Svelte, or Lit component.
 
 ```
-pragma create component [componentPath] [options]
+pragma create component <framework> [component-path] [options]
 ```
 
 **Arguments**
 
 | Argument | Required | Description |
 | --- | --- | --- |
-| `[componentPath]` | no | Component path (its final segment is the PascalCase component name). |
+| `<framework>` | yes | Component framework — the tree segment (`create component <framework>`). (one of: react, svelte, lit) |
+| `[component-path]` | no | Component path. |
 
 **Flags**
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--framework` | `<react\|svelte\|lit>` | Component framework. (one of: react, svelte, lit) (default: react) |
-| `--with-styles` | — | Include styles. (default: true) |
-| `--with-stories` | — | Include Storybook stories. (default: true) |
-| `--with-ssr-tests` | — | Include SSR tests. (default: true) |
+| `--no-with-styles` | — | Include styles. (default: true) |
+| `--no-with-stories` | — | Include Storybook stories. (default: true) |
+| `--no-with-ssr-tests` | — | Include SSR tests. (frameworks: react, svelte) (default: true) |
+| `--use-ts-stories` | — | Use TypeScript stories format? (otherwise Svelte CSF). (frameworks: svelte) (default: false) |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -234,15 +341,13 @@ pragma create component [componentPath] [options]
 **Examples**
 
 ```bash
-pragma create component src/components/Button --framework react  # React component with tests, stories, and styles
-pragma create component src/lib/Card --framework svelte --dry-run  # preview the files without writing
+pragma create component react src/components/Button  # React component with tests, stories, and styles
+pragma create component svelte src/lib/Card --dry-run  # preview the files without writing
 ```
 
 ### pragma create package
 
-Scaffold a new npm package for the monorepo. Source-run only.
-
-Scaffold a new npm package for the monorepo. From the compiled pragma binary, `create package` refuses with `UNSUPPORTED` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that its generator reads templates from disk, which the binary does not carry. Run it from a source checkout, or use the `summon` CLI.
+Scaffold a new npm package for the monorepo.
 
 ```
 pragma create package [options]
@@ -257,9 +362,9 @@ pragma create package [options]
 | `--description` | `<string>` | Package description. (default: ) |
 | `--with-react` | — | Include React dependencies. (default: false) |
 | `--with-storybook` | — | Include Storybook setup. (default: false) |
-| `--with-cli` | — | Include a CLI binary entry point. (default: false) |
-| `--with-pr-template` | — | Include a PR template. (default: false) |
-| `--run-install` | — | Run the package manager install after creation. (default: false) |
+| `--with-cli` | — | Include CLI binary entry point. (default: false) |
+| `--with-pr-template` | — | Include a .github/PULL_REQUEST_TEMPLATE.md. (default: false) |
+| `--no-run-install` | — | Run package manager install after creation. (default: true) |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -269,16 +374,16 @@ pragma create package [options]
 
 ```bash
 pragma create package --name @canonical/my-lib --type library
-pragma create package --name @canonical/my-tool --run-install
+pragma create package --name @canonical/my-tool --no-run-install
 ```
 
 ## doctor
 
 ### pragma doctor
 
-Check environment health — Node, config, store, MCP, and skills.
+Check your environment and every setup target, globally and in this project.
 
-Runs nine diagnostic checks and reports pass/fail/skip with inline remedies. Storeless by default; the store check boots lazily and never fails the run.
+Reports the environment checks first, then one row per setup target — once for your home directory, once for this project. Each row is pass, fail, available (an optional integration you have not set up yet), or skip (nothing to do here, and the row says why), with the next step printed inline. Every row is named after the setup target that repairs it, except `harnesses`: a listing, per scope, of the AI harnesses found on this machine and whether this CLI's MCP server is registered in each — the ones actually found, or every harness it knows about under the verbose global flag. Needs no store; the store check boots lazily and never fails the run.
 
 ```
 pragma doctor
@@ -300,7 +405,7 @@ pragma doctor --format json  # machine-readable checks
 
 Show every triple where a URI is the subject, grouped by predicate.
 
-Inspect one entity: all predicate/object pairs asserted on the subject. Address it by prefixed name (ds:button) or absolute IRI.
+Inspect one entity: all predicate/object pairs asserted on the subject. Address it by prefixed name (ds:global.component.button) or absolute IRI.
 
 ```
 pragma graph inspect <uri>
@@ -318,8 +423,8 @@ pragma graph inspect <uri>
 **Examples**
 
 ```bash
-pragma graph inspect ds:button
-pragma graph inspect https://ds.canonical.com/button
+pragma graph inspect ds:global.component.button
+pragma graph inspect https://ds.canonical.com/global.component.button
 ```
 
 ### pragma graph query
@@ -345,7 +450,57 @@ pragma graph query <sparql>
 
 ```bash
 pragma graph query "SELECT ?s WHERE { ?s a ds:Component }"  # list every component subject
-pragma graph query "ASK { ds:button a ds:Component }" --format json
+pragma graph query "ASK { <https://ds.canonical.com/global.component.button> a ds:Component }" --format json
+```
+
+## implementation
+
+### pragma implementation libraries
+
+List the implementation libraries.
+
+List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements. Example: implementation_libraries {}.
+
+```
+pragma implementation libraries
+```
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `implementation_libraries` tool.
+
+**Examples**
+
+```bash
+pragma implementation libraries
+pragma implementation libraries --format llm
+```
+
+### pragma implementation list
+
+List which library implements which design-system block.
+
+List the implementations of design-system blocks — which library implements which block, on which platform, and the source file it lives in. Optionally filter by platform or library, or search. Example: implementation_list { platform: "react" }.
+
+```
+pragma implementation list [options]
+```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--platform` | `<string>` | Filter by platform (e.g. react, svelte, typescript). |
+| `--library` | `<string>` | Filter by implementation library name. |
+| `--search` | `<string>` | Search in block and library name. |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `implementation_list` tool.
+
+**Examples**
+
+```bash
+pragma implementation list
+pragma implementation list --format llm
 ```
 
 ## info
@@ -369,6 +524,19 @@ pragma info
 pragma info  # human-readable summary
 pragma info --format json  # the full {ok,data,meta} envelope
 ```
+
+## mcp
+
+### pragma mcp serve
+
+Start the MCP server over stdio.
+
+```
+pragma mcp serve
+```
+
+- Store: storeless.
+- MCP: not exposed (CLI-only).
 
 ## modifier
 
@@ -396,7 +564,7 @@ pragma modifier list --format llm
 
 Look up modifier details by name, IRI, or glob.
 
-Get values and usage details for one or more modifier families by name. Use when you need the allowed values of specific families. Example: modifier_lookup { names: ["importance"] }.
+Get values and usage details for one or more modifier families by name. Use when you need the allowed values of specific families. Example: modifier_lookup { name: ["importance"] }.
 
 ```
 pragma modifier lookup <name...>
@@ -421,7 +589,7 @@ pragma modifier lookup <name>
 
 Return randomly selected complete modifier entries as exemplars.
 
-Return randomly selected complete modifier families (with value lists) as exemplars. Use BEFORE writing queries to see actual data shapes.
+Return randomly selected complete modifier families (with value lists) as exemplars. Use BEFORE writing queries to see actual data shapes. Example: modifier_sample {}.
 
 ```
 pragma modifier sample
@@ -488,40 +656,6 @@ pragma ontology lookup ds --properties
 pragma ontology lookup ds --class Component
 ```
 
-### pragma ontology show
-
-(deprecated: use `ontology lookup`) Show a namespace's classes (hierarchy + counts) and properties.
-
-Deprecated alias of `ontology lookup` — retained for compatibility. Prefer `ontology lookup <prefix>`.
-
-```
-pragma ontology show <prefix> [options]
-```
-
-**Arguments**
-
-| Argument | Required | Description |
-| --- | --- | --- |
-| `<prefix>` | yes | The namespace prefix (ds) or full URI. |
-
-**Flags**
-
-| Flag | Value | Description |
-| --- | --- | --- |
-| `--properties` | — | Include the properties section (also implied by --detail standard or higher). |
-| `--full-uris` | — | Show full IRIs instead of prefixed. |
-| `--class` | `<string>` | Focus on one class and its properties. |
-
-- Store: reads the local store (`pragma sources update` builds it).
-- MCP: exposed as the `ontology_show` tool.
-
-**Examples**
-
-```bash
-pragma ontology lookup ds  # prefer `lookup`
-pragma ontology show ds  # deprecated alias
-```
-
 ## prompt
 
 ### pragma prompt list
@@ -566,11 +700,39 @@ pragma prompt lookup <name>
 
 ### pragma setup completions
 
-Install the shell-completion script for your shell.
+Install TAB completion for the shell you are running.
 
 ```
-pragma setup completions
+pragma setup completions [options]
 ```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--scope` | `<project\|global\|both>` | Where to configure: global (your home directory, the default), project (this repository), or both. (one of: project, global, both) (default: global) |
+| `--global` | — | Shorthand for --scope global — configure your home directory. |
+| `--local` | — | Shorthand for --scope project — configure this project only. |
+
+- Store: storeless.
+- Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
+- MCP: not exposed (CLI-only).
+
+### pragma setup config
+
+Create your global config file, filled in with the defaults.
+
+```
+pragma setup config [options]
+```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--scope` | `<project\|global\|both>` | Where to configure: global (your home directory, the default), project (this repository), or both. (one of: project, global, both) (default: global) |
+| `--global` | — | Shorthand for --scope global — configure your home directory. |
+| `--local` | — | Shorthand for --scope project — configure this project only. |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -578,11 +740,19 @@ pragma setup completions
 
 ### pragma setup lsp
 
-Ensure the Terrazzo LSP VS Code extension is installed.
+Install the Terrazzo design-token extension into your VS Code-family editors.
 
 ```
-pragma setup lsp
+pragma setup lsp [options]
 ```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--scope` | `<project\|global\|both>` | Where to configure: global (your home directory, the default), project (this repository), or both. (one of: project, global, both) (default: global) |
+| `--global` | — | Shorthand for --scope global — configure your home directory. |
+| `--local` | — | Shorthand for --scope project — configure this project only. |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -590,7 +760,7 @@ pragma setup lsp
 
 ### pragma setup mcp
 
-Register the pragma MCP server in detected AI harnesses.
+Register the pragma MCP server with the AI harnesses on this machine.
 
 ```
 pragma setup mcp [options]
@@ -600,9 +770,9 @@ pragma setup mcp [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: project, global, or both. (one of: project, global, both) (default: both) |
-| `--global` | — | Shorthand for --scope global (configure the user/home band). |
-| `--local` | — | Shorthand for --scope project (configure the per-project band). |
+| `--scope` | `<project\|global\|both>` | Where to configure: global (your home directory, the default), project (this repository), or both. (one of: project, global, both) (default: global) |
+| `--global` | — | Shorthand for --scope global — configure your home directory. |
+| `--local` | — | Shorthand for --scope project — configure this project only. |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -610,9 +780,9 @@ pragma setup mcp [options]
 
 ### pragma setup
 
-Configure MCP, completions, skills, and the LSP for this project.
+Set up your config file, TAB completion, the editor extension, MCP, and skills.
 
-Runs the shell-completions, LSP, MCP, and skills installers as a single wizard: pick the steps, review the recap, then apply. The scope option targets the project band, the user/home band, or both.
+Shows what each target needs, then applies the ones you keep. Everything is configured in your home directory by default; the scope option moves the run to this project alone, or covers both. Without an attended terminal the plan is printed and nothing is written unless the run is explicitly confirmed.
 
 ```
 pragma setup [options]
@@ -622,9 +792,9 @@ pragma setup [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: project, global, or both. (one of: project, global, both) (default: both) |
-| `--global` | — | Shorthand for --scope global (configure the user/home band). |
-| `--local` | — | Shorthand for --scope project (configure the per-project band). |
+| `--scope` | `<project\|global\|both>` | Where to configure: global (your home directory, the default), project (this repository), or both. (one of: project, global, both) (default: global) |
+| `--global` | — | Shorthand for --scope global — configure your home directory. |
+| `--local` | — | Shorthand for --scope project — configure this project only. |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -634,14 +804,14 @@ pragma setup [options]
 
 ```bash
 pragma setup
-pragma setup --dry-run  # preview every step's effects
-pragma setup --global  # configure only the user/home band
-pragma setup mcp  # just the MCP server registration
+pragma setup --dry-run  # show the plan, write nothing
+pragma setup --local  # configure this project instead of your home directory
+pragma setup mcp  # only register the MCP server
 ```
 
 ### pragma setup skills
 
-Symlink discovered skills into each AI harness.
+Link the skills you have installed into every AI harness that reads them.
 
 ```
 pragma setup skills [options]
@@ -651,9 +821,9 @@ pragma setup skills [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: project, global, or both. (one of: project, global, both) (default: both) |
-| `--global` | — | Shorthand for --scope global (configure the user/home band). |
-| `--local` | — | Shorthand for --scope project (configure the per-project band). |
+| `--scope` | `<project\|global\|both>` | Where to configure: global (your home directory, the default), project (this repository), or both. (one of: project, global, both) (default: global) |
+| `--global` | — | Shorthand for --scope global — configure your home directory. |
+| `--local` | — | Shorthand for --scope project — configure this project only. |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -727,7 +897,7 @@ pragma sources status --format json  # the full envelope
 
 Resolve configured packs and build the local store from them.
 
-Resolves each configured pack (git/file/npm) and builds one content-addressed pack, which every later boot reads with no network access. Pin a revision by putting a commit SHA in the pack's source ref.
+Resolves each configured pack (git, file, or npm) and builds one local pack from them, which every later run reads without touching the network. Put a commit SHA in a pack source ref to pin it to that revision.
 
 ```
 pragma sources update [options]
@@ -737,7 +907,7 @@ pragma sources update [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--skip-invalid` | — | Skip sources that fail to parse (warning about each) and build from the rest, instead of failing the whole update. |
+| `--skip-invalid` | — | Build from the sources that parse, warning about each one that does not, instead of failing the whole update. |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -747,16 +917,16 @@ pragma sources update [options]
 
 ```bash
 pragma sources update  # resolve and build
-pragma sources update --skip-invalid  # build from the parseable sources, warning about any dropped
+pragma sources update --skip-invalid  # build from the sources that parse, and name the ones dropped
 ```
 
 ## standard
 
 ### pragma standard categories
 
-List all standard categories with counts.
+List all standard categories with counts (a parent counts its whole branch).
 
-List all code standard categories.
+List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering. Example: standard_categories {}.
 
 ```
 pragma standard categories
@@ -776,7 +946,7 @@ pragma standard categories --format llm
 
 List all code standards.
 
-List code standards. Optionally filter by category or search term.
+List code standards: one ROW per standard — its IRI, name, category and description — not the standards themselves. Take a row's `name` VERBATIM to standard_lookup for the dos and donts. Optionally filter by category slug (a parent slug answers for its whole branch; standard_categories lists them) or by search term. Example: standard_list { category: "react" }.
 
 ```
 pragma standard list [options]
@@ -786,7 +956,7 @@ pragma standard list [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--category` | `<string>` | Filter by category name. |
+| `--category` | `<string>` | Filter by category slug. A parent category answers for its whole branch. |
 | `--search` | `<string>` | Search in name and description. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -801,9 +971,9 @@ pragma standard list --format llm
 
 ### pragma standard lookup
 
-Look up detailed information for a standard by name, IRI, or glob.
+Look up one or more standards by name, IRI, or glob. --detail standard adds the dos, --detail detailed adds the don'ts.
 
-Get detailed information about one or more code standards including dos and donts with code examples. Address standards by name, prefixed name (cs:…), absolute IRI, or glob pattern (react/component/*).
+Get one or more code standards in full, with dos and don'ts as code examples. `detail` DEFAULTS to "summary", which returns neither: pass detail: "standard" for the dos and detail: "detailed" for dos AND don'ts. Address a standard by the name standard_list publishes (`react/component/tsdoc`), by prefixed name (`cs:react.component.tsdoc`), by absolute IRI, or by a glob over any of those. Example: standard_lookup { name: ["react/component/tsdoc"], detail: "detailed" }.
 
 ```
 pragma standard lookup <name...>
@@ -828,7 +998,7 @@ pragma standard lookup <name>
 
 Return randomly selected complete standard instances as exemplars for shape discovery.
 
-Return 1–5 randomly selected complete code standard instances as exemplars. Use BEFORE writing queries to see actual data shapes, property names, and value formats. Each call returns different instances.
+Return 1–5 randomly selected complete code standard instances as exemplars. Use BEFORE writing queries to see actual data shapes, property names, and value formats. Each call returns different instances. Example: standard_sample { count: 2 }.
 
 ```
 pragma standard sample [count]
@@ -876,7 +1046,7 @@ pragma tier list --format llm
 
 Show tiers by name, with the blocks scoped to each.
 
-Get one or more tiers by name, with the blocks scoped directly to each. Use when you need which blocks a specific tier carries. Example: tier_lookup { names: ["apps/lxd"] }.
+Get one or more tiers by name, with the blocks scoped directly to each. Use when you need which blocks a specific tier carries. Example: tier_lookup { name: ["apps/lxd"] }.
 
 ```
 pragma tier lookup <name...>
@@ -923,7 +1093,7 @@ pragma token list --format llm
 
 Look up token details by name, IRI, or glob.
 
-Get type and theme values for one or more design tokens by name. Use when resolving specific tokens' light/dark values. Example: token_lookup { names: ["color.primary"] }.
+Get type and theme values for one or more design tokens by name. Use when resolving specific tokens' light/dark values. Example: token_lookup { name: ["color.primary"] }.
 
 ```
 pragma token lookup <name...>
@@ -948,7 +1118,7 @@ pragma token lookup <name>
 
 Return randomly selected complete token entries as exemplars.
 
-Return randomly selected complete design tokens (with theme values) as exemplars. Use BEFORE writing queries to see actual data shapes.
+Return randomly selected complete design tokens (with theme values) as exemplars. Use BEFORE writing queries to see actual data shapes. Example: token_sample {}.
 
 ```
 pragma token sample
@@ -984,4 +1154,25 @@ pragma upgrade
 ```bash
 pragma upgrade
 pragma upgrade --dry-run  # show the delta and the command
+```
+
+## version
+
+### pragma version
+
+Print the CLI version.
+
+Prints the version `--version` prints — one value, two spellings of the same read.
+
+```
+pragma version
+```
+
+- Store: storeless.
+- MCP: not exposed (CLI-only).
+
+**Examples**
+
+```bash
+pragma version
 ```

@@ -1,10 +1,11 @@
 import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fail, succeed } from "@canonical/task";
+import { $, fail, gen, log, mkdir, succeed, writeFile } from "@canonical/task";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fixturePreviewModule } from "../../../testing/fixtures/fixtureCapability.js";
 import { PragmaError } from "../../error/PragmaError.js";
+import { canPrompt } from "../../interactivity.js";
 import { bootRuntime } from "../../runtime/boot.js";
 import type { GlobalFlags } from "../../runtime/types.js";
 import type { ParamSpec, VerbSpec } from "../../spec/types.js";
@@ -150,6 +151,46 @@ describe("executeVerb — mutations", () => {
     expect(outcome.stdout).toContain("Dry run");
   });
 
+  it("a verb with NO formatPlan renders the effect dump, byte for byte", async () => {
+    // The `formatPlan` seam is opt-in, and opting out is the majority case.
+    // These are the exact bytes the kernel produced before any verb had a
+    // renderer of its own — the whole literal, not a substring — so a verb
+    // that declares nothing can never be re-rendered by accident.
+    const dumped: VerbSpec = {
+      ...make,
+      run: () =>
+        gen(function* () {
+          yield* $(log("info", "starting"));
+          yield* $(mkdir("out"));
+          yield* $(writeFile("out/thing.txt", "hello"));
+          return { dumped: true };
+        }),
+    };
+    const outcome = await executeVerb(
+      dumped,
+      {},
+      { dryRun: true, undo: false, yes: false },
+      bootRuntime(PLAIN, mkdtempSync(join(tmpdir(), "pragma-dump-"))),
+    );
+    expect(outcome.stdout).toBe(
+      "Dry run — planned effects:\n" +
+        "  - Log [info]: starting\n" +
+        "  - Created out/\n" +
+        "  - Write file: out/thing.txt (5 bytes)\n",
+    );
+    expect(outcome.exitCode).toBe(0);
+  });
+
+  it("an empty plan renders the no-effects line, byte for byte", async () => {
+    const outcome = await executeVerb(
+      make,
+      {},
+      { dryRun: true, undo: false, yes: false },
+      bootRuntime(PLAIN),
+    );
+    expect(outcome.stdout).toBe("Dry run — no effects.\n");
+  });
+
   it("reports undo count under --undo", async () => {
     const outcome = await executeVerb(
       make,
@@ -158,6 +199,104 @@ describe("executeVerb — mutations", () => {
       bootRuntime(PLAIN),
     );
     expect(outcome.stdout).toBe("Undid 0 step(s).\n");
+  });
+});
+
+describe("--quiet — success is silent, failure is not", () => {
+  // The rule the flag has to keep: everything muted is success-path narration
+  // (the calm zero-record notice, a mutation's stage lines). Error rendering
+  // does not route through either seam, so no failure can hide behind it.
+  const QUIET: GlobalFlags = { ...PLAIN, quiet: true };
+  const savedExit = process.exitCode;
+  afterEach(() => {
+    process.exitCode = savedExit;
+  });
+
+  const emptyList: VerbSpec = {
+    ...echo,
+    params: [],
+    output: {
+      formatters: {
+        ...passthroughFormatters,
+        plain: () => "",
+        notice: () => "No results.",
+      },
+    },
+    run: async () => [],
+  };
+
+  it("mutes the empty-state notice but keeps stdout and the exit code", async () => {
+    const loud = await executeVerb(
+      emptyList,
+      {},
+      { dryRun: false, undo: false, yes: false },
+      bootRuntime(PLAIN),
+    );
+    expect(loud.stderr).toBe("No results.\n");
+
+    const quiet = await executeVerb(
+      emptyList,
+      {},
+      { dryRun: false, undo: false, yes: false },
+      bootRuntime(QUIET),
+    );
+    expect(quiet.stderr).toBeUndefined();
+    expect(quiet.stdout).toBe(loud.stdout);
+    expect(quiet.exitCode).toBe(0);
+  });
+
+  it("mutes a mutation's progress lines", async () => {
+    const reporting: VerbSpec = {
+      ...make,
+      run: (_params, runtime) => {
+        runtime.report?.("Resolving the pack…");
+        return succeed({ made: true });
+      },
+    };
+    const errs: string[] = [];
+    const spy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation((chunk: string | Uint8Array) => {
+        errs.push(String(chunk));
+        return true;
+      });
+    await executeVerb(
+      reporting,
+      {},
+      { dryRun: false, undo: false, yes: true },
+      bootRuntime(PLAIN),
+    );
+    const loud = errs.join("");
+    errs.length = 0;
+    await executeVerb(
+      reporting,
+      {},
+      { dryRun: false, undo: false, yes: true },
+      bootRuntime(QUIET),
+    );
+    spy.mockRestore();
+    expect(loud).toContain("Resolving the pack…");
+    expect(errs.join("")).toBe("");
+  });
+
+  it("still renders the error, with its exit code", async () => {
+    const failing: VerbSpec = {
+      ...echo,
+      run: async () => {
+        throw PragmaError.notFound("thing", "Nope");
+      },
+    };
+    const errs: string[] = [];
+    const spy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation((chunk: string | Uint8Array) => {
+        errs.push(String(chunk));
+        return true;
+      });
+    await dispatch(failing, ["x"], {}, QUIET);
+    spy.mockRestore();
+    expect(errs.join("")).toContain('thing "Nope" not found.');
+    expect(process.exitCode).toBe(1);
   });
 });
 
@@ -190,7 +329,7 @@ describe("dispatch — errors", () => {
   it("renders a declined confirm gate as a clean cancellation, not a bug report", async () => {
     // A TTY user declining execute()'s "Proceed?" gate fails the task with
     // GENERATOR_CANCELLED; the boundary must treat it as a clean cancel, never
-    // the scary INTERNAL_ERROR "please report this issue" / exit 1.
+    // the scary INTERNAL_ERROR "report this issue" / exit 1.
     const cancelling: VerbSpec = {
       ...make,
       run: () => fail({ code: "GENERATOR_CANCELLED", message: "Cancelled." }),
@@ -351,5 +490,24 @@ describe("executeVerb — interactivity gate (H3)", () => {
       bootRuntime(PLAIN),
     );
     expect(sink.isTTY).toBe(true);
+  });
+
+  it("canPrompt IS the stdin+stderr conjunction — the one gate both callers read", () => {
+    // The mount's create decision reads the same exported function this
+    // describe drives through executeVerb, so pinning the truth table here
+    // pins BOTH callers (nothing is left to keep two copies in step).
+    const cases: Array<[boolean, boolean, boolean, boolean]> = [
+      [true, true, false, true], // stdout is irrelevant…
+      [true, true, true, true],
+      [false, true, true, false], // …stdin is required…
+      [true, false, true, false], // …and so is stderr.
+      [false, false, false, false],
+    ];
+    for (const [stdin, stderr, stdout, expected] of cases) {
+      setTTY(process.stdin, stdin);
+      setTTY(process.stderr, stderr);
+      setTTY(process.stdout, stdout);
+      expect(canPrompt(), `stdin=${stdin} stderr=${stderr}`).toBe(expected);
+    }
   });
 });

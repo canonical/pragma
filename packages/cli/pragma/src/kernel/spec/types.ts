@@ -11,7 +11,7 @@
  * other param is a kebab-cased flag.
  */
 
-import type { Task } from "@canonical/task";
+import type { Effect, Task } from "@canonical/task";
 import type { PragmaRuntime } from "../runtime/types.js";
 
 /** MCP tool annotations mirrored onto exposed verbs. */
@@ -111,6 +111,14 @@ export type ParamSpec =
       default?: unknown;
       positional?: boolean;
       complete?: ParamComplete;
+      /**
+       * A repeatable flag ACCUMULATES: `--category css --category git` is
+       * the union, never last-wins (repetition is the sanctioned multi-value
+       * form, and silently dropping all but the last value is data loss).
+       * CLI-side only: the MCP arg schema keeps its scalar shape, and the
+       * run body accepts one value or many.
+       */
+      repeatable?: true;
     }
   | {
       kind: "enum";
@@ -121,6 +129,8 @@ export type ParamSpec =
       default?: string;
       positional?: boolean;
       complete?: ParamComplete;
+      /** See the string variant — repeated occurrences accumulate. */
+      repeatable?: true;
     }
   | {
       kind: "string[]";
@@ -131,11 +141,57 @@ export type ParamSpec =
       complete?: ParamComplete;
     };
 
-/** The three output modes every verb must render. */
+/**
+ * The three output modes every verb must render.
+ *
+ * `plain` takes an optional {@link RenderContext} — the dispatcher's
+ * presentation facts (`--no-headers`, whether stdout is a terminal). Only
+ * list-shaped formatters read it; `llm` (the byte-frozen agent contract) and
+ * `json` (the envelope) never see it.
+ *
+ * `notice` is the seam for what the DATA cannot say about itself. Return the
+ * calm sentence when the payload would otherwise misrepresent the read; return
+ * `undefined` (or omit the member) when it speaks for itself.
+ *
+ * Two shapes qualify, and they are the same failure. A zero-record result
+ * ("empty ≠ silence"): an unbuilt store, a mistyped filter and a genuinely empty
+ * result were all `{"ok":true,"data":[],"meta":{}}`. And a result that is one of
+ * several it could have been — a `lookup` whose name reached more entities than
+ * the one it answers with. A caller shown Launchpad's `Button` has no way to
+ * discover the global one from a payload that looks exactly like an unambiguous
+ * hit; the notice names the IRIs the answer did not take, which is the only
+ * address that reaches them.
+ *
+ * It was called `emptyNotice` while emptiness was the only case. The channel is
+ * unchanged — same key, same three surfaces — so this is one seam covering both,
+ * not a second one grown beside it.
+ *
+ * Three surfaces route it, each in its own register — it is one seam, not a
+ * plain-mode courtesy:
+ * - `plain`: the dispatcher writes it to STDERR with exit 0, keeping the stdout
+ *   data stream free of human sentences a pipe would read as records. `--quiet`
+ *   mutes it (success-path guidance).
+ * - `--format json` AND the MCP tool result: it rides the envelope as
+ *   `meta.notice` (`project/cli/dispatch.ts#renderData`,
+ *   `project/mcp/registerVerb.ts#emptyMeta` — the same key from the same seam,
+ *   so the two MACHINE surfaces stay byte-equal). `data` keeps its uniform empty
+ *   shape; `[]` stays `[]`. Without it an agent could not tell an unbuilt store,
+ *   a mistyped filter and a genuinely empty result apart — all three were
+ *   `{"ok":true,"data":[],"meta":{}}`.
+ * - `llm` (the byte-frozen agent contract) is the ONE mode that still ignores
+ *   it: it renders one stream and its bytes are frozen.
+ *
+ * The formatters themselves never see the notice: `json(d)` renders the data
+ * alone, and the ENVELOPE layer carries the notice beside it.
+ */
 export interface Formatters<T> {
-  readonly plain: (d: T) => string;
+  readonly plain: (
+    d: T,
+    context?: import("../render/contracts.js").RenderContext,
+  ) => string;
   readonly llm: (d: T) => string;
   readonly json: (d: T) => string;
+  readonly notice?: (d: T) => string | undefined;
 }
 
 /** A usage example shown in verb help. */
@@ -176,7 +232,38 @@ export interface VerbSpec<P = Record<string, unknown>, R = unknown> {
   readonly summary: string;
   readonly doc?: string;
   readonly params: readonly ParamSpec[];
-  readonly output: { schema?: unknown; formatters: Formatters<R> };
+  readonly output: {
+    schema?: unknown;
+    formatters: Formatters<R>;
+    /**
+     * OPTIONAL dry-run seam. A `--dry-run` normally renders the raw effect
+     * dump — one `describeEffect` bullet per effect, absolute paths repeated
+     * per line, interpreter internals included — which is debug material, not a
+     * preview a user was meant to read. A verb that has stashed structured plan
+     * data on the runtime (`PragmaRuntime.planData`) can render that instead.
+     *
+     * ABSENT BY DEFAULT, and absent is exactly today's render: a verb that does
+     * not declare this is untouched. The honest preview still runs underneath
+     * either way, so a dry run still fails exactly when the run would.
+     *
+     * The previewed `effects` and the run's verbosity arrive BESIDE the stashed
+     * data, because a plan is not always known before the Task runs: `setup`
+     * computes its target table up front and renders that, while `create` has
+     * nothing to stash — its plan IS the effects the generator produced, which
+     * only exist once the preview interpreter has walked the Task. One seam
+     * serves both by handing the renderer everything the branch knows.
+     *
+     * MAY be async: a renderer whose formatting rules live in another package
+     * loads them behind a dynamic `import()` rather than putting them on the
+     * capabilities barrel's static graph, which every `--help` and
+     * `__complete` spawn pays for. The kernel awaits whatever it returns.
+     */
+    formatPlan?: (
+      planData: unknown,
+      effects: readonly Effect[],
+      verbose: boolean,
+    ) => string | Promise<string>;
+  };
   readonly examples?: readonly Example[];
   readonly disclosure?: DisclosureSpec;
   readonly capability: Capability;
@@ -186,17 +273,68 @@ export interface VerbSpec<P = Record<string, unknown>, R = unknown> {
 }
 
 /**
+ * One slice of the index a module contributes to the MCP resource listing.
+ *
+ * Deliberately the vocabulary of {@link CompletionSourceRef} — a listing and a
+ * completion address the same index by the same three facts (which type, which
+ * box, what to yield), and a second vocabulary for that would be a second
+ * writing of one decision. The only source a listing can read is the index, so
+ * `from` is implied and absent.
+ */
+export interface McpListableRef {
+  /** Prefixed type filter (e.g. `ds:Component`) — empty = any type. */
+  readonly type?: string;
+  /** Restrict to schema (`tbox`) or individuals (`abox`); empty = both. */
+  readonly box?: "tbox" | "abox";
+  /**
+   * What the slice yields: `"collection"` lists ONE entry — the class entry
+   * for {@link type}, carrying its instance count — while `"entities"` lists
+   * every matching entity. Default `"entities"`.
+   */
+  readonly as?: "collection" | "entities";
+  /**
+   * Relative importance, 0–1 (default 1). Feeds MCP `annotations.priority` on
+   * the listed resource AND breaks ties in URI-completion ranking, so the two
+   * judgements about what matters most are ONE declaration rather than two
+   * constants in the kernel.
+   */
+  readonly weight?: number;
+}
+
+/**
+ * A module's declared contribution to the MCP resource listing.
+ *
+ * The listing is the UNION of every module's slices. It exists because
+ * `resources/list` has no working pagination in the SDK (the high-level
+ * `McpServer` list handler ignores `request.params.cursor` and never returns
+ * `nextCursor`), so the listing is curated rather than paged: every byte it
+ * spends on connect is context the agent cannot spend on the task.
+ *
+ * DERIVED wherever the module is compiled from a read story — a story already
+ * declares the type set it addresses (`PackLookup.type`/`types`), so its
+ * listing is read off that declaration, never authored a second time.
+ */
+export interface McpListable {
+  readonly sources: readonly McpListableRef[];
+}
+
+/**
  * An MCP resource provider — the ONE non-tool projection a module may add.
  *
  * `register` installs a `{+uri}` resource template on the server (listing +
  * autocomplete are storeless over the pack index; a read is store-backed and
  * shares the CLI's entity reader). Resources are NOT tools, so they never enter
  * the emitted tool surface; the projector calls this per module that declares it.
+ *
+ * `register` receives the WHOLE effective module set, not just its own module:
+ * the listing a provider installs is the union of every module's
+ * {@link McpListable}, which no single module can see.
  */
 export interface McpResourceProvider {
   readonly register: (
     server: import("@modelcontextprotocol/sdk/server/mcp.js").McpServer,
     rt: PragmaRuntime,
+    modules: readonly CapabilityModule[],
   ) => void;
   /**
    * A static declaration of the resource template ids this provider installs
@@ -224,6 +362,132 @@ export interface McpPromptProvider {
   ) => Promise<void> | void;
 }
 
+/** A flag a mounted subcommand offers to completion (full `--token`). */
+export interface CompletionChildFlag {
+  /** The full flag token (`--no-with-styles`). */
+  readonly flag: string;
+  /** Whether the flag consumes a value. */
+  readonly takesValue: boolean;
+  /** Closed value set for the flag's value, when one exists. */
+  readonly values?: readonly string[];
+}
+
+/** A positional slot a mounted subcommand offers to completion. */
+export interface CompletionChildPositional {
+  /** The slot name (diagnostics only). */
+  readonly name: string;
+  /** Whether the positional is required. */
+  readonly required: boolean;
+  /** Closed value set (e.g. tree segments), when one exists. */
+  readonly values?: readonly string[];
+  /** True when the slot completes file paths natively. */
+  readonly files?: boolean;
+}
+
+/**
+ * The completion surface of one MOUNTED command node: its flags, its
+ * positional slots, and any deeper segment children — static data (it must
+ * pass the completion safety allowlist), never live module state.
+ */
+export interface CompletionChildSpec {
+  /** The command token at this node. */
+  readonly label: string;
+  /** Flags offered at this node. */
+  readonly flags: readonly CompletionChildFlag[];
+  /** Positional slots at this node, in order. */
+  readonly positionals: readonly CompletionChildPositional[];
+  /** Deeper segment children (each with its own flags/positionals/children). */
+  readonly children?: readonly CompletionChildSpec[];
+}
+
+/**
+ * The REGISTERED CLI spelling of one mounted verb — the single syntax seam
+ * every kernel emitter and gate consumes: the reference emitter (usage line
+ * + Args/Flags tables), `emitSurface` (the covenant's mounted-noun flag and
+ * positional tokens, L-CIS-2), and the `docExamples` gate's valid-token
+ * vocabulary. A mounted tree may register a different surface than the
+ * binding-level params suggest (tree segments as subcommands, a
+ * default-true boolean registered only as its `--no-` form), and all three
+ * surfaces must print what the CLI actually accepts — the module supplies
+ * it, the kernel renders it.
+ */
+export interface ReferenceCliSyntax {
+  /**
+   * The usage line after the bin name (e.g.
+   * `create application react [app-path] [options]`) — real tree segments,
+   * the registered positional token.
+   */
+  readonly usage: string;
+  /**
+   * The registered flag token per binding-level param name (e.g.
+   * `withStyles` → `--no-with-styles`). A param absent here renders with the
+   * default `--<kebab-name>` derivation.
+   */
+  readonly flagTokens: Readonly<Record<string, string>>;
+  /**
+   * The registered positional token per binding-level param name (e.g.
+   * `componentPath` → `[component-path]`) — the SAME token the usage line
+   * carries, so the Arguments table never contradicts its own synopsis. A
+   * param absent here renders with the default `<name>`/`[name]` derivation.
+   */
+  readonly positionalTokens?: Readonly<Record<string, string>>;
+}
+
+/** What the program hands a module mounting its own subtree. */
+export interface CliMountHost {
+  /** Global flags for this invocation (closed over by mounted actions). */
+  readonly globalFlags: import("../runtime/types.js").GlobalFlags;
+  /** The binary name (for messages the mounted tree prints). */
+  readonly programName: string;
+}
+
+/**
+ * A module-level CLI projection hook (precedented by `mcpResources`/
+ * `mcpPrompts`/`colophon` — module metadata, NOT a `VerbSpec` field, zero
+ * covenant impact): the module MOUNTS its noun's subtree onto the Commander
+ * parent itself, instead of the generic per-verb attachment. The module's
+ * verbs remain the binding-level grammar (surface, MCP, reference,
+ * completion labels); the mount owns everything beneath the noun.
+ */
+export interface CliProjection {
+  /**
+   * Load the mount's registration machinery, when it is deferred. The
+   * projection hook rides the capabilities barrel, which `--help` and
+   * `__complete` import on every spawn — so a mount whose registration needs
+   * heavy modules (a Commander adapter, shared decision logic) keeps them
+   * behind this async step instead of a static import, and only the one
+   * caller that actually builds the command tree (the bin, before
+   * `buildProgram`) awaits it. {@link mount} stays synchronous and throws
+   * when invoked unprepared, so a future caller cannot silently skip the
+   * step.
+   */
+  readonly prepare?: () => Promise<void>;
+  /** Populate this module's noun parent with its subcommands. */
+  readonly mount: (
+    parent: import("commander").Command,
+    host: CliMountHost,
+  ) => void;
+  /**
+   * The completion surface of the mounted tree, keyed by verb label —
+   * static data the completion model attaches as segment children.
+   */
+  readonly completionChildren: () => Readonly<
+    Record<string, CompletionChildSpec>
+  >;
+  /** Markdown inserted under the noun's heading in the generated reference. */
+  readonly referenceIntro?: string;
+  /**
+   * The registered CLI syntax for one of the noun's binding verbs — the
+   * MOUNTED spelling the reference must print (usage line with tree
+   * segments, flag tokens the CLI actually registers) instead of deriving
+   * tokens from binding-level param names the mounted tree may not register.
+   * Return `undefined` to keep the default rendering for that verb.
+   */
+  readonly referenceSyntax?: (
+    verbPath: VerbSpec["path"],
+  ) => ReferenceCliSyntax | undefined;
+}
+
 /** A capability module: a named bundle of verbs with optional boot/resources/prompts hooks. */
 export interface CapabilityModule {
   readonly name: string;
@@ -248,6 +512,15 @@ export interface CapabilityModule {
   readonly boot?: (rt: PragmaRuntime) => void;
   /** An optional MCP resource surface (NOT a VerbSpec field — a module hook). */
   readonly mcpResources?: McpResourceProvider;
+  /**
+   * The slices of the index this module contributes to the MCP resource
+   * listing (NOT a VerbSpec field — a module hook, like `mcpResources`). A
+   * story-compiled module gets it DERIVED from its lookup's declared types;
+   * only an authored module declares it by hand.
+   */
+  readonly mcpListable?: McpListable;
   /** An optional MCP prompt surface (NOT a VerbSpec field — a module hook). */
   readonly mcpPrompts?: McpPromptProvider;
+  /** An optional CLI mount for the module's noun (NOT a VerbSpec field). */
+  readonly cliProjection?: CliProjection;
 }

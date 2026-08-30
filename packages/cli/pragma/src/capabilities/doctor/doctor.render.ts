@@ -10,61 +10,41 @@
  * Glyphs are plain constants tinted at render time; nothing is baked at load.
  */
 
-import chalk from "chalk";
 import { BIN_NAME } from "../../constants.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
-import type { Formatters } from "../../kernel/spec/types.js";
-import { BAND_LABELS } from "../shared/bands.js";
+import {
+  CHECK_GLYPHS,
+  checkRemedyWord,
+  FIX_ARROW,
+  SCOPE_LABELS,
+  SUB_BULLET,
+  SUB_INDENT,
+} from "../../kernel/render/vocabulary.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 import type { CheckResult, CheckStatus, DoctorData } from "./types.js";
 
-/** Uncolored status glyphs — tinted at render time (never baked at module load). */
-const STATUS_GLYPHS: Record<CheckStatus, string> = {
-  pass: "✓",
-  fail: "✗",
-  skip: "○",
-};
-
-const SUB_BULLET = "·";
-const FIX_ARROW = "↳";
-const INDENT = "     "; // aligns sub-lines under the check name
-
-/** The TTY styler plus `red` — the one tint {@link RenderStyle} does not carry. */
-interface DoctorStyle extends RenderStyle {
-  red(text: string): string;
-}
-
 /**
- * Build the doctor styler for this process's stdout: the shared TTY seam, plus a
- * `red` gated on the SAME decision, so a fail tint appears only on a color TTY.
- *
- * @returns A colorizing styler on a color-capable TTY, else the identity styler.
- * @note Impure — {@link defaultStyle} reads `process.stdout.isTTY` + chalk level.
+ * Tint a status glyph by meaning — green pass, red fail, cyan available
+ * (actionable-but-optional, the same tint as the `fix:` arrow it points at),
+ * yellow skip.
  */
-function doctorStyle(): DoctorStyle {
-  const style = defaultStyle();
-  return {
-    ...style,
-    red: style.enabled ? (text) => chalk.red(text) : (text) => text,
-  };
-}
-
-/** Tint a status glyph by meaning — green pass, red fail, yellow skip. */
-function paintGlyph(status: CheckStatus, style: DoctorStyle): string {
-  const glyph = STATUS_GLYPHS[status];
+function paintGlyph(status: CheckStatus, style: RenderStyle): string {
+  const glyph = CHECK_GLYPHS[status];
   if (status === "pass") return style.green(glyph);
   if (status === "fail") return style.red(glyph);
+  if (status === "available") return style.cyan(glyph);
   return style.yellow(glyph);
 }
 
 /**
  * Render one check as terminal lines: a headline row (icon, aligned name,
- * detail), an optional indented breakdown of sub-items, and — for failures — an
- * inline remedial instruction.
+ * detail), an optional indented breakdown of sub-items, and — whenever the
+ * check carries one — an inline instruction.
  */
 function formatCheckPlain(
   check: CheckResult,
   nameWidth: number,
-  style: DoctorStyle,
+  style: RenderStyle,
 ): string[] {
   const name = check.name.padEnd(nameWidth);
   const label = check.status === "fail" ? style.red(name) : style.bold(name);
@@ -84,27 +64,45 @@ function formatCheckPlain(
       const itemLabel = item.detail ? item.label.padEnd(itemWidth) : item.label;
       const detail = item.detail ? `  ${style.dim(item.detail)}` : "";
       lines.push(
-        `${INDENT}${style.dim(SUB_BULLET)} ${icon}${itemLabel}${detail}`,
+        `${SUB_INDENT}${style.dim(SUB_BULLET)} ${icon}${itemLabel}${detail}`,
       );
     }
   }
 
-  if (check.status === "fail" && check.remedy) {
+  // Every row that HAS an instruction prints it. A fail's remedy is the
+  // repair, an available's is the setup command that enables it — and a skip's,
+  // when it authored one, is the only thing standing between the reader and a
+  // dead end. Skips were dropped here, so `skills` reported "no skills
+  // installed" with the next step (`sources update`) computed, carried through
+  // the check, published in `--format json`, and then thrown away one line
+  // before it reached the person reading. A skip never DERIVES a remedy
+  // (`scopedChecks` only passes through an authored one), so this prints
+  // nothing that was not deliberately written for this machine.
+  if (check.remedy) {
     lines.push(
-      `${INDENT}${style.cyan(FIX_ARROW)} ${style.cyan("fix:")} ${check.remedy}`,
+      `${SUB_INDENT}${style.cyan(FIX_ARROW)} ${style.cyan(`${checkRemedyWord(check.status)}:`)} ${check.remedy}`,
     );
   }
 
   return lines;
 }
 
-/** Render the pass/fail/skip tally, coloring non-zero fail/skip. */
-function formatSummary(data: DoctorData, style: DoctorStyle): string {
+/**
+ * Render the pass/fail/available/skip tally, coloring the non-zero counts.
+ * `available` is counted apart from `failed` so a healthy install with
+ * integrations left to opt into never reports failures it does not have.
+ */
+function formatSummary(data: DoctorData, style: RenderStyle): string {
   const parts = [style.green(`${data.passed} passed`)];
   parts.push(
     data.failed > 0
       ? style.red(`${data.failed} failed`)
       : style.dim(`${data.failed} failed`),
+  );
+  parts.push(
+    data.available > 0
+      ? style.cyan(`${data.available} available`)
+      : style.dim(`${data.available} available`),
   );
   parts.push(
     data.skipped > 0
@@ -115,28 +113,28 @@ function formatSummary(data: DoctorData, style: DoctorStyle): string {
 }
 
 /**
- * Partition checks into ordered bands: environment (no band), then the global
- * and project bands. Declaration order is preserved within each band, so the
- * report stays deterministic.
+ * Partition checks into ordered sections: environment (no scope), then the
+ * global and local-project scopes. Declaration order is preserved within each,
+ * so the report stays deterministic.
  */
-function partitionByBand(checks: readonly CheckResult[]): {
+function partitionByScope(checks: readonly CheckResult[]): {
   environment: CheckResult[];
-  machine: CheckResult[];
+  global: CheckResult[];
   project: CheckResult[];
 } {
   return {
-    environment: checks.filter((c) => c.band === undefined),
-    machine: checks.filter((c) => c.band === "global"),
-    project: checks.filter((c) => c.band === "project"),
+    environment: checks.filter((c) => c.scope === undefined),
+    global: checks.filter((c) => c.scope === "global"),
+    project: checks.filter((c) => c.scope === "project"),
   };
 }
 
 export const doctorFormatters: Formatters<DoctorData> = {
   plain(data) {
-    const style = doctorStyle();
+    const style = defaultStyle();
     const nameWidth = Math.max(...data.checks.map((c) => c.name.length), 0);
     const lines: string[] = [style.bold(`${BIN_NAME} doctor`), ""];
-    const { environment, machine, project } = partitionByBand(data.checks);
+    const { environment, global, project } = partitionByScope(data.checks);
     const section = (heading: string, checks: CheckResult[]): void => {
       if (checks.length === 0) return;
       if (heading) lines.push(style.bold(heading));
@@ -144,51 +142,53 @@ export const doctorFormatters: Formatters<DoctorData> = {
         lines.push(...formatCheckPlain(check, nameWidth, style));
       lines.push("");
     };
-    // Environment checks lead (no header); the global then project bands are the
-    // two banded sections before the tally.
+    // Environment checks lead (no header); Global then Local project are the
+    // two scoped sections before the tally.
     section("", environment);
-    section(BAND_LABELS.global, machine);
-    section(BAND_LABELS.project, project);
+    section(SCOPE_LABELS.global, global);
+    section(SCOPE_LABELS.project, project);
     lines.push(formatSummary(data, style));
     return lines.join("\n");
   },
 
   llm(data) {
     const renderCheck = (check: CheckResult): string[] => {
-      const icon =
-        check.status === "pass" ? "✓" : check.status === "fail" ? "✗" : "○";
-      const out = [`- ${icon} **${check.name}**: ${check.detail}`];
+      const out = [
+        `- ${CHECK_GLYPHS[check.status]} **${check.name}**: ${check.detail}`,
+      ];
       for (const item of check.items ?? []) {
-        const itemIcon =
-          item.status === "pass"
-            ? "✓ "
-            : item.status === "fail"
-              ? "✗ "
-              : item.status === "skip"
-                ? "○ "
-                : "";
+        const itemIcon = item.status ? `${CHECK_GLYPHS[item.status]} ` : "";
         const detail = item.detail ? `: ${item.detail}` : "";
         out.push(`  - ${itemIcon}${item.label}${detail}`);
       }
-      if (check.status === "fail" && check.remedy) {
-        out.push(`  - _fix:_ \`${check.remedy}\``);
+      // Same rule as the plain path: every row that carries an instruction
+      // prints it, under the label its status earns. Only a `fix:` is code-set
+      // — a derived remedy is a bare command, while a skip's authored `next:`
+      // is a sentence that may quote a command of its own, and wrapping that in
+      // backticks nests one code span inside another.
+      if (check.remedy) {
+        out.push(
+          check.status === "skip"
+            ? `  - _${checkRemedyWord(check.status)}:_ ${check.remedy}`
+            : `  - _${checkRemedyWord(check.status)}:_ \`${check.remedy}\``,
+        );
       }
       return out;
     };
 
     const lines: string[] = ["## Doctor", ""];
-    const { environment, machine, project } = partitionByBand(data.checks);
+    const { environment, global, project } = partitionByScope(data.checks);
     const section = (heading: string, checks: CheckResult[]): void => {
       if (checks.length === 0) return;
       if (heading) lines.push(`### ${heading}`, "");
       for (const check of checks) lines.push(...renderCheck(check));
     };
     section("", environment);
-    section(BAND_LABELS.global, machine);
-    section(BAND_LABELS.project, project);
+    section(SCOPE_LABELS.global, global);
+    section(SCOPE_LABELS.project, project);
     lines.push(
       "",
-      `_${data.passed} passed, ${data.failed} failed, ${data.skipped} skipped_`,
+      `_${data.passed} passed, ${data.failed} failed, ${data.available} available, ${data.skipped} skipped_`,
     );
     return lines.join("\n");
   },

@@ -23,7 +23,7 @@
 
 import { BIN_NAME } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
-import type { VerbSpec } from "../../kernel/spec/types.js";
+import type { VerbSpec } from "../../kernel/spec/index.js";
 import { capabilitiesFormatters } from "./capabilities.render.js";
 import type { CapabilitiesData } from "./types.js";
 

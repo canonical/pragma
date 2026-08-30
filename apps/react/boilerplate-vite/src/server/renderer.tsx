@@ -22,7 +22,12 @@ import { extractPreferences } from "@canonical/react-hooks";
 import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import { getRequestUrl } from "@canonical/react-ssr/server";
 import { i18nConfig } from "#i18n/config.js";
-import EntryServer, { type InitialData } from "./entry.js";
+import EntryServer, {
+  type InitialData,
+  prefetchRouteData,
+  type RouteDisposition,
+  resolveRouteDisposition,
+} from "./entry.js";
 
 const htmlString = fs.readFileSync(
   path.join(process.cwd(), "dist", "client", "index.html"),
@@ -55,20 +60,52 @@ function acceptLanguageHeader(
  * URL for routing and the cookie-backed theme so the first paint matches the
  * user's preference, passing both as the renderer's initial data.
  */
-export default function createAppRenderer(request: Request | IncomingMessage) {
+/** The app renderer's answer: a stream renderer, or an HTTP redirect. */
+export type AppRendererResult =
+  | {
+      readonly kind: "render";
+      readonly renderer: JSXRenderer<typeof EntryServer, InitialData>;
+    }
+  | Extract<RouteDisposition, { kind: "redirect" }>;
+
+export default async function createAppRenderer(
+  request: Request | IncomingMessage,
+): Promise<AppRendererResult> {
   const cookie = cookieHeader(request);
   const { theme } = extractPreferences(cookie);
   const locale = negotiateLocale(i18nConfig, {
     cookieHeader: cookie,
     acceptLanguage: acceptLanguageHeader(request),
   });
+  const url = getRequestUrl(request);
+  const disposition = resolveRouteDisposition(url ?? "/");
+
+  if (disposition.kind === "redirect") {
+    return disposition;
+  }
+
+  // Fetch-then-render: the matched route's declared server query runs now so
+  // its captured responses can ride the bootstrap script (which is fixed at
+  // stream start). Absent or failed, the page renders and the client fetches.
+  const relayPayloads = await prefetchRouteData(disposition);
+
   const initialData: InitialData = {
-    url: getRequestUrl(request),
+    url,
     theme: theme === "light" || theme === "dark" ? theme : undefined,
     locale,
+    ...(relayPayloads ? { relayPayloads } : {}),
   };
-  return new JSXRenderer(EntryServer, initialData, {
-    htmlString,
-    defaultLocale: locale,
-  });
+
+  // Flat-spread the dehydrated router state into the page payload; the client
+  // reads it back with readDehydratedState() and resumes the server match.
+  Object.assign(initialData, disposition.dehydratedState ?? {});
+
+  return {
+    kind: "render",
+    renderer: new JSXRenderer(EntryServer, initialData, {
+      htmlString,
+      defaultLocale: locale,
+      statusCode: disposition.status,
+    }),
+  };
 }

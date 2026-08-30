@@ -9,6 +9,8 @@ import type { ChoicesFieldProps } from "./types.js";
  * rendered by the individual options.
  *
  * `import { ChoicesField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.choices_field
  */
 export default withWrapper<ChoicesFieldProps>(
   bindField<ChoicesFieldProps>(Choices, "controlled"),

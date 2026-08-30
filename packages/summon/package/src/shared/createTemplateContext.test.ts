@@ -66,8 +66,8 @@ describe("createTemplateContext", () => {
     const monorepoInfo: MonorepoInfo = { isMonorepo: false };
     const ctx = createTemplateContext(baseAnswers, monorepoInfo);
 
-    expect(ctx.module).toBe("src/index.ts");
-    expect(ctx.types).toBe("src/index.ts");
+    // Entry-point strings are getEntryPoints' concern (tested there); the
+    // context carries only what a template consumes.
     expect(ctx.needsBuild).toBe(false);
   });
 
@@ -76,8 +76,6 @@ describe("createTemplateContext", () => {
     const monorepoInfo: MonorepoInfo = { isMonorepo: false };
     const ctx = createTemplateContext(answers, monorepoInfo);
 
-    expect(ctx.module).toBe("dist/esm/index.js");
-    expect(ctx.types).toBe("dist/types/index.d.ts");
     expect(ctx.license).toBe("LGPL-3.0");
     expect(ctx.needsBuild).toBe(true);
   });
@@ -87,8 +85,6 @@ describe("createTemplateContext", () => {
     const monorepoInfo: MonorepoInfo = { isMonorepo: false };
     const ctx = createTemplateContext(answers, monorepoInfo);
 
-    expect(ctx.module).toBe("src/index.css");
-    expect(ctx.types).toBeNull();
     expect(ctx.license).toBe("LGPL-3.0");
     expect(ctx.needsBuild).toBe(false);
   });

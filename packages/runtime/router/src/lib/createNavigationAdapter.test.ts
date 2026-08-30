@@ -14,6 +14,11 @@ function createFakeNavigationWindow(initialHref = "https://example.com/") {
 
   const navigationWindow = {
     location: { href: initialHref },
+    // Set to emulate the real Navigation API's `{ committed, finished }`
+    // return value; `undefined` emulates environments without it.
+    nextNavigateResult: undefined as
+      | { committed?: Promise<unknown>; finished?: Promise<unknown> }
+      | undefined,
     navigation: {
       currentEntry: { url: initialHref },
       navigate(url: string, options?: { history?: "push" | "replace" }) {
@@ -22,6 +27,8 @@ function createFakeNavigationWindow(initialHref = "https://example.com/") {
           navigationWindow.location.href,
         ).href;
         void options;
+
+        return navigationWindow.nextNavigateResult;
       },
       addEventListener(_type: "navigate", listener: typeof navigateListener) {
         navigateListener = listener;
@@ -35,6 +42,9 @@ function createFakeNavigationWindow(initialHref = "https://example.com/") {
         }
       },
     },
+    lastInterceptOptions: undefined as
+      | { handler?: () => void | Promise<void> }
+      | undefined,
     dispatchNavigate(nextHref: string, navigationType: string = "traverse") {
       navigationWindow.location.href = nextHref;
       navigateListener?.({
@@ -42,7 +52,9 @@ function createFakeNavigationWindow(initialHref = "https://example.com/") {
         destination: { url: nextHref },
         canIntercept: true,
         hashChange: false,
-        intercept: vi.fn(),
+        intercept: (options?: { handler?: () => void | Promise<void> }) => {
+          navigationWindow.lastInterceptOptions = options;
+        },
       });
     },
     dispatchNavigateRaw(
@@ -153,5 +165,114 @@ describe("createNavigationAdapter (Navigation API)", () => {
     void getListener;
 
     expect(listener).toHaveBeenCalledTimes(0);
+  });
+
+  it("catches rejections from the navigation transition promises", async () => {
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => {
+      unhandled.push(reason);
+    };
+    process.on("unhandledRejection", onUnhandled);
+
+    try {
+      const navigationWindow = createFakeNavigationWindow();
+      const adapter = createNavigationAdapter(navigationWindow);
+
+      // A superseded navigation rejects both transition promises.
+      navigationWindow.nextNavigateResult = {
+        committed: Promise.reject(new Error("aborted")),
+        finished: Promise.reject(new Error("superseded")),
+      };
+      adapter.navigate("/docs");
+
+      // Partial results (either promise absent) must also be tolerated.
+      navigationWindow.nextNavigateResult = {
+        committed: Promise.resolve(null),
+      };
+      adapter.navigate("/docs?page=2");
+
+      navigationWindow.nextNavigateResult = {
+        finished: Promise.reject(new Error("superseded")),
+      };
+      adapter.navigate("/guides", { replace: true });
+
+      // Drain microtasks twice so any unhandled rejection gets reported.
+      await new Promise((resolve) => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off("unhandledRejection", onUnhandled);
+    }
+  });
+
+  it("hands the tracked router load to the intercept handler", async () => {
+    const navigationWindow = createFakeNavigationWindow();
+    const adapter = createNavigationAdapter(navigationWindow);
+
+    adapter.subscribe(() => {});
+
+    let releaseLoad!: () => void;
+    const load = new Promise<void>((resolve) => {
+      releaseLoad = resolve;
+    });
+
+    adapter.trackLoad?.(load);
+    navigationWindow.dispatchNavigate("https://example.com/docs", "push");
+
+    const handler = navigationWindow.lastInterceptOptions?.handler;
+
+    expect(handler).toBeTypeOf("function");
+
+    let settled = false;
+    const handled = Promise.resolve(handler?.()).then(() => {
+      settled = true;
+    });
+
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(settled).toBe(false);
+
+    releaseLoad();
+    await handled;
+    expect(settled).toBe(true);
+  });
+
+  it("resolves the intercept handler even when the tracked load rejects", async () => {
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => {
+      unhandled.push(reason);
+    };
+    process.on("unhandledRejection", onUnhandled);
+
+    try {
+      const navigationWindow = createFakeNavigationWindow();
+      const adapter = createNavigationAdapter(navigationWindow);
+
+      adapter.subscribe(() => {});
+      adapter.trackLoad?.(Promise.reject(new Error("load failed")));
+      navigationWindow.dispatchNavigate("https://example.com/docs", "push");
+
+      const handler = navigationWindow.lastInterceptOptions?.handler;
+
+      await expect(Promise.resolve(handler?.())).resolves.toBeUndefined();
+
+      await new Promise((resolve) => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off("unhandledRejection", onUnhandled);
+    }
+  });
+
+  it("resolves the intercept handler when no load was tracked", async () => {
+    const navigationWindow = createFakeNavigationWindow();
+    const adapter = createNavigationAdapter(navigationWindow);
+
+    adapter.subscribe(() => {});
+    navigationWindow.dispatchNavigate("https://example.com/docs", "push");
+
+    const handler = navigationWindow.lastInterceptOptions?.handler;
+
+    await expect(Promise.resolve(handler?.())).resolves.toBeUndefined();
   });
 });

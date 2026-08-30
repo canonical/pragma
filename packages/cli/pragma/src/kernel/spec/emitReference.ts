@@ -17,7 +17,7 @@
 
 import { BIN_NAME, PROJECT_CONFIG_FILENAME } from "../../constants.js";
 import type { RawConfig } from "../config/types.js";
-import { ERROR_CODES } from "../error/constants.js";
+import { ERROR_CODES } from "../error/index.js";
 import {
   FIXED_SURFACE,
   kebabCase,
@@ -28,6 +28,7 @@ import type {
   CapabilityModule,
   Example,
   ParamSpec,
+  ReferenceCliSyntax,
   VerbSpec,
 } from "./types.js";
 
@@ -49,9 +50,9 @@ const ERROR_CODE_DESCRIPTIONS: Record<(typeof ERROR_CODES)[number], string> = {
   AMBIGUOUS_INPUT:
     "A name resolved to several entities (reserved; not yet raised).",
   UNKNOWN_VERB: "The command noun or verb is not recognized.",
-  STORE_UNAVAILABLE: "The local store could not be reached or is not built.",
-  CONFIG_ERROR: "The layered configuration could not be resolved.",
-  INTERNAL_ERROR: "An unexpected failure — please report it.",
+  STORE_UNAVAILABLE: "The local store cannot be reached or is not built.",
+  CONFIG_ERROR: "The layered configuration cannot be resolved.",
+  INTERNAL_ERROR: "An unexpected failure — report it as a bug.",
   UNSUPPORTED: "A capability is unavailable in this build or environment.",
 };
 
@@ -165,22 +166,39 @@ function formatUsage(verb: VerbSpec): string {
   return segments.join(" ");
 }
 
-/** The Args table for a verb's positionals, or `""` when it has none. */
-function formatArgsTable(params: readonly ParamSpec[]): string {
+/**
+ * The Args table for a verb's positionals, or `""` when it has none. A
+ * mounted verb's {@link ReferenceCliSyntax.positionalTokens} supplies the
+ * REGISTERED token per param — the one its usage line prints — so the
+ * Argument column and the synopsis agree on the same spelling; without one,
+ * the token derives from the param name.
+ */
+function formatArgsTable(
+  params: readonly ParamSpec[],
+  positionalTokens?: Readonly<Record<string, string>>,
+): string {
   const positionals = params.filter((p) => p.positional);
   if (positionals.length === 0) return "";
   const rows = ["| Argument | Required | Description |", "| --- | --- | --- |"];
   for (const param of positionals) {
     const required = param.required ? "yes" : "no";
-    rows.push(
-      `| \`${formatPositionalToken(param)}\` | ${required} | ${describeParam(param)} |`,
-    );
+    const token =
+      positionalTokens?.[param.name] ?? formatPositionalToken(param);
+    rows.push(`| \`${token}\` | ${required} | ${describeParam(param)} |`);
   }
   return `**Arguments**\n\n${rows.join("\n")}`;
 }
 
-/** The Flags table for a verb's non-positional params, or `""` when it has none. */
-function formatFlagsTable(params: readonly ParamSpec[]): string {
+/**
+ * The Flags table for a verb's non-positional params, or `""` when it has
+ * none. A mounted verb's {@link ReferenceCliSyntax.flagTokens} supplies the
+ * REGISTERED token per param (e.g. a default-true boolean's `--no-` form);
+ * without one, the token derives from the param name.
+ */
+function formatFlagsTable(
+  params: readonly ParamSpec[],
+  flagTokens?: Readonly<Record<string, string>>,
+): string {
   const flags = params.filter((p) => !p.positional);
   if (flags.length === 0) return "";
   const rows = ["| Flag | Value | Description |", "| --- | --- | --- |"];
@@ -189,9 +207,8 @@ function formatFlagsTable(params: readonly ParamSpec[]): string {
     // does not split the table column.
     const value = formatFlagValue(param);
     const valueCell = value === "" ? "—" : `\`${escapeCell(value)}\``;
-    rows.push(
-      `| \`--${kebabCase(param.name)}\` | ${valueCell} | ${describeParam(param)} |`,
-    );
+    const token = flagTokens?.[param.name] ?? `--${kebabCase(param.name)}`;
+    rows.push(`| \`${token}\` | ${valueCell} | ${describeParam(param)} |`);
   }
   return `**Flags**\n\n${rows.join("\n")}`;
 }
@@ -235,26 +252,39 @@ function assemblePage(blocks: readonly string[]): string {
 }
 
 /** Render one verb's `commands.md` section (heading through examples). */
-function renderCommandSection(verb: VerbSpec): string {
+function renderCommandSection(
+  verb: VerbSpec,
+  syntax?: ReferenceCliSyntax,
+): string {
   const blocks = [
     `### ${formatInvocation(verb)}`,
     verb.summary,
     verb.doc ?? "",
-    `\`\`\`\n${formatUsage(verb)}\n\`\`\``,
-    formatArgsTable(verb.params),
-    formatFlagsTable(verb.params),
+    `\`\`\`\n${syntax ? `${BIN_NAME} ${syntax.usage}` : formatUsage(verb)}\n\`\`\``,
+    formatArgsTable(verb.params, syntax?.positionalTokens),
+    formatFlagsTable(verb.params, syntax?.flagTokens),
     formatVerbAttributes(verb),
     formatExamples(verb.examples),
   ];
   return blocks.filter((block) => block.length > 0).join("\n\n");
 }
 
-/** Render the CLI command reference, grouped by noun. */
-function renderCommandsPage(verbs: readonly VerbSpec[]): string {
+/**
+ * Render the CLI command reference, grouped by noun. A noun whose module
+ * declares a `cliProjection.referenceIntro` gets that Markdown inserted
+ * directly under its heading, and a verb its module supplies a
+ * `cliProjection.referenceSyntax` for renders the MOUNTED usage/flag
+ * spelling (generic module fields — the kernel renders, the module authors).
+ */
+function renderCommandsPage(
+  verbs: readonly VerbSpec[],
+  nounIntros: ReadonlyMap<string, string>,
+  verbSyntax: ReadonlyMap<VerbSpec, ReferenceCliSyntax>,
+): string {
   const blocks = [
     "# CLI command reference",
     `Every \`${BIN_NAME}\` command, grouped by noun. Generated from the live capability grammar — do not edit by hand.`,
-    "Global flags apply to every command: `--format <plain|llm|json>` (auto-detected — the llm/condensed-Markdown form turns on when output is piped), `--verbose`, and `--detail <summary|standard|detailed>`.",
+    "Global flags apply to every command: `--format <plain|llm|json>` (auto-detected — the llm/condensed-Markdown form turns on when output is piped), `--verbose`, `--no-headers`, `--quiet`, and `--detail <summary|standard|detailed>`.",
   ];
   let currentNoun = "";
   for (const verb of verbs) {
@@ -262,10 +292,43 @@ function renderCommandsPage(verbs: readonly VerbSpec[]): string {
     if (noun !== currentNoun) {
       currentNoun = noun;
       blocks.push(`## ${noun}`);
+      const intro = nounIntros.get(noun);
+      if (intro) blocks.push(intro);
     }
-    blocks.push(renderCommandSection(verb));
+    blocks.push(renderCommandSection(verb, verbSyntax.get(verb)));
   }
   return assemblePage(blocks);
+}
+
+/** Collect each noun's declared reference intro from its module's mount. */
+function collectNounIntros(
+  modules: readonly CapabilityModule[],
+): Map<string, string> {
+  const intros = new Map<string, string>();
+  for (const module of modules) {
+    const intro = module.cliProjection?.referenceIntro;
+    if (!intro) continue;
+    for (const verb of module.verbs) {
+      intros.set(verb.path[0], intro);
+    }
+  }
+  return intros;
+}
+
+/** Collect each mounted verb's registered CLI syntax from its module. */
+function collectVerbSyntax(
+  modules: readonly CapabilityModule[],
+): Map<VerbSpec, ReferenceCliSyntax> {
+  const syntax = new Map<VerbSpec, ReferenceCliSyntax>();
+  for (const module of modules) {
+    const provider = module.cliProjection?.referenceSyntax;
+    if (!provider) continue;
+    for (const verb of module.verbs) {
+      const entry = provider(verb.path);
+      if (entry) syntax.set(verb, entry);
+    }
+  }
+  return syntax;
 }
 
 /** One MCP tool input row: name, projected type, requiredness, description. */
@@ -468,12 +531,17 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
   name: {
     type: "string (optional)",
     notes:
-      "Distribution-only — see below. The binary's own name, read from the distribution config at module load.",
+      "Distribution-only — see below. The program's own name, read from the distribution config at module load.",
   },
   help: {
     type: "string (optional)",
     notes:
       "Distribution-only — see below. The one-line blurb on the front door and in the MCP handshake.",
+  },
+  logo: {
+    type: "string[] (optional)",
+    notes:
+      "Distribution-only — see below. ASCII-art wordmark lines shown above the header on root `--help`, tinted with the terminal palette's orange slot. Shown to a HUMAN reader only: the front door omits the art for MACHINE-ORIENTED output — `--format llm` or `--format json`, plus the `llm` a non-interactive stdout auto-infers — so a piped `--help` spends none of an agent's budget on a picture of the name it just typed. The gate is the output SHAPE, not whether stdout is a terminal, and explicit beats inferred in both directions: `--format plain` keeps the art down a pipe (as does `PRAGMA_NO_AUTO_LLM`, which turns the inference off), and `--format llm` drops it on a TTY. Declared content, not code: a wordmark spells the distribution's name, so a fork ships its own art or omits the field and gets no wordmark. Omit or leave empty for a bare header.",
   },
   colophon: {
     type: "object (optional)",
@@ -488,7 +556,7 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
   tier: {
     type: "string (optional)",
     notes:
-      "Accepted by the validator and SCOPES NOTHING: since the block list became declared content, no read filters by tier — the value is only reported by `config show` and `info`. Set it with `config set tier <path>`; `none`, `default` or `-` clear it.",
+      "Accepted by the validator and SCOPES NOTHING: since the block list became declared content, no read filters by tier — the value is only reported by `config show` and `info`. Set it with `config set tier <path>` and clear it with `config unset tier`; `none`, `default` and `-` are refused as values, so no string doubles as a remove-marker.",
   },
   channel: {
     type: "`normal` | `experimental` | `prerelease` (optional)",
@@ -550,22 +618,22 @@ function renderConfigPage(): string {
     "## Layers",
     "From lowest to highest precedence:",
     [
-      `1. **Built-in defaults** — the distribution config compiled into the binary.`,
+      `1. **Built-in defaults** — the distribution config shipped with the package.`,
       `2. **Global config** — \`$XDG_CONFIG_HOME/${BIN_NAME}/config.json\`, written by \`${BIN_NAME} config set\`.`,
-      `3. **Project config** — the nearest \`${PROJECT_CONFIG_FILENAME}\` (or \`${BIN_NAME}.config.js\`, the compiled-binary fallback), walking up from the working directory.`,
+      `3. **Project config** — the nearest \`${PROJECT_CONFIG_FILENAME}\` (or \`${BIN_NAME}.config.js\`, the JavaScript fallback), walking up from the working directory.`,
     ].join("\n"),
     "A higher layer REPLACES a lower one field by field. No field is deep-merged — not `packs`, not `prefixes`, not `completion`. A project declaring one prefix therefore replaces the distribution's whole prefix map, including the namespaces its own packs are built with; declare every prefix you need, not only the new one.",
     "## Fields",
     "The `Type` column is prose; the field set and each field's optionality are checked against the validator.",
     rows.join("\n"),
     "## Distribution-only fields",
-    `\`name\`, \`help\` and \`issuesUrl\` are read from the distribution config when the program loads, because the surfaces that need them — \`--help\`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. \`colophon\` is read from the same file at render time: the \`colophon\` verb narrates whatever the distribution declares there. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by \`config show\`. Changing them means forking: edit the distribution config and rebuild the binary. The distribution config's \`vocabulary\` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes \`name\` in.`,
+    `\`name\`, \`help\`, \`logo\` and \`issuesUrl\` are read from the distribution config when the program loads, because the surfaces that need them — \`--help\`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. \`colophon\` is read from the same file at render time: the \`colophon\` verb narrates whatever the distribution declares there. The validator ACCEPTS all five in a global or project layer, and they have **no effect there and are not reported** by \`config show\`. Changing them means forking: edit the distribution config and rebuild the package. The distribution config's \`vocabulary\` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes \`name\` in.`,
     "## What `config show` reports",
-    `\`${BIN_NAME} config show\` prints ${REPORTED_FIELDS.map((field) => `\`${field}\``).join(", ")} — those and only those — each with the layer that supplied it. The rest resolve without being reported that way: \`prefixes\` and \`completion\` appear only in the \`--format json\` payload, \`prefixes\` with an origin and \`completion\` with none; \`stories\` carries an origin whose value the payload leaves out; and the four distribution-only fields above carry neither. The plain and llm forms print those rows and nothing else; \`--format json\` returns the resolved config and the origin map whole.`,
+    `\`${BIN_NAME} config show\` prints ${REPORTED_FIELDS.map((field) => `\`${field}\``).join(", ")} — those and only those — each with the layer that supplied it. The rest resolve without being reported that way: \`prefixes\` and \`completion\` appear only in the \`--format json\` payload, \`prefixes\` with an origin and \`completion\` with none; \`stories\` carries an origin whose value the payload leaves out; and the five distribution-only fields above carry neither. The plain and llm forms print those rows and nothing else; \`--format json\` returns the resolved config and the origin map whole.`,
     "## Renamed: `packages` → `packs`",
     "The `packages` field was renamed to `packs`. A layer that still declares `packages:` fails loudly: the rename is detected before the schema's unknown-key stripping could hide it, and the error names it. Rename the key — the entry shape is unchanged.",
     "## Removed: `generators`",
-    "The `generators` field was removed: it was accepted by the validator, layered, and read by nothing — the `create` verbs resolve their generators statically (a compiled binary can only run generators it was linked with), so declaring it changed only what `config show` printed. A layer that still declares it fails loudly at load with an error naming the removed field; delete it. Declared generators may return as a working feature in a later program.",
+    "The `generators` field was removed: it was accepted by the validator, layered, and read by nothing — the `create` verbs resolve their generators statically (they are imported by name, not looked up at run time), so declaring it changed only what `config show` printed. A layer that still declares it fails loudly at load with an error naming the removed field; delete it. Declared generators may return as a working feature in a later program.",
     "## Removed: `completion.caseSensitive`",
     "The `completion.caseSensitive` field was removed: it was accepted by the validator and read by nothing — completion matching is declared per parameter by the capability grammar, never configured. A layer that still sets it fails loudly at load with an error naming the removed field; delete the key. `completion.minChars` and `completion.families` are unchanged.",
     "## Reading and writing",
@@ -616,7 +684,14 @@ export function emitReference(
   const verbs = collectDocVerbs(modules);
   return new Map<string, string>([
     ["index.md", renderIndexPage(verbs, modules)],
-    ["commands.md", renderCommandsPage(verbs)],
+    [
+      "commands.md",
+      renderCommandsPage(
+        verbs,
+        collectNounIntros(modules),
+        collectVerbSyntax(modules),
+      ),
+    ],
     ["tools.md", renderToolsPage(verbs, modules)],
     ["errors.md", renderErrorsPage()],
     ["config.md", renderConfigPage()],

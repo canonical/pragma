@@ -39,5 +39,12 @@ export { runPreview } from "./lib/preview-interpreter.js";
 // `collectUndos` ships from `@canonical/task`; only execution lives here)
 // =============================================================================
 
-export type { UndoResult } from "./lib/undo-interpreter.js";
-export { runUndo } from "./lib/undo-interpreter.js";
+export type {
+  UndoOutcome,
+  UndoResult,
+} from "./lib/undo-interpreter.js";
+export {
+  hostExistsResolver,
+  runCollectedUndos,
+  runUndo,
+} from "./lib/undo-interpreter.js";

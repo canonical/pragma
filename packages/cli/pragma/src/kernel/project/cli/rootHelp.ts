@@ -10,11 +10,14 @@
  * never heard of still surfaces.
  */
 
-import type { VerbSpec } from "../../spec/types.js";
+import { PROGRAM_LOGO } from "../../../constants.js";
+import type { GlobalFlags } from "../../runtime/index.js";
+import type { VerbSpec } from "../../spec/index.js";
 import {
   helpColumns,
   helpDim,
   helpHeading,
+  helpLogo,
   helpTerm,
   helpUsage,
 } from "./helpFormat.js";
@@ -79,6 +82,15 @@ function buildKernelGroups(programName: string): readonly HelpGroup[] {
           summary: `Read and write ${programName} configuration`,
         },
         { noun: "info", summary: "Show version, config, and update status" },
+        { noun: "version", summary: "Print the CLI version" },
+        // A colophon is the note at the back of a book: the typeface, the
+        // press, the paper. Nothing depends on it, which is the point — so
+        // this line does not argue for it. Every other summary in this column
+        // promises work done; this one just invites you to look. It sits with
+        // the other commands that describe the distribution rather than act on
+        // it; "For AI agents" is for surfaces an agent drives, and credits are
+        // for a person reading.
+        { noun: "colophon", summary: "Read the credits" },
         {
           noun: "upgrade",
           summary: `Upgrade the ${programName} CLI to the latest version`,
@@ -92,14 +104,11 @@ function buildKernelGroups(programName: string): readonly HelpGroup[] {
           noun: "capabilities",
           summary: "Discover conventions, tools, and the discovery sequence",
         },
-        {
-          noun: "colophon",
-          summary: `Read how ${programName} and the active domain are made`,
-        },
         { noun: "skill", summary: "Browse agent skills from the active packs" },
         { noun: "prompt", summary: "Browse reusable prompt templates" },
-        // The one noun with no verb to speak for it (the bin special-cases it),
-        // so its summary is hand-written rather than derived.
+        // Curated for PLACEMENT, not for existence: `mcp serve` is an
+        // ordinary verb like every other, and this group is where a reader
+        // looks for it.
         { noun: "mcp", summary: "Start the MCP server over stdio" },
       ],
     },
@@ -128,22 +137,52 @@ function summarizeNoun(noun: string, verbs: readonly VerbSpec[]): string {
 }
 
 /**
+ * Whether this reader is worth spending the wordmark on.
+ *
+ * An AUDIENCE question, not a data question: the art is 11 lines and ~200
+ * tokens — roughly a third of what `--help` costs an agent — and it says
+ * nothing an agent can act on. Both captured shapes are excluded:
+ * `llm` (requested, or inferred from a non-interactive stdout — the shape an
+ * agent captures) and `json`. `--format plain` therefore keeps the art even
+ * down a pipe, and `--format llm` drops it even on a terminal: explicit beats
+ * inference, the same inferred-vs-explicit split `renderErrorForFormat` uses.
+ *
+ * The DECISION is passed in as data — both call sites already hold the parsed
+ * flags — so this module still reads no `process` state and stays testable.
+ *
+ * @param flags - The invocation's global flags.
+ * @returns `true` when a human is reading and the wordmark should print.
+ */
+function wordmarkSuitsReader(flags: GlobalFlags): boolean {
+  return flags.llm !== true && flags.format !== "json";
+}
+
+/**
  * Build the curated root help string.
  *
  * @param programName - The CLI binary name (the distribution's `name`).
  * @param description - The program description shown in the header.
  * @param verbs - All registered verbs, used to derive the live noun set.
+ * @param issuesUrl - Where the preview notice sends feedback; the
+ *   distribution's own, so a fork points at its own tracker.
+ * @param version - The version to stamp on the header. Passed in rather than
+ *   read here so it is the SAME string `--version` prints: `buildProgram`
+ *   resolves `options.version ?? VERSION`, and a host that overrides one must
+ *   not be able to leave the other saying something else.
+ * @param globalFlags - The invocation's global flags, read only to decide who
+ *   is reading (see {@link wordmarkSuitsReader}). Passed rather than probed: the
+ *   help layer must not learn to read `process`.
  * @returns The formatted, colorized help text.
  */
 export function formatRootHelp(
   programName: string,
   description: string,
   verbs: readonly VerbSpec[],
+  version: string,
+  issuesUrl: string,
+  globalFlags: GlobalFlags,
 ): string {
   const present = nounsFrom(verbs);
-  // `mcp` is served by the bin's special-case, not a projected verb, but is
-  // always available — surface it so the front door is complete.
-  present.add("mcp");
   const kernel = buildKernelGroups(programName);
   const curated = new Set(kernel.flatMap((g) => g.nouns.map((n) => n.noun)));
 
@@ -171,7 +210,31 @@ export function formatRootHelp(
   );
 
   const lines: string[] = [
-    `${helpHeading(programName)} — ${description}`,
+    // The wordmark leads when the distribution declares one AND a human is
+    // reading it. A fork ships its own art or none, so its front door is never
+    // branded with someone else's; and a captured run drops the art entirely
+    // rather than charging an agent ~200 tokens for a picture of the name it
+    // just typed (see `wordmarkSuitsReader`). The LINES go, not their colour:
+    // chalk already emits no escapes off a TTY, so dimming would save nobody
+    // anything.
+    ...(PROGRAM_LOGO.length > 0 && wordmarkSuitsReader(globalFlags)
+      ? [...PROGRAM_LOGO.map(helpLogo), ""]
+      : []),
+    // `<name> v<version> — <blurb>`, the spelling `info` and `capabilities`
+    // already use, so the front door names the build the same way every other
+    // surface does. Dimmed: it answers "which build am I on" for someone who
+    // is already here, and must not compete with the name.
+    `${helpHeading(programName)} ${helpDim(`v${version}`)} — ${description}`,
+    "",
+    // The preview notice. Dimmed and directly under the header, because it
+    // qualifies what the reader has just been told the tool IS — a version
+    // number alone does not say "expect this to move".
+    //
+    // The URL is the distribution's declared `issuesUrl`, never a literal:
+    // `kernel/copy.test.ts` forbids the kernel naming a distribution, and a
+    // fork inviting feedback to someone else's tracker would be worse than a
+    // missing line. It is passed in for the same reason `version` is.
+    helpDim(`This is a preview version. Issues and suggestions: ${issuesUrl}`),
     "",
     helpUsage(
       `${programName} ${helpTerm("<command>")} ${helpDim("[subcommand] [flags]")}`,
@@ -203,7 +266,9 @@ export function formatRootHelp(
       "--detail <level>",
       "Progressive-disclosure level (summary, standard, detailed)",
     ],
-    ["--verbose", "Diagnostic output on stderr"],
+    ["--no-headers", "Hide the table header row in plain output"],
+    ["--quiet", "Suppress success and progress output (errors still print)"],
+    ["--verbose", "Diagnostic output on stderr (sources update)"],
     ["--help", "Show help (works on any command)"],
     ["--version", "Show the CLI version"],
   ];

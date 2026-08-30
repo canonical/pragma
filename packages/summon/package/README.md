@@ -194,8 +194,8 @@ packages/my-styles/
 | `--with-react` | Add React dependencies and JSX config | `false` |
 | `--with-storybook` | Add Storybook configuration | `false` |
 | `--with-cli` | Add CLI binary entry point | `false` |
-| `--run-install` | Run package manager install after creation | `true` |
-| `--no-run-install` | Skip the install step | — |
+| `--with-pr-template` | Add a `.github/PULL_REQUEST_TEMPLATE.md` | `false` |
+| `--no-run-install` | Skip the install step (install runs by default) | — |
 
 ### Global Options
 
@@ -290,7 +290,12 @@ The generator automatically detects:
 
 ### Monorepo Version
 
-When running in the pragma monorepo, the version is read from `lerna.json`:
+The generator walks up from the current directory to the nearest monorepo
+root — a `lerna.json`, a `pnpm-workspace.yaml`, or a `package.json` with a
+`workspaces` field — and reads the version from it (for pnpm workspaces, from
+the adjacent `package.json`). A malformed `lerna.json` is treated as "not a
+monorepo" instead of aborting the run. In the pragma monorepo that means
+`lerna.json`:
 
 ```json
 {
@@ -302,12 +307,16 @@ New packages inherit this version.
 
 ### Package Manager
 
-Detects which package manager to use for the install step:
+Detects which package manager to use for the install step by walking up from
+the current directory: the nearest directory holding a lockfile wins, and
+within a directory the priority is:
 
-1. If `bun.lockb` or `bun.lock` exists → `bun install`
-2. If `pnpm-lock.yaml` exists → `pnpm install`
-3. If `yarn.lock` exists → `yarn install`
-4. Otherwise → `npm install`
+1. `bun.lockb` / `bun.lock` → `bun install`
+2. `pnpm-lock.yaml` → `pnpm install`
+3. `yarn.lock` → `yarn install`
+4. `package-lock.json` → `npm install`
+
+With no lockfile anywhere, the fallback is `bun install`.
 
 ---
 

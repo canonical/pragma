@@ -15,19 +15,23 @@
 
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { type GeneratorDefinition, template } from "@canonical/summon-core";
+import {
+  type GeneratorDefinition,
+  loadTemplateSync,
+  template,
+} from "@canonical/summon-core";
 import { debug, info, mkdir, sequence_, when } from "@canonical/task";
-
 import {
   appendExportToParentIndex,
   createComponentPathPrompt,
   createTemplateContext,
+  failIfComponentExists,
   getComponentName,
   getParentDir,
   PACKAGE_NAME,
+  packageVersion,
   sharedPrompts,
 } from "../shared/index.js";
-import { loadTemplateSync } from "../shared/loadTemplate.js";
 import type { ReactComponentAnswers } from "./types.js";
 
 // =============================================================================
@@ -81,7 +85,7 @@ const generator = {
     displayName: `${PACKAGE_NAME}:react`,
     description:
       "Generate a React component with TypeScript, tests, stories, and styles",
-    version: "0.1.0",
+    version: packageVersion(),
     help: `Generate a React component with TypeScript, tests, stories, and styles.
 
 FEATURES:
@@ -96,7 +100,7 @@ The component name is extracted from the path and must be PascalCase.
 For example, 'src/components/Button' creates a 'Button' component.`,
     examples: [
       "summon component react --component-path=src/components/Button",
-      "summon component react --component-path=src/components/Card --with-styles --with-stories",
+      "summon component react --component-path=src/components/Card --no-with-styles --no-with-stories",
       "summon component react --component-path=src/components/Modal --no-with-ssr-tests",
       "summon component react --component-path=src/components/Button --dry-run",
     ],
@@ -108,11 +112,15 @@ For example, 'src/components/Button' creates a 'Button' component.`,
     const componentName = getComponentName(answers.componentPath);
     const componentDir = answers.componentPath;
     const parentDir = getParentDir(answers.componentPath);
-    const ctx = createTemplateContext(answers, "react");
+    const ctx = createTemplateContext(answers);
     const t = reactTemplates();
 
     return sequence_([
       info(`Generating React component: ${componentName}`),
+
+      // Refuse to scaffold over an existing component: the writes' delete
+      // undos would otherwise let --undo destroy pre-existing files.
+      failIfComponentExists(componentDir),
 
       debug("Creating component directory"),
       mkdir(componentDir),
@@ -145,7 +153,7 @@ For example, 'src/components/Button' creates a 'Button' component.`,
       template({
         source: t.test.source,
         content: t.test.content,
-        dest: path.join(componentDir, `${componentName}.tests.tsx`),
+        dest: path.join(componentDir, `${componentName}.test.tsx`),
         vars: ctx,
       }),
 
@@ -155,7 +163,7 @@ For example, 'src/components/Button' creates a 'Button' component.`,
         template({
           source: t.ssrTest.source,
           content: t.ssrTest.content,
-          dest: path.join(componentDir, `${componentName}.ssr.tests.tsx`),
+          dest: path.join(componentDir, `${componentName}.ssr.test.tsx`),
           vars: ctx,
         }),
       ),

@@ -17,8 +17,8 @@ import {
   buildDiscoverySequence,
   CONVENTIONS,
 } from "../../../capabilities/capabilities/catalog.js";
-import { emitSurface } from "../../spec/emitSurface.js";
-import type { CapabilityModule } from "../../spec/types.js";
+import type { CapabilityModule } from "../../spec/index.js";
+import { emitSurface } from "../../spec/index.js";
 
 /** Hard ceiling on the instructions length (asserted by the protected test). */
 export const INSTRUCTIONS_MAX_CHARS = 1500;

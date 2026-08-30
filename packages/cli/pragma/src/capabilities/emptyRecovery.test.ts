@@ -35,6 +35,9 @@ function storyFor(noun: string): PackDefinition {
 const PREFIXES = {
   ds: "https://ds.canonical.com/",
   cs: "https://ds.canonical.com/code-standards/",
+  // The `standard` list query names `skos:broader` for its category roll-up —
+  // a CORE prefix on the real build path, which this in-memory helper bypasses.
+  skos: "http://www.w3.org/2004/02/skos/core#",
   owl: "http://www.w3.org/2002/07/owl#",
   rdfs: "http://www.w3.org/2000/01/rdf-schema#",
   xsd: "http://www.w3.org/2001/XMLSchema#",
@@ -85,7 +88,12 @@ const listVerb = (pack: PackDefinition): VerbSpec =>
 const PACK_LISTS: readonly { pack: PackDefinition; hint: RegExp }[] = [
   { pack: storyFor("modifier"), hint: /pragma sources update/ },
   { pack: storyFor("token"), hint: /pragma sources update/ },
-  { pack: storyFor("standard"), hint: /broaden your filter/ },
+  // CHANGED DELIBERATELY. `standard` used to fall through to the generic
+  // build/broaden hint, and the build half of it is actively WRONG for this
+  // noun: the code standards ride the embedded snapshot and answer with no
+  // `sources update` at all. It now authors its own, pointing at the one
+  // surface that reads the category vocabulary out of the graph.
+  { pack: storyFor("standard"), hint: /pragma standard categories/ },
 ];
 
 const REAL = { dryRun: false, undo: false, yes: false };
@@ -101,21 +109,23 @@ describe("pack list empty-state (U5, PROTECTED)", () => {
 
   it.each(
     PACK_LISTS,
-  )("$pack.noun list renders a non-blank message (+ hint) and keeps JSON []", ({
+  )("$pack.noun list declares a non-blank empty notice (+ hint), JSON stays []", ({
     pack,
     hint,
   }) => {
     const { formatters } = listVerb(pack).output;
-    const plain = formatters.plain([]);
-    expect(plain).toContain(`No ${pack.noun} entries found.`);
-    expect(plain).toMatch(hint);
+    // The message + runnable hint live on the empty-state seam — the
+    // dispatcher routes them to stderr, keeping plain stdout pure data.
+    const notice = formatters.notice?.([]);
+    expect(notice).toContain(`No ${pack.noun} entries found.`);
+    expect(notice).toMatch(hint);
     // JSON is the uniform empty array — unchanged by the message.
     expect(formatters.json([])).toBe("[]");
     // The llm view stays non-blank too (the `(0)` heading plus the message).
     expect(formatters.llm([]).trim().length).toBeGreaterThan(0);
   });
 
-  it("dispatch prints the empty message on stdout and exits 0 (end-to-end)", async () => {
+  it("dispatch routes the empty message to stderr and exits 0 (end-to-end)", async () => {
     const outcome = await executeVerb(
       listVerb(storyFor("modifier")),
       {},
@@ -123,7 +133,10 @@ describe("pack list empty-state (U5, PROTECTED)", () => {
       rt,
     );
     expect(outcome.exitCode).toBe(0);
-    expect(outcome.stdout).toContain("No modifier entries found.");
-    expect(outcome.stdout).toContain("pragma sources update");
+    // stdout carries no prose a pipe would read as a record; the calm notice
+    // and its hint reach the human on stderr.
+    expect(outcome.stdout ?? "").not.toContain("No modifier entries found.");
+    expect(outcome.stderr).toContain("No modifier entries found.");
+    expect(outcome.stderr).toContain("pragma sources update");
   });
 });

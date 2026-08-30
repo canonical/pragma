@@ -3,6 +3,7 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 import { VERSION } from "../../../constants.js";
 import { fixtureModule } from "../../../testing/fixtures/fixtureCapability.js";
 import { projectCli } from "../../../testing/helpers/projectCli.js";
+import type { GlobalFlags } from "../../runtime/index.js";
 import type { CapabilityModule, VerbSpec } from "../../spec/types.js";
 import { formatRootHelp } from "./rootHelp.js";
 
@@ -102,6 +103,121 @@ describe("buildProgram — default-true boolean negation (B9)", () => {
     expect(longs).not.toContain("--no-run-install");
     expect(longs).toContain("--with-history");
     expect(longs).not.toContain("--no-with-history");
+  });
+});
+
+describe("buildProgram — one spelling per flag", () => {
+  it("registers no short option anywhere in the tree", () => {
+    const program = projectCli([fixtureModule]);
+    const walk = (cmd: import("commander").Command): void => {
+      expect(cmd.options.some((o) => o.short !== undefined)).toBe(false);
+      for (const child of cmd.commands) walk(child);
+    };
+    walk(program);
+  });
+
+  it("still answers --help while -v/-h reject as unknown options", async () => {
+    const spyErr = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation(() => true);
+    const spyOut = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    await expect(
+      projectCli([fixtureModule]).parseAsync(["widget", "--help"], {
+        from: "user",
+      }),
+    ).rejects.toMatchObject({ code: "commander.helpDisplayed" });
+    await expect(
+      projectCli([fixtureModule]).parseAsync(["widget", "list", "-h"], {
+        from: "user",
+      }),
+    ).rejects.toMatchObject({ code: "commander.unknownOption" });
+    await expect(
+      projectCli([fixtureModule]).parseAsync(["widget", "list", "-v"], {
+        from: "user",
+      }),
+    ).rejects.toMatchObject({ code: "commander.unknownOption" });
+    spyErr.mockRestore();
+    spyOut.mockRestore();
+  });
+});
+
+describe("buildProgram — repeatable filter flags", () => {
+  /** A verb with a repeatable enum filter and a repeatable string filter. */
+  const filterVerb: VerbSpec = {
+    path: ["thing", "list"],
+    summary: "thing list summary",
+    params: [
+      {
+        kind: "enum",
+        name: "category",
+        doc: "Filter by category.",
+        values: ["css", "git"],
+        repeatable: true,
+      },
+      { kind: "string", name: "tag", doc: "Filter by tag.", repeatable: true },
+    ],
+    output: {
+      formatters: {
+        plain: (d) => JSON.stringify(d),
+        llm: (d) => JSON.stringify(d),
+        json: (d) => JSON.stringify(d),
+      },
+    },
+    capability: { needsStore: false, mutates: false, mcp: { expose: true } },
+    run: async (params) => params,
+  };
+
+  /** Parse argv and capture the option bag the action receives. */
+  async function optsFor(argv: string[]): Promise<Record<string, unknown>> {
+    let seen: Record<string, unknown> = {};
+    const program = projectCli([
+      {
+        name: "thing",
+        verbs: [
+          {
+            ...filterVerb,
+            run: async (params) => {
+              seen = params;
+              return null;
+            },
+          },
+        ],
+      },
+    ]);
+    await program.parseAsync(["thing", "list", ...argv], { from: "user" });
+    return seen;
+  }
+
+  it("accumulates a repeated filter into the union, never last-wins", async () => {
+    const params = await optsFor([
+      "--category",
+      "css",
+      "--category",
+      "git",
+      "--tag",
+      "a",
+      "--tag",
+      "b",
+    ]);
+    expect(params.category).toEqual(["css", "git"]);
+    expect(params.tag).toEqual(["a", "b"]);
+  });
+
+  it("keeps a single occurrence a one-element array and validates enum values", async () => {
+    const params = await optsFor(["--category", "css"]);
+    expect(params.category).toEqual(["css"]);
+    const program = projectCli([{ name: "thing", verbs: [filterVerb] }]);
+    const spy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation(() => true);
+    await expect(
+      program.parseAsync(["thing", "list", "--category", "bogus"], {
+        from: "user",
+      }),
+    ).rejects.toMatchObject({ code: "commander.invalidArgument" });
+    spy.mockRestore();
   });
 });
 
@@ -371,12 +487,88 @@ describe("buildProgram — sub-verb-only noun invoked bare (U2)", () => {
   });
 });
 
+/** The global flags of a human at a terminal: plain output, nothing inferred. */
+const HUMAN_FLAGS: GlobalFlags = {
+  llm: false,
+  format: "plain",
+  verbose: false,
+};
+
+/** A run whose stdout is captured: `llm`, inferred or asked for. */
+const CAPTURED_FLAGS: GlobalFlags = {
+  llm: true,
+  autoLlm: true,
+  format: "plain",
+  verbose: false,
+};
+
+/** The first line of the wordmark art — present iff the wordmark printed. */
+const WORDMARK_LINE = "(___,";
+
+const rootHelpFor = (flags: GlobalFlags): string =>
+  formatRootHelp(
+    "pragma",
+    "pragma test",
+    [
+      makeVerb(["info"]),
+      makeVerb(["config", "show"]),
+      makeVerb(["block", "list"]),
+    ],
+    "1.2.3",
+    "https://example.test/issues",
+    flags,
+  );
+
+describe("formatRootHelp — the wordmark is gated on the AUDIENCE", () => {
+  // Asserted on the ART, never on styling: `golden.ts` strips ANSI and this
+  // suite pins `chalk.level = 0`, so a colour-only change would be invisible
+  // here — and chalk emits no escapes off a TTY anyway, so it would save an
+  // agent nothing. The lines have to go.
+  it("prints the art for a human reading plain output", () => {
+    expect(rootHelpFor(HUMAN_FLAGS)).toContain(WORDMARK_LINE);
+  });
+
+  it("drops the art — every line of it — when stdout is captured", () => {
+    const help = rootHelpFor(CAPTURED_FLAGS);
+    expect(help).not.toContain(WORDMARK_LINE);
+    // No leading blank line either: the header IS the first line.
+    expect(help.startsWith("pragma v1.2.3 — pragma test")).toBe(true);
+    // Only the art goes; the page itself is untouched.
+    expect(help).toContain("Usage: pragma <command> [subcommand] [flags]");
+    expect(help).toContain("Global flags");
+  });
+
+  it("drops the art for `--format json` too", () => {
+    expect(
+      rootHelpFor({ llm: false, format: "json", verbose: false }),
+    ).not.toContain(WORDMARK_LINE);
+  });
+
+  it("keeps the art for an EXPLICIT `--format plain` down a pipe", () => {
+    // Explicit beats inference: asking for the human shape gets the human page,
+    // captured or not. (`parseGlobalFlags` leaves `llm` false whenever
+    // `--format` was requested.)
+    expect(
+      rootHelpFor({
+        llm: false,
+        autoLlm: false,
+        format: "plain",
+        verbose: false,
+      }),
+    ).toContain(WORDMARK_LINE);
+  });
+
+  it("differs ONLY by the wordmark block", () => {
+    const human = rootHelpFor(HUMAN_FLAGS).split("\n");
+    const captured = rootHelpFor(CAPTURED_FLAGS).split("\n");
+    // 10 art lines + the blank that separates them from the header.
+    expect(human.length - captured.length).toBe(11);
+    expect(human.slice(11)).toEqual(captured);
+  });
+});
+
 describe("formatRootHelp — grouping", () => {
-  const help = formatRootHelp("pragma", "pragma test", [
-    makeVerb(["info"]),
-    makeVerb(["config", "show"]),
-    makeVerb(["block", "list"]),
-  ]);
+  const help = rootHelpFor(HUMAN_FLAGS);
 
   it("leads with the uncurated nouns, untitled, under the usage line", () => {
     // `block` is not in the kernel's curated table, so it leads the page with
@@ -389,11 +581,13 @@ describe("formatRootHelp — grouping", () => {
     expect(help.match(/pragma test/g)).toHaveLength(1);
   });
 
-  it("lists the live nouns and always-available mcp", () => {
+  it("lists the live nouns, and only those", () => {
     expect(help).toContain("block");
     expect(help).toContain("config");
     expect(help).toContain("info");
-    expect(help).toContain("mcp");
+    // `mcp` is curated for PLACEMENT, not conjured into existence: a registry
+    // without an mcp verb has no mcp row.
+    expect(help).not.toContain("mcp");
   });
 
   it("drops nouns that are not present", () => {
@@ -410,7 +604,20 @@ describe("formatRootHelp — grouping", () => {
 
   it("renders the unified root page (restyle golden)", () => {
     expect(help).toMatchInlineSnapshot(`
-      "pragma — pragma test
+      "              _
+                  /' \`\\
+                /'     )
+              /' (___,/'____     ____     ____     ,__________     ____
+            /'        )'    )--/'    )  /'    )   /'    )     )  /'    )
+          /'        /'       /'    /' /'    /'  /'    /'    /' /'    /'
+      (,/'        /'        (___,/(__(___,/(__/'    /'    /(__(___,/(__
+                                        /'
+                                /     /'
+                               (___,/'
+
+      pragma v1.2.3 — pragma test
+
+      This is a preview version. Issues and suggestions: https://example.test/issues
 
       Usage: pragma <command> [subcommand] [flags]
 
@@ -420,13 +627,12 @@ describe("formatRootHelp — grouping", () => {
         config  Read and write pragma configuration
         info    Show version, config, and update status
 
-      For AI agents
-        mcp     Start the MCP server over stdio
-
       Global flags
         --format <plain|llm|json>  Select output format (llm = condensed Markdown for agents)
         --detail <level>           Progressive-disclosure level (summary, standard, detailed)
-        --verbose                  Diagnostic output on stderr
+        --no-headers               Hide the table header row in plain output
+        --quiet                    Suppress success and progress output (errors still print)
+        --verbose                  Diagnostic output on stderr (sources update)
         --help                     Show help (works on any command)
         --version                  Show the CLI version
 

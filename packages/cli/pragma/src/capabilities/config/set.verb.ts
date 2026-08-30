@@ -3,9 +3,10 @@
  *
  * The single form for writing config: `pragma config set tier apps/lxd`. Since
  * AV-228 B3 retired the per-field `config tier`/`channel`/`detail` verbs, this
- * is now the ONLY config setter. It drives the shared write path (`runField` via
- * `runSet`), so it inherits reset sentinels, enum re-validation, and the
- * global-layer-only write from the {@link CONFIG_FIELDS} table.
+ * is now the ONLY config setter. It drives the shared write path (`runField`
+ * via `runSet`), so it inherits enum re-validation and the global-layer-only
+ * write from the {@link CONFIG_FIELDS} table; clearing a field is `config
+ * unset <key>`'s job.
  *
  * Covenant shape: `<key>` is an ENUM over the field names (better completion +
  * validation; the token still emits as `<key>`), `<value>` a free string, so
@@ -16,7 +17,7 @@
 import type { Task } from "@canonical/task";
 import { BIN_NAME } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
-import type { VerbSpec } from "../../kernel/spec/types.js";
+import type { VerbSpec } from "../../kernel/spec/index.js";
 import { configFieldFormatters } from "./field.render.js";
 import { CONFIG_FIELDS } from "./fields.js";
 import type { ConfigFieldResult } from "./types.js";
@@ -27,7 +28,7 @@ const CONFIG_KEYS = CONFIG_FIELDS.map((field) => field.field);
 const setVerb: VerbSpec<Record<string, unknown>, ConfigFieldResult> = {
   path: ["config", "set"],
   summary: "Set a config field by name.",
-  doc: "Write a global config field by name — the one-command form of the per-field setters. `key` is one of `tier`, `channel`, or `detail`; the field's own reset rules apply (e.g. `set tier none` clears it). Written to the global layer only — project configs are authored by hand.",
+  doc: "Write a global config field by name. `key` is one of `tier`, `channel`, or `detail`; clearing a field is `config unset <key>`'s job, and the values that used to double as clear-markers are refused. Written to the global layer only — project configs are authored by hand.",
   params: [
     {
       kind: "enum",
@@ -40,7 +41,7 @@ const setVerb: VerbSpec<Record<string, unknown>, ConfigFieldResult> = {
     {
       kind: "string",
       name: "value",
-      doc: "The value to write (or a field's reset sentinel, e.g. `none`).",
+      doc: "The value to write.",
       required: true,
       positional: true,
     },
@@ -52,7 +53,7 @@ const setVerb: VerbSpec<Record<string, unknown>, ConfigFieldResult> = {
       note: "scope reads to a tier",
     },
     { cmd: `${BIN_NAME} config set channel experimental` },
-    { cmd: `${BIN_NAME} config set tier none`, note: "clear the tier" },
+    { cmd: `${BIN_NAME} config unset tier`, note: "clear the tier" },
   ],
   capability: {
     needsStore: false,

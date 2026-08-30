@@ -91,6 +91,19 @@ export type PromptQuestion =
 // =============================================================================
 
 /**
+ * An undo task as an effect carries it: the reversal itself, optionally
+ * tagged with the correlation key its declaration supplied
+ * (`UndoOptions.undoKey` in `effect.js`).
+ *
+ * The key rides the very object whose outcome it names, so the undo
+ * interpreter can echo it back on the matching `UndoOutcome` with no
+ * positional pairing between collection order and execution order — and a
+ * bare `Task<void>` remains a valid (unkeyed) undo, so nothing that builds
+ * or consumes undos without keys changes shape.
+ */
+export type UndoTask = Task<void> & { readonly undoKey?: string };
+
+/**
  * Effect represents a pure data description of a side-effecting operation.
  *
  * Effects are not executed directly - they are data structures that describe
@@ -102,15 +115,26 @@ export type PromptQuestion =
 export type Effect =
   /** Read file contents as UTF-8 string */
   | { _tag: "ReadFile"; path: string }
-  /** Write content to file, creating parent directories */
-  | { _tag: "WriteFile"; path: string; content: string; undo?: Task<void> }
+  /**
+   * Write content to file, creating parent directories. `verbatim` marks the
+   * content as a carried copy that must land byte-for-byte: interpreters treat
+   * it identically, but content transforms hooked on the effect seam (e.g. a
+   * generated-file stamp) skip it.
+   */
+  | {
+      _tag: "WriteFile";
+      path: string;
+      content: string;
+      verbatim?: boolean;
+      undo?: UndoTask;
+    }
   /** Append content to file */
   | {
       _tag: "AppendFile";
       path: string;
       content: string;
       createIfMissing: boolean;
-      undo?: Task<void>;
+      undo?: UndoTask;
     }
   /**
    * Read a file, apply a pure transform to its contents, and write it back.
@@ -122,19 +146,19 @@ export type Effect =
       _tag: "TransformFile";
       path: string;
       transform: (source: string) => string;
-      undo?: Task<void>;
+      undo?: UndoTask;
     }
   /** Copy a single file */
-  | { _tag: "CopyFile"; source: string; dest: string; undo?: Task<void> }
+  | { _tag: "CopyFile"; source: string; dest: string; undo?: UndoTask }
   /** Recursively copy a directory */
   | {
       _tag: "CopyDirectory";
       source: string;
       dest: string;
-      undo?: Task<void>;
+      undo?: UndoTask;
     }
   /** Delete a file */
-  | { _tag: "DeleteFile"; path: string; undo?: Task<void> }
+  | { _tag: "DeleteFile"; path: string; undo?: UndoTask }
   /**
    * Delete a directory — recursively by default, or non-recursively
    * (skipped when missing or non-empty) when `onlyIfEmpty` is set.
@@ -145,12 +169,18 @@ export type Effect =
       _tag: "DeleteDirectory";
       path: string;
       onlyIfEmpty?: boolean;
-      undo?: Task<void>;
+      undo?: UndoTask;
     }
   /** Create directory and parents */
-  | { _tag: "MakeDir"; path: string; recursive: boolean; undo?: Task<void> }
-  /** Check if path exists */
-  | { _tag: "Exists"; path: string }
+  | { _tag: "MakeDir"; path: string; recursive: boolean; undo?: UndoTask }
+  /**
+   * Check if path exists. By default the check follows symlinks (`fs.access`
+   * semantics): a dangling symlink reports absent. `followSymlinks: false`
+   * asks about the directory ENTRY itself (`lstat` semantics): a dangling
+   * symlink reports present — the criterion a `readdir`-based probe uses, so
+   * a postcondition can ask the same question its detection did.
+   */
+  | { _tag: "Exists"; path: string; followSymlinks?: boolean }
   /** Find files matching glob pattern */
   | { _tag: "Glob"; pattern: string; cwd: string }
   /** Execute shell command */
@@ -159,7 +189,7 @@ export type Effect =
       command: string;
       args: string[];
       cwd?: string;
-      undo?: Task<void>;
+      undo?: UndoTask;
     }
   /** Interactive prompt */
   | { _tag: "Prompt"; question: PromptQuestion }
@@ -172,7 +202,7 @@ export type Effect =
   /** Run tasks in parallel */
   | { _tag: "Parallel"; tasks: Task<unknown>[] }
   /** Create a symbolic link */
-  | { _tag: "Symlink"; target: string; path: string; undo?: Task<void> }
+  | { _tag: "Symlink"; target: string; path: string; undo?: UndoTask }
   /** Race tasks, return first to complete */
   | { _tag: "Race"; tasks: Task<unknown>[] };
 

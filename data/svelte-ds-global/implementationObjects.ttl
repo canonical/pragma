@@ -1,0 +1,20 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix ds: <https://ds.canonical.com/>.
+
+ds:implementation.library.svelte-ds-global ds:hasImplementation ds:implementation.svelte-ds-global.global.component.breadcrumbs, ds:implementation.svelte-ds-global.global.pattern.skip_link, ds:implementation.svelte-ds-global.global.subcomponent.breadcrumbs-item.
+ds:implementation.svelte-ds-global.global.component.breadcrumbs a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.breadcrumbs;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/svelte/ds-global/src/lib/component/Breadcrumbs/Breadcrumbs.svelte";
+    ds:importStatement "import { Breadcrumbs } from \"@canonical/svelte-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/svelte/ds-global/src/lib/component/Breadcrumbs/Breadcrumbs.svelte".
+ds:implementation.svelte-ds-global.global.pattern.skip_link a ds:ImplementationObject;
+    ds:implementsBlock ds:global.pattern.skip_link;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/svelte/ds-global/src/lib/_work_in_progress/SkipLink/SkipLink.svelte";
+    ds:importStatement "import { SkipLink } from \"@canonical/svelte-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/svelte/ds-global/src/lib/_work_in_progress/SkipLink/SkipLink.svelte".
+ds:implementation.svelte-ds-global.global.subcomponent.breadcrumbs-item a ds:ImplementationObject;
+    ds:implementsBlock ds:global.subcomponent.breadcrumbs-item;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/svelte/ds-global/src/lib/component/Breadcrumbs/common/Item/Item.svelte";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/svelte/ds-global/src/lib/component/Breadcrumbs/common/Item/Item.svelte".

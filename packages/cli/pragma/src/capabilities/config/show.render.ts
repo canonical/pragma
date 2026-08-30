@@ -8,7 +8,7 @@
 
 import type { ConfigOrigin } from "../../kernel/config/types.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
-import type { Formatters } from "../../kernel/spec/types.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 import type { ConfigShowData } from "./types.js";
 
 /** A `[layer]` marker for values a config file supplied (blank for defaults). */

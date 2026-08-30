@@ -33,6 +33,58 @@ describe("appendExportToParentIndex", () => {
     expect(writeEffects).toHaveLength(0);
   });
 
+  it("recognizes an equivalent hand-written export (single quotes, no semicolon)", () => {
+    // Exact string equality would miss these and append a duplicate — the
+    // check compares the parsed module path, not the serialization.
+    for (const existing of [
+      "export * from './Button/index.js';\n",
+      'export * from "./Button/index.js"\n',
+      "export  *  from   './Button/index.js'\n",
+    ]) {
+      const result = dryRunWithFileState(
+        appendExportToParentIndex("src/components", "Button"),
+        { "src/components/index.ts": existing },
+      );
+
+      const writeEffects = result.effects.filter(
+        (e) => e._tag === "AppendFile" || e._tag === "WriteFile",
+      );
+      expect(writeEffects).toHaveLength(0);
+    }
+  });
+
+  it("appends when an existing export is a prefix-named sibling", () => {
+    // Substring matching would treat ./ButtonGroup as covering ./Button and
+    // silently skip the append — the whole-line check must not.
+    const result = dryRunWithFileState(
+      appendExportToParentIndex("src/components", "Button"),
+      {
+        "src/components/index.ts": 'export * from "./ButtonGroup/index.js";\n',
+      },
+    );
+
+    const appendEffect = result.effects.find((e) => e._tag === "AppendFile");
+    expect(appendEffect).toBeDefined();
+    expect((appendEffect as { content: string }).content).toBe(
+      'export * from "./Button/index.js";\n',
+    );
+  });
+
+  it("leads with a newline when the existing index lacks a trailing one", () => {
+    const result = dryRunWithFileState(
+      appendExportToParentIndex("src/components", "Button"),
+      {
+        "src/components/index.ts": 'export * from "./Other/index.js";',
+      },
+    );
+
+    const appendEffect = result.effects.find((e) => e._tag === "AppendFile");
+    expect(appendEffect).toBeDefined();
+    expect((appendEffect as { content: string }).content).toBe(
+      '\nexport * from "./Button/index.js";\n',
+    );
+  });
+
   it("creates new index file when it does not exist", () => {
     const result = dryRunWithFileState(
       appendExportToParentIndex("src/components", "Card"),

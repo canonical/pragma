@@ -32,10 +32,8 @@ export interface TemplateContext {
   repository: string;
   /** Bun version for CI */
   bunVersion: string;
-  /** Generator name */
-  generatorName: string;
-  /** Generator version */
-  generatorVersion: string;
+  /** Version line for the @canonical/* config dependencies */
+  canonicalVersion: string;
   /** Index signature for EJS compatibility */
   [key: string]: unknown;
 }

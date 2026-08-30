@@ -30,11 +30,11 @@
  */
 
 import { readPackIndex } from "../../../completion/entitySource.js";
-import { runSelect } from "../../../packs/sparql/runSelect.js";
+import { runSelect } from "../../../packs/sparql/index.js";
 import type { PackRow } from "../../../packs/types.js";
 import { distributionSource } from "../../../packs/types.js";
+import type { PragmaRuntime } from "../../../runtime/index.js";
 import type { SourcesDecision } from "../../../runtime/resolveSources.js";
-import type { PragmaRuntime } from "../../../runtime/types.js";
 import { VOCABULARY } from "../../../vocabulary.js";
 
 /** The declared prompt terms this module reads the graph with. */

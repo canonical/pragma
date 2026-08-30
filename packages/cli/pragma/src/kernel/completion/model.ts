@@ -25,8 +25,13 @@
  */
 
 import { DETAIL_LEVELS, OUTPUT_FORMATS } from "../../constants.js";
-import { kebabCase, verbLabel } from "../spec/emitSurface.js";
-import type { CapabilityModule, ParamSpec, VerbSpec } from "../spec/types.js";
+import { kebabCase, verbLabel } from "../spec/index.js";
+import type {
+  CapabilityModule,
+  CompletionChildSpec,
+  ParamSpec,
+  VerbSpec,
+} from "../spec/types.js";
 import type {
   CompletionModel,
   CompletionSource,
@@ -85,6 +90,13 @@ const GLOBAL_FLAGS: readonly FlagEntry[] = [
     repeatable: false,
     source: { kind: "values", values: DETAIL_LEVELS },
   },
+  {
+    flag: "--no-headers",
+    takesValue: false,
+    repeatable: false,
+    source: none(),
+  },
+  { flag: "--quiet", takesValue: false, repeatable: false, source: none() },
   { flag: "--help", takesValue: false, repeatable: false, source: none() },
   {
     flag: "--version",
@@ -181,7 +193,12 @@ function toVerbEntry(verb: VerbSpec): VerbEntry {
       flags.push({
         flag: `--${name}`,
         takesValue: param.kind !== "boolean",
-        repeatable: param.kind === "string[]",
+        // Two grammars accumulate, so two shapes are repeatable: a `string[]`
+        // flag (`--tag a --tag b`) and any `string`/`enum` param the spec
+        // marks `repeatable` — the form compiled packs give every declared
+        // filter. Reading only the kind de-offered a filter after its first
+        // use, hiding the repetition the parser had just started honouring.
+        repeatable: param.kind === "string[]" || param.repeatable === true,
         source,
       });
     }
@@ -190,18 +207,73 @@ function toVerbEntry(verb: VerbSpec): VerbEntry {
   return { label, mutates: verb.capability.mutates, flags, positionals };
 }
 
-/** An empty self-verb entry (used for the injected `mcp` noun). */
-function bareSelfVerb(label: string): VerbEntry {
-  return { label, mutates: false, flags: [], positionals: [] };
+/**
+ * Convert one module-declared completion node (a mounted subtree's static
+ * data) into a verb entry, asserting every inlinable token's safety exactly
+ * as spec-derived entries are asserted. `mutates` is the owning verb's
+ * mutability, applied only to the LEAVES (see the namespace note below).
+ */
+function toMountedEntry(
+  spec: CompletionChildSpec,
+  mutates: boolean,
+  where: string,
+): VerbEntry {
+  assertSafeToken(spec.label, `${where} label`);
+  const flags: FlagEntry[] = spec.flags.map((flag) => {
+    const name = flag.flag.replace(/^--?/, "");
+    assertSafeToken(name, `${where} flag "${flag.flag}"`);
+    const source: CompletionSource = flag.values
+      ? { kind: "values", values: flag.values }
+      : none();
+    assertSafeSource(source, `${where} flag "${flag.flag}"`);
+    return {
+      flag: flag.flag,
+      takesValue: flag.takesValue,
+      repeatable: false,
+      source,
+    };
+  });
+  const positionals: PositionalEntry[] = spec.positionals.map((positional) => {
+    const source: CompletionSource = positional.values
+      ? { kind: "values", values: positional.values }
+      : positional.files
+        ? { kind: "files" }
+        : none();
+    assertSafeSource(source, `${where} positional "${positional.name}"`);
+    return {
+      name: positional.name,
+      required: positional.required,
+      variadic: false,
+      source,
+    };
+  });
+  const children =
+    spec.children && spec.children.length > 0
+      ? spec.children.map((child) =>
+          toMountedEntry(child, mutates, `${where}/${child.label}`),
+        )
+      : undefined;
+  return {
+    label: spec.label,
+    // A node with children is a NAMESPACE, not a runnable command:
+    // `registerGeneratorCommands` adds the host mutation trio to runnable
+    // LEAVES only, so a mutating namespace would offer `--dry-run`/`--undo`/
+    // `--yes` BEFORE the framework segment — an ordering the CLI rejects as
+    // an unknown option. The verb's mutability descends to the leaves.
+    mutates: children ? false : mutates,
+    flags,
+    positionals,
+    ...(children ? { children } : {}),
+  };
 }
 
 /**
  * Derive the completion model from the capability modules.
  *
  * Hidden verbs are excluded (matching `emitSurface` and `buildProgram`).
- * The bin-served `mcp` entry is injected so `pragma mc<Tab>` completes it,
- * matching the root help.
- * TODO(spec): drop the injection when `mcp` lands as a real (non-hidden) spec.
+ * Every noun in the model comes from a declared verb — `mcp` used to be
+ * injected here because the bin served it without a spec, and it now declares
+ * `mcp serve` like any other pair.
  *
  * @param modules - The capability modules.
  * @returns The completion model, nouns and verbs sorted.
@@ -225,22 +297,30 @@ export function buildCompletionModel(
   };
 
   for (const module of modules) {
+    // A module-owned mount REPLACES its verbs' completion surface: the flags
+    // the mounted tree actually registers (e.g. a default-on confirm's
+    // `--no-` form), the segment positionals, and the child walk — declared
+    // as static data by the module, converted and safety-asserted here.
+    const mountedChildren = module.cliProjection?.completionChildren();
     for (const verb of module.verbs) {
       if (verb.hidden) continue;
       const noun = verb.path[0];
       assertSafeToken(noun, `noun "${noun}"`);
       const bucket = bucketFor(noun);
-      const entry = toVerbEntry(verb);
+      const mountedSpec = mountedChildren?.[verbLabel(verb.path)];
+      const entry = mountedSpec
+        ? toMountedEntry(
+            mountedSpec,
+            verb.capability.mutates,
+            `mounted "${verb.path.join(" ")}"`,
+          )
+        : toVerbEntry(verb);
       if (verb.path[1] === undefined) {
         bucket.selfVerb = entry;
       } else {
         bucket.verbs.push(entry);
       }
     }
-  }
-
-  if (!byNoun.has("mcp")) {
-    byNoun.set("mcp", { selfVerb: bareSelfVerb("mcp"), verbs: [] });
   }
 
   const nouns: NounEntry[] = [...byNoun.entries()]

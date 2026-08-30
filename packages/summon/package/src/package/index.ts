@@ -8,6 +8,7 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   type GeneratorDefinition,
+  loadTemplateSync,
   type PromptDefinition,
   template,
 } from "@canonical/summon-core";
@@ -20,6 +21,7 @@ import {
   getPackageShortName,
   PACKAGE_NAME,
   type PackageAnswers,
+  packageVersion,
   validatePackageName,
 } from "../shared/index.js";
 
@@ -30,20 +32,40 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const templatesDir = path.join(__dirname, "..", "templates");
 
-const templates = {
-  packageJson: path.join(templatesDir, "package.json.ejs"),
-  tsconfig: path.join(templatesDir, "tsconfig.json.ejs"),
-  tsconfigReact: path.join(templatesDir, "tsconfig-react.json.ejs"),
-  tsconfigBuild: path.join(templatesDir, "tsconfig.build.json.ejs"),
-  biome: path.join(templatesDir, "biome.json.ejs"),
-  indexTs: path.join(templatesDir, "index.ts.ejs"),
-  indexCss: path.join(templatesDir, "index.css.ejs"),
-  cliTs: path.join(templatesDir, "cli.ts.ejs"),
-  readme: path.join(templatesDir, "README.md.ejs"),
-  storybookMain: path.join(templatesDir, "storybook-main.ts.ejs"),
-  storybookPreview: path.join(templatesDir, "storybook-preview.ts.ejs"),
-  pullRequestTemplate: path.join(templatesDir, "PULL_REQUEST_TEMPLATE.md.ejs"),
-};
+/**
+ * Read every package template through the embedded seam — disk-first (source
+ * runs), embedded fallback keyed `package/<file>` (a compiled binary). The
+ * source paths stay the key-derivation input and the dry-run display ids.
+ */
+function loadPackageTemplates() {
+  const load = (file: string) =>
+    loadTemplateSync(path.join(templatesDir, file));
+  return {
+    packageJson: load("package.json.ejs"),
+    tsconfig: load("tsconfig.json.ejs"),
+    tsconfigReact: load("tsconfig-react.json.ejs"),
+    tsconfigBuild: load("tsconfig.build.json.ejs"),
+    biome: load("biome.json.ejs"),
+    indexTs: load("index.ts.ejs"),
+    indexCss: load("index.css.ejs"),
+    cliTs: load("cli.ts.ejs"),
+    readme: load("README.md.ejs"),
+    storybookMain: load("storybook-main.ts.ejs"),
+    storybookPreview: load("storybook-preview.ts.ejs"),
+    pullRequestTemplate: load("PULL_REQUEST_TEMPLATE.md.ejs"),
+  };
+}
+
+/**
+ * Memoized template bundle — loaded on the FIRST `generate()` call, never at
+ * module eval, so importing this generator reads no template (the compiled-
+ * binary READ-command discipline every generator package follows).
+ */
+let packageTemplatesCache: ReturnType<typeof loadPackageTemplates> | undefined;
+function packageTemplates(): ReturnType<typeof loadPackageTemplates> {
+  packageTemplatesCache ??= loadPackageTemplates();
+  return packageTemplatesCache;
+}
 
 // =============================================================================
 // Prompts
@@ -133,7 +155,7 @@ export const generator: GeneratorDefinition<PackageAnswers> = {
     displayName: PACKAGE_NAME,
     description:
       "Generate a new npm package with proper configuration for the pragma monorepo",
-    version: "0.1.0",
+    version: packageVersion(),
     help: `Generate a new npm package with proper configuration.
 
 PACKAGE TYPES:
@@ -157,8 +179,10 @@ OPTIONS:
                       repos; monorepos read only the root template)
 
 The generator auto-detects:
-  - Monorepo: Uses lerna.json version when in pragma monorepo
-  - Package manager: Detects bun/yarn/pnpm (defaults to bun)`,
+  - Monorepo: walks up to the nearest lerna.json, pnpm-workspace.yaml, or
+    package.json "workspaces" root and uses its version
+  - Package manager: nearest lockfile wins, walking up from the current
+    directory (bun > pnpm > yarn > npm within a directory; defaults to bun)`,
     examples: [
       "summon package --name=@canonical/my-tool --type=tool-ts",
       "summon package --name=@canonical/my-lib --type=library --with-react",
@@ -171,6 +195,7 @@ The generator auto-detects:
   prompts,
 
   generate: (answers) => {
+    const t = packageTemplates();
     const packageDir = getPackageShortName(answers.name);
     const cwd = process.cwd();
     const isCss = answers.type === "css";
@@ -193,7 +218,8 @@ The generator auto-detects:
 
         // Create package.json
         template({
-          source: templates.packageJson,
+          source: t.packageJson.source,
+          content: t.packageJson.content,
           dest: path.join(packageDir, "package.json"),
           vars: ctx,
         }),
@@ -202,7 +228,8 @@ The generator auto-detects:
         when(
           needsTs && answers.withReact,
           template({
-            source: templates.tsconfigReact,
+            source: t.tsconfigReact.source,
+            content: t.tsconfigReact.content,
             dest: path.join(packageDir, "tsconfig.json"),
             vars: ctx,
           }),
@@ -210,7 +237,8 @@ The generator auto-detects:
         when(
           needsTs && !answers.withReact,
           template({
-            source: templates.tsconfig,
+            source: t.tsconfig.source,
+            content: t.tsconfig.content,
             dest: path.join(packageDir, "tsconfig.json"),
             vars: ctx,
           }),
@@ -220,7 +248,8 @@ The generator auto-detects:
         when(
           ctx.needsBuild,
           template({
-            source: templates.tsconfigBuild,
+            source: t.tsconfigBuild.source,
+            content: t.tsconfigBuild.content,
             dest: path.join(packageDir, "tsconfig.build.json"),
             vars: ctx,
           }),
@@ -228,7 +257,8 @@ The generator auto-detects:
 
         // Create biome.json
         template({
-          source: templates.biome,
+          source: t.biome.source,
+          content: t.biome.content,
           dest: path.join(packageDir, "biome.json"),
           vars: ctx,
         }),
@@ -237,7 +267,8 @@ The generator auto-detects:
         when(
           needsTs,
           template({
-            source: templates.indexTs,
+            source: t.indexTs.source,
+            content: t.indexTs.content,
             dest: path.join(packageDir, "src", "index.ts"),
             vars: ctx,
           }),
@@ -247,7 +278,8 @@ The generator auto-detects:
         when(
           isCss,
           template({
-            source: templates.indexCss,
+            source: t.indexCss.source,
+            content: t.indexCss.content,
             dest: path.join(packageDir, "src", "index.css"),
             vars: ctx,
           }),
@@ -257,7 +289,8 @@ The generator auto-detects:
         when(
           needsTs && answers.withCli,
           template({
-            source: templates.cliTs,
+            source: t.cliTs.source,
+            content: t.cliTs.content,
             dest: path.join(packageDir, "src", "cli.ts"),
             vars: ctx,
           }),
@@ -265,7 +298,8 @@ The generator auto-detects:
 
         // Create README.md
         template({
-          source: templates.readme,
+          source: t.readme.source,
+          content: t.readme.content,
           dest: path.join(packageDir, "README.md"),
           vars: ctx,
         }),
@@ -276,7 +310,8 @@ The generator auto-detects:
         when(
           answers.withPrTemplate,
           template({
-            source: templates.pullRequestTemplate,
+            source: t.pullRequestTemplate.source,
+            content: t.pullRequestTemplate.content,
             dest: path.join(packageDir, ".github", "PULL_REQUEST_TEMPLATE.md"),
             vars: ctx,
           }),
@@ -292,7 +327,8 @@ The generator auto-detects:
         when(
           answers.withStorybook,
           template({
-            source: templates.storybookMain,
+            source: t.storybookMain.source,
+            content: t.storybookMain.content,
             dest: path.join(packageDir, ".storybook", "main.ts"),
             vars: ctx,
           }),
@@ -300,7 +336,8 @@ The generator auto-detects:
         when(
           answers.withStorybook,
           template({
-            source: templates.storybookPreview,
+            source: t.storybookPreview.source,
+            content: t.storybookPreview.content,
             dest: path.join(packageDir, ".storybook", "preview.ts"),
             vars: ctx,
           }),

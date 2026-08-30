@@ -2,6 +2,10 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  bundledSkillsDir,
+  discoverSkillsFrom,
+} from "../../capabilities/skill/discover.js";
 import { readConfig } from "../config/readConfig.js";
 import { embeddedManifest } from "../runtime/graphpack/embedded.js";
 import { activePackPath, packDir } from "../runtime/paths.js";
@@ -121,10 +125,19 @@ describe("indexCompletionEnv — multi-source names(ref)", () => {
       join(skillDir, "SKILL.md"),
       "---\nname: docx\ndescription: Word docs.\n---\n",
     );
+    // The BUNDLED snapshot ships inside the package, so it is a discovery root
+    // on every machine — including this one. The project root's skill is what
+    // this cell is about; the expectation is derived from the shipped artifact
+    // rather than pinned to a list, so a release that changes which skills the
+    // packs provide does not rewrite this test.
+    const bundled = discoverSkillsFrom([bundledSkillsDir() as string]).map(
+      (skill) => skill.name,
+    );
+    const expected = [...new Set(["docx", ...bundled])].sort();
     const env = indexCompletionEnv(cwd);
-    expect(await env.names({ from: "skills" })).toEqual(["docx"]);
+    expect(await env.names({ from: "skills" })).toEqual(expected);
     // A second read returns the same list (one filesystem walk per env).
-    expect(await env.names({ from: "skills" })).toEqual(["docx"]);
+    expect(await env.names({ from: "skills" })).toEqual(expected);
   });
 
   it("a type nothing matches yields [] (prefixes still list the default map)", async () => {
@@ -313,7 +326,7 @@ describe("the storeless fast path implements the pointer half", () => {
     // and would pass with the config file deleted. The read half refusing is
     // what makes this directory a configured-but-unbuilt project rather than a
     // fresh install. (`doctor` says so too, in the same words: verified against
-    // the compiled binary, where `block list` raises STORE_UNAVAILABLE while
+    // a cold install, where `block list` raises STORE_UNAVAILABLE while
     // this same completion still answers.)
     //
     // If a later change gives the fast path a config-free way to see

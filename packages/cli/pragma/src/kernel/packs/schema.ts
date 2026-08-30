@@ -18,7 +18,7 @@
 
 import { z } from "zod";
 import { DETAIL_LEVELS, RECOVERY_CLI_PREFIX } from "../../constants.js";
-import { PragmaError } from "../error/PragmaError.js";
+import { PragmaError } from "../error/index.js";
 import type { PackDefinition } from "./types.js";
 
 const NOUN_PATTERN = /^[a-z][a-z0-9-]*$/;
@@ -41,6 +41,16 @@ const TERM_PATTERN =
 /** Params a filter/verb may not claim (they are the shared read vocabulary). */
 const RESERVED_PARAMS = new Set(["search", "detail", "name", "count"]);
 
+/**
+ * Whether an author-supplied query is a SELECT (optionally preceded by its own
+ * PREFIX lines). Every author query a story declares runs through `runSelect`,
+ * which reads `result.bindings` — so a non-SELECT is a shape mismatch caught
+ * here rather than downstream.
+ */
+function isSelectQuery(query: string): boolean {
+  return /^\s*(?:PREFIX\s+[^\n]*\n\s*)*SELECT\s/i.test(query);
+}
+
 const term = z.string().regex(TERM_PATTERN, "must be a prefixed name or IRI");
 const graphqlName = z.string().regex(GRAPHQL_NAME_PATTERN);
 const fieldName = z.string().regex(FIELD_PATTERN);
@@ -49,16 +59,35 @@ const columnSchema = z
   .object({ field: fieldName, label: z.string().optional() })
   .strict();
 
+const vocabularySchema = z
+  .object({
+    query: z.string().min(1),
+    variable: fieldName.optional(),
+  })
+  .strict();
+
 const filterSchema = z
   .object({
     param: z.string().regex(FILTER_PARAM_PATTERN),
     variable: fieldName,
     values: z.array(z.string()).min(1).optional(),
+    match: z.enum(["exact", "set"]).optional(),
+    vocabulary: vocabularySchema.optional(),
     description: z.string().optional(),
   })
   .strict()
   .refine((f) => !RESERVED_PARAMS.has(f.param), {
     message: "filter param is a reserved name",
+  })
+  // A declared `values` set IS the vocabulary — the filter projects it as an
+  // enum and canonicalizes against it. A second, graph-read one alongside would
+  // be a silent no-op at best and a disagreement at worst.
+  .refine((f) => !(f.values && f.vocabulary), {
+    message:
+      '"values" and "vocabulary" are mutually exclusive — a declared value set is already the vocabulary',
+  })
+  .refine((f) => !f.vocabulary || isSelectQuery(f.vocabulary.query), {
+    message: '"vocabulary.query" must be a SPARQL SELECT query',
   });
 
 const searchSchema = z
@@ -204,14 +233,31 @@ const completionSchema = z
   })
   .strict();
 
+/**
+ * The declared scope-ranking factor (`PackScopeWeight`). `falloff` is bounded
+ * the same way `weights` is — a factor outside 0–1 is a promotion, and this
+ * declaration only ever DEMOTES a deeper scope below a shallower one.
+ */
+const scopeWeightSchema = z
+  .object({
+    via: term,
+    by: term,
+    falloff: z.number().min(0).max(1),
+    asserted: term.optional(),
+  })
+  .strict();
+
 const lookupSchema = z
   .object({
     source: z.enum(["sparql", "graphql"]).optional(),
     by: term,
+    nameFallback: z.enum(["iri"]).optional(),
     type: term.optional(),
     description: z.string().optional(),
     toolDescription: z.string().optional(),
     types: z.array(term).min(1).optional(),
+    weights: z.record(term, z.number().min(0).max(1)).optional(),
+    scopeWeight: scopeWeightSchema.optional(),
     graphqlType: graphqlName.optional(),
     fields: z.array(fieldSchema).min(1).optional(),
     sections: z.array(sectionSchema).min(1).optional(),
@@ -240,10 +286,7 @@ const definitionSchema = z
         message: 'a pack must declare at least one of "list" or "lookup".',
       });
     }
-    if (
-      def.list &&
-      !/^\s*(?:PREFIX\s+[^\n]*\n\s*)*SELECT\s/i.test(def.list.query)
-    ) {
+    if (def.list && !isSelectQuery(def.list.query)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: '"list.query" must be a SPARQL SELECT query.',
@@ -330,6 +373,36 @@ function refineLookup(
       message: '"lookup.type" and "lookup.types" are mutually exclusive.',
       path: ["lookup"],
     });
+  }
+
+  // An IRI-derived name is only as trustworthy as the class vouching for the
+  // entity it came from, and without a class constraint nothing bounds the scan
+  // the derived-name population would run. Rejected rather than ignored, for the
+  // same reason a stale weight is: a silent no-op is how a declaration that
+  // never applied survives review.
+  if (lookup.nameFallback !== undefined && !lookup.type && !lookup.types) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        '"lookup.nameFallback" requires a class constraint ("lookup.type" or "lookup.types") to vouch for the entities it names.',
+      path: ["lookup", "nameFallback"],
+    });
+  }
+
+  // A weight naming a type the lookup does not address can never apply. Reject
+  // it rather than ignore it — a silent no-op is how a stale weight survives a
+  // rename (the type moves, the weight stays, and nothing says so).
+  const addressed = new Set<string>(
+    lookup.types ?? (lookup.type ? [lookup.type] : []),
+  );
+  for (const named of Object.keys(lookup.weights ?? {})) {
+    if (!addressed.has(named)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `"lookup.weights" names "${named}", which is not in "lookup.type"/"lookup.types".`,
+        path: ["lookup", "weights"],
+      });
+    }
   }
 
   if (source === "graphql" && !lookup.graphqlType && !lookup.type) {

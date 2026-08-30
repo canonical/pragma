@@ -91,7 +91,7 @@ src/components/Button/
 And appends to `src/components/index.ts`:
 
 ```typescript
-export * from "./Button";
+export * from "./Button/index.js";
 ```
 
 #### Generated Component
@@ -198,7 +198,7 @@ src/lib/Button/
 ├── Button.ts            # Lit element implementation
 ├── types.ts             # Props interface
 ├── index.ts             # Barrel export
-├── Button.tests.ts      # Unit tests (Vitest + shadow DOM)
+├── Button.test.ts      # Unit tests (Vitest + shadow DOM)
 ├── Button.stories.ts    # Storybook stories (optional)
 └── styles.css           # Component styles as CSSResult (optional)
 ```
@@ -271,7 +271,7 @@ export interface ButtonProps {
 #### Generated Test
 
 ```typescript
-// Button.tests.ts
+// Button.test.ts
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import "./Button.js";
 import type Button from "./Button.js";
@@ -332,25 +332,19 @@ export const Default: Story = {
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--component-path` | Full path for the component (e.g., `src/components/Button`) | Interactive prompt |
-| `--with-styles` | Include `styles.css` file | `true` |
-| `--no-with-styles` | Skip styles file | — |
-| `--with-stories` | Include Storybook stories | `true` |
-| `--no-with-stories` | Skip stories file | — |
-| `--with-ssr-tests` | Include SSR test file | `true` |
-| `--no-with-ssr-tests` | Skip SSR tests | — |
+| `--no-with-styles` | Skip the `styles.css` file (included by default) | styles on |
+| `--no-with-stories` | Skip the Storybook stories (included by default) | stories on |
+| `--no-with-ssr-tests` | Skip the SSR test file (included by default) | SSR tests on |
 
 ### Svelte Options
 
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--component-path` | Full path for the component (e.g., `src/lib/components/Card`) | Interactive prompt |
-| `--with-styles` | Include inline `<style>` block | `true` |
-| `--no-with-styles` | Skip styles | — |
-| `--with-stories` | Include Storybook stories | `true` |
-| `--no-with-stories` | Skip stories | — |
+| `--no-with-styles` | Skip the external `styles.css` import (included by default) | styles on |
+| `--no-with-stories` | Skip the Storybook stories (included by default) | stories on |
 | `--use-ts-stories` | Use `.stories.ts` instead of `.stories.svelte` | `false` |
-| `--with-ssr-tests` | Include SSR test file | `true` |
-| `--no-with-ssr-tests` | Skip SSR tests | — |
+| `--no-with-ssr-tests` | Skip the SSR test file (included by default) | SSR tests on |
 
 ### Global Options
 
@@ -366,10 +360,8 @@ export const Default: Story = {
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--component-path` | Full path for the component (e.g., `src/lib/Button`) | Interactive prompt |
-| `--with-styles` | Include `styles.css` file | `true` |
-| `--no-with-styles` | Skip styles file | — |
-| `--with-stories` | Include Storybook stories | `true` |
-| `--no-with-stories` | Skip stories file | — |
+| `--no-with-styles` | Skip the `styles.css` file (included by default) | styles on |
+| `--no-with-stories` | Skip the Storybook stories (included by default) | stories on |
 
 ---
 
@@ -403,7 +395,7 @@ summon component react --component-path=src/components/Button
 Appends to `src/components/index.ts`:
 
 ```typescript
-export * from "./Button";
+export * from "./Button/index.js";
 ```
 
 If the barrel file doesn't exist, it's created.
@@ -471,7 +463,7 @@ export const generators = {
 
 ### Modify Templates
 
-Fork the package and edit templates in `src/react/templates/` or `src/svelte/templates/`. Templates use [EJS syntax](https://ejs.co/).
+Fork the package and edit templates in `src/templates/react/`, `src/templates/svelte/`, or `src/templates/lit/` — plus `src/templates/shared/`, which holds the framework-agnostic templates (currently `styles.css.ejs`, the generated stylesheet rendered by the React and Svelte generators; Lit ships its own). Templates use [EJS syntax](https://ejs.co/).
 
 ---
 

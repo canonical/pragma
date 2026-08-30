@@ -20,7 +20,9 @@ import {
   type Task,
   traverse,
 } from "@canonical/task";
-import { type PlatformEnv, userHome } from "./platformPaths.js";
+import editorClis from "./editors.js";
+import { executableCandidates } from "./executablePaths.js";
+import { type PlatformEnv, userHome, xdgConfigHome } from "./platformPaths.js";
 import type { DetectionSignal } from "./types.js";
 
 /** The context threaded through every signal check: the project root + host. */
@@ -39,22 +41,31 @@ export const CONFIDENCE_RANK: Record<Confidence, number> = {
   low: 2,
 };
 
-/**
- * Resolve a directory/file signal path: a `~/…` path against the platform home,
- * anything else against the project root.
- */
-const resolveFsPath = (path: string, ctx: DetectContext): string =>
-  path.startsWith("~/")
-    ? join(userHome(ctx.platform), path.slice(2))
-    : join(ctx.projectRoot, path);
+/** The literal prefix marking a signal path as XDG-config-relative. */
+const XDG_CONFIG_PREFIX = "$XDG_CONFIG_HOME/";
 
 /**
- * The executable suffixes probed on win32 when `PATHEXT` is unset — the usual
- * Windows default. Crucially includes `.CMD`/`.BAT`: npm installs CLI harnesses
- * (`claude`, `codex`, `od`…) as `.cmd` shims, never `.exe`, so an `.exe`-only
- * probe would miss every npm-installed harness on Windows.
+ * Resolve a directory/file signal path: a `$XDG_CONFIG_HOME/…` path against the
+ * XDG config base, a `~/…` path against the platform home, anything else
+ * against the project root.
+ *
+ * The XDG form is spelled out rather than written `~/.config/…` because the two
+ * are NOT the same directory: a user who sets `$XDG_CONFIG_HOME` keeps nothing
+ * under `~/.config`, and resolving against home would report the harness absent
+ * and skip it. A tool documenting `~/.config/<tool>` is following the XDG
+ * convention and should be declared in this form.
  */
-const DEFAULT_PATHEXT = ".COM;.EXE;.BAT;.CMD";
+const resolveFsPath = (path: string, ctx: DetectContext): string => {
+  if (path.startsWith(XDG_CONFIG_PREFIX)) {
+    return join(
+      xdgConfigHome(ctx.platform),
+      path.slice(XDG_CONFIG_PREFIX.length),
+    );
+  }
+  return path.startsWith("~/")
+    ? join(userHome(ctx.platform), path.slice(2))
+    : join(ctx.projectRoot, path);
+};
 
 /**
  * Check a `process` signal: whether `name` resolves on the platform `PATH` (on
@@ -70,21 +81,9 @@ const checkProcess = (
   signal: Extract<DetectionSignal, { type: "process" }>,
   ctx: DetectContext,
 ): Task<boolean> => {
-  const isWindows = ctx.platform.platform === "win32";
-  const separator = isWindows ? ";" : ":";
-  // On win32 an executable matches under any PATHEXT suffix; elsewhere the bare
-  // name is the sole candidate (the empty suffix).
-  const suffixes = isWindows
-    ? (ctx.platform.env.PATHEXT ?? DEFAULT_PATHEXT)
-        .split(";")
-        .filter((suffix) => suffix.length > 0)
-    : [""];
-  const candidates = (ctx.platform.env.PATH ?? "")
-    .split(separator)
-    .filter((dir) => dir.length > 0)
-    .flatMap((dir) =>
-      suffixes.map((suffix) => join(dir, `${signal.name}${suffix}`)),
-    );
+  // The PATH/PATHEXT rules live in one shared helper (`setup lsp`'s editor
+  // probe resolves the same way) — see `executablePaths.ts` for why.
+  const candidates = executableCandidates(signal.name, ctx.platform);
 
   return flatMap(
     traverse(candidates, (candidate) => exists(candidate)),
@@ -103,26 +102,13 @@ const checkProcess = (
 };
 
 /**
- * The VS Code-family extension roots probed for an `extension` signal, relative
- * to home. VS Code and its forks each keep their own extensions directory in the
- * identical `<id>-<version>` layout, so an extension installed under ANY of them
- * counts: stock VS Code (`~/.vscode`), Cursor (`~/.cursor`), VSCodium
- * (`~/.vscode-oss`), and Windsurf (`~/.windsurf`).
- */
-const VSCODE_FAMILY_EXTENSION_ROOTS = [
-  ".vscode",
-  ".cursor",
-  ".vscode-oss",
-  ".windsurf",
-] as const;
-
-/**
  * Check an `extension` signal: whether any installed VS Code-family extension
- * directory `<id>-<version>/` is present. VS Code and its forks (Cursor,
- * VSCodium, Windsurf) keep extensions under the same `<root>/extensions` layout,
- * so every known family root ({@link VSCODE_FAMILY_EXTENSION_ROOTS}) is probed
- * and ANY match counts. Each directory is confirmed to exist before it is
- * globbed, since globbing a missing directory throws.
+ * directory `<id>-<version>/` is present. VS Code and its forks keep
+ * extensions under the same `<dir>/<id>-<version>` layout, so every editor in
+ * the {@link editorClis} registry is probed (one source of truth for the
+ * family — previously a local root list here that had drifted, e.g. it lacked
+ * Antigravity) and ANY match counts. Each directory is confirmed to exist
+ * before it is globbed, since globbing a missing directory throws.
  *
  * The pattern targets the `package.json` MANIFEST inside each versioned
  * extension directory, not the directory itself: the `glob` effect lists files
@@ -134,9 +120,8 @@ const checkExtension = (
   signal: Extract<DetectionSignal, { type: "extension" }>,
   ctx: DetectContext,
 ): Task<boolean> => {
-  const home = userHome(ctx.platform);
-  const extensionDirs = VSCODE_FAMILY_EXTENSION_ROOTS.map((root) =>
-    join(home, root, "extensions"),
+  const extensionDirs = editorClis.map((editor) =>
+    editor.extensionsDir(ctx.platform),
   );
   return map(
     traverse(extensionDirs, (extensionsDir) =>

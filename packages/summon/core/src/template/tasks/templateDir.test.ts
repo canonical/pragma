@@ -123,4 +123,38 @@ describe("templateDir", () => {
     const writes = filterEffects(effects, "WriteFile");
     expect(writes).toHaveLength(3);
   });
+
+  it("applies the declared transform, extension-keyed", () => {
+    // The transform option was declared in TemplateDirOptions but never read
+    // — a silent no-op for every caller.
+    const t = templateDir({
+      source: "/tpl",
+      dest: "/out",
+      vars: {},
+      transform: { ".ts": (content) => content.toUpperCase() },
+    });
+
+    const { effects } = dryRunWith(t, buildMocks(["a.ts", "note.md"]));
+    const writes = filterEffects(effects, "WriteFile");
+    const byPath = new Map(writes.map((w) => [w.path, w.content]));
+
+    expect(byPath.get("/out/a.ts")).toBe("CONTENT OF /TPL/A.TS");
+    expect(byPath.get("/out/note.md")).toBe("content of /tpl/note.md");
+  });
+
+  it("prefers an exact basename transform over the extension entry", () => {
+    const t = templateDir({
+      source: "/tpl",
+      dest: "/out",
+      vars: {},
+      transform: {
+        ".ts": (content) => content.toUpperCase(),
+        "special.ts": (content) => `${content}!`,
+      },
+    });
+
+    const { effects } = dryRunWith(t, buildMocks(["special.ts"]));
+    const writes = filterEffects(effects, "WriteFile");
+    expect(writes[0]?.content).toBe("content of /tpl/special.ts!");
+  });
 });

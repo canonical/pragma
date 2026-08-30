@@ -1,6 +1,6 @@
 /**
  * Cards styles
- * @implements dso:global.group.cards
+ * @implements ds:global.group.cards
  *
  * A two-level subgrid: the parent `.grid` supplies columns; `Cards` inherits
  * them and defines four shared section row tracks (image / header / content /

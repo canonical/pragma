@@ -15,9 +15,16 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
-import type { PragmaRuntime } from "../runtime/types.js";
+import { compactUri, DEFAULT_PREFIX_MAP } from "../render/index.js";
+import type { PragmaRuntime } from "../runtime/index.js";
 import { asVerb } from "../spec/asVerb.js";
-import type { DisclosureSpec, ParamSpec, VerbSpec } from "../spec/types.js";
+import type {
+  CapabilityModule,
+  DisclosureSpec,
+  McpListable,
+  ParamSpec,
+  VerbSpec,
+} from "../spec/types.js";
 import {
   listFormatters,
   lookupFormatters,
@@ -105,6 +112,83 @@ export function compilePack(
   }
 
   return verbs;
+}
+
+/**
+ * Derive a story's MCP resource listing from the types its lookup addresses.
+ *
+ * ZERO new authoring: a read story ALREADY declares its type set
+ * (`lookup.type` / `lookup.types`) because that is what its name resolve is
+ * constrained by, so the slice of the index the noun contributes to the listing
+ * IS that declaration read a second time by a different reader — never written
+ * a second time by the author. Each type contributes ONE collection entry (its
+ * class entry, carrying the instance count); the individuals stay reachable
+ * through the `{+uri}` template and its autocomplete.
+ *
+ * Returns `undefined` for a story with no lookup (a list-only noun addresses no
+ * class, so it can name no slice).
+ *
+ * @param definition - A validated pack definition.
+ * @returns Its declared listing, or `undefined` when it declares no types.
+ */
+export function compileListable(
+  definition: PackDefinition,
+): McpListable | undefined {
+  const lookup = definition.lookup;
+  if (!lookup) return undefined;
+  const types = lookup.types ?? (lookup.type ? [lookup.type] : []);
+  if (types.length === 0) return undefined;
+  // `PackLookup.type`/`types` accept a prefixed name OR an absolute IRI, but the
+  // listing is keyed on the index's PREFIXED types. Copied verbatim, a lookup
+  // legitimately constrained to `https://…/Widget` compiles clean and then
+  // matches no class and no weight — a story that is valid everywhere else and
+  // silently contributes nothing here. Compacted against the same map
+  // `resolveUri` expands with, so the two directions agree.
+  const compact = (type: string): string =>
+    compactUri(type, DEFAULT_PREFIX_MAP);
+  const weights = Object.fromEntries(
+    Object.entries(lookup.weights ?? {}).map(([type, weight]) => [
+      compact(type),
+      weight,
+    ]),
+  );
+  return {
+    sources: types.map(compact).map((type) => ({
+      type,
+      as: "collection" as const,
+      // Unlisted types weigh 1 — the default is "as important as any other",
+      // so a story that declares no weights needs no weights.
+      weight: weights[type] ?? 1,
+    })),
+  };
+}
+
+/**
+ * Compile a story into the capability module that carries it.
+ *
+ * The ONE place a {@link PackDefinition} becomes a {@link CapabilityModule} —
+ * the distribution's static stories and the dynamic (config/package) ones come
+ * through here alike, so a module-level projection derived from the story
+ * (today: {@link compileListable}) cannot reach one tier and miss the other.
+ *
+ * @param definition - A validated pack definition.
+ * @param source - Where the definition came from, for diagnostics.
+ * @param prefixes - The merged prefix map used for display compaction.
+ * @returns The module: the compiled verbs plus the story's module-level data.
+ */
+export function compileStoryModule(
+  definition: PackDefinition,
+  source: StorySource,
+  prefixes: Readonly<Record<string, string>>,
+): CapabilityModule {
+  const listable = compileListable(definition);
+  return {
+    name: definition.noun,
+    story: true,
+    verbs: compilePack(definition, source, prefixes),
+    colophon: definition.colophon,
+    ...(listable ? { mcpListable: listable } : {}),
+  };
 }
 
 /** Presentation facts for one compiled list-shaped verb. */
@@ -287,9 +371,15 @@ function projectFilters(
         name: filter.param,
         doc,
         values: [...filter.values],
+        repeatable: true,
       } satisfies ParamSpec;
     }
-    return { kind: "string", name: filter.param, doc } satisfies ParamSpec;
+    return {
+      kind: "string",
+      name: filter.param,
+      doc,
+      repeatable: true,
+    } satisfies ParamSpec;
   });
 }
 

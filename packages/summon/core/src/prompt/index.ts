@@ -12,7 +12,7 @@ export {
   MISSING_REQUIRED_ANSWER,
   missingRequiredError,
 } from "./autoPrompt.js";
-export type { InkPromptOptions, InkSession } from "./inkPrompt.js";
+export type { InkPromptOptions, InkSession, StepReport } from "./inkPrompt.js";
 export { default as inkPrompt } from "./inkPrompt.js";
 export { default as mcpPrompt } from "./mcpPrompt.js";
 export type {

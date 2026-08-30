@@ -10,7 +10,7 @@
  * Storeless: the entity tier reads the index off disk, never booting the store.
  */
 
-import type { VerbSpec } from "../../kernel/spec/types.js";
+import type { VerbSpec } from "../../kernel/spec/index.js";
 
 /** The `__complete` verb spec. */
 export const completeVerb: VerbSpec<Record<string, unknown>, string[]> = {

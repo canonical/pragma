@@ -6,7 +6,7 @@ How to author a pragma configuration. **Every field, its type and its layering b
 
 From lowest to highest precedence:
 
-1. **Built-in defaults** — the distribution config `pragma.conf.ts`, bundled into the binary (identity, default packs and the read stories they supply, `channel: normal`, `detail: standard`).
+1. **Built-in defaults** — the distribution config `pragma.conf.ts`, shipped with the package (identity, default packs and the read stories they supply, `channel: normal`, `detail: standard`).
 2. **Global config** — `$XDG_CONFIG_HOME/pragma/config.json`. Machine-wide state, written by the config setters.
 3. **Project config** — the nearest `pragma.config.ts`, walking up from the current directory. It is *evaluated* (not just parsed), and the result is content-hash cached under `$XDG_STATE_HOME/pragma/config-cache/<sha256>.json` so a re-run skips re-evaluation when the file is unchanged.
 
@@ -20,7 +20,7 @@ Stories reach the CLI from three places, weakest to strongest:
 
 | Tier | Where it is declared | Validation failure |
 | --- | --- | --- |
-| **distribution** | `packs[].stories` in the binary's own `pragma.conf.ts` | compile-time: `tsc` for the shape, plus the `parsePackDefinition` round-trip in `distribution.test.ts` for the grammar |
+| **distribution** | `packs[].stories` in the distribution's own `pragma.conf.ts` | compile-time: `tsc` for the shape, plus the `parsePackDefinition` round-trip in `distribution.test.ts` for the grammar |
 | **package** | `stories/*.json` shipped by a package the active pack was built from | the story is **ignored**, named on stderr and under `doctor`'s `pack refs` |
 | **config** | `packs[].stories`, then the top-level `stories`, in your config | fatal `CONFIG_ERROR` |
 
@@ -87,11 +87,11 @@ The setters write to the **global** layer only — project configs are authored 
 pragma config set tier apps/lxd
 pragma config set channel experimental
 pragma config set detail detailed
-pragma config set tier none
+pragma config unset tier
 ```
 
-- `tier` is a free string with meaningful reset sentinels: `none`, `default`, or `-` clear it.
-- `channel` and `detail` are closed enums; reset them by setting their default (`normal` / `standard`).
-- `config set <key> <value>` is the one-command form of the per-field setters — `key` is one of `tier`, `channel`, or `detail`, and the field's own reset rules still apply.
+- `tier` is a free string. Clearing it is its own command, `config unset tier` — `none`, `default` and `-` are refused as values, because a string that doubles as a remove-marker cannot say "set the tier to the literal none".
+- `channel` and `detail` are closed enums; `config unset` clears them too, so the built-in default (`normal` / `standard`) applies again.
+- `config set <key> <value>` is the one-command form of the per-field setters — `key` is one of `tier`, `channel`, or `detail`, and `config unset <key>` is how any of the three is cleared.
 
 See [getting-started.md](./getting-started.md) for how the tier and channel scope the read commands, the [configuration reference](./reference/config.md) for every field, and the [command reference](./reference/commands.md) for each setter's full signature.

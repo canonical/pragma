@@ -13,7 +13,7 @@ import type { PromptDefinition } from "@canonical/summon-core";
 import { Box, Text, useInput } from "ink";
 import SelectInput from "ink-select-input";
 import TextInput from "ink-text-input";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export interface PromptSequenceProps {
   /** List of prompts to display */
@@ -24,6 +24,14 @@ export interface PromptSequenceProps {
   onCancel?: () => void;
   /** Initial answers (for resuming/editing) */
   initialAnswers?: Record<string, unknown>;
+  /**
+   * Answers provided EXPLICITLY (CLI flags / the positional): their prompts
+   * are never asked — they show as completed — so the sequence asks exactly
+   * `pendingPrompts(prompts, provided)`. An empty pending set completes
+   * immediately. Unlike `initialAnswers` (which pre-fill but still ask, e.g.
+   * when navigating back from the confirm gate), provided answers are final.
+   */
+  provided?: Record<string, unknown>;
 }
 
 // =============================================================================
@@ -173,12 +181,22 @@ const TextPrompt = ({
 
 interface ConfirmPromptProps {
   prompt: PromptDefinition;
+  /** An already-collected answer (e.g. a flag value re-asked after esc). */
+  initialValue?: boolean;
   onSubmit: (value: boolean) => void;
   onBack?: () => void;
 }
 
-const ConfirmPrompt = ({ prompt, onSubmit, onBack }: ConfirmPromptProps) => {
-  const defaultValue = Boolean(prompt.default);
+const ConfirmPrompt = ({
+  prompt,
+  initialValue,
+  onSubmit,
+  onBack,
+}: ConfirmPromptProps) => {
+  // Enter re-submits the EXISTING answer when there is one — after esc from
+  // the confirm gate, an explicit `--no-with-stories` must survive an Enter,
+  // not be overwritten by the declared default.
+  const defaultValue = initialValue ?? Boolean(prompt.default);
 
   useInput((input, key) => {
     if (input.toLowerCase() === "y") {
@@ -209,20 +227,28 @@ const ConfirmPrompt = ({ prompt, onSubmit, onBack }: ConfirmPromptProps) => {
 
 interface SelectPromptProps {
   prompt: PromptDefinition;
+  /** An already-collected answer (e.g. a flag value re-asked after esc). */
+  initialValue?: string;
   onSubmit: (value: string) => void;
   onBack?: () => void;
 }
 
-const SelectPrompt = ({ prompt, onSubmit, onBack }: SelectPromptProps) => {
+const SelectPrompt = ({
+  prompt,
+  initialValue,
+  onSubmit,
+  onBack,
+}: SelectPromptProps) => {
   const items =
     prompt.choices?.map((choice) => ({
       label: choice.label,
       value: choice.value,
     })) ?? [];
 
-  // Find initial index based on default value
-  const initialIndex = prompt.default
-    ? items.findIndex((item) => item.value === prompt.default)
+  // Highlight the existing answer when there is one, the default otherwise.
+  const preferred = initialValue ?? prompt.default;
+  const initialIndex = preferred
+    ? items.findIndex((item) => item.value === preferred)
     : 0;
 
   useInput((_input, key) => {
@@ -255,17 +281,20 @@ const SelectPrompt = ({ prompt, onSubmit, onBack }: SelectPromptProps) => {
 
 interface MultiselectPromptProps {
   prompt: PromptDefinition;
+  /** An already-collected answer (e.g. a flag value re-asked after esc). */
+  initialValue?: string[];
   onSubmit: (values: string[]) => void;
   onBack?: () => void;
 }
 
 const MultiselectPrompt = ({
   prompt,
+  initialValue,
   onSubmit,
   onBack,
 }: MultiselectPromptProps) => {
   const [selected, setSelected] = useState<Set<string>>(
-    new Set(prompt.default as string[] | undefined),
+    new Set(initialValue ?? (prompt.default as string[] | undefined)),
   );
   const [highlightedIndex, setHighlightedIndex] = useState(0);
 
@@ -362,6 +391,7 @@ export const PromptSequence = ({
   onComplete,
   onCancel,
   initialAnswers,
+  provided,
 }: PromptSequenceProps) => {
   // Always start at index 0, but preserve answers for display/editing
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -371,13 +401,28 @@ export const PromptSequence = ({
   // Track the history of prompt indices for back navigation
   const [history, setHistory] = useState<number[]>([]);
 
-  // Filter prompts based on `when` condition
-  const activePrompts = prompts.filter((prompt) => {
-    if (prompt.when) {
-      return prompt.when(answers);
-    }
-    return true;
-  });
+  const providedNames = useMemo(
+    () => new Set(Object.keys(provided ?? {})),
+    [provided],
+  );
+
+  // The asking list: skip explicitly provided prompts, and evaluate `when`
+  // against the given answer set (the answers collected so far by default).
+  const askable = useCallback(
+    (against: Record<string, unknown>) =>
+      prompts.filter((prompt) => {
+        if (providedNames.has(prompt.name)) {
+          return false;
+        }
+        if (prompt.when) {
+          return prompt.when(against);
+        }
+        return true;
+      }),
+    [prompts, providedNames],
+  );
+
+  const activePrompts = askable(answers);
 
   const currentPrompt = activePrompts[currentIndex];
 
@@ -388,14 +433,19 @@ export const PromptSequence = ({
       const newAnswers = { ...answers, [currentPrompt.name]: value };
       setAnswers(newAnswers);
 
-      if (currentIndex < activePrompts.length - 1) {
+      // Recompute the asking list against the NEW answers: this answer may
+      // have just made a later conditional prompt applicable (or not) — e.g.
+      // "Include stories? yes" unlocking "Use TypeScript stories?".
+      const nextActive = askable(newAnswers);
+      const nextIndex = nextActive.indexOf(currentPrompt) + 1;
+      if (nextIndex > 0 && nextIndex < nextActive.length) {
         setHistory((prev) => [...prev, currentIndex]);
-        setCurrentIndex((prev) => prev + 1);
+        setCurrentIndex(nextIndex);
       } else {
         onComplete(newAnswers);
       }
     },
-    [answers, currentPrompt, currentIndex, activePrompts.length, onComplete],
+    [answers, currentPrompt, currentIndex, askable, onComplete],
   );
 
   const handleBack = useCallback(() => {
@@ -408,12 +458,28 @@ export const PromptSequence = ({
     }
   }, [history, onCancel]);
 
+  // Nothing to ask (every prompt explicitly provided): complete immediately —
+  // the wizard proceeds straight to its preview/confirm.
+  useEffect(() => {
+    if (currentPrompt === undefined) {
+      onComplete(answers);
+    }
+  }, [currentPrompt, onComplete, answers]);
+
   if (!currentPrompt) {
     return null;
   }
 
-  // Get previously completed prompts to display
-  const completedPrompts = activePrompts.slice(0, currentIndex);
+  // Previously completed prompts to display: the explicitly provided ones,
+  // then everything answered so far — in declared order.
+  const answeredSoFar = new Set(
+    activePrompts.slice(0, currentIndex).map((prompt) => prompt.name),
+  );
+  const completedPrompts = prompts.filter(
+    (prompt) =>
+      providedNames.has(prompt.name) || answeredSoFar.has(prompt.name),
+  );
+  const completedAnswers = { ...provided, ...answers };
 
   // Render the appropriate prompt type
   const renderCurrentPrompt = () => {
@@ -432,7 +498,9 @@ export const PromptSequence = ({
       case "confirm":
         return (
           <ConfirmPrompt
+            key={currentPrompt.name}
             prompt={currentPrompt}
+            initialValue={existingValue as boolean | undefined}
             onSubmit={handleAnswer}
             onBack={handleBack}
           />
@@ -440,7 +508,9 @@ export const PromptSequence = ({
       case "select":
         return (
           <SelectPrompt
+            key={currentPrompt.name}
             prompt={currentPrompt}
+            initialValue={existingValue as string | undefined}
             onSubmit={handleAnswer}
             onBack={handleBack}
           />
@@ -448,7 +518,9 @@ export const PromptSequence = ({
       case "multiselect":
         return (
           <MultiselectPrompt
+            key={currentPrompt.name}
             prompt={currentPrompt}
+            initialValue={existingValue as string[] | undefined}
             onSubmit={handleAnswer}
             onBack={handleBack}
           />
@@ -473,7 +545,10 @@ export const PromptSequence = ({
 
       {/* Show completed answers in table format */}
       {completedPrompts.length > 0 && (
-        <CompletedAnswersTable prompts={completedPrompts} answers={answers} />
+        <CompletedAnswersTable
+          prompts={completedPrompts}
+          answers={completedAnswers}
+        />
       )}
 
       {/* Current prompt */}

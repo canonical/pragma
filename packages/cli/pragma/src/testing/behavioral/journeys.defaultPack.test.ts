@@ -31,7 +31,7 @@ import { storyModules } from "../../capabilities/distribution.js";
 import { graphQueryVerb } from "../../capabilities/graph/query.verb.js";
 import {
   ontologyListVerb,
-  ontologyShowVerb,
+  ontologyLookupVerb,
 } from "../../capabilities/ontology/verbs.js";
 import { updateVerb } from "../../capabilities/sources/update.verb.js";
 import {
@@ -268,7 +268,7 @@ describe("default-pack journey — block list, populated and empty (E1)", () => 
   });
 
   it("an ontology-only pack with no blocks lists empty — a calm exit 0", async () => {
-    // D10-A, MEASURED at the dispatch seam the binary uses: the declared list
+    // D10-A, MEASURED at the dispatch seam the CLI uses: the declared list
     // body (`makeListRun`) returns `[]` and never throws on emptiness, so the
     // process still exits 0 — no exit-code delta against the hand-written verb.
     // Only the empty MESSAGE moved (the story's `emptyRecovery` replaces the
@@ -306,10 +306,10 @@ describe("default-pack journey — ontology list/show, populated and empty (E1)"
     ]);
   });
 
-  it("ontology show ds surfaces the two block domain classes", async () => {
+  it("ontology lookup ds surfaces the two block domain classes", async () => {
     const fixture = await boot(DEFAULT_PACK_TTL, DEFAULT_PACK_CONFIG);
     const envelope = await readVerb(
-      ontologyShowVerb,
+      ontologyLookupVerb,
       { prefix: "ds" },
       fixture.cwd,
     );
@@ -326,11 +326,11 @@ describe("default-pack journey — ontology list/show, populated and empty (E1)"
     expect(envelope.data).toEqual([]);
   });
 
-  it("ontology show of an unknown prefix is NOT_FOUND, not a crash", async () => {
+  it("ontology lookup of an unknown prefix is NOT_FOUND, not a crash", async () => {
     const fixture = await boot(DEFAULT_PACK_TTL, DEFAULT_PACK_CONFIG);
     await expect(
       executeVerb(
-        ontologyShowVerb,
+        ontologyLookupVerb,
         { prefix: "nope" },
         NO_MUTATION,
         bootRuntime(JSON_FLAGS, fixture.cwd),
@@ -447,7 +447,7 @@ describe("default-pack journey — real-data shapes the clean fixture masked (E1
   // `schema.json` currently surfaces UNCLASSIFIED. `packIsComplete` only checks
   // size > 0, so torn-but-nonempty garbage bypasses the completeness guard and
   // `compileFromExtraction` throws a raw `SyntaxError` (renders as INTERNAL
-  // "please report") instead of a classified error. It SHOULD degrade to
+  // "report") instead of a classified error. It SHOULD degrade to
   // STORE_UNAVAILABLE like the emptied case does — the fix belongs in
   // `kernel/runtime/graphpack/read.ts` (guard the `schema.json` read/compile).
   // No lane in this wave owns that, so rather than a false `it.fails` hand-off

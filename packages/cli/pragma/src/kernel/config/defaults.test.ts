@@ -15,6 +15,13 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
     // `collectColophon` reads exactly this object. Pin the shape and the two
     // stable fragments — the story's own subject and the maker line the old
     // one-line `colophon` string carried (folded in when the field went live).
+    //
+    // DOMAIN FIRST: this section is deliberately a one-liner that hands off to
+    // `docs/architecture.md`. `pragma colophon` renders it ABOVE the active
+    // pack's domain colophon, and a reader reaching for the colophon wants the
+    // design system, not the toolchain that serves it. The length pin is the
+    // ruling: architecture prose belongs in the docs, not in front of the
+    // domain every reader came for.
     expect(defaults.colophon?.markdown).toContain("domain-based toolchain");
     expect(defaults.colophon?.markdown).toContain(
       "Made by the Canonical Webteam — https://canonical.com.",
@@ -23,9 +30,21 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
     // Bodies, not documents: the renderer supplies the H1 from the name.
     expect(defaults.colophon?.markdown.startsWith("#")).toBe(false);
     expect(defaults.colophon?.summary?.startsWith("#")).toBe(false);
+    // The handoff, and the brevity that makes it honest (see the note above).
+    // It is a URL, not a repo path: `docs/` is outside the package's `files`
+    // allowlist and is not copied into `dist`, so a path would name a file no
+    // installed user has. A bare `docs/architecture.md` must fail here.
+    expect(defaults.colophon?.markdown).toContain(
+      "https://github.com/canonical/pragma/blob/main/packages/cli/pragma/docs/architecture.md",
+    );
+    expect(defaults.colophon?.summary).toContain(
+      "https://github.com/canonical/pragma/blob/main/packages/cli/pragma/docs/architecture.md",
+    );
+    expect(defaults.colophon?.markdown.length).toBeLessThan(400);
+    expect(defaults.colophon?.summary?.length).toBeLessThan(400);
   });
 
-  it("ships the three canonical default packs (git+https sources)", () => {
+  it("ships the four canonical default packs (git+https sources)", () => {
     expect(
       defaults.packs?.map((pack) =>
         typeof pack === "string"
@@ -43,7 +62,12 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
       },
       {
         name: "@canonical/code-standards",
-        source: "git+https://github.com/canonical/web-code-standards.git#main",
+        source:
+          "git+https://github.com/canonical/web-code-standards.git#v0.1.5",
+      },
+      {
+        name: "@canonical/ds-implementations",
+        source: "git+https://github.com/canonical/pragma.git#main",
       },
     ]);
   });
@@ -55,7 +79,7 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
     const storyCounts = defaults.packs?.map((pack) =>
       typeof pack === "string" ? 0 : (pack.stories?.length ?? 0),
     );
-    expect(storyCounts).toEqual([4, 0, 1]);
+    expect(storyCounts).toEqual([5, 0, 1, 1]);
   });
 
   it("declares no removed field — the validator would refuse to load one", () => {

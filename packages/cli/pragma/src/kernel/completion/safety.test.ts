@@ -319,7 +319,7 @@ describe("storeless guarantee (PROTECTED)", () => {
 
     // prefixes: `ds` is in the default display map, so it comes back for `d`.
     await expect(
-      runComplete(["ontology", "show", "d"], capabilities, env),
+      runComplete(["ontology", "lookup", "d"], capabilities, env),
     ).resolves.toContain("ds");
 
     // index (derived, no field): the tier lookup is a declared pack lookup
@@ -331,28 +331,35 @@ describe("storeless guarantee (PROTECTED)", () => {
       runComplete(["tier", "lookup", "ap"], capabilities, env),
     ).resolves.toContain("ds:apps");
 
-    // skills (no skills root here) and prompt labels (this graph carries no
-    // prompt entities) have nothing to offer, and the honest storeless answer
-    // is an empty list rather than a store boot.
-    for (const words of [
-      ["skill", "lookup", "do"],
-      ["prompt", "lookup", "bu"],
-    ]) {
-      await expect(runComplete(words, capabilities, env)).resolves.toEqual([]);
-    }
+    // skills: the BUNDLED snapshot ships inside the package, so even this
+    // fresh cwd with an empty XDG data home completes REAL skill names — and
+    // does it storelessly, which is the whole point of the cell. (It used to
+    // assert `[]` here, which was true only because a fresh machine had no
+    // skills at all; that is the defect the snapshot fixes.) The names are not
+    // spelled out: an empty prefix asks for all of them.
+    await expect(
+      runComplete(["skill", "lookup", ""], capabilities, env),
+    ).resolves.not.toHaveLength(0);
+
+    // prompt labels: this graph carries no prompt entities and no shipped skill
+    // declares `prompt: true`, so the honest storeless answer is still an empty
+    // list rather than a store boot.
+    await expect(
+      runComplete(["prompt", "lookup", "bu"], capabilities, env),
+    ).resolves.toEqual([]);
 
     expect(vi.mocked(createStore)).not.toHaveBeenCalled();
   });
 
   it("the spawned __complete fast path answers without touching any state", () => {
-    // The perf globalSetup guarantees dist/pragma exists.
+    // The perf globalSetup guarantees the emitted `dist/` exists.
     // A FRESH INSTALL, reproduced: nothing is inherited from this process's
     // environment, the cwd holds no config, and $HOME plus all three XDG roots
-    // are empty temps. Anything the binary answers here it answered from
+    // are empty temps. Anything the entry answers here it answered from
     // itself. (The suite before this inherited `...process.env`, so it could
     // not tell a compiled-in answer from an ambient one.)
-    const binary = fileURLToPath(
-      new URL("../../../dist/pragma", import.meta.url),
+    const entry = fileURLToPath(
+      new URL("../../../dist/src/bin.js", import.meta.url),
     );
     const home = mkdtempSync(join(tmpdir(), "pragma-storeless-home-"));
     const xdgConfig = mkdtempSync(join(tmpdir(), "pragma-storeless-cfg-"));
@@ -366,23 +373,27 @@ describe("storeless guarantee (PROTECTED)", () => {
       XDG_CACHE_HOME: xdgCache,
     };
 
-    const nouns = spawnSync(binary, ["__complete", "--", "co"], {
-      encoding: "utf-8",
-      cwd: emptyCwd,
-      env,
-    });
+    const nouns = spawnSync(
+      process.execPath,
+      [entry, "__complete", "--", "co"],
+      {
+        encoding: "utf-8",
+        cwd: emptyCwd,
+        env,
+      },
+    );
     expect(nouns.status).toBe(0);
-    expect(nouns.stdout).toBe("colophon\nconfig\n");
+    expect(nouns.stdout).toBe("colophon\nconcept\nconfig\n");
     expect(nouns.stderr).toBe("");
 
     // The headline guarantee of the embedded pack: a user who has installed
-    // the binary and nothing else gets ENTITY candidates on the first TAB.
-    // Every other pin on the embedded index runs in-process, where a bundler
-    // change that made `pack.index.generated.ts` unreachable FROM THE BINARY
-    // would leave the whole suite green.
+    // the shipped entry and nothing else gets ENTITY candidates on the first TAB.
+    // Every other pin on the embedded index runs in-process, where an emit
+    // change that made `pack.index.generated.ts` unreachable FROM THE SHIPPED
+    // ENTRY would leave the whole suite green.
     const entities = spawnSync(
-      binary,
-      ["__complete", "--", "block", "lookup", "ds:global.component.but"],
+      process.execPath,
+      [entry, "__complete", "--", "block", "lookup", "ds:global.component.but"],
       { encoding: "utf-8", cwd: emptyCwd, env },
     );
     expect(entities.status).toBe(0);
@@ -402,17 +413,21 @@ describe("storeless guarantee (PROTECTED)", () => {
   });
 
   it("the spawned fast path emits zero bytes for zero candidates, exit 0", () => {
-    const binary = fileURLToPath(
-      new URL("../../../dist/pragma", import.meta.url),
+    const entry = fileURLToPath(
+      new URL("../../../dist/src/bin.js", import.meta.url),
     );
-    const result = spawnSync(binary, ["__complete", "--", "bogus", ""], {
-      encoding: "utf-8",
-      env: {
-        ...process.env,
-        XDG_CONFIG_HOME: mkdtempSync(join(tmpdir(), "pragma-zb-cfg-")),
-        XDG_STATE_HOME: mkdtempSync(join(tmpdir(), "pragma-zb-state-")),
+    const result = spawnSync(
+      process.execPath,
+      [entry, "__complete", "--", "bogus", ""],
+      {
+        encoding: "utf-8",
+        env: {
+          ...process.env,
+          XDG_CONFIG_HOME: mkdtempSync(join(tmpdir(), "pragma-zb-cfg-")),
+          XDG_STATE_HOME: mkdtempSync(join(tmpdir(), "pragma-zb-state-")),
+        },
       },
-    });
+    );
     expect(result.status).toBe(0);
     expect(result.stdout).toBe("");
     expect(result.stderr).toBe("");

@@ -8,6 +8,8 @@ import type { DateTimeFieldProps } from "./types.js";
  * (label, description, error) and middleware/conditional-display support.
  *
  * `import { DateTimeField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.date_time_field
  */
 export default withWrapper<DateTimeFieldProps>(
   bindField<DateTimeFieldProps>(DateTimeInput, "native"),

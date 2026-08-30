@@ -3,6 +3,1072 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
+
+
+### Bug Fixes
+
+* **ci:** guard against workspace sibling ranges the sibling has outgrown ([#1045](https://github.com/canonical/pragma/issues/1045)) ([7b404ef](https://github.com/canonical/pragma/commit/7b404ef3772983776f708027d6f78735235f1485))
+* **ci:** repair the sibling ranges `lerna version` does not rewrite ([#1056](https://github.com/canonical/pragma/issues/1056)) ([3ab7f93](https://github.com/canonical/pragma/commit/3ab7f939adb3e4e3786edba5653d2326a82a3dd7))
+* **pragma-cli:** detect the install source from the filesystem, and name the linked state ([#1053](https://github.com/canonical/pragma/issues/1053)) ([8897dbb](https://github.com/canonical/pragma/commit/8897dbbb996d4004d691c524fdc7fcbef9df9a87))
+* **pragma-cli:** make every setup row actionable, reversible and honestly reported ([#1044](https://github.com/canonical/pragma/issues/1044)) ([4e8d5ed](https://github.com/canonical/pragma/commit/4e8d5ede0bb36b66a682d2098f3db93ac57ed015))
+* **pragma-cli:** make the code standards reachable in one call ([#1047](https://github.com/canonical/pragma/issues/1047)) ([fff26ef](https://github.com/canonical/pragma/commit/fff26ef00b36bd48068c994a0f0b7e4054372596))
+* **pragma-cli:** rank a shared block name by tier depth, and stop discarding the rest ([#1050](https://github.com/canonical/pragma/issues/1050)) ([58eb157](https://github.com/canonical/pragma/commit/58eb1573cc852121cf80bdf52eca3c77d8147255))
+* **pragma-cli:** read ds:usage in block lookup, the vocabulary the graph has ([#1049](https://github.com/canonical/pragma/issues/1049)) ([003d8db](https://github.com/canonical/pragma/commit/003d8dbb112865888f9c86c03e1caf3c61c58731))
+
+
+### Features
+
+* **harnesses:** register the pragma MCP server with Charm's Crush ([#1055](https://github.com/canonical/pragma/issues/1055)) ([1719dbb](https://github.com/canonical/pragma/commit/1719dbbad56c7e95c50315fada3cfabba0d4207c))
+* **Log:** migrate to design tokens ([#942](https://github.com/canonical/pragma/issues/942)) ([64baf67](https://github.com/canonical/pragma/commit/64baf67c08ee141967340945cbf748444387923c))
+* **pragma-cli:** detect VS Code by installation, and report a harness inventory ([#1043](https://github.com/canonical/pragma/issues/1043)) ([cc08d6b](https://github.com/canonical/pragma/commit/cc08d6b60c2fa434ceb44a13808910c374224536))
+* **pragma-cli:** ship the packs' skills with the release ([#1051](https://github.com/canonical/pragma/issues/1051)) ([ea272dd](https://github.com/canonical/pragma/commit/ea272dd5a9e71c23a24f654956d56237056e64c4))
+* **pragma-cli:** show setup's wizard progress as the plan's rows, not the effect transcript ([#1054](https://github.com/canonical/pragma/issues/1054)) ([b601ae8](https://github.com/canonical/pragma/commit/b601ae8f377618adbd0e51d640d1dc4bb63639c2))
+* **pragma-cli:** show the timings the wizard already has, and the wordmark only when read ([#1046](https://github.com/canonical/pragma/issues/1046)) ([c094f8b](https://github.com/canonical/pragma/commit/c094f8b2c242d47c9b7184985e531049c425ded6))
+* **Spinner:** migrate to design tokens ([#940](https://github.com/canonical/pragma/issues/940)) ([0d76ed8](https://github.com/canonical/pragma/commit/0d76ed87b80a09fc2f0714f8296cf4beb0b4b68b))
+* **Switch:** migrate to design tokens ([#948](https://github.com/canonical/pragma/issues/948)) ([672e348](https://github.com/canonical/pragma/commit/672e348370009c9dc8f7c4413ba37af04ad18c91))
+
+
+### BREAKING CHANGES
+
+* **pragma-cli:** a lookup argument may answer with more than one entity, so
+`results` can be longer than the arguments that produced it. Unique names are
+unaffected — an array of one is the payload they always had. `LookupOutput`
+loses `ambiguous`, and the ambiguity notice with it; the zero-record notice is
+untouched.
+
+Claude-Session: https://claude.ai/code/session_011B8Z3Lq1eARN1wLfKGvzqC
+
+* fix(pragma-cli): give each pack its own row in doctor
+
+Drive-by, unrelated to the ranking.
+
+`pack refs` printed its whole provenance as one line — four packs and two
+forty-character SHAs comma-joined — in a report where every other multi-part
+check already uses sub-items:
+
+  pack refs: embedded snapshot @ @canonical/design-system@git:d6d8a6c8268cf2bd
+  103e956a2540d6e36bd08d72, @canonical/anatomy-dsl@npm:0.2.2, @canonical/code-
+  standards@git:ab7ae14024f3e52dd19e378eec5861dbc4b9ba72, @canonical/ds-
+  implementations@self:v0.34.0 — 657 entities · `pragma sources update` …
+
+Now the headline counts what answered and each pack gets a row saying which
+revision it is, with git hashes cut to seven:
+
+  pack refs: embedded snapshot — 4 packs, 657 entities · `pragma sources update` …
+    @canonical/design-system: git d6d8a6c
+    @canonical/anatomy-dsl: npm 0.2.2
+
+A ref that parses as no scheme passes through whole rather than being dropped —
+an unreadable provenance is still provenance, and hiding it would be the one
+failure this check exists to prevent. The update hint stays in the detail
+because the renderer prints a remedy only under `fail` and `available`, and a
+snapshot that is answering reads correctly is neither.
+
+Claude-Session: https://claude.ai/code/session_011B8Z3Lq1eARN1wLfKGvzqC
+
+* fix(summon-core): give each wizard question its own widget instance
+
+`pragma setup` failed a real (non-dry) run:
+
+  Error: Invalid --mcp-targets "global:completions".
+  Valid values: /home/adrian/.claude.json, …
+
+`global:completions` is a row id from the PREVIOUS question. Every question
+widget seeds its state from `question.default` with `useState`, which runs on
+MOUNT only — and `QuestionView` rendered them unkeyed, so React reused one
+instance across consecutive questions of the same type. The second multiselect
+inherited the first's selection instead of its own default, and submitted the
+first question's values under the second question's name.
+
+Keying on the question name forces a remount per question.
+
+The bug is older than the run that exposed it. A `customize` confirm used to sit
+between "which targets" and "configure MCP for which files"; a different widget
+type forces a remount, so the carry-over could not happen. Removing that confirm
+did not cause this — it stopped hiding it, which is why a change that deleted a
+question broke one that never mentioned it.
+
+The test drives two adjacent multiselects with different defaults and asserts on
+the SELECTION MARKERS, not the values: the widget renders labels, so a frame
+check for the first question's values passes either way. Confirmed red without
+the key — `expected '› ○ ~/.claude.json' to contain '◉'` — the second question
+rendering every row unselected because it holds a set matching none of its own
+choices.
+
+Claude-Session: https://claude.ai/code/session_011B8Z3Lq1eARN1wLfKGvzqC
+
+* refactor(pragma-cli)!: say `global` and `local project`, and plan in verbs
+
+Two vocabulary problems, one pass over every command touched today.
+
+"Band" was the repository's private word for the two config scopes and it
+had reached the front of the setup plan's headline, doctor's section
+headers, six flag docs and the emitted reference. Nobody outside the
+project has ever called a config scope a band. Both surfaces now say
+`global` and `local project` — the words the `--global` and `--local`
+flags already made the user type, so `Local project` sits above a row
+whose fix is `pragma setup mcp --local`. The TYPE layer is deliberately
+untouched: `ScopeBand`, `bands.ts` and the `band` field on a plan row are
+a wider rename, and nothing there now leaks into a sentence.
+
+The setup plan's middle column was a column of status codes. It reads as
+verbs:
+
+  - `none` said equally "already correct" and "nothing found". It is now
+    `no change`, with the detail beside it saying which of the two.
+  - `skip` never said why. It is `nothing to do`, and every reason names
+    what was found — `nothing to link — no skills installed yet; they
+    arrive with the packs `pragma sources update` builds`.
+  - `3 files` is a count, not an action, and it was in the action column.
+    The verb goes there, taken from the row's children when they agree so
+    a row that will ADD three entries no longer reads `update`.
+  - `installed (VSCodium)` beside `codium — VSCodium (unchanged)` said
+    the editor's name twice and "nothing happens" twice. Children print
+    their own action only when they disagree with each other.
+
+Doctor computed a next step for a skip, carried it through the check,
+published it in `--format json`, and then dropped it one line before it
+reached the reader: `skills` reported "no skills installed" and stopped.
+Every row that carries an instruction now prints it, labelled `fix:`
+where something is broken or unfinished and `next:` on a skip — a skip is
+not a fault, and calling its instruction a fix is the reading the
+`available` glyph exists to prevent.
+
+Jargon out of the rows themselves: "resolver OK" is now "pragma answers
+`<TAB>`", "embedded snapshot" is "shipped with the CLI", "no Global band"
+is "keeps no global config — it is per-project only", and the five
+`setup` sub-verb summaries say what you get rather than naming the
+mechanism.
+
+Goldens moved deliberately, not blanket-updated. `doctor.render.test`
+and `setup.render.test` keep every structural assertion they had — the
+banding, the ordering, the ANSI gate, the neutral marker on an unrun row
+— and gain one: no user-facing string may contain the word "band". The
+`checkShellCompletions` gate-1 test still proves the resolver ran; it
+just matches the sentence a reader gets instead of the one the build did.
+
+Behaviour is unchanged. `PlanAction` values, `--scope` values, config
+keys, JSON field names and `PARITY_GAPS` ids are all as they were; the
+action words are a display mapping over the untouched token.
+
+Claude-Session: https://claude.ai/code/session_011B8Z3Lq1eARN1wLfKGvzqC
+
+* fix(pragma-cli): key `standard` list and lookup on the same property
+
+`standard list` derived its row `name` from `cs:name` while `lookup.by`
+had moved to `rdfs:label`. Both COALESCE over their property with the
+same IRI-derived fallback, so they agreed for every entity carrying
+both or neither — and diverged for exactly the 16 standards in the
+shipped snapshot that carry `cs:name` and no label. Those rows
+published `Turtle local-name casing`; lookup bound the derived slug and
+answered ENTITY_NOT_FOUND.
+
+That is the two-step grammar breaking in the documented way: the tool
+description tells an agent to take a row's `name` VERBATIM to
+`standard_lookup`, and for 16 of 148 standards that instruction could
+not be followed. It is the same defect class the `nameFallback: "iri"`
+docblock was written for, reintroduced from the other side.
+
+Point the list query at `rdfs:label` so one property and one fallback
+serve both halves, and say in the query why the two must move together.
+
+The 16 rows now display their IRI-derived slug rather than a human
+title until the snapshot is rebuilt from a pack generation that carries
+labels (upstream v0.1.5 has 148/148 `rdfs:label`, 0 `cs:name`; the
+shipped embed has 1, 16, and 131 with neither). A consistent slug beats
+a title that cannot be looked up.
+
+Also stop `journeys.packageStories` asserting over ALL `pack refs`
+items. Provenance now contributes one passing row per pack, so the test
+pins the FAILING items — which is what "lists each ignored story as a
+failing item" actually claims.
+
+
+
+
+
+# [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
+
+
+### Bug Fixes
+
+* **boilerplate,summon-application:** declare the root surface classes ([#1001](https://github.com/canonical/pragma/issues/1001)) ([73ba2f1](https://github.com/canonical/pragma/commit/73ba2f136862e0b4609df5f4346fd55233dabee9))
+* **ci:** stop an unreachable pack refresh from blocking the release ([#1042](https://github.com/canonical/pragma/issues/1042)) ([00e6fe1](https://github.com/canonical/pragma/commit/00e6fe1008206a691217ae055d59be89e04e8602)), closes [#1029](https://github.com/canonical/pragma/issues/1029)
+* **deps:** batch package dependency updates ([#963](https://github.com/canonical/pragma/issues/963)) ([923f482](https://github.com/canonical/pragma/commit/923f4825325ecd1afc93ec9bbeca7437a4a4569f)), closes [#958](https://github.com/canonical/pragma/issues/958) [#935](https://github.com/canonical/pragma/issues/935) [#919](https://github.com/canonical/pragma/issues/919) [#918](https://github.com/canonical/pragma/issues/918) [#894](https://github.com/canonical/pragma/issues/894)
+* **harnesses:** install OpenCode in the global band, where its config lives ([#1031](https://github.com/canonical/pragma/issues/1031)) ([4f172e9](https://github.com/canonical/pragma/commit/4f172e98b177e6a0458d5d8645bf8026517dfb57))
+* **harnesses:** undo restores the prior state instead of leaving a husk ([#1032](https://github.com/canonical/pragma/issues/1032)) ([016cfe1](https://github.com/canonical/pragma/commit/016cfe1829f701d43ec2abeaf198af7a4bc46276))
+* **pragma-cli:** a stale language server, a preview notice, and design-system 0.2.5 ([#1036](https://github.com/canonical/pragma/issues/1036)) ([3305d23](https://github.com/canonical/pragma/commit/3305d2338400edeeeb3ed659f1d050dc23232f93)), closes [canonical/design-tokens#110](https://github.com/canonical/design-tokens/issues/110) [#1035](https://github.com/canonical/pragma/issues/1035)
+* **pragma-cli:** address lookups by the shape given, and nest a section's own headings ([#1034](https://github.com/canonical/pragma/issues/1034)) ([8abf87a](https://github.com/canonical/pragma/commit/8abf87ad5d1d86df44cf25426dcf02b71e654e59)), closes [#1027](https://github.com/canonical/pragma/issues/1027)
+* **pragma-cli:** honour NO_COLOR ([#977](https://github.com/canonical/pragma/issues/977)) ([78f78cd](https://github.com/canonical/pragma/commit/78f78cdedb9416ad97ad8c8276fb22651c6f9a8b))
+* **pragma-cli:** name the typed URI in resolution errors, accept encoded ones ([#1024](https://github.com/canonical/pragma/issues/1024)) ([5004baa](https://github.com/canonical/pragma/commit/5004baa061728fab2bd6f7e36c27bd521e6b6cb3))
+* **pragma-cli:** prune installed skill links a package no longer provides ([#1003](https://github.com/canonical/pragma/issues/1003)) ([8ab2fa3](https://github.com/canonical/pragma/commit/8ab2fa377530f18b12455a4a6aa364df5537b5ba))
+* **pragma-cli:** remove per-file test temp directories ([#1022](https://github.com/canonical/pragma/issues/1022)) ([b57a9c3](https://github.com/canonical/pragma/commit/b57a9c32ef522ad6e43d948c8b2822fd69cc21b8)), closes [#1000](https://github.com/canonical/pragma/issues/1000) [#1000](https://github.com/canonical/pragma/issues/1000)
+* **pragma-cli:** render one plan, on both surfaces ([#1020](https://github.com/canonical/pragma/issues/1020)) ([f4b4f90](https://github.com/canonical/pragma/commit/f4b4f90db5766d75bcd8f3afbedcdcb647bb7f34))
+* **pragma-cli:** teach the parameter the tool actually takes, and count a name once ([#1041](https://github.com/canonical/pragma/issues/1041)) ([f865f76](https://github.com/canonical/pragma/commit/f865f76a9e55766ec50c4db4e09cde4e9f768b1f))
+* **pragma-cli:** three argument-parsing defects that answered wrongly in silence ([#976](https://github.com/canonical/pragma/issues/976)) ([51bfa28](https://github.com/canonical/pragma/commit/51bfa284097343eef138a478b570dedb42a38995))
+* **router:** runtime hardening — navigation adapter, async prefetch control flow, SSR status ([#965](https://github.com/canonical/pragma/issues/965)) ([bb27037](https://github.com/canonical/pragma/commit/bb27037ab4402edbc0b28b9c56a1372cb653e820))
+* **summon-application:** version fallback, safe route undo, input validation, workspace detection ([#982](https://github.com/canonical/pragma/issues/982)) ([098b87b](https://github.com/canonical/pragma/commit/098b87be7f6bd463cbb76fd638cb1a614aee009f))
+* **summon-component:** test naming, exists guard, honest lit answers, portable template keys ([#978](https://github.com/canonical/pragma/issues/978)) ([fbdec01](https://github.com/canonical/pragma/commit/fbdec01df90947b147f64219baa7381fcecf57e5)), closes [#974](https://github.com/canonical/pragma/issues/974)
+* **summon-core:** align the CLI seams — one flag name, safe replays, honest validation ([#988](https://github.com/canonical/pragma/issues/988)) ([375c4ba](https://github.com/canonical/pragma/commit/375c4ba08dc9e26b7e56ba3d7347544648367786))
+* **summon-core:** build the execute seam from combinators so it survives re-interpretation ([#984](https://github.com/canonical/pragma/issues/984)) ([9d7c23e](https://github.com/canonical/pragma/commit/9d7c23e1cfae46e69dad02284cd8cb352a76076d))
+* **summon-core:** drop the dead broken builtins and the phantom discovery default ([#985](https://github.com/canonical/pragma/issues/985)) ([a4e8d0c](https://github.com/canonical/pragma/commit/a4e8d0c895e44531b8efcb1549fb38947c1737f9))
+* **summon-core:** one stamp table, protected prologues, idempotent stamping ([#986](https://github.com/canonical/pragma/issues/986)) ([24aace4](https://github.com/canonical/pragma/commit/24aace44b5c91e1dcab87dfec1986be18bb74d84))
+* **summon-monorepo:** working publish auth, honest metadata, resolvable root deps ([#983](https://github.com/canonical/pragma/issues/983)) ([77a8173](https://github.com/canonical/pragma/commit/77a817364724c8a3faa157bcc6502bd8ee3dcbe2))
+* **summon-package:** make every generated flag combination installable ([#975](https://github.com/canonical/pragma/issues/975)) ([987e68f](https://github.com/canonical/pragma/commit/987e68f551ee614c2c7adcc09178fedaff09f5f8))
+* **task:** collect undos against real host state with fail-backtracking ([#971](https://github.com/canonical/pragma/issues/971)) ([5231ce5](https://github.com/canonical/pragma/commit/5231ce53a82aac704183723d2ca2ced791a338d7))
+* **task:** repair the fallback glob and implement templateDir's transform option ([#987](https://github.com/canonical/pragma/issues/987)) ([90fafdb](https://github.com/canonical/pragma/commit/90fafdb64b73c62bb4bba3655e09536f98d159b7))
+
+
+* feat(pragma-cli)!: CLI standards — fast paths, tables, flags, mcp serve, grammar (#1016) ([0b61599](https://github.com/canonical/pragma/commit/0b615996557efb2bce29f9d747d5238e1ac1f8d5)), closes [#1016](https://github.com/canonical/pragma/issues/1016)
+* feat(pragma)!: mount summon's generators instead of mirroring them (#1005) ([299e206](https://github.com/canonical/pragma/commit/299e206a4dd76b62fc48a6d436d33d06652e6fdf)), closes [#1005](https://github.com/canonical/pragma/issues/1005)
+* feat(router)!: pre-1.0 API consolidation — one constructor, adapters as the axis, block(), warm() (re-land of #973) (#981) ([416d596](https://github.com/canonical/pragma/commit/416d59636f94cafae7a9fbb0b377edabed6438bf)), closes [#973](https://github.com/canonical/pragma/issues/973) [#981](https://github.com/canonical/pragma/issues/981) [#973](https://github.com/canonical/pragma/issues/973) [#973](https://github.com/canonical/pragma/issues/973) [#973](https://github.com/canonical/pragma/issues/973)
+* feat(pragma-cli)!: ship compiled JavaScript on node, not a linux-x64 binary (#972) ([f6e2720](https://github.com/canonical/pragma/commit/f6e272048552b6948b8099405d0e22855b2626f1)), closes [#972](https://github.com/canonical/pragma/issues/972)
+
+
+### Features
+
+* **boilerplate-vite:** align the reference app and overhaul the router docs (re-land of [#979](https://github.com/canonical/pragma/issues/979)) ([#990](https://github.com/canonical/pragma/issues/990)) ([8fe2792](https://github.com/canonical/pragma/commit/8fe27927613e7b5b9ff6c4c6596d6d9228063c2b))
+* **boilerplate-vite:** serialize Relay data across the SSR boundary ([#993](https://github.com/canonical/pragma/issues/993)) ([d4ad306](https://github.com/canonical/pragma/commit/d4ad3063de8560a6f700aa760e345f8bcb311398)), closes [#968](https://github.com/canonical/pragma/issues/968)
+* **collect:** export the implementation graph as turtle in the release ([#1010](https://github.com/canonical/pragma/issues/1010)) ([15c4878](https://github.com/canonical/pragma/commit/15c48788c8b5c696e8cfd756b5232628e232c93b))
+* **ds-app-wpe:** Add `Button` component to WPE tier, pending upstreaming ([#906](https://github.com/canonical/pragma/issues/906)) ([d02e499](https://github.com/canonical/pragma/commit/d02e4997aef7d087f29de396c4b0f7ca65bdbc5d))
+* **pragma-cli:** CLI standards conformance ([#1011](https://github.com/canonical/pragma/issues/1011)) ([2aaf368](https://github.com/canonical/pragma/commit/2aaf3682852951b079cd3bbeb3360b1ba01b1ac6))
+* **pragma-cli:** curate the MCP resource listing from declared slices ([#1025](https://github.com/canonical/pragma/issues/1025)) ([e535e45](https://github.com/canonical/pragma/commit/e535e4597a11427d0038676144cac3a47cc98605))
+* **pragma-cli:** open root --help with the distribution's wordmark ([#1023](https://github.com/canonical/pragma/issues/1023)) ([5bdd942](https://github.com/canonical/pragma/commit/5bdd9425a76a8bb119f94d80848067eb1069d0ff))
+* **pragma-cli:** the implementation graph reaches the CLI, and the release ships it ([#1029](https://github.com/canonical/pragma/issues/1029)) ([6e865b9](https://github.com/canonical/pragma/commit/6e865b981b92496d50135e9ba9dcb5278d958618)), closes [#1017](https://github.com/canonical/pragma/issues/1017) [#1033](https://github.com/canonical/pragma/issues/1033) [#1010](https://github.com/canonical/pragma/issues/1010)
+* **router-core:** tie the Navigation API intercept handler to the router load ([#991](https://github.com/canonical/pragma/issues/991)) ([9d9fc06](https://github.com/canonical/pragma/commit/9d9fc06fe6352496ae8af2b1dd1c53f9bf707f49)), closes [#966](https://github.com/canonical/pragma/issues/966) [#966](https://github.com/canonical/pragma/issues/966)
+* **SideNavigation:** migrate to design tokens ([#949](https://github.com/canonical/pragma/issues/949)) ([b29eda9](https://github.com/canonical/pragma/commit/b29eda90af9c58c70bf87d9e934fe26bd2e946b8))
+* **summon-application:** port the i18n feature to the templates behind an --intl flag ([#992](https://github.com/canonical/pragma/issues/992)) ([d0117b9](https://github.com/canonical/pragma/commit/d0117b9bc671f1d8ec7d080c0d5cf137a8d451f9))
+* **summon:** preview the undo plan and confirm before reversing ([#974](https://github.com/canonical/pragma/issues/974)) ([3c8d8d6](https://github.com/canonical/pragma/commit/3c8d8d6cc6c4aafacd1fe81c60183b497d479763)), closes [#988](https://github.com/canonical/pragma/issues/988)
+* **svelte-ds-global:** Upstream `SkipLink` from WPE tier to Global tier ([#859](https://github.com/canonical/pragma/issues/859)) ([b1f6b4f](https://github.com/canonical/pragma/commit/b1f6b4fdbc917e027666dcae579b0d87f330b7a2))
+* **task:** mark carried writes verbatim so seam transforms skip them ([#997](https://github.com/canonical/pragma/issues/997)) ([f61f87d](https://github.com/canonical/pragma/commit/f61f87d32f7f621cfa6baf2b5c928864533a0823))
+
+
+### BREAKING CHANGES
+
+* **pragma-cli:** `graph_inspect` and `graph inspect --format json` change
+shape. `groups[].predicate` and `groups[].objects[]` are now term objects
+(`{termType, value, prefixed?, title?, datatype?, language?}`) rather than
+strings, and the result gains `prefixed`, `inbound`, `nested` and `detail`.
+
+Co-Authored-By: Claude Code <noreply@anthropic.com>
+
+* fix(pragma-cli): sample a roster instead of listing it
+
+Review caught that class-to-instance cost too much: at `detailed` a
+330-instance class spent 19.5 KB restating what one `*_list` call answers
+properly.
+
+Fixed by telling two kinds of inbound edge apart:
+
+- A RELATION fans in narrowly and every subject is part of the answer
+  (`ds:implementsBlock`, `ds:inheritsFrom`), so it is LISTED.
+- A ROSTER fans in without bound because it grows with the data rather than
+  the model, and is already answered by `pragma/instanceCount` and by the
+  noun's list verb, so it is SAMPLED — a few exemplars flagged `sampled`,
+  never a page.
+
+Told apart by FAN-IN rather than by predicate name. Keying on `rdf:type`
+would have fixed classes while leaving a `detailed` read of one tier at
+20.9 KB: `ds:tier` fans in 141 deep here and is the same pathology under a
+different predicate. Deriving it from the shape also keeps the kernel free of
+vocabulary, so a graph whose rosters hang off other predicates is bounded
+just the same.
+
+  ds:Property  (330 instances)  19.5 KB -> 2.4 KB
+  ds:global    (141 members)    20.9 KB -> 2.1 KB
+  button       (2 relations)    unchanged, still listed in full
+
+`count` stays the TRUE total either way. `sampled` is distinct from
+`truncated` on purpose: "sample of 5" tells a reader that paging will not
+produce the rest and the list verb is where the full set lives, where
+"showing 5" invites them to ask for more.
+
+Co-Authored-By: Claude Code <noreply@anthropic.com>
+
+* feat(pragma-cli)!: serve the entity read as Turtle, and budget its literals
+
+Agent context is a scarce resource, and a read of one button was spending
+15.8 KB of it. Two independent causes, both fixed here.
+
+STRUCTURE. The JSON projection cost ~95 bytes of wrapper to convey a
+thirteen-character IRI, paid per term — ~6.1 KB of that button was scaffolding.
+The resource read now serves `text/turtle`, which is also simply what the body
+IS; it claimed `application/json` for a graph. Turtle spends the prefixes once
+and writes each term as itself, and the shape stops fighting the data:
+
+- IRI versus literal is SYNTAX (`ds:Foo` against `"Foo"`) — the thing the typed
+  terms needed a `termType` field to say.
+- A blank node is `[ … ]` inline, which is exactly the record the reader
+  assembles by hand for JSON.
+- Datatypes and language tags are native.
+- An inbound edge is a triple written the other way round. The whole
+  `InboundGroup` structure exists only because JSON cannot point an arrow
+  backwards.
+
+Counts, samples and truncations ride as `#` comments — the one place a
+serialization can say something ABOUT the data without asserting it as data.
+
+PROSE. The larger cost was not structure at all: that button spent 8,572 of its
+9,734 literal characters on two fields (`ds:guidelines` 5,814, `ds:usage`
+2,758). Long-form documentation is what `detailed` is FOR, and the noun's own
+lookup verb already serves those fields under its own disclosure. Below
+`detailed` a literal is previewed and marked with its true length.
+
+  ds:global.component.button   15,843 B -> 4,518 B  (-71%)
+  ds:Property                  19,508 B ->   824 B  (-96%)
+  ds:global                    20,941 B ->   608 B  (-97%)
+
+The mirror contract survives the encoding change: `--format llm` emits the same
+bytes the resource serves, both through one serializer over one reader, so the
+test still fails the moment either grows a projection the other lacks. And the
+output is validated by PARSING it with the same Oxigraph engine the store uses
+— a document that merely looks right is how a reader gets a syntax error
+instead of an entity.
+
+`nested` values are terms rather than strings, deviating from the plan's reuse
+of `PackChildRow`: flattening them would reintroduce the IRI-versus-literal
+ambiguity the term projection exists to close, and leave the serializer unable
+to tell `ds:Foo` from `"ds:Foo"`.
+* **pragma-cli:** the `pragma:{+uri}` resource read now returns `text/turtle`
+rather than `application/json`, and `graph inspect --format llm` returns Turtle
+rather than Markdown. `--format json` keeps the structured projection, whose
+literals are now previewed below `detailed` and whose `nested` values are terms.
+
+Co-Authored-By: Claude Code <noreply@anthropic.com>
+
+* fix(pragma-cli): never exhibit a blank node as an inbound exemplar
+
+A read of `ds:Property` — whose 330 instances are all blank nodes — sampled
+three of them and rendered:
+
+    # rdf:type — 330 total, sample of 3
+    [] rdf:type ds:Property .
+    [] rdf:type ds:Property .
+    [] rdf:type ds:Property .
+
+Three identical rows carrying nothing, and wrong besides: every `[]` in Turtle
+mints a FRESH blank node, so those three lines assert three unrelated
+anonymous subjects rather than the three the store holds.
+
+Blank nodes are now excluded from the exemplars a group exhibits. They cannot
+be read back through `pragma:{+uri}` and their labels re-mint on every load, so
+they can only ever appear as anonymous placeholders — which is not a sample of
+anything. They still COUNT: the total stays exact, and a group with no
+nameable member says so ("none individually addressable") instead of
+advertising a sample of zero.
+
+Fixed in the reader rather than the serializer, so the JSON projection stops
+carrying useless placeholder terms too.
+
+Co-Authored-By: Claude Code <noreply@anthropic.com>
+
+* fix(pragma-cli): close eleven read-projection gaps found in review
+
+Two were correctness bugs in the very promises this PR makes.
+
+**Inbound counts were not the true total.** One `LIMIT 500` answered counting
+and exhibiting at once and answered neither: the limit applies to the whole
+ordered result, so the first predicate to fill it under-reported its own
+`count`, and every predicate ordered after it vanished from the read entirely
+— while `InboundGroup.count` documented the exact total. Counts now come from
+a `GROUP BY` aggregate the store computes; only exemplars are bounded, in a
+second pass that excludes blank nodes in the QUERY so the budget is spent on
+subjects that can actually be shown.
+
+**A blank node linked from two predicates lost one of them.** Records were
+keyed by node label alone, so whichever `via` arrived first won and the second
+edge disappeared — and Turtle filters the ordinary blank object out too, so
+nothing remained to notice the loss by. Keyed by predicate AND node now.
+
+The rest:
+
+- RDF 1.2 literal `direction` was dropped, making `"x"@en--ltr`
+  indistinguishable from `"x"@en` — the exact flattening reading the term view
+  was meant to stop. Carried, and emitted as `@lang--dir`.
+- `String(term)` rendered every nested field as `[object Object]`, so the whole
+  plain-format record was unreadable once nested values became terms.
+- The `llm` formatter rebuilt its prefix map from named nodes only, missing any
+  prefix used solely by the subject, a nested record key, or a datatype — and
+  then emitted compact names with no matching `@prefix`, i.e. invalid Turtle
+  that also broke byte mirroring. `InspectResult` now CARRIES the map it was
+  compacted against; the reconstruction is gone.
+- An un-compacted datatype or nested predicate was written bare, producing
+  `"x"^^http://example.com/type`. Wrapped as `<iri>` in every position.
+- "none individually addressable" was claimed for every group at `summary`,
+  where emptiness only means the level exhibits none. A group now records what
+  it WOULD have shown, so the two cases are distinguishable.
+- `graph_inspect` had no `disclosure`, so no `detail` argument was ever
+  injected and the documented knob was unreachable. Declared.
+- `docs/mcp-integration.md` still described the JSON `InspectResult` the
+  resource no longer returns. Rewritten for the Turtle document.
+- Dead `withoutBlankNodeLabels` helper removed.
+
+Co-Authored-By: Claude Code <noreply@anthropic.com>
+
+* feat(pragma-cli): curate the MCP resource listing from declared slices
+
+`resources/list` returned 712 entries / ~155 KB on every client connect — the
+whole pack index, individuals included. MCP defines a `cursor`/`nextCursor`
+contract for it, but the SDK's high-level `McpServer` list handler ignores
+`request.params.cursor` and never returns a `nextCursor` (verified on the wire
+against 1.27.1), so there is no paging to fall back on: everything listed is
+sent, every connect. Agent context is a precious resource, and that was ~155 KB
+of it spent before the agent had asked anything.
+
+So the listing becomes CURATED. A module declares the slices of the index it
+contributes (`mcpListable`, reusing `CompletionSourceRef`'s vocabulary) and the
+listing is their union — 110 entries / ~35 KB: eight collection entries (one per
+addressable class, carrying `pragma/instanceCount`) plus the schema that
+describes them. The 429 individuals stay fully reachable through the
+`pragma:{+uri}` template and its autocomplete.
+
+DERIVED, never authored twice. Every read story already declares the type set it
+addresses (`PackLookup.type` / `types`) for its name resolve, so `compilePack`
+reads its listing off that same declaration: zero new authoring for all six data
+nouns. Only `ontology` declares one by hand, because "the whole TBox" is not a
+type filter. `ds:Token` is declared by a story but never indexed, and contributes
+nothing rather than an empty collection.
+
+Editorial judgement becomes data. `CLASS_PRIORITY = 0.9` / `INDIVIDUAL_PRIORITY
+= 0.3` were the kernel deciding what mattered in someone else's graph; they are
+replaced by `PackLookup.weights` (prefixed type -> 0-1). A weight does two jobs
+from one declaration: `annotations.priority` on the listed resource, and a
+tiebreaker in `rankUriCompletions`. With `ds:Subcomponent: 0.6`, every component
+now outranks every subcomponent for the query "button" (the answer moves from
+5th to 3rd). A `weights` key naming a type the lookup does not address is
+REJECTED, not ignored.
+
+Also in the resource provider:
+
+- Completion is honest. `COMPLETION_LIMIT = 50` pre-truncated the ranked list,
+  and the SDK derives `total`/`hasMore` from the array the callback returns — so
+  `ds:` reported `{ values: 50, total: 50, hasMore: false }` while 499 entities
+  matched. The full list is returned and the SDK slices it.
+- Human names. 570 of 712 entries showed a bare URI with no description while
+  383 carried an unused `altNames[0]`. `name` is now the stable prefixed URI and
+  MCP's `title` carries the human label.
+- `pragma/type` joins `pragma/box` / `pragma/instanceCount` in `_meta`, so an
+  agent can filter a family without spending a read. The covenant `$comment` and
+  `docs/mcp-integration.md` move with it.
+- `audience: ["user", "assistant"]` — `["assistant"]` hid every resource from
+  human pickers, and browsing a design system in a picker is a human use case.
+- `pragma:sources` is readable. It is the ONLY resource a cold server
+  advertises, and reading it failed `INVALID_INPUT — Invalid uri "sources"`.
+- One `ENTITY_MIME_TYPE`, read by the registration, the read body and every
+  listed entry, so the listing cannot advertise a type the read does not serve.
+
+`mcpSurface.resources` keeps its `["pragma:{+uri}"]` template list untouched:
+collections are graph data, guarded by tests, on the covenant's own precedent
+for prompt names. `BUDGETS.md` gains the payload ceiling the new tests enforce.
+
+* fix(pragma-cli): close four listing gaps found in review
+
+All four were real; each is now pinned by a test.
+
+- `PackLookup.type`/`types` accept a prefixed name OR an absolute IRI, but the
+  listing is keyed on the index's PREFIXED types. Copied verbatim, a story
+  legitimately constrained to `https://…/Widget` compiled clean and then matched
+  no class and no weight — valid everywhere else, silently contributing nothing
+  here. Types and weight KEYS are now compacted against the same map
+  `resolveUri` expands with, so the two directions agree.
+
+- A class with no instances has no key in `instanceCountByType`, so a declared
+  collection reported no count at all — making an empty collection
+  indistinguishable from an entry that is not a collection. A declared
+  collection whose class the index knows now always states a count, zero
+  included.
+
+- Completion weighed only `PackIndexEntity.type`, one lexically chosen primary
+  among `types`, while the listing's own `matchesType` honours both. A weight
+  declared for a secondary type was ignored, and ranking could shift when an
+  unrelated, lexically earlier type was added. The effective weight is now the
+  LOWEST across every declared membership: a weight below the default is a
+  demotion, and a demotion one membership asks for should not be cancelled by
+  another that never asked for anything.
+
+- The payload-budget assertions measured `String.length` — UTF-16 code units —
+  while claiming to budget bytes. Today's listing undercounts by only 4 bytes,
+  but a graph with non-ASCII labels could exceed the 60 KB ceiling with the
+  assertion still green. Both sites now measure UTF-8.
+
+Co-Authored-By: Claude Code <noreply@anthropic.com>
+* anyone parsing plain output sees headers appear, columns
+become rectangular, and empty-state text move to stderr. --format json is
+and remains the stable contract.
+
+* test(pragma-cli): regenerate the goldens the table contract moved
+
+Bytes only: the renderer snapshot picks up header rows and rectangular
+grids, the root-help inline golden gains the --no-headers row, and the
+generated reference names the flag in its global-flags line (emitter +
+committed page). The cross-CLI and CLI-vs-MCP parity suites pass without
+any regeneration.
+
+* feat(pragma-cli)!: one spelling per flag
+
+Every flag now has exactly one spelling, and every spelling is honest:
+
+- `-v` and `-h` are gone — `--version` and `--help` are the flags
+  (`-v` also read as *verbose* everywhere else while printing a version).
+  The long-only help option is registered once on the root and inherited by
+  every subcommand, the mounted create subtree included.
+- `--format text` stops parsing; the format set is plain|llm|json and an
+  unknown value fails with the valid list.
+- `--detail` is validated exactly as `--format` is — an unrecognized
+  level used to be dropped silently, the same defect class as a filter that
+  evaporates.
+- `--verbose=<x>` is rejected loudly — the flag takes no value, and
+  stripping-and-ignoring one was a silent no-op.
+- a repeated filter flag ACCUMULATES: `--category css --category git`
+  returns the union instead of silently keeping the last value. Repetition
+  is the sanctioned multi-value form; the MCP arg schemas keep their scalar
+  shape and the run body accepts one value or many.
+- verb help renders every flag the command parses, derived from the same
+  spec facts registration reads: each default-true boolean's `--no-`
+  negation and the auto-injected --dry-run/--undo/--yes on mutating verbs
+  (help used to deny flags that worked). The flag/doc rows live in one
+  constants module shared by registration, the mounted subtree's help, and
+  the verb help renderer.
+* -v, -h, --format text, and --verbose=<x> stop parsing;
+repeated filter flags change meaning from last-wins to union.
+
+* feat(pragma-cli)!: config get/unset, a version command, --quiet
+
+The grammar had jobs with no command and commands with two spellings. This
+settles both, one job at a time:
+
+- `config get <key>` prints ONE resolved value — bare on stdout, nothing at
+  all when the field is unset — so `TIER=$(pragma config get tier)` works
+  without a JSON tool. Plain and llm are deliberately the same bytes here:
+  command substitution pipes stdout, and a pipe auto-selects llm, so a
+  decorated llm line would land inside the variable. Provenance stays in
+  `--format json` and in `config show`.
+- `config unset <key>` clears a field. Clearing is a command, not a magic
+  value: `config set` refuses `none`, `default` and `-` for a free-string
+  field and the refusal names `config unset`, so the three strings can never
+  quietly mean two things.
+- `ontology show` is removed. `lookup` is the by-name read across every noun,
+  and an alias is a second spelling of a settled name.
+- `version` prints what `--version` prints, proven byte-for-byte through the
+  shipped entry. It is withheld from MCP: the version already rides `info`
+  and the server handshake.
+- `--quiet` mutes success and progress — the mutation report seam, the
+  interpreter log sink, the onboarding lines, the calm zero-record notice —
+  and touches error rendering nowhere, so no failure can hide behind it.
+- `--verbose`'s help text now says what it does. Its only consumer is
+  `sources update`; the old wording promised diagnostics on every command.
+- `pragma status` stays an error, not a second `info`. The unknown-command
+  path gains a curated table for tokens whose job exists here under another
+  name, so the error offers `info` and `doctor` — edit distance never could.
+
+The covenant records the four config verbs, the version noun, the retired
+ontology alias and the two new global-flag rows; the reference docs are
+regenerated from it.
+* `config set <key> none|default|-` no longer clears a field —
+use `config unset <key>`. `ontology show` is removed; use `ontology lookup`.
+
+* feat(pragma-cli)!: spell the server entry `mcp serve`
+
+`mcp` was a hidden self-verb the bin alone knew about: `pragma mcp` started a
+JSON-RPC server, and because the short-circuit fired on the noun before any
+flag parsing, `pragma mcp --help` served too — root help promised `--help`
+works on any command and this one silently did not.
+
+The server entry is now an ordinary noun/verb pair, declared like every other:
+
+- the verb spec is `["mcp", "serve"]` and no longer `hidden`, so it emits into
+  the surface, completes, and answers `--help` through the same machinery as
+  the rest of the grammar
+- the bin's short-circuit narrows to the exact serve argv and only without a
+  help flag; the server's stdout still carries JSON-RPC and nothing else,
+  which is the only thing that shortcut ever bought
+- root help's `mcp` row and the completion model's injected `mcp` noun are
+  deleted — both existed only because no spec declared the noun (the model's
+  injection carried a TODO saying exactly that). The help group keeps `mcp`
+  curated for PLACEMENT; a registry with no mcp verb now has no mcp row.
+- the covenant entry drops its hand-written `note`: the reason a verb is
+  withheld from agents lives on the verb spec, and `emitVerb` never emitted it
+
+The e2e suite pins the half that only exists across a process boundary — that
+`mcp`, `mcp --help` and `mcp serve --help` print help and start no server,
+while `mcp serve` boots and exits cleanly on a closed stdin. Reference pages
+regenerated from the emitter; `.mcp.json` and the docs name the new argv.
+* `pragma mcp` no longer starts the server; it prints the
+noun's help. Host configurations must launch `pragma mcp serve`.
+
+* feat(pragma-cli)!: print the configured domain's colophon, not the toolchain's
+
+A colophon answers "what am I working with". Once a domain is configured the
+answer is the domain — but the collector led with a paragraph about how this
+program itself is built, every time, above the thing the reader asked about.
+
+The domain sections are now the whole output. The toolchain's own declared
+story is the answer only when no pack tells one: a fresh install, or a
+distribution that ships no story. With neither, the command says so — the
+empty state goes to stderr with exit 0, so plain stdout stays empty for a
+script, while `llm` carries the same line in its own body rather than handing
+an agent zero bytes.
+
+Nothing moves into code: the toolchain half is still the distribution config's
+`colophon`, the domain half still each active pack's, and the formatters still
+render whatever sections the collector hands them. Only the choice of which
+sections exist changed, and it stays in the collector.
+
+The verb summary, doc, example note, root-help row, and tool hint follow the
+new answer; the reference pages are regenerated from the emitter. The fallback
+is pinned where a story-less distribution exists — the fork in
+`identity.test.ts` — and the empty state where it is expressible, on the
+formatters.
+
+Drive-by: bundled with the `mcp serve` unit; unrelated to it.
+* `pragma colophon` no longer prints the toolchain section
+ahead of the domain's. With a domain configured, the JSON payload's first
+section is now `kind: "pack"`.
+
+* docs(pragma-cli): measure the fast-path recovery instead of asserting it
+
+The ceilings came down from the provisional 220 ms on the strength of a
+description of the refactor. Nobody had produced numbers, and the table in
+BUDGETS.md recorded three sequential runs whose "before" arm was a remembered
+figure rather than a build.
+
+Both arms are now built and measured together: the pre-refactor tree and this
+one each to their own dist, spawns alternating case by case so drift on a
+shared box lands on both arms, 40 kept samples per cell, and each arm netted
+against its own `--version` control so process start — which is most of every
+number and none of it pragma's — is out of the comparison.
+
+  pragma --help              74.6 -> 64.7 ms   (work: 49.3 -> 35.3, -28%)
+  pragma __complete config   79.1 -> 69.2 ms   (work: 53.7 -> 39.7, -26%)
+  pragma __complete skill    74.2 -> 69.3 ms   (work: 48.9 -> 39.8, -19%)
+  capabilities barrel import 44.0 -> 37.6 ms
+
+The eager cost is really gone. It was never the ~46 ms the 220 ms ceilings
+were sized for, though — end to end it is ~14 ms — and saying so is the point
+of measuring.
+
+On the ceilings: 2 x the help median is 129.5, so 130 is the rule's own
+number. 2 x the slower complete median is 138.5, BELOW the standing 150 — and
+150 stays. A ceiling is relative to the box as well as the artifact: this box
+starts a process in 25-30 ms against the reference box's 45.5, so projecting
+the measured work onto the reference box gives ~85 ms and a 2x of ~170, and CI
+has run this path at a ~100 ms trimmed mean. A cut to 140 would be a ceiling
+derived on hardware the suite does not run on. Both are at their floor.
+
+No ceiling value changes; the docblocks and BUDGETS.md now cite a measurement
+a reader can reproduce.
+
+* test(pragma-cli): runCli spawns without colour so CI asserts the same bytes
+
+nx exports FORCE_COLOR to its test tasks, so a spawned CLI coloured its help
+even through a pipe — the e2e assertions passed locally and failed in CI on a
+difference no assertion meant to make. FORCE_COLOR is deleted rather than
+overridden: Bun warns on stderr when it sees both, and stderr is asserted.
+
+* fix(pragma-cli)!: serve only on the exact `mcp serve` invocation
+
+The short-circuit matched a PREFIX: `argv[0] === "mcp" && argv[1] ===
+"serve"` with only `--help` excluded. Every suffixed line therefore
+bypassed flag parsing and started the server — `pragma mcp serve extra`
+and `pragma mcp serve --version` among them, so a global flag the
+program owns went unanswered and a malformed line served instead of
+being parsed.
+
+The exit buys stdio purity for the real server start (no first-run
+banner, no config read, nothing on stdout but JSON-RPC). It was never
+meant to extend that budget to argv the server was not asked to answer.
+Require argv to be EXACTLY the two tokens; anything else falls through
+to the ordinary grammar, which is the point the surrounding docblock
+already made about `pragma mcp` and the help forms.
+
+Covered across the process boundary, because in-process dispatch never
+reaches the short-circuit at all.
+
+* fix(pragma-cli): offer a repeatable filter again after its first use
+
+`compile.ts` marks every declared pack filter `repeatable`, so
+`--category css --category git` accumulates into the union. The
+completion projection still read the param KIND alone, marking only
+`string[]` flags repeatable, so the shell de-offered a generated
+`--category` or free-string filter the moment one occurrence was typed
+— hiding repetition exactly at the TAB where it became meaningful.
+
+Project `ParamSpec.repeatable` alongside the `string[]` kind, which is
+what `buildProgram` and `dispatch` already read.
+
+* fix(pragma-cli): the domain colophon names `ontology lookup`, the live verb
+
+Two changes in this branch combined into a defect neither creates alone:
+the schema read became `ontology lookup`, and the pack colophon became
+the DEFAULT output of `pragma colophon`. The colophon still said
+`ontology show` reads the schema itself, so the command's own default
+output directed every reader at a verb that exits 2.
+
+The colophons are shipped copy, not docs, so a verb renamed elsewhere in
+the tree breaks a page nobody edited. Gate them on the live grammar:
+every backticked `<noun> <verb>` whose noun the program declares must
+name a verb that noun actually has. A bare noun and every other
+backticked span (prefixes, flags, type names) are left alone.
+
+Also corrects the same stale name in the ontology formatter docblock and
+in the MCP-surface test's docblock.
+
+* docs(pragma-cli): the config pages spell clearing as `config unset`
+
+`config set` now refuses `none`, `default` and `-` on the free-string
+`tier`, because one string cannot both remove the field and be its
+value. Two pages still recommended exactly those commands: the authoring
+guide showed `config set tier none` in its example block and called the
+three "meaningful reset sentinels", and the generated reference said
+they clear the field. Both documented commands exit with INVALID_INPUT.
+
+The reference row is edited at its source in `emitReference.ts` and the
+page regenerated — `docs/reference/config.md` is generated output.
+
+* docs(pragma-cli): `OutputFormat` stops promising a `text` alias
+
+The shared type's docblock still said `--format text` is normalised to
+`plain`. The bin rejects it with the valid list instead, so every caller
+of the type was told a removed behaviour still exists. Say what is true:
+the set is closed and no alias normalises into it.
+
+* fix(pragma-cli): completion offers `--no-headers` and `--quiet`
+
+Both flags are parsed as globals and both are advertised in root help,
+but neither stood in the completion model's `GLOBAL_FLAGS`, so no
+generated bash, zsh or fish script ever offered them — invisible at the
+one TAB that would have taught them.
+
+Regenerates the emitted-script snapshots and updates the literal
+candidate pins, which are the pins that make this kind of omission go
+red rather than silently green.
+* summon-core no longer exposes an embedded template store —
+callers pass a real path to `loadTemplate`. `GeneratorCliHost`,
+`registerGeneratorCommands` on the main projection subpath, the
+`writeUsageError` hook and the message-only usage-error exports are gone.
+`summon application react` no longer accepts `--no-ssr`/`--no-router`.
+
+* feat(pragma)!: mount summon's generators instead of mirroring them
+
+pragma's `create` verb hand-maintained a copy of summon's generator surface —
+a flag list in `constants.ts`, an adapter that mapped it back, and a PROTECTED
+test asserting the copy still matched. Every generator change had to be made
+twice, and that test was the only thing between a drifted mirror and a
+silently wrong CLI.
+
+`mount.ts` replaces all of it, adapting the projection summon-core now exposes
+onto pragma's kernel: synthesising VerbSpecs, wiring dispatch and completion,
+enforcing the path jail, and emitting the generated reference. There is one
+description of a generator's surface and both binaries read it. `--intl`
+arriving on application/react needed no edit here at all; under the mirror it
+would have needed two.
+
+Kernel changes that made the mount possible: `kernel/spec` gains the types and
+emitters for a synthesised verb, `dispatch` and `completion/model` handle a
+verb tree resolved at runtime, and `error/types`/`renderError` carry the
+generator error codes so an invalid answer exits 2 rather than surfacing as an
+internal error.
+
+`create` help now renders in pragma's house style like every other noun —
+previously it emitted no colour at all and bypassed the style seam, so
+`NO_COLOR` and theming never reached it. Because presentation is now
+deliberately host-owned, the cross-CLI contract's help cells assert structural
+parity (same groups, rows, order, defaults) with a non-empty guard, while
+every other cell stays byte-for-byte.
+
+Also here: the perf gate's `globalSetup` builds `dist` once behind a
+cross-process lock instead of once per worker, `scripts/codegen.ts` generates
+the create surface the covenant checks against, and the retired-flag migration
+handler no longer matches commands that never carried the flag.
+* `--ssr` and `--router` are gone from `pragma create
+application` — the generator no longer declares them. The
+`@canonical/summon-component/embedded` subpath export is removed along with
+its last consumer.
+
+* fix(pragma-cli,summon): make build-lock waiters re-acquire before re-statting freshness
+
+The waiter arm of buildUnderLock (pragma-cli src/testing/perf/
+globalSetup.ts:187, summon twin src/testing/globalSetup.ts:142) paired a
+lock-free existsSync with an isFresh() stat — two unsynchronised
+observations. After existsSync saw no lock, a new holder could acquire it
+and begin an in-place rebuild; the waiter then read mid-flight mtimes as
+fresh and consumed the torn artifact the lock exists to prevent. The
+waiter now always loops back to acquire the lock and re-stats only under
+it, in both TWIN copies, keeping their shared docblock in step.
+
+The contention test's driver isFresh is now also an ownership sentinel:
+it drops a violation file whenever it runs while the lockfile is absent
+or carries another pid, so any freshness observation outside the
+waiter's own lock goes red deterministically (verified red against the
+removed fast path).
+
+* fix(pragma-cli): stop offering mutation flags on mounted namespace completions
+
+toMountedEntry (src/kernel/completion/model.ts:250) stamped the owning
+verb's mutates onto every node of a mounted subtree, so the completion
+walk offered --dry-run/--undo/--yes at a namespace position — but
+registerGeneratorCommands registers the host mutation trio on runnable
+leaves only, so an accepted suggestion like `create component --dry-run
+react` exits 2 as an unknown option (verified live). A node with
+children is now non-mutating for completion; the verb's mutability
+descends to the leaves. The literal namespace-tier pin and the
+emitSurface agreement assertion are updated to the registered grammar.
+
+* fix(pragma-cli): complete registered positional-prompt flags on create leaves
+
+leafChild (src/capabilities/create/mount.ts:466) filtered positional
+prompts out of a leaf's completion flag list, but addPromptOptions
+(summon-core registerGeneratorCommands.ts:94) registers EVERY prompt as
+an option with no positional filter — `--component-path <value>` and
+`--app-path <value>` are real registered flags (they appear in the
+leaf's own --help) that completion silently withheld. Every prompt now
+contributes its flag; the positional argument stays an additional
+spelling. The literal leaf-tier pins gain the positional-prompt flags.
+
+* fix(pragma-cli): stop retired-flag detection reading past the option terminator
+
+handleProgramError's retired-grammar scan (src/bin.ts:314) matched
+--framework anywhere in stripped argv, so a parse failure on `create
+component react --bogus -- --framework` — where --framework is an
+operand — emitted the R1 migration message instead of the real
+`unknown option '--bogus'` (verified live). The scan now reuses
+globalFlags' option-terminator concept via the newly exported
+selectScanSpan (src/kernel/project/cli/globalFlags.ts), restricting
+detection to the pre-`--` span; a subprocess regression test pins the
+honest error.
+* navigate() and setSearchParams() throw on a router
+constructed without an adapter instead of doing nothing.
+
+* refactor(router)!: collapse router factories onto the adapter axis
+
+createRouter(routes, { adapter, ... }) is now the one constructor. The
+preset factories were one-line sugar over an adapter choice; under the
+minimal-API principle the adapter is the whole axis:
+
+- delete createBrowserRouter, createHashRouter, createMemoryRouter and
+  createStaticRouter from router-core (the browser adapter already
+  resolves Navigation API -> History API internally)
+- delete router-react's createHydratedRouter; its __INITIAL_DATA__
+  reading survives as readDehydratedState(), passed to createRouter as
+  hydratedState — which also removes the incoherence where the hydrated
+  path was history-only while createBrowserRouter preferred the
+  Navigation API
+- migrate every in-repo consumer (boilerplate entries, summon templates,
+  storybook harnesses, story-utils) to createRouter + adapters; the
+  static-router recipe (match + synchronous hydrate) is inlined at the
+  two SSR entry points that used it
+* createBrowserRouter, createHashRouter,
+createMemoryRouter, createStaticRouter and createHydratedRouter are
+removed. Use createRouter(routes, { adapter: createBrowserAdapter() |
+createHashAdapter() | createMemoryAdapter(url) | createServerAdapter(url),
+hydratedState: readDehydratedState() ?? undefined }).
+
+* refactor(router)!: reshape blockers to router.block() and fix useBlocker reactivity
+
+Five members (registerBlocker/unregisterBlocker/blockerState/
+proceedNavigation/cancelNavigation) collapse into one:
+router.block(isActive) returns a handle with { state, proceed, cancel,
+subscribe, dispose }, backed by a dedicated blocker-state subject.
+
+This also fixes a real bug: useBlocker subscribed to the store, but a
+blocked navigate() never touched the store, so the documented
+confirmation-dialog pattern never rendered — the old test had to poke
+the store manually to observe the blocked state. The hook now subscribes
+to the handle and re-renders on the block itself; the dialog pattern is
+asserted end-to-end.
+
+Disposing (or unmounting) while blocked discards the pending navigation
+— previously implicit, now documented handle behavior.
+* registerBlocker, unregisterBlocker, blockerState,
+proceedNavigation and cancelNavigation are removed from Router; use
+router.block(isActive). The RouterBlocker type is replaced by
+RouterBlockerHandle. useBlocker's public shape is unchanged.
+
+* refactor(router)!: shrink the public surface — internal store, one-arg StatusResponse
+
+- Remove store from the public Router interface. It was reachable on
+  every router yet documented nowhere, and no production code consumed
+  it; the package's own tests reach the concrete object's store through
+  an explicit internal accessor instead. createRouterStore and the
+  RouterStore type remain exported as standalone primitives.
+- StatusResponse's data argument is now optional — new StatusResponse(401)
+  works, as the READMEs already wrote.
+* Router no longer exposes store. Subscribe via
+subscribe/subscribeToNavigation/subscribeToSearchParam, read via
+getState/getTrackedLocation.
+
+* refactor(router)!: rename prefetch to warm
+
+'prefetch' imports the wrong mental model: in every other router a
+prefetch/loader hands data to the component, and readers kept filing the
+hook's fire-and-forget design as a bug. 'warm' says what the hook is
+for — warming a cache ahead of navigation — and cannot be confused with
+a data loader.
+
+Renamed atomically across router-core (route/wrapper hook, router.warm(),
+WarmFn, internals), router-react (Link's hover warm-up), the reference
+app and summon templates, and the router docs. TanStack's prefetchQuery
+in examples is unrelated third-party API and keeps its name.
+* the route/wrapper 'prefetch' hook is now 'warm';
+router.prefetch() is router.warm(); the PrefetchFn type is WarmFn.
+
+* fix(router-core): make StatusResponse's optional payload type-safe
+* `pragma` requires Node.js >= 22.18 (declared in
+`engines`). The compiled binary needed no runtime at all. The floor is
+22.18 because pragma dynamic-imports the consumer's own `pragma.config.ts`
+and relies on Node's type stripping, which is default-on from that
+version. That also constrains the config to erasable TypeScript syntax —
+`enum`, `namespace` and parameter properties now fail, and
+`evaluateProjectConfig` names that specifically rather than letting it
+surface as an anonymous load failure.
+
+The embedded template manifest stays, with its reason changed: the disk
+read wins (`loadTemplateSync` tries the real file first), so the manifest
+is the fallback arm, kept because it pins template bytes to this package's
+version rather than to whatever a consumer's resolution supplies.
+
+`compiledCreate.subprocess.test.ts` becomes `shippedCreate.subprocess.test.ts`:
+the byte-identity guard survives and now covers all three nouns instead of
+`component` alone, while the describe that pinned the refusals is gone —
+asserting `create package` refuses would now assert a defect.
+
+Gates: check (biome + tsc + webarchitect) green, 1123 tests green, 8/8 perf
+budgets green at load 1.43 with every ceiling unchanged. Verified from a
+real `npm install` of the packed tarball: version, `block list` (oxigraph
+WASM + embedded pack), `create component` and `create package` all work.
+
+* fix(pragma-cli): sweep the packaging claims the de-compile left behind
+
+Six review lanes over c9330765 agreed on one root cause: the change fixed the
+sites it touched, not the class. A measured sweep found 46 now-false statement
+sites across 28 files — roughly three-quarters of the surviving
+packaging-relevant prose.
+
+Substantive, not prose:
+
+- `wasmEmbed.test.ts` was left compiling a `bun build --compile` binary and
+  asserting against it. It is PROTECTED, it was green, and it guarded an
+  artifact nobody receives — so the store-boot path (oxigraph WASM + the
+  embedded pack) had NO coverage at the process boundary: `budgets.test.ts`
+  spawns `__store-probe` with `stdio: "ignore"` and never checks its exit, and
+  the create smoke tolerates exit 3 for `block list`. Retargeted at the shipped
+  entry, where it also becomes the one test that exercises a real
+  `pragma.config.ts` through Node's type stripping.
+
+- The emit freshness gate called a FAILED build fresh. `tsc` writes its outputs
+  even when it exits non-zero, so `dist/src/bin.js` got a fresh mtime from a
+  build that failed, and the next run skipped the rebuild and ran every spawning
+  PROTECTED suite against the wreckage. `scripts/build.ts` now writes
+  `dist/.build-ok` last and only on a clean emit, and the gate reads that.
+  Proved: a build with an injected type error refreshes `bin.js` and leaves the
+  sentinel untouched.
+
+- `detectInstallSource` read `process.argv[1]` for a `node_modules` substring.
+  Under a self-executing binary argv[1] was the user's FIRST ARGUMENT, so the
+  test read a command word and answered "global" for nearly everything; running
+  `node dist/src/bin.js` moves the entry path into argv[1], where it always
+  contains `node_modules` — the same bug facing the other way. It now uses
+  `import.meta.url` and asks whether the entry lives under the working tree.
+
+- `engines` was `>=22.18`, which admits 23.0-23.5 — versions that satisfy the
+  range but predate the 23.x line's own default-on type stripping. Now
+  `>=22.18 <23 || >=23.6`.
+
+- The embedded template manifest's justification was wrong, and it was mine:
+  c9330765 claimed it "pins template bytes to this package's version". It does
+  not. `loadTemplateSync` reads the real file first and the path it reads comes
+  from the RESOLVED generator package, so whatever a consumer resolves is what
+  wins. The manifest pins nothing; it fires only when a generator package's
+  shipped templates cannot be read. Said plainly now, with the keep-or-drop
+  decision left to the create-surface work that is changing what it covers.
+
+- The bash completion floor (bash >= 4 for `mapfile`) justified itself by the
+  `os: ["linux"]` pin this change deleted. macOS ships bash 3.2. The floor is
+  restated honestly at both sites instead of resting on a guarantee that is gone.
+
+User-facing false claims removed: the repo-root README and the package README
+both still documented `create package` refusing with `UNSUPPORTED`; five strings
+in `emitReference.ts` put a compiled binary into the generated `config.md`; the
+MCP `capabilities` catalog told agents reads come "from the snapshot embedded in
+the binary"; `create`'s surviving UNSUPPORTED recovery still said "run it from a
+source checkout" when the real cause is a broken install; and
+getting-started/config-model/mcp-integration narrated the binary throughout.
+
+Gates: check 3/3, 1123 tests, 8/8 perf budgets at load 2.39, ceilings unchanged.
+
+* docs(pragma-cli): correct three claims the de-compile left inaccurate
+
+Round 2 of the review loop came back dry — a measured sweep of the
+packaging-claim term set found 24 hit lines, 20 explicitly historical, 4
+still true, and none false. These three are what it did find, all below
+the action floor and all inaccuracies this change itself introduced:
+
+- `detectInstallSource`'s `@note` still named `process.argv`, which the fix
+  round removed in favour of `import.meta.url`. An `@note` that names the
+  wrong sources is worse than none.
+- `genReference.ts` described `build.ts` as running `Bun.build`.
+- `entitySource.ts` claimed the whole embedded pack "is parsed at process
+  start on every invocation". That was true of one bundled script and is
+  false of per-module output: `pack.generated` is now a module the fast
+  path never imports, so it is not parsed there at all. The split used to
+  buy only the allocation; it now buys the parse too.
+
+Two further LOW findings are recorded rather than fixed: the freshness
+gate's INPUTS list does not watch the tsconfig files, and the install-scope
+label mislabels two layouts (a project-local install run from a
+subdirectory, and a global install under a $HOME-nested prefix). Both are
+display- or dev-only and carry wake conditions in the findings ledger.
+
+* fix(pragma-cli): address review — clear dist, re-derive the completion budget
+
+Four review points, all correct, plus the CI failure they sat beside.
+
+**`tsc` never prunes `outDir`, and `files` publishes all of `dist`.** A build
+run after the old compiled build left its 105 MB `dist/pragma` in place, so
+the tarball would have carried the very artifact this change removes —
+undoing both the size reduction and the provenance. Outputs for deleted or
+renamed sources have the same shape, quietly. `dist` is now recreated per
+build, so it means exactly "what this build produced". Verified by planting a
+stale `dist/pragma` and confirming it is gone after `bun run build`.
+
+**The install-scope check was not path-aware.** Comparing against a literal
+cwd prefix called an ordinary local install "global" the moment it was run
+from a subdirectory — in a monorepo, the usual case — and its hard-coded `/`
+would fail on Windows, which this change makes a supported platform. It now
+derives the install root (the parent of the `node_modules` holding the entry)
+and asks whether the working directory sits inside it, via `relative()`. That
+also settles the $HOME-nested global prefixes (nvm, `~/.npm-global`) noted in
+the findings ledger. The two path questions are pinned by a colocated test,
+including the sibling case (`/proj` does not contain `/proj-two`).
+
+**The README promised more than `engines` delivers.** It said "22.18 or
+newer"; the range deliberately excludes 23.0-23.5, which predate the 23.x
+line's own default-on type stripping. Stated exactly now.
+
+**`declaration: true` emitted a `.d.ts` surface nothing resolves.** The
+`tool-ts` ruleset fixes `module` and `types` at `src/index.ts` and `files`
+ships `src`, so a consumer's TypeScript reads the source barrel directly.
+Emitting declarations beside it was dead weight in every tarball and a second,
+silently divergent copy of the same types. Dropped, with the reason recorded —
+exposing the emitted ones instead is a packaging decision that belongs with
+that ruleset, not with this build.
+
+**BUDGET_COMPLETE_MS: 100 → 150.** This is the CI failure, and it is real
+rather than flaky: three attempts at 100.37, 100.20 and 100.15 ms. A ceiling
+is relative to the artifact it was measured on, and 100 was 2× the compiled
+binary's median — against JavaScript that node executes, that lands on the
+median, where it cannot separate a regression from a slow runner. 150 restores
+the same 2× rule against the artifact that actually ships and still fails a
+50% regression from today. The designed 50 ms target is recorded as UNMET
+rather than quietly moved: node's own start consumes most of it before pragma
+runs a line. Completion is typed interactively, so this is the one number this
+packaging change genuinely cost, and the one most worth pulling back down.
+
+
+
+
+
 # [0.34.0](https://github.com/canonical/pragma/compare/v0.33.0...v0.34.0) (2026-08-21)
 
 

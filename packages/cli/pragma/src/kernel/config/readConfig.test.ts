@@ -59,7 +59,7 @@ describe("readConfig — layering + provenance", () => {
     expect(config.tier).toBe("core");
     expect(config.channel).toBe("experimental");
     expect(config.detail).toBe("detailed");
-    expect(config.packs).toHaveLength(3); // from defaults
+    expect(config.packs).toHaveLength(4); // from defaults
 
     expect(origins).toMatchObject({
       tier: "project",
@@ -101,12 +101,15 @@ describe("readConfig — layering + provenance", () => {
     freshXdg();
     writeGlobal('{"help":"Global help"}');
     const dir = projectWith(
-      'export default { name: "acme", colophon: { markdown: "By Acme." }, issuesUrl: "https://acme.test/issues", tier: "core" };',
+      'export default { name: "acme", logo: ["ACME"], colophon: { markdown: "By Acme." }, issuesUrl: "https://acme.test/issues", tier: "core" };',
     );
 
     const { config, origins } = await readConfig(dir);
 
     expect(config).not.toHaveProperty("name");
+    // `logo` is identity too: accepted by the shared schema, silent in a layer.
+    expect(config).not.toHaveProperty("logo");
+    expect(origins).not.toHaveProperty("logo");
     expect(config).not.toHaveProperty("help");
     expect(config).not.toHaveProperty("colophon");
     expect(config).not.toHaveProperty("issuesUrl");
@@ -461,7 +464,7 @@ describe("evaluateProjectConfig — mtime+VERSION cache", () => {
     freshXdg();
     // A malformed project config: references an undefined symbol → the module
     // throws at evaluation. Left unwrapped this collapsed to INTERNAL_ERROR
-    // ("please report this issue") on EVERY command that reads config.
+    // ("report this issue") on EVERY command that reads config.
     const dir = projectWith("export default { tier: definitelyNotDefined };");
     const path = join(dir, "pragma.config.ts");
 

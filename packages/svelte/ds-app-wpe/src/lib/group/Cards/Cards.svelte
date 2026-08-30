@@ -43,5 +43,5 @@ master columns. Outside a grid it degrades to a plain block.
 </div>
 ```
 
-@implements dso:global.group.cards
+@implements ds:global.group.cards
 -->

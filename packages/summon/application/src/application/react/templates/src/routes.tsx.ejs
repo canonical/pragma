@@ -1,3 +1,6 @@
+<% if (intl) { -%>
+import { useTranslation } from "@canonical/i18n-react";
+<% } -%>
 import {
   type AnyRoute,
   group,
@@ -11,6 +14,8 @@ import {
 import type { ReactElement, ReactNode } from "react";
 import accountRoutes from "#domains/account/routes.js";
 <% if (relay) { -%>
+import { getRequest } from "relay-runtime";
+import { PAGE_SIZE, productListQuery } from "#domains/catalog/ProductList.js";
 import catalogRoutes from "#domains/catalog/routes.js";
 <% } -%>
 <% if (forms) { -%>
@@ -18,6 +23,9 @@ import contactRoutes from "#domains/contact/routes.js";
 <% } -%>
 import marketingRoutes from "#domains/marketing/routes.js";
 import Navigation from "#lib/Navigation/index.js";
+<% if (relay) { -%>
+import type { RelaySeedPayload } from "#relay/environment.js";
+<% } -%>
 
 const protectedPaths = new Set(["/account"]);
 
@@ -27,50 +35,54 @@ function hasDemoAuth(search: unknown): boolean {
   return authValue === "1";
 }
 
-export function getAuthRedirectHref(input: string | URL): string | null {
-  // Absolute URLs are used as-is; relative paths resolve against a dummy base.
-  const url =
-    input instanceof URL ? input : new URL(input, "https://router.local");
-
-  if (
-    !protectedPaths.has(url.pathname) ||
-    hasDemoAuth({ auth: url.searchParams.get("auth") })
-  ) {
+/**
+ * Auth decision for an already-matched route, from the router's own data —
+ * the matched pattern and the schema-validated search. Deriving it from the
+ * raw URL would normalize differently from the router (trailing slashes,
+ * duplicate search values) and let a protected page render unauthenticated.
+ */
+export function getAuthRedirectForMatch(match: {
+  readonly route: AnyRoute;
+  readonly search: unknown;
+  readonly pathname: string;
+}): string | null {
+  if (!protectedPaths.has(match.route.url) || hasDemoAuth(match.search)) {
     return null;
   }
 
-  return `/login?from=${encodeURIComponent(url.pathname)}`;
+  return `/login?from=${encodeURIComponent(match.pathname)}`;
 }
 
 export function withAuth(loginPath: string): RouteMiddleware {
-  return ((currentRoute: AnyRoute) => {
+  return <TRoute extends AnyRoute>(currentRoute: TRoute): TRoute => {
     if (!protectedPaths.has(currentRoute.url)) {
       return currentRoute;
     }
 
-    const currentPrefetch = currentRoute.prefetch;
+    const currentWarm = currentRoute.warm;
+    const guardedWarm = (
+      params: unknown,
+      search: unknown,
+      context: NavigationContext,
+    ) => {
+      if (!hasDemoAuth(search)) {
+        const from = currentRoute.render(
+          (params ?? {}) as RouteParamValues | Record<string, never>,
+        );
 
-    return {
-      ...currentRoute,
-      prefetch: (
-        params: unknown,
-        search: unknown,
-        context: NavigationContext,
-      ) => {
-        if (!hasDemoAuth(search)) {
-          const from = currentRoute.render(
-            (params ?? {}) as RouteParamValues | Record<string, never>,
-          );
+        redirect(`${loginPath}?from=${encodeURIComponent(from)}`, 302);
+      }
 
-          redirect(`${loginPath}?from=${encodeURIComponent(from)}`, 302);
-        }
-
-        if (currentPrefetch) {
-          return currentPrefetch(params, search, context);
-        }
-      },
+      if (currentWarm) {
+        return currentWarm(params, search, context);
+      }
     };
-  }) as RouteMiddleware;
+
+    // Overriding `warm` widens the property's type, so the object needs a
+    // local assertion back to TRoute; the middleware's signature itself is
+    // now the real generic contract.
+    return { ...currentRoute, warm: guardedWarm } as TRoute;
+  };
 }
 
 const publicLayout = wrapper<ReactElement>({
@@ -85,14 +97,31 @@ const publicLayout = wrapper<ReactElement>({
   ),
 });
 
+<% if (intl) { -%>
+function NotFoundPage(): ReactElement {
+  const { t } = useTranslation();
+
+  return (
+    <section>
+      <h1>{t("notFound.heading")}</h1>
+      <p>{t("notFound.body")}</p>
+    </section>
+  );
+}
+
+<% } -%>
 const notFoundRoute = route({
   url: "/not-found",
+<% if (intl) { -%>
+  content: NotFoundPage,
+<% } else { -%>
   content: () => (
     <section>
       <h1>Page not found</h1>
       <p>The page you are looking for does not exist.</p>
     </section>
   ),
+<% } -%>
 });
 
 const [guide, home] = group(publicLayout, [
@@ -113,9 +142,19 @@ const [contact] = group(publicLayout, [contactRoutes.contact] as const);
 const [catalog] = group(publicLayout, [catalogRoutes.catalog] as const);
 
 <% } -%>
+// Static redirect route: matched entirely from the URL, no content — the
+// router (and the SSR disposition helper) answers with a real 301. Static
+// redirects accept 301 or 308 only; runtime redirect() covers the 302 family.
+const legacyHome = route({
+  url: "/home",
+  redirect: "/",
+  status: 301,
+});
+
 const appRoutes = {
   guide,
   home,
+  legacyHome,
   account,
   login,
 <% if (forms) { -%>
@@ -134,6 +173,71 @@ declare module "@canonical/router-react" {
   }
 }
 
+/**
+ * A GraphQL operation captured on the server and replayed on the client:
+ * the operation name identifies the query, `variables` rebuilds the operation
+ * descriptor, and `data` is the raw response payload. Pure JSON — this is the
+ * wire shape that rides `__INITIAL_DATA__.relayPayloads`. (Declared for every
+ * flag combination so the server layer's signatures stay uniform; without
+ * --relay nothing produces or consumes one.)
+ */
+export interface SerializedRelayPayload {
+  readonly id: string;
+  readonly variables: Record<string, unknown>;
+  readonly data: Record<string, unknown>;
+}
+
+<% if (relay) { -%>
+/**
+ * Per-route server queries: what the SSR layer fetches (and serializes) for a
+ * matched route before rendering it. Keyed by the route ids that
+ * `resolveRouteDisposition` computes; the declaration reuses the exact query
+ * the route's client-side `warm` hook fires, so navigation warming and SSR
+ * prefetch can never drift apart.
+ */
+export const serverQueries: Partial<
+  Record<
+    keyof AppRoutes,
+    {
+      readonly query: typeof productListQuery;
+      readonly variables: Record<string, unknown>;
+    }
+  >
+> = {
+  catalog: { query: productListQuery, variables: { count: PAGE_SIZE } },
+};
+
+/**
+ * Resolve serialized payloads back to replayable operations by matching each
+ * entry's operation name against the declared server queries. Unknown or
+ * malformed entries are dropped — a stale payload must never crash boot.
+ */
+export function resolveRelayPayloads(
+  serialized: readonly SerializedRelayPayload[] | undefined,
+): readonly RelaySeedPayload[] {
+  // The payload rides window state, so a stale or foreign value can be any
+  // shape — only a real array is iterable here.
+  if (!Array.isArray(serialized) || serialized.length === 0) {
+    return [];
+  }
+
+  const byName = new Map(
+    Object.values(serverQueries).map((serverQuery) => [
+      getRequest(serverQuery.query).params.name,
+      serverQuery.query,
+    ]),
+  );
+
+  return serialized.flatMap((entry) => {
+    const query = byName.get(entry.id);
+
+    return query
+      ? [{ query, variables: entry.variables, data: entry.data }]
+      : [];
+  });
+}
+
+<% } -%>
 export const middleware = [withAuth("/login")] as const;
 
 export { appRoutes, notFoundRoute };

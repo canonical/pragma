@@ -65,21 +65,21 @@ _pragma() {
   # flag names
   if [[ "$cur" == -* ]]; then
     case "$noun/$verb" in
-      block/get) COMPREPLY=($(compgen -W "--view --out --with-meta --note --format --verbose --detail --help" -- "$cur")); return ;;
-      block/list) COMPREPLY=($(compgen -W "--tags --format --verbose --detail --help" -- "$cur")); return ;;
-      block/remove) COMPREPLY=($(compgen -W "--dry-run --undo --yes --format --verbose --detail --help" -- "$cur")); return ;;
+      block/get) COMPREPLY=($(compgen -W "--view --out --with-meta --note --format --verbose --detail --no-headers --quiet --help" -- "$cur")); return ;;
+      block/list) COMPREPLY=($(compgen -W "--tags --format --verbose --detail --no-headers --quiet --help" -- "$cur")); return ;;
+      block/remove) COMPREPLY=($(compgen -W "--dry-run --undo --yes --format --verbose --detail --no-headers --quiet --help" -- "$cur")); return ;;
     esac
     if [ -z "$noun" ]; then
-      COMPREPLY=($(compgen -W "--format --verbose --detail --help --version" -- "$cur"))
+      COMPREPLY=($(compgen -W "--format --verbose --detail --no-headers --quiet --help --version" -- "$cur"))
     else
-      COMPREPLY=($(compgen -W "--format --verbose --detail --help" -- "$cur"))
+      COMPREPLY=($(compgen -W "--format --verbose --detail --no-headers --quiet --help" -- "$cur"))
     fi
     return
   fi
 
   # nouns
   if [ -z "$noun" ]; then
-    COMPREPLY=($(compgen -W "block mcp standard status" -- "$cur"))
+    COMPREPLY=($(compgen -W "block standard status" -- "$cur"))
     return
   fi
 
@@ -172,12 +172,14 @@ end
 complete -c pragma -f
 
 # nouns
-complete -c pragma -n "__pragma_at ''" -a "block mcp standard status"
+complete -c pragma -n "__pragma_at ''" -a "block standard status"
 
 # global flags
 complete -c pragma -l format -x -a "plain llm json"
 complete -c pragma -l verbose
 complete -c pragma -l detail -x -a "summary standard detailed"
+complete -c pragma -l no-headers
+complete -c pragma -l quiet
 complete -c pragma -l help
 complete -c pragma -n "__pragma_at ''" -l version
 
@@ -277,21 +279,21 @@ _pragma() {
   # flag names
   if [[ "$cur" == -* ]]; then
     case "$noun/$verb" in
-      block/get) compadd -- --view --out --with-meta --note --format --verbose --detail --help; return 0 ;;
-      block/list) compadd -- --tags --format --verbose --detail --help; return 0 ;;
-      block/remove) compadd -- --dry-run --undo --yes --format --verbose --detail --help; return 0 ;;
+      block/get) compadd -- --view --out --with-meta --note --format --verbose --detail --no-headers --quiet --help; return 0 ;;
+      block/list) compadd -- --tags --format --verbose --detail --no-headers --quiet --help; return 0 ;;
+      block/remove) compadd -- --dry-run --undo --yes --format --verbose --detail --no-headers --quiet --help; return 0 ;;
     esac
     if [[ -z "$noun" ]]; then
-      compadd -- --format --verbose --detail --help --version
+      compadd -- --format --verbose --detail --no-headers --quiet --help --version
     else
-      compadd -- --format --verbose --detail --help
+      compadd -- --format --verbose --detail --no-headers --quiet --help
     fi
     return 0
   fi
 
   # nouns
   if [[ -z "$noun" ]]; then
-    compadd -- block mcp standard status
+    compadd -- block standard status
     return 0
   fi
 

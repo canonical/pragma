@@ -2,11 +2,11 @@
  * The `setup` capability barrel.
  */
 
-export { setupModule } from "./setup.verb.js";
 export type {
-  ConfiguredTarget,
-  ScopeSelection,
-  SetupResult,
-  SetupSkillsResult,
-  SymlinkAction,
-} from "./types.js";
+  PlanChildRow,
+  PlanRow,
+  SetupPlan,
+  TargetId,
+} from "./plan.js";
+export { setupModule } from "./setup.verb.js";
+export type { Scope, ScopeSelection } from "./types.js";

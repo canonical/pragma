@@ -8,8 +8,8 @@
  * exactly what the config declared.
  */
 
-import type { PackDeclaration } from "../../config/types.js";
-import { PragmaError } from "../../error/PragmaError.js";
+import type { PackDeclaration } from "../../config/index.js";
+import { PragmaError } from "../../error/index.js";
 
 /** A parsed, validated package reference — discriminated by `kind`. */
 export type PackageRef =

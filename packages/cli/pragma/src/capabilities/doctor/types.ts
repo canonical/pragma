@@ -2,15 +2,17 @@
  * Data shapes for `pragma doctor` (ported verbatim from the old shell).
  */
 
-/**
- * One of the two config bands a check can concern. Mirrors the harnesses
- * `ScopeBand` structurally but is redeclared here so this statically-reachable
- * type module never pulls the harnesses runtime into the fast-path module graph.
- */
-export type ScopeBand = "project" | "global";
+// The scope and status types are part of the rendering vocabulary — the one
+// module that owns both the states and the words (and glyphs) for them.
+// Re-exported here so doctor's type surface stays complete; the definitions,
+// the `available` tier's rationale, and the structural pin against
+// `@canonical/harnesses` live with the vocabulary.
+import type { CheckStatus, Scope } from "../../kernel/render/vocabulary.js";
 
-/** Status of a doctor check or one of its sub-items. */
-export type CheckStatus = "pass" | "fail" | "skip";
+export type {
+  CheckStatus,
+  Scope,
+} from "../../kernel/render/vocabulary.js";
 
 /**
  * A structured sub-item under a check — e.g. one resolved package under
@@ -35,22 +37,27 @@ export interface CheckResult {
   readonly detail: string;
   /** Optional structured breakdown, rendered as indented sub-items. */
   readonly items?: readonly CheckItem[];
-  /** Remedial instruction shown inline under a failing check. */
+  /**
+   * Remedial instruction shown inline under the check: for `fail` the fix,
+   * for `available` the setup command that enables the integration.
+   */
   readonly remedy?: string;
   /**
-   * Which config band the check concerns, if any: `global` for the user/home
+   * Which config scope the check concerns, if any: `global` for the user/home
    * level (shell completions), `project` for per-repo config (skills). The MCP
-   * checks derive their band from the harnesses they found. The renderer groups
-   * banded checks into Global/Project sections; environment checks (Node,
-   * versions, store) carry no band.
+   * checks derive their scope from the harnesses they found. The renderer groups
+   * scoped checks into Global/Project sections; environment checks (Node,
+   * versions, store) carry no scope.
    */
-  readonly band?: ScopeBand;
+  readonly scope?: Scope;
 }
 
-/** Aggregated results from all doctor checks. */
+/** Aggregated results from all doctor checks — one count per status tier. */
 export interface DoctorData {
   readonly checks: readonly CheckResult[];
   readonly passed: number;
   readonly failed: number;
+  /** Opt-in integrations detected but not set up — counted apart from failures. */
+  readonly available: number;
   readonly skipped: number;
 }

@@ -19,6 +19,8 @@ const componentCssClassName = "ds input date chrome";
  * @returns {ReactElement} - Rendered DateInput
  *
  * `import { DateInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.date_input
  */
 export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
   function DateInput(

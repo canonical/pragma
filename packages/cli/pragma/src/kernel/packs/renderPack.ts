@@ -16,14 +16,16 @@ import type {
   RenderListOptions,
   RenderLookupOptions,
   SectionDef,
-} from "../render/contracts.js";
+} from "../render/index.js";
+import { compactUri } from "../render/index.js";
 import {
+  renderListEmptyNotice,
   renderListLlm,
   renderListPlain,
   renderLookupLlm,
   renderLookupPlain,
 } from "../render/renderers.js";
-import type { Formatters } from "../spec/types.js";
+import type { Formatters } from "../spec/index.js";
 import type { LookupOutput } from "./resolveEntity.js";
 import type {
   PackChildRow,
@@ -53,7 +55,7 @@ export interface RenderMeta {
  * list on a BUILT store (a cold store would have failed with STORE_UNAVAILABLE
  * first) means "nothing matched", so point at both possible fixes.
  */
-const DEFAULT_EMPTY_HINT = `If you haven't built the store yet, run \`${BIN_NAME} sources update\`; otherwise broaden your filter or channel.`;
+const DEFAULT_EMPTY_HINT = `Either nothing matched — try a wider filter — or the store has nothing in it yet: build it with \`${BIN_NAME} sources update\`.`;
 
 /** Build the list formatters for a list-shaped verb (list or an extra verb). */
 export function listFormatters(
@@ -82,9 +84,13 @@ export function listFormatters(
     emptyHint,
   };
   return {
-    plain: (rows) => renderListPlain(rows, options),
+    plain: (rows, context) => renderListPlain(rows, options, context),
     llm: (rows) => renderListLlm(rows, options),
     json: (rows) => JSON.stringify(rows, null, 2),
+    // Zero rows: the dispatcher routes this to stderr (exit 0) so the plain
+    // stdout stream stays pure data; llm/json keep their own empty shapes.
+    notice: (rows) =>
+      rows.length === 0 ? renderListEmptyNotice(options) : undefined,
   };
 }
 
@@ -115,14 +121,18 @@ export function lookupOptions(
     }),
   );
   return {
-    title: (entity) => scalar(entity.name) ?? scalar(entity.uri) ?? "(unnamed)",
+    // An entity reached by IRI need not carry a `by` value, so the IRI is a
+    // real title, not a fallback nobody hits — and it is titled in the form the
+    // user addressed it with, not the expanded one they never typed.
+    title: (entity) =>
+      scalar(entity.name) ?? compactScalar(entity.uri, prefixes) ?? "(unnamed)",
     fields,
     sections: [...flatSections, ...expandSections],
     prefixes,
   };
 }
 
-/** Build the lookup formatters (renders every resolved entity, then any errors). */
+/** Build the lookup formatters (every resolved entity, then errors, then the notice). */
 export function lookupFormatters(
   lookup: PackLookup,
   prefixes: Readonly<Record<string, string>>,
@@ -191,6 +201,15 @@ function scalar(
   value: string | readonly PackChildRow[] | undefined,
 ): string | undefined {
   return typeof value === "string" ? value : undefined;
+}
+
+/** A scalar URI in its prefixed display form, or undefined when it is neither. */
+function compactScalar(
+  value: string | readonly PackChildRow[] | undefined,
+  prefixes: Readonly<Record<string, string>>,
+): string | undefined {
+  const uri = scalar(value);
+  return uri === undefined ? undefined : compactUri(uri, prefixes);
 }
 
 function capitalize(value: string): string {

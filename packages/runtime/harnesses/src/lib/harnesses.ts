@@ -6,7 +6,14 @@
  * ranges to handle config format changes across versions.
  */
 
-import { userHome } from "./platformPaths.js";
+import {
+  copilotMcpEntry,
+  crushMcpEntry,
+  cursorMcpEntry,
+  opencodeMcpEntry,
+  opendesignMcpEntry,
+} from "./mcpEntries.js";
+import { userHome, xdgConfigHome } from "./platformPaths.js";
 import type { HarnessDefinition } from "./types.js";
 
 const harnesses: readonly HarnessDefinition[] = [
@@ -21,7 +28,8 @@ const harnesses: readonly HarnessDefinition[] = [
       { type: "process", name: "claude" },
     ],
     configPath: (root) => `${root}/.mcp.json`,
-    // VERIFY(7b): claude-code reads the user MCP config from ~/.claude.json.
+    // Confirmed (was VERIFY(7b)): "User-scoped servers are stored in
+    // ~/.claude.json" — https://code.claude.com/docs/en/mcp (2026-08-27).
     homeConfigPath: (p) => `${userHome(p)}/.claude.json`,
     configFormat: "json",
     mcpKey: "mcpServers",
@@ -31,11 +39,18 @@ const harnesses: readonly HarnessDefinition[] = [
     id: "cursor",
     name: "Cursor",
     version: "*",
-    scope: "project",
+    scope: "both",
     detect: [{ type: "directory", path: ".cursor" }],
     configPath: (root) => `${root}/.cursor/mcp.json`,
+    // Cursor documents a global band: "~/.cursor/mcp.json" alongside the
+    // project ".cursor/mcp.json" — https://cursor.com/docs/context/mcp
+    // (2026-08-27).
+    homeConfigPath: (p) => `${userHome(p)}/.cursor/mcp.json`,
     configFormat: "json",
     mcpKey: "mcpServers",
+    // Cursor's MCP docs (https://cursor.com/docs/context/mcp) type stdio
+    // entries with `type: "stdio"`.
+    mcpEntry: cursorMcpEntry,
     skillsPath: (root) => `${root}/.cursor/skills`,
   },
   {
@@ -92,26 +107,49 @@ const harnesses: readonly HarnessDefinition[] = [
     id: "opencode",
     name: "OpenCode",
     version: "*",
-    scope: "project",
+    // VERIFY(7h): OpenCode reads a GLOBAL config as well as a project one, and
+    // merges them — https://opencode.ai/docs/config/ lists
+    // `~/.config/opencode/opencode.json` above the project file in its
+    // precedence order, with later sources overriding earlier ones "only for
+    // conflicting keys". Declaring project-only meant the global band — the
+    // default, and the band this product focuses on — installed every other
+    // harness and silently skipped this one.
+    scope: "both",
     detect: [
       { type: "file", path: "opencode.json" },
+      { type: "directory", path: "$XDG_CONFIG_HOME/opencode" },
       { type: "process", name: "opencode" },
     ],
     configPath: (root) => `${root}/opencode.json`,
+    // VERIFY(7h): the global config path, per the docs above. Through
+    // `xdgConfigHome`, not `userHome`: `~/.config/<tool>` is the XDG
+    // convention, so a user with `$XDG_CONFIG_HOME` set keeps it elsewhere and
+    // writing under home would install into a file OpenCode never reads.
+    homeConfigPath: (p) => `${xdgConfigHome(p)}/opencode/opencode.json`,
     configFormat: "json",
     mcpKey: "mcp",
+    // OpenCode's schema (https://opencode.ai/config.json, $defs.McpLocalConfig)
+    // requires `type: "local"` + `command` as a string array and rejects
+    // unknown keys — the default `{command, args, cwd}` shape fails its
+    // validation three ways (S1-3).
+    mcpEntry: opencodeMcpEntry,
     skillsPath: (root) => `${root}/.agents/skills`,
   },
   {
     id: "gemini-cli",
     name: "Gemini CLI",
     version: "*",
-    scope: "project",
+    scope: "both",
     detect: [
       { type: "directory", path: ".gemini" },
       { type: "process", name: "gemini" },
     ],
     configPath: (root) => `${root}/.gemini/settings.json`,
+    // Gemini CLI documents a global band: "~/.gemini/settings.json" alongside
+    // the project ".gemini/settings.json" —
+    // https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md
+    // (2026-08-27; `cwd` is an explicitly documented stdio field there too).
+    homeConfigPath: (p) => `${userHome(p)}/.gemini/settings.json`,
     configFormat: "json",
     mcpKey: "mcpServers",
     skillsPath: (root) => `${root}/.agents/skills`,
@@ -120,14 +158,71 @@ const harnesses: readonly HarnessDefinition[] = [
     id: "codex",
     name: "Codex",
     version: "*",
-    scope: "project",
+    scope: "both",
     detect: [
       { type: "directory", path: ".codex" },
       { type: "process", name: "codex" },
     ],
+    // Codex reads project-scoped overrides from ".codex/config.toml" (loaded
+    // only for trusted projects) and its user config from
+    // "$CODEX_HOME/config.toml" (default ~/.codex) —
+    // https://developers.openai.com/codex/config-reference (2026-08-27).
     configPath: (root) => `${root}/.codex/config.toml`,
+    homeConfigPath: (p) =>
+      `${p.env.CODEX_HOME ?? `${userHome(p)}/.codex`}/config.toml`,
     configFormat: "toml",
     mcpKey: "mcp_servers",
+    skillsPath: (root) => `${root}/.agents/skills`,
+  },
+  {
+    id: "copilot",
+    name: "GitHub Copilot CLI",
+    version: "*",
+    // Global-only ON PURPOSE, although Copilot CLI also reads project files:
+    // its project bands are ".mcp.json" (shared with Claude Code's row, same
+    // `mcpServers` key — one write covers both) and ".github/mcp.json". A
+    // project row here would put a SECOND serializer on the same
+    // (path, mcpKey) write the Claude Code row owns; the home config is the
+    // only location nothing else covers.
+    scope: "global",
+    detect: [
+      { type: "directory", path: "~/.copilot" },
+      { type: "process", name: "copilot" },
+    ],
+    // Never resolved (global-only band), but the type requires one; kept at
+    // the documented project fallback shape for legibility.
+    configPath: (root) => `${root}/.mcp.json`,
+    // "~/.copilot/mcp-config.json", relocatable via COPILOT_HOME —
+    // https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers
+    // (2026-08-27).
+    homeConfigPath: (p) =>
+      `${p.env.COPILOT_HOME ?? `${userHome(p)}/.copilot`}/mcp-config.json`,
+    configFormat: "json",
+    mcpKey: "mcpServers",
+    // Its documented local-entry shape carries `type: "local"` and a `tools`
+    // grant — see `copilotMcpEntry`.
+    mcpEntry: copilotMcpEntry,
+    skillsPath: (root) => `${root}/.agents/skills`,
+  },
+  {
+    id: "antigravity",
+    name: "Antigravity",
+    version: "*",
+    scope: "both",
+    detect: [
+      { type: "file", path: ".agents/mcp_config.json" },
+      { type: "file", path: "~/.gemini/config/mcp_config.json" },
+      { type: "process", name: "antigravity" },
+    ],
+    // Antigravity documents a workspace band at ".agents/mcp_config.json" and
+    // a global band at "~/.gemini/config/mcp_config.json", both under
+    // `mcpServers` — https://antigravity.google/docs/ide/mcp/ (2026-08-27).
+    // (The Nov-2025 launch path "~/.gemini/antigravity/mcp_config.json" is
+    // legacy; the docs' current path is the one written here.)
+    configPath: (root) => `${root}/.agents/mcp_config.json`,
+    homeConfigPath: (p) => `${userHome(p)}/.gemini/config/mcp_config.json`,
+    configFormat: "json",
+    mcpKey: "mcpServers",
     skillsPath: (root) => `${root}/.agents/skills`,
   },
   {
@@ -135,9 +230,50 @@ const harnesses: readonly HarnessDefinition[] = [
     name: "VS Code",
     version: "*",
     scope: "project",
+    // The first two signals are PROJECT-relative (`resolveFsPath` resolves an
+    // unprefixed path against `ctx.projectRoot`), so on their own this row can
+    // only see "this repo carries a committed `.vscode/`" — a developer with
+    // VS Code installed and `.vscode/` gitignored, the common case, was
+    // invisible. The four that follow are the user-level and binary probes
+    // every sibling GUI-editor row already has:
+    // - `$XDG_CONFIG_HOME/Code/User` is VS Code's user config dir on Linux. It
+    //   is spelled in XDG form deliberately (see `resolveFsPath`'s docblock): a
+    //   user who sets `$XDG_CONFIG_HOME` keeps nothing under `~/.config`, so a
+    //   `~/.config/Code/User` literal would report the editor absent.
+    // - `~/Library/Application Support/Code/User` is the SAME directory on
+    //   macOS, and needs its own row because nothing else here finds it: the
+    //   XDG probe above resolves to `~/.config` on darwin (`xdgConfigHome` is
+    //   platform-independent BY DESIGN — a tool documenting `~/.config/<tool>`
+    //   reads it on macOS too), and a default macOS install puts no `code` on
+    //   PATH until the user runs "Install 'code' command in PATH" from the
+    //   palette. Written as a `~/…` literal rather than through
+    //   `platformPaths`, because VS Code's user dir follows env-paths' DATA
+    //   base on darwin (`~/Library/Application Support`) and the XDG CONFIG
+    //   base on linux — no single helper spans both, and `userConfigBase`'s
+    //   darwin arm (`~/Library/Preferences`) is the wrong one. The literal is
+    //   inert on linux/win32: the path simply never exists there.
+    // - `~/.vscode/extensions` is present on any install with ≥1 extension —
+    //   on macOS as well as linux, it is the same path — and is the directory
+    //   `checkExtension` already globs on behalf of Cline and Roo Code. A
+    //   FRESH install has none, which is exactly the gap the two config-dir
+    //   probes above cover: both are created on first launch.
+    // - `code` on PATH covers `/usr/bin/code` (deb), `/snap/bin/code` (the snap
+    //   is CLASSIC confinement, so its home and PATH are the real ones) and
+    //   `code.cmd` on win32 — `executableCandidates` owns those rules.
+    // Tiers fall out of `toSignalTier` correctly: the dirs score `high`, the
+    // process `medium` — right, since `code` on PATH means "installed", not
+    // "this project uses it".
+    // Win32's user dir (`%APPDATA%\Code\User`) has no row: the signal grammar
+    // expands `~` and `$XDG_CONFIG_HOME` only, so a `~/AppData/Roaming` literal
+    // would silently miss a relocated `%APPDATA%`. It belongs with the rest of
+    // the unvalidated win32 surface in AV-287 (see `platformPaths.ts`).
     detect: [
       { type: "directory", path: ".vscode" },
       { type: "file", path: ".vscode/mcp.json" },
+      { type: "directory", path: "$XDG_CONFIG_HOME/Code/User" },
+      { type: "directory", path: "~/Library/Application Support/Code/User" },
+      { type: "directory", path: "~/.vscode/extensions" },
+      { type: "process", name: "code" },
     ],
     configPath: (root) => `${root}/.vscode/mcp.json`,
     configFormat: "json",
@@ -150,7 +286,7 @@ const harnesses: readonly HarnessDefinition[] = [
     version: "*",
     scope: "both",
     // VERIFY(7g): OpenDesign requires the MCP server `env` to be a JSON map.
-    normalizeEnv: true,
+    mcpEntry: opendesignMcpEntry,
     detect: [
       { type: "directory", path: ".od" },
       {
@@ -168,6 +304,81 @@ const harnesses: readonly HarnessDefinition[] = [
     mcpKey: "mcpServers",
     skillsPath: (root) => `${root}/.od/skills`,
   },
+  {
+    id: "crush",
+    name: "Crush",
+    version: "*",
+    // All paths below verified against Crush's source @7944b8e
+    // (charmbracelet/crush, `internal/config/load.go` + `config.go`), not its
+    // README. Crush merges a GLOBAL config with project files walked from cwd
+    // to the git root, later layers overriding earlier — a project-only row
+    // would be excluded from setup's DEFAULT global band entirely (the
+    // opencode/vscode lesson), so: both.
+    scope: "both",
+    detect: [
+      // The two JSON config names Crush itself looks up per project
+      // directory (`configNames`, load.go — `.crush.json` outranks
+      // `crush.json`; the `crushrc`/`.crushrc` pair are BASH scripts pragma
+      // never writes and never keys on).
+      { type: "file", path: "crush.json" },
+      { type: "file", path: ".crush.json" },
+      // Crush's per-project DATA directory (`defaultDataDirectory`,
+      // config.go). State-derived and usually gitignored, but Crush and
+      // nothing else creates it — "Crush ran in this repo" is a true signal
+      // with a single owner, unlike a bare `.vscode/`. Detection ONLY:
+      // `.crush/crush.json` is Crush's own workspace-state write target,
+      // never pragma's.
+      { type: "directory", path: ".crush" },
+      // The global config dir, in `$XDG_CONFIG_HOME/` form for the usual
+      // reason (see `resolveFsPath`): a user who relocates the config base
+      // keeps nothing under `~/.config`. (`$CRUSH_GLOBAL_CONFIG` is honoured
+      // on the write path below; the signal grammar has no env-prefix form,
+      // and a user who sets it has `crush` on PATH for the process probe.)
+      { type: "directory", path: "$XDG_CONFIG_HOME/crush" },
+      { type: "process", name: "crush" },
+    ],
+    configPath: (root) => `${root}/crush.json`,
+    // `GlobalConfig()` (load.go): `$CRUSH_GLOBAL_CONFIG` names the DIRECTORY
+    // holding crush.json when set; else `$XDG_CONFIG_HOME/crush/crush.json`.
+    // Through `xdgConfigHome`, not `userHome` — and on EVERY platform:
+    // Crush's `home.Config()` has no platform switch, so there is no
+    // `~/Library/Application Support` or `%APPDATA%` config arm to cover.
+    homeConfigPath: (p) =>
+      `${p.env.CRUSH_GLOBAL_CONFIG ?? `${xdgConfigHome(p)}/crush`}/crush.json`,
+    configFormat: "json",
+    // Top-level `mcp`, not `mcpServers` (config.go: `MCP MCPs json:"mcp"`).
+    mcpKey: "mcp",
+    // Crush REQUIRES the `type` discriminator — an entry without it reaches
+    // `createTransport`'s default arm ("unsupported mcp type") and silently
+    // never starts, so the default `{command, args, cwd}` shape would write
+    // a dead server. See `crushMcpEntry` (it also drops the schema-unknown
+    // `cwd`).
+    mcpEntry: crushMcpEntry,
+    // First of Crush's `projectSkillSubdirs` (load.go); it also reads
+    // `.crush/skills`, `.claude/skills` and `.cursor/skills`, but
+    // `.agents/skills` is the cross-client directory `setup skills` links.
+    skillsPath: (root) => `${root}/.agents/skills`,
+    // Shadowing caveats, not reasons to decline: a `crushrc` beside the
+    // global crush.json (`shellConfigSibling`), or a
+    // `.crushrc`/`crushrc`/`.crush.json` beside the project one, merges
+    // ABOVE it, so a conflicting server name there wins (disjoint names
+    // merge fine); and Crush's own state
+    // (`.crush/crush.json`, `$XDG_DATA_HOME/crush/crush.json`) merges above
+    // everything. Both state files are Crush's write targets, never ours.
+  },
 ];
+
+// Deliberately ABSENT from the registry (product calls, not oversights):
+//
+// - `pi` (github.com/earendil-works/pi): no first-party MCP client exists —
+//   the README states "No MCP" outright; MCP reaches pi only through the
+//   third-party pi-mcp-adapter extension a user installs themselves. A row
+//   here would write config pi itself never reads. pi IS served on the skills
+//   side without a row: it reads `.agents/skills`, the cross-client directory
+//   `setup skills` always links into.
+//
+// - `vscodium` as an MCP CLIENT: VSCodium has no first-party MCP surface (no
+//   Copilot agent mode), so there is nothing to configure. As an extension
+//   HOST it is fully supported via the editor-CLI registry (`editors.ts`).
 
 export default harnesses;

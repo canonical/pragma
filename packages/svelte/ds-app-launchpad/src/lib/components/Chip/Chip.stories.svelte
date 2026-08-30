@@ -23,14 +23,14 @@
   }}
 />
 
-<Story name="Severities">
+<Story name="Criticalities">
   {#snippet template(args)}
-    {#each MODIFIER_FAMILIES.severity as severity (severity)}
+    {#each [undefined, ...MODIFIER_FAMILIES.criticality] as criticality (criticality)}
       <Chip
         {...args}
-        lead="Severity"
-        value={severity}
-        {severity}
+        lead="Criticality"
+        value={criticality ?? "default"}
+        {criticality}
         onclick={fn()}
       />
       <br />
@@ -44,7 +44,7 @@
   args={{
     lead: "Lead",
     value: "Value",
-    severity: "caution",
+    criticality: "warning",
   }}
 >
   {#snippet template(args)}
@@ -83,13 +83,13 @@
 
 <Story name="Read-only">
   {#snippet template(args)}
-    {#each MODIFIER_FAMILIES.severity as severity (severity)}
+    {#each [undefined, ...MODIFIER_FAMILIES.criticality] as criticality (criticality)}
       <Chip
         {...args}
-        lead="Severity"
-        value={severity || "default"}
+        lead="Criticality"
+        value={criticality ?? "default"}
         readonly
-        {severity}
+        {criticality}
       >
         {#snippet badge()}
           <Badge value={420} />

@@ -40,6 +40,31 @@ export interface InkPromptOptions {
    * back to the process cwd, matching a run given no `cwd` of its own.
    */
   readonly cwd?: string;
+  /**
+   * Answers already provided outside the wizard (CLI flags / MCP args).
+   * Seeded into the session so the confirm gate's preview and step counter
+   * see the full answer set — without this a partially-flagged run previews
+   * with those answers missing (`undefined` paths, wrong plan).
+   */
+  readonly initialAnswers?: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * One host-named unit of work, reported through {@link InkSession.reportStep}.
+ *
+ * The wizard's default live progress is the per-effect transcript — the right
+ * grain for a scaffolder, whose unit of work IS the file. A host whose unit is
+ * coarser (pragma's `setup`, where one step is one configured target spanning
+ * a dozen effects) reports its own steps instead, in its own vocabulary, and
+ * the view renders those rows in place of the transcript. `label` is the whole
+ * row body, unstyled — the glyph, spinner and duration are the view's.
+ */
+export interface StepReport {
+  /** Stable identity — a `start` and its `done`/`failed` share it. */
+  readonly key: string;
+  /** The row body (unstyled); the completion report may extend it. */
+  readonly label: string;
+  readonly status: "start" | "done" | "failed";
 }
 
 /**
@@ -55,8 +80,18 @@ export interface InkSession {
   readonly onEffectComplete: (effect: Effect, duration: number) => void;
   /** Feed a task log line into the live view. */
   readonly onLog: (level: LogLevel, message: string) => void;
-  /** Tear down the Ink render. Safe to call more than once. */
-  readonly dispose: () => void;
+  /**
+   * Report a host-named step ({@link StepReport}). Once any step is reported,
+   * the live progress renders the host's step rows INSTEAD of the per-effect
+   * transcript; a session that never receives one renders exactly as before.
+   */
+  readonly reportStep: (report: StepReport) => void;
+  /**
+   * Tear down the Ink render. Safe to call more than once. Resolves once the
+   * final frame is flushed — AWAIT it before printing to the same terminal,
+   * or the closing frame and the caller's output interleave.
+   */
+  readonly dispose: () => Promise<void>;
 }
 
 /** The handle {@link mountPromptSession} returns (in `./ink/mount.js`). */
@@ -65,7 +100,8 @@ interface MountedSession {
   reportEffectStart: (effect: Effect) => void;
   reportEffectComplete: (effect: Effect, duration: number) => void;
   reportLog: (level: LogLevel, message: string) => void;
-  dispose: () => void;
+  reportStep: (report: StepReport) => void;
+  dispose: () => Promise<void>;
 }
 
 /**
@@ -88,10 +124,19 @@ export default function inkPrompt(
   let mounted: MountedSession | undefined;
 
   const ensure = (): Promise<MountedSession> => {
-    mountP ??= import("./ink/mount.js").then((mod) => {
-      mounted = mod.mountPromptSession(generator, options);
-      return mounted;
-    });
+    mountP ??= import("./ink/mount.js")
+      .then((mod) => {
+        mounted = mod.mountPromptSession(generator, options);
+        return mounted;
+      })
+      .catch((error) => {
+        // Do not cache a failure — a trailing catch, so BOTH a failed dynamic
+        // import and a throw from mountPromptSession itself (e.g. Ink render)
+        // reset the memo; otherwise every later prompt in the session would
+        // reuse the same stale rejection.
+        mountP = undefined;
+        throw error;
+      });
     return mountP;
   };
 
@@ -109,6 +154,13 @@ export default function inkPrompt(
     onEffectComplete: (effect, duration) =>
       mounted?.reportEffectComplete(effect, duration),
     onLog: (level, message) => mounted?.reportLog(level, message),
-    dispose: () => mounted?.dispose(),
+    // Steps can only originate from the running task, and the session mounts
+    // on the FIRST Prompt effect — which precedes execution (the confirm gate
+    // is itself a prompt) — so by the time a step is reported the session
+    // exists; the guard only covers a host reporting outside a run.
+    reportStep: (report) => mounted?.reportStep(report),
+    dispose: async () => {
+      await mounted?.dispose();
+    },
   };
 }

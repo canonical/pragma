@@ -1,150 +1,62 @@
 /**
  * Build script for the `pragma` compiled binary.
  *
- * Two steps: (1) codegen the embedded template manifest, then (2) compile the
- * CLI entry (`src/bin.ts`) into a standalone executable with `Bun.build`.
+ * Three steps: (1) codegen the create surface
+ * (`createSurface.generated.ts`), (2) emit the reference docs
+ * (`docs/reference/`), then (3) compile `src/` to `dist/` with `tsc` — the
+ * first two write the committed artifacts the drift guards read.
  *
- * COMPILED `create` (PR7, resolved) — `create component` runs from the shipped
- * binary. `create.verb.ts` reaches summon-core + the generators through STATIC
- * dynamic imports (behind its lazy boundary), so bun's `--compile` bundler
- * includes them. The generators load their `.ejs` templates from disk
- * (`import.meta`-relative), which do not exist in a standalone binary, so this
- * script inlines the reachable generator templates into `create/templates`
- * `.embedded.generated.ts` — the same inline-strings-survive-`--compile`
- * technique as `graphpack/embedded/pack.generated.ts` — keyed by
- * directory-qualified path (`component/react/types.ts.ejs`). The component
- * loader consults that manifest when its disk read fails, keyed by the qualified
- * path so react/svelte/lit never collide. A compiled-binary smoke test
- * (create/compiledCreate.subprocess.test.ts) proves the three frameworks are
- * byte-identical to a source run, and pins the refusal for the nouns that stay a
- * source-run feature.
+ * ONE PASS IS SELF-CONSISTENT: the reference docs render the surface this
+ * pass just produced. `capabilities` is imported at process start, so when
+ * codegen rewrites `createSurface.generated.ts`, the docs are emitted by a
+ * fresh `scripts/genReference.ts` child (which re-imports the rewritten
+ * module) instead of this process's stale copy — a single `bun run build`
+ * after a generator-surface edit leaves dist, surface, and docs/reference/
+ * on the SAME generation. A GATE's build sets PRAGMA_BUILD_SKIP_DOCS=1 and
+ * rewrites NEITHER committed artifact its drift guards read: the generated
+ * module (`createSurface.generated.ts`) runs in CHECK mode
+ * (`scripts/codegen.ts` — importable so the seam is pinned by unit cells): a
+ * stale committed module FAILS the build loudly, naming itself and
+ * `bun run build` as the repair, and the docs step writes nothing. So every
+ * drift guard (create.test.ts's PROTECTED cell, reference.test.ts) compares
+ * the bytes git actually holds and can fail on a stale committed tree.
+ *
+ * WHAT SHIPS is emitted JavaScript on a `node` shebang — `dist/src/bin.js`,
+ * the `bin` entry — not a standalone executable, so every binding runs from a
+ * published install with nothing special done for it. `create.verb.ts` reaches
+ * summon-core + the generators through STATIC specifiers behind a dynamic
+ * import, which keeps them analysable while leaving them off every fast path.
+ * The generators then load their templates from their OWN packages' shipped
+ * `dist/esm` trees. `shippedCreate.subprocess.test.ts` proves each binding
+ * byte-identical to a source run.
+ *
+ * COLD START is preserved by construction rather than by a bundler flag. The
+ * compiled build needed `splitting: true` so the lazily `import()`ed
+ * summon-core and generators became separate chunks instead of startup cost;
+ * under `tsc` every module is already its own file behind those same lazy
+ * boundaries.
  */
 
+import { spawnSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { join, relative } from "node:path";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CREATE_GENERATORS } from "../src/capabilities/create/constants.js";
 import { capabilities } from "../src/capabilities/index.js";
 import { emitReference } from "../src/kernel/spec/emitReference.js";
+import { checkModeFromEnv, generateCreateSurface } from "./codegen.js";
 
 const scriptsUrl = new URL(".", import.meta.url);
 
-/**
- * The generators whose `.ejs` the binary must carry: exactly the bindings
- * `create.verb.ts` lets run from the compiled binary
- * (`readsEmbeddedTemplates`). Keys are `<id>/<path-relative-to-root>`, matching
- * the qualified key the component loader derives from a template's source path.
- *
- * The root is the declared package's `src/templates` — the source of truth,
- * identical to that package's dist copy — reached through this package's own
- * `node_modules`, which bun links to the sibling workspace directory. That is a
- * MONOREPO BUILD path, not npm resolution: the published tarballs ship `dist`
- * only (`"files": ["dist"]`), so only a checkout satisfies it. The binding's
- * `name` is the single declared fact it consumes.
- *
- * `summon-package` / `summon-application` are excluded deliberately: their
- * generators call `template({ source })`, so a compiled binary can never read an
- * embedded template for them, and `qualifiedKey()` in summon-component prefixes
- * every lookup with `component/` — their entries were unreachable by
- * construction (26 of the 46 previously embedded).
- */
-const TEMPLATE_ROOTS: ReadonlyArray<{ id: string; root: string }> =
-  Object.entries(CREATE_GENERATORS).flatMap(([id, binding]) =>
-    binding.readsEmbeddedTemplates
-      ? [
-          {
-            id,
-            root: fileURLToPath(
-              new URL(
-                `../node_modules/${binding.name}/src/templates`,
-                scriptsUrl,
-              ),
-            ),
-          },
-        ]
-      : [],
-  );
-
-const MANIFEST_OUT = fileURLToPath(
-  new URL(
-    "../src/capabilities/create/templates.embedded.generated.ts",
-    scriptsUrl,
-  ),
-);
-
-/** Recursively collect every `.ejs` file path under a directory. */
-function collectEjs(dir: string): string[] {
-  const out: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...collectEjs(full));
-    else if (entry.name.endsWith(".ejs")) out.push(full);
-  }
-  return out;
-}
-
-/**
- * Inline the `.ejs` templates of every binding that reads through the embedded
- * manifest into the generated manifest module. Deterministic (sorted keys,
- * `JSON.stringify` values) so re-running produces byte-identical output — no
- * working-tree churn.
- *
- * @returns The number of templates embedded.
- */
-function generateTemplateManifest(): number {
-  const entries: Record<string, string> = {};
-  for (const { id, root } of TEMPLATE_ROOTS) {
-    const files = collectEjs(root);
-    // Fail loud PER ROOT rather than ship a manifest missing a binding's
-    // templates: the binary's `create <id>` would otherwise die with "Template
-    // not found" at run time. A missing or renamed root throws ENOENT out of
-    // `collectEjs` first, naming the path; this covers the root that exists and
-    // holds nothing. (Checking the total instead would be vacuous the moment a
-    // second binding embeds.)
-    if (files.length === 0) {
-      throw new Error(
-        `No .ejs templates under ${root} for \`create ${id}\` — is the workspace linked?`,
-      );
-    }
-    for (const file of files) {
-      const rel = relative(root, file).split(/[\\/]/).join("/");
-      entries[`${id}/${rel}`] = readFileSync(file, "utf-8");
-    }
-  }
-
-  const body = Object.keys(entries)
-    .sort()
-    .map((key) => `  ${JSON.stringify(key)}: ${JSON.stringify(entries[key])},`)
-    .join("\n");
-
-  const module = `// AUTO-GENERATED by scripts/build.ts — do not edit by hand.
-// Regenerate: \`bun run scripts/build.ts\`. Inlines the .ejs templates of the
-// generators that read through this manifest (\`create component\`) as strings, so
-// \`pragma create component\` works from the standalone --compile binary (the .ejs
-// files are absent from the binary's virtual filesystem).
-/** Directory-qualified template path → file contents. */
-export const TEMPLATES: Record<string, string> = {
-${body}
-};
-`;
-  // Write only when changed: the output is deterministic, so a rebuild is a
-  // no-op — no working-tree churn, and no rewrite racing a concurrent import
-  // (the compiled-binary smoke test rebuilds while sibling create tests run).
-  if (
-    !existsSync(MANIFEST_OUT) ||
-    readFileSync(MANIFEST_OUT, "utf-8") !== module
-  ) {
-    writeFileSync(MANIFEST_OUT, module);
-  }
-  return Object.keys(entries).length;
-}
+/** The emit target, cleared before every build so it holds only this build. */
+const DIST_DIR = fileURLToPath(new URL("../dist/", scriptsUrl));
 
 /** The committed reference tree the generator writes back. */
 const REFERENCE_DIR = fileURLToPath(new URL("../docs/reference/", scriptsUrl));
@@ -152,7 +64,7 @@ const REFERENCE_DIR = fileURLToPath(new URL("../docs/reference/", scriptsUrl));
 /**
  * Write the generated Markdown reference (`emitReference(capabilities)`) into
  * `docs/reference/`, one file per page. Deterministic, so — like
- * {@link generateTemplateManifest} — a page is written ONLY when its bytes
+ * {@link generateCreateSurface} — a page is written ONLY when its bytes
  * differ, keeping a rebuild a working-tree no-op. Any committed `.md` the
  * emitter no longer produces (a removed noun's page) is pruned, so the tree
  * self-heals instead of leaning on the drift-guard to catch the orphan.
@@ -185,41 +97,85 @@ function writeReferenceDocs(): number {
 export { writeReferenceDocs };
 
 // Only the actual build (not an `import` of `writeReferenceDocs` from the fast
-// `genReference` script) runs codegen and compiles the binary.
+// `genReference` script) runs codegen and emits `dist/`.
 if (import.meta.main) {
-  const embedded = generateTemplateManifest();
+  // A GATE's build: check every committed artifact (the header's property)
+  // — codegen fails loudly on a stale surface module, docs are skipped.
+  // The flag read lives beside the generator it flips (checkModeFromEnv),
+  // so the seam cells pin the PREDICATE; this call site itself is pinned by
+  // construction — no test executes this script, so replacing the read with
+  // `false` reddens nothing.
+  const check = checkModeFromEnv(process.env);
+
+  const { surfaced, changed: surfaceChanged } = generateCreateSurface({
+    check,
+  });
   console.log(
-    `Embedded ${embedded} generator templates → templates.embedded.generated.ts`,
+    `Projected ${surfaced} generator binding(s) → createSurface.generated.ts`,
   );
 
-  const changedDocs = writeReferenceDocs();
-  console.log(
-    `Wrote ${changedDocs} changed reference page(s) → docs/reference/`,
-  );
+  if (check) {
+    // A GATE's build (both vitest configs' globalSetup): writing docs here
+    // would silently REPAIR a stale committed tree in the same run, before
+    // reference.test.ts — the drift guard — reads it. The guard must compare
+    // the bytes git actually holds; `bun run build` / `gen:reference` stay
+    // the doc writers. (The codegen steps above enforce the same rule by
+    // FAILING on a stale committed module rather than skipping.)
+    console.log("Skipped reference docs (PRAGMA_BUILD_SKIP_DOCS=1)");
+  } else if (surfaceChanged) {
+    // The surface changed under this process's feet: `capabilities`
+    // (imported at startup) still carries the PRE-regen projection, so an
+    // in-process emit would render the docs one generation behind — and a
+    // rerun would then "fix" them (the build-twice trap). A fresh child
+    // re-imports the rewritten module and emits the post-regen truth in
+    // this same pass.
+    const docs = spawnSync("bun", ["run", "scripts/genReference.ts"], {
+      cwd: fileURLToPath(new URL("..", scriptsUrl)),
+      stdio: "inherit",
+    });
+    if (docs.error || docs.status !== 0) {
+      console.error(
+        `Reference docs emit failed${docs.error ? `: ${docs.error.message}` : ""}`,
+      );
+      process.exit(1);
+    }
+  } else {
+    const changedDocs = writeReferenceDocs();
+    console.log(
+      `Wrote ${changedDocs} changed reference page(s) → docs/reference/`,
+    );
+  }
 
-  const result = await Bun.build({
-    entrypoints: ["src/bin.ts"],
-    minify: true,
-    // Code-splitting is load-bearing for cold-start: it emits the lazily
-    // `import()`ed summon-core + generators (+ Ink/React) as SEPARATE chunks the
-    // binary parses on demand, not at startup. Without it, bundling summon adds
-    // ~135 ms to every invocation (blowing the __complete/--help budgets); with
-    // it, the fast paths stay at/under their budgets while `create` loads summon
-    // only when it runs.
-    splitting: true,
-    compile: {
-      target: "bun-linux-x64",
-      outfile: "dist/pragma",
+  // CLEAR `dist` FIRST. `tsc` writes into `outDir`; it never prunes it, and
+  // `files` publishes the whole directory — so anything a previous build left
+  // there ships, including the 105 MB executable an older build produced.
+  // Outputs for deleted or renamed sources have the same shape, quietly.
+  rmSync(DIST_DIR, { recursive: true, force: true });
+
+  // `tsc` runs as a child rather than through the compiler API: the emit config
+  // lives in `tsconfig.build.json` (one declaration, shared with editors and
+  // `check:ts`), and a non-zero exit is the whole error contract we need.
+  const emit = spawnSync("tsc", ["-p", "tsconfig.build.json"], {
+    cwd: fileURLToPath(new URL("..", scriptsUrl)),
+    stdio: "inherit",
+    // Resolve the workspace's own tsc rather than whatever is on PATH — a
+    // global `tsc` is frequently a different compiler.
+    env: {
+      ...process.env,
+      PATH: `${fileURLToPath(new URL("../node_modules/.bin", scriptsUrl))}:${process.env.PATH ?? ""}`,
     },
   });
 
-  if (!result.success) {
-    console.error("Build failed:");
-    for (const log of result.logs) {
-      console.error(log);
-    }
+  if (emit.error || emit.status !== 0) {
+    console.error(`Build failed${emit.error ? `: ${emit.error.message}` : ""}`);
     process.exit(1);
   }
 
-  console.log("Built dist/pragma");
+  // The success sentinel, written LAST and only on a clean emit. `tsc` writes
+  // its outputs even when it exits non-zero, so an output file's mtime cannot
+  // tell a finished build from a failed one; `testing/perf/globalSetup.ts`
+  // reads THIS file, not the entry.
+  writeFileSync(fileURLToPath(new URL("../dist/.build-ok", scriptsUrl)), "");
+
+  console.log("Built dist/ (tsc)");
 }

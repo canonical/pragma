@@ -6,9 +6,9 @@ Every field a `pragma` config layer may declare. Generated from the config type 
 
 From lowest to highest precedence:
 
-1. **Built-in defaults** — the distribution config compiled into the binary.
+1. **Built-in defaults** — the distribution config shipped with the package.
 2. **Global config** — `$XDG_CONFIG_HOME/pragma/config.json`, written by `pragma config set`.
-3. **Project config** — the nearest `pragma.config.ts` (or `pragma.config.js`, the compiled-binary fallback), walking up from the working directory.
+3. **Project config** — the nearest `pragma.config.ts` (or `pragma.config.js`, the JavaScript fallback), walking up from the working directory.
 
 A higher layer REPLACES a lower one field by field. No field is deep-merged — not `packs`, not `prefixes`, not `completion`. A project declaring one prefix therefore replaces the distribution's whole prefix map, including the namespaces its own packs are built with; declare every prefix you need, not only the new one.
 
@@ -18,11 +18,12 @@ The `Type` column is prose; the field set and each field's optionality are check
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `name` | string (optional) | Distribution-only — see below. The binary's own name, read from the distribution config at module load. |
+| `name` | string (optional) | Distribution-only — see below. The program's own name, read from the distribution config at module load. |
 | `help` | string (optional) | Distribution-only — see below. The one-line blurb on the front door and in the MCP handshake. |
+| `logo` | string[] (optional) | Distribution-only — see below. ASCII-art wordmark lines shown above the header on root `--help`, tinted with the terminal palette's orange slot. Shown to a HUMAN reader only: the front door omits the art for MACHINE-ORIENTED output — `--format llm` or `--format json`, plus the `llm` a non-interactive stdout auto-infers — so a piped `--help` spends none of an agent's budget on a picture of the name it just typed. The gate is the output SHAPE, not whether stdout is a terminal, and explicit beats inferred in both directions: `--format plain` keeps the art down a pipe (as does `PRAGMA_NO_AUTO_LLM`, which turns the inference off), and `--format llm` drops it on a TTY. Declared content, not code: a wordmark spells the distribution's name, so a fork ships its own art or omits the field and gets no wordmark. Omit or leave empty for a bare header. |
 | `colophon` | object (optional) | Distribution-only — see below. The toolchain's own story, rendered first by the `colophon` verb and titled with the distribution's name: `{ markdown, summary? }`, both Markdown bodies with no leading H1 (`summary` is the condensed `--format llm` form). Declared content, not code — a fork edits it to tell its own story. |
 | `issuesUrl` | URL string (optional) | Distribution-only — see below. Where the first-run note asks users to report problems. |
-| `tier` | string (optional) | Accepted by the validator and SCOPES NOTHING: since the block list became declared content, no read filters by tier — the value is only reported by `config show` and `info`. Set it with `config set tier <path>`; `none`, `default` or `-` clear it. |
+| `tier` | string (optional) | Accepted by the validator and SCOPES NOTHING: since the block list became declared content, no read filters by tier — the value is only reported by `config show` and `info`. Set it with `config set tier <path>` and clear it with `config unset tier`; `none`, `default` and `-` are refused as values, so no string doubles as a remove-marker. |
 | `channel` | `normal` \| `experimental` \| `prerelease` (optional) | Selects the npm dist-tag `upgrade` and `info` check the registry with. It no longer scopes graph reads — no read filters by channel. Defaults to `normal`. Set it with `config set channel <name>`. |
 | `detail` | `summary` \| `standard` \| `detailed` (optional) | Default progressive-disclosure level. A closed enum, like `channel`: any other value fails at load with a `CONFIG_ERROR` naming the file and the three levels. Set it with `config set detail <level>`. |
 | `packs` | array (optional) | Semantic pack sources built by `sources update`. Each entry is a bare npm name or `{ name, source, stories? }`; `stories` are read stories the pack supplies, in the pack grammar. |
@@ -32,11 +33,11 @@ The `Type` column is prose; the field set and each field's optionality are check
 
 ## Distribution-only fields
 
-`name`, `help` and `issuesUrl` are read from the distribution config when the program loads, because the surfaces that need them — `--help`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. `colophon` is read from the same file at render time: the `colophon` verb narrates whatever the distribution declares there. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by `config show`. Changing them means forking: edit the distribution config and rebuild the binary. The distribution config's `vocabulary` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes `name` in.
+`name`, `help`, `logo` and `issuesUrl` are read from the distribution config when the program loads, because the surfaces that need them — `--help`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. `colophon` is read from the same file at render time: the `colophon` verb narrates whatever the distribution declares there. The validator ACCEPTS all five in a global or project layer, and they have **no effect there and are not reported** by `config show`. Changing them means forking: edit the distribution config and rebuild the package. The distribution config's `vocabulary` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes `name` in.
 
 ## What `config show` reports
 
-`pragma config show` prints `tier`, `channel`, `detail`, `packs` — those and only those — each with the layer that supplied it. The rest resolve without being reported that way: `prefixes` and `completion` appear only in the `--format json` payload, `prefixes` with an origin and `completion` with none; `stories` carries an origin whose value the payload leaves out; and the four distribution-only fields above carry neither. The plain and llm forms print those rows and nothing else; `--format json` returns the resolved config and the origin map whole.
+`pragma config show` prints `tier`, `channel`, `detail`, `packs` — those and only those — each with the layer that supplied it. The rest resolve without being reported that way: `prefixes` and `completion` appear only in the `--format json` payload, `prefixes` with an origin and `completion` with none; `stories` carries an origin whose value the payload leaves out; and the five distribution-only fields above carry neither. The plain and llm forms print those rows and nothing else; `--format json` returns the resolved config and the origin map whole.
 
 ## Renamed: `packages` → `packs`
 
@@ -44,7 +45,7 @@ The `packages` field was renamed to `packs`. A layer that still declares `packag
 
 ## Removed: `generators`
 
-The `generators` field was removed: it was accepted by the validator, layered, and read by nothing — the `create` verbs resolve their generators statically (a compiled binary can only run generators it was linked with), so declaring it changed only what `config show` printed. A layer that still declares it fails loudly at load with an error naming the removed field; delete it. Declared generators may return as a working feature in a later program.
+The `generators` field was removed: it was accepted by the validator, layered, and read by nothing — the `create` verbs resolve their generators statically (they are imported by name, not looked up at run time), so declaring it changed only what `config show` printed. A layer that still declares it fails loudly at load with an error naming the removed field; delete it. Declared generators may return as a working feature in a later program.
 
 ## Removed: `completion.caseSensitive`
 

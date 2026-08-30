@@ -3,6 +3,297 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
+
+
+### Bug Fixes
+
+* **pragma-cli:** rank a shared block name by tier depth, and stop discarding the rest ([#1050](https://github.com/canonical/pragma/issues/1050)) ([58eb157](https://github.com/canonical/pragma/commit/58eb1573cc852121cf80bdf52eca3c77d8147255))
+
+
+### Features
+
+* **pragma-cli:** show setup's wizard progress as the plan's rows, not the effect transcript ([#1054](https://github.com/canonical/pragma/issues/1054)) ([b601ae8](https://github.com/canonical/pragma/commit/b601ae8f377618adbd0e51d640d1dc4bb63639c2))
+* **pragma-cli:** show the timings the wizard already has, and the wordmark only when read ([#1046](https://github.com/canonical/pragma/issues/1046)) ([c094f8b](https://github.com/canonical/pragma/commit/c094f8b2c242d47c9b7184985e531049c425ded6))
+
+
+### BREAKING CHANGES
+
+* **pragma-cli:** a lookup argument may answer with more than one entity, so
+`results` can be longer than the arguments that produced it. Unique names are
+unaffected — an array of one is the payload they always had. `LookupOutput`
+loses `ambiguous`, and the ambiguity notice with it; the zero-record notice is
+untouched.
+
+Claude-Session: https://claude.ai/code/session_011B8Z3Lq1eARN1wLfKGvzqC
+
+* fix(pragma-cli): give each pack its own row in doctor
+
+Drive-by, unrelated to the ranking.
+
+`pack refs` printed its whole provenance as one line — four packs and two
+forty-character SHAs comma-joined — in a report where every other multi-part
+check already uses sub-items:
+
+  pack refs: embedded snapshot @ @canonical/design-system@git:d6d8a6c8268cf2bd
+  103e956a2540d6e36bd08d72, @canonical/anatomy-dsl@npm:0.2.2, @canonical/code-
+  standards@git:ab7ae14024f3e52dd19e378eec5861dbc4b9ba72, @canonical/ds-
+  implementations@self:v0.34.0 — 657 entities · `pragma sources update` …
+
+Now the headline counts what answered and each pack gets a row saying which
+revision it is, with git hashes cut to seven:
+
+  pack refs: embedded snapshot — 4 packs, 657 entities · `pragma sources update` …
+    @canonical/design-system: git d6d8a6c
+    @canonical/anatomy-dsl: npm 0.2.2
+
+A ref that parses as no scheme passes through whole rather than being dropped —
+an unreadable provenance is still provenance, and hiding it would be the one
+failure this check exists to prevent. The update hint stays in the detail
+because the renderer prints a remedy only under `fail` and `available`, and a
+snapshot that is answering reads correctly is neither.
+
+Claude-Session: https://claude.ai/code/session_011B8Z3Lq1eARN1wLfKGvzqC
+
+* fix(summon-core): give each wizard question its own widget instance
+
+`pragma setup` failed a real (non-dry) run:
+
+  Error: Invalid --mcp-targets "global:completions".
+  Valid values: /home/adrian/.claude.json, …
+
+`global:completions` is a row id from the PREVIOUS question. Every question
+widget seeds its state from `question.default` with `useState`, which runs on
+MOUNT only — and `QuestionView` rendered them unkeyed, so React reused one
+instance across consecutive questions of the same type. The second multiselect
+inherited the first's selection instead of its own default, and submitted the
+first question's values under the second question's name.
+
+Keying on the question name forces a remount per question.
+
+The bug is older than the run that exposed it. A `customize` confirm used to sit
+between "which targets" and "configure MCP for which files"; a different widget
+type forces a remount, so the carry-over could not happen. Removing that confirm
+did not cause this — it stopped hiding it, which is why a change that deleted a
+question broke one that never mentioned it.
+
+The test drives two adjacent multiselects with different defaults and asserts on
+the SELECTION MARKERS, not the values: the widget renders labels, so a frame
+check for the first question's values passes either way. Confirmed red without
+the key — `expected '› ○ ~/.claude.json' to contain '◉'` — the second question
+rendering every row unselected because it holds a set matching none of its own
+choices.
+
+Claude-Session: https://claude.ai/code/session_011B8Z3Lq1eARN1wLfKGvzqC
+
+* refactor(pragma-cli)!: say `global` and `local project`, and plan in verbs
+
+Two vocabulary problems, one pass over every command touched today.
+
+"Band" was the repository's private word for the two config scopes and it
+had reached the front of the setup plan's headline, doctor's section
+headers, six flag docs and the emitted reference. Nobody outside the
+project has ever called a config scope a band. Both surfaces now say
+`global` and `local project` — the words the `--global` and `--local`
+flags already made the user type, so `Local project` sits above a row
+whose fix is `pragma setup mcp --local`. The TYPE layer is deliberately
+untouched: `ScopeBand`, `bands.ts` and the `band` field on a plan row are
+a wider rename, and nothing there now leaks into a sentence.
+
+The setup plan's middle column was a column of status codes. It reads as
+verbs:
+
+  - `none` said equally "already correct" and "nothing found". It is now
+    `no change`, with the detail beside it saying which of the two.
+  - `skip` never said why. It is `nothing to do`, and every reason names
+    what was found — `nothing to link — no skills installed yet; they
+    arrive with the packs `pragma sources update` builds`.
+  - `3 files` is a count, not an action, and it was in the action column.
+    The verb goes there, taken from the row's children when they agree so
+    a row that will ADD three entries no longer reads `update`.
+  - `installed (VSCodium)` beside `codium — VSCodium (unchanged)` said
+    the editor's name twice and "nothing happens" twice. Children print
+    their own action only when they disagree with each other.
+
+Doctor computed a next step for a skip, carried it through the check,
+published it in `--format json`, and then dropped it one line before it
+reached the reader: `skills` reported "no skills installed" and stopped.
+Every row that carries an instruction now prints it, labelled `fix:`
+where something is broken or unfinished and `next:` on a skip — a skip is
+not a fault, and calling its instruction a fix is the reading the
+`available` glyph exists to prevent.
+
+Jargon out of the rows themselves: "resolver OK" is now "pragma answers
+`<TAB>`", "embedded snapshot" is "shipped with the CLI", "no Global band"
+is "keeps no global config — it is per-project only", and the five
+`setup` sub-verb summaries say what you get rather than naming the
+mechanism.
+
+Goldens moved deliberately, not blanket-updated. `doctor.render.test`
+and `setup.render.test` keep every structural assertion they had — the
+banding, the ordering, the ANSI gate, the neutral marker on an unrun row
+— and gain one: no user-facing string may contain the word "band". The
+`checkShellCompletions` gate-1 test still proves the resolver ran; it
+just matches the sentence a reader gets instead of the one the build did.
+
+Behaviour is unchanged. `PlanAction` values, `--scope` values, config
+keys, JSON field names and `PARITY_GAPS` ids are all as they were; the
+action words are a display mapping over the untouched token.
+
+Claude-Session: https://claude.ai/code/session_011B8Z3Lq1eARN1wLfKGvzqC
+
+* fix(pragma-cli): key `standard` list and lookup on the same property
+
+`standard list` derived its row `name` from `cs:name` while `lookup.by`
+had moved to `rdfs:label`. Both COALESCE over their property with the
+same IRI-derived fallback, so they agreed for every entity carrying
+both or neither — and diverged for exactly the 16 standards in the
+shipped snapshot that carry `cs:name` and no label. Those rows
+published `Turtle local-name casing`; lookup bound the derived slug and
+answered ENTITY_NOT_FOUND.
+
+That is the two-step grammar breaking in the documented way: the tool
+description tells an agent to take a row's `name` VERBATIM to
+`standard_lookup`, and for 16 of 148 standards that instruction could
+not be followed. It is the same defect class the `nameFallback: "iri"`
+docblock was written for, reintroduced from the other side.
+
+Point the list query at `rdfs:label` so one property and one fallback
+serve both halves, and say in the query why the two must move together.
+
+The 16 rows now display their IRI-derived slug rather than a human
+title until the snapshot is rebuilt from a pack generation that carries
+labels (upstream v0.1.5 has 148/148 `rdfs:label`, 0 `cs:name`; the
+shipped embed has 1, 16, and 131 with neither). A consistent slug beats
+a title that cannot be looked up.
+
+Also stop `journeys.packageStories` asserting over ALL `pack refs`
+items. Provenance now contributes one passing row per pack, so the test
+pins the FAILING items — which is what "lists each ignored story as a
+failing item" actually claims.
+
+
+
+
+
+# [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
+
+
+### Bug Fixes
+
+* **deps:** batch package dependency updates ([#963](https://github.com/canonical/pragma/issues/963)) ([923f482](https://github.com/canonical/pragma/commit/923f4825325ecd1afc93ec9bbeca7437a4a4569f)), closes [#958](https://github.com/canonical/pragma/issues/958) [#935](https://github.com/canonical/pragma/issues/935) [#919](https://github.com/canonical/pragma/issues/919) [#918](https://github.com/canonical/pragma/issues/918) [#894](https://github.com/canonical/pragma/issues/894)
+* **pragma-cli:** render one plan, on both surfaces ([#1020](https://github.com/canonical/pragma/issues/1020)) ([f4b4f90](https://github.com/canonical/pragma/commit/f4b4f90db5766d75bcd8f3afbedcdcb647bb7f34))
+* **summon-core:** align the CLI seams — one flag name, safe replays, honest validation ([#988](https://github.com/canonical/pragma/issues/988)) ([375c4ba](https://github.com/canonical/pragma/commit/375c4ba08dc9e26b7e56ba3d7347544648367786))
+* **summon-core:** build the execute seam from combinators so it survives re-interpretation ([#984](https://github.com/canonical/pragma/issues/984)) ([9d7c23e](https://github.com/canonical/pragma/commit/9d7c23e1cfae46e69dad02284cd8cb352a76076d))
+* **summon-core:** drop the dead broken builtins and the phantom discovery default ([#985](https://github.com/canonical/pragma/issues/985)) ([a4e8d0c](https://github.com/canonical/pragma/commit/a4e8d0c895e44531b8efcb1549fb38947c1737f9))
+* **summon-core:** one stamp table, protected prologues, idempotent stamping ([#986](https://github.com/canonical/pragma/issues/986)) ([24aace4](https://github.com/canonical/pragma/commit/24aace44b5c91e1dcab87dfec1986be18bb74d84))
+* **task:** repair the fallback glob and implement templateDir's transform option ([#987](https://github.com/canonical/pragma/issues/987)) ([90fafdb](https://github.com/canonical/pragma/commit/90fafdb64b73c62bb4bba3655e09536f98d159b7))
+
+
+* feat(pragma)!: mount summon's generators instead of mirroring them (#1005) ([299e206](https://github.com/canonical/pragma/commit/299e206a4dd76b62fc48a6d436d33d06652e6fdf)), closes [#1005](https://github.com/canonical/pragma/issues/1005)
+
+
+### BREAKING CHANGES
+
+* summon-core no longer exposes an embedded template store —
+callers pass a real path to `loadTemplate`. `GeneratorCliHost`,
+`registerGeneratorCommands` on the main projection subpath, the
+`writeUsageError` hook and the message-only usage-error exports are gone.
+`summon application react` no longer accepts `--no-ssr`/`--no-router`.
+
+* feat(pragma)!: mount summon's generators instead of mirroring them
+
+pragma's `create` verb hand-maintained a copy of summon's generator surface —
+a flag list in `constants.ts`, an adapter that mapped it back, and a PROTECTED
+test asserting the copy still matched. Every generator change had to be made
+twice, and that test was the only thing between a drifted mirror and a
+silently wrong CLI.
+
+`mount.ts` replaces all of it, adapting the projection summon-core now exposes
+onto pragma's kernel: synthesising VerbSpecs, wiring dispatch and completion,
+enforcing the path jail, and emitting the generated reference. There is one
+description of a generator's surface and both binaries read it. `--intl`
+arriving on application/react needed no edit here at all; under the mirror it
+would have needed two.
+
+Kernel changes that made the mount possible: `kernel/spec` gains the types and
+emitters for a synthesised verb, `dispatch` and `completion/model` handle a
+verb tree resolved at runtime, and `error/types`/`renderError` carry the
+generator error codes so an invalid answer exits 2 rather than surfacing as an
+internal error.
+
+`create` help now renders in pragma's house style like every other noun —
+previously it emitted no colour at all and bypassed the style seam, so
+`NO_COLOR` and theming never reached it. Because presentation is now
+deliberately host-owned, the cross-CLI contract's help cells assert structural
+parity (same groups, rows, order, defaults) with a non-empty guard, while
+every other cell stays byte-for-byte.
+
+Also here: the perf gate's `globalSetup` builds `dist` once behind a
+cross-process lock instead of once per worker, `scripts/codegen.ts` generates
+the create surface the covenant checks against, and the retired-flag migration
+handler no longer matches commands that never carried the flag.
+* `--ssr` and `--router` are gone from `pragma create
+application` — the generator no longer declares them. The
+`@canonical/summon-component/embedded` subpath export is removed along with
+its last consumer.
+
+* fix(pragma-cli,summon): make build-lock waiters re-acquire before re-statting freshness
+
+The waiter arm of buildUnderLock (pragma-cli src/testing/perf/
+globalSetup.ts:187, summon twin src/testing/globalSetup.ts:142) paired a
+lock-free existsSync with an isFresh() stat — two unsynchronised
+observations. After existsSync saw no lock, a new holder could acquire it
+and begin an in-place rebuild; the waiter then read mid-flight mtimes as
+fresh and consumed the torn artifact the lock exists to prevent. The
+waiter now always loops back to acquire the lock and re-stats only under
+it, in both TWIN copies, keeping their shared docblock in step.
+
+The contention test's driver isFresh is now also an ownership sentinel:
+it drops a violation file whenever it runs while the lockfile is absent
+or carries another pid, so any freshness observation outside the
+waiter's own lock goes red deterministically (verified red against the
+removed fast path).
+
+* fix(pragma-cli): stop offering mutation flags on mounted namespace completions
+
+toMountedEntry (src/kernel/completion/model.ts:250) stamped the owning
+verb's mutates onto every node of a mounted subtree, so the completion
+walk offered --dry-run/--undo/--yes at a namespace position — but
+registerGeneratorCommands registers the host mutation trio on runnable
+leaves only, so an accepted suggestion like `create component --dry-run
+react` exits 2 as an unknown option (verified live). A node with
+children is now non-mutating for completion; the verb's mutability
+descends to the leaves. The literal namespace-tier pin and the
+emitSurface agreement assertion are updated to the registered grammar.
+
+* fix(pragma-cli): complete registered positional-prompt flags on create leaves
+
+leafChild (src/capabilities/create/mount.ts:466) filtered positional
+prompts out of a leaf's completion flag list, but addPromptOptions
+(summon-core registerGeneratorCommands.ts:94) registers EVERY prompt as
+an option with no positional filter — `--component-path <value>` and
+`--app-path <value>` are real registered flags (they appear in the
+leaf's own --help) that completion silently withheld. Every prompt now
+contributes its flag; the positional argument stays an additional
+spelling. The literal leaf-tier pins gain the positional-prompt flags.
+
+* fix(pragma-cli): stop retired-flag detection reading past the option terminator
+
+handleProgramError's retired-grammar scan (src/bin.ts:314) matched
+--framework anywhere in stripped argv, so a parse failure on `create
+component react --bogus -- --framework` — where --framework is an
+operand — emitted the R1 migration message instead of the real
+`unknown option '--bogus'` (verified live). The scan now reuses
+globalFlags' option-terminator concept via the newly exported
+selectScanSpan (src/kernel/project/cli/globalFlags.ts), restricting
+detection to the pre-`--` span; a subprocess regression test pins the
+honest error.
+
+
+
+
+
 # [0.34.0](https://github.com/canonical/pragma/compare/v0.33.0...v0.34.0) (2026-08-21)
 
 

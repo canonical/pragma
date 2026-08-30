@@ -104,7 +104,7 @@ export function readManifest(dir: string): Manifest | undefined {
  * would silently drop every package-declared noun. Requiring all four present +
  * non-empty makes `buildPack` rebuild a torn pack and makes the boot decision
  * surface STORE_UNAVAILABLE (the ordinary "not built" recovery) instead of a
- * "please report this" crash. `stories.json` is additionally gated on its SHAPE
+ * "report this" crash. `stories.json` is additionally gated on its SHAPE
  * — see {@link storiesAreReadable} for why it, and only it, is parsed here. */
 export function packIsComplete(dir: string): boolean {
   if (readManifest(dir) === undefined) return false;

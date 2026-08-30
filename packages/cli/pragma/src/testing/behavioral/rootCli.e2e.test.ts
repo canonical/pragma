@@ -22,8 +22,32 @@ describe("--version at every level (A2, e2e)", () => {
     expect(VERSION).toMatch(/^\d+\.\d+\.\d+/);
   });
 
-  it("-v is equivalent to --version", () => {
-    expect(runCli(["-v"]).stdout.trim()).toBe(VERSION);
+  it("-v is rejected — --version is the one spelling", () => {
+    const result = runCli(["-v"]);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('Unknown option "-v"');
+  });
+});
+
+describe("global value flags reject bad values loudly (e2e)", () => {
+  it("--format text is not a format", () => {
+    const result = runCli(["config", "show", "--format", "text"]);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('Invalid format "text"');
+    expect(result.stderr).toContain("plain, llm, json");
+  });
+
+  it("--detail rejects an unrecognized level, naming the valid ones", () => {
+    const result = runCli(["config", "show", "--detail", "bogus"]);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('Invalid detail "bogus"');
+    expect(result.stderr).toContain("summary, standard, detailed");
+  });
+
+  it("--verbose=<x> is rejected — the flag takes no value", () => {
+    const result = runCli(["config", "show", "--verbose=true"]);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain("`--verbose` takes no value");
   });
 });
 

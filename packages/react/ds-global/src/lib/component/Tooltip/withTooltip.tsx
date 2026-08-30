@@ -166,4 +166,7 @@ const withTooltip = <TProps extends object>(
   return WrappedComponent;
 };
 
+/**
+ * @implements ds:global.component.tooltip_wrapper
+ */
 export default withTooltip;

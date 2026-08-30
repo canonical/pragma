@@ -3,6 +3,248 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
+
+**Note:** Version bump only for package @canonical/summon
+
+
+
+
+
+# [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
+
+
+### Bug Fixes
+
+* **deps:** batch package dependency updates ([#963](https://github.com/canonical/pragma/issues/963)) ([923f482](https://github.com/canonical/pragma/commit/923f4825325ecd1afc93ec9bbeca7437a4a4569f)), closes [#958](https://github.com/canonical/pragma/issues/958) [#935](https://github.com/canonical/pragma/issues/935) [#919](https://github.com/canonical/pragma/issues/919) [#918](https://github.com/canonical/pragma/issues/918) [#894](https://github.com/canonical/pragma/issues/894)
+* **pragma-cli:** render one plan, on both surfaces ([#1020](https://github.com/canonical/pragma/issues/1020)) ([f4b4f90](https://github.com/canonical/pragma/commit/f4b4f90db5766d75bcd8f3afbedcdcb647bb7f34))
+* **summon-core:** drop the dead broken builtins and the phantom discovery default ([#985](https://github.com/canonical/pragma/issues/985)) ([a4e8d0c](https://github.com/canonical/pragma/commit/a4e8d0c895e44531b8efcb1549fb38947c1737f9))
+
+
+* feat(pragma)!: mount summon's generators instead of mirroring them (#1005) ([299e206](https://github.com/canonical/pragma/commit/299e206a4dd76b62fc48a6d436d33d06652e6fdf)), closes [#1005](https://github.com/canonical/pragma/issues/1005)
+
+
+### Features
+
+* **summon:** preview the undo plan and confirm before reversing ([#974](https://github.com/canonical/pragma/issues/974)) ([3c8d8d6](https://github.com/canonical/pragma/commit/3c8d8d6cc6c4aafacd1fe81c60183b497d479763)), closes [#988](https://github.com/canonical/pragma/issues/988)
+
+
+### BREAKING CHANGES
+
+* summon-core no longer exposes an embedded template store —
+callers pass a real path to `loadTemplate`. `GeneratorCliHost`,
+`registerGeneratorCommands` on the main projection subpath, the
+`writeUsageError` hook and the message-only usage-error exports are gone.
+`summon application react` no longer accepts `--no-ssr`/`--no-router`.
+
+* feat(pragma)!: mount summon's generators instead of mirroring them
+
+pragma's `create` verb hand-maintained a copy of summon's generator surface —
+a flag list in `constants.ts`, an adapter that mapped it back, and a PROTECTED
+test asserting the copy still matched. Every generator change had to be made
+twice, and that test was the only thing between a drifted mirror and a
+silently wrong CLI.
+
+`mount.ts` replaces all of it, adapting the projection summon-core now exposes
+onto pragma's kernel: synthesising VerbSpecs, wiring dispatch and completion,
+enforcing the path jail, and emitting the generated reference. There is one
+description of a generator's surface and both binaries read it. `--intl`
+arriving on application/react needed no edit here at all; under the mirror it
+would have needed two.
+
+Kernel changes that made the mount possible: `kernel/spec` gains the types and
+emitters for a synthesised verb, `dispatch` and `completion/model` handle a
+verb tree resolved at runtime, and `error/types`/`renderError` carry the
+generator error codes so an invalid answer exits 2 rather than surfacing as an
+internal error.
+
+`create` help now renders in pragma's house style like every other noun —
+previously it emitted no colour at all and bypassed the style seam, so
+`NO_COLOR` and theming never reached it. Because presentation is now
+deliberately host-owned, the cross-CLI contract's help cells assert structural
+parity (same groups, rows, order, defaults) with a non-empty guard, while
+every other cell stays byte-for-byte.
+
+Also here: the perf gate's `globalSetup` builds `dist` once behind a
+cross-process lock instead of once per worker, `scripts/codegen.ts` generates
+the create surface the covenant checks against, and the retired-flag migration
+handler no longer matches commands that never carried the flag.
+* `--ssr` and `--router` are gone from `pragma create
+application` — the generator no longer declares them. The
+`@canonical/summon-component/embedded` subpath export is removed along with
+its last consumer.
+
+* fix(pragma-cli,summon): make build-lock waiters re-acquire before re-statting freshness
+
+The waiter arm of buildUnderLock (pragma-cli src/testing/perf/
+globalSetup.ts:187, summon twin src/testing/globalSetup.ts:142) paired a
+lock-free existsSync with an isFresh() stat — two unsynchronised
+observations. After existsSync saw no lock, a new holder could acquire it
+and begin an in-place rebuild; the waiter then read mid-flight mtimes as
+fresh and consumed the torn artifact the lock exists to prevent. The
+waiter now always loops back to acquire the lock and re-stats only under
+it, in both TWIN copies, keeping their shared docblock in step.
+
+The contention test's driver isFresh is now also an ownership sentinel:
+it drops a violation file whenever it runs while the lockfile is absent
+or carries another pid, so any freshness observation outside the
+waiter's own lock goes red deterministically (verified red against the
+removed fast path).
+
+* fix(pragma-cli): stop offering mutation flags on mounted namespace completions
+
+toMountedEntry (src/kernel/completion/model.ts:250) stamped the owning
+verb's mutates onto every node of a mounted subtree, so the completion
+walk offered --dry-run/--undo/--yes at a namespace position — but
+registerGeneratorCommands registers the host mutation trio on runnable
+leaves only, so an accepted suggestion like `create component --dry-run
+react` exits 2 as an unknown option (verified live). A node with
+children is now non-mutating for completion; the verb's mutability
+descends to the leaves. The literal namespace-tier pin and the
+emitSurface agreement assertion are updated to the registered grammar.
+
+* fix(pragma-cli): complete registered positional-prompt flags on create leaves
+
+leafChild (src/capabilities/create/mount.ts:466) filtered positional
+prompts out of a leaf's completion flag list, but addPromptOptions
+(summon-core registerGeneratorCommands.ts:94) registers EVERY prompt as
+an option with no positional filter — `--component-path <value>` and
+`--app-path <value>` are real registered flags (they appear in the
+leaf's own --help) that completion silently withheld. Every prompt now
+contributes its flag; the positional argument stays an additional
+spelling. The literal leaf-tier pins gain the positional-prompt flags.
+
+* fix(pragma-cli): stop retired-flag detection reading past the option terminator
+
+handleProgramError's retired-grammar scan (src/bin.ts:314) matched
+--framework anywhere in stripped argv, so a parse failure on `create
+component react --bogus -- --framework` — where --framework is an
+operand — emitted the R1 migration message instead of the real
+`unknown option '--bogus'` (verified live). The scan now reuses
+globalFlags' option-terminator concept via the newly exported
+selectScanSpan (src/kernel/project/cli/globalFlags.ts), restricting
+detection to the pre-`--` span; a subprocess regression test pins the
+honest error.
+
+
+
+
+
+# Unreleased
+
+### BREAKING CHANGES
+
+* **`@canonical/cli-core` is deleted.** It was the v1 shared-CLI framework, and
+  the v1 name dies with the v1 model: the pragma kernel dropped the dependency
+  when it built its own command grammar, and every symbol summon still imported
+  from it had already been moved down into `@canonical/summon-core` and was
+  being served by a re-export shim. The summon bin now imports those symbols
+  from `@canonical/summon-core` directly. `packages/cli/` is left with the two
+  product binaries and zero framework packages.
+
+  For consumers: `@canonical/cli-core` is no longer published. If you imported
+  from it, the surviving symbols — `runGeneratorTask`, `createGeneratorStamp`,
+  `createStampOnEffectStart`, `answerPromptWithDefaults`, the effect formatters
+  (`formatEffectLine`, `formatEffectWithContent`, `formatContentPreview`,
+  `formatLlmHelp`/`formatLlmJson`/`formatLlmMarkdown`, `isVisibleEffect`, …) —
+  are exported by `@canonical/summon-core` under the same names, except
+  `promptForAnswers`, which is `collectAnswers` there. The rest of cli-core (the
+  v1 `CommandDefinition` type, `registerAll`, its help/completion derivation and
+  output adapters, `convertGenerator`, `executeGenerator`) has no successor in
+  this package: those concerns live inside the pragma kernel's command grammar,
+  whose extraction into a shared package is tracked separately.
+
+* **One interaction model — non-interactive runs without complete input now
+  REFUSE (exit 2).** Summon adopts the shared interaction decision it now
+  shares verbatim with `pragma create` (the contract is executed, not
+  written down: summon-core's projection suite pins the decision and
+  pragma's `crossCli.subprocess.test.ts` runs both CLIs over the same argv
+  and compares what they emit). Three behaviors that
+  previously fell through to mounting the Ink UI are now loud, scriptable
+  failures:
+
+  - **Non-TTY refusal**: a piped/CI run of a generator without `--yes`,
+    `--dry-run`, `--undo`, or a complete set of answer flags exits **2** with
+    `Refusing to scaffold in a non-interactive run without complete input.
+    Pass --yes to accept defaults, --dry-run to preview, or provide every
+    answer as a flag. Missing: --…` (previously: an Ink render attempt against
+    a pipe). A CI invocation like `summon component react | tee log` must now
+    pass `--yes` (accept defaults), `--dry-run` (preview only), or every
+    remaining flag.
+  - **Excess positionals** exit **2** with `error: unexpected argument "X"`
+    naming the first excess operand (plus a did-you-mean when ANY operand of
+    the invocation — a bound positional included, not only the excess ones —
+    names a sibling or child segment: `summon component react svelte MyThing`
+    suggests `summon component svelte` off the bound `svelte`); they were
+    previously commander's generic "too many arguments" or silently absorbed.
+    Every other Commander parse failure — an unknown option, an unknown
+    command, a missing option argument — now also exits **2** (aligned with
+    `pragma`; commander's own exit **1** previously stood). The error text is
+    unchanged — except an unknown segment beneath a namespace
+    (`summon component reakt`), whose suggestion is now the shared
+    `Did you mean 'summon component react'?` form both CLIs emit (previously
+    commander's `(Did you mean react?)`); `--help`/`--version` keep exit 0,
+    and a bare namespace still prints its help on stderr with exit 1.
+  - **Invalid input**: an explicitly provided answer failing its prompt's own
+    constraint (a `validate` rejection, or a value outside a select's
+    choices) errors loudly (exit **2**) in every mode that reaches the
+    generator — batch, run, and wizard; an incomplete non-interactive run
+    REFUSES first, before validating — with a message echoing the value
+    (`Invalid --component-path "not-pascal": …`). Batch runs
+    (`--dry-run`/`--undo`) previously fell through to the interactive UI;
+    `--yes` runs and partial-flag wizards previously accepted the invalid
+    value and scaffolded a tree carrying it (e.g. `--name "Bad Name!"` wrote
+    `./Bad Name!/` with the broken name in its package.json) — all four now
+    refuse before any UI, exactly where `pragma create` validates. One
+    prompt's VALUE SET also changed, not just when validation runs:
+    `application/react`'s `--app-path` now rejects an absolute path and any
+    `..` segment (previously ANY path was accepted and the tree was written
+    wherever it pointed — a sibling app via `../my-app` included), matching
+    `--component-path`'s long-standing rule. The batch
+    modes additionally error (exit **2**) on a required answer that is
+    missing even after defaults. A generator-raised cross-answer constraint
+    (`invalidAnswersError` from `@canonical/summon-core`) fails the same
+    way — a bare stderr line, exit **2** in the batch modes (previously an
+    uncaught throw with a stack, exit 1); no shipped generator raises one
+    today (application/react's former ssr/router guard is gone with its
+    prompts — see the wizard note below). The run and wizard
+    arms show it as the App's clean error instead of crashing — and now
+    carry the same exit codes instead of exiting 0 with the failure
+    rendered: exit **2** for the typed cross-answer error, exit **1** for
+    any other failure the App reports (a mid-run write error, say). An ordinary
+    `Error` thrown by a generator's `generate` gets the same treatment in
+    every arm: the App's clean error phase (`GENERATE_ERROR`, exit **1**)
+    where it previously crashed into Ink's boundary — rendered on stdout
+    with a source frame and, under bun, exit **0** — and a bare stderr
+    line (exit **1**) in the batch modes, where it previously escaped as
+    an unhandled-rejection stack. A `generate()` that RETURNS no task (a
+    plain-JS generator that forgot its `return`) is classified the same
+    way — the named line `<generator>'s generate returned no task`, exit
+    **1** in every arm — instead of the interpreter's incidental
+    TypeError. For failures the App already reported, the rendering is
+    unchanged; only the exit code moved.
+
+  Also in this line of work, on a TTY: `--dry-run` renders the batch plan and
+  `--undo` runs batch undo (neither mounts the interactive preview any more,
+  and `--dry-run` now takes precedence over `--undo`); a run with PARTIAL
+  answer flags asks exactly the missing prompts instead of silently
+  defaulting the rest; and the long-missing `--undo` row appears in every
+  generator's `--help`. Generated trees are byte-identical throughout; a
+  `--yes` run with VALID answers is untouched (an invalid explicit answer
+  now refuses — see *Invalid input* above).
+
+* **`application/react` drops its `ssr` and `router` prompts — SSR and the
+  router are always on.** The scaffold has no SPA arm, so the two wizard
+  questions (`Include SSR?`, `Include router?`) only ever accepted their
+  default: answering "no" hit the generator's own guard. Worse, the pair made
+  the non-interactive refusal's advice unfollowable — a default-`true`
+  confirm can be provided explicitly only as its negation, which the guard
+  then rejected, so `summon application react` had no complete-flags path at
+  all. The wizard now asks four questions (directory, forms, relay, install);
+  `--no-ssr`/`--no-router` are unknown options (they previously only ever
+  produced the guard error); the guard itself is gone as dead code. Generated
+  trees are byte-identical — the pair never reached a template.
+
 # [0.34.0](https://github.com/canonical/pragma/compare/v0.33.0...v0.34.0) (2026-08-21)
 
 
@@ -353,30 +595,6 @@ Claude-Session: https://claude.ai/code/session_017EwUvEW5ZgjAYc9KWPjHCZ
 
 
 
-
-# Unreleased
-
-### BREAKING CHANGES
-
-* **`@canonical/cli-core` is deleted.** It was the v1 shared-CLI framework, and
-  the v1 name dies with the v1 model: the pragma kernel dropped the dependency
-  when it built its own command grammar, and every symbol summon still imported
-  from it had already been moved down into `@canonical/summon-core` and was
-  being served by a re-export shim. The summon bin now imports those symbols
-  from `@canonical/summon-core` directly. `packages/cli/` is left with the two
-  product binaries and zero framework packages.
-
-  For consumers: `@canonical/cli-core` is no longer published. If you imported
-  from it, the surviving symbols — `runGeneratorTask`, `createGeneratorStamp`,
-  `createStampOnEffectStart`, `answerPromptWithDefaults`, the effect formatters
-  (`formatEffectLine`, `formatEffectWithContent`, `formatContentPreview`,
-  `formatLlmHelp`/`formatLlmJson`/`formatLlmMarkdown`, `isVisibleEffect`, …) —
-  are exported by `@canonical/summon-core` under the same names, except
-  `promptForAnswers`, which is `collectAnswers` there. The rest of cli-core (the
-  v1 `CommandDefinition` type, `registerAll`, its help/completion derivation and
-  output adapters, `convertGenerator`, `executeGenerator`) has no successor in
-  this package: those concerns live inside the pragma kernel's command grammar,
-  whose extraction into a shared package is tracked separately.
 
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 

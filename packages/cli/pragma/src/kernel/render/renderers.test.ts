@@ -6,15 +6,27 @@ import {
   renderErrorLlm,
   renderErrorPlain,
 } from "../error/renderError.js";
-import type { ColumnDef, LookupField, SectionDef } from "./contracts.js";
+import type {
+  ColumnDef,
+  LookupField,
+  RenderContext,
+  SectionDef,
+} from "./contracts.js";
 import { resolveDetail } from "./disclosure.js";
 import {
+  MAX_PLAIN_CELL_WIDTH,
+  renderListEmptyNotice,
   renderListLlm,
   renderListPlain,
   renderLookupLlm,
   renderLookupPlain,
 } from "./renderers.js";
 import { type RenderStyle, styleFor } from "./style.js";
+
+/** An interactive stdout with headers on — the default terminal shape. */
+const TTY_CONTEXT: RenderContext = { headers: true, stdoutIsTty: true };
+/** A piped stdout with headers on — the field-splitting consumer shape. */
+const PIPE_CONTEXT: RenderContext = { headers: true, stdoutIsTty: false };
 
 interface Widget {
   readonly uri: string;
@@ -111,18 +123,21 @@ describe("render matrix (list/lookup/empty × plain/llm/json × detail)", () => 
     expect(matrix).toMatchSnapshot();
   });
 
-  it("renders an empty-state message (+ hint) when items are empty", () => {
+  it("separates the empty notice (stderr's text) from the stdout rendering", () => {
     const options = {
       heading: "Widgets",
       columns: columnsFor("summary"),
       emptyMessage: "No widget entries found.",
       emptyHint: "Run `pragma sources update`.",
     };
-    // Plain: message then hint on the next line — a non-blank exit-0 body.
-    expect(renderListPlain([], options)).toBe(
+    // The notice is its own render — the dispatcher routes it to stderr so a
+    // pipe never receives a human sentence as data.
+    expect(renderListEmptyNotice(options)).toBe(
       "No widget entries found.\nRun `pragma sources update`.",
     );
-    // Llm: the `(0)` heading, then the same message + hint.
+    // Plain stdout for an empty list on a TTY: nothing (the notice suffices).
+    expect(renderListPlain([], options, TTY_CONTEXT)).toBe("");
+    // Llm keeps its byte-frozen shape: the `(0)` heading, then message + hint.
     expect(renderListLlm([], options)).toBe(
       "## Widgets (0)\n\nNo widget entries found.\nRun `pragma sources update`.",
     );
@@ -130,7 +145,8 @@ describe("render matrix (list/lookup/empty × plain/llm/json × detail)", () => 
 
   it("keeps the bare-empty behavior when no emptyMessage is declared", () => {
     const options = { heading: "Widgets", columns: columnsFor("summary") };
-    expect(renderListPlain([], options)).toBe("");
+    expect(renderListEmptyNotice(options)).toBe("");
+    expect(renderListPlain([], options, TTY_CONTEXT)).toBe("");
     expect(renderListLlm([], options)).toBe("## Widgets (0)\n");
   });
 
@@ -142,6 +158,101 @@ describe("render matrix (list/lookup/empty × plain/llm/json × detail)", () => 
     expect(resolveDetail({ specDefault: "detailed" })).toBe("detailed");
     expect(resolveDetail({})).toBe("standard");
     expect(resolveDetail({ flag: "bogus" })).toBe("standard");
+  });
+});
+
+describe("plain list table contract (headers, rectangular grid, cell discipline)", () => {
+  const columns: ColumnDef<Widget>[] = [
+    { key: "name", label: "Name" },
+    { key: "kind", label: "Kind" },
+    { key: "note", label: "Note" },
+  ];
+  const options = { heading: "Widgets", columns };
+
+  it("emits a bold-eligible UPPERCASE header row built from the column labels", () => {
+    const lines = renderListPlain(widgets, options, TTY_CONTEXT).split("\n");
+    expect(lines[0]).toMatch(/^NAME\s+KIND\s+NOTE$/);
+    expect(lines).toHaveLength(1 + widgets.length);
+  });
+
+  it("suppresses the header row when the context disables headers", () => {
+    const lines = renderListPlain(widgets, options, {
+      headers: false,
+      stdoutIsTty: true,
+    }).split("\n");
+    expect(lines[0]).not.toMatch(/^NAME/);
+    expect(lines).toHaveLength(widgets.length);
+  });
+
+  it("keeps the grid rectangular — an empty cell renders as -", () => {
+    // Card's note is "": the NOTE column is populated on another row, so the
+    // grid keeps the column and marks the hole instead of shifting fields.
+    const lines = renderListPlain(widgets, options, TTY_CONTEXT).split("\n");
+    const cardRow = lines.find((line) => line.startsWith("Card"));
+    expect(cardRow?.trim().split(/\s{2,}/)).toEqual(["Card", "pattern", "-"]);
+  });
+
+  it("drops a column no row populates (unless it opts into showWhenEmpty)", () => {
+    const noteless = widgets.map((w) => ({ ...w, note: "" }));
+    const lines = renderListPlain(noteless, options, TTY_CONTEXT).split("\n");
+    expect(lines[0]).toMatch(/^NAME\s+KIND$/);
+  });
+
+  it("collapses newlines and truncates a long cell with an ellipsis", () => {
+    const prose = [
+      {
+        ...widgets[0],
+        note: `first line\nsecond line ${"x".repeat(2 * MAX_PLAIN_CELL_WIDTH)}`,
+      },
+    ] as Widget[];
+    const lines = renderListPlain(prose, options, TTY_CONTEXT).split("\n");
+    const row = lines[1] as string;
+    expect(row).not.toContain("\n");
+    expect(row).toContain("first line second line");
+    const noteCell = row
+      .trim()
+      .split(/\s{2,}/)
+      .at(-1) as string;
+    expect(noteCell.length).toBeLessThanOrEqual(MAX_PLAIN_CELL_WIDTH);
+    expect(noteCell.endsWith("…")).toBe(true);
+  });
+
+  it("renders only the header row for an empty list on a piped stdout", () => {
+    // An explicit `--format plain` down a pipe gets a well-formed zero-record
+    // table: every declared column, no rows — so `awk` sees a schema.
+    expect(renderListPlain([], options, PIPE_CONTEXT)).toMatch(
+      /^NAME\s+KIND\s+NOTE$/,
+    );
+    // With headers off there is nothing to print at all.
+    expect(
+      renderListPlain([], options, { headers: false, stdoutIsTty: false }),
+    ).toBe("");
+  });
+
+  it("bolds the header row on a color-capable TTY, leaving cells unstyled", () => {
+    const tagged: RenderStyle = {
+      enabled: true,
+      bold: (t) => `B(${t})`,
+      dim: (t) => t,
+      cyan: (t) => t,
+      green: (t) => t,
+      yellow: (t) => t,
+    };
+    const lines = renderListPlain(widgets, options, TTY_CONTEXT, tagged).split(
+      "\n",
+    );
+    expect(lines[0]).toMatch(/^B\(NAME\s+KIND\s+NOTE\)$/);
+    expect(lines[1]).not.toContain("B(");
+  });
+
+  it("is byte-identical plain text when the styler is disabled", () => {
+    const lines = renderListPlain(
+      widgets,
+      options,
+      TTY_CONTEXT,
+      styleFor(false),
+    ).split("\n");
+    expect(lines[0]).toMatch(/^NAME\s+KIND\s+NOTE$/);
   });
 });
 
@@ -201,5 +312,131 @@ describe("error render matrix (× plain/llm/json)", () => {
         json: renderErrorJson(empty),
       },
     }).toMatchSnapshot();
+  });
+});
+
+describe("section-body headings nest under the heading the renderer gives them", () => {
+  interface Doc {
+    readonly guidelines: string;
+  }
+
+  const render = (guidelines: string): string =>
+    renderLookupLlm<Doc>(
+      { guidelines },
+      {
+        title: () => "Button",
+        fields: [],
+        sections: [{ key: "guidelines", heading: "Guidelines", kind: "field" }],
+      },
+    );
+
+  it("demotes authored headings that collide with the section heading", () => {
+    const out = render(
+      "### Accessibility\n\n- Label the button.\n\n### Content\n\n- Verb first.",
+    );
+    expect(out).toContain("### Guidelines");
+    expect(out).toContain("#### Accessibility");
+    expect(out).toContain("#### Content");
+    expect(out).not.toMatch(/^### Accessibility$/m);
+  });
+
+  it("preserves the content's own hierarchy while shifting it as a block", () => {
+    const out = render("## Overview\n\ntext\n\n### Detail\n\nmore");
+    expect(out).toContain("#### Overview");
+    expect(out).toContain("##### Detail");
+  });
+
+  it("leaves content already nested below the section alone", () => {
+    const out = render("#### Already nested\n\ntext");
+    expect(out).toContain("#### Already nested");
+    expect(out).not.toContain("##### Already nested");
+  });
+
+  it("never emits a heading deeper than markdown's floor", () => {
+    const out = render("###### Deep\n\ntext");
+    expect(out).toContain("###### Deep");
+  });
+
+  it("leaves `#` inside a fenced code block exactly as authored", () => {
+    const out = render("### Setup\n\n```sh\n# not a heading\nbun install\n```");
+    expect(out).toContain("#### Setup");
+    expect(out).toContain("# not a heading");
+    expect(out).not.toContain("## not a heading");
+  });
+
+  it("leaves a body with no headings untouched", () => {
+    const out = render("Plain prose with a # hash mid-line.");
+    expect(out).toContain("Plain prose with a # hash mid-line.");
+  });
+
+  it("does not rewrite the plain body, where `###` is literal text", () => {
+    const out = renderLookupPlain<Doc>(
+      { guidelines: "### Accessibility" },
+      {
+        title: () => "Button",
+        fields: [],
+        sections: [{ key: "guidelines", heading: "Guidelines", kind: "field" }],
+      },
+    );
+    expect(out).toContain("Guidelines:");
+    expect(out).toContain("  ### Accessibility");
+  });
+});
+
+describe("section-body nesting follows CommonMark, not a near-enough reading", () => {
+  interface Doc {
+    readonly guidelines: string;
+  }
+
+  const render = (guidelines: string): string =>
+    renderLookupLlm<Doc>(
+      { guidelines },
+      {
+        title: () => "Button",
+        fields: [],
+        sections: [{ key: "guidelines", heading: "Guidelines", kind: "field" }],
+      },
+    );
+
+  it("nests a heading indented up to three spaces, keeping its indent", () => {
+    // Four spaces would make the line an indented code block; three or fewer
+    // leave it a heading. Missing that left an indented heading at the
+    // section's own level while its unindented twin was demoted — one body
+    // rendered with two conflicting hierarchies.
+    expect(render("  ### Accessibility\n\ntext")).toMatch(
+      /^ {2}#### Accessibility$/m,
+    );
+  });
+
+  it("does not close a four-backtick fence on a three-backtick sample", () => {
+    // A closing fence must be AT LEAST as long as the opener. Toggling on any
+    // same-character run let the inner sample read as the close, after which
+    // every `#` line in that code block was rewritten — the renderer silently
+    // editing the user's sample code.
+    const out = render(
+      [
+        "````md",
+        "```",
+        "### Sample text, not a heading",
+        "```",
+        "````",
+        "",
+        "### A real heading",
+      ].join("\n"),
+    );
+    // Anchored: `#### x` CONTAINS `### x`, so a substring check would pass
+    // against the very rewrite this pins against.
+    expect(out).toMatch(/^### Sample text, not a heading$/m);
+    expect(out).toMatch(/^#### A real heading$/m);
+  });
+
+  it("does not close a fence on a run that carries an info string", () => {
+    // An opener may carry an info string; a CLOSER may not. A ```js line
+    // inside a block opens nothing and closes nothing.
+    const out = render(
+      ["```", "### inside", "```js", "### also inside", "```"].join("\n"),
+    );
+    expect(out).toMatch(/^### inside$/m);
+    expect(out).toMatch(/^### also inside$/m);
   });
 });

@@ -17,7 +17,7 @@ const componentCssClassName = "ds accordion";
  *
  * `import { Accordion } from "@canonical/react-ds-global";`
  *
- * @implements dso:global.component.accordion
+ * @implements ds:global.component.accordion
  */
 const Accordion = ({
   className,

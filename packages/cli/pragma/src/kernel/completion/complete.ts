@@ -30,7 +30,7 @@
  * whole grammar is testable through this one function.
  */
 
-import type { CapabilityModule } from "../spec/types.js";
+import type { CapabilityModule } from "../spec/index.js";
 import { emptyNameSource } from "./entitySource.js";
 import { buildCompletionModel } from "./model.js";
 import { parseWords } from "./parse.js";

@@ -6,22 +6,30 @@
 
 import {
   formatContentPreview,
+  GENERATOR_INVALID_ANSWER,
   type GeneratorDefinition,
+  isInvalidAnswersError,
   type PromptDefinition,
   type StampConfig,
 } from "@canonical/summon-core";
 import {
+  collectUndos,
   dryRun,
   type Effect,
   type Task,
   type TaskError,
 } from "@canonical/task";
-import { runUndo } from "@canonical/task/node";
+import { hostExistsResolver, runCollectedUndos } from "@canonical/task/node";
 import { Box, Text, useApp, useInput } from "ink";
 import { useCallback, useEffect, useState } from "react";
 import { ExecutionProgress, type TimedEffect } from "./ExecutionProgress.js";
 import { PromptSequence } from "./PromptSequence.js";
 import { Spinner } from "./Spinner.js";
+import {
+  describeUndoSteps,
+  isUnreversibleExec,
+  shouldSkipUndoGate,
+} from "./undoPlan.js";
 
 // =============================================================================
 // Effect Tree - Hierarchical display with action labels and tree connectors
@@ -772,6 +780,14 @@ export type AppState =
       effects: Effect[];
       promptAnswers: Record<string, unknown>;
     }
+  | { phase: "undoPreview"; planEffects: Effect[] }
+  | {
+      phase: "confirmingUndo";
+      undos: Task<void>[];
+      planEffects: Effect[];
+      unreversible: Effect[];
+    }
+  | { phase: "undone"; undoCount: number; unreversible: Effect[] }
   | { phase: "executing"; task: Task<void> }
   | { phase: "complete"; effects: TimedEffect[]; duration: number }
   | { phase: "error"; error: TaskError; answers?: Record<string, unknown> };
@@ -789,6 +805,15 @@ export interface AppProps {
   verbose?: boolean;
   /** Pre-filled answers (for non-interactive mode) */
   answers?: Record<string, unknown>;
+  /**
+   * Wizard mode over a PARTIAL answer set: `answers` are the explicitly
+   * provided ones — never re-asked, shown as completed — and the wizard asks
+   * exactly the pending prompts (empty set ⇒ straight to preview/confirm).
+   * Without this flag, provided `answers` skip prompting entirely (a run).
+   */
+  askMissing?: boolean;
+  /** Skip confirmation gates (`--yes`) */
+  yes?: boolean;
   /** Stamp configuration for generated files (undefined = no stamps) */
   stamp?: StampConfig;
 }
@@ -800,51 +825,183 @@ export const App = ({
   undo = false,
   verbose = false,
   answers: prefilledAnswers,
+  askMissing = false,
+  yes = false,
   stamp,
 }: AppProps) => {
   const { exit } = useApp();
   const [state, setState] = useState<AppState>(
-    prefilledAnswers ? { phase: "loading" } : { phase: "prompting" },
+    prefilledAnswers && !askMissing
+      ? { phase: "loading" }
+      : { phase: "prompting" },
   );
   const [answers, setAnswers] = useState<Record<string, unknown>>(
     prefilledAnswers ?? {},
   );
   const [showFiles, setShowFiles] = useState(false);
+  // Set once the user navigates BACK from the confirm gate: the re-entered
+  // wizard asks EVERY prompt again (previous values pre-filled) instead of
+  // seeding `provided` — with a fully-explicit invocation the pending set is
+  // empty, so a kept seed would auto-complete straight back to the gate and
+  // make the advertised `esc to go back` a no-op.
+  const [reasking, setReasking] = useState(false);
+
+  // Generate the task, entering the error phase on ANY throw — §3's exit
+  // contract: a rendered failure never exits 0. A generator-raised typed
+  // invalid answer (a cross-answer constraint its `generate` enforces — two
+  // answers only valid together; no shipped generator raises one today) is
+  // the usage class
+  // (GENERATOR_INVALID_ANSWER → the effect's exit 2); any OTHER throw is a
+  // generator bug rendered as GENERATE_ERROR — the run/wizard sibling of the
+  // batch arms' bare stderr line — carrying the runtime class (exit 1).
+  // Re-throwing it (the old behavior) reached Ink's error boundary, which
+  // renders a crash box but sets NO exit code: `summon … --yes` under bun
+  // exited 0 on a failed run.
+  //
+  // The SUCCESS path is validated too: `undefined` is this helper's
+  // "already handled, stop" sentinel, so a `generate()` that RETURNS
+  // undefined/null (a plain-JS generator that forgot its `return` — the
+  // `--generators` extension point is untyped) must not be forwarded as
+  // that sentinel — no state would be set, no exit code owned, and the
+  // App would sit in phase limbo with `waitUntilExit` pending FOREVER.
+  // It is the same generator-bug class as a throw: GENERATE_ERROR, named.
+  const generateTask = useCallback(
+    (promptAnswers: Record<string, unknown>): Task<void> | undefined => {
+      try {
+        // The wider type is honest: `--generators` loads unchecked JS, so
+        // the declared `Task<void>` is a promise the author may break.
+        const task: Task<void> | undefined | null =
+          generator.generate(promptAnswers);
+        if (task === undefined || task === null) {
+          setState({
+            phase: "error",
+            error: {
+              code: "GENERATE_ERROR",
+              message: `${generator.meta.name}'s generate returned no task`,
+            },
+            answers: promptAnswers,
+          });
+          return undefined;
+        }
+        return task;
+      } catch (error) {
+        setState({
+          phase: "error",
+          error: isInvalidAnswersError(error)
+            ? { code: GENERATOR_INVALID_ANSWER, message: error.message }
+            : {
+                code: "GENERATE_ERROR",
+                message: error instanceof Error ? error.message : String(error),
+              },
+          answers: promptAnswers,
+        });
+        return undefined;
+      }
+    },
+    [generator],
+  );
+
+  const runUndoPlan = useCallback(
+    (
+      undos: Task<void>[],
+      unreversible: Effect[],
+      promptAnswers: Record<string, unknown>,
+    ) => {
+      (async () => {
+        try {
+          const result = await runCollectedUndos(undos);
+          // Failure no longer aborts the pending undos — every step is
+          // attempted and reported in `outcomes` — so the verdict is read
+          // off the outcomes here: any failed step fails the undo, naming
+          // each cause, instead of a green "complete" over partial work.
+          const failed = result.outcomes.filter((o) => o.status === "failed");
+          if (failed.length > 0) {
+            setState({
+              phase: "error",
+              error: {
+                code: "UNDO_ERROR",
+                message: `${failed.length} of ${result.outcomes.length} undo step${result.outcomes.length === 1 ? "" : "s"} did not complete: ${failed
+                  .map((o) => o.error.message)
+                  .join("; ")}`,
+              },
+              answers: promptAnswers,
+            });
+            return;
+          }
+          setState({
+            phase: "undone",
+            undoCount: result.undoCount,
+            unreversible,
+          });
+        } catch (err) {
+          setState({
+            phase: "error",
+            error:
+              err instanceof Error
+                ? { code: "UNDO_ERROR", message: err.message }
+                : { code: "UNKNOWN_ERROR", message: String(err) },
+            answers: promptAnswers,
+          });
+        }
+      })();
+    },
+    [],
+  );
 
   const handlePromptsComplete = useCallback(
     (promptAnswers: Record<string, unknown>) => {
       setAnswers(promptAnswers);
 
-      // Generate the task
-      const task = generator.generate(promptAnswers);
+      const task = generateTask(promptAnswers);
+      if (task === undefined) return;
 
-      // Undo mode: run undo directly
+      // Undo mode: collect the plan ONCE (host-backed Exists resolution, so
+      // branch selection matches the run being undone), show it, and execute
+      // exactly the collected undos — never re-walk the task in between.
       if (undo) {
-        (async () => {
-          try {
-            const result = await runUndo(task);
-            setState({
-              phase: "complete",
-              effects: [],
-              duration: 0,
-            });
-            if (result.undoCount === 0) {
-              setState({
-                phase: "error",
-                error: { code: "NOTHING_TO_UNDO", message: "Nothing to undo." },
-              });
-            }
-          } catch (err) {
+        try {
+          const unreversible: Effect[] = [];
+          const undos = collectUndos(task, {
+            resolveExists: hostExistsResolver(),
+            onForwardEffect: (effect) => {
+              if (isUnreversibleExec(effect)) unreversible.push(effect);
+            },
+          });
+          if (undos.length === 0) {
             setState({
               phase: "error",
-              error:
-                err instanceof Error
-                  ? { code: "UNDO_ERROR", message: err.message }
-                  : { code: "UNKNOWN_ERROR", message: String(err) },
-              answers: promptAnswers,
+              error: { code: "NOTHING_TO_UNDO", message: "Nothing to undo." },
             });
+            return;
           }
-        })();
+          const planEffects = describeUndoSteps(undos);
+          if (dryRunOnly) {
+            setState({ phase: "undoPreview", planEffects });
+            return;
+          }
+          // Same gate contract as the forward run: flags only pre-fill
+          // answers; `--yes` skips the gate, and so does `--no-preview` —
+          // the forward flow goes straight to executing in both cases.
+          if (shouldSkipUndoGate({ yes, preview })) {
+            runUndoPlan(undos, unreversible, promptAnswers);
+            return;
+          }
+          setState({
+            phase: "confirmingUndo",
+            undos,
+            planEffects,
+            unreversible,
+          });
+        } catch (err) {
+          setState({
+            phase: "error",
+            error:
+              err instanceof Error
+                ? { code: "UNDO_ERROR", message: err.message }
+                : { code: "UNKNOWN_ERROR", message: String(err) },
+            answers: promptAnswers,
+          });
+        }
         return;
       }
 
@@ -875,13 +1032,17 @@ export const App = ({
         setState({ phase: "executing", task });
       }
     },
-    [generator, preview, dryRunOnly, undo],
+    [generateTask, preview, dryRunOnly, undo, yes, runUndoPlan],
   );
 
   const handleConfirm = useCallback(() => {
-    const task = generator.generate(answers);
+    // The same catch as the preview's generate: a re-generate at the confirm
+    // gate normally re-runs what already succeeded, but a stateful generator
+    // throwing HERE must land in the error phase too, not in Ink's boundary.
+    const task = generateTask(answers);
+    if (task === undefined) return;
     setState({ phase: "executing", task });
-  }, [generator, answers]);
+  }, [generateTask, answers]);
 
   const handleCancel = useCallback(() => {
     exit();
@@ -901,20 +1062,41 @@ export const App = ({
     [answers],
   );
 
-  // Handle pre-filled answers
+  // Handle pre-filled answers (run mode only — askMissing starts prompting)
   useEffect(() => {
-    if (prefilledAnswers && state.phase === "loading") {
+    if (prefilledAnswers && !askMissing && state.phase === "loading") {
       handlePromptsComplete(prefilledAnswers);
     }
-  }, [prefilledAnswers, state.phase, handlePromptsComplete]);
+  }, [prefilledAnswers, askMissing, state.phase, handlePromptsComplete]);
 
-  // Handle going back from confirmation to prompting
+  // The error phase owns the process exit code (the cross-CLI matrix): a
+  // rendered failure must not exit 0 — pragma routes the same failures
+  // through mapExitCode (usage → 2, everything else → 1). The typed invalid
+  // answer (a generator's cross-answer guard) is the usage class; every
+  // other rendered failure — execution, dry-run, undo — is a runtime
+  // failure. Only the exit code is owned here: the rendering above it stays
+  // host UI, and a deliberate cancel (n at the confirm gate) keeps exit 0.
+  useEffect(() => {
+    if (state.phase !== "error") return;
+    process.exitCode = state.error.code === GENERATOR_INVALID_ANSWER ? 2 : 1;
+  }, [state]);
+
+  // Handle going back from confirmation to prompting. Clearing the provided
+  // seed (via `reasking`) is what keeps esc meaningful when the wizard had
+  // nothing left to ask — the flag-given answers are exactly what the user
+  // may want to change.
   const handleGoBack = useCallback(() => {
     setShowFiles(false);
+    setReasking(true);
     setState({ phase: "prompting" });
   }, []);
 
-  // Handle confirm/cancel/back/show-files input when in confirming state
+  const handleUndoConfirm = useCallback(() => {
+    if (state.phase !== "confirmingUndo") return;
+    runUndoPlan(state.undos, state.unreversible, answers);
+  }, [state, runUndoPlan, answers]);
+
+  // Handle confirm/cancel/back/show-files input when in a confirming state
   useInput(
     (input, key) => {
       if (state.phase === "confirming") {
@@ -929,9 +1111,18 @@ export const App = ({
         } else if (input.toLowerCase() === "n") {
           handleCancel();
         }
+      } else if (state.phase === "confirmingUndo") {
+        if (key.return || input.toLowerCase() === "y") {
+          handleUndoConfirm();
+        } else if (key.escape || input.toLowerCase() === "n") {
+          handleCancel();
+        }
       }
     },
-    { isActive: state.phase === "confirming" },
+    {
+      isActive:
+        state.phase === "confirming" || state.phase === "confirmingUndo",
+    },
   );
 
   return (
@@ -955,6 +1146,7 @@ export const App = ({
           onComplete={handlePromptsComplete}
           onCancel={handleCancel}
           initialAnswers={answers}
+          provided={askMissing && !reasking ? prefilledAnswers : undefined}
         />
       )}
 
@@ -968,6 +1160,66 @@ export const App = ({
           <Box marginTop={1}>
             <Text dimColor>Dry-run complete. No files were modified.</Text>
           </Box>
+        </Box>
+      )}
+
+      {state.phase === "undoPreview" && (
+        <Box flexDirection="column">
+          <DryRunTimeline
+            effects={state.planEffects}
+            title="Undo plan (dry-run):"
+            verbose={verbose}
+          />
+          <Box marginTop={1}>
+            <Text dimColor>Dry-run complete. No files were modified.</Text>
+          </Box>
+        </Box>
+      )}
+
+      {state.phase === "confirmingUndo" && (
+        <Box flexDirection="column">
+          <DryRunTimeline
+            effects={state.planEffects}
+            title={`Undo will reverse ${state.undos.length} step${state.undos.length === 1 ? "" : "s"}:`}
+            verbose={verbose}
+          />
+          {state.unreversible.length > 0 && (
+            <Box marginTop={1}>
+              <Text color="yellow">
+                {state.unreversible.length} exec step
+                {state.unreversible.length === 1 ? "" : "s"} (e.g. installs)
+                cannot be reversed; artifacts may remain.
+              </Text>
+            </Box>
+          )}
+          <Box marginTop={1}>
+            <Text color="magenta">› </Text>
+            <Text bold>Reverse these steps? </Text>
+            <Text dimColor>(y/N) </Text>
+            <Text dimColor italic>
+              esc to cancel
+            </Text>
+          </Box>
+        </Box>
+      )}
+
+      {state.phase === "undone" && (
+        <Box flexDirection="column">
+          <Box>
+            <Text color="green">
+              ✓ Undo complete ({state.undoCount} step
+              {state.undoCount === 1 ? "" : "s"} reversed).
+            </Text>
+          </Box>
+          {state.unreversible.length > 0 && (
+            <Box marginTop={1}>
+              <Text dimColor>
+                Note: {state.unreversible.length} exec step
+                {state.unreversible.length === 1 ? "" : "s"} were not reversed;
+                their artifacts may remain.
+              </Text>
+            </Box>
+          )}
         </Box>
       )}
 

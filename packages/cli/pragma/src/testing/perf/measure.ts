@@ -1,7 +1,7 @@
 /**
  * Perf measurement helper for the compiled `pragma` binary.
  *
- * Spawns the standalone binary N times, discards warmups, and reports the
+ * Spawns the shipped entry N times, discards warmups, and reports the
  * median and p95 of the wall-clock durations. Kept dependency-free (only
  * `node:child_process`) so it can run inside vitest without touching the
  * kernel's import graph. Wired up by the perf-spike commit; the skeleton
@@ -62,11 +62,20 @@ export function trimmedMean(sorted: readonly number[], trim = 0.1): number {
 /**
  * Measure the wall-clock cost of running `binary args…` repeatedly.
  *
- * @param binary - Absolute path to the compiled binary.
+ * Every budget argv exits 0 by contract, so a sample that FAILS —
+ * nonzero/killed `status` or a spawn `error` — throws on the spot, naming
+ * the argv and the failure. Without this the timing loop certified
+ * non-runnable artifacts: the staleness gate guarantees the emit's
+ * FRESHNESS, not its runnability, and a truncated artifact (an interrupted
+ * build) failed every spawn in ~0.3ms — sailing under every ceiling and
+ * turning the PROTECTED budgets into a vacuous pass.
+ *
+ * @param binary - Absolute path to the executable to spawn (the runtime, when
+ *   the entry is passed as its first argument).
  * @param args - Arguments passed on each spawn.
  * @param options - Run/warmup counts and env overlay.
  * @returns Median, p95, and the kept samples.
- * @note Impure — spawns child processes.
+ * @note Impure — spawns child processes; throws on the first failing sample.
  */
 export function measureCommand(
   binary: string,
@@ -79,11 +88,21 @@ export function measureCommand(
 
   for (let i = 0; i < runs; i++) {
     const start = performance.now();
-    spawnSync(binary, [...args], {
+    const result = spawnSync(binary, [...args], {
       env: { ...process.env, ...options.env },
       stdio: "ignore",
     });
     const elapsed = performance.now() - start;
+    if (result.error || result.status !== 0) {
+      throw new Error(
+        `measureCommand: \`${[binary, ...args].join(" ")}\` failed on ` +
+          `sample ${i + 1}/${runs} — status ${String(result.status)}, ` +
+          `signal ${String(result.signal)}` +
+          (result.error ? `, error: ${result.error.message}` : "") +
+          ". Every budget argv must exit 0: a binary that cannot run must " +
+          "fail the measurement, not be timed failing.",
+      );
+    }
     if (i >= warmups) samples.push(elapsed);
   }
 

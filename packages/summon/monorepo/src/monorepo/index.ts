@@ -22,6 +22,7 @@ import {
   validateMonorepoName,
   validateRepository,
 } from "../shared/index.js";
+import { packageVersion } from "../shared/packageVersion.js";
 
 // =============================================================================
 // Template Paths
@@ -89,8 +90,8 @@ const prompts: PromptDefinition[] = [
     message: "TypeScript config package:",
     choices: [
       {
-        label: "@canonical/typescript-config-base - Standard (no DOM)",
-        value: "@canonical/typescript-config-base",
+        label: "@canonical/typescript-config - Standard (no DOM)",
+        value: "@canonical/typescript-config",
       },
       {
         label:
@@ -98,7 +99,7 @@ const prompts: PromptDefinition[] = [
         value: "@canonical/typescript-config-lit",
       },
     ],
-    default: "@canonical/typescript-config-base",
+    default: "@canonical/typescript-config",
     group: "Monorepo",
   },
   {
@@ -142,7 +143,7 @@ export const generator: GeneratorDefinition<MonorepoAnswers> = {
     displayName: PACKAGE_NAME,
     description:
       "Generate a new Bun + Lerna monorepo with CI, release, and shared config",
-    version: "0.1.0",
+    version: packageVersion(),
     help: `Generate a new monorepo shell with opinionated defaults.
 
 This generator creates the monorepo infrastructure only — it does NOT create
@@ -152,7 +153,7 @@ WHAT'S INCLUDED:
   - Bun + Lerna + Nx orchestration
   - GitHub Actions CI (check + build-and-test)
   - PR lint (conventional commits)
-  - Release workflow (tag.yml with NPM_AUTH_TOKEN)
+  - Release workflow (tag.yml, npm OIDC trusted publishing)
   - Shared config (@canonical/biome-config, TypeScript config)
   - Coverage testing setup
   - Organized .gitignore
@@ -161,7 +162,7 @@ WHAT'S INCLUDED:
   - Renovate config with batching families
 
 POST-SETUP:
-  1. Configure GitHub repo secret NPM_AUTH_TOKEN
+  1. Configure each package's npm trusted publisher (repo + tag.yml)
   2. Configure GitHub repo: squash merge only, PR title as commit message
   3. Enable Renovate GitHub App on the repository
   4. Use summon-package to add the first package`,
@@ -381,7 +382,9 @@ POST-SETUP:
       info(""),
       info("Next steps:"),
       info(`  cd ${repoDir}`),
-      info("  # Add NPM_AUTH_TOKEN secret to GitHub repo"),
+      info(
+        "  # Configure npm trusted publishers for the repo (workflow tag.yml)",
+      ),
       info("  # Configure squash merge in GitHub repo settings"),
       info("  # Enable Renovate GitHub App on the repository"),
       info("  # Use summon-package to add the first package"),

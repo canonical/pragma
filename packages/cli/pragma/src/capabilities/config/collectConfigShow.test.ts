@@ -37,6 +37,7 @@ describe("config show payload", () => {
       "@canonical/design-system",
       "@canonical/anatomy-dsl",
       "@canonical/code-standards",
+      "@canonical/ds-implementations",
     ]);
     for (const pack of data.config.packs ?? []) {
       expect(

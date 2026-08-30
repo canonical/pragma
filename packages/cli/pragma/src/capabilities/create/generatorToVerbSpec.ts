@@ -15,14 +15,17 @@
  * input a wizard would. A `when` condition is honoured by `collectAnswers` at
  * prompt time. `generate` is reached through the verb's `run` → `execute`.
  *
- * This adapter runs over STATIC prompt mirrors (see `create.verb.ts`), never the
- * live generators — importing a generator runs a top-level `await loadTemplate`,
- * which must stay behind `create`'s lazy dispatch (R9). A parity test loads the
- * real generators and asserts the mirrors match.
+ * This adapter runs over the build-time PROJECTION of the generators'
+ * prompts (`createSurface.generated.ts`), never the live generators —
+ * importing a generator pulls summon-core, which must stay behind `create`'s
+ * lazy dispatch (R9). The projection-fidelity test loads the real generators
+ * and asserts the committed projection matches. It accepts a live
+ * `PromptDefinition` equally (the shapes are compatible): a projected
+ * prompt's `when` survives as `conditional: true`.
  */
 
-import type { PromptDefinition } from "@canonical/summon-core";
-import type { ParamSpec } from "../../kernel/spec/types.js";
+import type { PromptLike } from "@canonical/summon-core/projection";
+import type { ParamSpec } from "../../kernel/spec/index.js";
 
 /** A path-like text prompt gets file completion. */
 const looksLikePath = (name: string): boolean => /(path|dir)$/i.test(name);
@@ -53,8 +56,9 @@ export function declarativeDoc(message: string): string {
  * @param prompt - The generator's prompt definition.
  * @returns The equivalent {@link ParamSpec}.
  */
-export function promptToParam(prompt: PromptDefinition): ParamSpec {
-  const required = prompt.default === undefined && !prompt.when;
+export function promptToParam(prompt: PromptLike): ParamSpec {
+  const required =
+    prompt.default === undefined && !prompt.when && prompt.conditional !== true;
   const positional = prompt.positional === true;
 
   switch (prompt.type) {
@@ -104,8 +108,6 @@ export function promptToParam(prompt: PromptDefinition): ParamSpec {
 }
 
 /** Map a generator's whole prompt list to grammar params, in order. */
-export function generatorToParams(
-  prompts: readonly PromptDefinition[],
-): ParamSpec[] {
+export function generatorToParams(prompts: readonly PromptLike[]): ParamSpec[] {
   return prompts.map(promptToParam);
 }

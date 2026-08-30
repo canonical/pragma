@@ -3,48 +3,177 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
 @prefix ds: <https://ds.canonical.com/>.
 
-ds:implementation.library.canonical-react-ds-global ds:hasImplementation [
-        a ds:ImplementationObject;
-        ds:implementsBlock ds:global.pattern.timeline;
-        ds:headLink "src/lib/Timeline/Timeline.tsx"
-    ], [
-        a ds:ImplementationObject;
-        ds:implementsBlock ds:global.component.tile;
-        ds:headLink "src/lib/Tile/Tile.tsx"
-    ], [
-        a ds:ImplementationObject;
-        ds:implementsBlock ds:global.component.label;
-        ds:headLink "src/lib/Label/Label.tsx"
-    ], [
-        a ds:ImplementationObject;
-        ds:implementsBlock ds:global.component.accordion;
-        ds:headLink "src/lib/Accordion/Accordion.tsx"
-    ], [
-        a ds:ImplementationObject;
-        ds:implementsBlock ds:global.pattern.breadcrumbs;
-        ds:headLink "src/lib/Breadcrumbs/Breadcrumbs.tsx"
-    ], [
-        a ds:ImplementationObject;
-        ds:implementsBlock ds:global.subcomponent.timeline-event;
-        ds:headLink "src/lib/Timeline/common/Event/Event.tsx"
-    ], [
-        a ds:ImplementationObject;
-        ds:implementsBlock ds:global.subcomponent.timeline-content;
-        ds:headLink "src/lib/Timeline/common/Content/Content.tsx"
-    ], [
-        a ds:ImplementationObject;
-        ds:implementsBlock ds:global.subcomponent.tile-content;
-        ds:headLink "src/lib/Tile/common/Content/Content.tsx"
-    ], [
-        a ds:ImplementationObject;
-        ds:implementsBlock ds:global.subcomponent.tile-header;
-        ds:headLink "src/lib/Tile/common/Header/Header.tsx"
-    ], [
-        a ds:ImplementationObject;
-        ds:implementsBlock ds:global.subcomponent.accordion-item;
-        ds:headLink "src/lib/Accordion/common/Item/Item.tsx"
-    ], [
-        a ds:ImplementationObject;
-        ds:implementsBlock ds:global.subcomponent.breadcrumbs-item;
-        ds:headLink "src/lib/Breadcrumbs/common/Item/Item.tsx"
-    ].
+ds:implementation.library.react-ds-global ds:hasImplementation ds:implementation.react-ds-global.global.component.accordion, ds:implementation.react-ds-global.global.component.announcement, ds:implementation.react-ds-global.global.component.badge, ds:implementation.react-ds-global.global.component.breadcrumbs, ds:implementation.react-ds-global.global.component.button, ds:implementation.react-ds-global.global.component.card, ds:implementation.react-ds-global.global.component.chip, ds:implementation.react-ds-global.global.component.contextual_menu, ds:implementation.react-ds-global.global.component.heading, ds:implementation.react-ds-global.global.component.icon, ds:implementation.react-ds-global.global.component.inline_code, ds:implementation.react-ds-global.global.component.keyboard_key, ds:implementation.react-ds-global.global.component.label, ds:implementation.react-ds-global.global.component.link, ds:implementation.react-ds-global.global.component.popover, ds:implementation.react-ds-global.global.component.tabs, ds:implementation.react-ds-global.global.component.tile, ds:implementation.react-ds-global.global.component.tooltip, ds:implementation.react-ds-global.global.component.tooltip_wrapper, ds:implementation.react-ds-global.global.group.cards, ds:implementation.react-ds-global.global.group.keyboard_keys, ds:implementation.react-ds-global.global.pattern.skip_link, ds:implementation.react-ds-global.global.pattern.timeline, ds:implementation.react-ds-global.global.subcomponent.accordion-item, ds:implementation.react-ds-global.global.subcomponent.breadcrumbs-item, ds:implementation.react-ds-global.global.subcomponent.card-content, ds:implementation.react-ds-global.global.subcomponent.card-footer, ds:implementation.react-ds-global.global.subcomponent.card-header, ds:implementation.react-ds-global.global.subcomponent.card-image, ds:implementation.react-ds-global.global.subcomponent.contextual-menu-item, ds:implementation.react-ds-global.global.subcomponent.spinner, ds:implementation.react-ds-global.global.subcomponent.tile-content, ds:implementation.react-ds-global.global.subcomponent.tile-header, ds:implementation.react-ds-global.global.subcomponent.timeline-content, ds:implementation.react-ds-global.global.subcomponent.timeline-event, ds:implementation.react-ds-global.site.component.rule, ds:implementation.react-ds-global.site.component.section.
+ds:implementation.react-ds-global.global.component.accordion a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.accordion;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Accordion/Accordion.tsx";
+    ds:importStatement "import { Accordion } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Accordion/Accordion.tsx".
+ds:implementation.react-ds-global.global.component.announcement a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.announcement;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/_work_in_progress/Announcement/Announcement.tsx";
+    ds:importStatement "import { Announcement } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/_work_in_progress/Announcement/Announcement.tsx".
+ds:implementation.react-ds-global.global.component.badge a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.badge;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Badge/Badge.tsx";
+    ds:importStatement "import { Badge } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Badge/Badge.tsx".
+ds:implementation.react-ds-global.global.component.breadcrumbs a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.breadcrumbs;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Breadcrumbs/Breadcrumbs.tsx";
+    ds:importStatement "import { Breadcrumbs } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Breadcrumbs/Breadcrumbs.tsx".
+ds:implementation.react-ds-global.global.component.button a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.button;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Button/Button.tsx";
+    ds:importStatement "import { Button } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Button/Button.tsx".
+ds:implementation.react-ds-global.global.component.card a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.card;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Card/Card.tsx";
+    ds:importStatement "import { Card } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Card/Card.tsx".
+ds:implementation.react-ds-global.global.component.chip a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.chip;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Chip/Chip.tsx";
+    ds:importStatement "import { Chip } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Chip/Chip.tsx".
+ds:implementation.react-ds-global.global.component.contextual_menu a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.contextual_menu;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/ContextualMenu/ContextualMenu.tsx";
+    ds:importStatement "import { ContextualMenu } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/ContextualMenu/ContextualMenu.tsx".
+ds:implementation.react-ds-global.global.component.heading a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.heading;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Heading/Heading.stories.tsx";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Heading/Heading.stories.tsx".
+ds:implementation.react-ds-global.global.component.icon a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.icon;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Icon/Icon.tsx";
+    ds:importStatement "import { Icon } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Icon/Icon.tsx".
+ds:implementation.react-ds-global.global.component.inline_code a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.inline_code;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/InlineCode/InlineCode.tsx";
+    ds:importStatement "import { InlineCode } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/InlineCode/InlineCode.tsx".
+ds:implementation.react-ds-global.global.component.keyboard_key a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.keyboard_key;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/KeyboardKey/KeyboardKey.tsx";
+    ds:importStatement "import { KeyboardKey } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/KeyboardKey/KeyboardKey.tsx".
+ds:implementation.react-ds-global.global.component.label a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.label;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/_work_in_progress/Label/Label.tsx";
+    ds:importStatement "import { Label } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/_work_in_progress/Label/Label.tsx".
+ds:implementation.react-ds-global.global.component.link a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.link;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/_work_in_progress/Link/Link.tsx";
+    ds:importStatement "import { Link } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/_work_in_progress/Link/Link.tsx".
+ds:implementation.react-ds-global.global.component.popover a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.popover;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Popover/Popover.tsx";
+    ds:importStatement "import { Popover } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Popover/Popover.tsx".
+ds:implementation.react-ds-global.global.component.tabs a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.tabs;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Tabs/Tabs.tsx";
+    ds:importStatement "import { Tabs } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Tabs/Tabs.tsx".
+ds:implementation.react-ds-global.global.component.tile a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.tile;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Tile/Tile.tsx";
+    ds:importStatement "import { Tile } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Tile/Tile.tsx".
+ds:implementation.react-ds-global.global.component.tooltip a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.tooltip;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Tooltip/Tooltip.tsx";
+    ds:importStatement "import { Tooltip } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Tooltip/Tooltip.tsx".
+ds:implementation.react-ds-global.global.component.tooltip_wrapper a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.tooltip_wrapper;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Tooltip/withTooltip.tsx";
+    ds:importStatement "import { withTooltip } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Tooltip/withTooltip.tsx".
+ds:implementation.react-ds-global.global.group.cards a ds:ImplementationObject;
+    ds:implementsBlock ds:global.group.cards;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/group/Cards/Cards.tsx";
+    ds:importStatement "import { Cards } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/group/Cards/Cards.tsx".
+ds:implementation.react-ds-global.global.group.keyboard_keys a ds:ImplementationObject;
+    ds:implementsBlock ds:global.group.keyboard_keys;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/group/KeyboardKeys/KeyboardKeys.tsx";
+    ds:importStatement "import { KeyboardKeys } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/group/KeyboardKeys/KeyboardKeys.tsx".
+ds:implementation.react-ds-global.global.pattern.skip_link a ds:ImplementationObject;
+    ds:implementsBlock ds:global.pattern.skip_link;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/_work_in_progress/SkipLink/SkipLink.tsx";
+    ds:importStatement "import { SkipLink } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/_work_in_progress/SkipLink/SkipLink.tsx".
+ds:implementation.react-ds-global.global.pattern.timeline a ds:ImplementationObject;
+    ds:implementsBlock ds:global.pattern.timeline;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/pattern/Timeline/Timeline.tsx";
+    ds:importStatement "import { Timeline } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/pattern/Timeline/Timeline.tsx".
+ds:implementation.react-ds-global.global.subcomponent.accordion-item a ds:ImplementationObject;
+    ds:implementsBlock ds:global.subcomponent.accordion-item;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Accordion/common/Item/Item.tsx";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Accordion/common/Item/Item.tsx".
+ds:implementation.react-ds-global.global.subcomponent.breadcrumbs-item a ds:ImplementationObject;
+    ds:implementsBlock ds:global.subcomponent.breadcrumbs-item;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Breadcrumbs/common/Item/Item.tsx";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Breadcrumbs/common/Item/Item.tsx".
+ds:implementation.react-ds-global.global.subcomponent.card-content a ds:ImplementationObject;
+    ds:implementsBlock ds:global.subcomponent.card-content;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Card/common/Content/Content.tsx";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Card/common/Content/Content.tsx".
+ds:implementation.react-ds-global.global.subcomponent.card-footer a ds:ImplementationObject;
+    ds:implementsBlock ds:global.subcomponent.card-footer;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Card/common/Footer/Footer.tsx";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Card/common/Footer/Footer.tsx".
+ds:implementation.react-ds-global.global.subcomponent.card-header a ds:ImplementationObject;
+    ds:implementsBlock ds:global.subcomponent.card-header;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Card/common/Header/Header.tsx";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Card/common/Header/Header.tsx".
+ds:implementation.react-ds-global.global.subcomponent.card-image a ds:ImplementationObject;
+    ds:implementsBlock ds:global.subcomponent.card-image;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Card/common/Image/Image.tsx";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Card/common/Image/Image.tsx".
+ds:implementation.react-ds-global.global.subcomponent.contextual-menu-item a ds:ImplementationObject;
+    ds:implementsBlock ds:global.subcomponent.contextual-menu-item;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/ContextualMenu/common/Item/Item.tsx";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/ContextualMenu/common/Item/Item.tsx".
+ds:implementation.react-ds-global.global.subcomponent.spinner a ds:ImplementationObject;
+    ds:implementsBlock ds:global.subcomponent.spinner;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/subcomponent/Spinner/Spinner.tsx";
+    ds:importStatement "import { Spinner } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/subcomponent/Spinner/Spinner.tsx".
+ds:implementation.react-ds-global.global.subcomponent.tile-content a ds:ImplementationObject;
+    ds:implementsBlock ds:global.subcomponent.tile-content;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Tile/common/Content/Content.tsx";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Tile/common/Content/Content.tsx".
+ds:implementation.react-ds-global.global.subcomponent.tile-header a ds:ImplementationObject;
+    ds:implementsBlock ds:global.subcomponent.tile-header;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/component/Tile/common/Header/Header.tsx";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/component/Tile/common/Header/Header.tsx".
+ds:implementation.react-ds-global.global.subcomponent.timeline-content a ds:ImplementationObject;
+    ds:implementsBlock ds:global.subcomponent.timeline-content;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/pattern/Timeline/common/Content/Content.tsx";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/pattern/Timeline/common/Content/Content.tsx".
+ds:implementation.react-ds-global.global.subcomponent.timeline-event a ds:ImplementationObject;
+    ds:implementsBlock ds:global.subcomponent.timeline-event;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/pattern/Timeline/common/Event/Event.tsx";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/pattern/Timeline/common/Event/Event.tsx".
+ds:implementation.react-ds-global.site.component.rule a ds:ImplementationObject;
+    ds:implementsBlock ds:site.component.rule;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/_work_in_progress/Rule/Rule.tsx";
+    ds:importStatement "import { Rule } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/_work_in_progress/Rule/Rule.tsx".
+ds:implementation.react-ds-global.site.component.section a ds:ImplementationObject;
+    ds:implementsBlock ds:site.component.section;
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/_work_in_progress/Section/Section.tsx";
+    ds:importStatement "import { Section } from \"@canonical/react-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/react/ds-global/src/lib/_work_in_progress/Section/Section.tsx".

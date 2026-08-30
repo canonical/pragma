@@ -13,6 +13,8 @@ const componentCssClassName = "ds form-checkbox";
  * @returns {ReactElement} - Rendered Checkbox
  *
  * `import { CheckboxInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.checkbox_input
  */
 export const CheckboxInput = forwardRef<HTMLInputElement, CheckboxInputProps>(
   function CheckboxInput(

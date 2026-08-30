@@ -13,10 +13,14 @@
  */
 
 import {
+  createOperationDescriptor,
   Environment,
   type FetchFunction,
   type GraphQLResponse,
+  type GraphQLTaggedNode,
+  getRequest,
   Network,
+  type PayloadData,
   RecordSource,
   Store,
 } from "relay-runtime";
@@ -25,9 +29,27 @@ import {
   httpExecutor,
   localGraphExecutor,
   type RelayFetchContext,
+  type RelayFetchExecutor,
   type RelayRuntimeFetch,
   urlMiddleware,
 } from "relay-runtime-network";
+
+/**
+ * A server-captured operation ready to replay: the resolved query node plus
+ * the variables and raw response `data` captured when the server executed it.
+ */
+export interface RelaySeedPayload {
+  readonly query: GraphQLTaggedNode;
+  readonly variables: Record<string, unknown>;
+  readonly data: Record<string, unknown>;
+}
+
+/** A response observed by the network, in the serializable wire shape. */
+export interface CapturedResponse {
+  readonly id: string;
+  readonly variables: Record<string, unknown>;
+  readonly data: Record<string, unknown>;
+}
 
 /** Options for {@link createEnvironment}. */
 export interface CreateEnvironmentOptions {
@@ -36,6 +58,20 @@ export interface CreateEnvironmentOptions {
    * neither is set the environment executes against the local mock schema.
    */
   readonly graphqlUrl?: string;
+  /**
+   * Server-captured operations replayed into the store at construction via
+   * Relay's public `commitPayload` — only these operations' data ever crosses
+   * the SSR boundary (no whole-store serialization, nothing to scrub). Each
+   * replayed operation is retained, so the seeded data cannot be GC'd before
+   * its first reader mounts.
+   */
+  readonly payloads?: readonly RelaySeedPayload[];
+  /**
+   * Observe each successful single response the environment's network
+   * returns. The SSR prefetch uses this to tee responses into the
+   * serializable payload list while `fetchQuery` normalizes them as usual.
+   */
+  readonly captureResponse?: (captured: CapturedResponse) => void;
 }
 
 /** Reads the endpoint URL from Vite's env, treating the empty string as unset. */
@@ -75,11 +111,46 @@ const createLocalNetwork = () =>
     },
   });
 
+/**
+ * Wraps an executor so a transport failure resolves as a well-formed GraphQL
+ * error payload instead of a thrown exception. The pipeline's fetch context
+ * creates an internal incremental-payload promise that no non-incremental
+ * consumer ever awaits; an executor throw rejects it unhandled (fatal under
+ * Bun). Converting the failure at the source means nothing in the pipeline
+ * ever rejects, while Relay still surfaces it as an operation error.
+ */
+const safeExecutor = (executor: RelayFetchExecutor): RelayFetchExecutor =>
+  Object.assign(
+    async (context: RelayFetchContext) => {
+      try {
+        return await executor(context);
+      } catch (error) {
+        console.warn(
+          "[relay] transport failure converted to error payload:",
+          error,
+        );
+
+        return {
+          payload: {
+            errors: [
+              {
+                message: error instanceof Error ? error.message : String(error),
+              },
+            ],
+          },
+          response: null,
+          status: null,
+        };
+      }
+    },
+    { descriptor: executor.descriptor },
+  );
+
 /** Builds the HTTP network that posts operations to `graphqlUrl`. */
 const createHttpNetwork = (graphqlUrl: string) =>
   createRelayRuntimeNetwork({
     fetch: {
-      executor: httpExecutor(),
+      executor: safeExecutor(httpExecutor()),
       middlewares: [urlMiddleware({ url: graphqlUrl })],
     },
   });
@@ -93,10 +164,19 @@ const createHttpNetwork = (graphqlUrl: string) =>
  */
 const toFetchFunction =
   (fetchGraphQL: RelayRuntimeFetch): FetchFunction =>
-  (params, variables, cacheConfig) =>
-    fetchGraphQL(params, variables, {
+  (params, variables, cacheConfig) => {
+    const response = fetchGraphQL(params, variables, {
       ...cacheConfig,
     }) as Promise<GraphQLResponse>;
+
+    // The pipeline starts the request at call time, before Relay's observable
+    // attaches its handlers — guard the raw promise so a rejection that beats
+    // (or never gains) a subscriber cannot crash the process. Consumers still
+    // observe the same rejection through the returned promise.
+    response.catch(() => {});
+
+    return response;
+  };
 
 /**
  * Creates a Relay `Environment` for the app.
@@ -112,8 +192,76 @@ export const createEnvironment = (
     ? createHttpNetwork(graphqlUrl)
     : createLocalNetwork();
 
-  return new Environment({
-    network: Network.create(toFetchFunction(network.fetch)),
+  // toFetchFunction always yields a promise (see its cast); the narrower
+  // alias lets the capture wrapper await it without widening back into
+  // FetchFunction's observable-bearing return union.
+  const baseFetch = toFetchFunction(network.fetch) as (
+    ...args: Parameters<FetchFunction>
+  ) => Promise<GraphQLResponse>;
+  const capture = options.captureResponse;
+  const fetchFn: FetchFunction = capture
+    ? async (params, variables, cacheConfig, uploadables) => {
+        const response = await baseFetch(
+          params,
+          variables,
+          cacheConfig,
+          uploadables,
+        );
+        // Batched responses are never produced by either executor; capture
+        // only well-formed single responses that carry data and a name.
+        if (
+          !Array.isArray(response) &&
+          "data" in response &&
+          response.data &&
+          params.name
+        ) {
+          capture({
+            id: params.name,
+            variables,
+            data: response.data as unknown as Record<string, unknown>,
+          });
+        }
+
+        return response;
+      }
+    : baseFetch;
+
+  const environment = new Environment({
+    network: Network.create(fetchFn),
     store: new Store(new RecordSource()),
   });
+
+  for (const seed of options.payloads ?? []) {
+    const operation = createOperationDescriptor(
+      getRequest(seed.query),
+      seed.variables,
+    );
+
+    environment.commitPayload(operation, seed.data as PayloadData);
+    // Explicit retention — seeded data must survive until its first reader
+    // mounts and takes over the retain; no reliance on GC timing.
+    environment.retain(operation);
+  }
+
+  return environment;
+};
+
+let browserEnvironment: Environment | null = null;
+
+/**
+ * The browser-session Relay environment, created lazily on first use.
+ *
+ * Module scope so the client entry's provider and route-level `warm` hooks
+ * share one normalized store — a navigation-time cache warm lands in the same
+ * store `useLazyLoadQuery` reads from. The FIRST caller's options win (the
+ * client entry seeds SSR payloads before anything else runs); later calls
+ * reuse the existing environment. Server code must keep using
+ * `createEnvironment()` (fresh per request).
+ */
+export const getBrowserEnvironment = (
+  options?: CreateEnvironmentOptions,
+): Environment => {
+  browserEnvironment ??= createEnvironment(options);
+
+  return browserEnvironment;
 };

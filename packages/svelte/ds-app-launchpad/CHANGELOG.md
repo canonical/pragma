@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
+
+
+### Features
+
+* **Log:** migrate to design tokens ([#942](https://github.com/canonical/pragma/issues/942)) ([64baf67](https://github.com/canonical/pragma/commit/64baf67c08ee141967340945cbf748444387923c))
+* **Spinner:** migrate to design tokens ([#940](https://github.com/canonical/pragma/issues/940)) ([0d76ed8](https://github.com/canonical/pragma/commit/0d76ed87b80a09fc2f0714f8296cf4beb0b4b68b))
+* **Switch:** migrate to design tokens ([#948](https://github.com/canonical/pragma/issues/948)) ([672e348](https://github.com/canonical/pragma/commit/672e348370009c9dc8f7c4413ba37af04ad18c91))
+
+
+
+
+
+# [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
+
+
+### Features
+
+* **SideNavigation:** migrate to design tokens ([#949](https://github.com/canonical/pragma/issues/949)) ([b29eda9](https://github.com/canonical/pragma/commit/b29eda90af9c58c70bf87d9e934fe26bd2e946b8))
+
+
+
+
+
 # [0.34.0](https://github.com/canonical/pragma/compare/v0.33.0...v0.34.0) (2026-08-21)
 
 

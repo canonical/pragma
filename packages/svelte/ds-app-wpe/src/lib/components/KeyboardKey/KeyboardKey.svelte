@@ -37,5 +37,5 @@ non-interactive and purely informational.
 <KeyboardKey keyValue="enter" />
 ```
 
-@implements dso:global.component.keyboard_key
+@implements ds:global.component.keyboard_key
 -->

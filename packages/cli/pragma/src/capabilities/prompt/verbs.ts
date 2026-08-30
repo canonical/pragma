@@ -13,12 +13,11 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
-import { PragmaError } from "../../kernel/error/PragmaError.js";
-import { cliRecovery } from "../../kernel/error/recovery.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
+import { cliRecovery, PragmaError } from "../../kernel/error/index.js";
+import { VOCABULARY } from "../../kernel/index.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
-import type { VerbSpec } from "../../kernel/spec/types.js";
-import { VOCABULARY } from "../../kernel/vocabulary.js";
+import type { VerbSpec } from "../../kernel/spec/index.js";
 import {
   promptListFormatters,
   promptLookupFormatters,

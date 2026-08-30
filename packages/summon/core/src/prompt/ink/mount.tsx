@@ -11,7 +11,7 @@
 import type { Effect, LogLevel } from "@canonical/task";
 import { render } from "ink";
 import type GeneratorDefinition from "../../types/GeneratorDefinition.js";
-import type { InkPromptOptions } from "../inkPrompt.js";
+import type { InkPromptOptions, StepReport } from "../inkPrompt.js";
 import type { PromptEffect } from "../types.js";
 import { SessionController } from "./session.js";
 import { Wizard } from "./Wizard.js";
@@ -22,7 +22,8 @@ export interface MountedSession {
   reportEffectStart: (effect: Effect) => void;
   reportEffectComplete: (effect: Effect, duration: number) => void;
   reportLog: (level: LogLevel, message: string) => void;
-  dispose: () => void;
+  reportStep: (report: StepReport) => void;
+  dispose: () => Promise<void>;
 }
 
 /**
@@ -45,6 +46,7 @@ export function mountPromptSession(
     generator,
     options.onCancel,
     options.cwd,
+    options.initialAnswers,
   );
   const instance = render(<Wizard controller={controller} />, {
     stdout: process.stderr as unknown as NodeJS.WriteStream,
@@ -56,19 +58,32 @@ export function mountPromptSession(
   const onAbort = (): void => controller.cancel();
   signal?.addEventListener("abort", onAbort);
 
-  let disposed = false;
+  let disposal: Promise<void> | undefined;
   return {
     answerPrompt: (effect) => controller.request(effect),
     reportEffectStart: (effect) => controller.reportEffectStart(effect),
     reportEffectComplete: (effect, duration) =>
       controller.reportEffectComplete(effect, duration),
     reportLog: (level, message) => controller.reportLog(level, message),
+    reportStep: (report) => controller.reportStep(report),
     dispose: () => {
-      if (disposed) return;
-      disposed = true;
-      controller.markComplete();
-      signal?.removeEventListener("abort", onAbort);
-      instance.unmount();
+      // MEMOIZED, not boolean-guarded: every caller — however many, however
+      // concurrent — gets THE one disposal. A guard that returned early made
+      // a second concurrent dispose() resolve BEFORE the first had flushed
+      // the final frame, which breaks the contract awaiting dispose() exists
+      // for: a caller could print into a still-mounted UI.
+      disposal ??= (async () => {
+        controller.markComplete();
+        signal?.removeEventListener("abort", onAbort);
+        // Let React COMMIT the state just reported (markComplete, and a run's
+        // last effect/step — its scheduler commits on a macrotask) before the
+        // unmount flushes the final frame. Unmounting in the same continuation
+        // flushed the previously committed tree, so the last row of a run was
+        // permanently painted as still in progress.
+        await new Promise((resolve) => setImmediate(resolve));
+        instance.unmount();
+      })();
+      return disposal;
     },
   };
 }

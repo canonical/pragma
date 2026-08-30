@@ -18,7 +18,7 @@
  *     is NOT produced by `mapExitCode`.
  */
 
-import type { ErrorCode } from "../../error/types.js";
+import type { ErrorCode } from "../../error/index.js";
 
 /**
  * The process exit codes. The first four are the covenant's frozen

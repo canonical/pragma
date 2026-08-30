@@ -6,6 +6,8 @@ import { Meta } from "@storybook/addon-docs/blocks";
 
 Middleware lets you extend field behaviour without modifying field components. It is the form system's mechanism for cross-cutting concerns: fetching options from an API, validating against a server, reacting to changes in other fields, adding analytics, or injecting loading states.
 
+Transforming the value between what the user sees and what the form submits is **not** one of them — see [Why masking is not middleware](#why-masking-is-not-middleware) below.
+
 This guide covers the middleware model, the two built-in middleware functions, and how to write your own.
 
 ## How middleware works
@@ -40,10 +42,13 @@ Field
        └─ Middleware[0]        ← outermost middleware
             └─ Middleware[1]   ← next middleware
                  └─ ...
-                      └─ Input component   ← the actual input
+                      └─ bindField(Input)  ← the RHF-bound field
+                           └─ Input component
 ```
 
-The first middleware in the array is the outermost wrapper. Each middleware receives the result of the next one as its `Component` argument. The innermost middleware receives the original input component.
+The first middleware in the array is the outermost wrapper. Each middleware receives the result of the next one as its `Component` argument. The innermost middleware receives the **bound** component — `bindField(Input)`, not the presentational input itself.
+
+That distinction matters. `bindField` is where `register()` or `useController` runs, so `value`, `onChange` and the element `ref` are all created *below* every middleware. Middleware sees the props going into the binding — `name`, `registerProps`, the ARIA props — and can add to them; it cannot intercept the value on its way out, and it never has the DOM node.
 
 This ordering is handled by `withWrapper`, which reverses the array and reduces it:
 
@@ -358,6 +363,31 @@ function withDebouncedValidation(
   };
 }
 ```
+
+## Why masking is not middleware
+
+A recurring idea is a `withMask` (or `addMask`) middleware, shared by the phone field and, say, a credit-card field. It does not work, and it is worth knowing why before reaching for it again.
+
+Formatting a value is really two halves:
+
+- **parse** — turning what the user typed into what the form stores (`"(555) 123-4567"` → `"5551234567"`).
+- **format** — turning the stored value into what is displayed, on every keystroke, and putting the caret back where the user left it.
+
+Middleware can do the first half. It can inject `registerProps`, so `setValueAs` normalises the submitted value. It cannot do the second: `value` and `onChange` are created by `bindField` *below* it, and the caret needs the DOM element, which no middleware ever receives. `setValueAs` is also a `register()`-path transform, so it does not run at all for a field bound `controlled`.
+
+A middleware that does half the job is worse than none, because it looks like it works — the submitted value is correct — while the display half has to live somewhere else entirely.
+
+There is a second, structural reason. Middleware is a chain: any number compose, in any order. Caret ownership is exclusive — two masking layers would fight over the same selection. Something that may only ever be applied once is not middleware, it is a strategy.
+
+So the split is:
+
+| Concern | Where it belongs |
+| --- | --- |
+| Effects, async work, injected props | Middleware |
+| Normalising the submitted value | `createFormatterRegisterOptions`, or the component's own change handler |
+| Display projection and caret | `useFormattedValue` |
+
+Use `useFormattedValue` with a `Formatter` — a `{ format, parse }` pair of pure functions, both exported from the package root — for anything where the string on screen differs from the string submitted. `createPatternFormatter("(###) ###-####")` covers fixed grouping; because `format` is an ordinary function, it can also pick its grouping from the value itself, which is what a card number needs (American Express groups 4-6-5 where most brands group 4-4-4-4). Pair it with `inputType="custom"` for a field this package does not ship.
 
 ## Composing multiple middleware
 
