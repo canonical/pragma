@@ -443,6 +443,8 @@ hydrateRoot(
 - `useSearchParam()` subscribes to one query-string key.
 - `useSearchParams()` subscribes either to the full query string or to a fixed set of keys.
 
+Both `useSearchParam()`'s key and `useSearchParams()`'s key list are checked against the search-param keys declared by the registered route map's `search` schemas (falling back to any `string` when no `RouterRegister` is declared — see [Type registration](#3-navigate-with-typed-links-and-observe-router-state)).
+
 Typical selection strategy:
 
 - reach for `useBlocker()` when a form has unsaved state

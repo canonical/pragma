@@ -1,14 +1,14 @@
 /**
  * Shared Standard-Schema execution for route `params` and `search` validation.
  *
- * Accepts both real Standard Schema v1 validators (Zod, Valibot, ArkType — see
- * https://standardschema.dev) and the legacy hand-rolled
- * `{ "~standard": { output, validate } }` shape. The router matches
- * synchronously, so validators that resolve to a `Promise` are rejected
- * loudly instead of being silently ignored.
+ * Accepts Standard Schema v1 validators (Zod ≥3.24, Valibot, ArkType — see
+ * https://standardschema.dev). The router matches synchronously, so
+ * validators that resolve to a `Promise` are rejected loudly instead of
+ * being silently ignored, and a validator returning anything other than a
+ * spec-shaped `{ value }` / `{ issues }` result throws.
  */
 
-import type { SchemaLike, StandardSchemaIssue } from "./types.js";
+import type { StandardSchemaIssue, StandardSchemaV1 } from "./types.js";
 
 export interface SchemaSuccess {
   readonly issues: null;
@@ -41,7 +41,7 @@ function isValueResult(result: unknown): result is { readonly value: unknown } {
 export function formatIssues(
   issues: ReadonlyArray<StandardSchemaIssue>,
 ): string {
-  return issues.map((issue) => issue.message ?? "Validation error").join(", ");
+  return issues.map((issue) => issue.message).join(", ");
 }
 
 /**
@@ -49,22 +49,15 @@ export function formatIssues(
  *
  * - A Standard Schema failure (`{ issues }`) becomes a `SchemaFailure`.
  * - A Standard Schema success (`{ value }`) unwraps to its `value`.
- * - A legacy validator returning the parsed object directly passes through.
- * - A missing validator (legacy type-only schema) passes the input through.
  * - A `Promise` result throws: the router matches synchronously.
+ * - Any other result throws: the validator does not implement the spec.
  */
 export function runSchema(
-  schema: SchemaLike<unknown>,
+  schema: StandardSchemaV1,
   value: unknown,
   context: string,
 ): SchemaOutcome {
-  const validator = schema["~standard"].validate;
-
-  if (!validator) {
-    return { issues: null, value };
-  }
-
-  const result = validator(value);
+  const result = schema["~standard"].validate(value);
 
   if (result instanceof Promise) {
     throw new Error(
@@ -80,5 +73,7 @@ export function runSchema(
     return { issues: null, value: result.value };
   }
 
-  return { issues: null, value: result };
+  throw new Error(
+    `${context}: schema validator returned neither { value } nor { issues } — not a Standard Schema v1 result.`,
+  );
 }

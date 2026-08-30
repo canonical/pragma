@@ -1,26 +1,9 @@
 /**
- * Legacy hand-rolled schema shape, kept for backwards compatibility.
- *
- * Prefer a real Standard Schema v1 validator ({@link StandardSchemaV1});
- * this shape predates the router's spec alignment and carries its output
- * type on a non-standard `output` phantom property.
- */
-export interface StandardSchemaLike<TOutput = unknown> {
-  readonly "~standard": {
-    readonly output?: TOutput;
-    readonly validate?: (value: unknown) => unknown;
-  };
-}
-
-/**
- * A single validation issue, as defined by the Standard Schema spec.
- *
- * The spec requires `message`, but it is optional here because the router
- * also tolerates legacy hand-rolled validators that omit it (a default
- * message is substituted when formatting).
+ * A single validation issue, as defined by the Standard Schema spec: a
+ * human-readable message and an optional path locating the failing value.
  */
 export interface StandardSchemaIssue {
-  readonly message?: string;
+  readonly message: string;
   readonly path?:
     | ReadonlyArray<PropertyKey | { readonly key: PropertyKey }>
     | undefined;
@@ -53,58 +36,37 @@ export interface StandardSchemaV1<TInput = unknown, TOutput = TInput> {
 }
 
 /**
- * Any schema the router accepts: a Standard Schema v1 validator or the
- * legacy hand-rolled shape.
+ * Infer a Standard Schema's output type — the type its `validate` resolves
+ * to on success.
+ *
+ * Resolves to `unknown` when the output is unknowable (for example a value
+ * widened to the bare {@link StandardSchemaV1} constraint). Each consumer
+ * chooses its own fallback for that case: {@link InferParams} falls back to
+ * the path-derived params, {@link InferSearch} to a readonly record.
  */
-export type SchemaLike<TOutput = unknown> =
-  | StandardSchemaV1<unknown, TOutput>
-  | StandardSchemaLike<TOutput>;
-
-type InferLegacyOutput<TSchema> =
-  TSchema extends StandardSchemaLike<infer TLegacyOutput>
-    ? TLegacyOutput
-    : Record<string, never>;
+export type InferOutput<TSchema> =
+  TSchema extends StandardSchemaV1<unknown, infer TOutput> ? TOutput : unknown;
 
 /**
- * Infer a schema's output type.
+ * Infer a Standard Schema's input type — the type its `validate` accepts.
  *
- * Standard Schema v1 carries it on the `types.output` phantom property
- * (discriminated by the required `version`/`vendor` members); the legacy
- * shape carries it on `output`. Falls back to an empty record when neither
- * is present.
+ * Resolves to `unknown` when the input is unknowable (a schema declaring
+ * no `types` phantom, or a value widened to the bare {@link StandardSchemaV1}
+ * constraint).
  */
-export type InferOutput<TSchema> = TSchema extends {
-  readonly "~standard": {
-    readonly version: 1;
-    readonly vendor: string;
-    readonly types?: infer TTypes;
-  };
-}
-  ? [NonNullable<TTypes>] extends [{ readonly output: infer TOutput }]
-    ? TOutput
-    : InferLegacyOutput<TSchema>
-  : InferLegacyOutput<TSchema>;
+type InferInput<TSchema> =
+  TSchema extends StandardSchemaV1<infer TInput, unknown> ? TInput : unknown;
 
 export type BivariantCallback<TArgs extends readonly unknown[], TResult> = {
   bivarianceHack(...args: TArgs): TResult;
 }["bivarianceHack"];
 
-export type StripParamModifier<TParam extends string> =
-  TParam extends `${infer TName}(${string}`
-    ? TName
-    : TParam extends `${infer TName}?`
-      ? TName
-      : TParam extends `${infer TName}*`
-        ? TName
-        : TParam extends `${infer TName}+`
-          ? TName
-          : TParam;
-
+/** The `:param` names of a path pattern, as a union of string literals. */
 export type ParamNames<TPath extends string> =
   TPath extends `${string}:${infer TParam}/${infer TRest}`
-    ? StripParamModifier<TParam> | ParamNames<`/${TRest}`>
+    ? TParam | ParamNames<`/${TRest}`>
     : TPath extends `${string}:${infer TParam}`
-      ? StripParamModifier<TParam>
+      ? TParam
       : never;
 
 export type RouteParams<TPath extends string> = [ParamNames<TPath>] extends [
@@ -117,7 +79,17 @@ export type RouteParams<TPath extends string> = [ParamNames<TPath>] extends [
 
 export type RouteParamValues = Readonly<Record<string, string>>;
 
-export type InferSearch<TSchema> = InferOutput<TSchema>;
+/**
+ * The search values a route's `content`/`warm` receive: the search schema's
+ * output when one is declared, `Record<string, never>` when the route has
+ * no search schema, and a readonly record when the schema's output is
+ * unknowable (for example a value widened to the bare schema constraint).
+ */
+export type InferSearch<TSchema> = [Exclude<TSchema, undefined>] extends [never]
+  ? Record<string, never>
+  : unknown extends InferOutput<Exclude<TSchema, undefined>>
+    ? Readonly<Record<string, unknown>>
+    : InferOutput<Exclude<TSchema, undefined>>;
 
 /**
  * The params a route's `content`/`warm` receive: the params schema's
@@ -128,10 +100,10 @@ export type InferParams<TPath extends string, TParamsSchema> = [
   Exclude<TParamsSchema, undefined>,
 ] extends [never]
   ? RouteParams<TPath>
-  : [Exclude<TParamsSchema, undefined>] extends [SchemaLike<unknown>]
+  : [Exclude<TParamsSchema, undefined>] extends [StandardSchemaV1]
     ? unknown extends InferOutput<Exclude<TParamsSchema, undefined>>
-      ? // The schema's output is unknowable (e.g. a widened `SchemaLike`
-        // from contextual inference) — fall back to the path-derived params.
+      ? // The schema's output is unknowable (e.g. a value widened to the
+        // bare schema constraint) — fall back to the path-derived params.
         RouteParams<TPath>
       : InferOutput<Exclude<TParamsSchema, undefined>>
     : RouteParams<TPath>;
@@ -178,9 +150,9 @@ export type AnyWrapper = WrapperDefinition<unknown>;
 
 export type RouteContent<
   TPath extends string = string,
-  TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
+  TSearchSchema extends StandardSchemaV1 | undefined = undefined,
   TRendered = unknown,
-  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
+  TParamsSchema extends StandardSchemaV1 | undefined = undefined,
 > = BivariantCallback<
   [
     props: RouteContentProps<
@@ -202,10 +174,10 @@ export type AnyRouteContent = BivariantCallback<
 
 export interface DataRouteInput<
   TPath extends string = string,
-  TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
+  TSearchSchema extends StandardSchemaV1 | undefined = undefined,
   TRendered = unknown,
   TWrappers extends readonly AnyWrapper[] = readonly [],
-  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
+  TParamsSchema extends StandardSchemaV1 | undefined = undefined,
 > {
   readonly url: TPath;
   readonly content: RouteContent<
@@ -234,7 +206,7 @@ export interface RedirectRouteInput<
   TPath extends string = string,
   TTarget extends string = string,
   TWrappers extends readonly AnyWrapper[] = readonly [],
-  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
+  TParamsSchema extends StandardSchemaV1 | undefined = undefined,
 > {
   readonly url: TPath;
   readonly redirect: TTarget;
@@ -246,20 +218,20 @@ export interface RedirectRouteInput<
 
 export type RouteInput<
   TPath extends string = string,
-  TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
+  TSearchSchema extends StandardSchemaV1 | undefined = undefined,
   TRendered = unknown,
   TWrappers extends readonly AnyWrapper[] = readonly [],
-  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
+  TParamsSchema extends StandardSchemaV1 | undefined = undefined,
 > =
   | DataRouteInput<TPath, TSearchSchema, TRendered, TWrappers, TParamsSchema>
   | RedirectRouteInput<TPath, string, TWrappers, TParamsSchema>;
 
 export interface DataRouteDefinition<
   TPath extends string = string,
-  TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
+  TSearchSchema extends StandardSchemaV1 | undefined = undefined,
   TRendered = unknown,
   TWrappers extends readonly AnyWrapper[] = readonly [],
-  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
+  TParamsSchema extends StandardSchemaV1 | undefined = undefined,
 > extends RouteCodec<TPath, InferParams<TPath, TParamsSchema>> {
   readonly url: TPath;
   readonly content: RouteContent<
@@ -286,7 +258,7 @@ export interface RedirectRouteDefinition<
   TPath extends string = string,
   TTarget extends string = string,
   TWrappers extends readonly AnyWrapper[] = readonly [],
-  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
+  TParamsSchema extends StandardSchemaV1 | undefined = undefined,
 > extends RouteCodec<TPath, InferParams<TPath, TParamsSchema>> {
   readonly url: TPath;
   readonly redirect: TTarget;
@@ -298,10 +270,10 @@ export interface RedirectRouteDefinition<
 
 export type RouteDefinition<
   TPath extends string = string,
-  TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
+  TSearchSchema extends StandardSchemaV1 | undefined = undefined,
   TRendered = unknown,
   TWrappers extends readonly AnyWrapper[] = readonly [],
-  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
+  TParamsSchema extends StandardSchemaV1 | undefined = undefined,
 > =
   | DataRouteDefinition<
       TPath,
@@ -319,8 +291,8 @@ export interface AnyRoute {
     [params: unknown, search: unknown, context: NavigationContext],
     void | Promise<void>
   >;
-  readonly params?: SchemaLike<unknown>;
-  readonly search?: SchemaLike<unknown>;
+  readonly params?: StandardSchemaV1;
+  readonly search?: StandardSchemaV1;
   readonly redirect?: string;
   readonly status?: number;
   readonly wrappers: readonly AnyWrapper[];
@@ -377,41 +349,6 @@ export type RouteIntent<
     ? NavigationIntent<TName, TRoute>
     : never;
 
-export type UnionToIntersection<TUnion> = (
-  TUnion extends unknown
-    ? (value: TUnion) => void
-    : never
-) extends (value: infer TIntersection) => void
-  ? TIntersection
-  : never;
-
-export type BuildPathFn<TRoutes extends RouteMap> = UnionToIntersection<
-  {
-    [TName in RouteName<TRoutes>]: (
-      name: TName,
-      ...args: RouteArgs<TRoutes, TName>
-    ) => string;
-  }[RouteName<TRoutes>]
->;
-
-export type NavigateFn<TRoutes extends RouteMap> = UnionToIntersection<
-  {
-    [TName in RouteName<TRoutes>]: (
-      name: TName,
-      ...args: RouteArgs<TRoutes, TName>
-    ) => RouteIntent<TRoutes, TName>;
-  }[RouteName<TRoutes>]
->;
-
-export type WarmFn<TRoutes extends RouteMap> = UnionToIntersection<
-  {
-    [TName in RouteName<TRoutes>]: (
-      name: TName,
-      ...args: RouteArgs<TRoutes, TName>
-    ) => Promise<void>;
-  }[RouteName<TRoutes>]
->;
-
 export type ParamsOf<TRoute extends AnyRoute> = TRoute extends {
   readonly url: infer TPath extends string;
   readonly params?: infer TParamsSchema;
@@ -419,12 +356,32 @@ export type ParamsOf<TRoute extends AnyRoute> = TRoute extends {
   ? InferParams<TPath, TParamsSchema>
   : Record<string, never>;
 
+/**
+ * The validated search values a matched route carries: the search schema's
+ * output, `Record<string, never>` for a route with no search schema, and a
+ * readonly record when the output is unknowable.
+ */
 export type SearchOf<TRoute extends AnyRoute> = TRoute extends {
+  readonly search?: infer TSearchSchema;
+}
+  ? InferSearch<TSearchSchema>
+  : Record<string, never>;
+
+/**
+ * The search values accepted when building a path for a route: the search
+ * schema's *input* type, because build values pass through the schema's
+ * serialization boundary in the other direction from matching. Falls back
+ * exactly as {@link SearchOf} does — `Record<string, never>` without a
+ * schema, a readonly record when the input is unknowable.
+ */
+export type SearchInputOf<TRoute extends AnyRoute> = TRoute extends {
   readonly search?: infer TSearchSchema;
 }
   ? [Exclude<TSearchSchema, undefined>] extends [never]
     ? Record<string, never>
-    : InferOutput<Exclude<TSearchSchema, undefined>>
+    : unknown extends InferInput<Exclude<TSearchSchema, undefined>>
+      ? Readonly<Record<string, unknown>>
+      : InferInput<Exclude<TSearchSchema, undefined>>
   : Record<string, never>;
 
 export type HasParams<TRoute extends AnyRoute> = TRoute extends {
@@ -435,20 +392,64 @@ export type HasParams<TRoute extends AnyRoute> = TRoute extends {
     : true
   : false;
 
+/** The value shapes `buildSearch`/`renderPattern` can serialize. */
+type SerializableScalar = string | number | boolean;
+
+/**
+ * Check that every search value can serialize into a query string: a
+ * scalar, or an array of scalars (`undefined` items are skipped by the
+ * serializer, so arrays admit them). A homomorphic mapped type, so the
+ * checked object keeps excess-property checking, optionality, and
+ * modifiers; a field that cannot serialize is replaced by a string-literal
+ * type stating the error, so the offending value surfaces as a mismatch
+ * against that message.
+ */
+type SerializableSearch<TSearch> = {
+  [TKey in keyof TSearch]: unknown extends TSearch[TKey]
+    ? TSearch[TKey]
+    : TSearch[TKey] extends
+          | SerializableScalar
+          | ReadonlyArray<SerializableScalar | undefined>
+          | undefined
+      ? TSearch[TKey]
+      : `search value '${TKey & string}' cannot serialize into a query string; use a string, number, boolean, or an array of those`;
+};
+
+/**
+ * Check that every param value can render into a single path segment: a
+ * scalar only — no arrays (a param renders into one segment) and no
+ * `undefined` (rendering throws on a nullish param). A homomorphic mapped
+ * type; a field that cannot render is replaced by a string-literal type
+ * stating the error.
+ */
+type SerializableParams<TParams> = {
+  [TKey in keyof TParams]: unknown extends TParams[TKey]
+    ? TParams[TKey]
+    : TParams[TKey] extends SerializableScalar
+      ? TParams[TKey]
+      : `params value '${TKey & string}' cannot render into a path segment; use a string, number, or boolean`;
+};
+
 export type PathBuildOptions<TRoute extends AnyRoute> = {
-  readonly search?: NoInfer<SearchOf<TRoute>>;
+  readonly search?: NoInfer<SerializableSearch<SearchInputOf<TRoute>>>;
   readonly hash?: string;
   /** When true, the navigation replaces the current history entry. */
   readonly replace?: boolean;
 } & (HasParams<TRoute> extends true
-  ? { readonly params: NoInfer<ParamsOf<TRoute>> }
-  : { readonly params?: NoInfer<ParamsOf<TRoute>> });
+  ? { readonly params: NoInfer<SerializableParams<ParamsOf<TRoute>>> }
+  : { readonly params?: NoInfer<SerializableParams<ParamsOf<TRoute>>> });
 
 export type PathBuildArgs<TRoute extends AnyRoute> =
   HasParams<TRoute> extends true
     ? [options: PathBuildOptions<TRoute>]
     : [options?: PathBuildOptions<TRoute>];
 
+/**
+ * The intent returned by `navigate()`/`buildPath()`: the build values are
+ * carried verbatim, so `params` holds schema-output values and `search`
+ * holds schema-*input* values — build search has not passed through the
+ * schema.
+ */
 export interface NavigationIntent<
   TName extends string,
   TRoute extends AnyRoute,
@@ -456,7 +457,7 @@ export interface NavigationIntent<
   readonly name: TName;
   readonly href: string;
   readonly params: ParamsOf<TRoute>;
-  readonly search: SearchOf<TRoute>;
+  readonly search: SearchInputOf<TRoute>;
   readonly hash?: string;
 }
 
@@ -589,6 +590,40 @@ export interface NavigationStateChange<
   readonly state: RouterNavigationState;
 }
 
+/**
+ * The search keys one route declares, or `never` when its search type is
+ * an index signature (no schema, or an unknowable one) — guarded so a
+ * single schema-less route cannot widen a router's key union to `string`.
+ */
+type SearchKeys<TRoute extends AnyRoute> = string extends keyof SearchOf<TRoute>
+  ? never
+  : Extract<keyof SearchOf<TRoute>, string>;
+
+/** The union of every search key declared by a route map's schemas. */
+type DeclaredSearchKeys<TRoutes extends RouteMap> = {
+  [TName in RouteName<TRoutes>]: SearchKeys<RouteOf<TRoutes, TName>>;
+}[RouteName<TRoutes>];
+
+/**
+ * The search-param keys a router can set and observe: the union of every
+ * key declared by a route's search schema. When no route declares a search
+ * schema the union falls back to `string`, because live URLs still carry
+ * undeclared params.
+ */
+export type SearchParamKey<TRoutes extends RouteMap> = [
+  DeclaredSearchKeys<TRoutes>,
+] extends [never]
+  ? string
+  : DeclaredSearchKeys<TRoutes>;
+
+/**
+ * A `setSearchParams` update: declared keys only, each optional, `null`
+ * meaning "remove this param".
+ */
+type SearchParamUpdate<TRoutes extends RouteMap> = {
+  readonly [TKey in SearchParamKey<TRoutes>]?: string | null;
+};
+
 export interface RouterStore<
   TRoutes extends RouteMap,
   TNotFound extends AnyRoute | undefined = undefined,
@@ -617,7 +652,7 @@ export interface RouterStore<
     ) => void,
   ): () => void;
   subscribeToSearchParam(
-    key: string,
+    key: SearchParamKey<TRoutes>,
     listener: (value: string | null, previousValue: string | null) => void,
   ): () => void;
 }
@@ -660,6 +695,11 @@ export interface PlatformAdapter {
 export interface MemoryAdapter extends PlatformAdapter {
   back(): void;
   forward(): void;
+  /**
+   * Always a fresh `URL`: the memory adapter normalizes every location at
+   * its boundary, so callers can read `pathname`/`search` directly.
+   */
+  getLocation(): URL;
 }
 
 /**
@@ -700,6 +740,15 @@ export interface MemoryAdapterOptions {
   readonly history?: MemoryHistoryDelegate;
 }
 
+/**
+ * The serializable snapshot `dehydrate()` emits and `hydrate()` consumes.
+ *
+ * Deliberately one flat shape rather than a union discriminated on `kind`
+ * (considered and declined): the fields are identical across the three
+ * kinds, and `hydrate()` re-validates `kind` and `routeId` against the
+ * live match at runtime and throws on mismatch, so a discriminated union
+ * would add three type names without adding a check.
+ */
 export interface RouterDehydratedState<TRoutes extends RouteMap = RouteMap> {
   readonly href: string;
   readonly kind: "route" | "not-found" | "unmatched";
@@ -718,6 +767,15 @@ export interface RouterLoadResult<
   readonly status: number;
 }
 
+/**
+ * Options accepted by `createRouter()`.
+ *
+ * Deliberately not generic over the route map (considered and declined):
+ * the only field a `TRoutes` parameter could narrow is
+ * `hydratedState.routeId`, a serialized string that `hydrate()` already
+ * re-validates against the live match at runtime, so the extra generic
+ * would thread through every consumer without adding a check.
+ */
 export interface RouterOptions<
   TNotFound extends AnyRoute | undefined = undefined,
 > {
@@ -780,7 +838,19 @@ export interface Router<
   getTrackedLocation(
     onAccess: (key: RouterLocationKey) => void,
   ): TrackedLocation<RouterLocationState>;
-  buildPath: BuildPathFn<TRoutes>;
+  /**
+   * Build the href for a named route from its typed params and search.
+   *
+   * A single generic signature, not one overload per route: when `name` is
+   * a union of route names mixing params and paramless routes, the
+   * conditional args tuple widens to its optional branch, so a missing
+   * `params` for the union is not caught — pass a single literal name for
+   * full checking.
+   */
+  buildPath<TName extends RouteName<TRoutes>>(
+    name: TName,
+    ...args: RouteArgs<TRoutes, TName>
+  ): string;
   dehydrate(): RouterDehydratedState<TRoutes> | null;
   dispose(): void;
   hydrate(
@@ -788,8 +858,24 @@ export interface Router<
   ): RouterLoadResult<TRoutes, TNotFound>;
   load(url: string | URL): Promise<RouterLoadResult<TRoutes, TNotFound>>;
   match(url: string | URL): RouterMatch<TRoutes, TNotFound> | null;
-  navigate: NavigateFn<TRoutes>;
-  warm: WarmFn<TRoutes>;
+  /**
+   * Navigate to a named route, returning the built navigation intent.
+   * Shares `buildPath`'s single-generic-signature checking limit for a
+   * union of route names.
+   */
+  navigate<TName extends RouteName<TRoutes>>(
+    name: TName,
+    ...args: RouteArgs<TRoutes, TName>
+  ): RouteIntent<TRoutes, TName>;
+  /**
+   * Preload a named route: run its wrapper and route warm hooks and cache
+   * the load. Shares `buildPath`'s single-generic-signature checking limit
+   * for a union of route names.
+   */
+  warm<TName extends RouteName<TRoutes>>(
+    name: TName,
+    ...args: RouteArgs<TRoutes, TName>
+  ): Promise<void>;
   /**
    * Register a navigation blocker. While `isActive()` returns true,
    * `navigate()` is intercepted and held until the returned handle's
@@ -798,10 +884,18 @@ export interface Router<
    */
   block(isActive: () => boolean): RouterBlockerHandle;
   render(result?: RouterLoadResult<TRoutes, TNotFound> | null): unknown;
+  /**
+   * Merge an update into the current search params and navigate. Keys are
+   * limited to those the route map's search schemas declare; the callback
+   * still receives every live param, because URLs carry undeclared ones.
+   * `null` (or `undefined`) removes a param.
+   */
   setSearchParams(
     params:
-      | Record<string, string | null>
-      | ((current: Record<string, string>) => Record<string, string | null>),
+      | SearchParamUpdate<TRoutes>
+      | ((
+          current: Readonly<Record<string, string>>,
+        ) => SearchParamUpdate<TRoutes>),
     options?: { readonly replace?: boolean },
   ): void;
   subscribe(
@@ -814,7 +908,7 @@ export interface Router<
     ) => void,
   ): () => void;
   subscribeToSearchParam(
-    key: string,
+    key: SearchParamKey<TRoutes>,
     listener: (value: string | null, previousValue: string | null) => void,
   ): () => void;
 }

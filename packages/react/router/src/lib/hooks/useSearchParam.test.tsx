@@ -6,7 +6,7 @@ import RouterProvider from "../RouterProvider/Provider.js";
 import useSearchParam from "./useSearchParam.js";
 
 function SearchProbe() {
-  const page = useSearchParam<typeof routes>("page");
+  const page = useSearchParam("page");
 
   return <span>{page ?? "none"}</span>;
 }

@@ -83,35 +83,38 @@ interface Router<TRoutes extends RouteMap, TNotFound extends AnyRoute | undefine
   getRoute<TName extends RouteName<TRoutes>>(name: TName): RouteOf<TRoutes, TName>;
   getState(): RouterState<TRoutes, TNotFound>;
   getTrackedLocation(onAccess: (key: RouterLocationKey) => void): TrackedLocation<RouterLocationState>;
-  buildPath: BuildPathFn<TRoutes>;                       // (name, options?) => string
+  buildPath<TName extends RouteName<TRoutes>>(name: TName, ...args: RouteArgs<TRoutes, TName>): string;
   dehydrate(): RouterDehydratedState<TRoutes> | null;
   dispose(): void;
   hydrate(state: RouterDehydratedState<TRoutes>): RouterLoadResult<TRoutes, TNotFound>;
   load(url: string | URL): Promise<RouterLoadResult<TRoutes, TNotFound>>;
   match(url: string | URL): RouterMatch<TRoutes, TNotFound> | null;
-  navigate: NavigateFn<TRoutes>;                         // (name, options?) => NavigationIntent
-  warm: WarmFn<TRoutes>;                                 // (name, options?) => Promise<void>
+  navigate<TName extends RouteName<TRoutes>>(name: TName, ...args: RouteArgs<TRoutes, TName>): RouteIntent<TRoutes, TName>;
+  warm<TName extends RouteName<TRoutes>>(name: TName, ...args: RouteArgs<TRoutes, TName>): Promise<void>;
   block(isActive: () => boolean): RouterBlockerHandle;
   render(result?: RouterLoadResult<TRoutes, TNotFound> | null): unknown;
   setSearchParams(
     params:
-      | Record<string, string | null>
-      | ((current: Record<string, string>) => Record<string, string | null>),
+      | { readonly [key in SearchParamKey<TRoutes>]?: string | null }
+      | ((current: Readonly<Record<string, string>>) => { readonly [key in SearchParamKey<TRoutes>]?: string | null }),
     options?: { readonly replace?: boolean },
   ): void;
   subscribe(listener: (snapshot: RouterSnapshot<TRoutes, TNotFound>) => void): () => void;
   subscribeToNavigation(listener: (state: RouterNavigationState, previousState: RouterNavigationState) => void): () => void;
-  subscribeToSearchParam(key: string, listener: (value: string | null, previousValue: string | null) => void): () => void;
+  subscribeToSearchParam(key: SearchParamKey<TRoutes>, listener: (value: string | null, previousValue: string | null) => void): () => void;
 }
 ```
 
-- **`navigate(name, options?)`** and **`buildPath(name, options?)`** take a route name and `PathBuildOptions`. `params` is required at the type level iff the route's `url` contains `:params`; `search`, `hash`, and `replace` are optional. `navigate` returns a `NavigationIntent` (`{ name, href, params, search, hash? }`); `buildPath` returns the built path string. **Both `navigate` and `setSearchParams` throw on an adapterless router** — an adapterless router only matches and builds URLs.
-- **`warm(name, options?)`** returns `Promise<void>` — runs the route's `warm` hook ahead of navigation and caches the resolved load per href. **The cached entry is consumed by the next navigation to that href, and the `warm` hooks do not run again for it**; the cache is cleared on every committed navigation. `Link` calls this on hover.
+`buildPath`, `navigate`, and `warm` are each a single generic method — `<TName extends RouteName<TRoutes>>(name: TName, ...args: RouteArgs<TRoutes, TName>) => …` — not per-route overloads and not a standalone alias type. `RouteArgs<TRoutes, TName>` is a one-tuple of `PathBuildOptions` when the route needs build options at all, and an empty tuple otherwise (see [`PathBuildOptions`](#supporting-types) below). One consequence of the single-signature shape: when `TName` is a union of route names mixing params and paramless routes, the conditional args tuple widens to its optional branch, so a missing `params` for that union is not caught at the call site — pass a single literal name for full checking.
+
+- **`navigate(name, ...args)`** and **`buildPath(name, ...args)`** take a route name and, for routes that need them, a `PathBuildOptions` argument. `params` is required at the type level iff the route's `url` contains `:params`; `search`, `hash`, and `replace` are optional. `navigate` returns a `NavigationIntent` (`{ name, href, params, search, hash? }` — `search` is typed by the search schema's **input**, not its output, since build values have not passed through the schema); `buildPath` returns the built path string. **Both `navigate` and `setSearchParams` throw on an adapterless router** — an adapterless router only matches and builds URLs.
+- **`warm(name, ...args)`** returns `Promise<void>` — runs the route's `warm` hook ahead of navigation and caches the resolved load per href. **The cached entry is consumed by the next navigation to that href, and the `warm` hooks do not run again for it**; the cache is cleared on every committed navigation. `Link` calls this on hover.
 - **`match(url)`** is pure — it runs no hooks — but **can throw** a 400 `StatusResponse` when the matched route's [search schema](#search-validation) rejects the query string. `load()` catches that and commits it as an error result; call sites that use `match()` directly (e.g. a server disposition helper) must catch it themselves.
 - **`block(isActive)`** — see [Blocking navigation](#blocking-navigation--block).
 - **`render(result?)`** returns `unknown` (framework-agnostic); the React layer consumes it via `<Outlet>`. Typing is supplied by `TRendered` on `content`/`wrapper.component`.
 - **`dispose()`** aborts the in-flight load and unsubscribes from the adapter.
 - **`content.preload`**, when a route declares it, is **awaited during the load** — unlike `warm`, it gates navigation completion (it exists for code-splitting, where rendering without the module is impossible).
+- **`setSearchParams`/`subscribeToSearchParam`** key their `key`/update-object keys against [`SearchParamKey<TRoutes>`](#search-validation) — the union of every key declared by a route's `search` schema across the route map, falling back to `string` when no route declares one. `setSearchParams` merges into the current search params; a key set to `null` **or `undefined`** removes it (an explicit `undefined` value in an update object removes the param rather than serializing the literal string `"undefined"`).
 
 ```ts
 router.navigate("account", { search: { auth: "1" } });
@@ -124,8 +127,10 @@ await router.warm("home");
 Route paths are segment patterns:
 
 - **Static segments** (`/account`) match exactly.
-- **`:param` segments** match any single non-empty segment; the value is `decodeURIComponent`-decoded into `params`. Modifier suffixes on a param name — `?`, `*`, `+`, or a `(regex)` group — are **stripped for naming only and never evaluated**: `:id(\d+)` matches `abc` just like `:id` does, and `:section?` does **not** make the segment optional. Segment counts must match exactly (use a params schema for syntactic constraints, or a wildcard for variable depth).
+- **`:param` segments** match any single non-empty segment; the value is `decodeURIComponent`-decoded into `params`. This is the full param grammar — there is no optional, repeat, or regex-constrained param syntax.
 - **A trailing `*` wildcard** (`/docs/*`) matches zero or more remaining segments. Wildcard segments are not captured as params and are omitted when rendering the pattern back to a path.
+
+**A `?`/`*`/`+`/`(regex)` modifier on a `:param` segment is a compile error at `route()`**, not a runtime behavior: `:id(\d+)`, `:id?`, `:id*`, and `:id+` are all rejected by [`ValidPath`](#route-definition--route) with a diagnostic naming the offending segment and modifier. (The matcher still strips these suffixes internally — `extractParamName` — but typed code can no longer reach that path, since `route()` never accepts the pattern in the first place.) Segment counts must match exactly (use a params schema for syntactic constraints, or a wildcard for variable depth).
 
 **Route priority** is purely structural, computed per pattern: more static segments win, then more param segments, then fewer wildcards; ties keep definition order. Redirect routes compete on the same specificity rules as data routes — a redirect route has no special precedence at match time (the `redirect` property only selects the `route()` **overload** at the type level).
 
@@ -141,24 +146,35 @@ function route<
   const TPath extends string,
   TTarget extends string,
   TWrappers extends readonly AnyWrapper[] = readonly [],
-  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
+  TParamsSchema extends ParamsSchemaFor<TPath> | undefined = undefined,
 >(
-  definition: RedirectRouteInput<TPath, TTarget, TWrappers, TParamsSchema>,
+  definition: RedirectRouteInput<TPath, TTarget, TWrappers, TParamsSchema> &
+    ValidPath<TPath> &
+    RedirectTarget<TPath, TTarget>,
 ): RedirectRouteDefinition<TPath, TTarget, TWrappers, TParamsSchema>;
 
 // Data overload:
 function route<
   const TPath extends string,
-  TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
+  TSearchSchema extends StandardSchemaV1 | undefined = undefined,
   TRendered = unknown,
   TWrappers extends readonly AnyWrapper[] = readonly [],
-  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
+  TParamsSchema extends ParamsSchemaFor<TPath> | undefined = undefined,
 >(
-  definition: DataRouteInput<TPath, TSearchSchema, TRendered, TWrappers, TParamsSchema>,
+  definition: DataRouteInput<TPath, TSearchSchema, TRendered, TWrappers, TParamsSchema> &
+    ValidPath<TPath>,
 ): DataRouteDefinition<TPath, TSearchSchema, TRendered, TWrappers, TParamsSchema>;
 ```
 
 Constructs one flat route and derives its path codec. The returned definition adds `parse(url) → params | null` and `render(params) → string` over the input, and defaults `wrappers` to `[]`. Routes are **flat** — there is no nesting or `children`. Shared layout comes from [`wrapper`](#wrapper) + [`group`](#group); cross-cutting logic from [middleware](#middleware--applymiddleware).
+
+Three intersected types turn path/schema mistakes into `route()`-call diagnostics instead of runtime surprises, via the same mechanism: each resolves to `unknown` (an identity inside an intersection) when the input is valid, and otherwise to an object requiring a property whose *name* states the error — so the mistake surfaces as a missing-property error at the call site:
+
+- **`ValidPath<TPath>`** rejects a `?`/`*`/`+`/`(regex)` modifier on a path segment (see [URL patterns and matching](#url-patterns-and-matching)).
+- **`RedirectTarget<TPath, TTarget>`** (redirect overload only) rejects a redirect `target` the router cannot render: a target `:param` carrying a `?`/`*`/`+`/`(regex)` modifier is faulted for the modifier itself (the same treatment `ValidPath` gives a path param), and a plain target `:param` must appear in the route's own `path` — the target is rendered from the params matched off `path`, so an unsatisfiable param would throw at request time instead of failing to compile.
+- **`ParamsSchemaFor<TPath>`** constrains a `params` schema's *output* to cover every `:param` name in `TPath`, so `render()` can always substitute each pattern segment from the schema's output; declaring a params schema that omits one of the path's params is a type error on the schema argument itself, not on an intersected phantom.
+
+These three are diagnostic devices, not contracts: they live in (and are exported from) `route.ts` for the type tests, but are deliberately not part of the package surface. The declared return types additionally wrap each schema-derived generic in `NoInfer` (elided above). Without it, a route declared inline inside a router factory call would have its schema generics inferred from `TParamsSchema`'s own *constraint* rather than the argument, and `params`/`search` would silently degrade to `unknown`.
 
 #### `DataRouteInput`
 
@@ -496,13 +512,9 @@ warm: (params) => {
 
 ### Schema validation
 
-Both `params` and `search` accept a `SchemaLike` validator:
+Both `params` and `search` accept a [Standard Schema v1](https://standardschema.dev) validator — there is no other accepted shape:
 
 ```ts
-type SchemaLike<TOutput = unknown> =
-  | StandardSchemaV1<unknown, TOutput>   // the real spec — Zod (≥3.24), Valibot, ArkType
-  | StandardSchemaLike<TOutput>;         // legacy hand-rolled shape (kept for back-compat)
-
 interface StandardSchemaV1<TInput = unknown, TOutput = TInput> {
   readonly "~standard": {
     readonly version: 1;
@@ -518,17 +530,16 @@ type StandardSchemaResult<TOutput> =
   | { readonly value: TOutput; readonly issues?: undefined }
   | { readonly issues: ReadonlyArray<StandardSchemaIssue> };
 
-interface StandardSchemaLike<TOutput = unknown> {
-  readonly "~standard": {
-    readonly output?: TOutput;
-    readonly validate?: (value: unknown) => unknown;
-  };
+interface StandardSchemaIssue {
+  readonly message: string;                                              // required
+  readonly path?: ReadonlyArray<PropertyKey | { readonly key: PropertyKey }> | undefined;
 }
 ```
 
-Any [Standard Schema](https://standardschema.dev)-compatible library schema can be passed directly — its output type is inferred from the `types.output` phantom (`InferOutput`). The legacy shape carries its output type on the non-standard `output` phantom instead. Two constraints apply to both:
+Any spec-compliant library schema can be passed directly — its output type is inferred from the `types.output` phantom (`InferOutput`), and its input type from `types.input`, surfaced to consumers as `SearchInputOf`. Three constraints apply:
 
 - **Validation is synchronous.** `match()` is sync, so a validator that returns a `Promise` (e.g. a Zod async refinement) throws at match time with an explanatory error.
+- **The result must be spec-shaped.** A validator whose `validate()` call returns anything other than `{ value }` or `{ issues }` — a bare value, `undefined`, some other object — **throws** an explanatory error rather than being treated as a pass-through. There is no fallback shape; a hand-rolled validator that predates the spec should be updated to conform, not special-cased.
 - **Raw values are strings.** Path params and search params arrive as `Record<string, string>`; use coercion (`z.coerce.number()`, `Number(...)`) for anything else.
 
 #### Params validation
@@ -567,7 +578,7 @@ const matcher = createRouter(routes);
 matcher.buildPath("product", { params: { id: 42 } });   // "/products/42" — typed, serialized with String()
 ```
 
-This is the mechanism for syntactic constraints — a `(regex)` modifier in the pattern is **not** (it is stripped, never evaluated; see [URL patterns](#url-patterns-and-matching)). For *semantic* validation (does the record exist?), keep using `warm` + [`StatusResponse`](#statusresponse).
+This is the mechanism for syntactic constraints — a `(regex)` modifier in the pattern is **not**: it is rejected as a compile error at `route()` rather than evaluated (see [URL patterns](#url-patterns-and-matching)). For *semantic* validation (does the record exist?), keep using `warm` + [`StatusResponse`](#statusresponse).
 
 #### Search validation
 
@@ -591,7 +602,7 @@ const accountSearchSchema: StandardSchemaV1<
 };
 ```
 
-This schema never fails (it normalizes), which makes it a good dependency-free default. A type-only legacy schema (`output` phantom, no `validate`) passes the raw string record through unvalidated.
+This schema never fails (it normalizes), which makes it a good dependency-free default.
 
 ### Blocking navigation — `block`
 
@@ -640,7 +651,7 @@ interface PlatformNavigateOptions {
 | `createNavigationAdapter` | `(navigationWindow?): PlatformAdapter` | Navigation API only; throws without one. Intercepts same-origin navigations and ties `intercept()`'s handler to the router's tracked load (`trackLoad`), so native loading UI reflects the navigation; transition-promise rejections from superseded navigations are absorbed. |
 | `createHistoryAdapter` | `(browserWindow?): PlatformAdapter` | History API (`pushState`/`popstate`). |
 | `createHashAdapter` | `(browserWindow?): PlatformAdapter` | Stores the route in `location.hash` (`#/path`). For Storybook, static file hosts, and anywhere the real path is fixed. Throws without a window-like object. |
-| `createMemoryAdapter` | `(initialUrl?: string \| URL, options?: MemoryAdapterOptions): MemoryAdapter` | In-memory location for tests; adds `back()`/`forward()`. |
+| `createMemoryAdapter` | `(initialUrl?: string \| URL, options?: MemoryAdapterOptions): MemoryAdapter` | In-memory location for tests; adds `back()`/`forward()` and narrows `getLocation()` to always return a fresh `URL` (not `PlatformAdapter`'s `string \| URL`). |
 | `createServerAdapter` | `(initialUrl: string \| URL): PlatformAdapter` | Pins one request URL. **Its `navigate()` throws** — a server render never client-navigates — so `router.navigate()`/`setSearchParams()` on a server-adapter router throw too. |
 
 The optional-parameter adapters accept an injectable window-like object for testing.
@@ -686,7 +697,7 @@ interface RouterStore<TRoutes, TNotFound> {
   setNavigationState(state: RouterNavigationState): RouterState<TRoutes, TNotFound>;
   subscribe(listener: (snapshot: RouterSnapshot<TRoutes, TNotFound>) => void): () => void;
   subscribeToNavigation(listener: (state, previousState) => void): () => void;
-  subscribeToSearchParam(key: string, listener: (value, previousValue) => void): () => void;
+  subscribeToSearchParam(key: SearchParamKey<TRoutes>, listener: (value, previousValue) => void): () => void;
 }
 ```
 
@@ -761,17 +772,18 @@ function createTrackedLocation<TLocation extends object>(
 | `RouterDehydratedState` | `{ href; kind: "route" \| "not-found" \| "unmatched"; routeId; status }` |
 | `RouterLoadResult` | `{ dehydrate(); error; location; match; status }` (returned by `load`/`hydrate`) |
 | `RouterBlockerHandle` | the handle returned by [`router.block()`](#blocking-navigation--block) |
-| `PathBuildOptions<TRoute>` | `{ params?; search?; hash?; replace? }` — `params` required iff the path has params |
-| `NavigationIntent` | `{ name; href; params; search; hash? }` (returned by `navigate`) |
+| `PathBuildOptions<TRoute>` | `{ search?; hash?; replace? } & (params required or optional)` — `params` required iff the path has params; `search` is checked against the route's search-schema **input** type, serializable-scalar-only |
+| `NavigationIntent` | `{ name; href; params; search; hash? }` (returned by `navigate`) — `params` is the schema **output**, `search` is the schema **input**, since build values pass through the schema in the opposite direction from matching |
 | `TrackedLocation<T>` | a location whose field reads subscribe the reader to just that field |
 | `Subject<T>` | `{ next(value); subscribe(subscriber) → unsubscribe }` |
-| `PlatformAdapter` / `MemoryAdapter` / `MemoryAdapterOptions` / `MemoryHistoryDelegate` | see [Platform adapters](#platform-adapters) |
-| `SchemaLike<TOutput>` | `StandardSchemaV1<unknown, TOutput> \| StandardSchemaLike<TOutput>` — what `params`/`search` accept |
-| `InferOutput<TSchema>` | a schema's output type (`types.output` phantom, or legacy `output`) |
+| `PlatformAdapter` / `MemoryAdapter` / `MemoryAdapterOptions` / `MemoryHistoryDelegate` | see [Platform adapters](#platform-adapters); `MemoryAdapter.getLocation()` is narrowed to return `URL` (not `PlatformAdapter`'s `string \| URL`) — the memory adapter always normalizes to a fresh `URL` |
+| `InferOutput<TSchema>` | a schema's output type (the `types.output` phantom); resolves to `unknown` when unknowable, with a per-consumer fallback (see `InferParams`/`SearchOf` below) |
 | `InferParams<TPath, TParamsSchema>` | params schema output when declared, else `RouteParams<TPath>` |
 | `ParamsOf<TRoute>` | the route's params as seen by `content`/`Link`/`navigate` (schema-aware) |
-| `SearchOf<TRoute>` | the route's validated search shape (schema-aware) |
-| `StandardSchemaIssue` | `{ message?; path? }` — one validation issue; `message` optional to tolerate legacy validators |
+| `SearchOf<TRoute>` | the route's validated search shape as seen by `content` (schema **output**-aware) |
+| `SearchInputOf<TRoute>` | the search shape accepted when *building* a path (`Link`/`navigate`/`buildPath`) — the schema's **input** type, read from its `types.input` phantom and falling back to the output type when unknowable |
+| `SearchParamKey<TRoutes>` | the union of every key declared across the route map's `search` schemas; falls back to `string` when no route declares one — what `setSearchParams`/`subscribeToSearchParam` key against |
+| `StandardSchemaIssue` | `{ message; path? }` — one validation issue; `message` is required |
 
 ---
 
@@ -814,7 +826,9 @@ A `forwardRef` anchor that builds `href` from a **typed route name**. A primary-
 ```ts
 type LinkProps<TRoutes, TName> =
   Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> &
-  LinkBuildOptions<RouteOf<TRoutes, TName>> & {
+  // core's own `PathBuildOptions`, not a React-side copy of it, so `Link`
+  // cannot keep compiling against a contract core has since tightened:
+  PathBuildOptions<RouteOf<TRoutes, TName>> & {
     readonly children?: ReactNode;
     readonly download?: AnchorHTMLAttributes<HTMLAnchorElement>["download"];
     readonly onClick?: MouseEventHandler<HTMLAnchorElement>;
@@ -822,15 +836,9 @@ type LinkProps<TRoutes, TName> =
     readonly ref?: Ref<HTMLAnchorElement>;
     readonly to: TName;          // the named route
   };
-
-type LinkBuildOptions<TRoute> = {
-  readonly hash?: string;
-  readonly replace?: boolean;
-  readonly search?: SearchOf<TRoute>;
-} & (HasParams<TRoute> extends true
-  ? { readonly params: ParamsOf<TRoute> }      // required iff the route has params
-  : { readonly params?: ParamsOf<TRoute> });
 ```
+
+See [`PathBuildOptions`](#supporting-types) for the actual shape: `search` is checked against the search schema's *input* type and must be serializable (a scalar or array of scalars); `params` is required iff the route has params and must be a scalar-only object.
 
 ```tsx
 <Link to="account" search={{ auth: "1" }}>Account</Link>
@@ -857,7 +865,7 @@ Renders the matched route subtree (route content wrapped by its wrappers). Reren
 
 ### Hooks
 
-All default their generics to `RegisteredRouteMap` / `RegisteredNotFound` (see [`register`](#register--typed-routing-without-generics)), so once you register your routes no generics are needed. Each subscribes to the narrowest channel it needs.
+Most default their generics to `RegisteredRouteMap` / `RegisteredNotFound` (see [`register`](#register--typed-routing-without-generics)), so once you register your routes no generics are needed; `useRoute` carries no route-map generics at all (it exposes only the untyped `RouterLocationState`), and `useSearchParam`/`useSearchParams` key their arguments against `SearchParamKey<RegisteredRouteMap>` instead. Each hook subscribes to the narrowest channel it needs.
 
 #### `useRouter`
 
@@ -875,7 +883,7 @@ router.navigate("home");
 #### `useRoute`
 
 ```ts
-function useRoute<TRoutes = RegisteredRouteMap, TNotFound = RegisteredNotFound>(): TrackedLocation<RouterLocationState>;
+function useRoute(): TrackedLocation<RouterLocationState>;
 ```
 
 The current location as a tracked proxy over `RouterLocationState` — the keys are `hash`, `href`, `pathname`, `searchParams`, `status`, and `url`. Reading a field subscribes the component to **only** that field.
@@ -927,10 +935,10 @@ return navState === "loading" ? <Spinner /> : <Content />;
 #### `useSearchParam`
 
 ```ts
-function useSearchParam<TRoutes, TNotFound>(key: string): string | null;
+function useSearchParam(key: SearchParamKey<RegisteredRouteMap>): string | null;
 ```
 
-A single search-param value; subscribes to that key only.
+A single search-param value; subscribes to that key only. `key` is checked against [`SearchParamKey<RegisteredRouteMap>`](#search-validation) — the union of keys declared by the registered route map's search schemas, falling back to `string` without a `RouterRegister` declaration.
 
 ```ts
 const auth = useSearchParam("auth");
@@ -940,14 +948,14 @@ const auth = useSearchParam("auth");
 
 ```ts
 function useSearchParams(): URLSearchParams;
-function useSearchParams<_TRoutes, _TNotFound, const TKeys extends readonly string[]>(
+function useSearchParams<const TKeys extends readonly SearchParamKey<RegisteredRouteMap>[]>(
   keys: TKeys,
 ): SearchParamValues<TKeys>;
 
 type SearchParamValues<TKeys> = Readonly<{ [K in TKeys[number]]: string | null }>;
 ```
 
-With no args, returns the full `URLSearchParams`. With a `keys` tuple, returns a record of just those keys and subscribes only to them.
+With no args, returns the full `URLSearchParams`. With a `keys` tuple, returns a record of just those keys and subscribes only to them. Each key in the tuple is checked against `SearchParamKey<RegisteredRouteMap>`, same as `useSearchParam`.
 
 ```ts
 const params = useSearchParams();                 // URLSearchParams
