@@ -2,8 +2,6 @@
 
 React bindings for `@canonical/router-core`. `@canonical/router-react` turns a core router into React context, hooks, links, outlets, and SSR helpers while preserving the flat-route model from the core package.
 
-> **Stability: pre-1.0 / experimental.** The API is still consolidating and breaking changes may land between minor versions; the CHANGELOG and conventional-commit history are the migration record. The design positions behind the API are documented in the core package's [Design rationale](../../runtime/router/README.md#design-rationale).
-
 ## Installation
 
 ```bash
@@ -14,29 +12,23 @@ Requires `react` and `react-dom`.
 
 ## Quick start
 
-### 1. Define routes and a router in core
+### 1. Define routes in core
 
 ```tsx
-import {
-  createBrowserAdapter,
-  createRouter,
-  route,
-} from "@canonical/router-core";
+import { createRouter, route } from "@canonical/router-core";
 
 export const routes = {
   home: route({
     url: "/",
-    content: () => <h1>Home</h1>,
+    component: () => <h1>Home</h1>,
   }),
   docs: route({
     url: "/docs/:slug",
-    content: ({ params }) => <h1>{params.slug}</h1>,
+    component: ({ params }) => <h1>{params.slug}</h1>,
   }),
 } as const;
 
-export const router = createRouter(routes, {
-  adapter: createBrowserAdapter(),
-});
+export const router = createRouter(routes);
 ```
 
 `@canonical/router-core` owns route definitions, matching, and typed navigation. `@canonical/router-react` layers React rendering and subscriptions on top.
@@ -45,9 +37,12 @@ Route authoring story, in short:
 
 - define every route with `route()`
 - give it a `url` pattern such as `/docs/:slug`
-- optionally add `warm`, `content`, and `wrappers`
-- create one router from the full flat route map, with an adapter
+- give it a `component` receiving `{ params, search }` props (the deprecated `content` render-function form still works)
+- optionally add `prefetch`, `wrappers`, a per-route `fallback`, and an `errorComponent`
+- create one router from the full flat route map
 - let the router match incoming URLs — React renders the result
+
+Migrating from `content`: rename the field to `component` — bare component references and element-creating arrows are both valid, and hooks are legal inside. Both fields work during the transition (exactly one per route); `content` is deprecated (AV-340).
 
 ### 2. Provide the router and render the current match
 
@@ -72,6 +67,7 @@ import {
   Link,
   useNavigationState,
   useRoute,
+  useRouterState,
   useSearchParam,
   useSearchParams,
 } from "@canonical/router-react";
@@ -79,6 +75,7 @@ import {
 function Navigation() {
   const navigationState = useNavigationState();
   const location = useRoute();
+  const status = useRouterState((state) => state.match?.status ?? 404);
   const tab = useSearchParam("tab");
   const search = useSearchParams();
 
@@ -89,7 +86,7 @@ function Navigation() {
         Docs
       </Link>
       <span>{navigationState}</span>
-      <span>{location.status}</span>
+      <span>{status}</span>
       <span>{location.pathname}</span>
       <span>{tab ?? "overview"}</span>
       <span>{search.toString()}</span>
@@ -103,7 +100,7 @@ All hooks and `Link` default to `RegisteredRouteMap`. Register your route map on
 ```ts
 declare module "@canonical/router-react" {
   interface RouterRegister {
-    routes: typeof routes;
+    routes: typeof appRoutes;
   }
 }
 ```
@@ -121,17 +118,17 @@ Important distinction:
 
 ## Data ownership
 
-The router does not own data. `content()` receives `params` and `search` — not data. Components fetch their own data from their cache library (Relay, TanStack Query, SWR, etc.).
+The router does not own data. A route's `component` receives `params` and `search` props — not data. Components fetch their own data from their cache library (Relay, TanStack Query, SWR, etc.).
 
-The optional `warm()` on routes is a fire-and-forget navigation-time hook. Use it to warm caches, preload assets, or run side effects before the component renders. It does not pass data to `content()` — the component's cache hook finds the data already warm. (Why this is the design, and why loader-data-as-props is rejected, is spelled out in the core [Design rationale](../../runtime/router/README.md#design-rationale).)
+The optional `prefetch()` on routes is a fire-and-forget navigation-time hook. Use it to warm caches, preload assets, or run side effects before the component renders. It does not pass data to the route component.
 
 ```tsx
 const userRoute = route({
   url: "/users/:id",
-  warm: async ({ id }) => {
+  prefetch: async ({ id }) => {
     await queryClient.prefetchQuery(["user", id], () => fetchUser(id));
   },
-  content: ({ params }) => <UserProfile id={params.id} />,
+  component: ({ params }) => <UserProfile id={params.id} />,
 });
 
 function UserProfile({ id }: { id: string }) {
@@ -142,80 +139,34 @@ function UserProfile({ id }: { id: string }) {
 
 ## Error handling
 
-Errors travel through two separate channels. Knowing which one you are in tells you which tool to reach for.
+A route may declare an `errorComponent` to catch its own render errors (see [`Outlet`](#outlet)). Beyond that, the router does not ship a public error boundary component. When `prefetch()` throws, the error propagates into the React render tree and is caught by the nearest React error boundary.
 
-### Channel 1 — data errors are state, not exceptions
-
-The router commits every data failure as a status on the location: an unmatched URL is a 404, a rejected search schema is a 400, a `StatusResponse`/`Response` thrown from `warm()` carries its own status, and any other throw during a load becomes a 500. **None of these are thrown into React** — a `StatusResponse` thrown during a load never reaches an error boundary; it becomes `location.status`.
-
-The bridge into React is one property read: `useRoute().status`. The location object is tracked, so a component reading `status` re-renders only when the status changes:
+Use `StatusResponse` from `@canonical/router-core` to signal HTTP-like errors:
 
 ```tsx
-import { useRoute } from "@canonical/router-react";
+import { StatusResponse } from "@canonical/router-core";
 
-function RouteStatusGate({ children }: { children: React.ReactNode }) {
-  const { status } = useRoute();
+function ErrorFallback({ error }: { error: unknown }) {
+  const status = error instanceof StatusResponse ? error.status : 500;
 
-  if (status === 404) return <NotFoundPage />;
-  if (status === 401) return <LoginPrompt />;
-  if (status >= 400) return <ErrorPage status={status} />;
-
-  return <>{children}</>;
+  if (status === 404) return <NotFound />;
+  if (status === 401) return <LoginRedirect />;
+  return <ErrorPage status={status} />;
 }
 
-// Wrap the outlet once, near the top of the tree:
-// <RouterProvider router={router}>
-//   <RouteStatusGate>
-//     <Outlet />
-//   </RouteStatusGate>
-// </RouterProvider>
-```
-
-### Channel 2 — render errors belong to React
-
-A component that throws while rendering (including a suspense cache read that rejects) is React's concern, handled by an ordinary error boundary. The router deliberately does not ship one — error UI is application-specific. A complete boundary, inline:
-
-```tsx
-import { useRoute } from "@canonical/router-react";
-import { Component, type ReactNode } from "react";
-
-interface ErrorBoundaryProps {
-  readonly children: ReactNode;
-  readonly fallback: (error: unknown) => ReactNode;
-}
-
-interface ErrorBoundaryState {
-  readonly error: unknown | null;
-}
-
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { error: null };
-
-  static getDerivedStateFromError(error: unknown): ErrorBoundaryState {
-    return { error };
-  }
-
-  render(): ReactNode {
-    return this.state.error !== null
-      ? this.props.fallback(this.state.error)
-      : this.props.children;
-  }
-}
-
-// A plain boundary sticks in its error state after the user navigates away.
-// Key it by the location so navigation remounts it fresh:
-function RouteErrorGate({ children }: { children: ReactNode }) {
-  const { href } = useRoute();
-
+function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ErrorBoundary key={href} fallback={(error) => <CrashPage error={error} />}>
-      {children}
-    </ErrorBoundary>
+    <div>
+      <Sidebar />
+      <ErrorBoundary fallbackRender={({ error }) => <ErrorFallback error={error} />}>
+        {children}
+      </ErrorBoundary>
+    </div>
   );
 }
 ```
 
-Compose the two channels in one place — status gate outside, render boundary inside — and every route gets both behaviors for free.
+The boilerplate reference app provides a complete `RouteErrorBoundary` implementation to copy and adapt.
 
 ## Search param mutation
 
@@ -244,7 +195,7 @@ function FilterBar() {
 
 ## Navigation blocking
 
-`useBlocker()` prevents navigation when the component has unsaved state. The hook returns a state object — the consumer controls the confirmation UI, and the hook re-renders the moment a navigation is blocked:
+`useBlocker()` prevents navigation when the component has unsaved state. The hook returns a state object — the consumer controls the confirmation UI:
 
 ```tsx
 import { useBlocker } from "@canonical/router-react";
@@ -306,7 +257,7 @@ function QuickEditForm() {
 }
 ```
 
-The blocker registers on mount and disposes on unmount. Unmounting while a navigation is blocked **discards** that navigation (it is not resumed). Blockers intercept `router.navigate()` only — `setSearchParams()` and browser back/forward are not intercepted.
+The blocker registers on mount and unregisters on unmount — when the form is submitted or the component is removed, blocking stops automatically.
 
 ## Creating routes and matching URLs
 
@@ -315,31 +266,27 @@ The blocker registers on mount and disposes on unmount. Unmounting while a navig
 Each entry in the route map is a named call to `route()`.
 
 ```tsx
-import {
-  createBrowserAdapter,
-  createRouter,
-  route,
-} from "@canonical/router-core";
+import { createRouter, route } from "@canonical/router-core";
 
 const routes = {
   home: route({
     url: "/",
-    content: () => <h1>Home</h1>,
+    component: () => <h1>Home</h1>,
   }),
   docs: route({
     url: "/docs/:slug",
-    warm: async ({ slug }) => {
+    prefetch: async ({ slug }) => {
       await queryClient.prefetchQuery(["doc", slug], () => fetchDoc(slug));
     },
-    content: ({ params }) => <DocPage slug={params.slug} />,
+    component: ({ params }) => <DocPage slug={params.slug} />,
   }),
   accountSettings: route({
     url: "/account/settings",
-    content: () => <h1>Settings</h1>,
+    component: () => <h1>Settings</h1>,
   }),
 } as const;
 
-const router = createRouter(routes, { adapter: createBrowserAdapter() });
+const router = createRouter(routes);
 ```
 
 Important parts:
@@ -347,101 +294,160 @@ Important parts:
 - the route-map key such as `docs` is the typed navigation name used by `Link` and `router.navigate()`
 - the `url` string is the matcher used for incoming URLs
 - `:slug` segments become typed route params
-- `warm` runs at navigation time as a fire-and-forget hook
-- `content` renders the matched route, receiving `params` and `search`
+- `prefetch` runs at navigation time as a fire-and-forget hook
+- `component` renders the matched route, receiving `params` and `search` (the deprecated `content` field still works)
 
 Routes stay flat even when the UI is nested. Shared layout lives in wrappers from the core package, not in a nested route tree.
 
-## SSR and hydration
-
-There is one SSR story: the server serializes the router's dehydrated state into the page's `__INITIAL_DATA__` payload (the `INITIAL_DATA_KEY` contract shared with `@canonical/react-ssr`), and the client reads it back with `readDehydratedState()`.
+## SSR
 
 ### Server side
 
-`renderToStream(router, url)` loads the URL into a server-adapter router, streams the matched React output, and hands back everything the response needs:
+Wire your own render tree using standard React SSR primitives. Use `createStaticRouter` for server rendering — it matches on construction and fires `prefetch()` eagerly so caches start warming before React renders:
 
 ```tsx
-import { createRouter, createServerAdapter } from "@canonical/router-core";
-import { renderToStream } from "@canonical/router-react";
+import { createStaticRouter } from "@canonical/router-core";
+import { createHeadCollector, HeadProvider } from "@canonical/react-head";
+import { Outlet, RouterProvider } from "@canonical/router-react";
+import { renderToPipeableStream } from "react-dom/server";
 
-app.get("*", async (req, res) => {
-  const router = createRouter(routes, {
-    adapter: createServerAdapter(req.url),
-    notFound: notFoundRoute,
-  });
+app.get("*", (req, res) => {
+  const router = createStaticRouter(routes, req.url);
+  const headCollector = createHeadCollector();
 
-  const { stream, loadResult, bootstrapScriptContent } = await renderToStream(
-    router,
-    req.url,
+  // Check match for status code before rendering
+  if (!router.match) {
+    res.status(404);
+  } else if (router.match.kind === "redirect") {
+    return res.redirect(router.match.status, router.match.redirectTo);
+  }
+
+  const { pipe } = renderToPipeableStream(
+    <HeadProvider collector={headCollector}>
+      <RouterProvider router={router}>
+        <Shell>
+          <Outlet />
+        </Shell>
+      </RouterProvider>
+    </HeadProvider>,
+    {
+      onShellReady() {
+        const headHtml = headCollector.toHtml();
+        res.setHeader("content-type", "text/html");
+        res.write(`<!doctype html><html><head>${headHtml}</head><body>`);
+        pipe(res);
+      },
+    },
   );
-
-  res.status(loadResult.status); // 200, 404 for not-found, error statuses
-  // Inject `bootstrapScriptContent` into the HTML (an inline <script> that
-  // sets window.__INITIAL_DATA__), then send the stream.
 });
 ```
 
-When you integrate with `@canonical/react-ssr`'s `JSXRenderer` instead (as the reference app does), spread the dehydrated fields — `{ href, kind, routeId, status }` from `router.dehydrate()` — flat into the initial-data object next to your own fields, and pass the document's status through the renderer's `statusCode` option.
+The router dehydrates navigation state only. Data dehydration is the cache library's responsibility (dual dehydration):
 
-The router dehydrates **navigation state only**. Data dehydration is the cache library's responsibility.
+```tsx
+// In onShellReady or after render:
+const routerState = router.dehydrate();
+const cacheState = queryClient.dehydrate(); // TanStack Query, Relay, etc.
+
+// Inject both into the HTML template
+res.write(`<script>
+  window.__ROUTER_STATE__ = ${JSON.stringify(routerState)};
+  window.__QUERY_DATA__ = ${JSON.stringify(cacheState)};
+</script>`);
+```
 
 ### Client side
 
-`readDehydratedState()` reads `window.__INITIAL_DATA__`, validates that it actually carries router fields, and returns `null` otherwise — so the same entry works on server-rendered pages (resume the server match, skip the duplicate initial load) and in SPA builds (normal initial load):
-
 ```tsx
-import { createBrowserAdapter, createRouter } from "@canonical/router-core";
-import {
-  Outlet,
-  readDehydratedState,
-  RouterProvider,
-} from "@canonical/router-react";
-import { hydrateRoot } from "react-dom/client";
+import { createBrowserRouter } from "@canonical/router-core";
+import { HeadProvider } from "@canonical/react-head";
+import { Outlet, RouterProvider } from "@canonical/router-react";
 
-const router = createRouter(routes, {
-  adapter: createBrowserAdapter(),
-  hydratedState: readDehydratedState() ?? undefined,
+const router = createBrowserRouter(routes, {
+  hydratedState: window.__ROUTER_STATE__,
 });
 
 hydrateRoot(
-  document.getElementById("root")!,
-  <RouterProvider router={router}>
-    <Outlet />
-  </RouterProvider>,
+  document,
+  <HeadProvider>
+    <RouterProvider router={router}>
+      <Shell>
+        <Outlet />
+      </Shell>
+    </RouterProvider>
+  </HeadProvider>,
 );
 ```
 
-`createBrowserAdapter` uses the Navigation API when available (Baseline Newly Available since January 2026), falling back to the History API.
+`createBrowserRouter` uses the Navigation API when available (Baseline Newly Available since January 2026), falling back to the History API.
 
 ## Progressive disclosure
 
 ### `Link`
 
-`Link` builds typed hrefs from route names and optional route params, search data, and hash values. A plain primary-button click is intercepted and routed through `router.navigate()`; the click falls through to native anchor behaviour when it has a modifier key, a non-primary button, `target="_blank"`, a `download` attribute, or was `preventDefault()`ed. Hovering warms the destination through `router.warm()`.
+`Link` builds typed hrefs from route names and optional route params, search data, and hash values. Primary-button clicks are intercepted and routed through the core router. Hover prefetches the destination.
 
 ```tsx
-<Link params={{ slug: "api" }} to="docs">
+<Link<typeof routes> params={{ slug: "api" }} to="docs">
   API docs
 </Link>
 ```
 
 ### `Outlet`
 
-`Outlet` subscribes to router state, calls `router.render()`, and wraps the matched subtree in `Suspense`.
+`Outlet` subscribes to router state, constructs elements from the matched route's `component` (or the deprecated `content`) and `wrappers` (each gets its own React fiber, so hooks are legal in both), and wraps the matched subtree in `Suspense`.
 
 ```tsx
 <Outlet fallback={<p>Loading route…</p>} />
 ```
 
+Routes may override the pending UI and catch their own render errors:
+
+```tsx
+const routes = {
+  reports: route({
+    url: "/reports",
+    component: ReportsPage,
+    // Overrides the Outlet-level fallback within the route-keyed Suspense.
+    fallback: <ReportsSkeleton />,
+    // Rendered with { error } behind an internal error boundary that is
+    // keyed by route — navigating away discards the error state, and
+    // navigating back re-attempts the render.
+    errorComponent: ({ error }) => <ReportsError error={error} />,
+  }),
+} as const;
+```
+
+Without an `errorComponent`, render errors propagate past `Outlet` to your own error boundary.
+
 ### Hooks
 
 - `useBlocker(isActive)` blocks navigation when `isActive` is `true`. Returns `{ state, proceed, cancel }`.
 - `useNavigationState()` subscribes to the router loading state.
-- `useRoute()` returns a tracked location proxy and rerenders only when an accessed location key changes — including `status`.
+- `useRoute()` returns a tracked location proxy and rerenders only when an accessed location key changes.
+- `useRouteParams(route)` returns the current match's params, typed by the given route.
 - `useRouter()` returns the router instance from context. Use `useRouter().setSearchParams()` for search param mutation.
 - `useRouterState()` is the power-user hook for subscribing to selected slices of `router.getState()`.
+- `useRouteSearch(route)` returns the current match's schema-validated search data, typed by the given route.
 - `useSearchParam()` subscribes to one query-string key.
 - `useSearchParams()` subscribes either to the full query string or to a fixed set of keys.
+
+`useRouteParams` and `useRouteSearch` take the route object as a type witness — by passing it, the caller asserts the component renders under that route (route identity is not verified at runtime):
+
+```tsx
+const docsRoute = route({
+  url: "/docs/:slug",
+  search: z.object({ page: z.coerce.number().int().min(1).catch(1) }),
+  component: DocPage,
+});
+
+function DocPage() {
+  const { slug } = useRouteParams(docsRoute); // string — inferred from the url pattern
+  const { page } = useRouteSearch(docsRoute); // number — inferred from the search schema
+
+  return <h1>{slug} — page {page}</h1>;
+}
+```
 
 Typical selection strategy:
 
@@ -449,7 +455,8 @@ Typical selection strategy:
 - reach for `useNavigationState()` when you only need loading lifecycle
 - reach for `useSearchParam()` for one query-string key
 - reach for `useSearchParams()` for a fixed key set or the full query string
-- reach for `useRoute()` for pathname, hash, status, or full URL reads
+- reach for `useRoute()` for pathname, hash, or full URL reads
+- reach for `useRouteParams()`/`useRouteSearch()` inside a route's component for typed params and search
 - reach for `useRouter()` for search param mutation or direct router access
 - reach for `useRouterState()` when you need `match`, `navigation`, or other advanced state in one selector
 
@@ -457,33 +464,31 @@ Typical selection strategy:
 
 The reference integration lives in [apps/react/boilerplate-vite](../../../apps/react/boilerplate-vite). It shows:
 
-- domain-colocated route modules assembled into one flat map
-- a shell-as-layout wrapper applied with `group()`
-- SSR with real HTTP statuses and redirects (`resolveRouteDisposition` in its server entry) and hydration via `readDehydratedState()`
-- a route-level `warm` hook priming the Relay store, read by the component's own query hook
-- an auth middleware redirect flow
-- a static redirect route answering 301
+- domain-colocated route modules
+- a shell-as-route-provider layout
+- SSR + hydration
+- hover prefetch
+- auth middleware redirect flow
+- error handling with `StatusResponse` and React error boundaries
 
 ## Public API
 
 ### Components and helpers
 
-- `Link` — render a typed anchor that navigates and warms through the router.
+- `createHydratedRouter()` — create a browser-backed router that resumes from dehydrated state.
+- `Link` — render a typed anchor that navigates and prefetches through the router.
 - `Outlet` — render the current matched subtree.
 - `RouterProvider` — place a router instance into React context.
-- `readDehydratedState()` — read (and validate) dehydrated router state from the page's initial-data payload.
-- `renderToStream()` — load a URL into a router and stream the matched React output with dehydrated state and a bootstrap script.
-- `RouterRegister` / `RegisteredRouteMap` / `RegisteredNotFound` — module-augmentation hooks for generics-free typing.
 - `useBlocker()` — block navigation when the component has unsaved state.
 - `useNavigationState()` — subscribe to the navigation lifecycle state.
 - `useRoute()` — subscribe to a tracked location object.
+- `useRouteParams(route)` — read the current match's params, typed by the given route.
 - `useRouter()` — read the router instance from context.
 - `useRouterState()` — subscribe to the full router state or a selected slice.
+- `useRouteSearch(route)` — read the current match's validated search data, typed by the given route.
 - `useSearchParam()` — subscribe to one search-param key.
 - `useSearchParams()` — subscribe to all search params or a selected key set.
 
 ### Reference docs
 
-- API reference: [docs/references/ROUTER_API.md](../../../docs/references/ROUTER_API.md)
 - Migration guide: [docs/how-to-guides/MIGRATE_TO_PRAGMA_ROUTER.md](../../../docs/how-to-guides/MIGRATE_TO_PRAGMA_ROUTER.md)
-- Design rationale: [packages/runtime/router/README.md](../../runtime/router/README.md#design-rationale)

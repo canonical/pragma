@@ -11,23 +11,4 @@ describe("StatusResponse", () => {
     expect(statusResponse.status).toBe(503);
     expect(statusResponse.data).toEqual({ message: "Back soon", eta: "5m" });
   });
-
-  it("constructs with a status alone", () => {
-    const statusResponse = new StatusResponse(401);
-
-    expect(statusResponse.status).toBe(401);
-    expect(statusResponse.data).toBeUndefined();
-  });
-
-  it("requires the payload when the data type excludes undefined", () => {
-    // @ts-expect-error — a non-undefined TData makes the payload mandatory,
-    // so `.data` cannot claim a value that is absent at runtime.
-    const invalid = new StatusResponse<{ message: string }>(401);
-
-    void invalid;
-
-    const valid = new StatusResponse<{ message: string } | undefined>(401);
-
-    expect(valid.data).toBeUndefined();
-  });
 });

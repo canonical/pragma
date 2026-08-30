@@ -1,4 +1,3 @@
-import type { AnyRoute, RouteMap, RouterStore } from "@canonical/router-core";
 import { createRouter, route } from "@canonical/router-core";
 import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -37,14 +36,6 @@ function SelectedSearchParamsProbe({
   return <span>{`${params.page ?? "none"}:${params.sort ?? "none"}`}</span>;
 }
 
-/**
- * Reach the router's internal store — not part of the public Router
- * contract, kept reachable on the concrete object for these tests.
- */
-function getInternalStore(router: unknown): RouterStore<RouteMap, AnyRoute> {
-  return (router as { store: RouterStore<RouteMap, AnyRoute> }).store;
-}
-
 describe("useSearchParams", () => {
   it("subscribes to the full query string when called without keys", () => {
     const router = createRouter(routes);
@@ -60,7 +51,7 @@ describe("useSearchParams", () => {
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      getInternalStore(router).setLocation("/?page=2");
+      router.store.setLocation("/?page=2");
     });
 
     expect(screen.getByText("page=2")).toBeTruthy();
@@ -81,20 +72,20 @@ describe("useSearchParams", () => {
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      getInternalStore(router).setLocation("/?filter=active");
+      router.store.setLocation("/?filter=active");
     });
 
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      getInternalStore(router).setLocation("/?page=2&filter=active");
+      router.store.setLocation("/?page=2&filter=active");
     });
 
     expect(screen.getByText("2:none")).toBeTruthy();
     expect(renderCount.current).toBe(2);
 
     act(() => {
-      getInternalStore(router).setLocation("/?page=2&sort=asc&filter=active");
+      router.store.setLocation("/?page=2&sort=asc&filter=active");
     });
 
     expect(screen.getByText("2:asc")).toBeTruthy();

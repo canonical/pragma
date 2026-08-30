@@ -68,16 +68,6 @@ export interface RendererOptions {
    * between the two option types).
    */
   renderToReadableStreamOptions?: RenderToReadableStreamOptions;
-
-  /**
-   * HTTP status code reported for a *successful* render. Defaults to 200.
-   *
-   * Lets the server reflect the routed document's real status — e.g. a
-   * matched not-found route rendering with 404, or an error route with its
-   * status — instead of always claiming 200. Shell errors still report 500
-   * regardless of this option.
-   */
-  statusCode?: number;
 }
 
 // ─── Server entrypoint ───────────────────────────────────────────────────────

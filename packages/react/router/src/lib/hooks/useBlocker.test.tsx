@@ -48,7 +48,7 @@ describe("useBlocker", () => {
     expect(screen.getByTestId("state").textContent).toBe("idle");
   });
 
-  it("re-renders to blocked as soon as a navigation is intercepted", async () => {
+  it("reflects the blocked snapshot when the store notifies subscribers", async () => {
     const router = createRouter(routes, { adapter: createMemoryAdapter("/") });
 
     await act(async () => {
@@ -67,60 +67,16 @@ describe("useBlocker", () => {
       router.navigate("about");
     });
 
-    // The block itself triggers the re-render — no unrelated store change
-    // is needed to flush the snapshot.
-    expect(screen.getByTestId("state").textContent).toBe("blocked");
-  });
+    expect(router.blockerState).toBe("blocked");
 
-  it("renders the documented confirmation-dialog pattern when blocked", async () => {
-    function DialogProbe() {
-      const blocker = useBlocker(true);
-
-      return (
-        <div>
-          {blocker.state === "blocked" && (
-            <div role="dialog">
-              <button type="button" onClick={blocker.proceed}>
-                Leave
-              </button>
-              <button type="button" onClick={blocker.cancel}>
-                Stay
-              </button>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    const router = createRouter(routes, { adapter: createMemoryAdapter("/") });
-
-    await act(async () => {
-      await router.load("/");
-    });
-
-    render(
-      <RouterProvider router={router}>
-        <DialogProbe />
-      </RouterProvider>,
-    );
-
-    expect(screen.queryByRole("dialog")).toBeNull();
-
+    // A concurrent store change (navigation state channel here) flushes the
+    // useSyncExternalStore snapshot, so the rendered state now mirrors the
+    // router's blocked state.
     act(() => {
-      router.navigate("about");
+      router.store.setNavigationState("loading");
     });
 
-    expect(screen.getByRole("dialog")).toBeTruthy();
-
-    await act(async () => {
-      screen.getByText("Leave").click();
-    });
-
-    await vi.waitFor(() => {
-      expect(router.getState().location.pathname).toBe("/about");
-    });
-
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByTestId("state").textContent).toBe("blocked");
   });
 
   it("proceeds through the pending navigation when proceed is called", async () => {
@@ -140,7 +96,7 @@ describe("useBlocker", () => {
       router.navigate("about");
     });
 
-    expect(screen.getByTestId("state").textContent).toBe("blocked");
+    expect(router.blockerState).toBe("blocked");
 
     await act(async () => {
       screen.getByText("proceed").click();
@@ -150,7 +106,7 @@ describe("useBlocker", () => {
       expect(router.getState().location.pathname).toBe("/about");
     });
 
-    expect(screen.getByTestId("state").textContent).toBe("idle");
+    expect(router.blockerState).toBe("idle");
   });
 
   it("cancels the pending navigation and stays on the current page when cancel is called", async () => {
@@ -170,13 +126,13 @@ describe("useBlocker", () => {
       router.navigate("about");
     });
 
-    expect(screen.getByTestId("state").textContent).toBe("blocked");
+    expect(router.blockerState).toBe("blocked");
 
     act(() => {
       screen.getByText("cancel").click();
     });
 
-    expect(screen.getByTestId("state").textContent).toBe("idle");
+    expect(router.blockerState).toBe("idle");
     expect(router.getState().location.pathname).toBe("/");
   });
 
@@ -198,6 +154,8 @@ describe("useBlocker", () => {
     act(() => {
       router.navigate("about");
     });
+
+    expect(router.blockerState).toBe("idle");
 
     await vi.waitFor(() => {
       expect(router.getState().location.pathname).toBe("/about");

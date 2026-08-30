@@ -1,4 +1,3 @@
-import type { AnyRoute, RouteMap, RouterStore } from "@canonical/router-core";
 import { createRouter, route } from "@canonical/router-core";
 import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -43,14 +42,6 @@ function SearchProbe({ renderCount }: { renderCount: { current: number } }) {
   return <span>{location.searchParams.get("tab") ?? "none"}</span>;
 }
 
-/**
- * Reach the router's internal store — not part of the public Router
- * contract, kept reachable on the concrete object for these tests.
- */
-function getInternalStore(router: unknown): RouterStore<RouteMap, AnyRoute> {
-  return (router as { store: RouterStore<RouteMap, AnyRoute> }).store;
-}
-
 describe("useRoute", () => {
   it("only re-renders when an accessed location key changes", () => {
     const router = createRouter(routes);
@@ -66,13 +57,13 @@ describe("useRoute", () => {
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      getInternalStore(router).setLocation("/#details");
+      router.store.setLocation("/#details");
     });
 
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      getInternalStore(router).setLocation("/users");
+      router.store.setLocation("/users");
     });
 
     expect(screen.getByText("/users")).toBeTruthy();
@@ -93,7 +84,7 @@ describe("useRoute", () => {
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      getInternalStore(router).setLocation("/?tab=details");
+      router.store.setLocation("/?tab=details");
     });
 
     expect(
@@ -102,7 +93,7 @@ describe("useRoute", () => {
     expect(renderCount.current).toBe(2);
 
     act(() => {
-      getInternalStore(router).setLocation("/?tab=details#hash");
+      router.store.setLocation("/?tab=details#hash");
     });
 
     expect(
@@ -131,7 +122,7 @@ describe("useRoute", () => {
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      getInternalStore(router).setLocation("/users");
+      router.store.setLocation("/users");
     });
 
     expect(renderCount.current).toBe(2);
@@ -151,7 +142,7 @@ describe("useRoute", () => {
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      getInternalStore(router).setLocation("/?tab=activity");
+      router.store.setLocation("/?tab=activity");
     });
 
     expect(screen.getByText("activity")).toBeTruthy();

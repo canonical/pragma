@@ -1,4 +1,3 @@
-import type { AnyRoute, RouteMap, RouterStore } from "@canonical/router-core";
 import { createRouter, route } from "@canonical/router-core";
 import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -53,14 +52,6 @@ function StableObjectProbe({
   return <span>{selection.pathname}</span>;
 }
 
-/**
- * Reach the router's internal store — not part of the public Router
- * contract, kept reachable on the concrete object for these tests.
- */
-function getInternalStore(router: unknown): RouterStore<RouteMap, AnyRoute> {
-  return (router as { store: RouterStore<RouteMap, AnyRoute> }).store;
-}
-
 describe("useRouterState", () => {
   it("returns the full router state when no selector is provided", () => {
     const router = createRouter(routes);
@@ -87,13 +78,13 @@ describe("useRouterState", () => {
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      getInternalStore(router).setLocation("/#details");
+      router.store.setLocation("/#details");
     });
 
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      getInternalStore(router).setLocation("/users");
+      router.store.setLocation("/users");
     });
 
     expect(screen.getByText("/users")).toBeTruthy();
@@ -113,13 +104,13 @@ describe("useRouterState", () => {
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      getInternalStore(router).setLocation("/?tab=activity");
+      router.store.setLocation("/?tab=activity");
     });
 
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      getInternalStore(router).setLocation("/users?tab=activity");
+      router.store.setLocation("/users?tab=activity");
     });
 
     expect(screen.getByText("/users")).toBeTruthy();

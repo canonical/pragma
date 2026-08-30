@@ -10,7 +10,7 @@ import RouterProvider from "../RouterProvider/Provider.js";
 import Link from "./Link.js";
 
 const preloadSpy = vi.fn(async () => ({ default: "UsersPage" }));
-const warmSpy = vi.fn(async () => {});
+const prefetchSpy = vi.fn(async () => {});
 
 const routes = {
   home: route({
@@ -19,7 +19,7 @@ const routes = {
   }),
   users: route({
     url: "/users",
-    warm: warmSpy,
+    prefetch: prefetchSpy,
     content: Object.assign(() => "users", {
       preload: preloadSpy,
     }),
@@ -27,7 +27,7 @@ const routes = {
 };
 
 describe("Link", () => {
-  it("renders hrefs, warms on hover, and navigates on click", async () => {
+  it("renders hrefs, prefetches on hover, and navigates on click", async () => {
     const router = createRouter(routes, {
       adapter: createMemoryAdapter("/"),
     });
@@ -121,11 +121,11 @@ describe("Link", () => {
 
   it("passes params, search, and hash to navigation helpers and skips prevented hovers", async () => {
     const optionPreloadSpy = vi.fn(async () => ({ default: "UserPage" }));
-    const optionWarmSpy = vi.fn(async () => {});
+    const optionPrefetchSpy = vi.fn(async () => {});
     const parameterizedRoutes = {
       user: route({
         url: "/users/:id",
-        warm: optionWarmSpy,
+        prefetch: optionPrefetchSpy,
         content: Object.assign(
           ({ params }: { params: { id: string } }) => `user:${params.id}`,
           {
