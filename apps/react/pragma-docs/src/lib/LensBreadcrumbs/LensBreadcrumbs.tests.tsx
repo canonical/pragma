@@ -21,7 +21,9 @@ const bareRoutes: RouteMap = {
 } as const;
 
 const at = (url: string, node: ReactElement): ReactElement => (
-  <RouterProvider router={createRouter(bareRoutes, { adapter: createMemoryAdapter(url) })}>
+  <RouterProvider
+    router={createRouter(bareRoutes, { adapter: createMemoryAdapter(url) })}
+  >
     {node}
   </RouterProvider>
 );

@@ -25,7 +25,6 @@
  */
 
 import { HeadProvider } from "@canonical/react-head";
-import createStaticRouter from "../lib/router/createStaticRouter.js";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 import { act } from "react";
 import type { Root } from "react-dom/client";
@@ -38,6 +37,7 @@ import catalogRecords from "#domains/components/__fixtures__/catalogRecords.js";
 import componentEntityRecordsButton from "#domains/components/__fixtures__/componentEntityRecordsButton.js";
 import { createEnvironment } from "#relay/environment.js";
 import { setPrefetchEnvironment } from "#relay/prefetchEnvironment.js";
+import createStaticRouter from "../lib/router/createStaticRouter.js";
 import { appRoutes, middleware, notFoundRoute } from "../routes.js";
 import type { InitialData } from "../server/entry.js";
 import { hydrateApp } from "./hydrateApp.js";

@@ -8,11 +8,11 @@
  * `journeyTableInteraction.tests.tsx`; this file pins the shape.
  */
 
-import createStaticRouter from "../../../lib/router/createStaticRouter.js";
 import { RouterProvider } from "@canonical/router-react";
 import { render, screen, within } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
+import createStaticRouter from "../../../lib/router/createStaticRouter.js";
 import { appRoutes, middleware, notFoundRoute } from "../../../routes.js";
 import { JOURNEY_MODEL } from "../__fixtures__/journeyModel.js";
 import {

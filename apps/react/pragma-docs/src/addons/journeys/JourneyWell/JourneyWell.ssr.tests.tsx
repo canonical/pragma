@@ -8,10 +8,10 @@
  * those is a real constraint, so each is asserted here rather than trusted.
  */
 
-import createStaticRouter from "../../../lib/router/createStaticRouter.js";
 import { RouterProvider } from "@canonical/router-react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import createStaticRouter from "../../../lib/router/createStaticRouter.js";
 import { appRoutes, middleware, notFoundRoute } from "../../../routes.js";
 import { JOURNEY_MODEL } from "../__fixtures__/journeyModel.js";
 import JourneyWell from "./JourneyWell.js";

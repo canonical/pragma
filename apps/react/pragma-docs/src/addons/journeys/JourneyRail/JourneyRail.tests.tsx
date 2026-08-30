@@ -9,11 +9,11 @@
  *    quietly lies is worse than no filter at all.
  */
 
-import createStaticRouter from "../../../lib/router/createStaticRouter.js";
 import { RouterProvider } from "@canonical/router-react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
+import createStaticRouter from "../../../lib/router/createStaticRouter.js";
 import { appRoutes, middleware, notFoundRoute } from "../../../routes.js";
 import {
   JOURNEY_MODEL,

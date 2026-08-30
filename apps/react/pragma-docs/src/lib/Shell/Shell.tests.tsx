@@ -32,7 +32,11 @@ const renderShell = (
   children: ReactNode,
   homeMeta?: Readonly<Record<string, unknown>>,
 ): ReactElement => (
-  <RouterProvider router={createRouter(bareRoutes(homeMeta), { adapter: createMemoryAdapter("/") })}>
+  <RouterProvider
+    router={createRouter(bareRoutes(homeMeta), {
+      adapter: createMemoryAdapter("/"),
+    })}
+  >
     <Shell>{children}</Shell>
   </RouterProvider>
 );

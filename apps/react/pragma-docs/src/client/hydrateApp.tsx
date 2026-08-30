@@ -8,8 +8,7 @@
  */
 
 import { HeadProvider } from "@canonical/react-head";
-import { createBrowserAdapter,
-  createRouter } from "@canonical/router-core";
+import { createBrowserAdapter, createRouter } from "@canonical/router-core";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 import {
   type HydrationOptions,

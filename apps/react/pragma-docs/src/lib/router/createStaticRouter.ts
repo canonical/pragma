@@ -13,7 +13,6 @@
 // does not publish, the app owns the convenience.
 // =============================================================================
 
-import { createRouter, createServerAdapter } from "@canonical/router-core";
 import type {
   AnyRoute,
   RouteMap,
@@ -21,6 +20,7 @@ import type {
   RouterMatch,
   RouterOptions,
 } from "@canonical/router-core";
+import { createRouter, createServerAdapter } from "@canonical/router-core";
 
 /**
  * Create a static router for server-side rendering.

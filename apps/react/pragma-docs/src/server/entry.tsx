@@ -2,11 +2,11 @@
 
 import { HeadProvider } from "@canonical/react-head";
 import type { ServerEntrypointProps } from "@canonical/react-ssr/renderer";
-import createStaticRouter from "../lib/router/createStaticRouter.js";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 import { RelayEnvironmentProvider } from "react-relay";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { createEnvironment } from "#relay/environment.js";
+import createStaticRouter from "../lib/router/createStaticRouter.js";
 import { appRoutes, middleware, notFoundRoute } from "../routes.js";
 import "#styles/app.css";
 

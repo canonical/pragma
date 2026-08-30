@@ -10,13 +10,13 @@
  */
 
 import { HeadProvider } from "@canonical/react-head";
-import createStaticRouter from "../../../lib/router/createStaticRouter.js";
 import { RouterProvider } from "@canonical/router-react";
 import type { ReactElement } from "react";
 import { RelayEnvironmentProvider } from "react-relay";
 import type { FetchFunction } from "relay-runtime";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { createEnvironment } from "#relay/environment.js";
+import createStaticRouter from "../../../lib/router/createStaticRouter.js";
 import { appRoutes, middleware, notFoundRoute } from "../../../routes.js";
 import { ComponentsCatalogPage } from "../ComponentsCatalogPage/index.js";
 

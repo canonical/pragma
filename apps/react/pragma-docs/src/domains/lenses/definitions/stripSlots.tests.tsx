@@ -11,7 +11,6 @@
 
 import "./__fixtures__/stubReactFlowGlobals.js";
 import { HeadProvider } from "@canonical/react-head";
-import createStaticRouter from "../../../lib/router/createStaticRouter.js";
 import { RouterProvider } from "@canonical/router-react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactElement } from "react";
@@ -21,6 +20,7 @@ import type { FetchFunction } from "relay-runtime";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { describe, expect, it, vi } from "vitest";
 import { createEnvironment } from "#relay/environment.js";
+import createStaticRouter from "../../../lib/router/createStaticRouter.js";
 import { appRoutes, middleware, notFoundRoute } from "../../../routes.js";
 import definitionsExplorerRecords from "./__fixtures__/definitionsExplorerRecords.js";
 import { LensFilterProvider } from "./lensFilterContext.js";

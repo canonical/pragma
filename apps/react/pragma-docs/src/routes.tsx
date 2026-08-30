@@ -56,11 +56,7 @@ export function withAuth(loginPath: string): RouteMiddleware {
 
     return {
       ...currentRoute,
-      warm: (
-        params: unknown,
-        search: unknown,
-        context: NavigationContext,
-      ) => {
+      warm: (params: unknown, search: unknown, context: NavigationContext) => {
         if (!hasDemoAuth(search)) {
           const from = currentRoute.render(
             (params ?? {}) as RouteParamValues | Record<string, never>,
