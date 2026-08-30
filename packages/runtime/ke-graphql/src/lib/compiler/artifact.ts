@@ -115,7 +115,8 @@ export const deserializeExtraction = (
       ),
       deepBlankNesting: parsed.deepBlankNesting,
       // Pre-vocabulary artifacts lack the field; [] keeps them booting
-      // (version stays 1 — see the SerializedExtraction docstring).
+      // (see the SerializedExtraction docstring; such artifacts are read under
+      // the current version label, their absent fields defaulting to empty).
       graphqlAnnotations: parsed.graphqlAnnotations ?? [],
     },
   };
