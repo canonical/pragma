@@ -27,9 +27,12 @@ const componentCssClassName = "ds rail";
  *
  * The digit hints are wired for real (`useLensShortcuts`, an ephemeral
  * listener honouring P-D7) and displayed as `kbd` + `aria-keyshortcuts`.
+ * The digit itself is read from the route's own allocation: the rail
+ * DISPLAYS it, it does not own it — so a lens that allocates no key simply
+ * renders no `kbd`, and the shown digit is the wired digit by construction.
  */
 const Rail = ({ className, ...props }: RailProps): React.ReactElement => {
-  useLensShortcuts();
+  const { byRoute } = useLensShortcuts();
 
   return (
     <nav
@@ -47,8 +50,9 @@ const Rail = ({ className, ...props }: RailProps): React.ReactElement => {
       </Link>
 
       <ul className="rail-lenses">
-        {LENS_ENTRIES.map(({ to, label, hint }) => {
+        {LENS_ENTRIES.map(({ to, label }) => {
           const Icon = LENS_ICONS[to];
+          const hint = byRoute.get(to);
           return (
             <li key={to}>
               {/* aria-label pins the accessible name to the lens name alone:
@@ -65,7 +69,9 @@ const Rail = ({ className, ...props }: RailProps): React.ReactElement => {
               >
                 <Icon />
                 <span className="rail-label">{label}</span>
-                <kbd className="rail-kbd">{hint}</kbd>
+                {hint === undefined ? null : (
+                  <kbd className="rail-kbd">{hint}</kbd>
+                )}
               </Link>
             </li>
           );

@@ -71,6 +71,17 @@ jobs:
       - name: Test
         run: bunx nx affected -t test --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
 
+      # The two despecialization gates, run on EVERY PR rather than through
+      # `affected`. Their subjects live in a project they have no dependency
+      # edge to — G-2 reads the app's committed `schema.graphql`, and the
+      # acceptance gate scans the app's lens directory — so a PR touching only
+      # those files schedules neither. The edge cannot simply be declared: the
+      # app already depends on the provider, so an implicit dependency back
+      # would close a cycle. Running them unconditionally costs ~2s and closes
+      # the hole both gates document in their own headers.
+      - name: Gates (contract conformance, provider neutrality)
+        run: bunx nx run-many -t test -p @canonical/prism-pragma-provider @canonical/prism-graph-example
+
   build-gate:
     runs-on: ubuntu-latest
     needs: build-matrix

@@ -30,11 +30,15 @@
 // what closes the currency gap they leave: it measures the schema as it is
 // now, on every run.
 //
-// KNOWN LIMITATION, pre-existing and not fixed here. `nx affected` sees no
-// dependency edge from this package to the app, so a PR touching only
-// `schema.graphql` will not schedule this project's `test` target. graph-example's
-// acceptance gate has had the same hole since it landed. Run both by hand in
-// any PR that moves the schema until the edge is declared.
+// SCHEDULING, and why it is not a dependency edge. `nx affected` sees no edge
+// from this package to the app, so a PR touching only `schema.graphql` does not
+// schedule this project's `test` target — and the edge cannot simply be
+// declared, because the app already depends on this provider and an implicit
+// dependency back would close a cycle. CI therefore runs this gate and
+// graph-example's acceptance gate UNCONDITIONALLY, in `pr.yml`'s "Gates" step,
+// outside `affected`. If that step is ever removed, this comment is a lie and
+// the gate is asleep: it is cheap (~2s for both) precisely so that nobody has
+// a reason to remove it.
 // =============================================================================
 
 import { existsSync, readFileSync } from "node:fs";

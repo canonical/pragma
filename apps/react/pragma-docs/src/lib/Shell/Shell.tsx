@@ -5,7 +5,7 @@ import type React from "react";
 import { ModeStrip } from "#lib/ModeStrip/index.js";
 import { Rail } from "#lib/Rail/index.js";
 import { CANVAS_ELEMENT_ID } from "./constants.js";
-import { readStripSlots } from "./readStripSlots.js";
+import { shellStripFacet } from "./stripFacet.js";
 import type { ShellProps } from "./types.js";
 import "./styles.css";
 
@@ -34,7 +34,7 @@ const Shell = ({
   ...props
 }: ShellProps): React.ReactElement => {
   const { match } = useRouterState();
-  const strip = readStripSlots(
+  const strip = shellStripFacet.read(
     match?.kind === "route" ? match.route.meta : undefined,
   );
   const StripContext = strip?.Context;
