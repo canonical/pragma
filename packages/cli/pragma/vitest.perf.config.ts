@@ -14,9 +14,13 @@ import { defineConfig } from "vitest/config";
  *
  * So this pass runs the perf tests ALONE, serially, in a single fork, with NO
  * coverage instrumentation — the only way spawn-latency budgets measure the
- * binary rather than the test runner. The ceilings themselves are unchanged and
- * still ENFORCED here; they are simply enforced in isolation. Invoked by the
- * `test:perf` script (and chained into `test`); excluded from `test:vitest`.
+ * binary rather than the test runner. The ceilings themselves are unchanged.
+ *
+ * NOT RUN BY CI, by owner ruling 2026-08-30. `test` no longer chains this pass,
+ * which is how `nx affected -t test` used to reach it, so nothing here gates a
+ * pull request. It stays enforced for anyone who runs `bun run test:perf`, and
+ * the ceilings are untouched. The reasoning, the measurements that forced the
+ * ruling, and the two questions it deliberately left open are in BUDGETS.md.
  */
 export default defineConfig({
   test: {
