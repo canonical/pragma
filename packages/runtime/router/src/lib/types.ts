@@ -435,12 +435,23 @@ export type PathBuildOptions<TRoute extends AnyRoute> = {
   readonly hash?: string;
   /** When true, the navigation replaces the current history entry. */
   readonly replace?: boolean;
-} & (HasParams<TRoute> extends true
+} & (true extends HasParams<TRoute>
   ? { readonly params: NoInfer<SerializableParams<ParamsOf<TRoute>>> }
   : { readonly params?: NoInfer<SerializableParams<ParamsOf<TRoute>>> });
 
+/**
+ * The argument tuple for `buildPath`/`navigate`/`warm`.
+ *
+ * Written `true extends HasParams<TRoute>` rather than the other way round
+ * because `TRoute` may be a union: when a union of route names mixes
+ * parameterised and parameterless routes, `HasParams` distributes to
+ * `boolean`, and `boolean extends true` would take the optional branch —
+ * letting `buildPath(name)` compile for a name that needs params and then
+ * throw `Missing route param` at runtime. Asking whether `true` is *in* the
+ * result requires params as soon as any member of the union needs them.
+ */
 export type PathBuildArgs<TRoute extends AnyRoute> =
-  HasParams<TRoute> extends true
+  true extends HasParams<TRoute>
     ? [options: PathBuildOptions<TRoute>]
     : [options?: PathBuildOptions<TRoute>];
 

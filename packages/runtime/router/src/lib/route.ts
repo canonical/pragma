@@ -47,10 +47,21 @@ type PathSegmentError<TSegment extends string> = ParamModifierError<
   "matches"
 >;
 
-/** Every segment error in a path pattern, as a union of message literals. */
+/**
+ * Every segment error in a path pattern, as a union of message literals.
+ *
+ * A `*` segment is only matched when it is the final one: `matchPath` returns
+ * as soon as it reaches a wildcard, so any segment after it is dead pattern
+ * that would silently never constrain a match.
+ */
 type PathError<TPath extends string> =
   TPath extends `${infer TSegment}/${infer TRest}`
-    ? PathSegmentError<TSegment> | PathError<TRest>
+    ?
+        | PathSegmentError<TSegment>
+        | (TSegment extends "*"
+            ? "route path wildcard '*' must be the final segment; the router stops matching at it, so later segments are never compared"
+            : never)
+        | PathError<TRest>
     : PathSegmentError<TPath>;
 
 /**

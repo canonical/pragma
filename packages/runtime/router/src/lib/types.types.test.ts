@@ -129,6 +129,19 @@ describe("path grammar", () => {
     expectTypeOf<ValidPath<"/files/*">>().toEqualTypeOf<unknown>();
   });
 
+  it("rejects a wildcard that is not the final segment", () => {
+    // `matchPath` returns as soon as it reaches a `*`, so `/edit` here would
+    // never constrain a match — `/files/anything` would match this pattern.
+    expectTypeOf<
+      keyof ValidPath<"/files/*/edit">
+    >().toEqualTypeOf<"route path wildcard '*' must be the final segment; the router stops matching at it, so later segments are never compared">();
+
+    void (() => {
+      // @ts-expect-error — the wildcard is followed by another segment
+      route({ url: "/files/*/edit", content: () => "files" });
+    });
+  });
+
   it("names the offending modifier in the ValidPath error property", () => {
     expectTypeOf<
       keyof ValidPath<"/users/:id?">
@@ -387,11 +400,18 @@ describe("router surface", () => {
       // @ts-expect-error — a params route requires its options argument
       router.buildPath("user");
 
-      // Known limit of the single generic signature: a mixed union of
-      // route names distributes HasParams to `boolean`, the optional-args
-      // branch wins, and the missing params object is not caught.
+      // A union of names mixing parameterised and parameterless routes
+      // requires the options argument, because one member needs params.
+      // `HasParams` distributes to `boolean` over such a union, so this is
+      // only caught by asking `true extends HasParams<…>` rather than
+      // `HasParams<…> extends true` — the latter takes the optional branch
+      // and lets a missing `params` reach `renderPattern` at runtime.
       const name = "home" as "home" | "user";
+
+      // @ts-expect-error — the union includes a route that needs params
       router.buildPath(name);
+
+      router.buildPath(name, { params: { id: "1" } });
     });
   });
 });
