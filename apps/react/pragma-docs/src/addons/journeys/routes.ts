@@ -1,6 +1,6 @@
 import { route } from "@canonical/router-core";
-import { SHELL_STRIP_META_KEY } from "#lib/Shell/constants.js";
-import type { StripSlotsEntry } from "#lib/Shell/types.js";
+import { routeShortcutFacet } from "#lib/routeShortcut/index.js";
+import { shellStripFacet } from "#lib/Shell/stripFacet.js";
 import { ROUTE_QUERY_META_KEY } from "#relay/routeQuery.js";
 import { warmRouteQuery } from "#relay/warmRouteQuery.js";
 import { JourneysPage } from "./JourneysPage/index.js";
@@ -51,9 +51,8 @@ const routes = {
     },
     meta: {
       [ROUTE_QUERY_META_KEY]: journeysRouteEntry,
-      [SHELL_STRIP_META_KEY]: {
-        ...journeysStripSlots,
-      } satisfies StripSlotsEntry,
+      ...shellStripFacet.of({ ...journeysStripSlots }),
+      ...routeShortcutFacet.of("5"),
     },
   }),
   journeysJob: route({
@@ -64,9 +63,7 @@ const routes = {
     },
     meta: {
       [ROUTE_QUERY_META_KEY]: journeysRouteEntry,
-      [SHELL_STRIP_META_KEY]: {
-        ...journeysStripSlots,
-      } satisfies StripSlotsEntry,
+      ...shellStripFacet.of({ ...journeysStripSlots }),
     },
   }),
 } as const;
