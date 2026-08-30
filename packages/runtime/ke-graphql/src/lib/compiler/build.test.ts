@@ -962,11 +962,13 @@ describe("build — effective prefix injectivity", () => {
     expect(a001[0]?.message).toContain("graphql:prefix");
   });
 
-  it("warns instead of refusing when NO declaration is in play (B005)", () => {
+  it("refuses, without blaming annotations, when NO declaration is in play (B005)", () => {
     // Reachable with zero annotations: registering the prefix "ns" collides
     // with the first serial synthetic. Calling that an ANNOTATION conflict
-    // sent operators hunting for assertions that do not exist, and refusing
-    // the compile rejected input that compiled before the vocabulary landed.
+    // would send operators hunting for assertions that do not exist, so the
+    // code and the remedy stay distinct from A001's — but the SEVERITY is the
+    // same, per the owner ruling of 2026-08-30. A non-injective namespace map
+    // silently drops a claimant, which is exactly what R-4 forbids.
     const { diagnostics } = build(
       makeExtraction({
         classes: [
@@ -982,7 +984,7 @@ describe("build — effective prefix injectivity", () => {
     expect(diagnostics.filter((d) => d.code === "A001")).toEqual([]);
     const b005 = diagnostics.filter((d) => d.code === "B005");
     expect(b005).toHaveLength(1);
-    expect(b005[0]?.severity).toBe("warning");
+    expect(b005[0]?.severity).toBe("error");
     expect(b005[0]?.source).toBe("ns");
     expect(b005[0]?.message).toContain("StoreConfig.prefixes");
     expect(b005[0]?.message).not.toContain("graphql:prefix");

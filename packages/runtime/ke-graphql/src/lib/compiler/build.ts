@@ -168,9 +168,19 @@ export default function build(
   // A collision among registered and serial synthetic prefixes needs no
   // annotation at all — registering the prefix "ns" is enough — so calling it
   // an ANNOTATION conflict would send an operator hunting for graphql:
-  // assertions that do not exist, and refusing the compile would reject input
-  // that compiled before the vocabulary landed. That case is B005: a warning
-  // naming the registration remedy.
+  // assertions that do not exist. That case is B005, which names the
+  // registration remedy instead.
+  //
+  // B005 IS AN ERROR, by owner ruling 2026-08-30, and was a warning until
+  // then. The warning existed to avoid rejecting input that compiled before
+  // the vocabulary landed — a real cost, and the ruling accepts it, because
+  // the alternative is worse: the namespace→prefix map is keyed by prefix, so
+  // a surviving warning means one claimant silently overwrites the other,
+  // `ontologies` omits it, and `toFull()` resolves the shared prefix to
+  // whichever won. That is R-4's rule — a collision is an error, never a
+  // silent rename — reaching the one place it had not yet been applied. The
+  // remedy is one line of `StoreConfig.prefixes`, which is why the migration
+  // cost was judged payable rather than deferred again.
   const namespacesByPrefix = new Map<string, string[]>();
   for (const [ns, prefix] of effectiveNamespaces) {
     const list = namespacesByPrefix.get(prefix) ?? [];
@@ -195,7 +205,7 @@ export default function build(
             phase: PHASE,
           }
         : {
-            severity: "warning",
+            severity: "error",
             code: "B005",
             message: `${shared}; register a distinct prefix for each in StoreConfig.prefixes`,
             source: prefix,
