@@ -142,7 +142,9 @@ describe("extraction artifact (DMMF-style boot)", () => {
     legacy.version = 1;
     delete legacy.deferredSyntheticNamespaces;
 
-    expect(() => deserializeExtraction(legacy)).toThrow(/version 1 is not supported/);
+    expect(() => deserializeExtraction(legacy)).toThrow(
+      /version 1 is not supported/,
+    );
     // And it names the remedy, since the user's move is to rebuild.
     expect(() => deserializeExtraction(legacy)).toThrow(/regenerate/);
   });
