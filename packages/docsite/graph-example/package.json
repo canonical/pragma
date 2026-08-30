@@ -1,7 +1,7 @@
 {
   "name": "@canonical/prism-graph-example",
   "description": "A second, hand-written implementation of the Prism data contract over a fictional metro network, so the contract's provider-neutrality is measurable rather than asserted",
-  "version": "0.32.0",
+  "version": "0.36.0",
   "private": true,
   "type": "module",
   "module": "dist/esm/index.js",
@@ -47,14 +47,14 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/prism-contract": "^0.32.0",
+    "@canonical/prism-contract": "^0.36.0",
     "graphql": "^16.11.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.33.0",
-    "@canonical/typescript-config": "^0.33.0",
-    "@canonical/webarchitect": "^0.33.0",
+    "@canonical/biome-config": "^0.36.0",
+    "@canonical/typescript-config": "^0.36.0",
+    "@canonical/webarchitect": "^0.36.0",
     "@types/bun": "^1.3.10",
     "@types/node": "^24.12.0",
     "typescript": "^5.9.3",
