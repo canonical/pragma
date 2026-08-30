@@ -58,6 +58,20 @@ describe("sanitizeGraphQLName", () => {
     expect(sanitizeGraphQLName("")).toBe("_");
     expect(sanitizeGraphQLName("fine_Name0")).toBe("fine_Name0");
   });
+
+  it("collapses the introspection-reserved leading underscore run", () => {
+    // "__typename" is lexically legal, so only validateSchema rejects it —
+    // the sanitizer must catch it here or the compile dies at C003 with a
+    // message naming neither the term nor its IRI.
+    expect(sanitizeGraphQLName("__typename")).toBe("_typename");
+    expect(sanitizeGraphQLName("__Foo")).toBe("_Foo");
+    expect(sanitizeGraphQLName("___x")).toBe("_x");
+    // A single leading underscore is legal and must survive untouched.
+    expect(sanitizeGraphQLName("_meta")).toBe("_meta");
+    expect(sanitizeGraphQLName("_")).toBe("_");
+    // The reserved run can also be MINTED by the illegal-character pass.
+    expect(sanitizeGraphQLName("--x")).toBe("_x");
+  });
 });
 
 describe("sanitizePrefixComponent", () => {

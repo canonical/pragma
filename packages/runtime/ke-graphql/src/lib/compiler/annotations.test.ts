@@ -1,9 +1,11 @@
 // =============================================================================
 // Annotation resolution unit tests: the A-band taxonomy (A001 conflicts,
 // A002 targets, A003 values, A004 recognition/applicability, A005 config
-// shadowing), the prefix path (namespace re-keying, injectivity), and the
-// overlay application of every v1 term. Crafted RawExtractions, rows in the
-// (target, term, kind, value) order the extractor guarantees.
+// shadowing), the prefix path (namespace re-keying, value validation), and
+// the overlay application of every v1 term. Crafted RawExtractions, rows in
+// the (target, term, value, kind) order the extractor guarantees. The
+// effective-map injectivity guard lives in build.ts and is tested there.
+// (Row order is `[target, term, value, kind]`, per GraphqlAnnotationRow.)
 // =============================================================================
 
 import { describe, expect, it } from "vitest";
@@ -45,6 +47,7 @@ const makeExtraction = (
   functionals: new Set(),
   datatypes: [],
   namespaces: new Map([[NS, "ex"]]),
+  deferredSyntheticNamespaces: [],
   shaclConstraints: [],
   unions: [],
   instanceStats: new Map(),
@@ -133,6 +136,53 @@ describe("annotations — A001 conflicts (never tiebroken)", () => {
     expect(output.classes.get(uri("Thing"))?.name).toBeUndefined();
   });
 
+  it("treats agreeing xsd:boolean lexicals as one assertion, not a conflict", () => {
+    // xsd:boolean has four lexicals for two values, and extraction dedupes on
+    // the raw lexical — so `true` and "1" arrive as two rows for one fact.
+    // R-9 scopes A001 to sources that DISAGREE; there is nothing to pick here.
+    const { output, diagnostics } = resolve([
+      [uri("name"), GRAPHQL_TERMS.nonNull, "1", "literal"],
+      [uri("name"), GRAPHQL_TERMS.nonNull, "true", "literal"],
+    ]);
+    expect(diagnostics).toEqual([]);
+    expect(output.properties.get(uri("name"))?.nonNull).toBe(true);
+  });
+
+  it("treats agreeing false lexicals as one assertion", () => {
+    const { output, diagnostics } = resolve([
+      [uri("name"), GRAPHQL_TERMS.singular, "0", "literal"],
+      [uri("name"), GRAPHQL_TERMS.singular, "false", "literal"],
+    ]);
+    expect(diagnostics).toEqual([]);
+    expect(output.properties.get(uri("name"))?.singular).toBe(false);
+  });
+
+  it("still refuses boolean lexicals that genuinely disagree", () => {
+    const { output, diagnostics } = resolve([
+      [uri("name"), GRAPHQL_TERMS.singular, "0", "literal"],
+      [uri("name"), GRAPHQL_TERMS.singular, "true", "literal"],
+    ]);
+    const a001 = diagnostics.find((d) => d.code === "A001");
+    expect(a001?.severity).toBe("error");
+    expect(a001?.message).toContain('"0"');
+    expect(a001?.message).toContain('"true"');
+    expect(output.properties.get(uri("name"))?.singular).toBeUndefined();
+  });
+
+  it("does not merge an IRI onto an agreeing boolean lexical", () => {
+    // Normalization is scoped to LITERAL rows: an IRI whose string happens to
+    // read "true" is a value-kind error (A003 via A001's report), never a
+    // second spelling of the boolean.
+    const { diagnostics } = resolve([
+      [uri("name"), GRAPHQL_TERMS.singular, "true", "iri"],
+      [uri("name"), GRAPHQL_TERMS.singular, "true", "literal"],
+    ]);
+    const a001 = diagnostics.find((d) => d.code === "A001");
+    expect(a001?.severity).toBe("error");
+    expect(a001?.message).toContain("<true>");
+    expect(a001?.message).toContain('"true"');
+  });
+
   it("renders an IRI-vs-literal conflict with both spellings", () => {
     const { diagnostics } = resolve([
       [uri("Thing"), GRAPHQL_TERMS.titleFrom, uri("a"), "iri"],
@@ -177,37 +227,6 @@ describe("annotations — A001 conflicts (never tiebroken)", () => {
     );
     expect(diagnostics).toEqual([]);
     expect(output.prefixes.get("http://hash.test/v#")).toBe("vv");
-  });
-
-  it("refuses a non-injective effective prefix map, naming the claimants", () => {
-    // A declaration colliding with a registered prefix: both namespaces end
-    // up under "ex" in the effective map (Pass 1 folded the annotation).
-    const { diagnostics } = resolve(
-      [["http://second.test/", GRAPHQL_TERMS.prefix, "ex", "literal"]],
-      {
-        classes: [
-          { uri: uri("Thing"), superclasses: [] },
-          { uri: "http://second.test/Thing", superclasses: [] },
-          { uri: "http://third.test/Thing", superclasses: [] },
-          { uri: "http://fourth.test/Thing", superclasses: [] },
-        ],
-        properties: [],
-        // Prefix insertion order (aa, zz, ex) exercises both directions of
-        // the deterministic report ordering.
-        namespaces: new Map([
-          ["http://fourth.test/", "aa"],
-          ["http://third.test/", "zz"],
-          [NS, "ex"],
-          ["http://second.test/", "ex"],
-        ]),
-      },
-    );
-    const a001 = diagnostics.filter((d) => d.code === "A001");
-    expect(a001).toHaveLength(1);
-    expect(a001[0]?.source).toBe("ex");
-    expect(a001[0]?.message).toContain(NS);
-    expect(a001[0]?.message).toContain("http://second.test/");
-    expect(a001[0]?.message).toContain("injective");
   });
 });
 
@@ -322,6 +341,20 @@ describe("annotations — A003 values", () => {
     expect(a003?.message).toContain("needs a string literal");
     expect(output.prefixes.size).toBe(0);
   });
+
+  it("rejects an empty graphql:prefix instead of binding it", () => {
+    // "" is falsy: binding it would key NamespaceInfo (and every node's
+    // `namespace`) on the empty string, which `??` cannot tell from unset.
+    // The namespace must fall back to its registered/synthetic prefix.
+    const { output, diagnostics } = resolve([
+      [NS, GRAPHQL_TERMS.prefix, "", "literal"],
+    ]);
+    const a003 = diagnostics.find((d) => d.code === "A003");
+    expect(a003?.severity).toBe("error");
+    expect(a003?.source).toBe(NS);
+    expect(a003?.message).toContain("empty string");
+    expect(output.prefixes.has(NS)).toBe(false);
+  });
 });
 
 describe("annotations — A004 recognition and applicability", () => {
@@ -404,6 +437,43 @@ describe("annotations — A005 config shadowing (config wins)", () => {
       { [uri("Thing")]: { abstract: false, embeddable: false } },
     );
     expect(codes(diagnostics).filter((c) => c === "A005")).toHaveLength(2);
+  });
+
+  it("resolves a prefixed key through the DECLARED prefix, not Pass 1's", () => {
+    // The namespace is registered "ex" and declares graphql:prefix "exx".
+    // Every consumption site resolves prefixed config keys through the
+    // effective map, where the declaration has already replaced "ex" — so
+    // "exx:Thing" is the key that WINS downstream, and the report that says
+    // a config key won has to be keyed the same way or it is not a report
+    // about what happened.
+    const { diagnostics } = resolve(
+      [
+        [NS, GRAPHQL_TERMS.prefix, "exx", "literal"],
+        [uri("Thing"), GRAPHQL_TERMS.name, "Annotated", "literal"],
+      ],
+      {},
+      { "exx:Thing": { graphqlName: "Configured" } },
+    );
+    const a005 = diagnostics.filter((d) => d.code === "A005");
+    expect(a005).toHaveLength(1);
+    expect(a005[0]?.source).toBe(uri("Thing"));
+    expect(a005[0]?.message).toContain('"Configured"');
+    expect(a005[0]?.message).toContain('"Annotated"');
+  });
+
+  it("stays silent for a key written with the prefix the declaration replaced", () => {
+    // The mirror of the case above: "ex:Thing" resolves to nothing once the
+    // declaration binds, so the config never applies — and a shadow warning
+    // would send an operator to delete a key that changed nothing.
+    const { diagnostics } = resolve(
+      [
+        [NS, GRAPHQL_TERMS.prefix, "exx", "literal"],
+        [uri("Thing"), GRAPHQL_TERMS.name, "Annotated", "literal"],
+      ],
+      {},
+      { "ex:Thing": { graphqlName: "Configured" } },
+    );
+    expect(codes(diagnostics)).not.toContain("A005");
   });
 
   it("stays silent when config and annotation agree, or when either side is absent", () => {

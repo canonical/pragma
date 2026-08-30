@@ -107,6 +107,53 @@ describe("mode matrix — unannotated input", () => {
   });
 });
 
+describe("mode matrix — the synthetic-prefix warning (E001)", () => {
+  // Two namespaces with nothing registered for them: one declares its own
+  // graphql:prefix, one says nothing. The undeclared one has no answer in any
+  // mode and is Pass 1's to report. The declared one's answer exists but only
+  // binds where the mode consults annotations — so the warning about it is
+  // the mode's to decide, and "auto" is the mode that must hear it.
+  const UNREGISTERED_TTL = `
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix graphql: <${GRAPHQL}> .
+
+<http://declared.test/Gizmo> a owl:Class .
+<http://declared.test/> graphql:prefix "dec" .
+
+<http://silent.test/Widget> a owl:Class .
+`;
+
+  const warnedNamespaces = async (
+    mode: "auto" | "annotated" | "explicit",
+  ): Promise<{ sources: string[]; prefixes: string[] }> => {
+    const { result } = await compileFixture(UNREGISTERED_TTL, { mode });
+    return {
+      sources: result.diagnostics
+        .filter((d) => d.code === "E001")
+        .map((d) => d.source ?? "")
+        .sort(),
+      prefixes: [...result.mapped.namespaces.keys()].sort(),
+    };
+  };
+
+  it("names only the undeclared namespace where the declaration binds", async () => {
+    for (const mode of ["annotated", "explicit"] as const) {
+      const { sources, prefixes } = await warnedNamespaces(mode);
+      expect(sources).toEqual(["http://silent.test/"]);
+      // The declared namespace really did get its prefix — the silence is
+      // earned, not assumed.
+      expect(prefixes).toContain("dec");
+    }
+  });
+
+  it('names BOTH under "auto", where no declaration is consulted', async () => {
+    const { sources, prefixes } = await warnedNamespaces("auto");
+    expect(sources).toEqual(["http://declared.test/", "http://silent.test/"]);
+    // ...because "dec" is nowhere: both namespaces ship a serial synthetic.
+    expect(prefixes).not.toContain("dec");
+  });
+});
+
 describe("mode matrix — annotated input", () => {
   it("auto consults nothing: bytes equal the unannotated-equivalent emission, plus the honest A006", async () => {
     const annotatedDoc = await compileFixture(ANNOTATED_TTL, { mode: "auto" });

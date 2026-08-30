@@ -71,8 +71,22 @@ export const XSD_PATTERN = `${XSD}pattern`;
 /**
  * Extraction artifact format version. Bumped on any breaking change to the
  * serialized shape; deserialization rejects mismatched artifacts.
+ *
+ * 2 — `deferredSyntheticNamespaces`. A v1 artifact does not merely LACK the
+ * field, which a default of `[]` would cover; it was produced by a Pass 1 that
+ * had already folded a resolvable `graphql:prefix` into `namespaces`. Read
+ * back today under `mode: "auto"`, it therefore projects the annotation-derived
+ * prefix while a live compile of the same unchanged sources projects the
+ * registered or synthetic one. Same source hash, two different schemas,
+ * depending only on whether a cached artifact happened to be present — which
+ * is the worst shape a cache bug takes.
+ *
+ * There is no migration that could recover the pre-overlay namespace map from
+ * a v1 artifact: the fold is lossy, and what was folded is exactly what would
+ * have to be recovered. So the version is bumped and old artifacts are
+ * rejected with a regenerate instruction, which costs one recompile.
  */
-export const ARTIFACT_VERSION = 1;
+export const ARTIFACT_VERSION = 2;
 
 // ---------------------------------------------------------------------------
 // Provenance — the seven-line contract block stamped onto the printed SDL:

@@ -28,6 +28,7 @@ const makeExtraction = (
   functionals: new Set(),
   datatypes: [],
   namespaces: new Map([[NS, "ex"]]),
+  deferredSyntheticNamespaces: [],
   shaclConstraints: [],
   unions: [],
   instanceStats: new Map(),
@@ -696,6 +697,31 @@ describe("build — graphql: annotation overlay binding", () => {
     expect(output.classes.get(uri("Embed"))?.embeddable).toBe(true);
   });
 
+  it("lets graphql:embeddable false override a heuristic-true class", () => {
+    // Only the promoting direction was pinned. The overriding direction is
+    // the one that matters: blank-node-only instances make the heuristic say
+    // embeddable, and the ontology overrules it — the class keeps `uri` and
+    // its root queries instead of collapsing to an embedded shape.
+    const extraction = makeExtraction({
+      classes: [
+        { uri: uri("Blank"), superclasses: [] },
+        { uri: uri("Control"), superclasses: [] },
+      ],
+      instanceStats: new Map([
+        [uri("Blank"), { total: 2, named: 0 }],
+        [uri("Control"), { total: 2, named: 0 }],
+      ]),
+      graphqlAnnotations: [
+        [uri("Blank"), GRAPHQL_TERMS.embeddable, "false", "literal"],
+      ],
+    });
+    const { output, diagnostics } = build(extraction);
+    expect(output.classes.get(uri("Blank"))?.embeddable).toBe(false);
+    // The unannotated twin proves the heuristic really did say true.
+    expect(output.classes.get(uri("Control"))?.embeddable).toBe(true);
+    expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+  });
+
   it("keeps config ahead of the annotation for abstract/embeddable (A005 names the shadow)", () => {
     const extraction = makeExtraction({
       classes: [{ uri: uri("Thing"), superclasses: [] }],
@@ -747,6 +773,59 @@ describe("build — graphql: annotation overlay binding", () => {
     expect(output.properties.get(uri("tags"))?.functional).toBe(false);
     expect(output.properties.get(uri("cfg"))?.functional).toBe(true);
     expect(diagnostics.filter((d) => d.code === "A005")).toHaveLength(1);
+  });
+
+  it("keeps graphql:singular ahead of owl:FunctionalProperty", () => {
+    // The tier boundary directly beneath the annotation: owl says functional
+    // (singular), the ontology's own vocabulary says list. The annotation is
+    // the higher tier, so the property is a list — and it is recorded as an
+    // EXPLICIT decision, which is what outranks a per-class shape downstream.
+    const extraction = makeExtraction({
+      classes: [
+        { uri: uri("Thing"), superclasses: [] },
+        { uri: uri("Other"), superclasses: [] },
+      ],
+      properties: [
+        {
+          uri: uri("rel"),
+          kind: "object",
+          domains: [uri("Thing")],
+          ranges: [uri("Other")],
+        },
+      ],
+      functionals: new Set([uri("rel")]),
+      graphqlAnnotations: [
+        [uri("rel"), GRAPHQL_TERMS.singular, "false", "literal"],
+      ],
+    });
+    const { output, diagnostics } = build(extraction);
+    expect(output.properties.get(uri("rel"))?.functional).toBe(false);
+    expect(output.properties.get(uri("rel"))?.explicitSingular).toBe(false);
+    expect(diagnostics.filter((d) => d.code === "A001")).toEqual([]);
+  });
+
+  it("lets owl:FunctionalProperty decide when no explicit tier spoke", () => {
+    // The complement: with no config and no annotation, `functional` still
+    // comes from the heuristics and carries NO explicit marker, so per-class
+    // SHACL remains free to override it.
+    const extraction = makeExtraction({
+      classes: [
+        { uri: uri("Thing"), superclasses: [] },
+        { uri: uri("Other"), superclasses: [] },
+      ],
+      properties: [
+        {
+          uri: uri("rel"),
+          kind: "object",
+          domains: [uri("Thing")],
+          ranges: [uri("Other")],
+        },
+      ],
+      functionals: new Set([uri("rel")]),
+    });
+    const { output } = build(extraction);
+    expect(output.properties.get(uri("rel"))?.functional).toBe(true);
+    expect(output.properties.get(uri("rel"))?.explicitSingular).toBeUndefined();
   });
 
   it("joins graphql:inverse pairs with owl:inverseOf declared-pair semantics", () => {
@@ -810,13 +889,13 @@ describe("build — graphql: annotation overlay binding", () => {
     expect(output.properties.get(uri("hasChild"))?.inverse).toBe(uri("ghost"));
   });
 
-  it("carries the resolved overlay on the IR and leads prefixes with it", () => {
-    // Pass 1 folded the declaration into extraction.namespaces ("exx"); the
-    // overlay agrees, and both the node namespaces and the NamespaceInfo
-    // keying read the overlay's value first.
+  it("carries the resolved overlay on the IR and binds prefixes with it", () => {
+    // Pass 1 reports the REGISTERED prefix ("ex"); the declaration binds here,
+    // where the mode is known, and every prefix reader — node namespaces and
+    // the NamespaceInfo keying — sees the one effective value.
     const extraction = makeExtraction({
       classes: [{ uri: uri("Thing"), superclasses: [] }],
-      namespaces: new Map([[NS, "exx"]]),
+      namespaces: new Map([[NS, "ex"]]),
       graphqlAnnotations: [[NS, GRAPHQL_TERMS.prefix, "exx", "literal"]],
     });
     const { output, diagnostics } = build(extraction);
@@ -825,6 +904,26 @@ describe("build — graphql: annotation overlay binding", () => {
     expect(output.classes.get(uri("Thing"))?.namespace).toBe("exx");
     expect(output.namespaces.get("exx")?.uri).toBe(NS);
     expect(output.namespaces.get("exx")?.classCount).toBe(1);
+    // ...and the prefix it replaced is gone, not a second entry.
+    expect(output.namespaces.has("ex")).toBe(false);
+  });
+
+  it('does not bind graphql:prefix under mode "auto"', () => {
+    // "auto" promises the annotations are never consulted. The declaration
+    // must leave no trace: the namespace resolves exactly as it would for an
+    // ontology that never carried the assertion.
+    const extraction = makeExtraction({
+      classes: [{ uri: uri("Thing"), superclasses: [] }],
+      namespaces: new Map([[NS, "ex"]]),
+      graphqlAnnotations: [[NS, GRAPHQL_TERMS.prefix, "exx", "literal"]],
+    });
+    const { output, diagnostics } = build(extraction, {}, "auto");
+    expect(output.graphql.prefixes.size).toBe(0);
+    expect(output.classes.get(uri("Thing"))?.namespace).toBe("ex");
+    expect(output.namespaces.get("ex")?.uri).toBe(NS);
+    expect(output.namespaces.has("exx")).toBe(false);
+    // Only the honest "assertions present but unconsulted" note.
+    expect(diagnostics.map((d) => d.code)).toEqual(["A006"]);
   });
 
   it("exposes an empty overlay for an unannotated extraction", () => {
@@ -834,5 +933,253 @@ describe("build — graphql: annotation overlay binding", () => {
     expect(output.graphql.classes.size).toBe(0);
     expect(output.graphql.properties.size).toBe(0);
     expect(output.graphql.prefixes.size).toBe(0);
+  });
+});
+
+describe("build — effective prefix injectivity", () => {
+  it("refuses a collision a graphql:prefix declaration caused (A001)", () => {
+    const { diagnostics } = build(
+      makeExtraction({
+        classes: [
+          { uri: uri("Thing"), superclasses: [] },
+          { uri: "http://second.test/Thing", superclasses: [] },
+        ],
+        namespaces: new Map([
+          [NS, "ex"],
+          ["http://second.test/", "sec"],
+        ]),
+        graphqlAnnotations: [
+          ["http://second.test/", GRAPHQL_TERMS.prefix, "ex", "literal"],
+        ],
+      }),
+    );
+    const a001 = diagnostics.filter((d) => d.code === "A001");
+    expect(a001).toHaveLength(1);
+    expect(a001[0]?.severity).toBe("error");
+    expect(a001[0]?.source).toBe("ex");
+    expect(a001[0]?.message).toContain(NS);
+    expect(a001[0]?.message).toContain("http://second.test/");
+    expect(a001[0]?.message).toContain("graphql:prefix");
+  });
+
+  it("warns instead of refusing when NO declaration is in play (B005)", () => {
+    // Reachable with zero annotations: registering the prefix "ns" collides
+    // with the first serial synthetic. Calling that an ANNOTATION conflict
+    // sent operators hunting for assertions that do not exist, and refusing
+    // the compile rejected input that compiled before the vocabulary landed.
+    const { diagnostics } = build(
+      makeExtraction({
+        classes: [
+          { uri: "http://a.test/Thing", superclasses: [] },
+          { uri: "http://b.test/Thing", superclasses: [] },
+        ],
+        namespaces: new Map([
+          ["http://a.test/", "ns"],
+          ["http://b.test/", "ns"],
+        ]),
+      }),
+    );
+    expect(diagnostics.filter((d) => d.code === "A001")).toEqual([]);
+    const b005 = diagnostics.filter((d) => d.code === "B005");
+    expect(b005).toHaveLength(1);
+    expect(b005[0]?.severity).toBe("warning");
+    expect(b005[0]?.source).toBe("ns");
+    expect(b005[0]?.message).toContain("StoreConfig.prefixes");
+    expect(b005[0]?.message).not.toContain("graphql:prefix");
+  });
+
+  it("stays silent on an injective map", () => {
+    const { diagnostics } = build(
+      makeExtraction({
+        classes: [
+          { uri: uri("Thing"), superclasses: [] },
+          { uri: "http://second.test/Thing", superclasses: [] },
+        ],
+        namespaces: new Map([
+          [NS, "ex"],
+          ["http://second.test/", "sec"],
+        ]),
+      }),
+    );
+    expect(
+      diagnostics.filter((d) => d.code === "A001" || d.code === "B005"),
+    ).toEqual([]);
+  });
+
+  it('guards under mode "auto", which resolves no overlay at all', () => {
+    // The guard's reach is the reason it lives here rather than beside the
+    // annotation resolver: a collision among REGISTERED prefixes needs no
+    // annotation to construct, so the mode that consults no annotation is
+    // exactly the one that must still report it. Zero annotations, mode
+    // "auto", two namespaces registered under one prefix — B005 or the
+    // namespace map silently loses a namespace with nobody told.
+    const { diagnostics } = build(
+      makeExtraction({
+        classes: [
+          { uri: "http://a.test/Thing", superclasses: [] },
+          { uri: "http://b.test/Thing", superclasses: [] },
+        ],
+        namespaces: new Map([
+          ["http://a.test/", "ns"],
+          ["http://b.test/", "ns"],
+        ]),
+        graphqlAnnotations: [],
+      }),
+      {},
+      "auto",
+    );
+    const b005 = diagnostics.filter((d) => d.code === "B005");
+    expect(b005).toHaveLength(1);
+    expect(b005[0]?.source).toBe("ns");
+    expect(b005[0]?.message).toContain("http://a.test/");
+    expect(b005[0]?.message).toContain("http://b.test/");
+    // No annotation is present, so nothing else has anything to say.
+    expect(diagnostics.map((d) => d.code)).toEqual(["B005"]);
+  });
+});
+
+describe("build — the deferred synthetic-prefix warning (E001)", () => {
+  // Pass 1 hands over the namespaces it put on a serial synthetic that carry
+  // a graphql:prefix declaration; whether that declaration actually replaces
+  // the synthetic is a mode question, so Pass 1 defers and this pass decides.
+  const deferred = (
+    mode: Parameters<typeof build>[2],
+    rows: RawExtraction["graphqlAnnotations"] = [
+      ["http://other.test/", GRAPHQL_TERMS.prefix, "oth", "literal"],
+    ],
+  ) =>
+    build(
+      makeExtraction({
+        classes: [
+          { uri: uri("Thing"), superclasses: [] },
+          { uri: "http://other.test/Gizmo", superclasses: [] },
+        ],
+        namespaces: new Map([
+          [NS, "ex"],
+          ["http://other.test/", "ns"],
+        ]),
+        deferredSyntheticNamespaces: ["http://other.test/"],
+        graphqlAnnotations: rows,
+      }),
+      {},
+      mode,
+    );
+
+  it("stays silent when the declaration binds — the synthetic never ships", () => {
+    const { output, diagnostics } = deferred("annotated");
+    expect(output.classes.get("http://other.test/Gizmo")?.namespace).toBe(
+      "oth",
+    );
+    expect(diagnostics.filter((d) => d.code === "E001")).toEqual([]);
+  });
+
+  it('raises it under mode "auto", where no declaration is consulted', () => {
+    // The state E001 exists to report is exactly this one: the namespace is
+    // on a serial synthetic that every consumer sees — prefixed lookup
+    // arguments, node namespaces, NamespaceInfo — and the ontology's own
+    // declaration is not read. Silence here made adding a well-formed
+    // annotation strictly REDUCE the diagnostics an operator gets.
+    const { output, diagnostics } = deferred("auto");
+    expect(output.classes.get("http://other.test/Gizmo")?.namespace).toBe("ns");
+    const e001 = diagnostics.filter((d) => d.code === "E001");
+    expect(e001).toHaveLength(1);
+    expect(e001[0]?.severity).toBe("warning");
+    expect(e001[0]?.source).toBe("http://other.test/");
+    expect(e001[0]?.message).toContain('synthetic "ns"');
+    expect(e001[0]?.message).toContain('mode "auto"');
+    expect(e001[0]?.message).toContain("StoreConfig.prefixes");
+  });
+
+  it('binds and stays silent under mode "explicit" too', () => {
+    // The third mode consults the overlay like "annotated": the declaration
+    // binds, so there is no synthetic left to warn about.
+    const { output, diagnostics } = deferred("explicit");
+    expect(output.classes.get("http://other.test/Gizmo")?.namespace).toBe(
+      "oth",
+    );
+    expect(diagnostics.filter((d) => d.code === "E001")).toEqual([]);
+  });
+
+  it("raises it when a consulted declaration is REFUSED, not bound", () => {
+    // A004/A003-band refusals leave the namespace on the synthetic just as
+    // surely as "auto" does. The A-band error refuses the compile; the E001
+    // still tells the operator what the namespace resolved to meanwhile.
+    const { diagnostics } = deferred("annotated", [
+      ["http://other.test/", GRAPHQL_TERMS.prefix, "oth", "literal"],
+      ["http://other.test/", GRAPHQL_TERMS.prefix, "err", "literal"],
+    ]);
+    expect(diagnostics.filter((d) => d.code === "A001")).toHaveLength(1);
+    const e001 = diagnostics.filter((d) => d.code === "E001");
+    expect(e001).toHaveLength(1);
+    expect(e001[0]?.message).toContain('mode "annotated"');
+  });
+});
+
+describe("build — one prefix map for applying config keys and reporting them", () => {
+  // The namespace is registered "ex" and declares graphql:prefix "exx". The
+  // config key that APPLIES and the config key A005 reports as shadowing the
+  // annotation must be the same key — resolved through the same effective
+  // map — in every mode.
+  const shadowed = (
+    mappings: Parameters<typeof build>[1],
+    mode: Parameters<typeof build>[2] = undefined,
+  ) =>
+    build(
+      makeExtraction({
+        classes: [{ uri: uri("Thing"), superclasses: [] }],
+        namespaces: new Map([[NS, "ex"]]),
+        graphqlAnnotations: [
+          [NS, GRAPHQL_TERMS.prefix, "exx", "literal"],
+          [uri("Thing"), GRAPHQL_TERMS.abstract, "false", "literal"],
+        ],
+      }),
+      mappings,
+      mode,
+    );
+
+  it("applies a key written with the DECLARED prefix and reports it (A005)", () => {
+    const { output, diagnostics } = shadowed({
+      "exx:Thing": { abstract: true },
+    });
+    // `abstract: true` can only come from the config: the annotation says
+    // false and the heuristic (no instances, no subclasses) says false too.
+    expect(output.classes.get(uri("Thing"))?.isAbstract).toBe(true);
+    const a005 = diagnostics.filter((d) => d.code === "A005");
+    expect(a005).toHaveLength(1);
+    expect(a005[0]?.message).toContain("graphql:abstract");
+    expect(a005[0]?.source).toBe(uri("Thing"));
+  });
+
+  it("neither applies nor reports a key written with the SUPERSEDED prefix", () => {
+    // "ex" is what Pass 1 resolved and what the declaration replaced. A
+    // shadow report here would send an operator to delete a config key that
+    // never applied.
+    const { output, diagnostics } = shadowed({
+      "ex:Thing": { abstract: true },
+    });
+    expect(output.classes.get(uri("Thing"))?.isAbstract).toBe(false);
+    expect(diagnostics.filter((d) => d.code === "A005")).toEqual([]);
+  });
+
+  it("keeps reporting absolute-IRI keys, which no declaration can move", () => {
+    const { output, diagnostics } = shadowed({
+      [uri("Thing")]: { abstract: true },
+    });
+    expect(output.classes.get(uri("Thing"))?.isAbstract).toBe(true);
+    expect(diagnostics.filter((d) => d.code === "A005")).toHaveLength(1);
+  });
+
+  it('applies the Pass 1 prefix under "auto", where there is no shadow to report', () => {
+    // "auto" consults no annotation, so the declaration does not move the
+    // key: "ex:Thing" is what applies. Nothing is shadowed either — the
+    // annotation was never read — so A005 is silent and A006 is the note
+    // that says the assertions went unconsulted.
+    const { output, diagnostics } = shadowed(
+      { "ex:Thing": { abstract: true } },
+      "auto",
+    );
+    expect(output.classes.get(uri("Thing"))?.isAbstract).toBe(true);
+    expect(diagnostics.filter((d) => d.code === "A005")).toEqual([]);
+    expect(diagnostics.map((d) => d.code)).toContain("A006");
   });
 });

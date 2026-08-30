@@ -30,6 +30,7 @@ const makeExtraction = (
   functionals: new Set(),
   datatypes: [],
   namespaces: new Map([[NS, "ex"]]),
+  deferredSyntheticNamespaces: [],
   shaclConstraints: [],
   unions: [],
   instanceStats: new Map(),
@@ -1372,6 +1373,96 @@ describe("map — cardinality and interface coverage", () => {
     );
   });
 
+  it("keeps graphql:singular ahead of a per-class SHACL shape", () => {
+    // The documented precedence is config > annotation > owl > SHACL > kind.
+    // A per-class shape saying maxCount 1 must NOT invert the annotation that
+    // says this property is a list — while `required` (minCount, an axis with
+    // no explicit tier) stays the shape's to decide.
+    const ir = buildIR({
+      classes: [
+        { uri: uri("Spec"), superclasses: [] },
+        { uri: uri("Hop"), superclasses: [] },
+      ],
+      properties: [
+        {
+          uri: uri("root"),
+          kind: "object",
+          domains: [uri("Spec")],
+          ranges: [uri("Hop")],
+        },
+      ],
+      shaclConstraints: [
+        {
+          targetClass: uri("Spec"),
+          property: uri("root"),
+          minCount: 1,
+          maxCount: 1,
+        },
+      ],
+      graphqlAnnotations: [
+        [uri("root"), GRAPHQL_TERMS.singular, "false", "literal"],
+      ],
+      instanceStats: new Map([[uri("Spec"), { total: 1, named: 1 }]]),
+    });
+    const { output } = map(ir);
+    const field = output.types.get("Spec")?.fields.get("roots");
+    // list, not the shape's singular
+    expect(field?.resolverTemplate).toBe("object-list");
+    expect(field?.list).toBe(true);
+    expect(output.types.get("Spec")?.fields.has("root")).toBe(false);
+    // minCount 1 still reaches the field from the same shape
+    expect(field?.shaclRequired).toBe(true);
+  });
+
+  it("keeps a config singular ahead of a per-class SHACL shape", () => {
+    const ir = buildIR(
+      {
+        classes: [{ uri: uri("Spec"), superclasses: [] }],
+        properties: [
+          {
+            uri: uri("tag"),
+            kind: "datatype",
+            domains: [uri("Spec")],
+            ranges: [`${XSD}string`],
+          },
+        ],
+        shaclConstraints: [
+          { targetClass: uri("Spec"), property: uri("tag"), maxCount: 1 },
+        ],
+        instanceStats: new Map([[uri("Spec"), { total: 1, named: 1 }]]),
+      },
+      { [uri("tag")]: { singular: false } },
+    );
+    const { output } = map(ir);
+    expect(output.types.get("Spec")?.fields.get("tags")?.resolverTemplate).toBe(
+      "datatype-list",
+    );
+  });
+
+  it("lets a per-class SHACL shape decide when no explicit tier spoke", () => {
+    // The complement of the two tests above: with no config and no
+    // annotation, the shape still outranks the heuristic default.
+    const ir = buildIR({
+      classes: [{ uri: uri("Spec"), superclasses: [] }],
+      properties: [
+        {
+          uri: uri("part"),
+          kind: "object",
+          domains: [uri("Spec")],
+          ranges: [uri("Spec")],
+        },
+      ],
+      shaclConstraints: [
+        { targetClass: uri("Spec"), property: uri("part"), maxCount: 1 },
+      ],
+      instanceStats: new Map([[uri("Spec"), { total: 1, named: 1 }]]),
+    });
+    const { output } = map(ir);
+    expect(output.types.get("Spec")?.fields.get("part")?.resolverTemplate).toBe(
+      "object-singular",
+    );
+  });
+
   it("omits a field whose SHACL maxCount is 0 (V010)", () => {
     const ir = buildIR({
       classes: [{ uri: uri("Item"), superclasses: [] }],
@@ -1637,6 +1728,36 @@ describe("map — graphql: annotation binding (name, nonNull)", () => {
     expect(output.types.get("My_Item")?.fields.has("bad_name")).toBe(true);
   });
 
+  it("renames an annotated name claiming the introspection-reserved prefix", () => {
+    // "__typename"/"__Widget" are LEXICALLY legal, so without the reserved
+    // check they construct fine and die in validateSchema as a C003 naming
+    // neither graphql:name nor the OWL IRI. M002 must catch them here.
+    const ir = buildIR({
+      classes: [{ uri: uri("Widget"), superclasses: [] }],
+      instanceStats: new Map([[uri("Widget"), { total: 1, named: 1 }]]),
+      properties: [datatypeProp("note", { domains: [uri("Widget")] })],
+      graphqlAnnotations: [
+        [uri("Widget"), GRAPHQL_TERMS.name, "__Widget", "literal"],
+        [uri("note"), GRAPHQL_TERMS.name, "__typename", "literal"],
+      ],
+    });
+    const { output, diagnostics } = map(ir);
+    const m002 = diagnostics.filter((d) => d.code === "M002");
+    expect(m002).toHaveLength(2);
+    // Both diagnostics name the source that asked for the illegal name.
+    expect(
+      m002.some(
+        (d) =>
+          d.message.includes('graphql:name "__typename"') &&
+          d.source === uri("note"),
+      ),
+    ).toBe(true);
+    expect(m002.some((d) => d.source === uri("Widget"))).toBe(true);
+    // ...and the emitted names carry no reserved prefix.
+    expect(output.types.has("_Widget")).toBe(true);
+    expect(output.types.get("_Widget")?.fields.has("_typename")).toBe(true);
+  });
+
   it("promotes graphql:nonNull and OR-merges it with the config list", () => {
     const ir = buildIR({
       classes: [{ uri: uri("Widget"), superclasses: [] }],
@@ -1660,6 +1781,37 @@ describe("map — graphql: annotation binding (name, nonNull)", () => {
     expect(fields?.get("b")?.nonNull).toBe(true);
     // config only — the existing path is untouched
     expect(fields?.get("c")?.nonNull).toBe(true);
+  });
+
+  it("keeps the nonNull merge an OR: an explicit false does not veto the config", () => {
+    // The one case that tells an OR apart from `annotation ?? config`. Both
+    // sources only ever PROMOTE, so no A005 contradiction is expressible
+    // here: a field the consumer lists stays non-null even when the ontology
+    // says false, and the same annotation alone leaves the field nullable.
+    const ir = buildIR({
+      classes: [{ uri: uri("Widget"), superclasses: [] }],
+      instanceStats: new Map([[uri("Widget"), { total: 1, named: 1 }]]),
+      properties: [
+        datatypeProp("listed", { domains: [uri("Widget")] }),
+        datatypeProp("unlisted", { domains: [uri("Widget")] }),
+      ],
+      graphqlAnnotations: [
+        [uri("listed"), GRAPHQL_TERMS.nonNull, "false", "literal"],
+        [uri("unlisted"), GRAPHQL_TERMS.nonNull, "false", "literal"],
+      ],
+    });
+    const { output, diagnostics } = map(ir, {
+      nonNullOverrides: { Widget: ["listed"] },
+    });
+    const fields = output.types.get("Widget")?.fields;
+    // annotation false OR config listing → non-null (`??` would give false)
+    expect(fields?.get("listed")?.nonNull).toBe(true);
+    expect(fields?.get("listed")?.nullable).toBe(false);
+    // annotation false alone → the heuristic nullable default stands
+    expect(fields?.get("unlisted")?.nonNull).toBe(false);
+    expect(fields?.get("unlisted")?.nullable).toBe(true);
+    // ...and promotion-only means the disagreement is not a shadow (A005).
+    expect(diagnostics.filter((d) => d.code === "A005")).toEqual([]);
   });
 });
 

@@ -59,6 +59,7 @@ const buildIR = (
       functionals: new Set(),
       datatypes: [],
       namespaces: new Map(),
+      deferredSyntheticNamespaces: [],
       shaclConstraints: [],
       unions: [],
       instanceStats: new Map(),

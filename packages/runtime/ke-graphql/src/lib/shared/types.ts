@@ -47,6 +47,7 @@ export type DiagnosticCode =
   | "B002" // property references unknown class in domain
   | "B003" // property references unknown class/datatype in range
   | "B004" // inverse property references unknown property
+  | "B005" // two namespaces claim one prefix with no declaration in play
   // Validation
   | "V001" // blank-node-only class (embeddable)
   | "V002" // property has no rdfs:domain (domainless)
@@ -206,6 +207,17 @@ export interface RawExtraction {
   datatypes: RawDatatype[];
   /** namespace URI → prefix. */
   namespaces: Map<string, string>;
+  /**
+   * Namespaces that got a serial synthetic prefix (nothing registered) AND
+   * carry a resolvable `graphql:prefix` declaration — the one case where the
+   * synthetic-prefix warning (E001) cannot be decided during extraction.
+   * Whether the declaration replaces the synthetic is a MODE question, and
+   * extraction is mode-independent by construction (one artifact serves every
+   * projection mode). Pass 2 knows the mode: it raises the deferred warning
+   * for every namespace its bound overlay leaves on the synthetic — under
+   * mode "auto" that is all of them — and stays silent for the rest.
+   */
+  deferredSyntheticNamespaces?: readonly string[];
   shaclConstraints: RawShaclConstraint[];
   unions: RawUnion[];
 
@@ -254,7 +266,15 @@ export interface NamespaceInfo {
 /** A class in the typed ontology IR (Pass 2 output). */
 export interface ClassNode {
   uri: string;
+  /** Display label, TOTAL: the asserted rdfs:label, else the IRI local name. */
   label: string;
+  /**
+   * The ASSERTED rdfs:label alone — absent when the ontology asserts none, so
+   * `label`'s local-name fallback stays recoverable. R-6 scopes `_meta.label`
+   * to what a curator wrote; `_meta.title` is the total alternative, which is
+   * why one is nullable and the other is not.
+   */
+  assertedLabel?: string;
   definition?: string;
   /** Namespace prefix ('ds', 'cs', 'anatomy', …). */
   namespace: string;
@@ -331,10 +351,22 @@ export interface PropertyNode {
   range: RangeSpec;
   /**
    * Default cardinality. True = singular. Resolved by precedence:
-   * custom mapping > owl:FunctionalProperty > owl:cardinality > SHACL
-   * maxCount 1 > kind default (datatype → singular, object → list).
+   * custom mapping > graphql:singular > owl:FunctionalProperty >
+   * owl:cardinality > SHACL maxCount 1 > kind default (datatype → singular,
+   * object → list).
    */
   functional: boolean;
+  /**
+   * `functional` restated ONLY when an explicit tier decided it — a custom
+   * mapping or `graphql:singular`. Absent means the heuristics did (owl,
+   * SHACL, kind), which is what per-class SHACL is allowed to override.
+   * Consumers resolving a property's cardinality ON A CLASS consult this
+   * before the per-class SHACL spec's `singular`, so the two top tiers of
+   * the documented precedence are not silently outranked by a shape. It
+   * governs the SINGULAR axis alone: `required` and `omit` have no explicit
+   * tier and stay per-class SHACL's to decide.
+   */
+  explicitSingular?: boolean;
   /** Per-class cardinality overrides (SHACL). Key: class URI. */
   classCardinality: ReadonlyMap<string, CardinalitySpec>;
   /** Inverse property URI when declared via owl:inverseOf. */
@@ -383,7 +415,7 @@ export interface GraphqlPropertyOverlay {
    * graphql:searchable — IR capture ONLY in this release: no schema surface
    * reads it (no search root field, no connection, no OntologyProperty
    * field), so the emitted SDL is byte-identical with or without the term.
-   * The search feature (PRA-91) consumes this flag when it builds its index.
+   * Captured for a future search index; no schema surface reads it yet.
    * Its recorded default, decided here so the boundary is explicit: an
    * ontology with ZERO graphql:searchable annotations indexes the
    * descriptive-chain sources (title/label/definition) — a silently empty

@@ -332,14 +332,24 @@ export default async function extract(
   // graphql:prefix declarations, resolved to discovered namespaces: the
   // subject IRI itself when it IS a namespace, else subject + '#', else
   // subject + '/' (an ontology subject <…/ontology> declaring for
-  // <…/ontology#>). The annotation outranks the registered map and
-  // suppresses the synthetic-prefix warning. A namespace with two DISTINCT
-  // declared prefixes resolves nothing here — no arbitrary tiebreak; Pass 2
-  // refuses that compile (A001). Unresolvable subjects are Pass 2's A002.
+  // <…/ontology#>). Resolved here but NOT bound here: extraction is
+  // mode-independent (the artifact must serve any projection mode at rebuild
+  // time), and a declaration must not take effect under mode "auto", which
+  // promises the annotations are never consulted. Pass 2 validates them and
+  // binds them where the mode is known; all this map does below is DEFER the
+  // synthetic-prefix warning for the namespaces whose answer may still be
+  // waiting. A namespace with two DISTINCT declared prefixes resolves
+  // nothing here — no arbitrary tiebreak; Pass 2 refuses that compile
+  // (A001). Unresolvable subjects are Pass 2's A002.
   const declaredPrefixes = new Map<string, string>();
   const conflictedPrefixes = new Set<string>();
   for (const [target, term, value, kind] of graphqlAnnotations) {
-    if (term !== GRAPHQL_TERMS.prefix || kind !== "literal") {
+    // An EMPTY declaration is not a declaration: "" would both discard the
+    // registered prefix and then trip the `!prefix` synthetic fallback below,
+    // so it is skipped here and the namespace resolves exactly as if the
+    // assertion were absent. Pass 2 reports it (A003) — the two passes tell
+    // one story about the malformed value.
+    if (term !== GRAPHQL_TERMS.prefix || kind !== "literal" || value === "") {
       continue;
     }
     const ns = [target, `${target}#`, `${target}/`].find((candidate) =>
@@ -358,17 +368,32 @@ export default async function extract(
     declaredPrefixes.delete(ns);
   }
   let anonymous = 0;
+  const deferredSyntheticNamespaces: string[] = [];
   for (const ns of discovered) {
-    let prefix = declaredPrefixes.get(ns) ?? uriToPrefix.get(ns);
+    let prefix = uriToPrefix.get(ns);
     if (!prefix) {
       prefix = `ns${anonymous++ || ""}`;
-      diagnostics.push({
-        severity: "warning",
-        code: "E001",
-        message: `namespace ${ns} has no registered prefix — assigned synthetic "${prefix}". Register it in StoreConfig.prefixes: identity is the absolute IRI, but prefixes serve the singular lookup's prefixed-input convenience and display`,
-        source: ns,
-        phase: PHASE,
-      });
+      // A DECLARED namespace may have an answer waiting: Pass 2 binds the
+      // declaration over this placeholder in every mode that CONSULTS the
+      // overlay, and warning about a synthetic nobody ends up using would be
+      // noise. But whether it binds is a mode question and this pass is
+      // mode-independent by construction, so the warning is DEFERRED, not
+      // suppressed: Pass 2 raises it for every namespace the bound overlay
+      // leaves on the placeholder. Under mode "auto" — which consults no
+      // annotation — that is every one of them, and the operator hears about
+      // the synthetic they actually got. Suppressing here instead made a
+      // well-formed annotation strictly REDUCE diagnostic coverage.
+      if (declaredPrefixes.has(ns)) {
+        deferredSyntheticNamespaces.push(ns);
+      } else {
+        diagnostics.push({
+          severity: "warning",
+          code: "E001",
+          message: `namespace ${ns} has no registered prefix — assigned synthetic "${prefix}". Register it in StoreConfig.prefixes: identity is the absolute IRI, but prefixes serve the singular lookup's prefixed-input convenience and display`,
+          source: ns,
+          phase: PHASE,
+        });
+      }
     }
     namespaces.set(ns, prefix);
   }
@@ -656,6 +681,7 @@ export default async function extract(
       functionals,
       datatypes: [...datatypeMap.values()],
       namespaces,
+      deferredSyntheticNamespaces,
       shaclConstraints,
       unions,
       instanceStats,

@@ -38,8 +38,34 @@ export const BUDGET_PROJECT_CONFIG_MS = 10;
  * raw measurements are in BUDGETS.md; the designed `<300ms` target stays in the
  * surface covenant, exactly as the 50 ms `help` target survived its 130 ms
  * ceiling.
+ *
+ * RE-DERIVED 2026-08-30 FOR THE CI RUNNER CLASS (owner ruling: raise the
+ * ceiling here rather than merge past a red PROTECTED gate). The 500 above is
+ * a projection onto a reference workstation, and it holds there — the same
+ * commit measures 8/8 green locally, median ≈ 295 ms. It does not hold on the
+ * GitHub-hosted runners, which are a slower class: three attempts of this test
+ * (the `retry: 2` above, so three independent measurements) reported MEDIANS
+ * of 696.3, 786.9 and 795.9 ms. The failure is environmental, not a
+ * regression — it predates this branch, and #911 merged with the identical
+ * failure — but a ceiling that is red on the machine that enforces it is not
+ * protecting anything.
+ *
+ * Re-derived by this file's own method, from the worst observed median rather
+ * than the best: p95 ≈ 795.9 × (176/147) ≈ 953 ms, applying the reference
+ * box's own dispersion for this command; ceiling = `ceil(953 × 1.25 / 50) × 50`
+ * = 1200. The 1.25× margin and the 50 ms rounding are unchanged, so the ONLY
+ * input that moved is the measured median — which is the honest statement of
+ * what changed: the hardware, not the code.
+ *
+ * A round 900 was considered and rejected as arithmetic theatre: it clears the
+ * observed medians but not the p95 they imply, so it would have been red again
+ * on the first unlucky run and re-raised. PARKED, deliberately: a runner-class
+ * -conditional ceiling (tight locally, loose in CI) is the right long-term
+ * shape and is not built here — a second constant needs a way to know which
+ * box it is on, and inventing that inside an unrelated PR is how protected
+ * values quietly stop protecting. The designed `<300ms` target is untouched.
  */
-export const BUDGET_WARM_STORE_MS = 500;
+export const BUDGET_WARM_STORE_MS = 1200;
 
 /**
  * Warm in-process MCP tool-call ceiling (ms) — PR7 graduates this from seeded to
