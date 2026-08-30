@@ -7,6 +7,38 @@ hesitation. These budgets are enforced by the protected perf tests
 ceilings in `src/testing/perf/budgets.ts`. Node's own startup is INSIDE every
 sample, because the user pays it.
 
+> **They do not gate pull requests — owner ruling, 2026-08-30.** `test` no longer
+> chains `test:perf`, and that chain was the only path by which
+> `nx affected -t test` reached this suite. The tests and every ceiling are
+> unchanged, and still enforced for anyone who runs `bun run test:perf`.
+>
+> **This reaches further than PR CI, and that is worth naming.** `push.yml` and
+> `tag.yml` — the post-merge and release runs — invoke the same `bun run test`
+> (via the root `lerna run test`), so unchaining it takes the budgets off those
+> too. The ruling was about pull requests; the mechanism does not distinguish,
+> because that one script chain is the only thing any workflow calls. Confining
+> it to PRs alone would mean minting a second test target across every package
+> and pointing `pr.yml` at it — a far larger change than the ruling asked for.
+> The release path is the obvious candidate for open question (1) below.
+>
+> The ruling followed a re-derivation that did not converge. Two ceilings went
+> red on GitHub-hosted runners while measuring green on the reference box, and
+> raising one of them moved the failure from the budget to vitest's per-test
+> timeout rather than clearing it — 15 spawns at ~800 ms against a 5 s limit.
+> Chasing a contract that does not hold on the machine enforcing it, one
+> constant at a time, is not a derivation.
+>
+> **Two questions are deliberately left open**, neither answered here:
+>
+> 1. **Where perf runs instead** — a scheduled job, a release gate, or a
+>    maintainer's run before a release. Nothing runs it automatically today.
+> 2. **Whether `BUDGET_WARM_STORE_MS` reverts to its reference-box value.** It
+>    was raised for a runner class that no longer gates anything.
+>
+> Until (1) is answered, a performance regression reaches `main` unobserved.
+> That is the accepted cost of the ruling, written down so it stays a decision
+> rather than becoming an accident.
+
 ## Designed targets (surface covenant)
 
 | Path                         | Designed target |
