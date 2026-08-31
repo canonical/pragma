@@ -39,7 +39,7 @@ page. It is not triggered by specific system or user events; instead, it is a
 non-transient call-out used for broad organisational updates, compliance
 warnings, or upcoming deadlines.
 
-`import { Announcement } from "@canonical/svelte-ds-app-wpe";`
+`import { Announcement } from "@canonical/svelte-ds-global";`
 
 ## Example Usage
 ```svelte
