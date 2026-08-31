@@ -60,7 +60,7 @@
     "@canonical/summon-package": "^0.36.0",
     "@canonical/task": "^0.36.0",
     "@modelcontextprotocol/sdk": "^1.12.0",
-    "chalk": "^5.6.2",
+    "chalk": "^6.0.0",
     "commander": "^14.0.3",
     "graphql": "17.0.0-rc.0",
     "oxigraph": "^0.5.0",
