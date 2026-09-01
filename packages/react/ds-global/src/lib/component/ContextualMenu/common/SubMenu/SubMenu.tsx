@@ -4,23 +4,31 @@ import type React from "react";
 import { type ReactElement, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  isMenuSeparator,
   MENU_PLACEMENT,
   useIsMounted,
   useWindowFitment,
 } from "../../../../hooks/index.js";
-import type { MenuItem } from "../../types.js";
+import type { MenuEntry, MenuItem } from "../../types.js";
 import Item from "../Item/index.js";
 import { useMenuContext } from "../MenuContext.js";
 
 /**
- * One node in a (possibly nested) contextual menu. A leaf renders a plain item;
- * a submenu parent renders the item plus a positioned nested popup for its
- * children (see {@link SubMenuParent}). The hook that positions the popup runs
- * ONLY for submenu parents — leaves render a bare item — so a menu of leaves
- * spins up no positioning machinery.
+ * One node in a (possibly nested) contextual menu. A separator renders as a
+ * plain divider (no item props — it is not interactive, and the navigation
+ * tree never highlights it); a leaf renders a plain item; a submenu parent
+ * renders the item plus a positioned nested popup for its children (see
+ * {@link SubMenuParent}). The hook that positions the popup runs ONLY for
+ * submenu parents — leaves render a bare item — so a menu of leaves spins up
+ * no positioning machinery.
  */
-const SubMenu = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
+const SubMenu = ({ item }: { item: _Item<MenuEntry> }): ReactElement => {
   const { getItemProps, onSelectItem } = useMenuContext();
+
+  if (isMenuSeparator(item)) {
+    // <hr> carries the implicit `role="separator"` WAI-ARIA menus expect.
+    return <hr className="separator" />;
+  }
 
   if (item.items?.length) {
     return <SubMenuParent item={item} />;
@@ -46,10 +54,14 @@ const SubMenu = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
  * alignment as space runs out.
  */
 const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
-  const { getItemProps, getMenuProps, getNodeStatus, onSelectItem } =
+  const { getItemProps, getMenuProps, getNodeStatus, onSelectItem, isOpen } =
     useMenuContext();
 
-  const children = item.items ?? [];
+  // `_Item<MenuItem>` re-types annotated children with the single member, but
+  // a submenu's children genuinely include separators at runtime (the hook's
+  // prepareEntry recurses into submenus). State the heterogeneous truth
+  // explicitly so readers of `children` are prompted to handle separators.
+  const children: _Item<MenuEntry>[] = item.items ?? [];
   const status = getNodeStatus(item);
   // The submenu is keyboard-open when the highlight is in a DESCENDANT of this
   // parent — not when the parent itself is the highlighted item. `inHighlighted
@@ -57,10 +69,20 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
   // (which moves the highlight back onto the parent) would leave the submenu open.
   const keyboardOpen = status.inHighlightedBranch && !status.highlighted;
   const [hovered, setHovered] = useState(false);
-  const open = keyboardOpen || hovered;
+  // Gate on the ROOT open state: `hovered` is local, so a mouse-selected
+  // nested leaf (which closes the root disclosure) would otherwise leave the
+  // still-hovered submenu surface mounted and visible on its own.
+  const open = isOpen && (keyboardOpen || hovered);
   // Portal only after mount so the server and first client render agree —
   // `typeof window` is already truthy on the first client render.
   const mounted = useIsMounted();
+
+  // The pointer never "leaves" a surface that is hidden under it, so clear
+  // the hover state when the menu closes — otherwise the submenu would pop
+  // straight open the next time the menu opens.
+  useEffect(() => {
+    if (!isOpen) setHovered(false);
+  }, [isOpen]);
 
   // MENU_PLACEMENT is a stable module constant and logical, so the hook mirrors
   // it in RTL from this item's own writing direction — no per-submenu dir read.

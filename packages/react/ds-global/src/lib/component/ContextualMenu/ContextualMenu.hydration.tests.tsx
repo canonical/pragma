@@ -3,14 +3,12 @@ import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import ContextualMenu from "./ContextualMenu.js";
-import type { MenuItem } from "./types.js";
+import type { MenuEntry } from "./types.js";
 
-const groups: MenuItem[] = [
-  {
-    key: "g",
-    label: "Edit",
-    items: [{ key: "cut", label: "Cut", url: "#cut" }],
-  },
+const items: MenuEntry[] = [
+  { key: "cut", label: "Cut", url: "#cut" },
+  { type: "separator" },
+  { key: "zoom", label: "Zoom", url: "#zoom" },
 ];
 
 /**
@@ -26,7 +24,7 @@ describe("ContextualMenu (hydration)", () => {
   });
 
   it("hydrates server HTML with no recoverable error", () => {
-    const ui = <ContextualMenu trigger="Actions" groups={groups} />;
+    const ui = <ContextualMenu trigger="Actions" items={items} />;
 
     const container = document.createElement("div");
     container.innerHTML = renderToString(ui);
