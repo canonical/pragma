@@ -95,15 +95,27 @@ export interface WindowFitmentPlacement {
   align: WindowFitmentAlign;
 }
 
-export interface UseWindowFitmentResult {
+/**
+ * @typeParam TTarget - the element type of the anchored (target) element, so a
+ *   caller attaching `targetRef` to a non-`div` (e.g. Popover's `<details>`)
+ *   gets a correctly typed ref instead of casting. Defaults to `HTMLElement`.
+ *   The refs are only read via `getBoundingClientRect()`, common to every
+ *   element, so widening the type is sound.
+ * @typeParam TPopup - the element type of the popup element. Defaults to
+ *   `HTMLDivElement` (the popup surface is a `div` in every current consumer).
+ */
+export interface UseWindowFitmentResult<
+  TTarget extends HTMLElement = HTMLElement,
+  TPopup extends HTMLElement = HTMLDivElement,
+> {
   /**
    * A ref to be attached to the target element.
    */
-  targetRef: RefObject<HTMLDivElement | null>;
+  targetRef: RefObject<TTarget | null>;
   /**
    * A ref to be attached to the popup element.
    */
-  popupRef: RefObject<HTMLDivElement | null>;
+  popupRef: RefObject<TPopup | null>;
   /**
    * The calculated best possible position of the popup element.
    */
