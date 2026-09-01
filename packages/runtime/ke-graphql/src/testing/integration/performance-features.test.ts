@@ -168,17 +168,21 @@ describe("extraction artifact (DMMF-style boot)", () => {
     expect(runPasses(bare, {}).schema.getType("Thing")).toBeDefined();
   });
 
-  it("defaults graphqlAnnotations to [] for a pre-vocabulary artifact", async () => {
+  it("defaults graphqlAnnotations to [] on a current-format artifact that omits it", async () => {
     const store = await boot(MINIMAL_TTL);
     const live = await compile(createStoreQueryFn(store), PREFIXES);
-    const legacy = JSON.parse(serializeExtraction(live.extraction, "0"));
-    // An artifact serialized before the vocabulary landed has no field at
-    // all — it must still boot (version stays 1; sourcesHash protects the
-    // annotated-sources case by forcing a live recompile on mismatch).
-    delete legacy.graphqlAnnotations;
-    const { extraction } = deserializeExtraction(legacy);
+    const artifact = JSON.parse(serializeExtraction(live.extraction, "0"));
+    // This is NOT a pre-vocabulary artifact and cannot be one: the preceding
+    // case shows a real version 1 is refused outright, before any field
+    // defaulting runs. serializeExtraction stamps version 2, so what is built
+    // here is the CURRENT format missing an optional field — the shape a
+    // hand-assembled extraction takes — and absence must read as the empty
+    // list. (sourcesHash covers the annotated-sources case separately, by
+    // forcing a live recompile on mismatch.)
+    delete artifact.graphqlAnnotations;
+    const { extraction } = deserializeExtraction(artifact);
     expect(extraction.graphqlAnnotations).toEqual([]);
-    const rebuilt = compileFromExtraction(legacy);
+    const rebuilt = compileFromExtraction(artifact);
     expect(rebuilt.schema.getType("Thing")).toBeDefined();
   });
 

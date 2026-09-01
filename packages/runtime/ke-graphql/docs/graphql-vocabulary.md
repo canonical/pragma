@@ -177,10 +177,10 @@ Annotation resolution reports in the **A band**; naming and collisions report in
 | `A007` | info | Under `explicit`, the classes the allowlist excluded — aggregated, one diagnostic. |
 | `A008` | warning | An annotation resolved but had no effect. |
 | `M001` | **error** | A naming collision the compiler cannot resolve. |
-| `M002` | warning | A collision auto-resolved by namespace prefixing. |
+| `M002` | warning | A name is not a legal GraphQL name and was sanitized — a class local name, or a `graphql:name` value. Includes the introspection-reserved leading `__`, whose underscore run collapses to one. |
 | `M003` | warning | *(retired with the config-mapping surface it described.)* |
 | `M004` | info | A generated name collided with a reserved name and was renamed. |
-| `M005` | **error** | An ontology term maps onto a structural field the compiler owns — `uri`, `_meta`, or a `__`-prefixed name. The remedy is `graphql:name`. |
+| `M005` | **error** | An ontology term maps onto a structural field the compiler owns — `uri` or `_meta`, and `_meta` alone on an embeddable type. The remedy is `graphql:name`, or `prefixing: "all"` (structural names carry no prefix, so prefixing always clears it). A `__`-prefixed name never reaches here: `sanitizeGraphQLName` collapses the introspection-reserved underscore run and the rename reports `M002`. |
 | `M006` | **error** | A collision that survives every automatic remedy. |
 | `E001` | warning | A namespace received a serial synthetic prefix. |
 | `B005` | **error** | Two namespaces claim one prefix with no declaration in play — the namespace→prefix map must be injective. |
