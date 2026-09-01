@@ -1,0 +1,19 @@
+<script lang="ts">
+  import { greeting } from "../greeting.js";
+  import type { ExampleProps } from "./types.js";
+
+  let { children, ...rest }: ExampleProps = $props();
+</script>
+
+<p {...rest}>
+	{#if children}
+		{@render children()}
+	{:else}
+		{greeting("<%= shortName %>")}
+	{/if}
+</p>
+
+<!-- @component
+A sample component, so the scaffold ships something that renders and something
+that tests it. Replace it with this package's first real component.
+-->

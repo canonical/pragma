@@ -11,7 +11,7 @@ const baseAnswers: PackageAnswers = {
   name: "@canonical/test-pkg",
   type: "tool-ts",
   description: "Test",
-  withReact: false,
+  framework: "none",
   withStorybook: false,
   withCli: false,
   withPrTemplate: false,
@@ -23,8 +23,9 @@ describe("package generator undo plan", () => {
     const task = generator.generate(baseAnswers);
     const undos = collectUndos(task);
 
-    // 2 mkdirs + 5 templates × 2 = 12
-    expect(undos.length).toBe(12);
+    // 2 mkdirs + 7 templates (package.json, tsconfig, biome, vitest.config,
+    // index.ts, index.test.ts, README) × 2 = 16
+    expect(undos.length).toBe(16);
   });
 
   it("produces more undos with CLI enabled", () => {
@@ -92,5 +93,24 @@ describe("package generator undo plan", () => {
 
     // Storybook adds 3 mkdirs + 2 templates = 3 + 4 = 7 more undos
     expect(with_.length).toBe(without.length + 7);
+  });
+
+  it("a svelte library is fully undoable too", () => {
+    const svelteAnswers: PackageAnswers = {
+      ...baseAnswers,
+      name: "@canonical/my-ui",
+      type: "library",
+      framework: "svelte",
+    };
+    const undos = collectUndos(generator.generate(svelteAnswers));
+    const tags = undos.flatMap((undo) =>
+      dryRun(undo).effects.map((e) => e._tag),
+    );
+
+    // 4 mkdirs + 16 templates × 2 = 36
+    expect(undos.length).toBe(36);
+    for (const tag of tags) {
+      expect(["DeleteFile", "DeleteDirectory"]).toContain(tag);
+    }
   });
 });

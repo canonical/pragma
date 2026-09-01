@@ -1,5 +1,5 @@
 import { createConfig } from "@canonical/storybook-config";
 
-export default createConfig("react", {
+export default createConfig("<%= framework === 'svelte' ? 'svelte' : 'react' %>", {
   staticDirs: ["../src/assets", "../public"],
 });
