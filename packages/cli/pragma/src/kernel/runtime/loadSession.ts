@@ -43,6 +43,8 @@ export async function loadStoreSession(
   }
 
   const dir =
-    decision.kind === "embedded" ? materializeEmbeddedPack() : decision.dir;
+    decision.kind === "embedded"
+      ? await materializeEmbeddedPack()
+      : decision.dir;
   return readPack(dir);
 }

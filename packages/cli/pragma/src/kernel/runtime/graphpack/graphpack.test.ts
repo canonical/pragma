@@ -144,15 +144,15 @@ describe("the committed embedded pack (PROTECTED)", () => {
     // directory holds — which the next build then reuses, silently dropping the
     // difference. Comparing the two directories catches that on the day it lands.
     const built = await build([{ path: "a.ttl", content: TTL }]);
-    expect(readdirSync(materializeEmbeddedPack()).sort()).toEqual(
+    expect(readdirSync(await materializeEmbeddedPack()).sort()).toEqual(
       readdirSync(built.dir).sort(),
     );
   });
 
-  it("is self-consistent: complete, content-addressed, and non-empty", () => {
+  it("is self-consistent: complete, content-addressed, and non-empty", async () => {
     // No network, so CI runs it: the committed strings really do materialize a
     // bootable pack whose parts agree with each other.
-    const dir = materializeEmbeddedPack();
+    const dir = await materializeEmbeddedPack();
     const manifest = embeddedManifest();
     expect(packIsComplete(dir)).toBe(true);
     expect(basename(dir)).toBe(manifest.contentHash);
@@ -162,6 +162,26 @@ describe("the committed embedded pack (PROTECTED)", () => {
     expect(index.contentHash).toBe(manifest.contentHash);
     expect(manifest.tripleCount ?? 0).toBeGreaterThan(0);
     expect(manifest.entityCount ?? 0).toBeGreaterThan(0);
+
+    // EXACT, not "> 0", and it earns its keep twice.
+    //
+    // The manifest and the n-quads now live in SEPARATE generated modules, so
+    // a partial regeneration or a one-file `git add` can leave them describing
+    // different packs — a skew that could not exist while they shared a
+    // module. `read.ts` tolerates a superset deliberately, so it would serve
+    // the skew rather than refuse it.
+    //
+    // It also pins the equivalence `read.ts` depends on but cannot state:
+    // `store.size` (quads) against a `tripleCount` that `build.ts` computes
+    // with `SELECT (COUNT(*))` over the union graph. They agree on oxigraph
+    // 0.5.6; oxigraph is pinned by caret, so this is where a future version
+    // that deduplicates the union would be caught.
+    const session = await readPack(dir);
+    try {
+      expect(session.store.size).toBe(manifest.tripleCount);
+    } finally {
+      session.store.dispose();
+    }
   });
 });
 

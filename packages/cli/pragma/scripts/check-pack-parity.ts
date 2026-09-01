@@ -627,11 +627,14 @@ async function main(): Promise<number> {
   }
 
   // Imported lazily so the pure core stays importable (and testable) without
-  // touching the ~2 MB generated module or the distribution config.
+  // touching the distribution config. The manifest is its own small module —
+  // the ~2 MB n-quads live in `pack.generated.ts` and are not pulled here.
   const [{ default: conf }, { manifestJson }, { SELF_PACK, SOURCE_OVERRIDES }] =
     await Promise.all([
       import("../pragma.conf.js"),
-      import("../src/kernel/runtime/graphpack/embedded/pack.generated.js"),
+      import(
+        "../src/kernel/runtime/graphpack/embedded/pack.manifest.generated.js"
+      ),
       import("./embedSources.js"),
     ]);
   const manifest = JSON.parse(manifestJson) as {

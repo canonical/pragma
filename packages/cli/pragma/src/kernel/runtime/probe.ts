@@ -21,7 +21,7 @@ export async function runStoreProbe(): Promise<string> {
     import("./graphpack/embedded.js"),
     import("./graphpack/read.js"),
   ]);
-  const session = await readPack(materializeEmbeddedPack());
+  const session = await readPack(await materializeEmbeddedPack());
   try {
     const result = await session.store.query(
       "SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }" as never,

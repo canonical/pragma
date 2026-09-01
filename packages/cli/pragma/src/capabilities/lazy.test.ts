@@ -88,8 +88,9 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
 
   it("the dispatch path never reaches the embedded n-quads module (PROTECTED)", () => {
     // `activeStories` reads the pack's carried stories from their OWN generated
-    // module rather than through `graphpack/embedded.ts`, which statically
-    // imports the ~1.9 MB `pack.generated.ts`. Restoring that edge costs a
+    // module rather than through `graphpack/embedded.ts`, which reaches the
+    // ~2.1 MB `pack.generated.ts` (dynamically since the manifest split, but
+    // this path must not reach it at all). Restoring that edge costs a
     // measured +23 ms on EVERY dispatched command, and the whole test suite
     // passes with it restored — the split is prose in three docblocks and
     // nothing else. This is the constraint those docblocks describe.
@@ -101,6 +102,29 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
       const graph = staticImportGraph(resolve(here, entry));
       expect(has(graph, "embedded/pack.generated.ts"), entry).toBe(false);
       expect(has(graph, "graphpack/embedded.ts"), entry).toBe(false);
+    }
+  });
+
+  it("`embedded.ts` itself never statically imports the payload (PROTECTED)", () => {
+    // The store-boot path DOES go through `graphpack/embedded.ts`, so the test
+    // above cannot cover it. `materializeEmbeddedPack` reads the manifest to
+    // name the cache directory and then returns early when the pack is already
+    // there — the common case — so a static import of `pack.generated.ts` would
+    // parse ~2.1 MB of n-quads to reach that return, on every boot.
+    //
+    // Restoring `import { dataNq } from "./embedded/pack.generated.js"` at
+    // module scope costs a measured ~370 ms per CLI invocation on a
+    // 30,340-triple pack, and every other test still passes. This is the only
+    // thing standing between that edit and a silent regression.
+    for (const entry of [
+      "../kernel/runtime/graphpack/embedded.ts",
+      "../kernel/runtime/loadSession.ts",
+    ]) {
+      const graph = staticImportGraph(resolve(here, entry));
+      expect(has(graph, "embedded/pack.manifest.generated.ts"), entry).toBe(
+        true,
+      );
+      expect(has(graph, "embedded/pack.generated.ts"), entry).toBe(false);
     }
   });
 

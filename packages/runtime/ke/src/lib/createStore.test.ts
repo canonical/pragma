@@ -397,6 +397,23 @@ describe("Prefix expansion", () => {
     expect((result as SelectResult).bindings.length).toBeGreaterThan(0);
   });
 
+  it("reports its quad count without a query", async () => {
+    // `size` exists so consumers need not run `SELECT (COUNT(*))` to learn
+    // something the store already tracks. Asserted against the union-graph
+    // count that WAS the idiom, so the two cannot drift apart unnoticed.
+    testResult = await createTestStore({
+      prefixes: { ex: "http://example.org/" },
+    });
+    const { store } = testResult;
+
+    const counted = (await store.query(
+      "SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }" as never,
+    )) as SelectResult;
+
+    expect(store.size).toBe(Number(counted.bindings.at(0)?.n));
+    expect(store.size).toBeGreaterThan(0);
+  });
+
   it("exposes registered prefixes as readonly", async () => {
     testResult = await createTestStore({
       prefixes: {
