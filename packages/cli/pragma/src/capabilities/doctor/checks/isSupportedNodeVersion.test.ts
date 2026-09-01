@@ -24,7 +24,9 @@ import { isSupportedNodeVersion } from "./isSupportedNodeVersion.js";
  */
 function satisfiesDeclaredRange(version: string, range: string): boolean {
   const rank = (major: number, minor: number) => major * 1_000_000 + minor;
-  const [major = Number.NaN, minor = Number.NaN] = version.split(".").map(Number);
+  const [major = Number.NaN, minor = Number.NaN] = version
+    .split(".")
+    .map(Number);
 
   return range.split("||").some((clause) =>
     clause
@@ -33,7 +35,8 @@ function satisfiesDeclaredRange(version: string, range: string): boolean {
       .every((comparator) => {
         // A comparator may be major-only (`<23`) or major.minor (`>=22.18`).
         const parsed = /^(>=|<)(\d+)(?:\.(\d+))?$/.exec(comparator);
-        if (!parsed) throw new Error(`oracle cannot parse comparator: ${comparator}`);
+        if (!parsed)
+          throw new Error(`oracle cannot parse comparator: ${comparator}`);
         const [, operator, boundMajor, boundMinor] = parsed;
         const actual = rank(major, minor);
         const bound = rank(Number(boundMajor), Number(boundMinor ?? 0));
@@ -43,10 +46,22 @@ function satisfiesDeclaredRange(version: string, range: string): boolean {
 }
 
 const GRID = [
-  "20.19.0", "21.7.3",
-  "22.0.0", "22.12.0", "22.17.9", "22.18.0", "22.18.1", "22.99.0",
-  "23.0.0", "23.5.9", "23.6.0", "23.9.0",
-  "24.0.0", "24.18.1", "25.0.0", "26.0.0",
+  "20.19.0",
+  "21.7.3",
+  "22.0.0",
+  "22.12.0",
+  "22.17.9",
+  "22.18.0",
+  "22.18.1",
+  "22.99.0",
+  "23.0.0",
+  "23.5.9",
+  "23.6.0",
+  "23.9.0",
+  "24.0.0",
+  "24.18.1",
+  "25.0.0",
+  "26.0.0",
 ];
 
 describe("isSupportedNodeVersion — agrees with the declared engines range", () => {
@@ -59,7 +74,9 @@ describe("isSupportedNodeVersion — agrees with the declared engines range", ()
   // The oracle is only trustworthy if it can disagree; prove it discriminates
   // rather than returning a constant.
   it("uses an oracle that actually discriminates", () => {
-    const verdicts = GRID.map((v) => satisfiesDeclaredRange(v, SUPPORTED_NODE_RANGE));
+    const verdicts = GRID.map((v) =>
+      satisfiesDeclaredRange(v, SUPPORTED_NODE_RANGE),
+    );
     expect(verdicts).toContain(true);
     expect(verdicts).toContain(false);
   });
