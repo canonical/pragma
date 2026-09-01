@@ -17,7 +17,7 @@ export default defineConfig({
         "src/testing/**",
       ],
       // The repo standard for a shipped package: 100%, matching the sibling
-      // contract package (packages/docsite/contract/vitest.config.ts). Do not
+      // contract package (packages/prism/contract/vitest.config.ts). Do not
       // lower these — a reference implementation that cannot hold its own bar
       // is not a reference.
       thresholds: {

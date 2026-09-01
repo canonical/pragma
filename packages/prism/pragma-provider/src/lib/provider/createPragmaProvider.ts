@@ -24,7 +24,7 @@
 //     );
 //
 // Carried into this package unchanged, that resolves relative to THIS file —
-// so the app's schema would be written into `packages/docsite/pragma-provider/`
+// so the app's schema would be written into `packages/prism/pragma-provider/`
 // (or into `node_modules/`), `tsc --noEmit` would pass, `biome check` would
 // pass, and every test in the repo would pass. Only a boot reveals it, and a
 // boot needs a populated refs cache. The guard is therefore structural, not a

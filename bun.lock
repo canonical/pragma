@@ -402,60 +402,6 @@
         "vitest": "^4.0.18",
       },
     },
-    "packages/docsite/contract": {
-      "name": "@canonical/prism-contract",
-      "version": "0.36.0",
-      "devDependencies": {
-        "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.36.0",
-        "@canonical/typescript-config": "^0.36.0",
-        "@canonical/webarchitect": "^0.36.0",
-        "@types/node": "^24.12.0",
-        "graphql": "^16.11.0",
-        "typescript": "^5.9.3",
-        "vitest": "^4.0.18",
-      },
-      "peerDependencies": {
-        "graphql": "^16.11.0 || ^17.0.0 || 17.0.0-rc.0",
-      },
-    },
-    "packages/docsite/graph-example": {
-      "name": "@canonical/prism-graph-example",
-      "version": "0.36.0",
-      "dependencies": {
-        "@canonical/prism-contract": "^0.36.0",
-        "graphql": "^16.11.0",
-      },
-      "devDependencies": {
-        "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.36.0",
-        "@canonical/typescript-config": "^0.36.0",
-        "@canonical/webarchitect": "^0.36.0",
-        "@types/bun": "^1.3.10",
-        "@types/node": "^24.12.0",
-        "typescript": "^5.9.3",
-        "vitest": "^4.0.18",
-      },
-    },
-    "packages/docsite/pragma-provider": {
-      "name": "@canonical/prism-pragma-provider",
-      "version": "0.36.0",
-      "dependencies": {
-        "@canonical/ke": "^0.36.0",
-        "@canonical/ke-graphql": "^0.36.0",
-      },
-      "devDependencies": {
-        "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.36.0",
-        "@canonical/prism-contract": "^0.36.0",
-        "@canonical/typescript-config": "^0.36.0",
-        "@canonical/webarchitect": "^0.36.0",
-        "@types/bun": "^1.3.10",
-        "@types/node": "^24.12.0",
-        "typescript": "^5.9.3",
-        "vitest": "^4.0.18",
-      },
-    },
     "packages/ds-assets": {
       "name": "@canonical/ds-assets",
       "version": "0.36.0",
@@ -512,6 +458,60 @@
         "storybook": "^10.3.1",
         "typescript": "^5.9.3",
         "vite": "^8.0.1",
+        "vitest": "^4.0.18",
+      },
+    },
+    "packages/prism/contract": {
+      "name": "@canonical/prism-contract",
+      "version": "0.36.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.36.0",
+        "@canonical/typescript-config": "^0.36.0",
+        "@canonical/webarchitect": "^0.36.0",
+        "@types/node": "^24.12.0",
+        "graphql": "^16.11.0",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
+      },
+      "peerDependencies": {
+        "graphql": "^16.11.0 || ^17.0.0 || 17.0.0-rc.0",
+      },
+    },
+    "packages/prism/graph-example": {
+      "name": "@canonical/prism-graph-example",
+      "version": "0.36.0",
+      "dependencies": {
+        "@canonical/prism-contract": "^0.36.0",
+        "graphql": "^16.11.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.36.0",
+        "@canonical/typescript-config": "^0.36.0",
+        "@canonical/webarchitect": "^0.36.0",
+        "@types/bun": "^1.3.10",
+        "@types/node": "^24.12.0",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
+      },
+    },
+    "packages/prism/pragma-provider": {
+      "name": "@canonical/prism-pragma-provider",
+      "version": "0.36.0",
+      "dependencies": {
+        "@canonical/ke": "^0.36.0",
+        "@canonical/ke-graphql": "^0.36.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.36.0",
+        "@canonical/prism-contract": "^0.36.0",
+        "@canonical/typescript-config": "^0.36.0",
+        "@canonical/webarchitect": "^0.36.0",
+        "@types/bun": "^1.3.10",
+        "@types/node": "^24.12.0",
+        "typescript": "^5.9.3",
         "vitest": "^4.0.18",
       },
     },
@@ -1909,11 +1909,11 @@
 
     "@canonical/pragma-cli": ["@canonical/pragma-cli@workspace:packages/cli/pragma"],
 
-    "@canonical/prism-contract": ["@canonical/prism-contract@workspace:packages/docsite/contract"],
+    "@canonical/prism-contract": ["@canonical/prism-contract@workspace:packages/prism/contract"],
 
-    "@canonical/prism-graph-example": ["@canonical/prism-graph-example@workspace:packages/docsite/graph-example"],
+    "@canonical/prism-graph-example": ["@canonical/prism-graph-example@workspace:packages/prism/graph-example"],
 
-    "@canonical/prism-pragma-provider": ["@canonical/prism-pragma-provider@workspace:packages/docsite/pragma-provider"],
+    "@canonical/prism-pragma-provider": ["@canonical/prism-pragma-provider@workspace:packages/prism/pragma-provider"],
 
     "@canonical/react-boilerplate-vite": ["@canonical/react-boilerplate-vite@workspace:apps/react/boilerplate-vite"],
 
