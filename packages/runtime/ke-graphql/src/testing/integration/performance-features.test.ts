@@ -1,5 +1,3 @@
-// biome-ignore-all lint/correctness/noUnsafeOptionalChaining: GraphQL ExecutionResult["data"] is typed `| null | undefined`, so these assertions cast it and read a field directly. An absent result throws here, which fails the test the same way an assertion mismatch would.
-
 // =============================================================================
 // Performance features: extraction artifact (DMMF-style boot), lazy store,
 // process-lifetime loader cache, slice-before-hydrate pagination, store-free
@@ -22,7 +20,12 @@ import {
 import runPasses from "../../lib/compiler/runPasses.js";
 import { createSchemaPlugin } from "../../lib/index.js";
 import { GRAPHQL_TERMS } from "../../lib/shared/index.js";
-import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "../index.js";
+import {
+  assertData,
+  DS_REALISTIC_TTL,
+  MINIMAL_TTL,
+  PREFIXES,
+} from "../index.js";
 
 type Cleanup = () => void;
 let cleanups: Cleanup[] = [];
@@ -72,7 +75,8 @@ describe("extraction artifact (DMMF-style boot)", () => {
       contextValue: rebuilt.createContext(store),
     });
     expect(result.errors).toBeUndefined();
-    expect((result.data?.thing as { name: string }).name).toBe("Widget");
+    assertData(result);
+    expect((result.data.thing as { name: string }).name).toBe("Widget");
   });
 
   it("preserves Sets/Maps through serialization", async () => {
@@ -269,7 +273,8 @@ describe("lazy store (TBox needs no store)", () => {
       contextValue: ctx,
     });
     expect(tbox.errors).toBeUndefined();
-    expect((tbox.data?.ontologyClass as { label: string }).label).toBe("Thing");
+    assertData(tbox);
+    expect((tbox.data.ontologyClass as { label: string }).label).toBe("Thing");
 
     // ABox: blocked until the store arrives.
     const abox = graphql({
@@ -286,7 +291,8 @@ describe("lazy store (TBox needs no store)", () => {
     releaseStore(store);
     const resolved = await abox;
     expect(resolved.errors).toBeUndefined();
-    expect((resolved.data?.thing as { name: string }).name).toBe("Widget");
+    assertData(resolved);
+    expect((resolved.data.thing as { name: string }).name).toBe("Widget");
   });
 });
 
@@ -370,7 +376,8 @@ describe("slice-before-hydrate listings", () => {
       variableValues: { c: connection.edges[0]?.cursor },
       contextValue: result.createContext(store),
     });
-    expect((page2.data?.modifiers as { edges: unknown[] }).edges).toHaveLength(
+    assertData(page2);
+    expect((page2.data.modifiers as { edges: unknown[] }).edges).toHaveLength(
       0,
     );
   });
@@ -395,8 +402,9 @@ describe("store-free TBox (tboxLoader removed)", () => {
       contextValue: ctx,
     });
     expect(tbox.errors).toBeUndefined();
+    assertData(tbox);
     expect(
-      (tbox.data?.ontologyProperty as { acceptanceCriteria: string })
+      (tbox.data.ontologyProperty as { acceptanceCriteria: string })
         .acceptanceCriteria,
     ).toBe("Must be a human-readable display name.");
   });

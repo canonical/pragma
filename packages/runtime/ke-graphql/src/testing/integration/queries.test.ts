@@ -1,5 +1,3 @@
-// biome-ignore-all lint/correctness/noUnsafeOptionalChaining: GraphQL ExecutionResult["data"] is typed `| null | undefined`, so these assertions cast it and read a field directly. An absent result throws here, which fails the test the same way an assertion mismatch would.
-
 // =============================================================================
 // Query execution against compiled schemas: resolution templates, node(),
 // pagination, _meta, coercion, dual-direction inverses.
@@ -15,6 +13,8 @@ import {
 } from "../../lib/compiler/index.js";
 import type { CompilerContext } from "../../lib/shared/index.js";
 import {
+  assertData,
+  assertPresent,
   BLANK_NODES_TTL,
   DS_REALISTIC_TTL,
   EDGE_CASES_TTL,
@@ -109,10 +109,12 @@ describe("ds-realistic resolution", () => {
       edges: Array<{ node: Record<string, unknown> }>;
     };
     expect(subcomponents.edges).toHaveLength(1);
-    expect(subcomponents.edges[0]?.node.standalone).toBe(false);
-    expect(
-      (subcomponents.edges[0]?.node.parentComponent as { name: string }).name,
-    ).toBe("Button");
+    const subcomponent = subcomponents.edges[0];
+    assertPresent(subcomponent, "the first subcomponent edge");
+    expect(subcomponent.node.standalone).toBe(false);
+    expect((subcomponent.node.parentComponent as { name: string }).name).toBe(
+      "Button",
+    );
     // synthetic inverse: reverse assertions found via the inverse loader
     const implementations = component.implementations as {
       edges: Array<{ node: { name: string } }>;
@@ -147,7 +149,8 @@ describe("ds-realistic resolution", () => {
       `{ component(uri: "ds:global.component.button") { _meta { title label comment definition } } }`,
     );
     expect(result.errors).toBeUndefined();
-    expect((result.data?.component as Record<string, unknown>)._meta).toEqual({
+    assertData(result);
+    expect((result.data.component as Record<string, unknown>)._meta).toEqual({
       // title is TOTAL and agrees with label whenever label resolves
       title: "Button",
       // no rdfs:label on the instance → the local-name tier (ds:name) fires
@@ -210,7 +213,8 @@ describe("ds-realistic resolution", () => {
       compiled,
       `{ node(id: "https://ds.canonical.com/global.component.button") { uri } }`,
     );
-    expect((absolute.data?.node as { uri: string }).uri).toBe(
+    assertData(absolute);
+    expect((absolute.data.node as { uri: string }).uri).toBe(
       "https://ds.canonical.com/global.component.button",
     );
   });
@@ -305,8 +309,9 @@ ex:c1 a ex:Category .
       }`,
     );
     expect(result.errors).toBeUndefined();
-    expect(result.data?.bad).toBeNull();
-    expect((result.data?.good as { name: string }).name).toBe("Button");
+    assertData(result);
+    expect(result.data.bad).toBeNull();
+    expect((result.data.good as { name: string }).name).toBe("Button");
   });
 
   it("pages a listing by its own cursors — the cursor/uri currency is one string", async () => {
@@ -319,8 +324,9 @@ ex:c1 a ex:Category .
       `{ uIBlocks: components(first: 1) { edges { cursor node { uri } } } }`,
     );
     expect(page1.errors).toBeUndefined();
+    assertData(page1);
     const first = (
-      page1.data?.uIBlocks as {
+      page1.data.uIBlocks as {
         edges: Array<{ cursor: string; node: { uri: string } }>;
       }
     ).edges[0];
@@ -334,7 +340,8 @@ ex:c1 a ex:Category .
     expect(page2.errors).toBeUndefined();
     // one component in the fixture: the cursor HIT, so page 2 is empty rather
     // than silently restarting with the same node.
-    expect((page2.data?.components as { edges: unknown[] }).edges).toHaveLength(
+    assertData(page2);
+    expect((page2.data.components as { edges: unknown[] }).edges).toHaveLength(
       0,
     );
   });
@@ -378,7 +385,8 @@ ex:c1 a ex:Category .
       }`,
     );
     expect(result.errors).toBeUndefined();
-    const meta = (result.data?.component as Record<string, unknown>)
+    assertData(result);
+    const meta = (result.data.component as Record<string, unknown>)
       ._meta as Record<string, unknown>;
     const type = meta.type as Record<string, unknown>;
     expect(type.uri).toBe("https://ds.canonical.com/Component");
@@ -407,11 +415,12 @@ ex:c1 a ex:Category .
       }`,
     );
     expect(result.errors).toBeUndefined();
-    const prefixes = (result.data?.ontologies as Array<{ prefix: string }>).map(
+    assertData(result);
+    const prefixes = (result.data.ontologies as Array<{ prefix: string }>).map(
       (o) => o.prefix,
     );
     expect(prefixes).toContain("ds");
-    const cls = result.data?.ontologyClass as Record<string, unknown>;
+    const cls = result.data.ontologyClass as Record<string, unknown>;
     expect(cls.instanceCount).toBe(1);
     const instances = cls.instances as {
       edges: Array<{ node: { uri: string; __typename: string } }>;
@@ -547,7 +556,8 @@ describe("embedded blank nodes", () => {
       `{ standard(uri: "ex:s1") { title examples { code language } } }`,
     );
     expect(result.errors).toBeUndefined();
-    const examples = (result.data?.standard as Record<string, unknown>)
+    assertData(result);
+    const examples = (result.data.standard as Record<string, unknown>)
       .examples as Array<Record<string, unknown>>;
     expect(examples).toHaveLength(2);
     const languages = examples.map((e) => e.language).sort();
@@ -562,13 +572,16 @@ describe("coercion", () => {
       onRuntimeWarning: (w) => warnings.push(w.reason),
     });
     const active = await run(compiled, `{ item(uri: "ex:i1") { active } }`);
-    expect((active.data?.item as { active: boolean }).active).toBe(true);
+    assertData(active);
+    expect((active.data.item as { active: boolean }).active).toBe(true);
     // ex:label keeps its own name now (nothing reserves `label` any more) and
     // is the field still running through coerce, which strips the @en tag.
     const label = await run(compiled, `{ item(uri: "ex:i3") { label } }`);
-    expect((label.data?.item as { label: string }).label).toBe("Tagged");
+    assertData(label);
+    expect((label.data.item as { label: string }).label).toBe("Tagged");
     const summary = await run(compiled, `{ item(uri: "ex:i5") { summary } }`);
-    expect((summary.data?.item as { summary: string }).summary).toBe("");
+    assertData(summary);
+    expect((summary.data.item as { summary: string }).summary).toBe("");
   });
 
   it("leaves the generic label null when no label-shaped value is asserted", async () => {
@@ -581,7 +594,8 @@ describe("coercion", () => {
       `{ item(uri: "ex:i1") { _meta { label title } } }`,
     );
     expect(result.errors).toBeUndefined();
-    expect((result.data?.item as Record<string, unknown>)._meta).toEqual({
+    assertData(result);
+    expect((result.data.item as Record<string, unknown>)._meta).toEqual({
       label: null,
       title: "i1",
     });
@@ -637,8 +651,10 @@ ex:d2 a ex:Doc ; rdfs:label "Plain label" ; ex:code "d2" .
 
 describe("generic descriptive chain", () => {
   const selection = `{ _meta { label comment definition } }`;
-  const metaOf = (data: Record<string, unknown> | null | undefined) =>
-    (data?.doc as Record<string, unknown>)._meta;
+  const metaOf = (data: Record<string, unknown> | null | undefined) => {
+    assertPresent(data, "the query result data");
+    return (data.doc as Record<string, unknown>)._meta;
+  };
 
   it("prefers the canonical rdfs/skos predicate over the local-name tier", async () => {
     const compiled = await setup(DESCRIPTIVE_TTL);
@@ -701,7 +717,8 @@ describe("generic descriptive chain", () => {
       }`,
     );
     expect(result.errors).toBeUndefined();
-    const d1 = (result.data?.d1 as Record<string, unknown>)._meta;
+    assertData(result);
+    const d1 = (result.data.d1 as Record<string, unknown>)._meta;
     // no lang given → the argument default "en" is coerced in by graphql-js
     expect(d1).toEqual({
       def: "The Widget",
@@ -711,7 +728,7 @@ describe("generic descriptive chain", () => {
       fr: null,
       t: "Das Widget",
     });
-    const d2 = (result.data?.d2 as Record<string, unknown>)._meta;
+    const d2 = (result.data.d2 as Record<string, unknown>)._meta;
     // d2's only literal is untagged: it answers any lang (the untagged tier)…
     expect(d2).toEqual({
       any: "Plain label",
@@ -742,7 +759,8 @@ describe("generic descriptive chain", () => {
       }`,
     );
     expect(result.errors).toBeUndefined();
-    expect((result.data?.doc as Record<string, unknown>)._meta).toEqual({
+    assertData(result);
+    expect((result.data.doc as Record<string, unknown>)._meta).toEqual({
       // same answers as an omitted argument: the "en" default chain
       t: "The Widget",
       l: "The Widget",

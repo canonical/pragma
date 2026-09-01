@@ -1,5 +1,3 @@
-// biome-ignore-all lint/correctness/noUnsafeOptionalChaining: GraphQL ExecutionResult["data"] is typed `| null | undefined`, so these assertions cast it and read a field directly. An absent result throws here, which fails the test the same way an assertion mismatch would.
-
 // =============================================================================
 // Plugin integration: createSchemaPlugin via createStore, store.api,
 // sdlOutput writing, extensions (object + factory), standardVocabFields.
@@ -17,7 +15,7 @@ import { join } from "node:path";
 import { createTestStore } from "@canonical/ke/testing";
 import { GraphQLString, graphql } from "graphql";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MINIMAL_TTL, PREFIXES } from "../testing/index.js";
+import { assertData, MINIMAL_TTL, PREFIXES } from "../testing/index.js";
 import {
   compile,
   createStoreQueryFn,
@@ -84,7 +82,8 @@ describe("createSchemaPlugin", () => {
       source: `{ thing(uri: "ex:widget") { name } }`,
       contextValue: context,
     });
-    expect((result.data?.thing as { name: string }).name).toBe("Widget");
+    assertData(result);
+    expect((result.data.thing as { name: string }).name).toBe("Widget");
   });
 
   it("writes the SDL to sdlOutput", async () => {
@@ -166,8 +165,9 @@ describe("createSchemaPlugin", () => {
       contextValue: api?.createContext(store),
     });
     expect(result.errors).toBeUndefined();
-    expect(result.data?.hello).toBe("world");
-    expect((result.data?.thing as { shout: string }).shout).toBe(
+    assertData(result);
+    expect(result.data.hello).toBe("world");
+    expect((result.data.thing as { shout: string }).shout).toBe(
       "http://example.org/widget!",
     );
   });
@@ -203,7 +203,8 @@ describe("createSchemaPlugin", () => {
       contextValue: api?.createContext(store),
     });
     expect(result.errors).toBeUndefined();
-    expect((result.data?.firstThing as { name: string }).name).toBe("Widget");
+    assertData(result);
+    expect((result.data.firstThing as { name: string }).name).toBe("Widget");
   });
 
   it("reports C001/C002 extension conflicts as composition errors", async () => {
@@ -408,6 +409,7 @@ describe("createSchemaPlugin", () => {
       contextValue: api?.createContext(store),
     });
     expect(result.errors).toBeUndefined();
-    expect((result.data?.thing as { name: string }).name).toBe("Widget");
+    assertData(result);
+    expect((result.data.thing as { name: string }).name).toBe("Widget");
   });
 });

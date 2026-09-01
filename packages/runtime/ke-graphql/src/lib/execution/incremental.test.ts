@@ -1,5 +1,3 @@
-// biome-ignore-all lint/correctness/noUnsafeOptionalChaining: GraphQL ExecutionResult["data"] is typed `| null | undefined`, so these assertions cast it and read a field directly. An absent result throws here, which fails the test the same way an assertion mismatch would.
-
 // =============================================================================
 // Execution paths: local execution, @defer incremental
 // delivery, drain-and-merge, the Relay format adapter, static extraction.
@@ -9,6 +7,8 @@ import { createTestStore } from "@canonical/ke/testing";
 import { parse } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  assertData,
+  assertPresent,
   DS_REALISTIC_TTL,
   MINIMAL_TTL,
   PREFIXES,
@@ -101,7 +101,8 @@ describe("executeLocal (in-process execution)", () => {
     expect(isIncrementalResults(execution)).toBe(false);
     if (!isIncrementalResults(execution)) {
       expect(execution.errors).toBeUndefined();
-      expect((execution.data?.component as Record<string, unknown>).name).toBe(
+      assertData(execution);
+      expect((execution.data.component as Record<string, unknown>).name).toBe(
         "Button",
       );
     }
@@ -174,20 +175,23 @@ describe("relayFormatAdapter", () => {
       payloads.push(payload);
     }
     // initial payload: plain data, no path
-    expect(payloads[0]?.path).toBeUndefined();
-    expect((payloads[0]?.data?.component as Record<string, unknown>).name).toBe(
+    const initial = payloads[0];
+    assertPresent(initial, "the initial payload");
+    assertData(initial);
+    expect(initial.path).toBeUndefined();
+    expect((initial.data.component as Record<string, unknown>).name).toBe(
       "Button",
     );
     // deferred payload: path + label, is_final on the last
     const deferred = payloads.slice(1);
     expect(deferred.length).toBeGreaterThan(0);
     const last = deferred[deferred.length - 1];
-    expect(last?.path).toEqual(["component"]);
-    expect(last?.label).toBe("summary");
-    expect(last?.extensions?.is_final).toBe(true);
-    expect((last?.data as Record<string, unknown>).summary).toBe(
-      "Primary action trigger.",
-    );
+    assertPresent(last, "the final deferred payload");
+    assertData(last);
+    expect(last.path).toEqual(["component"]);
+    expect(last.label).toBe("summary");
+    expect(last.extensions?.is_final).toBe(true);
+    expect(last.data.summary).toBe("Primary action trigger.");
   });
 });
 
@@ -615,7 +619,9 @@ describe("extractStatic (build-time static extraction)", () => {
     );
     expect(perEntity).toEqual(["ThingQuery:http://example.org/widget"]);
     const widget = results.get("ThingQuery:http://example.org/widget");
-    expect((widget?.data?.thing as { name: string }).name).toBe("Widget");
+    assertPresent(widget, "the ThingQuery result");
+    assertData(widget);
+    expect((widget.data.thing as { name: string }).name).toBe("Widget");
   });
 
   it("fails loudly on non-enumerable variables", async () => {
