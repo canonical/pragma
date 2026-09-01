@@ -522,6 +522,16 @@ export interface Store {
    */
   dispose(): void;
 
+  /**
+   * The number of quads the store holds.
+   *
+   * Oxigraph tracks this, so it is a field read rather than a query. The
+   * SPARQL equivalent — `SELECT (COUNT(*)) WHERE { ?s ?p ?o }` — is a full
+   * scan whose cost grows with the graph, which is a large price for a
+   * number the store already knows.
+   */
+  readonly size: number;
+
   /** The registered prefix map (readonly). See PrefixMap documentation. */
   prefixes: Readonly<PrefixMap>;
 

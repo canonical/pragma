@@ -471,6 +471,11 @@ class KeStore implements Store {
     this.pluginApis = new Map();
   }
 
+  /** @see Store.size */
+  get size(): number {
+    return this.oxStore.size;
+  }
+
   get prefixes(): Readonly<PrefixMap> {
     return this._prefixes;
   }

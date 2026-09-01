@@ -4,7 +4,7 @@
  * Resolves the distribution's own declared packs through the PRODUCT's pipeline
  * (`parsePackDeclaration` → `resolvePackage` → `buildPack`, with `sources
  * update`'s own prefix precedence) into a throwaway cache, then inlines the five
- * artifacts as escaped JS strings, across three generated modules (the carried
+ * artifacts as escaped JS strings, across four generated modules (the carried
  * `stories.json` gets its own so the dispatch path never loads the n-quads). Inlining (rather than shipping file assets)
  * is what lets the pack travel with the emitted modules with no asset step, so a
  * cold install answers store-backed reads offline.
@@ -18,8 +18,9 @@
  * strictly stronger than byte-reproducibility. The one thing the skip cannot
  * see is a TOOLCHAIN change with unchanged inputs; that is caught rather than
  * silent (`probe.test.ts` and `wasmEmbed.test.ts` both boot the committed embed
- * on every test run), and deleting `pack.generated.ts` forces a full
- * regeneration.
+ * on every test run), and deleting `pack.manifest.generated.ts` forces a full
+ * regeneration — that is the module `readCommittedManifest` reads to decide
+ * whether the pack changed, so it is the one whose absence means "rebuild".
  *
  * THE SAME RESOLUTION ALSO SHIPS THE PACKS' SKILLS. Every pack this script
  * clones has its `skills/<name>/SKILL.md` on disk at the moment the graph is
@@ -99,6 +100,11 @@ const indexOutPath = join(embeddedDir, "pack.index.generated.ts");
 // putting them in `pack.generated.ts` would load its ~1.9 MB of n-quads with
 // them (a measured +28 ms on every invocation).
 const storiesOutPath = join(embeddedDir, "pack.stories.generated.ts");
+// And the manifest, for the same reason as the other two: `materializeEmbeddedPack`
+// reads it on EVERY boot to name the cache directory, then returns early when the
+// pack is already there — so leaving it beside the n-quads made the common path
+// parse ~2.1 MB of string to read ~1 KB of JSON.
+const manifestOutPath = join(embeddedDir, "pack.manifest.generated.ts");
 /**
  * The committed skills snapshot, at the PACKAGE ROOT (not `dist/`, not `src/`).
  *
@@ -274,7 +280,7 @@ function writeBundledSkills(packs: readonly { name: string; root: string }[]): {
 async function readCommittedManifest(): Promise<string | undefined> {
   try {
     const { manifestJson } = await import(
-      "../src/kernel/runtime/graphpack/embedded/pack.generated.js"
+      "../src/kernel/runtime/graphpack/embedded/pack.manifest.generated.js"
     );
     return manifestJson as string;
   } catch {
@@ -386,8 +392,11 @@ try {
       path: outPath,
       body: `export const dataNq = ${JSON.stringify(read(DATA_FILE))};
 export const schemaJson = ${JSON.stringify(read(SCHEMA_FILE))};
-export const manifestJson = ${JSON.stringify(read(MANIFEST_FILE))};
 `,
+    },
+    {
+      path: manifestOutPath,
+      body: `export const manifestJson = ${JSON.stringify(read(MANIFEST_FILE))};\n`,
     },
     {
       path: indexOutPath,

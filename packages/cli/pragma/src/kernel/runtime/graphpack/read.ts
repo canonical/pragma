@@ -80,15 +80,25 @@ export async function readPack(dir: string): Promise<StoreSession> {
   // "populated index but empty store" check (via the now-empty dump,
   // `packIsComplete` turns false so recovery rebuilds) rather than serving an
   // empty graph as the pack.
-  const actualTriples = await countTriples(store);
+  // `store.size` is a field oxigraph maintains. The equivalent query —
+  // `SELECT (COUNT(*)) WHERE { ?s ?p ?o }`, which is what `build.ts` still runs
+  // to WRITE `tripleCount` — is a scan, and it ran on every boot to read a
+  // number the store already knew.
+  //
+  // The two agree: ke queries with `use_default_graph_as_union`, and oxigraph
+  // does not deduplicate across that union, so a quad count and the union's
+  // solution count are the same number even for a triple repeated across
+  // graphs. Verified against 0.5.6 rather than assumed — and the guard is `<`,
+  // which tolerates the direction a set-semantic union would drift.
+  const actualQuads = store.size;
   if (manifest.tripleCount !== undefined) {
-    if (actualTriples < manifest.tripleCount) {
+    if (actualQuads < manifest.tripleCount) {
       store.dispose();
       throw packUnavailable(
-        `The pack at ${dir} has a corrupt data cache (expected at least ${manifest.tripleCount} triples, loaded ${actualTriples}).`,
+        `The pack at ${dir} has a corrupt data cache (expected at least ${manifest.tripleCount} triples, loaded ${actualQuads}).`,
       );
     }
-  } else if (index.entities.length > 0 && actualTriples === 0) {
+  } else if (index.entities.length > 0 && actualQuads === 0) {
     store.dispose();
     throw packUnavailable(`The pack at ${dir} has a corrupt data cache.`);
   }
@@ -100,12 +110,4 @@ export async function readPack(dir: string): Promise<StoreSession> {
     prefixes: manifest.prefixes,
     index,
   };
-}
-
-/** Count the booted store's triples (a cheap aggregate over the union graph). */
-async function countTriples(store: StoreSession["store"]): Promise<number> {
-  const result = (await store.query(
-    "SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }" as never,
-  )) as import("@canonical/ke").SelectResult;
-  return Number(result.bindings.at(0)?.n ?? 0);
 }

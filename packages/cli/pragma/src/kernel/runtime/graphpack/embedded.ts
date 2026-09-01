@@ -18,10 +18,12 @@
  *
  * The inlined strings are materialized into the ordinary content-addressed pack
  * cache on first use and then read back through {@link readPack}, so the
- * embedded pack and a built pack share one boot path. The story records live in
- * their OWN generated module (like the index): dispatch reads them on every
- * command, and pulling them out of `pack.generated.ts` would load its ~1.9 MB
- * of n-quads with them — a measured +28 ms on every invocation. Inlining as JS strings
+ * embedded pack and a built pack share one boot path. The story records, the
+ * index and the MANIFEST each live in their own generated module: every one of
+ * them is read on a path that does not need the n-quads, and leaving any of
+ * them beside `pack.generated.ts` would load its ~2.1 MB with them — a measured
+ * +28 ms on every invocation for the stories, and ~370 ms per CLI invocation
+ * for the manifest at a 30,340-triple pack. Inlining as JS strings
  * (rather than file assets) means the pack travels with the emitted modules —
  * it needs no asset step in any build, and no file lookup at run time.
  */
@@ -36,8 +38,8 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { packDir, packsCacheDir } from "../paths.js";
-import { dataNq, manifestJson, schemaJson } from "./embedded/pack.generated.js";
 import { indexJson } from "./embedded/pack.index.generated.js";
+import { manifestJson } from "./embedded/pack.manifest.generated.js";
 import { storiesJson } from "./embedded/pack.stories.generated.js";
 import { packIsComplete } from "./manifest.js";
 import { manifestSchema } from "./schemas.js";
@@ -72,9 +74,15 @@ export function embeddedManifest(): Manifest {
  * @returns The pack directory, ready for {@link readPack}.
  * @note Impure — writes the inlined pack files into the cache.
  */
-export function materializeEmbeddedPack(): string {
+export async function materializeEmbeddedPack(): Promise<string> {
   const dir = packDir(embeddedManifest().contentHash);
   if (packIsComplete(dir)) return dir;
+
+  // Loaded HERE, not at module scope: this is the only branch that needs the
+  // payload, and it is the branch that does NOT run once the pack is cached.
+  // A static import would parse ~2.1 MB of inlined n-quads on every boot to
+  // reach a return statement six lines above.
+  const { dataNq, schemaJson } = await import("./embedded/pack.generated.js");
 
   mkdirSync(packsCacheDir(), { recursive: true });
   const temp = mkdtempSync(join(packsCacheDir(), ".embed-"));
