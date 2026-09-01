@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        bun-version: ['1.3.9']
+        # Bun is pinned once in .bun-version; only Node varies here.
         # Node 20 EOL is April 2026. Testing on 22 (LTS) and 24 (current).
         node-version: ['22', '24']
     steps:
@@ -20,7 +20,6 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
         with:
-          bun-version: ${{ matrix.bun-version }}
           node-version: ${{ matrix.node-version }}
           build-command: bunx nx affected -t build:all --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
 
@@ -117,7 +116,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          bun-version: '1.4.0'
+          bun-version-file: .bun-version
 
         # Runs first: a guard whose failing case no longer fails is worse than
         # no guard, and this suite constructs the exact ^0.34.0-vs-0.35.0 case
@@ -148,7 +147,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          bun-version: '1.4.0'
+          bun-version-file: .bun-version
 
       - name: Test the reconciler and the sigstore patch
         run: bun run publish:reconcile:test
