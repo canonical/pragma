@@ -196,7 +196,7 @@ precedent.
   itself. The same goes for commit subjects, which Lerna puts in the CHANGELOG.
   Internal sequencing stays in the planning repo; when merge order matters, name
   the PR that must land first **by number** and say why in one line.
-- Add `no visual change` to skip Chromatic when there's no visual diff.
+- Add `Chromatic: skip` to skip Chromatic when there's no visual diff.
 - New package? First-time publish is manual (`npm publish --access public` from the
   package dir); verify with `bun run publish:status` from the root.
 - **New packages need OIDC trusted-publisher setup — a manual human step, agents cannot
