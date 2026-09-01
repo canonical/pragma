@@ -34,8 +34,8 @@ export const productListQuery = graphql`
  * renders a `ProductCard` (a `useFragment` child) per edge.
  *
  * The hook suspends while the query is in flight, so render this component
- * inside a `Suspense` boundary — and, until the SSR data-serialization PR
- * lands, only on the client (see `CatalogPage`).
+ * inside a `Suspense` boundary. Whether it may render at all is
+ * `CatalogPage`'s call: on the server it renders only from a seeded store.
  */
 export default function ProductList(): ReactElement {
 <% if (intl) { -%>

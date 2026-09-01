@@ -215,6 +215,8 @@ describe("fixtures", () => {
       "component/lit",
       "package",
       "application",
+      "application-spa",
+      "application-spa-all",
     ]);
   });
 

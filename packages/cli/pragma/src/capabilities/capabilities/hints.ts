@@ -213,7 +213,7 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   create_application: {
     category: "write",
     use_when:
-      "Scaffolding a new React application with SSR, routing, and optional Relay",
+      "Scaffolding a new React application with routing, optional Relay, and either server-side rendering or a client-only SPA",
   },
   setup: {
     category: "write",

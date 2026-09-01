@@ -258,9 +258,16 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
   // here, which is the point).
   it("every declared generator binding path is driven by a conformance fixture", () => {
     expect(
-      [...CONFORMANCE_FIXTURES]
-        .map((fixture) => commandPathOf(fixture.generator))
-        .sort(),
+      // Deduplicated: the assertion is that every declared path is COVERED, and
+      // one path may carry several fixtures — application/react is driven by
+      // both the SSR arm and the SPA arm.
+      [
+        ...new Set(
+          CONFORMANCE_FIXTURES.map((fixture) =>
+            commandPathOf(fixture.generator),
+          ),
+        ),
+      ].sort(),
     ).toEqual(
       Object.values(CREATE_GENERATORS)
         .flatMap((binding) => binding.paths as readonly string[])

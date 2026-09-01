@@ -32,7 +32,7 @@ const COMPONENT_ANSWERS = {
 } as const;
 
 /**
- * The design-system generator fixtures — the five trees pragma's `create` verbs
+ * The design-system generator fixtures — the seven trees pragma's `create` verbs
  * and summon's `execute` must agree on byte for byte.
  */
 export const CONFORMANCE_FIXTURES: readonly ConformanceFixture[] = [
@@ -72,6 +72,38 @@ export const CONFORMANCE_FIXTURES: readonly ConformanceFixture[] = [
       appPath: "my-app",
       forms: true,
       relay: false,
+      runInstall: false,
+    },
+  },
+  {
+    // The SPA arm. Nothing else in CI produces a client-only tree, so without
+    // this fixture `--rendering spa` would be exercised only by hand: here
+    // three independent producers build it and diff it byte for byte.
+    name: "application-spa",
+    generator: "application",
+    answers: {
+      appPath: "my-app",
+      forms: true,
+      intl: false,
+      relay: false,
+      rendering: "spa",
+      runInstall: false,
+    },
+  },
+  {
+    // The SPA arm with every feature on. The bare fixture above renders none
+    // of the combination-only gates — `relay && spa` (an environment with no
+    // payloads to seed), `intl && spa` (negotiation with no server to have
+    // done it), the four-way provider stack in the client entry, and the
+    // nested intl/spa gates in the e2e template. This one renders all of them.
+    name: "application-spa-all",
+    generator: "application",
+    answers: {
+      appPath: "my-app",
+      forms: true,
+      intl: true,
+      relay: true,
+      rendering: "spa",
       runInstall: false,
     },
   },

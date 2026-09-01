@@ -17,7 +17,7 @@ export const CREATE_SURFACE: Readonly<Record<string, SurfaceCommand>> = {
       "application",
       "react"
     ],
-    "description": "Scaffold a complete React application with SSR and routing",
+    "description": "Scaffold a complete React application with routing, and either server-side rendering or a client-only SPA",
     "prompts": [
       {
         "name": "appPath",
@@ -39,6 +39,23 @@ export const CREATE_SURFACE: Readonly<Record<string, SurfaceCommand>> = {
         "type": "confirm",
         "message": "Include internationalisation (locale negotiation, translated UI, locale switcher)?",
         "default": false,
+        "group": "Application"
+      },
+      {
+        "name": "rendering",
+        "type": "select",
+        "message": "Rendering — ssr keeps the server layer (SSR servers and sitemap), spa is client-only",
+        "default": "ssr",
+        "choices": [
+          {
+            "label": "ssr - server-side rendering (Express + Bun servers, sitemap)",
+            "value": "ssr"
+          },
+          {
+            "label": "spa - client-only single-page app (no server layer)",
+            "value": "spa"
+          }
+        ],
         "group": "Application"
       },
       {
@@ -277,6 +294,11 @@ export const CREATE_CLI_SYNTAX: Readonly<
       "flag": "--intl",
       "takesValue": false,
       "kebabName": "intl"
+    },
+    "rendering": {
+      "flag": "--rendering",
+      "takesValue": true,
+      "kebabName": "rendering"
     },
     "relay": {
       "flag": "--relay",

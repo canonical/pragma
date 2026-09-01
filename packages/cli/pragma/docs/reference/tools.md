@@ -136,7 +136,7 @@ Mutation — plan-first (set `confirm: true` to apply).
 
 ### create_application
 
-Scaffold a full React application with SSR and routing.
+Scaffold a full React application with routing, and either server-side rendering or a client-only SPA.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
@@ -147,6 +147,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 | `appPath` | string | no | Application directory name. (default: my-app) |
 | `forms` | boolean | no | Include form components. (default: true) |
 | `intl` | boolean | no | Include internationalisation (locale negotiation, translated UI, locale switcher). (default: false) |
+| `rendering` | enum(ssr, spa) | no | Rendering — ssr keeps the server layer (SSR servers and sitemap), spa is client-only. (one of: ssr, spa) (default: ssr) |
 | `relay` | boolean | no | Include a Relay (GraphQL) data layer with a local mock schema. (default: false) |
 | `runInstall` | boolean | no | Install dependencies now. (default: true) |
 | `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |

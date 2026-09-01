@@ -13,9 +13,13 @@ import {
 } from "@canonical/router-core";
 import type { ReactElement, ReactNode } from "react";
 import accountRoutes from "#domains/account/routes.js";
-<% if (relay) { -%>
+<%# getRequest and the ProductList pair exist only for serverQueries and -%>
+<%# resolveRelayPayloads, which the SPA arm omits; catalogRoutes is always used. -%>
+<% if (relay && !spa) { -%>
 import { getRequest } from "relay-runtime";
 import { PAGE_SIZE, productListQuery } from "#domains/catalog/ProductList.js";
+<% } -%>
+<% if (relay) { -%>
 import catalogRoutes from "#domains/catalog/routes.js";
 <% } -%>
 <% if (forms) { -%>
@@ -23,7 +27,7 @@ import contactRoutes from "#domains/contact/routes.js";
 <% } -%>
 import marketingRoutes from "#domains/marketing/routes.js";
 import Navigation from "#lib/Navigation/index.js";
-<% if (relay) { -%>
+<% if (relay && !spa) { -%>
 import type { RelaySeedPayload } from "#relay/environment.js";
 <% } -%>
 
@@ -35,6 +39,9 @@ function hasDemoAuth(search: unknown): boolean {
   return authValue === "1";
 }
 
+<%# Server-only: its single consumer is src/server/entry.tsx, which the SPA arm does -%>
+<%# not emit. The client path guards the same routes through withAuth below. -%>
+<% if (!spa) { -%>
 /**
  * Auth decision for an already-matched route, from the router's own data —
  * the matched pattern and the schema-validated search. Deriving it from the
@@ -53,6 +60,7 @@ export function getAuthRedirectForMatch(match: {
   return `/login?from=${encodeURIComponent(match.pathname)}`;
 }
 
+<% } -%>
 export function withAuth(loginPath: string): RouteMiddleware {
   return <TRoute extends AnyRoute>(currentRoute: TRoute): TRoute => {
     if (!protectedPaths.has(currentRoute.url)) {
@@ -142,9 +150,16 @@ const [contact] = group(publicLayout, [contactRoutes.contact] as const);
 const [catalog] = group(publicLayout, [catalogRoutes.catalog] as const);
 
 <% } -%>
+<% if (spa) { -%>
+// Static redirect route: matched entirely from the URL, no content — the
+// router resolves it client-side. There is no server to answer a cold request
+// with a real 301. Static redirects accept 301 or 308 only; runtime redirect()
+// covers the 302 family.
+<% } else { -%>
 // Static redirect route: matched entirely from the URL, no content — the
 // router (and the SSR disposition helper) answers with a real 301. Static
 // redirects accept 301 or 308 only; runtime redirect() covers the 302 family.
+<% } -%>
 const legacyHome = route({
   url: "/home",
   redirect: "/",
@@ -173,6 +188,9 @@ declare module "@canonical/router-react" {
   }
 }
 
+<%# Declared for every flag combination EXCEPT the SPA arm, which has no server -%>
+<%# layer whose signatures need to stay uniform. -%>
+<% if (!spa) { -%>
 /**
  * A GraphQL operation captured on the server and replayed on the client:
  * the operation name identifies the query, `variables` rebuilds the operation
@@ -187,7 +205,8 @@ export interface SerializedRelayPayload {
   readonly data: Record<string, unknown>;
 }
 
-<% if (relay) { -%>
+<% } -%>
+<% if (relay && !spa) { -%>
 /**
  * Per-route server queries: what the SSR layer fetches (and serializes) for a
  * matched route before rendering it. Keyed by the route ids that

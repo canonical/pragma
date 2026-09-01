@@ -17,18 +17,28 @@
   },
   "scripts": {
     "dev": "vite",
+<% if (!spa) { -%>
     "dev:express": "node --import tsx src/server/server.express.ts",
     "dev:bun": "bun src/server/server.bun.ts",
+<% } -%>
     "preview": "bun run build:client && vite preview --outDir dist/client",
+<% if (!spa) { -%>
     "preview:bun": "bun run build:client && bun run build:server && bun src/server/preview.bun.ts",
     "preview:express": "bun run build:client && bun run build:server && node --import tsx src/server/preview.express.ts",
+<% } -%>
     "build": "bun run build:client",
     "build:all": "bun run build:client && bun run build:storybook",
 <% if (intl) { -%>
     "build:storybook": "storybook build",
 <% } -%>
+<%# --ssrManifest exists for the server build's asset lookup; nothing else -%>
+<%# reads the manifest, so the SPA build does not emit one. -%>
+<% if (spa) { -%>
+    "build:client": "vite build --outDir dist/client",
+<% } else { -%>
     "build:client": "vite build --ssrManifest --outDir dist/client",
     "build:server": "vite build --mode server",
+<% } -%>
 <% if (!intl) { -%>
     "build:storybook": "storybook build",
 <% } -%>
@@ -65,7 +75,9 @@
 <% } -%>
     "@canonical/react-head": "<%= pragmaVersion %>",
     "@canonical/react-hooks": "<%= pragmaVersion %>",
+<% if (!spa) { -%>
     "@canonical/react-ssr": "<%= pragmaVersion %>",
+<% } -%>
     "@canonical/router-core": "<%= pragmaVersion %>",
     "@canonical/router-react": "<%= pragmaVersion %>",
 <% if (relay) { -%>
@@ -74,7 +86,9 @@
     "@canonical/storybook-addon-utils": "<%= pragmaVersion %>",
     "@canonical/storybook-config": "<%= pragmaVersion %>",
     "@canonical/styles": "<%= pragmaVersion %>",
+<% if (!spa) { -%>
     "express": "^5.2.1",
+<% } -%>
 <% if (relay) { -%>
     "graphql": "^16.11.0",
 <% } -%>
@@ -98,7 +112,9 @@
     "@testing-library/jest-dom": "^6.9.1",
 <% } -%>
     "@testing-library/react": "^16.3.2",
+<% if (!spa) { -%>
     "@types/express": "^5.0.6",
+<% } -%>
 <% if (intl) { -%>
     "@types/node": "^26.0.0",
 <% } else { -%>
@@ -114,7 +130,9 @@
     "@vitejs/plugin-react": "^6.0.0",
     "@vitest/coverage-v8": "^4.0.18",
     "browserslist": "^4.28.1",
+<% if (!spa) { -%>
     "bun-types": "^1.3.9",
+<% } -%>
     "jsdom": "^28.1.0",
     "lightningcss": "^1.32.0",
 <% if (relay) { -%>
@@ -122,7 +140,9 @@
     "relay-test-utils": "^21.0.1",
 <% } -%>
     "storybook": "^10.3.1",
+<% if (!spa) { -%>
     "tsx": "^4.19.0",
+<% } -%>
     "typescript": "^5.9.3",
     "vite": "^8.0.1",
 <% if (relay) { -%>

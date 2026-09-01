@@ -655,7 +655,10 @@ describe("the mounted create grammar (subprocess)", () => {
       "--type": "library",
       "--description": "A replied library.",
     },
-    "application/react": { "--app-path": "replied-app" },
+    "application/react": {
+      "--app-path": "replied-app",
+      "--rendering": "spa",
+    },
   };
   for (const [commandPath, surface] of Object.entries(CREATE_SURFACE)) {
     it(`${commandPath}: the refusal's own instruction WORKS — its Missing tokens supplied back (+ --dry-run) preview, exit 0`, () => {

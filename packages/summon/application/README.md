@@ -6,12 +6,14 @@ Summon generators for scaffolding application structure: full applications, doma
 
 ### `summon application/react <name>`
 
-Scaffolds a complete React application with SSR, routing, Storybook, and two starter domains.
+Scaffolds a complete React application with routing, Storybook, and two starter domains — server-rendered by default, or client-only with `--rendering spa`.
 
 ```bash
 summon application/react my-app
 summon application/react --no-forms my-app
+summon application/react --intl my-app
 summon application/react --relay my-app
+summon application/react --rendering spa my-app
 ```
 
 Produces:
@@ -27,7 +29,7 @@ my-app/
 ├── patches/                  # bun dependency patches (--relay only)
 ├── src/
 │   ├── client/entry.tsx      # Client hydration
-│   ├── server/
+│   ├── server/               # (omitted with --rendering spa)
 │   │   ├── entry.tsx         # SSR render
 │   │   ├── server.express.ts # Express dev server
 │   │   ├── server.bun.ts     # Bun dev server
@@ -42,7 +44,8 @@ my-app/
 │   │   ├── ThemeSelector/
 │   │   ├── ExampleComponent/
 │   │   ├── LazyComponent/
-│   │   └── ClientOnly/       # SSR query guard (--relay only)
+│   │   └── ClientOnly/       # SSR query guard (--relay only; omitted with --rendering spa)
+│   ├── i18n/                 # Locale config, message catalogs (--intl only)
 │   ├── relay/                # Environment factory, mock schema, __generated__ (--relay only)
 │   ├── styles/
 │   ├── routes.tsx
@@ -56,6 +59,44 @@ my-app/
 ```
 
 Form components are ON by default: the contact domain and its `contactRoutes` wiring in `routes.tsx` ship unless `--no-forms` is passed.
+
+#### `--intl`: internationalisation
+
+Off by default. `--intl` adds locale negotiation (cookie > `Accept-Language` >
+default), per-locale message catalogs for `en`/`fr`/`ar` under `src/i18n/`, a
+`LocaleSelector` in the chrome, the Storybook locale toolbar and its `withI18n`
+decorator, and translated copy across every page. Under `--rendering spa` the same
+negotiation runs in the browser (cookie, then `navigator.languages`) because no
+server saw the request.
+
+#### `--rendering spa`: client-only, no SSR layer
+
+Off by default — a scaffolded app server-renders. `--rendering spa` is subtractive: it
+emits a strict subset of the default tree, and nothing that is SPA-only.
+
+Omitted:
+
+- `src/server/` — the SSR entry, the compiled renderer, and the Express and Bun
+  dev/preview servers.
+- `src/sitemap/` — `/sitemap.xml` is a server-rendered route, and its renderer
+  is the getters' only consumer.
+- `src/lib/ClientOnly/` — an SSR-safety wrapper, so a no-op here.
+- The `dev:*`, `preview:*` and `build:server` scripts, `--ssrManifest` on
+  `build:client`, and the `express`, `@canonical/react-ssr`, `@types/express`,
+  `tsx` and `bun-types` dependencies.
+
+Kept: the e2e suite. Its harness spawns a script and polls HTTP — `vite` and
+`vite preview` are servers too — so the matrix keeps its two non-SSR cells and
+`bun run test:e2e` still covers `dev` and `preview`.
+
+**What a SPA gives up.** The client router still performs the auth redirect,
+the `/home` redirect and the not-found route. What is lost is the HTTP status
+on a *cold* request — no 404, 301 or 302 from a server — plus `/sitemap.xml`
+and the server-painted first paint (`<html lang dir>` and the cookie-derived
+theme class), so expect a brief default theme/locale flash. With `--relay` the
+catalog page always suspends and fetches rather than arriving with prefetched
+data. Static hosting needs a history-API fallback the scaffold does not
+configure.
 
 #### `--relay`: Relay (GraphQL) data layer
 
@@ -193,8 +234,8 @@ The generators enforce the conventions established by the boilerplate:
 
 ```
 src/
-├── client/                 # Client entry point (hydration)
-├── server/                 # Server entry points (Express, Bun)
+├── client/                 # Client entry point (hydration; createRoot with --rendering spa)
+├── server/                 # Server entry points (Express, Bun) — omitted with --rendering spa
 ├── domains/                # Feature domains
 │   ├── marketing/
 │   │   ├── HomePage.tsx
@@ -313,6 +354,13 @@ This enables typed `<Link to="invoices">`, `router.navigate("invoices")`, and `r
 ## Open questions
 
 Design decisions about the generated output that are not yet settled:
+
+- **A `--rendering spa` app has no sitemap.** `/sitemap.xml` is a server-rendered route, so
+  `--rendering spa` drops `src/sitemap/` entirely. The getters themselves are portable — a
+  build step could write a static `public/sitemap.xml` and a static host would serve
+  it fine — but that is new tooling nothing else needs, and keeping the renderer
+  would hold `@canonical/react-ssr` as a dependency for otherwise-dead code.
+  **Open:** whether SEO-facing SPAs should get a build-time sitemap emitter.
 
 - **Pinned pragma version is fetched at summon time.** Generated apps pin the pragma
   workspace packages (`react-ds-global`, `router-core`, `styles`, …) at `^<latest>`, where

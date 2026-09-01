@@ -523,11 +523,12 @@ export const createVerbs: Record<
   ),
   application: createVerb(
     "application",
-    "Scaffold a full React application with SSR and routing.",
+    "Scaffold a full React application with routing, and either server-side rendering or a client-only SPA.",
     applicationParams,
     [
       { cmd: `${BIN_NAME} create application react my-app` },
       { cmd: `${BIN_NAME} create application react my-app --relay` },
+      { cmd: `${BIN_NAME} create application react my-app --rendering spa` },
     ],
   ),
 };
