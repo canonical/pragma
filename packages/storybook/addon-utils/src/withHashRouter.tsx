@@ -5,6 +5,7 @@ import {
   route,
 } from "@canonical/router-core";
 import { RouterProvider } from "@canonical/router-react";
+import { type ReactNode, useState } from "react";
 import type {
   Renderer,
   StoryContext,
@@ -29,6 +30,52 @@ export interface WithHashRouterOptions {
   readonly routes?: RouteMap;
 }
 
+interface StoryProps {
+  readonly StoryFn: StoryFunction<Renderer>;
+}
+
+/**
+ * Invokes the story from inside a component, so it renders as its own fiber.
+ *
+ * `{StoryFn()}` placed in the provider's JSX children runs the story's `render`
+ * body during the *parent's* render pass, before React descends into
+ * `RouterProvider`. A `useRoute()` called directly in a story's `render` then
+ * reads the context above the provider — empty — and throws "RouterProvider is
+ * required to use router-react hooks." Under `<Story />` the call happens
+ * inside the provider's subtree, and the story owns the hooks it declares
+ * rather than appending them to the decorator's list.
+ *
+ * Declared at module scope, not inside the decorator: a component type
+ * recreated per render would remount the story on every navigation.
+ */
+const Story = ({ StoryFn }: StoryProps): ReactNode => StoryFn() as ReactNode;
+
+interface HashRouterStoryProps extends StoryProps {
+  readonly routes: RouteMap;
+}
+
+/**
+ * Owns the router instance for one mounted story.
+ *
+ * Held in state so there is one router per mount rather than one per render:
+ * navigating rerenders the story, and a router rebuilt each time would drop the
+ * hash subscription and reset the location the story just navigated to.
+ */
+const HashRouterStory = ({
+  routes,
+  StoryFn,
+}: HashRouterStoryProps): ReactNode => {
+  const [router] = useState(() =>
+    createRouter(routes, { adapter: createHashAdapter() }),
+  );
+
+  return (
+    <RouterProvider router={router}>
+      <Story StoryFn={StoryFn} />
+    </RouterProvider>
+  );
+};
+
 /**
  * Storybook decorator that wraps a story in a hash-based router context
  * (`@canonical/router-react`). A hash router is used because the Storybook
@@ -42,9 +89,10 @@ export interface WithHashRouterOptions {
  * function stays required), so it doubles as a plain "wrap this subtree in a
  * hash router" helper for decorators that need to render something extra
  * *inside* the provider (an `<Outlet />`, a `useRoute()` bridge) without
- * fabricating a `StoryContext`. That keeps `createRouter` +
- * `createHashAdapter` + `RouterProvider` owned here instead of being
- * hand-rolled per call site.
+ * fabricating a `StoryContext`. It returns an element and calls no hooks of its
+ * own, so it is also safe to invoke outside a React render — as the headless
+ * probe in ds-app does. That keeps `createRouter` + `createHashAdapter` +
+ * `RouterProvider` owned here instead of being hand-rolled per call site.
  *
  * @example
  * const meta = {
@@ -64,7 +112,6 @@ export interface WithHashRouterOptions {
  */
 export const withHashRouter =
   ({ routes = defaultRoutes }: WithHashRouterOptions = {}) =>
-  (StoryFn: StoryFunction<Renderer>, _context?: StoryContext<Renderer>) => {
-    const router = createRouter(routes, { adapter: createHashAdapter() });
-    return <RouterProvider router={router}>{StoryFn()}</RouterProvider>;
-  };
+  (StoryFn: StoryFunction<Renderer>, _context?: StoryContext<Renderer>) => (
+    <HashRouterStory routes={routes} StoryFn={StoryFn} />
+  );
