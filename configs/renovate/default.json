@@ -68,6 +68,19 @@
         "renovate"
       ],
       "addLabels": ["no visual change"]
+    },
+    {
+      "description": "Majors carry an impact review: the generated body is often truncated, and PR CI rarely exercises the release path, so the breaking surface has to be triaged by hand",
+      "matchUpdateTypes": ["major"],
+      "prBodyNotes": [
+        "### Impact review",
+        "A major is not merged on green CI alone. Before approving:",
+        "- [ ] **Breaking entries triaged against this repo** — most upstream ⚠️ entries target plugins or entry points a given repo does not use. Name the ones that actually apply.",
+        "- [ ] **Release and publish path assessed** — PR CI usually does not run tag/release workflows, so changes to versioning, changelog generation or publishing are unexercised here.",
+        "- [ ] **Node and engines floor still satisfied** — including any range a package declares for itself.",
+        "- [ ] **Toolchain coupling checked** — lockfile format, package manager and peer ranges that other tools parse.",
+        "> If this body was truncated, the upstream release notes for the major are **not** shown above. Read them at the source before ticking."
+      ]
     }
   ]
 }
