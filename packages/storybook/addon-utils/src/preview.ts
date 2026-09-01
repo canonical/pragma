@@ -2,8 +2,6 @@ import type { ProjectAnnotations, Renderer } from "storybook/internal/types";
 
 import "@canonical/styles/fonts";
 import "@canonical/styles-debug";
-// Force autodocs pages to render in the light scheme (see forceLightDocs.ts).
-import "./forceLightDocs.js";
 
 import {
   KEY_BASELINE,
