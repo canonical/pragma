@@ -27,9 +27,18 @@
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
   "exports": {
-    ".": "./dist/esm/index.js",
-    "./preview": "./dist/esm/preview.js",
-    "./manager": "./dist/esm/manager.js",
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/esm/index.js"
+    },
+    "./preview": {
+      "types": "./dist/types/preview.d.ts",
+      "default": "./dist/esm/preview.js"
+    },
+    "./manager": {
+      "types": "./dist/types/manager.d.ts",
+      "default": "./dist/esm/manager.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -52,6 +61,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^0.36.0",
+    "@canonical/design-tokens": "0.8.1",
     "@canonical/typescript-config": "^0.36.0",
     "@canonical/webarchitect": "^0.36.0",
     "copyfiles": "^2.4.1",
