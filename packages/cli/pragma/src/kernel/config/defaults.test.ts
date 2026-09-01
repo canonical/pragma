@@ -44,7 +44,12 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
     expect(defaults.colophon?.summary?.length).toBeLessThan(400);
   });
 
-  it("ships the four canonical default packs (git+https sources)", () => {
+  // Five packs, and ONE carries a subdirectory. That is load-bearing, not
+  // decoration: `@canonical/token-ontology` lives inside a monorepo, and a
+  // git source names a repository — without `:packages/token-ontology` the
+  // clone would succeed against a root that has no `definitions/` or `data/`
+  // and the pack would contribute nothing, silently.
+  it("ships the five canonical default packs (all git+https)", () => {
     expect(
       defaults.packs?.map((pack) =>
         typeof pack === "string"
@@ -59,6 +64,11 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
       {
         name: "@canonical/anatomy-dsl",
         source: "git+https://github.com/canonical/anatomy-dsl.git#main",
+      },
+      {
+        name: "@canonical/token-ontology",
+        source:
+          "git+https://github.com/canonical/design-tokens.git#main:packages/token-ontology",
       },
       {
         name: "@canonical/code-standards",
@@ -79,7 +89,7 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
     const storyCounts = defaults.packs?.map((pack) =>
       typeof pack === "string" ? 0 : (pack.stories?.length ?? 0),
     );
-    expect(storyCounts).toEqual([5, 0, 1, 1]);
+    expect(storyCounts).toEqual([5, 0, 0, 1, 1]);
   });
 
   it("declares no removed field — the validator would refuse to load one", () => {
@@ -98,6 +108,11 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
     // can expand — `cs:` is here for that reader.
     expect(defaults.prefixes).toEqual({
       ds: "https://ds.canonical.com/",
+      dt: "https://dt.canonical.com/",
+      // Nested under `dt:`, and bound separately because `compactUri` takes the
+      // longest match — with only the parent bound, every term of this
+      // vocabulary would render as `dt:w3c-tokens/…`.
+      "w3c-tokens": "https://dt.canonical.com/w3c-tokens/",
       cs: "http://pragma.canonical.com/codestandards#",
     });
   });

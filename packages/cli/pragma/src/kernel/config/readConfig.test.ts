@@ -59,7 +59,7 @@ describe("readConfig — layering + provenance", () => {
     expect(config.tier).toBe("core");
     expect(config.channel).toBe("experimental");
     expect(config.detail).toBe("detailed");
-    expect(config.packs).toHaveLength(4); // from defaults
+    expect(config.packs).toHaveLength(5); // from defaults
 
     expect(origins).toMatchObject({
       tier: "project",

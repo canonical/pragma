@@ -36,6 +36,7 @@ describe("config show payload", () => {
     ).toEqual([
       "@canonical/design-system",
       "@canonical/anatomy-dsl",
+      "@canonical/token-ontology",
       "@canonical/code-standards",
       "@canonical/ds-implementations",
     ]);

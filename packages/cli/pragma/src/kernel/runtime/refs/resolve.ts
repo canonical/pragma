@@ -383,13 +383,19 @@ export async function resolvePackage(
           },
         );
       }
+      // The clone lives at `dir`; the PACKAGE may be nested within it. A git
+      // source names a repository, so a package inside a monorepo is reached
+      // by its subdirectory — without which `readTtlSources` would scan a
+      // repository root that has no `definitions/` or `data/` and contribute
+      // nothing at all.
+      const packageRoot = ref.subdir ? join(dir, ref.subdir) : dir;
       return {
         name: ref.pkg,
         source: ref.source,
         resolved,
-        root: dir,
-        sources: readTtlSources(dir, ref.pkg),
-        stories: readStorySources(dir, ref.pkg),
+        root: packageRoot,
+        sources: readTtlSources(packageRoot, ref.pkg),
+        stories: readStorySources(packageRoot, ref.pkg),
       };
     }
   }

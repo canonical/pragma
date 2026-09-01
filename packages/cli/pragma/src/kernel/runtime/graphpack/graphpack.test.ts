@@ -147,7 +147,13 @@ describe("the committed embedded pack (PROTECTED)", () => {
     expect(readdirSync(await materializeEmbeddedPack()).sort()).toEqual(
       readdirSync(built.dir).sort(),
     );
-  });
+    // 60s, not the 5s default. This test does real work twice: it BUILDS a
+    // pack from source, and it materialises the embedded one — which on a cold
+    // cache takes the miss branch and imports the multi-megabyte payload. Both
+    // costs grow with the pack, and the pack grows whenever a source is added.
+    // A default that a pack size can outgrow turns a real assertion into an
+    // intermittent one.
+  }, 60_000);
 
   it("is self-consistent: complete, content-addressed, and non-empty", async () => {
     // No network, so CI runs it: the committed strings really do materialize a

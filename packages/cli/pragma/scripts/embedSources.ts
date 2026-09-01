@@ -29,6 +29,11 @@ import type { PackDeclaration } from "../src/kernel/config/types.js";
  */
 export const SOURCE_OVERRIDES: Readonly<Record<string, PackDeclaration>> = {
   "@canonical/anatomy-dsl": { name: "@canonical/anatomy-dsl" }, // no `source` ⇒ npm
+  // Same reason, plus one of its own: the git source declares a SUBDIRECTORY
+  // (`#main:packages/token-ontology`), and the npm tarball ships `definitions/`
+  // and `data/` at its own root — so the override is also what makes the two
+  // paths agree on where the package starts.
+  "@canonical/token-ontology": { name: "@canonical/token-ontology" },
 };
 
 /**

@@ -25,6 +25,8 @@ export type PackageRef =
       readonly pkg: string;
       readonly url: string;
       readonly ref: string;
+      /** Package root WITHIN the clone, for a package nested in a monorepo. */
+      readonly subdir?: string;
       readonly source: string;
     };
 
@@ -72,11 +74,33 @@ export function parsePackDeclaration(entry: PackDeclaration): PackageRef {
         },
       );
     }
+    // `#<ref>` or `#<ref>:<subdir>`. A git ref cannot contain a colon
+    // (git check-ref-format), so the split is unambiguous.
+    const fragment = source.slice(hashIdx + 1);
+    const colonIdx = fragment.indexOf(":");
+    if (colonIdx !== -1 && colonIdx === fragment.length - 1) {
+      throw PragmaError.configError(
+        `Invalid source for "${name}": the subdirectory after : is empty.`,
+        {
+          recovery: {
+            message:
+              "Example: git+https://github.com/org/repo.git#main:packages/thing",
+          },
+        },
+      );
+    }
+    const ref = colonIdx === -1 ? fragment : fragment.slice(0, colonIdx);
+    if (ref.length === 0) {
+      throw PragmaError.configError(
+        `Invalid source for "${name}": git URL must include a ref after #.`,
+      );
+    }
     return {
       kind: "git",
       pkg: name,
       url: source.slice("git+".length, hashIdx),
-      ref: source.slice(hashIdx + 1),
+      ref,
+      ...(colonIdx === -1 ? {} : { subdir: fragment.slice(colonIdx + 1) }),
       source,
     };
   }
