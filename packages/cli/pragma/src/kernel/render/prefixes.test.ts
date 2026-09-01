@@ -13,6 +13,8 @@ describe("DEFAULT_PREFIX_MAP", () => {
       skos: "http://www.w3.org/2004/02/skos/core#",
       ds: "https://ds.canonical.com/",
       cs: "http://pragma.canonical.com/codestandards#",
+      dt: "https://dt.canonical.com/",
+      "w3c-tokens": "https://dt.canonical.com/w3c-tokens/",
     });
   });
 

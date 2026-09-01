@@ -995,7 +995,20 @@ Made by the Canonical Webteam — https://canonical.com.`,
       name: "@canonical/anatomy-dsl",
       source: "git+https://github.com/canonical/anatomy-dsl.git#main",
     },
-    // Pinned to a TAG, and the only source here that is. The standards are the
+    // The design-token semantic model: the authored `dt:` / `w3c-tokens:`
+    // ontology in `definitions/` plus the generated strata in `data/`.
+    //
+    // The only source here carrying a SUBDIRECTORY, and it needs one: this
+    // package lives inside a monorepo, at `packages/token-ontology`, while a
+    // git source names a repository. `readTtlSources` scans
+    // `<root>/definitions` and `<root>/data`, which the design-tokens repo
+    // root does not have — so without the subdirectory this would clone
+    // cleanly and contribute nothing.
+    {
+      name: "@canonical/token-ontology",
+      source:
+        "git+https://github.com/canonical/design-tokens.git#main:packages/token-ontology",
+    },
     // pack an agent is most likely to quote back at a human as policy, so which
     // revision answered a query has to be recoverable — a floating ref makes
     // "the CLI told me this was the rule" unfalsifiable. The other three still
@@ -1036,6 +1049,11 @@ Made by the Canonical Webteam — https://canonical.com.`,
   // `cs:` is listed even though nothing rebinds it upstream.
   prefixes: {
     ds: "https://ds.canonical.com/",
+    dt: "https://dt.canonical.com/",
+    // Nested UNDER `dt:`, and both must be bound: `compactUri` takes the
+    // longest match, so binding only the parent would render every term of
+    // this vocabulary as `dt:w3c-tokens/…`.
+    "w3c-tokens": "https://dt.canonical.com/w3c-tokens/",
     cs: "http://pragma.canonical.com/codestandards#",
   },
   channel: "normal",
