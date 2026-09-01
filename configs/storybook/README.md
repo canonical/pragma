@@ -65,13 +65,17 @@ while the manager around it flipped instantly. A container can subscribe to
 ### Why the container lives here and not in the shell-theme addon
 
 It looks like it belongs in the addon, and moving it is the obvious future
-refactor. **It breaks.** That addon's Vite build externalises only
-`storybook/manager-api` and `storybook/internal/types`, so bundling React and
-`@storybook/addon-docs` into it ships a second React and a second copy of
-Storybook's `DocsContext`. The container would read a different context instance
-than the docs renderer populates, and fail silently — no error, just untouched
-theming. This package already carries `@storybook/addon-docs`, React types and a
-React TypeScript config, so the component belongs here.
+refactor. **It breaks.** That addon's Vite build externalises `storybook/*` but
+nothing else, so bundling React and `@storybook/addon-docs` into it ships a
+second React — and the container calls a hook, so the duplicate copy raises an
+invalid hook call. This package already carries `@storybook/addon-docs`, React
+types and a React TypeScript config, so the component belongs here.
+
+Note the failure mode precisely, because the obvious guess is wrong: it is *not*
+a lost docs context. `@storybook/addon-docs` parks its context on
+`globalThis.__DOCS_CONTEXT__`, first loader winning, specifically so duplicate
+bundles share one instance. React is the singleton that does not survive being
+duplicated.
 
 React is safe for the Svelte and Lit Storybooks: `@storybook/addon-docs`
 declares React as a hard dependency, and the container renders through the docs

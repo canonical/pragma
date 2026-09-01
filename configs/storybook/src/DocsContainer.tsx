@@ -19,10 +19,14 @@ import {
  * reasoning is in this package's README.
  *
  * Keep this component in this package. Moving it into the shell-theme addon,
- * where it looks like it belongs, bundles a second React and a second copy of
- * Storybook's DocsContext into that addon, whose Vite build externalises only
- * `storybook/*`. The container would then read a different context instance
- * than the docs renderer populates, and fail silently.
+ * where it looks like it belongs, would bundle a SECOND React into that addon —
+ * its Vite build externalises `storybook/*` but nothing else — and this
+ * component calls a hook, so the duplicate copy raises an invalid hook call.
+ *
+ * The failure is specifically React, not a lost docs context: addon-docs parks
+ * its context on `globalThis.__DOCS_CONTEXT__` (first loader wins) precisely so
+ * that duplicate bundles share one instance. React is the singleton that does
+ * not survive duplication.
  *
  * Import `@storybook/addon-docs/blocks` statically, not behind `lazy()`. The
  * static import does hoist the docs-blocks graph into the eager preview bundle,
