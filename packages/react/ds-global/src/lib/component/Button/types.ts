@@ -8,7 +8,7 @@ import type { ComponentProps, ReactNode } from "react";
  * in {@link default | ButtonProps}, so only genuinely design-system-specific
  * members live here.
  */
-export interface BaseProps {
+type OwnProps = {
   /**
    * Button contents (label text).
    * The button's accessible name derives from its rendered text content,
@@ -50,8 +50,8 @@ export interface BaseProps {
    * @default false
    */
   loading?: boolean;
-}
+};
 
-type Props = BaseProps & Omit<ComponentProps<"button">, keyof BaseProps>;
+type Props = OwnProps & Omit<ComponentProps<"button">, keyof OwnProps>;
 
 export type { Props as default };

@@ -203,15 +203,14 @@ The index file explicitly lists every public export. This makes the component's 
 
 ```typescript
 export { default as Button } from "./Button.js";
-export type {
-  BaseProps as ButtonBaseProps,
-  default as ButtonProps,
-} from "./types.js";
+export type { default as ButtonProps } from "./types.js";
 ```
 
 Several patterns appear here. The default export from `Button.tsx` becomes a named export `Button`. This allows consumers to use destructuring imports: `import { Button } from "@canonical/react-ds-global"`.
 
-Type exports use the `export type` syntax to ensure they are erased during compilation. The types are renamed during export (`BaseProps as ButtonBaseProps`) to include the component name, preventing naming conflicts when multiple components define similar base props.
+Type exports use the `export type` syntax to ensure they are erased during compilation. The type is renamed during export (`default as ButtonProps`) to include the component name, preventing naming conflicts when multiple components export a props type.
+
+Only the finished props type is exported. The DS-owned half of the props (the `OwnProps` object a component intersects with its root element's `ComponentProps`) stays private to `types.ts`: it is an implementation detail of how the public type is assembled, and exporting it would freeze that assembly into the published surface.
 
 The `.js` extension appears in import paths because the compiled JavaScript files will have that extension. TypeScript understands that `.js` refers to the corresponding `.ts` file during development.
 
