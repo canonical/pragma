@@ -4,5 +4,6 @@
     "baseUrl": "src",
     "types": ["node", "react", "react-dom"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"]
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["src/lib/register.types.test.ts"]
 }

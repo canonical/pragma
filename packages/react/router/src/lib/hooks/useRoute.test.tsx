@@ -7,7 +7,7 @@ import useRoute from "./useRoute.js";
 
 function PathnameProbe({ renderCount }: { renderCount: { current: number } }) {
   renderCount.current += 1;
-  const location = useRoute<typeof routes>();
+  const location = useRoute();
 
   return <span>{location.pathname}</span>;
 }
@@ -25,7 +25,7 @@ const routes = {
 
 function QueryProbe({ renderCount }: { renderCount: { current: number } }) {
   renderCount.current += 1;
-  const location = useRoute<typeof routes>();
+  const location = useRoute();
 
   Reflect.get(location as object, Symbol.toStringTag);
 
@@ -38,7 +38,7 @@ function QueryProbe({ renderCount }: { renderCount: { current: number } }) {
 
 function SearchProbe({ renderCount }: { renderCount: { current: number } }) {
   renderCount.current += 1;
-  const location = useRoute<typeof routes>();
+  const location = useRoute();
 
   return <span>{location.searchParams.get("tab") ?? "none"}</span>;
 }
@@ -117,7 +117,7 @@ describe("useRoute", () => {
 
     function ProbeWithoutReads() {
       renderCount.current += 1;
-      useRoute<typeof routes>();
+      useRoute();
 
       return <span>idle</span>;
     }

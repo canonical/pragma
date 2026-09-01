@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import route from "./route.js";
+import type { StandardSchemaV1 } from "./types.js";
 import wrapper from "./wrapper.js";
 
 describe("route", () => {
@@ -92,19 +93,21 @@ describe("route", () => {
   });
 
   it("applies a params schema in parse and serializes its output in render", () => {
-    const numericIdSchema = {
-      "~standard": {
-        output: {} as { readonly id: number },
-        validate(value: unknown) {
-          const raw = value as { id?: string };
-          const id = Number(raw.id);
+    const numericIdSchema: StandardSchemaV1<unknown, { readonly id: number }> =
+      {
+        "~standard": {
+          version: 1,
+          vendor: "router-test",
+          validate(value) {
+            const raw = value as { id?: string };
+            const id = Number(raw.id);
 
-          return Number.isInteger(id)
-            ? { value: { id } }
-            : { issues: [{ message: "id must be an integer" }] };
+            return Number.isInteger(id)
+              ? { value: { id } }
+              : { issues: [{ message: "id must be an integer" }] };
+          },
         },
-      },
-    };
+      };
 
     const userRoute = route({
       url: "/users/:id",

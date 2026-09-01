@@ -9,7 +9,7 @@
 
 import buildUrl from "./buildUrl.js";
 import { runSchema } from "./schemaUtils.js";
-import type { SchemaLike } from "./types.js";
+import type { StandardSchemaV1 } from "./types.js";
 
 /** Strip modifier suffixes (regex groups, `?`, `*`, `+`) from a param name. */
 export function extractParamName(patternSegment: string): string {
@@ -120,7 +120,7 @@ export function renderPattern(
  */
 export function createRouteCodec(
   path: string,
-  paramsSchema?: SchemaLike<unknown>,
+  paramsSchema?: StandardSchemaV1,
 ): {
   parse(input: string | URL): Readonly<Record<string, unknown>> | null;
   render(params: Readonly<Record<string, unknown>>): string;

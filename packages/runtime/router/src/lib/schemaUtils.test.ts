@@ -1,26 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { formatIssues, runSchema } from "./schemaUtils.js";
+import type { StandardSchemaResult, StandardSchemaV1 } from "./types.js";
+
+function schema(
+  validate: (
+    value: unknown,
+  ) => StandardSchemaResult<unknown> | Promise<StandardSchemaResult<unknown>>,
+): StandardSchemaV1 {
+  return { "~standard": { version: 1, vendor: "router-test", validate } };
+}
 
 describe("runSchema", () => {
-  it("passes the input through when the schema has no validator", () => {
-    const outcome = runSchema(
-      { "~standard": { output: {} as { q?: string } } },
-      { q: "router" },
-      "test",
-    );
-
-    expect(outcome).toEqual({ issues: null, value: { q: "router" } });
-  });
-
   it("unwraps a Standard Schema success result", () => {
     const outcome = runSchema(
-      {
-        "~standard": {
-          version: 1,
-          vendor: "test",
-          validate: () => ({ value: { page: 2 } }),
-        },
-      },
+      schema(() => ({ value: { page: 2 } })),
       { page: "2" },
       "test",
     );
@@ -30,13 +23,7 @@ describe("runSchema", () => {
 
   it("returns issues from a Standard Schema failure result", () => {
     const outcome = runSchema(
-      {
-        "~standard": {
-          version: 1,
-          vendor: "test",
-          validate: () => ({ issues: [{ message: "invalid" }] }),
-        },
-      },
+      schema(() => ({ issues: [{ message: "invalid" }] })),
       {},
       "test",
     );
@@ -44,33 +31,10 @@ describe("runSchema", () => {
     expect(outcome.issues).toEqual([{ message: "invalid" }]);
   });
 
-  it("passes through a legacy validator's plain return value", () => {
-    const outcome = runSchema(
-      {
-        "~standard": {
-          output: {} as { auth?: string },
-          validate: (value: unknown) => ({
-            auth: (value as { auth?: string }).auth,
-          }),
-        },
-      },
-      { auth: "1" },
-      "test",
-    );
-
-    expect(outcome).toEqual({ issues: null, value: { auth: "1" } });
-  });
-
   it("throws when a validator resolves asynchronously", () => {
     expect(() =>
       runSchema(
-        {
-          "~standard": {
-            version: 1,
-            vendor: "test",
-            validate: async () => ({ value: {} }),
-          },
-        },
+        schema(async () => ({ value: {} })),
         {},
         "Route '/users/:id' params",
       ),
@@ -78,16 +42,25 @@ describe("runSchema", () => {
       "Route '/users/:id' params: async schema validation is not supported — the router matches synchronously.",
     );
   });
+
+  it("throws when a validator returns neither value nor issues", () => {
+    // A bare object: it passes the typeof-object guards inside both result
+    // checks, so only the final throw can reject it.
+    const nonConforming = schema(() => ({}) as StandardSchemaResult<unknown>);
+
+    expect(() => runSchema(nonConforming, {}, "Route '/list' search")).toThrow(
+      "Route '/list' search: schema validator returned neither { value } nor { issues } — not a Standard Schema v1 result.",
+    );
+  });
 });
 
 describe("formatIssues", () => {
-  it("joins issue messages and falls back to a default", () => {
+  it("joins issue messages", () => {
     expect(
       formatIssues([
         { message: "a is required" },
-        {},
         { message: "b must be a number" },
       ]),
-    ).toBe("a is required, Validation error, b must be a number");
+    ).toBe("a is required, b must be a number");
   });
 });
