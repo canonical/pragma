@@ -61,8 +61,31 @@ const EVERYTHING: McpListable = { sources: [{ as: "entities" }] };
  * only. Payload SIZE is the property that actually regressed (712 entries /
  * ~155 KB on every connect), and it is the one an agent pays for twice: once in
  * transfer, once in the context window it can no longer spend on the task.
+ *
+ * **Raised from 60,000 to 100,000 on 2026-09-01**, when the
+ * `@canonical/token-ontology` pack took the payload to 65,119 bytes. The
+ * listing was kept whole rather than trimmed to fit: the per-class counts are
+ * how an agent gets the shape of the graph before spending a single lookup,
+ * and that is worth more than the bytes.
+ *
+ * **Cost scales with the number of T-Box terms and their metadata, not with
+ * the number of packs.** The `ontology` noun emits one resource per matching
+ * T-Box entity (`provider.ts`), so a pack costs what its own vocabulary
+ * costs — this one happened to add ~23 KB, which is a fact about this
+ * ontology and not a rate. The headroom here does not convert into "one more
+ * pack" of any size.
+ *
+ * It is also the only listing that grows this way: every other noun lists
+ * collections with their counts, so those grow with the number of nouns. When
+ * this ceiling is next reached, the fix is to scope the T-Box slice or
+ * paginate it — not to raise the number again, which would turn a gate into a
+ * formality.
+ *
+ * It is deliberately not removed. The regression it was written for is still
+ * worth catching, and a ceiling with headroom catches it while a deleted one
+ * catches nothing.
  */
-const LISTING_BUDGET_BYTES = 60_000;
+const LISTING_BUDGET_BYTES = 100_000;
 
 describe("resource listing (storeless, over the pack index)", () => {
   it("degrades to a recovery entry on a missing or legacy index", () => {
