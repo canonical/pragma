@@ -34,10 +34,11 @@
     "access": "public"
   },
   "scripts": {
-    "check": "bun run check:biome",
+    "check": "bun run check:biome && bun run check:webarchitect",
     "check:fix": "bun run check:biome:fix",
     "check:biome": "biome check",
-    "check:biome:fix": "biome check --write"
+    "check:biome:fix": "biome check --write",
+    "check:webarchitect": "webarchitect assets"
   },
   "peerDependencies": {
     "@canonical/design-tokens": "0.8.1"
@@ -49,6 +50,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.36.0"
+    "@canonical/biome-config": "^0.36.0",
+    "@canonical/webarchitect": "^0.36.0"
   }
 }

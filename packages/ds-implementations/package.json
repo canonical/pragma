@@ -23,13 +23,15 @@
     "access": "public"
   },
   "scripts": {
-    "check": "bun run check:ttl",
+    "check": "bun run check:ttl && bun run check:webarchitect",
     "check:fix": "bun run check:ttl",
     "check:ttl": "bun scripts/validate-ttl.ts",
+    "check:webarchitect": "webarchitect assets",
     "test": "bun run check:ttl",
     "prepack": "rm -rf data && cp -r ../../data data"
   },
   "devDependencies": {
+    "@canonical/webarchitect": "^0.36.0",
     "n3": "^2.0.1",
     "tinyglobby": "^0.2.14"
   }
