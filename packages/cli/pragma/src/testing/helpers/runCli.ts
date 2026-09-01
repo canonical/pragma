@@ -46,9 +46,16 @@ export interface RunCliOptions {
    * test the shipped-entry boundary itself.
    */
   readonly mode?: "shipped" | "source";
-  /** Spawn timeout in milliseconds (default 20000). */
+  /** Spawn timeout in milliseconds (default {@link DEFAULT_TIMEOUT_MS}). */
   readonly timeoutMs?: number;
 }
+
+/**
+ * How long a spawned CLI may run before it is killed. Twenty seconds is far
+ * past any assertion these tests make; a run that reaches it has hung, not
+ * been slow.
+ */
+const DEFAULT_TIMEOUT_MS = 20_000;
 
 /** The captured outcome of a `runCli` invocation. */
 export interface RunCliResult {
@@ -114,12 +121,29 @@ export function runCli(
     cwd: options.cwd,
     env: { ...env, ...options.env },
     encoding: "utf-8",
-    timeout: options.timeoutMs ?? 20_000,
+    timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
   });
 
   if (result.error) {
+    // A timeout is not a spawn failure, and saying so costs real diagnosis
+    // time: `spawnSync` reports both through `error`, but a timed-out child
+    // has already produced output worth seeing, and the duration is the whole
+    // finding. Separated here so the message names what happened, and carries
+    // the evidence rather than making the reader go and get it.
+    const timedOutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    const invocation = `${command} ${spawnArgs.join(" ")}`;
+    const captured = [
+      result.stdout ? `stdout:\n${result.stdout}` : "stdout: (empty)",
+      result.stderr ? `stderr:\n${result.stderr}` : "stderr: (empty)",
+    ].join("\n");
+
+    if ((result.error as NodeJS.ErrnoException).code === "ETIMEDOUT") {
+      throw new Error(
+        `runCli: ${invocation} timed out after ${timedOutMs}ms (killed by ${result.signal ?? "signal"}).\n${captured}`,
+      );
+    }
     throw new Error(
-      `runCli: failed to spawn ${command} ${spawnArgs.join(" ")} — ${result.error.message}`,
+      `runCli: failed to spawn ${invocation} — ${result.error.message}.\n${captured}`,
     );
   }
 
