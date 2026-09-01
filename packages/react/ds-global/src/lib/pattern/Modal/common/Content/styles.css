@@ -1,0 +1,36 @@
+/**
+ * Modal.Content styles
+ * @implements dso:global.subcomponent.modal-content
+ *
+ * DSL anatomy mapping:
+ * - layout.flex: 1 -> flex: 1
+ * - layout.overflow: scroll -> overflow: auto (scrollbars only when needed)
+ * - spacing.internal: spacing/large -> padding-block / padding-inline
+ */
+
+/* Component tokens — sourced from @canonical/design-tokens */
+:root {
+  --modal-content-padding-block: var(--dimension-300);
+  --modal-content-padding-inline: var(
+    --modal-padding-inline,
+    var(--dimension-300)
+  );
+}
+
+.ds.modal-content {
+  /* layout.flex: 1 — takes the space the header and footer leave */
+  flex: 1 1 auto;
+  /*
+    A flex item's automatic minimum size is its content, which would push the
+    dialog past its max-block-size instead of scrolling. Zero lets it shrink.
+  */
+  min-block-size: 0;
+  /* layout.overflow: scroll */
+  overflow: auto;
+  /*
+    The inline padding is shared with the header and footer so the content aligns
+    with the title, the actions and the two horizontal rules.
+  */
+  padding-block: var(--modal-content-padding-block);
+  padding-inline: var(--modal-content-padding-inline);
+}

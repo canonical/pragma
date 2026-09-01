@@ -13,7 +13,7 @@ ds:implementation.library.ds-types
 ds:implementation.library.react-ds-global
     a ds:ImplementationLibrary;
     rdfs:seeAlso <https://github.com/canonical/pragma/blob/main/data/react-ds-global/implementationLibrary.ttl>;
-    ds:implementationCount 37.
+    ds:implementationCount 41.
 
 ds:implementation.library.react-ds-global-form
     a ds:ImplementationLibrary;
