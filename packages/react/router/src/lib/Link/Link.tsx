@@ -1,26 +1,13 @@
-import type {
-  AnyRoute,
-  RouteMap,
-  RouteName,
-  RouteOf,
-} from "@canonical/router-core";
+import type { RouteArgs, RouteMap, RouteName } from "@canonical/router-core";
 import type { MouseEvent, ReactElement } from "react";
 import { forwardRef } from "react";
 import useRoute from "../hooks/useRoute.js";
 import useRouter from "../hooks/useRouter.js";
 import type { RegisteredRouteMap } from "../register.js";
-import type { LinkBuildOptions, LinkProps } from "./types.js";
+import type { LinkProps } from "./types.js";
 
 function hasModifierKey(event: MouseEvent<HTMLAnchorElement>): boolean {
   return event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
-}
-
-function buildOptionsObject(
-  options: LinkBuildOptions<AnyRoute>,
-): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(options).filter(([, value]) => value !== undefined),
-  );
 }
 
 /**
@@ -53,30 +40,18 @@ const Link = forwardRef(function Link<
   forwardedRef: LinkProps<TRoutes, TName>["ref"],
 ): ReactElement {
   const router = useRouter<TRoutes>();
-  const location = useRoute<TRoutes>();
-  const buildPath = router.buildPath as (
-    name: TName,
-    options?: LinkBuildOptions<RouteOf<TRoutes, TName>>,
-  ) => string;
-  const navigate = router.navigate as (
-    name: TName,
-    options?: LinkBuildOptions<RouteOf<TRoutes, TName>>,
-  ) => unknown;
-  const warm = router.warm as (
-    name: TName,
-    options?: LinkBuildOptions<RouteOf<TRoutes, TName>>,
-  ) => Promise<void>;
-
-  const buildOptions = buildOptionsObject({
-    hash,
-    params,
-    replace,
-    search,
-  } as LinkBuildOptions<AnyRoute>);
-  const hasOptions = Object.keys(buildOptions).length > 0;
-  const href = hasOptions
-    ? buildPath(to, buildOptions as LinkBuildOptions<RouteOf<TRoutes, TName>>)
-    : buildPath(to);
+  const location = useRoute();
+  // `RouteArgs` is a one-member tuple of the build options, but it stays
+  // deferred while `TName` is an unresolved type parameter, so TS cannot see
+  // that the destructured props already satisfy it — `LinkProps` is what
+  // enforces that, at every call site. Absent options are passed as
+  // `undefined` rather than stripped: core defaults each one, so an omitted
+  // key and an `undefined` key build the same URL.
+  const buildArgs = [{ hash, params, replace, search }] as unknown as RouteArgs<
+    TRoutes,
+    TName
+  >;
+  const href = router.buildPath(to, ...buildArgs);
   const isCurrent = location.pathname === href.split("?")[0].split("#")[0];
 
   return (
@@ -99,15 +74,7 @@ const Link = forwardRef(function Link<
         }
 
         event.preventDefault();
-
-        if (hasOptions) {
-          navigate(
-            to,
-            buildOptions as LinkBuildOptions<RouteOf<TRoutes, TName>>,
-          );
-        } else {
-          navigate(to);
-        }
+        router.navigate(to, ...buildArgs);
       }}
       onMouseEnter={(event) => {
         onMouseEnter?.(event);
@@ -116,14 +83,7 @@ const Link = forwardRef(function Link<
           return;
         }
 
-        if (hasOptions) {
-          void warm(
-            to,
-            buildOptions as LinkBuildOptions<RouteOf<TRoutes, TName>>,
-          );
-        } else {
-          void warm(to);
-        }
+        void router.warm(to, ...buildArgs);
       }}
       ref={forwardedRef}
       target={target}

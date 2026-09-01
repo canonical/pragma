@@ -46,6 +46,45 @@ Storybook addons live in `packages/storybook/`. These packages extend Storybook 
 
 Developer tools live directly in `packages/`. The `webarchitect` package is an example. If you are adding a new CLI tool or development utility, it belongs at this level.
 
+### A new category directory needs a new workspace glob
+
+The root `package.json` `workspaces` array lists each category explicitly, and every entry matches exactly **one** level:
+
+```json
+{
+  "workspaces": [
+    "configs/*",
+    "packages/*",
+    "packages/react/*",
+    "packages/runtime/*",
+    "packages/storybook/*",
+    "packages/summon/*",
+    "packages/cli/*",
+    "packages/styles/*",
+    "packages/svelte/*",
+    "packages/lit/*",
+    "apps/*",
+    "apps/react/*",
+    "apps/lit/*"
+  ]
+}
+```
+
+A package added to an **existing** category — `packages/react/my-thing` — is matched by `packages/react/*` and needs nothing further. A package added under a **new** category — `packages/my-category/my-thing` — is matched by nothing, because `packages/*` stops one level short. **Add `"packages/my-category/*"` to the array in the same commit that creates the directory.**
+
+This is the step that is easiest to miss and hardest to diagnose, because nothing in the repository points at it:
+
+- `bun install` does not warn. A directory outside every glob is not a workspace member, so Bun treats `@canonical/my-thing` as an ordinary registry dependency and fetches it from npm. For a package that is private or not yet published, install fails with a **404 on a package that is sitting in the working tree** — an error that describes the symptom and not the cause.
+- `scripts/check-workspace-ranges.ts` cannot catch it. The guard enumerates packages *from* the root globs, which is what makes it maintenance-free — but it also means a package no glob matches is invisible to the guard. Its count simply does not rise, and a count that does not rise looks exactly like a count that is correct.
+- `nx` **will** see the package, because it discovers projects from the filesystem. A disagreement between `nx show projects` and the workspace guard is the clearest signal that a glob is missing.
+
+Verify with the two commands together — they must agree:
+
+```bash
+bunx nx show projects | wc -l          # discovered from the filesystem
+bun run check:ranges                   # enumerated from the root globs
+```
+
 ## Webarchitect rulesets
 
 Every package must declare a webarchitect ruleset. Webarchitect validates that packages conform to architectural standards, including license requirements, export structure, and configuration file presence. The three rulesets serve different package categories.
@@ -239,6 +278,8 @@ Create a types file and an implementation file to complete the initial structure
 
 ### Step 7: Install Dependencies
 
+**First confirm a root workspace glob matches the new directory.** If the package sits under a category that is not already in the root `package.json` `workspaces` array, add it now — see [A new category directory needs a new workspace glob](#a-new-category-directory-needs-a-new-workspace-glob). Everything below assumes membership; without it `bun install` reaches for the registry instead of the working tree.
+
 Run `bun install` from the monorepo root to link the new package into the workspace:
 
 ```bash
@@ -247,6 +288,14 @@ bun install
 ```
 
 Bun resolves workspace dependencies and creates symlinks for local packages. After installation, other packages can depend on the new package using its scoped name.
+
+Confirm the link is real rather than a registry copy — this is the check that distinguishes a workspace member from a package Bun downloaded:
+
+```bash
+readlink node_modules/@canonical/my-utils     # → ../../packages/my-utils
+```
+
+A symlink into the working tree means the package is a workspace member. A real directory means it was resolved from npm, which for a package you have not published yet means the build is using someone else's code — or, more often, that install failed with a 404.
 
 ### Step 8: Validate Configuration
 
@@ -359,6 +408,9 @@ Configuration completeness:
 - src/index.ts exports the public API
 
 Validation:
+- The root `package.json` `workspaces` array matches the package's directory (only needed for a package in a **new** category directory, and easy to forget precisely because most packages do not need it)
+- `bunx nx show projects` and `bun run check:ranges` report the same package count — a disagreement means a glob is missing
+- `readlink node_modules/@canonical/<name>` resolves into the working tree, not to a downloaded copy
 - `bun install` succeeds from the monorepo root
 - `bun run build` succeeds in the package directory
 - `bun run check` passes (includes webarchitect validation)

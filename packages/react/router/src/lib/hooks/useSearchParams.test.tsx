@@ -18,7 +18,7 @@ function AllSearchParamsProbe({
   renderCount: { current: number };
 }) {
   renderCount.current += 1;
-  const searchParams = useSearchParams<typeof routes>();
+  const searchParams = useSearchParams();
 
   return <span>{searchParams.toString() || "none"}</span>;
 }
@@ -29,10 +29,7 @@ function SelectedSearchParamsProbe({
   renderCount: { current: number };
 }) {
   renderCount.current += 1;
-  const params = useSearchParams<typeof routes, undefined, ["page", "sort"]>([
-    "page",
-    "sort",
-  ] as const);
+  const params = useSearchParams(["page", "sort"] as const);
 
   return <span>{`${params.page ?? "none"}:${params.sort ?? "none"}`}</span>;
 }

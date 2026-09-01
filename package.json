@@ -67,5 +67,8 @@
     "react-relay@21.0.1": "patches/react-relay@21.0.1.patch",
     "relay-runtime@21.0.1": "patches/relay-runtime@21.0.1.patch",
     "sigstore@4.1.0": "patches/sigstore@4.1.0.patch"
+  },
+  "engines": {
+    "node": "^22.13.0 || ^24.0.0 || ^26.0.0"
   }
 }

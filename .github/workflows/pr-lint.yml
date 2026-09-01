@@ -21,3 +21,84 @@ jobs:
         uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # The closed type vocabulary. Every entry has a label of the same name,
+          # applied by `apply-type-label` below — keep the two lists in step.
+          types: |
+            feat
+            fix
+            docs
+            refactor
+            chore
+            test
+            ci
+            revert
+
+  apply-type-label:
+    name: Apply type label
+    needs: validate-pr-metadata
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      # Creating a managed label that does not exist yet goes through the issues API.
+      issues: write
+    steps:
+      # The title is the source of truth. It has just been validated, so the type
+      # label is derived from it rather than applied by hand: `feat(x): …` gets
+      # `feat`, and a `!` marker gets `breaking` alongside it. Labels this job
+      # manages are also removed when the title stops implying them, so an edited
+      # title never leaves a stale type behind.
+      - name: Derive the type label from the PR title
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const TYPES = ["feat", "fix", "docs", "refactor", "chore", "test", "ci", "revert"];
+            const BREAKING = "breaking";
+            // Only consulted when a label is missing from the repository, so a
+            // freshly generated repo labels its first PR correctly.
+            const COLORS = Object.fromEntries(TYPES.map((type) => [type, "b3c5d7"]));
+            COLORS[BREAKING] = "b60205";
+
+            const { owner, repo } = context.repo;
+            const pr = context.payload.pull_request;
+
+            // A fork PR gets a read-only token, so labelling would fail the run.
+            if (pr.head.repo.full_name !== `${owner}/${repo}`) {
+              core.warning("PR is from a fork; skipping labelling (the token is read-only).");
+              return;
+            }
+
+            const match = /^([a-z]+)(\([^)]*\))?(!)?:\s/.exec(pr.title);
+            if (!match) {
+              core.setFailed(`PR title is not a conventional commit: ${pr.title}`);
+              return;
+            }
+            const [, type, , breaking] = match;
+            if (!TYPES.includes(type)) {
+              core.setFailed(`"${type}" is not one of the allowed types: ${TYPES.join(", ")}`);
+              return;
+            }
+
+            const managed = new Set([...TYPES, BREAKING]);
+            const desired = new Set([type, ...(breaking ? [BREAKING] : [])]);
+            const current = new Set(pr.labels.map((label) => label.name).filter((name) => managed.has(name)));
+
+            const add = [...desired].filter((name) => !current.has(name));
+            const remove = [...current].filter((name) => !desired.has(name));
+
+            for (const name of add) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                await github.rest.issues.createLabel({ owner, repo, name, color: COLORS[name] });
+                core.info(`Created missing label "${name}"`);
+              }
+            }
+            if (add.length > 0) {
+              await github.rest.issues.addLabels({ owner, repo, issue_number: pr.number, labels: add });
+            }
+            for (const name of remove) {
+              await github.rest.issues.removeLabel({ owner, repo, issue_number: pr.number, name });
+            }
+            core.info(`${pr.title}\n  added:   ${add.join(", ") || "—"}\n  removed: ${remove.join(", ") || "—"}`);
