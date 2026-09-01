@@ -81,9 +81,10 @@ The pull request workflow runs on every PR. It uses a build matrix to test again
 ```yaml
 strategy:
   matrix:
-    bun-version: ['1.3.6']
     node-version: ['22', '24']
 ```
+
+Bun is not a matrix axis. It is pinned once in `.bun-version` at the repository root, which every `setup-bun` step reads through `bun-version-file`, so a bump moves every job at once.
 
 Each matrix job performs three steps:
 
