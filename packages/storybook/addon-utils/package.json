@@ -66,6 +66,7 @@
     "@canonical/biome-config": "^0.36.0",
     "@canonical/router-core": "^0.36.0",
     "@canonical/router-react": "^0.36.0",
+    "@canonical/storybook-addon-shell-theme": "^0.36.0",
     "@canonical/styles": "^0.36.0",
     "@canonical/typescript-config-react": "^0.36.0",
     "@storybook/addon-docs": "^10.3.1",

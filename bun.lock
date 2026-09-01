@@ -191,6 +191,7 @@
         "@storybook/svelte-vite": "^10.3.1",
         "@storybook/sveltekit": "^10.3.1",
         "@storybook/web-components-vite": "^10.3.1",
+        "react": "^18.0.0 || ^19.0.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
@@ -199,6 +200,7 @@
         "@types/node": "^26.0.0",
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
+        "react": "^19.2.4",
         "storybook": "^10.3.1",
         "typescript": "^5.9.3",
       },
@@ -1065,6 +1067,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.36.0",
+        "@canonical/design-tokens": "0.8.1",
         "@canonical/typescript-config": "^0.36.0",
         "@canonical/webarchitect": "^0.36.0",
         "copyfiles": "^2.4.1",
@@ -1110,6 +1113,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.36.0",
+        "@canonical/storybook-config": "^0.36.0",
         "@canonical/typescript-config-react": "^0.36.0",
         "@storybook/addon-docs": "^10.3.1",
         "@storybook/react-vite": "^10.3.1",
@@ -1180,6 +1184,7 @@
         "@canonical/biome-config": "^0.36.0",
         "@canonical/router-core": "^0.36.0",
         "@canonical/router-react": "^0.36.0",
+        "@canonical/storybook-addon-shell-theme": "^0.36.0",
         "@canonical/styles": "^0.36.0",
         "@canonical/typescript-config-react": "^0.36.0",
         "@storybook/addon-docs": "^10.3.1",

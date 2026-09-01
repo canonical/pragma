@@ -1,11 +1,10 @@
-import type { StorybookConfig } from "@storybook/react-vite";
+import { createConfig } from "@canonical/storybook-config";
 
-const config: StorybookConfig = {
-  stories: ["../src/**/*.mdx", "../src/**/*.stories.@(js|jsx|ts|tsx)"],
-  addons: ["./local-preset.js"],
-  framework: "@storybook/react-vite",
-  core: { disableTelemetry: true },
+/**
+ * `extraAddons` carries the local preset so this Storybook self-hosts the addon
+ * it develops, rather than the published copy.
+ */
+export default createConfig("react", {
+  extraAddons: ["./local-preset.js"],
   staticDirs: ["../public"],
-};
-
-export default config;
+});
