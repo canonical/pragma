@@ -1,6 +1,7 @@
 import type { Preview as ReactPreview } from "@storybook/react-vite";
 import type { Preview as SveltePreview } from "@storybook/svelte-vite";
 import type { Preview as LitPreview } from "@storybook/web-components-vite";
+import { DocsContainer } from "./DocsContainer.js";
 
 /**
  * Preview type for React, Svelte, and Lit Storybooks.
@@ -29,6 +30,11 @@ type Preview = ReactPreview & SveltePreview & LitPreview;
  *
  * Color scheme toggling is handled by @canonical/storybook-addon-utils
  * which provides .light/.dark class toggling via its toolbar control.
+ *
+ * The explicit `Partial<Preview>` annotation is load-bearing: it stops the
+ * emitted declaration inferring `docs.container`'s React prop types, which
+ * would make `@types/react` — a devDependency here — required to typecheck the
+ * published `./preview` entry in Svelte and Lit consumers. Do not drop it.
  */
 export const previewConfig: Partial<Preview> = {
   tags: ["autodocs"],
@@ -49,6 +55,10 @@ export const previewConfig: Partial<Preview> = {
     },
     docs: {
       codePanel: true,
+      // Themes the documentation page chrome and keeps it following the OS
+      // light/dark preference. Without this, docs pages fall back to
+      // Storybook's stock light theme — see DocsContainer.tsx.
+      container: DocsContainer,
     },
   },
 };
