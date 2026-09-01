@@ -82,7 +82,18 @@ describe("mode matrix — unannotated input", () => {
     expect(bodyOf(auto.result.sdl)).toBe(bodyOf(annotated.result.sdl));
   });
 
-  it("explicit: the zero-type schema — TBox + node survive, A007 lists every class, contract satisfied", async () => {
+  // The name once ended "…, contract satisfied", backed by a
+  // satisfiesContract() call on the emitted SDL. `@canonical/prism-contract`
+  // is deliberately not a dependency of this package — the contract is
+  // authored by the documentation site, and a compiler that vendored its own
+  // conformance check would be marking its own homework (see the README) — so
+  // that assertion cannot live here. The claim is struck from the name rather
+  // than left standing over nothing; it returns, in the contract package's own
+  // gate, when that package does. What it was defending for the zero-type case
+  // is pinned below in local terms anyway: the root set is EXACTLY node plus
+  // the four TBox roots, so the contract base survives a projection that keeps
+  // no ontology class at all.
+  it("explicit: the zero-type schema — TBox + node survive, A007 lists every class", async () => {
     const { result } = await compileFixture(MINIMAL_TTL, { mode: "explicit" });
     expect([...result.mapped.types.keys()]).toEqual([]);
     expect([...result.mapped.interfaces.keys()]).toEqual([]);
@@ -235,6 +246,23 @@ describe("mode matrix — annotated input", () => {
     expect(roots).toContain("author");
     expect(roots).not.toContain("secret");
     expect(roots).not.toContain("badge");
+    // …but the relay/Node base does NOT fall out with them. The allowlist
+    // filters ontology classes; it must not take the contract base with it,
+    // and nothing else pins that for a PARTIAL allowlist — the zero-type case
+    // above pins it for the empty one, and the goldens only cover the default
+    // annotated mode. This is the locally expressible core of the
+    // satisfiesContract() call that stood here before
+    // `@canonical/prism-contract` left the tree: the contract's own relay
+    // control fails by exactly one violation, FIELD_REMOVED on Query.node.
+    expect(roots).toContain("node");
+    expect(result.sdl).toContain("interface Node {");
+    // Every projected type still implements it (member order is not pinned).
+    expect(
+      /type Publication implements ([^{]*)\{/.exec(result.sdl)?.[1],
+    ).toContain("Node");
+    expect(/type Author implements ([^{]*)\{/.exec(result.sdl)?.[1]).toContain(
+      "Node",
+    );
     // A007 aggregates the dropped set once, sorted.
     const a007 = result.diagnostics.filter((d) => d.code === "A007");
     expect(a007).toHaveLength(1);
