@@ -1,22 +1,7 @@
 import type { ModifierFamily } from "@canonical/ds-types";
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
-/**
- * Props for the Label component
- *
- * @implements ds:global.component.label
- *
- * Anatomy (from DSL):
- * - layout.display: inline
- * - typography.size: font/size/label
- * - typography.weight: font/weight/medium
- *
- * Modifier families (from DSL):
- * - anticipation: constructive, caution, destructive
- * - importance: primary, secondary, tertiary
- * - criticality: success, error, warning, information
- */
-export interface LabelProps extends HTMLAttributes<HTMLSpanElement> {
+type OwnProps = {
   /**
    * The label text content
    */
@@ -51,4 +36,22 @@ export interface LabelProps extends HTMLAttributes<HTMLSpanElement> {
    * - failed: Terminal failure
    */
   lifecycle?: ModifierFamily<"lifecycle">;
-}
+};
+
+/**
+ * Props for the Label component
+ *
+ * @implements ds:global.component.label
+ *
+ * Anatomy (from DSL):
+ * - layout.display: inline
+ * - typography.size: font/size/label
+ * - typography.weight: font/weight/medium
+ *
+ * Modifier families (from DSL):
+ * - anticipation: constructive, caution, destructive
+ * - importance: primary, secondary, tertiary
+ * - criticality: success, error, warning, information
+ */
+export type LabelProps = OwnProps &
+  Omit<ComponentProps<"span">, keyof OwnProps>;
