@@ -427,7 +427,9 @@ hydrateRoot(
 
 ### `Outlet`
 
-`Outlet` subscribes to router state, calls `router.render()`, and wraps the matched subtree in `Suspense`.
+`Outlet` subscribes to router state, builds the matched subtree with `createElement`, and wraps it in `Suspense`.
+
+It does **not** call `router.render()`. Core `render()` invokes the route's content and each wrapper as plain functions, which gives them no fiber of their own — every hook they declare would attach to `Outlet`'s hook list, and navigating between routes whose components declare different numbers of hooks would throw *"Rendered fewer hooks than expected"*. Constructing elements instead gives each component its own fiber, so its hooks belong to it. `render()` remains the correct shape for a non-React consumer.
 
 ```tsx
 <Outlet fallback={<p>Loading route…</p>} />
@@ -442,6 +444,8 @@ hydrateRoot(
 - `useRouterState()` is the power-user hook for subscribing to selected slices of `router.getState()`.
 - `useSearchParam()` subscribes to one query-string key.
 - `useSearchParams()` subscribes either to the full query string or to a fixed set of keys.
+
+Both `useSearchParam()`'s key and `useSearchParams()`'s key list are checked against the search-param keys declared by the registered route map's `search` schemas (falling back to any `string` when no `RouterRegister` is declared — see [Type registration](#3-navigate-with-typed-links-and-observe-router-state)).
 
 Typical selection strategy:
 

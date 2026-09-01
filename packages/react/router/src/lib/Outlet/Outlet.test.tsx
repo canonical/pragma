@@ -210,53 +210,119 @@ describe("Outlet hook ownership (AV-340)", () => {
   });
 
   it("supports hooks in wrapper components across navigation", async () => {
-    function StatefulShell({
+    // The PAGES here declare NO hooks, deliberately.
+    //
+    // An earlier version of this test wrapped ManyHooksPage and FewHooksPage
+    // in a SINGLE one-hook shell, so the hook-count difference came from the
+    // PAGES. That version would have passed with wrappers reverted to direct
+    // calls: Outlet would have owned exactly one wrapper hook on both routes,
+    // and the difference React saw would have been the page half — already
+    // covered by the test above. The wrapper half was unguarded.
+    //
+    // Here the pages contribute nothing and the SHELLS differ in hook count,
+    // so any change in Outlet's own hook list is attributable to the wrappers
+    // alone. Outlet is not keyed (only the Suspense inside it is), so its
+    // fiber survives navigation — which is precisely why hooks attributed to
+    // it, rather than to the wrapper's own fiber, break on the next render.
+    function HookFreePage(): ReactElement {
+      return <span>page</span>;
+    }
+
+    function ManyHooksShell({
       children,
     }: WrapperComponentProps<ReactNode>): ReactElement {
-      const [shellId] = useState("stateful-shell");
+      const [shellId] = useState("many-hooks-shell");
+      const renderCount = useRef(0);
+
+      useEffect(() => {
+        // Present only to give this shell a third hook.
+      }, []);
+
+      renderCount.current += 1;
 
       return <div data-testid={shellId}>{children}</div>;
     }
 
-    const shell = wrapper<ReactNode>({
-      id: "shell",
-      component: StatefulShell,
+    function FewHooksShell({
+      children,
+    }: WrapperComponentProps<ReactNode>): ReactElement {
+      const [shellId] = useState("few-hooks-shell");
+
+      return <div data-testid={shellId}>{children}</div>;
+    }
+
+    const manyShell = wrapper<ReactNode>({
+      id: "many-shell",
+      component: ManyHooksShell,
+    });
+    const fewShell = wrapper<ReactNode>({
+      id: "few-shell",
+      component: FewHooksShell,
     });
     const wrappedRoutes = {
       many: route({
         url: "/",
-        content: ManyHooksPage,
-        wrappers: [shell] as const,
+        content: HookFreePage,
+        wrappers: [manyShell] as const,
       }),
       few: route({
         url: "/few",
-        content: FewHooksPage,
-        wrappers: [shell] as const,
+        content: HookFreePage,
+        wrappers: [fewShell] as const,
       }),
     };
     const router = createRouter(wrappedRoutes, {
       adapter: createMemoryAdapter("/"),
     });
+    const onUncaughtError = vi.fn();
+    const container = document.createElement("div");
 
-    render(
-      <RouterProvider router={router}>
-        <Outlet />
-      </RouterProvider>,
-    );
+    document.body.appendChild(container);
 
-    await waitFor(() => {
-      expect(screen.getByTestId("stateful-shell")).toBeTruthy();
-      expect(screen.getByText("many-hooks-mount-1")).toBeTruthy();
+    const root = createRoot(container, { onUncaughtError });
+
+    await act(async () => {
+      root.render(
+        <RouterProvider router={router}>
+          <Outlet />
+        </RouterProvider>,
+      );
     });
 
+    await waitFor(() => {
+      expect(
+        container.querySelector('[data-testid="many-hooks-shell"]'),
+      ).toBeTruthy();
+    });
+
+    // Three wrapper hooks -> one: the direction React 19 throws on.
     await act(async () => {
       await router.navigate("few");
     });
 
-    await waitFor(() => {
-      expect(screen.getByTestId("stateful-shell")).toBeTruthy();
-      expect(screen.getByText("few-hooks")).toBeTruthy();
+    expect(onUncaughtError.mock.calls.map((call) => String(call[0]))).toEqual(
+      [],
+    );
+    expect(
+      container.querySelector('[data-testid="few-hooks-shell"]'),
+    ).toBeTruthy();
+
+    // And back: one -> three.
+    await act(async () => {
+      await router.navigate("many");
     });
+
+    expect(onUncaughtError.mock.calls.map((call) => String(call[0]))).toEqual(
+      [],
+    );
+    expect(
+      container.querySelector('[data-testid="many-hooks-shell"]'),
+    ).toBeTruthy();
+
+    act(() => {
+      root.unmount();
+    });
+    container.remove();
   });
 
   it("renders element-creating arrow content identically to bare components", async () => {

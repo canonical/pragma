@@ -7,8 +7,11 @@ file is the PR workflow contract.
 ## Toolchain
 
 - **Bun is required** and is the canonical package manager/runner (`bun install`,
-  `bun run <script>`). Node.js 20+ must also be present (the floor `pragma doctor`
-  enforces and `old/CONTRIBUTING.md` documents); avoid Node 23.
+  `bun run <script>`). Node.js `^22.13.0 || ^24.0.0 || ^26.0.0` must also be
+  present — the range Lerna requires, and therefore the range the root gate
+  runs under. Node 20, 23 and 25 are all excluded: 23 additionally has a known
+  compatibility issue. The root `package.json` declares this range, so
+  `bun install` warns when the local Node is outside it.
 - **npm appears only for first-time package publishing** (`npm publish --access public`
   from inside a new package dir) — never for day-to-day dev. Don't use `npm install`.
 
@@ -21,8 +24,11 @@ file is the PR workflow contract.
 - **Keep commits atomic.** One logical change per commit; the diff should be reviewable
   on its own and tell a single story. Bundling unrelated items into one commit/PR is
   allowed but should be **rare** and called out in the PR body (a "drive-by" line).
-- The PR also needs one of these **labels**: `Feature 🎁`, `Breaking Change 💣`,
-  `Bug 🐛`, `Documentation 📝`, `Maintenance 🔨`.
+- The allowed types are `feat`, `fix`, `docs`, `refactor`, `chore`, `test`, `ci` and
+  `revert`; the **type label** is derived from the title by CI, so never add one by hand.
+  A breaking change is marked with `!` in the title (`feat(router)!: …`), which is what
+  applies the `breaking` label. Every other label is a human judgement — see
+  [docs/references/LABELS.md](docs/references/LABELS.md).
 - The release CHANGELOG is Lerna-generated from commit history — write commit subjects
   for the changelog reader, not just yourself.
 
@@ -184,7 +190,16 @@ precedent.
 - Branch from up-to-date `origin/main`; never push to `main` directly — **all changes
   land via PR** on a feature branch.
 - Fill in `.github/PULL_REQUEST_TEMPLATE.md` (Done / QA / readiness checklist).
-- Add `no visual change` to skip Chromatic when there's no visual diff.
+- **A PR description must stand on its own. Never cite an internal planning
+  document in it** — no ADR rung numbers, session ledgers, `pragma-adrs` paths, or
+  any other coordinate into a repo the reader may not be able to open. Outside
+  contributors and other teams review these PRs; sending them looking for a
+  document they do not have access to costs them time and tells them nothing. A
+  citation is not a reason. State what the change does and why, in full, in the PR
+  itself. The same goes for commit subjects, which Lerna puts in the CHANGELOG.
+  Internal sequencing stays in the planning repo; when merge order matters, name
+  the PR that must land first **by number** and say why in one line.
+- Add `Chromatic: skip` to skip Chromatic when there's no visual diff.
 - New package? First-time publish is manual (`npm publish --access public` from the
   package dir); verify with `bun run publish:status` from the root.
 - **New packages need OIDC trusted-publisher setup — a manual human step, agents cannot

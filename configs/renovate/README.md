@@ -32,7 +32,8 @@ Or if published to npm:
   - `lerna-nx` — `lerna`, `nx`, `@nx/*`
   - `canonical` — `@canonical/*` (catch-all for internal packages)
 - **DevDep automerge** — patch and minor updates for devDependencies
-- **Labels** — `Maintenance 🔨` on all Renovate PRs
+- **Labels** — none applied directly; the `chore` type label is derived from the
+  `chore(deps): ...` title by the `pr-lint` workflow
 - **Semantic commits** — `chore(deps): ...` format
 
 ## Adding domain-specific groups

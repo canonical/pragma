@@ -35,7 +35,7 @@ describe("createMemoryAdapter", () => {
     const unsubscribe = adapter.subscribe(listener);
 
     adapter.navigate("https://example.com/first");
-    adapter.navigate(new URL("https://example.com/second?tab=details"), {
+    adapter.navigate("https://example.com/second?tab=details", {
       replace: true,
     });
     unsubscribe();

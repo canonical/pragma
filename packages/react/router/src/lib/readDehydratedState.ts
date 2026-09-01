@@ -1,5 +1,9 @@
 import { INITIAL_DATA_KEY } from "@canonical/react-ssr/renderer/constants";
-import type { RouteMap, RouterDehydratedState } from "@canonical/router-core";
+import type {
+  RouteMap,
+  RouteName,
+  RouterDehydratedState,
+} from "@canonical/router-core";
 import type { HydrationWindow } from "./types.js";
 
 /**
@@ -34,33 +38,37 @@ export default function readDehydratedState<
     return null;
   }
 
-  const state = candidate as {
+  const { href, kind, routeId, status } = candidate as {
     href?: unknown;
     kind?: unknown;
     routeId?: unknown;
     status?: unknown;
   };
 
-  if (
-    typeof state.href !== "string" ||
-    typeof state.status !== "number" ||
-    (state.kind !== "route" &&
-      state.kind !== "not-found" &&
-      state.kind !== "unmatched")
-  ) {
+  if (typeof href !== "string" || typeof status !== "number") {
     return null;
   }
 
-  if (state.kind === "route" && typeof state.routeId !== "string") {
-    return null;
+  // A normalized copy is returned per branch so extra payload keys (url,
+  // theme, …) and any malformed routeId on a non-route kind never reach
+  // hydrate(). The one cast is the JSON boundary itself: a route id read off
+  // an untyped payload cannot be proven to name a route in TRoutes.
+  if (kind === "route") {
+    if (typeof routeId !== "string") {
+      return null;
+    }
+
+    return {
+      href,
+      kind,
+      routeId: routeId as RouteName<TRoutes>,
+      status,
+    };
   }
 
-  // Return a normalized copy so extra payload keys (url, theme, …) and any
-  // malformed routeId on non-route kinds never reach hydrate().
-  return {
-    href: state.href,
-    kind: state.kind,
-    routeId: state.kind === "route" ? state.routeId : null,
-    status: state.status,
-  } as RouterDehydratedState<TRoutes>;
+  if (kind === "not-found" || kind === "unmatched") {
+    return { href, kind, routeId: null, status };
+  }
+
+  return null;
 }

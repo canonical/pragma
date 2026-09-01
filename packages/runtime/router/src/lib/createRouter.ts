@@ -16,14 +16,14 @@ import StatusResponse from "./StatusResponse.js";
 import { formatIssues, runSchema } from "./schemaUtils.js";
 import type {
   AnyRoute,
-  BuildPathFn,
   NamedRouteMatch,
-  NavigateFn,
   NavigationIntent,
   NotFoundRouteMatch,
   ParamsOf,
   PathBuildArgs,
   PlatformNavigateOptions,
+  RouteArgs,
+  RouteIntent,
   RouteMap,
   RouteMiddleware,
   RouteModule,
@@ -37,9 +37,10 @@ import type {
   RouterLoadResult,
   RouterMatch,
   RouterOptions,
+  SearchInputOf,
   SearchOf,
+  SearchParamKey,
   StandardSchemaIssue,
-  WarmFn,
 } from "./types.js";
 
 type NavigationMode = "initial" | "none" | "pop" | "push";
@@ -313,14 +314,14 @@ function readBuildOptions<TRoute extends AnyRoute>(
   args: PathBuildArgs<TRoute>,
 ): {
   params: ParamsOf<TRoute>;
-  search: SearchOf<TRoute>;
+  search: SearchInputOf<TRoute>;
   hash?: string;
 } {
   const [options] = args;
 
   return {
     params: (options?.params ?? {}) as ParamsOf<TRoute>,
-    search: (options?.search ?? {}) as SearchOf<TRoute>,
+    search: (options?.search ?? {}) as SearchInputOf<TRoute>,
     hash: options?.hash,
   };
 }
@@ -707,8 +708,6 @@ export default function createRouter<
     signal: AbortSignal,
     scheduledControlFlow: ScheduledControlFlow,
   ): Promise<ResolvedLoadData<TRoutes, TNotFound>> {
-    const nextRoute = currentMatch?.route;
-
     // A rejection from an async warm hook is honoured when it carries
     // control flow (a runtime redirect or a typed status): the first one wins
     // and is applied late by the caller's guard.  Any other rejection is an
@@ -741,13 +740,15 @@ export default function createRouter<
     // Fire warm hooks as fire-and-forget side effects.
     // Wrapper warms run for all wrappers (no caching/reuse).
     // Route warm runs if defined. None block rendering.
-    if (nextRoute) {
+    if (currentMatch) {
+      const nextRoute = currentMatch.route;
       // Wrappers are shared across routes and typed as RouteParamValues, so
       // they receive the raw string params extracted from the URL — a route's
       // params schema only transforms what the route's own hooks receive.
-      const rawWrapperParams = (
-        currentMatch ? (matchPath(nextRoute.url, currentMatch.url) ?? {}) : {}
-      ) as RouteParamValues;
+      // A not-found match may carry a pattern the URL cannot re-match, in
+      // which case wrappers receive empty params.
+      const rawWrapperParams = (matchPath(nextRoute.url, currentMatch.url) ??
+        {}) as RouteParamValues;
 
       for (const currentWrapper of nextRoute.wrappers) {
         if (currentWrapper.warm) {
@@ -757,7 +758,7 @@ export default function createRouter<
         }
       }
 
-      if (nextRoute.warm && currentMatch) {
+      if (nextRoute.warm) {
         void Promise.resolve(
           nextRoute.warm(currentMatch.params, currentMatch.search, {
             signal,
@@ -1087,16 +1088,16 @@ export default function createRouter<
     await update();
   }
 
-  const buildPath: BuildPathFn<TRoutes> = ((
-    name: RouteName<TRoutes>,
-    ...args: unknown[]
-  ) => {
+  function buildPath<TName extends RouteName<TRoutes>>(
+    name: TName,
+    ...args: RouteArgs<TRoutes, TName>
+  ): string {
     return createIntent(
       resolvedRoutes,
       name,
-      args as unknown as PathBuildArgs<RouteOf<TRoutes, typeof name>>,
+      args as unknown as PathBuildArgs<RouteOf<TRoutes, TName>>,
     ).href;
-  }) as BuildPathFn<TRoutes>;
+  }
 
   let pendingNavigation: {
     href: string;
@@ -1106,13 +1107,11 @@ export default function createRouter<
     resolve: () => void;
   } | null = null;
 
-  const navigate: NavigateFn<TRoutes> = ((
-    name: RouteName<TRoutes>,
-    ...args: unknown[]
-  ) => {
-    const buildArgs = args as unknown as PathBuildArgs<
-      RouteOf<TRoutes, typeof name>
-    >;
+  function navigate<TName extends RouteName<TRoutes>>(
+    name: TName,
+    ...args: RouteArgs<TRoutes, TName>
+  ): RouteIntent<TRoutes, TName> {
+    const buildArgs = args as unknown as PathBuildArgs<RouteOf<TRoutes, TName>>;
     const intent = createIntent(resolvedRoutes, name, buildArgs);
     const replace = (buildArgs[0] as { replace?: boolean } | undefined)
       ?.replace;
@@ -1145,15 +1144,15 @@ export default function createRouter<
       };
       notifyBlockerState();
 
-      return intent;
+      return intent as unknown as RouteIntent<TRoutes, TName>;
     }
 
     saveScrollPosition();
     syncAdapterLocation(intent.href, replace ? { replace: true } : undefined);
     scheduleAdapterLoad(intent.href, replace ? "pop" : "push");
 
-    return intent;
-  }) as NavigateFn<TRoutes>;
+    return intent as unknown as RouteIntent<TRoutes, TName>;
+  }
 
   const blockers = new Map<string, () => boolean>();
   const blockerSubject = createSubject<"idle" | "blocked">();
@@ -1177,8 +1176,10 @@ export default function createRouter<
 
   function setSearchParams(
     params:
-      | Record<string, string | null>
-      | ((current: Record<string, string>) => Record<string, string | null>),
+      | { readonly [TKey in SearchParamKey<TRoutes>]?: string | null }
+      | ((current: Readonly<Record<string, string>>) => {
+          readonly [TKey in SearchParamKey<TRoutes>]?: string | null;
+        }),
     options?: { readonly replace?: boolean },
   ): void {
     const currentState = store.getState();
@@ -1189,7 +1190,7 @@ export default function createRouter<
       currentSearch[key] = value;
     }
 
-    const nextParams =
+    const nextParams: Readonly<Record<string, string | null | undefined>> =
       typeof params === "function" ? params(currentSearch) : params;
 
     const nextUrl = buildUrl(currentUrl.href);
@@ -1200,7 +1201,9 @@ export default function createRouter<
       ...currentSearch,
       ...nextParams,
     })) {
-      if (value !== null) {
+      // null and undefined both remove the param: an update object with
+      // optional keys can carry explicit undefined values.
+      if (value !== null && value !== undefined) {
         nextUrl.searchParams.set(key, value);
       }
     }
@@ -1220,18 +1223,18 @@ export default function createRouter<
     scheduleAdapterLoad(href, replace ? "pop" : "push");
   }
 
-  const warm: WarmFn<TRoutes> = ((
-    name: RouteName<TRoutes>,
-    ...args: unknown[]
-  ) => {
+  function warm<TName extends RouteName<TRoutes>>(
+    name: TName,
+    ...args: RouteArgs<TRoutes, TName>
+  ): Promise<void> {
     const intent = createIntent(
       resolvedRoutes,
       name,
-      args as unknown as PathBuildArgs<RouteOf<TRoutes, typeof name>>,
+      args as unknown as PathBuildArgs<RouteOf<TRoutes, TName>>,
     );
 
     return warmHref(intent.href);
-  }) as WarmFn<TRoutes>;
+  }
 
   const match = (
     input: string | URL,

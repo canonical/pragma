@@ -1,11 +1,8 @@
 import type {
-  AnyRoute,
-  HasParams,
-  ParamsOf,
+  PathBuildOptions,
   RouteMap,
   RouteName,
   RouteOf,
-  SearchOf,
 } from "@canonical/router-core";
 import type {
   AnchorHTMLAttributes,
@@ -15,25 +12,18 @@ import type {
 } from "react";
 
 /**
- * Route-building options shared by `Link`, `navigate()`, and `warm()`.
+ * Props accepted by `Link`.
+ *
+ * The route-building half of these props is core's `PathBuildOptions`
+ * itself, not a structural duplicate of it: a copy would keep compiling
+ * against a stale contract (accepting, say, non-serializable `search`
+ * values) long after core tightened it.
  */
-export type LinkBuildOptions<TRoute extends AnyRoute> = {
-  /** Optional URL hash fragment without the leading `#`. */
-  readonly hash?: string;
-  /** When true, the navigation replaces the current history entry. */
-  readonly replace?: boolean;
-  /** Search data to encode into the destination URL. */
-  readonly search?: SearchOf<TRoute>;
-} & (HasParams<TRoute> extends true
-  ? { readonly params: ParamsOf<TRoute> }
-  : { readonly params?: ParamsOf<TRoute> });
-
-/** Props accepted by `Link`. */
 export type LinkProps<
   TRoutes extends RouteMap,
   TName extends RouteName<TRoutes>,
 > = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> &
-  LinkBuildOptions<RouteOf<TRoutes, TName>> & {
+  PathBuildOptions<RouteOf<TRoutes, TName>> & {
     /** Content rendered inside the generated anchor element. */
     readonly children?: ReactNode;
     /** Trigger a file download instead of client-side navigation. */

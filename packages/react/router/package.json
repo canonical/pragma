@@ -33,12 +33,13 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "build:all": "bun run build",
-    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
+    "check": "bun run check:biome && bun run check:ts && bun run check:ts:registered && bun run check:webarchitect",
     "check:webarchitect": "webarchitect package-react",
-    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:fix": "bun run check:biome:fix && bun run check:ts && bun run check:ts:registered",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
+    "check:ts:registered": "tsc --noEmit -p tsconfig.types.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
