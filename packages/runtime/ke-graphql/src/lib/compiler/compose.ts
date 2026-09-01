@@ -381,7 +381,11 @@ export default function compose(
           for (const [name, config] of Object.entries(
             getExtensionFields(type.name),
           )) {
-            if (generated[name]) {
+            // Object.hasOwn, not a truthy lookup: see the Query builder below
+            // — these field maps are plain objects and inherit
+            // Object.prototype, so `generated.toString` answers with the
+            // prototype method for a type that has no such field.
+            if (Object.hasOwn(generated, name)) {
               diagnostics.push({
                 severity: "error",
                 code: "C002",
@@ -424,7 +428,17 @@ export default function compose(
         // root field landing on one of them gets the SAME C002 error+drop
         // treatment as a consumer extension would — the TBox field is kept,
         // never silently overwritten.
-        if (fields[name]) {
+        //
+        // The occupancy test must be OWN-property: `fields` is a plain
+        // object and therefore inherits Object.prototype, so a truthy
+        // `fields[name]` answers for `toString`, `valueOf`, `constructor`
+        // and their siblings on a map that holds none of them. A class named
+        // `ToString` mints the perfectly legal root field `Query.toString`,
+        // which collides with no TBox field and must NOT be dropped — and a
+        // fatal C002 naming a conflict the schema does not contain is worse
+        // than the collision it was built to catch, because there is no
+        // rename that clears it.
+        if (Object.hasOwn(fields, name)) {
           diagnostics.push({
             severity: "error",
             code: "C002",
@@ -441,7 +455,8 @@ export default function compose(
       for (const [name, config] of Object.entries(
         getExtensionFields("Query"),
       )) {
-        if (fields[name]) {
+        // Same map, same own-property rule as above.
+        if (Object.hasOwn(fields, name)) {
           diagnostics.push({
             severity: "error",
             code: "C002",

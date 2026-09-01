@@ -436,6 +436,40 @@ describe("compose full construction", () => {
     expect(String(field?.type)).toBe("[Ontology!]!");
   });
 
+  it("C002 — a field named after an Object.prototype member is no conflict", () => {
+    // Both field maps are plain objects and inherit Object.prototype, so a
+    // truthy `fields[name]` answers for toString/valueOf/constructor on a map
+    // that holds none of them. A class named `ToString` mints the perfectly
+    // legal root field `Query.toString`, and an extension may legitimately be
+    // called `valueOf`: neither collides with anything, and a fatal C002 here
+    // would drop a field with no rename that clears it. The own-property test
+    // is what separates those from a real conflict.
+    const plan = emptyPlan({
+      types: new Map([
+        [
+          "ToString",
+          objectPlan("ToString", new Map([["name", scalarField("name")]])),
+        ],
+      ]),
+      queryFields: new Map<string, FieldPlan>([
+        ["toString", scalarField("toString")],
+      ]),
+    });
+    const extensions: SchemaExtensionsInput = {
+      ToString: { valueOf: { type: GraphQLString } },
+    };
+    const { output, diagnostics } = compose(plan, { extensions });
+    expect(diagnostics.filter((d) => d.code === "C002")).toHaveLength(0);
+    expect(output.schema).not.toBeNull();
+    // Both survive: the generated root field and the extension field.
+    const queryFields = output.schema?.getQueryType()?.getFields() ?? {};
+    expect(Object.hasOwn(queryFields, "toString")).toBe(true);
+    expect(output.sdl).toContain("toString: String");
+    expect(output.sdl).toContain("valueOf: String");
+    // …and the TBox roots the generated field genuinely does not touch stay.
+    expect(Object.hasOwn(queryFields, "ontologies")).toBe(true);
+  });
+
   it("C001 — object-form extension references an unknown type", () => {
     const thing: TypePlan = {
       name: "Thing",
