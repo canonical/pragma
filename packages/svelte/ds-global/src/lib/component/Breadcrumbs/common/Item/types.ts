@@ -18,7 +18,7 @@ export type ItemAnchorProps = Omit<
  * Extends navigation Item (WD405) with breadcrumb-specific props.
  * Omits `items` (nested children): irrelevant to a flat breadcrumb trail.
  *
- * @implements dso:global.subcomponent.breadcrumbs-item
+ * @implements ds:global.subcomponent.breadcrumbs-item
  */
 export interface ItemProps extends ItemAnchorProps, Omit<Item, "items"> {
   /**

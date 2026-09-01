@@ -9,7 +9,7 @@
  * - json: the serialized {@link QueryResult}.
  */
 
-import type { Formatters } from "../../kernel/spec/types.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 
 // Inline `import("…")` type (no `from`) — keeps the ke types off the static
 // import graph the lazy-dispatch probe walks (see query.verb.ts).
@@ -36,9 +36,21 @@ function formatTriples(
 }
 
 export const queryFormatters: Formatters<QueryResult> = {
+  // Zero rows/triples: plain stdout stays empty — the notice is
+  // `notice`, routed to stderr (exit 0) by the dispatcher so a pipe
+  // reads no prose. ASK always has a result and never goes empty.
+  notice(result) {
+    if (result.type === "select" && result.bindings.length === 0) {
+      return "No results.";
+    }
+    if (result.type === "construct" && result.triples.length === 0) {
+      return "No triples.";
+    }
+    return undefined;
+  },
   plain(result) {
     if (result.type === "select") {
-      if (result.bindings.length === 0) return "No results.";
+      if (result.bindings.length === 0) return "";
       const cols = Object.keys(result.bindings[0] ?? {});
       const rows = result.bindings.map((b) =>
         cols.map((c) => b[c] ?? "").join("\t"),
@@ -48,7 +60,7 @@ export const queryFormatters: Formatters<QueryResult> = {
     if (result.type === "ask") {
       return `ASK: ${String(result.result)}`;
     }
-    return formatTriples(result.triples);
+    return result.triples.length === 0 ? "" : formatTriples(result.triples);
   },
 
   llm(result) {

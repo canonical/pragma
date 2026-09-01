@@ -14,6 +14,7 @@ import { compilePack } from "../kernel/packs/compile.js";
 import type { LookupOutput } from "../kernel/packs/resolveEntity.js";
 import { parsePackDefinition } from "../kernel/packs/schema.js";
 import type { PackRow } from "../kernel/packs/types.js";
+import { distributionSource } from "../kernel/packs/types.js";
 import { verbKey } from "../kernel/packs/uniqueness.js";
 import { DEFAULT_PREFIX_MAP } from "../kernel/render/prefixes.js";
 import type { PragmaRuntime } from "../kernel/runtime/types.js";
@@ -29,6 +30,10 @@ if (!standardPack) {
 const CS = "http://pragma.canonical.com/codestandards#";
 const PREFIXES = {
   cs: CS,
+  // The store the fixture builds is queried with the story queries verbatim,
+  // and the category roll-up names `skos:broader` — a CORE prefix on the real
+  // build path (`buildPackPrefixes`), which this in-memory helper does not use.
+  skos: "http://www.w3.org/2004/02/skos/core#",
   owl: "http://www.w3.org/2002/07/owl#",
   rdfs: "http://www.w3.org/2000/01/rdf-schema#",
   xsd: "http://www.w3.org/2001/XMLSchema#",
@@ -77,7 +82,11 @@ cs:code.function.purity a cs:CodeStandard ;
 `;
 
 const verbs = () =>
-  compilePack(standardPack, "pragma.conf.ts", DEFAULT_PREFIX_MAP);
+  compilePack(
+    standardPack,
+    distributionSource("pragma.conf.ts"),
+    DEFAULT_PREFIX_MAP,
+  );
 const verb = (label: string) =>
   verbs().find((v) => verbKey(v.path) === `standard ${label}`) as VerbSpec;
 

@@ -28,7 +28,7 @@ describe("insertRoute", () => {
     expect(out).toContain('import InvoicesPage from "./InvoicesPage.js";');
     expect(out).toContain("invoices: route({");
     expect(out).toContain('url: "/billing/invoices",');
-    expect(out).toContain("component: InvoicesPage,");
+    expect(out).toContain("content: InvoicesPage,");
     // existing entry untouched
     expect(out).toContain("billing: route({");
   });
@@ -81,6 +81,43 @@ describe("removeRoute", () => {
     expect(back).toContain("billing: route({");
     expect(back).toContain('import MainPage from "./MainPage.js";');
     expect(back).not.toContain("InvoicesPage");
+  });
+
+  it("removes a property from a single-line routes object without corrupting it", () => {
+    // Whole-line removal deleted the line carrying `} as const;` here, leaving
+    // unparseable source; removal must be span-based when code shares the line.
+    const singleLine = `const routes = { billing: route({ url: "/billing", content: MainPage }) } as const;\n`;
+    const added = insertRoute(singleLine, INS);
+    const back = removeRoute(added, INS);
+
+    const sf = ts.createSourceFile("r.ts", back, ts.ScriptTarget.Latest, true);
+    // @ts-expect-error parseDiagnostics is internal but reliable for this check
+    expect(sf.parseDiagnostics).toHaveLength(0);
+    expect(back).toContain("billing: route({");
+    expect(back).toContain("} as const;");
+    expect(back).not.toContain("invoices: route({");
+  });
+
+  it("round-trips an initially empty single-line routes object", () => {
+    const emptyObject = "const routes = {} as const;\n";
+    const added = insertRoute(emptyObject, INS);
+    const back = removeRoute(added, INS);
+
+    const sf = ts.createSourceFile("r.ts", back, ts.ScriptTarget.Latest, true);
+    // @ts-expect-error parseDiagnostics is internal but reliable for this check
+    expect(sf.parseDiagnostics).toHaveLength(0);
+    expect(back).not.toContain("invoices");
+  });
+
+  it("removes the last property of a multi-line object left without a trailing comma", () => {
+    const source = `import MainPage from "./MainPage.js";\nimport InvoicesPage from "./InvoicesPage.js";\n\nconst routes = {\n  billing: route({ url: "/billing", content: MainPage }),\n  invoices: route({ url: "/billing/invoices", content: InvoicesPage })\n} as const;\n`;
+    const back = removeRoute(source, INS);
+
+    const sf = ts.createSourceFile("r.ts", back, ts.ScriptTarget.Latest, true);
+    // @ts-expect-error parseDiagnostics is internal but reliable for this check
+    expect(sf.parseDiagnostics).toHaveLength(0);
+    expect(back).toContain("billing: route({");
+    expect(back).not.toContain("invoices: route({");
   });
 
   it("does NOT delete a merged import that has named bindings", () => {

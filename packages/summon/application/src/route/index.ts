@@ -14,6 +14,8 @@ import {
 } from "@canonical/task";
 import { toCamelCase, toPascalCase, toTitleCase } from "@canonical/utils";
 import { normalizeCommandPath } from "../shared/casing.js";
+import { packageVersion } from "../shared/packageVersion.js";
+import { validateCommandPath } from "../shared/validators.js";
 import { insertRoute, removeRoute } from "./insertRoute.js";
 
 export interface RouteAnswers {
@@ -27,6 +29,11 @@ const prompts: PromptDefinition[] = [
     message: "Route path (for example account/settings):",
     default: "example/page",
     positional: true,
+    validate: validateCommandPath({
+      label: "Route path",
+      minSegments: 2,
+      example: "account/settings",
+    }),
     group: "Route",
   },
 ];
@@ -56,7 +63,7 @@ export const generator: GeneratorDefinition<RouteAnswers> = {
     name: "route",
     displayName: "@canonical/summon-application:route",
     description: "Add a route page to an existing domain",
-    version: "0.1.0",
+    version: packageVersion(),
     help: `Creates a page component inside an existing domain directory.
 
 Given a path like "account/settings":
@@ -88,9 +95,10 @@ route key already existed) would remove a route you already had.`,
     const segments = normalized.split("/");
 
     if (segments.length < 2) {
-      throw new Error(
-        `Route path must include a domain and route name (e.g. "account/settings"), got "${normalized}"`,
-      );
+      return fail({
+        code: "ROUTE_PATH_INVALID",
+        message: `Route path must include a domain and route name (e.g. "account/settings"), got "${normalized}"`,
+      });
     }
 
     const domainName = segments[0];

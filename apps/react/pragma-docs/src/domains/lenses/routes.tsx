@@ -29,7 +29,7 @@ const routes = {
     meta: {
       ...routeShortcutFacet.of("6"),
     },
-    component: () => (
+    content: () => (
       <LensPlaceholder
         builtBy="P-5 (reading views)"
         lands="Long-form reading: foundations, setup, the analog map — prose that references entities through chips."

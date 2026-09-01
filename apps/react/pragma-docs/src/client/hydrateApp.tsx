@@ -8,7 +8,7 @@
  */
 
 import { HeadProvider } from "@canonical/react-head";
-import { createBrowserRouter } from "@canonical/router-core";
+import { createBrowserAdapter, createRouter } from "@canonical/router-core";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 import {
   type HydrationOptions,
@@ -55,7 +55,8 @@ export const hydrateApp = (
   // `check` guard is what keeps that initial pass network-silent).
   setPrefetchEnvironment(relayEnvironment);
 
-  const router = createBrowserRouter(appRoutes, {
+  const router = createRouter(appRoutes, {
+    adapter: createBrowserAdapter(),
     middleware: [...middleware],
     notFound: notFoundRoute,
   });

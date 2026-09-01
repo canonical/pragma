@@ -6,11 +6,11 @@ import LensBreadcrumbs from "./LensBreadcrumbs.js";
 /** Name-compatible bare routes so the back-link crumb's `to={lensRouteName}`
  * resolves without mounting the app's real pages. */
 const bareRoutes = {
-  home: route({ url: "/", component: () => null }),
-  components: route({ url: "/components", component: () => null }),
-  definitions: route({ url: "/definitions", component: () => null }),
-  standards: route({ url: "/standards", component: () => null }),
-  journeys: route({ url: "/journeys", component: () => null }),
+  home: route({ url: "/", content: () => null }),
+  components: route({ url: "/components", content: () => null }),
+  definitions: route({ url: "/definitions", content: () => null }),
+  standards: route({ url: "/standards", content: () => null }),
+  journeys: route({ url: "/journeys", content: () => null }),
 } as const;
 
 const meta: Meta<typeof LensBreadcrumbs> = {

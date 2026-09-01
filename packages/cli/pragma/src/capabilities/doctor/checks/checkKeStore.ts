@@ -1,10 +1,12 @@
 import { BIN_NAME } from "../../../constants.js";
 import { entityTotal } from "../../../kernel/completion/entitySource.js";
-import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
+import type { PragmaRuntime } from "../../../kernel/runtime/index.js";
 import type { CheckResult } from "../types.js";
 
 /**
- * Check that the ke store boots, reporting the entity total and boot time.
+ * Check that the local store boots, reporting the entity total and boot time.
+ * The check is NAMED "store" in the report — the same word every other surface
+ * uses for it; the ke library it boots through is an implementation detail.
  *
  * This is the ONE check that touches the store — it boots the shared lazy store
  * inside a try/catch, so doctor stays storeless-by-default at the dispatch level
@@ -24,15 +26,15 @@ export async function checkKeStore(rt: PragmaRuntime): Promise<CheckResult> {
     const total = entityTotal(session.index);
     const elapsed = Math.round(performance.now() - start);
     return {
-      name: "ke store",
+      name: "store",
       status: "pass",
       detail: `${total.toLocaleString()} entities in ${elapsed}ms`,
     };
   } catch {
     return {
-      name: "ke store",
+      name: "store",
       status: "fail",
-      detail: "failed to boot",
+      detail: "cannot boot",
       remedy: `Ensure design-system packs are configured and run \`${BIN_NAME} sources update\`.`,
     };
   }

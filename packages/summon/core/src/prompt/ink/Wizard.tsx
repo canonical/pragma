@@ -8,10 +8,20 @@
 import { describeEffect, type Effect } from "@canonical/task";
 import { Box, Static, Text, useInput } from "ink";
 import { useEffect, useState } from "react";
-import { truncateMiddle } from "./progressWindow.js";
+import {
+  COMPLETED_GLYPH,
+  describedWidthBudget,
+  FAILURE_GLYPH,
+  formatEffectDuration,
+  truncateMiddle,
+} from "./progressWindow.js";
 import { AnswersTable, ProgressHeader, QuestionView } from "./prompts.js";
 import { Spinner } from "./Spinner.js";
-import type { SessionController, WizardState } from "./session.js";
+import type {
+  SessionController,
+  StepProgress,
+  WizardState,
+} from "./session.js";
 
 /** A compact summary of the effects the confirm gate is about to apply. */
 const EffectsSummary = ({ effects }: { effects: readonly Effect[] }) => {
@@ -82,14 +92,71 @@ const EffectsSummary = ({ effects }: { effects: readonly Effect[] }) => {
 };
 
 /**
- * Live progress: the file effects completed so far.
+ * Live progress: the file effects completed so far, each with what it cost.
  *
  * The completed lines render under Ink's `<Static>` (C7): each is printed ONCE,
  * to the scrollback above the live region, instead of the whole history being
  * re-rendered on every new effect — the flicker/scroll a big scaffold otherwise
  * caused. Each line is middle-truncated so a long path stays on ONE row. Only
  * the trailing spinner remains in the live (re-rendered) frame.
+ *
+ * The trailing `(12ms)` is the duration the seam already delivers per effect
+ * (`SessionController.reportEffectComplete`) — same spelling as the summon
+ * binary's timed view. The description is truncated against a budget that has
+ * everything rendered around it — the `✓ ` prefix as well as the suffix —
+ * reserved out of it ({@link describedWidthBudget}), so neither the glyph nor
+ * the timing can push the row past the one-line cap.
  */
+/**
+ * Live progress in the HOST's units — rendered whenever the host has reported
+ * steps ({@link SessionController.reportStep}), in place of the per-effect
+ * transcript below. One row per step: a settled row wears the shared outcome
+ * glyph and its wall time, the running one a spinner. The glyphs, the duration
+ * spelling and the one-row truncation are the transcript's own — the two views
+ * share one dialect; they differ only in what a row IS.
+ *
+ * Rendered in the LIVE region, never under `<Static>`, and that is
+ * load-bearing: `execute` walks `generate` on the mock interpreter once after
+ * consent (the outcome summary's file list), so the board fills with
+ * near-zero-duration rows once before the real drive resets and repaints it
+ * (see {@link SessionController.reportStep}) — and a static row cannot be
+ * taken back. The list is bounded by the host's own step count (one row per
+ * setup target), so the full-repaint cost `<Static>` exists to avoid does not
+ * arise.
+ */
+const StepRow = ({ step }: { step: StepProgress }) => {
+  if (step.status === "running") {
+    return (
+      <Box>
+        <Spinner
+          color="blue"
+          label={truncateMiddle(step.label, describedWidthBudget(""))}
+        />
+      </Box>
+    );
+  }
+  const duration = formatEffectDuration(step.duration ?? 0);
+  return (
+    <Text>
+      {step.status === "failed" ? (
+        <Text color="red">{FAILURE_GLYPH}</Text>
+      ) : (
+        <Text color="green">{COMPLETED_GLYPH}</Text>
+      )}{" "}
+      {truncateMiddle(step.label, describedWidthBudget(duration))}{" "}
+      <Text dimColor>{duration}</Text>
+    </Text>
+  );
+};
+
+const StepsProgress = ({ state }: { state: WizardState }) => (
+  <Box flexDirection="column">
+    {state.steps.map((step) => (
+      <StepRow key={step.key} step={step} />
+    ))}
+  </Box>
+);
+
 const Progress = ({ state }: { state: WizardState }) => {
   const shown = state.progress.filter(
     (t) =>
@@ -105,13 +172,20 @@ const Progress = ({ state }: { state: WizardState }) => {
   return (
     <Box flexDirection="column">
       <Static items={shown}>
-        {(t, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: append-only progress; a path may repeat
-          <Text key={`${t.effect._tag}-${i}`}>
-            <Text color="green">✓</Text>{" "}
-            {truncateMiddle(describeEffect(t.effect))}
-          </Text>
-        )}
+        {(t, i) => {
+          const duration = formatEffectDuration(t.duration);
+          return (
+            // biome-ignore lint/suspicious/noArrayIndexKey: append-only progress; a path may repeat
+            <Text key={`${t.effect._tag}-${i}`}>
+              <Text color="green">{COMPLETED_GLYPH}</Text>{" "}
+              {truncateMiddle(
+                describeEffect(t.effect),
+                describedWidthBudget(duration),
+              )}{" "}
+              <Text dimColor>{duration}</Text>
+            </Text>
+          );
+        }}
       </Static>
       {state.phase === "executing" && (
         <Box>
@@ -170,7 +244,24 @@ export const Wizard = ({ controller }: WizardProps) => {
         <Box flexDirection="column">
           <ProgressHeader current={state.step} total={state.total} />
           <AnswersTable prompts={generator.prompts} answers={state.answers} />
+          {/*
+            KEYED BY QUESTION NAME, and it is load-bearing. Every question
+            widget seeds its state from `question.default` with `useState`,
+            which runs on MOUNT only. Without a key React reuses one instance
+            across consecutive questions of the same type, so the second one
+            inherits the first one's state instead of its own default — two
+            adjacent multiselects, and the answers cross.
+
+            That is not hypothetical: `pragma setup` asks "which targets" and
+            then "configure MCP for which files", and it shipped a run where the
+            second answered with the FIRST's row ids
+            (`Invalid --mcp-targets "global:completions"`). It was invisible for
+            as long as a confirm sat between the two — a different widget type
+            forces a remount — so removing that confirm did not cause the bug,
+            it stopped hiding it.
+          */}
           <QuestionView
+            key={state.activeQuestion.question.name}
             question={state.activeQuestion.question}
             validate={
               generator.prompts.find(
@@ -195,13 +286,23 @@ export const Wizard = ({ controller }: WizardProps) => {
         </Box>
       )}
 
-      {(state.phase === "executing" || state.phase === "complete") && (
-        <Progress state={state} />
-      )}
+      {(state.phase === "executing" || state.phase === "complete") &&
+        (state.steps.length > 0 ? (
+          <StepsProgress state={state} />
+        ) : (
+          <Progress state={state} />
+        ))}
 
-      {state.phase === "complete" && (
+      {/*
+        The banner belongs to the DEFAULT transcript only. A host that narrates
+        its run in its own steps also owns its own epilogue (pragma's `setup`
+        prints its recap right after the unmount), and "Generation complete!"
+        over a run that is not a generation was exactly the vocabulary leak the
+        step rows exist to close.
+      */}
+      {state.phase === "complete" && state.steps.length === 0 && (
         <Box marginTop={1}>
-          <Text color="green">✓ Generation complete!</Text>
+          <Text color="green">{COMPLETED_GLYPH} Generation complete!</Text>
         </Box>
       )}
 
@@ -217,7 +318,7 @@ export const Wizard = ({ controller }: WizardProps) => {
           ).length;
           return (
             <Text color="yellow">
-              ✗ Cancelled.{" "}
+              {FAILURE_GLYPH} Cancelled.{" "}
               {written === 0
                 ? "No files were written."
                 : `${written} file(s) were written.`}
@@ -226,7 +327,9 @@ export const Wizard = ({ controller }: WizardProps) => {
         })()}
 
       {state.phase === "error" && (
-        <Text color="red">✗ Error: {state.error?.message}</Text>
+        <Text color="red">
+          {FAILURE_GLYPH} Error: {state.error?.message}
+        </Text>
       )}
     </Box>
   );

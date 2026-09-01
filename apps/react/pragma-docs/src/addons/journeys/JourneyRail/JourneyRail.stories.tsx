@@ -12,7 +12,7 @@ import { ALL_JOURNEYS_FILTER } from "../journeyFilter.js";
 import JourneyRail from "./JourneyRail.js";
 
 const bareRoutes = {
-  journeysJob: route({ url: "/journeys/:job", component: () => null }),
+  journeysJob: route({ url: "/journeys/:job", content: () => null }),
 } as const;
 
 const meta: Meta<typeof JourneyRail> = {

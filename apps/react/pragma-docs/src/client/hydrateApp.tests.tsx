@@ -10,7 +10,6 @@
  */
 
 import { HeadProvider } from "@canonical/react-head";
-import { createStaticRouter } from "@canonical/router-core";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 import { act } from "react";
 import type { Root } from "react-dom/client";
@@ -25,6 +24,7 @@ import componentEntityRecordsButton from "#domains/components/__fixtures__/compo
 // React Flow needs when the well MOUNTS (ResizeObserver/DOMMatrix —
 // side-effect import, no test behaviour of its own).
 import definitionsExplorerRecords from "#domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
+import createStaticRouter from "../lib/router/createStaticRouter.js";
 import "#domains/lenses/definitions/__fixtures__/stubReactFlowGlobals.js";
 import journeysExplorerRecords from "#addons/journeys/__fixtures__/journeysExplorerRecords.js";
 import journeysExplorerRecordsJob from "#addons/journeys/__fixtures__/journeysExplorerRecordsJob.js";

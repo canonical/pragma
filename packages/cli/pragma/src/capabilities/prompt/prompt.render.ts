@@ -3,7 +3,7 @@
  */
 
 import { defaultStyle } from "../../kernel/render/style.js";
-import type { Formatters } from "../../kernel/spec/types.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 import type {
   PromptArgument,
   PromptListData,
@@ -19,8 +19,12 @@ function argTokens(args: readonly PromptArgument[]): string {
 }
 
 export const promptListFormatters: Formatters<PromptListData> = {
+  // Zero prompts: plain stdout stays empty — the notice is `notice`,
+  // routed to stderr (exit 0) by the dispatcher so a pipe reads no prose.
+  notice: (data) =>
+    data.prompts.length === 0 ? "No prompts in the store." : undefined,
   plain(data) {
-    if (data.prompts.length === 0) return "No prompts in the store.";
+    if (data.prompts.length === 0) return "";
     const lines = ["Prompts"];
     for (const prompt of data.prompts) {
       lines.push(`  ${prompt.name} — ${prompt.description ?? ""}`.trimEnd());

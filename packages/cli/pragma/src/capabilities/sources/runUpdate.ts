@@ -31,24 +31,30 @@ import {
   writeFile,
 } from "@canonical/task";
 import { VERSION } from "../../constants.js";
-import { PragmaError } from "../../kernel/error/PragmaError.js";
-import { cliRecovery } from "../../kernel/error/recovery.js";
+import { cliRecovery, PragmaError } from "../../kernel/error/index.js";
+// DIRECT LEAF IMPORT, not `graphpack/index.js`. The barrel re-exports
+// `embedded.ts`, which statically imports the ~1.9 MB generated pack — and
+// with per-file `tsc` output ESM evaluates that re-export when this module
+// loads. `sources update` builds a USER pack; it must not pay the embedded
+// pack's cost to do it.
 import { buildPack } from "../../kernel/runtime/graphpack/build.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { activePackPath, readActivePack } from "../../kernel/runtime/paths.js";
-import type { PackageRef } from "../../kernel/runtime/refs/parseRef.js";
-import {
-  parsePackDeclaration,
-  redactUrl,
-} from "../../kernel/runtime/refs/parseRef.js";
+import type { PackageRef } from "../../kernel/runtime/refs/index.js";
 import {
   detectPrefixClashes,
   harvestPrefixes,
+  parsePackDeclaration,
   type ResolvedPackage,
+  redactUrl,
   resolvePackage,
-} from "../../kernel/runtime/refs/resolve.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
-import { installedSkillsDir } from "../skill/discover.js";
-import { planSkillInstall } from "./installSkills.js";
+} from "../../kernel/runtime/refs/index.js";
+// The global scope's EXISTING link directories, from the module that owns the
+// scope covenant — so `sources update` cannot drift away from what
+// `setup skills --global` links, or widen the scope on its own.
+import { existingGlobalSkillDirs } from "../setup/operations/setupSkills.js";
+import { globalSkillRoots, installedSkillsDir } from "../skill/discover.js";
+import { planHarnessSkillLinks, planSkillInstall } from "./installSkills.js";
 import type { SourcesUpdateData } from "./types.js";
 
 /** Generic-core prefixes; config `prefixes` merge over them (config wins). */
@@ -209,17 +215,17 @@ export async function buildUpdateTask(
   // prefix. Display-only, so a warning (not a hard failure) is the right call.
   for (const clash of detectPrefixClashes(inputs)) {
     report?.(
-      `Prefix "${clash.label}:" is declared with conflicting IRIs across packages (${clash.iris.join(" vs ")}); last wins, so some entities may compact to the wrong prefix.`,
+      `Prefix "${clash.label}:" is declared with conflicting IRIs across packs (${clash.iris.join(" vs ")}); last wins, so some entities may compact to the wrong prefix.`,
     );
   }
 
   report?.(`Building store from ${inputs.length} source(s)`);
   if (verbose) for (const input of inputs) report?.(`  parse ${input.path}`);
   if (stories.length > 0)
-    report?.(`Carrying ${stories.length} package read story file(s)`);
+    report?.(`Carrying ${stories.length} pack read story file(s)`);
 
   // Build the pack. On a parse/build failure, classify it as a NAMED data error
-  // (U6) — not INTERNAL_ERROR's "please report this issue" — identifying the
+  // (U6) — not INTERNAL_ERROR's "report this issue" — identifying the
   // offending package source, since ke's parser error carries only line/column.
   // With `--skip-invalid`, drop the unparseable sources (warning LOUDLY about
   // each — never a silent partial graph) and build from the rest instead of
@@ -262,7 +268,7 @@ export async function buildUpdateTask(
     );
     if (usableInputs.length === 0)
       throw PragmaError.configError(
-        `All ${inputs.length} configured source(s) failed to parse — nothing to build.`,
+        `None of the ${inputs.length} configured source(s) can be parsed — nothing to build.`,
         {
           recovery: cliRecovery(
             "sources update --verbose",
@@ -299,7 +305,7 @@ export async function buildUpdateTask(
       {
         recovery: cliRecovery(
           "sources update --verbose",
-          "Check that the package sources actually contain RDF triples, then re-run.",
+          "Check that the pack sources actually contain RDF triples, then re-run.",
         ),
       },
     );
@@ -322,13 +328,63 @@ export async function buildUpdateTask(
 
   // Install package-provided skills (U10): symlink each resolved package's
   // `skills/*` into the installed-skills root, so `skill list` / `setup skills`
-  // see them after an update. Kept in this Task (reversible: created links carry
-  // an unlink undo) so `sources update --undo` also removes them.
-  const skillLinks = planSkillInstall(resolved).filter(
-    (link) => link.action !== "skipped",
+  // see them after an update — and RETIRE the links of skills those packages
+  // have since dropped, which the same plan reports as `pruned`. Kept in this
+  // Task (reversible: a created link carries an unlink undo, a pruned one a
+  // re-link undo) so `sources update --undo` restores the root as it was.
+  //
+  // The two are split, not counted together: a prune is a deletion, so folding
+  // it into "Installing N skill(s)" would report a removal as an install.
+  const skillPlan = planSkillInstall(resolved);
+  const skillLinks = skillPlan.filter(
+    (link) => link.action === "created" || link.action === "replaced",
   );
+  const staleLinks = skillPlan.filter((link) => link.action === "pruned");
   if (skillLinks.length > 0)
     report?.(`Installing ${skillLinks.length} skill(s)`);
+  if (staleLinks.length > 0)
+    report?.(
+      `Removing ${staleLinks.length} skill link(s) no longer provided by any package`,
+    );
+
+  // Converge the GLOBAL scope (layer 2). Layer 1 above is the installed root;
+  // the harness directories link AT it, and until now nothing here touched
+  // them — a new pack skill reached no harness directory until the user
+  // separately ran `setup skills`, and a dropped one left a dangling link that
+  // nothing would ever clear. That two-step was the reported bug.
+  //
+  // CONVERGE-ONLY, and this is a policy line, not an optimisation:
+  // `existingGlobalSkillDirs` returns only directories that ALREADY EXIST, and
+  // nothing below composes a `mkdir`. `sources update` is `mcp: {expose:true}`
+  // with `mutates: true` and `needsNetwork: true`, so creating directories here
+  // would mean an agent, over MCP, after a network fetch, conjuring
+  // `~/.claude/skills` into being and opting the user into linking they never
+  // asked for. Refresh what is there; never bring a directory into existence.
+  //
+  // Ownership is the SAME `withinAnyRoot` test `setup skills` applies, over the
+  // SAME root set (`globalSkillRoots`), so a real directory, a still-resolving
+  // link into the user's own checkout, and a `<root>-backup/foo` sibling are all
+  // left exactly as found — while a link still pointing at the BUNDLED snapshot
+  // for a skill this update just installed is ours, and is moved onto it.
+  const harnessPlan = planHarnessSkillLinks(
+    await existingGlobalSkillDirs(runtime.cwd),
+    globalSkillRoots(),
+    skillPlan
+      .filter((link) => link.action !== "pruned")
+      .map((link) => link.folderName),
+    staleLinks.map((link) => link.folderName),
+  );
+  const harnessLinks = harnessPlan.filter((link) => link.action !== "pruned");
+  const harnessStale = harnessPlan.filter((link) => link.action === "pruned");
+  if (harnessLinks.length > 0)
+    report?.(
+      `Linking ${harnessLinks.length} skill(s) into your harness folders`,
+    );
+  if (harnessStale.length > 0)
+    report?.(`Removing ${harnessStale.length} stale harness skill link(s)`);
+  if (verbose)
+    for (const link of harnessPlan)
+      report?.(`  ${link.action} ${link.folderName} in ${link.dirName}`);
 
   report?.(`Pointing ${runtime.cwd} at pack ${built.contentHash.slice(0, 12)}`);
   return gen(function* () {
@@ -343,6 +399,58 @@ export async function buildUpdateTask(
           }),
         );
       }
+    }
+    // No `mkdir` guard here: a stale link can only have been enumerated FROM
+    // the installed root, so the root necessarily exists.
+    //
+    // The undo re-creates the link exactly as found — dangling target and all —
+    // because undo's job is to restore the prior state, not to improve on it. It
+    // clears the path first because the undo interpreter MOCKS forward effects
+    // when collecting: the delete above may never have run, and `fs.symlink`
+    // refuses a path that already exists. Same delete-then-link shape the
+    // `replaced` branch above uses, for the same reason.
+    for (const stale of staleLinks) {
+      yield* $(
+        deleteFile(stale.linkPath, {
+          undo: gen(function* () {
+            yield* $(deleteFile(stale.linkPath));
+            yield* $(symlink(stale.target, stale.linkPath));
+          }),
+        }),
+      );
+    }
+    // Layer 2, in the same Task and so under the same `--undo`. Still no
+    // `mkdir`: every directory here was proven to exist at plan time, and
+    // creating one is the thing converge-only exists to forbid.
+    for (const link of harnessLinks) {
+      // A `created` link undoes by deletion — absent IS the state it replaced.
+      // A `replaced` one does not: the path held a link, and the delete above
+      // carries no undo of its own, so deleting what the symlink created would
+      // leave the path ABSENT rather than pointing where it pointed before.
+      // Its undo is therefore the same delete-then-relink shape the prunes
+      // below use, against the target detection recorded — and it clears the
+      // path first because undo collection MOCKS forward effects, so the link
+      // may still be there and `fs.symlink` refuses an existing path.
+      const previous = link.previousTarget;
+      const undoLink =
+        link.action === "replaced" && previous !== undefined
+          ? gen(function* () {
+              yield* $(deleteFile(link.linkPath));
+              yield* $(symlink(previous, link.linkPath));
+            })
+          : deleteFile(link.linkPath);
+      if (link.action === "replaced") yield* $(deleteFile(link.linkPath));
+      yield* $(symlink(link.target, link.linkPath, { undo: undoLink }));
+    }
+    for (const stale of harnessStale) {
+      yield* $(
+        deleteFile(stale.linkPath, {
+          undo: gen(function* () {
+            yield* $(deleteFile(stale.linkPath));
+            yield* $(symlink(stale.target, stale.linkPath));
+          }),
+        }),
+      );
     }
     return data;
   });
@@ -385,12 +493,12 @@ export async function classifySourceBuildError(
   const culprit = await isolateBadSource(inputs);
   const detail = culprit?.message ?? parserMessage;
   const where = culprit
-    ? `Package source "${culprit.path}" could not be parsed`
-    : "The configured package sources could not be built into a store";
+    ? `Pack source "${culprit.path}" cannot be parsed`
+    : "The configured packs cannot be built into a store";
   return PragmaError.configError(`${where}: ${detail}`, {
     recovery: cliRecovery(
       "sources update --verbose",
-      "Re-run with --verbose to see each file as it parses. If a package ships malformed RDF, report it to that package's maintainer.",
+      "Re-run with --verbose to see each file as it parses. If a pack ships malformed RDF, report it to that pack's maintainer.",
     ),
   });
 }

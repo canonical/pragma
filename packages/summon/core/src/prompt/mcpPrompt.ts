@@ -24,7 +24,7 @@ export default function mcpPrompt(
 ): PromptHandler {
   return (effect: PromptEffect) => {
     const q = effect.question;
-    if (q.name in params) return Promise.resolve(params[q.name]);
+    if (Object.hasOwn(params, q.name)) return Promise.resolve(params[q.name]);
     if (q.default !== undefined) return Promise.resolve(q.default);
     return Promise.reject(missingRequiredError(effect, "argument"));
   };

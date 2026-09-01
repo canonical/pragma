@@ -9,7 +9,7 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
-import type { VerbSpec } from "../../kernel/spec/types.js";
+import type { VerbSpec } from "../../kernel/spec/index.js";
 import { statusFormatters } from "./status.render.js";
 import type { SourcesStatusData } from "./types.js";
 

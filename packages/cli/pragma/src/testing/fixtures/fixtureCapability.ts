@@ -7,7 +7,7 @@
 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { $, gen, succeed, writeFile } from "@canonical/task";
+import { $, gen, readFile, succeed, writeFile } from "@canonical/task";
 import type { CapabilityModule } from "../../kernel/spec/types.js";
 
 /** A synthetic module: noun `widget`, three verbs (one hidden). */
@@ -169,6 +169,50 @@ export const fixtureEffectsModule: CapabilityModule = {
           const name = (p as { name: string }).name;
           yield* $(writeFile(touchPath(name), "touched\n"));
           return { touched: name };
+        }),
+    },
+  ],
+};
+
+/**
+ * A synthetic module for the HONEST-preview guards (PR7). `probe graft` READS a
+ * file before writing beside it, so a run whose source is missing dies on its
+ * first effect. The mock previewer answered that read with a placeholder string
+ * and reported a confident plan with exit 0 — the structural false positive
+ * PRA-104 indicts. Under `runPreview` the read is real, so `--dry-run` (and the
+ * MCP plan-first twin) fail exactly where and how the run would. Test-only (D8)
+ * — never listed in `capabilities/index.ts`.
+ */
+export const fixturePreviewModule: CapabilityModule = {
+  name: "fixture-preview",
+  verbs: [
+    {
+      path: ["probe", "graft"],
+      summary: "Copy a file's content into a sibling.",
+      params: [
+        {
+          kind: "string",
+          name: "source",
+          doc: "The file to read.",
+          positional: true,
+          required: true,
+        },
+      ],
+      output: { formatters: passthroughFormatters },
+      capability: {
+        needsStore: false,
+        mutates: true,
+        mcp: {
+          expose: true,
+          annotations: { readOnlyHint: false, openWorldHint: false },
+        },
+      },
+      run: (p) =>
+        gen(function* () {
+          const { source } = p as { source: string };
+          const content = yield* $(readFile(source));
+          yield* $(writeFile(`${source}.grafted`, content));
+          return { grafted: source };
         }),
     },
   ],

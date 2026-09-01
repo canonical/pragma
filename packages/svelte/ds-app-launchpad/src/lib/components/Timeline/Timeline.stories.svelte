@@ -95,7 +95,7 @@
       {/snippet}
       {#snippet titleRow()}
         <Timeline.Event.TitleRow>
-          The MP was <span style="color: var(--lp-color-text-default)"
+          The MP was <span style="color: var(--color-text)"
             >Merged</span
           >
           {#snippet date()}

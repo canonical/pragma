@@ -3,6 +3,7 @@
  */
 
 import type { ConfigOrigins } from "../../kernel/config/types.js";
+import type { InstallKind } from "../../kernel/render/vocabulary.js";
 
 /** The config summary `info` reports — resolved values plus provenance. */
 export interface InfoConfig {
@@ -20,8 +21,12 @@ export interface InfoConfig {
 export interface InfoUpdate {
   readonly current: string;
   readonly latest: string;
-  /** The package-manager command that would apply the update. */
-  readonly command: string;
+  /** The package-manager command that would apply the update — only for a
+   * GLOBAL install; every other state carries {@link guidance} instead. */
+  readonly command?: string;
+  /** The honest sentence for an install with no sanctioned update command
+   * (linked / ephemeral / workspace / unknown). */
+  readonly guidance?: string;
 }
 
 /**
@@ -31,7 +36,10 @@ export interface InfoUpdate {
  */
 export interface InfoData {
   readonly version: string;
+  /** The install-source display label (e.g. `npm (global)`). */
   readonly installSource: string;
+  /** The install-source state the label renders. */
+  readonly installKind: InstallKind;
   /** Set when a newer CLI release is available on the active channel. */
   readonly update?: InfoUpdate;
   /** True when the registry could not be reached (the update-check was skipped). */

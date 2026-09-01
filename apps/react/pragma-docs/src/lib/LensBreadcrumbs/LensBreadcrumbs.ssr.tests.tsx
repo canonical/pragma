@@ -1,5 +1,6 @@
 import {
-  createMemoryRouter,
+  createMemoryAdapter,
+  createRouter,
   type RouteMap,
   route,
 } from "@canonical/router-core";
@@ -10,16 +11,18 @@ import { describe, expect, it } from "vitest";
 import LensBreadcrumbs from "./LensBreadcrumbs.js";
 
 const bareRoutes: RouteMap = {
-  home: route({ url: "/", component: () => null }),
-  components: route({ url: "/components", component: () => null }),
-  definitions: route({ url: "/definitions", component: () => null }),
-  standards: route({ url: "/standards", component: () => null }),
-  journeys: route({ url: "/journeys", component: () => null }),
+  home: route({ url: "/", content: () => null }),
+  components: route({ url: "/components", content: () => null }),
+  definitions: route({ url: "/definitions", content: () => null }),
+  standards: route({ url: "/standards", content: () => null }),
+  journeys: route({ url: "/journeys", content: () => null }),
 } as const;
 
 const renderAt = (url: string, node: ReactElement): string =>
   renderToString(
-    <RouterProvider router={createMemoryRouter(bareRoutes, url)}>
+    <RouterProvider
+      router={createRouter(bareRoutes, { adapter: createMemoryAdapter(url) })}
+    >
       {node}
     </RouterProvider>,
   );

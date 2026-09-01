@@ -45,6 +45,8 @@ function readDoc(relPath: string): string {
 const HAND_WRITTEN_DOCS = [
   "../../../README.md",
   "../../../docs/getting-started.md",
+  "../../../docs/design-system.md",
+  "../../../docs/setup.md",
   "../../../docs/mcp-integration.md",
   "../../../docs/config-model.md",
   "../../../docs/architecture.md",
@@ -161,7 +163,21 @@ const READ_CASES: readonly ReadCase[] = [
     params: { name: ["Button"] },
   },
   { command: "pragma standard list", key: "standard list", params: {} },
+  {
+    // The doc's headline example, and the one the roll-up is about: a parent
+    // category answering for its whole branch.
+    command: "pragma standard list --category testing",
+    key: "standard list",
+    params: { category: ["testing"] },
+  },
+  {
+    command: "pragma standard categories",
+    key: "standard categories",
+    params: {},
+  },
+  { command: "pragma modifier list", key: "modifier list", params: {} },
   { command: "pragma token list", key: "token list", params: {} },
+  { command: "pragma prompt list", key: "prompt list", params: {} },
   { command: "pragma tier list", key: "tier list", params: {} },
   { command: "pragma ontology list", key: "ontology list", params: {} },
   { command: "pragma config show", key: "config show", params: {} },

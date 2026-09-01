@@ -18,6 +18,8 @@ type SwitchInputFieldProps = InputProps<SwitchInputProps>;
  * `labelPosition="after"`.
  *
  * `import { SwitchField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.switch_field
  */
 export default withToggleWrapper<SwitchInputFieldProps>(
   bindField<SwitchInputFieldProps>(SwitchInput, "native"),

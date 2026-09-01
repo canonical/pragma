@@ -1,6 +1,6 @@
 /**
  * Accordion.Item styles
- * @implements dso:global.subcomponent.accordion-item
+ * @implements ds:global.subcomponent.accordion-item
  *
  * Rendered with native <details>/<summary>. Typography and baseline alignment
  * come from the `.p` class on the heading and content. Tokens follow the Figma

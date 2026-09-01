@@ -8,7 +8,7 @@
  * conflict, reported with both sources.
  */
 
-import type { VerbSpec } from "../spec/types.js";
+import type { VerbSpec } from "../spec/index.js";
 
 /** The `(noun, verb)` key for a verb path (`["standard","list"]` → `standard list`). */
 export function verbKey(path: readonly [string, string?]): string {

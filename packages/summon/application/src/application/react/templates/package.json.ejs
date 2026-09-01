@@ -7,6 +7,9 @@
   "imports": {
     "#lib/*": "./src/lib/*",
     "#domains/*": "./src/domains/*",
+<% if (intl) { -%>
+    "#i18n/*": "./src/i18n/*",
+<% } -%>
 <% if (relay) { -%>
     "#relay/*": "./src/relay/*",
 <% } -%>
@@ -21,9 +24,14 @@
     "preview:express": "bun run build:client && bun run build:server && node --import tsx src/server/preview.express.ts",
     "build": "bun run build:client",
     "build:all": "bun run build:client && bun run build:storybook",
+<% if (intl) { -%>
+    "build:storybook": "storybook build",
+<% } -%>
     "build:client": "vite build --ssrManifest --outDir dist/client",
     "build:server": "vite build --mode server",
+<% if (!intl) { -%>
     "build:storybook": "storybook build",
+<% } -%>
     "check": "bun run check:biome && bun run check:ts",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
@@ -33,13 +41,24 @@
     "relay": "relay-compiler",
     "relay:watch": "relay-compiler --watch",
 <% } -%>
+<% if (intl) { -%>
+    "storybook": "storybook dev -p 6010 --no-open --host 0.0.0.0",
+<% } -%>
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+<% if (intl) { -%>
+    "test:e2e": "vitest run --config vitest.e2e.config.ts"
+<% } else { -%>
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "storybook": "storybook dev -p 6010 --no-open --host 0.0.0.0"
+<% } -%>
   },
   "dependencies": {
+<% if (intl) { -%>
+    "@canonical/i18n-core": "<%= pragmaVersion %>",
+    "@canonical/i18n-react": "<%= pragmaVersion %>",
+<% } -%>
     "@canonical/react-ds-global": "<%= pragmaVersion %>",
 <% if (forms) { -%>
     "@canonical/react-ds-global-form": "<%= pragmaVersion %>",
@@ -52,6 +71,7 @@
 <% if (relay) { -%>
     "@canonical/storybook-addon-relay": "<%= pragmaVersion %>",
 <% } -%>
+    "@canonical/storybook-addon-utils": "<%= pragmaVersion %>",
     "@canonical/storybook-config": "<%= pragmaVersion %>",
     "@canonical/styles": "<%= pragmaVersion %>",
     "express": "^5.2.1",
@@ -60,19 +80,30 @@
 <% } -%>
     "react": "^19.2.4",
     "react-dom": "^19.2.4"<% if (relay) { %>,
-    "react-relay": "^21.0.1",
-    "relay-runtime": "^21.0.1",
-    "relay-runtime-network": "^0.1.0"<% } %>
+    "react-relay": "21.0.1",
+    "relay-runtime": "21.0.1",
+    "relay-runtime-network": "0.1.0"<% } %>
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "<%= pragmaVersion %>",
     "@canonical/typescript-config-react": "<%= pragmaVersion %>",
+<% if (intl) { -%>
+    "@chromatic-com/storybook": "^5.0.1",
+<% } -%>
     "@storybook/react-vite": "^10.3.1",
+<% if (intl) { -%>
+    "@testing-library/jest-dom": "^7.0.0",
+<% } else { -%>
     "@testing-library/jest-dom": "^6.9.1",
+<% } -%>
     "@testing-library/react": "^16.3.2",
     "@types/express": "^5.0.6",
+<% if (intl) { -%>
+    "@types/node": "^26.0.0",
+<% } else { -%>
     "@types/node": "^24.12.0",
+<% } -%>
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
 <% if (relay) { -%>

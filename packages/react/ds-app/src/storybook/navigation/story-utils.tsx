@@ -1,6 +1,9 @@
-import { createHashRouter, route } from "@canonical/router-core";
-import { RouterProvider, useRoute } from "@canonical/router-react";
-import { Lorem, withBaseLayer } from "@canonical/storybook-addon-utils";
+import { useRoute } from "@canonical/router-react";
+import {
+  Lorem,
+  withBaseLayer,
+  withHashRouter,
+} from "@canonical/storybook-addon-utils";
 import type { Decorator } from "@storybook/react-vite";
 import type { ReactNode } from "react";
 import type { LinkComponentProps } from "../../lib/SideNavigation/types.js";
@@ -30,7 +33,7 @@ export { CanonicalLogo } from "./CanonicalLogo/index.js";
 /**
  * Link adapter for the stories. SideNavigation is router-agnostic (it only sees
  * `LinkComponentProps`); this bridges its raw-URL nav items to the hash router
- * that `withNavigationRouterProps` provides — `createHashRouter` reads
+ * that `withNavigationRouterProps` provides — the hash adapter reads
  * `location.hash`, so an href into the fragment navigates client-side with no
  * server.
  */
@@ -46,26 +49,23 @@ export const HashLink = ({ href, ...props }: LinkComponentProps): ReactNode => (
  */
 export const navDecorators: Decorator[] = [withBaseLayer];
 
-/** Minimal catch-all route so the hash router has somewhere to resolve to. */
-const navRoutes = {
-  story: route({ url: "/", component: () => null }),
-} as const;
-
 /**
  * Provides the router-derived props to a nav story from the live location.
  *
- * Self-contained: it renders its **own** `RouterProvider` (hash-based) around an
- * inner bridge that calls `useRoute()` — so the provider is guaranteed to wrap
- * the hook regardless of decorator order (no dependency on `withHashRouter`
- * being positioned correctly). The bridge injects `currentUrl` + `LinkComponent`
- * via the supported `Story({ args })` update and keys the story by pathname so
- * the navigation hook re-seeds its selection on navigation. Lets the component
- * stay router-agnostic while the story demonstrates URL-driven active state.
+ * Self-contained: it composes addon-utils' `withHashRouter` around an inner
+ * bridge that calls `useRoute()` — so the provider is guaranteed to wrap the
+ * hook regardless of decorator order (no dependency on a router decorator being
+ * positioned correctly). The bridge injects `currentUrl` + `LinkComponent` via
+ * the supported `Story({ args })` update and keys the story by pathname so the
+ * navigation hook re-seeds its selection on navigation. Lets the component stay
+ * router-agnostic while the story demonstrates URL-driven active state.
  * Use on SideNavigation / Content / Footer; the story supplies only data
  * (`root` / `footerRoot`).
+ *
+ * addon-utils' default route is the same minimal catch-all this used to declare
+ * locally, so no `routes` override is needed.
  */
 export const withNavigationRouterProps: Decorator = (Story, context) => {
-  const router = createHashRouter(navRoutes);
   const RouterPropsBridge = (): ReactNode => {
     const { pathname } = useRoute();
     // Merge over the story's existing args explicitly (don't rely on SB's
@@ -81,11 +81,7 @@ export const withNavigationRouterProps: Decorator = (Story, context) => {
       />
     );
   };
-  return (
-    <RouterProvider router={router}>
-      <RouterPropsBridge />
-    </RouterProvider>
-  );
+  return withHashRouter()(() => <RouterPropsBridge />);
 };
 
 /**

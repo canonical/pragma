@@ -12,7 +12,7 @@
 
 import { homedir, tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
-import { blockModule } from "../../capabilities/block/index.js";
+import { storyModules } from "../../capabilities/distribution.js";
 import { VERSION } from "../../constants.js";
 import { compilePack } from "../../kernel/packs/compile.js";
 import { verbKey } from "../../kernel/packs/uniqueness.js";
@@ -30,6 +30,11 @@ import { bootFixtureRuntime } from "../helpers/fixtureGraph.js";
 import { plain } from "../helpers/golden.js";
 import { assertCliMcpParity } from "../helpers/parity.js";
 import { runCli } from "../helpers/runCli.js";
+
+const blockModule = storyModules.get("block");
+if (!blockModule) {
+  throw new Error('pragma.conf.ts declares no story for "block"');
+}
 
 describe("bootFixtureRuntime — the shared canonical graph (commit-1 smoke)", () => {
   it("boots a built-pack store both CLI and MCP resolve identically", async () => {
@@ -68,7 +73,11 @@ describe("foreign-namespace generic-pack proof (compiler is DS-agnostic)", () =>
     try {
       const recipeModule: CapabilityModule = {
         name: "recipe",
-        verbs: compilePack(recipePack, "test:recipe", RECIPE_PREFIXES),
+        verbs: compilePack(
+          recipePack,
+          { label: "test:recipe", origin: "package" },
+          RECIPE_PREFIXES,
+        ),
       };
       expect(recipeModule.verbs.map((v) => verbKey(v.path)).sort()).toEqual([
         "recipe list",

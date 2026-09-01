@@ -28,7 +28,7 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
-import type { CapabilityModule } from "../spec/types.js";
+import type { CapabilityModule } from "../spec/index.js";
 import { assertSafeToken, buildCompletionModel } from "./model.js";
 import { bashScript } from "./templates/bash.js";
 import { fishScript } from "./templates/fish.js";

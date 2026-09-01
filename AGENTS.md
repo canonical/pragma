@@ -155,6 +155,30 @@ scaffolded boilerplates) **and** Bun-bundled published packages under `packages/
 the CLI at `packages/cli/pragma`). When unsure, check whether the package's build script
 runs `tsc` or a bundler.
 
+## CI workflows are global — do not add checks for one package
+
+The CI domain is global, always, without exception. If a package-scoped
+concern can earn a workflow step, every package can, and with 60+ packages
+that becomes unbearable — the cost of one job is not one job, it is the
+precedent.
+
+- **Shared workflows (`pr.yml` and friends) are global infrastructure.** Do
+  not add a job or step for a single package's concern. This is not a style
+  preference: a new required check applies to every PR in the repo, including
+  other teams' and outside contributors'.
+- **A package-scoped check rides the package's own `check` / `test` targets.**
+  Root `check` is `lerna run check`, which fans out to every package, and the
+  build matrix already runs it — so a package target is covered everywhere
+  *and* only runs when nx says the package is affected. That is cheaper and
+  correctly scoped than a dedicated job.
+- **The bar for a shared job is a genuine repo-wide invariant**, not merely
+  something that happens to be run from the root.
+  `scripts/check-workspace-ranges.ts` earns its shared step because it asserts
+  something true of every workspace sibling. One package's data provenance
+  does not, however important that package is.
+- **If you believe you need a workflow change, say why in the PR body** and
+  expect it to be challenged.
+
 ## PR mechanics
 
 - Branch from up-to-date `origin/main`; never push to `main` directly — **all changes

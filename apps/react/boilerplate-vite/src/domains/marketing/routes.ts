@@ -29,12 +29,12 @@ const guideParamsSchema: StandardSchemaV1<
 const routes = {
   home: route({
     url: "/",
-    component: HomePage,
+    content: HomePage,
   }),
   guide: route({
     url: "/guides/:slug",
     params: guideParamsSchema,
-    component: GuidePage,
+    content: GuidePage,
   }),
 } as const;
 

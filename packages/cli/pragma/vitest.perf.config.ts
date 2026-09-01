@@ -4,8 +4,9 @@ import { defineConfig } from "vitest/config";
  * The SERIAL perf-budget pass — deliberately split out of the default
  * (parallel, coverage-instrumented) `vitest.config.ts`.
  *
- * The budget tests (`src/testing/perf/**`) spawn the compiled `dist/pragma`
- * and time its wall-clock cost against tight ceilings (budgets.ts). Run inside
+ * The budget tests (`src/testing/perf/**`) spawn the shipped entry
+ * (`node dist/src/bin.js`) and time its wall-clock cost against tight ceilings
+ * (budgets.ts). Run inside
  * the 65-file parallel coverage suite they measure spawn latency while ~64
  * v8-instrumented workers saturate every core, so the whole latency
  * distribution inflates 2–3× and the ceilings blow reliably — a measurement
@@ -27,8 +28,13 @@ export default defineConfig({
     globals: true,
     include: ["src/testing/perf/**/*.test.ts"],
     setupFiles: ["./src/testing/setupXdgIsolation.ts"],
-    // Builds dist/pragma once if missing — the binary the budgets spawn.
-    globalSetup: ["./src/testing/perf/globalSetup.ts"],
+    // Emits `dist/` once if missing — the entry the budgets spawn.
+    globalSetup: [
+      "./src/testing/perf/globalSetup.ts",
+      // Allocates the run-level temp root BEFORE any worker starts and
+      // removes it after the last one exits. `setupXdgIsolation.ts` reads it.
+      "./src/testing/tempRoot.globalSetup.ts",
+    ],
     environment: "node",
     // No cross-file parallelism: the perf tests run one at a time (never
     // alongside each other or coverage workers), so a wall-clock spawn

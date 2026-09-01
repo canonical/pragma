@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import pkg from "../../package.json" with { type: "json" };
 import createTemplateContext from "./createTemplateContext.js";
 import type { MonorepoInfo, PackageAnswers } from "./types.js";
 
@@ -41,6 +42,14 @@ describe("createTemplateContext", () => {
     expect(ctx.version).toBe("0.1.0");
   });
 
+  it("keeps the @canonical/* dependency line separate from the host version", () => {
+    const monorepoInfo: MonorepoInfo = { isMonorepo: true, version: "0.0.1" };
+    const ctx = createTemplateContext(baseAnswers, monorepoInfo);
+
+    expect(ctx.version).toBe("0.0.1");
+    expect(ctx.canonicalVersion).toBe(pkg.version);
+  });
+
   it("handles unscoped package names", () => {
     const unscopedAnswers: PackageAnswers = {
       ...baseAnswers,
@@ -57,8 +66,8 @@ describe("createTemplateContext", () => {
     const monorepoInfo: MonorepoInfo = { isMonorepo: false };
     const ctx = createTemplateContext(baseAnswers, monorepoInfo);
 
-    expect(ctx.module).toBe("src/index.ts");
-    expect(ctx.types).toBe("src/index.ts");
+    // Entry-point strings are getEntryPoints' concern (tested there); the
+    // context carries only what a template consumes.
     expect(ctx.needsBuild).toBe(false);
   });
 
@@ -67,8 +76,6 @@ describe("createTemplateContext", () => {
     const monorepoInfo: MonorepoInfo = { isMonorepo: false };
     const ctx = createTemplateContext(answers, monorepoInfo);
 
-    expect(ctx.module).toBe("dist/esm/index.js");
-    expect(ctx.types).toBe("dist/types/index.d.ts");
     expect(ctx.license).toBe("LGPL-3.0");
     expect(ctx.needsBuild).toBe(true);
   });
@@ -78,8 +85,6 @@ describe("createTemplateContext", () => {
     const monorepoInfo: MonorepoInfo = { isMonorepo: false };
     const ctx = createTemplateContext(answers, monorepoInfo);
 
-    expect(ctx.module).toBe("src/index.css");
-    expect(ctx.types).toBeNull();
     expect(ctx.license).toBe("LGPL-3.0");
     expect(ctx.needsBuild).toBe(false);
   });

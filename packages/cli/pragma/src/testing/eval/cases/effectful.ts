@@ -88,7 +88,7 @@ export const effectfulEvalCases: readonly EvalCase[] = [
     id: "tool-doctor-reports-check-tallies",
     kind: "tool",
     input:
-      "doctor returns a { checks, passed, failed, skipped } diagnostic report where the tallies sum to the checks.",
+      "doctor returns a { checks, passed, failed, available, skipped } diagnostic report where the tallies sum to the checks.",
     async expect({ mcp }) {
       const result = await mcp.callTool("doctor");
       assert.equal(result.ok, true);
@@ -96,11 +96,12 @@ export const effectfulEvalCases: readonly EvalCase[] = [
         checks: unknown[];
         passed: number;
         failed: number;
+        available: number;
         skipped: number;
       };
       assert.ok(Array.isArray(data.checks), "expected a checks array");
       assert.equal(
-        data.passed + data.failed + data.skipped,
+        data.passed + data.failed + data.available + data.skipped,
         data.checks.length,
       );
     },
@@ -170,18 +171,23 @@ export const effectfulEvalCases: readonly EvalCase[] = [
     },
   },
   {
-    id: "tool-token-add-config-is-plan-first",
+    id: "tool-token-noun-is-read-only",
     kind: "tool",
     input:
-      "token_add-config (needsStore mutation) without `confirm` returns a plan naming tokens.config.mjs and writes nothing.",
+      "the `token` noun exposes only reads — `token_add-config` (the tokens.config.mjs writer) was REMOVED in L-OPEN-9, not ported.",
     async expect() {
       await withCanonicalFixture(CANONICAL_CONFIG, async (mcp) => {
-        const result = await mcp.callTool("token_add-config");
-        assert.equal(result.ok, true);
-        const meta = result.meta as { planOnly?: boolean };
-        assert.equal(meta.planOnly, true);
-        const data = result.data as { plan: string[] };
-        assert.match(data.plan.join("\n"), /tokens\.config\.mjs/);
+        // This case used to pin `token_add-config`'s plan-first contract. The
+        // verb is gone, so it pins the ruling instead: the read surface is
+        // declared content and carries no mutation. (The plan-first MECHANIC is
+        // still covered by `tool-config-set-is-plan-first` and
+        // `tool-upgrade-is-plan-first`.)
+        const tools = (await mcp.listTools()).map((tool) => tool.name);
+        assert.ok(!tools.includes("token_add-config"));
+        assert.deepEqual(
+          tools.filter((name) => name.startsWith("token")).sort(),
+          ["token_list", "token_lookup", "token_sample"],
+        );
       });
     },
   },
@@ -189,14 +195,21 @@ export const effectfulEvalCases: readonly EvalCase[] = [
     id: "tool-tier-lookup-lists-scoped-blocks",
     kind: "tool",
     input:
-      "tier_lookup {name:apps/lxd} resolves the tier and lists the blocks scoped to it (LXD Panel).",
+      "tier_lookup {name:[apps/lxd]} resolves the tier and expands the blocks scoped to it (LXD Panel).",
     async expect() {
       await withCanonicalFixture(ALL_VISIBLE_CONFIG, async (mcp) => {
-        const result = await mcp.callTool("tier_lookup", { name: "apps/lxd" });
+        // The declared pack lookup (L-OPEN-9): variadic names in, the uniform
+        // `{ results, errors }` lookup envelope out, blocks as an expand.
+        const result = await mcp.callTool("tier_lookup", {
+          name: ["apps/lxd"],
+        });
         assert.equal(result.ok, true);
-        const data = result.data as { name: string; blocks: string[] };
-        assert.equal(data.name, "apps/lxd");
-        assert.ok(data.blocks.includes("LXD Panel"));
+        const data = result.data as {
+          results: { name: string; blocks: { name: string }[] }[];
+        };
+        const tier = data.results[0];
+        assert.equal(tier?.name, "apps/lxd");
+        assert.ok(tier?.blocks.some((block) => block.name === "LXD Panel"));
       });
     },
   },

@@ -28,6 +28,7 @@ import {
   guardMissingBinary,
   isMissingBinaryError,
 } from "../shared/assertExecOk.js";
+import type { InstallSource } from "../shared/index.js";
 import {
   checkRegistryVersion,
   REGISTRY_TIMEOUT_MS,
@@ -35,6 +36,22 @@ import {
 import { runUpgrade } from "./runUpgrade.js";
 import type { UpgradeData } from "./types.js";
 import { upgradeModule } from "./upgrade.verb.js";
+
+// Pin the install-source detection: the real detector reads THIS process
+// (whose entry is a source checkout — an honest `unknown` with no command,
+// which would starve every update-needed case of its exec). Detection itself
+// is covered by `shared/packageManager.test.ts`; here it is a fixture.
+const detection = vi.hoisted(() => ({ install: undefined as unknown }));
+vi.mock("../shared/index.js", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  detectInstallSource: () => detection.install,
+}));
+
+const GLOBAL_NPM: InstallSource = {
+  kind: "global",
+  pm: "npm",
+  label: "npm (global)",
+};
 
 const upgradeVerb = upgradeModule.verbs[0] as VerbSpec;
 const FLAGS_JSON: GlobalFlags = {
@@ -71,6 +88,7 @@ let prevXdg: string | undefined;
 beforeEach(() => {
   prevXdg = process.env.XDG_CONFIG_HOME;
   process.env.XDG_CONFIG_HOME = tmpCwd();
+  detection.install = GLOBAL_NPM;
 });
 afterEach(() => {
   process.env.XDG_CONFIG_HOME = prevXdg;
@@ -181,6 +199,60 @@ describe("upgrade — update needed", () => {
   });
 });
 
+describe("upgrade — a non-global install NEVER gets an exec (the headline)", () => {
+  const LINKED: InstallSource = {
+    kind: "linked",
+    pm: "npm",
+    target: "/home/u/code/pragma/packages/cli/pragma",
+    label: "npm link (development checkout)",
+  };
+
+  it("linked + update available: no command, no exec — guidance instead", async () => {
+    // The case that must never regress: `npm i -g` against an npm-linked
+    // install would OVERWRITE the symlink to the development worktree.
+    detection.install = LINKED;
+    stubRegistry("99.0.0");
+    const task = await runUpgrade(bootRuntime(FLAGS_JSON, tmpCwd()));
+    const { value, effects } = dryRun(task);
+    expect(value.executed).toBe(false);
+    expect(value.command).toBeUndefined();
+    expect(value.kind).toBe("linked");
+    expect(value.guidance).toMatch(/development checkout/i);
+    expect(effects.some((e) => e._tag === "Exec")).toBe(false);
+  });
+
+  it("--dry-run through dispatch plans NO Execute line for a linked install", async () => {
+    detection.install = LINKED;
+    stubRegistry("99.0.0");
+    const outcome = await executeVerb(
+      upgradeVerb,
+      {},
+      DRY,
+      bootRuntime(FLAGS_JSON, tmpCwd()),
+    );
+    const plan = JSON.parse(outcome.stdout as string).data.plan as string[];
+    expect(plan.some((line) => line.startsWith("Execute:"))).toBe(false);
+    expect(plan.some((line) => line.includes("No automatic upgrade"))).toBe(
+      true,
+    );
+  });
+
+  it("an ephemeral run reports its state with no command either", async () => {
+    detection.install = {
+      kind: "ephemeral",
+      runner: "npx",
+      label: "npx (ephemeral)",
+    } satisfies InstallSource;
+    stubRegistry("99.0.0");
+    const { value, effects } = dryRun(
+      await runUpgrade(bootRuntime(FLAGS_JSON, tmpCwd())),
+    );
+    expect(value.executed).toBe(false);
+    expect(value.command).toBeUndefined();
+    expect(effects.some((e) => e._tag === "Exec")).toBe(false);
+  });
+});
+
 describe("assertExecOk — the exec-exitCode guard", () => {
   it("returns on a zero exit and throws an actionable UNSUPPORTED (with stderr) on nonzero", () => {
     expect(() =>
@@ -199,10 +271,10 @@ describe("assertExecOk — the exec-exitCode guard", () => {
     }
     const err = asPragmaError(thrown);
     // A denied `npm i -g` is user-fixable, NOT a bug — so it must not tell the
-    // user to "please report this issue" (that is INTERNAL_ERROR's recovery).
+    // user to "report this issue" (that is INTERNAL_ERROR's recovery).
     expect(err.code).toBe("UNSUPPORTED");
     expect(err.recovery?.message).not.toContain("report this issue");
-    expect(err.recovery?.message).toMatch(/permissions or network/i);
+    expect(err.recovery?.message).toMatch(/elevated privileges/i);
     // Surfaces the command + exit code + the captured stderr (trimmed).
     expect(err.message).toContain("npm i -g @canonical/pragma-cli");
     expect(err.message).toContain("code 13");
@@ -276,7 +348,7 @@ describe("upgrade — a failed exec maps to an actionable runtime error (exit 1)
 
   it("a missing-binary spawn (ENOENT) at a guarded site is a named UNSUPPORTED, not INTERNAL_ERROR", async () => {
     // The same wrapper `runUpgrade`/`setupLsp` apply: a spawn ENOENT REJECTS the
-    // exec, which used to collapse to INTERNAL_ERROR ("please report this issue").
+    // exec, which used to collapse to INTERNAL_ERROR ("report this issue").
     // `guardMissingBinary` names it instead.
     const thrown = await runToError(
       failVerbWith((_p, rt) =>

@@ -10,7 +10,7 @@ Scaffolds a complete React application with SSR, routing, Storybook, and two sta
 
 ```bash
 summon application/react my-app
-summon application/react --forms my-app
+summon application/react --no-forms my-app
 summon application/react --relay my-app
 ```
 
@@ -35,7 +35,7 @@ my-app/
 │   ├── domains/
 │   │   ├── marketing/        # HomePage, GuidePage, routes
 │   │   ├── account/          # AccountPage, LoginPage, routes
-│   │   ├── contact/          # ContactPage, routes (--forms only)
+│   │   ├── contact/          # ContactPage, routes (omitted with --no-forms)
 │   │   └── catalog/          # CatalogPage, ProductList, ProductCard (--relay only)
 │   ├── lib/
 │   │   ├── Navigation/
@@ -55,7 +55,7 @@ my-app/
 └── vite.config.ts
 ```
 
-The `--forms` flag adds the contact domain with form components and wires `contactRoutes` into `routes.tsx`.
+Form components are ON by default: the contact domain and its `contactRoutes` wiring in `routes.tsx` ship unless `--no-forms` is passed.
 
 #### `--relay`: Relay (GraphQL) data layer
 
@@ -136,7 +136,7 @@ const [billing] = group(publicLayout, [billingRoutes.billing] as const);
 
 ### `summon route <domain>/<name>`
 
-Adds a page component to an existing domain and appends the import to its `routes.ts`.
+Adds a page component to an existing domain and wires it into the domain's `routes.ts` — no manual edit needed.
 
 ```bash
 summon route billing/invoices
@@ -147,16 +147,16 @@ Produces:
 ```
 src/domains/billing/
 ├── InvoicesPage.tsx   # New page component
-└── routes.ts          # Import + TODO comment appended
+└── routes.ts          # Import + route entry inserted
 ```
 
-The generator appends the import and a comment with the route entry. Add the route to the `routes` object manually:
+The generator locates the `routes` object with the TypeScript AST and splices in both the import and the full entry:
 
 ```ts
-invoices: route({ url: "/billing/invoices", component: InvoicesPage }),
+invoices: route({ url: "/billing/invoices", content: InvoicesPage }),
 ```
 
-Create the domain first with `summon domain <name>`.
+Running with `--undo` removes that entry and import again — safe when the insertion actually added a new key. If the route key already existed the insertion was a no-op, and `--undo` would remove the pre-existing route (the generator help documents the same caveat). Create the domain first with `summon domain <name>`.
 
 ### `summon wrapper <name>`
 
@@ -204,7 +204,7 @@ src/
 │   │   ├── AccountPage.tsx
 │   │   ├── LoginPage.tsx
 │   │   └── routes.ts
-│   ├── contact/            # When --forms is enabled
+│   ├── contact/            # Omitted with --no-forms
 │   │   ├── ContactPage.tsx
 │   │   └── routes.ts
 │   └── catalog/            # When --relay is enabled
@@ -243,16 +243,16 @@ Routes are flat objects using `route()` from `@canonical/router-core`:
 const routes = {
   invoices: route({
     url: "/billing/invoices",
-    component: InvoicesPage,
+    content: InvoicesPage,
   }),
 } as const;
 
 export default routes;
 ```
 
-- `component` receives the component directly (not a wrapper function)
+- `content` receives the component directly (not a wrapper function)
 - Pages use `useHead()` from `@canonical/react-head` for title and meta
-- No `fetch()` / `prefetch()` unless needed for cache warming
+- No `fetch()` / `warm()` unless needed for cache warming
 - No `.error` — use React error boundaries
 - Route files are `.ts` (no JSX in route definitions)
 

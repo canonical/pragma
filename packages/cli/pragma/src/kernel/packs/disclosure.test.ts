@@ -66,7 +66,7 @@ const PACK: PackDefinition = {
 };
 
 const lookupVerb = () =>
-  compilePack(PACK, "test:widget", PREFIXES).find(
+  compilePack(PACK, { label: "test:widget", origin: "package" }, PREFIXES).find(
     (v) => verbKey(v.path) === "widget lookup",
   );
 

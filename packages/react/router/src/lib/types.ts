@@ -4,7 +4,6 @@ import type {
   RouterDehydratedState,
   RouterLoadResult,
   RouterNavigationState,
-  RouterOptions,
 } from "@canonical/router-core";
 import type { ReactNode } from "react";
 
@@ -43,17 +42,6 @@ export interface HydrationWindow {
   /** Arbitrary global values, including the router's initial data payload. */
   readonly [key: string]: unknown;
 }
-
-/** Options accepted by `createHydratedRouter()`. */
-export interface CreateHydratedRouterOptions<
-  TNotFound extends AnyRoute | undefined,
-> extends Omit<RouterOptions<TNotFound>, "adapter"> {
-  /** Alternate window-like object to read initial hydration data from. */
-  readonly browserWindow?: HydrationWindow;
-}
-
-/** Alias for the window-like value consumed by `createHydratedRouter()`. */
-export type CreateHydratedRouterWindow = HydrationWindow;
 
 /** Alias for the navigation state values emitted by router-react hooks. */
 export type HydratedNavigationState = RouterNavigationState;

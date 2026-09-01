@@ -8,6 +8,8 @@ import type { TextFieldProps } from "./types.js";
  * (label, description, error) and middleware/conditional-display support.
  *
  * `import { TextField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.text_field
  */
 export default withWrapper<TextFieldProps>(
   bindField<TextFieldProps>(TextInput, "native"),

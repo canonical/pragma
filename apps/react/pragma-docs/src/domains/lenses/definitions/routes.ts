@@ -35,8 +35,8 @@ import { definitionsStripSlots } from "./stripSlots.js";
 const routes = {
   definitions: route({
     url: "/definitions",
-    component: DefinitionsPage,
-    prefetch: (params, search) => {
+    content: DefinitionsPage,
+    warm: (params, search) => {
       warmRouteQuery(definitionsRouteEntry, params, search);
     },
     meta: {
@@ -47,8 +47,8 @@ const routes = {
   }),
   definitionsTerm: route({
     url: "/definitions/:term",
-    component: DefinitionsPage,
-    prefetch: (params, search) => {
+    content: DefinitionsPage,
+    warm: (params, search) => {
       warmRouteQuery(definitionsRouteEntry, params, search);
     },
     meta: {

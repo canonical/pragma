@@ -1,249 +1,133 @@
 /**
- * The `create` verbs — `component` / `package` / `application` (path capped at
- * two segments; the declared component frameworks collapse to one verb + a
- * `--framework` enum). Each is a mutating, interactive, storeless verb.
+ * The `create` verbs — `component` / `package` / `application`, the THREE
+ * binding-level VerbSpecs (the MCP/covenant/reference grammar). Their params
+ * DERIVE mechanically from the generators' own prompts, projected at build
+ * time into `createSurface.generated.ts` — no hand mirrors, no flag aliases:
+ * the prompt names ARE the param/MCP-arg names, the FLAG tokens are
+ * `buildOptionInfo`'s registered forms (a default-true confirm registers
+ * ONLY `--no-<kebab>` — the covenant and the doc gate speak that vocabulary
+ * through the mount's registered-syntax seam, L-CIS-2), and `component`'s
+ * params are the FRAMEWORK UNION of its three declared leaves plus a
+ * required, positional `framework` enum derived from the tree segments
+ * (L-CIS). The CLI mounts the
+ * generator TREE itself (`create component react [component-path]` — see
+ * `mount.ts`); these specs are what MCP tools and the emitted surface read.
  *
- * LAZY DISPATCH (R9 + lazy-React): the params are STATIC — built by the
- * generator→grammar adapter over static prompt MIRRORS, never the live
- * generators (importing a generator pulls summon-core, and with it React). The
- * `run` body lazily `import()`s `pickGenerator` + summon-core, so `buildProgram`
- * / `--help` / `__complete` / reads never load summon-core or the generators —
- * and `create --yes` never loads React (the Ink UI is dynamic-only, and only the
- * TTY branch even asks for it). A parity test loads the real generators and
- * asserts the mirrors still match.
+ * LAZY DISPATCH (R9 + lazy-React): NOTHING of summon-core is imported
+ * statically — not even the UI-free projection subpath: this module sits on
+ * the capabilities barrel, so `--help` and `__complete` pay its import cost
+ * on every spawn, and the projection helpers it needs (`decideInteraction`,
+ * `refusalMessage`, `toKebabCase`, …) are only ever called inside `run`.
+ * `run` lazily `import()`s `pickGenerator` + summon-core + the projection, so
+ * `buildProgram` / `--help` / `__complete` / reads never load summon-core or
+ * the generators — and `create --yes` never loads React. The lazy-graph
+ * guard in `lazy.test.ts` pins the boundary.
  */
 
-import type { GeneratorResult, PromptDefinition } from "@canonical/summon-core";
+import { isAbsolute } from "node:path";
+import type { GeneratorResult } from "@canonical/summon-core";
+import type { ProjectedPrompt } from "@canonical/summon-core/projection";
 import type { Task } from "@canonical/task";
 import { BIN_NAME } from "../../constants.js";
-import { PragmaError } from "../../kernel/error/PragmaError.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
-import type { ParamSpec, VerbSpec } from "../../kernel/spec/types.js";
-import { CREATE_GENERATORS } from "./constants.js";
-import { createFormatters } from "./create.render.js";
-import { generatorToParams } from "./generatorToVerbSpec.js";
+import { PragmaError } from "../../kernel/error/index.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
+import type { ParamSpec, VerbSpec } from "../../kernel/spec/index.js";
+import { COMPONENT_FRAMEWORKS, CREATE_GENERATORS } from "./constants.js";
+import { createFormatters, formatCreatePlan } from "./create.render.js";
+import { CREATE_SURFACE } from "./createSurface.generated.js";
+import { generatorToParams, promptToParam } from "./generatorToVerbSpec.js";
 import { assertInsideWorkspace } from "./pathJail.js";
 import type { CreateKind } from "./types.js";
 
 // =============================================================================
-// Static params (mirrors of the generators' prompts — see the module doc)
+// Params, derived from the projected surface (createSurface.generated.ts)
 // =============================================================================
 
 /**
- * The framework — the FIRST positional, mirroring `summon component
- * <framework>` exactly: `pragma create component react MyButton`. It is a
- * required selector (summon's generator keys are `component/<framework>`),
- * NOT a defaulted flag — so `pragma create component react` reads react as
- * the framework (not as the path), and omitting it prompts / errors naming
- * the choices rather than silently scaffolding React. Declared before
- * `componentPath` in the params array, so it takes positional slot 0.
- *
- * The values are DERIVED from {@link CREATE_GENERATORS} — the one authoring
- * point for which component generators the distribution ships — so declaring a
- * framework there surfaces it here with no second edit. There is deliberately
- * NO `default`: a default is what made an omitted framework silently scaffold
- * React, and `surface.v2.json` freezes this as `args: ["[framework]", …]` with
- * no `--framework` flag.
+ * `framework` — the component tree segments as a REQUIRED positional enum
+ * (`create component <framework>`), values derived from the declared paths.
+ * Deliberately NO default: summon has no default framework, and neither does
+ * the projection of it.
  */
 const FRAMEWORK_PARAM: ParamSpec = {
   kind: "enum",
   name: "framework",
-  // Just "Component framework." — every renderer already appends the enum's own
-  // "(one of: react, svelte, lit)", so listing them here printed the choices
-  // twice in `docs/reference/{commands,tools}.md`.
-  doc: "Component framework.",
-  values: CREATE_GENERATORS.component.frameworks,
+  doc: "Component framework — the tree segment (`create component <framework>`).",
+  values: COMPONENT_FRAMEWORKS,
+  required: true,
   positional: true,
-  required: false,
 };
 
 /**
- * `componentPath` — the SECOND positional (`... <framework> <componentPath>`),
- * deliberately WITHOUT a ParamSpec default so the selected framework's own
- * prompt default applies (react vs svelte/lit differ); `required: false`
- * keeps it optional despite having no default here.
+ * The FRAMEWORK UNION of the component leaves' prompts (A4): first-seen order
+ * over the declared framework order; a prompt identical across all declaring
+ * frameworks keeps its default; a prompt whose default DIFFERS across
+ * frameworks omits it (`required: false` — the selected framework's own
+ * prompt default applies at run time); a prompt not present on every
+ * framework gets its doc suffixed with the declaring frameworks.
  */
-const COMPONENT_PATH_PARAM: ParamSpec = {
-  kind: "string",
-  name: "componentPath",
-  doc: "Component path (its final segment is the PascalCase component name).",
-  required: false,
-  positional: true,
-  complete: { kind: "files" },
-};
-
-const SHARED_COMPONENT_MIRROR: PromptDefinition[] = [
-  {
-    name: "withStyles",
-    type: "confirm",
-    message: "Include styles?",
-    default: true,
-  },
-  {
-    name: "withStories",
-    type: "confirm",
-    message: "Include Storybook stories?",
-    default: true,
-  },
-  {
-    name: "withSsrTests",
-    type: "confirm",
-    message: "Include SSR tests?",
-    default: true,
-  },
-];
-
-const PACKAGE_MIRROR: PromptDefinition[] = [
-  {
-    name: "name",
-    type: "text",
-    message: "Package name:",
-    default: "@canonical/my-package",
-  },
-  {
-    name: "type",
-    type: "select",
-    message: "Package type:",
-    choices: [
-      { label: "tool-ts", value: "tool-ts" },
-      { label: "library", value: "library" },
-      { label: "css", value: "css" },
-    ],
-    default: "tool-ts",
-  },
-  {
-    name: "description",
-    type: "text",
-    message: "Package description:",
-    default: "",
-  },
-  {
-    name: "withReact",
-    type: "confirm",
-    message: "Include React dependencies?",
-    default: false,
-  },
-  {
-    name: "withStorybook",
-    type: "confirm",
-    message: "Include Storybook setup?",
-    default: false,
-  },
-  {
-    name: "withCli",
-    type: "confirm",
-    message: "Include a CLI binary entry point?",
-    default: false,
-  },
-  {
-    name: "withPrTemplate",
-    type: "confirm",
-    message: "Include a PR template?",
-    default: false,
-  },
-  // Opt-in (default false): the grammar has no `--no-` form, so a default-true
-  // boolean could never be turned off. `--run-install` enables it.
-  {
-    name: "runInstall",
-    type: "confirm",
-    message: "Run the package manager install after creation?",
-    default: false,
-  },
-];
-
-// The include-flag prompts carry the CLI grammar's `--with-X` names
-// (`withSsr`/`withRouter`/`withForms`/`withRelay`, AV-228 B8) rather than the
-// summon generator's bare prompt names (`ssr`/`router`/`forms`/`relay`). {@link
-// INCLUDE_FLAG_ALIASES} maps them back at the CLI↔generator boundary so the
-// generator prompt names — and their embedded templates + byte-equality
-// goldens — stay stable. `--run-install` (default false) is an action flag, not
-// an include, so it keeps its spelling.
-const APPLICATION_MIRROR: PromptDefinition[] = [
-  {
-    name: "appPath",
-    type: "text",
-    message: "Application directory:",
-    default: "my-app",
-    positional: true,
-  },
-  { name: "withSsr", type: "confirm", message: "Include SSR?", default: true },
-  {
-    name: "withRouter",
-    type: "confirm",
-    message: "Include router?",
-    default: true,
-  },
-  {
-    name: "withForms",
-    type: "confirm",
-    message: "Include form components?",
-    default: true,
-  },
-  {
-    name: "withRelay",
-    type: "confirm",
-    message: "Include a Relay (GraphQL) data layer?",
-    default: false,
-  },
-  {
-    name: "runInstall",
-    type: "confirm",
-    message: "Install dependencies now?",
-    default: false,
-  },
-];
-
-/**
- * CLI include-flag names → summon generator prompt names, per create kind
- * (AV-228 B8). All four `create application` include-flags are exposed on the
- * unified `--with-X` convention, so their params arrive keyed `withSsr`/
- * `withRouter`/`withForms`/`withRelay`; the summon generator reads the bare
- * `ssr`/`router`/`forms`/`relay`. We normalize at the ONE CLI↔generator seam
- * ({@link toGeneratorAnswers}), keeping the generator prompt names (and their
- * templates/goldens) untouched. Component and package already use `--with-X`
- * names that match their prompts, so their maps are empty.
- */
-export const INCLUDE_FLAG_ALIASES: Record<
-  CreateKind,
-  Readonly<Record<string, string>>
-> = {
-  component: {},
-  package: {},
-  application: {
-    withSsr: "ssr",
-    withRouter: "router",
-    withForms: "forms",
-    withRelay: "relay",
-  },
-};
-
-/**
- * Re-key a param bag's CLI include-flag aliases to the generator prompt names,
- * so the summon generator reads `ssr` where the CLI grammar exposes `--with-ssr`.
- *
- * @param kind - The create noun (selects the alias map).
- * @param params - The coerced CLI/MCP param bag.
- * @returns A new bag with aliased keys renamed to the generator prompt names.
- */
-export function toGeneratorAnswers(
-  kind: CreateKind,
-  params: Readonly<Record<string, unknown>>,
-): Record<string, unknown> {
-  const aliases = INCLUDE_FLAG_ALIASES[kind];
-  const answers: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(params)) {
-    answers[aliases[key] ?? key] = value;
+function unionComponentParams(): ParamSpec[] {
+  const paths = CREATE_GENERATORS.component.paths;
+  const byName = new Map<
+    string,
+    { prompt: ProjectedPrompt; frameworks: string[]; defaults: unknown[] }
+  >();
+  const order: string[] = [];
+  for (const commandPath of paths) {
+    const framework = commandPath.split("/")[1] as string;
+    for (const prompt of surfaceFor(commandPath).prompts) {
+      let entry = byName.get(prompt.name);
+      if (!entry) {
+        entry = { prompt, frameworks: [], defaults: [] };
+        byName.set(prompt.name, entry);
+        order.push(prompt.name);
+      }
+      entry.frameworks.push(framework);
+      entry.defaults.push(prompt.default);
+    }
   }
-  return answers;
+  return order.map((name) => {
+    const entry = byName.get(name) as NonNullable<
+      ReturnType<typeof byName.get>
+    >;
+    const universal = entry.frameworks.length === paths.length;
+    const agreed = entry.defaults.every((value) =>
+      Object.is(value, entry.defaults[0]),
+    );
+    const param = promptToParam(
+      agreed ? entry.prompt : { ...entry.prompt, default: undefined },
+    );
+    return {
+      ...param,
+      ...(universal
+        ? {}
+        : { doc: `${param.doc} (frameworks: ${entry.frameworks.join(", ")})` }),
+      ...(agreed ? {} : { required: false }),
+    } as ParamSpec;
+  });
+}
+
+/** The projected surface for a declared path (fails loud on a stale build). */
+function surfaceFor(commandPath: string) {
+  const surface = CREATE_SURFACE[commandPath];
+  if (!surface) {
+    throw new Error(
+      `createSurface.generated.ts carries no entry for declared path "${commandPath}" — rerun the build`,
+    );
+  }
+  return surface;
 }
 
 const componentParams: ParamSpec[] = [
   FRAMEWORK_PARAM,
-  COMPONENT_PATH_PARAM,
-  ...generatorToParams(SHARED_COMPONENT_MIRROR),
+  ...unionComponentParams(),
 ];
-const packageParams: ParamSpec[] = generatorToParams(PACKAGE_MIRROR);
-const applicationParams: ParamSpec[] = generatorToParams(APPLICATION_MIRROR);
+const packageParams: ParamSpec[] = generatorToParams(
+  surfaceFor("package").prompts,
+);
+const applicationParams: ParamSpec[] = generatorToParams(
+  surfaceFor("application/react").prompts,
+);
 
 /** The path param each noun jails (package writes into a name-derived subdir). */
 const PATH_PARAM: Record<CreateKind, string | undefined> = {
@@ -252,22 +136,19 @@ const PATH_PARAM: Record<CreateKind, string | undefined> = {
   application: "appPath",
 };
 
+/**
+ * The two value classes the shared prompt validators reject as workspace
+ * ESCAPES — absolute, and any `..` segment: exactly the jail's own
+ * non-symlink classes, which the round-9 reorder moved onto the validator
+ * tier. Used to keep the jail-tier `recovery` hint on those rejections.
+ */
+const isEscapeValue = (value: unknown): boolean =>
+  typeof value === "string" &&
+  (isAbsolute(value) || value.split(/[/\\]/).includes(".."));
+
 // =============================================================================
 // The lazy run — the one-line summon↔pragma seam per invocation
 // =============================================================================
-
-/**
- * The standalone `bun build --compile` binary resolves every bundled module
- * under the virtual `/$bunfs` filesystem — a marker absent from any source or
- * `bun`-run module URL. Only a generator that routes its template reads through
- * the embedded manifest can run there
- * (`CREATE_GENERATORS[kind].readsEmbeddedTemplates`);
- * the others call `template({ source })`, which falls through to
- * `readFile(source)` and dies with `ENOENT … /$bunfs/…` after `mkdir` has
- * already run, leaving partially-created files behind.
- * `compiledCreate.subprocess.test.ts` pins the refusal AND the empty cwd.
- */
-const IS_COMPILED_BINARY = import.meta.url.includes("/$bunfs/");
 
 /**
  * True when a dynamic import failed because the module could not be RESOLVED.
@@ -294,53 +175,33 @@ export function isModuleNotFound(cause: unknown): boolean {
 }
 
 /**
- * Load the create runtime: inject the embedded template manifest, then import
- * the generator selector + summon-core (STATIC dynamic imports, so bun's
- * `--compile` bundler includes them — they stay behind this lazy boundary, so
- * the fast paths and `create --yes` still load neither summon-core nor React).
+ * Load the create runtime — the generator selector and summon-core.
  *
- * The manifest is injected BEFORE `pickGenerator` — the component loader
- * consults it when its disk read fails (the compiled binary), and the generators
- * load their templates on first `generate()`. It is imported from
- * summon-component's `loadTemplate` submodule so this does not evaluate the
- * generator index first. In a source run the disk read wins and the manifest is
- * inert.
+ * Lazy, and the specifiers stay STATIC so they remain analysable: importing
+ * these pulls summon-core and with it React, which must stay off `--help`,
+ * completion and every read. The generators load their own templates from their
+ * own packages on first `generate()`.
  *
- * A binding whose generator does not read through that manifest is gated to a
- * source run here ({@link IS_COMPILED_BINARY}). A stale resolution failure is a
- * defensive backstop {@link isModuleNotFound} turns into the same clean gate.
+ * A resolution failure means a broken or pruned install, and
+ * {@link isModuleNotFound} turns it into a clean refusal rather than an
+ * internal-bug report.
  */
-async function loadCreateRuntime(kind: CreateKind) {
-  if (IS_COMPILED_BINARY && !CREATE_GENERATORS[kind].readsEmbeddedTemplates) {
-    throw new PragmaError({
-      code: "UNSUPPORTED",
-      message: `\`create ${kind}\` is not available in the compiled ${BIN_NAME} binary — ${SOURCE_ONLY_REASON}. Run it from a source checkout, or use the \`summon\` CLI.`,
-      recovery: {
-        message: `Run \`create ${kind}\` from a source checkout, or use \`summon\`.`,
-      },
-    });
-  }
+async function loadCreateRuntime() {
   try {
-    // Inject the embedded manifest before the generators evaluate.
-    const [{ setEmbeddedTemplates }, { TEMPLATES }] = await Promise.all([
-      import("@canonical/summon-component/embedded"),
-      import("./templates.embedded.generated.js"),
-    ]);
-    setEmbeddedTemplates(TEMPLATES);
-
-    const [pick, summon] = await Promise.all([
-      import("./pickGenerator.js"),
+    const [summon, projection, pick] = await Promise.all([
       import("@canonical/summon-core"),
+      import("@canonical/summon-core/projection"),
+      import("./pickGenerator.js"),
     ]);
-    return { pickGenerator: pick.pickGenerator, summon };
+    return { pickGenerator: pick.pickGenerator, summon, projection };
   } catch (cause) {
     if (isModuleNotFound(cause)) {
       throw new PragmaError({
         code: "UNSUPPORTED",
         message:
-          "`create` could not load its generator runtime. Run it from a source checkout, or use the `summon` CLI.",
+          "`create` cannot load its generator runtime — the `@canonical/summon-*` packages it depends on are missing from this install.",
         recovery: {
-          message: "Run `create` from a source checkout, or use `summon`.",
+          message: `Reinstall ${BIN_NAME} to restore its generator dependencies.`,
         },
       });
     }
@@ -348,61 +209,151 @@ async function loadCreateRuntime(kind: CreateKind) {
   }
 }
 
+/** The create noun that declares a command path. */
+function kindOf(commandPath: string): CreateKind {
+  for (const [kind, binding] of Object.entries(CREATE_GENERATORS)) {
+    if ((binding.paths as readonly string[]).includes(commandPath)) {
+      return kind as CreateKind;
+    }
+  }
+  throw PragmaError.internalError(`undeclared command path ${commandPath}`);
+}
+
 /**
- * Build the `create` Task for one invocation: pick the generator, jail its
- * output path, pre-validate flag/arg answers, pick the prompt strategy against
- * the interaction context, wire `runtime.exec`, and return `execute`.
+ * Build the `create` Task for one invocation of a declared COMMAND PATH: pick
+ * the generator, pre-validate the provided answers (the shared validator
+ * tier), jail its output path (the host backstop, after validation),
+ * decide the interaction mode (the ONE shared decision — same function, same
+ * inputs as the summon bin), and return `execute` wired to the strategy the
+ * mode names.
  *
- * @param kind - The create noun.
- * @param params - The coerced params for this invocation.
+ * `params` are the EXPLICIT answers only (CLI flags/positional; MCP args
+ * carry schema defaults, which is that transport's contract). MCP keeps its
+ * plan-first/confirm path untouched — `decideInteraction` is CLI-only.
+ *
+ * @param commandPath - The declared command path (`component/react`, …).
+ * @param params - The provided answers for this invocation.
  * @param rt - The pragma runtime.
  * @returns A `Promise<Task<GeneratorResult>>` (the union's third arm) the
  *   dispatcher/MCP handler awaits into a Task before interpreting.
  */
-async function runCreate(
-  kind: CreateKind,
+export async function runCreate(
+  commandPath: string,
   params: Record<string, unknown>,
   rt: PragmaRuntime,
 ): Promise<Task<GeneratorResult>> {
   // Lazy: importing these pulls summon-core (and with it React) — kept off every
-  // non-create path. Now STATIC dynamic imports so `--compile` bundles them; the
-  // embedded `.ejs` manifest is injected here. A binding that does not read
-  // through it stays a source-run feature in the binary.
-  const { pickGenerator, summon } = await loadCreateRuntime(kind);
+  // non-create path. The specifiers stay static so they remain analysable; the
+  // embedded `.ejs` manifest is injected here as the disk read's fallback.
+  const { pickGenerator, summon, projection } = await loadCreateRuntime();
 
-  // Normalize the CLI/MCP `--with-X` include-flags to the generator prompt names
-  // (AV-228 B8) once, at this seam; every summon interaction below reads the
-  // generator-facing `answers` bag so the generator prompt names stay stable.
-  const answers = toGeneratorAnswers(kind, params);
+  const generator = pickGenerator(commandPath);
+  const kind = kindOf(commandPath);
 
-  const generator = pickGenerator(kind, answers);
-
-  // SEC-2: reject a path escaping the workspace BEFORE any effect runs.
-  const pathParam = PATH_PARAM[kind];
-  if (pathParam) assertInsideWorkspace(pathParam, answers[pathParam], rt.cwd);
+  // The tree segment is not an answer: drop a stray `framework` key so the
+  // generators (whose prompts never include it) see only their own answers.
+  const answers: Record<string, unknown> = { ...params };
+  delete answers.framework;
 
   // Reject a flag/arg-provided answer that fails its prompt's own constraint,
-  // with a clean INVALID_INPUT (execute re-validates as a backstop).
+  // with a clean INVALID_INPUT (execute re-validates as a backstop). Runs
+  // BEFORE the jail: the path prompts' own validators reject absolute/`..`
+  // escapes, so an escaping output path fails the SHARED validator line in
+  // both hosts (the cross-CLI matrix) and the jail below stays the backstop
+  // its docblock claims.
+  const pathParam = PATH_PARAM[kind];
   const invalid = summon.validateAnswers(generator.prompts, answers);
   if (invalid !== null) {
-    throw new PragmaError({ code: "INVALID_INPUT", message: invalid });
+    // A rejection of the JAILED path param's escape classes (absolute /
+    // `..` — the two the round-9 reorder moved off the jail) attaches ONE
+    // workspace hint to BOTH classes — the jail's `..`-branch message —
+    // deliberately NOT reproducing the jail's per-branch hints (its
+    // absolute branch says "Use a path relative to the current
+    // directory."; those stay the jail's own, pinned in pathJail.test.ts).
+    // The message stays the validator's — the shared cross-host line. A
+    // non-escape rejection of the same param (e.g. casing) never carried
+    // recovery and still does not.
+    const escaped =
+      pathParam !== undefined &&
+      invalid.startsWith(`Invalid --${projection.toKebabCase(pathParam)} `) &&
+      isEscapeValue(answers[pathParam]);
+    throw new PragmaError({
+      code: "INVALID_INPUT",
+      message: invalid,
+      ...(escaped
+        ? { recovery: { message: "The path must stay inside the workspace." } }
+        : {}),
+    });
   }
 
+  // SEC-2: reject a path escaping the workspace BEFORE any effect runs — the
+  // host-level backstop behind the validators, and the only tier that catches
+  // a symlink RESOLVING outside the workspace.
+  if (pathParam) assertInsideWorkspace(pathParam, answers[pathParam], rt.cwd);
+
+  // An ABSENT interaction context defaults to `yes: false` — nothing may
+  // silently auto-apply just because a caller forgot to say how it is driven.
   const { isTTY, transport, yes, signal, abort } = rt.interaction ?? {
     isTTY: false,
     transport: "cli" as const,
-    yes: true,
+    yes: false,
   };
   const stamp = summon.createGeneratorStamp(generator);
 
-  // TTY without --yes → the embedded Ink wizard (identical #819 flow). The
-  // session both answers prompts and renders live effect progress, so its
-  // callbacks ride runtime.exec alongside the shared stamping transform.
-  if (isTTY && !yes) {
+  // MCP: params-or-error, plan-first/confirm — untouched by the decision
+  // table (an MCP call is never a terminal session).
+  if (transport === "mcp") {
+    const prompt = summon.mcpPrompt(answers);
+    rt.exec = {
+      cwd: rt.cwd,
+      promptHandler: prompt,
+      onEffectStart: summon.createStampOnEffectStart(stamp),
+      onLog: (_level, message) => process.stderr.write(`${message}\n`),
+      signal,
+    };
+    return summon.execute(generator, { prompt, params: answers, signal });
+  }
+
+  // The ONE interaction decision (R2) — the same function, over the same five
+  // inputs, as the summon bin. The mount refuses before ever loading this
+  // runtime; re-deriving here keeps direct kernel callers honest too.
+  const { mode } = projection.decideInteraction({
+    dryRun: rt.mutation?.preview === true,
+    undo: rt.mutation?.undo === true,
+    yes: yes === true,
+    isTTY: isTTY === true,
+    explicitComplete: projection.explicitAnswersComplete(
+      generator.prompts,
+      answers,
+    ),
+  });
+
+  if (mode === "refuse") {
+    throw new PragmaError({
+      code: "INVALID_INPUT",
+      message: projection.refusalMessage(
+        projection.missingExplicitFlags(generator.prompts, answers),
+      ),
+    });
+  }
+
+  // Wizard: ask exactly the pending prompts — the provided answers are
+  // explicit and pre-seeded; `collectAnswers` skips them and evaluates each
+  // conditional against the answers as they land (wizard-script parity).
+  if (mode === "wizard") {
     // `onCancel` (H2): an in-Ink Ctrl-C during execution aborts the run so the
     // interpreter stops writing — raw mode swallows the SIGINT, so the wizard
     // drives the abort. Shared with setup by construction.
-    const session = summon.inkPrompt(generator, { signal, onCancel: abort });
+    // `cwd` also reaches the wizard: its confirm-gate preview reads the same
+    // jail-checked write root the interpreter resolves effect paths against.
+    const session = summon.inkPrompt(generator, {
+      signal,
+      onCancel: abort,
+      cwd: rt.cwd,
+      // Flag-provided answers reach the wizard too: without the seed the
+      // confirm gate previews with them missing (undefined paths, wrong plan).
+      initialAnswers: answers,
+    });
     // Thread the per-call write root: the interpreter resolves the generator's
     // relative output paths against `rt.cwd` — the SAME dir the SEC-2 jail
     // validated above — so the write can never escape the checked directory.
@@ -425,13 +376,12 @@ async function runCreate(
     });
   }
 
-  // Non-interactive: MCP → params-or-error; CLI/--yes/CI → flags+defaults.
-  const prompt =
-    transport === "mcp"
-      ? summon.mcpPrompt(answers)
-      : summon.autoPrompt(answers);
-  // Same per-call write root as the Ink branch: `rt.cwd` feeds both the SEC-2
-  // jail and the interpreter's effect-path base, atomically.
+  // run / batch-dry-run / batch-undo: flags + defaults, never a wizard —
+  // `autoPrompt` resolves each unprovided prompt to its default or fails
+  // loudly on a missing required answer. Same per-call write root as the
+  // wizard branch: `rt.cwd` feeds both the SEC-2 jail and the interpreter's
+  // effect-path base, atomically.
+  const prompt = summon.autoPrompt(answers);
   rt.exec = {
     cwd: rt.cwd,
     promptHandler: prompt,
@@ -450,7 +400,7 @@ async function runCreate(
  * `destructiveHint`, and MCP clients default an unset hint on a non-read-only
  * tool to `true` — advertising create as destructive, the opposite of intent.
  */
-const CREATE_CAPABILITY = {
+export const CREATE_CAPABILITY = {
   needsStore: false,
   mutates: true,
   destructive: false,
@@ -462,50 +412,41 @@ const CREATE_CAPABILITY = {
 };
 
 /**
- * Why a binding is source-run only — the ONE authoring of it, shared by the
- * documentation below and by {@link loadCreateRuntime}'s `UNSUPPORTED` refusal,
- * so what the reference promises and what the binary does cannot disagree.
+ * The shared output spec: the outcome formatters plus the dry-run seam.
+ *
+ * ONE constant because there are TWO specs per leaf — the binding-level verbs
+ * below (what MCP and the emitted surface read) and the per-leaf spec the
+ * mount synthesizes for `create component react …` (what a user actually
+ * runs). They describe the same generation, so a preview that reached only one
+ * of them would be a preview the CLI never showed.
+ *
+ * `formatPlan` renders through summon's own effect formatter instead of the
+ * kernel's raw dump, so the two bins describe the identical tree they write
+ * identically. `planData` stays unset — the effects the preview records ARE
+ * the plan — which is what leaves the `--format json` dry-run body exactly as
+ * it was.
+ *
+ * It resolves a PROMISE because {@link formatCreatePlan} loads that formatter
+ * behind a dynamic `import()`: this constant is reachable from the
+ * capabilities barrel, and the whole point of the lazy-dispatch boundary above
+ * is that nothing on that graph pays for summon-core on a `--help` spawn.
  */
-const SOURCE_ONLY_REASON =
-  "its generator reads templates from disk, which the binary does not carry";
-
-/**
- * The published caveat for a binding the compiled binary cannot run. DERIVED
- * from `CREATE_GENERATORS[kind].readsEmbeddedTemplates` — flipping that bit
- * moves the caveat, `docs/reference/*.md`, and `create.test.ts`'s binding
- * assertion together.
- *
- * It LEADS WITH THE PURPOSE, because `tools.md` and the MCP tool description
- * both render `doc ?? summary` — so a caveat alone REPLACED the only sentence
- * saying what the tool makes, and an agent enumerating tools could not learn
- * that `create_package` scaffolds a package. The tool works from a source
- * checkout; describing nothing but its refusal made a live tool
- * undiscoverable. The repeated sentence in `commands.md`'s section is the
- * cheaper of the two costs.
- *
- * It names no CLI flag (`mcp/toolDescriptions.test.ts` forbids one, and an
- * agent has no flags): the plan-only refusal is stated in the terms BOTH
- * surfaces share.
- *
- * @param kind - The create binding.
- * @param summary - The verb's own one-liner, which the `doc` replaces on MCP.
- * @returns The `doc` for a source-run-only binding, or `undefined`.
- */
-function buildAvailabilityDoc(
-  kind: CreateKind,
-  summary: string,
-): string | undefined {
-  if (CREATE_GENERATORS[kind].readsEmbeddedTemplates) return undefined;
-  return `${summary} From the compiled ${BIN_NAME} binary, \`create ${kind}\` refuses with \`UNSUPPORTED\` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that ${SOURCE_ONLY_REASON}. Run it from a source checkout, or use the \`summon\` CLI.`;
-}
+export const CREATE_OUTPUT: VerbSpec<
+  Record<string, unknown>,
+  GeneratorResult
+>["output"] = {
+  formatters: createFormatters,
+  formatPlan: (_planData, effects, verbose) =>
+    formatCreatePlan(effects, verbose),
+};
 
 /**
  * Build a create verb. `run` presents `Promise<Task<R>>` through the `Task<R>`
  * arm by an honest cast at this one site (mirroring `sources update`): a literal
  * `Promise<Task<R>>` arm in the union would poison async read-verb inference.
  *
- * A binding the compiled binary cannot run says so in its `summary` (which is
- * what `--help` and the noun listing show) and explains itself in its `doc`.
+ * The binding-level `run` maps its kind (+ `framework` for component) onto
+ * the declared command path — the MCP transport's view of the tree.
  */
 function createVerb(
   kind: CreateKind,
@@ -513,17 +454,32 @@ function createVerb(
   params: ParamSpec[],
   examples: VerbSpec["examples"],
 ): VerbSpec<Record<string, unknown>, GeneratorResult> {
-  const doc = buildAvailabilityDoc(kind, summary);
   return {
     path: ["create", kind],
-    summary: doc ? `${summary} Source-run only.` : summary,
-    ...(doc ? { doc } : {}),
+    summary,
     params,
-    output: { formatters: createFormatters },
+    output: CREATE_OUTPUT,
     examples,
     capability: CREATE_CAPABILITY,
-    run: (params_, rt) =>
-      runCreate(kind, params_, rt) as unknown as Task<GeneratorResult>,
+    run: (params_, rt) => {
+      let commandPath: string;
+      if (kind === "component") {
+        const framework = String(params_.framework ?? "");
+        if (!COMPONENT_FRAMEWORKS.includes(framework)) {
+          throw PragmaError.invalidInput("framework", framework, {
+            validOptions: [...COMPONENT_FRAMEWORKS],
+          });
+        }
+        commandPath = `component/${framework}`;
+      } else {
+        commandPath = CREATE_GENERATORS[kind].paths[0];
+      }
+      return runCreate(
+        commandPath,
+        params_,
+        rt,
+      ) as unknown as Task<GeneratorResult>;
+    },
   };
 }
 
@@ -544,7 +500,7 @@ export const createVerbs: Record<
     [
       {
         cmd: `${BIN_NAME} create component react src/components/Button`,
-        note: "React component with tests, stories, and styles (framework is the first positional, like `summon component react`)",
+        note: "React component with tests, stories, and styles",
       },
       {
         cmd: `${BIN_NAME} create component svelte src/lib/Card --dry-run`,
@@ -561,7 +517,7 @@ export const createVerbs: Record<
         cmd: `${BIN_NAME} create package --name @canonical/my-lib --type library`,
       },
       {
-        cmd: `${BIN_NAME} create package --name @canonical/my-tool --run-install`,
+        cmd: `${BIN_NAME} create package --name @canonical/my-tool --no-run-install`,
       },
     ],
   ),
@@ -570,8 +526,8 @@ export const createVerbs: Record<
     "Scaffold a full React application with SSR and routing.",
     applicationParams,
     [
-      { cmd: `${BIN_NAME} create application my-app` },
-      { cmd: `${BIN_NAME} create application my-app --with-relay` },
+      { cmd: `${BIN_NAME} create application react my-app` },
+      { cmd: `${BIN_NAME} create application react my-app --relay` },
     ],
   ),
 };

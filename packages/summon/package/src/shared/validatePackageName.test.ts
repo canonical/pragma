@@ -22,6 +22,19 @@ describe("validatePackageName", () => {
     expect(validatePackageName("@canonical/my-package")).toBe(true);
   });
 
+  it("validates the scope segment of scoped names", () => {
+    expect(validatePackageName("@my-scope/pkg")).toBe(true);
+    expect(validatePackageName("@Canonical/pkg")).toContain("scope");
+    expect(validatePackageName("@scope!/pkg")).toContain("scope");
+    expect(validatePackageName("@-scope/pkg")).toContain("scope");
+    expect(validatePackageName("@ /pkg")).toContain("scope");
+  });
+
+  it("rejects a scoped name with an empty or missing short name", () => {
+    expect(validatePackageName("@/pkg")).toContain("scope");
+    expect(validatePackageName("@scope")).toContain("@scope/name");
+  });
+
   it("rejects names longer than 214 characters", () => {
     const longName = `a${"b".repeat(214)}`;
     expect(validatePackageName(longName)).not.toBe(true);

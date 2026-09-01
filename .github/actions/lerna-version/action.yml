@@ -8,6 +8,13 @@ inputs:
     description: "Prefix for the git tag. Default is 'v'."
     required: false
     default: "v"
+  packs_token:
+    description: >-
+      Token with read access to the declared pack repositories, used only to
+      refresh the CLI's embedded pack. Optional: without it the refresh is
+      skipped and the release ships the committed snapshot.
+    required: false
+    default: ""
 outputs:
   VERSION:
     description: "The new latest version number across all packages"
@@ -20,6 +27,22 @@ runs:
       id: lerna_version
       run: ${{ github.action_path }}/version.sh ${{ inputs.release_type }} ${{ inputs.tag_prefix }}
 
+      # `lerna version` rewrites sibling ranges in dependencies, devDependencies
+      # and optionalDependencies — but NOT peerDependencies. For a 0.x line every
+      # bump is breaking under caret semantics, so a package that peer-depends on
+      # a sibling is left declaring a range its sibling has just outgrown, and
+      # `check:ranges` below stops the release. That is not hypothetical: it is
+      # how v0.35.0 shipped a broken main, and how v0.36.0 was blocked.
+      #
+      # This runs the SAME script as the verification step, in `--fix` mode, so
+      # the repair and the guard can never disagree about what a satisfiable
+      # range is. It runs BEFORE the lockfile update so `bun install` resolves
+      # against the corrected ranges. Anything it cannot repair — an unparseable
+      # range states an intent no rule can infer — survives to fail the guard.
+    - name: Repair sibling ranges lerna does not rewrite
+      shell: bash
+      run: bun run check:ranges --fix
+
       # `lerna version` updates package numbers, so we must update the root lockfile.
       # This can be removed once https://github.com/lerna/lerna/issues/4234 is closed.
     - name: Update lockfile
@@ -31,6 +54,49 @@ runs:
     - name: Apply formatting fixes
       shell: bash
       run: bun run check:fix
+
+      # Regenerate the implementation graph data with the new version so the
+      # tagged commit carries ds:version / ds:versionedLink for this release.
+    - name: Regenerate implementation graph data
+      shell: bash
+      run: bun scripts/collect-implementations.ts --version ${{ steps.lerna_version.outputs.VERSION }}
+
+      # Refresh the CLI's embedded pack so the release ships a graph snapshot
+      # current with its own tag — a fresh install answers store-backed reads
+      # offline, and that answer should not lag the release by weeks. Writes
+      # nothing when the resolved upstream inputs are unchanged, so a release
+      # with no upstream movement produces no diff.
+      #
+      # BEST EFFORT, and it says which it did. The pack repositories are
+      # INTERNAL and cloned over HTTPS; this job's SSH deploy key is scoped to
+      # pragma alone, so without a token that can read them the clone fails —
+      # which blocked the entire 0.35.0 release for an artifact that was
+      # already committed and already valid. The script skips loudly rather
+      # than failing the release, and still fails on a real error once a token
+      # is supplied.
+    - name: Refresh the CLI embedded pack
+      shell: bash
+      run: ${{ github.action_path }}/refresh-pack.sh "${{ inputs.packs_token }}"
+
+      # LAST GATE BEFORE THE BUMP BECOMES PERMANENT. Everything above has
+      # rewritten versions and ranges in the working tree; nothing has been
+      # committed, tagged, pushed or published yet. This is the only moment at
+      # which a bad bump can still be stopped for free.
+      #
+      # The v0.35.0 bump (5198c5399) moved every package to 0.35.0 and rewrote
+      # sibling ranges in `dependencies` and `devDependencies` but not in
+      # `peerDependencies`, leaving `^0.34.0` ranges that 0.35.0 cannot satisfy
+      # — for a 0.x version the caret pins the MINOR. Bun then stopped linking
+      # those workspace siblings and silently substituted published copies, and
+      # main was red from the moment the bump landed.
+      #
+      # The `check` and `test` jobs in tag.yml cannot catch this: they run
+      # BEFORE this action, on the pre-bump tree, where every range is still
+      # correct. Nor can pr.yml — this commit is pushed straight to main by
+      # git-commit.sh below and never sees a pull request.
+    - name: Verify the bump left every workspace sibling range satisfiable
+      shell: bash
+      run: bun run check:ranges
 
     - name: Setup Git CLI
       uses: ./.github/actions/setup-git

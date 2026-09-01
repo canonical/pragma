@@ -11,7 +11,7 @@ const componentCssClassName = "ds contextual-menu-item";
  * the item opts into a custom renderer (`displayItemsType: "custom"` with a
  * `Component`), that component owns the item's content instead.
  *
- * @implements dso:global.subcomponent.contextual-menu-item
+ * @implements ds:global.subcomponent.contextual-menu-item
  */
 const Item = ({ item, itemProps, onSelect }: ItemProps): React.ReactElement => {
   const {

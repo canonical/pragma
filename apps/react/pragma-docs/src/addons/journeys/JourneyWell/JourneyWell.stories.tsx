@@ -5,7 +5,7 @@ import { BROWSE_JOB, JOURNEY_MODEL } from "../__fixtures__/journeyModel.js";
 import JourneyWell from "./JourneyWell.js";
 
 const bareRoutes = {
-  journeysJob: route({ url: "/journeys/:job", component: () => null }),
+  journeysJob: route({ url: "/journeys/:job", content: () => null }),
 } as const;
 
 const meta: Meta<typeof JourneyWell> = {

@@ -5,7 +5,7 @@
 
 /**
  * Icon styles
- * @implements dso:global.component.icon
+ * @implements ds:global.component.icon
  *
  * DSL anatomy mapping:
  * - layout.display: inline-block -> display: inline-block

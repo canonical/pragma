@@ -6,8 +6,8 @@
  * default MCP server advertises prompts sourced from the active graph.
  */
 
-import { promptProvider } from "../../kernel/project/mcp/prompts/provider.js";
-import type { CapabilityModule } from "../../kernel/spec/types.js";
+import { promptProvider } from "../../kernel/project/mcp/prompts/index.js";
+import type { CapabilityModule } from "../../kernel/spec/index.js";
 import { promptListVerb, promptLookupVerb } from "./verbs.js";
 
 /** The `prompt` capability module (content tools + native prompt surface). */

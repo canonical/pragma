@@ -9,7 +9,7 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { dryRun, sequence_ } from "@canonical/task";
+import { dryRun, dryRunWith, type Effect, sequence_ } from "@canonical/task";
 import { describe, expect, it } from "vitest";
 import { generators } from "./index.js";
 
@@ -33,9 +33,8 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: false,
+        intl: false,
         relay: false,
         runInstall: false,
       }),
@@ -123,9 +122,8 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: true,
+        intl: true,
         relay: true,
         runInstall: false,
       }),
@@ -151,9 +149,8 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: true,
+        intl: false,
         relay: false,
         runInstall: false,
       }),
@@ -185,9 +182,8 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: false,
+        intl: false,
         relay: false,
         runInstall: false,
       }),
@@ -211,9 +207,8 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: false,
+        intl: false,
         relay: true,
         runInstall: false,
       }),
@@ -292,9 +287,8 @@ describe("application/react generator", () => {
       const result = dryRun(
         generators["application/react"].generate({
           appPath,
-          ssr: true,
-          router: true,
           forms: false,
+          intl: false,
           relay: true,
           runInstall: false,
         }),
@@ -324,9 +318,8 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: true,
+        intl: false,
         relay: false,
         runInstall: false,
       }),
@@ -356,13 +349,65 @@ describe("application/react generator", () => {
     expect(filePaths).not.toContain("my-app/relay.config.json");
   });
 
+  it("includes the i18n layer and locale switcher when intl=true", () => {
+    const result = dryRun(
+      generators["application/react"].generate({
+        appPath: "my-app",
+        forms: false,
+        intl: true,
+        relay: false,
+        runInstall: false,
+      }),
+    );
+    const filePaths = result.effects
+      .filter((e) => e._tag === "WriteFile" || e._tag === "CopyFile")
+      .map(
+        (e) =>
+          (e as { path?: string; dest?: string }).path ??
+          (e as { dest?: string }).dest,
+      );
+
+    expect(filePaths).toContain("my-app/src/i18n/config.ts");
+    expect(filePaths).toContain("my-app/src/i18n/en.ts");
+    expect(filePaths).toContain("my-app/src/i18n/fr.ts");
+    expect(filePaths).toContain("my-app/src/i18n/ar.ts");
+    expect(filePaths).toContain(
+      "my-app/src/lib/LocaleSelector/LocaleSelector.tsx",
+    );
+    expect(filePaths).toContain("my-app/.storybook/decorators/withI18n.tsx");
+  });
+
+  it("excludes the i18n layer and locale switcher when intl=false", () => {
+    const result = dryRun(
+      generators["application/react"].generate({
+        appPath: "my-app",
+        forms: false,
+        intl: false,
+        relay: false,
+        runInstall: false,
+      }),
+    );
+    const filePaths = result.effects
+      .filter((e) => e._tag === "WriteFile" || e._tag === "CopyFile")
+      .map(
+        (e) =>
+          (e as { path?: string; dest?: string }).path ??
+          (e as { dest?: string }).dest,
+      );
+
+    expect(filePaths.filter((f) => String(f).includes("/i18n/"))).toEqual([]);
+    expect(
+      filePaths.filter((f) => String(f).includes("LocaleSelector")),
+    ).toEqual([]);
+    expect(filePaths.filter((f) => String(f).includes("withI18n"))).toEqual([]);
+  });
+
   it("uses the appPath in file paths", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "custom-app",
-        ssr: true,
-        router: true,
         forms: false,
+        intl: false,
         relay: false,
         runInstall: false,
       }),
@@ -380,34 +425,21 @@ describe("application/react generator", () => {
     expect(filePaths).toContain("custom-app/src/client/entry.tsx");
   });
 
-  it("throws when --ssr is false", () => {
-    expect(() =>
-      dryRun(
-        generators["application/react"].generate({
-          appPath: "my-app",
-          ssr: false,
-          router: true,
-          forms: false,
-          relay: false,
-          runInstall: false,
-        }),
-      ),
-    ).toThrow();
-  });
+  it("refuses to scaffold over an existing directory", () => {
+    // Every write's default undo is a delete, so overwrite-then-`--undo`
+    // would destroy pre-existing files — the guard must hard-fail, not warn.
+    const task = generators["application/react"].generate({
+      appPath: "my-app",
+      forms: false,
+      intl: false,
+      relay: false,
+      runInstall: false,
+    });
+    const mocks = new Map<string, (effect: Effect) => unknown>([
+      ["Exists", (e) => (e as { path: string }).path === "my-app"],
+    ]);
 
-  it("throws when --router is false", () => {
-    expect(() =>
-      dryRun(
-        generators["application/react"].generate({
-          appPath: "my-app",
-          ssr: true,
-          router: false,
-          forms: false,
-          relay: false,
-          runInstall: false,
-        }),
-      ),
-    ).toThrow();
+    expect(() => dryRunWith(task, mocks)).toThrow(/already exists/);
   });
 });
 
@@ -498,7 +530,7 @@ export default routes;
     expect(out).toContain('import SettingsPage from "./SettingsPage.js";');
     expect(out).toContain("settings: route({");
     expect(out).toContain('url: "/account/settings",');
-    expect(out).toContain("component: SettingsPage,");
+    expect(out).toContain("content: SettingsPage,");
   });
 
   it("throws on single-segment path", () => {

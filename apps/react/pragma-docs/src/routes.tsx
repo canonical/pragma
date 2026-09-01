@@ -52,15 +52,11 @@ export function withAuth(loginPath: string): RouteMiddleware {
       return currentRoute;
     }
 
-    const currentPrefetch = currentRoute.prefetch;
+    const currentPrefetch = currentRoute.warm;
 
     return {
       ...currentRoute,
-      prefetch: (
-        params: unknown,
-        search: unknown,
-        context: NavigationContext,
-      ) => {
+      warm: (params: unknown, search: unknown, context: NavigationContext) => {
         if (!hasDemoAuth(search)) {
           const from = currentRoute.render(
             (params ?? {}) as RouteParamValues | Record<string, never>,
@@ -110,7 +106,7 @@ const publicLayout = wrapper<ReactElement>({
 
 const notFoundRoute = route({
   url: "/not-found",
-  component: () => (
+  content: () => (
     <section>
       <h1>Page not found</h1>
       <p>The page you are looking for does not exist.</p>

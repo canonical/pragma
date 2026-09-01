@@ -50,10 +50,10 @@ vi.mock("../routes.js", async () => {
   );
   return {
     appRoutes: {
-      home: route({ url: "/", component: () => null }),
+      home: route({ url: "/", content: () => null }),
       playground: route({
         url: "/playground",
-        component: () => null,
+        content: () => null,
         meta: {
           [ROUTE_QUERY_META_KEY]: {
             query: componentProbeQueryNode,
@@ -63,7 +63,7 @@ vi.mock("../routes.js", async () => {
       }),
     },
     middleware: [],
-    notFoundRoute: route({ url: "/not-found", component: () => null }),
+    notFoundRoute: route({ url: "/not-found", content: () => null }),
   };
 });
 

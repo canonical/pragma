@@ -16,7 +16,7 @@
 import type { Task } from "@canonical/task";
 import { BIN_NAME } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
-import type { CapabilityModule, VerbSpec } from "../../kernel/spec/types.js";
+import type { CapabilityModule, VerbSpec } from "../../kernel/spec/index.js";
 import type { UpgradeData } from "./types.js";
 import { upgradeFormatters } from "./upgrade.render.js";
 

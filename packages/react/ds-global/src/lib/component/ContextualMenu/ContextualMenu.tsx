@@ -22,7 +22,7 @@ const componentCssClassName = "ds contextual-menu";
  *
  * `import { ContextualMenu } from "@canonical/react-ds-global";`
  *
- * @implements dso:global.component.contextual-menu
+ * @implements ds:global.component.contextual_menu
  */
 const ContextualMenu = ({
   trigger,

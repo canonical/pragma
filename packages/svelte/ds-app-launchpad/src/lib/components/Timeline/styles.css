@@ -1,12 +1,12 @@
 .ds.timeline {
-  --dimension-gap-row-timeline: calc(var(--lp-dimension-spacing-block-s) * 2);
-  --color-background-timeline-line: var(--lp-color-border-default);
-  --dimension-width-timeline-line: var(--lp-dimension-stroke-thickness-default);
+  --dimension-gap-row-timeline: calc(var(--dimension-150) * 2);
+  --color-background-timeline-line: var(--color-border);
+  --dimension-width-timeline-line: var(--dimension-stroke-thickness-medium);
 
   display: grid;
   grid-template-columns: [marker-start] auto [marker-end content-start] 1fr [content-end];
   list-style: none;
 
   row-gap: var(--dimension-gap-row-timeline);
-  column-gap: var(--lp-dimension-spacing-inline-m);
+  column-gap: var(--dimension-200);
 }

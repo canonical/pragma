@@ -2,6 +2,10 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  bundledSkillsDir,
+  discoverSkillsFrom,
+} from "../../capabilities/skill/discover.js";
 import { readConfig } from "../config/readConfig.js";
 import { embeddedManifest } from "../runtime/graphpack/embedded.js";
 import { activePackPath, packDir } from "../runtime/paths.js";
@@ -38,14 +42,15 @@ function projectWithIndex(index: unknown): string {
  * A crafted index exercising the index / prefixes sources. Deliberately in a
  * NEUTRAL namespace: the reader knows no entity families any more, so a test
  * proving it reads `label` or `altNames` must not need this distribution's
- * vocabulary to say so.
+ * vocabulary to say so. Since L-OPEN-9 no live verb declares the `altNames`
+ * field (the tier lookup completes entity names like every declared lookup),
+ * so this crafted index is where the field's read contract is held.
  *
  * Real-vocabulary coverage lives in two places, and neither is here: the
  * PROTECTED contract describe below reads the shipped index for plain entity
  * NAMES, and `safety.test.ts`'s "every declared name source resolves without
  * constructing the store" drives the live grammar over the shipped index for
- * the `altNames` field (`tier lookup ap` → `Apps/Juju`, carried only by the
- * declared alt-name property) and for `prefixes`.
+ * entity names (`tier lookup ap` → `ds:apps`) and for `prefixes`.
  */
 const CRAFTED_INDEX = {
   version: 2,
@@ -120,10 +125,19 @@ describe("indexCompletionEnv — multi-source names(ref)", () => {
       join(skillDir, "SKILL.md"),
       "---\nname: docx\ndescription: Word docs.\n---\n",
     );
+    // The BUNDLED snapshot ships inside the package, so it is a discovery root
+    // on every machine — including this one. The project root's skill is what
+    // this cell is about; the expectation is derived from the shipped artifact
+    // rather than pinned to a list, so a release that changes which skills the
+    // packs provide does not rewrite this test.
+    const bundled = discoverSkillsFrom([bundledSkillsDir() as string]).map(
+      (skill) => skill.name,
+    );
+    const expected = [...new Set(["docx", ...bundled])].sort();
     const env = indexCompletionEnv(cwd);
-    expect(await env.names({ from: "skills" })).toEqual(["docx"]);
+    expect(await env.names({ from: "skills" })).toEqual(expected);
     // A second read returns the same list (one filesystem walk per env).
-    expect(await env.names({ from: "skills" })).toEqual(["docx"]);
+    expect(await env.names({ from: "skills" })).toEqual(expected);
   });
 
   it("a type nothing matches yields [] (prefixes still list the default map)", async () => {
@@ -312,7 +326,7 @@ describe("the storeless fast path implements the pointer half", () => {
     // and would pass with the config file deleted. The read half refusing is
     // what makes this directory a configured-but-unbuilt project rather than a
     // fresh install. (`doctor` says so too, in the same words: verified against
-    // the compiled binary, where `block list` raises STORE_UNAVAILABLE while
+    // a cold install, where `block list` raises STORE_UNAVAILABLE while
     // this same completion still answers.)
     //
     // If a later change gives the fast path a config-free way to see

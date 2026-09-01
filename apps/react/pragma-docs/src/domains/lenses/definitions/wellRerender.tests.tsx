@@ -28,7 +28,6 @@
 
 import "./__fixtures__/stubReactFlowGlobals.js";
 import { HeadProvider } from "@canonical/react-head";
-import { createStaticRouter } from "@canonical/router-core";
 import { RouterProvider } from "@canonical/router-react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
@@ -36,6 +35,7 @@ import { RelayEnvironmentProvider } from "react-relay";
 import type { FetchFunction } from "relay-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { createEnvironment } from "#relay/environment.js";
+import createStaticRouter from "../../../lib/router/createStaticRouter.js";
 import { appRoutes, middleware, notFoundRoute } from "../../../routes.js";
 import definitionsExplorerRecords from "./__fixtures__/definitionsExplorerRecords.js";
 import { DEFINITIONS_TEST_TIMEOUT_MS } from "./__fixtures__/definitionsPageHarness.js";

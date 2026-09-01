@@ -140,23 +140,73 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     }
   });
 
-  it("exactly one module on that graph statically imports zod", () => {
-    // zod is NOT dynamic-import-only here, and this pins the one place it is
-    // not, by measurement rather than by claim. `resolveSources` (which the
-    // resource provider and the prompt provider both reach) calls
-    // `packIsComplete` → `readManifest` → `manifestSchema.parse`, so
-    // `graphpack/types.ts` and its zod dependency are evaluated whenever the
-    // command tree is built — including on `__complete`.
+  // The create surface's registration machinery — summon-core's projection
+  // helpers, its Commander adapter, and Commander itself — must stay behind
+  // the mount's dynamic import: `--help` and `__complete` both import this
+  // barrel and neither registers a single create command, so an eager edge
+  // here taxes every fast-path spawn for work only a dispatched `create`
+  // invocation performs. The registered flag/positional spellings the fast
+  // paths DO need (completion tokens, reference syntax) are baked into
+  // `createSurface.generated.ts` at build time, so nothing on this graph has
+  // to call the projection to learn them. Type-only imports are allowed —
+  // they are erased — which is why this walks import STATEMENTS rather than
+  // grepping for the specifier.
+  it("capabilities/index pulls no summon-core projection, adapter, or commander value import (PROTECTED)", () => {
+    const banned = [/^@canonical\/summon-core\/projection/, /^commander$/];
+    const graph = staticImportGraph(resolve(here, "index.ts"));
+    const pkgRoot = resolve(here, "..", "..");
+    // Anchored to line start so the word "import" inside a docblock cannot
+    // open a match that swallows prose down to the next real specifier.
+    const importRe = /^import\s+([^;]*?)from\s*["']([^"']+)["']/gm;
+    const offenders: string[] = [];
+    for (const file of graph) {
+      const source = readFileSync(file, "utf-8");
+      for (const match of source.matchAll(importRe)) {
+        const clause = match[1] as string;
+        const specifier = match[2] as string;
+        if (!banned.some((re) => re.test(specifier))) continue;
+        if (/^type\s/.test(clause.trim())) continue;
+        offenders.push(`${relative(pkgRoot, file)} → ${specifier}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("NO module on that graph statically imports zod (PROTECTED)", () => {
+    // This used to pin an exact set of one — `graphpack/types.ts`, reached via
+    // `resolveSources` → `packIsComplete` → `readManifest` → `manifestSchema
+    // .parse` — as the one genuine zod value import on the storeless graph,
+    // measured at ~3–4 ms of a ~30 ms budget. Its own comment said an exact set
+    // was what would make the day it got fixed impossible to miss. That day is
+    // this commit: the schemas moved to `graphpack/schemas.ts`, imported only by
+    // the two readers already off the fast path, and `readManifest` validates
+    // structurally instead.
     //
-    // An EXACT set, not a tolerated-name list: a second importer fails this,
-    // and so does removing the edge, which is what makes the day it is fixed
-    // impossible to miss.
+    // The set is now EMPTY, which is strictly stronger than the pin it replaces:
+    // it no longer tolerates one named module, so a brand-new module value-
+    // importing zod fails here too — the gap the previous form left open.
     const graph = staticImportGraph(resolve(here, "index.ts"));
     const pkgRoot = resolve(here, "..", "..");
     const zodImporters = [...graph]
       .filter((file) => /from\s*["']zod["']/.test(readFileSync(file, "utf-8")))
       .map((file) => relative(pkgRoot, file))
       .sort();
-    expect(zodImporters).toEqual(["src/kernel/runtime/graphpack/types.ts"]);
+    expect(zodImporters).toEqual([]);
+  });
+
+  it("the help path (buildProgram) imports zod from nowhere (PROTECTED)", () => {
+    // The named-module check above (`kernel/config/schema.ts`,
+    // `kernel/spec/validate.ts`) could only catch the two modules it names — a
+    // third zod importer reaching the help path would have passed it silently.
+    // Generalized (ruling R4) to the property those names were standing in for.
+    const graph = staticImportGraph(
+      resolve(here, "../kernel/project/cli/buildProgram.ts"),
+    );
+    const pkgRoot = resolve(here, "..", "..");
+    const zodImporters = [...graph]
+      .filter((file) => /from\s*["']zod["']/.test(readFileSync(file, "utf-8")))
+      .map((file) => relative(pkgRoot, file))
+      .sort();
+    expect(zodImporters).toEqual([]);
   });
 });

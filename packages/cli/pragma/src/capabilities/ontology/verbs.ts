@@ -8,10 +8,9 @@
  * `--class <name>` narrows to one class and the properties whose domain is that
  * class.
  *
- * `ontology show` is the DEPRECATED alias of `ontology lookup` (AV-228 B1): the
- * verb was renamed to `lookup` for consistency with block/standard/tier/etc.
- * (the ratified by-name read name), and `show` is kept callable — both share the
- * same params, disclosure, and handler, and both stay blessed in the covenant.
+ * `ontology lookup` is the ratified by-name read name (AV-228 B1 renamed it
+ * from `show` for consistency with block/standard/tier/etc.); the old alias
+ * is gone — one job, one spelling.
  *
  * Disclosure (B5): rather than reinvent its own scheme, the by-name read declares
  * the canonical disclosure ladder and honours the `--detail`/config `detail` the
@@ -23,16 +22,15 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
-import { PragmaError } from "../../kernel/error/PragmaError.js";
-import { cliRecovery } from "../../kernel/error/recovery.js";
+import { cliRecovery, PragmaError } from "../../kernel/error/index.js";
 import { resolvePackDetail } from "../../kernel/packs/disclosure.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type {
   DisclosureSpec,
   ParamSpec,
   VerbSpec,
-} from "../../kernel/spec/types.js";
+} from "../../kernel/spec/index.js";
 import {
   listNamespaces,
   localName,
@@ -95,10 +93,9 @@ const listVerb: VerbSpec<Record<string, unknown>, OntologySummary[]> = {
 };
 
 /**
- * The canonical disclosure the by-name read folds onto (B5). Declared on both
- * the primary {@link ontologyLookupVerb} and its deprecated {@link
- * ontologyShowVerb} alias — so the MCP projector injects the `detail` enum tool
- * param and its per-call `withDetail` seeding light up (symmetric with
+ * The canonical disclosure the by-name read folds onto (B5). Declared on
+ * {@link ontologyLookupVerb} — so the MCP projector injects the `detail` enum
+ * tool param and its per-call `withDetail` seeding light up (symmetric with
  * `block`/`standard`, which an inline resolve left dark over MCP) — AND read by
  * `run` to resolve the effective level, so the advertised param and the fetched
  * level share ONE source. The levels are the full canonical ladder; the fold is
@@ -109,7 +106,7 @@ const BY_NAME_DISCLOSURE: DisclosureSpec = {
   default: "summary",
 };
 
-/** The params shared by `ontology lookup` and its deprecated `ontology show` alias. */
+/** The params of the `ontology lookup` by-name read. */
 const BY_NAME_PARAMS: ParamSpec[] = [
   {
     kind: "string",
@@ -147,7 +144,7 @@ const BY_NAME_CAPABILITY = {
 };
 
 /**
- * The by-name read handler shared by `ontology lookup` and `ontology show`.
+ * The `ontology lookup` by-name read handler.
  *
  * @param params - The coerced param bag (`prefix`, `properties`, `fullUris`, `class`).
  * @param rt - The runtime (store + disclosure precedence).
@@ -211,59 +208,21 @@ async function runByName(
   };
 }
 
-/**
- * Build one by-name read verb (`lookup` primary or `show` deprecated alias) —
- * both share {@link BY_NAME_PARAMS}, {@link BY_NAME_DISCLOSURE}, the formatters,
- * and {@link runByName}; only the path label, summary, doc, and examples differ.
- */
-function byNameVerb(
-  verb: "lookup" | "show",
-  summary: string,
-  examples: VerbSpec["examples"],
-  doc?: string,
-): VerbSpec<Record<string, unknown>, OntologyShowData> {
-  return {
-    path: ["ontology", verb],
-    summary,
-    ...(doc !== undefined ? { doc } : {}),
-    params: BY_NAME_PARAMS,
-    output: { formatters: ontologyShowFormatters },
-    examples,
-    disclosure: BY_NAME_DISCLOSURE,
-    capability: BY_NAME_CAPABILITY,
-    run: runByName,
-  };
-}
-
-/** The `ontology` verbs (`list`, `lookup`, and the deprecated `show` alias). */
+/** The `ontology` verbs (`list` and the `lookup` by-name read). */
 export const ontologyListVerb = asVerb(listVerb);
 
-/** `ontology lookup <prefix>` — the primary by-name schema read. */
-export const ontologyLookupVerb = asVerb(
-  byNameVerb(
-    "lookup",
-    "Look up a namespace's classes (hierarchy + counts) and properties.",
-    [
-      { cmd: `${BIN_NAME} ontology lookup ds` },
-      { cmd: `${BIN_NAME} ontology lookup ds --properties` },
-      { cmd: `${BIN_NAME} ontology lookup ds --class Component` },
-    ],
-  ),
-);
-
-/**
- * `ontology show <prefix>` — DEPRECATED alias of {@link ontologyLookupVerb}
- * (AV-228 B1). Kept callable and blessed in the covenant; shares the same
- * handler, so it behaves identically. New callers should use `ontology lookup`.
- */
-export const ontologyShowVerb = asVerb(
-  byNameVerb(
-    "show",
-    "(deprecated: use `ontology lookup`) Show a namespace's classes (hierarchy + counts) and properties.",
-    [
-      { cmd: `${BIN_NAME} ontology lookup ds`, note: "prefer `lookup`" },
-      { cmd: `${BIN_NAME} ontology show ds`, note: "deprecated alias" },
-    ],
-    "Deprecated alias of `ontology lookup` — retained for compatibility. Prefer `ontology lookup <prefix>`.",
-  ),
-);
+/** `ontology lookup <prefix>` — the by-name schema read. */
+export const ontologyLookupVerb = asVerb({
+  path: ["ontology", "lookup"],
+  summary: "Look up a namespace's classes (hierarchy + counts) and properties.",
+  params: BY_NAME_PARAMS,
+  output: { formatters: ontologyShowFormatters },
+  examples: [
+    { cmd: `${BIN_NAME} ontology lookup ds` },
+    { cmd: `${BIN_NAME} ontology lookup ds --properties` },
+    { cmd: `${BIN_NAME} ontology lookup ds --class Component` },
+  ],
+  disclosure: BY_NAME_DISCLOSURE,
+  capability: BY_NAME_CAPABILITY,
+  run: runByName,
+} satisfies VerbSpec<Record<string, unknown>, OntologyShowData>);

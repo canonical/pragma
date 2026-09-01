@@ -44,8 +44,8 @@ const ComponentsContext = makeLensContext({
 const routes = {
   components: route({
     url: "/components",
-    component: ComponentsCatalogPage,
-    prefetch: (params, search) => {
+    content: ComponentsCatalogPage,
+    warm: (params, search) => {
       warmRouteQuery(componentsCatalogRouteEntry, params, search);
     },
     meta: {
@@ -56,8 +56,8 @@ const routes = {
   }),
   componentEntity: route({
     url: "/components/:uri",
-    component: ComponentEntityPage,
-    prefetch: (params, search) => {
+    content: ComponentEntityPage,
+    warm: (params, search) => {
       warmRouteQuery(componentEntityRouteEntry, params, search);
     },
     meta: {

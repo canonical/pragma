@@ -51,7 +51,7 @@ export async function readConfig(
     return { value: defaultValues[field], origin: "default" };
   };
 
-  // `name`/`help`/`colophon`/`issuesUrl` are DELIBERATELY not picked: identity
+  // `name`/`help`/`logo`/`colophon`/`issuesUrl` are DELIBERATELY not picked: identity
   // is read from `pragma.conf.ts` statically (`src/constants.ts`), so merging a
   // layer's value here would report a provenance nothing honours.
   const tier = pick("tier");

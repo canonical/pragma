@@ -8,19 +8,23 @@
  * name or absolute IRI addresses the subject exactly.
  */
 
-import { BIN_NAME } from "../../constants.js";
+import {
+  BIN_NAME,
+  DEFAULT_DETAIL_LEVEL,
+  DETAIL_LEVELS,
+} from "../../constants.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import type { InspectResult } from "../../kernel/runtime/readEntity.js";
 import { readEntity } from "../../kernel/runtime/readEntity.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
-import type { VerbSpec } from "../../kernel/spec/types.js";
+import type { VerbSpec } from "../../kernel/spec/index.js";
 import { inspectFormatters } from "./inspect.render.js";
 
 const inspectVerb: VerbSpec<Record<string, unknown>, InspectResult> = {
   path: ["graph", "inspect"],
   summary:
     "Show every triple where a URI is the subject, grouped by predicate.",
-  doc: "Inspect one entity: all predicate/object pairs asserted on the subject. Address it by prefixed name (ds:button) or absolute IRI.",
+  doc: "Inspect one entity: all predicate/object pairs asserted on the subject. Address it by prefixed name (ds:global.component.button) or absolute IRI.",
   params: [
     {
       kind: "string",
@@ -32,9 +36,17 @@ const inspectVerb: VerbSpec<Record<string, unknown>, InspectResult> = {
     },
   ],
   output: { formatters: inspectFormatters },
+  // The read is BOUNDED by disclosure — inbound exemplars and literal previews
+  // both widen with the level — so the verb must declare the ladder it honours.
+  // Without this the CLI `--detail` flag has nothing to validate against and the
+  // MCP projector injects no `detail` argument at all, so the documented knob
+  // was one an agent could not actually reach.
+  disclosure: { levels: [...DETAIL_LEVELS], default: DEFAULT_DETAIL_LEVEL },
   examples: [
-    { cmd: `${BIN_NAME} graph inspect ds:button` },
-    { cmd: `${BIN_NAME} graph inspect https://ds.canonical.com/button` },
+    { cmd: `${BIN_NAME} graph inspect ds:global.component.button` },
+    {
+      cmd: `${BIN_NAME} graph inspect https://ds.canonical.com/global.component.button`,
+    },
   ],
   capability: {
     needsStore: true,

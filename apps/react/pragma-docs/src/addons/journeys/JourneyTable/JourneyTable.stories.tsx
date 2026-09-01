@@ -6,7 +6,7 @@ import { buildJourneyRows, DEFAULT_TABLE_STATE } from "../journeyTableModel.js";
 import JourneyTable from "./JourneyTable.js";
 
 const bareRoutes = {
-  journeysJob: route({ url: "/journeys/:job", component: () => null }),
+  journeysJob: route({ url: "/journeys/:job", content: () => null }),
 } as const;
 
 /** The fixture model flattened into rows, one job carrying a story so the

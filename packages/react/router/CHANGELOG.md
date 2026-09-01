@@ -3,6 +3,122 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
+
+**Note:** Version bump only for package @canonical/router-react
+
+
+
+
+
+# [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
+
+
+### Bug Fixes
+
+* **deps:** batch package dependency updates ([#963](https://github.com/canonical/pragma/issues/963)) ([923f482](https://github.com/canonical/pragma/commit/923f4825325ecd1afc93ec9bbeca7437a4a4569f)), closes [#958](https://github.com/canonical/pragma/issues/958) [#935](https://github.com/canonical/pragma/issues/935) [#919](https://github.com/canonical/pragma/issues/919) [#918](https://github.com/canonical/pragma/issues/918) [#894](https://github.com/canonical/pragma/issues/894)
+
+
+* feat(router)!: pre-1.0 API consolidation — one constructor, adapters as the axis, block(), warm() (re-land of #973) (#981) ([416d596](https://github.com/canonical/pragma/commit/416d59636f94cafae7a9fbb0b377edabed6438bf)), closes [#973](https://github.com/canonical/pragma/issues/973) [#981](https://github.com/canonical/pragma/issues/981) [#973](https://github.com/canonical/pragma/issues/973) [#973](https://github.com/canonical/pragma/issues/973) [#973](https://github.com/canonical/pragma/issues/973)
+
+
+### Features
+
+* **boilerplate-vite:** align the reference app and overhaul the router docs (re-land of [#979](https://github.com/canonical/pragma/issues/979)) ([#990](https://github.com/canonical/pragma/issues/990)) ([8fe2792](https://github.com/canonical/pragma/commit/8fe27927613e7b5b9ff6c4c6596d6d9228063c2b))
+
+
+### BREAKING CHANGES
+
+* navigate() and setSearchParams() throw on a router
+constructed without an adapter instead of doing nothing.
+
+* refactor(router)!: collapse router factories onto the adapter axis
+
+createRouter(routes, { adapter, ... }) is now the one constructor. The
+preset factories were one-line sugar over an adapter choice; under the
+minimal-API principle the adapter is the whole axis:
+
+- delete createBrowserRouter, createHashRouter, createMemoryRouter and
+  createStaticRouter from router-core (the browser adapter already
+  resolves Navigation API -> History API internally)
+- delete router-react's createHydratedRouter; its __INITIAL_DATA__
+  reading survives as readDehydratedState(), passed to createRouter as
+  hydratedState — which also removes the incoherence where the hydrated
+  path was history-only while createBrowserRouter preferred the
+  Navigation API
+- migrate every in-repo consumer (boilerplate entries, summon templates,
+  storybook harnesses, story-utils) to createRouter + adapters; the
+  static-router recipe (match + synchronous hydrate) is inlined at the
+  two SSR entry points that used it
+* createBrowserRouter, createHashRouter,
+createMemoryRouter, createStaticRouter and createHydratedRouter are
+removed. Use createRouter(routes, { adapter: createBrowserAdapter() |
+createHashAdapter() | createMemoryAdapter(url) | createServerAdapter(url),
+hydratedState: readDehydratedState() ?? undefined }).
+
+* refactor(router)!: reshape blockers to router.block() and fix useBlocker reactivity
+
+Five members (registerBlocker/unregisterBlocker/blockerState/
+proceedNavigation/cancelNavigation) collapse into one:
+router.block(isActive) returns a handle with { state, proceed, cancel,
+subscribe, dispose }, backed by a dedicated blocker-state subject.
+
+This also fixes a real bug: useBlocker subscribed to the store, but a
+blocked navigate() never touched the store, so the documented
+confirmation-dialog pattern never rendered — the old test had to poke
+the store manually to observe the blocked state. The hook now subscribes
+to the handle and re-renders on the block itself; the dialog pattern is
+asserted end-to-end.
+
+Disposing (or unmounting) while blocked discards the pending navigation
+— previously implicit, now documented handle behavior.
+* registerBlocker, unregisterBlocker, blockerState,
+proceedNavigation and cancelNavigation are removed from Router; use
+router.block(isActive). The RouterBlocker type is replaced by
+RouterBlockerHandle. useBlocker's public shape is unchanged.
+
+* refactor(router)!: shrink the public surface — internal store, one-arg StatusResponse
+
+- Remove store from the public Router interface. It was reachable on
+  every router yet documented nowhere, and no production code consumed
+  it; the package's own tests reach the concrete object's store through
+  an explicit internal accessor instead. createRouterStore and the
+  RouterStore type remain exported as standalone primitives.
+- StatusResponse's data argument is now optional — new StatusResponse(401)
+  works, as the READMEs already wrote.
+* Router no longer exposes store. Subscribe via
+subscribe/subscribeToNavigation/subscribeToSearchParam, read via
+getState/getTrackedLocation.
+
+* refactor(router)!: rename prefetch to warm
+
+'prefetch' imports the wrong mental model: in every other router a
+prefetch/loader hands data to the component, and readers kept filing the
+hook's fire-and-forget design as a bug. 'warm' says what the hook is
+for — warming a cache ahead of navigation — and cannot be confused with
+a data loader.
+
+Renamed atomically across router-core (route/wrapper hook, router.warm(),
+WarmFn, internals), router-react (Link's hover warm-up), the reference
+app and summon templates, and the router docs. TanStack's prefetchQuery
+in examples is unrelated third-party API and keeps its name.
+* the route/wrapper 'prefetch' hook is now 'warm';
+router.prefetch() is router.warm(); the PrefetchFn type is WarmFn.
+
+* fix(router-core): make StatusResponse's optional payload type-safe
+
+
+
+
+
+# [0.34.0](https://github.com/canonical/pragma/compare/v0.33.0...v0.34.0) (2026-08-21)
+
+**Note:** Version bump only for package @canonical/router-react
+
+
+
+
+
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 
 **Note:** Version bump only for package @canonical/router-react

@@ -39,14 +39,18 @@ export interface TemplateContext {
   version: string;
   /** License */
   license: string;
-  /** Module entry point */
-  module: string;
-  /** Types entry point (null for CSS packages) */
-  types: string | null;
-  /** Files to include */
-  files: string[];
   /** Whether this package type needs a build step */
   needsBuild: boolean;
+  /**
+   * Version line to depend on for `@canonical/*` packages.
+   *
+   * Taken from this generator's own version, not from the host repository:
+   * the generator ships from the same fixed-version monorepo as the config
+   * packages it scaffolds a dependency on, so its version is the published
+   * line those packages exist on. The host repository's version says nothing
+   * about them.
+   */
+  canonicalVersion: string;
   /** Webarchitect ruleset */
   ruleset: string;
   /** Include React */
@@ -55,12 +59,6 @@ export interface TemplateContext {
   withStorybook: boolean;
   /** Include CLI */
   withCli: boolean;
-  /** Monorepo version (if applicable) */
-  monorepoVersion?: string;
-  /** Generator name */
-  generatorName: string;
-  /** Generator version */
-  generatorVersion: string;
   /** Index signature for EJS compatibility */
   [key: string]: unknown;
 }

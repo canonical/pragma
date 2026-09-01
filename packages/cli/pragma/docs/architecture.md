@@ -24,7 +24,7 @@ At runtime a **`LazyStore`** boots the graph on first use and memoizes it. A sto
 
 ### Capabilities — the catalog
 
-The concrete verbs live under `src/capabilities/` as `CapabilityModule`s, collected into one array. A directory exists there only where its noun needs hand-written code — the kernel's own nouns (`info`, `config`, `sources`, `doctor`, `graph`, `ontology`, `prompt`, `skill`, `setup`, `upgrade`, `create`, `capabilities`, `colophon`, `meta`), and three DOMAIN verbs the story grammar cannot express: `block list` (a tier-chain and channel filter the grammar has no term for), `token add-config` (a mutation — the story compiler emits reads only), and `tier lookup` (frozen by the covenant with a single positional). Every other design-system read noun is a **declarative story**: the distribution's own five are declared as data in `pragma.conf.ts` and compiled at module load through the same compiler a third-party story goes through.
+The concrete verbs live under `src/capabilities/` as `CapabilityModule`s, collected into one array. A directory exists there only where its noun needs hand-written code, and after L-OPEN-9 that is the kernel's own nouns and nothing else (`info`, `config`, `sources`, `doctor`, `graph`, `ontology`, `prompt`, `skill`, `setup`, `upgrade`, `create`, `capabilities`, `colophon`, `meta`). **Every design-system read noun is a declarative story**: the distribution's own five are declared as data in `pragma.conf.ts` and compiled at module load through the same compiler a third-party story goes through. The three reads that were still code — the tier-chain-filtered block list, the bespoke tier lookup, and the tokens-config writer — were either expressed in the grammar or removed, so a fork now defines its entire read surface in `pragma.conf.ts`.
 
 Stories from a project's config, or from a `stories/*.json` a package ships, merge into that array at dispatch — see [config-model.md](./config-model.md#read-stories) for the tiers and their precedence. The projectors consume the one array, so a new module or a new story appears in the CLI, the MCP server, and the generated reference at once.
 
@@ -32,14 +32,16 @@ Stories from a project's config, or from a `stories/*.json` a package ships, mer
 
 Two thin frontends turn the grammar into runnable surfaces:
 
-- **CLI** — `buildProgram` wires the grammar into a Commander program; `dispatch` runs the resolved verb across the effect seam (a read is plain async; a mutation returns a `Task` interpreted under the node / dry-run / undo interpreters) and renders the outcome.
+- **CLI** — `buildProgram` wires the grammar into a Commander program; `dispatch` runs the resolved verb across the effect seam (a read is plain async; a mutation returns a `Task` interpreted under the node / preview / undo interpreters) and renders the outcome.
 - **MCP** — `buildServer` registers every exposed verb via `registerVerb`, installs the resource and prompt surfaces, and attaches the handshake instructions.
 
 Both frontends resolve configuration through the same **config seam** — the three-layer resolver described in [config-model.md](./config-model.md) — so the CLI and the MCP server always agree on the active tier, channel, and package sources.
 
 ## The effect seam
 
-Mutations never touch the filesystem directly. A mutating `run` returns a `Task` — a description of its effects — which the frontend interprets. The CLI interprets it under `--dry-run` (describe only), `--undo` (reverse), or real execution; the MCP handler interprets it as a plan unless `confirm: true`. One Task description, several interpreters — the reason `--dry-run` and MCP's plan-first preview share exactly one code path.
+Mutations never touch the filesystem directly. A mutating `run` returns a `Task` — a description of its effects — which the frontend interprets. The CLI interprets it under `--dry-run` (preview), `--undo` (reverse), or real execution; the MCP handler interprets it as a plan unless `confirm: true`. One Task description, several interpreters — the reason `--dry-run` and MCP's plan-first preview share exactly one code path.
+
+A preview is `@canonical/task/node`'s `runPreview`, and it is **honest**: reads (`ReadFile`, `Exists`, `Glob`) hit the real filesystem through a virtual write overlay, so a step sees what the step before it planned; writes are recorded and never executed, so the disk is untouched. A preview therefore fails exactly where and how the run would fail — a mutation whose first template read is missing exits nonzero under `--dry-run` and returns an error from MCP plan-first, instead of printing a confident plan and exiting 0. Two limits are deliberate and permanent: `Exec` is never spawned (a preview that runs commands is not a preview), so a task whose success depends on a command's real output can preview cleaner than it runs; and prompts auto-answer with their defaults, so a preview never blocks on input.
 
 ## Further reading
 

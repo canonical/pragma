@@ -42,8 +42,8 @@ const HomeContext = makeLensContext({
 const routes = {
   home: route({
     url: "/",
-    component: HomePage,
-    prefetch: (params, search) => {
+    content: HomePage,
+    warm: (params, search) => {
       warmRouteQuery(lobbyRouteEntry, params, search);
     },
     meta: {
@@ -54,7 +54,7 @@ const routes = {
   }),
   guide: route({
     url: "/guides/:slug",
-    component: GuidePage,
+    content: GuidePage,
   }),
 } as const;
 

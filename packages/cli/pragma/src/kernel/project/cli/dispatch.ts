@@ -11,30 +11,30 @@
  * exit code.
  */
 
-import { describeEffect, dryRun, type Task } from "@canonical/task";
-import { runTask, runUndo } from "@canonical/task/node";
+import { describeEffect, type Effect, type Task } from "@canonical/task";
+import { runPreview, runTask, runUndo } from "@canonical/task/node";
 import {
   asPragmaError,
   CANCELLED_MESSAGE,
   isCancellation,
   isInterruption,
 } from "../../error/fromTaskError.js";
-import { PragmaError } from "../../error/PragmaError.js";
 import {
+  PragmaError,
   renderErrorJson,
   renderErrorLlm,
   renderErrorPlain,
-} from "../../error/renderError.js";
-import { successEnvelope } from "../../render/envelope.js";
-import { selectFormatter } from "../../render/formatters.js";
-import { writeStdout } from "../../render/writeStdout.js";
-import { bootRuntime } from "../../runtime/boot.js";
+} from "../../error/index.js";
+import { canPrompt, stdoutIsCaptured } from "../../interactivity.js";
+import type { RenderContext } from "../../render/contracts.js";
+import { successEnvelope, writeStdout } from "../../render/index.js";
+import { bootRuntime } from "../../runtime/index.js";
 import type {
   GlobalFlags,
   InteractionRuntime,
   PragmaRuntime,
 } from "../../runtime/types.js";
-import type { ParamSpec, VerbSpec } from "../../spec/types.js";
+import type { ParamSpec, VerbSpec } from "../../spec/index.js";
 import { EXIT, mapExitCode } from "./exitCodes.js";
 
 /** The CLI-only mutation flags auto-injected onto every mutating verb. */
@@ -53,6 +53,18 @@ const logToStderr = (_level: string, message: string): void => {
   process.stderr.write(`${message}\n`);
 };
 
+/** A silenced log sink — `--quiet` drops progress; errors render elsewhere. */
+const logNowhere = (_level: string, _message: string): void => {};
+
+/**
+ * The interpreter log sink for this invocation: stderr, or — under `--quiet`
+ * — nothing. Progress/stage lines are success-path output; error rendering
+ * never routes through this sink, so muting it cannot hide a failure.
+ */
+function logSink(flags: GlobalFlags): (level: string, message: string) => void {
+  return flags.quiet === true ? logNowhere : logToStderr;
+}
+
 /** The result of running a verb: what to write where, and the exit code. */
 export interface DispatchOutcome {
   readonly stdout?: string;
@@ -62,6 +74,15 @@ export interface DispatchOutcome {
 
 /** Coerce one raw arg into the type its {@link ParamSpec} declares. */
 function coerceParam(param: ParamSpec, raw: unknown): unknown {
+  // A repeatable flag's collector hands over an array of occurrences; coerce
+  // each element so an enum still validates every value.
+  if (
+    Array.isArray(raw) &&
+    (param.kind === "string" || param.kind === "enum") &&
+    param.repeatable === true
+  ) {
+    return raw.map((value) => coerceParam(param, value));
+  }
   switch (param.kind) {
     case "number": {
       const value = typeof raw === "number" ? raw : Number(raw);
@@ -128,7 +149,19 @@ export function extractParams(
   return result;
 }
 
-/** Render a read/execute result through the verb's formatters. */
+/**
+ * Render a read/execute result through the verb's formatters.
+ *
+ * The plain branch owns two ROUTING decisions (the rendering itself stays in
+ * the formatters): it threads the presentation context (`--no-headers`,
+ * stdout's TTY-ness) into the plain formatter, and it routes a declared
+ * empty-state notice to STDERR with exit 0 — a zero-record result is a calm
+ * success, and stdout (the data stream) must not carry a human sentence a
+ * pipe would read as a record. `llm` and `json` keep their own empty shapes
+ * on stdout: both are machine contracts whose consumers read one stream.
+ *
+ * @note Impure — reads stdout's capture state for the render context.
+ */
 function renderData(
   verb: VerbSpec,
   flags: GlobalFlags,
@@ -137,25 +170,92 @@ function renderData(
 ): DispatchOutcome {
   if (flags.format === "json") {
     const projection = JSON.parse(verb.output.formatters.json(data));
+    // The calm notice rides `meta` on the machine surfaces, so an empty result
+    // is distinguishable from an unbuilt store or a mistyped filter, and an
+    // ambiguous lookup hit from an unambiguous one. `data` keeps its uniform
+    // shape, and MCP builds the same key from the same seam
+    // (`mcp/registerVerb.ts#noticeMeta`) — the two machine surfaces stay
+    // byte-equal.
+    const notice = verb.output.formatters.notice?.(data);
     return {
-      stdout: `${JSON.stringify(successEnvelope(projection, meta))}\n`,
+      stdout: `${JSON.stringify(
+        successEnvelope(projection, notice ? { ...meta, notice } : meta),
+      )}\n`,
       exitCode: 0,
     };
   }
-  const text = selectFormatter(flags, verb.output.formatters)(data);
-  return { stdout: text ? `${text}\n` : "", exitCode: 0 };
+  if (flags.llm) {
+    const text = verb.output.formatters.llm(data);
+    return { stdout: text ? `${text}\n` : "", exitCode: 0 };
+  }
+  const context: RenderContext = {
+    headers: flags.noHeaders !== true,
+    stdoutIsTty: !stdoutIsCaptured(),
+  };
+  const text = verb.output.formatters.plain(data, context);
+  // The calm notice is success-path guidance — `--quiet` mutes it.
+  const notice =
+    flags.quiet === true ? undefined : verb.output.formatters.notice?.(data);
+  return {
+    stdout: text ? `${text}\n` : "",
+    ...(notice ? { stderr: `${notice}\n` } : {}),
+    exitCode: 0,
+  };
 }
 
-/** Render a dry-run plan (the effects a mutation would perform). */
-function renderPlan(
+/**
+ * Render a dry-run plan.
+ *
+ * The default render is the effect dump — one described effect per line — which
+ * is what every verb without a plan of its own gets, byte for byte as before.
+ * A verb that declares `output.formatPlan` renders that instead: the dump is
+ * debug material (interpreter log effects, a repeated absolute path prefix on
+ * every line), and a preview is something a user is meant to read.
+ *
+ * The JSON envelope is decided by the STASHED DATA, not by the seam: `plan` is
+ * the same string array it always was, and `targets` appears only for a verb
+ * that stashed a structured plan beside it. So a verb whose renderer works off
+ * the effects alone leaves the machine-readable shape exactly as it found it.
+ *
+ * @param flags - The global flags (format selection, verbosity).
+ * @param plan - The described effects the mutation would perform.
+ * @param effects - Those same effects, unformatted, for the verb's renderer.
+ * @param seam - The verb's plan renderer + whatever it stashed, when it has one.
+ * @returns The dispatch outcome.
+ */
+async function renderPlan(
   flags: GlobalFlags,
   plan: readonly string[],
-): DispatchOutcome {
+  effects: readonly Effect[],
+  seam?: {
+    format: (
+      planData: unknown,
+      effects: readonly Effect[],
+      verbose: boolean,
+    ) => string | Promise<string>;
+    planData: unknown;
+  },
+): Promise<DispatchOutcome> {
   if (flags.format === "json") {
+    const body =
+      seam?.planData === undefined
+        ? { plan }
+        : { plan, targets: seam.planData };
     return {
-      stdout: `${JSON.stringify(successEnvelope({ plan }, { dryRun: true }))}\n`,
+      stdout: `${JSON.stringify(successEnvelope(body, { dryRun: true }))}\n`,
       exitCode: 0,
     };
+  }
+  if (seam !== undefined) {
+    // Awaited: the seam MAY be async, so a renderer can load formatting rules
+    // that live in another package behind a dynamic `import()` instead of
+    // charging every `--help` spawn for them (see `VerbSpec.output.formatPlan`).
+    const rendered = await seam.format(
+      seam.planData,
+      effects,
+      flags.verbose === true,
+    );
+    return { stdout: `${rendered}\n`, exitCode: 0 };
   }
   const body =
     plan.length > 0
@@ -221,14 +321,15 @@ export async function executeVerb(
     // Also hand it the interaction context so an interactive verb can pick its
     // prompt strategy. The verb's `run` sets `mutationRuntime.exec` (the runner
     // options) as its last act; the projector reads it back on the real-run
-    // branch only — the dry-run/undo branches stay handler-free (they mock
-    // prompts), so `--dry-run`/`--undo` are unchanged by this seam.
+    // branch AND on the dry-run branch, which takes `cwd` (so the preview reads
+    // the tree the run would write into) and `onEffectStart` (so the stamping
+    // transform runs, and planned byte counts match written ones). It never
+    // takes the prompt handler: a preview auto-answers prompts and so can never
+    // block on input. `--undo` stays handler-free and untouched by this seam.
     const controller = new AbortController();
     const interaction: InteractionRuntime = {
-      // Gate on STDERR (H3): the Ink wizard renders to stderr and reads stdin,
-      // so `<verb> 2>/dev/null` must be non-interactive — gating on stdout would
-      // mount an invisible render that blocks on stdin.
-      isTTY: process.stdin.isTTY === true && process.stderr.isTTY === true,
+      // The shared H3 gate (see `canPrompt`): stdin and stderr, never stdout.
+      isTTY: canPrompt(),
       transport: "cli",
       yes: mutation.yes,
       signal: controller.signal,
@@ -239,12 +340,15 @@ export async function executeVerb(
     };
     const mutationRuntime: PragmaRuntime = {
       ...runtime,
-      mutation: { preview: mutation.dryRun },
+      mutation: { preview: mutation.dryRun, undo: mutation.undo },
       interaction,
       // Progress seam (U7): a long mutation's eager resolve/build runs before its
       // Task is returned, so `onLog` can't reach it — stream stage lines straight
       // to stderr instead, keeping stdout (the JSON/data stream) clean.
-      report: (message: string) => process.stderr.write(`${message}\n`),
+      report:
+        flags.quiet === true
+          ? () => {}
+          : (message: string) => process.stderr.write(`${message}\n`),
     };
     const task = await Promise.resolve(
       verb.run(params, mutationRuntime) as
@@ -252,32 +356,104 @@ export async function executeVerb(
         | Promise<Task<unknown>>,
     );
     if (mutation.dryRun) {
-      // A plan is the effects a mutation WOULD apply — a `Prompt` is not one, so
-      // the interactive confirm gate / answer prompts never clutter the preview.
-      return renderPlan(
-        flags,
-        dryRun(task)
-          .effects.filter((effect) => effect._tag !== "Prompt")
-          .map(describeEffect),
-      );
+      // The HONEST preview (PR7): reads hit the real filesystem, writes are
+      // recorded and never executed. A mutation whose real run would die on its
+      // first template read now fails HERE too, so `--dry-run` exits nonzero
+      // exactly when the run would — the plan is a prediction, not a wish.
+      // `exec.cwd` is the same write root the real run resolves paths against,
+      // and `exec.onEffectStart` carries summon's stamping transform, so the
+      // planned byte counts are the bytes the run would actually write.
+      //
+      // NO `onLog`, deliberately. A preview that PERFORMS an effect is not a
+      // preview of that effect: routing the recorded `Log`s to stderr printed
+      // the generator's whole commentary on the way through, and the plan then
+      // listed the very same lines as rows. The interpreter prints nothing of
+      // its own when `onLog` is absent, so a log is now planned once and
+      // performed never.
+      const previewExec = mutationRuntime.exec ?? {};
+      try {
+        const { effects } = await runPreview(task, {
+          cwd: previewExec.cwd,
+          onEffectStart: previewExec.onEffectStart,
+        });
+        // A plan is the effects a mutation WOULD apply — a `Prompt` is not one,
+        // so the interactive confirm gate / answer prompts never clutter it.
+        const planned = effects.filter((effect) => effect._tag !== "Prompt");
+        // The DESCRIBED plan — what `--format json` carries and what a verb
+        // with no renderer of its own is dumped as — passes the same
+        // visibility filter the MCP payload and the human preview use. It is
+        // the filter, not the row format, that this seam shares: `plan` is
+        // structured description, so it stays `describeEffect` strings rather
+        // than terminal rows, and the two surfaces can be compared string for
+        // string (`testing/behavioral/parity.test.ts`, A6).
+        //
+        // Loaded lazily from the LIGHT `/format` subpath. A dry run is already
+        // several filesystem reads deep here; a `--help` spawn never reaches
+        // this branch, and the kernel keeps summon-core off its static graph.
+        const { visiblePlanEffects } = await import(
+          "@canonical/summon-core/format"
+        );
+        const format = verb.output.formatPlan;
+        return await renderPlan(
+          flags,
+          visiblePlanEffects(planned, flags.verbose === true).map(
+            describeEffect,
+          ),
+          planned,
+          format === undefined
+            ? undefined
+            : { format, planData: mutationRuntime.planData },
+        );
+      } finally {
+        // A verb that mounted an interactive session before returning its Task
+        // must be torn down on this branch too, exactly as on the real run.
+        await previewExec.dispose?.();
+      }
     }
     if (mutation.undo) {
-      const { undoCount } = await runUndo(task, { onLog: logToStderr });
+      // The truth seam. `runUndo`'s collection phase drove the verb's task
+      // with every effect mocked, so anything the task body reported was a
+      // narration of the mocked walk, not of the reversals — which have only
+      // JUST run, each isolated, each with its own outcome. Those outcomes
+      // are the one honest record of what the undo did: a verb that reports
+      // per-target results sets `undoReport` (like `exec`/`planData`) and
+      // projects them onto its own rows; a throw from it renders as the
+      // run's error, exactly like a failed real run. Verbs without a
+      // projector of their own still may not exit 0 over a failed reversal,
+      // so the outcomes are re-checked here as the backstop.
+      const { undoCount, outcomes } = await runUndo(task, {
+        onLog: logSink(flags),
+      });
+      await mutationRuntime.undoReport?.(outcomes);
+      const failed = outcomes.filter((o) => o.status === "failed");
+      if (failed.length > 0) {
+        throw new PragmaError({
+          code: "UNSUPPORTED",
+          message: `${failed.length} of ${outcomes.length} undo step(s) did not complete: ${failed
+            .map((o) => o.error.message)
+            .join("; ")}`,
+        });
+      }
       return renderUndo(flags, undoCount);
     }
     // Real execution: spread the verb's runner options into the node
     // interpreter (prompt handler, stamping/progress callbacks, log routing,
-    // signal). Teardown (e.g. unmount an Ink render) runs in `finally`.
+    // signal). Teardown (e.g. unmount an Ink render) runs in `finally` —
+    // BEFORE the outcome is rendered: an interactive session's closing frame
+    // flushes on its dispose, so printing the result first put the verb's
+    // stdout recap ABOVE a frame that then repainted stale beneath it. Tear
+    // the UI down, then report; the error path gets the same order for free.
     const exec = mutationRuntime.exec ?? {};
     const onSigint = (): void => controller.abort();
     process.once("SIGINT", onSigint);
+    let value: unknown;
     try {
-      const value = await runTask(task, { onLog: logToStderr, ...exec });
-      return renderData(verb, flags, value, {});
+      value = await runTask(task, { onLog: logSink(flags), ...exec });
     } finally {
       process.removeListener("SIGINT", onSigint);
       await exec.dispose?.();
     }
+    return renderData(verb, flags, value, {});
   }
 
   const data = await Promise.resolve(
@@ -287,30 +463,29 @@ export async function executeVerb(
 }
 
 /**
- * Dispatch a matched verb: coerce, run, and perform the output I/O.
+ * Run a verb whose params are already prepared, then perform the output I/O —
+ * the shared tail of {@link dispatch} and of a mounted subtree's own
+ * dispatcher, which extracts its params by its own rules but reuses every
+ * piece of the kernel machinery from here down: dry-run/undo/real-run
+ * interpretation, error rendering, exit codes, SIGINT.
  *
- * @param verb - The matched verb spec.
- * @param positionals - Positional args from Commander.
- * @param opts - Commander's parsed option values (incl. mutation flags).
+ * @param verb - The verb spec to run.
+ * @param getParams - Produces the coerced param bag (may throw a usage error;
+ *   it is rendered exactly like a run error).
+ * @param mutation - The mutation flags.
  * @param globalFlags - The parsed global flags.
  * @note Impure — writes stdout/stderr and sets `process.exitCode`.
  */
-export async function dispatch(
+async function runPrepared(
   verb: VerbSpec,
-  positionals: readonly string[],
-  opts: Record<string, unknown>,
+  getParams: () => Record<string, unknown>,
+  mutation: MutationFlags,
   globalFlags: GlobalFlags,
 ): Promise<void> {
   const runtime = bootRuntime(globalFlags);
   let outcome: DispatchOutcome;
   try {
-    const params = extractParams(verb.params, positionals, opts);
-    const mutation: MutationFlags = {
-      dryRun: opts.dryRun === true,
-      undo: opts.undo === true,
-      yes: opts.yes === true,
-    };
-    outcome = await executeVerb(verb, params, mutation, runtime);
+    outcome = await executeVerb(verb, getParams(), mutation, runtime);
   } catch (error) {
     // Two clean, non-bug outcomes print the same "Cancelled." line but exit
     // differently — both set DIRECTLY here, out-of-band from `mapExitCode`'s
@@ -331,4 +506,54 @@ export async function dispatch(
   if (outcome.stdout) writeStdout(outcome.stdout);
   if (outcome.stderr) process.stderr.write(outcome.stderr);
   if (outcome.exitCode !== 0) process.exitCode = outcome.exitCode;
+}
+
+/**
+ * Dispatch a matched verb: coerce, run, and perform the output I/O.
+ *
+ * @param verb - The matched verb spec.
+ * @param positionals - Positional args from Commander.
+ * @param opts - Commander's parsed option values (incl. mutation flags).
+ * @param globalFlags - The parsed global flags.
+ * @note Impure — writes stdout/stderr and sets `process.exitCode`.
+ */
+export async function dispatch(
+  verb: VerbSpec,
+  positionals: readonly string[],
+  opts: Record<string, unknown>,
+  globalFlags: GlobalFlags,
+): Promise<void> {
+  const mutation: MutationFlags = {
+    dryRun: opts.dryRun === true,
+    undo: opts.undo === true,
+    yes: opts.yes === true,
+  };
+  await runPrepared(
+    verb,
+    () => extractParams(verb.params, positionals, opts),
+    mutation,
+    globalFlags,
+  );
+}
+
+/**
+ * Dispatch a verb whose params were ALREADY extracted by the caller — the
+ * seam a mounted subtree drives: its leaf specs carry no Commander defaults
+ * (explicit stays distinguishable from default), so the mount extracts the
+ * explicit answers itself and hands them here, reusing the whole kernel tail
+ * (interpreters, rendering, exit codes, SIGINT) byte-for-byte.
+ *
+ * @param verb - The (possibly synthesized) verb spec to run.
+ * @param params - The prepared param bag.
+ * @param mutation - The mutation flags.
+ * @param globalFlags - The parsed global flags.
+ * @note Impure — writes stdout/stderr and sets `process.exitCode`.
+ */
+export async function dispatchPrepared(
+  verb: VerbSpec,
+  params: Record<string, unknown>,
+  mutation: MutationFlags,
+  globalFlags: GlobalFlags,
+): Promise<void> {
+  await runPrepared(verb, () => params, mutation, globalFlags);
 }

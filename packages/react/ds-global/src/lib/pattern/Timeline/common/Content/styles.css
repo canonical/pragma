@@ -1,6 +1,6 @@
 /**
  * Timeline.Content styles
- * @implements dso:global.subcomponent.timeline-content
+ * @implements ds:global.subcomponent.timeline-content
  *
  * DSL anatomy mapping:
  * - layout.type: stack -> display: flex; flex-direction: column

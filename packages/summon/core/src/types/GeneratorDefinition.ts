@@ -14,6 +14,15 @@ export default interface GeneratorDefinition<
   meta: GeneratorMeta;
   /** Prompts to collect answers from user */
   prompts: PromptDefinition[];
-  /** Pure function that returns a Task describing the generation */
+  /**
+   * Pure function that returns a Task describing the generation.
+   *
+   * The returned task must be RE-INTERPRETABLE: compose it from combinators
+   * (`sequence_`, `when`, `flatMap`, …), never from a single-use `gen()` —
+   * a gen() task closes over one iterator, and the runners interpret a build
+   * more than once (dry-run preview, undo collection with backtracking).
+   * `execute()` shields callers by invoking `generate` freshly per
+   * interpretation, but direct drivers of one build get truncated re-drives.
+   */
   generate: (answers: TAnswers) => Task<void>;
 }

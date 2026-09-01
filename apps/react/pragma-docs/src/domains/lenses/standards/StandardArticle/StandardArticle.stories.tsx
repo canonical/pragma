@@ -15,7 +15,7 @@ const STANDARD_IRI =
 /** Name-compatible bare route so the breadcrumb resolves without mounting
  * the app's real pages. */
 const bareRoutes = {
-  standardEntity: route({ url: "/standards/:uri", component: () => null }),
+  standardEntity: route({ url: "/standards/:uri", content: () => null }),
 } as const;
 
 /**

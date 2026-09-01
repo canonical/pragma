@@ -13,7 +13,7 @@
  * ambient process directory.
  */
 
-import { existsSync, mkdtempSync, readdirSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -58,23 +58,42 @@ describe("create cwd/jail atomicity (PROTECTED)", () => {
     expect(readdirSync(serverDir)).toEqual([]);
   });
 
-  it("rejects an escape past the per-call cwd — validated against the SAME cwd", async () => {
+  it("rejects a symlink escape past the per-call cwd — the JAIL validates against the SAME cwd", async () => {
     const serverDir = freshDir("server");
     const projA = freshDir("projA");
     const escapeSibling = freshDir("escape");
+    // A symlink INSIDE the jailed dir pointing out of it: the one escape
+    // class the shared prompt validator (cwd-agnostic, value-only) passes,
+    // so only the jail — resolving the path against the INJECTED cwd — can
+    // refuse it. A `..`/absolute vector would be consumed by the validator
+    // one gate earlier and prove nothing about which root the jail reads.
+    symlinkSync(escapeSibling, join(projA, "link"));
     const mcp = await projectMcp([createModule], serverDir);
     cleanup = mcp.cleanup;
 
     const result = await mcp.callTool("create_component", {
       ...COMPONENT_ARGS,
-      componentPath: "../escape/Bad",
+      componentPath: "link/Bad",
       cwd: projA,
       confirm: true,
     });
 
     expect(result.ok).toBe(false);
-    expect((result.error as { code: string }).code).toBe("INVALID_INPUT");
-    // Nothing was written into the sibling the path tried to escape into.
+    const error = result.error as {
+      code: string;
+      message: string;
+      recovery?: { message: string };
+    };
+    expect(error.code).toBe("INVALID_INPUT");
+    // The jail's OWN tier answered: its spelling and its covenant recovery
+    // field — were the jail handed the ambient process cwd instead of the
+    // injected one, `link` would not resolve there and the run would write
+    // into the sibling.
+    expect(error.message).toBe('Invalid componentPath "link/Bad".');
+    expect(error.recovery?.message).toBe(
+      "The path resolves outside the workspace.",
+    );
+    // Nothing was written into the sibling the symlink pointed at.
     expect(readdirSync(escapeSibling)).toEqual([]);
   });
 

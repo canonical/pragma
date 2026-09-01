@@ -1,4 +1,3 @@
-import type { AnyRouteContent, AnyWrapper } from "@canonical/router-core";
 import type { ComponentType, ReactElement, ReactNode } from "react";
 import {
   createElement,
@@ -8,7 +7,6 @@ import {
   useSyncExternalStore,
 } from "react";
 import useRouter from "../hooks/useRouter.js";
-import RouteErrorBoundary from "./RouteErrorBoundary.js";
 import type { OutletProps } from "./types.js";
 
 /**
@@ -19,22 +17,9 @@ import type { OutletProps } from "./types.js";
  * cause a rerender. The rendered content is keyed by route name so React
  * cleanly unmounts/remounts when the matched route changes.
  *
- * `Outlet` constructs elements from the matched route's `component` (or the
- * deprecated `content`) and `wrappers` rather than invoking them as plain
- * functions, so each receives its own React fiber. Both bare component
- * references (`component: PageComponent`) and element-creating arrows
- * (`component: (props) => <Page {...props} />`) are valid — an arrow is
- * itself a function component — and hooks are legal in both the route
- * component and wrapper components.
- *
- * Routes may declare a `fallback` (pending UI overriding the `Outlet`-level
- * `fallback` prop within the route-keyed `Suspense`) and an `errorComponent`
- * (rendered with `{ error }` behind an internal route-keyed error boundary
- * that resets when the matched route changes).
- *
- * Without a route `errorComponent`, component-level render errors propagate
- * past `Outlet`. Wrap it in a React `ErrorBoundary` to catch those. The
- * router handles data errors (fetch failures, status codes); React handles
+ * Component-level render errors (e.g. a route's error component itself throws)
+ * propagate past `Outlet`. Wrap it in a React `ErrorBoundary` to catch those.
+ * The router handles data errors (fetch failures, status codes); React handles
  * render errors.
  */
 export default function Outlet({ fallback = null }: OutletProps): ReactElement {
@@ -70,59 +55,42 @@ export default function Outlet({ fallback = null }: OutletProps): ReactElement {
     match && "name" in match && typeof match.name === "string"
       ? match.name
       : undefined;
-  const content = (match?.route.component ?? match?.route.content) as
-    | AnyRouteContent
-    | undefined;
-
-  // Mirrors core `render()`: no match or no UI slot renders null, and
-  // wrappers apply only when a slot exists. `component` is preferred over
-  // the deprecated `content`; Outlet renders both through the same
-  // createElement path with identical `{ params, search }` props.
+  // Build ELEMENTS instead of calling `router.render()`.
+  //
+  // Core's `render()` INVOKES the route's component and its wrappers as
+  // plain functions — `content({ params, search })`, `wrapper.component({
+  // children })` — so any hooks they declare run inside THIS component's
+  // hook list. Navigating between two routes whose components use different
+  // numbers of hooks then throws "Rendered fewer hooks than expected",
+  // because React sees Outlet's own hook count change between renders.
+  //
+  // `createElement` gives each component its own fiber, so its hooks belong
+  // to it. Core's `render()` is left alone: it is the correct shape for a
+  // non-React consumer, and this is a React-layer concern.
   let rendered: ReactNode = null;
 
-  if (match && content) {
+  if (match && "route" in match && match.route.content) {
     const contentElement = createElement(
-      content as ComponentType<{
+      match.route.content as ComponentType<{
         readonly params: unknown;
         readonly search: unknown;
       }>,
       { params: match.params, search: match.search },
     );
 
-    rendered = (match.route.wrappers as readonly AnyWrapper[]).reduceRight(
-      (children: ReactNode, currentWrapper) =>
-        createElement(
-          currentWrapper.component as ComponentType<{
-            readonly children: ReactNode;
-          }>,
-          null,
-          children,
-        ),
+    rendered = (
+      match.route.wrappers as readonly {
+        readonly component: ComponentType<{ readonly children: ReactNode }>;
+      }[]
+    ).reduceRight<ReactNode>(
+      (children, currentWrapper) =>
+        createElement(currentWrapper.component, null, children),
       contentElement,
     );
   }
 
-  const errorComponent = match?.route.errorComponent as
-    | ComponentType<{ readonly error: unknown }>
-    | undefined;
-
-  if (errorComponent) {
-    rendered = (
-      <RouteErrorBoundary errorComponent={errorComponent}>
-        {rendered}
-      </RouteErrorBoundary>
-    );
-  }
-
-  // The route-level fallback (a ReactNode, like Outlet's own prop) overrides
-  // the Outlet-level default within the route-keyed Suspense.
-  const routeFallback =
-    match && match.route.fallback !== undefined
-      ? (match.route.fallback as ReactNode)
-      : fallback;
-
   return (
-    <Suspense key={routeKey} fallback={routeFallback}>
+    <Suspense key={routeKey} fallback={fallback}>
       {rendered}
     </Suspense>
   );

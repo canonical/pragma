@@ -10,7 +10,7 @@
  */
 
 import type { GlobalFlags } from "../runtime/types.js";
-import type { Formatters } from "../spec/types.js";
+import type { Formatters } from "../spec/index.js";
 
 /**
  * Pick the formatter for the active output mode.

@@ -1,6 +1,6 @@
 import { I18nProvider } from "@canonical/i18n-react";
 import { HeadProvider } from "@canonical/react-head";
-import { createHashRouter, route } from "@canonical/router-core";
+import { createHashAdapter, createRouter, route } from "@canonical/router-core";
 import { RouterProvider } from "@canonical/router-react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
@@ -26,11 +26,11 @@ beforeAll(() => {
 // importing the real route map would drag every domain page (and its
 // dependencies) into this chrome-only test.
 const routes = {
-  home: route({ url: "/", component: () => null }),
-  guide: route({ url: "/guides/:slug", component: () => null }),
-  catalog: route({ url: "/catalog", component: () => null }),
-  contact: route({ url: "/contact", component: () => null }),
-  account: route({ url: "/account", component: () => null }),
+  home: route({ url: "/", content: () => null }),
+  guide: route({ url: "/guides/:slug", content: () => null }),
+  catalog: route({ url: "/catalog", content: () => null }),
+  contact: route({ url: "/contact", content: () => null }),
+  account: route({ url: "/account", content: () => null }),
 } as const;
 
 /**
@@ -38,7 +38,7 @@ const routes = {
  * entries mount, and a hash router so `Link` resolves without a server.
  */
 function renderShell() {
-  const router = createHashRouter(routes);
+  const router = createRouter(routes, { adapter: createHashAdapter() });
 
   return render(
     <I18nProvider config={i18nConfig} catalogs={catalogs}>

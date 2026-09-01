@@ -11,9 +11,8 @@
  */
 
 import chalk from "chalk";
+import { INDENT } from "../../render/vocabulary.js";
 
-/** Two-space indent for every list body row. */
-const INDENT = "  ";
 /** Two-space gap between a term column and its description. */
 const GAP = "  ";
 
@@ -30,6 +29,19 @@ export function helpDim(text: string): string {
 /** A cyan term — a command, verb, flag, or example, as shown in the body. */
 export function helpTerm(text: string): string {
   return chalk.cyan(text);
+}
+
+/**
+ * The wordmark's colour.
+ *
+ * `yellow` is a PALETTE slot, not a fixed hue: the 16-colour ANSI palette has no
+ * orange, and this slot is the one terminal themes render as orange — Ubuntu's
+ * among them. Naming the slot rather than a 256-colour or truecolour orange is
+ * what lets the wordmark follow the user's own theme instead of fighting it, and
+ * keeps it legible on light backgrounds where a hardcoded orange would not be.
+ */
+export function helpLogo(text: string): string {
+  return chalk.yellow(text);
 }
 
 /** The `Usage:` line: a dim label followed by the given command shape. */

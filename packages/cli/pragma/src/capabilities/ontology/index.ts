@@ -2,18 +2,22 @@
  * The `ontology` capability module — schema (TBox) inspection.
  */
 
-import type { CapabilityModule } from "../../kernel/spec/types.js";
-import {
-  ontologyListVerb,
-  ontologyLookupVerb,
-  ontologyShowVerb,
-} from "./verbs.js";
+import type { CapabilityModule } from "../../kernel/spec/index.js";
+import { ontologyListVerb, ontologyLookupVerb } from "./verbs.js";
 
-/**
- * The `ontology` capability module (`list`, `lookup`, and the deprecated `show`
- * alias — AV-228 B1).
- */
+/** The `ontology` capability module (`list` and the `lookup` by-name read). */
 export const ontologyModule: CapabilityModule = {
   name: "ontology",
-  verbs: [ontologyListVerb, ontologyLookupVerb, ontologyShowVerb],
+  verbs: [ontologyListVerb, ontologyLookupVerb],
+  /**
+   * The ONE hand-declared listing in the distribution. Every other module is
+   * story-compiled and has its slice DERIVED from the types its lookup already
+   * names; this noun addresses the schema itself, which no `type` filter
+   * expresses — the whole TBox is the answer, so it is stated once, here.
+   *
+   * `0.5` puts the schema below the story collections (weight 1) it explains
+   * and above nothing else: an agent orienting itself wants the collections
+   * first, then the vocabulary they are described in.
+   */
+  mcpListable: { sources: [{ box: "tbox", as: "entities", weight: 0.5 }] },
 };

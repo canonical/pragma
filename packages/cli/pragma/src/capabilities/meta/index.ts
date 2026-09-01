@@ -4,7 +4,7 @@
  */
 
 import { asVerb } from "../../kernel/spec/asVerb.js";
-import type { CapabilityModule } from "../../kernel/spec/types.js";
+import type { CapabilityModule } from "../../kernel/spec/index.js";
 import { completeVerb } from "./complete.verb.js";
 import { mcpVerb } from "./mcp.verb.js";
 

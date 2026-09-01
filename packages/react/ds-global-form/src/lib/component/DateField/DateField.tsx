@@ -29,6 +29,8 @@ const dateRangeRules = ({
  * (label, description, error) and middleware/conditional-display support.
  *
  * `import { DateField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.date_field
  */
 export default withWrapper<DateFieldProps>(
   bindField<DateFieldProps>(DateInput, "native", {
