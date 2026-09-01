@@ -1,0 +1,10 @@
+.ds.side-panel-content {
+  /* Takes the space the header and footer leave, so a short panel still fills. */
+  flex: 1 1 auto;
+
+  /*
+    No scroller here: overflow spills to the panel, which scrolls. That is what
+    keeps the scrollbar at the panel's edge rather than inside the text column.
+  */
+  padding-block: var(--dimension-200);
+}
