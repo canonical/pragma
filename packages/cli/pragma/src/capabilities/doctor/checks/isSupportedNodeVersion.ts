@@ -16,6 +16,12 @@
  * @returns Whether the version falls inside the declared range.
  */
 export function isSupportedNodeVersion(version: string): boolean {
+  // A semver range excludes prereleases unless a comparator opts into them, and
+  // `engines.node` opts into none. So `22.18.0-pre` is outside the declared
+  // range even though its numeric part is inside it, and reporting it as
+  // supported would be doctor passing a runtime the install contract rejects.
+  if (version.includes("-")) return false;
+
   const [rawMajor, rawMinor] = version.split(".");
   const major = Number(rawMajor);
   const minor = Number(rawMinor);

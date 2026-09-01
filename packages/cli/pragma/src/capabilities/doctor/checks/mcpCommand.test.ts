@@ -45,6 +45,12 @@ describe("commandOf — one executable, either entry shape", () => {
   });
 });
 
+// Every test in this suite writes into a temp directory and then resolves
+// against it, so each one is bound by filesystem latency rather than by any
+// work of its own. Vitest's 5s default is comfortable on an idle machine and
+// marginal on a loaded one — this suite has timed out in CI while asserting
+// nothing slow. Ten seconds keeps the assertions meaningful without making a
+// genuine hang cheap to ignore.
 describe("commandResolves — the host's own resolution rules", () => {
   const dirs: string[] = [];
   const tmp = (): string => {
@@ -97,4 +103,4 @@ describe("commandResolves — the host's own resolution rules", () => {
       await commandResolves("./local-bin", dir, hostOf("linux", dir)),
     ).toBe(true);
   });
-});
+}, 10_000);

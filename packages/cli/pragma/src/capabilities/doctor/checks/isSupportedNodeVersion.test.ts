@@ -23,6 +23,11 @@ import { isSupportedNodeVersion } from "./isSupportedNodeVersion.js";
  * written for so a widened range fails loudly instead of silently passing.
  */
 function satisfiesDeclaredRange(version: string, range: string): boolean {
+  // Semver excludes prereleases from a range unless a comparator opts in, and
+  // none of ours does. Encoded here too, so the oracle and the implementation
+  // are held to the same rule rather than agreeing by omission.
+  if (version.includes("-")) return false;
+
   const rank = (major: number, minor: number) => major * 1_000_000 + minor;
   const [major = Number.NaN, minor = Number.NaN] = version
     .split(".")
@@ -62,6 +67,10 @@ const GRID = [
   "24.18.1",
   "25.0.0",
   "26.0.0",
+  // Prereleases: numerically inside the range, excluded by semver.
+  "22.18.0-pre",
+  "23.6.0-nightly",
+  "24.0.0-rc.1",
 ];
 
 describe("isSupportedNodeVersion — agrees with the declared engines range", () => {
@@ -79,6 +88,19 @@ describe("isSupportedNodeVersion — agrees with the declared engines range", ()
     );
     expect(verdicts).toContain(true);
     expect(verdicts).toContain(false);
+  });
+
+  it("rejects prerelease builds whose numeric part is in range", () => {
+    // Asserted directly, not only through the oracle: if both sides dropped the
+    // rule together the grid would still agree and prove nothing.
+    for (const pre of ["22.18.0-pre", "23.6.0-nightly", "24.0.0-rc.1"]) {
+      expect(isSupportedNodeVersion(pre)).toBe(false);
+    }
+    // The same versions without the suffix are supported, so it is the suffix
+    // doing the work and not the numbers.
+    for (const stable of ["22.18.0", "23.6.0", "24.0.0"]) {
+      expect(isSupportedNodeVersion(stable)).toBe(true);
+    }
   });
 
   it("fails closed on a version it cannot parse", () => {
