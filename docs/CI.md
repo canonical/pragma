@@ -56,6 +56,8 @@ The pipeline uses several tools, each chosen for specific reasons.
 
 **Node.js** runs Storybook and Lerna. The pipeline installs both Bun and Node, using Bun for package management and Node for tools that require fuller Node.js compatibility. The build matrix tests against Node 22 (LTS) and Node 24 (current) to catch compatibility issues.
 
+The supported range is `^22.13.0 || ^24.0.0 || ^26.0.0`, declared in the root `package.json` and set by Lerna, which supports no others. **The matrix tests two of the three majors in that range: Node 26 is supported but never exercised in CI.** That is a deliberate trade — a third matrix leg runs on every PR in the repository, including outside contributors', and the cost of one job is not one job. If a Node 26 regression is ever reported, this is the gap it came through.
+
 **Chromatic** provides visual regression testing. It captures screenshots of Storybook stories, stores baselines, and highlights visual differences between builds. Chromatic runs as a separate workflow with path filtering, so changes to `react-ds-global` only trigger visual tests for that package. This conserves snapshot credits while ensuring visual changes are reviewed. Chromatic workflows are focused solely on visual baselines — they do not run code quality checks or tests. Correctness is owned by `pr.yml` (on PRs) and `push.yml` (on main).
 
 ## Caching
