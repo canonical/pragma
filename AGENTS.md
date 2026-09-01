@@ -184,6 +184,15 @@ precedent.
 - Branch from up-to-date `origin/main`; never push to `main` directly — **all changes
   land via PR** on a feature branch.
 - Fill in `.github/PULL_REQUEST_TEMPLATE.md` (Done / QA / readiness checklist).
+- **A PR description must stand on its own. Never cite an internal planning
+  document in it** — no ADR rung numbers, session ledgers, `pragma-adrs` paths, or
+  any other coordinate into a repo the reader may not be able to open. Outside
+  contributors and other teams review these PRs; sending them looking for a
+  document they do not have access to costs them time and tells them nothing. A
+  citation is not a reason. State what the change does and why, in full, in the PR
+  itself. The same goes for commit subjects, which Lerna puts in the CHANGELOG.
+  Internal sequencing stays in the planning repo; when merge order matters, name
+  the PR that must land first **by number** and say why in one line.
 - Add `no visual change` to skip Chromatic when there's no visual diff.
 - New package? First-time publish is manual (`npm publish --access public` from the
   package dir); verify with `bun run publish:status` from the root.
