@@ -377,6 +377,39 @@ describe("compose full construction", () => {
     ]);
   });
 
+  it("escapes line terminators in the stamped values", () => {
+    // provider and revision are free-form consumer strings (a CI variable, a
+    // git describe). The header's lines are GraphQL comments, which run to the
+    // next line terminator — so a raw newline does not merely look wrong, it
+    // CLOSES the comment and everything after it is parsed as SDL. That is an
+    // sdlOutput describing a type the executable schema does not have.
+    const plan = emptyPlan({
+      types: new Map([
+        [
+          "Thing",
+          objectPlan("Thing", new Map([["name", scalarField("name")]])),
+        ],
+      ]),
+    });
+    const { output } = compose(plan, {
+      provider: "ds\r\n# provider: spoofed",
+      revision: "type Evil { x: String }\nback\\slash",
+    });
+    // Still exactly seven lines, one fact each, in contract order.
+    expect(output.sdl.split("\n").slice(0, 7)).toEqual([
+      "# ke-graphql · canonical SDL",
+      "# graphql-schema-spec: 1",
+      "# provider: ds\\r\\n# provider: spoofed",
+      "# mode: annotated",
+      "# validated-store: false",
+      // the backslash is escaped too, so the encoding stays invertible
+      "# revision: type Evil { x: String }\\nback\\\\slash",
+      "# prefixing: none",
+    ]);
+    // …and the smuggled definition never became SDL syntax.
+    expect(output.sdl).not.toMatch(/^type Evil/m);
+  });
+
   it("C002 — a generated root field colliding with a TBox root field is dropped", () => {
     // The plan-vs-tbox merge gets the SAME treatment as a consumer extension:
     // error + drop, the TBox field survives. (Silently, plan.queryFields used
@@ -401,6 +434,85 @@ describe("compose full construction", () => {
     // The TBox field survives with the TBox type — not the planted String.
     const field = output.schema?.getQueryType()?.getFields().ontologies;
     expect(String(field?.type)).toBe("[Ontology!]!");
+  });
+
+  it("C002 — a field named after an Object.prototype member is no conflict", () => {
+    // Both field maps are plain objects and inherit Object.prototype, so a
+    // truthy `fields[name]` answers for toString/valueOf/constructor on a map
+    // that holds none of them. A class named `ToString` mints the perfectly
+    // legal root field `Query.toString`, and an extension may legitimately be
+    // called `valueOf`: neither collides with anything, and a fatal C002 here
+    // would drop a field with no rename that clears it. The own-property test
+    // is what separates those from a real conflict.
+    const plan = emptyPlan({
+      types: new Map([
+        [
+          "ToString",
+          objectPlan("ToString", new Map([["name", scalarField("name")]])),
+        ],
+      ]),
+      queryFields: new Map<string, FieldPlan>([
+        ["toString", scalarField("toString")],
+      ]),
+    });
+    const extensions: SchemaExtensionsInput = {
+      ToString: { valueOf: { type: GraphQLString } },
+    };
+    const { output, diagnostics } = compose(plan, { extensions });
+    expect(diagnostics.filter((d) => d.code === "C002")).toHaveLength(0);
+    expect(output.schema).not.toBeNull();
+    // Both survive: the generated root field and the extension field.
+    const queryFields = output.schema?.getQueryType()?.getFields() ?? {};
+    expect(Object.hasOwn(queryFields, "toString")).toBe(true);
+    expect(output.sdl).toContain("toString: String");
+    expect(output.sdl).toContain("valueOf: String");
+    // …and the TBox roots the generated field genuinely does not touch stay.
+    expect(Object.hasOwn(queryFields, "ontologies")).toBe(true);
+  });
+
+  it("C002 — a Query EXTENSION named after an Object.prototype member is no conflict", () => {
+    // The third map carrying the same hazard, and the one the case above does
+    // not reach: it exercises the object-type extension merge (ToString) and
+    // the Query plan merge (Query.toString), but never the Query EXTENSION
+    // merge. That map is a plain object too, so `valueOf` — a legal extension
+    // field name colliding with no TBox root and no generated root — reads as
+    // occupied under a truthy `fields[name]` and is dropped under a fatal C002
+    // that no rename on the ontology side can clear.
+    //
+    // Both directions ride one compose, because "no C002" on its own would
+    // also be satisfied by deleting the check outright: `ontologies` IS a TBox
+    // root, so the conflict it names is real and must still be caught while
+    // `valueOf` passes. Own-property is what separates the two.
+    const plan = emptyPlan({
+      types: new Map([
+        [
+          "Thing",
+          objectPlan("Thing", new Map([["name", scalarField("name")]])),
+        ],
+      ]),
+    });
+    const extensions: SchemaExtensionsInput = {
+      Query: {
+        valueOf: { type: GraphQLString },
+        ontologies: { type: GraphQLString },
+      },
+    };
+    const { output, diagnostics } = compose(plan, { extensions });
+    expect(output.schema).not.toBeNull();
+    const queryFields = output.schema?.getQueryType()?.getFields() ?? {};
+    // The inherited name survives, and reaches the printed SDL.
+    expect(Object.hasOwn(queryFields, "valueOf")).toBe(true);
+    expect(output.sdl).toContain("valueOf: String");
+    // The genuine conflict on the same map is still fatal — exactly one C002,
+    // naming that field — and the TBox root it collided with is the survivor,
+    // not the planted String.
+    const c002 = diagnostics.filter((d) => d.code === "C002");
+    expect(c002).toHaveLength(1);
+    expect(c002[0]?.severity).toBe("error");
+    expect(c002[0]?.message).toBe(
+      "extension field Query.ontologies conflicts with a generated field",
+    );
+    expect(String(queryFields.ontologies?.type)).toBe("[Ontology!]!");
   });
 
   it("C001 — object-form extension references an unknown type", () => {
