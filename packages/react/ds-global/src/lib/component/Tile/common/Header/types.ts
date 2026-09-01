@@ -1,4 +1,11 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
+
+type OwnProps = {
+  /**
+   * Header content
+   */
+  children: ReactNode;
+};
 
 /**
  * Props for the Tile.Header subcomponent
@@ -11,9 +18,5 @@ import type { HTMLAttributes, ReactNode } from "react";
  * - layout.align: center
  * - spacing.internal: spacing/medium
  */
-export interface HeaderProps extends HTMLAttributes<HTMLDivElement> {
-  /**
-   * Header content
-   */
-  children: ReactNode;
-}
+export type HeaderProps = OwnProps &
+  Omit<ComponentProps<"div">, keyof OwnProps>;

@@ -1,21 +1,18 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import type {
   UseDisclosureProps,
   WindowFitmentSide,
 } from "../../hooks/index.js";
 
-export interface PopoverProps
-  extends Omit<HTMLAttributes<HTMLDetailsElement>, "onToggle">,
-    Pick<
-      UseDisclosureProps,
-      | "preferredDirections"
-      | "distance"
-      | "gutter"
-      | "maxWidth"
-      | "autoFit"
-      | "closeOnEscape"
-      | "closeOnOutsideClick"
-    > {
+type OwnProps = Pick<
+  UseDisclosureProps,
+  | "distance"
+  | "gutter"
+  | "maxWidth"
+  | "autoFit"
+  | "closeOnEscape"
+  | "closeOnOutsideClick"
+> & {
   /**
    * The trigger content, rendered inside the `<summary>`. Clicking it toggles
    * the popover; with no JavaScript the native `<details>` handles the toggle.
@@ -35,4 +32,12 @@ export interface PopoverProps
    * (`inline-*` mirrors in RTL). Defaults to the reading-direction order.
    */
   preferredDirections?: WindowFitmentSide[];
-}
+};
+
+/**
+ * Props for the Popover component. Extends its native `<details>` root, with
+ * `onToggle` deliberately excluded: once hydrated the disclosure hook owns the
+ * toggle, so consumers drive open state via `open`/`onOpenChange`.
+ */
+export type PopoverProps = OwnProps &
+  Omit<ComponentProps<"details">, keyof OwnProps | "onToggle">;

@@ -1,6 +1,14 @@
-import type { HTMLAttributes, ReactElement } from "react";
+import type { ComponentProps, ReactElement } from "react";
 import type { ContentProps } from "./common/Content/types.js";
 import type { EventProps } from "./common/Event/types.js";
+
+type OwnProps = {
+  /**
+   * Timeline.Content element (required)
+   * Maps to DSL edges[1]: timeline-content (cardinality: 1)
+   */
+  children: ReactElement<ContentProps>;
+};
 
 /**
  * Props for the Timeline component
@@ -17,13 +25,8 @@ import type { EventProps } from "./common/Event/types.js";
  *
  * Note: Timeline.Header and Timeline.Footer are not yet implemented.
  */
-export interface TimelineProps extends HTMLAttributes<HTMLDivElement> {
-  /**
-   * Timeline.Content element (required)
-   * Maps to DSL edges[1]: timeline-content (cardinality: 1)
-   */
-  children: ReactElement<ContentProps>;
-}
+export type TimelineProps = OwnProps &
+  Omit<ComponentProps<"div">, keyof OwnProps>;
 
 /**
  * Timeline component type with attached subcomponents

@@ -1,12 +1,14 @@
 import type { IconName } from "@canonical/ds-assets";
 import type { ModifierFamily } from "@canonical/ds-types";
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
-export interface BaseProps {
-  /** A unique identifier for the button */
-  id?: string;
-  /** Additional CSS classes */
-  className?: string;
+/**
+ * The Button's DS-owned props. Native `<button>` attributes (`id`, `className`,
+ * `type`, `disabled`, event handlers, …) come from `ComponentProps<"button">`
+ * in {@link default | ButtonProps}, so only genuinely design-system-specific
+ * members live here.
+ */
+type OwnProps = {
   /**
    * Button contents (label text).
    * The button's accessible name derives from its rendered text content,
@@ -48,8 +50,8 @@ export interface BaseProps {
    * @default false
    */
   loading?: boolean;
-}
+};
 
-type Props = BaseProps & ButtonHTMLAttributes<HTMLButtonElement>;
+type Props = OwnProps & Omit<ComponentProps<"button">, keyof OwnProps>;
 
 export type { Props as default };

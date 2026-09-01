@@ -1,6 +1,6 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
-export interface CardsProps extends HTMLAttributes<HTMLDivElement> {
+type OwnProps = {
   /** The `Card` elements to lay out. */
   children?: ReactNode;
   /**
@@ -11,4 +11,7 @@ export interface CardsProps extends HTMLAttributes<HTMLDivElement> {
    * @default 1
    */
   cardSpan?: number;
-}
+};
+
+/** Props for the Cards group, extending the native props of its `<div>` root. */
+export type CardsProps = OwnProps & Omit<ComponentProps<"div">, keyof OwnProps>;

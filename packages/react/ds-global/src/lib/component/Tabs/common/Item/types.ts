@@ -7,6 +7,10 @@ import type { TabItem } from "../../types.js";
  * Not a public subcomponent — Tabs iterates `navigationRoot.items` and renders
  * one of these per child. Kept internal so router integration lives in one
  * place (the `LinkComponent` on Tabs), mirroring SideNavigation.
+ *
+ * Exempt from the native-prop extension convention: it is an internal renderer
+ * that derives its `<li>` from the `item` model rather than forwarding native
+ * props from the caller.
  */
 export interface ItemProps {
   /** The tab's navigation item. */

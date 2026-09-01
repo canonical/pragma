@@ -1,15 +1,18 @@
-import type { HTMLAttributes, ReactElement } from "react";
+import type { ComponentProps, ReactElement } from "react";
 import type { ItemProps } from "./common/Item/types.js";
 
-/**
- * Props for the Accordion component
- */
-export interface AccordionProps extends HTMLAttributes<HTMLDivElement> {
+type OwnProps = {
   /**
    * Accordion.Item elements to render
    */
   children: ReactElement<ItemProps> | ReactElement<ItemProps>[];
-}
+};
+
+/**
+ * Props for the Accordion component
+ */
+export type AccordionProps = OwnProps &
+  Omit<ComponentProps<"div">, keyof OwnProps>;
 
 /**
  * Accordion component type with attached subcomponents

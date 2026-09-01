@@ -1,12 +1,6 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
-/**
-    We have used the `HTMLDivElement` as a default props base.
-    If your component is based on a different HTML element, please update it accordingly.
-    See https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API for a full list of HTML elements interfaces.
-*/
-export interface SkipLinkProps
-  extends Omit<HTMLAttributes<HTMLAnchorElement>, "href" | "tabIndex"> {
+type OwnProps = {
   /** The contents of the skip link itself */
   children?: ReactNode;
   /**
@@ -14,4 +8,16 @@ export interface SkipLinkProps
    * @default "main"
    * */
   mainId?: string;
-}
+};
+
+/**
+ * Props for the SkipLink component, extending the native props of its `<a>`
+ * root.
+ *
+ * The native `href` and `tabIndex` are deliberately excluded: the DS drives
+ * both — `href` is derived from `mainId` (`#${mainId}`) so the link always
+ * targets the main content element, and `tabIndex` is fixed at `0` so the skip
+ * link stays reachable as the first stop in the tab order.
+ */
+export type SkipLinkProps = OwnProps &
+  Omit<ComponentProps<"a">, keyof OwnProps | "href" | "tabIndex">;

@@ -1,8 +1,8 @@
 import type { ModifierFamily } from "@canonical/ds-types";
-import type React from "react";
+import type { ComponentProps, MouseEventHandler } from "react";
 
 /**
- * Props for the `Chip` component.
+ * The Chip's DS-owned props, shared by both of its possible roots.
  */
 export interface ChipProps {
   /**
@@ -29,21 +29,31 @@ export interface ChipProps {
   /** The chip’s value text. */
   value?: string;
 
-  /** Called when the chip is clicked. */
-  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
-
   /** Called when the chip is dismissed. */
   onDismiss?: () => void;
-
-  /** Unique identifier for the chip. */
-  id?: string;
-
-  /** Additional CSS class names. */
-  className?: string;
-
-  /** Inline styles for the chip. */
-  style?: React.CSSProperties;
 }
 
-export type ChipPropsType = ChipProps &
-  Omit<React.HTMLAttributes<HTMLButtonElement>, "children">;
+/**
+ * Interactive chip — rendered as a `<button>` when an `onClick` handler is
+ * supplied, so it extends native `<button>` props.
+ */
+type InteractiveChipProps = ChipProps & {
+  /** Called when the chip is clicked. Its presence makes the chip a button. */
+  onClick: MouseEventHandler<HTMLButtonElement>;
+} & Omit<ComponentProps<"button">, keyof ChipProps | "onClick" | "children">;
+
+/**
+ * Static chip — rendered as a `<span>` when no `onClick` is supplied, so it
+ * extends native `<span>` props.
+ */
+type StaticChipProps = ChipProps & {
+  /** A static chip has no click handler and renders a `<span>`. */
+  onClick?: undefined;
+} & Omit<ComponentProps<"span">, keyof ChipProps | "onClick" | "children">;
+
+/**
+ * Chip props: a discriminated union on `onClick` (issue #628 precedent). A chip
+ * with an `onClick` renders a `<button>` and extends button props; one without
+ * renders a `<span>` and extends span props. No polymorphic `as` generic.
+ */
+export type ChipPropsType = InteractiveChipProps | StaticChipProps;

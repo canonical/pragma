@@ -1,11 +1,7 @@
 import type { ModifierFamily } from "@canonical/ds-types";
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
-/**
- * Props for the `Announcement` component.
- */
-export interface AnnouncementProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, "children"> {
+type OwnProps = {
   /**
    * Criticality modifier — the type of announcement. Drives the icon,
    * side-bar colour, background, and text treatment via the criticality
@@ -22,7 +18,10 @@ export interface AnnouncementProps
 
   /** The announcement body — its detailed content. */
   children: ReactNode;
+};
 
-  /** Additional CSS class names. */
-  className?: string;
-}
+/**
+ * Props for the `Announcement` component.
+ */
+export type AnnouncementProps = OwnProps &
+  Omit<ComponentProps<"div">, keyof OwnProps>;

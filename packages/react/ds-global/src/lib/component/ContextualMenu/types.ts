@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import type {
   MenuItem,
   UseContextualMenuProps,
@@ -8,12 +8,10 @@ import type {
 
 export type { MenuItem } from "../../hooks/index.js";
 
-export interface ContextualMenuProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, "onSelect">,
-    Pick<
-      UseContextualMenuProps,
-      "distance" | "gutter" | "maxWidth" | "autoFit" | "wrap"
-    > {
+type OwnProps = Pick<
+  UseContextualMenuProps,
+  "distance" | "gutter" | "maxWidth" | "autoFit" | "wrap"
+> & {
   /**
    * The trigger content, rendered inside the trigger button. Clicking it opens
    * the menu.
@@ -38,4 +36,7 @@ export interface ContextualMenuProps
   open?: boolean;
   /** Called when the open state changes. */
   onOpenChange?: (open: boolean) => void;
-}
+};
+
+export type ContextualMenuProps = OwnProps &
+  Omit<ComponentProps<"div">, keyof OwnProps>;
