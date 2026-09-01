@@ -470,6 +470,51 @@ describe("compose full construction", () => {
     expect(Object.hasOwn(queryFields, "ontologies")).toBe(true);
   });
 
+  it("C002 — a Query EXTENSION named after an Object.prototype member is no conflict", () => {
+    // The third map carrying the same hazard, and the one the case above does
+    // not reach: it exercises the object-type extension merge (ToString) and
+    // the Query plan merge (Query.toString), but never the Query EXTENSION
+    // merge. That map is a plain object too, so `valueOf` — a legal extension
+    // field name colliding with no TBox root and no generated root — reads as
+    // occupied under a truthy `fields[name]` and is dropped under a fatal C002
+    // that no rename on the ontology side can clear.
+    //
+    // Both directions ride one compose, because "no C002" on its own would
+    // also be satisfied by deleting the check outright: `ontologies` IS a TBox
+    // root, so the conflict it names is real and must still be caught while
+    // `valueOf` passes. Own-property is what separates the two.
+    const plan = emptyPlan({
+      types: new Map([
+        [
+          "Thing",
+          objectPlan("Thing", new Map([["name", scalarField("name")]])),
+        ],
+      ]),
+    });
+    const extensions: SchemaExtensionsInput = {
+      Query: {
+        valueOf: { type: GraphQLString },
+        ontologies: { type: GraphQLString },
+      },
+    };
+    const { output, diagnostics } = compose(plan, { extensions });
+    expect(output.schema).not.toBeNull();
+    const queryFields = output.schema?.getQueryType()?.getFields() ?? {};
+    // The inherited name survives, and reaches the printed SDL.
+    expect(Object.hasOwn(queryFields, "valueOf")).toBe(true);
+    expect(output.sdl).toContain("valueOf: String");
+    // The genuine conflict on the same map is still fatal — exactly one C002,
+    // naming that field — and the TBox root it collided with is the survivor,
+    // not the planted String.
+    const c002 = diagnostics.filter((d) => d.code === "C002");
+    expect(c002).toHaveLength(1);
+    expect(c002[0]?.severity).toBe("error");
+    expect(c002[0]?.message).toBe(
+      "extension field Query.ontologies conflicts with a generated field",
+    );
+    expect(String(queryFields.ontologies?.type)).toBe("[Ontology!]!");
+  });
+
   it("C001 — object-form extension references an unknown type", () => {
     const thing: TypePlan = {
       name: "Thing",
