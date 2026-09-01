@@ -169,13 +169,13 @@ Annotation resolution reports in the **A band**; naming and collisions report in
 | Code | Severity | Meaning |
 |---|---|---|
 | `A001` | **error** | Two sources at one precedence level disagree on one term for one target. Never resolved by an alphabetical tiebreak (B.03, R-9). |
-| `A002` | **error** | The term was applied to an illegal target — a class-only term on a property, or the reverse. |
+| `A002` | **error** | The term's **target does not resolve** — it is not a declared class or property of the compiled ontology, or it sits in a namespace hosting none. Also raised when a `graphql:prefix` subject resolves to no discovered namespace. |
 | `A003` | **error** | The value has the wrong type for the term, or is empty where a value is required. |
-| `A004` | warning | An unrecognised term in the `graphql:` namespace — a typo, or a term this release does not mint. |
+| `A004` | warning | Two cases, both leaving the annotation ignored: an **unrecognised term** in the `graphql:` namespace — a typo, or one this release does not mint — or a recognised term on the **wrong kind of target**, such as a class-only term applied to a property. |
 | `A005` | warning | Workspace-local configuration shadows an upstream annotation. A deliberate asymmetry: the draft-locally workflow stays a warning where a same-level conflict is an error. |
 | `A006` | info | Annotations are present but were not consulted, because the mode is `auto`. |
 | `A007` | info | Under `explicit`, the classes the allowlist excluded — aggregated, one diagnostic. |
-| `A008` | warning | An annotation resolved but had no effect. |
+| `A008` | warning | Under `explicit`, a field is **omitted because its range is unexposed** — its range class carries no `graphql:expose`, or no member of its union range does. |
 | `M001` | **error** | A naming collision the compiler cannot resolve. |
 | `M002` | warning | A name is not a legal GraphQL name and was sanitized — a class local name, or a `graphql:name` value. Includes the introspection-reserved leading `__`, whose underscore run collapses to one. |
 | `M003` | warning | *(retired with the config-mapping surface it described.)* |

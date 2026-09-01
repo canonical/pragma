@@ -471,4 +471,8 @@ The intermediate representations (`RawExtraction`, `OntologyIR`, `MappedIR`) are
 
 The emitted base is additionally gated by `@canonical/prism-contract` — semantic subsumption via `findBreakingChanges` over the **live emitted SDL** of every fixture, with the SDL crossing the package boundary as a string, plus two controls: `prefixing: "all"` still conforms (the contract names no ontology terms), and `relay: false` fails by exactly one violation (`FIELD_REMOVED` on `Query.node`).
 
-**That gate does not live here.** `@canonical/prism-contract` is not a dependency of this package and `contract.test.ts` is not in this tree: the contract is authored by the documentation site, not by the compiler, and a compiler that vendored its own conformance check would be marking its own homework. The gate ships with the contract package and runs against this compiler's output from there.
+**Where that gate lives depends on whether the contract package exists.** The contract is authored by the documentation site, not by the compiler, and a compiler that vendored its own conformance check would be marking its own homework — so the gate belongs with the contract, not here.
+
+On `main` the contract package does not exist, so neither does the gate: `@canonical/prism-contract` is absent from this package's dependencies and there is no `contract.test.ts`.
+
+On `feat/prism-docsite` the package **does** exist, so both are present: `@canonical/prism-contract` is a devDependency and `src/testing/integration/contract.test.ts` runs the gate against this compiler's live output. That is the only difference between this package on the two branches, and it disappears when the contract package lands on `main`.
