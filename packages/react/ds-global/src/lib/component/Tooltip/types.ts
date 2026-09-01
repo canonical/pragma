@@ -1,11 +1,4 @@
-import type {
-  ComponentProps,
-  CSSProperties,
-  FocusEventHandler,
-  PointerEventHandler,
-  ReactNode,
-  RefObject,
-} from "react";
+import type { ComponentProps, CSSProperties, ReactNode } from "react";
 import type { UseDisclosureProps } from "../../hooks/index.js";
 
 /**
