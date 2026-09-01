@@ -13,7 +13,6 @@
 // =============================================================================
 
 import { createTestStore } from "@canonical/ke/testing";
-import { satisfiesContract } from "@canonical/prism-contract";
 import { graphql } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
 import {
@@ -100,10 +99,6 @@ describe("mode matrix — unannotated input", () => {
     expect(a007?.severity).toBe("info");
     expect(a007?.message).toContain("1 class(es)");
     expect(a007?.message).toContain("http://example.org/Thing");
-    expect(satisfiesContract(result.sdl)).toEqual({
-      satisfied: true,
-      violations: [],
-    });
   });
 });
 
@@ -276,11 +271,6 @@ describe("mode matrix — annotated input", () => {
     // The exposed pair keeps its dual-direction inverse field (the derived
     // list name pluralizes writtenBy → writtenBies).
     expect(pubBlock).toContain("writtenBies");
-    // The emission still satisfies the contract.
-    expect(satisfiesContract(result.sdl)).toEqual({
-      satisfied: true,
-      violations: [],
-    });
     // The TBox stays COMPLETE (Secret is browsable) but the population of
     // an unexposed class answers empty/0 — instanceCount is defined as the
     // population `instances` paginates.

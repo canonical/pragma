@@ -23,6 +23,22 @@ describe("graphiqlHtml", () => {
     expect(html).not.toContain('url: "/graph"ql"');
   });
 
+  it("escapes < so a </script> endpoint cannot break out of the script", () => {
+    // JSON escaping is a JAVASCRIPT-level defence, and the element boundary is
+    // an HTML-level question: the tokenizer ends a <script> on the raw text
+    // "</script", which JSON.stringify preserves verbatim. Escaping "<" is
+    // what actually keeps a hostile endpoint inside the string literal.
+    const html = graphiqlHtml("/graphql</script><script>alert(1)</script>");
+    // The payload contributed no element boundary: the four closing tags are
+    // the three pinned UMD bundles plus this page's own inline script.
+    expect(html.match(/<\/script>/g)).toHaveLength(4);
+    expect(html).not.toContain("<script>alert(1)");
+    // …and the value still round-trips to the endpoint the caller passed.
+    expect(html).toContain(
+      String.raw`createFetcher({ url: "/graphql\u003c/script>\u003cscript>alert(1)\u003c/script>" })`,
+    );
+  });
+
   it("ships the bootstrapping markers the page needs to render", () => {
     const html = graphiqlHtml("/graphql");
     // A complete standalone document …
