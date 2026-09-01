@@ -345,7 +345,20 @@ describe("resource surface over the server (embedded pack)", () => {
   let harness: Awaited<ReturnType<typeof projectMcp>>;
   beforeAll(async () => {
     harness = await projectMcp(capabilities);
-  });
+    // Boot the store HERE, not in whichever test happens to read first.
+    //
+    // `createLazyStore` memoises the boot PROMISE, and vitest's per-test
+    // timeout aborts the test without aborting the work — so a cold boot that
+    // overruns is charged partly to the test that triggered it and partly to
+    // the next one, which merely awaits the same promise. That reads as a
+    // sudden per-read regression and is nothing of the kind; it cost a real
+    // investigation to find that out.
+    //
+    // Paying it in the hook attributes it where it belongs, keeps every `it`
+    // in this file measuring what it claims to, and bounds it by hookTimeout
+    // rather than by a 5 s default that pack growth will keep outgrowing.
+    await harness.readResource(BUTTON_URI);
+  }, 60_000);
   afterAll(async () => {
     await harness.cleanup();
   });
