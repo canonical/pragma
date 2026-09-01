@@ -1,0 +1,18 @@
+import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
+
+/** @typedef {import("@sveltejs/vite-plugin-svelte").SvelteConfig} SvelteConfig */
+/** @typedef {import("@sveltejs/package").Options} SveltePackageOptions */
+
+/**
+ * `svelte-package` and `svelte-check` both read this file. `kit.outDir` keeps
+ * the packaging scratch tree out of the source directories even though this
+ * is a plain library and not a SvelteKit app.
+ *
+ * @type {SvelteConfig & SveltePackageOptions}
+ */
+export default {
+  preprocess: vitePreprocess(),
+  kit: {
+    outDir: ".build-cache",
+  },
+};

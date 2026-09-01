@@ -1,0 +1,15 @@
+import { render } from "@canonical/svelte-ssr-test";
+import { describe, expect, it } from "vitest";
+import Component from "./Example.svelte";
+
+describe("Example SSR", () => {
+  it("renders without throwing", () => {
+    expect(() => render(Component, { props: {} })).not.toThrow();
+  });
+
+  it("renders the default greeting", () => {
+    const page = render(Component, { props: {} });
+
+    expect(page.getByText("Hello from <%= shortName %>")).toBeDefined();
+  });
+});

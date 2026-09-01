@@ -1,0 +1,17 @@
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import Example from "./Example.js";
+
+describe("Example", () => {
+  it("renders its default greeting", () => {
+    render(<Example />);
+
+    expect(screen.getByText("Hello from <%= shortName %>")).toBeDefined();
+  });
+
+  it("renders children when given them", () => {
+    render(<Example>Custom content</Example>);
+
+    expect(screen.getByText("Custom content")).toBeDefined();
+  });
+});

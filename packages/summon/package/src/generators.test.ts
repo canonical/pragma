@@ -24,6 +24,7 @@ interface Manifest {
   scripts: Record<string, string>;
   devDependencies: Record<string, string>;
   dependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
 }
 
 /** Render the package.json template the way the generator does, and parse it. */
@@ -31,14 +32,22 @@ const renderManifest = (
   answers: PackageAnswers,
   monorepoInfo: MonorepoInfo = { isMonorepo: false },
 ): Manifest => {
-  const source = readFileSync(
-    new URL("./templates/package.json.ejs", import.meta.url),
-    "utf-8",
-  );
-  return JSON.parse(
-    renderString(source, createTemplateContext(answers, monorepoInfo)),
-  );
+  const ctx = createTemplateContext(answers, monorepoInfo);
+  // The Svelte arm has a manifest of its own — the generator picks it the
+  // same way, off the RESOLVED framework rather than the raw answer.
+  const templatePath =
+    ctx.framework === "svelte"
+      ? "./templates/svelte/package.json.ejs"
+      : "./templates/package.json.ejs";
+  const source = readFileSync(new URL(templatePath, import.meta.url), "utf-8");
+  return JSON.parse(renderString(source, ctx));
 };
+
+/** The paths a generated package writes, in dry-run order. */
+const generatedPaths = (answers: PackageAnswers): string[] =>
+  dryRun(generator.generate(answers))
+    .effects.filter((e) => e._tag === "WriteFile")
+    .map((e) => (e as { path: string }).path);
 
 describe("package generator", () => {
   it("has correct meta information", () => {
@@ -53,9 +62,22 @@ describe("package generator", () => {
     expect(promptNames).toContain("name");
     expect(promptNames).toContain("type");
     expect(promptNames).toContain("description");
-    expect(promptNames).toContain("withReact");
+    expect(promptNames).toContain("framework");
     expect(promptNames).toContain("withCli");
     expect(promptNames).toContain("runInstall");
+  });
+
+  it("offers the framework as a three-valued select", () => {
+    // A boolean cannot express three frameworks; the CLI flag surface is
+    // derived from the prompt, so the prompt is where the shape is decided.
+    const framework = generator.prompts.find((p) => p.name === "framework");
+
+    expect(framework?.type).toBe("select");
+    expect(framework?.choices?.map((c) => c.value)).toEqual([
+      "none",
+      "react",
+      "svelte",
+    ]);
   });
 
   it("generates expected files for tool-ts package", () => {
@@ -63,7 +85,7 @@ describe("package generator", () => {
       name: "@canonical/my-tool",
       type: "tool-ts",
       description: "My tool",
-      withReact: false,
+      framework: "none",
       withStorybook: false,
       withCli: false,
       withPrTemplate: false,
@@ -94,7 +116,7 @@ describe("package generator", () => {
       name: "@canonical/my-lib",
       type: "library",
       description: "My library",
-      withReact: false,
+      framework: "none",
       withStorybook: false,
       withCli: false,
       withPrTemplate: false,
@@ -118,7 +140,7 @@ describe("package generator", () => {
       name: "@canonical/my-cli",
       type: "tool-ts",
       description: "My CLI",
-      withReact: false,
+      framework: "none",
       withStorybook: false,
       withCli: true,
       withPrTemplate: false,
@@ -140,7 +162,7 @@ describe("package generator", () => {
       name: "@canonical/my-styles",
       type: "css",
       description: "My styles",
-      withReact: false,
+      framework: "none",
       withStorybook: false,
       withCli: false,
       withPrTemplate: false,
@@ -168,7 +190,7 @@ describe("package generator", () => {
       name: "@canonical/my-pkg",
       type: "tool-ts",
       description: "",
-      withReact: false,
+      framework: "none",
       withStorybook: false,
       withCli: false,
       withPrTemplate: false,
@@ -192,7 +214,7 @@ describe("generated manifest", () => {
     name: "@canonical/my-lib",
     type: "library",
     description: "My library",
-    withReact: false,
+    framework: "none",
     withStorybook: false,
     withCli: false,
     withPrTemplate: false,
@@ -250,6 +272,114 @@ describe("generated manifest", () => {
   });
 });
 
+describe("framework template sets", () => {
+  const library: PackageAnswers = {
+    name: "@canonical/my-ui",
+    type: "library",
+    description: "My UI",
+    framework: "none",
+    withStorybook: false,
+    withCli: false,
+    withPrTemplate: false,
+    runInstall: false,
+  };
+
+  it("emits a react sample component and its test", () => {
+    const paths = generatedPaths({ ...library, framework: "react" });
+
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        "my-ui/package.json",
+        "my-ui/tsconfig.json",
+        "my-ui/tsconfig.build.json",
+        "my-ui/biome.json",
+        "my-ui/vitest.config.ts",
+        "my-ui/src/index.ts",
+        "my-ui/src/Example/index.ts",
+        "my-ui/src/Example/types.ts",
+        "my-ui/src/Example/Example.tsx",
+        "my-ui/src/Example/Example.test.tsx",
+        "my-ui/README.md",
+      ]),
+    );
+  });
+
+  it("emits the full @sveltejs/package toolchain for a svelte library", () => {
+    const paths = generatedPaths({ ...library, framework: "svelte" });
+
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        "my-ui/package.json",
+        "my-ui/svelte.config.js",
+        "my-ui/vite.config.ts",
+        "my-ui/tsconfig.json",
+        "my-ui/tsconfig.build.json",
+        "my-ui/biome.json",
+        "my-ui/vitest-setup-client.ts",
+        "my-ui/src/lib/index.ts",
+        "my-ui/src/lib/greeting.ts",
+        "my-ui/src/lib/greeting.test.ts",
+        "my-ui/src/lib/Example/index.ts",
+        "my-ui/src/lib/Example/types.ts",
+        "my-ui/src/lib/Example/Example.svelte",
+        "my-ui/src/lib/Example/Example.ssr.test.ts",
+        "my-ui/src/lib/Example/Example.svelte.test.ts",
+        "my-ui/README.md",
+      ]),
+    );
+    // svelte-package reads src/lib; nothing lands directly in src/.
+    expect(paths).not.toContain("my-ui/src/index.ts");
+    expect(paths).not.toContain("my-ui/vitest.config.ts");
+  });
+
+  it("ships one runnable test in every TypeScript arm", () => {
+    // `vitest run` exits non-zero when it finds no test files, so a scaffold
+    // whose `bun run test` passes is a scaffold that ships a test.
+    for (const framework of ["none", "react", "svelte"] as const) {
+      const paths = generatedPaths({ ...library, framework });
+      expect(paths.some((p) => p.includes(".test."))).toBe(true);
+    }
+  });
+
+  it("warns and coerces instead of throwing on an impossible combination", () => {
+    const result = dryRun(
+      generator.generate({
+        ...library,
+        type: "tool-ts",
+        framework: "react",
+      }),
+    );
+    const warnings = result.effects.filter(
+      (e) => e._tag === "Log" && (e as { level?: string }).level === "warn",
+    );
+
+    expect(warnings).toHaveLength(1);
+    // …and the run still produces the plain tool-ts package, rather than
+    // aborting: no build config, and the sample module rather than a
+    // component tree.
+    const paths = generatedPaths({
+      ...library,
+      type: "tool-ts",
+      framework: "react",
+    });
+    expect(paths).toContain("my-ui/src/index.ts");
+    expect(paths).toContain("my-ui/src/index.test.ts");
+    expect(paths.some((p) => p.endsWith(".tsx"))).toBe(false);
+    expect(paths.some((p) => p.endsWith("tsconfig.build.json"))).toBe(false);
+  });
+
+  it("coerces svelte + --with-cli to a svelte library with no bin", () => {
+    const paths = generatedPaths({
+      ...library,
+      framework: "svelte",
+      withCli: true,
+    });
+
+    expect(paths.some((p) => p.endsWith("cli.ts"))).toBe(false);
+    expect(paths).toContain("my-ui/src/lib/Example/Example.svelte");
+  });
+});
+
 describe("generated manifest — validity matrix", () => {
   // Every supported flag combination must render parseable JSON whose
   // scripts, dependencies, and published files agree with each other. This is
@@ -262,30 +392,35 @@ describe("generated manifest — validity matrix", () => {
     runInstall: false,
   } as const;
   const types = ["tool-ts", "library", "css"] as const;
+  const frameworks = ["none", "react", "svelte"] as const;
   const bools = [false, true] as const;
 
   const combos = types.flatMap((type) =>
-    bools.flatMap((withReact) =>
+    frameworks.flatMap((framework) =>
       bools.flatMap((withStorybook) =>
-        bools.map((withCli) => ({ type, withReact, withStorybook, withCli })),
+        bools.map((withCli) => ({ type, framework, withStorybook, withCli })),
       ),
     ),
   );
 
   it.each(combos)("renders a consistent manifest for %j", ({
     type,
-    withReact,
+    framework,
     withStorybook,
     withCli,
   }) => {
     // renderManifest JSON.parses — an unparseable render fails here.
-    const manifest = renderManifest({
+    const answers = {
       ...base,
       type,
-      withReact,
+      framework,
       withStorybook,
       withCli,
-    });
+    };
+    const manifest = renderManifest(answers);
+    // Coercions the guard applies before any template sees the answers.
+    const isSvelte = framework === "svelte" && type === "library";
+    const hasCli = withCli && !isSvelte;
     const devDependencies = manifest.devDependencies ?? {};
     const allDependencies = {
       ...devDependencies,
@@ -300,18 +435,34 @@ describe("generated manifest — validity matrix", () => {
     if (withStorybook) {
       expect(manifest.scripts["build:storybook"]).toBeDefined();
       expect(allDependencies.storybook).toBeDefined();
-      expect(allDependencies["@storybook/addon-themes"]).toBeDefined();
-      expect(allDependencies["@storybook/react-vite"]).toBeDefined();
       expect(allDependencies["@canonical/storybook-config"]).toBeDefined();
       expect(allDependencies["@canonical/styles-debug"]).toBeDefined();
-      // The react renderer needs react even when the package itself is not
-      // a react package.
-      expect(allDependencies.react).toBeDefined();
-      expect(allDependencies["react-dom"]).toBeDefined();
+      if (isSvelte) {
+        expect(allDependencies["@storybook/svelte-vite"]).toBeDefined();
+        expect(allDependencies["@storybook/addon-svelte-csf"]).toBeDefined();
+      } else {
+        expect(allDependencies["@storybook/react-vite"]).toBeDefined();
+        // The react renderer needs react even when the package itself is not
+        // a react package.
+        expect(allDependencies.react).toBeDefined();
+        expect(allDependencies["react-dom"]).toBeDefined();
+      }
+    }
+
+    // Every test runner named by a script must be installable.
+    if (manifest.scripts.test?.includes("vitest")) {
+      expect(allDependencies.vitest).toBeDefined();
+    }
+    if (isSvelte) {
+      expect(manifest.scripts.build).toContain("svelte-package");
+      expect(allDependencies["@sveltejs/package"]).toBeDefined();
+      expect(manifest.scripts["check:ts"]).toContain("svelte-check");
+      expect(allDependencies["svelte-check"]).toBeDefined();
+      expect(manifest.peerDependencies?.svelte).toBeDefined();
     }
 
     // A bin entry must point inside the published file set.
-    if (withCli && type !== "css") {
+    if (hasCli && type !== "css") {
       const binPath = Object.values(manifest.bin ?? {})[0];
       expect(binPath).toBeDefined();
       expect(

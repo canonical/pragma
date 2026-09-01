@@ -1,0 +1,12 @@
+import type { ExampleProps } from "./types.js";
+
+/**
+ * A sample component, so the scaffold ships something that renders and
+ * something that tests it. Replace it with this package's first real
+ * component.
+ */
+const Example = ({ children, ...rest }: ExampleProps) => (
+  <p {...rest}>{children ?? "Hello from <%= shortName %>"}</p>
+);
+
+export default Example;
