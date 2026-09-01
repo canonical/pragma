@@ -42,6 +42,13 @@ const ISSUES_URL = identity.issuesUrl;
 const VERSION: string = pkg.version;
 
 /**
+ * The Node.js range this distribution supports, read from `engines.node` in
+ * package.json so the manifest stays the single statement of the floor. The
+ * doctor check quotes it, and `isSupportedNodeVersion` is pinned to it by test.
+ */
+const SUPPORTED_NODE_RANGE: string = pkg.engines.node;
+
+/**
  * The project config filename the walker looks for and every surface that
  * quotes it — diagnostics, the onboarding note, the generated reference, the
  * surface covenant — names. It lives HERE rather than beside the walker so the
@@ -116,5 +123,6 @@ export {
   PROGRAM_LOGO,
   PROJECT_CONFIG_FILENAME,
   RECOVERY_CLI_PREFIX,
+  SUPPORTED_NODE_RANGE,
   VERSION,
 };
