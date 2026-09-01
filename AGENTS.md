@@ -21,8 +21,11 @@ file is the PR workflow contract.
 - **Keep commits atomic.** One logical change per commit; the diff should be reviewable
   on its own and tell a single story. Bundling unrelated items into one commit/PR is
   allowed but should be **rare** and called out in the PR body (a "drive-by" line).
-- The PR also needs one of these **labels**: `Feature 🎁`, `Breaking Change 💣`,
-  `Bug 🐛`, `Documentation 📝`, `Maintenance 🔨`.
+- The allowed types are `feat`, `fix`, `docs`, `refactor`, `chore`, `test`, `ci` and
+  `revert`; the **type label** is derived from the title by CI, so never add one by hand.
+  A breaking change is marked with `!` in the title (`feat(router)!: …`), which is what
+  applies the `breaking` label. Every other label is a human judgement — see
+  [docs/references/LABELS.md](docs/references/LABELS.md).
 - The release CHANGELOG is Lerna-generated from commit history — write commit subjects
   for the changelog reader, not just yourself.
 
@@ -193,7 +196,7 @@ precedent.
   itself. The same goes for commit subjects, which Lerna puts in the CHANGELOG.
   Internal sequencing stays in the planning repo; when merge order matters, name
   the PR that must land first **by number** and say why in one line.
-- Add `no visual change` to skip Chromatic when there's no visual diff.
+- Add `Chromatic: skip` to skip Chromatic when there's no visual diff.
 - New package? First-time publish is manual (`npm publish --access public` from the
   package dir); verify with `bun run publish:status` from the root.
 - **New packages need OIDC trusted-publisher setup — a manual human step, agents cannot

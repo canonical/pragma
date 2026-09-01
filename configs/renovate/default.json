@@ -2,7 +2,6 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
   "schedule": ["before 9am on monday"],
-  "labels": ["Maintenance 🔨"],
   "semanticCommits": "enabled",
   "packageRules": [
     {
@@ -67,7 +66,7 @@
         "@vitest/{/,}**",
         "renovate"
       ],
-      "addLabels": ["no visual change"]
+      "addLabels": ["Chromatic: skip"]
     },
     {
       "description": "Majors carry an impact review: the generated body is often truncated, and PR CI rarely exercises the release path, so the breaking surface has to be triaged by hand",

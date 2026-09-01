@@ -23,6 +23,7 @@ jobs:
     if: >-
       github.event_name != 'pull_request' ||
       (!github.event.pull_request.draft &&
+      !contains(github.event.pull_request.labels.*.name, 'Chromatic: skip') &&
       !contains(github.event.pull_request.labels.*.name, 'no visual change'))
     runs-on: ubuntu-latest
     steps:
