@@ -88,6 +88,35 @@ export interface ComposeOptions {
 }
 
 /**
+ * Encode one provenance value for the line-oriented `# key: value` header.
+ *
+ * `provider` and `revision` are free-form consumer strings — a CI variable, a
+ * `git describe` result — and the header is not merely line-FORMATTED, it is
+ * line-DELIMITED: its lines are GraphQL comments, and a comment runs to the
+ * next line terminator. A value carrying LF or CR therefore does not just
+ * look wrong, it ENDS the comment, and everything after it is parsed as SDL.
+ * A revision of `1\ntype Evil { x: String }` would make `sdlOutput` describe
+ * a type the executable schema does not have — an SDL disagreeing with its
+ * own schema is the one failure the canonical SDL exists to prevent.
+ *
+ * The terminators are ESCAPED, not rejected. A stray newline in a CI variable
+ * is a cosmetic mistake, and refusing the compile over one would be out of
+ * proportion when the header stays complete, honest and diffable once the
+ * value is escaped — the seven-line block is preserved either way, and the
+ * operator can still read what was configured. The backslash is escaped
+ * FIRST so the encoding stays unambiguous: a revision containing a literal
+ * two-character `\n` reads back as `\\n`, distinct from an encoded newline.
+ *
+ * LF and CR are the whole hazard: GraphQL's LineTerminator is exactly those
+ * two (U+2028/U+2029 are not line terminators there), so nothing else in a
+ * value can close a comment. `mode` and `prefixing` are typed unions that
+ * cannot carry either, and go through here anyway — the block's line count
+ * should be a property of this builder, not of its callers' type discipline.
+ */
+const encodeHeaderValue = (value: string): string =>
+  value.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/\r/g, "\\r");
+
+/**
  * Build the provenance header prepended to the printed SDL. Pure.
  *
  * A banner line, then one `# key: value` line per provenance fact, in the
@@ -108,11 +137,11 @@ const buildProvenanceHeader = (options: ComposeOptions): string =>
   [
     "# ke-graphql · canonical SDL",
     `# graphql-schema-spec: ${GRAPHQL_SCHEMA_SPEC}`,
-    `# provider: ${options.provider ?? DEFAULT_PROVIDER}`,
-    `# mode: ${options.mode ?? DEFAULT_MODE}`,
+    `# provider: ${encodeHeaderValue(options.provider ?? DEFAULT_PROVIDER)}`,
+    `# mode: ${encodeHeaderValue(options.mode ?? DEFAULT_MODE)}`,
     "# validated-store: false",
-    `# revision: ${options.revision ?? DEFAULT_REVISION}`,
-    `# prefixing: ${options.prefixing ?? DEFAULT_PREFIXING}`,
+    `# revision: ${encodeHeaderValue(options.revision ?? DEFAULT_REVISION)}`,
+    `# prefixing: ${encodeHeaderValue(options.prefixing ?? DEFAULT_PREFIXING)}`,
     "",
     "",
   ].join("\n");

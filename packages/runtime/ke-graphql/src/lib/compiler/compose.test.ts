@@ -377,6 +377,39 @@ describe("compose full construction", () => {
     ]);
   });
 
+  it("escapes line terminators in the stamped values", () => {
+    // provider and revision are free-form consumer strings (a CI variable, a
+    // git describe). The header's lines are GraphQL comments, which run to the
+    // next line terminator — so a raw newline does not merely look wrong, it
+    // CLOSES the comment and everything after it is parsed as SDL. That is an
+    // sdlOutput describing a type the executable schema does not have.
+    const plan = emptyPlan({
+      types: new Map([
+        [
+          "Thing",
+          objectPlan("Thing", new Map([["name", scalarField("name")]])),
+        ],
+      ]),
+    });
+    const { output } = compose(plan, {
+      provider: "ds\r\n# provider: spoofed",
+      revision: "type Evil { x: String }\nback\\slash",
+    });
+    // Still exactly seven lines, one fact each, in contract order.
+    expect(output.sdl.split("\n").slice(0, 7)).toEqual([
+      "# ke-graphql · canonical SDL",
+      "# graphql-schema-spec: 1",
+      "# provider: ds\\r\\n# provider: spoofed",
+      "# mode: annotated",
+      "# validated-store: false",
+      // the backslash is escaped too, so the encoding stays invertible
+      "# revision: type Evil { x: String }\\nback\\\\slash",
+      "# prefixing: none",
+    ]);
+    // …and the smuggled definition never became SDL syntax.
+    expect(output.sdl).not.toMatch(/^type Evil/m);
+  });
+
   it("C002 — a generated root field colliding with a TBox root field is dropped", () => {
     // The plan-vs-tbox merge gets the SAME treatment as a consumer extension:
     // error + drop, the TBox field survives. (Silently, plan.queryFields used
