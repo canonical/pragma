@@ -32,7 +32,7 @@ export interface Sortable {
 
 /** A paginated window over a URI list, computed before entity hydration. */
 export interface UriPage {
-  /** The page's URIs, in cursor domain (prefixed form). */
+  /** The page's URIs — absolute IRIs, the cursor and loader-key currency. */
   window: string[];
   hasNextPage: boolean;
   hasPreviousPage: boolean;

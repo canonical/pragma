@@ -10,7 +10,6 @@
 // =============================================================================
 
 import type { ExecutionResult, GraphQLSchema } from "graphql";
-import { toPrefixed } from "../dataloader/index.js";
 import type { CompilerContext, MappedIR } from "../shared/index.js";
 import {
   executeLocal,
@@ -38,7 +37,7 @@ const isUriVariable = (type: string): boolean =>
   type === "String!" || type === "String" || type === "ID!" || type === "ID";
 
 /**
- * List all named instance URIs (prefixed) across all concrete classes.
+ * List all named instance IRIs (absolute) across all concrete classes.
  *
  * @note Impure — loads every class's instance list from the store through
  * the context's list loader.
@@ -52,10 +51,7 @@ const listEntityUris = async (
     if (type.embeddable) {
       continue;
     }
-    const instances = await context.listLoader.load(type.owlUri);
-    for (const full of instances) {
-      uris.push(toPrefixed(full, mapped.namespaces));
-    }
+    uris.push(...(await context.listLoader.load(type.owlUri)));
   }
   return uris;
 };

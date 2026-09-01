@@ -110,5 +110,5 @@ console.info(`[demo] GraphiQL   http://localhost:${port}/graphql`);
 console.info("[demo] try:");
 console.info(
   `  curl -s http://localhost:${port}/graphql -H 'content-type: application/json' \\
-    -d '{"query":"{ books(first: 3) { edges { node { id title pageCount authors { edges { node { name } } } } } } }"}'`,
+    -d '{"query":"{ books(first: 3) { edges { node { uri title pageCount authors { edges { node { name } } } } } } }"}'`,
 );

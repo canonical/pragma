@@ -272,6 +272,204 @@ describe("compose full construction", () => {
     ).toContain("extension field Thing.name conflicts with a generated field");
   });
 
+  it("declares exactly uri + _meta on Node and accepts an implementor", () => {
+    // The converged base: Node is identity plus self-description and nothing
+    // else. Everything descriptive is reached through _meta, so a selection
+    // through Query.node(id:) needs no inline fragment for title/label.
+    const thing: TypePlan = {
+      name: "Thing",
+      interfaces: ["Node"],
+      fields: new Map<string, FieldPlan>([
+        [
+          "uri",
+          {
+            name: "uri",
+            type: { base: "ID", kind: "scalar", list: false, nonNull: true },
+          },
+        ],
+        [
+          "_meta",
+          {
+            name: "_meta",
+            type: {
+              base: "EntityMeta",
+              kind: "named",
+              list: false,
+              nonNull: true,
+            },
+          },
+        ],
+      ]),
+      embeddable: false,
+    };
+    const plan = emptyPlan({
+      types: new Map([["Thing", thing]]),
+      queryFields: new Map<string, FieldPlan>([
+        [
+          "node",
+          {
+            name: "node",
+            type: { base: "Node", kind: "named", list: false, nonNull: false },
+          },
+        ],
+      ]),
+    });
+
+    const { output, diagnostics } = compose(plan);
+    expect(diagnostics.filter((d) => d.code === "C003")).toHaveLength(0);
+    expect(output.schema).not.toBeNull();
+    const nodeBlock = /interface Node \{[^}]*\}/.exec(output.sdl)?.[0];
+    expect(nodeBlock).toContain("uri: ID!");
+    expect(nodeBlock).toContain("_meta: EntityMeta!");
+    // nothing else survives on the interface
+    for (const gone of ["id:", "kind:", "label:", "comment:", "definition:"]) {
+      expect(nodeBlock).not.toContain(gone);
+    }
+    expect(output.sdl).toContain("type Thing implements Node");
+  });
+
+  it("prepends the provenance header in contract key order, defaulted", () => {
+    const plan = emptyPlan({
+      types: new Map([
+        [
+          "Thing",
+          objectPlan("Thing", new Map([["name", scalarField("name")]])),
+        ],
+      ]),
+    });
+    const { output } = compose(plan);
+    expect(output.sdl.split("\n").slice(0, 7)).toEqual([
+      "# ke-graphql · canonical SDL",
+      "# graphql-schema-spec: 1",
+      "# provider: unknown",
+      "# mode: annotated",
+      "# validated-store: false",
+      "# revision: 0",
+      "# prefixing: none",
+    ]);
+    // the header is a comment block, so the SDL still parses as SDL
+    expect(output.sdl).toContain("type Thing {");
+  });
+
+  it("stamps the configured mode, provider, revision, and prefixing", () => {
+    const plan = emptyPlan({
+      types: new Map([
+        [
+          "Thing",
+          objectPlan("Thing", new Map([["name", scalarField("name")]])),
+        ],
+      ]),
+    });
+    const { output } = compose(plan, {
+      mode: "explicit",
+      provider: "ds",
+      revision: "a1b2c3",
+      prefixing: "all",
+    });
+    expect(output.sdl.split("\n").slice(0, 7)).toEqual([
+      "# ke-graphql · canonical SDL",
+      "# graphql-schema-spec: 1",
+      "# provider: ds",
+      "# mode: explicit",
+      "# validated-store: false",
+      "# revision: a1b2c3",
+      "# prefixing: all",
+    ]);
+  });
+
+  it("escapes line terminators in the stamped values", () => {
+    // provider and revision are free-form consumer strings (a CI variable, a
+    // git describe). The header's lines are GraphQL comments, which run to the
+    // next line terminator — so a raw newline does not merely look wrong, it
+    // CLOSES the comment and everything after it is parsed as SDL. That is an
+    // sdlOutput describing a type the executable schema does not have.
+    const plan = emptyPlan({
+      types: new Map([
+        [
+          "Thing",
+          objectPlan("Thing", new Map([["name", scalarField("name")]])),
+        ],
+      ]),
+    });
+    const { output } = compose(plan, {
+      provider: "ds\r\n# provider: spoofed",
+      revision: "type Evil { x: String }\nback\\slash",
+    });
+    // Still exactly seven lines, one fact each, in contract order.
+    expect(output.sdl.split("\n").slice(0, 7)).toEqual([
+      "# ke-graphql · canonical SDL",
+      "# graphql-schema-spec: 1",
+      "# provider: ds\\r\\n# provider: spoofed",
+      "# mode: annotated",
+      "# validated-store: false",
+      // the backslash is escaped too, so the encoding stays invertible
+      "# revision: type Evil { x: String }\\nback\\\\slash",
+      "# prefixing: none",
+    ]);
+    // …and the smuggled definition never became SDL syntax.
+    expect(output.sdl).not.toMatch(/^type Evil/m);
+  });
+
+  it("C002 — a generated root field colliding with a TBox root field is dropped", () => {
+    // The plan-vs-tbox merge gets the SAME treatment as a consumer extension:
+    // error + drop, the TBox field survives. (Silently, plan.queryFields used
+    // to overwrite ontologies/ontology/ontologyClass/ontologyProperty.)
+    const plan = emptyPlan({
+      types: new Map([
+        [
+          "Thing",
+          objectPlan("Thing", new Map([["name", scalarField("name")]])),
+        ],
+      ]),
+      queryFields: new Map<string, FieldPlan>([
+        ["ontologies", scalarField("ontologies")],
+      ]),
+    });
+    const { output, diagnostics } = compose(plan);
+    const c002 = diagnostics.filter((d) => d.code === "C002");
+    expect(c002).toHaveLength(1);
+    expect(c002[0]?.severity).toBe("error");
+    expect(c002[0]?.message).toContain("Query.ontologies");
+    expect(c002[0]?.message).toContain("TBox");
+    // The TBox field survives with the TBox type — not the planted String.
+    const field = output.schema?.getQueryType()?.getFields().ontologies;
+    expect(String(field?.type)).toBe("[Ontology!]!");
+  });
+
+  it("C002 — a field named after an Object.prototype member is no conflict", () => {
+    // Both field maps are plain objects and inherit Object.prototype, so a
+    // truthy `fields[name]` answers for toString/valueOf/constructor on a map
+    // that holds none of them. A class named `ToString` mints the perfectly
+    // legal root field `Query.toString`, and an extension may legitimately be
+    // called `valueOf`: neither collides with anything, and a fatal C002 here
+    // would drop a field with no rename that clears it. The own-property test
+    // is what separates those from a real conflict.
+    const plan = emptyPlan({
+      types: new Map([
+        [
+          "ToString",
+          objectPlan("ToString", new Map([["name", scalarField("name")]])),
+        ],
+      ]),
+      queryFields: new Map<string, FieldPlan>([
+        ["toString", scalarField("toString")],
+      ]),
+    });
+    const extensions: SchemaExtensionsInput = {
+      ToString: { valueOf: { type: GraphQLString } },
+    };
+    const { output, diagnostics } = compose(plan, { extensions });
+    expect(diagnostics.filter((d) => d.code === "C002")).toHaveLength(0);
+    expect(output.schema).not.toBeNull();
+    // Both survive: the generated root field and the extension field.
+    const queryFields = output.schema?.getQueryType()?.getFields() ?? {};
+    expect(Object.hasOwn(queryFields, "toString")).toBe(true);
+    expect(output.sdl).toContain("toString: String");
+    expect(output.sdl).toContain("valueOf: String");
+    // …and the TBox roots the generated field genuinely does not touch stay.
+    expect(Object.hasOwn(queryFields, "ontologies")).toBe(true);
+  });
+
   it("C001 — object-form extension references an unknown type", () => {
     const thing: TypePlan = {
       name: "Thing",

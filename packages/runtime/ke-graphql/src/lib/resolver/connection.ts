@@ -1,7 +1,9 @@
 // =============================================================================
 // Relay connection helpers.
 //
-// Cursor = base64(prefixed URI), opaque to clients. Items are sorted by URI
+// Cursor = base64(absolute IRI), opaque to clients — the exact string
+// EntityValue.uri carries and the loaders key on, so an `after:` cursor can
+// never drift from the identity it pages over. Items are sorted by URI
 // before slicing so cursors remain stable regardless of triple order or
 // Set-union order (root listings arrive name-sorted from the list loader and
 // keep that order). Per the Cursor Connections spec: negative first/last

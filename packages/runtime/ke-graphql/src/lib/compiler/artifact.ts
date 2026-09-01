@@ -58,6 +58,7 @@ export const serializeExtraction = (
       functionals: [...extraction.functionals],
       datatypes: extraction.datatypes,
       namespaces: [...extraction.namespaces],
+      deferredSyntheticNamespaces: extraction.deferredSyntheticNamespaces ?? [],
       shaclConstraints: extraction.shaclConstraints,
       unions: extraction.unions,
       instanceStats: [...extraction.instanceStats],
@@ -69,6 +70,7 @@ export const serializeExtraction = (
         [...values],
       ]),
       deepBlankNesting: extraction.deepBlankNesting,
+      graphqlAnnotations: extraction.graphqlAnnotations,
     } satisfies SerializedExtraction,
     null,
     0,
@@ -98,6 +100,10 @@ export const deserializeExtraction = (
       functionals: new Set(parsed.functionals),
       datatypes: parsed.datatypes,
       namespaces: new Map(parsed.namespaces),
+      // Artifacts serialized before the deferral existed lack the field, and
+      // [] is exactly the state they were built under — Pass 2 then raises
+      // nothing, which is what those artifacts already do today.
+      deferredSyntheticNamespaces: parsed.deferredSyntheticNamespaces ?? [],
       shaclConstraints: parsed.shaclConstraints,
       unions: parsed.unions,
       instanceStats: new Map(parsed.instanceStats),
@@ -108,6 +114,10 @@ export const deserializeExtraction = (
         parsed.annotations.map(([target, values]) => [target, new Map(values)]),
       ),
       deepBlankNesting: parsed.deepBlankNesting,
+      // Pre-vocabulary artifacts lack the field; [] keeps them booting
+      // (see the SerializedExtraction docstring; such artifacts are read under
+      // the current version label, their absent fields defaulting to empty).
+      graphqlAnnotations: parsed.graphqlAnnotations ?? [],
     },
   };
 };

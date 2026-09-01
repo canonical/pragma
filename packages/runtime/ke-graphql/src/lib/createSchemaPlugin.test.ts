@@ -24,13 +24,15 @@ import {
   serializeExtraction,
 } from "./compiler/index.js";
 import createSchemaPlugin from "./createSchemaPlugin.js";
-import type { EntityValue } from "./shared/index.js";
+import { type EntityValue, GRAPHQL } from "./shared/index.js";
 
-// A TTL whose compile emits diagnostics of every severity without failing
-// composition, plus at least one sourceless diagnostic so both arms of the
-// log line's `(source)` suffix are taken: V006 (info, boolean property),
-// V002 (warning, domainless property), three custom mappings onto one field
-// name (M001 error, non-fatal), and a union range (X003 info, sourceless).
+// A TTL whose compile emits diagnostics of every severity, plus at least one
+// sourceless diagnostic so both arms of the log line's `(source)` suffix are
+// taken: V006 (info, boolean property), V002 (warning, domainless property),
+// three custom mappings onto one field name (M001 error — fatal: any
+// error-severity diagnostic refuses the compile), and a union range (X003
+// info, sourceless). The failure path still logs every diagnostic before the
+// boot dies.
 const DIAGNOSTIC_TTL = `
 @prefix ex: <http://example.org/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -100,6 +102,41 @@ describe("createSchemaPlugin", () => {
     );
   });
 
+  it("leaves an existing sdlOutput file untouched on an artifact boot", async () => {
+    // An artifact boot skips printSchema, so `sdl` is "" by contract. Writing
+    // that would truncate the committed schema.graphql to nothing — the file
+    // relay-compiler reads. Yesterday's correct SDL must survive the boot.
+    const probe = await createTestStore({
+      ttl: MINIMAL_TTL,
+      prefixes: PREFIXES,
+    });
+    cleanups.push(probe.cleanup);
+    const artifactJson = serializeExtraction(
+      (await compile(createStoreQueryFn(probe.store), PREFIXES)).extraction,
+      hashSources([MINIMAL_TTL]),
+    );
+    const dir = mkdtempSync(join(tmpdir(), "ke-graphql-"));
+    cleanups.push(() => rmSync(dir, { recursive: true, force: true }));
+    const artifactPath = join(dir, "extraction.json");
+    writeFileSync(artifactPath, artifactJson, "utf-8");
+    const sdlPath = join(dir, "schema.graphql");
+    const committed = "type Thing implements Node { uri: ID! }\n";
+    writeFileSync(sdlPath, committed, "utf-8");
+
+    const { store, cleanup } = await createTestStore({
+      ttl: MINIMAL_TTL,
+      prefixes: PREFIXES,
+      plugins: [
+        createSchemaPlugin({ extraction: artifactPath, sdlOutput: sdlPath }),
+      ],
+    });
+    cleanups.push(cleanup);
+    // The fast path really did run (empty SDL is its marker) …
+    expect(store.api<SchemaPluginApi>("ke-graphql")?.sdl).toBe("");
+    // … and the file on disk is byte-identical to what was there before.
+    expect(readFileSync(sdlPath, "utf-8")).toBe(committed);
+  });
+
   it("registers extensions in object form on types and Query", async () => {
     const plugin = createSchemaPlugin({
       extensions: {
@@ -128,7 +165,9 @@ describe("createSchemaPlugin", () => {
     });
     expect(result.errors).toBeUndefined();
     expect(result.data?.hello).toBe("world");
-    expect((result.data?.thing as { shout: string }).shout).toBe("ex:widget!");
+    expect((result.data?.thing as { shout: string }).shout).toBe(
+      "http://example.org/widget!",
+    );
   });
 
   it("supports the extensions factory form receiving generated types", async () => {
@@ -200,14 +239,27 @@ describe("createSchemaPlugin", () => {
     const api = store.api<SchemaPluginApi>("ke-graphql");
     const result = await graphql({
       schema: api?.schema as NonNullable<typeof api>["schema"],
-      source: `{ thing(uri: "ex:widget") { label } }`,
+      source: `{ thing(uri: "ex:widget") { label name _meta { label } } }`,
       contextValue: api?.createContext(store),
     });
     expect(result.errors).toBeUndefined();
-    expect((result.data?.thing as { label: string }).label).toBe("The Widget");
+    const thing = result.data?.thing as {
+      label: string;
+      name: string;
+      _meta: { label: string };
+    };
+    // The opt-in now lands on the name it asked for: nothing reserves `label`
+    // any more, so the documented mapping produces the documented field.
+    expect(thing.label).toBe("The Widget");
+    // The generic chain's FIRST link is also rdfs:label, so _meta reports the
+    // same literal — the opt-in's value is neither lost nor renamed.
+    expect(thing._meta.label).toBe("The Widget");
+    // Provenance check: had the generic chain fallen through to its
+    // local-name tier (ex:name) it would read "Widget" instead.
+    expect(thing.name).toBe("Widget");
   });
 
-  it("logs diagnostics to the matching console channel by severity", async () => {
+  it("logs every diagnostic to its severity channel, then fails the boot on the error", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const info = vi.spyOn(console, "info").mockImplementation(() => {});
@@ -223,12 +275,16 @@ describe("createSchemaPlugin", () => {
         "ex:baz": { graphqlName: "dup" },
       },
     });
-    const { cleanup } = await createTestStore({
-      ttl: DIAGNOSTIC_TTL,
-      prefixes: PREFIXES,
-      plugins: [plugin],
-    });
-    cleanups.push(cleanup);
+    // The M001 error refuses the compile (any error-severity diagnostic is
+    // fatal), so the boot rejects — but only AFTER the full diagnostic list
+    // hit the console: dying loudly includes the non-fatal findings.
+    await expect(
+      createTestStore({
+        ttl: DIAGNOSTIC_TTL,
+        prefixes: PREFIXES,
+        plugins: [plugin],
+      }),
+    ).rejects.toThrow(/M001/);
     expect(error).toHaveBeenCalledWith(expect.stringContaining("M001"));
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("V002"));
     expect(info).toHaveBeenCalledWith(expect.stringContaining("V006"));
@@ -236,6 +292,43 @@ describe("createSchemaPlugin", () => {
     // source: V006 has one, the union diagnostic (X003) does not.
     expect(info).toHaveBeenCalledWith(expect.stringMatching(/V006:.+\(.+\)$/));
     expect(info).toHaveBeenCalledWith(expect.stringMatching(/X003:[^()]*$/));
+  });
+
+  it("rejects the boot on a conflicting graphql: annotation (A001 is fatal)", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    cleanups.push(() => error.mockRestore());
+    // Two graphql:name values for one class: the resolver refuses a tiebreak
+    // (A001, error severity), the compile-level gate refuses the schema, and
+    // the boot dies loudly — which the graph server turns into a non-zero
+    // exit. Same fatality channel as M001, proven end to end here.
+    await expect(
+      createTestStore({
+        ttl: `${MINIMAL_TTL}
+<http://example.org/Thing> <${GRAPHQL}name> "Alpha" , "Beta" .
+`,
+        prefixes: PREFIXES,
+        plugins: [createSchemaPlugin()],
+      }),
+    ).rejects.toThrow(/A001/);
+    expect(error).toHaveBeenCalledWith(expect.stringContaining("A001"));
+  });
+
+  it("passes a non-compilation failure through without logging diagnostics", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    cleanups.push(() => error.mockRestore());
+    // The artifact path does not exist: readFileSync throws a plain
+    // filesystem error, which carries no diagnostic list to log.
+    const plugin = createSchemaPlugin({
+      extraction: join(tmpdir(), "ke-graphql-does-not-exist.json"),
+    });
+    await expect(
+      createTestStore({
+        ttl: MINIMAL_TTL,
+        prefixes: PREFIXES,
+        plugins: [plugin],
+      }),
+    ).rejects.toThrow(/ENOENT/);
+    expect(error).not.toHaveBeenCalled();
   });
 
   it("boots from an extraction artifact given as a file path", async () => {
