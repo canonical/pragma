@@ -362,7 +362,7 @@ pragma create package [options]
 | `--name` | `<string>` | Package name. (default: @canonical/my-package) |
 | `--type` | `<tool-ts\|library\|css>` | Package type. (one of: tool-ts, library, css) (default: tool-ts) |
 | `--description` | `<string>` | Package description. (default: ) |
-| `--with-react` | — | Include React dependencies. (default: false) |
+| `--framework` | `<none\|react\|svelte>` | UI framework (library packages only). (one of: none, react, svelte) (default: none) |
 | `--with-storybook` | — | Include Storybook setup. (default: false) |
 | `--with-cli` | — | Include CLI binary entry point. (default: false) |
 | `--with-pr-template` | — | Include a .github/PULL_REQUEST_TEMPLATE.md. (default: false) |
