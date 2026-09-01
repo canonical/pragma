@@ -45,10 +45,7 @@
  * @note Impure — spawns processes, reads the environment, and exits.
  */
 import { type ChildProcess, spawn } from "node:child_process";
-import {
-  DEFAULT_GRAPHQL_URL,
-  GRAPHQL_URL_ENV_VAR,
-} from "#relay/graphqlEndpoint.js";
+import { DEFAULT_GRAPHQL_URL, GRAPHQL_URL_ENV_VAR } from "#graphql-endpoint";
 
 /** How long to wait for the graph to answer before giving up on it. */
 const READY_BUDGET_MS = Number(process.env.GRAPH_READY_MS) || 120_000;

@@ -39,3 +39,19 @@ export * from "./JourneysExplorer/index.js";
 export * from "./JourneysPage/index.js";
 export * from "./JourneyTable/index.js";
 export * from "./JourneyWell/index.js";
+export {
+  JOB_PAGE_SIZE,
+  journeysExplorerQueryNode,
+  journeysExplorerVariables,
+  journeysRouteEntry,
+  PAIRING_PAGE_SIZE,
+  readJobParam,
+} from "./journeysQuery.js";
+export type {
+  JourneyViewProviderProps,
+  JourneyViewValue,
+} from "./journeyViewContext.js";
+// The add-on's own surface, beside the components above: its route table, its
+// query module, and the view-mode context the rail and table share.
+export { JourneyViewProvider, useJourneyView } from "./journeyViewContext.js";
+export { default as journeysRoutes } from "./routes.js";

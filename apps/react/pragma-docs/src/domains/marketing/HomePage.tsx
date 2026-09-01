@@ -3,7 +3,7 @@ import { Link } from "@canonical/router-react";
 import type React from "react";
 import { Suspense } from "react";
 import { graphql, useLazyLoadQuery } from "react-relay";
-import ErrorBoundary from "#lib/ErrorBoundary/index.js";
+import ErrorBoundary from "#lib/ErrorBoundary";
 import type { LobbyQuery } from "#relay/__generated__/LobbyQuery.graphql.js";
 import lobbyQueryNode from "#relay/__generated__/LobbyQuery.graphql.js";
 import {

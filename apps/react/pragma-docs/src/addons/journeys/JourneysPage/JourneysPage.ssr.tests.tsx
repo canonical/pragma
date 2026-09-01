@@ -9,8 +9,8 @@ import { renderToString } from "react-dom/server";
 import { RelayEnvironmentProvider } from "react-relay";
 import type { FetchFunction } from "relay-runtime";
 import { describe, expect, it, vi } from "vitest";
-import { createEnvironment } from "#relay/environment.js";
-import createStaticRouter from "../../../lib/router/createStaticRouter.js";
+import { createStaticRouter } from "#lib/router";
+import { createEnvironment } from "#relay";
 import { appRoutes, middleware, notFoundRoute } from "../../../routes.js";
 import JourneysPage from "./JourneysPage.js";
 

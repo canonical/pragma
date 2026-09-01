@@ -17,7 +17,7 @@ import { prepareRelayData } from "./prepareRelayData.js";
 // replacing the real app routes for the matcher and collector alike.
 vi.mock("../routes.js", async () => {
   const { route } = await import("@canonical/router-core");
-  const { ROUTE_QUERY_META_KEY } = await import("#relay/routeQuery.js");
+  const { ROUTE_QUERY_META_KEY } = await import("#relay");
   return {
     appRoutes: {
       home: route({ url: "/", content: () => null }),

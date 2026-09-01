@@ -7,9 +7,9 @@
  * `ComponentsCatalogPage.tsx`.
  */
 
+import type { RouteQueryEntry } from "#relay";
 import type { ComponentsCatalogQuery$variables } from "#relay/__generated__/ComponentsCatalogQuery.graphql.js";
 import componentsCatalogQueryNode from "#relay/__generated__/ComponentsCatalogQuery.graphql.js";
-import type { RouteQueryEntry } from "#relay/routeQuery.js";
 
 /**
  * One page of the catalog connection — the schema's hard per-page maximum

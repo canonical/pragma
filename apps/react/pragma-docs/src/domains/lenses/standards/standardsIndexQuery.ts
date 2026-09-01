@@ -8,10 +8,10 @@
  * tag lives in `StandardsPage.tsx`.
  */
 
-import { GRAPH_BINDINGS } from "#lib/graphBindings/index.js";
+import { GRAPH_BINDINGS } from "#lib/graphBindings";
+import type { RouteQueryEntry } from "#relay";
 import type { StandardsIndexQuery$variables } from "#relay/__generated__/StandardsIndexQuery.graphql.js";
 import standardsIndexQueryNode from "#relay/__generated__/StandardsIndexQuery.graphql.js";
-import type { RouteQueryEntry } from "#relay/routeQuery.js";
 
 /**
  * One page of the standards connection. 100 is a size THIS APP chooses,

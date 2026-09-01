@@ -1,8 +1,7 @@
 import { route } from "@canonical/router-core";
-import { routeShortcutFacet } from "#lib/routeShortcut/index.js";
-import { shellStripFacet } from "#lib/Shell/stripFacet.js";
-import { ROUTE_QUERY_META_KEY } from "#relay/routeQuery.js";
-import { warmRouteQuery } from "#relay/warmRouteQuery.js";
+import { routeShortcutFacet } from "#lib/routeShortcut";
+import { shellStripFacet } from "#lib/Shell";
+import { ROUTE_QUERY_META_KEY, warmRouteQuery } from "#relay";
 import { DefinitionsPage } from "./DefinitionsPage/index.js";
 import { definitionsRouteEntry } from "./definitionsQuery.js";
 import { definitionsStripSlots } from "./stripSlots.js";

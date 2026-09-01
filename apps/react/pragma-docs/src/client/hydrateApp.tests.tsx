@@ -18,24 +18,23 @@ import { RelayEnvironmentProvider } from "react-relay";
 import type { FetchFunction } from "relay-runtime";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import catalogRecords from "#domains/components/__fixtures__/catalogRecords.js";
-import componentEntityRecordsButton from "#domains/components/__fixtures__/componentEntityRecordsButton.js";
+import { createStaticRouter } from "#lib/router";
+import catalogRecords from "../domains/components/__fixtures__/catalogRecords.js";
+import componentEntityRecordsButton from "../domains/components/__fixtures__/componentEntityRecordsButton.js";
 // Definitions block: the captured explorer records, plus the jsdom shims
 // React Flow needs when the well MOUNTS (ResizeObserver/DOMMatrix —
 // side-effect import, no test behaviour of its own).
-import definitionsExplorerRecords from "#domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
-import createStaticRouter from "../lib/router/createStaticRouter.js";
-import "#domains/lenses/definitions/__fixtures__/stubReactFlowGlobals.js";
-import journeysExplorerRecords from "#addons/journeys/__fixtures__/journeysExplorerRecords.js";
-import journeysExplorerRecordsJob from "#addons/journeys/__fixtures__/journeysExplorerRecordsJob.js";
-import standardEntityRecords from "#domains/lenses/standards/__fixtures__/standardEntityRecords.js";
-import { LINK_COMPONENT_URI } from "#domains/lenses/standards/__fixtures__/standardsPageHarness.js";
-import lobbyRecords from "#domains/marketing/__fixtures__/lobbyRecords.js";
-import componentProbeRecords from "#domains/playground/__fixtures__/componentProbeRecords.js";
-import { createEnvironment } from "#relay/environment.js";
-import { setPrefetchEnvironment } from "#relay/prefetchEnvironment.js";
+import definitionsExplorerRecords from "../domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
+import "../domains/lenses/definitions/__fixtures__/stubReactFlowGlobals.js";
+import { createEnvironment, setPrefetchEnvironment } from "#relay";
+import type { InitialData } from "#server";
+import journeysExplorerRecords from "../addons/journeys/__fixtures__/journeysExplorerRecords.js";
+import journeysExplorerRecordsJob from "../addons/journeys/__fixtures__/journeysExplorerRecordsJob.js";
+import standardEntityRecords from "../domains/lenses/standards/__fixtures__/standardEntityRecords.js";
+import { LINK_COMPONENT_URI } from "../domains/lenses/standards/__fixtures__/standardsPageHarness.js";
+import lobbyRecords from "../domains/marketing/__fixtures__/lobbyRecords.js";
+import componentProbeRecords from "../domains/playground/__fixtures__/componentProbeRecords.js";
 import { appRoutes, middleware, notFoundRoute } from "../routes.js";
-import type { InitialData } from "../server/entry.js";
 import { hydrateApp } from "./hydrateApp.js";
 
 // Driving `act` directly (no Testing Library wrapper) needs the flag.

@@ -11,14 +11,16 @@
 
 import type { FetchFunction, RequestParameters } from "relay-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { componentsCatalogRouteEntry } from "#domains/components/catalogQuery.js";
-import { componentEntityRouteEntry } from "#domains/components/entityQuery.js";
-import { definitionsRouteEntry } from "#domains/lenses/definitions/definitionsQuery.js";
-import componentProbeRecords from "#domains/playground/__fixtures__/componentProbeRecords.js";
+import {
+  componentEntityRouteEntry,
+  componentsCatalogRouteEntry,
+} from "#domains/components";
+import { definitionsRouteEntry } from "#domains/lenses/definitions";
 import {
   componentProbeQueryNode,
   componentProbeVariables,
-} from "#domains/playground/probeQuery.js";
+} from "#domains/playground";
+import componentProbeRecords from "../domains/playground/__fixtures__/componentProbeRecords.js";
 import { createEnvironment } from "./environment.js";
 import { setPrefetchEnvironment } from "./prefetchEnvironment.js";
 import type { RouteQueryEntry } from "./routeQuery.js";

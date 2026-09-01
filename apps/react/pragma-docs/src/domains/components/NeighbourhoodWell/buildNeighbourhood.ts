@@ -17,12 +17,7 @@
  * construction (fixed iteration count, stable pair order, centre pinned).
  */
 
-import {
-  edgeEndpoint,
-  quadArc,
-  relaxBoxes,
-  settle,
-} from "#lib/WellGeometry/index.js";
+import { edgeEndpoint, quadArc, relaxBoxes, settle } from "#lib/WellGeometry";
 import {
   CENTRE_EXTRA_WIDTH,
   CENTRE_NODE_HEIGHT,
@@ -48,7 +43,7 @@ import type {
   WellNode,
 } from "./types.js";
 
-export { edgeEndpoint } from "#lib/WellGeometry/index.js";
+export { edgeEndpoint } from "#lib/WellGeometry";
 
 /** A node mid-layout: mutable position, frozen identity. */
 interface WorkingNode extends Omit<WellNode, "x" | "y"> {

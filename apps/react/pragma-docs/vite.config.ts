@@ -6,8 +6,14 @@ import { browserslistToTargets } from "lightningcss";
 import { defineConfig } from "vite";
 import relay from "vite-plugin-relay-lite";
 
-// Path aliases (#lib, #domains, #styles) are declared as Node subpath imports
-// in package.json "imports" and resolved natively by Vite — no resolver plugin.
+// Path aliases are declared as Node subpath imports in package.json "imports",
+// resolved natively by Vite — no resolver plugin. There is one per domain and
+// each names that domain's barrel (#lib/Shell, #domains/lenses, #relay,
+// #server). Two declared exceptions: #relay/__generated__/* is the sole
+// wildcard, because relay-compiler owns that directory and writes no barrel
+// for it; and #graphql-endpoint points at a FILE, because graphqlEndpoint.ts
+// must keep its zero imports — the graph process pins graphql v17, and routing
+// it through the #relay barrel would drag the app's v16 in.
 const PORT = Number(process.env.PORT) || undefined;
 
 // `build:server` runs `vite build --mode server` to compile the two server

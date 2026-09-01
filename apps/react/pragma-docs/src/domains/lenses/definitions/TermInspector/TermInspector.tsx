@@ -1,7 +1,7 @@
 import { Link } from "@canonical/router-react";
 import type React from "react";
 import { graphql, useFragment } from "react-relay";
-import { GRAPH_BINDINGS } from "#lib/graphBindings/index.js";
+import { GRAPH_BINDINGS } from "#lib/graphBindings";
 import type {
   TermInspector_class$data,
   TermInspector_class$key,

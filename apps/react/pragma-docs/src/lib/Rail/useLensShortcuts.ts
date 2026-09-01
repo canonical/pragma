@@ -31,10 +31,7 @@
 import type { RouteName } from "@canonical/router-core";
 import { type RegisteredRouteMap, useRouter } from "@canonical/router-react";
 import { useEffect, useMemo } from "react";
-import {
-  collectShortcuts,
-  type ShortcutAllocation,
-} from "#lib/routeShortcut/index.js";
+import { collectShortcuts, type ShortcutAllocation } from "#lib/routeShortcut";
 
 const isEditableTarget = (target: EventTarget | null): boolean => {
   if (!(target instanceof HTMLElement)) return false;

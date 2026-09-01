@@ -1,4 +1,4 @@
-import type { Box, Kind } from "#lib/Chip/encodings.js";
+import type { Box, Kind } from "#lib/Chip";
 import type { NeighbourhoodWell_component$key } from "#relay/__generated__/NeighbourhoodWell_component.graphql.js";
 import type { EdgeFamily, RelationSpec, Sector } from "./constants.js";
 

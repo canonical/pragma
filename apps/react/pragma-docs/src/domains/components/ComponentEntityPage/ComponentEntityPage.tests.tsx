@@ -12,7 +12,7 @@ import { RelayEnvironmentProvider } from "react-relay";
 import type { FetchFunction } from "relay-runtime";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { describe, expect, it, vi } from "vitest";
-import { createEnvironment } from "#relay/environment.js";
+import { createEnvironment } from "#relay";
 import componentEntityRecordsButton from "../__fixtures__/componentEntityRecordsButton.js";
 import componentEntityRecordsCard from "../__fixtures__/componentEntityRecordsCard.js";
 import {

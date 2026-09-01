@@ -13,9 +13,9 @@
  * truth.
  */
 
+import type { RouteQueryEntry } from "#relay";
 import type { ComponentEntityQuery$variables } from "#relay/__generated__/ComponentEntityQuery.graphql.js";
 import componentEntityQueryNode from "#relay/__generated__/ComponentEntityQuery.graphql.js";
-import type { RouteQueryEntry } from "#relay/routeQuery.js";
 
 /** How many related entities each relation list shows (v1: no paging UI). */
 export const RELATION_PAGE_SIZE = 24;

@@ -11,17 +11,18 @@ import {
   wrapper,
 } from "@canonical/router-core";
 import type { ReactElement, ReactNode } from "react";
-import { JourneyViewProvider } from "#addons/journeys/journeyViewContext.js";
-import journeysRoutes from "#addons/journeys/routes.js";
-import accountRoutes from "#domains/account/routes.js";
-import componentsRoutes from "#domains/components/routes.js";
-import { LensFilterProvider } from "#domains/lenses/definitions/lensFilterContext.js";
-import definitionsRoutes from "#domains/lenses/definitions/routes.js";
-import lensRoutes from "#domains/lenses/routes.js";
-import standardsRoutes from "#domains/lenses/standards/routes.js";
-import marketingRoutes from "#domains/marketing/routes.js";
-import playgroundRoutes from "#domains/playground/routes.js";
-import Shell from "#lib/Shell/index.js";
+import { JourneyViewProvider, journeysRoutes } from "#addons/journeys";
+import { accountRoutes } from "#domains/account";
+import { componentsRoutes } from "#domains/components";
+import { lensRoutes } from "#domains/lenses";
+import {
+  definitionsRoutes,
+  LensFilterProvider,
+} from "#domains/lenses/definitions";
+import { standardsRoutes } from "#domains/lenses/standards";
+import { marketingRoutes } from "#domains/marketing";
+import { playgroundRoutes } from "#domains/playground";
+import Shell from "#lib/Shell";
 
 const protectedPaths = new Set(["/account"]);
 

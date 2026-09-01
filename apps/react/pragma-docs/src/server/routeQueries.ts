@@ -24,11 +24,8 @@
  */
 
 import type { Variables } from "relay-runtime";
-import {
-  type RouteQueryEntry,
-  readRouteQueryEntry,
-} from "#relay/routeQuery.js";
-import createStaticRouter from "../lib/router/createStaticRouter.js";
+import { createStaticRouter } from "#lib/router";
+import { type RouteQueryEntry, readRouteQueryEntry } from "#relay";
 import { appRoutes, middleware, notFoundRoute } from "../routes.js";
 
 /** A matched route's query, its variables already built from the match. */

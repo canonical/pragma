@@ -33,7 +33,7 @@
 
 import { fetchQuery, type OperationType } from "relay-runtime";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
-import { createEnvironment } from "#relay/environment.js";
+import { createEnvironment } from "#relay";
 import { matchRouteQuery } from "./routeQueries.js";
 
 /** The serialised store snapshot for `initialData.relay`. */

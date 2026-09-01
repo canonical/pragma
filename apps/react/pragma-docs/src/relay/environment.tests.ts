@@ -24,7 +24,7 @@
 
 import { fetchQuery } from "relay-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { componentProbeVariables } from "#domains/playground/probeQuery.js";
+import { componentProbeVariables } from "#domains/playground";
 import componentProbeQueryNode from "#relay/__generated__/ComponentProbeQuery.graphql.js";
 import { createEnvironment } from "./environment.js";
 import { DEFAULT_GRAPHQL_URL } from "./graphqlEndpoint.js";

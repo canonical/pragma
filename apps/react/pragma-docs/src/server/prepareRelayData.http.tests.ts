@@ -41,10 +41,8 @@ import { prepareRelayData } from "./prepareRelayData.js";
 
 vi.mock("../routes.js", async () => {
   const { route } = await import("@canonical/router-core");
-  const { ROUTE_QUERY_META_KEY } = await import("#relay/routeQuery.js");
-  const { componentProbeVariables } = await import(
-    "#domains/playground/probeQuery.js"
-  );
+  const { ROUTE_QUERY_META_KEY } = await import("#relay");
+  const { componentProbeVariables } = await import("#domains/playground");
   const { default: componentProbeQueryNode } = await import(
     "#relay/__generated__/ComponentProbeQuery.graphql.js"
   );

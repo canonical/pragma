@@ -20,7 +20,7 @@ import path from "node:path";
 import { extractPreferences } from "@canonical/react-hooks";
 import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import { getRequestUrl } from "@canonical/react-ssr/server";
-import { resolveGraphqlUrl } from "#relay/graphqlEndpoint.js";
+import { resolveGraphqlUrl } from "#graphql-endpoint";
 import EntryServer, { type InitialData } from "./entry.js";
 import { prepareRelayData } from "./prepareRelayData.js";
 

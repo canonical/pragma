@@ -4,7 +4,7 @@
  *
  * Route `meta` is `Readonly<Record<string, unknown>>` and the router never
  * serialises it (`dehydrate()` emits routing state only — see
- * `#relay/routeQuery.js`'s header), so anything may live there at the
+ * `src/relay/routeQuery.ts`'s header), so anything may live there at the
  * acknowledged cost of `unknown`-typed access. Before this helper each
  * tenant hand-wrote its own reader (`readRouteQueryEntry`, `readStripSlots`)
  * and each AUTHORING site wrote a bare computed key — which type-checks the
@@ -23,8 +23,8 @@
  *
  * TENANTS, AND THE ONE HOLDOUT. `#lib/Shell/stripFacet.js` and
  * `#lib/routeShortcut/shortcutFacet.js` read through here.
- * `ROUTE_QUERY_META_KEY` (`#relay/routeQuery.js`) deliberately does NOT, and
- * is the next migration — with a PRECONDITION: `readRouteQueryEntry`'s four
+ * `ROUTE_QUERY_META_KEY` (`src/relay/routeQuery.ts`) deliberately does NOT,
+ * and is the next migration — with a PRECONDITION: `readRouteQueryEntry`'s four
  * error messages have no tests today (`src/server/routeQueries.tests.ts` is
  * happy-path only), and it sits on the SSR data path, whose only end-to-end
  * coverage is the e2e suite. Write those four message tests first, then

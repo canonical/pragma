@@ -13,7 +13,7 @@
 import { RouterProvider } from "@canonical/router-react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import createStaticRouter from "../../../lib/router/createStaticRouter.js";
+import { createStaticRouter } from "#lib/router";
 import { appRoutes, middleware, notFoundRoute } from "../../../routes.js";
 import { JOURNEY_MODEL } from "../__fixtures__/journeyModel.js";
 import { buildJourneyRows, DEFAULT_TABLE_STATE } from "../journeyTableModel.js";

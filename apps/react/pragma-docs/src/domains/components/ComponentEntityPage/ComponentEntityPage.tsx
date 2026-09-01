@@ -2,7 +2,7 @@ import { useHead } from "@canonical/react-head";
 import type React from "react";
 import { Suspense } from "react";
 import { graphql, useLazyLoadQuery } from "react-relay";
-import ErrorBoundary from "#lib/ErrorBoundary/index.js";
+import ErrorBoundary from "#lib/ErrorBoundary";
 import type { ComponentEntityQuery } from "#relay/__generated__/ComponentEntityQuery.graphql.js";
 import componentEntityQueryNode from "#relay/__generated__/ComponentEntityQuery.graphql.js";
 import { EntityAside } from "../EntityAside/index.js";
