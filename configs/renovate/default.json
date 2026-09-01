@@ -80,6 +80,27 @@
         "- [ ] **Toolchain coupling checked** — lockfile format, package manager and peer ranges that other tools parse.",
         "> If this body was truncated, the upstream release notes for the major are **not** shown above. Read them at the source before ticking."
       ]
+    },
+    {
+      "description": "The toolchain is reviewed on every bump, not only on majors. Bun, Lerna and Nx decide whether the repo builds at all, and their breaking changes do not arrive labelled as breaking: a patch can change lockfile output, and a range can narrow without the changelog saying so",
+      "matchPackageNames": [
+        "bun",
+        "oven-sh/setup-bun",
+        "lerna",
+        "nx",
+        "@nx/{/,}**"
+      ],
+      "automerge": false,
+      "prBodyNotes": [
+        "### Toolchain impact review — required on every bump, not just majors",
+        "These packages decide whether the repository builds. Green CI is necessary and not sufficient; each box needs a person.",
+        "- [ ] **Lockfile output is unchanged.** `setup-env` runs `bun install --ignore-scripts && git diff --exit-code bun.lock`. A package manager that rewrites the lockfile — new `lockfileVersion`, reordering, formatting — turns **every** job red at once. Verify by installing with the new version and running that exact assertion.",
+        "- [ ] **Every pin moved together.** The Bun version is pinned in more places than Renovate can see: it reads `bun-version` on a `setup-bun` step, and is blind to a workflow matrix entry and to a composite action's input `default`. A partial bump goes green precisely because the untested half did not move.",
+        "- [ ] **The release path was considered.** `tag.yml` runs only on a tag, so `lerna version`, `lerna publish` and changelog generation are never exercised by a PR. A change to any of them ships unverified.",
+        "- [ ] **The supported Node range was diffed, not read.** Compare `engines.node` old against new on the registry. Lerna 10 dropped Node 20 *and* Node 25 — the second only visible by diffing `>=24.0.0` against `^24.0.0 || ^26.0.0`, and stated nowhere in the changelog.",
+        "- [ ] **Cross-tool coupling checked.** Nx parses `bun.lock`; Lerna drives Nx; Bun writes the lockfile both read. A version of one can require a version of another.",
+        "> If this body was truncated, the upstream release notes are **not** shown above. Read them at the source before ticking."
+      ]
     }
   ]
 }
