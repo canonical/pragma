@@ -51,8 +51,8 @@
   "devDependencies": {
     "@canonical/design-system": "^0.2.5",
     "@vitest/coverage-v8": "^4.0.18",
-    "lerna": "^9.0.5",
-    "nx": "^22.5.4",
+    "lerna": "^10.0.0",
+    "nx": "^23.0.0",
     "tinyglobby": "^0.2.14"
   },
   "msw": {
