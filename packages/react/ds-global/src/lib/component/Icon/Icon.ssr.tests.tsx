@@ -1,3 +1,4 @@
+import { ICON_MANIFEST } from "@canonical/ds-assets";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import Component from "./Icon.js";
@@ -20,7 +21,7 @@ describe("Icon SSR", () => {
       <Component className="test-class" icon={"user"} />,
     );
     expect(html).toContain(
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" class="ds icon test-class" aria-hidden="true"><use href="/icons/user.svg#user"></use></svg>',
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" class="ds icon test-class" aria-hidden="true"><use href="/icons/${ICON_MANIFEST.user}#user"></use></svg>`,
     );
   });
 

@@ -81,6 +81,17 @@ function createConfig<T extends keyof typeof frameworks>(
     staticDirs: [
       ...(opts.staticDirs ?? []),
       getAbsolutePath("@canonical/ds-assets"),
+      // `Icon` resolves icons through `ICON_MANIFEST`'s content-hashed
+      // filenames by default (see ds-assets/docs/ICONS.md), which live in
+      // `dist/icons/`, not the plain `icons/` the mount above exposes at
+      // `/icons`. Overlay the hashed set at the same `/icons` path so
+      // Storybook serves what `Icon` actually requests; filenames don't
+      // collide with the unhashed ones other components (e.g. `Spinner`)
+      // still reference from the mount above.
+      {
+        from: `${getAbsolutePath("@canonical/ds-assets")}/dist/icons`,
+        to: "/icons",
+      },
     ],
     env: {
       PROJECT_NAME: opts.projectName ?? "",

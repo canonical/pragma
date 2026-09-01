@@ -1,0 +1,5 @@
+<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <g id="service-status">
+    <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1m0 2a5 5 0 1 1 0 10A5 5 0 0 1 8 3m-1 2v4l3 2 .9-1.5L8.5 8V5z" fill="currentColor" />
+  </g>
+</svg>

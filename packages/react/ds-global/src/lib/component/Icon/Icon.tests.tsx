@@ -1,3 +1,4 @@
+import { ICON_MANIFEST } from "@canonical/ds-assets";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import Component from "./Icon.js";
@@ -38,5 +39,50 @@ describe("Icon component", () => {
       <Component icon={"user"} className={"test-class"} />,
     );
     expect(container.querySelector("svg")).toHaveClass("test-class");
+  });
+
+  it("references the icon by its content-hashed filename from ICON_MANIFEST by default", () => {
+    const { container } = render(<Component icon={"user"} />);
+    const use = container.querySelector("use");
+    expect(use).toHaveAttribute("href", `/icons/${ICON_MANIFEST.user}#user`);
+  });
+
+  it("prefers a manifest override over ICON_MANIFEST", () => {
+    const { container } = render(
+      <Component icon={"user"} manifest={{ user: "user.custom.svg" }} />,
+    );
+    const use = container.querySelector("use");
+    expect(use).toHaveAttribute("href", "/icons/user.custom.svg#user");
+  });
+
+  it("falls back to ICON_MANIFEST for icons missing from a partial override", () => {
+    const { container } = render(
+      <Component icon={"user"} manifest={{ search: "search.custom.svg" }} />,
+    );
+    const use = container.querySelector("use");
+    expect(use).toHaveAttribute("href", `/icons/${ICON_MANIFEST.user}#user`);
+  });
+
+  it("renders a custom icon (outside ICON_MANIFEST) given a manifest entry for it", () => {
+    const { container } = render(
+      <Component
+        icon="my-custom-icon"
+        manifest={{ "my-custom-icon": "my-custom-icon.deadbeef.svg" }}
+      />,
+    );
+    const use = container.querySelector("use");
+    expect(use).toHaveAttribute(
+      "href",
+      "/icons/my-custom-icon.deadbeef.svg#my-custom-icon",
+    );
+  });
+
+  it("falls back to plain `<icon>.svg` naming for a custom icon with no manifest entry", () => {
+    const { container } = render(<Component icon="my-custom-icon" />);
+    const use = container.querySelector("use");
+    expect(use).toHaveAttribute(
+      "href",
+      "/icons/my-custom-icon.svg#my-custom-icon",
+    );
   });
 });

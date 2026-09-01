@@ -1,3 +1,4 @@
+import { ICON_MANIFEST } from "@canonical/ds-assets";
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import Component from "./Button.js";
@@ -104,7 +105,7 @@ describe("Button component", () => {
       const { container } = render(<Component icon="edit">Edit</Component>);
 
       const use = container.querySelector("svg.ds.icon use");
-      expect(use).toHaveAttribute("href", "/icons/edit.svg#edit");
+      expect(use).toHaveAttribute("href", `/icons/${ICON_MANIFEST.edit}#edit`);
     });
 
     it("renders the icon decoratively (hidden from assistive technology)", () => {

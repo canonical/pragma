@@ -39,6 +39,8 @@ Icons can be referenced directly via SVG's `<use>` element:
 </svg>
 ```
 
+**Self-hosting these SVGs in an app?** Use `dist/icons/` (content-hashed filenames) with `ICON_MANIFEST` instead of referencing `icons/` by plain name — otherwise an icon update can go stale behind your app's caching indefinitely, since `search.svg` never changes name even when its glyph does. See [Self-hosting and cache invalidation](docs/ICONS.md#self-hosting-and-cache-invalidation) in docs/ICONS.md.
+
 See [docs/ICONS.md](docs/ICONS.md) for the complete icon specification, naming conventions, and migration notes from Vanilla.
 
 ## Fonts
