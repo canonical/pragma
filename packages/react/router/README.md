@@ -427,7 +427,9 @@ hydrateRoot(
 
 ### `Outlet`
 
-`Outlet` subscribes to router state, calls `router.render()`, and wraps the matched subtree in `Suspense`.
+`Outlet` subscribes to router state, builds the matched subtree with `createElement`, and wraps it in `Suspense`.
+
+It does **not** call `router.render()`. Core `render()` invokes the route's content and each wrapper as plain functions, which gives them no fiber of their own — every hook they declare would attach to `Outlet`'s hook list, and navigating between routes whose components declare different numbers of hooks would throw *"Rendered fewer hooks than expected"*. Constructing elements instead gives each component its own fiber, so its hooks belong to it. `render()` remains the correct shape for a non-React consumer.
 
 ```tsx
 <Outlet fallback={<p>Loading route…</p>} />
