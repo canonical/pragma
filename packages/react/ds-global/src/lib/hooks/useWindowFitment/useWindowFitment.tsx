@@ -124,7 +124,10 @@ export const computeArrowOffset = (
   return { axis, offset: clampedOffset };
 };
 
-const useWindowFitment = ({
+const useWindowFitment = <
+  TTarget extends HTMLElement = HTMLElement,
+  TPopup extends HTMLElement = HTMLDivElement,
+>({
   preferredDirections = [
     "block-start",
     "block-end",
@@ -139,10 +142,13 @@ const useWindowFitment = ({
   onBestPositionChange,
   autoFit = false,
   direction: directionProp,
-}: UseWindowFitmentProps): UseWindowFitmentResult => {
+}: UseWindowFitmentProps): UseWindowFitmentResult<TTarget, TPopup> => {
   const isServer = typeof window === "undefined";
-  const targetRef = useRef<HTMLDivElement | null>(null);
-  const popupRef = useRef<HTMLDivElement | null>(null);
+  // Refs are created as the concrete `TTarget`/`TPopup` the caller asks for
+  // (default `HTMLElement`/`HTMLDivElement`); internally they are only read via
+  // `getBoundingClientRect()`, common to every element.
+  const targetRef = useRef<TTarget | null>(null);
+  const popupRef = useRef<TPopup | null>(null);
   const prevBestPosition = useRef<BestPosition | undefined>(undefined);
   // Bumped when the anchored element's `dir` flips with no layout change, so the
   // logical→physical resolution re-runs (see the MutationObserver effect below).

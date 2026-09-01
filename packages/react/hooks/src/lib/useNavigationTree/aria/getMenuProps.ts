@@ -18,6 +18,10 @@ export default function getMenuProps<T extends Item = Item>(
 ): MenuPropsResult {
   return {
     role: "menu",
+    // The menu is navigated with Up/Down arrows, so it is vertical. ARIA defaults
+    // `menu` to vertical, but declaring it is explicit and future-proofs a
+    // horizontal (menubar) variant.
+    "aria-orientation": "vertical",
     ...(opts.label ? { "aria-label": opts.label } : {}),
     ...(opts.labelledBy ? { "aria-labelledby": opts.labelledBy } : {}),
   };
