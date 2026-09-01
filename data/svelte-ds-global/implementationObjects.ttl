@@ -8,7 +8,7 @@ ds:implementation.svelte-ds-global.global.component.announcement a ds:Implementa
     ds:implementsBlock ds:global.component.announcement;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/svelte/ds-global/src/lib/_work_in_progress/Announcement/Announcement.svelte";
     ds:importStatement "import { Announcement } from \"@canonical/svelte-ds-global\";";
-    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.35.0/packages/svelte/ds-global/src/lib/_work_in_progress/Announcement/Announcement.svelte".
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.36.0/packages/svelte/ds-global/src/lib/_work_in_progress/Announcement/Announcement.svelte".
 ds:implementation.svelte-ds-global.global.component.breadcrumbs a ds:ImplementationObject;
     ds:implementsBlock ds:global.component.breadcrumbs;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/svelte/ds-global/src/lib/component/Breadcrumbs/Breadcrumbs.svelte";
