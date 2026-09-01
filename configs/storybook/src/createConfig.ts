@@ -37,7 +37,6 @@ const frameworks = {
 type CreateConfigOptions = {
   staticDirs?: string[];
   extraAddons?: string[];
-  disabledAddons?: string[];
   projectName?: string;
   projectLogo?: string;
   refs?: StorybookConfig["refs"];
@@ -62,7 +61,7 @@ function createConfig<T extends keyof typeof frameworks>(
       getAddonPath("@canonical/storybook-addon-shell-theme"),
       ...frameworks[framework].addons,
       ...(opts.extraAddons ?? []),
-    ].filter((addon) => !opts.disabledAddons?.includes(addon)),
+    ],
     framework: {
       name: frameworks[framework].framework,
       options: {},
