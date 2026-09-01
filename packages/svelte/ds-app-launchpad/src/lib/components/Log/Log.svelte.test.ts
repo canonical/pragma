@@ -26,16 +26,15 @@ describe("Log component", () => {
       await expect.element(componentLocator(page)).toBeInTheDocument();
     });
 
-    it.each([
-      "Line",
-      "Timestamp",
-      "Content",
-    ])("renders column header %s", async (header) => {
-      const page = render(Component, { ...baseProps });
-      await expect
-        .element(columnHeaderLocator(page, header))
-        .toBeInTheDocument();
-    });
+    it.each(["Line", "Timestamp", "Content"])(
+      "renders column header %s",
+      async (header) => {
+        const page = render(Component, { ...baseProps });
+        await expect
+          .element(columnHeaderLocator(page, header))
+          .toBeInTheDocument();
+      },
+    );
 
     it("doesn't render timestamp column when hideTimestamps is true", async () => {
       const page = render(Component, {

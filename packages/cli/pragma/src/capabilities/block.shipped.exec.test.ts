@@ -167,26 +167,24 @@ describe("the `block` story declares vocabulary the shipped ontology defines (PR
     expect(DECLARED_PROPERTIES.length).toBeGreaterThan(0);
   });
 
-  it.each(
-    DECLARED_PROPERTIES,
-  )("$what reads $property, which the shipped ontology defines", async ({
-    what,
-    property,
-  }) => {
-    const result = await rt.query.sparql(
-      [
-        "ASK {",
-        `  ${property} a ?kind .`,
-        "  VALUES ?kind { owl:DatatypeProperty owl:ObjectProperty }",
-        "}",
-      ].join("\n"),
-    );
-    expect(result.type).toBe("ask");
-    expect(
-      result.type === "ask" ? result.result : false,
-      `${what} reads ${property}, which the shipped ontology does not define — it can never render, for any block, on any install`,
-    ).toBe(true);
-  });
+  it.each(DECLARED_PROPERTIES)(
+    "$what reads $property, which the shipped ontology defines",
+    async ({ what, property }) => {
+      const result = await rt.query.sparql(
+        [
+          "ASK {",
+          `  ${property} a ?kind .`,
+          "  VALUES ?kind { owl:DatatypeProperty owl:ObjectProperty }",
+          "}",
+        ].join("\n"),
+      );
+      expect(result.type).toBe("ask");
+      expect(
+        result.type === "ask" ? result.result : false,
+        `${what} reads ${property}, which the shipped ontology does not define — it can never render, for any block, on any install`,
+      ).toBe(true);
+    },
+  );
 });
 
 describe("the shipped graph carries the usage narrative on every block (PROTECTED)", () => {

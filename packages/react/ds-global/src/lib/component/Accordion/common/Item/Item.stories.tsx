@@ -53,6 +53,7 @@ export const WithRichContent: Story = {
           <li>Other components</li>
         </ul>
         <p className="p">
+          {/* biome-ignore lint/a11y/noAmbiguousAnchorText: placeholder prose demonstrating that an item accepts rich content; the rendered story is a visual baseline and its copy is deliberately unchanged. */}
           <a href="#example">Learn more</a>
         </p>
       </>

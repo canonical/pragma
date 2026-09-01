@@ -65,12 +65,13 @@ describe("verb-level candidates: the SET matches the live surface", () => {
     expect(multiVerbNouns.length).toBeGreaterThan(0);
   });
 
-  it.each(
-    multiVerbNouns,
-  )("%s: candidates == its live verb set", async (noun, verbs) => {
-    const candidates = await runComplete([noun, ""], capabilities);
-    expect([...candidates].sort()).toEqual([...verbs].sort());
-  });
+  it.each(multiVerbNouns)(
+    "%s: candidates == its live verb set",
+    async (noun, verbs) => {
+      const candidates = await runComplete([noun, ""], capabilities);
+      expect([...candidates].sort()).toEqual([...verbs].sort());
+    },
+  );
 });
 
 describe("flags are kebab-cased at emission (the live, testable guarantee)", () => {

@@ -53,17 +53,15 @@ describe("TextInput SSR", () => {
         expect(componentLocator(page).getAttribute("type")).toBe("text");
       });
 
-      it.each([
-        "text",
-        "email",
-        "url",
-        "tel",
-      ] as const)("accepts %s", (type) => {
-        const page = render(Component, {
-          props: { ...baseProps, type },
-        });
-        expect(componentLocator(page).getAttribute("type")).toBe(type);
-      });
+      it.each(["text", "email", "url", "tel"] as const)(
+        "accepts %s",
+        (type) => {
+          const page = render(Component, {
+            props: { ...baseProps, type },
+          });
+          expect(componentLocator(page).getAttribute("type")).toBe(type);
+        },
+      );
     });
 
     it("accepts search type", () => {

@@ -108,36 +108,35 @@ describe("config set — the reserved clear-markers are refused, naming unset", 
   // Clearing a field is a command, so no value may quietly mean "remove me":
   // the three strings that used to are rejected, and the rejection names the
   // command that owns the job. `tier` keeps whatever it held.
-  it.each([
-    "none",
-    "default",
-    "-",
-  ])("set tier %s is INVALID_INPUT that recovers with config unset tier", async (reserved) => {
-    const cwd = tmp("pragma-proj-");
-    await executeVerb(
-      setVerb,
-      { key: "tier", value: "apps/lxd" },
-      REAL,
-      bootRuntime(FLAGS, cwd),
-    );
-    let caught: unknown;
-    try {
+  it.each(["none", "default", "-"])(
+    "set tier %s is INVALID_INPUT that recovers with config unset tier",
+    async (reserved) => {
+      const cwd = tmp("pragma-proj-");
       await executeVerb(
         setVerb,
-        { key: "tier", value: reserved },
+        { key: "tier", value: "apps/lxd" },
         REAL,
         bootRuntime(FLAGS, cwd),
       );
-    } catch (error) {
-      caught = error;
-    }
-    expect(caught).toBeInstanceOf(PragmaError);
-    expect((caught as PragmaError).code).toBe("INVALID_INPUT");
-    expect(JSON.stringify((caught as PragmaError).recovery)).toContain(
-      "config unset tier",
-    );
-    expect(readGlobal().tier).toBe("apps/lxd");
-  });
+      let caught: unknown;
+      try {
+        await executeVerb(
+          setVerb,
+          { key: "tier", value: reserved },
+          REAL,
+          bootRuntime(FLAGS, cwd),
+        );
+      } catch (error) {
+        caught = error;
+      }
+      expect(caught).toBeInstanceOf(PragmaError);
+      expect((caught as PragmaError).code).toBe("INVALID_INPUT");
+      expect(JSON.stringify((caught as PragmaError).recovery)).toContain(
+        "config unset tier",
+      );
+      expect(readGlobal().tier).toBe("apps/lxd");
+    },
+  );
 
   it("a reserved marker is only reserved for a free-string field", () => {
     // `channel`/`detail` are closed enums: their rejection is the enum

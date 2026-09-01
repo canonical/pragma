@@ -99,31 +99,28 @@ const PACK_LISTS: readonly { pack: PackDefinition; hint: RegExp }[] = [
 const REAL = { dryRun: false, undo: false, yes: false };
 
 describe("pack list empty-state (U5, PROTECTED)", () => {
-  it.each(
-    PACK_LISTS,
-  )("$pack.noun list on an empty store returns [] — never throws", async ({
-    pack,
-  }) => {
-    await expect(listVerb(pack).run({}, rt)).resolves.toEqual([]);
-  });
+  it.each(PACK_LISTS)(
+    "$pack.noun list on an empty store returns [] — never throws",
+    async ({ pack }) => {
+      await expect(listVerb(pack).run({}, rt)).resolves.toEqual([]);
+    },
+  );
 
-  it.each(
-    PACK_LISTS,
-  )("$pack.noun list declares a non-blank empty notice (+ hint), JSON stays []", ({
-    pack,
-    hint,
-  }) => {
-    const { formatters } = listVerb(pack).output;
-    // The message + runnable hint live on the empty-state seam — the
-    // dispatcher routes them to stderr, keeping plain stdout pure data.
-    const notice = formatters.notice?.([]);
-    expect(notice).toContain(`No ${pack.noun} entries found.`);
-    expect(notice).toMatch(hint);
-    // JSON is the uniform empty array — unchanged by the message.
-    expect(formatters.json([])).toBe("[]");
-    // The llm view stays non-blank too (the `(0)` heading plus the message).
-    expect(formatters.llm([]).trim().length).toBeGreaterThan(0);
-  });
+  it.each(PACK_LISTS)(
+    "$pack.noun list declares a non-blank empty notice (+ hint), JSON stays []",
+    ({ pack, hint }) => {
+      const { formatters } = listVerb(pack).output;
+      // The message + runnable hint live on the empty-state seam — the
+      // dispatcher routes them to stderr, keeping plain stdout pure data.
+      const notice = formatters.notice?.([]);
+      expect(notice).toContain(`No ${pack.noun} entries found.`);
+      expect(notice).toMatch(hint);
+      // JSON is the uniform empty array — unchanged by the message.
+      expect(formatters.json([])).toBe("[]");
+      // The llm view stays non-blank too (the `(0)` heading plus the message).
+      expect(formatters.llm([]).trim().length).toBeGreaterThan(0);
+    },
+  );
 
   it("dispatch routes the empty message to stderr and exits 0 (end-to-end)", async () => {
     const outcome = await executeVerb(

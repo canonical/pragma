@@ -14,7 +14,7 @@ Create `biome.json` in the root of your project and extend this configuration.
 
 ```json
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.11/schema.json",
   "extends": [
     "@canonical/biome-config"
   ],

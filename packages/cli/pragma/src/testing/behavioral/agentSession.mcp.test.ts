@@ -55,48 +55,52 @@ afterAll(async () => {
 });
 
 describe("agent session — list, pick, lookup (B1)", () => {
-  it.each(
-    browsableNouns,
-  )("%s: list -> pick first -> lookup resolves it", async (noun) => {
-    const list = await mcp.callTool(`${noun}_list`);
-    expect(list.ok).toBe(true);
-    const rows = list.data as { name: string }[];
-    expect(rows.length).toBeGreaterThan(0);
-    const first = rows[0] as { name: string };
+  it.each(browsableNouns)(
+    "%s: list -> pick first -> lookup resolves it",
+    async (noun) => {
+      const list = await mcp.callTool(`${noun}_list`);
+      expect(list.ok).toBe(true);
+      const rows = list.data as { name: string }[];
+      expect(rows.length).toBeGreaterThan(0);
+      const first = rows[0] as { name: string };
 
-    const lookup = await mcp.callTool(`${noun}_lookup`, { name: [first.name] });
-    expect(lookup.ok).toBe(true);
-    const data = lookup.data as {
-      results: { name: string }[];
-      errors: unknown[];
-    };
-    expect(data.errors).toEqual([]);
-    expect(data.results[0]?.name).toBe(first.name);
-  });
+      const lookup = await mcp.callTool(`${noun}_lookup`, {
+        name: [first.name],
+      });
+      expect(lookup.ok).toBe(true);
+      const data = lookup.data as {
+        results: { name: string }[];
+        errors: unknown[];
+      };
+      expect(data.errors).toEqual([]);
+      expect(data.results[0]?.name).toBe(first.name);
+    },
+  );
 
-  it.each(
-    browsableNouns,
-  )("%s: a BATCH lookup with one hit reports the miss without failing the call", async (noun) => {
-    // `makeLookupRun` (kernel/packs/runBodies.ts) throws on a TOTAL miss (see
-    // the errorMatrix.mcp.test.ts B3 suite) — a partial batch is the "miss
-    // reported, call not failed" shape (an ADAPTATION of the plan's B1/B3
-    // wording, which described a single-name miss; verified against the
-    // live behavior).
-    const list = await mcp.callTool(`${noun}_list`);
-    const rows = list.data as { name: string }[];
-    const known = (rows[0] as { name: string }).name;
+  it.each(browsableNouns)(
+    "%s: a BATCH lookup with one hit reports the miss without failing the call",
+    async (noun) => {
+      // `makeLookupRun` (kernel/packs/runBodies.ts) throws on a TOTAL miss (see
+      // the errorMatrix.mcp.test.ts B3 suite) — a partial batch is the "miss
+      // reported, call not failed" shape (an ADAPTATION of the plan's B1/B3
+      // wording, which described a single-name miss; verified against the
+      // live behavior).
+      const list = await mcp.callTool(`${noun}_list`);
+      const rows = list.data as { name: string }[];
+      const known = (rows[0] as { name: string }).name;
 
-    const result = await mcp.callTool(`${noun}_lookup`, {
-      name: [known, "zzz-definitely-not-a-real-entity"],
-    });
-    expect(result.ok).toBe(true);
-    const data = result.data as {
-      results: { name: string }[];
-      errors: { code: string }[];
-    };
-    expect(data.results[0]?.name).toBe(known);
-    expect(data.errors[0]?.code).toBe("ENTITY_NOT_FOUND");
-  });
+      const result = await mcp.callTool(`${noun}_lookup`, {
+        name: [known, "zzz-definitely-not-a-real-entity"],
+      });
+      expect(result.ok).toBe(true);
+      const data = result.data as {
+        results: { name: string }[];
+        errors: { code: string }[];
+      };
+      expect(data.results[0]?.name).toBe(known);
+      expect(data.errors[0]?.code).toBe("ENTITY_NOT_FOUND");
+    },
+  );
 });
 
 describe("agent session — the categories journey, if the live surface declares one (B1)", () => {

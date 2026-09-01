@@ -96,16 +96,17 @@ describe("error/recovery matrix — render shapes (A8, storeless)", () => {
     }
   });
 
-  it.each(MATRIX)("json renders the failure envelope for $label", ({
-    error,
-  }) => {
-    const envelope = JSON.parse(renderErrorJson(error)) as {
-      ok: boolean;
-      error: { code: string };
-    };
-    expect(envelope.ok).toBe(false);
-    expect(envelope.error.code).toBe(error.code);
-  });
+  it.each(MATRIX)(
+    "json renders the failure envelope for $label",
+    ({ error }) => {
+      const envelope = JSON.parse(renderErrorJson(error)) as {
+        ok: boolean;
+        error: { code: string };
+      };
+      expect(envelope.ok).toBe(false);
+      expect(envelope.error.code).toBe(error.code);
+    },
+  );
 });
 
 describe("error/recovery matrix — grounded in a real spawn (A8, e2e)", () => {

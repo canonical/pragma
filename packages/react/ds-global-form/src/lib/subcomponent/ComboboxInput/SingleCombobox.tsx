@@ -12,6 +12,7 @@ import {
   filterItems as defaultFilterItems,
 } from "./utils/index.js";
 import "./styles.css";
+
 const componentCssClassName = "ds form-combobox";
 
 /**

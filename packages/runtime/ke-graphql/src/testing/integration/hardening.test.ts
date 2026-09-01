@@ -1,3 +1,5 @@
+// biome-ignore-all lint/correctness/noUnsafeOptionalChaining: GraphQL ExecutionResult["data"] is typed `| null | undefined`, so these assertions cast it and read a field directly. An absent result throws here, which fails the test the same way an assertion mismatch would.
+
 // =============================================================================
 // Hardening behaviors that need a compiled schema end-to-end: the forced-
 // abstract-with-instances guard (correctness C1 + V015) and the SPARQL

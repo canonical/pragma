@@ -69,47 +69,49 @@ describe("disclosure lookups declare the aligned canonical level set (B4)", () =
   // the full `[summary, standard, detailed]`, so a config `detail=standard` named
   // a level block never advertised. Every disclosure lookup now declares the same
   // canonical ladder; per-noun DEFAULTS may still differ (domain-tuned).
-  it.each(
-    disclosureLookupVerbs,
-  )("$noun: levels === the canonical ladder", (v) => {
-    expect(v.spec.disclosure?.levels).toEqual([...DETAIL_LEVELS]);
-  });
+  it.each(disclosureLookupVerbs)(
+    "$noun: levels === the canonical ladder",
+    (v) => {
+      expect(v.spec.disclosure?.levels).toEqual([...DETAIL_LEVELS]);
+    },
+  );
 });
 
 describe("detail:summary vs detail:detailed — key-set growth (B6)", () => {
-  it.each(
-    disclosureLookupVerbs,
-  )("%s_lookup: detailed carries every summary key plus at least one more", async (v) => {
-    const noun = v.noun;
-    const list = await mcp.callTool(`${noun}_list`);
-    const rows = list.data as { name: string }[];
-    const name = rows[0]?.name;
-    expect(name).toBeDefined();
-    if (!name) return;
+  it.each(disclosureLookupVerbs)(
+    "%s_lookup: detailed carries every summary key plus at least one more",
+    async (v) => {
+      const noun = v.noun;
+      const list = await mcp.callTool(`${noun}_list`);
+      const rows = list.data as { name: string }[];
+      const name = rows[0]?.name;
+      expect(name).toBeDefined();
+      if (!name) return;
 
-    const summary = await mcp.callTool(`${noun}_lookup`, {
-      name: [name],
-      detail: "summary",
-    });
-    const detailed = await mcp.callTool(`${noun}_lookup`, {
-      name: [name],
-      detail: "detailed",
-    });
-    expect(summary.ok).toBe(true);
-    expect(detailed.ok).toBe(true);
+      const summary = await mcp.callTool(`${noun}_lookup`, {
+        name: [name],
+        detail: "summary",
+      });
+      const detailed = await mcp.callTool(`${noun}_lookup`, {
+        name: [name],
+        detail: "detailed",
+      });
+      expect(summary.ok).toBe(true);
+      expect(detailed.ok).toBe(true);
 
-    const summaryEntity = (
-      summary.data as { results: Record<string, unknown>[] }
-    ).results[0] as Record<string, unknown>;
-    const detailedEntity = (
-      detailed.data as { results: Record<string, unknown>[] }
-    ).results[0] as Record<string, unknown>;
+      const summaryEntity = (
+        summary.data as { results: Record<string, unknown>[] }
+      ).results[0] as Record<string, unknown>;
+      const detailedEntity = (
+        detailed.data as { results: Record<string, unknown>[] }
+      ).results[0] as Record<string, unknown>;
 
-    const summaryKeys = new Set(Object.keys(summaryEntity));
-    const detailedKeys = new Set(Object.keys(detailedEntity));
-    for (const key of summaryKeys) {
-      expect(detailedKeys.has(key)).toBe(true);
-    }
-    expect(detailedKeys.size).toBeGreaterThan(summaryKeys.size);
-  });
+      const summaryKeys = new Set(Object.keys(summaryEntity));
+      const detailedKeys = new Set(Object.keys(detailedEntity));
+      for (const key of summaryKeys) {
+        expect(detailedKeys.has(key)).toBe(true);
+      }
+      expect(detailedKeys.size).toBeGreaterThan(summaryKeys.size);
+    },
+  );
 });

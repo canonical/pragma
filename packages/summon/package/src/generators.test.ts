@@ -272,53 +272,53 @@ describe("generated manifest — validity matrix", () => {
     ),
   );
 
-  it.each(combos)("renders a consistent manifest for %j", ({
-    type,
-    withReact,
-    withStorybook,
-    withCli,
-  }) => {
-    // renderManifest JSON.parses — an unparseable render fails here.
-    const manifest = renderManifest({
-      ...base,
-      type,
-      withReact,
-      withStorybook,
-      withCli,
-    });
-    const devDependencies = manifest.devDependencies ?? {};
-    const allDependencies = {
-      ...devDependencies,
-      ...(manifest.dependencies ?? {}),
-    };
+  it.each(combos)(
+    "renders a consistent manifest for %j",
+    ({ type, withReact, withStorybook, withCli }) => {
+      // renderManifest JSON.parses — an unparseable render fails here.
+      const manifest = renderManifest({
+        ...base,
+        type,
+        withReact,
+        withStorybook,
+        withCli,
+      });
+      const devDependencies = manifest.devDependencies ?? {};
+      const allDependencies = {
+        ...devDependencies,
+        ...(manifest.dependencies ?? {}),
+      };
 
-    // Scripts must not reference binaries the manifest does not declare.
-    if (manifest.scripts["check:webarchitect"] !== undefined) {
-      expect(allDependencies["@canonical/webarchitect"]).toBeDefined();
-    }
-    expect(manifest.scripts.storybook !== undefined).toBe(withStorybook);
-    if (withStorybook) {
-      expect(manifest.scripts["build:storybook"]).toBeDefined();
-      expect(allDependencies.storybook).toBeDefined();
-      expect(allDependencies["@storybook/addon-themes"]).toBeDefined();
-      expect(allDependencies["@storybook/react-vite"]).toBeDefined();
-      expect(allDependencies["@canonical/storybook-config"]).toBeDefined();
-      expect(allDependencies["@canonical/styles-debug"]).toBeDefined();
-      // The react renderer needs react even when the package itself is not
-      // a react package.
-      expect(allDependencies.react).toBeDefined();
-      expect(allDependencies["react-dom"]).toBeDefined();
-    }
+      // Scripts must not reference binaries the manifest does not declare.
+      if (manifest.scripts["check:webarchitect"] !== undefined) {
+        expect(allDependencies["@canonical/webarchitect"]).toBeDefined();
+      }
+      expect(manifest.scripts.storybook !== undefined).toBe(withStorybook);
+      if (withStorybook) {
+        expect(manifest.scripts["build:storybook"]).toBeDefined();
+        expect(allDependencies.storybook).toBeDefined();
+        expect(allDependencies["@storybook/addon-themes"]).toBeDefined();
+        expect(allDependencies["@storybook/react-vite"]).toBeDefined();
+        expect(allDependencies["@canonical/storybook-config"]).toBeDefined();
+        expect(allDependencies["@canonical/styles-debug"]).toBeDefined();
+        // The react renderer needs react even when the package itself is not
+        // a react package.
+        expect(allDependencies.react).toBeDefined();
+        expect(allDependencies["react-dom"]).toBeDefined();
+      }
 
-    // A bin entry must point inside the published file set.
-    if (withCli && type !== "css") {
-      const binPath = Object.values(manifest.bin ?? {})[0];
-      expect(binPath).toBeDefined();
-      expect(
-        manifest.files.some((dir) => (binPath as string).startsWith(`${dir}/`)),
-      ).toBe(true);
-    } else {
-      expect(manifest.bin).toBeUndefined();
-    }
-  });
+      // A bin entry must point inside the published file set.
+      if (withCli && type !== "css") {
+        const binPath = Object.values(manifest.bin ?? {})[0];
+        expect(binPath).toBeDefined();
+        expect(
+          manifest.files.some((dir) =>
+            (binPath as string).startsWith(`${dir}/`),
+          ),
+        ).toBe(true);
+      } else {
+        expect(manifest.bin).toBeUndefined();
+      }
+    },
+  );
 });

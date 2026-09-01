@@ -1,3 +1,5 @@
+// biome-ignore-all lint/correctness/noUnsafeOptionalChaining: GraphQL ExecutionResult["data"] is typed `| null | undefined`, so these assertions cast it and read a field directly. An absent result throws here, which fails the test the same way an assertion mismatch would.
+
 // =============================================================================
 // Execution paths: local execution, @defer incremental
 // delivery, drain-and-merge, the Relay format adapter, static extraction.
