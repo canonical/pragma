@@ -116,19 +116,25 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
 
-  it("R1 stays scoped: `create package --framework` gets the real unknown-option error", () => {
-    // Only `create component` ever had the flag; the other bindings must
-    // keep Commander's honest unknown-option error instead of a migration
-    // message about a grammar they never spoke.
+  it("R1 stays scoped: `create package --framework` is that leaf's OWN flag", () => {
+    // The retired-grammar message belongs to `create component`, whose
+    // framework became a path segment. `create package` speaks a different
+    // grammar in which `--framework` is a real select, so it must be parsed,
+    // never met with a migration message about a form it never spoke.
     const { status, stderr } = run([
       "create",
       "package",
       "--framework",
-      "react",
+      "svelte",
     ]);
+    // Still a refusal — the OTHER answers are missing — but not about this
+    // flag: it parsed, so it is absent from the Missing list.
     expect(status).toBe(2);
-    expect(stderr).toContain("unknown option '--framework'");
+    expect(stderr).not.toContain("unknown option '--framework'");
     expect(stderr).not.toContain("the framework is now a path segment");
+    expect(/Missing: ([^\n]*)\./.exec(stderr)?.[1]).not.toContain(
+      "--framework",
+    );
   }, 60_000);
 
   it("R1 stops at the terminator: `--framework` after `--` is an operand, not the retired flag", () => {
@@ -654,6 +660,7 @@ describe("the mounted create grammar (subprocess)", () => {
       "--name": "@canonical/replied-lib",
       "--type": "library",
       "--description": "A replied library.",
+      "--framework": "none",
     },
     "application/react": { "--app-path": "replied-app" },
   };
