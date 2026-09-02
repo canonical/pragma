@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
+
+### Bug Fixes
+
+* **deps:** update dependency chalk to v6 ([#1077](https://github.com/canonical/pragma/issues/1077)) ([077d7c6](https://github.com/canonical/pragma/commit/077d7c69ef30e9abc75b1b1c5663a2da4cad6b78))
+* **deps:** update dependency commander to v15 ([#1078](https://github.com/canonical/pragma/issues/1078)) ([8e3355f](https://github.com/canonical/pragma/commit/8e3355ff96e4f2e8e4cb08fb247444a60ec12935))
+
+
 # [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
 
 **Note:** Version bump only for package @canonical/webarchitect

@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
+
+### Bug Fixes
+
+* **storybook-addon-utils:** render the story inside the router provider, not into its children ([#1079](https://github.com/canonical/pragma/issues/1079)) ([6b1401c](https://github.com/canonical/pragma/commit/6b1401c96340e8a2afd9dccf6da63a46714bee9d)), closes [#996](https://github.com/canonical/pragma/issues/996) [#961](https://github.com/canonical/pragma/issues/961)
+
+
 # [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
 
 **Note:** Version bump only for package @canonical/react-ds-app

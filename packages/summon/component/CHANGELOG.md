@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
+
+* feat(react/ds-global)!: extend native props via ComponentProps intersection (#297) (#851) ([4c96482](https://github.com/canonical/pragma/commit/4c96482e5b9eff2a86cdca939a17b1f0374e498f)), closes [#297](https://github.com/canonical/pragma/issues/297) [#851](https://github.com/canonical/pragma/issues/851) [#297](https://github.com/canonical/pragma/issues/297) [#297](https://github.com/canonical/pragma/issues/297) [#628](https://github.com/canonical/pragma/issues/628)
+
+### BREAKING CHANGES
+
+* `ButtonBaseProps` is no longer exported from
+  `@canonical/react-ds-global`. Use `ButtonProps`.
+
+
 # [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
 
 

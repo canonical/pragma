@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
+
+### Bug Fixes
+
+* **storybook-config:** theme Storybook's documentation page chrome ([#1092](https://github.com/canonical/pragma/issues/1092)) ([4c501a2](https://github.com/canonical/pragma/commit/4c501a2a905388418be3d9e5169c156ea01e3473)), closes [#962](https://github.com/canonical/pragma/issues/962) [#962](https://github.com/canonical/pragma/issues/962)
+
+### BREAKING CHANGES
+
+* **storybook-config:** `disabledAddons` has been removed from CreateConfigOptions.
+
+
 # [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
 
 **Note:** Version bump only for package @canonical/storybook-addon-msw

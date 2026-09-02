@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
+
+### Bug Fixes
+
+* **deps:** update dependency chalk to v6 ([#1077](https://github.com/canonical/pragma/issues/1077)) ([077d7c6](https://github.com/canonical/pragma/commit/077d7c69ef30e9abc75b1b1c5663a2da4cad6b78))
+* **deps:** update dependency commander to v15 ([#1078](https://github.com/canonical/pragma/issues/1078)) ([8e3355f](https://github.com/canonical/pragma/commit/8e3355ff96e4f2e8e4cb08fb247444a60ec12935))
+* **pragma-cli:** check Node against the declared engines, not a hardcoded major ([#1089](https://github.com/canonical/pragma/issues/1089)) ([990f8f6](https://github.com/canonical/pragma/commit/990f8f60e9a2ca9d7238bdbbc6ab77d44a351252))
+* **pragma-cli:** move `colophon` out of the AI-agent help section ([#1060](https://github.com/canonical/pragma/issues/1060)) ([e1e9831](https://github.com/canonical/pragma/commit/e1e98313a44ab2f28fb76b4fc0cb67ee11cbc6ad))
+* **pragma-cli:** resolve the anatomy pack from anatomy-dsl 0.3.0 ([#1069](https://github.com/canonical/pragma/issues/1069)) ([025ea3b](https://github.com/canonical/pragma/commit/025ea3b7be75f9e9426efffb79583600c64b21ad)), closes [#main](https://github.com/canonical/pragma/issues/main)
+* **task:** report per-undo outcomes and isolate undo failures, so `setup --undo` tells the truth ([#1058](https://github.com/canonical/pragma/issues/1058)) ([92977b8](https://github.com/canonical/pragma/commit/92977b838304d1bef90716c0b0d9ed981106389b))
+
+### Features
+
+* **pragma-cli:** package-level embedded-pack parity gate and whole-corpus round-trip guarantee ([#1059](https://github.com/canonical/pragma/issues/1059)) ([e8e273a](https://github.com/canonical/pragma/commit/e8e273a4e94a753a8b4add37a6500dcc4ecf9682)), closes [#1042](https://github.com/canonical/pragma/issues/1042) [#1047](https://github.com/canonical/pragma/issues/1047) [pre-#1047](https://github.com/pre-/issues/1047) [#1047](https://github.com/canonical/pragma/issues/1047)
+* **summon-application:** make rendering a choice, and build the SPA arm it selects ([#1095](https://github.com/canonical/pragma/issues/1095)) ([1c74cc9](https://github.com/canonical/pragma/commit/1c74cc96ef730eae9d90a438be515e2167147c32))
+
+
 # [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
 
 

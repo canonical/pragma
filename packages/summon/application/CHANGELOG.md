@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
+
+### Features
+
+* **summon-application:** make rendering a choice, and build the SPA arm it selects ([#1095](https://github.com/canonical/pragma/issues/1095)) ([1c74cc9](https://github.com/canonical/pragma/commit/1c74cc96ef730eae9d90a438be515e2167147c32))
+
+
 # [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
 
 **Note:** Version bump only for package @canonical/summon-application

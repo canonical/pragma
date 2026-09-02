@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
+
+### Bug Fixes
+
+* **task:** report per-undo outcomes and isolate undo failures, so `setup --undo` tells the truth ([#1058](https://github.com/canonical/pragma/issues/1058)) ([92977b8](https://github.com/canonical/pragma/commit/92977b838304d1bef90716c0b0d9ed981106389b))
+
+
 # [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
 
 **Note:** Version bump only for package @canonical/task

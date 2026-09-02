@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
+
+* feat(router)!: type-level truth — reject what the runtime cannot do (#1063) ([8d12c0f](https://github.com/canonical/pragma/commit/8d12c0f2bdd162d640bec393b69d4f4de6bb6da3)), closes [#1063](https://github.com/canonical/pragma/issues/1063)
+
+### Bug Fixes
+
+* **router-react:** render route content and wrappers as their own fibers ([#1073](https://github.com/canonical/pragma/issues/1073)) ([4443cad](https://github.com/canonical/pragma/commit/4443cade417653335873295cc522104734a18dad))
+
+### BREAKING CHANGES
+
+* the legacy hand-rolled schema shape
+  `{ "~standard": { output, validate } }` is no longer accepted — use full
+  Standard Schema v1. A validator returning neither `{ value }` nor `{ issues }`
+  now throws instead of passing the value through, and
+  `StandardSchemaIssue.message` is required.
+
+  Removed public types: `SchemaLike`, `StandardSchemaLike`, `StripParamModifier`,
+  `UnionToIntersection`, `BuildPathFn`, `NavigateFn`, `WarmFn`, and
+  `LinkBuildOptions` (use `PathBuildOptions`).
+
+  Build-side `search` is now typed by the schema's *input* type rather than its
+  output, and both `search` and `params` build values are constrained to
+  serializable scalars. `NavigationIntent.search` matches.
+
+  `useRoute`, `useSearchParam` and `useSearchParams` no longer take type
+  parameters. `MemoryAdapter.getLocation()` returns `URL`, not `string | URL`.
+  `setSearchParams` with an explicit `undefined` now removes the param instead
+  of serializing the string "undefined".
+
+
 # [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
 
 **Note:** Version bump only for package @canonical/router-react

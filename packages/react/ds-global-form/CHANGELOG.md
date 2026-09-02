@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
+
+### Bug Fixes
+
+* **ds-global-form:** keep the caret still when a formatted value reformats ([#1062](https://github.com/canonical/pragma/issues/1062)) ([f42c32e](https://github.com/canonical/pragma/commit/f42c32e5d64102cdb08e488e7ecb87f8b0773e13))
+
+
 # [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
 
 **Note:** Version bump only for package @canonical/react-ds-global-form

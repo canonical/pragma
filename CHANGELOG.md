@@ -3,6 +3,57 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
+
+* feat(react/ds-global)!: extend native props via ComponentProps intersection (#297) (#851) ([4c96482](https://github.com/canonical/pragma/commit/4c96482e5b9eff2a86cdca939a17b1f0374e498f)), closes [#297](https://github.com/canonical/pragma/issues/297) [#851](https://github.com/canonical/pragma/issues/851) [#297](https://github.com/canonical/pragma/issues/297) [#297](https://github.com/canonical/pragma/issues/297) [#628](https://github.com/canonical/pragma/issues/628)
+* feat(router)!: type-level truth — reject what the runtime cannot do (#1063) ([8d12c0f](https://github.com/canonical/pragma/commit/8d12c0f2bdd162d640bec393b69d4f4de6bb6da3)), closes [#1063](https://github.com/canonical/pragma/issues/1063)
+
+### Bug Fixes
+
+* **ci:** make the release publish deterministic and recoverable ([#1057](https://github.com/canonical/pragma/issues/1057)) ([616ed6d](https://github.com/canonical/pragma/commit/616ed6dd3e557a7e1a976a6a5cd519297514eadf)), closes [sigstore/sigstore-js#1708](https://github.com/sigstore/sigstore-js/issues/1708) [#1709](https://github.com/canonical/pragma/issues/1709)
+* **deps:** update dependency chalk to v6 ([#1077](https://github.com/canonical/pragma/issues/1077)) ([077d7c6](https://github.com/canonical/pragma/commit/077d7c69ef30e9abc75b1b1c5663a2da4cad6b78))
+* **deps:** update dependency commander to v15 ([#1078](https://github.com/canonical/pragma/issues/1078)) ([8e3355f](https://github.com/canonical/pragma/commit/8e3355ff96e4f2e8e4cb08fb247444a60ec12935))
+* **ds-global-form:** keep the caret still when a formatted value reformats ([#1062](https://github.com/canonical/pragma/issues/1062)) ([f42c32e](https://github.com/canonical/pragma/commit/f42c32e5d64102cdb08e488e7ecb87f8b0773e13))
+* **pragma-cli:** check Node against the declared engines, not a hardcoded major ([#1089](https://github.com/canonical/pragma/issues/1089)) ([990f8f6](https://github.com/canonical/pragma/commit/990f8f60e9a2ca9d7238bdbbc6ab77d44a351252))
+* **pragma-cli:** move `colophon` out of the AI-agent help section ([#1060](https://github.com/canonical/pragma/issues/1060)) ([e1e9831](https://github.com/canonical/pragma/commit/e1e98313a44ab2f28fb76b4fc0cb67ee11cbc6ad))
+* **pragma-cli:** resolve the anatomy pack from anatomy-dsl 0.3.0 ([#1069](https://github.com/canonical/pragma/issues/1069)) ([025ea3b](https://github.com/canonical/pragma/commit/025ea3b7be75f9e9426efffb79583600c64b21ad)), closes [#main](https://github.com/canonical/pragma/issues/main)
+* **react-ds-global:** Fixes `Section` padding being bound to nonexistent tokens ([#926](https://github.com/canonical/pragma/issues/926)) ([f0e8fd4](https://github.com/canonical/pragma/commit/f0e8fd49860e8165f99e5d6b1b693454c35a2c2c))
+* **router-react:** render route content and wrappers as their own fibers ([#1073](https://github.com/canonical/pragma/issues/1073)) ([4443cad](https://github.com/canonical/pragma/commit/4443cade417653335873295cc522104734a18dad))
+* **storybook-addon-utils:** render the story inside the router provider, not into its children ([#1079](https://github.com/canonical/pragma/issues/1079)) ([6b1401c](https://github.com/canonical/pragma/commit/6b1401c96340e8a2afd9dccf6da63a46714bee9d)), closes [#996](https://github.com/canonical/pragma/issues/996) [#961](https://github.com/canonical/pragma/issues/961)
+* **storybook-config:** theme Storybook's documentation page chrome ([#1092](https://github.com/canonical/pragma/issues/1092)) ([4c501a2](https://github.com/canonical/pragma/commit/4c501a2a905388418be3d9e5169c156ea01e3473)), closes [#962](https://github.com/canonical/pragma/issues/962) [#962](https://github.com/canonical/pragma/issues/962)
+* **task:** report per-undo outcomes and isolate undo failures, so `setup --undo` tells the truth ([#1058](https://github.com/canonical/pragma/issues/1058)) ([92977b8](https://github.com/canonical/pragma/commit/92977b838304d1bef90716c0b0d9ed981106389b))
+
+### Features
+
+* **pragma-cli:** package-level embedded-pack parity gate and whole-corpus round-trip guarantee ([#1059](https://github.com/canonical/pragma/issues/1059)) ([e8e273a](https://github.com/canonical/pragma/commit/e8e273a4e94a753a8b4add37a6500dcc4ecf9682)), closes [#1042](https://github.com/canonical/pragma/issues/1042) [#1047](https://github.com/canonical/pragma/issues/1047) [pre-#1047](https://github.com/pre-/issues/1047) [#1047](https://github.com/canonical/pragma/issues/1047)
+* **summon-application:** make rendering a choice, and build the SPA arm it selects ([#1095](https://github.com/canonical/pragma/issues/1095)) ([1c74cc9](https://github.com/canonical/pragma/commit/1c74cc96ef730eae9d90a438be515e2167147c32))
+* **svelte-ds-global:** Upstream Svelte `Announcement` from WPE tier to Global ([#961](https://github.com/canonical/pragma/issues/961)) ([5bad77e](https://github.com/canonical/pragma/commit/5bad77e66e9da624cee6364ddb3548e95230813e))
+
+### BREAKING CHANGES
+
+* `ButtonBaseProps` is no longer exported from
+  `@canonical/react-ds-global`. Use `ButtonProps`.
+* **storybook-config:** `disabledAddons` has been removed from CreateConfigOptions.
+* the legacy hand-rolled schema shape
+  `{ "~standard": { output, validate } }` is no longer accepted — use full
+  Standard Schema v1. A validator returning neither `{ value }` nor `{ issues }`
+  now throws instead of passing the value through, and
+  `StandardSchemaIssue.message` is required.
+
+  Removed public types: `SchemaLike`, `StandardSchemaLike`, `StripParamModifier`,
+  `UnionToIntersection`, `BuildPathFn`, `NavigateFn`, `WarmFn`, and
+  `LinkBuildOptions` (use `PathBuildOptions`).
+
+  Build-side `search` is now typed by the schema's *input* type rather than its
+  output, and both `search` and `params` build values are constrained to
+  serializable scalars. `NavigationIntent.search` matches.
+
+  `useRoute`, `useSearchParam` and `useSearchParams` no longer take type
+  parameters. `MemoryAdapter.getLocation()` returns `URL`, not `string | URL`.
+  `setSearchParams` with an explicit `undefined` now removes the param instead
+  of serializing the string "undefined".
+
+
 # [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
 
 
