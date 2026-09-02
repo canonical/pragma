@@ -192,10 +192,18 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       {
         v: "application",
         args: ["[app-path]"],
-        // ssr/router are GONE: always-on facts, not prompts — the pair had no
-        // reachable explicit form (only `--no-` spellings the generator's own
-        // guard rejected), so the projection no longer carries them.
-        flags: ["--no-forms", "--intl", "--relay", "--no-run-install"],
+        // router is GONE: an always-on fact, not a prompt — it had no
+        // reachable explicit form (only a `--no-` spelling the generator's own
+        // guard rejected), so the projection no longer carries it. `rendering`
+        // is the SSR axis' replacement (L-CIS-3): a select, so it is spelled as
+        // a value and never as a negation.
+        flags: [
+          "--no-forms",
+          "--intl",
+          "--rendering",
+          "--relay",
+          "--no-run-install",
+        ],
         mutates: true,
         mcp: "create_application",
       },

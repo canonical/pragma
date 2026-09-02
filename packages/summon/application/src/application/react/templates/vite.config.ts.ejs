@@ -1,7 +1,11 @@
 import react from "@vitejs/plugin-react";
 import browserslist from "browserslist";
 import { browserslistToTargets } from "lightningcss";
+<% if (spa) { -%>
+import { defineConfig, type UserConfig } from "vite";
+<% } else { -%>
 import { defineConfig } from "vite";
+<% } -%>
 <% if (relay) { -%>
 import relay from "vite-plugin-relay-lite";
 <% } -%>
@@ -10,6 +14,15 @@ import relay from "vite-plugin-relay-lite";
 // in package.json "imports" and resolved natively by Vite — no resolver plugin.
 const PORT = Number(process.env.PORT) || undefined;
 
+<% if (spa) { -%>
+// Every command (`dev`, `build:client`, `preview`) serves the same client
+// build (`--outDir dist/client`); there is no second, server-mode pass, so
+// the config takes no mode. It is a named const because a zero-arg config
+// function gets no contextual type from Vite, so every string literal below
+// would widen (`transformer: string`, `cssMinify: string`, ...) and
+// defineConfig would reject the object.
+const config: UserConfig = {
+<% } else { -%>
 // `build:server` runs `vite build --mode server` to compile the two server
 // renderers in a single pass. Each is a separate, individually-instantiated
 // Lego brick, so they are named Rollup inputs — the build emits
@@ -18,6 +31,7 @@ const PORT = Number(process.env.PORT) || undefined;
 // (`dev`, `build:client`, `preview`) uses the default mode and the SPA client
 // build (`--ssrManifest --outDir dist/client`).
 export default defineConfig(({ mode }) => ({
+<% } -%>
 <% if (relay) { -%>
   // Relay's `graphql\`...\`` tags must be rewritten into imports of the
   // compiler-generated artifacts. `@vitejs/plugin-react` v6 is OXC-based (no
@@ -39,8 +53,12 @@ export default defineConfig(({ mode }) => ({
 <% } else { -%>
   plugins: [react()],
 <% } -%>
+<% if (spa) { -%>
+  // Honour the PORT env var for `dev` and `preview` alike.
+<% } else { -%>
   // Honour the PORT env var for `dev` (SPA) and `preview` so all server scripts
   // — including the SSR ones, which already read PORT — respond to it uniformly.
+<% } -%>
   server: { port: PORT },
   preview: { port: PORT },
   // CSS delivery is the app's job, not the libraries': @canonical/* packages
@@ -56,10 +74,16 @@ export default defineConfig(({ mode }) => ({
     lightningcss: { targets: browserslistToTargets(browserslist()) },
   },
   build: {
+<% if (spa) { -%>
+    // Minify CSS with Lightning CSS too (instead of the esbuild default), so
+    // a single tool owns both downleveling and minification.
+<% } else { -%>
     // Minify CSS with Lightning CSS too (instead of the esbuild default), so
     // a single tool owns both downleveling and minification — in the client
     // build and the server build alike.
+<% } -%>
     cssMinify: "lightningcss",
+<% if (!spa) { -%>
     ...(mode === "server"
       ? {
           ssr: true,
@@ -72,8 +96,20 @@ export default defineConfig(({ mode }) => ({
           },
         }
       : undefined),
+<% } -%>
   },
+<%# The `ssr` key stays in the SPA arm on purpose: this app never runs a -%>
+<%# server, but vitest resolves modules through Vite's SSR (Node-style) -%>
+<%# pipeline, so the same externalisation rules apply to `bun run test`. -%>
   ssr: {
+<% if (spa) { -%>
+    // Read by vitest, not by a server: it loads modules through Vite's SSR
+    // (Node-style) resolver, which ignores packages that declare only a
+    // "module" entry (ERR_RESOLVE_PACKAGE_ENTRY_FAIL) and cannot load the CSS
+    // side-effect imports in their built output (ERR_UNKNOWN_FILE_EXTENSION).
+    // Bundling the whole @canonical scope sidesteps both, for any current or
+    // future dependency.
+<% } else { -%>
     // Bundle @canonical/* for SSR rather than externalising them, for two
     // reasons: (1) some packages declare only a "module" entry (no
     // "main"/"exports"), which Vite's SSR (Node-style) resolver ignores —
@@ -82,7 +118,8 @@ export default defineConfig(({ mode }) => ({
     // which Node cannot load (ERR_UNKNOWN_FILE_EXTENSION) but Vite's SSR
     // transform no-ops. The regex covers the whole scope so any current or
     // future @canonical dependency is handled.
-<% if (relay) { -%>
+<% } -%>
+<% if (relay && !spa) { -%>
     //
     // The Relay packages (react-relay, relay-runtime, relay-runtime-network,
     // graphql) stay externalised like react itself. Three packaging defects
@@ -98,4 +135,12 @@ export default defineConfig(({ mode }) => ({
 <% } -%>
     noExternal: [/^@canonical\//],
   },
+<% if (spa) { -%>
+};
+
+// Exported as a config FUNCTION, not the object: vitest.config.ts resolves
+// it with viteConfig({ command, mode }) before merging its own settings in.
+export default defineConfig(() => config);
+<% } else { -%>
 }));
+<% } -%>

@@ -45,12 +45,21 @@ export default function HomePage(): ReactElement {
 <% } else { -%>
       <h2>Streaming with Suspense</h2>
 <% } -%>
+<% if (spa) { -%>
+      <p>
+        <code>LazyComponent</code> reads a synthetic delayed fetch with React 19{" "}
+        <code>use()</code>, so it suspends. Inside this <code>Suspense</code>{" "}
+        boundary the rest of the page renders immediately and the fallback
+        stands in until the resolved content swaps itself back in.
+      </p>
+<% } else { -%>
       <p>
         <code>LazyComponent</code> reads a synthetic delayed fetch with React 19{" "}
         <code>use()</code>, so it suspends. Inside this <code>Suspense</code>{" "}
         boundary the server streams the page shell first, shows the fallback,
         then flushes the resolved content in — no full client round-trip.
       </p>
+<% } -%>
 <% if (intl) { -%>
       <Suspense fallback={<p>{t("home.streamFallback")}</p>}>
 <% } else { -%>

@@ -15,7 +15,8 @@
  * `create` verbs take. No new package edge: pragma already depends on
  * summon-core, and never on the summon bin.
  *
- * Five generators are covered: component × {react, svelte, lit}, package, and
+ * Five generators are covered across seven fixtures: component × {react, svelte, lit},
+ * package, and
  * application. A cross-binary subprocess guard lives in byteEquality.subprocess.test.ts.
  */
 
@@ -172,6 +173,32 @@ const cases: Case[] = [
       appPath: "my-app",
       forms: true,
       relay: false,
+      runInstall: false,
+    },
+  },
+  {
+    fixture: "application-spa",
+    kind: "application",
+    framework: "",
+    params: {
+      appPath: "my-app",
+      forms: true,
+      intl: false,
+      relay: false,
+      rendering: "spa",
+      runInstall: false,
+    },
+  },
+  {
+    fixture: "application-spa-all",
+    kind: "application",
+    framework: "",
+    params: {
+      appPath: "my-app",
+      forms: true,
+      intl: true,
+      relay: true,
+      rendering: "spa",
       runInstall: false,
     },
   },

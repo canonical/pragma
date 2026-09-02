@@ -688,6 +688,7 @@ describe("projection fidelity — the committed surface IS the live generators (
       "appPath",
       "forms",
       "intl",
+      "rendering",
       "relay",
       "runInstall",
     ]);

@@ -1,9 +1,18 @@
 <% if (intl) { -%>
+<% if (spa) { -%>
+import { negotiateLocale } from "@canonical/i18n-core";
+<% } else { -%>
 import { isSupportedLocale, negotiateLocale } from "@canonical/i18n-core";
+<% } -%>
 import { I18nProvider } from "@canonical/i18n-react";
 <% } -%>
 import { HeadProvider } from "@canonical/react-head";
 import { createBrowserAdapter, createRouter } from "@canonical/router-core";
+<%# Without readDehydratedState the specifier list fits on one line, which is -%>
+<%# what the formatter insists on — so the SPA arm cannot share this block. -%>
+<% if (spa) { -%>
+import { Outlet, RouterProvider } from "@canonical/router-react";
+<% } else { -%>
 import {
   Outlet,
 <% if (intl) { -%>
@@ -14,7 +23,12 @@ import {
   RouterProvider,
 <% } -%>
 } from "@canonical/router-react";
+<% } -%>
+<% if (spa) { -%>
+import { createRoot } from "react-dom/client";
+<% } else { -%>
 import { hydrateRoot } from "react-dom/client";
+<% } -%>
 <% if (relay) { -%>
 import { RelayEnvironmentProvider } from "react-relay";
 <% } -%>
@@ -24,6 +38,11 @@ import { catalogs, i18nConfig } from "#i18n/index.js";
 <% if (relay) { -%>
 import { getBrowserEnvironment } from "#relay/environment.js";
 <% } -%>
+<%# Same story: the SPA arm never pulls the two SSR payload symbols, so the three -%>
+<%# base names fit on one line and the formatter requires them there. -%>
+<% if (spa) { -%>
+import { appRoutes, middleware, notFoundRoute } from "../routes.js";
+<% } else { -%>
 import {
   appRoutes,
   middleware,
@@ -33,8 +52,17 @@ import {
   type SerializedRelayPayload,
 <% } -%>
 } from "../routes.js";
+<% } -%>
 import "#styles/index.css";
-<% if (relay) { -%>
+<% if (relay && spa) { -%>
+
+// Claim the browser-session Relay environment FIRST — before the router exists
+// — so the first `useLazyLoadQuery` and any warm hook fired during router
+// construction share one store. A client-only app has no server-captured
+// payload to seed from, so the store starts empty and the first query fetches.
+const relayEnvironment = getBrowserEnvironment();
+<% } -%>
+<% if (relay && !spa) { -%>
 
 // Seed the browser-session Relay environment FIRST — before the router exists
 // — from the server-captured payloads riding __INITIAL_DATA__ (SSR pages) so
@@ -54,6 +82,15 @@ const relayEnvironment = getBrowserEnvironment({
 });
 <% } -%>
 
+<% if (spa) { -%>
+// Nothing was rendered server-side, so there is no dehydrated state to resume
+// from: the router always performs a normal initial load.
+const router = createRouter(appRoutes, {
+  adapter: createBrowserAdapter(),
+  middleware: [...middleware],
+  notFound: notFoundRoute,
+});
+<% } else { -%>
 // On SSR pages __INITIAL_DATA__ carries the flat dehydrated router state
 // (href/kind/routeId/status); hydrating from it resumes the server-rendered
 // match and skips the duplicate initial load. In the SPA cells there is no
@@ -65,8 +102,24 @@ const router = createRouter(appRoutes, {
   notFound: notFoundRoute,
   hydratedState: readDehydratedState() ?? undefined,
 });
+<% } -%>
 
-<% if (intl) { -%>
+<% if (intl && spa) { -%>
+/**
+ * Resolve the locale for the first client render. Nothing negotiated it
+ * server-side, so the pure negotiation runs here: the cookie wins, then the
+ * browser's language list (the client-side stand-in for the Accept-Language
+ * header).
+ */
+function resolveInitialLocale(): string {
+  return negotiateLocale(i18nConfig, {
+    cookieHeader: document.cookie,
+    acceptLanguage: navigator.languages?.join(",") ?? navigator.language,
+  });
+}
+
+<% } -%>
+<% if (intl && !spa) { -%>
 /**
  * Resolve the locale for the first client render.
  *
@@ -94,10 +147,15 @@ if (!root) {
   throw new Error('Root element "#root" not found');
 }
 
-<% if (relay) { -%>
+<%# One mount site, four provider stacks. The stacks differ only by nesting -%>
+<%# depth, so they cannot share a body without changing every indent. -%>
+<% if (spa) { -%>
+createRoot(root).render(
+<% } else { -%>
 hydrateRoot(
   root,
-<% if (intl) { -%>
+<% } -%>
+<% if (relay && intl) { -%>
   <I18nProvider
     config={i18nConfig}
     catalogs={catalogs}
@@ -111,7 +169,7 @@ hydrateRoot(
       </RelayEnvironmentProvider>
     </HeadProvider>
   </I18nProvider>,
-<% } else { -%>
+<% } else if (relay) { -%>
   <HeadProvider>
     <RelayEnvironmentProvider environment={relayEnvironment}>
       <RouterProvider router={router}>
@@ -119,12 +177,7 @@ hydrateRoot(
       </RouterProvider>
     </RelayEnvironmentProvider>
   </HeadProvider>,
-<% } -%>
-);
-<% } else { -%>
-hydrateRoot(
-  root,
-<% if (intl) { -%>
+<% } else if (intl) { -%>
   <I18nProvider
     config={i18nConfig}
     catalogs={catalogs}
@@ -144,4 +197,3 @@ hydrateRoot(
   </HeadProvider>,
 <% } -%>
 );
-<% } -%>

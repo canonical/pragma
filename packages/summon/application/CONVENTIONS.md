@@ -1,7 +1,7 @@
 # Application Conventions
 
 > From `@canonical/summon-application`
-> Last updated: 2026-07-10
+> Last updated: 2026-09-01
 
 ## Taxonomy Key
 
@@ -13,11 +13,12 @@
 | `A4` | Routes | Route definition patterns |
 | `A5` | Wrappers | Layout wrapper patterns |
 | `A6` | Middleware | Cross-cutting concern patterns |
-| `A7` | SSR | Server-side rendering |
+| `A7` | SSR | Server-side rendering (the default; omitted with `--rendering spa`) |
 | `A8` | Head | Document head management |
 | `A9` | Navigation | Client-side navigation |
 | `A10` | Types | Type registration and safety |
 | `A11` | Data | Relay (GraphQL) data layer (when `--relay` is enabled) |
+| `A12` | i18n | Locale negotiation and message catalogs (when `--intl` is enabled) |
 
 ---
 
@@ -26,7 +27,7 @@
 | ID | Rule | Gate |
 |----|------|------|
 | A1.1 | Client entry point lives in `src/client/` | `src/client/entry.tsx` exists |
-| A1.2 | Server entry points live in `src/server/` | `src/server/entry.tsx` exists |
+| A1.2 | Server entry points live in `src/server/` (absent with `--rendering spa`) | `src/server/entry.tsx` exists unless `--rendering spa` |
 | A1.3 | Feature domains live in `src/domains/` | `src/domains/` dir exists |
 | A1.4 | Shared components live in `src/lib/` | `src/lib/` dir exists |
 | A1.5 | Styles live in `src/styles/` | `src/styles/index.css` exists |
@@ -208,6 +209,11 @@ const [invoices, payments] = group(sidebarWrapper, [
 
 ## A7 — SSR
 
+Present unless the application is scaffolded with `--rendering spa`, which omits the
+whole server layer. A `--rendering spa` app has no `src/server/`, no `/sitemap.xml`, and
+no server-painted first paint; its client entry mounts with `createRoot`
+rather than `hydrateRoot`.
+
 | ID | Rule | Gate |
 |----|------|------|
 | A7.1 | Server entry renders full `<html>` document as `ServerEntrypoint` | `ServerEntrypointProps` used |
@@ -227,7 +233,7 @@ const [invoices, payments] = group(sidebarWrapper, [
 | A8.1 | Head management uses `@canonical/react-head` | `useHead` import present |
 | A8.2 | `useHead()` called in every page component | call present per page |
 | A8.3 | Dynamic titles use deps array | `useHead({...}, [deps])` pattern |
-| A8.4 | `HeadProvider` wraps the app in both client and server entries | provider present |
+| A8.4 | `HeadProvider` wraps the app in every emitted entry — client, and server unless `--rendering spa` | provider present |
 | A8.5 | Head is separate from the router — no router dependency | no router imports in head |
 
 ---
@@ -267,20 +273,19 @@ Present only when the application is scaffolded with `--relay`.
 | A11.3 | Compiler artifacts in `src/relay/__generated__/` are committed, never rebuilt by the app build (`codegen: false`); regenerate explicitly with the `relay` script after any schema or `graphql` tag edit | committed artifacts match schema |
 | A11.4 | Data requirements are colocated: containers use `useLazyLoadQuery`, leaf components own their `useFragment`, parents just spread it | fragment per component |
 | A11.5 | Query subtrees pair `Suspense` (pending state) with an `ErrorBoundary` (failure state) | both boundaries wrap the subtree |
-| A11.6 | Query subtrees render inside `ClientOnly` until SSR data serialization/hydration is supported | `ClientOnly` wraps query subtrees |
-| A11.7 | One Relay environment per browser session (module scope in the client entry); a fresh environment per request in the server entry | environment creation sites |
+| A11.6 | Query subtrees guard on `typeof document` / a store `check()` so the server renders them only from prefetched data (vacuously true under `--rendering spa`, where there is no server) | guard present on query subtrees |
+| A11.7 | One Relay environment per browser session (module scope in the client entry); under `--rendering ssr`, additionally a fresh environment per request in the server entry | environment creation sites |
 
-### ClientOnly (pending SSR data support)
+### ClientOnly (emitted, unused)
 
-`src/lib/ClientOnly/` is emitted (and exported from the lib barrel) only when
-`--relay` is enabled: the catalog page is its only consumer today. It defers
-`children` until after hydration, so `useLazyLoadQuery` — which fetches and
-suspends during render — never runs on the server, where there is no way yet
-to serialize the fetched store for the client. The server streams the
-fallback; the browser fetches after hydration. The server entry still
-provides a fresh per-request `RelayEnvironmentProvider`, so any component
-touching Relay context renders without branching on runtime. Once SSR data
-serialization/hydration lands, the guard is removed rather than generalised.
+`src/lib/ClientOnly/` is emitted (and exported from the lib barrel) when
+`--relay` is enabled and `--rendering spa` is not. It defers `children` until after
+hydration. **Nothing in the scaffold renders it**: the catalog page now guards
+on `typeof document` plus a store `check()` (A11.6), which lets the server
+render the subtree when the prefetch already filled the store instead of
+always deferring it. `ClientOnly` remains as a building block for subtrees
+that genuinely cannot render server-side. Under `--rendering spa` it would be a
+guaranteed no-op, so it is not emitted.
 
 ### Committed artifacts
 
@@ -289,6 +294,21 @@ relay-compiler output of the committed `schema.graphql` and the catalog
 queries. The Vite plugin runs with `codegen: false`, so the artifacts are a
 source-of-truth input to the build, not a build product — edit a query or the
 schema, run the `relay` script, and commit the regenerated artifacts.
+
+---
+
+## A12 — i18n
+
+Present only when the application is scaffolded with `--intl`.
+
+| ID | Rule | Gate |
+|----|------|------|
+| A12.1 | Locale config and message catalogs live in `src/i18n/` (one module per locale, re-exported from a barrel) | `src/i18n/config.ts` exists |
+| A12.2 | Negotiation is a pure function over sources — cookie first, then the language list — never a runtime branch | `negotiateLocale(config, sources)` call sites |
+| A12.3 | The server negotiates from the request (cookie, `Accept-Language`) and publishes the result on `__INITIAL_DATA__`; the client reuses it so hydration cannot mismatch | server entry sets it, client entry reads it |
+| A12.4 | Under `--rendering spa` the same negotiation runs client-side against `document.cookie` and `navigator.languages` | client entry negotiates directly |
+| A12.5 | User-facing copy goes through `useTranslation()` under `--intl`. Developer-facing prose explaining the scaffold to whoever reads it stays as literals and out of the catalogs — the templates mark those passages | `t(...)` used for chrome and user copy |
+| A12.6 | Storybook exposes a locale toolbar via the `withI18n` decorator, so stories render in any catalog | decorator registered |
 
 ---
 

@@ -35,6 +35,7 @@ describe("application/react generator", () => {
         appPath: "my-app",
         forms: false,
         intl: false,
+        rendering: "ssr",
         relay: false,
         runInstall: false,
       }),
@@ -119,11 +120,16 @@ describe("application/react generator", () => {
       .map((rel) => (rel === "gitignore" ? ".gitignore" : rel));
 
     // Generate with all features on so conditionally-included templates emit.
+    // `rendering` is the exception, and deliberately "ssr": it is the only
+    // SUBTRACTIVE answer, so the SPA tree is a strict subset of the SSR one.
+    // Asking for "spa" here would drop src/server/ and src/sitemap/ and then
+    // report them as unwired. The SSR arm is therefore the maximal run.
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
         forms: true,
         intl: true,
+        rendering: "ssr",
         relay: true,
         runInstall: false,
       }),
@@ -151,6 +157,7 @@ describe("application/react generator", () => {
         appPath: "my-app",
         forms: true,
         intl: false,
+        rendering: "ssr",
         relay: false,
         runInstall: false,
       }),
@@ -184,6 +191,7 @@ describe("application/react generator", () => {
         appPath: "my-app",
         forms: false,
         intl: false,
+        rendering: "ssr",
         relay: false,
         runInstall: false,
       }),
@@ -209,6 +217,7 @@ describe("application/react generator", () => {
         appPath: "my-app",
         forms: false,
         intl: false,
+        rendering: "ssr",
         relay: true,
         runInstall: false,
       }),
@@ -289,6 +298,7 @@ describe("application/react generator", () => {
           appPath,
           forms: false,
           intl: false,
+          rendering: "ssr",
           relay: true,
           runInstall: false,
         }),
@@ -320,6 +330,7 @@ describe("application/react generator", () => {
         appPath: "my-app",
         forms: true,
         intl: false,
+        rendering: "ssr",
         relay: false,
         runInstall: false,
       }),
@@ -349,12 +360,82 @@ describe("application/react generator", () => {
     expect(filePaths).not.toContain("my-app/relay.config.json");
   });
 
+  it('includes the server, sitemap and ClientOnly when rendering="ssr"', () => {
+    const result = dryRun(
+      generators["application/react"].generate({
+        appPath: "my-app",
+        forms: true,
+        intl: false,
+        rendering: "ssr",
+        relay: true,
+        runInstall: false,
+      }),
+    );
+    const filePaths = result.effects
+      .filter((e) => e._tag === "WriteFile" || e._tag === "CopyFile")
+      .map(
+        (e) =>
+          (e as { path?: string; dest?: string }).path ??
+          (e as { dest?: string }).dest,
+      );
+
+    expect(filePaths).toContain("my-app/src/server/entry.tsx");
+    expect(filePaths).toContain("my-app/src/server/renderer.tsx");
+    expect(filePaths).toContain("my-app/src/server/server.express.ts");
+    expect(filePaths).toContain("my-app/src/server/server.bun.ts");
+    expect(filePaths).toContain("my-app/src/server/preview.express.ts");
+    expect(filePaths).toContain("my-app/src/server/preview.bun.ts");
+    expect(filePaths).toContain("my-app/src/sitemap/renderer.ts");
+    expect(filePaths).toContain("my-app/src/sitemap/getSitemapItems.ts");
+    // ClientOnly is an SSR-safety wrapper, so it rides --relay AND the SSR arm.
+    expect(filePaths).toContain("my-app/src/lib/ClientOnly/ClientOnly.tsx");
+  });
+
+  it('excludes the server, sitemap and ClientOnly when rendering="spa"', () => {
+    const result = dryRun(
+      generators["application/react"].generate({
+        appPath: "my-app",
+        forms: true,
+        intl: false,
+        rendering: "spa",
+        relay: true,
+        runInstall: false,
+      }),
+    );
+    const filePaths = result.effects
+      .filter((e) => e._tag === "WriteFile" || e._tag === "CopyFile")
+      .map(
+        (e) =>
+          (e as { path?: string; dest?: string }).path ??
+          (e as { dest?: string }).dest,
+      );
+
+    expect(
+      filePaths.filter((p) => p?.startsWith("my-app/src/server/")),
+    ).toEqual([]);
+    expect(
+      filePaths.filter((p) => p?.startsWith("my-app/src/sitemap/")),
+    ).toEqual([]);
+    expect(
+      filePaths.filter((p) => p?.startsWith("my-app/src/lib/ClientOnly/")),
+    ).toEqual([]);
+    // The e2e harness is not SSR machinery — it spawns `bun run <script>` and
+    // polls HTTP, which the surviving dev/preview cells still need.
+    expect(filePaths).toContain("my-app/test/e2e/serverHarness.ts");
+    expect(filePaths).toContain("my-app/test/e2e/servers.e2e.ts");
+    expect(filePaths).toContain("my-app/vitest.e2e.config.ts");
+    // The SPA arm is subtractive: the relay layer it does not touch ships.
+    expect(filePaths).toContain("my-app/src/relay/environment.ts");
+    expect(filePaths).toContain("my-app/patches/react-relay@21.0.1.patch");
+  });
+
   it("includes the i18n layer and locale switcher when intl=true", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
         forms: false,
         intl: true,
+        rendering: "ssr",
         relay: false,
         runInstall: false,
       }),
@@ -383,6 +464,7 @@ describe("application/react generator", () => {
         appPath: "my-app",
         forms: false,
         intl: false,
+        rendering: "ssr",
         relay: false,
         runInstall: false,
       }),
@@ -408,6 +490,7 @@ describe("application/react generator", () => {
         appPath: "custom-app",
         forms: false,
         intl: false,
+        rendering: "ssr",
         relay: false,
         runInstall: false,
       }),
@@ -432,6 +515,7 @@ describe("application/react generator", () => {
       appPath: "my-app",
       forms: false,
       intl: false,
+      rendering: "ssr",
       relay: false,
       runInstall: false,
     });

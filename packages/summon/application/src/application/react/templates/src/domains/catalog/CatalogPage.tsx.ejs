@@ -44,6 +44,15 @@ export default function CatalogPage(): ReactElement {
         <code>src/relay/schema.ts</code> — set <code>VITE_GRAPHQL_URL</code> to
         point it at a real endpoint instead.
       </p>
+<% if (spa) { -%>
+      {/*
+        There is no server to prefetch against, so `useLazyLoadQuery`
+        (store-or-network) always goes to the network on first render and
+        suspends until it resolves. `canRenderQuery` below is therefore
+        always true here — it exists for the SSR arm, where the server may
+        have nothing seeded to render from.
+      */}
+<% } else { -%>
       {/*
         SSR: the server prefetches this route's declared query (see
         `serverQueries` in src/routes.tsx) and seeds both render environments
@@ -53,6 +62,7 @@ export default function CatalogPage(): ReactElement {
         second fetch. If the prefetch failed, the query suspends and fetches
         through the active environment instead.
       */}
+<% } -%>
       {/*
         The canonical Relay pairing: Suspense renders the pending state while
         `useLazyLoadQuery` is in flight, and the ErrorBoundary renders the
@@ -60,6 +70,7 @@ export default function CatalogPage(): ReactElement {
         `VITE_GRAPHQL_URL` mode) — without it a thrown query error would
         unmount the whole tree to a blank page.
       */}
+<% if (!spa) { -%>
       {/*
         On the server, the query renders only when the SSR prefetch already
         seeded the store — after a failed or timed-out prefetch, querying here
@@ -68,6 +79,7 @@ export default function CatalogPage(): ReactElement {
         markup matches, since a client without payloads paints the same
         fallback via Suspense first.
       */}
+<% } -%>
       {canRenderQuery ? (
 <% if (intl) { -%>
         <ErrorBoundary fallback={<p role="alert">{t("catalog.error")}</p>}>

@@ -32,6 +32,7 @@ export interface ApplicationReactAnswers {
   readonly appPath: string;
   readonly forms: boolean;
   readonly intl: boolean;
+  readonly rendering: "ssr" | "spa";
   readonly relay: boolean;
   readonly runInstall: boolean;
 }
@@ -46,13 +47,16 @@ const prompts: PromptDefinition[] = [
     validate: validateAppPath,
     group: "Application",
   },
-  // SSR and the router are NOT prompts: they are always on (the scaffold has no
-  // SPA arm — every template assumes both), so a question that only ever
-  // accepted its default was two dead wizard steps and, worse, an unanswerable
-  // refusal: a default-`true` confirm can be made explicit ONLY by negating it
-  // (`--no-ssr`/`--no-router`), which the old cross-answer guard then rejected —
-  // so `create application react` had no reachable all-flags completion. The
-  // help text states the facts; the flags simply do not exist.
+  // The router is NOT a prompt: it is always on (every template assumes it), so
+  // a question that only ever accepted its default was a dead wizard step and,
+  // worse, an unanswerable refusal — a default-`true` confirm can be made
+  // explicit ONLY by negating it (`--no-router`), which the old cross-answer
+  // guard then rejected, leaving `create application react` with no reachable
+  // all-flags completion. SSR was retired alongside it for the same reason, but
+  // the reason has since expired: `rendering` below IS the second answer SSR
+  // lacked. It is a select rather than a revived confirm, so its explicit
+  // spelling is a VALUE (`--rendering spa`) and never a negation — the shape
+  // that made the old pair unanswerable. No cross-answer guard comes back.
   {
     name: "forms",
     type: "confirm",
@@ -66,6 +70,28 @@ const prompts: PromptDefinition[] = [
     message:
       "Include internationalisation (locale negotiation, translated UI, locale switcher)?",
     default: false,
+    group: "Application",
+  },
+  // A select, not a confirm: rendering is an axis with two answers, not a
+  // capability you bolt on, and the wizard should show both. Note the frozen
+  // covenant's flag array is compared index-wise
+  // (kernel/spec/surfaceConformance.ts), and that order derives from this list.
+  {
+    name: "rendering",
+    type: "select",
+    message:
+      "Rendering — ssr keeps the server layer (SSR servers and sitemap), spa is client-only",
+    choices: [
+      {
+        label: "ssr - server-side rendering (Express + Bun servers, sitemap)",
+        value: "ssr",
+      },
+      {
+        label: "spa - client-only single-page app (no server layer)",
+        value: "spa",
+      },
+    ],
+    default: "ssr",
     group: "Application",
   },
   {
@@ -108,11 +134,13 @@ export const generator: GeneratorDefinition<ApplicationReactAnswers> = {
   meta: {
     name: "application/react",
     displayName: "@canonical/summon-application:application/react",
-    description: "Scaffold a complete React application with SSR and routing",
+    description:
+      "Scaffold a complete React application with routing, and either server-side rendering or a client-only SPA",
     version: packageVersion(),
     help: `Creates a full React application with:
   - Vite build + dev server
-  - Server-side rendering (Express + Bun dev servers)
+  - Server-side rendering (Express + Bun dev servers) — the default
+    --rendering ssr; --rendering spa omits the whole server layer
   - Routing with @canonical/router-core
   - Head management with @canonical/react-head
   - Two domains (marketing + account) with pages
@@ -123,11 +151,18 @@ export const generator: GeneratorDefinition<ApplicationReactAnswers> = {
   - Storybook with router decorator
   - Biome + TypeScript configuration
 
-SSR and routing are always included; standalone SPA mode is not supported.`,
+Routing is always included. Rendering is a choice: ssr (the default) or spa,
+which omits the server layer entirely — no src/server/, no sitemap, no
+express/tsx/bun-types. Under spa the client router still handles the auth
+redirect, the /home redirect and the not-found route, but a cold request gets
+no 302/301/404 HTTP status and no server-painted first paint, so expect a
+brief default theme/locale flash. A static host will need a history-API
+fallback.`,
     examples: [
       "summon application/react my-app",
       "summon application/react --no-forms my-app",
       "summon application/react --relay my-app",
+      "summon application/react --rendering spa my-app",
       "summon application/react --no-forms --relay my-app",
     ],
   },
@@ -135,6 +170,9 @@ SSR and routing are always included; standalone SPA mode is not supported.`,
   prompts,
 
   generate: (answers) => {
+    // One axis, one boolean. The templates gate on `spa`, not on the answer
+    // string, so the prompt's shape is not their concern.
+    const spa = answers.rendering === "spa";
     // The app path is a directory path, not a route path — keep it as given
     // (absolute or relative), only trimming surrounding whitespace and any
     // trailing slash.
@@ -201,6 +239,7 @@ SSR and routing are always included; standalone SPA mode is not supported.`,
           forms: answers.forms,
           intl: answers.intl,
           relay: answers.relay,
+          spa,
           standalone,
           pragmaVersion,
         });
@@ -238,6 +277,19 @@ SSR and routing are always included; standalone SPA mode is not supported.`,
             warn(
               `Detected ${pm}, but the generated scripts use \`bun run\` — ` +
                 "install bun to run the app's composite scripts.",
+            ),
+          ),
+          // The SPA arm trades away things SSR gives for free. Say so at
+          // scaffold time rather than leaving it to the README.
+          when(
+            spa,
+            info(
+              "Client-only SPA: no src/server/ and no /sitemap.xml. The router " +
+                "still handles the auth redirect, the /home redirect and the " +
+                "not-found route, but a cold request gets no 302/301/404 HTTP " +
+                "status and no server-painted first paint (expect a brief " +
+                "default theme/locale flash). Static hosting needs a " +
+                "history-API fallback.",
             ),
           ),
 
@@ -324,41 +376,60 @@ SSR and routing are always included; standalone SPA mode is not supported.`,
             vars,
           }),
 
-          // Server — dev (Vite + HMR) and preview (compiled) servers each route
-          // between the app + sitemap renderers; the renderers stay routing-agnostic.
+          // Server (omitted by the SPA arm) — dev (Vite + HMR) and preview (compiled)
+          // servers each route between the app + sitemap renderers; the renderers
+          // stay routing-agnostic.
           // Server entry (EJS — a per-request RelayEnvironmentProvider only when --relay)
-          template({
-            source: src("src/server/entry.tsx.ejs"),
-            dest: dest("src/server/entry.tsx"),
-            vars,
-          }),
-          template({
-            source: src("src/server/renderer.tsx.ejs"),
-            dest: dest("src/server/renderer.tsx"),
-            vars,
-          }),
-          template({
-            source: src("src/server/server.express.ts.ejs"),
-            dest: dest("src/server/server.express.ts"),
-            vars,
-          }),
-          template({
-            source: src("src/server/server.bun.ts.ejs"),
-            dest: dest("src/server/server.bun.ts"),
-            vars,
-          }),
-          copy("src/server/preview.express.ts"),
-          copy("src/server/preview.bun.ts"),
+          when(
+            !spa,
+            template({
+              source: src("src/server/entry.tsx.ejs"),
+              dest: dest("src/server/entry.tsx"),
+              vars,
+            }),
+          ),
+          when(
+            !spa,
+            template({
+              source: src("src/server/renderer.tsx.ejs"),
+              dest: dest("src/server/renderer.tsx"),
+              vars,
+            }),
+          ),
+          when(
+            !spa,
+            template({
+              source: src("src/server/server.express.ts.ejs"),
+              dest: dest("src/server/server.express.ts"),
+              vars,
+            }),
+          ),
+          when(
+            !spa,
+            template({
+              source: src("src/server/server.bun.ts.ejs"),
+              dest: dest("src/server/server.bun.ts"),
+              vars,
+            }),
+          ),
+          when(!spa, copy("src/server/preview.express.ts")),
+          when(!spa, copy("src/server/preview.bun.ts")),
 
-          // Sitemap (rendered route at /sitemap.xml)
-          copy("src/sitemap/renderer.ts"),
+          // Sitemap (rendered route at /sitemap.xml) — omitted by the SPA arm.
+          // The getters are portable, but the renderer is the only consumer and it
+          // is served at runtime by the servers above; keeping either would hold
+          // @canonical/react-ssr as a dependency for dead code.
+          when(!spa, copy("src/sitemap/renderer.ts")),
           // sitemap getters (EJS — /contact entry only when forms is on, /catalog
           // entry only when relay is on)
-          template({
-            source: src("src/sitemap/getSitemapItems.ts.ejs"),
-            dest: dest("src/sitemap/getSitemapItems.ts"),
-            vars,
-          }),
+          when(
+            !spa,
+            template({
+              source: src("src/sitemap/getSitemapItems.ts.ejs"),
+              dest: dest("src/sitemap/getSitemapItems.ts"),
+              vars,
+            }),
+          ),
 
           // Domain: marketing
           template({
@@ -565,14 +636,20 @@ SSR and routing are always included; standalone SPA mode is not supported.`,
           copy("src/lib/LazyComponent/LazyComponent.stories.tsx"),
           copy("src/lib/LazyComponent/index.ts"),
 
-          // Lib: ClientOnly (when --relay is enabled — the catalog page is its
-          // only consumer, keeping Relay queries off the server render until
-          // SSR data serialization/hydration is supported)
-          when(answers.relay, copy("src/lib/ClientOnly/ClientOnly.tsx")),
-          when(answers.relay, copy("src/lib/ClientOnly/ClientOnly.tests.tsx")),
-          when(answers.relay, copy("src/lib/ClientOnly/index.ts")),
+          // Lib: ClientOnly (when --relay is enabled, on the SSR arm only — it is
+          // an SSR-safety wrapper that defers a subtree past the first hydration
+          // pass, which in a client-only app is a guaranteed no-op)
+          when(
+            answers.relay && !spa,
+            copy("src/lib/ClientOnly/ClientOnly.tsx"),
+          ),
+          when(
+            answers.relay && !spa,
+            copy("src/lib/ClientOnly/ClientOnly.tests.tsx"),
+          ),
+          when(answers.relay && !spa, copy("src/lib/ClientOnly/index.ts")),
 
-          // Lib barrel (EJS — ClientOnly export only when --relay)
+          // Lib barrel (EJS — ClientOnly export only when --relay, on the SSR arm)
           template({
             source: src("src/lib/index.ts.ejs"),
             dest: dest("src/lib/index.ts"),

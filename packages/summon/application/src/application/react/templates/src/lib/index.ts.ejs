@@ -1,4 +1,4 @@
-<% if (relay) { -%>
+<% if (relay && !spa) { -%>
 export { default as ClientOnly } from "./ClientOnly/index.js";
 <% } -%>
 export { ExampleComponent } from "./ExampleComponent/index.js";
