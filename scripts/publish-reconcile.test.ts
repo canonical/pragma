@@ -5,7 +5,8 @@ import { join, resolve } from "node:path";
 import {
 	type PublicPackage,
 	type RegistryAnswer,
-	parseVersionsOutput,
+	packumentPath,
+	parsePackument,
 	reconcile,
 	renderLog,
 	renderSummary,
@@ -23,35 +24,58 @@ function registryOf(entries: Record<string, string[] | null>) {
 	};
 }
 
-describe("parseVersionsOutput", () => {
-	test("a JSON array of versions", () => {
-		const answer = parseVersionsOutput('["0.34.0", "0.35.0", "0.36.0"]', 0);
-		expect(answer).toEqual({ kind: "versions", versions: ["0.34.0", "0.35.0", "0.36.0"] });
-	});
+describe("parsePackument", () => {
+	const doc = (versions: string[]) =>
+		JSON.stringify({
+			name: "@canonical/utils",
+			versions: Object.fromEntries(versions.map((v) => [v, { version: v }])),
+		});
 
-	test("a single-release package yields a bare string", () => {
-		expect(parseVersionsOutput('"0.36.0"', 0)).toEqual({
+	test("a packument yields its version keys", () => {
+		expect(parsePackument(200, doc(["0.34.0", "0.35.0", "0.36.0"]))).toEqual({
 			kind: "versions",
-			versions: ["0.36.0"],
+			versions: ["0.34.0", "0.35.0", "0.36.0"],
 		});
 	});
 
-	test("E404 on stdout means never published, not an error", () => {
-		// npm view --json reports failures as JSON on stdout (see
-		// guard_registry_not_ahead in .github/actions/lerna-version/version.sh).
-		const stdout = '{"error": {"code": "E404", "summary": "Not Found"}}';
-		expect(parseVersionsOutput(stdout, 1)).toEqual({ kind: "never-published" });
+	test("404 means never published, not an error", () => {
+		// A package awaiting its first manual publish is a legitimate state.
+		expect(parsePackument(404, '{"error":"Not found"}')).toEqual({
+			kind: "never-published",
+		});
 	});
 
-	test("a non-404 npm error is an error, never an empty answer", () => {
-		const stdout = '{"error": {"code": "E503", "summary": "registry down"}}';
-		const answer = parseVersionsOutput(stdout, 1);
-		expect(answer.kind).toBe("error");
+	test("any other non-200 is an error — an unreadable registry must not read as empty", () => {
+		expect(parsePackument(503, "").kind).toBe("error");
+		expect(parsePackument(500, "").kind).toBe("error");
+		expect(parsePackument(401, "").kind).toBe("error");
 	});
 
-	test("garbage output is an error, never an empty answer", () => {
-		expect(parseVersionsOutput("npm WARN something", 0).kind).toBe("error");
-		expect(parseVersionsOutput("", 1).kind).toBe("error");
+	test("a 200 that is not a packument is an error, never an empty answer", () => {
+		expect(parsePackument(200, "<html>proxy</html>").kind).toBe("error");
+		expect(parsePackument(200, "").kind).toBe("error");
+		expect(parsePackument(200, "null").kind).toBe("error");
+		// A document with no versions map is not the same as one with none.
+		expect(parsePackument(200, '{"name":"x"}').kind).toBe("error");
+	});
+
+	test("an empty versions map is a real answer: published nothing", () => {
+		expect(parsePackument(200, '{"versions":{}}')).toEqual({
+			kind: "versions",
+			versions: [],
+		});
+	});
+});
+
+describe("packumentPath", () => {
+	test("a scoped name encodes its one slash", () => {
+		expect(packumentPath("@canonical/summon-application")).toBe(
+			"@canonical%2fsummon-application",
+		);
+	});
+
+	test("an unscoped name is unchanged", () => {
+		expect(packumentPath("lerna")).toBe("lerna");
 	});
 });
 
@@ -177,3 +201,5 @@ describe("the sigstore 409 patch", () => {
 		expect(lock).toContain('"patches/sigstore@4.1.0.patch"');
 	});
 });
+
+
