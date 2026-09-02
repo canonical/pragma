@@ -5,7 +5,10 @@
   "main": "src/index.css",
   "exports": {
     ".": "./src/index.css",
-    "./fonts": "./src/fonts.css"
+    "./fonts": "./src/fonts.css",
+    "./modifiers.states.shim.css": "./src/modifiers.states.shim.css",
+    "./modifiers.importance.shim.css": "./src/modifiers.importance.shim.css",
+    "./modifiers.criticality.shim.css": "./src/modifiers.criticality.shim.css"
   },
   "files": [
     "src"
