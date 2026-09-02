@@ -1,5 +1,16 @@
 export type PackageType = "tool-ts" | "library" | "css";
 
+/**
+ * The UI framework a generated `library` targets.
+ *
+ * A three-valued select rather than a boolean: `none` is a plain TypeScript
+ * library built with `tsc`, `react` adds the JSX toolchain on top of that same
+ * build, and `svelte` swaps the entire build/test surface over to
+ * `@sveltejs/package`. Only `library` packages carry a framework — see
+ * {@link import("../resolveFramework.js").default}.
+ */
+export type Framework = "none" | "react" | "svelte";
+
 export type PackageManager = "bun" | "npm" | "yarn" | "pnpm";
 
 export interface PackageAnswers {
@@ -9,8 +20,8 @@ export interface PackageAnswers {
   type: PackageType;
   /** Package description */
   description: string;
-  /** Include React dependencies */
-  withReact: boolean;
+  /** UI framework the package targets (`library` packages only) */
+  framework: Framework;
   /** Include Storybook setup */
   withStorybook: boolean;
   /** Include CLI binary entry point */
@@ -41,6 +52,10 @@ export interface TemplateContext {
   license: string;
   /** Whether this package type needs a build step */
   needsBuild: boolean;
+  /** `module` entry point the generated manifest advertises */
+  moduleEntry: string;
+  /** `types` entry point the manifest advertises, or null for CSS packages */
+  typesEntry: string | null;
   /**
    * Version line to depend on for `@canonical/*` packages.
    *
@@ -53,8 +68,8 @@ export interface TemplateContext {
   canonicalVersion: string;
   /** Webarchitect ruleset */
   ruleset: string;
-  /** Include React */
-  withReact: boolean;
+  /** UI framework the package targets, after reconciliation */
+  framework: Framework;
   /** Include Storybook */
   withStorybook: boolean;
   /** Include CLI */

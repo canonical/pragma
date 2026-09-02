@@ -185,7 +185,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 | `name` | string | no | Package name. (default: @canonical/my-package) |
 | `type` | enum(tool-ts, library, css) | no | Package type. (one of: tool-ts, library, css) (default: tool-ts) |
 | `description` | string | no | Package description. (default: ) |
-| `withReact` | boolean | no | Include React dependencies. (default: false) |
+| `framework` | enum(none, react, svelte) | no | UI framework (library packages only). (one of: none, react, svelte) (default: none) |
 | `withStorybook` | boolean | no | Include Storybook setup. (default: false) |
 | `withCli` | boolean | no | Include CLI binary entry point. (default: false) |
 | `withPrTemplate` | boolean | no | Include a .github/PULL_REQUEST_TEMPLATE.md. (default: false) |

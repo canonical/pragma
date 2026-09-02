@@ -1,26 +1,34 @@
-import { withThemeByClassName } from "@storybook/addon-themes";
-import type { Preview, ReactRenderer } from "@storybook/react-vite";
+import previewConfig from "@canonical/storybook-config/preview";
 
 <% if (type === 'css') { -%>
 import "../src/index.css";
 <% } -%>
 import "@canonical/styles-debug/baseline-grid";
 
-const preview: Preview = {
+const preview = {
+  ...previewConfig,
+  // Storybook statically parses `preview.ts` for `storySort` and requires the
+  // order to be an inline literal — an imported const is rejected — and it
+  // does not reliably merge `tags`/`parameters` spread from an imported
+  // preview. So both are declared inline here rather than inherited from
+  // `@canonical/storybook-config`.
+  // https://github.com/storybookjs/storybook/issues/31842
   tags: ["autodocs"],
-  decorators: [
-    withThemeByClassName<ReactRenderer>({
-      themes: {
-        light: "is-light",
-        dark: "dark",
-        paper: "is-paper",
-      },
-      defaultTheme: "light",
-    }),
-  ],
   parameters: {
-    docs: {
-      codePanel: true,
+    ...previewConfig.parameters,
+    options: {
+      storySort: {
+        order: [
+          "Documentation",
+          "subcomponents",
+          "components",
+          "groups",
+          "patterns",
+          "common",
+          "utils",
+          "_work_in_progress",
+        ],
+      },
     },
   },
 };

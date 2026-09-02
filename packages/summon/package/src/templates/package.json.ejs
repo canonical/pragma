@@ -3,21 +3,21 @@
   "description": "<%= description %>",
   "version": "<%= version %>",
   "type": "module",
-<% if (type === 'tool-ts') { -%>
-  "module": "src/index.ts",
-  "types": "src/index.ts",
-<% } else if (type === 'css') { -%>
-  "module": "src/index.css",
-<% } else { -%>
-  "main": "dist/esm/index.js",
-  "module": "dist/esm/index.js",
-  "types": "dist/types/index.d.ts",
+<% if (type === 'css') { -%>
+  "module": "<%= moduleEntry %>",
+<% } else if (needsBuild) { -%>
+  "main": "<%= moduleEntry %>",
+  "module": "<%= moduleEntry %>",
+  "types": "<%= typesEntry %>",
   "exports": {
     ".": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/esm/index.js"
+      "types": "./<%= typesEntry %>",
+      "import": "./<%= moduleEntry %>"
     }
   },
+<% } else { -%>
+  "module": "<%= moduleEntry %>",
+  "types": "<%= typesEntry %>",
 <% } -%>
 <% if (withCli && type !== 'css') { -%>
   "bin": {
@@ -75,64 +75,69 @@
 <% if (type === 'css') { -%>
     "test": "echo 'No tests for CSS package'"
 <% } else { -%>
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:watch": "vitest"
 <% } -%>
   },
 <% if (type !== 'css') { -%>
   "devDependencies": {
-    "@biomejs/biome": "2.4.6",
+    "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^<%= canonicalVersion %>",
 <% if (withStorybook) { -%>
     "@canonical/styles-debug": "^<%= canonicalVersion %>",
 <% } -%>
-<% if (withReact) { -%>
+<% if (framework === 'react') { -%>
     "@canonical/typescript-config-react": "^<%= canonicalVersion %>",
 <% } else { -%>
     "@canonical/typescript-config": "^<%= canonicalVersion %>",
 <% } -%>
     "@canonical/webarchitect": "^<%= canonicalVersion %>",
 <% if (withStorybook) { -%>
-    "@chromatic-com/storybook": "^5.0.0",
-    "@storybook/addon-themes": "^10.1.11",
-    "@storybook/react-vite": "^10.1.11",
+    "@chromatic-com/storybook": "^5.0.1",
+    "@storybook/addon-themes": "^10.3.1",
+    "@storybook/react-vite": "^10.3.1",
 <% } -%>
-<% if (withReact) { -%>
+<% if (framework === 'react') { -%>
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
 <% } -%>
     "bun-types": "^1.0.0",
-<% if (withStorybook && !withReact) { -%>
+<% if (framework === 'react') { -%>
+    "jsdom": "^28.1.0",
+<% } -%>
+<% if (withStorybook && framework !== 'react') { -%>
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
 <% } -%>
 <% if (withStorybook) { -%>
-    "storybook": "^10.1.11",
+    "storybook": "^10.3.1",
 <% } -%>
     "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
-  },
+    "vitest": "^4.0.18"
+  }<% if (withStorybook || framework === 'react') { %>,
   "dependencies": {
 <% if (withStorybook) { -%>
-    "@canonical/storybook-config": "^<%= canonicalVersion %>"<%= withReact ? "," : "" %>
+    "@canonical/storybook-config": "^<%= canonicalVersion %>"<%= framework === 'react' ? "," : "" %>
 <% } -%>
-<% if (withReact) { -%>
+<% if (framework === 'react') { -%>
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
 <% } -%>
-  }
+  }<% } %>
 <% } else { -%>
   "devDependencies": {
-    "@biomejs/biome": "2.4.6",
+    "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^<%= canonicalVersion %>",
 <% if (withStorybook) { -%>
     "@canonical/storybook-config": "^<%= canonicalVersion %>",
     "@canonical/styles-debug": "^<%= canonicalVersion %>",
-    "@chromatic-com/storybook": "^5.0.0",
-    "@storybook/addon-themes": "^10.1.11",
-    "@storybook/react-vite": "^10.1.11",
+    "@chromatic-com/storybook": "^5.0.1",
+    "@storybook/addon-themes": "^10.3.1",
+    "@storybook/react-vite": "^10.3.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "storybook": "^10.1.11",
+    "storybook": "^10.3.1",
 <% } -%>
     "@canonical/webarchitect": "^<%= canonicalVersion %>"
   }

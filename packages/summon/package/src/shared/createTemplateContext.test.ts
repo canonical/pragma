@@ -7,7 +7,7 @@ const baseAnswers: PackageAnswers = {
   name: "@canonical/test-pkg",
   type: "tool-ts",
   description: "Test package",
-  withReact: false,
+  framework: "none",
   withStorybook: false,
   withCli: false,
   withPrTemplate: false,

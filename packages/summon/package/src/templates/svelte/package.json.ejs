@@ -1,0 +1,91 @@
+{
+  "name": "<%= name %>",
+  "description": "<%= description %>",
+  "version": "<%= version %>",
+  "type": "module",
+  "module": "<%= moduleEntry %>",
+  "types": "<%= typesEntry %>",
+  "exports": {
+    ".": {
+      "types": "./<%= typesEntry %>",
+      "import": "./<%= moduleEntry %>",
+      "svelte": "./<%= moduleEntry %>"
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "!dist/**/*.stories.*"
+  ],
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/pragma"
+  },
+  "license": "<%= license %>",
+  "bugs": {
+    "url": "https://github.com/canonical/pragma/issues"
+  },
+  "homepage": "https://github.com/canonical/pragma#readme",
+  "scripts": {
+    "build": "svelte-package -o dist -i src/lib --tsconfig ./tsconfig.build.json",
+<% if (withStorybook) { -%>
+    "build:all": "bun run build && bun run build:storybook",
+    "build:storybook": "storybook build",
+<% } else { -%>
+    "build:all": "bun run build",
+<% } -%>
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "svelte-check --tsconfig ./tsconfig.json",
+    "check:webarchitect": "webarchitect <%= ruleset %>",
+<% if (withStorybook) { -%>
+    "storybook": "storybook dev -p 6006 --no-open --host 0.0.0.0",
+<% } -%>
+    "test": "vitest --run --project=ssr --project=server",
+    "test:client": "vitest --run --project=client",
+    "test:server": "vitest --run --project=server",
+    "test:ssr": "vitest --run --project=ssr",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.9",
+    "@canonical/biome-config": "^<%= canonicalVersion %>",
+<% if (withStorybook) { -%>
+    "@canonical/storybook-config": "^<%= canonicalVersion %>",
+    "@canonical/styles-debug": "^<%= canonicalVersion %>",
+<% } -%>
+    "@canonical/svelte-ssr-test": "^<%= canonicalVersion %>",
+    "@canonical/typescript-config-svelte": "^<%= canonicalVersion %>",
+    "@canonical/webarchitect": "^<%= canonicalVersion %>",
+<% if (withStorybook) { -%>
+    "@chromatic-com/storybook": "^5.0.1",
+    "@storybook/addon-svelte-csf": "^5.0.11",
+    "@storybook/addon-themes": "^10.3.1",
+    "@storybook/svelte-vite": "^10.3.1",
+<% } -%>
+    "@sveltejs/package": "^2.5.7",
+    "@sveltejs/vite-plugin-svelte": "^7.0.0",
+    "@types/node": "^26.0.0",
+    "@vitest/browser": "^4.0.18",
+    "@vitest/browser-playwright": "^4.0.18",
+    "playwright": "^1.61.1",
+<% if (withStorybook) { -%>
+    "storybook": "^10.3.1",
+<% } -%>
+    "svelte": "^5.47.1",
+    "svelte-check": "^4.4.5",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.1",
+    "vitest": "^4.0.18",
+    "vitest-browser-svelte": "^2.0.2"
+  },
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  }
+}
