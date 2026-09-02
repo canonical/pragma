@@ -87,16 +87,42 @@ ds:token.spacing.medium a ds:Token ;
   ds:valueLight "16px" ;
   ds:valueDark "16px" .
 
-# A ds:Token carrying NO ds:tokenId — the entity "token list" does not publish,
-# because its query REQUIRES the id. It is here to pin what a lookup may NOT
-# reach: "token lookup" addresses by ds:tokenId, and a story whose list requires
-# its "by" property must not become addressable (or sampleable) under a name
-# derived from its IRI. See PackLookup.nameFallback, declared by the "standard"
-# story alone — the one story whose list DOES publish such a name.
+# A ds:Token carrying NO ds:tokenId. No shipped story reads ds:Token any more
+# — the "token" noun reads dt:TokenSymbol below — so this pins the negative
+# case generically: a story whose list REQUIRES its "by" property must not let
+# an entity without one become addressable (or sampleable) under a name derived
+# from its IRI. See PackLookup.nameFallback, which "standard" and "token"
+# declare because their lists DO publish such a name.
 ds:token.legacy.borderRadius a ds:Token ;
   ds:tokenType ds:type.spacing ;
   ds:valueLight "4px" ;
   ds:valueDark "4px" .
+
+# ---- Design tokens, the dt: semantic model ----
+#
+# What the "token" noun actually reads. A symbol carries NO name property: the
+# name is the IRI's local part, with dots published as slashes, so these are
+# addressed "color/primary" and "spacing/medium".
+#
+# A symbol resolves once per POSITION. A ResolvedValue with no dt:coordinate is
+# the all-defaults position; color/primary carries a second at the dark
+# coordinate, which is the case a single scalar field would silently collapse.
+dt:TokenSymbol a owl:Class .
+dt:ResolvedValue a owl:Class .
+dt:Coordinate a owl:Class .
+dt:forSymbol a owl:ObjectProperty ; rdfs:domain dt:ResolvedValue ; rdfs:range dt:TokenSymbol .
+dt:coordinate a owl:ObjectProperty ; rdfs:domain dt:ResolvedValue ; rdfs:range dt:Coordinate .
+dt:resolvesTo a owl:DatatypeProperty ; rdfs:domain dt:ResolvedValue .
+
+dt:coordinate.mode.dark a dt:Coordinate .
+
+dt:color.primary a dt:TokenSymbol .
+dt:spacing.medium a dt:TokenSymbol .
+
+[] a dt:ResolvedValue ; dt:forSymbol dt:color.primary ; dt:resolvesTo "#0066CC" .
+[] a dt:ResolvedValue ; dt:forSymbol dt:color.primary ;
+   dt:coordinate dt:coordinate.mode.dark ; dt:resolvesTo "#4D94FF" .
+[] a dt:ResolvedValue ; dt:forSymbol dt:spacing.medium ; dt:resolvesTo "16px" .
 `;
 
 /**
@@ -338,6 +364,7 @@ export const CANONICAL_PREFIXES: Readonly<Record<string, string>> = {
   ...BLOCK_PREFIXES,
   cs: "http://pragma.canonical.com/codestandards#",
   skos: "http://www.w3.org/2004/02/skos/core#",
+  dt: "https://dt.canonical.com/",
 };
 
 /** The full canonical Turtle: PR3's `BLOCK_TTL` verbatim, plus the sections above. */

@@ -113,10 +113,13 @@ describe("first install — an empty cwd answers real reads offline", () => {
 });
 
 describe("first install — empty results are honest, not papered over", () => {
-  it("token list exits calmly with no rows (the graph carries no ds:Token)", async () => {
-    expect(
-      await readData(verbOf(tokenModule, "token list"), emptyCwd()),
-    ).toEqual([]);
+  // No longer an empty case, and kept for the half that still matters on a
+  // first install: the noun reads dt:TokenSymbol, which the embedded pack
+  // ships, so a fresh project answers with rows rather than with the honest
+  // empty this describe is otherwise about.
+  it("token list answers from the embedded pack, with no sources update", async () => {
+    const rows = await readData(verbOf(tokenModule, "token list"), emptyCwd());
+    expect(Array.isArray(rows) && rows.length).toBeGreaterThan(0);
   });
 
   it("prompt list exits calmly with no prompts (the graph carries no ds:Prompt)", async () => {

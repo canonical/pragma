@@ -44,10 +44,12 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
     )?.description;
     await mcp.cleanup();
     expect(desc).toContain(
-      "Get type and theme values for one or more design tokens by name.",
+      "Get the resolved values of one or more design tokens by name.",
     );
     // The authored MCP tool-call example survives on the MCP surface.
-    expect(desc).toContain('Example: token_lookup { name: ["color.primary"] }');
+    expect(desc).toContain(
+      'Example: token_lookup { name: ["color/background"] }',
+    );
   });
 
   it("routes the definition-level toolDescription to the MCP list tool", async () => {
@@ -58,7 +60,9 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
     await mcp.cleanup();
     // The rich description reaches MCP (was previously dropped — only `summary`
     // reached the tool), including the authored call example.
-    expect(desc).toContain("List all design tokens with their type.");
+    expect(desc).toContain(
+      "List all design tokens with their default resolved value.",
+    );
     expect(desc).toContain("Example: token_list {}");
   });
 
@@ -78,14 +82,16 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
   it("CLI --help shows the rich prose but NEVER the MCP tool-call syntax", () => {
     const lookupHelp = formatVerbHelp("pragma", verb(tokenModule, "lookup"));
     expect(lookupHelp).toContain(
-      "Get type and theme values for one or more design tokens by name.",
+      "Get the resolved values of one or more design tokens by name.",
     );
     // No-leaks: the `token_lookup {…}` MCP call shape must not reach CLI help.
     expect(lookupHelp).not.toContain("token_lookup {");
     expect(lookupHelp).not.toContain("Example:");
 
     const listHelp = formatVerbHelp("pragma", verb(tokenModule, "list"));
-    expect(listHelp).toContain("List all design tokens with their type.");
+    expect(listHelp).toContain(
+      "List all design tokens with their default resolved value.",
+    );
     expect(listHelp).not.toContain("token_list {");
   });
 });

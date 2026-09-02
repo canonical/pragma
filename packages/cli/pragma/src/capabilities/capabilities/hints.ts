@@ -177,17 +177,17 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   token_list: {
     category: "read",
     use_when:
-      "Browsing design tokens, optionally filtered by category (color, spacing, etc.)",
+      "Browsing design tokens and their default resolved value. Names use slashes: color/background",
   },
   token_lookup: {
     category: "read",
     use_when:
-      "Need theme values and resolution details for specific tokens by name or IRI",
+      "Need the resolved value of specific tokens, per coordinate (the default position and any it is covered at), by name or IRI",
   },
   token_sample: {
     category: "read",
     use_when:
-      "See actual token data shapes (with theme values) before querying — returns random instances each call",
+      "See actual token data shapes before querying — returns random instances each call",
   },
 
   // — Write ——————————————————————————————————————————————————————————————————

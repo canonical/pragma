@@ -1075,7 +1075,7 @@ pragma tier lookup <name>
 
 List all design tokens.
 
-List all design tokens with their type. Use when browsing which tokens exist under the active scope. Example: token_list {}.
+List all design tokens with their default resolved value. Use when browsing which tokens exist. Names use slashes: color/background. Example: token_list {}.
 
 ```
 pragma token list
@@ -1095,7 +1095,7 @@ pragma token list --format llm
 
 Look up token details by name, IRI, or glob.
 
-Get type and theme values for one or more design tokens by name. Use when resolving specific tokens' light/dark values. Example: token_lookup { name: ["color.primary"] }.
+Get the resolved values of one or more design tokens by name. Names use slashes. Example: token_lookup { name: ["color/background"] }.
 
 ```
 pragma token lookup <name...>
@@ -1120,7 +1120,7 @@ pragma token lookup <name>
 
 Return randomly selected complete token entries as exemplars.
 
-Return randomly selected complete design tokens (with theme values) as exemplars. Use BEFORE writing queries to see actual data shapes. Example: token_sample {}.
+Return randomly selected complete design tokens as exemplars. Use BEFORE writing queries to see actual data shapes. Example: token_sample {}.
 
 ```
 pragma token sample
