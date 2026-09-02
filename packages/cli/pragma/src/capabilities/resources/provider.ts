@@ -250,7 +250,13 @@ export function buildResourceList(
   // readPackIndex returns raw JSON.parse output (no zod), so guard structurally:
   // a malformed index missing `version` must degrade to the recovery hint, not
   // fall through to `[...index.entities]` (a TypeError inside the MCP handler).
-  if (!index || index.version !== 2 || !Array.isArray(index.entities)) {
+  // A v2 index (an existing cache from before the anonymous counts) carries
+  // every field THIS listing reads, so it stays servable alongside v3.
+  if (
+    !index ||
+    (index.version !== 2 && index.version !== 3) ||
+    !Array.isArray(index.entities)
+  ) {
     return [sourcesEntry()];
   }
   const byPrefixed = new Map<string, PackIndexEntity>();

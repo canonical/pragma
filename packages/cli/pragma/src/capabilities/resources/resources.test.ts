@@ -103,7 +103,7 @@ describe("resource listing (storeless, over the pack index)", () => {
 
   it("lists the declared COLLECTIONS with their counts, not the individuals", () => {
     const index = readPackIndex({ kind: "embedded" });
-    expect(index?.version).toBe(2);
+    expect(index?.version).toBe(3);
     const resources = buildResourceList(index, declaredListing());
 
     // The collection entry for `ds:Component` is listed, carrying the count of
