@@ -75,6 +75,9 @@ export async function fetchGraphqlLookup(
       recovery: cliRecovery(
         `graph inspect ${entityUri}`,
         "Inspect the entity's triples to check its rdf:type.",
+        // `graph inspect` needs the <uri> — which THIS arm holds, unlike the
+        // sibling above — so the agent half of the recovery rides along.
+        { tool: "graph_inspect", params: { uri: entityUri } },
       ),
     });
   }

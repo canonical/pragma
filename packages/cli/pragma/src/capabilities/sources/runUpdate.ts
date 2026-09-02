@@ -203,6 +203,9 @@ export async function buildUpdateTask(
         recovery: cliRecovery(
           "sources update --verbose",
           "Add a pack that ships `.ttl` under definitions/ or data/, then re-run.",
+          // The agent's half: `--verbose` is CLI-only diagnostics, so the
+          // tool call is the plain rebuild (then retry the read).
+          { tool: "sources_update" },
         ),
       },
     );
@@ -273,6 +276,9 @@ export async function buildUpdateTask(
           recovery: cliRecovery(
             "sources update --verbose",
             "Fix the reported sources, then re-run.",
+            // `--verbose` is CLI-only diagnostics; the tool call is the
+            // plain rebuild.
+            { tool: "sources_update" },
           ),
         },
       );
@@ -306,6 +312,9 @@ export async function buildUpdateTask(
         recovery: cliRecovery(
           "sources update --verbose",
           "Check that the pack sources actually contain RDF triples, then re-run.",
+          // `--verbose` is CLI-only diagnostics; the tool call is the
+          // plain rebuild.
+          { tool: "sources_update" },
         ),
       },
     );
@@ -499,6 +508,9 @@ export async function classifySourceBuildError(
     recovery: cliRecovery(
       "sources update --verbose",
       "Re-run with --verbose to see each file as it parses. If a pack ships malformed RDF, report it to that pack's maintainer.",
+      // `--verbose` is CLI-only diagnostics; the tool call is the plain
+      // rebuild.
+      { tool: "sources_update" },
     ),
   });
 }
