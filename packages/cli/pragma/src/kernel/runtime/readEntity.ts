@@ -336,7 +336,12 @@ export async function readEntity(
       recovery: cliRecovery(
         `graph query 'SELECT ?s WHERE { ?s ?p ?o } LIMIT 10'`,
         "Check the URI, or list known entities.",
-        { tool: "graph_query" },
+        // The SAME query the cli string quotes — `sparql` is required, so a
+        // bare tool name would return -32602 instead of recovering.
+        {
+          tool: "graph_query",
+          params: { sparql: "SELECT ?s WHERE { ?s ?p ?o } LIMIT 10" },
+        },
       ),
     });
   }
