@@ -27,11 +27,32 @@
  *                                               # package is missing from the
  *                                               # registry
  *
- * `--verify` re-reads the registry a bounded number of times (default 3
- * attempts, 20s apart) before failing, because a packument read immediately
- * after a publish can lag the write. This is read-only settling: the script
- * never publishes, never retries a publish, and converges on whatever state
- * the registry is in.
+ * `--verify` re-reads the registry a bounded number of times before failing,
+ * because a packument read immediately after a publish can lag the write.
+ * This is read-only settling: the script never publishes, never retries a
+ * publish, and converges on whatever state the registry is in.
+ *
+ * There is NO settling window, deliberately. What made v0.37.0 fail its own
+ * verdict after publishing all 55 packages was the READ, not a wait that was
+ * too short: `npm view` fetches the CDN-cached packument, which carries
+ * `cache-control: public, max-age=300`. A publish does not invalidate it, so a
+ * reader can only wait out a 5-minute TTL — any budget below it is a coin
+ * flip, any budget above it is five idle minutes on every release, and either
+ * way the next red gets 'fixed' by raising the number again.
+ *
+ * So this reads the ORIGIN: `GET <registry>/<name>?write=true`, which the
+ * registry serves uncached (`cf-cache-status: DYNAMIC` on every repeat).
+ * Read-after-write is consistent, the verdict is a fact rather than a race,
+ * and the whole 55-package check answers in about two seconds.
+ *
+ * Transient faults are NOT retried here either, and that is on purpose:
+ * `reconcile` throws on an unreadable registry rather than counting it as
+ * missing, so a retry loop around it could never have seen one. A stuck read
+ * is a job failure to re-run, not a package to keep asking about.
+ *
+ * A failure also reports the SHAPE of the settling window, because
+ * `still converging` and `the publish dropped packages` are different
+ * incidents and the missing-count trend is what tells them apart.
  *
  * What it deliberately does NOT do
  * --------------------------------
@@ -44,11 +65,12 @@
  * - It does not read bun.lock or node_modules; the local side is a pure
  *   function of the workspace manifests, like check-workspace-ranges.ts.
  *
- * The registry is queried with `npm view <pkg> versions --json`, the same
- * idiom as guard_registry_not_ahead() in .github/actions/lerna-version/
- * version.sh, including its E404-means-never-published case. A never-published
- * package is reported distinctly: its first publish is manual (see
- * docs/how-to-guides/PUBLISH_A_PACKAGE.md) and no re-run will create it.
+ * The registry is queried over HTTP rather than through `npm view`, so the read
+ * can name its own route (the origin one, above) instead of inheriting the
+ * CLI's CDN-cached one. The 404-means-never-published case carries over from
+ * guard_registry_not_ahead() in .github/actions/lerna-version/version.sh: a
+ * never-published package is reported distinctly, because its first publish is
+ * manual (see docs/how-to-guides/PUBLISH_A_PACKAGE.md) and no re-run creates it.
  */
 
 import { appendFileSync, readFileSync } from "node:fs";
@@ -112,39 +134,42 @@ export function loadPublicPackages(root: string): PublicPackage[] {
 }
 
 // -------------------------------------------------------------------
-// Registry answers (pure parsing; the spawn lives in main)
+// Registry answers (pure parsing; the fetch lives in main)
 // -------------------------------------------------------------------
 
 /**
- * Interprets the stdout of `npm view <pkg> versions --json`.
+ * Reads one packument response.
  *
- * npm reports failures as JSON on stdout even with a non-zero exit:
- * `{"error": {"code": "E404", ...}}` — E404 means the package has never been
- * published, which for a workspace package is a real, reportable state (a new
- * package awaiting its manual first publish), not a query failure. A package
- * with a single release yields a bare string instead of an array.
+ * A 404 is the registry's answer for a name it has never seen, which is a
+ * legitimate state (a package awaiting its first manual publish), not a
+ * failure. Everything else that is not a 200 IS a failure and must say so:
+ * an unreadable registry has to stop the verdict, never quietly read as
+ * "nothing published".
  */
-export function parseVersionsOutput(stdout: string, exitCode: number): RegistryAnswer {
-	let data: unknown;
-	try {
-		data = JSON.parse(stdout.trim() || "null");
-	} catch {
-		return { kind: "error", message: `unparseable npm output: ${stdout.slice(0, 200)}` };
+export function parsePackument(status: number, body: string): RegistryAnswer {
+	if (status === 404) return { kind: "never-published" };
+	if (status !== 200) {
+		return { kind: "error", message: `registry responded ${status}` };
 	}
 
-	if (data !== null && typeof data === "object" && "error" in data) {
-		const error = (data as { error: { code?: string; summary?: string } }).error;
-		if (error?.code === "E404") return { kind: "never-published" };
-		return { kind: "error", message: `${error?.code ?? "unknown"}: ${error?.summary ?? ""}` };
+	let data: unknown;
+	try {
+		data = JSON.parse(body.trim() || "null");
+	} catch {
+		return {
+			kind: "error",
+			message: `unparseable packument: ${body.slice(0, 200)}`,
+		};
 	}
-	if (exitCode !== 0) {
-		return { kind: "error", message: `npm view exited with status ${exitCode}` };
+
+	if (data === null || typeof data !== "object") {
+		return { kind: "error", message: "packument was not an object" };
 	}
-	if (typeof data === "string") return { kind: "versions", versions: [data] };
-	if (Array.isArray(data) && data.every((v) => typeof v === "string")) {
-		return { kind: "versions", versions: data };
+	const versions = (data as { versions?: unknown }).versions;
+	if (versions === undefined || typeof versions !== "object" || versions === null) {
+		return { kind: "error", message: "packument carried no versions map" };
 	}
-	return { kind: "error", message: "npm view returned neither a version list nor an error" };
+	return { kind: "versions", versions: Object.keys(versions) };
 }
 
 // -------------------------------------------------------------------
@@ -245,29 +270,55 @@ export function renderSummary(result: ReconcileResult, opts: { verify: boolean }
 // CLI
 // -------------------------------------------------------------------
 
-const HELP = `Usage: bun scripts/publish-reconcile.ts [--verify] [--attempts N] [--delay-seconds N]
+const HELP = `Usage: bun scripts/publish-reconcile.ts [--verify]
 
 Reports which public workspace packages are missing from the npm registry at
 their manifest versions.
 
   (no flags)         print the delta and exit 0 (the "plan" before a publish)
   --verify           exit 1 while the delta is non-empty (the verdict after a
-                     publish); re-reads the registry up to --attempts times,
-                     --delay-seconds apart, to absorb read-after-write lag
-  --attempts N       registry reads in --verify mode (default 3)
-  --delay-seconds N  pause between --verify reads (default 20)
+                     publish). Reads hit the registry ORIGIN, so the answer is
+                     immediate and final — there is nothing to wait for
 `;
 
-async function queryRegistry(name: string): Promise<RegistryAnswer> {
-	// --prefer-online defeats npm's local packument cache, which would
-	// otherwise make the --verify settling reads return the same stale answer.
-	const proc = Bun.spawn(["npm", "view", name, "versions", "--json", "--prefer-online"], {
+/** The configured registry, so a fork publishing elsewhere is still checked. */
+function registryBase(): string {
+	const proc = Bun.spawnSync(["npm", "config", "get", "registry"], {
 		stdout: "pipe",
 		stderr: "ignore",
 	});
-	const stdout = await new Response(proc.stdout).text();
-	const exitCode = await proc.exited;
-	return parseVersionsOutput(stdout, exitCode);
+	const configured = proc.stdout.toString().trim();
+	const base =
+		configured && configured !== "undefined"
+			? configured
+			: "https://registry.npmjs.org/";
+	return base.replace(/\/+$/, "");
+}
+
+/** `@scope/name` -> `@scope%2fname`, the form the registry expects. */
+export function packumentPath(name: string): string {
+	return name.replace("/", "%2f");
+}
+
+const REGISTRY = registryBase();
+
+async function queryRegistry(name: string): Promise<RegistryAnswer> {
+	// `?write=true` is the ORIGIN read. The default packument route is CDN
+	// cached for 300s and a publish does not invalidate it, so a read-back
+	// through it can report a package missing that was published seconds ago.
+	// The write route answers uncached, which is what makes this a verdict
+	// rather than a race. (Note the ABBREVIATED packument media type returns an
+	// empty body on this route, so this asks for the full document.)
+	const url = `${REGISTRY}/${packumentPath(name)}?write=true`;
+	try {
+		const response = await fetch(url, { headers: { accept: "application/json" } });
+		return parsePackument(response.status, await response.text());
+	} catch (error) {
+		return {
+			kind: "error",
+			message: `registry request failed: ${(error as Error).message}`,
+		};
+	}
 }
 
 function appendStepSummary(markdown: string): void {
@@ -283,26 +334,10 @@ async function main(argv: string[]): Promise<number> {
 		return 0;
 	}
 	const verify = argv.includes("--verify");
-	const flag = (name: string, fallback: number): number => {
-		const i = argv.indexOf(name);
-		if (i === -1 || i + 1 >= argv.length) return fallback;
-		const value = Number(argv[i + 1]);
-		return Number.isFinite(value) && value > 0 ? value : fallback;
-	};
-	const attempts = verify ? flag("--attempts", 3) : 1;
-	const delaySeconds = flag("--delay-seconds", 20);
-
 	const root = resolve(import.meta.dirname, "..");
 	const packages = loadPublicPackages(root);
 
-	let result = await reconcile(packages, queryRegistry);
-	for (let attempt = 1; result.missing.length > 0 && attempt < attempts; attempt++) {
-		console.log(
-			`${result.missing.length} package(s) not visible on the registry yet; re-reading in ${delaySeconds}s (attempt ${attempt + 1}/${attempts})...`,
-		);
-		await Bun.sleep(delaySeconds * 1000);
-		result = await reconcile(packages, queryRegistry);
-	}
+	const result = await reconcile(packages, queryRegistry);
 
 	console.log(renderLog(result));
 	const summary = renderSummary(result, { verify });
