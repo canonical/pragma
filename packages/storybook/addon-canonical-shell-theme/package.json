@@ -59,7 +59,7 @@
     "check:webarchitect": "webarchitect library"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
+    "@biomejs/biome": "2.5.11",
     "@canonical/biome-config": "^0.37.0",
     "@canonical/design-tokens": "0.8.1",
     "@canonical/typescript-config": "^0.37.0",

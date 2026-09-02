@@ -15,6 +15,8 @@ import {
 } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  assertData,
+  assertPresent,
   BLANK_NODES_TTL,
   DS_REALISTIC_TTL,
   INHERITANCE_TTL,
@@ -116,15 +118,15 @@ describe("Ontology and lookups", () => {
       }`,
     );
     expect(result.errors).toBeUndefined();
-    const ontologies = result.data?.ontologies as Array<
-      Record<string, unknown>
-    >;
+    assertData(result);
+    const ontologies = result.data.ontologies as Array<Record<string, unknown>>;
     const ex = ontologies.find((o) => o.prefix === "ex");
-    expect(ex?.namespace).toBe("http://example.org/");
-    expect((ex?.classes as unknown[]).length).toBe(1);
-    expect((ex?.properties as unknown[]).length).toBe(2);
-    expect((result.data?.ontology as { prefix: string }).prefix).toBe("ex");
-    expect(result.data?.unknown).toBeNull();
+    assertPresent(ex, "the ex ontology");
+    expect(ex.namespace).toBe("http://example.org/");
+    expect((ex.classes as unknown[]).length).toBe(1);
+    expect((ex.properties as unknown[]).length).toBe(2);
+    expect((result.data.ontology as { prefix: string }).prefix).toBe("ex");
+    expect(result.data.unknown).toBeNull();
   });
 
   it("resolves ontologyProperty with scalar ranges and datatype kind", async () => {
@@ -142,15 +144,16 @@ describe("Ontology and lookups", () => {
       }`,
     );
     expect(result.errors).toBeUndefined();
-    const property = result.data?.ontologyProperty as Record<string, unknown>;
+    assertData(result);
+    const property = result.data.ontologyProperty as Record<string, unknown>;
     expect(property.kind).toBe("DATATYPE");
     expect(property.functional).toBe(true); // datatype default is singular
     expect(property.range).toContain("integer");
     expect((property.domain as { label: string }).label).toBe("Thing");
     expect(property.inverse).toBeNull();
-    expect(result.data?.missing).toBeNull();
+    expect(result.data.missing).toBeNull();
     // Prefixed form resolves like ontologyClass does.
-    expect((result.data?.prefixed as { uri: string }).uri).toBe(
+    expect((result.data.prefixed as { uri: string }).uri).toBe(
       "http://example.org/count",
     );
   });
@@ -175,18 +178,19 @@ describe("Ontology and lookups", () => {
       }`,
     );
     expect(result.errors).toBeUndefined();
+    assertData(result);
     // class range resolves to the member class URI.
-    const rel = result.data?.rel as Record<string, unknown>;
+    const rel = result.data.rel as Record<string, unknown>;
     expect(rel.range).toBe("http://example.org/Cat");
     expect((rel.domain as { label: string }).label).toBe("Thing");
     // unknown range echoes the raw URI string.
-    expect((result.data?.weird as { range: string }).range).toBe(
+    expect((result.data.weird as { range: string }).range).toBe(
       "http://external.example/Mystery",
     );
     // a property with no rdfs:domain has a null domain.
-    expect((result.data?.domainless as { domain: unknown }).domain).toBeNull();
+    expect((result.data.domainless as { domain: unknown }).domain).toBeNull();
     // an inverse pair exposes the inverse property; definition is absent here.
-    const inv = result.data?.inv as {
+    const inv = result.data.inv as {
       inverse: { uri: string };
       definition: string | null;
     };
@@ -210,19 +214,20 @@ describe("Ontology and lookups", () => {
       }`,
     );
     expect(result.errors).toBeUndefined();
-    const cls = result.data?.byFull as Record<string, unknown>;
+    assertData(result);
+    const cls = result.data.byFull as Record<string, unknown>;
     expect(cls.definition).toBe("A reusable UI component.");
     expect(cls.namespace).toBe("ds");
     // prefixed-form fallback resolves both class and property…
-    expect((result.data?.byPrefixed as { uri: string }).uri).toBe(
+    expect((result.data.byPrefixed as { uri: string }).uri).toBe(
       "https://ds.canonical.com/Component",
     );
-    expect((result.data?.propByPrefixed as { uri: string }).uri).toBe(
+    expect((result.data.propByPrefixed as { uri: string }).uri).toBe(
       "https://ds.canonical.com/name",
     );
     // …and an unmatched prefixed form falls through to null.
-    expect(result.data?.missingClass).toBeNull();
-    expect(result.data?.missingProp).toBeNull();
+    expect(result.data.missingClass).toBeNull();
+    expect(result.data.missingProp).toBeNull();
   });
 
   it("walks superclass chains on OntologyClass", async () => {
@@ -275,7 +280,8 @@ describe("Ontology and lookups", () => {
       }`,
     );
     expect(result.errors).toBeUndefined();
-    const properties = (result.data?.ontologyClass as Record<string, unknown>)
+    assertData(result);
+    const properties = (result.data.ontologyClass as Record<string, unknown>)
       .properties as Array<{
       property: { label: string };
       required: boolean;
@@ -318,7 +324,8 @@ ex:s1 a ex:Spec . ex:h1 a ex:Hop .
       }`,
     );
     expect(result.errors).toBeUndefined();
-    const properties = (result.data?.ontologyClass as Record<string, unknown>)
+    assertData(result);
+    const properties = (result.data.ontologyClass as Record<string, unknown>)
       .properties as Array<{
       property: { label: string };
       required: boolean;
@@ -505,8 +512,9 @@ ex:i1 a ex:Item . ex:n1 a ex:Named .
       }`,
     );
     expect(result.errors).toBeUndefined();
+    assertData(result);
     const meta = (
-      result.data?.ontologyClass as { _meta: Record<string, unknown> }
+      result.data.ontologyClass as { _meta: Record<string, unknown> }
     )._meta;
     expect(meta.title).toBe("Widget");
     expect(meta.definition).toBeNull();
@@ -558,7 +566,8 @@ ex:s1 a ex:Sub ;
       `{ doc(uri: "ex:d1") { _meta { title label comment definition } } }`,
     );
     expect(result.errors).toBeUndefined();
-    const meta = (result.data?.doc as { _meta: Record<string, unknown> })._meta;
+    assertData(result);
+    const meta = (result.data.doc as { _meta: Record<string, unknown> })._meta;
     // titleFrom heads the title chain: H1, not the asserted rdfs:label L1.
     expect(meta.title).toBe("H1");
     // Doc declares no labelFrom, so label keeps the canonical resolution —
@@ -578,7 +587,8 @@ ex:s1 a ex:Sub ;
       `{ doc(uri: "ex:d2") { _meta { title comment } } }`,
     );
     expect(result.errors).toBeUndefined();
-    const meta = (result.data?.doc as { _meta: Record<string, unknown> })._meta;
+    assertData(result);
+    const meta = (result.data.doc as { _meta: Record<string, unknown> })._meta;
     expect(meta.title).toBe("L2");
     expect(meta.comment).toBeNull();
   });
@@ -590,7 +600,8 @@ ex:s1 a ex:Sub ;
       `{ sub(uri: "ex:s1") { _meta { title label } } }`,
     );
     expect(result.errors).toBeUndefined();
-    const meta = (result.data?.sub as { _meta: Record<string, unknown> })._meta;
+    assertData(result);
+    const meta = (result.data.sub as { _meta: Record<string, unknown> })._meta;
     // titleFrom is inherited from Doc (Sub declares none of its own)...
     expect(meta.title).toBe("SH");
     // ...while Sub's own labelFrom beats the asserted rdfs:label.
@@ -636,8 +647,9 @@ ex:d2 a ex:Doc ; ex:contact [ a ex:Agent ; ex:heading "Ada Lovelace" ; rdfs:labe
       }`,
     );
     expect(result.errors).toBeUndefined();
+    assertData(result);
     const concrete = (
-      result.data?.concrete as {
+      result.data.concrete as {
         contacts: Array<{ _meta: Record<string, unknown> }>;
       }
     ).contacts[0]?._meta as Record<string, unknown>;
@@ -646,7 +658,7 @@ ex:d2 a ex:Doc ; ex:contact [ a ex:Agent ; ex:heading "Ada Lovelace" ; rdfs:labe
     expect(concrete.label).toBe("Grace Hopper");
 
     const abstract = (
-      result.data?.abstract as {
+      result.data.abstract as {
         contacts: Array<{ _meta: Record<string, unknown> }>;
       }
     ).contacts[0]?._meta as Record<string, unknown>;
@@ -672,8 +684,9 @@ describe("EntityMeta edge cases", () => {
       }`,
     );
     expect(result.errors).toBeUndefined();
+    assertData(result);
     expect(
-      (result.data?.thing as { _meta: { field: unknown } })._meta.field,
+      (result.data.thing as { _meta: { field: unknown } })._meta.field,
     ).toBeNull();
   });
 });
@@ -737,15 +750,16 @@ describe("EntityMeta.curie", () => {
       }`,
     );
     expect(result.errors).toBeUndefined();
+    assertData(result);
     const node = (
-      result.data?.components as {
+      result.data.components as {
         edges: { node: { uri: string; _meta: { curie: string } } }[];
       }
     ).edges[0]?.node;
     // Identity is untouched — curie is a SECOND string, not a replacement.
     expect(node?.uri).toBe("https://ds.canonical.com/global.component.button");
     expect(node?._meta.curie).toBe("ds:global.component.button");
-    expect(result.data?.ontologyClass).toEqual({
+    expect(result.data.ontologyClass).toEqual({
       uri: "https://ds.canonical.com/Component",
       _meta: { curie: "ds:Component" },
     });
@@ -789,8 +803,9 @@ describe("ClassProperty.name", () => {
       }`,
     );
     expect(result.errors).toBeUndefined();
+    assertData(result);
     const fields = (
-      result.data?.components as {
+      result.data.components as {
         edges: {
           node: {
             _meta: { fields: { name: string; property: { uri: string } }[] };
@@ -814,7 +829,7 @@ describe("ClassProperty.name", () => {
     // OntologyClass.properties agrees with EntityMeta.fields: one index.
     expect(
       (
-        result.data?.ontologyClass as {
+        result.data.ontologyClass as {
           properties: { name: string; property: { uri: string } }[];
         }
       ).properties,
@@ -828,8 +843,9 @@ describe("ClassProperty.name", () => {
       } } } } }`,
     );
     expect(roundTrip.errors).toBeUndefined();
+    assertData(roundTrip);
     const meta = (
-      roundTrip.data?.components as {
+      roundTrip.data.components as {
         edges: { node: { _meta: Record<string, unknown> } }[];
       }
     ).edges[0]?.node._meta as Record<string, unknown>;
@@ -848,9 +864,10 @@ describe("ClassProperty.name", () => {
       }`,
     );
     expect(result.errors).toBeUndefined();
+    assertData(result);
     const firstOf = (key: string) =>
       (
-        result.data?.[key] as {
+        result.data[key] as {
           properties: {
             name: string;
             singular: boolean;
@@ -886,7 +903,8 @@ describe("ClassProperty.name", () => {
       }`,
     );
     expect(result.errors).toBeUndefined();
-    const container = result.data?.container as {
+    assertData(result);
+    const container = result.data.container as {
       isAbstract: boolean;
       properties: { name: string; property: { uri: string } }[];
     };
@@ -901,12 +919,12 @@ describe("ClassProperty.name", () => {
       { name: "parts", property: { uri: "http://example.org/part" } },
     ]);
     expect(
-      (result.data?.boxClass as { properties: unknown }).properties,
+      (result.data.boxClass as { properties: unknown }).properties,
     ).toEqual(container.properties);
     // And it is a name field(name:) accepts, which `part` is not — the
     // round-trip guarantee the field's own description promises.
     expect(
-      (result.data?.boxInstance as { _meta: { field: unknown } })._meta.field,
+      (result.data.boxInstance as { _meta: { field: unknown } })._meta.field,
     ).toEqual({ name: "parts" });
   });
 
@@ -926,9 +944,10 @@ describe("ClassProperty.name", () => {
       } } } } }`,
     );
     expect(result.errors).toBeUndefined();
+    assertData(result);
     expect(
       (
-        result.data?.components as {
+        result.data.components as {
           edges: { node: { _meta: { field: unknown } } }[];
         }
       ).edges[0]?.node._meta.field,
@@ -951,9 +970,10 @@ describe("ClassProperty.name", () => {
       }`,
     );
     expect(result.errors).toBeUndefined();
+    assertData(result);
     expect(
       (
-        result.data?.ontologyClass as {
+        result.data.ontologyClass as {
           properties: { name: string; property: { uri: string } }[];
         }
       ).properties,
@@ -962,7 +982,7 @@ describe("ClassProperty.name", () => {
       { name: "legacy", property: { uri: "http://example.org/legacy" } },
     ]);
     expect(
-      (result.data?.spec as { _meta: { field: unknown } })._meta.field,
+      (result.data.spec as { _meta: { field: unknown } })._meta.field,
     ).toBeNull();
   });
 });
@@ -974,7 +994,8 @@ describe("datatype list fields", () => {
     });
     const result = await run(compiled, `{ thing(uri: "ex:widget") { names } }`);
     expect(result.errors).toBeUndefined();
-    expect((result.data?.thing as { names: string[] }).names).toEqual([
+    assertData(result);
+    expect((result.data.thing as { names: string[] }).names).toEqual([
       "Widget",
     ]);
   });
@@ -1187,10 +1208,11 @@ describe("TBox defensive branches (synthetic parents)", () => {
       }`,
     });
     expect(result.errors).toBeUndefined();
-    expect((result.data?.unionProp as { range: string }).range).toBe(
+    assertData(result);
+    expect((result.data.unionProp as { range: string }).range).toBe(
       "Cat | Dog",
     );
-    const cls = result.data?.knownClass as Record<string, unknown>;
+    const cls = result.data.knownClass as Record<string, unknown>;
     expect(cls.namespace).toBe("t");
     // The synthetic name map resolves this class to a name nothing was
     // minted under, so the population guard answers 0 (and `instances`
@@ -1305,7 +1327,8 @@ describe("TBox defensive branches (synthetic parents)", () => {
       source: `{ orphanMeta { fields { property { uri } } } }`,
     });
     expect(result.errors).toBeUndefined();
-    expect((result.data?.orphanMeta as { fields: unknown[] }).fields).toEqual(
+    assertData(result);
+    expect((result.data.orphanMeta as { fields: unknown[] }).fields).toEqual(
       [],
     );
   });

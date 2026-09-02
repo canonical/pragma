@@ -105,7 +105,7 @@
 /* Body font tier for the field label/description/error, which lost `.p`. Scoped
    to just these (NOT the headings, which keep their own tier). */
 :is(.comfortable, .dense, .app, .site, .docs)
-  :is(.ds.field-label, .ds.field-description, .ds.field-error) {
+:is(.ds.field-label, .ds.field-description, .ds.field-error) {
   font-size: var(--typography-text-primary-font-size);
   font-family: var(--typography-text-primary-font-family);
 }
@@ -142,7 +142,7 @@
  * rule wins for the text family. Direct chromes (select/date/time) and the
  * textarea keep the previous model until their own cutover pass. */
 :is(.comfortable, .dense, .app, .site, .docs)
-  .ds.input:is(.text, .number, .password, .phone) {
+.ds.input:is(.text, .number, .password, .phone) {
   /* The COMPOSITE chrome family — every wrapper with an inner <input> leaf
      (text, number, password, phone). One selector, one seat: the wrapper is
      the box, the leaf carries the line. */
@@ -330,7 +330,7 @@
  * --end-nudge already lands its bottom on the grid. Adding a density fill on top
  * would double-pad. Prose bottom rhythm belongs to the engine / `.editorial`. */
 :is(.comfortable, .dense, .app, .site, .docs)
-  :is(.ds.field-label, .ds.field-description, .ds.field-error) {
+:is(.ds.field-label, .ds.field-description, .ds.field-error) {
   padding-block-end: max(
     0px,
     calc(

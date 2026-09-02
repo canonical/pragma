@@ -197,28 +197,30 @@ describe("read-noun parity — every list/lookup/extra verb (B5)", () => {
     });
   });
 
-  it.each(
-    lookupVerbs,
-  )("$noun lookup: CLI --format json == MCP, for a known name", async (v) => {
-    const name = firstNameByNoun.get(v.noun);
-    if (!name) return;
-    await assertCliMcpParity({
-      modules: capabilities,
-      verb: v.spec,
-      tool: v.tool as string,
-      cwd: fixture.cwd,
-      params: { name: [name] },
-    });
-  });
+  it.each(lookupVerbs)(
+    "$noun lookup: CLI --format json == MCP, for a known name",
+    async (v) => {
+      const name = firstNameByNoun.get(v.noun);
+      if (!name) return;
+      await assertCliMcpParity({
+        modules: capabilities,
+        verb: v.spec,
+        tool: v.tool as string,
+        cwd: fixture.cwd,
+        params: { name: [name] },
+      });
+    },
+  );
 
-  it.each(
-    extraListShapedVerbs,
-  )("$noun $verb: CLI --format json == MCP", async (v) => {
-    await assertCliMcpParity({
-      modules: capabilities,
-      verb: v.spec,
-      tool: v.tool as string,
-      cwd: fixture.cwd,
-    });
-  });
+  it.each(extraListShapedVerbs)(
+    "$noun $verb: CLI --format json == MCP",
+    async (v) => {
+      await assertCliMcpParity({
+        modules: capabilities,
+        verb: v.spec,
+        tool: v.tool as string,
+        cwd: fixture.cwd,
+      });
+    },
+  );
 });

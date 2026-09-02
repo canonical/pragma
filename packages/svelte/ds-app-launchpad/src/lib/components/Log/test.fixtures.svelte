@@ -32,7 +32,6 @@
       "This-is-a-very-long-log-line-without-natural-breakpoints-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   } as const;
 
-  // biome-ignore lint/style/useExportType: False positive, presumably due to "cross-language" export
   export { logs, logsProps, longLog, longLogProps, oneLog, oneLogProps };
 </script>
 

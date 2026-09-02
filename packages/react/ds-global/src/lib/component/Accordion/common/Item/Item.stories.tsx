@@ -53,7 +53,7 @@ export const WithRichContent: Story = {
           <li>Other components</li>
         </ul>
         <p className="p">
-          <a href="#example">Learn more</a>
+          <a href="#example">Usage examples</a>
         </p>
       </>
     ),

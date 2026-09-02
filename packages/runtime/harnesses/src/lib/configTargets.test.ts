@@ -84,11 +84,12 @@ describe("isHarnessInBand", () => {
     ["project", "global", "global", false],
   ];
 
-  it.each(
-    cases,
-  )("harness %s under scope=%s in %s band → %s", (harnessScope, scope, band, expected) => {
-    expect(isHarnessInBand(harnessScope, scope, band)).toBe(expected);
-  });
+  it.each(cases)(
+    "harness %s under scope=%s in %s band → %s",
+    (harnessScope, scope, band, expected) => {
+      expect(isHarnessInBand(harnessScope, scope, band)).toBe(expected);
+    },
+  );
 });
 
 describe("listHarnessesForBand", () => {

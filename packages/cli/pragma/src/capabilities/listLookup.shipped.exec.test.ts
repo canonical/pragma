@@ -158,104 +158,112 @@ describe("every list-published name resolves through lookup, whole corpus (PROTE
     expect(NOUNS).toContain("block");
   });
 
-  it.each(
-    NOUNS.map((noun) => [noun] as const),
-  )("%s: every published name round-trips, and its corpus is not silently empty", async (noun) => {
-    const module = storyModules.get(noun) as CapabilityModule;
-    const names = await publishedNames(rt, module, noun);
-    if (EMPTY_CORPUS_TODAY.includes(noun)) {
-      // Asserted empty, not skipped: this is what expires the allowlist.
+  it.each(NOUNS.map((noun) => [noun] as const))(
+    "%s: every published name round-trips, and its corpus is not silently empty",
+    async (noun) => {
+      const module = storyModules.get(noun) as CapabilityModule;
+      const names = await publishedNames(rt, module, noun);
+      if (EMPTY_CORPUS_TODAY.includes(noun)) {
+        // Asserted empty, not skipped: this is what expires the allowlist.
+        expect(
+          names,
+          `${noun} is allowlisted as an empty corpus but published rows — ` +
+            "delete it from EMPTY_CORPUS_TODAY so a later regression to zero rows cannot hide behind the entry",
+        ).toEqual([]);
+      } else {
+        expect(
+          names.length,
+          `${noun} list published no rows at all from the shipped pack`,
+        ).toBeGreaterThan(0);
+      }
+
+      const errors = await lookupErrors(rt, module, noun, names);
       expect(
-        names,
-        `${noun} is allowlisted as an empty corpus but published rows — ` +
-          "delete it from EMPTY_CORPUS_TODAY so a later regression to zero rows cannot hide behind the entry",
+        errors,
+        `${noun} list published ${errors.length} name(s) its own lookup cannot resolve — ` +
+          "the two-step grammar the tool descriptions document is broken for every agent following it",
       ).toEqual([]);
-    } else {
+    },
+    120_000,
+  );
+
+  it.each(NOUNS.map((noun) => [noun] as const))(
+    "%s: every published name is in the pool that feeds suggestions, globs and sample",
+    async (noun) => {
+      const story = declaredStories.get(noun) as PackDefinition;
+      const lookup = story.lookup;
+      if (!lookup) throw new Error(`no "${noun}" lookup`);
+      const module = storyModules.get(noun) as CapabilityModule;
+
+      const names = await publishedNames(rt, module, noun);
+      const pool = await listEntityNames(rt, lookup, SOURCE);
+      // The resolve matches case-insensitively; hold the pool to the same bar.
+      const addressable = new Set(pool.map((name) => name.toLowerCase()));
+      const missing = names.filter(
+        (name) => !addressable.has(name.toLowerCase()),
+      );
       expect(
-        names.length,
-        `${noun} list published no rows at all from the shipped pack`,
-      ).toBeGreaterThan(0);
-    }
-
-    const errors = await lookupErrors(rt, module, noun, names);
-    expect(
-      errors,
-      `${noun} list published ${errors.length} name(s) its own lookup cannot resolve — ` +
-        "the two-step grammar the tool descriptions document is broken for every agent following it",
-    ).toEqual([]);
-  }, 120_000);
-
-  it.each(
-    NOUNS.map((noun) => [noun] as const),
-  )("%s: every published name is in the pool that feeds suggestions, globs and sample", async (noun) => {
-    const story = declaredStories.get(noun) as PackDefinition;
-    const lookup = story.lookup;
-    if (!lookup) throw new Error(`no "${noun}" lookup`);
-    const module = storyModules.get(noun) as CapabilityModule;
-
-    const names = await publishedNames(rt, module, noun);
-    const pool = await listEntityNames(rt, lookup, SOURCE);
-    // The resolve matches case-insensitively; hold the pool to the same bar.
-    const addressable = new Set(pool.map((name) => name.toLowerCase()));
-    const missing = names.filter(
-      (name) => !addressable.has(name.toLowerCase()),
-    );
-    expect(
-      missing,
-      `${noun}: published but not addressable — a miss-suggestion or glob over this pool can hand out none of these, and sample can never draw them`,
-    ).toEqual([]);
-  }, 60_000);
+        missing,
+        `${noun}: published but not addressable — a miss-suggestion or glob over this pool can hand out none of these, and sample can never draw them`,
+      ).toEqual([]);
+    },
+    60_000,
+  );
 
   it.each(
     NOUNS.filter(
       (noun) => declaredStories.get(noun)?.lookup?.nameFallback === "iri",
     ).map((noun) => [noun] as const),
-  )("%s: the derived-name pool covers the WHOLE class population (sample is representative)", async (noun) => {
-    const story = declaredStories.get(noun) as PackDefinition;
-    const lookup = story.lookup;
-    if (!lookup?.type && !lookup?.types?.length) {
-      throw new Error(`"${noun}" derives names without a class constraint`);
-    }
-    const types = (lookup.types ?? [lookup.type as string]).join(" ");
-    // The pool is DISTINCT NAMES, and a name may be legitimately shared (two
-    // shipped standards carry the same upstream rdfs:label; the ranked
-    // resolve answers a shared name with every entity it reaches). So the
-    // full-population claim is counted the way the pool is built: one name
-    // per asserted `by` value, plus one derived name per instance carrying
-    // none. A pool smaller than that is the #1047 defect — sample and
-    // suggestions drawing from the labelled subset only. (A prose label
-    // colliding with a slash-derived name would make this one too strict;
-    // that collision would itself be a data defect worth the red bar.)
-    const labelled = Number(
-      await scalar(
-        [
-          "SELECT (COUNT(DISTINCT ?name) AS ?n) WHERE {",
-          `  VALUES ?class { ${types} }`,
-          `  ?uri a ?class ; ${lookup.by} ?name .`,
-          "}",
-        ].join("\n"),
-      ),
-    );
-    const bare = Number(
-      await scalar(
-        [
-          "SELECT (COUNT(DISTINCT ?uri) AS ?n) WHERE {",
-          `  VALUES ?class { ${types} }`,
-          "  ?uri a ?class .",
-          `  FILTER NOT EXISTS { ?uri ${lookup.by} ?any . }`,
-          "}",
-        ].join("\n"),
-      ),
-    );
-    const pool = await listEntityNames(rt, lookup, SOURCE);
+  )(
+    "%s: the derived-name pool covers the WHOLE class population (sample is representative)",
+    async (noun) => {
+      const story = declaredStories.get(noun) as PackDefinition;
+      const lookup = story.lookup;
+      if (!lookup?.type && !lookup?.types?.length) {
+        throw new Error(`"${noun}" derives names without a class constraint`);
+      }
+      const types = (lookup.types ?? [lookup.type as string]).join(" ");
+      // The pool is DISTINCT NAMES, and a name may be legitimately shared (two
+      // shipped standards carry the same upstream rdfs:label; the ranked
+      // resolve answers a shared name with every entity it reaches). So the
+      // full-population claim is counted the way the pool is built: one name
+      // per asserted `by` value, plus one derived name per instance carrying
+      // none. A pool smaller than that is the #1047 defect — sample and
+      // suggestions drawing from the labelled subset only. (A prose label
+      // colliding with a slash-derived name would make this one too strict;
+      // that collision would itself be a data defect worth the red bar.)
+      const labelled = Number(
+        await scalar(
+          [
+            "SELECT (COUNT(DISTINCT ?name) AS ?n) WHERE {",
+            `  VALUES ?class { ${types} }`,
+            `  ?uri a ?class ; ${lookup.by} ?name .`,
+            "}",
+          ].join("\n"),
+        ),
+      );
+      const bare = Number(
+        await scalar(
+          [
+            "SELECT (COUNT(DISTINCT ?uri) AS ?n) WHERE {",
+            `  VALUES ?class { ${types} }`,
+            "  ?uri a ?class .",
+            `  FILTER NOT EXISTS { ?uri ${lookup.by} ?any . }`,
+            "}",
+          ].join("\n"),
+        ),
+      );
+      const pool = await listEntityNames(rt, lookup, SOURCE);
 
-    expect(labelled + bare).toBeGreaterThan(0);
-    expect(
-      pool.length,
-      `${noun}: ${labelled} asserted name(s) + ${bare} instance(s) with none, but only ` +
-        `${pool.length} addressable names — sample's draw pool is an unrepresentative slice of the corpus`,
-    ).toBe(labelled + bare);
-  }, 60_000);
+      expect(labelled + bare).toBeGreaterThan(0);
+      expect(
+        pool.length,
+        `${noun}: ${labelled} asserted name(s) + ${bare} instance(s) with none, but only ` +
+          `${pool.length} addressable names — sample's draw pool is an unrepresentative slice of the corpus`,
+      ).toBe(labelled + bare);
+    },
+    60_000,
+  );
 });
 
 describe("negative control: the pre-#1047 shape fails these assertions", () => {

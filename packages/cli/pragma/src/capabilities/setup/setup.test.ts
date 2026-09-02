@@ -515,9 +515,7 @@ describe("setup mcp — the per-file question, asked directly", () => {
     // the only gate, and the choices carry the detected state per file.
     expect(targets?.when?.({})).toBe(true);
     expect(
-      (targets?.choices as { label: string }[]).every((c) =>
-        /— (add|update|unchanged)$/.test(c.label),
-      ),
+      targets?.choices?.every((c) => /— (add|update|unchanged)$/.test(c.label)),
     ).toBe(true);
   });
 

@@ -73,25 +73,27 @@ afterAll(async () => {
 });
 
 describe("lookup miss — total miss fails the call (B3, adapted)", () => {
-  it.each(
-    lookupVerbs.map((v) => v.noun),
-  )("%s_lookup: a single unknown name fails with ENTITY_NOT_FOUND", async (noun) => {
-    const result = await mcp.callTool(`${noun}_lookup`, {
-      name: ["zzz-definitely-not-a-real-entity"],
-    });
-    expect(result.ok).toBe(false);
-    expect((result.error as { code: string }).code).toBe("ENTITY_NOT_FOUND");
-  });
+  it.each(lookupVerbs.map((v) => v.noun))(
+    "%s_lookup: a single unknown name fails with ENTITY_NOT_FOUND",
+    async (noun) => {
+      const result = await mcp.callTool(`${noun}_lookup`, {
+        name: ["zzz-definitely-not-a-real-entity"],
+      });
+      expect(result.ok).toBe(false);
+      expect((result.error as { code: string }).code).toBe("ENTITY_NOT_FOUND");
+    },
+  );
 
-  it.each(
-    lookupVerbs.map((v) => v.noun),
-  )("%s_lookup: an all-unknown batch ALSO fails (not a partial report)", async (noun) => {
-    const result = await mcp.callTool(`${noun}_lookup`, {
-      name: ["zzz-nope-one", "zzz-nope-two"],
-    });
-    expect(result.ok).toBe(false);
-    expect((result.error as { code: string }).code).toBe("ENTITY_NOT_FOUND");
-  });
+  it.each(lookupVerbs.map((v) => v.noun))(
+    "%s_lookup: an all-unknown batch ALSO fails (not a partial report)",
+    async (noun) => {
+      const result = await mcp.callTool(`${noun}_lookup`, {
+        name: ["zzz-nope-one", "zzz-nope-two"],
+      });
+      expect(result.ok).toBe(false);
+      expect((result.error as { code: string }).code).toBe("ENTITY_NOT_FOUND");
+    },
+  );
 });
 
 /**
@@ -116,45 +118,43 @@ describe("list — a filter value the graph does not carry is INVALID_INPUT (B3,
     expect(filteredListVerbs.length).toBeGreaterThan(0);
   });
 
-  it.each(
-    filteredListVerbs,
-  )("$tool: an unobserved filter value is rejected, naming the observed ones", async ({
-    tool,
-    param,
-  }) => {
-    const result = await mcp.callTool(tool, {
-      [param]: "zzz-definitely-not-a-real-value",
-    });
-    expect(result.ok).toBe(false);
-    const error = result.error as { code: string; validOptions?: string[] };
-    expect(error.code).toBe("INVALID_INPUT");
-    expect(error.validOptions?.length).toBeGreaterThan(0);
-    expect(error.validOptions).not.toContain("zzz-definitely-not-a-real-value");
-  });
+  it.each(filteredListVerbs)(
+    "$tool: an unobserved filter value is rejected, naming the observed ones",
+    async ({ tool, param }) => {
+      const result = await mcp.callTool(tool, {
+        [param]: "zzz-definitely-not-a-real-value",
+      });
+      expect(result.ok).toBe(false);
+      const error = result.error as { code: string; validOptions?: string[] };
+      expect(error.code).toBe("INVALID_INPUT");
+      expect(error.validOptions?.length).toBeGreaterThan(0);
+      expect(error.validOptions).not.toContain(
+        "zzz-definitely-not-a-real-value",
+      );
+    },
+  );
 
-  it.each(
-    filteredListVerbs,
-  )("$tool: every value the graph DOES carry narrows to a calm list", async ({
-    tool,
-    param,
-  }) => {
-    const rejected = await mcp.callTool(tool, { [param]: "zzz-nope" });
-    const admissible = (rejected.error as { validOptions: string[] })
-      .validOptions;
-    expect(admissible.length).toBeGreaterThan(0);
-    // EVERY admissible value is accepted, and at least one is populated. Not
-    // "the first one returns rows": the vocabulary is the graph's, so it can
-    // legitimately contain a value no row carries (a category with zero
-    // standards) — that value is a calm empty list, not a rejection, and the
-    // sweep would otherwise read a real answer as a failure.
-    let populated = 0;
-    for (const value of admissible) {
-      const result = await mcp.callTool(tool, { [param]: value });
-      expect(result.ok).toBe(true);
-      if ((result.data as unknown[]).length > 0) populated += 1;
-    }
-    expect(populated).toBeGreaterThan(0);
-  });
+  it.each(filteredListVerbs)(
+    "$tool: every value the graph DOES carry narrows to a calm list",
+    async ({ tool, param }) => {
+      const rejected = await mcp.callTool(tool, { [param]: "zzz-nope" });
+      const admissible = (rejected.error as { validOptions: string[] })
+        .validOptions;
+      expect(admissible.length).toBeGreaterThan(0);
+      // EVERY admissible value is accepted, and at least one is populated. Not
+      // "the first one returns rows": the vocabulary is the graph's, so it can
+      // legitimately contain a value no row carries (a category with zero
+      // standards) — that value is a calm empty list, not a rejection, and the
+      // sweep would otherwise read a real answer as a failure.
+      let populated = 0;
+      for (const value of admissible) {
+        const result = await mcp.callTool(tool, { [param]: value });
+        expect(result.ok).toBe(true);
+        if ((result.data as unknown[]).length > 0) populated += 1;
+      }
+      expect(populated).toBeGreaterThan(0);
+    },
+  );
 
   it("standard_list: a declared category with NO standards is a calm empty list", async () => {
     // The case that separates "the graph is the vocabulary" from "the returned

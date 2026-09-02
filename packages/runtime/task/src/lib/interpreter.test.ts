@@ -1502,24 +1502,23 @@ describe("Interpreter - executeEffect for DeleteFile error propagation", () => {
 // =============================================================================
 
 describe("Interpreter - executeEffect Log fallback for all levels", () => {
-  it.each([
-    "debug",
-    "warn",
-    "error",
-  ] as const)("logs %s level with prefix to console", async (level) => {
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+  it.each(["debug", "warn", "error"] as const)(
+    "logs %s level with prefix to console",
+    async (level) => {
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
-    try {
-      await executeEffect({ _tag: "Log", level, message: "msg" }, new Map());
+      try {
+        await executeEffect({ _tag: "Log", level, message: "msg" }, new Map());
 
-      const prefix = { debug: "[DEBUG]", warn: "[WARN]", error: "[ERROR]" }[
-        level
-      ];
-      expect(consoleSpy).toHaveBeenCalledWith(`${prefix} msg`);
-    } finally {
-      consoleSpy.mockRestore();
-    }
-  });
+        const prefix = { debug: "[DEBUG]", warn: "[WARN]", error: "[ERROR]" }[
+          level
+        ];
+        expect(consoleSpy).toHaveBeenCalledWith(`${prefix} msg`);
+      } finally {
+        consoleSpy.mockRestore();
+      }
+    },
+  );
 });
 
 // =============================================================================

@@ -13,6 +13,7 @@ import {
   isIncrementalResults,
 } from "../../lib/execution/index.js";
 import { isAbsoluteIri, isSafeIri } from "../../lib/hardening/index.js";
+import { assertData } from "../index.js";
 
 const PREFIXES = { ex: "http://example.org/" };
 
@@ -86,7 +87,8 @@ describe("forced abstract with direct instances (C1 + V015)", () => {
     });
     if (!isIncrementalResults(execution)) {
       expect(execution.errors).toBeUndefined();
-      expect((execution.data?.node as { __typename: string }).__typename).toBe(
+      assertData(execution);
+      expect((execution.data.node as { __typename: string }).__typename).toBe(
         "Dog",
       );
     }
