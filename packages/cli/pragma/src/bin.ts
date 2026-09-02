@@ -102,14 +102,16 @@ async function main(): Promise<void> {
     return;
   }
 
-  // 4. Reject a bad global-flag value early (help still prints regardless):
-  //    an unknown `--format`, an unrecognized `--detail` level (which used to
-  //    be dropped silently — the same defect class as a filter that
-  //    evaporates), and a valued `--verbose=<x>` (the flag takes no value;
-  //    accepting-and-ignoring one would be a silent no-op).
+  // 4. Reject a bad global-flag value early: an unknown `--format`, an
+  //    unrecognized `--detail` level (which used to be dropped silently — the
+  //    same defect class as a filter that evaporates), and a valued
+  //    `--verbose=<x>` (the flag takes no value; accepting-and-ignoring one
+  //    would be a silent no-op). `--help` does NOT bypass these: a typo'd
+  //    value must exit 2 whether or not help rides along — printing help over
+  //    a bad value read as success (`pragma --help --format bogus` exited 0).
   const explicitHelp = argv.some((arg) => arg === "--help");
   const jsonMode = globalFlags.format === "json";
-  if (!explicitHelp) {
+  {
     const rawFormat = readRawFormat(argv);
     if (
       rawFormat !== undefined &&
@@ -222,33 +224,58 @@ async function main(): Promise<void> {
     return;
   }
 
-  // A real command merges the package- and config-declared story packs into the
-  // tree (DISPATCH only); `--help` stays on the static, storeless capabilities
-  // so its budget and the golden hold. An invalid CONFIG story surfaces as a
-  // rendered error; a package story that cannot be used is named on stderr and
-  // the command carries on (it is third-party data, and failing here would take
-  // `sources update` and `doctor` — the only recoveries — down with it).
+  // A command token merges the package- and config-declared story packs into
+  // the tree — even under `--help`, because a config story can declare a NEW
+  // noun and the guard below must not report a legitimate story noun as
+  // unknown. Bare `--help` never reaches here (the front-door branch above
+  // answered it from the static registry), so the help budget and the golden
+  // hold. An invalid CONFIG story surfaces as a rendered error; a package
+  // story that cannot be used is named on stderr and the command carries on
+  // (it is third-party data, and failing here would take `sources update` and
+  // `doctor` — the only recoveries — down with it).
   let modules = capabilities;
-  if (!explicitHelp) {
-    try {
-      const { loadEffectiveModules } = await import(
-        "./kernel/packs/collect.js"
-      );
-      const effective = await loadEffectiveModules(capabilities, process.cwd());
-      modules = effective.modules;
-      if (globalFlags.quiet !== true) {
-        for (const problem of effective.problems) {
-          process.stderr.write(
-            `Ignored story ${problem.source}: ${problem.message}\n`,
-          );
-        }
+  try {
+    const { loadEffectiveModules } = await import("./kernel/packs/collect.js");
+    const effective = await loadEffectiveModules(capabilities, process.cwd());
+    modules = effective.modules;
+    if (globalFlags.quiet !== true) {
+      for (const problem of effective.problems) {
+        process.stderr.write(
+          `Ignored story ${problem.source}: ${problem.message}\n`,
+        );
       }
-    } catch (error) {
+    }
+  } catch (error) {
+    // A real command must surface a broken config; help must keep helping —
+    // under `--help` fall back to the static registry instead of erroring.
+    if (!explicitHelp) {
       await renderStartupError(error, globalFlags.format === "json");
       return;
     }
   }
   const verbs = modules.flatMap((module) => [...module.verbs]);
+
+  // 6b. `--help` riding an unknown command must not read as success.
+  // Commander answers `--help` BEFORE it rejects an unknown operand
+  // (`_outputHelpIfRequested` runs ahead of `unknownCommand()`), so
+  // `pragma changelog --help` printed root help and exited 0 — a typo
+  // reporting success. Resolve the command tokens against the effective
+  // grammar FIRST and route a miss through the same suggester + exit 2 the
+  // flagless typo gets. Commander's own `help` command is real but not a
+  // grammar noun, so it stays with Commander.
+  if (explicitHelp) {
+    const positionals = args.filter((arg) => !arg.startsWith("-"));
+    if (positionals[0] !== "help") {
+      const { nounVerbMap, resolveUnknownCommand } = await import(
+        "./kernel/project/cli/suggest.js"
+      );
+      const unknown = resolveUnknownCommand(positionals, nounVerbMap(verbs));
+      if (unknown) {
+        await renderUnknownCommand(unknown, globalFlags.format);
+        return;
+      }
+    }
+  }
 
   // Module-owned noun mounts (CapabilityModule.cliProjection), keyed by the
   // module's noun. A module's verbs all share their noun, so the module name
@@ -338,6 +365,39 @@ async function renderStartupError(
   process.exitCode = mapExitCode(pragmaError.code);
 }
 
+/**
+ * Render the designed unknown-command error — curated or fuzzy suggestions,
+ * the shared `Error:` + "Did you mean?" shape — and set exit code 2. One
+ * renderer for BOTH routes to an unknown command (the pre-parse `--help`
+ * guard and Commander's `unknownCommand` throw), so a typo reads identically
+ * with or without `--help` riding along.
+ */
+async function renderUnknownCommand(
+  unknown: import("./kernel/project/cli/suggest.js").UnknownCommand,
+  format: import("./constants.js").OutputFormat,
+): Promise<void> {
+  const [
+    { curatedSuggestions },
+    { PragmaError },
+    { renderErrorForFormat, renderErrorPlain },
+    { suggestNames },
+  ] = await Promise.all([
+    import("./kernel/project/cli/suggest.js"),
+    import("./kernel/error/PragmaError.js"),
+    import("./kernel/error/renderError.js"),
+    import("./kernel/project/cli/suggestNames.js"),
+  ]);
+  const curated = curatedSuggestions(unknown.token);
+  const suggestions = curated
+    ? [...curated]
+    : suggestNames(unknown.token, [...unknown.candidates]);
+  const unknownError = PragmaError.unknownVerb(unknown.token, { suggestions });
+  process.stderr.write(
+    `${renderErrorForFormat(unknownError, format) ?? renderErrorPlain(unknownError)}\n`,
+  );
+  process.exitCode = 2;
+}
+
 /** Silence Commander's built-in stderr writer on a command and all descendants. */
 function silenceCommanderErrors(command: Command): void {
   command.configureOutput({ writeErr: () => {} });
@@ -417,42 +477,20 @@ async function handleProgramError(
       return;
     }
     if (error.code === "commander.unknownCommand") {
-      const { curatedSuggestions, nounVerbMap, resolveUnknownCommand } =
-        await import("./kernel/project/cli/suggest.js");
-      const { stripGlobalFlags } = await import(
-        "./kernel/project/cli/globalFlags.js"
+      const { nounVerbMap, resolveUnknownCommand } = await import(
+        "./kernel/project/cli/suggest.js"
       );
-      const positionals = stripGlobalFlags(argv).filter(
-        (arg) => !arg.startsWith("-"),
+      // Route through the same PragmaError + renderers as every other error,
+      // so the plain path gets the `Error:` prefix and the shared "Did you
+      // mean?" list instead of a second, inline rendering — and an explicit
+      // machine format gets the same envelope every other usage error
+      // emits (the kernel's one gate+renderer decision; plain and json
+      // bytes unchanged by construction).
+      const unknown = resolveUnknownCommand(
+        strippedPositionals,
+        nounVerbMap(verbs),
       );
-      const unknown = resolveUnknownCommand(positionals, nounVerbMap(verbs));
-      if (unknown) {
-        // Route through the same PragmaError + renderers as every other error,
-        // so the plain path gets the `Error:` prefix and the shared "Did you
-        // mean?" list instead of a second, inline rendering — and an explicit
-        // machine format gets the same envelope every other usage error
-        // emits (the kernel's one gate+renderer decision; plain and json
-        // bytes unchanged by construction).
-        const [
-          { PragmaError },
-          { renderErrorForFormat, renderErrorPlain },
-          { suggestNames },
-        ] = await Promise.all([
-          import("./kernel/error/PragmaError.js"),
-          import("./kernel/error/renderError.js"),
-          import("./kernel/project/cli/suggestNames.js"),
-        ]);
-        const curated = curatedSuggestions(unknown.token);
-        const suggestions = curated
-          ? [...curated]
-          : suggestNames(unknown.token, [...unknown.candidates]);
-        const unknownError = PragmaError.unknownVerb(unknown.token, {
-          suggestions,
-        });
-        process.stderr.write(
-          `${renderErrorForFormat(unknownError, format) ?? renderErrorPlain(unknownError)}\n`,
-        );
-      }
+      if (unknown) await renderUnknownCommand(unknown, format);
       process.exitCode = 2;
       return;
     }

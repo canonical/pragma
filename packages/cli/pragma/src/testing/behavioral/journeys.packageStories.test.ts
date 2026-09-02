@@ -180,6 +180,25 @@ describe("the shipped entry answers the package's noun (subprocess)", () => {
     expect(data.tools.map((tool) => tool.name)).toContain("recipe_list");
   });
 
+  it("pragma recipe --help answers with the story noun's help, exit 0", () => {
+    // The `--help` unknown-command guard loads the EFFECTIVE modules, so a
+    // config-declared noun must be a known command there — reporting a
+    // legitimate story noun as unknown would be worse than the exit-0 typo
+    // the guard exists to fix.
+    const result = runCli(["recipe", "--help"], { cwd: graph.cwd });
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("recipe");
+  });
+
+  it("pragma recipy --help exits 2 and suggests the story noun", () => {
+    // The suggester also ranks against the effective grammar: a typo'd story
+    // noun points at the story noun, not just the static registry.
+    const result = runCli(["recipy", "--help"], { cwd: graph.cwd });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('Unknown command "recipy"');
+    expect(result.stderr).toContain("- recipe");
+  });
+
   it("pragma --help does NOT list recipe — the documented fast-path limit", () => {
     // `--help` reads the STATIC capability set (no config, no pack read), which
     // is what keeps its budget. A package-declared noun is dispatch-only.
