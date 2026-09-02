@@ -41,11 +41,13 @@ export const packIndexEntitySchema: z.ZodType<PackIndexEntity> = z.object({
 
 /** zod schema validating a persisted {@link PackIndex}. */
 export const packIndexSchema: z.ZodType<PackIndex> = z.object({
-  version: z.union([z.literal(1), z.literal(2)]),
+  version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   contentHash: z.string(),
   prefixes: z.record(z.string(), z.string()),
   entities: z.array(packIndexEntitySchema),
   instanceCountByType: z.record(z.string(), z.number()),
+  // v3 enrichment; a v2 index (an existing cache) simply lacks it.
+  anonymousInstanceCountByType: z.record(z.string(), z.number()).optional(),
 });
 
 /** zod schema validating a persisted `manifest.json`. */

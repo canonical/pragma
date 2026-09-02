@@ -280,15 +280,27 @@ export async function buildIndex(
 
   const typesBySubject = new Map<string, string[]>();
   const instanceCountByType: Record<string, number> = {};
+  const anonymousInstanceCountByType: Record<string, number> = {};
   for (const term of typesResult.termBindings) {
-    if (term.s?.termType !== "NamedNode") continue;
     const typeTerm = term.type;
     // Ignore blank-node `rdf:type` objects (SHACL shapes / RDF lists): a `_:b0`
     // is never a domain class, so it must not become a garbage primary type or
     // inflate the per-type instance counts (A6).
     if (typeTerm === undefined || typeTerm.termType === "BlankNode") continue;
-    const subject = term.s.value;
     const typeUri = typeTerm.value;
+    // A BLANK subject is a real instance that merely cannot be named (the
+    // shipped pack models every `ds:Property` value this way — 330 instances
+    // that used to report as 0, A11). It counts — in the ANONYMOUS bucket,
+    // so `instanceCountByType` keeps its browse-promise meaning — and it
+    // never enters `typesBySubject`: the name index is for addressable
+    // subjects only, exactly like the label/altName collectors above.
+    if (term.s?.termType === "BlankNode") {
+      anonymousInstanceCountByType[typeUri] =
+        (anonymousInstanceCountByType[typeUri] ?? 0) + 1;
+      continue;
+    }
+    if (term.s?.termType !== "NamedNode") continue;
+    const subject = term.s.value;
     const bucket = typesBySubject.get(subject) ?? [];
     bucket.push(typeUri);
     typesBySubject.set(subject, bucket);
@@ -343,10 +355,11 @@ export async function buildIndex(
   });
 
   return {
-    version: 2,
+    version: 3,
     contentHash,
     prefixes,
     entities,
     instanceCountByType,
+    anonymousInstanceCountByType,
   };
 }
