@@ -38,6 +38,16 @@ jobs:
     name: Apply type label
     needs: validate-pr-metadata
     runs-on: ubuntu-latest
+    # ONE run at a time per pull request. Two edits in quick succession queue
+    # two runs, and run side by side they can each read the labels before the
+    # other writes them: a `feat` → `docs` → `fix` retitle then leaves BOTH
+    # `docs` and `fix` behind, each run having removed only the `feat` it saw.
+    # Queued rather than cancelled, so the last run to execute is the one that
+    # reads the final title. Together with the live read below, every run
+    # converges on the pull request as it now stands.
+    concurrency:
+      group: apply-type-label-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     permissions:
       pull-requests: write
       # Creating a managed label that does not exist yet goes through the issues API.
@@ -60,7 +70,16 @@ jobs:
             COLORS[BREAKING] = "b60205";
 
             const { owner, repo } = context.repo;
-            const pr = context.payload.pull_request;
+            // Read the pull request as it stands NOW, not as the event payload
+            // snapshotted it when the edit was queued. A run that starts after
+            // a later edit would otherwise reconcile a title and a label set
+            // that are already history, and converge on the wrong answer while
+            // reporting success.
+            const { data: pr } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: context.payload.pull_request.number,
+            });
 
             // A fork PR gets a read-only token, so labelling would fail the run.
             if (pr.head.repo.full_name !== `${owner}/${repo}`) {
@@ -99,6 +118,18 @@ jobs:
               await github.rest.issues.addLabels({ owner, repo, issue_number: pr.number, labels: add });
             }
             for (const name of remove) {
-              await github.rest.issues.removeLabel({ owner, repo, issue_number: pr.number, name });
+              // A label that is already gone is the outcome this loop wants,
+              // not an error. Anyone may remove one between the read above and
+              // the write here — a maintainer clicking it off, another
+              // automation — and GitHub answers a removal of an absent label
+              // with a 404, which would fail the whole job over a state that
+              // is already correct. Mirrors the 404 guard the add loop above
+              // uses for the same reason.
+              try {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number: pr.number, name });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                core.info(`Label "${name}" was already absent`);
+              }
             }
             core.info(`${pr.title}\n  added:   ${add.join(", ") || "—"}\n  removed: ${remove.join(", ") || "—"}`);
