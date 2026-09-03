@@ -2,3 +2,4 @@
 
 export { default as Modal } from "./Modal.js";
 export type * from "./types.js";
+export { default as withModal } from "./withModal.js";

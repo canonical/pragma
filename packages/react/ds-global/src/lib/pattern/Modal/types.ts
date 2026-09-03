@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps, MouseEventHandler, ReactNode } from "react";
 
 type OwnProps = {
   /**
@@ -51,3 +51,44 @@ type OwnProps = {
  */
 export type ModalProps = OwnProps &
   Omit<ComponentProps<"dialog">, keyof OwnProps | "title" | "onClose">;
+
+/**
+ * The one requirement {@link withModal} places on the component it wraps: it
+ * must accept an `onClick` handler. The HOC composes its open handler onto
+ * the trigger itself — no wrapper element — so a trigger that accepts
+ * `onClick` but never forwards it to a clickable element never opens its
+ * modal. An `onClick` the consumer passes still runs: the HOC calls it first,
+ * then opens the modal.
+ *
+ * The event is typed against plain `Element` so triggers rooted at any
+ * element — `<button>`, `<a>`, a clickable `<span>` — satisfy the constraint:
+ * React's event handlers are bivariant (the `bivarianceHack`), so a
+ * `MouseEventHandler<HTMLButtonElement>` prop fits where a
+ * `MouseEventHandler<Element>` is expected.
+ */
+export type WithModalTriggerProps = {
+  onClick?: MouseEventHandler<Element>;
+};
+
+/**
+ * The content of a {@link withModal} modal: plain JSX, or a function.
+ *
+ * The function form receives the modal's `close` callback — the only action
+ * the HOC can hand to the content — so a footer button can close the modal:
+ * `<Button onClick={close}>Got it</Button>`.
+ *
+ * A footer action can only close. If it must do more — submit data, close
+ * conditionally, open another modal — skip the HOC and compose the controlled
+ * `Modal` with your own `open` state.
+ */
+export type WithModalChildren = ReactNode | ((close: () => void) => ReactNode);
+
+/**
+ * The modal options for {@link withModal}: everything `Modal` accepts except
+ * `open`, `onOpenChange`, `children` and `ref`, which the HOC owns or
+ * deliberately does not expose.
+ */
+export type WithModalOptions = Omit<
+  ModalProps,
+  "open" | "onOpenChange" | "children" | "ref"
+>;
