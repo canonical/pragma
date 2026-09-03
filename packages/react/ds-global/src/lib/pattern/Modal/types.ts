@@ -51,3 +51,26 @@ type OwnProps = {
  */
 export type ModalProps = OwnProps &
   Omit<ComponentProps<"dialog">, keyof OwnProps | "title" | "onClose">;
+
+/**
+ * The content of a {@link withModal} modal: plain JSX, or a function.
+ *
+ * The function form receives the modal's `close` callback — the only action
+ * the HOC can hand to the content — so a footer button can close the modal:
+ * `<Button onClick={close}>Got it</Button>`.
+ *
+ * A footer action can only close. If it must do more — submit data, close
+ * conditionally, open another modal — skip the HOC and compose the controlled
+ * `Modal` with your own `open` state.
+ */
+export type WithModalChildren = ReactNode | ((close: () => void) => ReactNode);
+
+/**
+ * The modal options for {@link withModal}: everything `Modal` accepts except
+ * `open`, `onOpenChange`, `children` and `ref`, which the HOC owns or
+ * deliberately does not expose.
+ */
+export type WithModalOptions = Omit<
+  ModalProps,
+  "open" | "onOpenChange" | "children" | "ref"
+>;
