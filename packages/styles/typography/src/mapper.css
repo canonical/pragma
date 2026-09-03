@@ -8,7 +8,8 @@
  * The design-tokens modifier provides:
  *   --typography-heading-{1-6}-font-size      → e.g. var(--dimension-size-fontSize-700)
  *   --typography-heading-{1-6}-font-weight     → e.g. var(--typography-weight-medium)
- *   --typography-heading-{1-6}-line-height     → unitless ratio e.g. var(--number-line-height-700)
+ *   --typography-heading-{1-6}-line-height     → unitless DTCG projection
+ *   --typography-heading-{1-6}-line-height-dimension → exact Canonical length (when available)
  *   --typography-heading-{1-6}-letter-spacing  → e.g. var(--dimension-letterSpacing-default)
  *   --typography-heading-{1-6}-font-family     → e.g. var(--typography-fontFamily-default)
  *   (same pattern for text.primary, text.secondary, text.tertiary)
@@ -20,9 +21,9 @@
  *   --space-after     → <number> in baseline-height units
  *   --baseline-height → set at :root (default: 0.5rem)
  *
- * The --line-height is computed using round() to snap the typographic
- * line-height (font-size × unitless ratio) up to the nearest baseline unit:
- *   round(up, font-size × line-height-ratio, baseline-height)
+ * Exact Canonical line-height dimensions take precedence. The round() path is
+ * retained only as a compatibility fallback for design-tokens 0.8.1 and is
+ * removed with the broader typography migration.
  *
  * Heading padding-inline:
  *   Headings receive --heading-padding-inline (default: 0) so they can
@@ -91,13 +92,16 @@ body {
 h1 {
   --font-size: var(--typography-heading-1-font-size);
   --font-weight: var(--typography-heading-1-font-weight);
-  --line-height: round(
-    up,
-    calc(
-      var(--typography-heading-1-font-size) *
-      var(--typography-heading-1-line-height)
-    ),
-    var(--baseline-height)
+  --line-height: var(
+    --typography-heading-1-line-height-dimension,
+    round(
+      up,
+      calc(
+        var(--typography-heading-1-font-size) *
+        var(--typography-heading-1-line-height)
+      ),
+      var(--baseline-height)
+    )
   );
   --space-after: 0;
   font-family: var(--typography-heading-1-font-family);
@@ -109,13 +113,16 @@ h1 {
 h2 {
   --font-size: var(--typography-heading-2-font-size);
   --font-weight: var(--typography-heading-2-font-weight);
-  --line-height: round(
-    up,
-    calc(
-      var(--typography-heading-2-font-size) *
-      var(--typography-heading-2-line-height)
-    ),
-    var(--baseline-height)
+  --line-height: var(
+    --typography-heading-2-line-height-dimension,
+    round(
+      up,
+      calc(
+        var(--typography-heading-2-font-size) *
+        var(--typography-heading-2-line-height)
+      ),
+      var(--baseline-height)
+    )
   );
   --space-after: 0;
   font-family: var(--typography-heading-2-font-family);
@@ -127,13 +134,16 @@ h2 {
 h3 {
   --font-size: var(--typography-heading-3-font-size);
   --font-weight: var(--typography-heading-3-font-weight);
-  --line-height: round(
-    up,
-    calc(
-      var(--typography-heading-3-font-size) *
-      var(--typography-heading-3-line-height)
-    ),
-    var(--baseline-height)
+  --line-height: var(
+    --typography-heading-3-line-height-dimension,
+    round(
+      up,
+      calc(
+        var(--typography-heading-3-font-size) *
+        var(--typography-heading-3-line-height)
+      ),
+      var(--baseline-height)
+    )
   );
   --space-after: 0;
   font-family: var(--typography-heading-3-font-family);
@@ -145,13 +155,16 @@ h3 {
 h4 {
   --font-size: var(--typography-heading-4-font-size);
   --font-weight: var(--typography-heading-4-font-weight);
-  --line-height: round(
-    up,
-    calc(
-      var(--typography-heading-4-font-size) *
-      var(--typography-heading-4-line-height)
-    ),
-    var(--baseline-height)
+  --line-height: var(
+    --typography-heading-4-line-height-dimension,
+    round(
+      up,
+      calc(
+        var(--typography-heading-4-font-size) *
+        var(--typography-heading-4-line-height)
+      ),
+      var(--baseline-height)
+    )
   );
   --space-after: 0;
   font-family: var(--typography-heading-4-font-family);
@@ -163,13 +176,16 @@ h4 {
 h5 {
   --font-size: var(--typography-heading-5-font-size);
   --font-weight: var(--typography-heading-5-font-weight);
-  --line-height: round(
-    up,
-    calc(
-      var(--typography-heading-5-font-size) *
-      var(--typography-heading-5-line-height)
-    ),
-    var(--baseline-height)
+  --line-height: var(
+    --typography-heading-5-line-height-dimension,
+    round(
+      up,
+      calc(
+        var(--typography-heading-5-font-size) *
+        var(--typography-heading-5-line-height)
+      ),
+      var(--baseline-height)
+    )
   );
   --space-after: 0;
   font-family: var(--typography-heading-5-font-family);
@@ -191,13 +207,16 @@ h5 {
 h6 {
   --font-size: var(--typography-heading-6-font-size);
   --font-weight: var(--typography-heading-6-font-weight);
-  --line-height: round(
-    up,
-    calc(
-      var(--typography-heading-6-font-size) *
-      var(--typography-heading-6-line-height)
-    ),
-    var(--baseline-height)
+  --line-height: var(
+    --typography-heading-6-line-height-dimension,
+    round(
+      up,
+      calc(
+        var(--typography-heading-6-font-size) *
+        var(--typography-heading-6-line-height)
+      ),
+      var(--baseline-height)
+    )
   );
   --space-after: 0;
   font-family: var(--typography-heading-6-font-family);
@@ -212,13 +231,16 @@ p,
 .p {
   --font-size: var(--typography-text-primary-font-size);
   --font-weight: var(--typography-text-primary-font-weight);
-  --line-height: round(
-    up,
-    calc(
-      var(--typography-text-primary-font-size) *
-      var(--typography-text-primary-line-height)
-    ),
-    var(--baseline-height)
+  --line-height: var(
+    --typography-text-primary-line-height-dimension,
+    round(
+      up,
+      calc(
+        var(--typography-text-primary-font-size) *
+        var(--typography-text-primary-line-height)
+      ),
+      var(--baseline-height)
+    )
   );
   --space-after: 0;
   font-family: var(--typography-text-primary-font-family);
@@ -242,13 +264,16 @@ p,
 .code {
   --font-size: var(--typography-text-primary-code-font-size);
   --font-weight: var(--typography-text-primary-code-font-weight);
-  --line-height: round(
-    up,
-    calc(
-      var(--typography-text-primary-code-font-size) *
-      var(--typography-text-primary-code-line-height)
-    ),
-    var(--baseline-height)
+  --line-height: var(
+    --typography-text-primary-code-line-height-dimension,
+    round(
+      up,
+      calc(
+        var(--typography-text-primary-code-font-size) *
+        var(--typography-text-primary-code-line-height)
+      ),
+      var(--baseline-height)
+    )
   );
   --space-after: 0;
   font-family: var(--typography-text-primary-code-font-family);
