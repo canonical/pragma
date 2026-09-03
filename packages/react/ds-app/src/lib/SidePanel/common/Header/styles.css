@@ -1,0 +1,33 @@
+.ds.side-panel-header {
+  /* Never shrinks, and stays visible: the panel scrolls beneath it. */
+  flex: none;
+  position: sticky;
+  inset-block-start: 0;
+  /* Above the in-flow content, whatever it contains. */
+  z-index: 1;
+  /*
+    Opaque, so scrolling content passes behind rather than through. `inherit`
+    picks up whichever surface colour the panel resolved, so the two cannot
+    drift apart.
+  */
+  background-color: inherit;
+
+  display: flex;
+  align-items: center;
+  gap: var(--dimension-200);
+
+  padding-block: var(--dimension-200);
+
+  > .title {
+    flex: 1 1 auto;
+    margin: 0;
+    /*
+      A panel title is a heading, not body text: heading-4 resolves a step above
+      `--typography-text-primary-font-size`, which is the same size as
+      heading-5/6 and read as body copy.
+    */
+    font-size: var(--typography-heading-4-font-size);
+    line-height: var(--typography-heading-4-line-height);
+    font-weight: var(--typography-heading-4-font-weight);
+  }
+}
