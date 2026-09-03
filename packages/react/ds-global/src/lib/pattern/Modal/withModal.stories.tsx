@@ -20,8 +20,8 @@ const meta = {
           "`withModal(Button, (close) => <Modal.Footer><Button onClick={close}>Done</Button></Modal.Footer>)`.",
           "",
           "**A footer button can only close the modal.** If an action needs to do anything else —",
-          "save data, open another modal, close conditionally — skip this HOC and compose the",
-          "controlled `Modal` with your own `open` state.",
+          "save data, open another modal, close conditionally — skip this HOC and compose `Modal`",
+          "directly, driving it through its `ref`.",
         ].join("\n"),
       },
       story: {
@@ -78,7 +78,7 @@ Default.parameters = {
  * A footer button can only do one thing here: close the modal. Pass the
  * content as a function to receive the `close` callback and wire it with
  * `onClick={close}`. If a button needs to do more than close — submit a form,
- * open another modal — use the controlled `Modal` instead.
+ * open another modal — compose `Modal` directly and drive it through its `ref`.
  */
 export const FooterAction: StoryFn = () => {
   const AcknowledgeButton = withModal(Button, (close) => (

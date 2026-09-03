@@ -1,5 +1,5 @@
 import type { ComponentType, FC, ReactElement } from "react";
-import { useState } from "react";
+import { useRef } from "react";
 import Modal from "./Modal.js";
 import type { WithModalChildren, WithModalOptions } from "./types.js";
 
@@ -30,12 +30,12 @@ import type { WithModalChildren, WithModalOptions } from "./types.js";
  * ```
  *
  * If an action needs to do more than close — save data, open another modal,
- * close conditionally — don't use this HOC: keep the `open` state yourself
- * and compose the controlled `Modal` directly.
+ * close conditionally — don't use this HOC: compose `Modal` directly and drive
+ * it through its `ref`.
  *
  * @param Component The trigger component to wrap (e.g. `Button`). Clicking it opens the modal.
  * @param modalChildren The modal's content: plain JSX, or a function that receives `close` and returns JSX.
- * @param modalProps Props forwarded to the underlying `Modal` (e.g. `closeOnBackdropClick`), minus `open`, `onOpenChange` and `children`, which the HOC owns.
+ * @param modalProps Props forwarded to the underlying `Modal` (e.g. `closeOnBackdropClick`), minus `ref`, `defaultOpen` and `children`, which the HOC owns.
  */
 const withModal = <TProps extends object>(
   Component: ComponentType<TProps>,
@@ -43,8 +43,17 @@ const withModal = <TProps extends object>(
   modalProps: WithModalOptions = {},
 ): FC<TProps> => {
   const WrappedComponent = (props: TProps): ReactElement => {
-    const [open, setOpen] = useState(false);
-    const close = (): void => setOpen(false);
+    // The modal owns its open state, so the HOC only needs a handle on the
+    // dialog to open it from the trigger and to hand `close` to the content.
+    const dialogRef = useRef<HTMLDialogElement>(null);
+    // showModal() throws on an already-open dialog. The open modal makes the
+    // page inert, so a second trigger click should be impossible — but the
+    // guard costs nothing and a thrown error would cost the whole render.
+    const open = (): void => {
+      const dialog = dialogRef.current;
+      if (dialog && !dialog.open) dialog.showModal();
+    };
+    const close = (): void => dialogRef.current?.close();
 
     return (
       <>
@@ -57,10 +66,14 @@ const withModal = <TProps extends object>(
         */}
         {/* biome-ignore lint/a11y/noStaticElementInteractions: the span is a passthrough wrapper; the interactive component inside it handles focus and keyboard activation and bubbles its click here */}
         {/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard activation of the wrapped control fires a click that bubbles to this handler, so no separate key handler is needed */}
-        <span className="ds modal-trigger" onClick={() => setOpen(true)}>
+        <span className="ds modal-trigger" onClick={open}>
           <Component {...props} />
         </span>
-        <Modal open={open} onOpenChange={setOpen} {...modalProps}>
+        {/* The props the HOC owns come last, after the spread. `WithModalOptions`
+            omits them, but a structurally typed variable can still carry them,
+            and neither may be allowed through: a stray `ref` would unwire the
+            trigger, and `defaultOpen` would open a modal nobody asked for. */}
+        <Modal {...modalProps} ref={dialogRef} defaultOpen={false}>
           {typeof modalChildren === "function"
             ? modalChildren(close)
             : modalChildren}

@@ -12,7 +12,7 @@ export interface ModalContextValue {
    * title, which is what gives the dialog its accessible name.
    */
   titleId: string;
-  /** Requests dismissal — reports `false` through the modal's `onOpenChange`. */
+  /** Closes the dialog. What the Header's close button calls. */
   onDismiss: () => void;
 }
 
