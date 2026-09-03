@@ -22,6 +22,9 @@ summon monorepo --name=my-project --description="My awesome project"
 <repo>/
 ├── .github/
 │   ├── actions/
+│   │   ├── apply-type-label/ # Type label reconciliation, used by pr-lint.yml
+│   │   │   ├── action.yml
+│   │   │   └── apply-type-label.cjs
 │   │   ├── lerna-version/    # Version bump + changelog action
 │   │   │   ├── action.yml
 │   │   │   ├── version.sh
