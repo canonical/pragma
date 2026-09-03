@@ -8,7 +8,9 @@
     "./fonts": "./src/fonts.css",
     "./modifiers.states.shim.css": "./src/modifiers.states.shim.css",
     "./modifiers.importance.shim.css": "./src/modifiers.importance.shim.css",
-    "./modifiers.criticality.shim.css": "./src/modifiers.criticality.shim.css"
+    "./modifiers.criticality.shim.css": "./src/modifiers.criticality.shim.css",
+    "./modifiers.density.css": "./src/modifiers.density.css",
+    "./spacing.css": "./src/spacing.css"
   },
   "files": [
     "src"
