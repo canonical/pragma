@@ -1,0 +1,51 @@
+{
+  "name": "@canonical/styles-vanilla-adapter",
+  "description": "Two stylesheets that let an application run pragma and Vanilla Framework together: the mixed layer order, and the boundary that keeps Vanilla out of pragma territory plus the theme bridge. No tooling, no transforms.",
+  "version": "0.37.0",
+  "main": "adapter.css",
+  "exports": {
+    ".": "./adapter.css",
+    "./adapter": "./adapter.css",
+    "./adapter.css": "./adapter.css",
+    "./layers": "./layers.css",
+    "./layers.css": "./layers.css"
+  },
+  "files": [
+    "adapter.css",
+    "layers.css"
+  ],
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/pragma"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/pragma/issues"
+  },
+  "homepage": "https://github.com/canonical/pragma#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "check": "bun run check:biome",
+    "check:fix": "bun run check:biome:fix",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.11",
+    "@canonical/biome-config": "^0.37.0"
+  },
+  "peerDependencies": {
+    "@canonical/styles": "^0.37.0"
+  },
+  "peerDependenciesMeta": {
+    "@canonical/styles": {
+      "optional": true
+    }
+  }
+}

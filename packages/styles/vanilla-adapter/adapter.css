@@ -1,0 +1,58 @@
+/* @canonical/styles-vanilla-adapter — the boundary and the theme bridge.
+ *
+ * Import AFTER @canonical/styles and the component stylesheets, in the pragma
+ * entry, never inside the `vanilla` layer:
+ *
+ *   @import url("@canonical/styles-vanilla-adapter/adapter.css");
+ *
+ * Two rules, two layers, no tooling. What you read here is what the browser runs
+ * (pragma constitution VI and XIII). The reasoning is in pragma-adrs F.
+ */
+
+/* THE BOUNDARY.
+ *
+ * Pragma territory is every element with the class `ds` and everything inside it.
+ * Vanilla must never style it, and a Vanilla rule leaks for every property a
+ * pragma component does not itself declare. So at the boundary every property is
+ * rolled back to the browser's own default with `revert`, in a layer that sits
+ * ABOVE `vanilla` and BELOW every pragma layer (see layers.css):
+ *
+ *   - a property pragma declares wins, because pragma's layers are higher;
+ *   - a property only Vanilla declares is reverted to the browser default,
+ *     which is exactly what a pragma-only page has;
+ *   - custom properties are not part of `all`, so pragma's tokens and Vanilla's
+ *     theme toggles keep inheriting;
+ *   - inheritance is untouched, which is what pragma's territory-root reset and
+ *     the theme bridge below rely on.
+ *
+ * Pseudo-elements are included because Vanilla's box-sizing rule targets them.
+ * Vanilla's `!important` declarations still win here, as they would anywhere
+ * (`* { animation: none !important }` under reduced motion is the one that
+ * matters, and pragma honours reduced motion itself). */
+@layer boundary {
+  :where(.ds, .ds *, .ds *::before, .ds *::after) {
+    all: revert;
+  }
+}
+
+/* THE THEME BRIDGE.
+ *
+ * Pragma keys every colour on `color-scheme` (light-dark() values, inherited).
+ * Vanilla keys theme on two inherited space-toggle properties set by .is-light
+ * and .is-paper (light on, dark off) and by .is-dark (the reverse), which its
+ * themed strips, tooltips and accent strip all go through. Reading Vanilla's
+ * toggles and writing pragma's scheme makes the nearest Vanilla theme ancestor
+ * decide, by inheritance, with no selector-order fragility:
+ *   under a light or paper ancestor → `light`
+ *   under a dark ancestor            → `dark`
+ *   with no Vanilla theme at all     → `light dark`, pragma's own default
+ * Only the boundary root is written (`.ds:not(.ds *)`), so nested pragma roots
+ * inherit from their pragma parent; <html> is excluded so the `light` pin on the
+ * root (README, rule 10) stays in force once the document is flipped to
+ * `html.ds`. The `adapter` layer sits below `ds.components`, so a component that
+ * sets its own scheme still wins. */
+@layer adapter {
+  :where(.ds:not(.ds *):not(html)) {
+    color-scheme: var(--vf-theme-light, light) var(--vf-theme-dark, dark);
+  }
+}

@@ -1,0 +1,44 @@
+/* @canonical/styles-vanilla-adapter — the order contract for a mixed application.
+ *
+ * This statement must be the FIRST rule of the FIRST stylesheet the browser sees;
+ * only @charset may precede it. From Sass, import it by its extensionless path so
+ * Sass inlines it in place:
+ *
+ *   @import "@canonical/styles-vanilla-adapter/layers";
+ *
+ * From plain CSS or a bundler:
+ *
+ *   @import url("@canonical/styles-vanilla-adapter/layers.css");
+ *
+ * Read bottom-up, each position is an argument (pragma-adrs F, §2.2):
+ *   vanilla        Vanilla Framework and everything built on it — one territory
+ *   boundary       `all: revert` on pragma territory (adapter.css): Vanilla ends here
+ *   normalize      pragma's authored reset, scoped to pragma territory
+ *   ds.tokens      primitive :root values, spacing, motion, overflow, mapper shims
+ *   ds.reset       pragma's element baseline (box-sizing, margin resets), scoped
+ *   ds.typography  the mapper and the baseline engines, scoped
+ *   ds.modifiers   theme, scale, channels, density and context classes
+ *   ds.surfaces    .surface, .contrasted, .modal
+ *   ds.states      the universal derived-state rule, scoped
+ *   adapter        the theme bridge (adapter.css)
+ *   ds.components  every pragma component stylesheet (.global and .app tiers)
+ *   app            the application's own pragma-era CSS
+ *
+ * `vanilla` is the lowest layer: in Vanilla territory nothing pragma ships
+ * competes with it, because pragma's element-level layers are scoped to `.ds`
+ * and its other layers are custom properties or component classes. `boundary`
+ * sits directly above it so that inside pragma territory every Vanilla
+ * declaration is reverted before pragma's layers apply.
+ */
+@layer vanilla,
+  boundary,
+  normalize,
+  ds.tokens,
+  ds.reset,
+  ds.typography,
+  ds.modifiers,
+  ds.surfaces,
+  ds.states,
+  adapter,
+  ds.components,
+  app;
