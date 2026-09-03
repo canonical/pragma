@@ -1,4 +1,13 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
+
+type OwnProps = {
+  /**
+   * The actions that capture the user's decision — normally Buttons, with the
+   * affirmative one last.
+   * Maps to DSL edges[0]: button (cardinality: 0..*)
+   */
+  children?: ReactNode;
+};
 
 /**
  * Props for the Modal.Footer subcomponent
@@ -15,11 +24,5 @@ import type { HTMLAttributes, ReactNode } from "react";
  * - edges:
  *   - [0] global.component.button (cardinality: 0..*, slotName: default)
  */
-export interface FooterProps extends HTMLAttributes<HTMLElement> {
-  /**
-   * The actions that capture the user's decision — normally Buttons, with the
-   * affirmative one last.
-   * Maps to DSL edges[0]: button (cardinality: 0..*)
-   */
-  children?: ReactNode;
-}
+export type FooterProps = OwnProps &
+  Omit<ComponentProps<"footer">, keyof OwnProps>;

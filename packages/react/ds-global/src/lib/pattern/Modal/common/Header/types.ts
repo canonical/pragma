@@ -1,22 +1,6 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
-/**
- * Props for the Modal.Header subcomponent
- *
- * @implements dso:global.subcomponent.modal-header
- *
- * Anatomy (from DSL):
- * - layout.type: flow
- * - layout.direction: horizontal
- * - layout.align: center
- * - layout.justify: space-between
- * - spacing.internal: spacing/medium
- * - appearance.border.bottom: border/style/divider
- * - edges:
- *   - [0] title (cardinality: 1, slotName: default)
- *   - [1] close button (cardinality: 0..1)
- */
-export interface HeaderProps extends HTMLAttributes<HTMLElement> {
+type OwnProps = {
   /**
    * The modal title. It tells the user what triggered the modal.
    * Maps to DSL edges[0]: title (cardinality: 1)
@@ -40,4 +24,23 @@ export interface HeaderProps extends HTMLAttributes<HTMLElement> {
    * through the Modal's `onOpenChange`; set it only to override that.
    */
   onDismiss?: () => void;
-}
+};
+
+/**
+ * Props for the Modal.Header subcomponent
+ *
+ * @implements dso:global.subcomponent.modal-header
+ *
+ * Anatomy (from DSL):
+ * - layout.type: flow
+ * - layout.direction: horizontal
+ * - layout.align: center
+ * - layout.justify: space-between
+ * - spacing.internal: spacing/medium
+ * - appearance.border.bottom: border/style/divider
+ * - edges:
+ *   - [0] title (cardinality: 1, slotName: default)
+ *   - [1] close button (cardinality: 0..1)
+ */
+export type HeaderProps = OwnProps &
+  Omit<ComponentProps<"header">, keyof OwnProps>;
