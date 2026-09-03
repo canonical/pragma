@@ -48,8 +48,7 @@ const Modal = ({
       if (typeof ref === "function") {
         ref(node);
       } else if (ref) {
-        (ref as  { current: HTMLDialogElement | null }).current =
-          node;
+        (ref as { current: HTMLDialogElement | null }).current = node;
       }
     },
     [ref],
