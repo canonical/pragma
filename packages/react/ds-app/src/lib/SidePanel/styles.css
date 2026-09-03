@@ -1,0 +1,158 @@
+/**
+ * SidePanel styles
+ *
+ * A NON-MODAL <dialog>: the application behind stays interactive. None of the
+ * top-layer conveniences apply, which is why this file does work a modal
+ * wouldn't — it positions and stacks the panel itself, and never styles
+ * `::backdrop` (a backdrop is only painted for a modal dialog, and faking one
+ * would cover the application and swallow its clicks).
+ */
+
+/* Component properties — the documented override points. */
+:root {
+  /*
+    design-tokens 0.8.1 ships no `size/*` token, so this is a literal.
+    TODO: replace with a token when one exists.
+  */
+  --side-panel-inline-size: 33.5rem;
+  /*
+    ...and no `shadow/*` token either. The shadow is what separates the panel
+    from the live page, so unlike a modal we cannot drop it.
+    TODO: replace with a token when one exists.
+  */
+  --side-panel-box-shadow: 0 0 32px 0 rgba(0, 0, 0, 0.2);
+  /*
+    A non-modal dialog is not in the top layer, so stacking is ours to manage.
+    Matches the demo's Drawer so the two never fight.
+  */
+  --side-panel-z-index: 1000;
+
+  --side-panel-border-radius: var(--dimension-radius-medium);
+  /*
+    The hairline closing the scroll region is a divider, not a boundary, so it
+    takes the muted border rather than the default one — gray-100 in light mode
+    against gray-520, and gray-820 in dark so it stays pale either way.
+  */
+  --side-panel-color-border: var(--color-border-muted);
+  /* One inline padding, read by the header, content and footer alike. */
+  --side-panel-padding-inline: var(--dimension-300);
+  --side-panel-transition-duration: var(--motion-duration-medium);
+  --side-panel-transition-easing-enter: var(--motion-easing-decelerate);
+  --side-panel-transition-easing-exit: var(--motion-easing-accelerate);
+}
+
+.ds.side-panel {
+  /*
+    Undo the user-agent dialog box. Each of these is set by the UA stylesheet,
+    so leaving one undeclared is not the same as it being absent: `position`
+    is `absolute`, `margin` is `auto` (which would centre the panel), both
+    max sizes are capped, and there is a ~3px border and 1em of padding.
+  */
+  position: fixed;
+  inset-block: 0;
+  inset-inline-end: 0;
+  inset-inline-start: auto;
+  margin: 0;
+  padding-block: 0;
+  /*
+    The inline padding lives here rather than on the header, content and footer,
+    so all three sit inside one text column — and so the content pane's own
+    border box stops short of the panel edges, letting its closing hairline be
+    inset. Trade-off: the content pane is narrower than the panel, so its
+    scrollbar sits inside the padding rather than hugging the panel edge.
+  */
+  padding-inline: var(--side-panel-padding-inline);
+  border: none;
+  max-inline-size: none;
+  max-block-size: none;
+
+  /*
+    The UA also sets `height: fit-content`, which beats `inset-block: 0` and
+    leaves the panel only as tall as its content. `auto` hands the height back
+    to the insets, so the panel spans the full viewport.
+  */
+  block-size: auto;
+
+  /* Full height comes from `inset-block`, avoiding mobile viewport-unit games. */
+  inline-size: min(var(--side-panel-inline-size), 100vw);
+  z-index: var(--side-panel-z-index);
+  border-radius: var(--side-panel-border-radius);
+  box-shadow: var(--side-panel-box-shadow);
+
+  /*
+    The panel is focused when it opens so that reading starts inside it, but it
+    is a container rather than a control: a focus ring drawn around the whole
+    panel reads as a border. Its focusable children keep their own rings.
+  */
+  &:focus,
+  &:focus-visible {
+    outline: none;
+  }
+
+  /*
+    The dialog itself is the scroller, not the content pane. That puts the
+    scrollbar at the panel's edge — a scroll container's scrollbar sits inside
+    the border box, so the inline padding stays between it and the text — and
+    keeps the content column free of a scrollbar of its own. The header and
+    footer stay visible by sticking to this scrollport.
+  */
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Don't hand the scroll to the page behind once the panel bottoms out. */
+  overscroll-behavior: contain;
+
+  /*
+    Read the surface channels HERE rather than in :root. A custom property
+    substitutes where it is declared, and at :root the surface channels are
+    unset — so a :root intermediate would collapse to the fallback forever.
+    Popover/styles.css in ds-global documents the same trap.
+  */
+  background-color: var(--surface-color-background, var(--color-background));
+  color: var(--surface-color-text, var(--color-text));
+
+  /* Closed state. `translate` is physical, so flip it when the panel docks left. */
+  --side-panel-translate-closed: 100%;
+  transform: translateX(var(--side-panel-translate-closed));
+
+  &:dir(rtl) {
+    --side-panel-translate-closed: -100%;
+  }
+
+  /*
+    `display` is transitioned discretely so the slide-out is seen before the
+    dialog is hidden. No `overlay` in the list: that property only applies to
+    top-layer elements, which a non-modal dialog is not.
+  */
+  transition-property: transform, display;
+  transition-duration: var(--side-panel-transition-duration);
+  transition-timing-function: var(--side-panel-transition-easing-exit);
+  transition-behavior: allow-discrete;
+
+  /*
+    A closed <dialog> is `display: none` by user-agent rule. Declaring display
+    unconditionally would beat that and leave the panel permanently visible, so
+    the stack layout is scoped to the open state.
+  */
+  &[open] {
+    display: flex;
+    flex-direction: column;
+    transform: translateX(0);
+    transition-timing-function: var(--side-panel-transition-easing-enter);
+
+    /* The frame the entry transition starts from. */
+    @starting-style {
+      transform: translateX(var(--side-panel-translate-closed));
+    }
+  }
+
+  /* Respect a reduced-motion preference: appear, don't slide. */
+  @media (prefers-reduced-motion: reduce) {
+    transition-property: display;
+
+    &[open] {
+      @starting-style {
+        transform: translateX(0);
+      }
+    }
+  }
+}
