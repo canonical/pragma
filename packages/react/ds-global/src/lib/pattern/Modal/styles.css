@@ -28,6 +28,7 @@
     because `::backdrop` has no surface channel to read.
   */
   --modal-color-backdrop: var(--color-backdrop);
+  --modal-backdrop-blur: 0;
   --modal-border-radius: var(--dimension-radius-medium);
 
   /*
@@ -100,5 +101,6 @@
   /* edges[0]: backdrop — mutes the page while the modal is active */
   &::backdrop {
     background-color: var(--modal-color-backdrop);
+    backdrop-filter: blur(var(--modal-backdrop-blur));
   }
 }

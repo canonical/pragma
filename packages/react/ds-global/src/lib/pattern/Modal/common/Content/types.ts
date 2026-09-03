@@ -1,4 +1,12 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
+
+type OwnProps = {
+  /**
+   * The main information the modal conveys — an open slot.
+   * Maps to DSL edges[0]: content (cardinality: 1)
+   */
+  children?: ReactNode;
+};
 
 /**
  * Props for the Modal.Content subcomponent
@@ -12,10 +20,5 @@ import type { HTMLAttributes, ReactNode } from "react";
  * - edges:
  *   - [0] content (cardinality: 1, slotName: default)
  */
-export interface ContentProps extends HTMLAttributes<HTMLDivElement> {
-  /**
-   * The main information the modal conveys — an open slot.
-   * Maps to DSL edges[0]: content (cardinality: 1)
-   */
-  children?: ReactNode;
-}
+export type ContentProps = OwnProps &
+  Omit<ComponentProps<"div">, keyof OwnProps>;

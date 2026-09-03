@@ -1,28 +1,6 @@
-import type { DialogHTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
-/**
- * Props for the Modal pattern
- *
- * @implements dso:global.pattern.modal
- *
- * Anatomy (from DSL):
- * - layout.type: stack
- * - edges (composed by the consumer):
- *   - [0] backdrop (cardinality: 1) — the native `::backdrop`, no DOM node
- *   - [1] dialog container (cardinality: 1) — the `<dialog>` element itself
- *     - [0] modal-header  (cardinality: 0..1, slotName: header)
- *     - [1] modal-content (cardinality: 1,    slotName: default)
- *     - [2] modal-footer  (cardinality: 0..1, slotName: footer)
- *
- * `title` is omitted from the native attributes because the DOM `title`
- * attribute is a tooltip, while here it would name the modal — which the
- * composed `Modal.Header` does instead.
- */
-export interface ModalProps
-  extends Omit<
-    DialogHTMLAttributes<HTMLDialogElement>,
-    "open" | "title" | "onClose"
-  > {
+type OwnProps = {
   /**
    * Whether the modal is shown. Controlled: the consumer owns this state, and
    * the modal asks to change it through `onOpenChange`.
@@ -49,4 +27,27 @@ export interface ModalProps
    * content carries the main information the modal conveys.
    */
   children: ReactNode;
-}
+};
+
+/**
+ * Props for the Modal pattern
+ *
+ * @implements dso:global.pattern.modal
+ *
+ * Anatomy (from DSL):
+ * - layout.type: stack
+ * - edges (composed by the consumer):
+ *   - [0] backdrop (cardinality: 1) — the native `::backdrop`, no DOM node
+ *   - [1] dialog container (cardinality: 1) — the `<dialog>` element itself
+ *     - [0] modal-header  (cardinality: 0..1, slotName: header)
+ *     - [1] modal-content (cardinality: 1,    slotName: default)
+ *     - [2] modal-footer  (cardinality: 0..1, slotName: footer)
+ *
+ * `title` is omitted from the native attributes because the DOM `title`
+ * attribute is a tooltip, while here it would name the modal — which the
+ * composed `Modal.Header` does instead. `onClose` is omitted because the
+ * component owns the native close event and reports dismissal through
+ * `onOpenChange`.
+ */
+export type ModalProps = OwnProps &
+  Omit<ComponentProps<"dialog">, keyof OwnProps | "title" | "onClose">;

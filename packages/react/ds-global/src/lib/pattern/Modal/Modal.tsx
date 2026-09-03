@@ -1,5 +1,5 @@
 import type React from "react";
-import { useEffect, useId, useRef } from "react";
+import { useCallback, useEffect, useId, useRef } from "react";
 import { Content, Footer, Header } from "./common/index.js";
 import ModalContext from "./common/ModalContext.js";
 import type { ModalProps } from "./types.js";
@@ -36,10 +36,24 @@ const Modal = ({
   closeOnBackdropClick = false,
   children,
   className,
+  ref,
   ...props
 }: ModalProps): React.ReactElement => {
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const dialogRef = useRef<HTMLDialogElement | null>(null);
   const titleId = useId();
+
+  const setDialogRef = useCallback(
+    (node: HTMLDialogElement | null) => {
+      dialogRef.current = node;
+      if (typeof ref === "function") {
+        ref(node);
+      } else if (ref) {
+        (ref as  { current: HTMLDialogElement | null }).current =
+          node;
+      }
+    },
+    [ref],
+  );
 
   useEffect(() => {
     // When open changes this effect is executed. According to the value open has
@@ -63,7 +77,7 @@ const Modal = ({
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: the click handler only identifies clicks landing on the backdrop, which has no keyboard equivalent; keyboard dismissal is Escape, handled natively by the dialog's cancel event
     <dialog
-      ref={dialogRef}
+      ref={setDialogRef}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       // The composed Header sets this id on its title, which names the dialog;
       // a modal without a header must supply aria-label, which passes through
