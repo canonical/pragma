@@ -165,3 +165,17 @@ export const ICON_NAMES = [
   "x",
   "youtube",
 ] as const;
+
+/**
+ * The groups an icon can belong to. A closed list: every icon carries at least
+ * one of these in its metadata.
+ */
+export const ICON_CATEGORIES = [
+  "navigation",
+  "action",
+  "status",
+  "object",
+  "social-brand",
+  "product",
+  "theme",
+] as const;
