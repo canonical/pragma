@@ -102,3 +102,13 @@
     background-color: var(--modal-color-backdrop);
   }
 }
+
+/*
+  The `withModal` HOC wraps the trigger in this span to carry the open-on-click
+  handler. `display: contents` removes the box itself, so the wrapped trigger
+  participates in the parent's layout (flex/grid items, gap) exactly as if it
+  were unwrapped 
+*/
+.ds.modal-trigger {
+  display: contents;
+}
