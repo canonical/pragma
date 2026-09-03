@@ -1,4 +1,5 @@
 import type { Meta, StoryFn } from "@storybook/react-vite";
+import type React from "react";
 import { Button } from "../../component/Button/index.js";
 import { withModal } from "./index.js";
 import Modal from "./Modal.js";
@@ -14,6 +15,11 @@ const meta = {
       description: {
         component: [
           "`withModal` wraps a trigger with a modal: **click the trigger → the modal opens**.",
+          "",
+          "**The trigger must accept `onClick`.** The HOC composes its open handler onto the",
+          "wrapped component itself — no wrapper element — so the component must forward",
+          "`onClick` to the clickable element at its root. Any `onClick` the consumer passes",
+          "keeps working: it runs first, then the modal opens.",
           "",
           "**How it closes:** the header's X button and Escape always work. A footer button can",
           "close it too — pass the content as a function to receive the `close` callback:",
@@ -159,14 +165,23 @@ BackdropDismissible.parameters = {
 };
 
 /**
- * The trigger does not have to be a `Button` — any component that renders a
- * clickable element works, because the open handler sits on a wrapper span and
- * catches the bubbled click.
+ * The trigger does not have to be a `Button` — any component that accepts
+ * `onClick` and forwards it to the clickable element at its root works,
+ * because the HOC composes its open handler onto the trigger itself. Here the
+ * anchor is that root, so the modal opens when the link is clicked.
  */
 export const CustomTrigger: StoryFn = () => {
-  const Link = ({ children }: { children?: string }) => (
+  const Link = ({
+    children,
+    onClick,
+  }: {
+    children?: string;
+    onClick?: React.MouseEventHandler<HTMLAnchorElement>;
+  }) => (
     // biome-ignore lint/a11y/useValidAnchor: demo trigger only
-    <a href="#">{children}</a>
+    <a href="#" onClick={onClick}>
+      {children}
+    </a>
   );
   const TermsLink = withModal(
     Link,
@@ -188,7 +203,12 @@ export const CustomTrigger: StoryFn = () => {
 CustomTrigger.parameters = {
   docs: {
     source: {
-      code: `const TermsLink = withModal(
+      code: `const Link = ({ children, onClick }: {
+  children?: string;
+  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
+}) => <a href="#" onClick={onClick}>{children}</a>;
+
+const TermsLink = withModal(
   Link,
   <>
     <Modal.Header>Terms</Modal.Header>

@@ -1,10 +1,19 @@
 import type { ComponentType, FC, ReactElement } from "react";
 import { useState } from "react";
 import Modal from "./Modal.js";
-import type { WithModalChildren, WithModalOptions } from "./types.js";
+import type {
+  WithModalChildren,
+  WithModalOptions,
+  WithModalTriggerProps,
+} from "./types.js";
 
 /**
  * Wraps a trigger with a modal. Click the trigger → the modal opens.
+ *
+ * **The wrapped component must accept `onClick`** and forward it to the
+ * clickable element at its root — the HOC composes its open handler onto the
+ * trigger itself, with no wrapper element in between. An `onClick` the
+ * consumer passes keeps working: it runs first, then the modal opens.
  *
  * ```tsx
  * const OpenButton = withModal(Button, <Modal.Content>Hello</Modal.Content>);
@@ -33,11 +42,14 @@ import type { WithModalChildren, WithModalOptions } from "./types.js";
  * close conditionally — don't use this HOC: keep the `open` state yourself
  * and compose the controlled `Modal` directly.
  *
- * @param Component The trigger component to wrap (e.g. `Button`). Clicking it opens the modal.
+ * A pure composition wrapper: it renders the wrapped component and the modal
+ * as siblings, so it carries no root element of its own.
+ *
+ * @param Component The trigger component to wrap (e.g. `Button`). It must accept `onClick` and forward it to its root element; clicking it opens the modal.
  * @param modalChildren The modal's content: plain JSX, or a function that receives `close` and returns JSX.
- * @param modalProps Props forwarded to the underlying `Modal` (e.g. `closeOnBackdropClick`), minus `open`, `onOpenChange` and `children`, which the HOC owns.
+ * @param modalProps Props forwarded to the underlying `Modal` (e.g. `closeOnBackdropClick`), minus `open`, `onOpenChange` `children` and `ref`, which the HOC owns.
  */
-const withModal = <TProps extends object>(
+const withModal = <TProps extends WithModalTriggerProps>(
   Component: ComponentType<TProps>,
   modalChildren: WithModalChildren,
   modalProps: WithModalOptions = {},
@@ -48,18 +60,15 @@ const withModal = <TProps extends object>(
 
     return (
       <>
-        {/*
-          The trigger wiring lives on a wrapper span, mirroring the tooltip
-          engine: the wrapped component renders untouched inside it, and any
-          click it produces — pointer or keyboard activation — bubbles up here
-          to open the modal. The span is layout-neutral (`display: contents`,
-          see styles.css), so the wrapped component lays out as if unwrapped.
-        */}
-        {/* biome-ignore lint/a11y/noStaticElementInteractions: the span is a passthrough wrapper; the interactive component inside it handles focus and keyboard activation and bubbles its click here */}
-        {/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard activation of the wrapped control fires a click that bubbles to this handler, so no separate key handler is needed */}
-        <span className="ds modal-trigger" onClick={() => setOpen(true)}>
-          <Component {...props} />
-        </span>
+        <Component
+          {...props}
+          onClick={(event) => {
+            // The consumer's handler runs first, then the modal opens; a
+            // preventDefault or stopPropagation there does not gate the open.
+            props.onClick?.(event);
+            setOpen(true);
+          }}
+        />
         <Modal open={open} onOpenChange={setOpen} {...modalProps}>
           {typeof modalChildren === "function"
             ? modalChildren(close)

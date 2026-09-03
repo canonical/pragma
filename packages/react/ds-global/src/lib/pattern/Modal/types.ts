@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps, MouseEventHandler, ReactNode } from "react";
 
 type OwnProps = {
   /**
@@ -51,6 +51,24 @@ type OwnProps = {
  */
 export type ModalProps = OwnProps &
   Omit<ComponentProps<"dialog">, keyof OwnProps | "title" | "onClose">;
+
+/**
+ * The one requirement {@link withModal} places on the component it wraps: it
+ * must accept an `onClick` handler. The HOC composes its open handler onto
+ * the trigger itself — no wrapper element — so a trigger that accepts
+ * `onClick` but never forwards it to a clickable element never opens its
+ * modal. An `onClick` the consumer passes still runs: the HOC calls it first,
+ * then opens the modal.
+ *
+ * The event is typed against plain `Element` so triggers rooted at any
+ * element — `<button>`, `<a>`, a clickable `<span>` — satisfy the constraint:
+ * React's event handlers are bivariant (the `bivarianceHack`), so a
+ * `MouseEventHandler<HTMLButtonElement>` prop fits where a
+ * `MouseEventHandler<Element>` is expected.
+ */
+export type WithModalTriggerProps = {
+  onClick?: MouseEventHandler<Element>;
+};
 
 /**
  * The content of a {@link withModal} modal: plain JSX, or a function.

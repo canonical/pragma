@@ -1,10 +1,19 @@
+import type { MouseEventHandler } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { withModal } from "./index.js";
 import Modal from "./Modal.js";
 
-const Trigger = ({ children }: { children?: string }) => (
-  <button type="button">{children}</button>
+const Trigger = ({
+  children,
+  onClick,
+}: {
+  children?: string;
+  onClick?: MouseEventHandler<HTMLButtonElement>;
+}) => (
+  <button type="button" onClick={onClick}>
+    {children}
+  </button>
 );
 
 describe("withModal (SSR)", () => {
@@ -31,7 +40,6 @@ describe("withModal (SSR)", () => {
     );
     const html = renderToString(<TriggeredModal>Open</TriggeredModal>);
 
-    expect(html).toContain("ds modal-trigger");
     expect(html).toContain("Open");
     expect(html).toContain('class="ds modal"');
     // The dialog is only opened by a client-side effect, so it must render

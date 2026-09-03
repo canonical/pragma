@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { Button } from "../../component/Button/index.js";
 import { withModal } from "./index.js";
 import Modal from "./Modal.js";
@@ -122,15 +122,31 @@ describe("withModal", () => {
     expect(container.querySelector("dialog")).not.toHaveAttribute("open");
   });
 
-  it("wraps the trigger in a modal-trigger span", () => {
+  it("renders the trigger without a wrapper element", () => {
     const TriggeredModal = withModal(Button, modalChildren);
     const { container } = render(<TriggeredModal>Open</TriggeredModal>);
 
-    const trigger = container.querySelector(".ds.modal-trigger");
-    expect(trigger).toBeInTheDocument();
-    expect(trigger).toContainElement(
-      screen.getByRole("button", { name: "Open" }),
+    const trigger = screen.getByRole("button", { name: "Open" });
+    // The open handler sits on the trigger itself; nothing wraps it.
+    expect(trigger.parentElement).toBe(container);
+  });
+
+  it("runs the consumer's onClick before opening the modal", () => {
+    const TriggeredModal = withModal(Button, modalChildren);
+    const onClick = vi.fn();
+    const { container } = render(
+      <TriggeredModal onClick={onClick}>Open</TriggeredModal>,
     );
+    const dialog = container.querySelector("dialog");
+    onClick.mockImplementation(() => {
+      // The consumer's handler runs first: the modal is still closed.
+      expect(dialog).not.toHaveAttribute("open");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(dialog).toHaveAttribute("open");
   });
 
   it("sets the wrapped component's displayName", () => {
