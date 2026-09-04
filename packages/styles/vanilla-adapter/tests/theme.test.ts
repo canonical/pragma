@@ -11,6 +11,16 @@ import {
   VANILLA_VERSIONS,
 } from "./support/pages.js";
 
+/** Each theme root's paragraph and the pragma page whose colour it must match. */
+const THEME_PARAGRAPHS: ReadonlyArray<[string, "light" | "dark"]> = [
+  ["theme-dark-p", "dark"],
+  ["theme-dark-nested-p", "dark"],
+  ["theme-strip-p", "dark"],
+  ["theme-light-in-dark-p", "light"],
+  ["theme-paper-p", "light"],
+  ["ds-p", "light"],
+];
+
 describe.each(VANILLA_VERSIONS)("theme-bridge (Vanilla %s)", (version) => {
   it("pins the document light and derives each pragma root's scheme from Vanilla's nearest theme ancestor", async () => {
     const mixed = await render(mixedPage(version));
@@ -28,6 +38,9 @@ describe.each(VANILLA_VERSIONS)("theme-bridge (Vanilla %s)", (version) => {
     const mixed = await render(mixedPage(version));
     const light = await render(pragmaPage("light"));
     const dark = await render(pragmaPage("dark"));
+    expect(
+      mixed.defaultView?.matchMedia("(prefers-color-scheme: dark)").matches,
+    ).toBe(true);
     expect(computed(mixed, mixed.documentElement).colorScheme).toBe("light");
     expect(computed(mixed, "ds-root").colorScheme).toBe("light");
     expect(computed(mixed, "theme-dark").colorScheme).toBe("dark");
@@ -37,17 +50,23 @@ describe.each(VANILLA_VERSIONS)("theme-bridge (Vanilla %s)", (version) => {
     expect(computed(mixed, "ds-p").color).toBe(computed(light, "ds-p").color);
   });
 
-  // The colour follows the scheme only once pragma's territory root declares
-  // `color: var(--color-text)` (VC.25); until then the root inherits Vanilla's.
-  it("resolves token colours inside a dark Vanilla context as on pragma's dark page", async (ctx) => {
+  // The colour is the resolved value of `--color-text`, a `light-dark()` token
+  // whose computed value is the same text under both schemes; only the colour
+  // shows which side was taken. It follows the scheme once pragma's territory
+  // root declares `color: var(--color-text)` (VC.25); until then the root
+  // inherits Vanilla's.
+  it("resolves token colours in every theme case as on the matching pragma page", async (ctx) => {
     ctx.skip(!PRAGMA_IS_SCOPED, SKIP_REASON);
     const mixed = await render(mixedPage(version));
-    const dark = await render(pragmaPage("dark"));
-    const light = await render(pragmaPage("light"));
-    expect(computed(mixed, "theme-dark-p").color).toBe(
-      computed(dark, "ds-p").color,
-    );
-    expect(computed(mixed, "ds-p").color).toBe(computed(light, "ds-p").color);
+    const pages = {
+      light: await render(pragmaPage("light")),
+      dark: await render(pragmaPage("dark")),
+    };
+    for (const [id, theme] of THEME_PARAGRAPHS) {
+      expect(computed(mixed, id).color, id).toBe(
+        computed(pages[theme], "ds-p").color,
+      );
+    }
   });
 
   it("ignores a pragma theme class on a root inside a Vanilla page", async () => {

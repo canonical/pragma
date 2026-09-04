@@ -14,6 +14,12 @@ import { defineConfig } from "vitest/config";
  */
 const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
 
+/** Operating-system preferences a test can set through the `emulateMedia` command. */
+export interface MediaEmulation {
+  colorScheme?: "light" | "dark" | null;
+  reducedMotion?: "reduce" | "no-preference" | null;
+}
+
 export default defineConfig({
   resolve: {
     // Vanilla exposes its Sass only under the `sass` export condition.
@@ -32,7 +38,8 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     // The verbose reporter is the one that prints skip reasons.
     reporters: ["verbose"],
-    // Media emulation is page-wide, so files must not share the page.
+    // Media emulation is page-wide and files share the page, so they run one
+    // at a time: an emulation set by one file cannot reach another's tests.
     fileParallelism: false,
     browser: {
       enabled: true,
@@ -46,7 +53,7 @@ export default defineConfig({
       screenshotFailures: false,
       commands: {
         // Operating-system preferences the page under test cannot set itself.
-        emulateMedia: async ({ page }, media) => {
+        emulateMedia: async ({ page }, media: MediaEmulation) => {
           await page.emulateMedia(media);
         },
       },

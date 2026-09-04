@@ -3,7 +3,7 @@ import {
   computed,
   differences,
   idsIn,
-  isExpectedDifference,
+  isLayoutOutput,
   mixedPage,
   PRAGMA_IS_SCOPED,
   render,
@@ -19,6 +19,10 @@ import {
  * design on every element. The pin itself is asserted in theme.test.ts.
  */
 const isPin = (property: string): boolean => property === "color-scheme";
+
+/** The root and the body also differ in the size their content gives them. */
+const isPinOrContent = (property: string): boolean =>
+  isPin(property) || isLayoutOutput(property);
 
 describe.each(VANILLA_VERSIONS)(
   "vanilla-territory-untouched (Vanilla %s)",
@@ -39,9 +43,13 @@ describe.each(VANILLA_VERSIONS)(
         "",
       );
       expect(root.boxSizing).toBe("border-box");
-      // Vanilla's root line-height loses to pragma's unlayered normalize until
-      // the scoped release (D1); asserted only from then on.
-      if (PRAGMA_IS_SCOPED) expect(root.lineHeight).toBe("24px");
+    });
+
+    it("keeps Vanilla's root line-height", async (ctx) => {
+      // It loses to pragma's unlayered normalize until the scoped release (D1).
+      ctx.skip(!PRAGMA_IS_SCOPED, SKIP_REASON);
+      const mixed = await render(mixedPage(version));
+      expect(computed(mixed, mixed.documentElement).lineHeight).toBe("24px");
     });
 
     it.for([1280, 1700])(
@@ -50,20 +58,18 @@ describe.each(VANILLA_VERSIONS)(
         ctx.skip(!PRAGMA_IS_SCOPED, SKIP_REASON);
         const mixed = await render(mixedPage(version), width);
         const vanilla = await render(vanillaPage(version), width);
-        const content = (property: string): boolean =>
-          isPin(property) || isExpectedDifference("", property);
         const failures = [
           ...differences(
             "html",
             computed(mixed, mixed.documentElement),
             computed(vanilla, vanilla.documentElement),
-            content,
+            isPinOrContent,
           ),
           ...differences(
             "body",
             computed(mixed, mixed.body),
             computed(vanilla, vanilla.body),
-            content,
+            isPinOrContent,
           ),
           ...idsIn(VANILLA_BLOCK).flatMap((id) =>
             differences(

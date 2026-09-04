@@ -1,9 +1,10 @@
 /**
  * Builds whole documents in iframes so computed styles can be compared across
  * pages that differ only in which stylesheets they load. Everything here runs
- * in the browser; the CSS strings are resolved by Vite at test time, Vanilla
- * through its `sass` export condition (vite.config.ts), pragma through the
- * packages' own entry points.
+ * in the browser; the CSS strings are resolved by Vite at test time: Vanilla
+ * through its `sass` export condition (vite.config.ts), pragma's global
+ * stylesheet through its entry point, and the component sheets from their
+ * packages' sources, which are what the built entries are made of.
  */
 
 import buttonCss from "@canonical/react-ds-global/src/lib/component/Button/styles.css?inline";
@@ -19,6 +20,7 @@ import { onTestFinished } from "vitest";
 import { commands } from "vitest/browser";
 import adapterCss from "../../adapter.css?raw";
 import layersCss from "../../layers.css?raw";
+import type { MediaEmulation } from "../../vite.config.js";
 
 /** The Vanilla releases the fixtures run against: the sites' pin and the latest. */
 export const VANILLA_VERSIONS = ["4.56", "4.58"] as const;
@@ -78,6 +80,19 @@ const scopedLayers = (css: string): Set<string> => {
   return found;
 };
 
+/** Whether a stylesheet has a media rule on the given feature, at any depth. */
+const hasMediaRule = (css: string, feature: string): boolean => {
+  const walk = (rules: CSSRuleList): boolean => {
+    for (const rule of rules) {
+      if (rule instanceof CSSMediaRule && rule.conditionText.includes(feature))
+        return true;
+      if (rule instanceof CSSGroupingRule && walk(rule.cssRules)) return true;
+    }
+    return false;
+  };
+  return walk(parse(css).cssRules);
+};
+
 /**
  * Whether the loaded `@canonical/styles` release scopes its element-level layers
  * to pragma territory (pragma-adrs F, band A): a `@scope (.ds)` block inside
@@ -91,6 +106,21 @@ export const PRAGMA_IS_SCOPED = ((): boolean => {
 
 export const SKIP_REASON =
   "needs the @canonical/styles release whose element layers are scoped to .ds (pragma-adrs F, band A)";
+
+/**
+ * Whether pragma states its own reduced-motion rule (pragma-adrs F, VC.11,
+ * D14). Vanilla's `* { transition: none !important }` under that preference
+ * wins inside pragma territory whatever the layers do, because an important
+ * declaration in the lowest layer beats everything above it; the two pages
+ * agree only once pragma disables its motion too.
+ */
+export const PRAGMA_HONOURS_REDUCED_MOTION = hasMediaRule(
+  PRAGMA_CSS,
+  "prefers-reduced-motion",
+);
+
+export const MOTION_SKIP_REASON =
+  "needs pragma's own prefers-reduced-motion rule (pragma-adrs F, VC.11, D14)";
 
 /** The pragma block: one of every element the two reported bugs touched. */
 export const PRAGMA_BLOCK = `
@@ -129,22 +159,28 @@ const NEGATIVE_BLOCK = `
 </form></div>`;
 
 /**
- * README rule 8: a Vanilla container whose rules target its direct children.
- * A pragma root placed there directly loses that placement; a wrapper keeps it.
+ * README rule 8: Vanilla containers whose rules target their direct children
+ * or need a Vanilla class on the child. A pragma root placed there directly
+ * loses that placement; a wrapper keeps it. The inline form's child rule
+ * applies from 1036 pixels up, so the fixture needs the default width.
  */
 const PLACEMENT_BLOCK = `
 <form class="p-form p-form--inline" id="place-form">
   <div class="ds card" id="place-direct"></div>
   <div id="place-wrapper"><div class="ds card" id="place-wrapped"></div></div>
-</form>`;
+</form>
+<div class="row" id="place-row">
+  <div class="col-6" id="place-col"><div class="ds card" id="place-col-wrapped"></div></div>
+</div>
+<div class="p-card" id="place-pcard"><div class="ds card" id="place-pcard-wrapped"></div></div>`;
 
 /** The theme cases of VC.19 that markup alone can express, plus paper and a nested root. */
 const THEME_BLOCK = `
 <div class="is-dark"><div class="ds card" id="theme-dark"><p id="theme-dark-p">x</p>
-  <div class="ds card" id="theme-dark-nested"></div></div></div>
-<div class="p-strip--dark"><div class="ds card" id="theme-strip"></div></div>
-<div class="is-dark"><div class="is-light"><div class="ds card" id="theme-light-in-dark"></div></div></div>
-<div class="is-paper"><div class="ds card" id="theme-paper"></div></div>`;
+  <div class="ds card" id="theme-dark-nested"><p id="theme-dark-nested-p">x</p></div></div></div>
+<div class="p-strip--dark"><div class="ds card" id="theme-strip"><p id="theme-strip-p">x</p></div></div>
+<div class="is-dark"><div class="is-light"><div class="ds card" id="theme-light-in-dark"><p id="theme-light-in-dark-p">x</p></div></div></div>
+<div class="is-paper"><div class="ds card" id="theme-paper"><p id="theme-paper-p">x</p></div></div>`;
 
 export interface PageSpec {
   /** Classes on `<html>`. */
@@ -226,18 +262,20 @@ export const render = async (
   return doc;
 };
 
-/** Media features the page under test sees; reset when the test finishes. */
+/**
+ * Media features the page under test sees. Playwright's defaults (a light
+ * scheme, no motion preference) are restored explicitly when the test
+ * finishes: passing `null` does not restore them in Playwright 1.61.
+ */
 export const emulate = async (media: MediaEmulation): Promise<void> => {
   await commands.emulateMedia(media);
   onTestFinished(() =>
-    commands.emulateMedia({ colorScheme: null, reducedMotion: null }),
+    commands.emulateMedia({
+      colorScheme: "light",
+      reducedMotion: "no-preference",
+    }),
   );
 };
-
-export interface MediaEmulation {
-  colorScheme?: "light" | "dark" | null;
-  reducedMotion?: "reduce" | "no-preference" | null;
-}
 
 declare module "vitest/browser" {
   interface BrowserCommands {
@@ -266,7 +304,7 @@ export const computed = (
 /**
  * Resolved layout results, not cascade inputs: they follow from the properties
  * the comparisons still make (`max-width`, `padding-*`, `display`, `margin-*`)
- * and from content, so they differ wherever an expected difference does.
+ * and from content.
  */
 const LAYOUT_OUTPUTS = new Set([
   "width",
@@ -287,33 +325,51 @@ const LAYOUT_OUTPUTS = new Set([
   "inset-inline-end",
 ]);
 
+/** Whether a property is a layout output, for elements whose content differs. */
+export const isLayoutOutput = (property: string): boolean =>
+  LAYOUT_OUTPUTS.has(property);
+
+/** The elements whose geometry follows the table cells' padding. */
+const CELL_GEOMETRY = new Set(["ds-table", "ds-th", "ds-td", "ds-root"]);
+
 /**
- * Differences the contract states: Chromium gives table cells their default
- * padding as a presentational hint, which `revert` rolls back (VC.29, in the
- * README's non-guarantees); layout outputs follow.
+ * The one difference the contract states inside pragma territory: Chromium
+ * gives table cells their 1px default padding as a presentational hint, which
+ * `revert` rolls back to 0px (VC.29, in the README's non-guarantees), and the
+ * geometry of the table and its container follows. Any other value on a cell's
+ * padding is a leak.
  */
-export const isExpectedDifference = (id: string, property: string): boolean =>
-  LAYOUT_OUTPUTS.has(property) ||
-  ((id === "ds-th" || id === "ds-td") && property.startsWith("padding"));
+export const isExpectedDifference = (
+  id: string,
+  property: string,
+  left: string,
+  right: string,
+): boolean =>
+  (CELL_GEOMETRY.has(id) && LAYOUT_OUTPUTS.has(property)) ||
+  ((id === "ds-th" || id === "ds-td") &&
+    property.startsWith("padding") &&
+    left === "0px" &&
+    right === "1px");
 
 /**
  * Every longhand on which two computed styles differ, as `label property: left != right`
  * lines. Custom properties are excluded: they inherit by design and are asserted
- * separately. `ignore` names the properties an expected difference covers.
+ * separately. `ignore` names the differences an expected one covers.
  */
 export const differences = (
   label: string,
   left: CSSStyleDeclaration,
   right: CSSStyleDeclaration,
-  ignore: (property: string) => boolean = () => false,
+  ignore: (property: string, a: string, b: string) => boolean = () => false,
 ): string[] => {
   const names = new Set([...Array.from(left), ...Array.from(right)]);
   const lines: string[] = [];
   for (const property of names) {
-    if (property.startsWith("--") || ignore(property)) continue;
+    if (property.startsWith("--")) continue;
     const a = left.getPropertyValue(property);
     const b = right.getPropertyValue(property);
-    if (a !== b) lines.push(`${label} ${property}: ${a} != ${b}`);
+    if (a !== b && !ignore(property, a, b))
+      lines.push(`${label} ${property}: ${a} != ${b}`);
   }
   return lines;
 };

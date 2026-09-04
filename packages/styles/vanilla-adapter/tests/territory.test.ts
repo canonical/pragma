@@ -5,8 +5,10 @@ import {
   emulate,
   idsIn,
   isExpectedDifference,
+  MOTION_SKIP_REASON,
   mixedPage,
   PRAGMA_BLOCK,
+  PRAGMA_HONOURS_REDUCED_MOTION,
   PRAGMA_IS_SCOPED,
   pragmaPage,
   render,
@@ -17,10 +19,11 @@ import {
 
 /**
  * The properties Vanilla sets on bare elements and pragma leaves to the browser.
- * Without the boundary, 49 of these pairs differ on the mixed page (the `p`
- * max-width, the select's appearance and padding, the table's layout, the
- * cells' alignment, the link's underline, the rule's borders, the list's
- * margins); with it, none.
+ * Without the boundary these pairs differ on the mixed page: the `p` and `h2`
+ * max-width and the widths that follow, the select's appearance, padding,
+ * min-width and chevron, the table's layout, the cells' alignment and overflow,
+ * the link's underline, the rule's borders and background, the list's margins
+ * and padding. With it, none.
  */
 const LEAK_PROPERTIES = [
   "margin-top",
@@ -79,10 +82,10 @@ const compare = (
     const a = computed(left, id);
     const b = computed(right, id);
     for (const property of properties) {
-      if (isExpectedDifference(id, property)) continue;
       const x = a.getPropertyValue(property);
       const y = b.getPropertyValue(property);
-      if (x !== y) failures.push(`#${id} ${property}: ${x} != ${y}`);
+      if (x !== y && !isExpectedDifference(id, property, x, y))
+        failures.push(`#${id} ${property}: ${x} != ${y}`);
     }
   }
   return failures;
@@ -118,9 +121,26 @@ describe.each(VANILLA_VERSIONS)(
 
     it("root-not-styled: a pragma root placed directly in a Vanilla container loses that container's child rules, a wrapper keeps them", async () => {
       const mixed = await render(mixedPage(version));
+      const pragma = await render(pragmaPage());
+      // An inline form spaces its direct children.
       expect(computed(mixed, "place-wrapper").marginRight).toBe("24px");
       expect(computed(mixed, "place-direct").marginRight).toBe("0px");
       expect(computed(mixed, "place-wrapped").marginRight).toBe("0px");
+      // A grid row places children by their column class.
+      expect(computed(mixed, "place-col").gridColumnEnd).toBe("span 6");
+      expect(computed(mixed, "place-col-wrapped").gridColumnEnd).toBe("auto");
+      // A Vanilla card pads itself; the pragma root inside keeps pragma's box.
+      expect(computed(mixed, "place-pcard").paddingTop).not.toBe("0px");
+      for (const property of [
+        "padding-top",
+        "margin-bottom",
+        "border-top-width",
+      ]) {
+        expect(
+          computed(mixed, "place-pcard-wrapped").getPropertyValue(property),
+          property,
+        ).toBe(computed(pragma, "ds-root").getPropertyValue(property));
+      }
     });
 
     it("renders Vanilla markup inside pragma territory without Vanilla's styles", async () => {
@@ -141,13 +161,14 @@ describe.each(VANILLA_VERSIONS)(
     });
 
     it("keeps pragma's motion under a reduced-motion preference", async (ctx) => {
-      // Vanilla's `* { transition: none !important }` under reduced motion wins
-      // inside pragma territory until pragma states its own (D14, README
-      // non-guarantees); asserted from then on.
-      ctx.skip(!PRAGMA_IS_SCOPED, SKIP_REASON);
+      ctx.skip(!PRAGMA_HONOURS_REDUCED_MOTION, MOTION_SKIP_REASON);
       await emulate({ reducedMotion: "reduce" });
       const mixed = await render(mixedPage(version));
       const pragma = await render(pragmaPage());
+      expect(
+        mixed.defaultView?.matchMedia("(prefers-reduced-motion: reduce)")
+          .matches,
+      ).toBe(true);
       expect(computed(mixed, "ds-button").transitionProperty).toBe(
         computed(pragma, "ds-button").transitionProperty,
       );
@@ -169,7 +190,7 @@ describe.each(VANILLA_VERSIONS)(
           `#${id}`,
           computed(mixed, id),
           computed(pragma, id),
-          (property) => isExpectedDifference(id, property),
+          (property, a, b) => isExpectedDifference(id, property, a, b),
         ),
       );
       expect(failures).toEqual([]);
