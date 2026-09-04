@@ -347,7 +347,7 @@ Use --distributed to output to each package's own data/ folder instead.
 Examples:
   bun scripts/collect-implementations.ts
   bun scripts/collect-implementations.ts --version 0.35.0
-  bun scripts/collect-implementations.ts --package packages/ds-types
+  bun scripts/collect-implementations.ts --package packages/contracts/ds-types
   bun scripts/collect-implementations.ts --distributed
 `);
 		process.exit(0);

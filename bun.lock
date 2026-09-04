@@ -174,45 +174,6 @@
         "renovate": "44.56.0",
       },
     },
-    "configs/storybook": {
-      "name": "@canonical/storybook-config",
-      "version": "0.37.0",
-      "dependencies": {
-        "@canonical/ds-assets": "^0.37.0",
-        "@canonical/storybook-addon-shell-theme": "^0.37.0",
-        "@canonical/storybook-addon-utils": "^0.37.0",
-        "@canonical/styles-debug": "^0.37.0",
-        "@chromatic-com/storybook": "^5.0.1",
-        "@storybook/addon-a11y": "^10.3.1",
-        "@storybook/addon-docs": "^10.3.1",
-        "@storybook/addon-svelte-csf": "^5.0.11",
-        "@storybook/addon-vitest": "^10.3.1",
-        "@storybook/react-vite": "^10.3.1",
-        "@storybook/svelte-vite": "^10.3.1",
-        "@storybook/sveltekit": "^10.3.1",
-        "@storybook/web-components-vite": "^10.3.1",
-        "react": "^18.0.0 || ^19.0.0",
-      },
-      "devDependencies": {
-        "@biomejs/biome": "2.5.11",
-        "@canonical/biome-config": "^0.37.0",
-        "@canonical/typescript-config-react": "^0.37.0",
-        "@testing-library/jest-dom": "^7.0.0",
-        "@testing-library/react": "^16.3.2",
-        "@types/node": "^26.0.0",
-        "@types/react": "^19.2.14",
-        "@types/react-dom": "^19.2.3",
-        "@vitejs/plugin-react": "^6.0.0",
-        "jsdom": "^28.1.0",
-        "react": "^19.2.4",
-        "storybook": "^10.3.1",
-        "typescript": "^5.9.3",
-        "vitest": "^4.0.18",
-      },
-      "peerDependencies": {
-        "typescript": "^5.9.3",
-      },
-    },
     "configs/typescript": {
       "name": "@canonical/typescript-config",
       "version": "0.37.0",
@@ -288,6 +249,22 @@
         "vitest": "^4.0.18",
       },
     },
+    "packages/assets/ds-assets": {
+      "name": "@canonical/ds-assets",
+      "version": "0.37.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.5.11",
+        "@canonical/biome-config": "^0.37.0",
+        "@canonical/typescript-config": "^0.37.0",
+        "@canonical/webarchitect": "^0.37.0",
+        "@types/jsdom": "^28.0.0",
+        "@types/node": "^26.0.0",
+        "jsdom": "^28.1.0",
+        "typescript": "^5.9.3",
+        "vite": "^8.0.1",
+        "vitest": "^4.0.18",
+      },
+    },
     "packages/cli/pragma": {
       "name": "@canonical/pragma-cli",
       "version": "0.37.0",
@@ -357,31 +334,7 @@
         "vitest": "^4.0.18",
       },
     },
-    "packages/ds-assets": {
-      "name": "@canonical/ds-assets",
-      "version": "0.37.0",
-      "devDependencies": {
-        "@biomejs/biome": "2.5.11",
-        "@canonical/biome-config": "^0.37.0",
-        "@canonical/typescript-config": "^0.37.0",
-        "@canonical/webarchitect": "^0.37.0",
-        "@types/jsdom": "^28.0.0",
-        "@types/node": "^26.0.0",
-        "jsdom": "^28.1.0",
-        "typescript": "^5.9.3",
-        "vite": "^8.0.1",
-        "vitest": "^4.0.18",
-      },
-    },
-    "packages/ds-implementations": {
-      "name": "@canonical/ds-implementations",
-      "version": "0.37.0",
-      "devDependencies": {
-        "n3": "^2.0.1",
-        "tinyglobby": "^0.2.14",
-      },
-    },
-    "packages/ds-types": {
+    "packages/contracts/ds-types": {
       "name": "@canonical/ds-types",
       "version": "0.37.0",
       "devDependencies": {
@@ -1084,6 +1037,14 @@
         "vitest": "^4.0.18",
       },
     },
+    "packages/semantics/ds-implementations": {
+      "name": "@canonical/ds-implementations",
+      "version": "0.37.0",
+      "devDependencies": {
+        "n3": "^2.0.1",
+        "tinyglobby": "^0.2.14",
+      },
+    },
     "packages/storybook/addon-canonical-shell-theme": {
       "name": "@canonical/storybook-addon-shell-theme",
       "version": "0.37.0",
@@ -1239,6 +1200,45 @@
         "@canonical/router-react",
         "@canonical/styles",
       ],
+    },
+    "packages/storybook/config": {
+      "name": "@canonical/storybook-config",
+      "version": "0.37.0",
+      "dependencies": {
+        "@canonical/ds-assets": "^0.37.0",
+        "@canonical/storybook-addon-shell-theme": "^0.37.0",
+        "@canonical/storybook-addon-utils": "^0.37.0",
+        "@canonical/styles-debug": "^0.37.0",
+        "@chromatic-com/storybook": "^5.0.1",
+        "@storybook/addon-a11y": "^10.3.1",
+        "@storybook/addon-docs": "^10.3.1",
+        "@storybook/addon-svelte-csf": "^5.0.11",
+        "@storybook/addon-vitest": "^10.3.1",
+        "@storybook/react-vite": "^10.3.1",
+        "@storybook/svelte-vite": "^10.3.1",
+        "@storybook/sveltekit": "^10.3.1",
+        "@storybook/web-components-vite": "^10.3.1",
+        "react": "^18.0.0 || ^19.0.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.5.11",
+        "@canonical/biome-config": "^0.37.0",
+        "@canonical/typescript-config-react": "^0.37.0",
+        "@testing-library/jest-dom": "^7.0.0",
+        "@testing-library/react": "^16.3.2",
+        "@types/node": "^26.0.0",
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "@vitejs/plugin-react": "^6.0.0",
+        "jsdom": "^28.1.0",
+        "react": "^19.2.4",
+        "storybook": "^10.3.1",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
+      },
+      "peerDependencies": {
+        "typescript": "^5.9.3",
+      },
     },
     "packages/storybook/helpers": {
       "name": "@canonical/storybook-helpers",
@@ -1785,13 +1785,13 @@
 
     "@canonical/design-tokens": ["@canonical/design-tokens@0.8.1", "", { "dependencies": { "@canonical/terrazzo-lsp": "^0.8.1" } }, "sha512-5EQj2ZpYl3Jqg8rmbckovp+FAEzTPFsAnD8GrCLMCscIpHdumrIHeVzD8hM1Vx1hKchJ8S8IpW91fPyE26onDg=="],
 
-    "@canonical/ds-assets": ["@canonical/ds-assets@workspace:packages/ds-assets"],
+    "@canonical/ds-assets": ["@canonical/ds-assets@workspace:packages/assets/ds-assets"],
 
     "@canonical/ds-demo-site": ["@canonical/ds-demo-site@workspace:apps/react/demo"],
 
-    "@canonical/ds-implementations": ["@canonical/ds-implementations@workspace:packages/ds-implementations"],
+    "@canonical/ds-implementations": ["@canonical/ds-implementations@workspace:packages/semantics/ds-implementations"],
 
-    "@canonical/ds-types": ["@canonical/ds-types@workspace:packages/ds-types"],
+    "@canonical/ds-types": ["@canonical/ds-types@workspace:packages/contracts/ds-types"],
 
     "@canonical/ds-utils": ["@canonical/ds-utils@workspace:packages/runtime/ds-utils"],
 
@@ -1861,7 +1861,7 @@
 
     "@canonical/storybook-addon-utils": ["@canonical/storybook-addon-utils@workspace:packages/storybook/addon-utils"],
 
-    "@canonical/storybook-config": ["@canonical/storybook-config@workspace:configs/storybook"],
+    "@canonical/storybook-config": ["@canonical/storybook-config@workspace:packages/storybook/config"],
 
     "@canonical/storybook-helpers": ["@canonical/storybook-helpers@workspace:packages/storybook/helpers"],
 

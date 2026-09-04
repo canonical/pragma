@@ -6,7 +6,7 @@
 ds:implementation.library.ds-types a ds:ImplementationLibrary;
     ds:libraryName "@canonical/ds-types";
     ds:platform "typescript";
-    ds:link "https://github.com/canonical/pragma/tree/main/packages/ds-types";
+    ds:link "https://github.com/canonical/pragma/tree/main/packages/contracts/ds-types";
     ds:summary "Types and related type utilities for Pragma.";
     ds:documentation "https://pragma.canonical.com/typescript";
     ds:libraryTier ds:global;

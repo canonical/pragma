@@ -3,9 +3,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
     paths:
-      - configs/storybook/**
-      - packages/ds-assets/**
-      - packages/tokens/**
+      - packages/storybook/config/**
+      - packages/assets/ds-assets/**
       - packages/styles/**
       - packages/utils/**
       - packages/runtime/ds-utils/**
@@ -21,9 +20,8 @@ on:
     branches:
       - main
     paths:
-      - configs/storybook/**
-      - packages/ds-assets/**
-      - packages/tokens/**
+      - packages/storybook/config/**
+      - packages/assets/ds-assets/**
       - packages/styles/**
       - packages/utils/**
       - packages/runtime/ds-utils/**
@@ -45,9 +43,8 @@ jobs:
       # TODO: Add packages/svelte/ds-global once package consumes ds-global package
       # TODO: Add packages/svelte/ds-app once package consumes ds-app package
       externals: '[
-        "configs/storybook/**",
-        "packages/ds-assets/**",
-        "packages/tokens/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
+        "packages/storybook/config/**",
+        "packages/assets/ds-assets/**",
         "packages/styles/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
         "packages/utils/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
         "packages/runtime/ds-utils/**/!(*.test.*|*.stories.*|*.md|*.mdx)"

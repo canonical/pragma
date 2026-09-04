@@ -116,7 +116,7 @@ Each Storybook package has a dedicated Chromatic workflow. These workflows use p
 on:
   pull_request:
     paths:
-      - configs/storybook/**
+      - packages/storybook/config/**
       - packages/styles/**
       - packages/react/ds-global/**
 ```

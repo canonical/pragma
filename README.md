@@ -185,6 +185,7 @@ The `docs/` folder contains guides for working with the monorepo:
 | Guide | Description |
 |-------|-------------|
 | [Constitution](CONSTITUTION.md) | Design principles and decision rationale |
+| [Domains](docs/explanations/DOMAINS.md) | Package folder concerns and npm naming |
 | [Component Folder Structure](docs/explanations/COMPONENT_FOLDER_STRUCTURE.md) | Standard component anatomy and conventions |
 | [Adding a Package](docs/how-to-guides/ADDING_A_PACKAGE.md) | How to create new packages in the monorepo |
 | [Versioning](docs/VERSIONING.md) | Commit message format and release process |
@@ -193,7 +194,7 @@ The `docs/` folder contains guides for working with the monorepo:
 
 ## Package Reference
 
-The following tables list all workspace packages with their location and purpose. Packages marked **internal** have `"private": true` in their package.json and are not published to npm.
+The following tables list all workspace packages with their location and purpose. Packages marked **internal** have `"private": true` in their package.json and are not published to npm. The tables group packages by what they are for; for what each folder in the repository is for, and why a package's folder and its npm name are allowed to disagree, see [Domains](docs/explanations/DOMAINS.md).
 
 ### React Components
 
@@ -227,6 +228,7 @@ The following tables list all workspace packages with their location and purpose
 | Package | Path | Description |
 |---------|------|-------------|
 | `@canonical/svelte-ds-global` | `packages/svelte/ds-global` | Global components for Svelte 5 |
+| `@canonical/svelte-ds-app` | `packages/svelte/ds-app` | Application-level components for Svelte 5 |
 | `@canonical/svelte-ds-app-launchpad` | `packages/svelte/ds-app-launchpad` | Launchpad-specific Svelte components |
 | `@canonical/svelte-ds-app-wpe` | `packages/svelte/ds-app-wpe` | WPE-specific Svelte components |
 | `@canonical/svelte-ssr-test` | `packages/svelte/ssr-test` | Test package for Svelte SSR testing |
@@ -261,8 +263,9 @@ The following tables list all workspace packages with their location and purpose
 
 | Package | Path | Description |
 |---------|------|-------------|
-| `@canonical/ds-types` | `packages/ds-types` | TypeScript types for modifier families and component props |
-| `@canonical/ds-assets` | `packages/ds-assets` | Icons and shared visual assets |
+| `@canonical/ds-types` | `packages/contracts/ds-types` | TypeScript types for modifier families and component props |
+| `@canonical/ds-assets` | `packages/assets/ds-assets` | Icons and shared visual assets |
+| `@canonical/ds-implementations` | `packages/semantics/ds-implementations` | The implementation graph as Turtle (RDF), generated from `@implements` annotations |
 | `@canonical/utils` | `packages/utils` | Utility functions: casing, invariant, indent, and join |
 
 ### Developer Tooling
@@ -287,6 +290,7 @@ The following tables list all workspace packages with their location and purpose
 | `@canonical/storybook-addon-form-state` | `packages/storybook/addon-form-state` | Panel displaying live react-hook-form state |
 | `@canonical/storybook-addon-relay` | `packages/storybook/addon-relay` | Renders stories that use Relay hooks against a mock Relay environment |
 | `@canonical/storybook-addon-shell-theme` | `packages/storybook/addon-canonical-shell-theme` | Applies the Canonical shell theme with light and dark modes |
+| `@canonical/storybook-config` | `packages/storybook/config` | Shared Storybook configuration factory |
 | `@canonical/storybook-helpers` | `packages/storybook/helpers` | Shared Storybook utilities and helper components |
 
 ### Configuration
@@ -299,7 +303,6 @@ The following tables list all workspace packages with their location and purpose
 | `@canonical/typescript-config-react` | `configs/typescript-react` | TypeScript configuration extending base with React settings |
 | `@canonical/typescript-config-lit` | `configs/typescript-lit` | TypeScript configuration for Lit Web Components projects |
 | `@canonical/typescript-config-svelte` | `configs/typescript-svelte` | TypeScript configuration for Svelte projects |
-| `@canonical/storybook-config` | `configs/storybook` | Shared Storybook configuration factory |
 | `@canonical/vitest-config-react` | `configs/vitest-config-react` | Shared Vitest configuration factory for React packages |
 
 ### Apps (internal)

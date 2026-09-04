@@ -10,10 +10,10 @@ The fastest way to add a package is through the generator. It produces all requi
 pragma create package
 ```
 
-The generator prompts for the package name, location, and type (library or tool). To skip prompts:
+The generator prompts for the package name, location, and type (library or tool). The location is a domain directory under `packages/` — see [Package locations](#package-locations) for how to choose one. To skip prompts:
 
 ```bash
-pragma create package --name my-utils --path packages/my-utils --type library --yes
+pragma create package --name my-utils --path packages/runtime/my-utils --type library --yes
 ```
 
 After generation, install dependencies and verify:
@@ -34,23 +34,23 @@ Extend an existing package instead when the functionality is specific to one con
 
 ## Package locations
 
-Packages live in subdirectories of `packages/` based on their category. The location determines how consumers import the package and influences CI path filtering.
+Packages live in subdirectories of `packages/` based on their domain. The location determines how consumers import the package and influences CI path filtering.
 
-The top level `packages/` directory contains core infrastructure packages like `ds-types`, `ds-assets`, `utils`, and `webarchitect`. These packages have few dependencies and serve as foundations for other packages.
+A domain is a directory that names the **concern** a package serves: `packages/react/` for the React bindings, `packages/runtime/` for the framework-agnostic engines, `packages/contracts/` for the shared type contracts, and so on. [Domains](../explanations/DOMAINS.md) lists every one of them and says what belongs in it and what does not; read it before choosing a location. The paragraphs below describe the domains you are most likely to reach for.
 
 Framework-agnostic runtime packages live in `packages/runtime/`. These are the engines the framework bindings are built on — `i18n-core`, `router-core` and `ds-utils` are shared by the React, Svelte and Lit implementations, while `task`, `harnesses` and `ke` are runtimes for Node and the CLI. If a library holds logic rather than markup, and more than one framework package needs it, it belongs here rather than at the top level.
 
 React component packages live in `packages/react/`. The subdirectory structure mirrors the component tier hierarchy: `ds-global` for universal components, `ds-app` for application components, and specialized packages like `ds-app-launchpad` for domain-specific components.
 
-Style packages live in `packages/styles/`. The structure reflects the CSS layering: `primitives/canonical` for design tokens, `elements` for base HTML styling, and `modes/*` for theming concerns like colour modes and density variants.
+Style packages live in `packages/styles/`. The structure reflects the CSS layering: `main` aggregates the layers in order, `typography` supplies the baseline-grid engine and type scale, and `debug` holds the opt-in development aids.
 
-Storybook addons live in `packages/storybook/`. These packages extend Storybook with project-specific functionality like the baseline grid overlay and MSW integration.
+Storybook packages live in `packages/storybook/`. The addons extend Storybook with project-specific functionality like the baseline grid overlay and MSW integration; `config` is the shared configuration factory every Storybook in the repository builds on.
 
-Developer tools live directly in `packages/`. The `webarchitect` package is an example. If you are adding a new CLI tool or development utility, it belongs at this level.
+A shipped binary lives in `packages/cli/`, beside `pragma` and `summon`. Two general-purpose tools, `utils` and `webarchitect`, sit directly in `packages/` rather than under a domain: they are the exception, not a place to add to.
 
-### A new category directory needs a new workspace glob
+### A new domain directory needs a new workspace glob
 
-The root `package.json` `workspaces` array lists each category explicitly, and every entry matches exactly **one** level:
+The root `package.json` `workspaces` array lists each domain explicitly, and every entry matches exactly **one** level:
 
 ```json
 {
@@ -65,6 +65,9 @@ The root `package.json` `workspaces` array lists each category explicitly, and e
     "packages/styles/*",
     "packages/svelte/*",
     "packages/lit/*",
+    "packages/contracts/*",
+    "packages/assets/*",
+    "packages/semantics/*",
     "apps/*",
     "apps/react/*",
     "apps/lit/*"
@@ -72,7 +75,7 @@ The root `package.json` `workspaces` array lists each category explicitly, and e
 }
 ```
 
-A package added to an **existing** category — `packages/react/my-thing` — is matched by `packages/react/*` and needs nothing further. A package added under a **new** category — `packages/my-category/my-thing` — is matched by nothing, because `packages/*` stops one level short. **Add `"packages/my-category/*"` to the array in the same commit that creates the directory.**
+A package added to an **existing** domain — `packages/react/my-thing` — is matched by `packages/react/*` and needs nothing further. A package added under a **new** domain — `packages/my-domain/my-thing` — is matched by nothing, because `packages/*` stops one level short. **Add `"packages/my-domain/*"` to the array in the same commit that creates the directory.**
 
 This is the step that is easiest to miss and hardest to diagnose, because nothing in the repository points at it:
 
@@ -83,7 +86,7 @@ This is the step that is easiest to miss and hardest to diagnose, because nothin
 Verify with the two commands together — they must agree:
 
 ```bash
-bunx nx show projects | wc -l          # discovered from the filesystem
+bunx nx show projects | jq length      # discovered from the filesystem
 bun run check:ranges                   # enumerated from the root globs
 ```
 
@@ -103,10 +106,10 @@ Library packages are the most common type. This section walks through creating a
 
 ### Step 1: Create the Directory
 
-Create the package directory in the appropriate location. For a utility library:
+Create the package directory under the domain that names the concern it serves; [Domains](../explanations/DOMAINS.md) says which one that is. The example below is a framework-agnostic utility library, which puts it in `packages/runtime/`:
 
 ```bash
-mkdir -p packages/my-utils/src
+mkdir -p packages/runtime/my-utils/src
 ```
 
 ### Step 2: Create package.json
@@ -280,7 +283,7 @@ Create a types file and an implementation file to complete the initial structure
 
 ### Step 7: Install Dependencies
 
-**First confirm a root workspace glob matches the new directory.** If the package sits under a category that is not already in the root `package.json` `workspaces` array, add it now — see [A new category directory needs a new workspace glob](#a-new-category-directory-needs-a-new-workspace-glob). Everything below assumes membership; without it `bun install` reaches for the registry instead of the working tree.
+**First confirm a root workspace glob matches the new directory.** If the package sits under a domain that is not already in the root `package.json` `workspaces` array, add it now — see [A new domain directory needs a new workspace glob](#a-new-domain-directory-needs-a-new-workspace-glob). Everything below assumes membership; without it `bun install` reaches for the registry instead of the working tree.
 
 Run `bun install` from the monorepo root to link the new package into the workspace:
 
@@ -294,7 +297,7 @@ Bun resolves workspace dependencies and creates symlinks for local packages. Aft
 Confirm the link is real rather than a registry copy — this is the check that distinguishes a workspace member from a package Bun downloaded:
 
 ```bash
-readlink node_modules/@canonical/my-utils     # → ../../packages/my-utils
+readlink node_modules/@canonical/my-utils     # → ../../packages/runtime/my-utils
 ```
 
 A symlink into the working tree means the package is a workspace member. A real directory means it was resolved from npm, which for a package you have not published yet means the build is using someone else's code — or, more often, that install failed with a 404.
@@ -304,7 +307,7 @@ A symlink into the working tree means the package is a workspace member. A real 
 Run webarchitect to verify the package configuration:
 
 ```bash
-cd packages/my-utils
+cd packages/runtime/my-utils
 bun run check:webarchitect
 ```
 
@@ -410,7 +413,7 @@ Configuration completeness:
 - src/index.ts exports the public API
 
 Validation:
-- The root `package.json` `workspaces` array matches the package's directory (only needed for a package in a **new** category directory, and easy to forget precisely because most packages do not need it)
+- The root `package.json` `workspaces` array matches the package's directory (only needed for a package in a **new** domain directory, and easy to forget precisely because most packages do not need it)
 - `bunx nx show projects` and `bun run check:ranges` report the same package count — a disagreement means a glob is missing
 - `readlink node_modules/@canonical/<name>` resolves into the working tree, not to a downloaded copy
 - `bun install` succeeds from the monorepo root
