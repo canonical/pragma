@@ -1,0 +1,2 @@
+# The app's browser floor — Lightning CSS downlevels all CSS to this query (see vite.config.ts); edit it to widen or narrow support.
+defaults

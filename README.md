@@ -317,6 +317,7 @@ These workspace apps are development and demo surfaces; none are published.
 | Package | Path | Description |
 |---------|------|-------------|
 | `@canonical/ds-demo-site` | `apps/react/demo` | Design system demo site |
+| `@canonical/pragma-docs` | `apps/react/pragma-docs` | The documentation site — reads the graph through `@canonical/prism-pragma-provider` |
 | `@canonical/react-boilerplate-vite` | `apps/react/boilerplate-vite` | React application scaffold with SSR on Canonical's shared packages |
 | `@canonical/storybook-hub` | `apps/react/storybook-hub` | Aggregated Storybook hub |
 | `@canonical/lit-demo` | `apps/lit/demo` | Minimal SSR demo for the Lit prototype |
