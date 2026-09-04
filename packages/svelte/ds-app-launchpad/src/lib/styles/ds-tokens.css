@@ -14,8 +14,12 @@
 @import "@canonical/design-tokens/dist/modifiers.importance.css";
 @import "@canonical/design-tokens/dist/modifiers.lifecycle.css";
 @import "@canonical/design-tokens/dist/modifiers.release.css";
+@import "@canonical/styles/modifiers.states.shim.css";
+@import "@canonical/styles/modifiers.importance.shim.css";
 @import "@canonical/design-tokens/dist/states.css";
 @import "@canonical/design-tokens/dist/sets.semantic.css";
+@import "@canonical/styles/spacing.css";
+@import "@canonical/styles/modifiers.density.css";
 
 /* Verbatim :root shim from packages/styles/typography/src/mapper.css
  * (@canonical/styles-typography) avoiding h1-h6/p element selectors

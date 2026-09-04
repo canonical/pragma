@@ -65,11 +65,39 @@ describe("Button SSR", () => {
   });
 
   describe("modifiers", () => {
-    it("applies severity class", () => {
+    it("applies the default importance class", () => {
       const page = render(Component, {
-        props: { ...baseProps, severity: "brand" },
+        props: { ...baseProps },
       });
-      expect(componentLocator(page).classList).toContain("brand");
+      expect(componentLocator(page).classList).toContain("secondary");
+    });
+
+    it("applies the importance class", () => {
+      const page = render(Component, {
+        props: { ...baseProps, importance: "primary" },
+      });
+      expect(componentLocator(page).classList).toContain("primary");
+    });
+
+    it("applies the anticipation class", () => {
+      const page = render(Component, {
+        props: { ...baseProps, anticipation: "destructive" },
+      });
+      expect(componentLocator(page).classList).toContain("destructive");
+    });
+
+    it("applies the emphasis class", () => {
+      const page = render(Component, {
+        props: { ...baseProps, emphasis: "branded" },
+      });
+      expect(componentLocator(page).classList).toContain("branded");
+    });
+
+    it("applies the criticality class", () => {
+      const page = render(Component, {
+        props: { ...baseProps, criticality: "information" },
+      });
+      expect(componentLocator(page).classList).toContain("information");
     });
 
     it("applies density class", () => {
