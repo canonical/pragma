@@ -1,19 +1,19 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  cleanup,
+  adapterCss,
   computed,
-  diffComputed,
+  differences,
   idsIn,
   layerNames,
   layersCss,
   mixedPage,
-  PRAGMA_BLOCK,
+  PRAGMA_CSS,
   PRAGMA_IS_SCOPED,
+  parse,
   render,
+  SKIP_REASON,
   stylesCss,
 } from "./support/pages.js";
-
-afterEach(cleanup);
 
 const MIXED_ORDER = [
   "vanilla",
@@ -40,47 +40,62 @@ const isDeclared = (name: string): boolean =>
 
 describe("the order contract", () => {
   it("layers.css is a single statement naming the twelve layers in order", () => {
-    const sheet = new CSSStyleSheet();
-    sheet.replaceSync(layersCss);
+    const sheet = parse(layersCss);
     expect(sheet.cssRules.length).toBe(1);
-    const rule = sheet.cssRules[0];
-    expect(rule).toBeInstanceOf(CSSLayerStatementRule);
-    expect([...(rule as CSSLayerStatementRule).nameList]).toEqual(MIXED_ORDER);
+    expect(sheet.cssRules[0]).toBeInstanceOf(CSSLayerStatementRule);
+    expect(layerNames(layersCss)).toEqual(MIXED_ORDER);
   });
 
-  it("every layer @canonical/styles uses is in the statement", () => {
-    const names = layerNames(stylesCss);
+  it("adapter.css is the boundary block and the bridge block, and Chromium keeps the boundary's list whole", () => {
+    const blocks = Array.from(parse(adapterCss).cssRules).filter(
+      (rule): rule is CSSLayerBlockRule => rule instanceof CSSLayerBlockRule,
+    );
+    expect(blocks.map((block) => block.name)).toEqual(["boundary", "adapter"]);
+    const [boundary, bridge] = blocks;
+    // Chromium drops the Gecko-only rules one by one, as designed, and must
+    // never drop the list that names the WebKit parts and the placeholder.
+    const list = boundary?.cssRules[0];
+    expect(list).toBeInstanceOf(CSSStyleRule);
+    if (!(list instanceof CSSStyleRule)) return;
+    expect(list.selectorText).toContain("::placeholder");
+    expect(list.selectorText).toContain("::-webkit-slider-thumb");
+    expect(list.style.cssText).toBe("all: revert;");
+    const rule = bridge?.cssRules[0];
+    expect(rule).toBeInstanceOf(CSSStyleRule);
+    if (!(rule instanceof CSSStyleRule)) return;
+    expect(bridge?.cssRules.length).toBe(1);
+    expect(rule.style.colorScheme).toBe(
+      "var(--vf-theme-light, light) var(--vf-theme-dark, dark)",
+    );
+  });
+
+  it("every layer pragma's CSS uses is in the statement, and none is anonymous", () => {
+    const names = layerNames(PRAGMA_CSS);
     expect(names.length).toBeGreaterThan(0);
     expect(names.filter((name) => !isDeclared(name))).toEqual([]);
   });
 
-  it.skipIf(!PRAGMA_IS_SCOPED)(
-    "@canonical/styles' own statement is the mixed order minus the adapter's layers",
-    () => {
-      const sheet = new CSSStyleSheet();
-      sheet.replaceSync(stylesCss);
-      const statement = [...sheet.cssRules].find(
-        (rule) => rule instanceof CSSLayerStatementRule,
-      ) as CSSLayerStatementRule | undefined;
-      expect(statement).toBeDefined();
-      expect([...(statement as CSSLayerStatementRule).nameList]).toEqual(
-        MIXED_ORDER.filter((name) => !ADAPTER_ONLY.includes(name)),
-      );
-    },
-  );
+  it("pragma's CSS carries no !important (README rule 17)", () => {
+    expect(PRAGMA_CSS.match(/!\s*important/g) ?? []).toEqual([]);
+  });
 
-  it("does not depend on where adapter.css sits inside the pragma entry", async () => {
-    const after = await render(mixedPage("4.58", { adapter: "after" }));
+  it("@canonical/styles opens with its own statement, the mixed order minus the adapter's layers", (ctx) => {
+    ctx.skip(!PRAGMA_IS_SCOPED, SKIP_REASON);
+    const first = parse(stylesCss).cssRules[0];
+    expect(first).toBeInstanceOf(CSSLayerStatementRule);
+    if (!(first instanceof CSSLayerStatementRule)) return;
+    expect(Array.from(first.nameList)).toEqual(
+      MIXED_ORDER.filter((name) => !ADAPTER_ONLY.includes(name)),
+    );
+  });
+
+  it("order-independence: adapter.css may sit anywhere inside the pragma entry", async () => {
+    const spec = mixedPage("4.58", { adapter: "after" });
+    const after = await render(spec);
     const before = await render(mixedPage("4.58", { adapter: "before" }));
-    const failures: string[] = [];
-    for (const id of idsIn(PRAGMA_BLOCK)) {
-      for (const { property, left, right } of diffComputed(
-        computed(after, id),
-        computed(before, id),
-      )) {
-        failures.push(`#${id} ${property}: ${left} != ${right}`);
-      }
-    }
+    const failures = idsIn(spec.body).flatMap((id) =>
+      differences(`#${id}`, computed(after, id), computed(before, id)),
+    );
     expect(failures).toEqual([]);
   });
 });

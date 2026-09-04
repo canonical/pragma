@@ -1,12 +1,12 @@
 # Measurements
 
-What the boundary costs, measured rather than assumed, so that the README's "not guaranteed" section quotes numbers with their method. Re-measure on every release of `@canonical/styles` and record the result here; never turn these into a CI assertion, because timings are not deterministic across machines (pragma constitution XII).
+What the boundary costs, measured rather than assumed, so that the README's "not guaranteed" section quotes numbers with their method. This table is the review measurement of 2026-09-04 against a five-rule stand-in for pragma's element layers; the re-run against the real scoped `@canonical/styles` build with a nested DOM (pragma-adrs F, §2.10) is pending that release and replaces this table when it lands. The harness is the review's scratch script, kept out of the tree on purpose: never turn these into a CI assertion, because timings are not deterministic across machines (pragma constitution XII).
 
 ## Method
 
 Chromium 151.0.7922.137, one fresh browser context per run, timings from the Chrome DevTools Protocol `Performance.RecalcStyleDuration` counter (style only; layout is a separate counter and was 0 for the toggles). A forced recalculation is a class added to `<body>` followed by a read of `offsetHeight`; `RecalcStyleCount` confirmed exactly one recalculation per toggle. Pages: `layers.css`, Vanilla 4.58 compiled from its Sass entry inside `@layer vanilla`, a five-rule scoped stand-in for pragma's element layers, `adapter.css`, `<html class="site comfortable light">`, and N elements inside one `.ds` root as `div > (p, input, span)` units. Sanity check on every run: without the boundary the input inside `.ds` computes Vanilla's `width: 1280px; min-width: 128px`; with it `204px / 0px`.
 
-Caveats that must travel with every number below: a flat, uniform DOM shares the matched-properties cache maximally; the pragma stand-in was five rules where the real `@canonical/styles` is hundreds, which raises the pragma-only baseline and lowers the relative Vanilla overhead; one machine; run-to-run spread of about ±40 percent.
+Caveats that must travel with every number below: a flat, uniform DOM shares the matched-properties cache maximally; the pragma stand-in was five rules where the real `@canonical/styles` is hundreds, so the pragma-only baseline is lower here than it will be, and the relative Vanilla overhead higher: 34 to 41 percent is an upper bound; one machine; run-to-run spread of about ±40 percent.
 
 ## Results, 2026-09-04
 

@@ -1,21 +1,27 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  cleanup,
   computed,
-  diffComputed,
+  differences,
+  emulate,
   idsIn,
+  isExpectedDifference,
   mixedPage,
   PRAGMA_BLOCK,
   PRAGMA_IS_SCOPED,
   pragmaPage,
   render,
+  SKIP_REASON,
   VANILLA_VERSIONS,
-  type VanillaVersion,
+  vanillaPage,
 } from "./support/pages.js";
 
-afterEach(cleanup);
-
-/** The properties Vanilla sets on bare elements and pragma leaves to the browser. */
+/**
+ * The properties Vanilla sets on bare elements and pragma leaves to the browser.
+ * Without the boundary, 49 of these pairs differ on the mixed page (the `p`
+ * max-width, the select's appearance and padding, the table's layout, the
+ * cells' alignment, the link's underline, the rule's borders, the list's
+ * margins); with it, none.
+ */
 const LEAK_PROPERTIES = [
   "margin-top",
   "margin-bottom",
@@ -46,42 +52,60 @@ const LEAK_PROPERTIES = [
   "text-decoration-line",
 ];
 
-for (const version of Object.keys(VANILLA_VERSIONS) as VanillaVersion[]) {
-  describe(`territory (Vanilla ${version})`, () => {
+/**
+ * What a pragma root inherits from the page around it. The boundary cannot
+ * revert inheritance; pragma's territory root declares these (VC.25), and this
+ * list is the property set that declaration must cover.
+ */
+const ROOT_INHERITED = [
+  "font-family",
+  "font-size",
+  "font-weight",
+  "line-height",
+  "color",
+  "box-sizing",
+  "-webkit-font-smoothing",
+  "text-wrap-style",
+  "text-wrap-mode",
+];
+
+const compare = (
+  left: Document,
+  right: Document,
+  properties: readonly string[],
+): string[] => {
+  const failures: string[] = [];
+  for (const id of idsIn(PRAGMA_BLOCK)) {
+    const a = computed(left, id);
+    const b = computed(right, id);
+    for (const property of properties) {
+      if (isExpectedDifference(id, property)) continue;
+      const x = a.getPropertyValue(property);
+      const y = b.getPropertyValue(property);
+      if (x !== y) failures.push(`#${id} ${property}: ${x} != ${y}`);
+    }
+  }
+  return failures;
+};
+
+describe.each(VANILLA_VERSIONS)(
+  "territory-equals-pragma-only (Vanilla %s)",
+  (version) => {
     it("reverts Vanilla's declarations on every element inside pragma territory", async () => {
       const mixed = await render(mixedPage(version));
       const pragma = await render(pragmaPage());
-      const failures: string[] = [];
-      for (const id of idsIn(PRAGMA_BLOCK)) {
-        const left = computed(mixed, id);
-        const right = computed(pragma, id);
-        for (const property of LEAK_PROPERTIES) {
-          // Chromium gives table cells their 1px default padding as a
-          // presentational hint, which `revert` rolls back (VC.29); the
-          // table's width follows from it. Stated in the README.
-          if (
-            (id === "ds-th" || id === "ds-td") &&
-            property.startsWith("padding")
-          )
-            continue;
-          if (id === "ds-table" && property === "width") continue;
-          const a = left.getPropertyValue(property);
-          const b = right.getPropertyValue(property);
-          if (a !== b) failures.push(`#${id} ${property}: ${a} != ${b}`);
-        }
-      }
-      expect(failures).toEqual([]);
+      expect(compare(mixed, pragma, LEAK_PROPERTIES)).toEqual([]);
     });
 
     it("reverts Vanilla's placeholder colour inside pragma territory", async () => {
       const mixed = await render(mixedPage(version));
       const pragma = await render(pragmaPage());
+      const vanilla = await render(vanillaPage(version));
       expect(computed(mixed, "ds-input", "::placeholder").color).toBe(
         computed(pragma, "ds-input", "::placeholder").color,
       );
-      // and Vanilla territory keeps Vanilla's
-      expect(computed(mixed, "vf-input", "::placeholder").color).not.toBe(
-        computed(pragma, "ds-input", "::placeholder").color,
+      expect(computed(mixed, "vf-input", "::placeholder").color).toBe(
+        computed(vanilla, "vf-input", "::placeholder").color,
       );
     });
 
@@ -92,18 +116,14 @@ for (const version of Object.keys(VANILLA_VERSIONS) as VanillaVersion[]) {
       expect(rect.width).toBe("8px");
     });
 
-    it("does not style the pragma root itself with Vanilla", async () => {
+    it("root-not-styled: a pragma root placed directly in a Vanilla container loses that container's child rules, a wrapper keeps them", async () => {
       const mixed = await render(mixedPage(version));
-      const pragma = await render(pragmaPage());
-      for (const property of LEAK_PROPERTIES) {
-        expect(
-          computed(mixed, "ds-button").getPropertyValue(property),
-          property,
-        ).toBe(computed(pragma, "ds-button").getPropertyValue(property));
-      }
+      expect(computed(mixed, "place-wrapper").marginRight).toBe("24px");
+      expect(computed(mixed, "place-direct").marginRight).toBe("0px");
+      expect(computed(mixed, "place-wrapped").marginRight).toBe("0px");
     });
 
-    it("renders Vanilla markup inside pragma territory with browser defaults", async () => {
+    it("renders Vanilla markup inside pragma territory without Vanilla's styles", async () => {
       const mixed = await render(mixedPage(version));
       const input = computed(mixed, "neg-input");
       expect(input.marginBottom).toBe("0px");
@@ -120,22 +140,39 @@ for (const version of Object.keys(VANILLA_VERSIONS) as VanillaVersion[]) {
       expect(computed(flipped, "vf-p").maxWidth).toBe("none");
     });
 
-    it.skipIf(!PRAGMA_IS_SCOPED)(
-      "computes every longhand inside pragma territory as on a pragma-only page",
-      async () => {
-        const mixed = await render(mixedPage(version));
-        const pragma = await render(pragmaPage());
-        const failures: string[] = [];
-        for (const id of idsIn(PRAGMA_BLOCK)) {
-          for (const { property, left, right } of diffComputed(
-            computed(mixed, id),
-            computed(pragma, id),
-          )) {
-            failures.push(`#${id} ${property}: ${left} != ${right}`);
-          }
-        }
-        expect(failures).toEqual([]);
-      },
-    );
-  });
-}
+    it("keeps pragma's motion under a reduced-motion preference", async (ctx) => {
+      // Vanilla's `* { transition: none !important }` under reduced motion wins
+      // inside pragma territory until pragma states its own (D14, README
+      // non-guarantees); asserted from then on.
+      ctx.skip(!PRAGMA_IS_SCOPED, SKIP_REASON);
+      await emulate({ reducedMotion: "reduce" });
+      const mixed = await render(mixedPage(version));
+      const pragma = await render(pragmaPage());
+      expect(computed(mixed, "ds-button").transitionProperty).toBe(
+        computed(pragma, "ds-button").transitionProperty,
+      );
+    });
+
+    it("inherits pragma's baseline at the root, not Vanilla's", async (ctx) => {
+      ctx.skip(!PRAGMA_IS_SCOPED, SKIP_REASON);
+      const mixed = await render(mixedPage(version));
+      const pragma = await render(pragmaPage());
+      expect(compare(mixed, pragma, ROOT_INHERITED)).toEqual([]);
+    });
+
+    it("computes every longhand inside pragma territory as on a pragma-only page", async (ctx) => {
+      ctx.skip(!PRAGMA_IS_SCOPED, SKIP_REASON);
+      const mixed = await render(mixedPage(version));
+      const pragma = await render(pragmaPage());
+      const failures = idsIn(PRAGMA_BLOCK).flatMap((id) =>
+        differences(
+          `#${id}`,
+          computed(mixed, id),
+          computed(pragma, id),
+          (property) => isExpectedDifference(id, property),
+        ),
+      );
+      expect(failures).toEqual([]);
+    });
+  },
+);
