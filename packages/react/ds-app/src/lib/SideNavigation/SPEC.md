@@ -446,9 +446,9 @@ file):
 
 | # | Scope | Status |
 |---|---|---|
-| 1 | This spec + amended existing anatomy YAMLs | ✅ this PR |
-| 2 | `<nav>` landmark + `ComponentProps`-based prop types (AC1) | pending |
-| 3 | Provisional navigation tokens + full-spec styling (AC2) | pending |
+| 1 | This spec + amended existing anatomy YAMLs | ✅ done |
+| 2 | `<nav>` landmark + `ComponentProps`-based prop types (AC1) | ✅ done |
+| 3 | Provisional navigation tokens + full-spec styling (AC2) | ✅ this PR |
 | 4 | Group/GroupHeader/Separator/ItemExpandable, depth-1 type | pending |
 | 5 | ItemButton/ItemSwitch/ContextSwitcher (AC3, AC4) | pending |
 | 6 | Collapsed rail behaviour, tooltips, inert shortcut scaffold | pending |
@@ -486,9 +486,9 @@ With the logo width from §9.3 (1.125rem) and `--dimension-200` = 1rem, this
 resolves to **3.125rem (50px)**. Flagged for design confirmation — a 50px
 collapsed rail is narrower than most comparable products' collapsed rails
 (commonly 56–64px), because it's sized to the logo rather than to the item
-icon column (`--sidenav-start`, 0.75rem in the current implementation). If
-design intends the *icon column* to be the collapsed-width reference instead
-of the logo, this constant changes to reference `--sidenav-start`.
+icon column (`--sidenav-icon-column-inline-size`, 1rem — see §9.8). If design
+intends the *icon column* to be the collapsed-width reference instead of the
+logo, this constant changes to reference `--sidenav-icon-column-inline-size`.
 
 ### 9.3 — Logo dimensions
 
@@ -507,7 +507,7 @@ different, older dimensions (`--mark-size`/`--logo-height` in baseline
 units) and is out of scope here — it is a Storybook fixture, not the shipped
 component; reconciling it is noted in §10.10 but not required for AC1/AC2.
 
-### 9.4 — Overflow gradient height: `1.75rem`
+### 9.4 — Overflow gradient height: `1.75rem`, and a symmetric top fade
 
 `@canonical/styles`' `--overflow-gradient-height` is a global provisional
 token set to `2rem` (`packages/styles/main/src/overflow.css:20`). The spec
@@ -523,6 +523,18 @@ overrides it locally:
 
 This is a legitimate per-component override of an already-provisional token,
 not a new one.
+
+Separately: the spec's "Header/Footer spacing and gradient" section
+describes the 1rem gap and the fade in one combined statement ("1rem below
+the logo **and above the first footer item**... below/above that is a
+1.75rem gradient"), naming both seams together. The pre-24.04 implementation
+only had a fade at the *bottom* of `Content` (fading into the footer); this
+pass adds a matching fade at the *top* of `Content` (fading in from under the
+header), reading the spec's "below/above" as describing the same affordance
+at both ends, not a header-only or footer-only effect. Flagged for design to
+confirm a top fade is actually wanted — the spec's one image
+(`§Header/Footer spacing and gradient`) isn't machine-readable so this is an
+inference, not a visual confirmation, consistent with §9.5.
 
 ### 9.5 — Colour pairings (ADR-T01–T05)
 
@@ -545,6 +557,32 @@ specific to navigation. Provisionally, `ContextSwitcher` reuses
 inventing new ones, since both are ghost-style interactive rows over a
 floating surface. Flagged for design to confirm this reuse is intentional
 rather than the two ever needing to diverge.
+
+### 9.7 — Item row vertical padding (no stated row height)
+
+The spec states the item row's horizontal insets (1rem/1.5rem) and the
+icon↔label gap (0.5rem) exactly, but never states a row *height*. The
+pre-24.04 implementation had a fixed row height derived from
+`--space-baseline` (documented as "5bU/40px") — but `--space-baseline` was
+changed from 8px to 4px in a prior, unrelated pass
+(`packages/styles/main/src/spacing.css` §"Baseline grid") without updating
+that comment, so the derived value is now 20px, not 40px, and no longer a
+credible row height for a 1rem icon plus label text. Rather than perpetuate
+a stale derivation, the row's height is now intrinsic: `padding-block:
+var(--sidenav-icon-gap)` (0.5rem top and bottom) around the icon/label/end
+content. This is an inference, not a spec value — flagged for design.
+
+### 9.8 — Fixed leading-icon column width: `1rem`
+
+The item row's leading-icon column must be a **fixed** width — not
+content-sized (`auto`) — so labels align down the rail whether or not a
+given row has an icon (an empty icon slot must reserve the same space as a
+present one). `1rem` is not a spec value; it matches the `Icon` component's
+own default rendered size (`@canonical/react-ds-global`'s `--icon-size`
+fallback, which is always `1rem` in practice — no consumer in this repo sets
+`--size-icon-default`, the token it would otherwise prefer). New provisional
+token `--sidenav-icon-column-inline-size`, scoped separately from the
+spacing-dimension tokens since it names a sizing concern, not a spacing one.
 
 ---
 

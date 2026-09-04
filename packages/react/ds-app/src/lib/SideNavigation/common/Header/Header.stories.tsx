@@ -13,7 +13,7 @@ const meta: Meta<typeof Header> = {
   // overlay grid aligns to the component's own box.
   parameters: { layout: "fullscreen" },
   // withSideNavShell provides the .ds.side-navigation context so the shared
-  // row-grid var resolves (logo aligns with item icons) + surface tokens.
+  // row-inset vars resolve (logo aligns with item icons) + surface tokens.
   decorators: [withSideNavShell],
   args: {
     brand: <Brand />,

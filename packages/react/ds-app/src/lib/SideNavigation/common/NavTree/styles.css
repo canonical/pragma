@@ -1,23 +1,41 @@
 /*
  * SideNavigation NavTree — domain styles for the rendered tree structure
  * (level-1 groups → header + level-2 item list). Owned here so Content and
- * Footer can compose NavTree without re-declaring its internals. Structural
- * only; colour/visual tokens are deferred to PR2.
+ * Footer can compose NavTree without re-declaring its internals.
  */
 .ds.nav-tree {
   display: contents;
 
   & > .group {
+    /* Spec: 0.5rem above the group's own header/items, 1rem below the last
+       item — the same figure applies to every group, so a flex column with
+       these paddings on each .group needs no first/last special-casing for
+       the paddings themselves (only the divider line is first-group
+       exempt, below). */
+    padding-block: var(--dimension-100) var(--dimension-200);
+
+    /* "Each navigation item group has a line at the top except the first". */
+    &:not(:first-child) {
+      border-block-start: var(--dimension-stroke-thickness-medium) solid
+        var(--color-border-muted);
+    }
+
     > .header {
-      /* Group header sits on the baseline grid like a row: a fixed bU-multiple
-         height (4bU) with the .p label baseline-snapped, and inline padding that
-         aligns the header text with the item labels below (past the start column
-         + its gap). */
       display: flex;
       align-items: baseline;
-      block-size: calc(var(--space-baseline) * 4); /* 32px — 4bU */
-      box-sizing: border-box;
-      padding-inline-start: calc(var(--sidenav-start) + var(--dimension-100));
+      /* Aligns the header's text with item LABELS (past the icon column +
+         its gap), not the row's own left edge. */
+      padding-inline-start: calc(
+        var(--sidenav-inset-start) +
+        var(--sidenav-icon-column-inline-size) +
+        var(--sidenav-icon-gap)
+      );
+      color: var(--color-text);
+      font-family: var(--typography-heading-5-font-family);
+      font-size: var(--typography-heading-5-font-size);
+      font-weight: var(--typography-heading-5-font-weight);
+      line-height: var(--typography-heading-5-line-height);
+      letter-spacing: var(--typography-heading-5-letter-spacing);
     }
 
     > .list {

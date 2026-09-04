@@ -13,8 +13,8 @@ const meta: Meta<typeof Item> = {
   // overlay grid aligns to the component's own box.
   parameters: { layout: "fullscreen" },
   // Item is presentational and renders inside a <ul>; withSideNavShell provides
-  // the .ds.side-navigation context (shared row grid + surface), and the inner
-  // <ul.list> gives valid list markup.
+  // the .ds.side-navigation context (shared row insets + surface), and the
+  // inner <ul.list> gives valid list markup.
   decorators: [
     withSideNavShell,
     (Story) => (

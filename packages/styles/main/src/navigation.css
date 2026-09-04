@@ -1,0 +1,49 @@
+/* @canonical/styles — Side navigation architecture tokens
+ *
+ * PROVISIONAL. These are dimensions the 24.04 Side Navigation spec states
+ * directly (rail width, logo height) or that are derived from an explicit
+ * instruction where the spec itself is silent (collapsed rail width, logo
+ * aspect ratio) — see packages/react/ds-app/src/lib/SideNavigation/SPEC.md
+ * §9 for the full inference log. None of these have an equivalent in
+ * @canonical/design-tokens; they migrate there once validated, following the
+ * same provisional-then-promote path as spacing.css/overflow.css/motion.css.
+ *
+ * Convention: ALL available custom properties are listed here so the full
+ * API surface is visible in one place.
+ */
+
+:root {
+  /* ── Rail ───────────────────────────────────────────────────────── */
+  /* 240px, stated directly by the spec, on all breakpoints ≥ small. */
+  --sidenav-rail-inline-size: 15rem;
+
+  /* Not stated by the spec. Derived: logo width + one spacing unit
+     (--dimension-200, 1rem) on each side, with the logo horizontally
+     centred — see SPEC.md §9.2. */
+  --sidenav-rail-inline-size-collapsed: calc(
+    var(--sidenav-logo-inline-size) +
+    2 *
+    var(--dimension-200)
+  );
+
+  /* ── Logo ───────────────────────────────────────────────────────── */
+  /* Height stated directly by the spec (2.25rem). Width is NOT stated; per
+     an explicit 1:2 (width:height) aspect ratio, width = height ÷ 2 — see
+     SPEC.md §9.3. */
+  --sidenav-logo-block-size: 2.25rem;
+  --sidenav-logo-inline-size: 1.125rem;
+
+  /* ── Row insets (Header + Item, shared so icons/logo/toggle line up) ─ */
+  /* 1rem from the left; 1.5rem from the right (aligns with the collapse
+     toggle / context-switcher chevron beyond it). */
+  --sidenav-inset-start: var(--dimension-200);
+  --sidenav-inset-end: var(--dimension-300);
+  /* 0.5rem between a leading icon and its label. */
+  --sidenav-icon-gap: var(--dimension-100);
+  /* Fixed leading-icon column so labels align down the rail whether or not a
+     given row has an icon — matches the Icon component's own default
+     rendered size (its --icon-size fallback is 1rem; no design token names
+     it, so this is a distinctly-scoped provisional value rather than reusing
+     a spacing token for a sizing concern). */
+  --sidenav-icon-column-inline-size: 1rem;
+}

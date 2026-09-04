@@ -10,15 +10,46 @@
   min-height: 0;
   overflow: hidden auto;
 
-  /* Tree structure (.group/.header/.list) is owned by NavTree's own styles.
-     Content only reserves room for the overflow fade so the last item of the
-     last group is never permanently hidden behind it. */
-  & .nav-tree > .group:last-child > .list {
-    padding-block-end: var(--overflow-gradient-height);
+  /* Tree structure (.group/.header/.list, including each group's own
+     0.5rem/1rem block padding) is owned by NavTree's own styles. Content adds
+     extra room at BOTH ends, on top of that padding, for the overflow fades
+     below — so the first and last groups are never permanently hidden behind
+     one. */
+  & .nav-tree > .group:first-child {
+    padding-block-start: calc(
+      var(--dimension-100) +
+      var(--overflow-gradient-height)
+    );
   }
 
-  /* Overflow fade: a sticky bar pinned to the bottom of the scroll viewport,
-     painting the surface-aware gradient over content scrolling underneath. */
+  & .nav-tree > .group:last-child {
+    padding-block-end: calc(
+      var(--dimension-200) +
+      var(--overflow-gradient-height)
+    );
+  }
+
+  /* Overflow fades: sticky bars pinned to the top/bottom of the scroll
+     viewport, painting a fade over content scrolling underneath — so the
+     header/footer seams don't show a hard-cut edge. Falls back to the plain
+     background token when not nested in a `.surface` (see
+     @canonical/styles/overflow.css; `--surface-overflow-gradient` itself has
+     no such fallback). */
+  &::before {
+    content: "";
+    position: sticky;
+    top: 0;
+    display: block;
+    block-size: var(--overflow-gradient-height);
+    margin-block-end: calc(-1 * var(--overflow-gradient-height));
+    background: linear-gradient(
+      to bottom,
+      var(--surface-color-background, var(--color-background)),
+      transparent
+    );
+    pointer-events: none;
+  }
+
   &::after {
     content: "";
     position: sticky;
@@ -27,7 +58,14 @@
     block-size: var(--overflow-gradient-height);
     /* Pull the bar back over the reserved padding so it overlays content. */
     margin-block-start: calc(-1 * var(--overflow-gradient-height));
-    background: var(--surface-overflow-gradient);
+    background: var(
+      --surface-overflow-gradient,
+      linear-gradient(
+        to bottom,
+        transparent,
+        var(--surface-color-background, var(--color-background))
+      )
+    );
     pointer-events: none;
   }
 }

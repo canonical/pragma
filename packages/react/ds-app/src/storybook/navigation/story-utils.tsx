@@ -86,7 +86,7 @@ export const withNavigationRouterProps: Decorator = (Story, context) => {
 
 /**
  * Wraps a subcomponent story in the SideNavigation root context
- * (`.ds.side-navigation`) so the shared row-grid custom property and the
+ * (`.ds.side-navigation`) so the shared row-inset custom properties and the
  * navigation surface tokens resolve — without it, Content/Footer/Header/Item
  * render unstyled in isolation (they consume CSS defined on the root).
  */
@@ -97,15 +97,17 @@ export const withSideNavShell: Decorator = (Story) => (
 );
 
 /**
- * Imposes a page-like grid so the nav is shown in a realistic context: the nav
- * sits in the start column (responsive — full width under ~300px, fixed 300px
- * above) with a placeholder main-content column filling the rest.
+ * Imposes a page-like grid so the nav is shown in a realistic context: the
+ * nav sits in the start column (240px, matching the rail's own spec-mandated
+ * width — SideNavigation sets its own `inline-size` regardless of the column,
+ * but a matching column avoids a dead gap next to it) with a placeholder
+ * main-content column filling the rest.
  */
 export const withNavLayout: Decorator = (Story) => (
   <div
     style={{
       display: "grid",
-      gridTemplateColumns: "300px auto",
+      gridTemplateColumns: "240px auto",
       // The single row must be a DEFINITE height (not the default content-sized
       // `auto`), otherwise the row grows to fit the nav and the nav's
       // max-height:100% resolves against that grown height — no cap, no scroll.
