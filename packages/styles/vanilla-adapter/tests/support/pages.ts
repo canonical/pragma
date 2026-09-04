@@ -61,6 +61,13 @@ const parse = (css: string): CSSStyleSheet => {
   return sheet;
 };
 
+/**
+ * The child rules of any rule that has them: grouping rules, and style rules
+ * with nested rules, which Chromium does not derive from CSSGroupingRule.
+ */
+const childRules = (rule: CSSRule): CSSRuleList | undefined =>
+  "cssRules" in rule ? (rule as CSSGroupingRule).cssRules : undefined;
+
 /** The layers in which a stylesheet scopes rules to pragma territory. */
 const scopedLayers = (css: string): Set<string> => {
   const found = new Set<string>();
@@ -71,8 +78,9 @@ const scopedLayers = (css: string): Set<string> => {
       } else if (rule instanceof CSSScopeRule) {
         if (/(^|[\s(,])\.ds(?![\w-])/.test(rule.start ?? "")) found.add(layer);
         walk(rule.cssRules, layer);
-      } else if (rule instanceof CSSGroupingRule) {
-        walk(rule.cssRules, layer);
+      } else {
+        const children = childRules(rule);
+        if (children) walk(children, layer);
       }
     }
   };
@@ -86,7 +94,8 @@ const hasMediaRule = (css: string, feature: string): boolean => {
     for (const rule of rules) {
       if (rule instanceof CSSMediaRule && rule.conditionText.includes(feature))
         return true;
-      if (rule instanceof CSSGroupingRule && walk(rule.cssRules)) return true;
+      const children = childRules(rule);
+      if (children && walk(children)) return true;
     }
     return false;
   };
@@ -160,9 +169,11 @@ const NEGATIVE_BLOCK = `
 
 /**
  * README rule 8: Vanilla containers whose rules target their direct children
- * or need a Vanilla class on the child. A pragma root placed there directly
- * loses that placement; a wrapper keeps it. The inline form's child rule
- * applies from 1036 pixels up, so the fixture needs the default width.
+ * (the inline form) or need a Vanilla class on the child (the grid row). A
+ * pragma root placed there directly, or carrying the class, loses that
+ * placement; a wrapper keeps it. A pragma root inside a Vanilla card keeps
+ * pragma's box. The inline form's child rule applies from 1036 pixels up, so
+ * the fixture needs the default width.
  */
 const PLACEMENT_BLOCK = `
 <form class="p-form p-form--inline" id="place-form">
@@ -170,6 +181,7 @@ const PLACEMENT_BLOCK = `
   <div id="place-wrapper"><div class="ds card" id="place-wrapped"></div></div>
 </form>
 <div class="row" id="place-row">
+  <div class="ds card col-6" id="place-col-direct"></div>
   <div class="col-6" id="place-col"><div class="ds card" id="place-col-wrapped"></div></div>
 </div>
 <div class="p-card" id="place-pcard"><div class="ds card" id="place-pcard-wrapped"></div></div>`;
@@ -393,8 +405,9 @@ export const layerNames = (css: string): string[] => {
         const name = rule.name ? prefix + rule.name : "(anonymous)";
         names.push(name);
         walk(rule.cssRules, rule.name ? `${name}.` : prefix);
-      } else if (rule instanceof CSSGroupingRule) {
-        walk(rule.cssRules, prefix);
+      } else {
+        const children = childRules(rule);
+        if (children) walk(children, prefix);
       }
     }
   };

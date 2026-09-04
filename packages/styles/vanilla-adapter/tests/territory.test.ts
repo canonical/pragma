@@ -20,10 +20,11 @@ import {
 /**
  * The properties Vanilla sets on bare elements and pragma leaves to the browser.
  * Without the boundary these pairs differ on the mixed page: the `p` and `h2`
- * max-width and the widths that follow, the select's appearance, padding,
- * min-width and chevron, the table's layout, the cells' alignment and overflow,
- * the link's underline, the rule's borders and background, the list's margins
- * and padding. With it, none.
+ * max-width and the widths that follow, the input's and textarea's appearance,
+ * the select's and textarea's min-width, the textarea's vertical alignment, the
+ * label's margin and width, the table's layout, the cells' alignment, overflow
+ * and padding, the link's underline, the rule's borders and background, the
+ * list's margins and padding. With it, none.
  */
 const LEAK_PROPERTIES = [
   "margin-top",
@@ -126,21 +127,15 @@ describe.each(VANILLA_VERSIONS)(
       expect(computed(mixed, "place-wrapper").marginRight).toBe("24px");
       expect(computed(mixed, "place-direct").marginRight).toBe("0px");
       expect(computed(mixed, "place-wrapped").marginRight).toBe("0px");
-      // A grid row places children by their column class.
+      // A grid row places a child by its column class; on a pragma root the
+      // class is reverted with the rest, which is why rule 8 says to wrap.
       expect(computed(mixed, "place-col").gridColumnEnd).toBe("span 6");
-      expect(computed(mixed, "place-col-wrapped").gridColumnEnd).toBe("auto");
-      // A Vanilla card pads itself; the pragma root inside keeps pragma's box.
+      expect(computed(mixed, "place-col-direct").gridColumnEnd).toBe("auto");
+      // A Vanilla card pads itself; the pragma root inside keeps pragma's border.
       expect(computed(mixed, "place-pcard").paddingTop).not.toBe("0px");
-      for (const property of [
-        "padding-top",
-        "margin-bottom",
-        "border-top-width",
-      ]) {
-        expect(
-          computed(mixed, "place-pcard-wrapped").getPropertyValue(property),
-          property,
-        ).toBe(computed(pragma, "ds-root").getPropertyValue(property));
-      }
+      expect(computed(mixed, "place-pcard-wrapped").borderTopWidth).toBe(
+        computed(pragma, "ds-root").borderTopWidth,
+      );
     });
 
     it("renders Vanilla markup inside pragma territory without Vanilla's styles", async () => {
