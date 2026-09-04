@@ -95,21 +95,21 @@ Three facts about the cascade carry the design, and pragma's cascade explanation
 `adapter.css` fills the boundary with one declaration, so that inside pragma territory every property Vanilla set is reverted to the browser default and pragma's layers, all higher, apply on top exactly as on a pragma-only page:
 
 ```css
+/* abridged: the shipped file lists every WebKit form part Vanilla styles,
+   then each Gecko form part in a rule of its own */
 @layer boundary {
-  :where(.ds, .ds *):where(:not(svg, svg *)),
-  :where(.ds, .ds *):where(:not(svg, svg *))::before,
-  :where(.ds, .ds *):where(:not(svg, svg *))::after,
-  :where(.ds, .ds *)::placeholder,
-  /* … and each WebKit form part Vanilla styles, one selector each */ {
+  :where(.ds, .ds *):where(:not(svg, svg *), svg a),
+  :where(.ds, .ds *):where(:not(svg, svg *), svg a)::before,
+  :where(.ds, .ds *):where(:not(svg, svg *), svg a)::after,
+  :where(.ds, .ds *)::placeholder {
     all: revert;
   }
-  /* … and each Gecko form part in a rule of its own */
 }
 ```
 
-Pseudo-elements are separate boxes with their own cascade and cannot be named inside `:where()`, so every one Vanilla styles without a class has its own selector; the Gecko ones sit in rules of their own because a list naming a `-moz-` pseudo-element is dropped whole by other engines. SVG content is excluded because `revert` also rolls back presentational attributes, which inline SVG draws with, and Vanilla has no class-free rule that reaches SVG content.
+Pseudo-elements are separate boxes with their own cascade and cannot be named inside `:where()`, so every one Vanilla styles without a class has its own selector; the Gecko ones sit in rules of their own because a list naming a `-moz-` pseudo-element is dropped whole by other engines. SVG content is excluded because `revert` also rolls back presentational attributes, which inline SVG draws with; the one Vanilla rule that would reach in, its bare `a` colour, is kept out by leaving SVG anchors inside the boundary.
 
-Its second rule is the theme bridge. Pragma keys every colour on `color-scheme`; Vanilla keys theme on two inherited toggle properties that its `.is-light`, `.is-paper`, `.is-dark` and themed strips all set. At each boundary root the nearest Vanilla theme ancestor decides, by inheritance:
+Its other layer, `adapter`, holds the theme bridge. Pragma keys every colour on `color-scheme`; Vanilla keys theme on two inherited toggle properties that its `.is-light`, `.is-paper`, `.is-dark` and themed strips all set. At each boundary root the nearest Vanilla theme ancestor decides, by inheritance:
 
 ```css
 @layer adapter {
@@ -185,7 +185,7 @@ Guaranteed, and checked by the computed-style fixtures that arrive with the seco
 - No Vanilla rule styles an element inside pragma territory: every property there is the browser default or pragma's. (`territory-equals-pragma-only`, with the explicit checks on `--vf-color-text-default`, root line-height, `box-sizing` and `color-scheme`.)
 - A pragma element inside a Vanilla page computes the same styles as on a pragma-only page, for every property pragma declares or leaves to the browser. (`territory-equals-pragma-only`, over the full property list.)
 - The `.ds` root itself is not styled by Vanilla. (`root-not-styled`, including a `<button class="ds button">` against Vanilla's `button` rule.)
-- A pragma root inside a Vanilla dark context computes `color-scheme: dark` and its token-driven colours match pragma's dark page; inside a light or paper context, light. (`theme-bridge`, the four cases of rule 12 plus `.is-paper`.)
+- A pragma root inside a Vanilla dark context computes `color-scheme: dark` and its token-driven colours match pragma's dark page; inside a light or paper context, light. (`theme-bridge`, the four theme cases of VC.19 plus `.is-paper`.)
 - Vanilla territory is not changed by installing this package: every element outside `.ds`, including `html` and `body`, equals the Vanilla-only page. (`vanilla-territory-untouched`, at 1280 and at 1700 pixels.)
 - The order of `adapter.css` inside `pragma.css` does not matter. (`order-independence`.)
 

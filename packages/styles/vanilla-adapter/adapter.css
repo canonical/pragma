@@ -7,9 +7,9 @@
  *
  *   @import url("@canonical/styles-vanilla-adapter/adapter.css");
  *
- * Two rules, two layers, no tooling. What you read here is what the browser runs
- * (pragma constitution VI and XIII). The reasoning is in pragma-adrs F, VC.24
- * and VC.09.
+ * One boundary, one bridge, two layers, no tooling. What you read here is what
+ * the browser runs (pragma constitution VI and XIII). The reasoning is in
+ * pragma-adrs F, VC.24 and VC.09.
  */
 
 /* ── The boundary ──────────────────────────────────────────────────────────
@@ -35,11 +35,14 @@
  * a selector list that names a `-moz-` pseudo-element is dropped whole by other
  * engines, whereas unknown `-webkit-` pseudo-elements are parsed as valid by all.
  *
- * SVG content is excluded. `revert` also rolls back presentational attributes,
- * and inline SVG draws with them (`fill`, `width`, `d`, `r`, `transform`); Vanilla
- * has no class-free rule that reaches SVG content, so nothing leaks there. The
- * same rollback removes the sizing that `width` and `height` attributes give an
- * `<img>`: pragma sizes replaced elements in CSS.
+ * SVG content is excluded, except an `<a>` inside it. `revert` also rolls back
+ * presentational attributes, and inline SVG draws with them (`fill`, `width`, `d`,
+ * `r`, `transform`). Vanilla's only class-free rules that reach SVG content are
+ * its universal box-sizing rule, which pragma sets to the same value, and its
+ * bare `a` rules, which would colour an SVG anchor; so anchors stay inside the
+ * boundary and their text inherits the reverted colour. The same rollback
+ * removes the sizing that `width` and `height` attributes give an `<img>`:
+ * pragma sizes replaced elements in CSS.
  *
  * `:where()` keeps the element selectors at zero specificity, so any rule an
  * application places in the same layer beats them; the pseudo-element selectors
@@ -51,9 +54,9 @@
  * toggle is about forty percent cheaper with it, because the territory no longer
  * re-resolves Vanilla's variables. */
 @layer boundary {
-  :where(.ds, .ds *):where(:not(svg, svg *)),
-  :where(.ds, .ds *):where(:not(svg, svg *))::before,
-  :where(.ds, .ds *):where(:not(svg, svg *))::after,
+  :where(.ds, .ds *):where(:not(svg, svg *), svg a),
+  :where(.ds, .ds *):where(:not(svg, svg *), svg a)::before,
+  :where(.ds, .ds *):where(:not(svg, svg *), svg a)::after,
   :where(.ds, .ds *)::placeholder,
   :where(.ds, .ds *)::-webkit-file-upload-button,
   :where(.ds, .ds *)::-webkit-search-decoration,
@@ -79,6 +82,10 @@
   }
 
   :where(.ds, .ds *)::-moz-focus-inner {
+    all: revert;
+  }
+
+  :where(.ds, .ds *)::-moz-focus-outer {
     all: revert;
   }
 }
