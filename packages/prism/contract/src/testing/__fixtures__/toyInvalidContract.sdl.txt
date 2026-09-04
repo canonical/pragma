@@ -1,0 +1,17 @@
+# Parses, builds, and is NOT a valid schema: `Widget` claims `Described` and
+# omits `label`. `buildSchema` runs document-level SDL rules only, so this gets
+# past the parse; `assertValidSchema` is what refuses it. Used as a CONTRACT,
+# where a schema graphql will not execute is a programmer error and must throw
+# rather than certify anything.
+type Query {
+  widget(id: ID!): Widget
+}
+
+interface Described {
+  id: ID!
+  label: String!
+}
+
+type Widget implements Described {
+  id: ID!
+}

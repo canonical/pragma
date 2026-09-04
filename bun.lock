@@ -416,6 +416,25 @@
         "vitest": "^4.0.18",
       },
     },
+    "packages/prism/contract": {
+      "name": "@canonical/prism-contract",
+      "version": "0.37.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.5.11",
+        "@canonical/biome-config": "^0.37.0",
+        "@canonical/ke-graphql": "^0.37.0",
+        "@canonical/typescript-config": "^0.37.0",
+        "@canonical/webarchitect": "^0.37.0",
+        "@types/node": "^24.12.0",
+        "@vitest/coverage-v8": "^4.0.18",
+        "graphql": "^16.11.0",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
+      },
+      "peerDependencies": {
+        "graphql": "^16.11.0 || ^17.0.0-rc.0",
+      },
+    },
     "packages/react/ds-app": {
       "name": "@canonical/react-ds-app",
       "version": "0.37.0",
@@ -1795,6 +1814,8 @@
     "@canonical/lit-ds-prototype": ["@canonical/lit-ds-prototype@workspace:packages/lit/ds-prototype"],
 
     "@canonical/pragma-cli": ["@canonical/pragma-cli@workspace:packages/cli/pragma"],
+
+    "@canonical/prism-contract": ["@canonical/prism-contract@workspace:packages/prism/contract"],
 
     "@canonical/react-boilerplate-vite": ["@canonical/react-boilerplate-vite@workspace:apps/react/boilerplate-vite"],
 
@@ -4506,6 +4527,10 @@
 
     "@canonical/ke-graphql/@types/node": ["@types/node@24.12.0", "", { "dependencies": { "undici-types": "~7.16.0" } }, "sha512-GYDxsZi3ChgmckRT9HPU0WEhKLP08ev/Yfcq2AstjrDASOYCSXeyjDsHg4v5t4jOj7cyDX3vmprafKlWIG9MXQ=="],
 
+    "@canonical/prism-contract/@types/node": ["@types/node@24.12.0", "", { "dependencies": { "undici-types": "~7.16.0" } }, "sha512-GYDxsZi3ChgmckRT9HPU0WEhKLP08ev/Yfcq2AstjrDASOYCSXeyjDsHg4v5t4jOj7cyDX3vmprafKlWIG9MXQ=="],
+
+    "@canonical/prism-contract/graphql": ["graphql@16.13.1", "", {}, "sha512-gGgrVCoDKlIZ8fIqXBBb0pPKqDgki0Z/FSKNiQzSGj2uEYHr1tq5wmBegGwJx6QB5S5cM0khSBpi/JFHMCvsmQ=="],
+
     "@canonical/react-boilerplate-vite/graphql": ["graphql@16.13.1", "", {}, "sha512-gGgrVCoDKlIZ8fIqXBBb0pPKqDgki0Z/FSKNiQzSGj2uEYHr1tq5wmBegGwJx6QB5S5cM0khSBpi/JFHMCvsmQ=="],
 
     "@canonical/svelte-ds-app/@canonical/design-tokens": ["@canonical/design-tokens@0.6.2-contrasted.0", "", { "dependencies": { "@canonical/terrazzo-lsp": "^0.6.0" } }, "sha512-JLzc2tsSbuINFk4adbNGyFhnuKXLiIzE6ntwqigrL4vJoSTuj/OkaJLiLPB12LlQYOT3vnBiL+JmouZgDflNgQ=="],
@@ -5083,6 +5108,8 @@
     "@bundled-es-modules/glob/glob/path-scurry": ["path-scurry@1.11.1", "", { "dependencies": { "lru-cache": "^10.2.0", "minipass": "^5.0.0 || ^6.0.2 || ^7.0.0" } }, "sha512-Xa4Nw17FS9ApQFJ9umLiJS4orGjm7ZzwUrwamcGQuHSzDyth9boKDaycYdDcZDuqYATXw4HFXgaqWTctW/v1HA=="],
 
     "@canonical/ke-graphql/@types/node/undici-types": ["undici-types@7.16.0", "", {}, "sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw=="],
+
+    "@canonical/prism-contract/@types/node/undici-types": ["undici-types@7.16.0", "", {}, "sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw=="],
 
     "@canonical/svelte-ds-app-launchpad/@canonical/design-tokens/@canonical/terrazzo-lsp": ["@canonical/terrazzo-lsp@0.6.0", "", { "dependencies": { "@canonical/token-types": "^0.6.0", "@lezer/common": "^1.3.0", "@lezer/css": "^1.3.0", "colorjs.io": "^0.6.1" }, "bin": { "terrazzo-lsp": "dist/esm/cli.js" } }, "sha512-6b8IsmRF9VJJ6zWyz6XDZxm65tjWPnl5dce/abM2tRJaeBV3ewDLnSWS/BPoHhqDBEFTdo8Rb7o5mg44RzKN7A=="],
 

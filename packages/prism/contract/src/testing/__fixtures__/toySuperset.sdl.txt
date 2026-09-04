@@ -1,0 +1,29 @@
+type Query {
+  widget(id: ID!, locale: String): Widget
+  widgets: [Widget!]!
+  gadget(id: ID!): Gadget
+}
+
+type Widget implements Thing {
+  id: ID!
+  label: String
+  size: Int!
+  kind: WidgetKind!
+  color: String
+  gadgets: [Gadget!]!
+}
+
+type Gadget {
+  id: ID!
+  weight: Float
+}
+
+interface Thing {
+  id: ID!
+}
+
+enum WidgetKind {
+  ROUND
+  SQUARE
+  TRIANGULAR
+}

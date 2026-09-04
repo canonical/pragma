@@ -256,6 +256,14 @@ The following tables list all workspace packages with their location and purpose
 | `@canonical/task` | `packages/runtime/task` | Monadic effect framework for composable, testable, dry-runnable CLI operations |
 | `@canonical/harnesses` | `packages/runtime/harnesses` | AI harness detection and MCP config read/write (Claude Code, Cursor, Windsurf, Cline, Roo Code) |
 
+### Prism
+
+The documentation-site layer. The dependency arrow points one way — see "The documentation site depends on the runtime, never the reverse" in [AGENTS.md](AGENTS.md).
+
+| Package | Path | Description |
+|---------|------|-------------|
+| `@canonical/prism-contract` | `packages/prism/contract` | The minimal GraphQL surface a documentation-site provider must offer, plus a subsumption check that a provider satisfies it |
+
 ### Core Infrastructure
 
 | Package | Path | Description |

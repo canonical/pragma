@@ -138,6 +138,25 @@ sibling package/domain and match its layout, naming, error handling, and test
 placement — rather than inventing a new pattern. Match the surrounding code's idioms;
 a new file should be indistinguishable in style from its neighbours.
 
+### The documentation site depends on the runtime, never the reverse
+
+`packages/prism/*` and the documentation-site app are the site layer. They may
+depend on anything below them — `packages/runtime/*`, `packages/cli/*`,
+`packages/summon/*`, and the component packages.
+
+**Nothing in those depended-upon packages may depend on `packages/prism/*` —
+not even as a devDependency.** The usual pressure to reverse the arrow is a
+conformance check: the site authors a contract, and it is tempting to have the
+package that must satisfy the contract assert that it does. That is the package
+marking its own homework, and it costs it a dependency on the site it exists to
+be independent of. Site-side packages hold those gates instead, reading whatever
+they need to read.
+
+Nothing enforces this, so it is a review obligation: a new `@canonical/prism-*`
+entry in a manifest under `packages/runtime/`, `packages/cli/`,
+`packages/summon/` or a component package is a change to challenge, whatever it
+is for.
+
 ### Module imports — use relative paths, not `#` subpath aliases
 
 Do **not** use `#`-prefixed `package.json` `"imports"` (Node subpath imports) for
