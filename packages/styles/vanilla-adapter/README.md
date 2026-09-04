@@ -12,7 +12,7 @@ Everything else follows from that rule.
 
 ## Prerequisites
 
-This package needs `@canonical/styles` at the first release whose element-level layers are scoped to pragma territory; its changelog names it. With an older release the boundary still protects pragma components, but pragma's typography leaks into Vanilla territory.
+This package needs `@canonical/styles` at the first release whose element-level layers are scoped to pragma territory and whose territory root declares pragma's baseline; its changelog names it. With an older release the boundary still keeps Vanilla's rules out of pragma components, but everything pragma ships unlayered leaks into Vanilla territory, and a pragma root still inherits Vanilla's font, colour and line-height from the page.
 
 Until that release exists, this package is marked private and is not published. The computed-style fixtures that prove its guarantees arrive with the second pull request (F-11 in pragma-adrs F); the package is published when they pass.
 
@@ -29,7 +29,7 @@ Numbered so a review can cite one. Each ends with the decision in pragma-adrs F 
 **Imports**
 
 1. The first rule of the first stylesheet is the order statement in `layers.css`. From Sass, import it by its extensionless path so Sass inlines it in place: `@import "@canonical/styles-vanilla-adapter/layers";` or `@use "@canonical/styles-vanilla-adapter/layers";`. Nothing precedes it except `@charset`. (VC.02)
-2. Vanilla Framework and everything built on it go inside one `@layer vanilla { … }` block: the site's own patterns, its overrides, and the third-party CSS it inlines. No Vanilla-era rule stays outside it. (VC.01)
+2. Vanilla Framework and everything built on it go inside one `@layer vanilla { … }` block: the `@import "vanilla-framework"` line itself, the site's own patterns, its overrides, and the third-party CSS it inlines. The import goes inside because Vanilla emits one rule at import time (`hr.is-fixed-width`); nested, it lands in the layer. No Vanilla-era rule stays outside it. (VC.01)
 3. In a Sass entry, never a `.css`-suffixed or `url()` import. Sass does not inline those: at top level it hoists them above the statement, and inside a block it emits an invalid nested `@import`. Extensionless imports only. (VC.27)
 4. Pragma's CSS is a second entry, `pragma.css`: `@canonical/styles`, the component packages' stylesheets, and `adapter.css`. Resolve it with whatever your pipeline already resolves package imports with. The order inside that entry does not matter, because precedence comes from the layers, but none of it goes inside the `vanilla` layer. (VC.27)
 5. Link `styles.css` (the Vanilla layer), then `pragma.css`, then any React-island CSS. Link order does not decide precedence either; the layers do. What matters is that the statement is the first rule the browser sees. (VC.02)
@@ -92,17 +92,22 @@ Three facts about the cascade carry the design, and pragma's cascade explanation
 
 `app` is the name of your own layer whatever your context class is; a site with `class="site …"` still writes `@layer app`.
 
-`adapter.css` fills the boundary with one rule, so that inside pragma territory every property Vanilla set is reverted to the browser default and pragma's layers, all higher, apply on top exactly as on a pragma-only page:
+`adapter.css` fills the boundary with one declaration, so that inside pragma territory every property Vanilla set is reverted to the browser default and pragma's layers, all higher, apply on top exactly as on a pragma-only page:
 
 ```css
 @layer boundary {
-  :where(.ds, .ds *),
-  :where(.ds, .ds *)::before,
-  :where(.ds, .ds *)::after {
+  :where(.ds, .ds *):where(:not(svg, svg *)),
+  :where(.ds, .ds *):where(:not(svg, svg *))::before,
+  :where(.ds, .ds *):where(:not(svg, svg *))::after,
+  :where(.ds, .ds *)::placeholder,
+  /* … and each WebKit form part Vanilla styles, one selector each */ {
     all: revert;
   }
+  /* … and each Gecko form part in a rule of its own */
 }
 ```
+
+Pseudo-elements are separate boxes with their own cascade and cannot be named inside `:where()`, so every one Vanilla styles without a class has its own selector; the Gecko ones sit in rules of their own because a list naming a `-moz-` pseudo-element is dropped whole by other engines. SVG content is excluded because `revert` also rolls back presentational attributes, which inline SVG draws with, and Vanilla has no class-free rule that reaches SVG content.
 
 Its second rule is the theme bridge. Pragma keys every colour on `color-scheme`; Vanilla keys theme on two inherited toggle properties that its `.is-light`, `.is-paper`, `.is-dark` and themed strips all set. At each boundary root the nearest Vanilla theme ancestor decides, by inheritance:
 
@@ -130,8 +135,8 @@ Under a light or paper ancestor that computes to `light`, under a dark ancestor 
       Your settings file points $font-base-family and $font-monospace
       at pragma's stacks (rule 16). */
 @import "global-settings";
-@import "vanilla-framework";
 @layer vanilla {
+  @import "vanilla-framework";   /* inside the block: Vanilla emits one rule at import time */
   @import "cookie-policy";       /* inlined third-party CSS moves inside the layer */
   @include vanilla;
   @import "fonts";               /* your @font-face, under pragma's names */
@@ -186,9 +191,11 @@ Guaranteed, and checked by the computed-style fixtures that arrive with the seco
 
 Not guaranteed, stated rather than hidden:
 
-- Vanilla's `!important` declarations still apply inside pragma territory where their selectors match. In practice that is the universal reduced-motion rule, which pragma honours anyway.
+- Vanilla's `!important` declarations still apply inside pragma territory where their selectors match. The only one that can match without a Vanilla class present is `* { animation: none !important; transition: none !important }` under reduced motion, which pragma will honour itself.
 - Vanilla's root font-size scaling above 1681 pixels reaches pragma territory through `rem`; pragma scales with it coherently.
-- Vanilla emits one rule at import time, `hr.is-fixed-width`, outside the `vanilla` layer. It targets a Vanilla class and cannot reach pragma territory; allow it in your layer check.
+- `revert` also rolls back presentational attributes. Inline SVG is excluded from the boundary for that reason, and an `<img width height>` inside pragma territory loses the size its attributes gave it: size replaced elements in CSS, as pragma's components do.
+- `direction` and `unicode-bidi` are outside `all`, so Vanilla's `code, pre { direction: ltr }` still applies inside pragma territory. It is harmless.
+- The theme bridge reads the DOM's ancestors, so a surface portalled to `<body>` (a tooltip, a menu) takes the body's theme, not the strip it was opened from.
 - Vanilla's own native form controls inside a dark strip stay light, as they do today.
 - `.is-paper` renders pragma light, because Vanilla treats paper as light.
 - Pragma's hover and active deltas follow the root theme until pragma keys them on the inherited scheme.

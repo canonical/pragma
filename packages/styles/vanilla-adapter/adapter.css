@@ -25,19 +25,60 @@
  *     theme toggles keep inheriting;
  *   - inheritance is untouched, which is what pragma's territory-root reset and
  *     the theme bridge below rely on.
- * Pseudo-elements are written out because Vanilla's box-sizing rule targets them
- * and a pseudo-element cannot be named inside `:where()`. `:where()` keeps the
- * rule at zero specificity, so any rule an application places in the same layer
- * beats it. Vanilla's `!important` declarations still win here, as they would
- * anywhere; the one that can match without a Vanilla class present is
- * `* { animation: none !important }` under reduced motion, which pragma honours
- * itself. Measured in Chromium 151, the rule adds nothing measurable to style
- * recalculation; a Vanilla theme toggle is about forty percent cheaper with it,
- * because the territory no longer re-resolves Vanilla's variables. */
+ *
+ * Pseudo-elements are separate boxes with their own cascade, and a pseudo-element
+ * cannot be named inside `:where()`, so each one Vanilla styles without a class
+ * gets its own selector: `::before` and `::after` (box-sizing), `::placeholder`
+ * (the muted placeholder colour on every text input), and the WebKit form parts
+ * (file upload button, search decorations, the datalist picker, number spinners,
+ * range track and thumb). The Gecko form parts sit in rules of their own, because
+ * a selector list that names a `-moz-` pseudo-element is dropped whole by other
+ * engines, whereas unknown `-webkit-` pseudo-elements are parsed as valid by all.
+ *
+ * SVG content is excluded. `revert` also rolls back presentational attributes,
+ * and inline SVG draws with them (`fill`, `width`, `d`, `r`, `transform`); Vanilla
+ * has no class-free rule that reaches SVG content, so nothing leaks there. The
+ * same rollback removes the sizing that `width` and `height` attributes give an
+ * `<img>`: pragma sizes replaced elements in CSS.
+ *
+ * `:where()` keeps the element selectors at zero specificity, so any rule an
+ * application places in the same layer beats them; the pseudo-element selectors
+ * carry a pseudo-element's own (0,0,1). Vanilla's `!important` declarations still
+ * win here, as they would anywhere; the only one that can match without a Vanilla
+ * class present is `* { animation: none !important; transition: none !important }`
+ * under reduced motion, which pragma will honour itself. Measured in Chromium 151,
+ * the rule adds nothing measurable to style recalculation, and a Vanilla theme
+ * toggle is about forty percent cheaper with it, because the territory no longer
+ * re-resolves Vanilla's variables. */
 @layer boundary {
-  :where(.ds, .ds *),
-  :where(.ds, .ds *)::before,
-  :where(.ds, .ds *)::after {
+  :where(.ds, .ds *):where(:not(svg, svg *)),
+  :where(.ds, .ds *):where(:not(svg, svg *))::before,
+  :where(.ds, .ds *):where(:not(svg, svg *))::after,
+  :where(.ds, .ds *)::placeholder,
+  :where(.ds, .ds *)::-webkit-file-upload-button,
+  :where(.ds, .ds *)::-webkit-search-decoration,
+  :where(.ds, .ds *)::-webkit-search-results-decoration,
+  :where(.ds, .ds *)::-webkit-calendar-picker-indicator,
+  :where(.ds, .ds *)::-webkit-inner-spin-button,
+  :where(.ds, .ds *)::-webkit-outer-spin-button,
+  :where(.ds, .ds *)::-webkit-slider-runnable-track,
+  :where(.ds, .ds *)::-webkit-slider-thumb {
+    all: revert;
+  }
+
+  :where(.ds, .ds *)::-moz-range-track {
+    all: revert;
+  }
+
+  :where(.ds, .ds *)::-moz-range-progress {
+    all: revert;
+  }
+
+  :where(.ds, .ds *)::-moz-range-thumb {
+    all: revert;
+  }
+
+  :where(.ds, .ds *)::-moz-focus-inner {
     all: revert;
   }
 }
@@ -55,9 +96,10 @@
  * Only the boundary root is written (`.ds:not(.ds *)`), so nested pragma roots
  * inherit from their pragma parent; <html> is excluded so the `light` pin on the
  * root (README, rule 10) stays in force once the document is flipped to
- * `html.ds`. `:where()` keeps the rule at zero specificity, and the `adapter`
- * layer sits below `ds.components`, so a component that sets its own scheme
- * still wins. */
+ * `html.ds`. The ancestors are the DOM's, so a surface portalled to <body> takes
+ * the body's theme, not the strip it was opened from. `:where()` keeps the rule
+ * at zero specificity, and the `adapter` layer sits below `ds.components`, so a
+ * component that sets its own scheme still wins. */
 @layer adapter {
   :where(.ds:not(.ds *):not(html)) {
     color-scheme: var(--vf-theme-light, light) var(--vf-theme-dark, dark);
