@@ -1,0 +1,8 @@
+# NESTED one level below `data/`. The collector walks recursively, and the
+# store-visible path keeps the whole relative segment
+# (`design-system/data/tokens/colors.ttl`), which is what makes an
+# EXCLUDED_SOURCES entry able to name a nested file at all.
+
+@prefix ds: <https://design.example.org/ontology#> .
+
+ds:button ds:tier "core" .
