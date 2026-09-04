@@ -12,108 +12,125 @@
  * Commented-out properties are valid extension points that consumers
  * or themes may set; they are documented so the full API surface
  * is visible in one place.
+ *
+ * Layers: the token block is `ds.tokens`. These are custom properties, which
+ * act only where a rule reads them, so they are not scoped to pragma territory.
+ * The content-flow container at the end sets a real property on an element, so
+ * it sits in `ds.components` inside `@scope (.ds)` and cannot reach a page
+ * another system owns.
  */
 
-:root {
-  /* ── Baseline grid ──────────────────────────────────────────────── */
-  /* SPIKE: the baseline unit is 4px (down from 8px). Set here in styles, NOT in
+@layer ds.tokens {
+  :root {
+    /* ── Baseline grid ──────────────────────────────────────────────── */
+    /* SPIKE: the baseline unit is 4px (down from 8px). Set here in styles, NOT in
      the design token — the token (--dimension-size-height-baseline) is left at
      8px and intentionally no longer consumed, so this is the single place the
      4px grid lives until it is promoted into design-tokens via its own PR. */
-  --space-baseline: 0.25rem; /* 4px — bU (was the 8px --dimension-size-height-baseline token) */
-  --baseline-height: var(
-    --space-baseline
-  ); /* alias consumed by typography engine */
+    --space-baseline: 0.25rem; /* 4px — bU (was the 8px --dimension-size-height-baseline token) */
+    --baseline-height: var(
+      --space-baseline
+    ); /* alias consumed by typography engine */
 
-  /* ── Spacing scale (semantic aliases) ───────────────────────────── */
-  --space-0: 0;
-  --space-025: var(--dimension-025); /* 0.125rem /  2px — micro    */
-  --space-050: var(--dimension-050); /* 0.25rem  /  4px — xxs      */
-  --space-100: var(--dimension-100); /* 0.5rem   /  8px — xs (1bU) */
-  --space-150: var(--dimension-150); /* 0.75rem  / 12px — sm       */
-  --space-200: var(--dimension-200); /* 1rem     / 16px — md (2bU) */
-  --space-300: var(--dimension-300); /* 1.5rem   / 24px — lg (3bU) */
-  --space-400: var(--dimension-400); /* 2rem     / 32px — xl (4bU) */
-  --space-600: var(--dimension-600); /* 3rem     / 48px — 2xl      */
-  --space-800: var(--dimension-800); /* 4rem     / 64px — 3xl      */
+    /* ── Spacing scale (semantic aliases) ───────────────────────────── */
+    --space-0: 0;
+    --space-025: var(--dimension-025); /* 0.125rem /  2px — micro    */
+    --space-050: var(--dimension-050); /* 0.25rem  /  4px — xxs      */
+    --space-100: var(--dimension-100); /* 0.5rem   /  8px — xs (1bU) */
+    --space-150: var(--dimension-150); /* 0.75rem  / 12px — sm       */
+    --space-200: var(--dimension-200); /* 1rem     / 16px — md (2bU) */
+    --space-300: var(--dimension-300); /* 1.5rem   / 24px — lg (3bU) */
+    --space-400: var(--dimension-400); /* 2rem     / 32px — xl (4bU) */
+    --space-600: var(--dimension-600); /* 3rem     / 48px — 2xl      */
+    --space-800: var(--dimension-800); /* 4rem     / 64px — 3xl      */
 
-  /* ── Element-owned spacing (margin-block-end) ───────────────────── */
-  /* Direction: block-end (downward in horizontal writing modes).       */
-  /*                                                                    */
-  /* For typographic elements (h1-h6, p, .p), space-after is           */
-  /* implemented in @canonical/styles-typography mapper.css as a        */
-  /* unitless --space-after variable (in baseline-height units)         */
-  /* consumed by the baseline engine:                                   */
-  /*   margin-bottom: calc(bottom-nudge + space-after × baseline-height) */
-  /*                                                                    */
-  /* Default: --space-after: 0 on all elements (app UI contexts).      */
-  /* Editorial/prose contexts opt in via the .editorial class:          */
-  /*   h1, h2: --space-after: 2  (= 2 × 0.5rem = 1rem = 16px)        */
-  /*   h3-h6, p: --space-after: 1 (= 1 × 0.5rem = 0.5rem = 8px)     */
-  /*                                                                    */
-  /* The tokens below are for NON-typographic elements.                 */
-  /* When the spacing architecture is finalised, the typography         */
-  /* mapper should read FROM these tokens instead of hardcoding.        */
-  --spaceAfter-button: var(--space-200); /* 1rem / 16px — block-end margin */
-  /* --spaceAfter-figure: var(--space-300); */ /* block-end margin for figures */
-  /* --spaceAfter-list:   var(--space-200); */ /* block-end margin for ul/ol   */
-  /* --spaceAfter-table:  var(--space-300); */ /* block-end margin for tables  */
-  /* --spaceAfter-hr:     var(--space-400); */ /* block-end margin for <hr>    */
+    /* ── Element-owned spacing (margin-block-end) ───────────────────── */
+    /* Direction: block-end (downward in horizontal writing modes).       */
+    /*                                                                    */
+    /* For typographic elements (h1-h6, p, .p), space-after is           */
+    /* implemented in @canonical/styles-typography mapper.css as a        */
+    /* unitless --space-after variable (in baseline-height units)         */
+    /* consumed by the baseline engine:                                   */
+    /*   margin-bottom: calc(bottom-nudge + space-after × baseline-height) */
+    /*                                                                    */
+    /* Default: --space-after: 0 on all elements (app UI contexts).      */
+    /* Editorial/prose contexts opt in via the .editorial class:          */
+    /*   h1, h2: --space-after: 2  (= 2 × 0.5rem = 1rem = 16px)        */
+    /*   h3-h6, p: --space-after: 1 (= 1 × 0.5rem = 0.5rem = 8px)     */
+    /*                                                                    */
+    /* The tokens below are for NON-typographic elements.                 */
+    /* When the spacing architecture is finalised, the typography         */
+    /* mapper should read FROM these tokens instead of hardcoding.        */
+    --spaceAfter-button: var(--space-200); /* 1rem / 16px — block-end margin */
+    /* --spaceAfter-figure: var(--space-300); */ /* block-end margin for figures */
+    /* --spaceAfter-list:   var(--space-200); */ /* block-end margin for ul/ol   */
+    /* --spaceAfter-table:  var(--space-300); */ /* block-end margin for tables  */
+    /* --spaceAfter-hr:     var(--space-400); */ /* block-end margin for <hr>    */
 
-  /* ── Container-owned spacing (gap values) ───────────────────────── */
-  /* Used in application UI contexts: forms, dashboards, cards.        */
-  /* These are axis-agnostic by default — containers apply them to     */
-  /* whichever axis they need (block-direction gap for stacked forms,  */
-  /* inline-direction gap for button rows, both for grids).            */
-  --container-gap-tight: var(--space-050); /*  4px — dense key-value pairs  */
-  --container-gap-default: var(--space-200); /* 16px — standard card/form gap */
-  --container-gap-loose: var(--space-300); /* 24px — sections, visual break */
+    /* ── Container-owned spacing (gap values) ───────────────────────── */
+    /* Used in application UI contexts: forms, dashboards, cards.        */
+    /* These are axis-agnostic by default — containers apply them to     */
+    /* whichever axis they need (block-direction gap for stacked forms,  */
+    /* inline-direction gap for button rows, both for grids).            */
+    --container-gap-tight: var(--space-050); /*  4px — dense key-value pairs  */
+    --container-gap-default: var(
+      --space-200
+    ); /* 16px — standard card/form gap */
+    --container-gap-loose: var(--space-300); /* 24px — sections, visual break */
 
-  /* Per-axis container gap overrides (set by consumers, not defined here): */
-  /* --container-gap-block:  … ; */ /* block-direction gap override  */
-  /* --container-gap-inline: … ; */ /* inline-direction gap override */
+    /* Per-axis container gap overrides (set by consumers, not defined here): */
+    /* --container-gap-block:  … ; */ /* block-direction gap override  */
+    /* --container-gap-inline: … ; */ /* inline-direction gap override */
 
-  /* ── Intra-component spacing ────────────────────────────────────── */
-  /* Component-owned: internal padding regardless of context.           */
-  --component-padding-block: var(
-    --space-100
-  ); /*  8px — block (vertical)  padding */
-  --component-padding-inline: var(
-    --space-200
-  ); /* 16px — inline (horizontal) padding */
+    /* ── Intra-component spacing ────────────────────────────────────── */
+    /* Component-owned: internal padding regardless of context.           */
+    --component-padding-block: var(
+      --space-100
+    ); /*  8px — block (vertical)  padding */
+    --component-padding-inline: var(
+      --space-200
+    ); /* 16px — inline (horizontal) padding */
 
-  /* Per-side component padding overrides (set by themes/consumers): */
-  /* --component-padding-block-start:  … ; */ /* top padding override     */
-  /* --component-padding-block-end:    … ; */ /* bottom padding override  */
-  /* --component-padding-inline-start: … ; */ /* left (LTR) padding      */
-  /* --component-padding-inline-end:   … ; */ /* right (LTR) padding     */
+    /* Per-side component padding overrides (set by themes/consumers): */
+    /* --component-padding-block-start:  … ; */ /* top padding override     */
+    /* --component-padding-block-end:    … ; */ /* bottom padding override  */
+    /* --component-padding-inline-start: … ; */ /* left (LTR) padding      */
+    /* --component-padding-inline-end:   … ; */ /* right (LTR) padding     */
 
-  /* ── Layout grid ────────────────────────────────────────────────── */
-  --grid-gutter: var(
-    --space-200
-  ); /* 16px / 1rem — column gutters (inline-direction) */
-  --grid-margin: var(
-    --space-400
-  ); /* 32px / 2rem   — outer page margin (inline-direction) */
+    /* ── Layout grid ────────────────────────────────────────────────── */
+    --grid-gutter: var(
+      --space-200
+    ); /* 16px / 1rem — column gutters (inline-direction) */
+    --grid-margin: var(
+      --space-400
+    ); /* 32px / 2rem   — outer page margin (inline-direction) */
 
-  /* Grid gap axis overrides (consumed by grid.css): */
-  /* --grid-gap:        … ; */ /* shorthand: sets both row-gap and column-gap */
-  /* --grid-row-gap:    … ; */ /* block-direction gap between grid rows       */
-  /* --grid-column-gap: … ; */ /* inline-direction gap between grid columns   */
+    /* Grid gap axis overrides (consumed by grid.css): */
+    /* --grid-gap:        … ; */ /* shorthand: sets both row-gap and column-gap */
+    /* --grid-row-gap:    … ; */ /* block-direction gap between grid rows       */
+    /* --grid-column-gap: … ; */ /* inline-direction gap between grid columns   */
 
-  /* ── Heading alignment ──────────────────────────────────────────── */
-  /* Inline padding for headings to align with padded blocks.           */
-  /* --heading-padding-inline: … ; */ /* set by layout context, default 0 */
+    /* ── Heading alignment ──────────────────────────────────────────── */
+    /* Inline padding for headings to align with padded blocks.           */
+    /* --heading-padding-inline: … ; */ /* set by layout context, default 0 */
+  }
 }
 
 /* ── Content-flow container ─────────────────────────────────────── */
 
 @layer ds.components {
-  /* Content-flow container: establishes element-owned spacing context.
-   * Children use their own margin-bottom; last child is reset to 0
-   * to prevent double spacing at the container boundary.
-   */
-  .content-flow > :last-child {
-    margin-bottom: 0;
+  @scope (.ds) {
+    /* Content-flow container: establishes element-owned spacing context.
+     * Children use their own margin-bottom; last child is reset to 0
+     * to prevent double spacing at the container boundary.
+     *
+     * Two selectors, because a scoped selector never matches its own scoping
+     * root: `.content-flow` is a container inside the territory,
+     * `:scope.content-flow` is a pragma root that carries the class itself.
+     */
+    .content-flow > :last-child,
+    :scope.content-flow > :last-child {
+      margin-bottom: 0;
+    }
   }
 }

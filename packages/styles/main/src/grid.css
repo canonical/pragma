@@ -62,6 +62,22 @@
  *
  *   <!-- Separate row/column gaps -->
  *   <div class="grid responsive" style="--grid-row-gap: 1.5rem; --grid-column-gap: 1rem">...</div>
+ *
+ * Layers and scope:
+ *   The presets set real properties on any element that carries `grid`,
+ *   `subgrid`, `responsive` or `intrinsic`, so they are element-level rules and
+ *   sit in `ds.components` inside `@scope (.ds)` — a page that pragma does not
+ *   own may already use a class of that name, and a design system must not
+ *   restyle it.
+ *
+ *   Every preset is written twice, because a scoped selector never matches its
+ *   own scoping root: `.x` is an element inside the territory, `:scope.x` is the
+ *   pragma root that carries the preset itself (a Form is `ds form subgrid`, a
+ *   Cards group is `ds cards subgrid`). The bare form comes first so the pair
+ *   reads in ascending specificity.
+ *
+ *   The `:root` defaults stay with the presets that read them, as component-
+ *   scoped tokens, rather than moving to `ds.tokens`.
  */
 
 @layer ds.components {
@@ -75,35 +91,41 @@
     );
   }
 
-  .grid {
-    display: grid;
-    grid-template-columns: var(--modifier-grid-template);
-    column-gap: var(
-      --grid-column-gap,
-      var(--grid-gap, var(--grid-gutter, 1.5rem))
-    );
-    row-gap: var(--grid-row-gap, var(--grid-gap, var(--grid-gutter, 1.5rem)));
-  }
-
-  .responsive {
-    --modifier-grid-template: repeat(4, 1fr);
-
-    @media (min-width: 768px) {
-      --modifier-grid-template: repeat(8, 1fr);
+  @scope (.ds) {
+    .grid,
+    :scope.grid {
+      display: grid;
+      grid-template-columns: var(--modifier-grid-template);
+      column-gap: var(
+        --grid-column-gap,
+        var(--grid-gap, var(--grid-gutter, 1.5rem))
+      );
+      row-gap: var(--grid-row-gap, var(--grid-gap, var(--grid-gutter, 1.5rem)));
     }
 
-    @media (min-width: 1280px) {
-      --modifier-grid-template: repeat(12, 1fr);
+    .responsive,
+    :scope.responsive {
+      --modifier-grid-template: repeat(4, 1fr);
+
+      @media (min-width: 768px) {
+        --modifier-grid-template: repeat(8, 1fr);
+      }
+
+      @media (min-width: 1280px) {
+        --modifier-grid-template: repeat(12, 1fr);
+      }
     }
-  }
 
-  .intrinsic {
-    --modifier-grid-template: var(--grid-intrinsic);
-  }
+    .intrinsic,
+    :scope.intrinsic {
+      --modifier-grid-template: var(--grid-intrinsic);
+    }
 
-  .subgrid {
-    display: grid;
-    grid-template-columns: subgrid;
-    grid-column: var(--subgrid-span, 1 / -1);
+    .subgrid,
+    :scope.subgrid {
+      display: grid;
+      grid-template-columns: subgrid;
+      grid-column: var(--subgrid-span, 1 / -1);
+    }
   }
 }

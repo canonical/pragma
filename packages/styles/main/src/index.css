@@ -2,18 +2,60 @@
  *
  * Single import for consumers:
  *   @import url("@canonical/styles");
+ *
+ * Everything this package ships sits in a named cascade layer, and the layers
+ * whose rules select elements are authored inside `@scope (.ds)` so they reach
+ * only pragma territory. The README's "Cascade layers" section is the reference
+ * for what is layered where and what is deliberately not; the reasoning behind
+ * the order lives in docs/explanations/CASCADE.md.
+ *
+ * The order statement below must stay the first rule of this file. An `@import`
+ * is only valid before other rules — a layer statement and `@charset` excepted —
+ * so "the statement, then the imports" is the one legal shape. A consumer who
+ * must interleave their own layers prepends their own statement; a later
+ * statement can add names but never reorder the ones already fixed here.
  */
 
-/* Layer ordering — deterministic cascade (spec §C.2) */
-@layer normalize, ds.reset, ds.modifiers, ds.components;
+/* Read from the bottom up, each position is an argument:
+ *   normalize      pragma's own reset, scoped to pragma territory
+ *   ds.tokens      primitive values, spacing, motion, overflow
+ *   ds.reset       the territory root's baseline: font, colour, box-sizing
+ *   ds.typography  the semantic mapper and the baseline engines
+ *   ds.modifiers   theme, the typographic scale, the channel families and
+ *                  their shims, the density and context classes
+ *   ds.surfaces    the surface families
+ *   ds.states      the derived hover / active / disabled channels
+ *   ds.components  the layout presets this package ships, and any component
+ *                  stylesheet that belongs to no tier
+ *   ds.components.global  the global component packages' stylesheets
+ *   ds.components.app     the application tiers' stylesheets, so that an app
+ *                  tier's own rule for a component beats the global one by
+ *                  layer rather than by load order
+ *
+ * The two sublayers are named here rather than left to first appearance,
+ * because first appearance depends on the order a bundler happens to emit the
+ * component packages in, and their relative order is a guarantee. */
+@layer normalize,
+  ds.tokens,
+  ds.reset,
+  ds.typography,
+  ds.modifiers,
+  ds.surfaces,
+  ds.states,
+  ds.components,
+  ds.components.global,
+  ds.components.app;
 
-/* Reset */
-@import url("normalize.css");
+/* Reset: pragma's own, scoped to pragma territory */
+@import url("./normalize.css");
+@import url("./reset.css");
 
 /* Typography: interpreter engine + scale tokens */
 @import url("@canonical/styles-typography");
 
-/* Design tokens — colour, spacing, surfaces, states */
+/* Design tokens — colour, spacing, surfaces, states.
+ * Each generated file opens its own `@layer` block, so none of these imports
+ * carries a `layer()` keyword: that would nest the file's layer inside another. */
 @import url("@canonical/design-tokens/dist/sets.primitive.css");
 @import url("@canonical/design-tokens/dist/modifiers.theme.css");
 @import url("@canonical/design-tokens/dist/modifiers.surfaces.css");

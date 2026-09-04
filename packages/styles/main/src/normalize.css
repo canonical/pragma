@@ -1,0 +1,150 @@
+/* @canonical/styles — Pragma's own reset, scoped to pragma territory
+ *
+ * This replaces the `normalize.css` dependency. Two reasons, both structural:
+ *
+ *  1. A third-party file cannot be authored inside a `@scope` block, and every
+ *     element-level layer pragma ships has to be, so that its rules reach only
+ *     the subtree pragma owns — the subtree rooted at an element carrying the
+ *     class `ds` ("pragma territory"). Imported as a package, normalize's
+ *     `html`, `body`, `button` and `input` rules apply to the whole document,
+ *     including parts of a page another system owns.
+ *  2. The constitution prefers writing only the styles that are used
+ *     (principle XIII) over importing a file and stripping it afterwards.
+ *
+ * A scoped selector is relative to the scoping root and never matches the root
+ * itself, so `:where(:scope)` is how a rule addresses the territory root: the
+ * document element in an application that is pragma throughout, a region or a
+ * single component in one that is not. Every other selector here is relative
+ * to that root, and so reaches only what is inside the territory.
+ *
+ * ── What was ported from normalize.css 8.0.1, and why ────────────────────────
+ *
+ *  -webkit-text-size-adjust  iOS inflates text after an orientation change,
+ *                            which would move every line off the baseline grid.
+ *  body margin               the browser's 8px would show as a page gutter.
+ *                            It stays on the body: a margin does not inherit, so
+ *                            hoisting it to the territory root would neither
+ *                            reach the body nor be this package's call to make
+ *                            about a root a host page has placed.
+ *  form control font/margin  the natives pragma's form components render must
+ *                            inherit the page font and start with no margin —
+ *                            an inherited margin on `<input>` is exactly the
+ *                            field-spacing defect this programme exists to fix.
+ *  monospace font size       a browser applies a smaller default size when the
+ *                            font family is the bare `monospace` keyword, so a
+ *                            `<pre>` or `<code>` renders at about 13px. Setting
+ *                            `font-size: 1em` resolves against the parent and
+ *                            cancels it; normalize's `monospace, monospace`
+ *                            duplication is a second way to the same result and
+ *                            is not needed. Pragma renders both elements (the
+ *                            diff viewer's `<pre>`, the token table's `<code>`).
+ *  sub / sup                 a superscript that keeps its own line box would
+ *                            grow the line it sits on, and a whole-number
+ *                            multiple of the baseline unit is what the
+ *                            typography engine guarantees.
+ *  legend                    the form package renders `<legend>` for a field
+ *                            group's label; the browser's own inline padding
+ *                            and `display: block` are visible there.
+ *
+ * ── What was dropped, and why ────────────────────────────────────────────────
+ *
+ *  html line-height 1.15     superseded: the reset declares `line-height:
+ *                            normal` on the territory root (ds.reset).
+ *  h1 font-size and margin   the typography engine sets both on h1–h6, so the
+ *                            rule never reached the page.
+ *  hr                        `box-sizing: content-box` is overridden by the
+ *                            reset's `border-box` one layer up, and `height: 0`
+ *                            under `border-box` would collapse the rule's own
+ *                            border.
+ *  main, details, summary,   already the browser's own behaviour in every
+ *  template, [hidden], a,    engine pragma targets (constitution X: current
+ *  img, b/strong, abbr,      platforms, no legacy burden). These rules exist in
+ *  small, progress,          normalize for Internet Explorer, legacy Edge, and
+ *  fieldset, textarea,       browsers older than pragma's floor.
+ *  [type=checkbox]/[radio],
+ *  button/input overflow
+ *  text-transform, the       engine-specific control chrome. Where pragma
+ *  -webkit-appearance        renders such a control it owns that control's box
+ *  group, ::-moz-focus-      and chrome in the component's own stylesheet;
+ *  inner, :-moz-focusring,   giving the rest of them a global default is the
+ *  [type=search],            work of "own the box of the natives you render",
+ *  [type=number] spinners,   not of a reset.
+ *  ::-webkit-file-upload-
+ *  button
+ */
+
+@layer normalize {
+  @scope (.ds) {
+    /* The territory root. `:where()` keeps the specificity at zero so a single
+       class in any pragma layer above this one can override it. */
+    :where(:scope) {
+      /* Prevent the text inflation iOS applies after an orientation change. */
+      -webkit-text-size-adjust: 100%;
+    }
+
+    /* The document body, when the territory root IS the document element — the
+       shape an application that is pragma throughout uses,
+       `<html class="ds app comfortable">`. In a mixed application the root is a
+       region or a component and there is no body inside the territory, so this
+       rule matches nothing.
+
+       The margin stays on the body and is NOT hoisted to the territory root the
+       way the root's inherited declarations are, because margin does not
+       inherit and the reason for hoisting therefore does not apply. Zeroing the
+       root's own margin would also be a claim this package has no business
+       making: where a pragma root is placed inside a page it does not own, the
+       host's layout is entitled to place it. */
+    body {
+      margin: 0;
+    }
+
+    /* Change the font styles in all browsers, and remove the margin Firefox and
+       Safari give form controls. */
+    button,
+    input,
+    optgroup,
+    select,
+    textarea {
+      font-family: inherit;
+      font-size: 100%;
+      line-height: 1.15;
+      margin: 0;
+    }
+
+    /* Correct the odd font size a browser gives the generic monospace family. */
+    pre,
+    code,
+    kbd,
+    samp {
+      font-size: 1em;
+    }
+
+    /* Keep sub and sup from affecting the line box, and so the baseline grid. */
+    sub,
+    sup {
+      font-size: 75%;
+      line-height: 0;
+      position: relative;
+      vertical-align: baseline;
+    }
+
+    sub {
+      bottom: -0.25em;
+    }
+
+    sup {
+      top: -0.5em;
+    }
+
+    /* Correct the text wrapping, the colour inheritance and the padding on a
+       field group's caption. */
+    legend {
+      box-sizing: border-box;
+      color: inherit;
+      display: table;
+      max-width: 100%;
+      padding: 0;
+      white-space: normal;
+    }
+  }
+}

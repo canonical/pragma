@@ -1,0 +1,58 @@
+/* @canonical/styles — The territory root's baseline
+ *
+ * Keeping another system's rules off pragma territory is not enough on its own,
+ * because inheritance still crosses into it: a host page that declares a colour,
+ * a font, a line height or a font-weight on its document element hands those
+ * values down to every pragma component inside it, and no rule that reverts
+ * declarations can undo an inherited value.
+ *
+ * So the territory root declares pragma's baseline itself. This is not a
+ * coexistence device: it is what pragma's root should always have declared, and
+ * it is what makes a pragma region render as pragma's own wherever it is placed.
+ * On a page that is pragma throughout, the same declarations land on the
+ * document element and nothing changes.
+ *
+ * `@scope (.ds)` puts these rules inside pragma territory, and a scoped selector
+ * never matches its own scoping root, so `:where(:scope)` is how the root is
+ * addressed. `:where()` keeps the specificity at zero, so a single class in any
+ * layer above `ds.reset` — the typography engine, a modifier, a component —
+ * overrides it without escalation.
+ *
+ * The property set is fixed by the computed-style fixtures in
+ * `@canonical/styles-vanilla-adapter`, which compare every element of a pragma
+ * block on a mixed page against the same block on a pragma-only page:
+ * font-family, font-size, font-weight, line-height, colour, box-sizing, font
+ * smoothing, and the two text-wrap longhands. `font-size` is deliberately not
+ * declared — pragma's territory follows the reader's own root font size, which
+ * is what a rem-based scale is for.
+ */
+
+@layer ds.reset {
+  @scope (.ds) {
+    :where(:scope) {
+      /* The same token the typography mapper reads for the base font, so the
+         root and the elements inside it cannot disagree. */
+      font-family: var(--typography-text-primary-font-family);
+      /* A `light-dark()` token, resolved against the root's own colour scheme
+         (see the theme modifiers), so this one declaration is correct in both. */
+      color: var(--color-text);
+      line-height: normal;
+      font-weight: normal;
+      text-wrap: auto;
+      -webkit-font-smoothing: auto;
+    }
+
+    /* Border-box for the territory root and everything inside it, pseudo-
+       elements included. Pragma's components are authored against it: without
+       it a padded control's width no longer includes its padding and border,
+       and every control's box grows. */
+    :where(:scope, :scope *) {
+      box-sizing: border-box;
+    }
+
+    :where(:scope, :scope *)::before,
+    :where(:scope, :scope *)::after {
+      box-sizing: border-box;
+    }
+  }
+}

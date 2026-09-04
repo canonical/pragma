@@ -20,6 +20,14 @@
  * generated modifiers so they win.
  *
  * Remove once the generated modifiers expose state channels upstream.
+ *
+ * Layer: ds.modifiers. The file it extends is the anticipation / emphasis
+ * modifier family (`modifiers.anticipation.css`, `modifiers.emphasis.css`),
+ * both of which open `@layer ds.modifiers`, and this shim re-points the same
+ * modifier classes at more channels. It is not `ds.states`: that layer holds
+ * the generated file that DERIVES a state from a channel, and this one supplies
+ * the channel it derives from. Nothing here selects an element, so nothing here
+ * is scoped to pragma territory.
  */
 
 @layer ds.modifiers {

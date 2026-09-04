@@ -7,16 +7,49 @@
  *
  * Convention: ALL available custom properties are listed here so the full API
  * surface is visible in one place.
+ *
+ * Layer: ds.tokens. These are custom properties, which act only where a rule
+ * reads them, so they are not scoped to pragma territory — a token that no rule
+ * reads changes nothing, and a consumer may want to read them itself.
  */
 
-:root {
-  /* ── Durations ──────────────────────────────────────────────────── */
-  --motion-duration-fast: 0.165s; /* small state changes: chevrons, toggles */
-  --motion-duration-medium: 0.25s; /* panels, disclosures                    */
-  --motion-duration-slow: 0.4s; /* larger transitions, overlays           */
+@layer ds.tokens {
+  :root {
+    /* ── Durations ──────────────────────────────────────────────────── */
+    --motion-duration-fast: 0.165s; /* small state changes: chevrons, toggles */
+    --motion-duration-medium: 0.25s; /* panels, disclosures                    */
+    --motion-duration-slow: 0.4s; /* larger transitions, overlays           */
 
-  /* ── Easings ────────────────────────────────────────────────────── */
-  --motion-easing-standard: ease-out; /* enter/exit default            */
-  --motion-easing-decelerate: cubic-bezier(0, 0, 0.2, 1); /* entering  */
-  --motion-easing-accelerate: cubic-bezier(0.4, 0, 1, 1); /* exiting   */
+    /* ── Easings ────────────────────────────────────────────────────── */
+    --motion-easing-standard: ease-out; /* enter/exit default            */
+    --motion-easing-decelerate: cubic-bezier(0, 0, 0.2, 1); /* entering  */
+    --motion-easing-accelerate: cubic-bezier(0.4, 0, 1, 1); /* exiting   */
+  }
+
+  /* ── Reduced motion ───────────────────────────────────────────────────
+   * A reader who asks their system for less motion gets it from the design
+   * system, without the application opting in (constitution I).
+   *
+   * Zeroing the duration token is the whole mechanism, and it is deliberate:
+   * every duration a component reads resolves through one of these three, so a
+   * component's own `transition:` declaration keeps its place in the cascade
+   * and simply resolves to no time at all. A blanket `transition: none` rule
+   * could not do this — it would sit in a layer below the component sheets and
+   * lose to every one of them.
+   *
+   * The easings are left alone: an easing over no duration has no effect.
+   * There is no delay token in this package; if one is added it belongs here.
+   * No declaration here is marked important, and none in the package is: an
+   * important declaration inverts the layer order and so cannot be arbitrated
+   * by layers at all.
+   *
+   * A component that hard-codes a duration instead of reading a token is not
+   * covered, and each one is being moved onto the tokens separately. */
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      --motion-duration-fast: 0s;
+      --motion-duration-medium: 0s;
+      --motion-duration-slow: 0s;
+    }
+  }
 }

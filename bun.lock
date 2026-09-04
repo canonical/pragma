@@ -1269,7 +1269,6 @@
       "dependencies": {
         "@canonical/design-tokens": "0.8.1",
         "@canonical/styles-typography": "^0.37.0",
-        "normalize.css": "^8.0.1",
       },
       "devDependencies": {
         "@biomejs/biome": "2.5.11",
