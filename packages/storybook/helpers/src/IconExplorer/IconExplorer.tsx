@@ -23,8 +23,6 @@ const MAX_SIZE = 48;
 const RELATED_LIMIT = 5;
 const NEAREST_LIMIT = 5;
 
-type Scheme = "light" | "dark";
-
 /**
  * How many cells fit on a row, read back from the rendered layout.
  *
@@ -140,7 +138,6 @@ export function IconExplorer<Name extends string = string>({
   const [category, setCategory] = useState("");
   const [showDeprecated, setShowDeprecated] = useState(false);
   const [size, setSize] = useState(24);
-  const [scheme, setScheme] = useState<Scheme>("light");
   const [selected, setSelected] = useState<Name | null>(null);
   const [active, setActive] = useState(0);
   const [columns, setColumns] = useState(1);
@@ -474,17 +471,6 @@ export function IconExplorer<Name extends string = string>({
         <output className="hint" htmlFor={sizeId}>
           {size}px
         </output>
-
-        <label>
-          <input
-            type="checkbox"
-            checked={scheme === "dark"}
-            onChange={(event) =>
-              setScheme(event.target.checked ? "dark" : "light")
-            }
-          />
-          Dark preview
-        </label>
       </div>
 
       <p className="count" id={countId}>
@@ -494,15 +480,9 @@ export function IconExplorer<Name extends string = string>({
         {announced}
       </p>
 
-      {/* `.light`/`.dark` are the class names @canonical/storybook-addon-utils
-          uses for the page-wide scheme, kept here so the vocabulary matches.
-          `color-scheme` is set from here rather than in the stylesheet so there
-          is one source of truth, and so the `light-dark()` surfaces resolve
-          against the previewed scheme rather than the page. */}
-      <div
-        className={["preview-area", scheme].join(" ")}
-        style={{ colorScheme: scheme }}
-      >
+      {/* No scheme control of its own: the block inherits the docs page
+          colour scheme, which the shared docs container already follows. */}
+      <div className="preview-area">
         {results.length === 0 ? (
           <div className="empty">
             {query.trim() === "" ? (
