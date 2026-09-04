@@ -87,8 +87,12 @@ Three facts about the cascade carry the design, and pragma's cascade explanation
   ds.states,
   adapter,
   ds.components,
+  ds.components.global,
+  ds.components.app,
   app;
 ```
+
+The two component tiers are named in the statement so that an app-tier package's rule beats the global one whatever order your entry loads the component stylesheets in; a sublayer left to first appearance would make that order matter again.
 
 `app` is the name of your own layer whatever your context class is; a site with `class="site …"` still writes `@layer app`.
 
