@@ -1,0 +1,9 @@
+{
+  "extends": "@canonical/typescript-config",
+  "compilerOptions": {
+    "baseUrl": "src",
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["src/**/*.ts", "vitest.config.ts"],
+  "exclude": ["src/**/*.test.ts"]
+}

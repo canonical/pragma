@@ -2,7 +2,7 @@ import {
   type HumanizeNumberOptions,
   humanizeNumber,
   pluralize,
-} from "@canonical/utils";
+} from "@canonical/ds-utils";
 import { useMemo } from "react";
 import type { UseBadgeProps, UseBadgeResult } from "../types.js";
 
