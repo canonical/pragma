@@ -60,7 +60,8 @@
                 // doSomething();
                 close();
               }}
-              severity="negative"
+              importance="primary"
+              anticipation="destructive"
             >
               Discard review
             </Button>

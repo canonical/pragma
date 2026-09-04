@@ -4,20 +4,11 @@
   grid-auto-rows: minmax(1lh, auto);
   align-items: center;
 
-  gap: var(--lp-dimension-spacing-inline-xs);
-  padding-block: var(
-    --lp-dimension-padding-block-context,
-    var(--lp-dimension-spacing-block-xxs)
-  );
-  padding-inline: var(
-    --lp-dimension-padding-inline-context,
-    var(--lp-dimension-spacing-inline-s)
-  );
+  gap: var(--dimension-100);
+  padding-block: var(--dimension-padding-block-button, var(--dimension-050));
+  padding-inline: var(--dimension-padding-inline-button, var(--dimension-150));
   --icon-padding-subtract: calc(
-    var(
-      --lp-dimension-padding-inline-context,
-      var(--lp-dimension-spacing-inline-s)
-    ) /
+    var(--dimension-padding-inline-button, var(--dimension-150)) /
     2
   );
 

@@ -1460,7 +1460,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.5.11",
         "@canonical/biome-config": "^0.37.0",
-        "@canonical/design-tokens": "0.6.2-contrasted.0",
+        "@canonical/design-tokens": "0.8.1",
         "@canonical/storybook-config": "^0.37.0",
         "@canonical/storybook-helpers": "^0.37.0",
         "@canonical/svelte-ssr-test": "^0.37.0",
@@ -4510,8 +4510,6 @@
 
     "@canonical/svelte-ds-app/@canonical/design-tokens": ["@canonical/design-tokens@0.6.2-contrasted.0", "", { "dependencies": { "@canonical/terrazzo-lsp": "^0.6.0" } }, "sha512-JLzc2tsSbuINFk4adbNGyFhnuKXLiIzE6ntwqigrL4vJoSTuj/OkaJLiLPB12LlQYOT3vnBiL+JmouZgDflNgQ=="],
 
-    "@canonical/svelte-ds-app-launchpad/@canonical/design-tokens": ["@canonical/design-tokens@0.6.2-contrasted.0", "", { "dependencies": { "@canonical/terrazzo-lsp": "^0.6.0" } }, "sha512-JLzc2tsSbuINFk4adbNGyFhnuKXLiIzE6ntwqigrL4vJoSTuj/OkaJLiLPB12LlQYOT3vnBiL+JmouZgDflNgQ=="],
-
     "@canonical/svelte-ds-global/@canonical/design-tokens": ["@canonical/design-tokens@0.6.2-contrasted.0", "", { "dependencies": { "@canonical/terrazzo-lsp": "^0.6.0" } }, "sha512-JLzc2tsSbuINFk4adbNGyFhnuKXLiIzE6ntwqigrL4vJoSTuj/OkaJLiLPB12LlQYOT3vnBiL+JmouZgDflNgQ=="],
 
     "@cdktf/hcl2json/fs-extra": ["fs-extra@11.3.0", "", { "dependencies": { "graceful-fs": "^4.2.0", "jsonfile": "^6.0.1", "universalify": "^2.0.0" } }, "sha512-Z4XaCL6dUDHfP/jT25jJKMmtxvuwbkrD1vNSMFlo9lNLY2c5FHYSQgHPRZUjAB26TpDEoW9HCOgplrdbaPV/ew=="],
@@ -5084,8 +5082,6 @@
 
     "@canonical/ke-graphql/@types/node/undici-types": ["undici-types@7.16.0", "", {}, "sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw=="],
 
-    "@canonical/svelte-ds-app-launchpad/@canonical/design-tokens/@canonical/terrazzo-lsp": ["@canonical/terrazzo-lsp@0.6.0", "", { "dependencies": { "@canonical/token-types": "^0.6.0", "@lezer/common": "^1.3.0", "@lezer/css": "^1.3.0", "colorjs.io": "^0.6.1" }, "bin": { "terrazzo-lsp": "dist/esm/cli.js" } }, "sha512-6b8IsmRF9VJJ6zWyz6XDZxm65tjWPnl5dce/abM2tRJaeBV3ewDLnSWS/BPoHhqDBEFTdo8Rb7o5mg44RzKN7A=="],
-
     "@canonical/svelte-ds-app/@canonical/design-tokens/@canonical/terrazzo-lsp": ["@canonical/terrazzo-lsp@0.6.0", "", { "dependencies": { "@canonical/token-types": "^0.6.0", "@lezer/common": "^1.3.0", "@lezer/css": "^1.3.0", "colorjs.io": "^0.6.1" }, "bin": { "terrazzo-lsp": "dist/esm/cli.js" } }, "sha512-6b8IsmRF9VJJ6zWyz6XDZxm65tjWPnl5dce/abM2tRJaeBV3ewDLnSWS/BPoHhqDBEFTdo8Rb7o5mg44RzKN7A=="],
 
     "@canonical/svelte-ds-global/@canonical/design-tokens/@canonical/terrazzo-lsp": ["@canonical/terrazzo-lsp@0.6.0", "", { "dependencies": { "@canonical/token-types": "^0.6.0", "@lezer/common": "^1.3.0", "@lezer/css": "^1.3.0", "colorjs.io": "^0.6.1" }, "bin": { "terrazzo-lsp": "dist/esm/cli.js" } }, "sha512-6b8IsmRF9VJJ6zWyz6XDZxm65tjWPnl5dce/abM2tRJaeBV3ewDLnSWS/BPoHhqDBEFTdo8Rb7o5mg44RzKN7A=="],
@@ -5467,12 +5463,6 @@
     "@bundled-es-modules/glob/glob/minimatch/brace-expansion": ["brace-expansion@2.0.2", "", { "dependencies": { "balanced-match": "^1.0.0" } }, "sha512-Jt0vHyM+jmUBqojB7E1NIYadt0vI0Qxjxd2TErW94wDz+E2LAm5vKMXXwg6ZZBTHPuUlDgQHKXvjGBdfcF1ZDQ=="],
 
     "@bundled-es-modules/glob/glob/path-scurry/lru-cache": ["lru-cache@10.4.3", "", {}, "sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ=="],
-
-    "@canonical/svelte-ds-app-launchpad/@canonical/design-tokens/@canonical/terrazzo-lsp/@canonical/token-types": ["@canonical/token-types@0.6.0", "", {}, "sha512-bjsXhcipaOUfG5KNZhy0QHdxdDJPjM3tVH0RAQ7KXZGEIOBPR6RY47Du2pV+/Xq4bX1qCMUWBWKDTh/y1a1izQ=="],
-
-    "@canonical/svelte-ds-app-launchpad/@canonical/design-tokens/@canonical/terrazzo-lsp/@lezer/css": ["@lezer/css@1.3.2", "", { "dependencies": { "@lezer/common": "^1.2.0", "@lezer/highlight": "^1.0.0", "@lezer/lr": "^1.3.0" } }, "sha512-tRZAPl1j0pkmPL/pGG85GAbyQYnYv0j6UEdEt5e4ZYvp+OxDu2zVp2c/YddiuO8ZTa2CHsVELqRd/fGWjlISrg=="],
-
-    "@canonical/svelte-ds-app-launchpad/@canonical/design-tokens/@canonical/terrazzo-lsp/colorjs.io": ["colorjs.io@0.6.1", "", {}, "sha512-8lyR2wHzuIykCpqHKgluGsqQi5iDm3/a2IgP2GBZrasn2sBRkE4NOGsglZxWLs/jZQoNkmA/KM/8NV16rLUdBg=="],
 
     "@canonical/svelte-ds-app/@canonical/design-tokens/@canonical/terrazzo-lsp/@canonical/token-types": ["@canonical/token-types@0.6.0", "", {}, "sha512-bjsXhcipaOUfG5KNZhy0QHdxdDJPjM3tVH0RAQ7KXZGEIOBPR6RY47Du2pV+/Xq4bX1qCMUWBWKDTh/y1a1izQ=="],
 

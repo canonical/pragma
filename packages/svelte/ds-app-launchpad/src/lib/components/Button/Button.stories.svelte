@@ -2,15 +2,31 @@
   import { ArchiveIcon } from "@canonical/svelte-icons";
   import { defineMeta } from "@storybook/addon-svelte-csf";
   import { fn } from "storybook/test";
+  import type { ModifierFamilyValues } from "../../modifier-families/index.js";
   import { MODIFIER_FAMILIES } from "../../modifier-families/index.js";
   import Button from "./Button.svelte";
-  import type { ButtonProps } from "./types.js";
 
-  const BUTTON_SEVERITIES = [
-    "brand",
-    "base",
-    ...MODIFIER_FAMILIES.severity,
-  ] as const satisfies readonly NonNullable<ButtonProps["severity"]>[];
+  type ButtonVariant = {
+    importance?: ModifierFamilyValues["importance"];
+    anticipation?: ModifierFamilyValues["anticipation"];
+    emphasis?: Extract<ModifierFamilyValues["emphasis"], "branded">;
+    criticality?: Extract<ModifierFamilyValues["criticality"], "information">;
+  };
+
+  type MatrixColumn = {
+    label: string;
+    variant: ButtonVariant;
+  };
+
+  const MATRIX_COLUMNS: MatrixColumn[] = [
+    { label: "default", variant: {} },
+    ...MODIFIER_FAMILIES.anticipation.map((anticipation) => ({
+      label: anticipation,
+      variant: { anticipation },
+    })),
+    { label: "information", variant: { criticality: "information" } },
+    { label: "branded", variant: { emphasis: "branded" } },
+  ];
 
   const { Story } = defineMeta({
     title: "Components/Button",
@@ -27,6 +43,21 @@
   };
 </script>
 
+{#snippet variantMatrix(props: { disabled?: boolean; loading?: boolean })}
+  <div class="matrix">
+    <span></span>
+    {#each MATRIX_COLUMNS as column (column.label)}
+      <span class="matrix-label">{column.label}</span>
+    {/each}
+    {#each MODIFIER_FAMILIES.importance as importance (importance)}
+      <span class="matrix-label">{importance}</span>
+      {#each MATRIX_COLUMNS as column (column.label)}
+        <Button {importance} {...column.variant} {...props}>Button</Button>
+      {/each}
+    {/each}
+  </div>
+{/snippet}
+
 <Story
   name="Default"
   args={{
@@ -38,19 +69,51 @@
   {/snippet}
 </Story>
 
-<Story name="Severities">
+<Story name="Importance">
   {#snippet template(args)}
     <div class="row">
-      {#each BUTTON_SEVERITIES as severity (severity)}
-        <Button {...args} {severity} onclick={fn()}>
-          {severity}
+      {#each MODIFIER_FAMILIES.importance as importance (importance)}
+        <Button {...args} {importance} onclick={fn()}>
+          {importance}
         </Button>
       {/each}
     </div>
   {/snippet}
 </Story>
 
-<Story name="Densities">
+<Story name="Anticipation">
+  {#snippet template(args)}
+    <div class="row">
+      {#each MODIFIER_FAMILIES.anticipation as anticipation (anticipation)}
+        <Button {...args} {anticipation} onclick={fn()}>
+          {anticipation}
+        </Button>
+      {/each}
+    </div>
+  {/snippet}
+</Story>
+
+<Story name="Criticality">
+  {#snippet template(args)}
+    <Button {...args} criticality="information" onclick={fn()}>
+      information
+    </Button>
+  {/snippet}
+</Story>
+
+<Story name="Emphasis">
+  {#snippet template(args)}
+    <Button {...args} emphasis="branded" onclick={fn()}>branded</Button>
+  {/snippet}
+</Story>
+
+<Story name="Matrix">
+  {#snippet template()}
+    {@render variantMatrix({})}
+  {/snippet}
+</Story>
+
+<Story name="Density">
   {#snippet template(args)}
     <div class="row">
       {#each MODIFIER_FAMILIES.density as density (density)}
@@ -107,7 +170,7 @@
       <br />
       <br />
     </div>
-    <p style="font-size: 12px; color: var(--lp-color-text-muted);">
+    <p style="font-size: 12px; color: var(--color-text-muted);">
       Click the button to toggle the loading state.
     </p>
   {/snippet}
@@ -122,6 +185,23 @@
   Disabled button
 </Story>
 
+<Story name="Disabled matrix">
+  {#snippet template()}
+    {@render variantMatrix({ disabled: true })}
+  {/snippet}
+</Story>
+
+<Story name="Loading matrix">
+  {#snippet template()}
+    {@render variantMatrix({ loading: true })}
+    <div class="row loading-disabled">
+      <Button importance="primary" anticipation="destructive" loading disabled>
+        loading + disabled
+      </Button>
+    </div>
+  {/snippet}
+</Story>
+
 <Story
   name="As link"
   args={{
@@ -131,13 +211,21 @@
   Link button
 </Story>
 
-<Story name="Brand with icon">
-  {#snippet template(args)}
-    <Button {...args} severity="brand" onclick={fn()}>
-      {#snippet iconLeft()}
-        <ArchiveIcon />
-      {/snippet}
-      Brand action
-    </Button>
-  {/snippet}
-</Story>
+<style>
+  .matrix {
+    display: grid;
+    grid-template-columns: repeat(7, max-content);
+    gap: var(--dimension-150);
+    align-items: center;
+    justify-items: start;
+  }
+
+  .matrix-label {
+    font: var(--ds-typography-text-secondary);
+    color: var(--color-text-muted);
+  }
+
+  .loading-disabled {
+    margin-block-start: var(--dimension-150);
+  }
+</style>

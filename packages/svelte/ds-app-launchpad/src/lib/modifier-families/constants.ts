@@ -1,9 +1,10 @@
 export const MODIFIER_FAMILIES = {
   criticality: ["success", "error", "warning", "information"],
+  anticipation: ["constructive", "destructive", "caution"],
+  importance: ["primary", "secondary", "tertiary"],
+  emphasis: ["muted", "branded"],
   // TODO: old modifier family. Remove severity after its no longer used
   severity: ["neutral", "positive", "negative", "caution", "information"],
-  // TODO: new modifier family is also used density, but the values
-  // are different. Keep in mind when updating a component that uses it
-  // New values: comfortable, dense
-  density: ["dense", "compact", "medium"],
+  // compact is launchpad-only; the global density family is comfortable/dense
+  density: ["comfortable", "dense", "compact"],
 } as const satisfies Record<string, readonly string[]>;

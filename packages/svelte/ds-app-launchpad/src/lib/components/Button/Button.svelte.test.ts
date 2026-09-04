@@ -90,12 +90,41 @@ describe("Button component", () => {
   });
 
   describe("modifiers", () => {
-    it("applies severity class", async () => {
+    it("applies the default importance class", async () => {
+      const page = render(Component, { ...baseProps });
+      await expect.element(componentLocator(page)).toHaveClass("secondary");
+    });
+
+    it("applies importance class", async () => {
       const page = render(Component, {
         ...baseProps,
-        severity: "brand",
+        importance: "primary",
       });
-      await expect.element(componentLocator(page)).toHaveClass("brand");
+      await expect.element(componentLocator(page)).toHaveClass("primary");
+    });
+
+    it("applies anticipation class", async () => {
+      const page = render(Component, {
+        ...baseProps,
+        anticipation: "destructive",
+      });
+      await expect.element(componentLocator(page)).toHaveClass("destructive");
+    });
+
+    it("applies emphasis class", async () => {
+      const page = render(Component, {
+        ...baseProps,
+        emphasis: "branded",
+      });
+      await expect.element(componentLocator(page)).toHaveClass("branded");
+    });
+
+    it("applies criticality class", async () => {
+      const page = render(Component, {
+        ...baseProps,
+        criticality: "information",
+      });
+      await expect.element(componentLocator(page)).toHaveClass("information");
     });
 
     it("applies density class", async () => {
