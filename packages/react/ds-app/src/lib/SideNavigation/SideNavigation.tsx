@@ -12,6 +12,9 @@ const componentCssClassName = "ds side-navigation";
  * `defaultExpanded` — and wires the header's collapse toggle to the content
  * region it controls.
  *
+ * Renders as a self-contained `<nav>` landmark (SPEC.md §1, §6); `aria-label`
+ * defaults to `"Main navigation"` and may be overridden by the consumer.
+ *
  * Routing-agnostic: navigable items render via `LinkComponent` (default `"a"`);
  * pass a router `Link` to integrate client-side navigation. The active item is
  * resolved from `currentUrl`.
@@ -30,6 +33,7 @@ const SideNavigation = ({
   // expanded: expandedProp,
   defaultExpanded = true,
   // onExpandedChange,
+  "aria-label": ariaLabel,
   ...props
 }: SideNavigationProps): React.ReactElement => {
   const contentId = useId();
@@ -54,12 +58,13 @@ const SideNavigation = ({
   // -------------------------------------------------------------------------
 
   return (
-    <div
+    <nav
       className={[componentCssClassName, !expanded && "collapsed", className]
         .filter(Boolean)
         .join(" ")}
       data-expanded={expanded}
       {...props}
+      aria-label={ariaLabel ?? "Main navigation"}
     >
       <Header
         brand={brand}
@@ -81,7 +86,7 @@ const SideNavigation = ({
           currentUrl={currentUrl}
         />
       )}
-    </div>
+    </nav>
   );
 };
 

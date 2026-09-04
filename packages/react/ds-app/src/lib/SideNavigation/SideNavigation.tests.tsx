@@ -26,6 +26,20 @@ const footerRoot: NavItem = {
 };
 
 describe("SideNavigation", () => {
+  it("renders as a self-contained nav landmark", () => {
+    render(<SideNavigation root={root} />);
+    expect(
+      screen.getByRole("navigation", { name: "Main navigation" }),
+    ).toBeInTheDocument();
+  });
+
+  it("allows overriding the default aria-label", () => {
+    render(<SideNavigation root={root} aria-label="Product navigation" />);
+    expect(
+      screen.getByRole("navigation", { name: "Product navigation" }),
+    ).toBeInTheDocument();
+  });
+
   it("renders the root items in the content region", () => {
     render(<SideNavigation root={root} />);
     expect(screen.getByText("Machines")).toBeInTheDocument();

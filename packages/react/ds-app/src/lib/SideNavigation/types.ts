@@ -20,6 +20,12 @@ export type { LinkComponentProps };
  *
  * No discriminated union to author: the caret-vs-slot choice is structural,
  * derived from whether the item has `items`.
+ *
+ * @deprecated The caret-vs-slot derivation above describes the pre-24.04
+ * model. SPEC.md §4.3 replaces it with a `LeafNavItem | ExpandableNavItem`
+ * discriminated union (depth-1, no `url` on an expandable item) landing in
+ * the PR that adds `SideNavigation.ItemExpandable`. Unchanged here to keep
+ * this PR's scope to the `<nav>` landmark and prop-type conformance only.
  */
 export type NavItem = _DistributiveOmit<Item, "items"> & {
   /** Leading icon (start slot), by ds-assets icon name. */
@@ -58,5 +64,11 @@ type OwnProps = {
   defaultExpanded?: boolean;
 };
 
+/**
+ * SideNavigation renders a self-contained `<nav>` landmark (SPEC.md §1, §6);
+ * `aria-label` defaults to `"Main navigation"` and can be overridden via the
+ * inherited `ComponentProps<"nav">` surface, same as every other native
+ * attribute (`id`, `data-*`, `style`, …).
+ */
 export type SideNavigationProps = OwnProps &
-  Omit<ComponentProps<"div">, keyof OwnProps>;
+  Omit<ComponentProps<"nav">, keyof OwnProps>;

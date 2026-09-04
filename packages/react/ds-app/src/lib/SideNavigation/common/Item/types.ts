@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import type { ComponentProps, ComponentType } from "react";
 import type { LinkComponentProps, NavItem } from "../../types.js";
 
 /**
@@ -9,9 +9,11 @@ import type { LinkComponentProps, NavItem } from "../../types.js";
  * lives in NavTree's two loops. The end slot is derived — an item with subitems
  * shows a disclosure caret; a leaf shows its optional `slot`.
  */
-export type ItemProps = NavItem & {
+type OwnProps = NavItem & {
   /** Whether this item is the active (current) page. */
   active?: boolean;
   /** Component used to render navigable items. Defaults to `"a"`. */
   LinkComponent?: ComponentType<LinkComponentProps> | "a";
 };
+
+export type ItemProps = OwnProps & Omit<ComponentProps<"li">, keyof OwnProps>;

@@ -21,13 +21,13 @@ const CollapseToggle = ({
 }: CollapseToggleProps): React.ReactElement => {
   return (
     <button
-      type="button"
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       aria-expanded={expanded}
       aria-label={
         ariaLabel ?? (expanded ? "Collapse navigation" : "Expand navigation")
       }
       {...props}
+      type="button"
     >
       <Icon icon={expanded ? "collapse-side-nav" : "expand-side-nav"} />
     </button>

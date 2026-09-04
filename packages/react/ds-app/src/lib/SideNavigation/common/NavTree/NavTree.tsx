@@ -7,6 +7,8 @@ import { Item } from "../Item/index.js";
 import type { NavTreeProps } from "./types.js";
 import "./styles.css";
 
+const componentCssClassName = "ds nav-tree";
+
 /**
  * Internal: renders a navigation tree with two explicit loops (no recursion),
  * deriving active state from useNavigationTree. Shared by Content and Footer —
@@ -25,6 +27,8 @@ const NavTree = ({
   root,
   currentUrl,
   LinkComponent = "a",
+  className,
+  ...props
 }: NavTreeProps): React.ReactElement => {
   const nav = useNavigationTree<NavItem>({ root, initialUrl: currentUrl });
   const { index, selectItem } = nav;
@@ -38,7 +42,10 @@ const NavTree = ({
   const groups = nav.annotatedRoot.items ?? [];
 
   return (
-    <div className="ds nav-tree">
+    <div
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      {...props}
+    >
       {/* Loop 1 — level-1 groups */}
       {groups.map((group) => {
         const groupId = getItemId(group);
