@@ -1,7 +1,10 @@
 ---
 # SideNavigation.Content — required main navigation region. Grows to fill the
 # space between Header and Footer. Renders the direct children of its `root` Item
-# (the root itself is a non-rendered container) as a nav item list.
+# (the root itself is a non-rendered container) as a free composition of an
+# optional context switcher followed by content entries — each entry is either
+# a group (optional header + its navigation items) or a standalone separator.
+# See SPEC.md §1.1 and §4.3 for the full content vocabulary.
 #
 # The shell grows past the viewport (min-height), so the page scrolls rather than
 # this region: overflow is vertical-only as a safety valve, never horizontal.
@@ -15,23 +18,45 @@ node:
     layout.overflow.y: auto
     size.width: fill
   edges:
+    # Content-defined position — the context switcher is not pinned to the
+    # top; the designer places it among the content entries below.
     - node:
-        role: nav item list
-        styles:
-          layout.type: stack
-          layout.direction: column
-          size.width: fill
-        edges:
-          # Each item is the standard Item, or a consumer-supplied component
-          # via the WD405 Item.Component substitution point.
-          - switch:
-              "on": override
-              cases:
-                - uri: apps.subcomponent.side-navigation-item
-                - uri: $custom
-            relation:
-              cardinality: "0..*"
-              slotName: default
+        uri: apps.subcomponent.side-navigation-context-switcher
       relation:
-        cardinality: "1"
+        cardinality: "0..1"
         slotName: default
+    - node:
+        role: content entry
+        switch:
+          "on": kind
+          cases:
+            # A group: optional header, plus its navigation items. One of the
+            # groups MUST be the mandatory collapsible "Help" item (an
+            # ItemExpandable containing at least one external link) — see
+            # SPEC.md §1.1.
+            - node:
+                uri: apps.subcomponent.side-navigation-group
+                edges:
+                  - node:
+                      uri: apps.subcomponent.side-navigation-group-header
+                    relation:
+                      cardinality: "0..1"
+                      slotName: header
+                  - node:
+                      role: navigation item
+                      switch:
+                        "on": override
+                        cases:
+                          - uri: apps.subcomponent.side-navigation-item
+                          - uri: apps.subcomponent.side-navigation-item-expandable
+                          - uri: apps.subcomponent.side-navigation-item-button
+                          - uri: apps.subcomponent.side-navigation-item-switch
+                          - uri: $custom
+                    relation:
+                      cardinality: "0..*"
+                      slotName: default
+            - node:
+                uri: apps.subcomponent.side-navigation-separator
+        relation:
+          cardinality: "0..*"
+          slotName: default

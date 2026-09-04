@@ -1,7 +1,11 @@
 ---
-# SideNavigation.Footer — optional region pinned to the bottom, typically holding
-# account-level or global actions. Same root-item contract as Content; when the
-# nav is collapsed only the item icons remain visible.
+# SideNavigation.Footer — optional region pinned to the bottom, reserved for
+# user-related content. The spec's `footer-items` is a closed 3-item
+# vocabulary (account settings, notifications, log out) — the footer is
+# hidden entirely when none are selected. `certificateUser` swaps the
+# account item's icon (`user` → `certificate`) and forces `logout` out of the
+# selection. A free-form `$custom`/root-item escape hatch is retained for
+# footers that don't fit the closed vocabulary — see SPEC.md §10.6.
 node:
   uri: apps.subcomponent.side-navigation-footer
   styles:
@@ -10,20 +14,16 @@ node:
     size.width: fill
   edges:
     - node:
-        role: nav item list
-        styles:
-          layout.type: stack
-          layout.direction: column
-          size.width: fill
-        edges:
-          - switch:
-              "on": override
-              cases:
-                - uri: apps.subcomponent.side-navigation-item
-                - uri: $custom
-            relation:
-              cardinality: "0..*"
-              slotName: default
-      relation:
-        cardinality: "1"
-        slotName: default
+        role: footer item
+        switch:
+          "on": kind
+          cases:
+            - role: account
+              # Icon is `user`, or `certificate` when `certificateUser` is set.
+            - role: notifications
+            - role: logout
+              # Omitted (not merely hidden) when `certificateUser` is set.
+            - uri: $custom
+        relation:
+          cardinality: "0..3"
+          slotName: default
