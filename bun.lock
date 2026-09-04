@@ -1310,12 +1310,6 @@
         "@biomejs/biome": "2.5.11",
         "@canonical/biome-config": "^0.37.0",
       },
-      "peerDependencies": {
-        "@canonical/styles": ">=0.38.0",
-      },
-      "optionalPeers": [
-        "@canonical/styles",
-      ],
     },
     "packages/summon/application": {
       "name": "@canonical/summon-application",
