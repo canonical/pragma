@@ -24,7 +24,8 @@ import {
  * the select's and textarea's min-width, the textarea's vertical alignment, the
  * label's margin and width, the table's layout, the cells' alignment, overflow
  * and padding, the link's underline, the rule's borders and background, the
- * list's margins and padding. With it, none.
+ * list's margins and padding. With it, only the cells' padding, reverted to
+ * the browser's 0px: the one difference VC.29 states, accepted by name.
  */
 const LEAK_PROPERTIES = [
   "margin-top",
@@ -122,19 +123,20 @@ describe.each(VANILLA_VERSIONS)(
 
     it("root-not-styled: a pragma root placed directly in a Vanilla container loses that container's child rules, a wrapper keeps them", async () => {
       const mixed = await render(mixedPage(version));
-      const pragma = await render(pragmaPage());
+      // The same page without the adapter is the control: there the roots
+      // are placed like any child, which is what the boundary takes away.
+      const control = await render(mixedPage(version, { adapter: "none" }));
       // An inline form spaces its direct children.
       expect(computed(mixed, "place-wrapper").marginRight).toBe("24px");
       expect(computed(mixed, "place-direct").marginRight).toBe("0px");
+      expect(computed(control, "place-direct").marginRight).toBe("24px");
       expect(computed(mixed, "place-wrapped").marginRight).toBe("0px");
       // A grid row places a child by its column class; on a pragma root the
       // class is reverted with the rest, which is why rule 8 says to wrap.
       expect(computed(mixed, "place-col").gridColumnEnd).toBe("span 6");
       expect(computed(mixed, "place-col-direct").gridColumnEnd).toBe("auto");
-      // A Vanilla card pads itself; the pragma root inside keeps pragma's border.
-      expect(computed(mixed, "place-pcard").paddingTop).not.toBe("0px");
-      expect(computed(mixed, "place-pcard-wrapped").borderTopWidth).toBe(
-        computed(pragma, "ds-root").borderTopWidth,
+      expect(computed(control, "place-col-direct").gridColumnEnd).toBe(
+        "span 6",
       );
     });
 

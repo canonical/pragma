@@ -171,9 +171,11 @@ const NEGATIVE_BLOCK = `
  * README rule 8: Vanilla containers whose rules target their direct children
  * (the inline form) or need a Vanilla class on the child (the grid row). A
  * pragma root placed there directly, or carrying the class, loses that
- * placement; a wrapper keeps it. A pragma root inside a Vanilla card keeps
- * pragma's box. The inline form's child rule applies from 1036 pixels up, so
- * the fixture needs the default width.
+ * placement; a wrapper keeps it. The grid case uses a bare pragma root because
+ * pragma's Card declares its own `grid-column`. A pragma root inside a Vanilla
+ * card is placement context only: Vanilla's card styles nothing but itself.
+ * The inline form's child rule applies from 1036 pixels up, so the fixture
+ * needs the default width.
  */
 const PLACEMENT_BLOCK = `
 <form class="p-form p-form--inline" id="place-form">
@@ -181,7 +183,7 @@ const PLACEMENT_BLOCK = `
   <div id="place-wrapper"><div class="ds card" id="place-wrapped"></div></div>
 </form>
 <div class="row" id="place-row">
-  <div class="ds card col-6" id="place-col-direct"></div>
+  <div class="ds col-6" id="place-col-direct"></div>
   <div class="col-6" id="place-col"><div class="ds card" id="place-col-wrapped"></div></div>
 </div>
 <div class="p-card" id="place-pcard"><div class="ds card" id="place-pcard-wrapped"></div></div>`;
