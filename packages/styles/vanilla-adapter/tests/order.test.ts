@@ -27,6 +27,8 @@ const MIXED_ORDER = [
   "ds.states",
   "adapter",
   "ds.components",
+  "ds.components.global",
+  "ds.components.app",
   "app",
 ];
 
@@ -39,7 +41,7 @@ const isDeclared = (name: string): boolean =>
   );
 
 describe("the order contract", () => {
-  it("layers.css is a single statement naming the twelve layers in order", () => {
+  it("layers.css is a single statement naming the fourteen layers in order", () => {
     const sheet = parse(layersCss);
     expect(sheet.cssRules.length).toBe(1);
     expect(sheet.cssRules[0]).toBeInstanceOf(CSSLayerStatementRule);
