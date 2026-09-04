@@ -180,7 +180,7 @@ Template: `<html class="site comfortable light">`; link `styles.css`, then `prag
 
 ## What this package guarantees, and what it does not
 
-Guaranteed, and checked by the computed-style fixtures that arrive with the second pull request (F-11); each line names its fixture:
+Guaranteed, and checked by the computed-style fixtures in `tests/` (`bun run test`, a real Chromium through vitest's browser mode, Vanilla 4.56 and 4.58 compiled at test time); each line names its fixture. The fixtures that compare against a pragma-only page over the full property list skip, with the reason printed, until the scoped release of `@canonical/styles` ships:
 
 - No Vanilla rule styles an element inside pragma territory: every property there is the browser default or pragma's. (`territory-equals-pragma-only`, with the explicit checks on `--vf-color-text-default`, root line-height, `box-sizing` and `color-scheme`.)
 - A pragma element inside a Vanilla page computes the same styles as on a pragma-only page, for every property pragma declares or leaves to the browser. (`territory-equals-pragma-only`, over the full property list.)
@@ -193,7 +193,7 @@ Not guaranteed, stated rather than hidden:
 
 - Vanilla's `!important` declarations still apply inside pragma territory where their selectors match. The only one that can match without a Vanilla class present is `* { animation: none !important; transition: none !important }` under reduced motion, which pragma will honour itself.
 - Vanilla's root font-size scaling above 1681 pixels reaches pragma territory through `rem`; pragma scales with it coherently.
-- `revert` also rolls back presentational attributes. Inline SVG is excluded from the boundary for that reason, and an `<img width height>` inside pragma territory loses the size its attributes gave it: size replaced elements in CSS, as pragma's components do.
+- `revert` also rolls back presentational attributes. Inline SVG is excluded from the boundary for that reason; an `<img width height>` inside pragma territory loses the size its attributes gave it, and a table cell loses the 1px default padding Chromium gives it through the table's `cellpadding` hint. Size replaced elements and pad table cells in CSS, as pragma's components do.
 - `direction` and `unicode-bidi` are outside `all`, so Vanilla's `code, pre { direction: ltr }` still applies inside pragma territory. It is harmless.
 - The theme bridge reads the DOM's ancestors, so a surface portalled to `<body>` (a tooltip, a menu) takes the body's theme, not the strip it was opened from.
 - Vanilla's own native form controls inside a dark strip stay light, as they do today.
