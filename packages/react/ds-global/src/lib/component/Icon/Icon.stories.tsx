@@ -1,5 +1,5 @@
 import { ICON_NAMES } from "@canonical/ds-assets";
-import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import Component from "./Icon.js";
 
 const meta = {
@@ -30,29 +30,6 @@ export const Default: Story = {
   args: {
     icon: "user",
   },
-};
-
-export const AllIcons: StoryFn<typeof Component> = (props) => (
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-    }}
-  >
-    {Array.from(ICON_NAMES)
-      .sort((a, b) => a.localeCompare(b))
-      .map((iconName) => (
-        <span key={iconName}>
-          <Component {...props} icon={iconName} />
-          &nbsp;{iconName}
-        </span>
-      ))}
-  </div>
-);
-
-AllIcons.argTypes = {
-  // Disable icon control for this story since we are displaying all icons
-  icon: { table: { disable: true } },
 };
 
 export const Size: Story = {
