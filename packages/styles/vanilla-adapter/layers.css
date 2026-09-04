@@ -23,8 +23,11 @@
  *   ds.surfaces    .surface, .contrasted, .modal
  *   ds.states      the universal derived-state rule, scoped
  *   adapter        the theme bridge (adapter.css)
- *   ds.components  every pragma component stylesheet, as the sublayers
- *                  ds.components.global and ds.components.app
+ *   ds.components  every pragma component stylesheet, in one of two tiers:
+ *   ds.components.global  the global component packages
+ *   ds.components.app     the app-tier packages, which beat the global tier
+ *                  (both tiers are named here so that their order never depends
+ *                  on which component sheet the page happens to load first)
  *   app            the application's own pragma-era CSS, whatever its context class
  *
  * `vanilla` is the lowest layer: in Vanilla territory nothing pragma ships
@@ -44,4 +47,6 @@
   ds.states,
   adapter,
   ds.components,
+  ds.components.global,
+  ds.components.app,
   app;
