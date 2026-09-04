@@ -51,7 +51,7 @@
  * class present is `* { animation: none !important; transition: none !important }`
  * under reduced motion, which pragma will honour itself. Measured in Chromium 151,
  * the rule adds nothing measurable to style recalculation, and a Vanilla theme
- * toggle is about forty percent cheaper with it, because the territory no longer
+ * toggle is 42 to 46 percent cheaper with it, because the territory no longer
  * re-resolves Vanilla's variables. */
 @layer boundary {
   :where(.ds, .ds *):where(:not(svg, svg *), svg a),
