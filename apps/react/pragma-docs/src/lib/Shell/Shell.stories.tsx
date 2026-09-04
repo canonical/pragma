@@ -3,6 +3,7 @@
 import { route } from "@canonical/router-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withRouter } from "../../../.storybook/decorators/index.js";
+import type { LENS_ENTRIES } from "../Rail/constants.js";
 import Shell from "./Shell.js";
 
 /** Name-compatible bare routes so the rail's links resolve without
@@ -12,10 +13,25 @@ const bareRoutes = {
   components: route({ url: "/components", content: () => null }),
   definitions: route({ url: "/definitions", content: () => null }),
   standards: route({ url: "/standards", content: () => null }),
+  // The rail links every lens in `Rail/constants.ts`, journeys included. A
+  // name missing here is not a quiet no-op: `buildPath` indexes the route map
+  // and throws on the undefined entry, so the whole story fails to render.
+  journeys: route({ url: "/journeys", content: () => null }),
   guides: route({ url: "/guides", content: () => null }),
   playground: route({ url: "/playground", content: () => null }),
   account: route({ url: "/account", content: () => null }),
-} as const;
+  // `satisfies` rather than `as const`: `withRouter` takes a widened
+  // `RouteMap`, which erases the relationship between the names declared here
+  // and the names `Rail` links. Omitting one is not a quiet no-op —
+  // `buildPath` indexes the map and throws on the undefined entry, taking the
+  // whole story with it — and that is exactly how `journeys` went missing
+  // here for as long as nothing rendered these stories. Constraining the map
+  // to the rail's own lens union puts the next omission back at
+  // `bun run check`, where it costs seconds instead of a review round.
+} as const satisfies Record<
+  (typeof LENS_ENTRIES)[number]["to"] | "playground" | "account",
+  unknown
+>;
 
 const meta: Meta<typeof Shell> = {
   title: "Shell/Shell",
