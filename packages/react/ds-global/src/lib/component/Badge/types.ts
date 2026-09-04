@@ -1,5 +1,8 @@
 import type { ModifierFamily } from "@canonical/ds-types";
-import type { HumanizeNumberOptions, PluralizeOptions } from "@canonical/utils";
+import type {
+  HumanizeNumberOptions,
+  PluralizeOptions,
+} from "@canonical/ds-utils";
 import type { ComponentProps } from "react";
 
 type OwnProps = {

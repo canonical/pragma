@@ -1,5 +1,5 @@
+import { getItemId } from "@canonical/ds-utils";
 import { useNavigationTree } from "@canonical/react-hooks";
-import { getItemId } from "@canonical/utils";
 import type React from "react";
 import { useEffect } from "react";
 import type { NavItem } from "../../types.js";

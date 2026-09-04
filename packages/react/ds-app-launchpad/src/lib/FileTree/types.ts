@@ -1,5 +1,5 @@
 /* @canonical/generator-ds 0.9.0-experimental.1 */
-import type { AllOrNone } from "@canonical/utils";
+import type { AllOrNone } from "@canonical/ds-utils";
 import type React from "react";
 import type {
   FileProps,

@@ -43,6 +43,7 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
+    "@canonical/ds-utils": "^0.37.0",
     "@canonical/react-ds-global": "^0.37.0",
     "@canonical/storybook-config": "^0.37.0",
     "@canonical/styles": "^0.37.0",

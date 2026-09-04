@@ -8,6 +8,7 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
+      - packages/runtime/ds-utils/**
       - packages/lit/ds-prototype/**
       - "!**/*.test.*"
       - "!**/*.md"
@@ -21,6 +22,7 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
+      - packages/runtime/ds-utils/**
       - packages/lit/ds-prototype/**
       - "!**/*.test.*"
       - "!**/*.md"
@@ -37,5 +39,6 @@ jobs:
         "packages/ds-assets/**",
         "packages/tokens/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
         "packages/styles/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
-        "packages/utils/**/!(*.test.*|*.stories.*|*.md|*.mdx)"
+        "packages/utils/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
+        "packages/runtime/ds-utils/**/!(*.test.*|*.stories.*|*.md|*.mdx)"
         ]'

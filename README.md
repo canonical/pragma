@@ -99,13 +99,13 @@ The tiers correspond to the [Design System Ontology](https://github.com/canonica
 
 ### Core Infrastructure
 
-Three packages provide the foundation that component packages build upon.
+These packages provide the foundation that component packages build upon.
 
 **@canonical/ds-types** defines TypeScript types for modifier families. A modifier family is a set of related visual variants that components can support. For example, the `severity` modifier family includes `neutral`, `positive`, `negative`, `caution`, and `information`. The `ModifierFamily<'severity'>` type resolves to a union of these string literals, ensuring type safety when applying modifiers to components.
 
 **@canonical/ds-assets** contains icons and shared visual assets. Icons use `currentColor` for fill, allowing them to inherit text colour from their context, and a 16x16 viewBox as the standard size.
 
-**@canonical/utils** provides battle-tested utility functions like `debounce` and `throttle`. Functions only enter this package after proving useful across multiple packages; premature abstraction is actively avoided.
+**@canonical/utils** provides battle-tested, framework-neutral utility functions: string casing, `invariant`, `indent` and `join`. Design-system helpers with a runtime of their own — navigation trees, `debounce`, `throttle`, `humanizeNumber`, `pluralize` — live in **@canonical/ds-utils** under Runtime. Functions only enter either package after proving useful across multiple packages; premature abstraction is actively avoided.
 
 ### Styles Architecture
 
@@ -255,6 +255,7 @@ The following tables list all workspace packages with their location and purpose
 | `@canonical/i18n-core` | `packages/runtime/i18n` | Framework-agnostic internationalization core built on native Intl |
 | `@canonical/task` | `packages/runtime/task` | Monadic effect framework for composable, testable, dry-runnable CLI operations |
 | `@canonical/harnesses` | `packages/runtime/harnesses` | AI harness detection and MCP config read/write (Claude Code, Cursor, Windsurf, Cline, Roo Code) |
+| `@canonical/ds-utils` | `packages/runtime/ds-utils` | Framework-agnostic design system helpers: navigation trees, debounce, throttle, humanizeNumber, pluralize |
 
 ### Core Infrastructure
 
@@ -262,7 +263,7 @@ The following tables list all workspace packages with their location and purpose
 |---------|------|-------------|
 | `@canonical/ds-types` | `packages/ds-types` | TypeScript types for modifier families and component props |
 | `@canonical/ds-assets` | `packages/ds-assets` | Icons and shared visual assets |
-| `@canonical/utils` | `packages/utils` | Utility functions: debounce, throttle, casing, pluralize, and more |
+| `@canonical/utils` | `packages/utils` | Utility functions: casing, invariant, indent, and join |
 
 ### Developer Tooling
 

@@ -1,5 +1,8 @@
 /**
- * Throttles a function invocation to at most once every `wait` milliseconds.
+ * Rate-limits a function so that a burst of calls costs a single invocation.
+ *
+ * The call fires on the trailing edge: each call clears the pending timer, so
+ * the function runs once, `wait` milliseconds after the last call in a burst.
  * @template T The type of the function to throttle
  * @param func - The function to throttle
  * @param wait - The time in milliseconds to wait between invocations

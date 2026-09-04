@@ -1,4 +1,4 @@
-import { getItemId } from "@canonical/utils";
+import { getItemId } from "@canonical/ds-utils";
 import type React from "react";
 import { Item } from "./common/index.js";
 import type { BreadcrumbsProps } from "./types.js";

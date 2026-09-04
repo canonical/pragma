@@ -18,9 +18,10 @@
  * debouncedFetchData("hello").then(console.log); // Will only call fetch once after 300ms delay
  * debouncedFetchData("world").then(console.log); // Will cancel the previous call and make a new one
  *
- * // To cancel the debounced call before it executes
- * const promise = debouncedFetchData("to be cancelled");
- * promise.cancel();
+ * // To cancel the debounced call before it executes. `cancel` is a property of
+ * // the debounced function, not of the promise it returns.
+ * debouncedFetchData("to be cancelled");
+ * debouncedFetchData.cancel();
  */
 export default function debounce<
   F extends (...args: Parameters<F>) => ReturnType<F>,
@@ -51,7 +52,7 @@ export default function debounce<
     });
   };
 
-  // Clear the timeout and reject the promise
+  // Clear the pending timer. The promise for a cancelled call never settles.
   debounceExec.cancel = () => {
     if (timeoutId) {
       clearTimeout(timeoutId);

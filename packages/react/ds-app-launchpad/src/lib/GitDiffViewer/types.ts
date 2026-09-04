@@ -1,4 +1,4 @@
-import type { AllOrNone } from "@canonical/utils";
+import type { AllOrNone } from "@canonical/ds-utils";
 import type React from "react";
 
 /**
