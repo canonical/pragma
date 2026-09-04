@@ -1,0 +1,33 @@
+/*
+ * EntityHeader — the entity's identity block. Type scale is the app's; the
+ * meta line reads muted with the URI in code voice.
+ */
+
+/* Present for assistive tech and the frame suite's key
+ * (`component-entity-title`), absent from the layout — the mode strip's
+ * breadcrumb trail carries this entity's name as the terminal crumb now,
+ * so the canvas h1 was a duplicate title. The shared visually-hidden idiom;
+ * the meta line and summary below stay visible. */
+.ds.entity-header h1 {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.ds.entity-header .entity-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-100, 0.5rem) var(--space-200, 1rem);
+  margin-block: 0 var(--space-200, 1rem);
+  color: var(--color-text-muted, #666);
+}
+
+.ds.entity-header .entity-header-summary {
+  margin-block: 0;
+  max-inline-size: 70ch;
+}
