@@ -1,0 +1,40 @@
+import {
+  Controls,
+  Description,
+  Meta,
+  Primary,
+  Stories,
+  Title,
+} from "@storybook/addon-docs/blocks";
+import { ICON_METADATA } from "@canonical/ds-assets";
+import { IconExplorer } from "@canonical/storybook-helpers";
+import { Icon } from "./index.js";
+// Named `IconStories` rather than `Stories`: the `Stories` block imported
+// above already owns that name on this page.
+import * as IconStories from "./Icon.stories";
+
+<Meta of={IconStories} />
+
+<Title />
+
+<Description of="meta" />
+
+## Find an icon
+
+Search by what the icon means, not only by what it is called: "trash" finds
+`delete`, and the name an icon had in Vanilla still finds it. Press `/` to jump
+to the search box, then use the arrow keys to move through the grid and `Enter`
+to open an icon's details.
+
+<IconExplorer
+  metadata={ICON_METADATA}
+  renderIcon={(name) => <Icon icon={name} />}
+  snippet={(name) => `<Icon icon="${name}" />`}
+  importLine={'import { Icon } from "@canonical/react-ds-global";'}
+/>
+
+<Primary />
+
+<Controls />
+
+<Stories />
