@@ -264,6 +264,7 @@ The documentation-site layer. The dependency arrow points one way — see "The d
 |---------|------|-------------|
 | `@canonical/prism-contract` | `packages/prism/contract` | The minimal GraphQL surface a documentation-site provider must offer, plus a subsumption check that a provider satisfies it |
 | `@canonical/prism-pragma-provider` | `packages/prism/pragma-provider` | **internal** — pragma's own provider: the repository's TTL corpus compiled into a conformant GraphQL schema |
+| `@canonical/prism-graph-example` | `packages/prism/graph-example` | **internal** — a hand-written provider that satisfies the same contract without the compiler, so the site's neutrality is measured rather than asserted |
 
 ### Core Infrastructure
 
