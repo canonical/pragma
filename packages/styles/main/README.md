@@ -112,26 +112,27 @@ unlayered are not prose. `tests/layer-set.test.ts` reads them out of this file
 and compares them against the stylesheet a bundler resolves, so a README that
 disagrees with the CSS fails the build instead of misleading a reader.
 
-What the test binds is one answer per file and per layer, not per row. A file
-that appears twice — `spacing.css` puts its tokens in one layer and its container
-rule in another — is checked on the union of its rows: the layers it opens, and
-which of those layers it confines to `.ds`. Reordering two rows of the same file
-changes nothing a browser can see, and the test says nothing about it.
+What the test binds is one answer per file and per layer. A file may still appear
+twice when it writes to two layers — `spacing.css` puts its tokens in one and its
+container rule in another — and it is then checked on the union of its rows: the
+layers it opens, and which of those it confines to `.ds`. No file has two rows for
+the same layer, because the test could only read the disjunction of two answers to
+one question; where a file needs two things said about one layer, the row says
+both. Reordering rows changes nothing a browser can see, and the test says nothing
+about it.
 
 ### What Is Layered Where
 
 | File | Layer | Scoped to `.ds`? |
 | --- | --- | --- |
 | `normalize.css` | `normalize` | yes |
-| `reset.css` root declarations | `ds.reset` | yes |
-| `reset.css` box-sizing | `ds.reset` | yes, written `:where(.ds, .ds *)` rather than with `@scope` — see below |
+| `reset.css` | `ds.reset` | yes — the root declarations inside a `@scope` block, the border-box rule written `:where(.ds, .ds *)` instead, for the reason below |
 | `spacing.css` token block | `ds.tokens` | no |
 | `spacing.css` content-flow container | `ds.components.global` | yes |
 | `motion.css` | `ds.tokens` | no |
 | `overflow.css` root default | `ds.tokens` | no |
 | `overflow.css` `.surface` | `ds.surfaces` | no |
-| `grid.css` layout presets | `ds.components.global` | yes |
-| `grid.css` `:root` defaults | `ds.components.global` | no — component-scoped tokens stay with the rules that read them |
+| `grid.css` | `ds.components.global` | yes — the layout presets inside a `@scope` block; the `:root` token defaults are not scoped, because component-scoped tokens stay with the rules that read them and a token changes nothing until a scoped rule reads it |
 | `modifiers.density.css` | `ds.modifiers` | no |
 | `modifiers.states.shim.css`, `modifiers.importance.shim.css`, `modifiers.criticality.shim.css` | `ds.modifiers` | no |
 | `controls.hover.shim.css` | `ds.surfaces` and `ds.states` | no |
@@ -213,12 +214,12 @@ set, the specificity and the layer are identical either way.
 
 | Guarantee | The check behind it |
 | --- | --- |
-| Every rule the package itself ships is in one of the ten declared layers, and the statement is the first rule of this stylesheet. The typographic engine it imports is in them too. | `tests/layer-set.test.ts`, which resolves this package's entry through Vite and walks the result's CSSOM in Chromium: the statement first, every layer opened one of the ten or a sublayer of one, none anonymous, and nothing at the top level but the registration this README names. The order fixtures that arrive with the Vanilla adapter package check the same statement from the other side of the boundary. |
+| Every rule the package itself ships is in one of the ten declared layers, and the statement is the first rule of this stylesheet. The typographic engine it imports is in them too. | `tests/layer-set.test.ts`, which resolves this package's entry through Vite and walks the result's CSSOM in Chromium: the statement first, every layer opened one of the ten or a sublayer of one, none anonymous, and nothing at the top level but the registration this README names. A second `@layer` statement is read too, because a statement puts a name into the order without opening a block for it. The order fixtures that arrive with the Vanilla adapter package check the same statement from the other side of the boundary. |
 | An application tier's rule for a component beats the global tier's rule for the same component, whichever of the two a bundler loads first. | The two sublayers are named in the statement, so their order is fixed there rather than at first appearance. `tests/layer-set.test.ts` reads the statement back and asserts that `ds.components.app` is the one declared layer still waiting for content; the component packages move into the tiers when their stylesheets are wrapped, which is a separate change. |
 | Nothing this package ships is written directly into `ds.components`: everything in that layer sits in a tier, so a component package can always override it by layer. | `tests/layer-set.test.ts` walks the resolved stylesheet for style rules whose nearest enclosing layer is `ds.components` itself and requires none, and requires that `ds.components.global` is not empty so the check cannot pass by accident. A rule written straight into a parent layer lands in that layer's implicit final sublayer, above every named one. |
 | The package ships no `!important`. | `tests/layer-set.test.ts` asks the browser, not the text: it reads `getPropertyPriority` for every declaration of every rule in the resolved stylesheet, which is what the cascade itself reads, and which reports `!IMPORTANT` and a comment written between the bang and the word as important too. A scan of each file in `src/` stays on top of it as source hygiene. An important declaration inverts the layer order and cannot be arbitrated by layers at all, so one of them would undo the guarantee above. |
 | Every rule that styles an element is confined to the marked subtree. | `tests/layer-set.test.ts` walks every style rule of the resolved stylesheet and requires a `@scope (.ds)` block around each one whose layer is `normalize`, `ds.reset`, `ds.typography` or `ds.components.global` — with the one exception this README names in the table above, the box-sizing rule, whose selector the test reads back out of that row. A rule declaring nothing but custom properties is not counted, because it changes no computed value until a scoped rule reads one. The three baseline engines are checked the same way, each resolved on its own, because a consumer may import any of them directly. |
-| No file writes an `@import` after a rule. | `tests/layer-set.test.ts`, on each file as written rather than as resolved. A browser drops a late `@import` outright, and a bundler inlines it, so the defect is invisible in both the shipped stylesheet and the built one — and the file that was meant to be imported is simply absent from the page. |
+| No file writes an `@import` after a rule. | `tests/layer-set.test.ts`, on every file this package and `@canonical/styles-typography` ship, as written rather than as resolved. A browser drops a late `@import` outright, and a bundler inlines it, so the defect is invisible in both the shipped stylesheet and the built one — and the file that was meant to be imported is simply absent from the page. |
 | Under `prefers-reduced-motion: reduce`, every motion duration this package defines is `0s`. | `src/motion.css`, and the reduced-motion fixture arriving with the adapter package. Zeroing the token is the mechanism: a component reads the token, so nothing has to out-rank the component's own declaration. Whether a given component honours the tokens is that package's guarantee, not this one's. Sheets that still hard-code a duration, and so still animate under the preference, are being moved onto the tokens separately: in the form package the shared input chrome (`src/index.css`) and eight component sheets (`ChoicesField`, `RichChoicesField`, `CheckboxInput`, `RadioInput`, `ColorInput`, `ComboboxInput` and its list, `FileUploadInput`, `SwitchInput`); in the global package `Tooltip`, `ContextualMenu` and `Popover`, which set their own duration property; and one application-tier sheet, the launchpad diff viewer's file header. |
 | Inside a marked subtree, every element computes as it does on a page that is the design system's throughout — the same font, size, weight, line height, colour, box sizing, font smoothing and text wrapping. | The computed-style fixtures arriving with the adapter package, which render the same block of markup on both kinds of page and compare every longhand on every element. |
 | The outermost marked root declares its own baseline rather than inheriting the host page's, and everything inside it inherits from there. | The fixture named `inherits pragma's baseline at the root, not Vanilla's`, in the same file. |

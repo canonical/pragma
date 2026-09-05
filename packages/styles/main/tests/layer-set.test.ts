@@ -14,13 +14,16 @@
  * It runs in Chromium because the cascade is what is under test, and the CSSOM
  * of an engine that implements the cascade is the only parser that answers
  * honestly what a browser will do with a stylesheet. `tests/support/cascade.ts`
- * says which two questions are left to the text, and why they have to be.
+ * says which four questions are left to the text, and why each of them has to be.
  *
- * Not checked here, and checked elsewhere: that each layout preset's `:scope.x`
- * twin matches a root carrying the class as well as a descendant. That is a
- * question about what matches, not about where a rule sits, and it is answered
- * by the adapter package's computed-style fixtures and by the typography
- * package's own inventory of the selectors its engines write.
+ * One thing this file does not check, and nothing else checks either: that each
+ * layout preset's `:scope` twin — `:scope.grid` beside `.grid`, and the same for
+ * `subgrid`, `responsive`, `intrinsic` and `content-flow` — matches a root
+ * carrying the class as well as a descendant of one. That is a question about
+ * what a selector matches, not about where a rule sits, so it needs a rendered
+ * page rather than a parsed stylesheet, and it belongs to this package's own
+ * future check. Saying so is the point: the twins are the reason those presets
+ * survived being scoped, and nobody is watching them.
  */
 
 import { describe, expect, it } from "vitest";
@@ -43,6 +46,7 @@ import {
   LOCAL_SOURCES,
   lateImports,
   mustResolve,
+  namedLayers,
   openedLayers,
   parse,
   RESERVED_LAYERS,
@@ -56,6 +60,7 @@ import {
   styleRules,
   TIERS_ONLY_LAYER,
   TOKEN_PLUGIN_LAYERS,
+  TYPOGRAPHY_RAW,
   tableUnder,
   ticked,
   tokenTableRows,
@@ -100,12 +105,15 @@ describe("the layer set used equals the layer set declared", () => {
     expect(Array.from(first.nameList)).toEqual(DECLARED_LAYERS);
   });
 
-  it("every layer opened anywhere is one of the ten or a sublayer of one, and none is anonymous", () => {
-    const opened = openedLayers(entryCss);
-    expect(opened.length).toBeGreaterThan(0);
+  it("every layer named anywhere is one of the ten or a sublayer of one, and none is anonymous", () => {
+    // Named, not merely opened: a second `@layer` statement puts a name into the
+    // order without opening anything, so a layer can join the cascade with no
+    // block to give it away.
+    const named = namedLayers(entryCss);
+    expect(named.length).toBeGreaterThan(0);
     // An anonymous block reports as `(anonymous)`, which is undeclarable by
     // construction: nothing can name it, order it or override it.
-    expect(opened.filter((name) => !isDeclared(name))).toEqual([]);
+    expect(named.filter((name) => !isDeclared(name))).toEqual([]);
   });
 
   it("the only declared layer nothing writes to is the one reserved for the application tiers", () => {
@@ -121,6 +129,10 @@ describe("the layer set used equals the layer set declared", () => {
     // no component package could override it by layer. Measured in Chromium: a
     // rule in `@layer ds.components` beats one in `@layer ds.components.app` at
     // equal specificity, under a statement that declares both.
+    // Every kind the cascade sorts by layer counts, not only style rules: a
+    // browser settles duplicate `@keyframes`, `@font-face` and `@property` by
+    // layer too, so one of those written here would outrank the tiers as surely
+    // as a style rule would.
     expect(directRulesIn(entryCss, TIERS_ONLY_LAYER)).toEqual([]);
     // And the tier the presets moved to is not empty, so this is not vacuous.
     expect(
@@ -154,9 +166,10 @@ describe("the layer set used equals the layer set declared", () => {
     // from quietly growing to cover a rule nobody wrote it for.
     const quoted = tableUnder("What Is Layered Where")
       .flatMap((cells) => ticked(cells[2] ?? ""))
-      // The cell names the at-rule it is the alternative to as well as the
-      // selector it uses instead; the selector is the claim.
-      .filter((token) => !token.startsWith("@"));
+      // A scope cell may mention the at-rule it is the alternative to, and a
+      // selector that is not a claim about confinement at all. The claim is the
+      // selector that names the territory class in place of the scope.
+      .filter((token) => token.includes(".ds"));
     expect(quoted).toEqual([":where(.ds, .ds *)"]);
     expect(UNSCOPED_BY_MEASUREMENT).toHaveLength(1);
     expect(UNSCOPED_BY_MEASUREMENT[0]).toContain(quoted[0]);
@@ -185,9 +198,15 @@ describe("the layer set used equals the layer set declared", () => {
 
   it("no file writes an @import after a rule, where a browser would drop it", () => {
     // An `@import` is only valid before any rule, a layer statement and
-    // `@charset` excepted. Vite inlines a late one regardless, so the resolved
-    // stylesheet cannot show the defect and this reads the file as written.
-    for (const [name, raw] of Object.entries(LOCAL_RAW))
+    // `@charset` excepted. A bundler inlines a late one regardless, so the
+    // resolved stylesheet cannot show the defect and this reads files as written
+    // — both packages' files, because the entry pulls the typography package in
+    // and a late import written there reaches a consumer just the same.
+    const files = { ...LOCAL_RAW, ...TYPOGRAPHY_RAW };
+    // An empty glob would pass this loop without reading anything.
+    expect(Object.keys(LOCAL_RAW).length).toBeGreaterThan(0);
+    expect(Object.keys(TYPOGRAPHY_RAW).length).toBeGreaterThan(0);
+    for (const [name, raw] of Object.entries(files))
       expect([name, lateImports(raw)]).toEqual([name, []]);
   });
 });

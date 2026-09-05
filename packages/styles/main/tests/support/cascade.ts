@@ -9,13 +9,17 @@
  * a browser reads `!IMPORTANT`, and a comment between the bang and the word, as
  * important, and neither is the literal string a search would look for.
  *
- * Two questions are left to the text on purpose, because they are questions
- * about the text that the CSSOM cannot answer. Which files a stylesheet imports:
- * `replaceSync` drops `@import` rules from a constructed stylesheet altogether.
- * And where an `@import` sits relative to the rules: a browser drops a late
- * `@import` outright, so it is missing from the CSSOM exactly when it is a
- * defect — and Vite inlines it, so the resolved text hides it too. That check
- * reads the unresolved file.
+ * Four questions are left to the text, and each is a question about the text.
+ * Which files a stylesheet imports: `replaceSync` drops `@import` rules from a
+ * constructed stylesheet altogether. Where an `@import` sits relative to the
+ * rules: a browser drops a late one outright, so it is missing from the CSSOM
+ * exactly when it is a defect, and a bundler inlines it, so the resolved text
+ * hides it too — that check reads the unresolved file. How many `@property`
+ * registrations a file writes, which is the number the CSSOM's count is compared
+ * against, and which only the source can say, because a rejected registration
+ * leaves nothing behind. And a scan for `!important` in each file as source
+ * hygiene, which reaches files the entry never imports and so never parses; the
+ * live guarantee is the CSSOM's, next to it.
  *
  * Nothing is transformed. Vite resolves the `@import` graph the way a consumer's
  * bundler resolves it, `?inline` hands the resolved text to the test, and `?raw`
@@ -127,7 +131,7 @@ export const LOCAL_SOURCES: Record<string, string> = byBasename(
   "../../src/",
 );
 
-/** The same files unresolved, for the two questions that are about the text. */
+/** The same files unresolved, for the questions above that are about the text. */
 export const LOCAL_RAW: Record<string, string> = byBasename(
   import.meta.glob<string>("../../src/*.css", {
     eager: true,
@@ -153,8 +157,14 @@ const baselineSources: Record<string, string> = byBasename(
   "../../../typography/src/",
 );
 
-export const BASELINE_RAW: Record<string, string> = byBasename(
-  import.meta.glob<string>("../../../typography/src/baseline-*.css", {
+/**
+ * Every stylesheet the typography package writes, unresolved. The entry pulls
+ * that package in, so a late `@import` written there reaches this stylesheet's
+ * consumers exactly as one written here would — and the resolved text cannot
+ * show it either, for the same reason.
+ */
+export const TYPOGRAPHY_RAW: Record<string, string> = byBasename(
+  import.meta.glob<string>("../../../typography/src/*.css", {
     eager: true,
     import: "default",
     query: "?raw",
@@ -308,6 +318,34 @@ export const openedLayers = (css: string): string[] => {
   return [...names].sort();
 };
 
+/**
+ * Every layer name a stylesheet introduces into the cascade order: the blocks it
+ * opens, and the names of any `@layer` statement after the first. The first
+ * statement is the order statement, checked against the ten by name on its own;
+ * a later one is how a layer can enter the order without a single rule being
+ * written into it — `@layer ds.rogue;` opens nothing, so `openedLayers` cannot
+ * see it, and it is a name in the order all the same.
+ *
+ * `openedLayers` stays block-only, because what a file writes to is the question
+ * the README's tables ask and the question `usedLayers` answers.
+ */
+export const namedLayers = (css: string): string[] => {
+  const names = new Set(openedLayers(css));
+  const statements: string[][] = [];
+  const walk = (rules: CSSRuleList): void => {
+    for (const rule of rules) {
+      if (rule instanceof CSSLayerStatementRule)
+        statements.push(Array.from(rule.nameList));
+      const children = childRules(rule);
+      if (children) walk(children);
+    }
+  };
+  walk(parse(css).cssRules);
+  for (const statement of statements.slice(1))
+    for (const name of statement) names.add(name);
+  return [...names].sort();
+};
+
 /** The start selector of every `@scope` block, with the layer it sits in. */
 export const scopes = (css: string): { layer: string; start: string }[] => {
   const found: { layer: string; start: string }[] = [];
@@ -357,15 +395,46 @@ export const unconfinedElementRules = (
     .map((rule) => `${rule.layer} ${rule.selector}`);
 
 /**
- * The selectors of every style rule whose nearest enclosing layer is exactly the
- * named one — rules written into a layer itself rather than into one of its
- * sublayers. Nesting inside `@scope`, `@media` or another style rule does not
- * change which layer a rule is in.
+ * How a rule that the cascade sorts by layer is labelled, or nothing for a rule
+ * it does not sort. Style rules are the obvious ones; a browser also settles
+ * duplicate `@keyframes`, `@font-face` and `@property` by layer, measured in
+ * Chromium 151 and Firefox 153, so each of them written into a layer is a rule
+ * in that layer. Grouping rules are not listed: they hold rules, and the rules
+ * they hold are reached by walking through them.
  */
-export const directRulesIn = (css: string, layer: string): string[] =>
-  styleRules(css)
-    .filter((rule) => rule.layer === layer)
-    .map((rule) => rule.selector);
+const sortedByLayer = (rule: CSSRule): string | undefined => {
+  if (rule instanceof CSSStyleRule) return `style rule (${rule.selectorText})`;
+  if (rule instanceof CSSKeyframesRule) return `@keyframes ${rule.name}`;
+  if (rule instanceof CSSFontFaceRule) return "@font-face";
+  if (rule instanceof CSSPropertyRule) return `@property ${rule.name}`;
+  return undefined;
+};
+
+/**
+ * Every rule the cascade sorts whose nearest enclosing layer is exactly the named
+ * one — rules written into a layer itself rather than into one of its sublayers.
+ * Nesting inside `@scope`, `@media` or another style rule does not change which
+ * layer a rule is in.
+ */
+export const directRulesIn = (css: string, layer: string): string[] => {
+  const found: string[] = [];
+  const walk = (rules: CSSRuleList, current: string): void => {
+    for (const rule of rules) {
+      if (rule instanceof CSSLayerBlockRule) {
+        walk(rule.cssRules, current ? `${current}.${rule.name}` : rule.name);
+        continue;
+      }
+      const label = sortedByLayer(rule);
+      if (label !== undefined && current === layer) found.push(label);
+      // A keyframes rule holds keyframes, not rules a layer sorts on their own.
+      if (rule instanceof CSSKeyframesRule) continue;
+      const children = childRules(rule);
+      if (children) walk(children, current);
+    }
+  };
+  walk(parse(css).cssRules, "");
+  return found;
+};
 
 /** The properties every style rule directly in a layer declares, labelled. */
 export const declarationsIn = (css: string, layer: string): string[] =>
