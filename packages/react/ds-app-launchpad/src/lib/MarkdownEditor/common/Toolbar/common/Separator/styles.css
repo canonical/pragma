@@ -1,7 +1,10 @@
-/* @canonical/generator-ds 0.9.0-experimental.4 */
+/* @canonical/generator-ds 0.9.0-experimental.4
+ * Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
-.ds.toolbar-separator {
-  display: inline-block;
-  width: 1px;
-  background-color: var(--markdown-editor-toolbar-separator-color);
+@layer ds.components.app {
+  .ds.toolbar-separator {
+    display: inline-block;
+    width: 1px;
+    background-color: var(--markdown-editor-toolbar-separator-color);
+  }
 }

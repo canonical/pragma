@@ -1,54 +1,57 @@
-/* @canonical/generator-canonical-ds 0.0.1 */
+/* @canonical/generator-canonical-ds 0.0.1
+ * Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
-.ds.file-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--git-diff-file-header-items-gap);
-  background-color: var(--git-diff-file-header-background-color);
-  padding: var(--git-diff-file-header-vertical-padding)
-    var(--git-diff-file-header-horizontal-padding);
-
-  &:not(:has(.left-content > .collapse-button.collapsed)) {
-    border-bottom: 1px solid var(--git-diff-viewer-border-color-tinted);
-  }
-
-  & > .left-content,
-  & > .right-content {
+@layer ds.components.app {
+  .ds.file-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: var(--git-diff-file-header-items-gap);
-  }
+    background-color: var(--git-diff-file-header-background-color);
+    padding: var(--git-diff-file-header-vertical-padding)
+      var(--git-diff-file-header-horizontal-padding);
 
-  & > .left-content {
-    & > .file-name {
-      font-weight: 550;
+    &:not(:has(.left-content > .collapse-button.collapsed)) {
+      border-bottom: 1px solid var(--git-diff-viewer-border-color-tinted);
     }
 
-    & > .collapse-button {
-      border: none;
-      background-color: var(--git-diff-file-header-button-background);
-      cursor: pointer;
-      padding: 4px;
-      margin: 0;
+    & > .left-content,
+    & > .right-content {
       display: flex;
       align-items: center;
-      border-radius: 1px;
+      gap: var(--git-diff-file-header-items-gap);
+    }
 
-      &:hover {
-        background-color: var(--git-diff-file-header-button-hover-background);
-      }
-      &:focus {
-        background-color: var(--git-diff-file-header-button-focus-background);
+    & > .left-content {
+      & > .file-name {
+        font-weight: 550;
       }
 
-      > svg {
-        transform: rotate(90deg);
-        transition: transform 0.15s ease-out;
-      }
-      &.collapsed {
+      & > .collapse-button {
+        border: none;
+        background-color: var(--git-diff-file-header-button-background);
+        cursor: pointer;
+        padding: 4px;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        border-radius: 1px;
+
+        &:hover {
+          background-color: var(--git-diff-file-header-button-hover-background);
+        }
+        &:focus {
+          background-color: var(--git-diff-file-header-button-focus-background);
+        }
+
         > svg {
-          transform: rotate(0deg);
+          transform: rotate(90deg);
+          transition: transform 0.15s ease-out;
+        }
+        &.collapsed {
+          > svg {
+            transform: rotate(0deg);
+          }
         }
       }
     }

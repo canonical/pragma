@@ -1,29 +1,32 @@
-/* @canonical/generator-ds 0.9.0-experimental.12 */
+/* @canonical/generator-ds 0.9.0-experimental.12
+ * Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
-.ds.simple-change-marker {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: var(--diff-change-marker-simple-size);
-  width: var(--diff-change-marker-simple-size);
+@layer ds.components.app {
+  .ds.simple-change-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--diff-change-marker-simple-size);
+    width: var(--diff-change-marker-simple-size);
 
-  > svg {
-    width: 100%;
-    height: 100%;
-  }
+    > svg {
+      width: 100%;
+      height: 100%;
+    }
 
-  &.added {
-    color: var(--diff-change-marker-added-svg);
-    background-color: var(--diff-change-marker-added-alt);
-  }
+    &.added {
+      color: var(--diff-change-marker-added-svg);
+      background-color: var(--diff-change-marker-added-alt);
+    }
 
-  &.deleted {
-    color: var(--diff-change-marker-deleted-svg);
-    background-color: var(--diff-change-marker-deleted-alt);
-  }
+    &.deleted {
+      color: var(--diff-change-marker-deleted-svg);
+      background-color: var(--diff-change-marker-deleted-alt);
+    }
 
-  &.modified {
-    color: var(--diff-change-marker-modified-svg);
-    background-color: var(--diff-change-marker-modified-alt);
+    &.modified {
+      color: var(--diff-change-marker-modified-svg);
+      background-color: var(--diff-change-marker-modified-alt);
+    }
   }
 }

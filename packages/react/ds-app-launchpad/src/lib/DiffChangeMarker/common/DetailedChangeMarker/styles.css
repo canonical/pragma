@@ -1,21 +1,25 @@
-/* @canonical/generator-ds 0.9.0-experimental.12 */
-.ds.detailed-change-marker {
-  > span {
-    padding: var(--diff-change-marker-detailed-padding);
+/* @canonical/generator-ds 0.9.0-experimental.12
+ * Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
-    &.added {
-      color: var(--diff-change-marker-added-color);
-      background-color: var(--diff-change-marker-added-alt);
-    }
+@layer ds.components.app {
+  .ds.detailed-change-marker {
+    > span {
+      padding: var(--diff-change-marker-detailed-padding);
 
-    &.deleted {
-      color: var(--diff-change-marker-deleted-color);
-      background-color: var(--diff-change-marker-deleted-alt);
-    }
+      &.added {
+        color: var(--diff-change-marker-added-color);
+        background-color: var(--diff-change-marker-added-alt);
+      }
 
-    &.modified {
-      color: var(--diff-change-marker-modified-color);
-      background-color: var(--diff-change-marker-modified-alt);
+      &.deleted {
+        color: var(--diff-change-marker-deleted-color);
+        background-color: var(--diff-change-marker-deleted-alt);
+      }
+
+      &.modified {
+        color: var(--diff-change-marker-modified-color);
+        background-color: var(--diff-change-marker-modified-alt);
+      }
     }
   }
 }

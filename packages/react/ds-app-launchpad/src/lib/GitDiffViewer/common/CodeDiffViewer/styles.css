@@ -1,27 +1,30 @@
-/* @canonical/generator-canonical-ds 0.0.1 */
+/* @canonical/generator-canonical-ds 0.0.1
+ * Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
-.ds.code-diff-viewer {
-  font-size: 13px;
+@layer ds.components.app {
+  .ds.code-diff-viewer {
+    font-size: 13px;
 
-  .diff-table {
-    /* updated dynamically on window resize */
-    --table-width: 300px;
+    .diff-table {
+      /* updated dynamically on window resize */
+      --table-width: 300px;
 
-    table-layout: auto;
-    border-collapse: separate;
-    border-spacing: 1px 0;
-    display: block;
-    overflow: auto;
-    outline: none;
+      table-layout: auto;
+      border-collapse: separate;
+      border-spacing: 1px 0;
+      display: block;
+      overflow: auto;
+      outline: none;
 
-    tr {
-      /* remove outer spacing from the sides of the table */
-      margin-left: -1px;
-      margin-right: -1px;
+      tr {
+        /* remove outer spacing from the sides of the table */
+        margin-left: -1px;
+        margin-right: -1px;
+      }
     }
-  }
 
-  > .svg-refs {
-    display: none;
+    > .svg-refs {
+      display: none;
+    }
   }
 }

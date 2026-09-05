@@ -1,56 +1,60 @@
-.ds.node {
-  list-style: none;
-  display: flex;
-  gap: var(--file-tree-node-items-gap);
-  align-items: center;
+/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
-  font-size: var(--file-tree-node-text-size);
-  font-weight: var(--file-tree-node-text-weight);
-  line-height: var(--file-tree-node-text-line-height);
+@layer ds.components.app {
+  .ds.node {
+    list-style: none;
+    display: flex;
+    gap: var(--file-tree-node-items-gap);
+    align-items: center;
 
-  /* vertical padding is set on the indentation level */
-  padding: 0 var(--file-tree-node-horizontal-padding);
-  cursor: default;
-  color: var(--file-tree-node-text-color-default);
-  border-left: 2px solid var(--file-tree-node-border-color);
+    font-size: var(--file-tree-node-text-size);
+    font-weight: var(--file-tree-node-text-weight);
+    line-height: var(--file-tree-node-text-line-height);
 
-  &.selectable,
-  &.expandable {
-    cursor: pointer;
-    &:hover {
-      background-color: var(--file-tree-node-background-color-hover);
-    }
-  }
+    /* vertical padding is set on the indentation level */
+    padding: 0 var(--file-tree-node-horizontal-padding);
+    cursor: default;
+    color: var(--file-tree-node-text-color-default);
+    border-left: 2px solid var(--file-tree-node-border-color);
 
-  &.selected,
-  &.selectable:focus,
-  &.expandable:focus {
-    color: var(--file-tree-node-text-color-active);
-    background-color: var(--file-tree-node-background-color-active);
-    border-color: var(--file-tree-node-border-color-active);
-    font-weight: var(--file-tree-node-text-weight-active);
-  }
-
-  & > .icon {
-    user-select: none;
-    width: var(--file-tree-node-icon-size);
-    &.file {
-      content: var(--file-tree-node-file-icon);
-    }
-    &.folder {
-      content: var(--file-tree-node-closed-folder-icon);
-      &.expanded {
-        content: var(--file-tree-node-opened-folder-icon);
+    &.selectable,
+    &.expandable {
+      cursor: pointer;
+      &:hover {
+        background-color: var(--file-tree-node-background-color-hover);
       }
     }
-  }
-  & > .nodename {
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  & > .marker {
-    display: inline-block;
+
+    &.selected,
+    &.selectable:focus,
+    &.expandable:focus {
+      color: var(--file-tree-node-text-color-active);
+      background-color: var(--file-tree-node-background-color-active);
+      border-color: var(--file-tree-node-border-color-active);
+      font-weight: var(--file-tree-node-text-weight-active);
+    }
+
+    & > .icon {
+      user-select: none;
+      width: var(--file-tree-node-icon-size);
+      &.file {
+        content: var(--file-tree-node-file-icon);
+      }
+      &.folder {
+        content: var(--file-tree-node-closed-folder-icon);
+        &.expanded {
+          content: var(--file-tree-node-opened-folder-icon);
+        }
+      }
+    }
+    & > .nodename {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    & > .marker {
+      display: inline-block;
+    }
   }
 }
