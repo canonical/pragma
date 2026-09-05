@@ -1,14 +1,20 @@
-.ds.side-navigation-expand-toggle.button-primitive {
-  display: grid;
-  place-items: center;
-  box-sizing: content-box;
-  &[aria-expanded="true"] .expand-icon {
-    transform: rotate(180deg);
-  }
-  &[aria-expanded="false"] {
-    min-height: 1lh;
-    --dimension-padding-block-button: var(
-      --dimension-padding-block-side-navigation-item
-    );
+/* Layer: `ds.components.app` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
+
+@layer ds.components.app {
+  .ds.side-navigation-expand-toggle.button-primitive {
+    display: grid;
+    place-items: center;
+    box-sizing: content-box;
+    &[aria-expanded="true"] .expand-icon {
+      transform: rotate(180deg);
+    }
+    &[aria-expanded="false"] {
+      min-height: 1lh;
+      --dimension-padding-block-button: var(
+        --dimension-padding-block-side-navigation-item
+      );
+    }
   }
 }

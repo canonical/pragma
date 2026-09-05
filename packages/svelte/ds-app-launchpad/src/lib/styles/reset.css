@@ -1,19 +1,25 @@
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+/* Layer: `ds.components.app` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-* {
-  margin: 0;
-  padding: 0;
-}
+@layer ds.components.app {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
 
-img,
-picture,
-video,
-canvas,
-svg {
-  display: block;
-  max-width: 100%;
+  * {
+    margin: 0;
+    padding: 0;
+  }
+
+  img,
+  picture,
+  video,
+  canvas,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
 }

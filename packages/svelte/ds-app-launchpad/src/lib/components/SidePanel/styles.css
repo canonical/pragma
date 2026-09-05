@@ -1,40 +1,46 @@
-.ds.ds.side-panel {
-  /* TODO: Replace with a token */
-  --dimension-width-modal: 33.5rem;
+/* Layer: `ds.components.app` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-  margin: 0 0 0 auto;
-  opacity: 1;
-  height: 100vh;
+@layer ds.components.app {
+  .ds.ds.side-panel {
+    /* TODO: Replace with a token */
+    --dimension-width-modal: 33.5rem;
 
-  /* User-agent styles reset */
-  max-height: unset;
-  border: none;
+    margin: 0 0 0 auto;
+    opacity: 1;
+    height: 100vh;
 
-  box-shadow: 0 0 32px 0 rgba(0, 0, 0, 0.2);
-  transform: translateX(100%);
-  transition-property: display, transform, overlay;
+    /* User-agent styles reset */
+    max-height: unset;
+    border: none;
 
-  /* 
-      [open] is a fallback for Safari that doesn't support the `:open`.
+    box-shadow: 0 0 32px 0 rgba(0, 0, 0, 0.2);
+    transform: translateX(100%);
+    transition-property: display, transform, overlay;
 
-      TODO(:open): Remove when Safari supports it (https://developer.mozilla.org/en-US/docs/Web/CSS/:open)
-    */
-  &:is(:open, [open]) {
-    transform: translateX(0);
-  }
+    /* 
+        [open] is a fallback for Safari that doesn't support the `:open`.
 
-  /* Starting styles only for modal dialogs, so the SSR opened shows up immediately */
-  &:modal {
-    @starting-style {
-      transform: translateX(100%);
+        TODO(:open): Remove when Safari supports it (https://developer.mozilla.org/en-US/docs/Web/CSS/:open)
+      */
+    &:is(:open, [open]) {
+      transform: translateX(0);
     }
-  }
 
-  &::backdrop {
-    background-color: transparent;
-  }
+    /* Starting styles only for modal dialogs, so the SSR opened shows up immediately */
+    &:modal {
+      @starting-style {
+        transform: translateX(100%);
+      }
+    }
 
-  .ds.dialog-content {
-    min-height: 100%;
+    &::backdrop {
+      background-color: transparent;
+    }
+
+    .ds.dialog-content {
+      min-height: 100%;
+    }
   }
 }

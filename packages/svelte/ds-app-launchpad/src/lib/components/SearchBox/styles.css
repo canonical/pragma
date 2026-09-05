@@ -1,35 +1,41 @@
-.ds.search-box {
-  --dimension-width-search-box-button: var(--lp-dimension-size-l);
-  --dimension-gap-search-box: var(--lp-dimension-spacing-inline-xs);
+/* Layer: `ds.components.app` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-  display: grid;
-  grid-template-areas: "main";
+@layer ds.components.app {
+  .ds.search-box {
+    --dimension-width-search-box-button: var(--lp-dimension-size-l);
+    --dimension-gap-search-box: var(--lp-dimension-spacing-inline-xs);
 
-  > * {
-    grid-area: main;
-  }
+    display: grid;
+    grid-template-areas: "main";
 
-  > input {
-    padding-inline-end: calc(
-      2 *
-      var(--dimension-gap-search-box) +
-      var(--dimension-width-search-box-button)
-    );
-
-    &::-webkit-search-cancel-button {
-      display: none;
+    > * {
+      grid-area: main;
     }
 
-    &.no-invalid-styles {
-      --color-background-input-invalid: var(--color-background-input);
-      --color-background-input-invalid-hover: var(
-        --color-background-input-hover
+    > input {
+      padding-inline-end: calc(
+        2 *
+        var(--dimension-gap-search-box) +
+        var(--dimension-width-search-box-button)
       );
-      --color-background-input-invalid-active: var(
-        --color-background-input-active
-      );
-      --color-border-input-invalid: var(--color-border-input);
-      --color-outline-input-invalid: var(--color-outline-input);
+
+      &::-webkit-search-cancel-button {
+        display: none;
+      }
+
+      &.no-invalid-styles {
+        --color-background-input-invalid: var(--color-background-input);
+        --color-background-input-invalid-hover: var(
+          --color-background-input-hover
+        );
+        --color-background-input-invalid-active: var(
+          --color-background-input-active
+        );
+        --color-border-input-invalid: var(--color-border-input);
+        --color-outline-input-invalid: var(--color-outline-input);
+      }
     }
   }
 }

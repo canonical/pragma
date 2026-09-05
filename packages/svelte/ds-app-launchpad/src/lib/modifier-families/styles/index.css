@@ -1,2 +1,6 @@
+/* No layer block here: each sheet this file imports carries its own
+ * `@layer ds.components.app` wrapper, and an `@import` may not appear inside a
+ * layer block. */
+
 @import "./density.css";
 @import "./severity.css";

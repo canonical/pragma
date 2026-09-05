@@ -1,21 +1,27 @@
-.ds.table-th {
-  div {
-    display: flex;
-    flex-flow: row wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--lp-dimension-spacing-inline-xxs);
-  }
+/* Layer: `ds.components.app` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-  &:not([aria-sort]),
-  &[aria-sort="none"] {
-    .ds.table-th-sort:not(:focus-visible) {
-      opacity: 0;
+@layer ds.components.app {
+  .ds.table-th {
+    div {
+      display: flex;
+      flex-flow: row wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--lp-dimension-spacing-inline-xxs);
     }
 
-    &:hover {
-      .ds.table-th-sort {
-        opacity: 1;
+    &:not([aria-sort]),
+    &[aria-sort="none"] {
+      .ds.table-th-sort:not(:focus-visible) {
+        opacity: 0;
+      }
+
+      &:hover {
+        .ds.table-th-sort {
+          opacity: 1;
+        }
       }
     }
   }

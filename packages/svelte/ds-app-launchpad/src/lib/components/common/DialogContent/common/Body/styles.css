@@ -1,5 +1,11 @@
-.ds.dialog-content-body {
-  /* Sanity reset, so that the dialog doesn't inherit unwanted styles from the context it's used in. */
-  font: var(--ds-typography-text-primary);
-  color: var(--color-text);
+/* Layer: `ds.components.app` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
+
+@layer ds.components.app {
+  .ds.dialog-content-body {
+    /* Sanity reset, so that the dialog doesn't inherit unwanted styles from the context it's used in. */
+    font: var(--ds-typography-text-primary);
+    color: var(--color-text);
+  }
 }

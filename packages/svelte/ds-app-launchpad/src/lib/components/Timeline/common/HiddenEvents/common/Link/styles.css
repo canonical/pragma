@@ -1,9 +1,15 @@
-.ds.timeline-hidden-events-link {
-  font: var(--ds-typography-text-tertiary);
-}
+/* Layer: `ds.components.app` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-.ds.timeline-hidden-events-link-separator {
-  font: var(--ds-typography-text-tertiary);
-  color: var(--color-text-muted);
-  margin-inline: var(--dimension-100);
+@layer ds.components.app {
+  .ds.timeline-hidden-events-link {
+    font: var(--ds-typography-text-tertiary);
+  }
+
+  .ds.timeline-hidden-events-link-separator {
+    font: var(--ds-typography-text-tertiary);
+    color: var(--color-text-muted);
+    margin-inline: var(--dimension-100);
+  }
 }

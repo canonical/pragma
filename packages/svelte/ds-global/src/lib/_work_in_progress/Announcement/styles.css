@@ -8,53 +8,59 @@
  * root `--color-text` regardless of criticality.
  */
 
-.ds.announcement {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  gap: var(--dimension-100);
+/* Layer: `ds.components.global` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-  /* Side bar: leading rule carrying the criticality colour. */
-  border-inline-start-style: solid;
-  border-inline-start-width: var(--dimension-stroke-thickness-large);
-  border-inline-start-color: var(--modifier-color-border);
-
-  padding: var(--dimension-100);
-
-  /* Text stays the neutral root colour on every criticality level. */
-  color: var(--color-text);
-  background-color: var(--modifier-color-foreground-secondary);
-
-  /* Icon — masked box; glyph and fill driven by the criticality modifier channels. */
-  & > .icon {
-    flex: 0 0 auto;
-    inline-size: var(--dimension-200);
-    block-size: var(--dimension-200);
-    background-color: var(--modifier-color-icon);
-    mask-image: var(--modifier-icon);
-    mask-repeat: no-repeat;
-    mask-position: center;
-    mask-size: contain;
-    -webkit-mask-image: var(--modifier-icon);
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    -webkit-mask-size: contain;
-  }
-
-  & > .text {
+@layer ds.components.global {
+  .ds.announcement {
     display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    gap: 0;
-    min-width: 0;
-  }
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--dimension-100);
 
-  & .heading {
-    font-weight: var(--typography-heading-6-font-weight);
-    /* 
-      TODO: Uncomment after line-height bug in typography tokens is addressed 
-      See https://github.com/canonical/pragma/pull/961#issuecomment-5421532811
-    */
-    /* line-height: var(--typography-heading-6-line-height); */
+    /* Side bar: leading rule carrying the criticality colour. */
+    border-inline-start-style: solid;
+    border-inline-start-width: var(--dimension-stroke-thickness-large);
+    border-inline-start-color: var(--modifier-color-border);
+
+    padding: var(--dimension-100);
+
+    /* Text stays the neutral root colour on every criticality level. */
+    color: var(--color-text);
+    background-color: var(--modifier-color-foreground-secondary);
+
+    /* Icon — masked box; glyph and fill driven by the criticality modifier channels. */
+    & > .icon {
+      flex: 0 0 auto;
+      inline-size: var(--dimension-200);
+      block-size: var(--dimension-200);
+      background-color: var(--modifier-color-icon);
+      mask-image: var(--modifier-icon);
+      mask-repeat: no-repeat;
+      mask-position: center;
+      mask-size: contain;
+      -webkit-mask-image: var(--modifier-icon);
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      -webkit-mask-size: contain;
+    }
+
+    & > .text {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      gap: 0;
+      min-width: 0;
+    }
+
+    & .heading {
+      font-weight: var(--typography-heading-6-font-weight);
+      /* 
+        TODO: Uncomment after line-height bug in typography tokens is addressed 
+        See https://github.com/canonical/pragma/pull/961#issuecomment-5421532811
+      */
+      /* line-height: var(--typography-heading-6-line-height); */
+    }
   }
 }

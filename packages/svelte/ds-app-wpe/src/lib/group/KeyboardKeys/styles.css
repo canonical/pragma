@@ -1,12 +1,18 @@
-:root {
-  /* Figma (node 6004-72): 2px between adjacent keys in a chord. */
-  --keyboard-keys-gap: var(--dimension-025);
-  --keyboard-keys-margin-inline: var(--dimension-050);
-}
+/* Layer: `ds.components.app` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-.ds.keyboard-keys {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--keyboard-keys-gap);
-  margin-inline: var(--keyboard-keys-margin-inline);
+@layer ds.components.app {
+  :root {
+    /* Figma (node 6004-72): 2px between adjacent keys in a chord. */
+    --keyboard-keys-gap: var(--dimension-025);
+    --keyboard-keys-margin-inline: var(--dimension-050);
+  }
+
+  .ds.keyboard-keys {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--keyboard-keys-gap);
+    margin-inline: var(--keyboard-keys-margin-inline);
+  }
 }

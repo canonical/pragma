@@ -1,2 +1,4 @@
 /* TODO(jmuzina): remove this file once pragma tokens are ready and used in the project */
+/* No layer block here: the sheet this file imports carries its own layers, and
+ * an `@import` may not appear inside a layer block. */
 @import "./styles/index.css";

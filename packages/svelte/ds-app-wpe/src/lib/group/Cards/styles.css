@@ -1,23 +1,29 @@
-/**
- * Cards styles
- * @implements ds:global.group.cards
- *
- * A two-level subgrid: the parent `.grid` supplies columns; `Cards` inherits
- * them and defines four shared section row tracks (image / header / content /
- * footer). Each `Card` spans `--card-span` columns × 4 rows and row-subgrids,
- * so sections snap to the shared tracks and line up across the row.
- */
-.ds.cards {
-  display: grid;
-  grid-template-columns: subgrid;
-  grid-column: 1 / -1;
+/* Layer: `ds.components.app` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-  grid-auto-flow: row;
-  grid-auto-rows: auto;
+@layer ds.components.app {
+  /**
+   * Cards styles
+   * @implements ds:global.group.cards
+   *
+   * A two-level subgrid: the parent `.grid` supplies columns; `Cards` inherits
+   * them and defines four shared section row tracks (image / header / content /
+   * footer). Each `Card` spans `--card-span` columns × 4 rows and row-subgrids,
+   * so sections snap to the shared tracks and line up across the row.
+   */
+  .ds.cards {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
 
-  align-self: start;
-  align-content: start;
+    grid-auto-flow: row;
+    grid-auto-rows: auto;
 
-  gap: var(--grid-row-gap, var(--grid-gutter))
-    var(--grid-column-gap, var(--grid-gutter));
+    align-self: start;
+    align-content: start;
+
+    gap: var(--grid-row-gap, var(--grid-gutter))
+      var(--grid-column-gap, var(--grid-gutter));
+  }
 }

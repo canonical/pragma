@@ -1,11 +1,17 @@
-.ds.search-box-search-button.button-primitive {
-  justify-self: end;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  --color-background-button-hover: transparent;
-  --color-background-button-active: transparent;
+/* Layer: `ds.components.app` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-  width: var(--dimension-width-search-box-button);
-  margin-inline-end: var(--dimension-gap-search-box);
+@layer ds.components.app {
+  .ds.search-box-search-button.button-primitive {
+    justify-self: end;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    --color-background-button-hover: transparent;
+    --color-background-button-active: transparent;
+
+    width: var(--dimension-width-search-box-button);
+    margin-inline-end: var(--dimension-gap-search-box);
+  }
 }

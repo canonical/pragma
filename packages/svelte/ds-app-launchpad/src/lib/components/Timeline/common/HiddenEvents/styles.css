@@ -1,42 +1,48 @@
-.ds.timeline-hidden-events {
-  position: relative;
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: subgrid;
-  font: var(--ds-typography-text-tertiary-bold);
+/* Layer: `ds.components.app` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-  &:not(:last-child)::after {
-    /* Line spanning to the next element */
-    content: "";
-    position: absolute;
-    display: block;
-    grid-column: marker;
-    background-color: var(--color-background-timeline-line);
-    width: var(--dimension-width-timeline-line);
-    justify-self: center;
-    height: var(--dimension-gap-row-timeline);
-    top: 100%;
-  }
-
-  > div {
+@layer ds.components.app {
+  .ds.timeline-hidden-events {
+    position: relative;
     grid-column: 1 / -1;
-    justify-self: start;
-    display: flex;
-    padding-block: var(--dimension-100);
-    padding-inline: var(--dimension-200);
-    border-block: var(--dimension-stroke-thickness-medium) solid
-      var(--color-border);
-  }
+    display: grid;
+    grid-template-columns: subgrid;
+    font: var(--ds-typography-text-tertiary-bold);
 
-  &:first-child {
-    > div {
-      border-block-start: none;
+    &:not(:last-child)::after {
+      /* Line spanning to the next element */
+      content: "";
+      position: absolute;
+      display: block;
+      grid-column: marker;
+      background-color: var(--color-background-timeline-line);
+      width: var(--dimension-width-timeline-line);
+      justify-self: center;
+      height: var(--dimension-gap-row-timeline);
+      top: 100%;
     }
-  }
 
-  &:last-child {
     > div {
-      border-block-end: none;
+      grid-column: 1 / -1;
+      justify-self: start;
+      display: flex;
+      padding-block: var(--dimension-100);
+      padding-inline: var(--dimension-200);
+      border-block: var(--dimension-stroke-thickness-medium) solid
+        var(--color-border);
+    }
+
+    &:first-child {
+      > div {
+        border-block-start: none;
+      }
+    }
+
+    &:last-child {
+      > div {
+        border-block-end: none;
+      }
     }
   }
 }

@@ -1,12 +1,18 @@
-.ds.dialog-content-header {
-  display: flex;
-  align-items: start;
-  text-wrap: balance;
+/* Layer: `ds.components.app` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-  font: var(--ds-typography-heading-4);
-  color: var(--color-text);
+@layer ds.components.app {
+  .ds.dialog-content-header {
+    display: flex;
+    align-items: start;
+    text-wrap: balance;
 
-  > .ds.dialog-content-close-button {
-    margin-inline-start: auto;
+    font: var(--ds-typography-heading-4);
+    color: var(--color-text);
+
+    > .ds.dialog-content-close-button {
+      margin-inline-start: auto;
+    }
   }
 }
