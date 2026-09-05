@@ -1,70 +1,51 @@
-/* component styles */
-
 /* Layer: `ds.components.app` — so this application tier's rule for the
  * component beats the global tier's by cascade layer, not by whichever bundle a
  * loader happened to emit last. See "Cascade layers" in the @canonical/styles
  * README. */
 
+/* This sheet is a DELTA over the Button in @canonical/react-ds-global, not a
+ * second copy of it. It declares only the properties on which this tier
+ * disagrees with the global one. Everything else — the component's `--button-*`
+ * tokens and their documentation, the colour channels, the border width and
+ * style, the label weight, the state transition, the focus ring, the disabled
+ * treatment, the hover and active surfaces, the link variant, and the density
+ * seat that gives the button its height and its block padding — comes from the
+ * global sheet and is deliberately not repeated here.
+ *
+ * Repeating a declaration is not harmless. This layer sits above
+ * `ds.components.global`, so a repeated declaration wins whatever the global
+ * sheet's selector says: it beats that sheet's density seat, its `:disabled`
+ * rule and its `.link` rule as easily as it beats its base rule. And a repeated
+ * declaration that reads a custom property nobody defines any more still wins,
+ * then computes to nothing — an unresolvable `var()` makes the declaration
+ * invalid at computed-value time, which means the initial value, or the
+ * fallback where one is written. That is how this sheet used to erase the
+ * button's horizontal padding, and how its `var(--modifier-color, …)` — a
+ * channel since renamed to `--modifier-surface` — used to paint a `secondary`
+ * or `tertiary` button with the primary fill instead of the ghost surface.
+ *
+ * The four declarations below are the differences measured between the global
+ * sheet on its own and the global sheet plus this one. */
+
 @layer ds.components.app {
-  /* component variables
-      --button-color-background: background color of the button
-      --button-color-background-hover: background color of the button on hover
-      --button-color-background-active: background color of the button on active
-      --button-color-text: text color of the button
-      --button-color-border: border color of the button
-      --button-color-border-hover: border color of the button on hover
-      --button-color-border-active: border color of the button on active
-
-      --button-margin-left: left margin of the button
-      --button-margin-bottom: bottom margin of the button
-      --button-padding-vertical: vertical padding of the button
-      --button-padding-horizontal: horizontal padding of the button
-      --button-border-width: border width of the button
-      --button-font-size: font size of the button
-      --button-font-weight: font weight of the button
-      --button-line-height: line height of the button
-  */
   .ds.button {
+    /* A text box with a left-aligned label, where the global button is a
+       centred flex row. */
     display: inline-block;
-    cursor: pointer;
-
-    color: var(--modifier-color-text, var(--button-color-text));
-    background-color: var(--modifier-color, var(--button-color-background));
-    border-color: var(--modifier-color-border, var(--button-color-border));
-    border-style: solid;
-    border-width: var(--button-border-width);
-    font-size: var(--button-font-size);
-    font-weight: var(--button-font-weight);
-    line-height: var(--button-line-height);
-    margin-block-end: var(--button-margin-bottom);
-    margin-inline-end: var(--button-margin-left);
-    padding-block: var(--button-padding-vertical);
-    padding-inline: var(--button-padding-horizontal);
-
     text-align: left;
-    text-decoration: none;
 
-    /* component states */
-    &:hover {
-      background-color: var(
-        --modifier-color-hover,
-        var(--button-color-background-hover)
-      );
-      border-color: var(
-        --modifier-color-border-hover,
-        var(--button-color-border-hover)
-      );
-    }
+    /* The label size. The global sheet computes `--button-font-size` — the 14px
+       text-secondary tier — and publishes it as `--font-size` for the typography
+       engine to pick up, but this button carries no `.p`, so nothing applies it
+       and the label would fall back to the inherited 16px. This tier applies
+       it. */
+    font-size: var(--button-font-size);
 
-    &:active {
-      background-color: var(
-        --modifier-color-active,
-        var(--button-color-background-active)
-      );
-      border-color: var(
-        --modifier-color-border-active,
-        var(--button-color-border-active)
-      );
-    }
+    /* The border is always drawn. The global sheet draws it only when an
+       importance modifier raises the outline channel, and leaves it transparent
+       otherwise; on this tier every button is bordered. Raising the channel is
+       the whole delta — redeclaring `border-color` here would also override the
+       global sheet's disabled border and its transparent border on `.link`. */
+    --modifier-outline: 1;
   }
 }
