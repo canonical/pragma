@@ -215,7 +215,7 @@ export const mixedPage = (
   styles.push(PRAGMA_CSS);
   if (adapter === "after") styles.push(adapterCss);
   return {
-    root: options.root ?? "app comfortable light",
+    root: options.root ?? "coexist app comfortable light",
     styles,
     body:
       PRAGMA_BLOCK +
@@ -226,9 +226,9 @@ export const mixedPage = (
   };
 };
 
-/** The pragma-only page: pragma's CSS alone, root marked `ds`. */
+/** The pragma-only page: pragma's CSS alone, nothing on the root but context and density. */
 export const pragmaPage = (theme: "light" | "dark" = "light"): PageSpec => ({
-  root: `ds app comfortable ${theme}`,
+  root: `app comfortable ${theme}`,
   styles: [PRAGMA_CSS],
   body: PRAGMA_BLOCK,
 });
@@ -242,10 +242,11 @@ export const vanillaPage = (vanilla: VanillaVersion): PageSpec => ({
 
 /**
  * The removal step of README rule 19: Vanilla gone, the adapter not yet. The
- * document carries `ds` by then (rule 11); `flipped: false` is the violation.
+ * document has dropped `coexist` by then (rule 11); `flipped: false` is the
+ * violation, the marker still on.
  */
 export const removalPage = (flipped = true): PageSpec => ({
-  root: `${flipped ? "ds " : ""}app comfortable light`,
+  root: `${flipped ? "" : "coexist "}app comfortable light`,
   styles: [layersCss, PRAGMA_CSS, adapterCss],
   body: PRAGMA_BLOCK + THEME_BLOCK,
 });

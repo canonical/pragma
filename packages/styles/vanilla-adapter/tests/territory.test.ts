@@ -148,9 +148,9 @@ describe.each(VANILLA_VERSIONS)(
       expect(computed(mixed, "neg-label").display).toBe("inline");
     });
 
-    it("reverts every Vanilla rule once the document root carries `ds`", async () => {
+    it("reverts every Vanilla rule once the document root drops `coexist`", async () => {
       const flipped = await render(
-        mixedPage(version, { root: "ds app comfortable light" }),
+        mixedPage(version, { root: "app comfortable light" }),
       );
       expect(computed(flipped, "vf-input").marginBottom).toBe("0px");
       expect(computed(flipped, "vf-button").marginBottom).toBe("0px");

@@ -83,14 +83,14 @@ describe.each(VANILLA_VERSIONS)("theme-bridge (Vanilla %s)", (version) => {
 });
 
 describe("removal (README rule 19)", () => {
-  it("keeps the pin on every root while the adapter outlives Vanilla, because the document carries `ds`", async () => {
+  it("keeps the pin on every root while the adapter outlives Vanilla, because the document has dropped `coexist`", async () => {
     const page = await render(removalPage());
     expect(computed(page, page.documentElement).colorScheme).toBe("light");
     expect(computed(page, "ds-root").colorScheme).toBe("light");
     expect(computed(page, "theme-dark").colorScheme).toBe("light");
   });
 
-  it("lets every root follow the operating system if Vanilla is removed before the document is flipped", async () => {
+  it("lets every root follow the operating system if Vanilla is removed while `coexist` is still on the root", async () => {
     const page = await render(removalPage(false));
     expect(computed(page, page.documentElement).colorScheme).toBe("light");
     expect(computed(page, "ds-root").colorScheme).toBe("light dark");
