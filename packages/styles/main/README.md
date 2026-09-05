@@ -274,6 +274,19 @@ other subpaths this package exports — note that a subpath carries no order sta
 opens are ordered by wherever they first appear in your own stylesheet, and `spacing.css` now brings a
 `@scope (.ds)` block with it. Import the entry point unless you have a reason not to.
 
+### What Moves on the Page
+
+Measured in Chromium, an application that is the design system's throughout, before against after with
+`ds` added to the root. Four things change on every element, and one on `<hr>`; nothing else does.
+
+| What | Before | After | Why |
+| --- | --- | --- | --- |
+| `line-height`, everywhere it was not set | `1.15` inherited from the old reset | `normal` | the marked root declares its own baseline |
+| `color`, everywhere it was not set | `rgb(0, 0, 0)` | `oklch(0 0 0)` | the root declares `var(--color-text)`: the same black in the light scheme, but it now follows the theme instead of being the browser's default |
+| `box-sizing`, everywhere | `content-box` | `border-box` | the components are authored against it |
+| `font-family` on `<html>` | the browser's serif | the token stack | the root declares the font; `<body>` already had it from the typographic mapper |
+| `overflow` on `<hr>` | `visible` | `hidden` | the browser's own value; a rule has no content to overflow, so nothing shows |
+
 Two things that used to be true and are not:
 
 - The `normalize.css` package is no longer a dependency. This package writes its own reset, so it can
