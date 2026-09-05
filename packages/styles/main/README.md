@@ -94,7 +94,7 @@ Read it from the bottom up — each position is an argument.
 | --- | --- | --- |
 | `normalize` | This package's own reset, scoped. | Lowest, because everything else is meant to overrule it. |
 | `ds.tokens` | The primitive values, and the spacing, motion and overflow tokens. | Above the reset, because a token has to exist before anything reads it; below everything that reads one. |
-| `ds.reset` | The declarations the outermost marked root makes for itself: font, colour, line height, weight, text-wrap style, font smoothing — and border-box sizing for it and everything inside. | Above the tokens because it reads them; below the typographic engine and the components, which refine what it starts. |
+| `ds.reset` | The declarations the outermost marked root makes for itself: font, colour, line height, weight, text wrapping, font smoothing — and border-box sizing for it and everything inside. | Above the tokens because it reads them; below the typographic engine and the components, which refine what it starts. |
 | `ds.typography` | The semantic mapper and the baseline engine — with the typography change, stacked on this one and released with it. Until then the typography package ships those rules unlayered, and this layer is empty. | Above the reset because it is a more specific statement about text; below the modifiers, which can retune the scale. |
 | `ds.modifiers` | Theme, the typographic scale, the intent families (anticipation, criticality, emphasis, importance) and their shims, and the context and density classes. | Above typography, because a modifier's job is to shift what the layers below produced. |
 | `ds.surfaces` | The surface families: `surface`, `contrasted`, `modal`. | Above the modifiers, because a surface re-points colour channels the modifiers set. |
@@ -190,7 +190,7 @@ set, the specificity and the layer are identical either way.
 | An application tier's rule for a component beats the global tier's rule for the same component, whichever of the two a bundler loads first. | The two sublayers are named in the statement, so their order is fixed there rather than at first appearance, and the same order fixture reads it back. The component packages move into them when their stylesheets are wrapped, which is a separate change; until then both sublayers are empty and the guarantee is vacuous. |
 | The package ships no `!important`. | The same fixture file. An important declaration inverts the layer order and cannot be arbitrated by layers at all, so one of them would undo the guarantee above. |
 | Under `prefers-reduced-motion: reduce`, every motion duration this package defines is `0s`. | `src/motion.css`, and the reduced-motion fixture arriving with the adapter package. Zeroing the token is the mechanism: a component reads the token, so nothing has to out-rank the component's own declaration. Whether a given component honours the tokens is that package's guarantee, not this one's. Sheets that still hard-code a duration, and so still animate under the preference, are being moved onto the tokens separately: in the form package the shared input chrome (`src/index.css`) and eight component sheets (`ChoicesField`, `RichChoicesField`, `CheckboxInput`, `RadioInput`, `ColorInput`, `ComboboxInput` and its list, `FileUploadInput`, `SwitchInput`); in the global package `Tooltip`, `ContextualMenu` and `Popover`, which set their own duration property; and one application-tier sheet, the launchpad diff viewer's file header. |
-| Inside a marked subtree, every element computes as it does on a page that is the design system's throughout — the same font, size, weight, line height, colour, box sizing, font smoothing and text wrapping. | The computed-style fixtures arriving with the adapter package, which render the same block of markup on both kinds of page and compare every longhand on every element. This one needs the typography change stacked on this release as well. |
+| Inside a marked subtree, every element computes as it does on a page that is the design system's throughout — the same font, size, weight, line height, colour, box sizing, font smoothing, and both halves of text wrapping (whether it wraps, and how). | The computed-style fixtures arriving with the adapter package, which render the same block of markup on both kinds of page and compare every longhand on every element. This one needs the typography change stacked on this release as well. |
 | The outermost marked root declares its own baseline rather than inheriting the host page's, and everything inside it inherits from there. | The fixture named `inherits pragma's baseline at the root, not Vanilla's`, in the same file. |
 | Apart from `color-scheme` on the document root, nothing this package ships restyles a bare element outside a marked subtree. | The fixture that compares a page which loads this stylesheet against the same page without it, `html` and `body` included. It needs the typography change too: until that lands, the typography package's `body`, `h1`–`h6` and `p` rules do reach the whole document. |
 
@@ -220,8 +220,14 @@ set, the specificity and the layer are identical either way.
 | Feature | Used by | Chrome | Safari | Firefox |
 | --- | --- | --- | --- | --- |
 | `@scope` | this package's reset, the layout presets, the typography engine | 118 | 17.4 | 146 |
+| `light-dark()` | every colour token, including the `--color-text` the reset declares on the root | 123 | 17.5 | 120 |
 | `mod()` | the baseline engine | 125 | 17.4 | 128 |
 | `@property` | the baseline engine | 85 | 16.4 | 128 |
+
+Read the table as a whole, not row by row: the floor is the highest number in each column, because the
+stylesheet uses all of it. A browser that has `@scope` but not `light-dark()` — Chrome 118 to 122,
+Safari 17.4 — drops the root's `color` declaration as invalid and falls back to the browser's own text
+colour, so the reset applies but the page is not themed.
 
 The typographic engine also needs the `cap` unit and `round()`; `@canonical/styles-typography`'s
 "Browser Support" section is the full table for it.
