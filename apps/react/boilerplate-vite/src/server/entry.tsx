@@ -1,3 +1,9 @@
+// Styles first, for the same reason as in the client entry: the order the
+// bundler evaluates style imports in is the order the rules are emitted in.
+// The server build only needs the application's own sheet — the design
+// system's layers reach the browser through the client bundle's stylesheet,
+// which the renderer links from the built HTML.
+import "#styles/app.css";
 import { documentAttrs, isSupportedLocale } from "@canonical/i18n-core";
 import { I18nProvider } from "@canonical/i18n-react";
 import { HeadProvider } from "@canonical/react-head";
@@ -20,7 +26,6 @@ import {
   type SerializedRelayPayload,
   serverQueries,
 } from "../routes.js";
-import "#styles/app.css";
 
 interface InitialData extends Record<string, unknown> {
   readonly url?: string;
@@ -253,25 +258,31 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
   // attributes in sync with every switch.
   const { lang, dir } = documentAttrs(i18nConfig, locale);
 
-  // Paint the cookie-resolved theme on <html> for a flash-free first render —
-  // the same element `usePreferredTheme` toggles on the client, and one React
-  // does not hydrate (only `#root` is), so there is no mismatch to reconcile.
-  // `ds` beside it marks the whole document as the design system's territory,
-  // which its scoped element-level layers apply inside; index.html carries the
-  // same class for the client-only build.
+  // The root declaration plus the theme, on one element. `app` is the context
+  // and `comfortable` the density; together they choose the --density-* channel
+  // every control reads. The cookie-resolved theme joins them so the first
+  // paint is flash-free — it is the same element `usePreferredTheme` toggles on
+  // the client, and React does not hydrate it (only `#root` is), so there is no
+  // mismatch to reconcile. index.html carries the same classes for the
+  // client-only build.
+  //
+  // No `ds` on the root: an ordinary page is the design system's by default,
+  // and each component carries `ds` on itself. Marking a whole document is an
+  // adapter concern, for a page another framework partly owns.
   return (
     <html
       lang={lang}
       dir={dir}
-      className={["ds", initialData.theme].filter(Boolean).join(" ")}
+      className={["app comfortable", initialData.theme]
+        .filter(Boolean)
+        .join(" ")}
     >
       <head>
         {props.otherHeadElements}
         {props.scriptElements}
         {props.linkElements}
       </head>
-      {/* Surface declaration: context (app) + density (comfortable) — roots the design system's --density-* channel */}
-      <body className="app comfortable">
+      <body>
         <div id="root">
           <I18nProvider config={i18nConfig} catalogs={catalogs} locale={locale}>
             <HeadProvider>

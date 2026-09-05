@@ -124,3 +124,87 @@ describe("rendered template output is well-formed in every combination", () => {
     });
   }
 });
+
+/**
+ * The root declaration and the import order, asserted on the rendered text.
+ *
+ * These facts are what makes a scaffolded application render as the design
+ * system expects, and every one of them is a line in a template that a later
+ * edit can quietly move: the class list on `<html>`, and the position of the
+ * stylesheet among the entry's imports. The first decides which density
+ * channel every control reads; the second decides whether the layer statement
+ * is the first thing in the built stylesheet or the 75th kilobyte of it.
+ * Neither shows up as a syntax error, so neither is covered by the parse gate
+ * above.
+ *
+ * The root carries no `ds`. An ordinary page is the design system's by
+ * default and each component carries `ds` on itself; marking a whole document
+ * belongs to the adapter, on a page another framework partly owns.
+ */
+describe("the rendered application declares its context and density", () => {
+  /** The class list every rendered `<html>` must carry. */
+  const ROOT_CLASSES = "app comfortable";
+
+  const render = (rel: string, combo: (typeof combos)[number]) =>
+    renderString(
+      readFileSync(path.join(templatesDir, rel), "utf8"),
+      varsFor(combo),
+    );
+
+  for (const combo of combos) {
+    it(`${label(combo)}: <html> carries \`${ROOT_CLASSES}\` and no \`ds\``, () => {
+      const html = render("index.html.ejs", combo);
+      expect(html).toContain(`<html lang="en" class="${ROOT_CLASSES}">`);
+
+      // The SPA arm has no server entry to render.
+      if (combo.spa) return;
+
+      // The opening tag on its own line, which is the shape the formatter
+      // gives it — a bare `/<html/` would also match the prose in the comment
+      // above it. Each rendered root carries the classes, with the theme
+      // appended at runtime.
+      const server = render("src/server/entry.tsx.ejs", combo);
+      const roots = [...server.matchAll(/^\s*<html$/gm)];
+      expect(roots.length).toBeGreaterThan(0);
+      expect(
+        [...server.matchAll(/className=\{\["([^"]*)"/g)].map(
+          ([, list]) => list,
+        ),
+      ).toEqual(roots.map(() => ROOT_CLASSES));
+    });
+
+    it(`${label(combo)}: the stylesheet is the first import`, () => {
+      // "First import" is what the cascade needs: the design system's layer
+      // statement has to reach the page before any component's rules do.
+      const firstImport = (source: string) => source.match(/^import .*$/m)?.[0];
+
+      expect(firstImport(render("src/client/entry.tsx.ejs", combo))).toBe(
+        'import "#styles/index.css";',
+      );
+      expect(firstImport(render(".storybook/preview.ts.ejs", combo))).toBe(
+        'import "../src/styles/index.css";',
+      );
+      if (!combo.spa) {
+        expect(firstImport(render("src/server/entry.tsx.ejs", combo))).toBe(
+          'import "#styles/app.css";',
+        );
+      }
+    });
+
+    it(`${label(combo)}: the stylesheet imports the fonts and the components`, () => {
+      const styles = render("src/styles/index.css.ejs", combo);
+      const imports = [...styles.matchAll(/^@import url\("(.+?)"\);$/gm)].map(
+        ([, specifier]) => specifier,
+      );
+
+      // Order is the point: the fonts (unlayered `@font-face`), then the layer
+      // statement, then every component sheet, then the application's own.
+      expect(imports.slice(0, 3)).toEqual([
+        "@canonical/styles/fonts",
+        "@canonical/styles",
+        "@canonical/react-ds-global/index.css",
+      ]);
+      expect(imports.at(-1)).toBe("./app.css");
+    });
+  }
+});

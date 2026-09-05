@@ -31,18 +31,38 @@ bun add @canonical/react-ds-global-form
 
 ## 2. Import styles
 
-In your application entry point (e.g., `main.tsx` or `App.tsx`), import the global stylesheet and fonts:
+In your application entry point (`main.tsx`, or your framework's root layout), import the global stylesheet and fonts:
 
 ```tsx
 import "@canonical/styles/fonts";
 import "@canonical/styles";
+import "@canonical/react-ds-global/index.css";
 ```
 
-**Order matters.** The fonts import loads the `@font-face` declarations for Ubuntu Sans and Ubuntu Sans Mono. The main styles import loads the CSS reset, design tokens, modifier classes, grid system, and spacing scale — all organized in cascade layers (`normalize`, `ds.reset`, `ds.modifiers`, `ds.components`) to guarantee deterministic precedence.
+**Order matters, and it matters first.** Import these before your routes and before any component, because the cascade fixes the layer order from the first `@layer` statement it reads: whatever reaches the page first decides how everything after it is arbitrated. In practice that means the stylesheet import is the first line of your entry file, above the route imports.
 
-These two imports are the only CSS you need. Individual component packages do not require separate CSS imports — their styles are co-located and bundled by your tool chain.
+The fonts import loads the `@font-face` declarations for Ubuntu Sans; font faces are not sorted by the cascade, so they sit outside the layers. The main styles import brings the reset, the design tokens, the typographic engine, the modifier classes, the grid system, and the spacing scale, each in its own cascade layer.
 
-## 3. Use components
+The third import is every component stylesheet in one file, and what it buys is presence rather than position: components import their own CSS from their own modules, so without it a component's rules reach the page only when the code that renders it does, and a lazily-loaded route paints before its styles arrive. It does not decide which of a component's rules and yours wins a tie — both copies reach the build and a minifier keeps the last — and once the component stylesheets carry their `ds.components` layer, the cascade settles that by layer instead of by position.
+
+## 3. Declare the root
+
+Two classes on the document root pick the spacing and control sizes every component reads:
+
+```html
+<html class="app comfortable">
+```
+
+| Class | What it means | Values |
+| --- | --- | --- |
+| context | The kind of surface, which selects the comfortable/dense pair for every density value. | `app`, `site` or `docs` |
+| density | Which of that pair is in force. | `comfortable` or `dense` |
+
+A colour scheme is optional: `light` or `dark` pins one, and leaving both off follows the reader's operating system. Nothing else belongs on the root.
+
+In particular, not `ds`. An ordinary page is the design system's, and each component carries `ds` on itself — you never write it. The one page that does mark its root is a page another framework already styles: it takes `coexist`, which keeps the element-level rules off the parts that framework owns, as the `@canonical/styles-vanilla-adapter` README explains.
+
+## 4. Use components
 
 <Canvas of={Stories.QuickStart} />
 
@@ -58,13 +78,47 @@ Here is a more complete example combining several components with a grid layout:
 
 Components accept standard HTML attributes on their underlying elements, plus modifier props (`importance`, `anticipation`, `criticality`) that map to CSS classes.
 
-## 4. Verify theming
+## 5. Verify theming
 
-Pragma supports light and dark themes automatically through paired token values. Your OS dark mode preference is respected by default via `prefers-color-scheme`. To force a theme on a subtree, add `className="dark"` or `className="light"` to any ancestor element:
+Pragma supports light and dark themes through paired token values. **While no `light` or `dark` class is on the root**, the operating system's preference is followed via `prefers-color-scheme`; adding either class pins the scheme and the OS preference stops applying to that subtree. To force a theme, add `className="dark"` or `className="light"` to any ancestor element:
 
 <Canvas of={Stories.ThemeForcing} />
 
 No JavaScript runtime or theme provider is required.
+
+## Cascade layers
+
+One statement fixes the order of the design system's cascade layers:
+
+```css
+@layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers, ds.surfaces,
+       ds.states, ds.components, ds.components.global, ds.components.app;
+```
+
+Read from the bottom up, each name is an argument about who should win: component rules beat the modifier classes, which beat the reset, whatever order the files happen to load in.
+
+That is the order as declared, and `@canonical/styles` already places everything it ships in it. The component packages are being moved into `ds.components` now; until that lands their stylesheets sit outside the layers, where — as below — they beat every layered rule and settle ties between themselves by load order. Two consequences are worth knowing before you write any CSS of your own.
+
+- **Unlayered CSS beats all of it.** That is what the cascade says: a rule in no layer outranks every rule in one. So your own stylesheet wins by default — deliberately — and if you would rather it did not, put it in a layer of your own and name that layer in your own statement, prepended before this one.
+- **`!important` inverts the order.** For important declarations the earliest layer wins, which makes an important rule in the lowest layer the strongest thing on the page. The design system ships none.
+
+The `@canonical/styles` README's **Cascade layers** section is the reference: what is layered where, what is deliberately left unlayered, and how the element-level layers are scoped so that a page another framework partly owns can keep them off its territory. A longer explanation of the contract — the reasoning rather than the table — is being written as `docs/explanations/CASCADE.md` in the pragma repository.
+
+### Checking the layers on a built page
+
+Do not grep your built CSS for the statement above. A minifier rewrites it: Lightning CSS, which Vite uses, merges the blocks that share a layer name, reorders them into the order the statement declared, deletes the statement, and emits a statement only for a declared name that no block establishes. The order survives; the text does not.
+
+Read the layers from the page instead. In devtools, on a page that has loaded your stylesheet:
+
+```js
+[...document.styleSheets]
+  // A stylesheet served from another origin refuses to be read; skip it.
+  .flatMap((sheet) => { try { return [...sheet.cssRules]; } catch { return []; } })
+  .filter((rule) => rule instanceof CSSLayerBlockRule || rule instanceof CSSLayerStatementRule)
+  .map((rule) => rule.name ?? rule.nameList.join(", "));
+```
+
+The names come back in the sequence the browser applies them, which is what the statement was for: on the reference build that sequence is exactly the ten declared names. A layer's position is fixed the first time it is named, whether by a statement or by a block, and only the unlayered at-rules the cascade does not sort (`@font-face`, `@property`, `@keyframes`, `@charset`) may appear before the first of them.
 
 ## Vite configuration
 
@@ -74,12 +128,21 @@ If you use a custom `css.transformer` or `css.modules` configuration, ensure tha
 
 ## Next.js configuration
 
-For Next.js projects, import styles in your root layout:
+For Next.js projects, import styles in your root layout, above everything else it imports, and mark the root element there:
 
 ```tsx
 // app/layout.tsx
 import "@canonical/styles/fonts";
 import "@canonical/styles";
+import "@canonical/react-ds-global/index.css";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" className="app comfortable">
+      <body>{children}</body>
+    </html>
+  );
+}
 ```
 
 ## Package reference

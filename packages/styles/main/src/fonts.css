@@ -3,7 +3,8 @@
  * Variable fonts from @canonical/ds-assets.
  * Licensed under Ubuntu Font License v1.0.
  *
- * Opt-in: import this file to load the Ubuntu Sans font family.
+ * Opt-in: import this file to load the Ubuntu Sans font family. Only the sans
+ * is declared — see the note under the two faces for why the mono is not.
  *
  *   @import url("@canonical/styles/fonts");
  *   @import url("@canonical/styles");
@@ -12,42 +13,63 @@
  * for the whole document and the cascade does not sort it, so putting it in a
  * layer would say nothing and would only invite a reader to look for the layer
  * that "wins".
+ *
+ * The descriptors below are the ranges the files actually carry, read from
+ * each file's variation table (`fvar`) rather than copied from a specimen: a
+ * range wider than the file's own is a claim the browser silently clamps, so
+ * `font-weight: 900` would render at the heaviest weight the file has and the
+ * stylesheet would say otherwise.
  */
 
+/* Ubuntu Sans 1.006 — fvar: wdth 75–100, wght 100–800 (1000 units per em). */
 @font-face {
   font-family: "Ubuntu Sans";
   src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSans[wdth,wght].woff2")
     format("woff2-variations");
-  font-weight: 100 900;
-  font-stretch: 62.5% 100%;
+  font-weight: 100 800;
+  font-stretch: 75% 100%;
   font-style: normal;
   font-display: swap;
 }
 
+/* Ubuntu Sans Italic 1.006 — the same two axes over the same ranges. */
 @font-face {
   font-family: "Ubuntu Sans";
   src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSans-Italic[wdth,wght].woff2")
     format("woff2-variations");
-  font-weight: 100 900;
-  font-stretch: 62.5% 100%;
+  font-weight: 100 800;
+  font-stretch: 75% 100%;
   font-style: italic;
   font-display: swap;
 }
 
-@font-face {
-  font-family: "Ubuntu Sans Mono";
-  src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSansMono[wght].woff2")
-    format("woff2-variations");
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Ubuntu Sans Mono";
-  src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSansMono-Italic[wght].woff2")
-    format("woff2-variations");
-  font-weight: 100 900;
-  font-style: italic;
-  font-display: swap;
-}
+/* Ubuntu Sans Mono is not declared, deliberately. The two files
+ * @canonical/ds-assets ships under those names are not fonts: each is a
+ * ~300 KB HTML error page committed in place of the font. A declared face
+ * pointing at one costs a page that renders monospace text a 304 KB download
+ * that can only fail, after which the text falls back to the generic
+ * monospace stack — which is where it lands with no declaration at all, for
+ * nothing. So the rules stay commented out until the real files exist.
+ *
+ * Tracking: PRA-146. Whoever replaces the assets: uncomment these, read the
+ * new files' variation table (`fvar`) and set the ranges to what it says,
+ * in the same change.
+ *
+ * @font-face {
+ *   font-family: "Ubuntu Sans Mono";
+ *   src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSansMono[wght].woff2")
+ *     format("woff2-variations");
+ *   font-weight: 100 900;
+ *   font-style: normal;
+ *   font-display: swap;
+ * }
+ *
+ * @font-face {
+ *   font-family: "Ubuntu Sans Mono";
+ *   src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSansMono-Italic[wght].woff2")
+ *     format("woff2-variations");
+ *   font-weight: 100 900;
+ *   font-style: italic;
+ *   font-display: swap;
+ * }
+ */

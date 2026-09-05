@@ -1,5 +1,13 @@
 <!doctype html>
-<html lang="en">
+<!-- The root declaration: one context (`app`, `site` or `docs`) and one density
+     (`comfortable` or `dense`), which together choose the --density-* channel
+     every control reads. A colour scheme is optional — `light` or `dark` pins
+     one, leaving both off follows the reader's operating system.
+
+     No `ds` here. An ordinary page is the design system's by default; `ds` is
+     what each component carries on itself, and marking a whole document with
+     it is only needed where another framework owns part of the page. -->
+<html lang="en" class="app comfortable">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -11,8 +19,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="https://assets.ubuntu.com/v1/be7e4cc6-COF-favicon-32x32.png">
     <title><%= name %></title>
   </head>
-  <!-- Surface declaration: context (app) + density (comfortable) — roots the design system's --density-* channel -->
-  <body class="app comfortable">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/client/entry.tsx"></script>
   </body>
