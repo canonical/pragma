@@ -31,6 +31,10 @@
  *   - External CSS cannot pierce the shadow boundary — expose CSS custom properties for theming.
  */
 
+/* No layer here: this sheet is adopted into a shadow tree, which has a cascade
+ * of its own, so the document's layer order never reaches it and a layer inside
+ * it would only let a later unlayered rule in this same sheet win. */
+
 :host {
   /*
    * Host controls the outer layout role.

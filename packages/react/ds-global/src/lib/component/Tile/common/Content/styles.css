@@ -1,27 +1,31 @@
-/**
- * Tile.Content styles
- * @implements ds:global.subcomponent.tile-content
- *
- * DSL anatomy mapping:
- * - layout.type: stack, layout.direction: vertical -> flex column
- * - spacing.padding.top: dimension/100, spacing.padding.bottom: dimension/200,
- *   spacing.internal.horizontal: dimension/200 -> top 100, bottom 200,
- *   sides 200. With a header above (padding-bottom 100), the two sections read
- *   as top 100 / sides 200 / bottom 200 with the sections meeting in between.
- */
-:root {
-  --tile-content-padding-top: var(--dimension-100);
-  --tile-content-padding-bottom: var(--dimension-200);
-  --tile-content-padding-inline: var(--dimension-200);
-  --tile-content-gap: var(--dimension-100);
-}
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
-.ds.tile-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--tile-content-gap);
+@layer ds.components.global {
+  /**
+   * Tile.Content styles
+   * @implements ds:global.subcomponent.tile-content
+   *
+   * DSL anatomy mapping:
+   * - layout.type: stack, layout.direction: vertical -> flex column
+   * - spacing.padding.top: dimension/100, spacing.padding.bottom: dimension/200,
+   *   spacing.internal.horizontal: dimension/200 -> top 100, bottom 200,
+   *   sides 200. With a header above (padding-bottom 100), the two sections read
+   *   as top 100 / sides 200 / bottom 200 with the sections meeting in between.
+   */
+  :root {
+    --tile-content-padding-top: var(--dimension-100);
+    --tile-content-padding-bottom: var(--dimension-200);
+    --tile-content-padding-inline: var(--dimension-200);
+    --tile-content-gap: var(--dimension-100);
+  }
 
-  padding-block-start: var(--tile-content-padding-top);
-  padding-block-end: var(--tile-content-padding-bottom);
-  padding-inline: var(--tile-content-padding-inline);
+  .ds.tile-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--tile-content-gap);
+
+    padding-block-start: var(--tile-content-padding-top);
+    padding-block-end: var(--tile-content-padding-bottom);
+    padding-inline: var(--tile-content-padding-inline);
+  }
 }

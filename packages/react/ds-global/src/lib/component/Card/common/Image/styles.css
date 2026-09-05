@@ -1,5 +1,9 @@
-.ds.card-image {
-  display: block;
-  height: auto;
-  width: 100%;
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  .ds.card-image {
+    display: block;
+    height: auto;
+    width: 100%;
+  }
 }

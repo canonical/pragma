@@ -18,60 +18,64 @@
  *
  * NOTE: full token pairing (spacing, typography, radius) is deferred to ADR-Q02.
  * The values below cover layout + the criticality colour surface + the side bar.
+ *
+ * Layer: ds.components.global (@canonical/styles README, "Cascade layers").
  */
 
-.ds.announcement {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  gap: var(--dimension-100);
-
-  /* Side bar (Figma part 4): leading rule carrying the criticality colour. */
-  border-inline-start-style: solid;
-  border-inline-start-width: var(--dimension-stroke-thickness-large);
-  border-inline-start-color: var(--modifier-color-border);
-
-  padding: var(--dimension-100);
-
-  /* Text is always the root text colour — the criticality tints the icon,
-     side bar and background, but the copy stays neutral (Figma: color/text/root
-     on every criticality). Only the icon reads the criticality colour channel. */
-  color: var(--color-text);
-  background-color: var(--modifier-color-foreground-secondary);
-
-  /* Icon — a masked box. The glyph shape comes from the criticality modifier's
-     --modifier-icon channel; the fill from --modifier-color-icon. Masking (not
-     background-image) so the glyph takes the theme colour — same technique as
-     Accordion's chevron and the form CheckboxInput checkmark. */
-  & > .icon {
-    flex: 0 0 auto;
-    inline-size: var(--dimension-200);
-    block-size: var(--dimension-200);
-    background-color: var(--modifier-color-icon);
-    mask-image: var(--modifier-icon);
-    mask-repeat: no-repeat;
-    mask-position: center;
-    mask-size: contain;
-    -webkit-mask-image: var(--modifier-icon);
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    -webkit-mask-size: contain;
-  }
-
-  & > .text {
+@layer ds.components.global {
+  .ds.announcement {
     display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    gap: 0;
-    min-width: 0;
-  }
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--dimension-100);
 
-  & .heading {
-    font-weight: var(--typography-heading-6-font-weight);
-    /* 
-      TODO: Uncomment after line-height bug in typography tokens is addressed 
-      See https://github.com/canonical/pragma/pull/961#issuecomment-5421532811
-    */
-    /* line-height: var(--typography-heading-6-line-height); */
+    /* Side bar (Figma part 4): leading rule carrying the criticality colour. */
+    border-inline-start-style: solid;
+    border-inline-start-width: var(--dimension-stroke-thickness-large);
+    border-inline-start-color: var(--modifier-color-border);
+
+    padding: var(--dimension-100);
+
+    /* Text is always the root text colour — the criticality tints the icon,
+       side bar and background, but the copy stays neutral (Figma: color/text/root
+       on every criticality). Only the icon reads the criticality colour channel. */
+    color: var(--color-text);
+    background-color: var(--modifier-color-foreground-secondary);
+
+    /* Icon — a masked box. The glyph shape comes from the criticality modifier's
+       --modifier-icon channel; the fill from --modifier-color-icon. Masking (not
+       background-image) so the glyph takes the theme colour — same technique as
+       Accordion's chevron and the form CheckboxInput checkmark. */
+    & > .icon {
+      flex: 0 0 auto;
+      inline-size: var(--dimension-200);
+      block-size: var(--dimension-200);
+      background-color: var(--modifier-color-icon);
+      mask-image: var(--modifier-icon);
+      mask-repeat: no-repeat;
+      mask-position: center;
+      mask-size: contain;
+      -webkit-mask-image: var(--modifier-icon);
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      -webkit-mask-size: contain;
+    }
+
+    & > .text {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      gap: 0;
+      min-width: 0;
+    }
+
+    & .heading {
+      font-weight: var(--typography-heading-6-font-weight);
+      /* 
+        TODO: Uncomment after line-height bug in typography tokens is addressed 
+        See https://github.com/canonical/pragma/pull/961#issuecomment-5421532811
+      */
+      /* line-height: var(--typography-heading-6-line-height); */
+    }
   }
 }

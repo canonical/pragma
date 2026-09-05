@@ -1,23 +1,27 @@
-/* Component tokens (migrated from @canonical/styles-primitives-canonical tokens.css) */
-:root {
-  --icon-size: 1em;
-}
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
-/**
- * Icon styles
- * @implements ds:global.component.icon
- *
- * DSL anatomy mapping:
- * - layout.display: inline-block -> display: inline-block
- * - size.width: size/icon/default -> width: var(--size-icon-default)
- * - size.height: size/icon/default -> height: var(--size-icon-default)
- */
-.ds.icon {
-  /* layout.display: inline-block */
-  display: inline-block;
-  vertical-align: middle;
+@layer ds.components.global {
+  /* Component tokens (migrated from @canonical/styles-primitives-canonical tokens.css) */
+  :root {
+    --icon-size: 1em;
+  }
 
-  /* size.width: size/icon/default, size.height: size/icon/default */
-  width: var(--icon-size, var(--size-icon-default, 1rem));
-  height: var(--icon-size, var(--size-icon-default, 1rem));
+  /**
+   * Icon styles
+   * @implements ds:global.component.icon
+   *
+   * DSL anatomy mapping:
+   * - layout.display: inline-block -> display: inline-block
+   * - size.width: size/icon/default -> width: var(--size-icon-default)
+   * - size.height: size/icon/default -> height: var(--size-icon-default)
+   */
+  .ds.icon {
+    /* layout.display: inline-block */
+    display: inline-block;
+    vertical-align: middle;
+
+    /* size.width: size/icon/default, size.height: size/icon/default */
+    width: var(--icon-size, var(--size-icon-default, 1rem));
+    height: var(--icon-size, var(--size-icon-default, 1rem));
+  }
 }

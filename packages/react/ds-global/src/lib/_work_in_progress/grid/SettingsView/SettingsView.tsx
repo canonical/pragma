@@ -5,6 +5,10 @@ import type React from "react";
 import type { SettingsViewProps } from "./types.js";
 import "./styles.css";
 
+// Pragma territory is the subtree under an element carrying `ds`, so every
+// component root declares it (cs:css.selectors.namespace).
+const componentCssClassName = "ds settings-view";
+
 /**
  * SettingsView component
  */
@@ -16,7 +20,7 @@ export const SettingsView = ({
 }: SettingsViewProps): React.ReactNode => {
   return (
     <div
-      className={`settings-view${className ? ` ${className}` : ""}`}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
       {...props}
     >
       <h2>{title}</h2>

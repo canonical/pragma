@@ -27,6 +27,9 @@ export interface TemplateContext {
   withStories: boolean;
   /** Include SSR tests */
   withSsrTests: boolean;
+  /** The cascade layer the generated stylesheet is wrapped in. Derived from the
+   * target package, not asked for: see resolveComponentLayer. */
+  componentLayer: string;
   /** Index signature for compatibility with Record<string, unknown> */
   [key: string]: unknown;
 }

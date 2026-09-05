@@ -15,6 +15,7 @@ describe("SettingsView", () => {
     render(<SettingsView className="custom-class">Content</SettingsView>);
     // The root element carries the classes; children may render in a descendant.
     const element = document.querySelector(".custom-class") as HTMLElement;
+    expect(element).toHaveClass("ds");
     expect(element).toHaveClass("settings-view");
     expect(element).toHaveClass("custom-class");
   });

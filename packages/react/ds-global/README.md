@@ -57,6 +57,36 @@ import "@canonical/styles";
 
 `@canonical/styles` provides the global design tokens (colour, spacing, typography). Each component in this package co-locates its own component-level tokens in a `styles.css` file next to the component source. These component tokens reference the global tokens from `@canonical/design-tokens` and are included automatically when the component is imported.
 
+### How component CSS reaches the page
+
+Each component module imports its own stylesheet (`import "./styles.css"`), so importing a component is what puts its CSS on the page. A bundler collects those imports into the application's CSS; nothing here is injected at runtime, and there is no stylesheet to link by hand. The consequence is that a component you never import ships no CSS — and that the order a bundler happens to emit the sheets in is not something you can rely on, which is what the cascade layer below is for.
+
+An aggregate `src/lib/index.css` with one `@import` per sheet — for consumers who want every component's CSS without importing every component — is being added separately and will be documented here when it lands. It carries no layer of its own, and its imports are bare: every sheet it imports already opens its own block.
+
+### Every component stylesheet is in `ds.components.global`
+
+Every component `styles.css` in this package is wrapped in one cascade layer:
+
+```css
+@layer ds.components.global {
+  .ds.my-component {
+    /* … */
+  }
+}
+```
+
+`@canonical/styles` declares the order of every layer in one statement, and `ds.components.global` sits near the top of it. Two things follow.
+
+`ds.components.app`, one layer higher, is the application tiers' — `@canonical/react-ds-app-lxd` and its siblings. None of them is wrapped yet (at the time of writing, no stylesheet under `packages/react/ds-app-*` carries a layer at all); wrapping them is being done package by package alongside this one. Today an app tier still beats this package for the opposite reason — it is unlayered, and unlayered beats layered. What the layer guarantees, once those packages land, is that an app tier's rule for a component this package also styles wins by cascade layer rather than by whichever bundle the loader emitted last.
+
+An application's own **unlayered** CSS now beats every rule in this package, whatever the selectors on either side, because unlayered author rules outrank every layered one. That is CSS working as designed, and it is the deliberate escape hatch: an application that needs to override a component writes a plain rule and it wins. An application that does *not* want to win by accident puts its CSS in `@layer app`.
+
+**Rule for contributors:** every component `styles.css` in this package opens with that wrapper. `@keyframes` and the component's own `:root` token defaults go inside it; `@property` and `@font-face` registrations stay outside, above the block. That is a convention, not something the cascade forces: a layer does sort a registration — a higher layer's `@property` or `@keyframes` beats a lower layer's in either source order, and an unlayered one beats both (measured in Chromium 151). Keeping the registrations above the block is what makes them read as what they are, declarations the whole document shares, and puts them where a reader goes to look them up. `@keyframes` going inside the block is the opposite choice, and deliberate: it lets an application tier replace an animation by layer. A sheet this package ships is imported **bare**, never with `layer(ds.components.global)`: it already opens its own block, and the keyword would nest it one level deeper, at `ds.components.global.ds.components.global` — a sublayer that loses to this layer's own rules at any specificity (measured in Chromium 151). `layer(…)` on an import is for a sheet that carries no layer of its own. Never reach for `!important` to win a fight — an important declaration inverts the layer order and cannot be arbitrated by layers at all. The package ships exactly one, `component/Tooltip/styles.css:16`, which strips the margin off whatever a tooltip is attached to; it is a known defect and the component-hygiene change removes it. The `@canonical/styles` README's "Cascade layers" section is the reference for the full order and for what is deliberately left unlayered.
+
+### Components own the box of the natives they render
+
+A component that renders a native element — a `<button>`, an `<input>`, a `<label>` — is responsible for that element's box: its margin, its width, its `min-width`, its `box-sizing`. Anything a component leaves undeclared is filled in by whatever else the host page loads, and on a page that also runs another framework that is a visible bug rather than a default. Declaring the box is being done as its own change; until it lands, treat "the native looks right on our own page" as a weaker guarantee than it sounds.
+
 ## Icon assets
 
 Components that render an icon — `Icon`, `Spinner`, and any component with an

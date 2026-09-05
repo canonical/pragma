@@ -1,32 +1,36 @@
-/**
- * Tile styles
- * @implements ds:global.component.tile
- *
- * The Tile always provides a surface: the component adds `.surface`, so the
- * surface channel is established on this element (and steps when tiles/surfaces
- * nest). It paints that background so it stands out on the page (dashboards,
- * bento layouts). It shares the Card radius and has no border of its own. It is
- * a static container — no cursor, hover, or focus affordance.
- *
- * DSL anatomy mapping:
- * - layout.type: stack, layout.direction: vertical -> flex column
- * - appearance.background: color/surface/tile -> the surface background channel
- * - appearance.radius: radius/card -> shared card radius (--dimension-radius-medium)
- */
-:root {
-  /* Shared with Card. --dimension-radius-medium is currently 0; intended 9. */
-  --tile-border-radius: var(--dimension-radius-medium);
-}
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
-.ds.tile {
-  display: flex;
-  flex-direction: column;
+@layer ds.components.global {
+  /**
+   * Tile styles
+   * @implements ds:global.component.tile
+   *
+   * The Tile always provides a surface: the component adds `.surface`, so the
+   * surface channel is established on this element (and steps when tiles/surfaces
+   * nest). It paints that background so it stands out on the page (dashboards,
+   * bento layouts). It shares the Card radius and has no border of its own. It is
+   * a static container — no cursor, hover, or focus affordance.
+   *
+   * DSL anatomy mapping:
+   * - layout.type: stack, layout.direction: vertical -> flex column
+   * - appearance.background: color/surface/tile -> the surface background channel
+   * - appearance.radius: radius/card -> shared card radius (--dimension-radius-medium)
+   */
+  :root {
+    /* Shared with Card. --dimension-radius-medium is currently 0; intended 9. */
+    --tile-border-radius: var(--dimension-radius-medium);
+  }
 
-  /* Tile is a surface: it paints its own background (stands out on the page). */
-  background: var(--surface-color-background, var(--color-background));
+  .ds.tile {
+    display: flex;
+    flex-direction: column;
 
-  border-radius: var(--tile-border-radius);
+    /* Tile is a surface: it paints its own background (stands out on the page). */
+    background: var(--surface-color-background, var(--color-background));
 
-  /* Clip section corners (e.g. full-bleed content) to the tile radius. */
-  overflow: hidden;
+    border-radius: var(--tile-border-radius);
+
+    /* Clip section corners (e.g. full-bleed content) to the tile radius. */
+    overflow: hidden;
+  }
 }

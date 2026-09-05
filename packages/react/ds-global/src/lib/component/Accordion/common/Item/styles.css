@@ -1,326 +1,332 @@
-/**
- * Accordion.Item styles
- * @implements ds:global.subcomponent.accordion-item
- *
- * Rendered with native <details>/<summary>. Typography and baseline alignment
- * come from the `.p` class on the heading and content. Tokens follow the Figma
- * spec: header interactive background uses the ghost surface channel (which
- * auto-steps on nested .surface contexts to layer2/layer3), text uses
- * color-text, the chevron uses color-icon, and dividers use color-border-muted.
- * Vertical padding is expressed in baseline multiples.
- *
- * NOTE: the apps/sites element-size sizing (collapsed item at 36px sites / 32px
- * apps, and the matching h6 line box) is intentionally NOT set here — control
- * heights across apps vs sites are owned by the density/height bucket, not this
- * design-review geometry pass.
- */
-:root {
-  --accordion-item-color-text: var(--color-text);
-  --accordion-item-color-icon: var(--color-icon);
-  --accordion-item-color-border: var(--color-border-muted);
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
-  /* Items have no side (inline) borders by default — the docs show only the
-     block-end divider. This token is an intentional extension point: it
-     references a currently-undefined colour, so it resolves to no border, but
-     a theme/consumer can supply `--accordion-item-border-inline-color` to turn
-     inline borders on without changing the component. */
-  --accordion-item-border-inline: var(--dimension-stroke-thickness-medium) solid
-    var(--accordion-item-border-inline-color);
+@layer ds.components.global {
+  /**
+   * Accordion.Item styles
+   * @implements ds:global.subcomponent.accordion-item
+   *
+   * Rendered with native <details>/<summary>. Typography and baseline alignment
+   * come from the `.p` class on the heading and content. Tokens follow the Figma
+   * spec: header interactive background uses the ghost surface channel (which
+   * auto-steps on nested .surface contexts to layer2/layer3), text uses
+   * color-text, the chevron uses color-icon, and dividers use color-border-muted.
+   * Vertical padding is expressed in baseline multiples.
+   *
+   * NOTE: the apps/sites element-size sizing (collapsed item at 36px sites / 32px
+   * apps, and the matching h6 line box) is intentionally NOT set here — control
+   * heights across apps vs sites are owned by the density/height bucket, not this
+   * design-review geometry pass.
+   */
+  :root {
+    --accordion-item-color-text: var(--color-text);
+    --accordion-item-color-icon: var(--color-icon);
+    --accordion-item-color-border: var(--color-border-muted);
 
-  /* Default header background (surface 1). The surface channel is applied on
-     the element below — NOT here — because a var() referencing
-     --surface-color-foreground-ghost resolved in :root would capture the :root
-     value (where no .surface is active) and never step. The built surface
-     layer re-channels only the base ghost (no hover/active channel), so
-     hover/active default to the non-layered ghost state vars here and are
-     re-pointed per surface nesting depth by the stopgap rules below the
-     header. */
-  --accordion-item-header-background: var(--color-foreground-ghost);
-  --accordion-item-header-background-hover: var(--color-foreground-ghost-hover);
-  --accordion-item-header-background-active: var(
-    --color-foreground-ghost-active
-  );
+    /* Items have no side (inline) borders by default — the docs show only the
+       block-end divider. This token is an intentional extension point: it
+       references a currently-undefined colour, so it resolves to no border, but
+       a theme/consumer can supply `--accordion-item-border-inline-color` to turn
+       inline borders on without changing the component. */
+    --accordion-item-border-inline: var(--dimension-stroke-thickness-medium)
+      solid var(--accordion-item-border-inline-color);
 
-  --accordion-item-header-gap: var(--dimension-200);
-  /* Header block padding in baseline multiples (dimension-100 = 1 bU). The
-     apps/sites element-size sizing (6px → 36/32) is owned by the height bucket. */
-  --accordion-item-header-padding-block: var(--dimension-100);
-  --accordion-item-header-padding-inline: var(--dimension-200);
+    /* Default header background (surface 1). The surface channel is applied on
+       the element below — NOT here — because a var() referencing
+       --surface-color-foreground-ghost resolved in :root would capture the :root
+       value (where no .surface is active) and never step. The built surface
+       layer re-channels only the base ghost (no hover/active channel), so
+       hover/active default to the non-layered ghost state vars here and are
+       re-pointed per surface nesting depth by the stopgap rules below the
+       header. */
+    --accordion-item-header-background: var(--color-foreground-ghost);
+    --accordion-item-header-background-hover: var(
+      --color-foreground-ghost-hover
+    );
+    --accordion-item-header-background-active: var(
+      --color-foreground-ghost-active
+    );
 
-  --accordion-item-content-padding-inline: var(--dimension-200);
-  /* Vertical content padding in baseline multiples (dimension-100 = 1 bU). */
-  --accordion-item-content-padding-block: var(--dimension-100);
+    --accordion-item-header-gap: var(--dimension-200);
+    /* Header block padding in baseline multiples (dimension-100 = 1 bU). The
+       apps/sites element-size sizing (6px → 36/32) is owned by the height bucket. */
+    --accordion-item-header-padding-block: var(--dimension-100);
+    --accordion-item-header-padding-inline: var(--dimension-200);
 
-  /* Fixed chevron size (per Figma) so every item reserves the same chevron
-     column width and all headings start at the same x-position, regardless of
-     heading level — no horizontal drift. */
-  --accordion-item-chevron-size: var(--dimension-200);
+    --accordion-item-content-padding-inline: var(--dimension-200);
+    /* Vertical content padding in baseline multiples (dimension-100 = 1 bU). */
+    --accordion-item-content-padding-block: var(--dimension-100);
 
-  /* Indent the content so it aligns under the heading text, i.e. past the
-     header inline padding + chevron + the gap between chevron and heading. */
-  --accordion-item-content-indent: calc(
-    var(--accordion-item-header-padding-inline) +
-    var(--accordion-item-chevron-size) +
-    var(--accordion-item-header-gap)
-  );
-}
+    /* Fixed chevron size (per Figma) so every item reserves the same chevron
+       column width and all headings start at the same x-position, regardless of
+       heading level — no horizontal drift. */
+    --accordion-item-chevron-size: var(--dimension-200);
 
-.ds.accordion-item {
-  /* Inline (side) borders — off by default, see the token above. */
-  border-inline: var(--accordion-item-border-inline);
-
-  /* Divider at the end of each item (Figma anatomy #6: "the divider at the end
-     of an accordion item indicates the end of an accordion item"). */
-  border-block-end: var(--dimension-stroke-thickness-medium) solid
-    var(--accordion-item-color-border);
-}
-
-/* Header tab — the native <summary>. The chevron is a fixed size, so a fixed
-   chevron column keeps all headings left-aligned; align-items:center centres
-   the fixed chevron on the header line. */
-.ds.accordion-item > .header {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: var(--accordion-item-header-gap);
-
-  padding-block: var(--accordion-item-header-padding-block);
-  padding-inline: var(--accordion-item-header-padding-inline);
-
-  color: var(--accordion-item-color-text);
-  /* Consume the ghost surface channel here on the element so it resolves in the
-     .surface context and auto-steps (surface 1 -> base, 2 -> layer2, 3 ->
-     layer3); outside any .surface it falls back to the surface-1 default. */
-  background-color: var(
-    --surface-color-foreground-ghost,
-    var(--accordion-item-header-background)
-  );
-  cursor: pointer;
-
-  /* Hide the native disclosure triangle */
-  list-style: none;
-
-  &::-webkit-details-marker {
-    display: none;
-  }
-
-  /* Prefer the surface hover/active channels so a future token build that
-     ships them steps automatically; today they are unset everywhere, so these
-     resolve to the fallback tokens, re-pointed per nesting depth below. */
-  &:hover {
-    background-color: var(
-      --surface-color-foreground-ghost-hover,
-      var(--accordion-item-header-background-hover)
+    /* Indent the content so it aligns under the heading text, i.e. past the
+       header inline padding + chevron + the gap between chevron and heading. */
+    --accordion-item-content-indent: calc(
+      var(--accordion-item-header-padding-inline) +
+      var(--accordion-item-chevron-size) +
+      var(--accordion-item-header-gap)
     );
   }
 
-  &:active {
+  .ds.accordion-item {
+    /* Inline (side) borders — off by default, see the token above. */
+    border-inline: var(--accordion-item-border-inline);
+
+    /* Divider at the end of each item (Figma anatomy #6: "the divider at the end
+       of an accordion item indicates the end of an accordion item"). */
+    border-block-end: var(--dimension-stroke-thickness-medium) solid
+      var(--accordion-item-color-border);
+  }
+
+  /* Header tab — the native <summary>. The chevron is a fixed size, so a fixed
+     chevron column keeps all headings left-aligned; align-items:center centres
+     the fixed chevron on the header line. */
+  .ds.accordion-item > .header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--accordion-item-header-gap);
+
+    padding-block: var(--accordion-item-header-padding-block);
+    padding-inline: var(--accordion-item-header-padding-inline);
+
+    color: var(--accordion-item-color-text);
+    /* Consume the ghost surface channel here on the element so it resolves in the
+       .surface context and auto-steps (surface 1 -> base, 2 -> layer2, 3 ->
+       layer3); outside any .surface it falls back to the surface-1 default. */
     background-color: var(
-      --surface-color-foreground-ghost-active,
-      var(--accordion-item-header-background-active)
+      --surface-color-foreground-ghost,
+      var(--accordion-item-header-background)
+    );
+    cursor: pointer;
+
+    /* Hide the native disclosure triangle */
+    list-style: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    /* Prefer the surface hover/active channels so a future token build that
+       ships them steps automatically; today they are unset everywhere, so these
+       resolve to the fallback tokens, re-pointed per nesting depth below. */
+    &:hover {
+      background-color: var(
+        --surface-color-foreground-ghost-hover,
+        var(--accordion-item-header-background-hover)
+      );
+    }
+
+    &:active {
+      background-color: var(
+        --surface-color-foreground-ghost-active,
+        var(--accordion-item-header-background-active)
+      );
+    }
+  }
+
+  /* STOPGAP — step the header hover/active backgrounds with surface nesting.
+     The built surfaces modifier re-channels only the base ghost (it exposes no
+     --surface-color-foreground-ghost-hover/-active), so without this, hovering
+     a header on a layer-2/3 surface painted the base-layer colour. These rules
+     mirror the modifier's own nesting selectors to re-point the hover/active
+     tokens at the layered state tokens. Hard-coding surface depth in component
+     CSS is exactly what the token block above avoids — delete both rules once
+     the surfaces modifier ships the hover/active channels (the :hover/:active
+     rules above already prefer them). */
+  .surface .surface .ds.accordion-item {
+    --accordion-item-header-background-hover: var(
+      --color-foreground-ghost-layer2-hover
+    );
+    --accordion-item-header-background-active: var(
+      --color-foreground-ghost-layer2-active
     );
   }
-}
 
-/* STOPGAP — step the header hover/active backgrounds with surface nesting.
-   The built surfaces modifier re-channels only the base ghost (it exposes no
-   --surface-color-foreground-ghost-hover/-active), so without this, hovering
-   a header on a layer-2/3 surface painted the base-layer colour. These rules
-   mirror the modifier's own nesting selectors to re-point the hover/active
-   tokens at the layered state tokens. Hard-coding surface depth in component
-   CSS is exactly what the token block above avoids — delete both rules once
-   the surfaces modifier ships the hover/active channels (the :hover/:active
-   rules above already prefer them). */
-.surface .surface .ds.accordion-item {
-  --accordion-item-header-background-hover: var(
-    --color-foreground-ghost-layer2-hover
-  );
-  --accordion-item-header-background-active: var(
-    --color-foreground-ghost-layer2-active
-  );
-}
-
-.surface .surface .surface .ds.accordion-item {
-  --accordion-item-header-background-hover: var(
-    --color-foreground-ghost-layer3-hover
-  );
-  --accordion-item-header-background-active: var(
-    --color-foreground-ghost-layer3-active
-  );
-}
-
-/* The consumer supplies the heading content — plain text by default (rendered
-   as the text-primary body tier) or an <h6>, which renders at the heading-6
-   tier. Only those two type tokens are allowed on the accordion heading; any
-   other heading element is normalised to the text-primary body tier. */
-.ds.accordion-item > .header > .heading {
-  flex: 1;
-  min-width: 0;
-
-  /* Default: body copy (text-primary) for plain text and any heading element. */
-  font-family: var(--typography-text-primary-font-family);
-  font-size: var(--typography-text-primary-font-size);
-  font-weight: var(--typography-text-primary-font-weight);
-  line-height: var(--typography-text-primary-line-height);
-  letter-spacing: var(--typography-text-primary-letter-spacing);
-
-  /* Normalise every heading element except <h6> down to the inherited body
-     tier. <h6> keeps the base h6 tier from @canonical/styles-typography
-     (correct heading-6 tokens, including the baseline-snapped line-height) — no
-     heading-6 tokens are restated here.
-     NOTE: the per-context h6 line box (24px sites / 20px apps) and zeroing the
-     heading padding-block nudges to make the header height padding-driven are
-     part of the apps/sites height bucket, not this pass. */
-  & :is(h1, h2, h3, h4, h5) {
-    margin: 0;
-    font: inherit;
-    letter-spacing: inherit;
+  .surface .surface .surface .ds.accordion-item {
+    --accordion-item-header-background-hover: var(
+      --color-foreground-ghost-layer3-hover
+    );
+    --accordion-item-header-background-active: var(
+      --color-foreground-ghost-layer3-active
+    );
   }
 
-  & h6 {
-    margin: 0;
+  /* The consumer supplies the heading content — plain text by default (rendered
+     as the text-primary body tier) or an <h6>, which renders at the heading-6
+     tier. Only those two type tokens are allowed on the accordion heading; any
+     other heading element is normalised to the text-primary body tier. */
+  .ds.accordion-item > .header > .heading {
+    flex: 1;
+    min-width: 0;
+
+    /* Default: body copy (text-primary) for plain text and any heading element. */
+    font-family: var(--typography-text-primary-font-family);
+    font-size: var(--typography-text-primary-font-size);
+    font-weight: var(--typography-text-primary-font-weight);
+    line-height: var(--typography-text-primary-line-height);
+    letter-spacing: var(--typography-text-primary-letter-spacing);
+
+    /* Normalise every heading element except <h6> down to the inherited body
+       tier. <h6> keeps the base h6 tier from @canonical/styles-typography
+       (correct heading-6 tokens, including the baseline-snapped line-height) — no
+       heading-6 tokens are restated here.
+       NOTE: the per-context h6 line box (24px sites / 20px apps) and zeroing the
+       heading padding-block nudges to make the header height padding-driven are
+       part of the apps/sites height bucket, not this pass. */
+    & :is(h1, h2, h3, h4, h5) {
+      margin: 0;
+      font: inherit;
+      letter-spacing: inherit;
+    }
+
+    & h6 {
+      margin: 0;
+    }
   }
-}
 
-/* Control indicator (chevron) — fixed size for consistent alignment. */
-.ds.accordion-item > .header > .chevron {
-  flex-shrink: 0;
-  width: var(--accordion-item-chevron-size);
-  height: var(--accordion-item-chevron-size);
-
-  /* Closed: chevron points right (the down-glyph rotated -90deg). */
-  transform: rotate(-90deg);
-  transition: transform var(--motion-duration-fast)
-    var(--motion-easing-standard);
-
-  /* Chevron glyph from the Canonical icon set, masked so it can take the theme
-     icon colour (same technique as CheckboxInput's checkmark). */
-  &::before {
-    content: "";
-    display: block;
-    width: 100%;
-    height: 100%;
-    background-color: var(--accordion-item-color-icon);
-    mask-image: url("/icons/chevron-down.svg#chevron-down");
-    mask-repeat: no-repeat;
-    mask-position: center;
-    mask-size: contain;
-    -webkit-mask-image: url("/icons/chevron-down.svg#chevron-down");
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    -webkit-mask-size: contain;
-  }
-}
-
-/* Open: chevron points down (Figma: right when closed, down when open). */
-.ds.accordion-item[open] > .header > .chevron {
-  transform: rotate(0deg);
-}
-
-@media (prefers-reduced-motion: reduce) {
+  /* Control indicator (chevron) — fixed size for consistent alignment. */
   .ds.accordion-item > .header > .chevron {
-    transition: none;
+    flex-shrink: 0;
+    width: var(--accordion-item-chevron-size);
+    height: var(--accordion-item-chevron-size);
+
+    /* Closed: chevron points right (the down-glyph rotated -90deg). */
+    transform: rotate(-90deg);
+    transition: transform var(--motion-duration-fast)
+      var(--motion-easing-standard);
+
+    /* Chevron glyph from the Canonical icon set, masked so it can take the theme
+       icon colour (same technique as CheckboxInput's checkmark). */
+    &::before {
+      content: "";
+      display: block;
+      width: 100%;
+      height: 100%;
+      background-color: var(--accordion-item-color-icon);
+      mask-image: url("/icons/chevron-down.svg#chevron-down");
+      mask-repeat: no-repeat;
+      mask-position: center;
+      mask-size: contain;
+      -webkit-mask-image: url("/icons/chevron-down.svg#chevron-down");
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      -webkit-mask-size: contain;
+    }
   }
-}
 
-/* Content panel. Uses `.editorial` (a prose context) rather than `.p`, so the
-   wrapper doesn't add baseline padding that would double up with content that
-   is already `.p`. The wrapper owns its own vertical padding in baseline
-   multiples, and is indented inline to align under the heading. */
-.ds.accordion-item > .content {
-  color: var(--accordion-item-color-text);
+  /* Open: chevron points down (Figma: right when closed, down when open). */
+  .ds.accordion-item[open] > .header > .chevron {
+    transform: rotate(0deg);
+  }
 
-  padding-block: var(--accordion-item-content-padding-block);
-  padding-inline-start: var(--accordion-item-content-indent);
-  padding-inline-end: var(--accordion-item-content-padding-inline);
-}
+  @media (prefers-reduced-motion: reduce) {
+    .ds.accordion-item > .header > .chevron {
+      transition: none;
+    }
+  }
 
-/* 1px divider baseline compensation: subtract the divider thickness from the
-   block-end padding of whichever element sits directly above the item's
-   block-end border, so the item's border-box height stays a baseline multiple
-   (no drift down the list) without pulling the content up in the process.
-   - collapsed: only the header is shown -> compensate the header
-   - expanded:  the content is at the bottom -> compensate the content */
-.ds.accordion-item:not([open]) > .header {
-  padding-block-end: calc(
-    var(--accordion-item-header-padding-block) -
-    var(--dimension-stroke-thickness-medium)
-  );
-}
+  /* Content panel. Uses `.editorial` (a prose context) rather than `.p`, so the
+     wrapper doesn't add baseline padding that would double up with content that
+     is already `.p`. The wrapper owns its own vertical padding in baseline
+     multiples, and is indented inline to align under the heading. */
+  .ds.accordion-item > .content {
+    color: var(--accordion-item-color-text);
 
-.ds.accordion-item[open] > .content {
-  padding-block-end: calc(
-    var(--accordion-item-content-padding-block) -
-    var(--dimension-stroke-thickness-medium)
-  );
-}
+    padding-block: var(--accordion-item-content-padding-block);
+    padding-inline-start: var(--accordion-item-content-indent);
+    padding-inline-end: var(--accordion-item-content-padding-inline);
+  }
 
-/* ── Density seat (intrinsic) — the header is a control-height row ───────────
- * Inside a density scope the header takes the SHARED control seat from
- * @canonical/styles (modifiers.density.css), exactly like the Button and the
- * form inputs: the heading's own line box (`--control-seat-line`, the cell
- * minus one baseline of headroom per side) is the header interior;
- * `--seat-before` lands its baseline on the density target; `--seat-after`
- * closes the row to EXACTLY the density cell (32px apps-comfortable, 24px
- * apps-dense, …) with no block-size anywhere. So an accordion header, a
- * button, and an input in the same cell are the same height and their text
- * shares one baseline index.
- *
- * The header carries no border of its own — the item's DIVIDER plays that
- * role, and only on the collapsed face: collapsed, the divider renders
- * directly under the header, so the closing pad absorbs its thickness
- * (header + divider = the cell); expanded, the divider sits after the content
- * and the content's own compensation above owns it — the header keeps the full
- * closing pad. This is the per-state split the pre-density compensation rules
- * above apply to the legacy (non-density) look.
- *
- * The chevron needs no new rule: the header's `align-items: center` centres it
- * on the flex line, whose cross-size IS the heading's line box — the same
- * "centre on the glyph run" pairing the input affixes use.
- *
- * KNOWN LIMIT: an <h6> heading keeps its own engine line-height (see the
- * heading rule above), so its line box may differ from --control-seat-line;
- * the h6-in-header case is owned by a later pass. The default (body-tier)
- * heading is exact. */
-:is(.comfortable, .dense, .app, .site, .docs) .ds.accordion-item {
-  /* The CONTENT panel consumes the density system's semantic spacing rung for
-     its block padding — space-md (16px apps-comfortable, 8px apps-dense,
-     20/12px sites) — instead of the fixed 1 bU, so the panel's breathing room
-     follows the density cell. Every rung is a whole baseline multiple, so the
-     rhythm holds; the [open] divider compensation reads this same token, so it
-     follows automatically. Outside a density scope the :root default stands. */
-  --accordion-item-content-padding-block: var(
-    --density-space-md,
-    var(--dimension-100)
-  );
-}
+  /* 1px divider baseline compensation: subtract the divider thickness from the
+     block-end padding of whichever element sits directly above the item's
+     block-end border, so the item's border-box height stays a baseline multiple
+     (no drift down the list) without pulling the content up in the process.
+     - collapsed: only the header is shown -> compensate the header
+     - expanded:  the content is at the bottom -> compensate the content */
+  .ds.accordion-item:not([open]) > .header {
+    padding-block-end: calc(
+      var(--accordion-item-header-padding-block) -
+      var(--dimension-stroke-thickness-medium)
+    );
+  }
 
-:is(.comfortable, .dense, .app, .site, .docs) .ds.accordion-item > .header {
-  /* No border above the heading inside the header, so no border term. Rounded
-     to ¼px for exact layout-unit representability (see the shared seat). */
-  --seat-before: round(nearest, max(0px, var(--control-seat-basis)), 0.25px);
-  --seat-after: max(
-    0px,
-    calc(
-      var(--density-line-height-effective) -
-      var(--control-seat-line) -
-      var(--seat-before)
-    )
-  );
-  padding-block: var(--seat-before) var(--seat-after);
-}
-:is(.comfortable, .dense, .app, .site, .docs)
-  .ds.accordion-item:not([open])
-  > .header {
-  /* Collapsed: absorb the item divider below, keeping header + divider = cell. */
-  padding-block-end: max(
-    0px,
-    calc(var(--seat-after) - var(--dimension-stroke-thickness-medium))
-  );
-}
-:is(.comfortable, .dense, .app, .site, .docs)
-  .ds.accordion-item
-  > .header
-  > .heading {
-  line-height: var(--control-seat-line);
+  .ds.accordion-item[open] > .content {
+    padding-block-end: calc(
+      var(--accordion-item-content-padding-block) -
+      var(--dimension-stroke-thickness-medium)
+    );
+  }
+
+  /* ── Density seat (intrinsic) — the header is a control-height row ───────────
+   * Inside a density scope the header takes the SHARED control seat from
+   * @canonical/styles (modifiers.density.css), exactly like the Button and the
+   * form inputs: the heading's own line box (`--control-seat-line`, the cell
+   * minus one baseline of headroom per side) is the header interior;
+   * `--seat-before` lands its baseline on the density target; `--seat-after`
+   * closes the row to EXACTLY the density cell (32px apps-comfortable, 24px
+   * apps-dense, …) with no block-size anywhere. So an accordion header, a
+   * button, and an input in the same cell are the same height and their text
+   * shares one baseline index.
+   *
+   * The header carries no border of its own — the item's DIVIDER plays that
+   * role, and only on the collapsed face: collapsed, the divider renders
+   * directly under the header, so the closing pad absorbs its thickness
+   * (header + divider = the cell); expanded, the divider sits after the content
+   * and the content's own compensation above owns it — the header keeps the full
+   * closing pad. This is the per-state split the pre-density compensation rules
+   * above apply to the legacy (non-density) look.
+   *
+   * The chevron needs no new rule: the header's `align-items: center` centres it
+   * on the flex line, whose cross-size IS the heading's line box — the same
+   * "centre on the glyph run" pairing the input affixes use.
+   *
+   * KNOWN LIMIT: an <h6> heading keeps its own engine line-height (see the
+   * heading rule above), so its line box may differ from --control-seat-line;
+   * the h6-in-header case is owned by a later pass. The default (body-tier)
+   * heading is exact. */
+  :is(.comfortable, .dense, .app, .site, .docs) .ds.accordion-item {
+    /* The CONTENT panel consumes the density system's semantic spacing rung for
+       its block padding — space-md (16px apps-comfortable, 8px apps-dense,
+       20/12px sites) — instead of the fixed 1 bU, so the panel's breathing room
+       follows the density cell. Every rung is a whole baseline multiple, so the
+       rhythm holds; the [open] divider compensation reads this same token, so it
+       follows automatically. Outside a density scope the :root default stands. */
+    --accordion-item-content-padding-block: var(
+      --density-space-md,
+      var(--dimension-100)
+    );
+  }
+
+  :is(.comfortable, .dense, .app, .site, .docs) .ds.accordion-item > .header {
+    /* No border above the heading inside the header, so no border term. Rounded
+       to ¼px for exact layout-unit representability (see the shared seat). */
+    --seat-before: round(nearest, max(0px, var(--control-seat-basis)), 0.25px);
+    --seat-after: max(
+      0px,
+      calc(
+        var(--density-line-height-effective) -
+        var(--control-seat-line) -
+        var(--seat-before)
+      )
+    );
+    padding-block: var(--seat-before) var(--seat-after);
+  }
+  :is(.comfortable, .dense, .app, .site, .docs)
+    .ds.accordion-item:not([open])
+    > .header {
+    /* Collapsed: absorb the item divider below, keeping header + divider = cell. */
+    padding-block-end: max(
+      0px,
+      calc(var(--seat-after) - var(--dimension-stroke-thickness-medium))
+    );
+  }
+  :is(.comfortable, .dense, .app, .site, .docs)
+    .ds.accordion-item
+    > .header
+    > .heading {
+    line-height: var(--control-seat-line);
+  }
 }
