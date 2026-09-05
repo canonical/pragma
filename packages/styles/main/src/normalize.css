@@ -187,8 +187,10 @@
     }
 
     /* Correct the odd appearance and the outline style in Safari, and remove
-       the inner padding it adds on macOS. */
-    [type="search"] {
+       the inner padding it adds on macOS. Root-reaching, like the control font
+       rule above, so a search input that is itself the outermost root gets the
+       same chrome as one nested inside a territory. */
+    :where(:scope, :scope *):is([type="search"]) {
       -webkit-appearance: textfield;
       outline-offset: -2px;
     }

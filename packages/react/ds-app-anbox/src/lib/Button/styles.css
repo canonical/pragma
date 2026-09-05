@@ -1,7 +1,5 @@
-/* Layer: `ds.components.app` — so this application tier's rule for the
- * component beats the global tier's by cascade layer, not by whichever bundle a
- * loader happened to emit last. See "Cascade layers" in the @canonical/styles
- * README. */
+/* component styles
+ * Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
 /* This sheet is a DELTA over the Button in @canonical/react-ds-global, not a
  * second copy of it. It declares only the properties on which this tier
