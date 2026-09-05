@@ -8,6 +8,21 @@
  *   :root { --baseline-height: <length>; }
  *   element { --font-size: <length>; --line-height: <length>; }
  *   (fallback: --line-height-multiplier: <number> if --line-height is unset)
+ *
+ * Layers and scope:
+ *   Every rule below sits in `ds.typography` inside `@scope (.ds)`, so the
+ *   engine reaches only the design system's own territory — the subtree rooted
+ *   at an element carrying the class `ds` — and a page the design system does
+ *   not own keeps its own headings and paragraphs. Each engine carries its own
+ *   layer and scope block, because a consumer may link one engine on its own,
+ *   as the example does.
+ *
+ *   `.p` and `.code` are written twice, bare and `:scope.x`, because a scoped
+ *   selector never matches its own scoping root and a `ds` root carries those
+ *   classes: `<p class="ds field-error p">`, `<code class="ds inline-code code">`,
+ *   `<kbd class="ds keyboard-key code">`. The `@property` registration this file
+ *   imports stays outside both the layer and the scope; baseline-shim.css says
+ *   why.
  */
 
 /* Baseline unit shim (--baseline-height 4px fallback) */
@@ -19,77 +34,86 @@
 /* Semantic token → engine variable mapper */
 @import url("./mapper.css");
 
-/* Reset */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-.p,
-.code {
-  margin-block: 0;
-}
+@layer ds.typography {
+  @scope (.ds) {
+    /* Reset */
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    p,
+    .p,
+    .code,
+    :scope.p,
+    :scope.code {
+      margin-block: 0;
+    }
 
-/* Baseline alignment — cap-unit engine
- *
- * Each text element's total height snaps to a multiple of --baseline-height.
- * The engine achieves this by adding padding nudges inside the element box:
- *
- *   padding-block-start = start nudge (pushes the first baseline onto the grid)
- *   padding-block-end   = end nudge   (fills the remainder so total block size
- *                                      is a whole number of baseline units)
- *
- * Both nudges are padding (not margin) so the element's border-box block size
- * participates correctly in flex and grid layouts. margin-block-end is reserved
- * solely for --space-after (editorial element-owned spacing, default 0).
- */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-.p,
-.code {
-  --computed-line-height: var(
-    --line-height,
-    calc(var(--baseline-height) * var(--line-height-multiplier))
-  );
-  line-height: var(--computed-line-height);
-  font-size: var(--font-size);
+    /* Baseline alignment — cap-unit engine
+     *
+     * Each text element's total height snaps to a multiple of --baseline-height.
+     * The engine achieves this by adding padding nudges inside the element box:
+     *
+     *   padding-block-start = start nudge (pushes the first baseline onto the grid)
+     *   padding-block-end   = end nudge   (fills the remainder so total block size
+     *                                      is a whole number of baseline units)
+     *
+     * Both nudges are padding (not margin) so the element's border-box block size
+     * participates correctly in flex and grid layouts. margin-block-end is reserved
+     * solely for --space-after (editorial element-owned spacing, default 0).
+     */
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    p,
+    .p,
+    .code,
+    :scope.p,
+    :scope.code {
+      --computed-line-height: var(
+        --line-height,
+        calc(var(--baseline-height) * var(--line-height-multiplier))
+      );
+      line-height: var(--computed-line-height);
+      font-size: var(--font-size);
 
-  --baseline-position: calc((var(--computed-line-height) + 1cap) / 2);
-  --start-nudge: calc(
-    var(--baseline-height) -
-    mod(var(--baseline-position), var(--baseline-height))
-  );
-  --end-nudge: calc(var(--baseline-height) - var(--start-nudge));
-}
+      --baseline-position: calc((var(--computed-line-height) + 1cap) / 2);
+      --start-nudge: calc(
+        var(--baseline-height) -
+        mod(var(--baseline-position), var(--baseline-height))
+      );
+      --end-nudge: calc(var(--baseline-height) - var(--start-nudge));
+    }
 
-/* Block-level baseline nudges.
- *
- * The padding-block nudges snap a BLOCK element's box onto the baseline grid.
- * They must not apply to inline `.code` (e.g. InlineCode's <code> or
- * KeyboardKey's <kbd>) nested in a paragraph — there the parent line already
- * owns the baseline, and adding the nudge double-pads the top, breaking
- * alignment. So bare `.code` is inline-only (typography, no nudges); combine
- * `.p.code` for a standalone monospace code *block* that needs the nudges.
- */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-.p {
-  /* Nudges as padding — inside the box for flex/grid compatibility */
-  padding-block-start: var(--start-nudge);
-  padding-block-end: var(--end-nudge);
+    /* Block-level baseline nudges.
+     *
+     * The padding-block nudges snap a BLOCK element's box onto the baseline grid.
+     * They must not apply to inline `.code` (e.g. InlineCode's <code> or
+     * KeyboardKey's <kbd>) nested in a paragraph — there the parent line already
+     * owns the baseline, and adding the nudge double-pads the top, breaking
+     * alignment. So bare `.code` is inline-only (typography, no nudges); combine
+     * `.p.code` for a standalone monospace code *block* that needs the nudges.
+     */
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    p,
+    .p,
+    :scope.p {
+      /* Nudges as padding — inside the box for flex/grid compatibility */
+      padding-block-start: var(--start-nudge);
+      padding-block-end: var(--end-nudge);
 
-  /* Element-owned spacing — only active in .editorial contexts */
-  margin-block-end: calc(var(--space-after, 0) * var(--baseline-height));
+      /* Element-owned spacing — only active in .editorial contexts */
+      margin-block-end: calc(var(--space-after, 0) * var(--baseline-height));
+    }
+  }
 }

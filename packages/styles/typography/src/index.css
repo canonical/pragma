@@ -8,8 +8,18 @@
  *   - baseline-metrics.css  — Uses extracted font metrics (ascender/descender/unitsPerEm)
  *   - baseline-trim.css     — Uses text-box-trim + cap unit hybrid
  *
- * Each engine registers the --baseline-height 4px shim itself (see the
- * `@property` at the top of each), so importing any single engine — as the
- * typography example does — carries the fallback with no consumer hardcoding.
+ * Each engine imports the --baseline-height shim itself (see baseline-shim.css),
+ * so importing any single engine — as the typography example does — is meant to
+ * carry the fallback with no consumer hardcoding. That file records a measured
+ * defect in the registration that is not fixed here.
+ *
+ * Layers and scope: this package writes its token shims into `ds.tokens` and
+ * every element rule into `ds.typography` inside `@scope (.ds)`. It states no
+ * layer order of its own, because it is imported by @canonical/styles after that
+ * package's order statement, which names both layers and is the first rule of
+ * the first stylesheet. Imported on its own — the example does exactly that —
+ * the two layers are created where they first appear, which is well defined for
+ * a single package and settles nothing this package needs settled: no custom
+ * property is declared in more than one of the layers involved.
  */
 @import url("./baseline-cap.css");

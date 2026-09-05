@@ -29,6 +29,34 @@
  *   Headings receive --heading-padding-inline (default: 0) so they can
  *   optionally align with padded blocks (cards, inputs, containers).
  *   Set --heading-padding-inline on a layout context to activate.
+ *
+ * Layers and scope:
+ *   The shim block is custom properties and nothing else, and a custom property
+ *   acts only where a rule reads it, so it sits unscoped in `ds.tokens` beside
+ *   the other primitive values @canonical/styles ships.
+ *
+ *   Everything after it selects elements — `body`, `h1`–`h6`, `p`, `.p`,
+ *   `.code`, `.editorial` — so it sits in `ds.typography` inside `@scope (.ds)`
+ *   and reaches only the design system's own territory: the subtree rooted at an
+ *   element carrying the class `ds`. A page the design system does not own keeps
+ *   its own headings and paragraphs; before this, an unlayered `p` rule here
+ *   competed with the host page's own by source order and won half the time.
+ *
+ *   A scoped selector never matches its own scoping root, so the rule that used
+ *   to target `body` is written `:where(:scope)` — the territory root, which is
+ *   the document element in an application that is the design system's
+ *   throughout and a region or a component anywhere else. It reads the same base
+ *   font token as the root rule in @canonical/styles' own reset, so the two
+ *   cannot disagree about the base font.
+ *
+ *   `.p`, `.code` and `.editorial` are written twice, bare and `:scope.x`,
+ *   because a `ds` root carries them: a Field error and a Field description are
+ *   `<p class="ds field-error p">`, an inline code span is
+ *   `<code class="ds inline-code code">`, a keyboard key is
+ *   `<kbd class="ds keyboard-key code">`, and `editorial` is a class an adopter
+ *   puts on the region they flip, which is that region's root. `h1`–`h6` get no
+ *   twin: nothing renders a heading as a territory root, and the mark belongs on
+ *   the region rather than on one heading inside it.
  */
 
 /* ── TEMP FIX: design-tokens naming mismatch ──────────────────────
@@ -36,264 +64,284 @@
  * sets.primitive.css defines camelCase tokens. This shim bridges the
  * gap until the tokens package is fixed upstream.
  */
-:root {
-  /* ── Font family shims ────────────────────────────────────────── */
-  --typography-font-family-default: var(--typography-fontFamily-default);
-  --typography-font-family-code: var(--typography-fontFamily-code);
-  --typography-font-family-sans-serif: var(--typography-fontFamily-sansSerif);
-  --typography-font-family-monospace: var(--typography-fontFamily-monospace);
+@layer ds.tokens {
+  :root {
+    /* ── Font family shims ────────────────────────────────────────── */
+    --typography-font-family-default: var(--typography-fontFamily-default);
+    --typography-font-family-code: var(--typography-fontFamily-code);
+    --typography-font-family-sans-serif: var(--typography-fontFamily-sansSerif);
+    --typography-font-family-monospace: var(--typography-fontFamily-monospace);
 
-  /* ── Font weight shims ────────────────────────────────────────── */
-  --typography-weight-semi-bold: var(--typography-weight-semiBold);
-  --typography-weight-extra-bold: var(--typography-weight-extraBold);
-  --typography-weight-extra-light: var(--typography-weight-extraLight);
+    /* ── Font weight shims ────────────────────────────────────────── */
+    --typography-weight-semi-bold: var(--typography-weight-semiBold);
+    --typography-weight-extra-bold: var(--typography-weight-extraBold);
+    --typography-weight-extra-light: var(--typography-weight-extraLight);
 
-  /* ── Font size shims ──────────────────────────────────────────── */
-  --dimension-size-font-size-250: var(--dimension-size-fontSize-250);
-  --dimension-size-font-size-300: var(--dimension-size-fontSize-300);
-  --dimension-size-font-size-350: var(--dimension-size-fontSize-350);
-  --dimension-size-font-size-400: var(--dimension-size-fontSize-400);
-  --dimension-size-font-size-500: var(--dimension-size-fontSize-500);
-  --dimension-size-font-size-600: var(--dimension-size-fontSize-600);
-  --dimension-size-font-size-700: var(--dimension-size-fontSize-700);
+    /* ── Font size shims ──────────────────────────────────────────── */
+    --dimension-size-font-size-250: var(--dimension-size-fontSize-250);
+    --dimension-size-font-size-300: var(--dimension-size-fontSize-300);
+    --dimension-size-font-size-350: var(--dimension-size-fontSize-350);
+    --dimension-size-font-size-400: var(--dimension-size-fontSize-400);
+    --dimension-size-font-size-500: var(--dimension-size-fontSize-500);
+    --dimension-size-font-size-600: var(--dimension-size-fontSize-600);
+    --dimension-size-font-size-700: var(--dimension-size-fontSize-700);
 
-  /* ── Letter spacing shims ─────────────────────────────────────── */
-  --dimension-letter-spacing-default: var(--dimension-letterSpacing-default);
-  --dimension-letter-spacing-wide: var(--dimension-letterSpacing-wide);
+    /* ── Letter spacing shims ─────────────────────────────────────── */
+    --dimension-letter-spacing-default: var(--dimension-letterSpacing-default);
+    --dimension-letter-spacing-wide: var(--dimension-letterSpacing-wide);
 
-  /* ── Line height shims ────────────────────────────────────────── *
-   * number.tokens.json defines these as $type:"number" but the
-   * terrazzo plugin does not emit them in sets.primitive.css.
-   * Hardcoded here until the build pipeline includes number tokens.
-   *
-   * These are unitless RATIOS (font-size × ratio = target line-height). The
-   * engine then does round(up, font-size × ratio, --baseline-height), which
-   * snaps the result onto the grid. So the 4px baseline needs NO change here:
-   * a 1rem × 1.5 = 24px line snaps to 24px at both 8px (3 units) and 4px
-   * (6 units) — the px is identical, only the unit COUNT differs. (An earlier
-   * pass wrongly doubled these, which doubled the actual line-height and drifted
-   * from the controls; reverted to the design-token ratios.) */
-  --number-line-height-250: 1.3333;
-  --number-line-height-300: 1.4286;
-  --number-line-height-350: 1.5;
-  --number-line-height-400: 1.3333;
-  --number-line-height-500: 1.3333;
-  --number-line-height-600: 1.25;
-  --number-line-height-700: 1.1429;
-}
-
-/* Base font — inherited by all elements unless overridden */
-body {
-  font-family: var(--typography-text-primary-font-family);
-}
-
-/* ── Headings ── */
-
-h1 {
-  --font-size: var(--typography-heading-1-font-size);
-  --font-weight: var(--typography-heading-1-font-weight);
-  --line-height: var(
-    --typography-heading-1-line-height-dimension,
-    round(
-      up,
-      calc(
-        var(--typography-heading-1-font-size) *
-        var(--typography-heading-1-line-height)
-      ),
-      var(--baseline-height)
-    )
-  );
-  --space-after: 0;
-  font-family: var(--typography-heading-1-font-family);
-  font-weight: var(--font-weight);
-  letter-spacing: var(--typography-heading-1-letter-spacing);
-  padding-inline: var(--heading-padding-inline, 0);
-}
-
-h2 {
-  --font-size: var(--typography-heading-2-font-size);
-  --font-weight: var(--typography-heading-2-font-weight);
-  --line-height: var(
-    --typography-heading-2-line-height-dimension,
-    round(
-      up,
-      calc(
-        var(--typography-heading-2-font-size) *
-        var(--typography-heading-2-line-height)
-      ),
-      var(--baseline-height)
-    )
-  );
-  --space-after: 0;
-  font-family: var(--typography-heading-2-font-family);
-  font-weight: var(--font-weight);
-  letter-spacing: var(--typography-heading-2-letter-spacing);
-  padding-inline: var(--heading-padding-inline, 0);
-}
-
-h3 {
-  --font-size: var(--typography-heading-3-font-size);
-  --font-weight: var(--typography-heading-3-font-weight);
-  --line-height: var(
-    --typography-heading-3-line-height-dimension,
-    round(
-      up,
-      calc(
-        var(--typography-heading-3-font-size) *
-        var(--typography-heading-3-line-height)
-      ),
-      var(--baseline-height)
-    )
-  );
-  --space-after: 0;
-  font-family: var(--typography-heading-3-font-family);
-  font-weight: var(--font-weight);
-  letter-spacing: var(--typography-heading-3-letter-spacing);
-  padding-inline: var(--heading-padding-inline, 0);
-}
-
-h4 {
-  --font-size: var(--typography-heading-4-font-size);
-  --font-weight: var(--typography-heading-4-font-weight);
-  --line-height: var(
-    --typography-heading-4-line-height-dimension,
-    round(
-      up,
-      calc(
-        var(--typography-heading-4-font-size) *
-        var(--typography-heading-4-line-height)
-      ),
-      var(--baseline-height)
-    )
-  );
-  --space-after: 0;
-  font-family: var(--typography-heading-4-font-family);
-  font-weight: var(--font-weight);
-  letter-spacing: var(--typography-heading-4-letter-spacing);
-  padding-inline: var(--heading-padding-inline, 0);
-}
-
-h5 {
-  --font-size: var(--typography-heading-5-font-size);
-  --font-weight: var(--typography-heading-5-font-weight);
-  --line-height: var(
-    --typography-heading-5-line-height-dimension,
-    round(
-      up,
-      calc(
-        var(--typography-heading-5-font-size) *
-        var(--typography-heading-5-line-height)
-      ),
-      var(--baseline-height)
-    )
-  );
-  --space-after: 0;
-  font-family: var(--typography-heading-5-font-family);
-  font-weight: var(--font-weight);
-  letter-spacing: var(--typography-heading-5-letter-spacing);
-  /* Heading 5 is styled as small-caps with old-style figures (design review):
-     the design tokens carry these under `--typography-heading-5-font-variant(-numeric)`
-     — small-caps in :root/.app/.site, normal in docs — so the tier difference
-     flows automatically. `normal` fallbacks keep h5 unchanged if a theme ships
-     without the tokens. */
-  font-variant: var(--typography-heading-5-font-variant, normal);
-  font-variant-numeric: var(
-    --typography-heading-5-font-variant-numeric,
-    normal
-  );
-  padding-inline: var(--heading-padding-inline, 0);
-}
-
-h6 {
-  --font-size: var(--typography-heading-6-font-size);
-  --font-weight: var(--typography-heading-6-font-weight);
-  --line-height: var(
-    --typography-heading-6-line-height-dimension,
-    round(
-      up,
-      calc(
-        var(--typography-heading-6-font-size) *
-        var(--typography-heading-6-line-height)
-      ),
-      var(--baseline-height)
-    )
-  );
-  --space-after: 0;
-  font-family: var(--typography-heading-6-font-family);
-  font-weight: var(--font-weight);
-  letter-spacing: var(--typography-heading-6-letter-spacing);
-  padding-inline: var(--heading-padding-inline, 0);
-}
-
-/* ── Text ── */
-
-p,
-.p {
-  --font-size: var(--typography-text-primary-font-size);
-  --font-weight: var(--typography-text-primary-font-weight);
-  --line-height: var(
-    --typography-text-primary-line-height-dimension,
-    round(
-      up,
-      calc(
-        var(--typography-text-primary-font-size) *
-        var(--typography-text-primary-line-height)
-      ),
-      var(--baseline-height)
-    )
-  );
-  --space-after: 0;
-  font-family: var(--typography-text-primary-font-family);
-  font-weight: var(--font-weight);
-  letter-spacing: var(--typography-text-primary-letter-spacing);
-}
-
-/* ── Code ── */
-
-/* Monospace counterpart of `.p`, mapped to the `text-primary-code` typography
-   tier (monospace family). Class-only — consumers opt in with `class="code"`
-   (e.g. InlineCode's <code>, KeyboardKey's <kbd>); bare <code>/<kbd> are not
-   targeted.
-
-   `.code` alone is INLINE: it applies the monospace typography but NOT the
-   block-level baseline padding nudges (those live on `.p`/headings only), so an
-   inline <code> inside a paragraph inherits the parent line's baseline instead
-   of double-padding its top. For a standalone monospace code *block* that must
-   snap to the grid, combine both classes: `class="p code"` gives `.p`'s block
-   nudges plus `.code`'s monospace mapping. */
-.code {
-  --font-size: var(--typography-text-primary-code-font-size);
-  --font-weight: var(--typography-text-primary-code-font-weight);
-  --line-height: var(
-    --typography-text-primary-code-line-height-dimension,
-    round(
-      up,
-      calc(
-        var(--typography-text-primary-code-font-size) *
-        var(--typography-text-primary-code-line-height)
-      ),
-      var(--baseline-height)
-    )
-  );
-  --space-after: 0;
-  font-family: var(--typography-text-primary-code-font-family);
-  font-weight: var(--font-weight);
-  letter-spacing: var(--typography-text-primary-code-letter-spacing);
-}
-
-.editorial {
-  h1,
-  h2 {
-    --space-after: 2;
+    /* ── Line height shims ────────────────────────────────────────── *
+     * number.tokens.json defines these as $type:"number" but the
+     * terrazzo plugin does not emit them in sets.primitive.css.
+     * Hardcoded here until the build pipeline includes number tokens.
+     *
+     * These are unitless RATIOS (font-size × ratio = target line-height). The
+     * engine then does round(up, font-size × ratio, --baseline-height), which
+     * snaps the result onto the grid. So the 4px baseline needs NO change here:
+     * a 1rem × 1.5 = 24px line snaps to 24px at both 8px (3 units) and 4px
+     * (6 units) — the px is identical, only the unit COUNT differs. (An earlier
+     * pass wrongly doubled these, which doubled the actual line-height and drifted
+     * from the controls; reverted to the design-token ratios.) */
+    --number-line-height-250: 1.3333;
+    --number-line-height-300: 1.4286;
+    --number-line-height-350: 1.5;
+    --number-line-height-400: 1.3333;
+    --number-line-height-500: 1.3333;
+    --number-line-height-600: 1.25;
+    --number-line-height-700: 1.1429;
   }
-  h3,
-  h4,
-  h5,
-  h6 {
-    --space-after: 1;
-  }
-  p,
-  .p {
-    --space-after: 1;
+}
+
+@layer ds.typography {
+  @scope (.ds) {
+    /* Base font — inherited by every element in the territory unless
+       overridden. On the territory root rather than on `body`, because that is
+       the element a scoped rule can address and because a territory is often
+       not a whole document. */
+    :where(:scope) {
+      font-family: var(--typography-text-primary-font-family);
+    }
+
+    /* ── Headings ── */
+
+    h1 {
+      --font-size: var(--typography-heading-1-font-size);
+      --font-weight: var(--typography-heading-1-font-weight);
+      --line-height: var(
+        --typography-heading-1-line-height-dimension,
+        round(
+          up,
+          calc(
+            var(--typography-heading-1-font-size) *
+            var(--typography-heading-1-line-height)
+          ),
+          var(--baseline-height)
+        )
+      );
+      --space-after: 0;
+      font-family: var(--typography-heading-1-font-family);
+      font-weight: var(--font-weight);
+      letter-spacing: var(--typography-heading-1-letter-spacing);
+      padding-inline: var(--heading-padding-inline, 0);
+    }
+
+    h2 {
+      --font-size: var(--typography-heading-2-font-size);
+      --font-weight: var(--typography-heading-2-font-weight);
+      --line-height: var(
+        --typography-heading-2-line-height-dimension,
+        round(
+          up,
+          calc(
+            var(--typography-heading-2-font-size) *
+            var(--typography-heading-2-line-height)
+          ),
+          var(--baseline-height)
+        )
+      );
+      --space-after: 0;
+      font-family: var(--typography-heading-2-font-family);
+      font-weight: var(--font-weight);
+      letter-spacing: var(--typography-heading-2-letter-spacing);
+      padding-inline: var(--heading-padding-inline, 0);
+    }
+
+    h3 {
+      --font-size: var(--typography-heading-3-font-size);
+      --font-weight: var(--typography-heading-3-font-weight);
+      --line-height: var(
+        --typography-heading-3-line-height-dimension,
+        round(
+          up,
+          calc(
+            var(--typography-heading-3-font-size) *
+            var(--typography-heading-3-line-height)
+          ),
+          var(--baseline-height)
+        )
+      );
+      --space-after: 0;
+      font-family: var(--typography-heading-3-font-family);
+      font-weight: var(--font-weight);
+      letter-spacing: var(--typography-heading-3-letter-spacing);
+      padding-inline: var(--heading-padding-inline, 0);
+    }
+
+    h4 {
+      --font-size: var(--typography-heading-4-font-size);
+      --font-weight: var(--typography-heading-4-font-weight);
+      --line-height: var(
+        --typography-heading-4-line-height-dimension,
+        round(
+          up,
+          calc(
+            var(--typography-heading-4-font-size) *
+            var(--typography-heading-4-line-height)
+          ),
+          var(--baseline-height)
+        )
+      );
+      --space-after: 0;
+      font-family: var(--typography-heading-4-font-family);
+      font-weight: var(--font-weight);
+      letter-spacing: var(--typography-heading-4-letter-spacing);
+      padding-inline: var(--heading-padding-inline, 0);
+    }
+
+    h5 {
+      --font-size: var(--typography-heading-5-font-size);
+      --font-weight: var(--typography-heading-5-font-weight);
+      --line-height: var(
+        --typography-heading-5-line-height-dimension,
+        round(
+          up,
+          calc(
+            var(--typography-heading-5-font-size) *
+            var(--typography-heading-5-line-height)
+          ),
+          var(--baseline-height)
+        )
+      );
+      --space-after: 0;
+      font-family: var(--typography-heading-5-font-family);
+      font-weight: var(--font-weight);
+      letter-spacing: var(--typography-heading-5-letter-spacing);
+      /* Heading 5 is styled as small-caps with old-style figures (design review):
+         the design tokens carry these under `--typography-heading-5-font-variant(-numeric)`
+         — small-caps in :root/.app/.site, normal in docs — so the tier difference
+         flows automatically. `normal` fallbacks keep h5 unchanged if a theme ships
+         without the tokens. */
+      font-variant: var(--typography-heading-5-font-variant, normal);
+      font-variant-numeric: var(
+        --typography-heading-5-font-variant-numeric,
+        normal
+      );
+      padding-inline: var(--heading-padding-inline, 0);
+    }
+
+    h6 {
+      --font-size: var(--typography-heading-6-font-size);
+      --font-weight: var(--typography-heading-6-font-weight);
+      --line-height: var(
+        --typography-heading-6-line-height-dimension,
+        round(
+          up,
+          calc(
+            var(--typography-heading-6-font-size) *
+            var(--typography-heading-6-line-height)
+          ),
+          var(--baseline-height)
+        )
+      );
+      --space-after: 0;
+      font-family: var(--typography-heading-6-font-family);
+      font-weight: var(--font-weight);
+      letter-spacing: var(--typography-heading-6-letter-spacing);
+      padding-inline: var(--heading-padding-inline, 0);
+    }
+
+    /* ── Text ── */
+
+    /* `:scope.p` is the same rule for a territory root that carries the class
+       itself — a Field error and a Field description are both
+       `<p class="ds field-error p">`. */
+    p,
+    .p,
+    :scope.p {
+      --font-size: var(--typography-text-primary-font-size);
+      --font-weight: var(--typography-text-primary-font-weight);
+      --line-height: var(
+        --typography-text-primary-line-height-dimension,
+        round(
+          up,
+          calc(
+            var(--typography-text-primary-font-size) *
+            var(--typography-text-primary-line-height)
+          ),
+          var(--baseline-height)
+        )
+      );
+      --space-after: 0;
+      font-family: var(--typography-text-primary-font-family);
+      font-weight: var(--font-weight);
+      letter-spacing: var(--typography-text-primary-letter-spacing);
+    }
+
+    /* ── Code ── */
+
+    /* Monospace counterpart of `.p`, mapped to the `text-primary-code` typography
+       tier (monospace family). Class-only — consumers opt in with `class="code"`
+       (e.g. InlineCode's <code>, KeyboardKey's <kbd>); bare <code>/<kbd> are not
+       targeted. Both of those components carry `ds` on the same element, so the
+       `:scope.code` twin is what styles them when they are the outermost
+       territory root.
+
+       `.code` alone is INLINE: it applies the monospace typography but NOT the
+       block-level baseline padding nudges (those live on `.p`/headings only), so an
+       inline <code> inside a paragraph inherits the parent line's baseline instead
+       of double-padding its top. For a standalone monospace code *block* that must
+       snap to the grid, combine both classes: `class="p code"` gives `.p`'s block
+       nudges plus `.code`'s monospace mapping. */
+    .code,
+    :scope.code {
+      --font-size: var(--typography-text-primary-code-font-size);
+      --font-weight: var(--typography-text-primary-code-font-weight);
+      --line-height: var(
+        --typography-text-primary-code-line-height-dimension,
+        round(
+          up,
+          calc(
+            var(--typography-text-primary-code-font-size) *
+            var(--typography-text-primary-code-line-height)
+          ),
+          var(--baseline-height)
+        )
+      );
+      --space-after: 0;
+      font-family: var(--typography-text-primary-code-font-family);
+      font-weight: var(--font-weight);
+      letter-spacing: var(--typography-text-primary-code-letter-spacing);
+    }
+
+    /* Editorial prose. `editorial` marks a region, and the region an adopter
+       flips to the design system carries `ds` on that same element, so the twin
+       is the common case rather than the exception. */
+    .editorial,
+    :scope.editorial {
+      h1,
+      h2 {
+        --space-after: 2;
+      }
+      h3,
+      h4,
+      h5,
+      h6 {
+        --space-after: 1;
+      }
+      p,
+      .p {
+        --space-after: 1;
+      }
+    }
   }
 }

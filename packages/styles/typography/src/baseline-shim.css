@@ -10,6 +10,24 @@
  * Single source for the 4px shim, imported by every engine so importing any one
  * of them carries the fallback. Consumers no longer hardcode --baseline-height
  * to keep the engine working.
+ *
+ * Layers and scope: the registration below stays at the top level, outside both
+ * the `ds.typography` layer the engines are written into and the `@scope (.ds)`
+ * block inside it. A registration is not a style rule — it declares what a
+ * custom property means everywhere in the document, and nothing about it is
+ * sorted by the cascade — so a layer has nothing to order it against, and a
+ * scope has no subtree to confine it to. Engines have also rejected `@property`
+ * nested inside a layer. `@font-face` and `@keyframes` are outside the layers
+ * for the same reason.
+ *
+ * Known defect, measured in Chromium 151 while this file was being layered and
+ * NOT fixed here, because a fix changes what an application that never sets
+ * --baseline-height renders: an `initial-value` has to be computationally
+ * independent, and `rem` is not — it needs the root font size — so the browser
+ * throws this whole registration away and the fallback below does not exist.
+ * `4px` would be accepted. Nothing in the design system relies on the fallback
+ * (@canonical/styles' spacing.css declares --baseline-height, and so does the
+ * example), which is why it went unnoticed.
  */
 @property --baseline-height {
   syntax: "<length>";
