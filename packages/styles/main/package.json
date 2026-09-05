@@ -1,6 +1,6 @@
 {
   "name": "@canonical/styles",
-  "description": "Canonical Design System global stylesheet. Aggregates normalize, typography, and design tokens.",
+  "description": "Canonical Design System global stylesheet. The reset, typography, and design tokens, in named cascade layers.",
   "version": "0.37.0",
   "main": "src/index.css",
   "exports": {
