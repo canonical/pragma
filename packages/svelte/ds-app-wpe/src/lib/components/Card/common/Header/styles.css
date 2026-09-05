@@ -1,20 +1,24 @@
-/**
- * Card.Header styles
- * @implements ds:global.subcomponent.card-header
- */
-:root {
-  --card-header-gap: var(--dimension-200);
-  --card-header-padding-block: var(--dimension-200);
-  --card-header-padding-inline: var(--dimension-200);
-}
+/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
-.ds.card-header {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--card-header-gap);
+@layer ds.components.app {
+  /**
+   * Card.Header styles
+   * @implements ds:global.subcomponent.card-header
+   */
+  :root {
+    --card-header-gap: var(--dimension-200);
+    --card-header-padding-block: var(--dimension-200);
+    --card-header-padding-inline: var(--dimension-200);
+  }
 
-  padding-block: var(--card-header-padding-block);
-  padding-inline: var(--card-header-padding-inline);
+  .ds.card-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--card-header-gap);
+
+    padding-block: var(--card-header-padding-block);
+    padding-inline: var(--card-header-padding-inline);
+  }
 }

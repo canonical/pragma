@@ -1,19 +1,23 @@
-.ds.table-th-sort.button-primitive {
-  padding: var(--lp-dimension-spacing-block-xxxs)
-    var(--lp-dimension-spacing-inline-xxxs);
-  background: none;
-  border: none;
-  min-width: fit-content;
+/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
-  font-size: var(--lp-typography-font-size-m);
-  color: var(--lp-color-icon-status-queued);
+@layer ds.components.app {
+  .ds.table-th-sort.button-primitive {
+    padding: var(--lp-dimension-spacing-block-xxxs)
+      var(--lp-dimension-spacing-inline-xxxs);
+    background: none;
+    border: none;
+    min-width: fit-content;
 
-  --color-background-button-hover: transparent;
-  --color-background-button-active: transparent;
+    font-size: var(--lp-typography-font-size-m);
+    color: var(--lp-color-icon-status-queued);
 
-  &:hover,
-  &:focus-visible,
-  &.sorted {
-    color: var(--lp-color-text-default);
+    --color-background-button-hover: transparent;
+    --color-background-button-active: transparent;
+
+    &:hover,
+    &:focus-visible,
+    &.sorted {
+      color: var(--lp-color-text-default);
+    }
   }
 }

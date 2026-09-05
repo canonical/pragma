@@ -1,1 +1,5 @@
+/* No layer block here: @canonical/styles carries its own layers and the one
+ * `@layer` order statement that ranks them, so importing it into a layer would
+ * nest that whole tree inside `ds.components.app`. */
+
 @import "@canonical/styles";

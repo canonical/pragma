@@ -1,73 +1,77 @@
-.ds.user-avatar {
-  display: inline-grid;
-  flex: none;
+/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
-  border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
-  /* TODO: Check with Enzo. Figma uses --color-background-layer2 */
-  /* I read it as "one level above the surface" and foreground-input is exactly this */
-  /* However, avatar is not input. But -layer2 looks like internal token */
-  /* that we're not supposed to use directly */
-  background-color: var(
-    --surface-color-foreground-input,
-    var(--color-foreground-input)
-  );
-  color: var(--surface-color-text, var(--color-text));
+@layer ds.components.app {
+  .ds.user-avatar {
+    display: inline-grid;
+    flex: none;
 
-  width: var(--dimension-300);
-  height: var(--dimension-300);
-  font: var(--ds-typography-text-primary-bold);
+    border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
+    /* TODO: Check with Enzo. Figma uses --color-background-layer2 */
+    /* I read it as "one level above the surface" and foreground-input is exactly this */
+    /* However, avatar is not input. But -layer2 looks like internal token */
+    /* that we're not supposed to use directly */
+    background-color: var(
+      --surface-color-foreground-input,
+      var(--color-foreground-input)
+    );
+    color: var(--surface-color-text, var(--color-text));
 
-  &.small {
-    width: var(--dimension-250);
-    height: var(--dimension-250);
-    font: var(--ds-typography-text-secondary-bold);
-  }
+    width: var(--dimension-300);
+    height: var(--dimension-300);
+    font: var(--ds-typography-text-primary-bold);
 
-  &.large {
-    width: var(--dimension-400);
-    height: var(--dimension-400);
-    font: var(--ds-typography-heading-5);
-    letter-spacing: var(--typography-heading-5-letter-spacing);
-  }
+    &.small {
+      width: var(--dimension-250);
+      height: var(--dimension-250);
+      font: var(--ds-typography-text-secondary-bold);
+    }
 
-  &:is(img) {
-    object-fit: cover;
-    position: relative;
-    overflow: hidden;
+    &.large {
+      width: var(--dimension-400);
+      height: var(--dimension-400);
+      font: var(--ds-typography-heading-5);
+      letter-spacing: var(--typography-heading-5-letter-spacing);
+    }
 
-    /*
-    A fallback for when there is no JS and the image cannot be loaded.
-     
-    When userName is provided, the initials are displayed. When userName is not provided, a "?" is displayed.
-    Ideally this would be a user icon instead of "?", but that would require either
-    - a base64 encoded SVG, that would bloat CSS (rather unnecessarily, for the rare case of no userName and image load failure),
-    - or a url to a static asset (difficult to achieve for a component library without making assumptions on the hosting app's bundler and asset management).
-    */
-    &::after {
-      position: absolute;
-      inset: 0;
-      background-color: inherit;
-      display: grid;
+    &:is(img) {
+      object-fit: cover;
+      position: relative;
+      overflow: hidden;
+
+      /*
+      A fallback for when there is no JS and the image cannot be loaded.
+
+      When userName is provided, the initials are displayed. When userName is not provided, a "?" is displayed.
+      Ideally this would be a user icon instead of "?", but that would require either
+      - a base64 encoded SVG, that would bloat CSS (rather unnecessarily, for the rare case of no userName and image load failure),
+      - or a url to a static asset (difficult to achieve for a component library without making assumptions on the hosting app's bundler and asset management).
+      */
+      &::after {
+        position: absolute;
+        inset: 0;
+        background-color: inherit;
+        display: grid;
+        place-content: center;
+        text-transform: uppercase;
+        user-select: none;
+
+        content: "?";
+      }
+
+      &[data-initials]::after {
+        content: attr(data-initials);
+      }
+    }
+
+    &:is(abbr) {
+      user-select: none;
       place-content: center;
       text-transform: uppercase;
-      user-select: none;
-
-      content: "?";
+      text-decoration: none;
     }
 
-    &[data-initials]::after {
-      content: attr(data-initials);
+    &:is(div) {
+      place-content: center;
     }
-  }
-
-  &:is(abbr) {
-    user-select: none;
-    place-content: center;
-    text-transform: uppercase;
-    text-decoration: none;
-  }
-
-  &:is(div) {
-    place-content: center;
   }
 }

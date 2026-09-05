@@ -1,76 +1,80 @@
-.ds.log-line {
-  vertical-align: top;
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: subgrid;
-  font: var(--ds-typography-text-secondary-code);
-  color: var(--color-text);
+/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
-  --log-line-background-color: var(--color-foreground-input);
-  --log-line-target-highlight-color: var(--color-foreground-input-hover);
-  --log-line-target-highlight-time: 5s;
+@layer ds.components.app {
+  .ds.log-line {
+    vertical-align: top;
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    font: var(--ds-typography-text-secondary-code);
+    color: var(--color-text);
 
-  > td,
-  > th {
-    padding-block: var(--dimension-025);
-    font-weight: var(--typography-weight-regular);
-    background-color: var(--log-line-background-color);
-  }
+    --log-line-background-color: var(--color-foreground-input);
+    --log-line-target-highlight-color: var(--color-foreground-input-hover);
+    --log-line-target-highlight-time: 5s;
 
-  &:target {
     > td,
     > th {
-      animation:
-        target-highlight-hold var(--log-line-target-highlight-time) step-end
-        forwards,
-        target-highlight-fade var(--ds-transition-duration-sleepy) ease-out
-        var(--log-line-target-highlight-time) forwards;
+      padding-block: var(--dimension-025);
+      font-weight: var(--typography-weight-regular);
+      background-color: var(--log-line-background-color);
+    }
+
+    &:target {
+      > td,
+      > th {
+        animation:
+          target-highlight-hold var(--log-line-target-highlight-time) step-end
+          forwards,
+          target-highlight-fade var(--ds-transition-duration-sleepy) ease-out
+          var(--log-line-target-highlight-time) forwards;
+      }
+    }
+
+    > .line-number {
+      grid-column: line-number;
+      text-align: right;
+      color: var(--color-text-muted);
+      position: sticky;
+      left: 0;
+      padding-inline-start: var(--log-padding-inline);
+      padding-inline-end: var(--dimension-150);
+    }
+
+    > .timestamp {
+      grid-column: timestamp;
+      white-space: nowrap;
+
+      padding-inline-end: var(--dimension-200);
+    }
+
+    > .content {
+      grid-column: content;
+      white-space: pre;
+
+      &.wrap {
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+    }
+
+    /* TODO: Implement level-based styling when designs ready */
+  }
+
+  @keyframes target-highlight-hold {
+    from,
+    to {
+      background-color: var(--log-line-target-highlight-color);
     }
   }
 
-  > .line-number {
-    grid-column: line-number;
-    text-align: right;
-    color: var(--color-text-muted);
-    position: sticky;
-    left: 0;
-    padding-inline-start: var(--log-padding-inline);
-    padding-inline-end: var(--dimension-150);
-  }
-
-  > .timestamp {
-    grid-column: timestamp;
-    white-space: nowrap;
-
-    padding-inline-end: var(--dimension-200);
-  }
-
-  > .content {
-    grid-column: content;
-    white-space: pre;
-
-    &.wrap {
-      white-space: pre-wrap;
-      word-break: break-word;
+  @keyframes target-highlight-fade {
+    from {
+      background-color: var(--log-line-target-highlight-color);
     }
-  }
 
-  /* TODO: Implement level-based styling when designs ready */
-}
-
-@keyframes target-highlight-hold {
-  from,
-  to {
-    background-color: var(--log-line-target-highlight-color);
-  }
-}
-
-@keyframes target-highlight-fade {
-  from {
-    background-color: var(--log-line-target-highlight-color);
-  }
-
-  to {
-    background-color: var(--log-line-background-color);
+    to {
+      background-color: var(--log-line-background-color);
+    }
   }
 }

@@ -1,53 +1,57 @@
-.ds.switch {
-  appearance: none;
-  position: relative;
-  cursor: pointer;
-  outline-offset: 0;
+/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
-  width: var(--dimension-400);
-  height: var(--dimension-200);
-  background-color: var(--color-foreground-switch-unselected);
-  border-radius: var(--dimension-radius-full);
+@layer ds.components.app {
+  .ds.switch {
+    appearance: none;
+    position: relative;
+    cursor: pointer;
+    outline-offset: 0;
 
-  &::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 0;
-    transform: translateY(-50%);
-    width: var(--dimension-200);
+    width: var(--dimension-400);
     height: var(--dimension-200);
-    background-color: var(--color-foreground-switch-knob);
+    background-color: var(--color-foreground-switch-unselected);
     border-radius: var(--dimension-radius-full);
-    border: var(--dimension-stroke-thickness-medium) solid
-      var(--color-foreground-switch-unselected);
-    transition: transform var(--ds-transition-duration-slow)
-      var(--ds-transition-timing-ease-out);
-  }
-
-  &:checked {
-    background-color: var(--color-foreground-switch-selected);
 
     &::after {
-      border-color: var(--color-foreground-switch-selected);
-      transform: translate(calc(var(--dimension-400) / 2), -50%);
-    }
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    background-color: var(--color-foreground-switch-unselected-disabled);
-
-    &::after {
-      background-color: var(--color-foreground-switch-knob-disabled);
-      border-color: var(--color-foreground-switch-unselected-disabled);
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+      width: var(--dimension-200);
+      height: var(--dimension-200);
+      background-color: var(--color-foreground-switch-knob);
+      border-radius: var(--dimension-radius-full);
+      border: var(--dimension-stroke-thickness-medium) solid
+        var(--color-foreground-switch-unselected);
+      transition: transform var(--ds-transition-duration-slow)
+        var(--ds-transition-timing-ease-out);
     }
 
     &:checked {
-      background-color: var(--color-foreground-switch-selected-disabled);
+      background-color: var(--color-foreground-switch-selected);
 
       &::after {
-        border-color: var(--color-foreground-switch-selected-disabled);
+        border-color: var(--color-foreground-switch-selected);
+        transform: translate(calc(var(--dimension-400) / 2), -50%);
+      }
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      background-color: var(--color-foreground-switch-unselected-disabled);
+
+      &::after {
+        background-color: var(--color-foreground-switch-knob-disabled);
+        border-color: var(--color-foreground-switch-unselected-disabled);
+      }
+
+      &:checked {
+        background-color: var(--color-foreground-switch-selected-disabled);
+
+        &::after {
+          border-color: var(--color-foreground-switch-selected-disabled);
+        }
       }
     }
   }

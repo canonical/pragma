@@ -1,4 +1,6 @@
 /* TODO: when the only import here is @canonical/styles delete this file. The consumer should import @canonical/styles directly. */
+/* No layer block here: each sheet this file imports carries its own layers, and
+ * an `@import` may not appear inside a layer block. */
 @import "./styles/ds-tokens.css";
 @import "./styles/ds-shim.css";
 @import "./styles/index.css";

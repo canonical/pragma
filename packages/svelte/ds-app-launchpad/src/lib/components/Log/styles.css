@@ -1,18 +1,22 @@
-.ds.log {
-  display: block;
-  contain: inline-size layout paint;
-  overflow: auto;
+/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
-  --log-padding-inline: var(--dimension-200);
+@layer ds.components.app {
+  .ds.log {
+    display: block;
+    contain: inline-size layout paint;
+    overflow: auto;
 
-  background-color: var(--color-foreground-input);
-  padding-inline-end: var(--log-padding-inline);
-  padding-block-end: var(--dimension-400);
+    --log-padding-inline: var(--dimension-200);
 
-  tbody {
-    display: grid;
-    min-width: fit-content;
-    grid-template-columns: [line-number-start] auto [line-number-end
-        timestamp-start] max-content [timestamp-end content-start] 1fr [content-end];
+    background-color: var(--color-foreground-input);
+    padding-inline-end: var(--log-padding-inline);
+    padding-block-end: var(--dimension-400);
+
+    tbody {
+      display: grid;
+      min-width: fit-content;
+      grid-template-columns: [line-number-start] auto [line-number-end
+          timestamp-start] max-content [timestamp-end content-start] 1fr [content-end];
+    }
   }
 }

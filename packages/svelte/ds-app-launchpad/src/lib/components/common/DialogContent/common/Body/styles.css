@@ -1,5 +1,9 @@
-.ds.dialog-content-body {
-  /* Sanity reset, so that the dialog doesn't inherit unwanted styles from the context it's used in. */
-  font: var(--ds-typography-text-primary);
-  color: var(--color-text);
+/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.app {
+  .ds.dialog-content-body {
+    /* Sanity reset, so that the dialog doesn't inherit unwanted styles from the context it's used in. */
+    font: var(--ds-typography-text-primary);
+    color: var(--color-text);
+  }
 }

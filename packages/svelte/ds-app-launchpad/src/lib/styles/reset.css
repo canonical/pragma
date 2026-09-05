@@ -1,19 +1,23 @@
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
-* {
-  margin: 0;
-  padding: 0;
-}
+@layer ds.components.app {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
 
-img,
-picture,
-video,
-canvas,
-svg {
-  display: block;
-  max-width: 100%;
+  * {
+    margin: 0;
+    padding: 0;
+  }
+
+  img,
+  picture,
+  video,
+  canvas,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
 }

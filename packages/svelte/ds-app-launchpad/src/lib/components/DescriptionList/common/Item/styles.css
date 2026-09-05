@@ -1,53 +1,40 @@
-.ds.description-list-item {
-  display: flex;
-  flex-direction: column;
-  gap: var(--dimension-100);
+/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
-  dt {
-    order: 1;
-    font: var(--ds-typography-text-secondary-bold);
-    color: var(--color-text-muted);
-  }
-
-  dd {
-    order: 3;
-    font: var(--ds-typography-text-secondary);
-    color: var(--color-text);
-  }
-
-  /* Horizontal line for list layout */
-  &::before {
-    content: "";
-    order: 2;
-    height: 1px;
-    flex-grow: 1;
-    background: repeating-linear-gradient(
-      to right,
-      var(--color-border-muted) 0px 2px,
-      transparent 2px 4px
-    );
-    flex-basis: 10%;
-
-    display: none;
-  }
-
-  &.list {
-    flex-direction: row;
-    align-items: baseline;
+@layer ds.components.app {
+  .ds.description-list-item {
+    display: flex;
+    flex-direction: column;
     gap: var(--dimension-100);
 
-    &::before {
-      display: block;
+    dt {
+      order: 1;
+      font: var(--ds-typography-text-secondary-bold);
+      color: var(--color-text-muted);
     }
 
     dd {
-      text-align: end;
+      order: 3;
+      font: var(--ds-typography-text-secondary);
+      color: var(--color-text);
     }
-  }
 
-  &.auto {
-    /* Defined in DescriptionList.svelte */
-    @container description-list (width <= 573px) {
+    /* Horizontal line for list layout */
+    &::before {
+      content: "";
+      order: 2;
+      height: 1px;
+      flex-grow: 1;
+      background: repeating-linear-gradient(
+        to right,
+        var(--color-border-muted) 0px 2px,
+        transparent 2px 4px
+      );
+      flex-basis: 10%;
+
+      display: none;
+    }
+
+    &.list {
       flex-direction: row;
       align-items: baseline;
       gap: var(--dimension-100);
@@ -58,6 +45,23 @@
 
       dd {
         text-align: end;
+      }
+    }
+
+    &.auto {
+      /* Defined in DescriptionList.svelte */
+      @container description-list (width <= 573px) {
+        flex-direction: row;
+        align-items: baseline;
+        gap: var(--dimension-100);
+
+        &::before {
+          display: block;
+        }
+
+        dd {
+          text-align: end;
+        }
       }
     }
   }

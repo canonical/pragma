@@ -1,12 +1,16 @@
-.ds.timeline {
-  --dimension-gap-row-timeline: calc(var(--dimension-150) * 2);
-  --color-background-timeline-line: var(--color-border);
-  --dimension-width-timeline-line: var(--dimension-stroke-thickness-medium);
+/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
-  display: grid;
-  grid-template-columns: [marker-start] auto [marker-end content-start] 1fr [content-end];
-  list-style: none;
+@layer ds.components.app {
+  .ds.timeline {
+    --dimension-gap-row-timeline: calc(var(--dimension-150) * 2);
+    --color-background-timeline-line: var(--color-border);
+    --dimension-width-timeline-line: var(--dimension-stroke-thickness-medium);
 
-  row-gap: var(--dimension-gap-row-timeline);
-  column-gap: var(--dimension-200);
+    display: grid;
+    grid-template-columns: [marker-start] auto [marker-end content-start] 1fr [content-end];
+    list-style: none;
+
+    row-gap: var(--dimension-gap-row-timeline);
+    column-gap: var(--dimension-200);
+  }
 }

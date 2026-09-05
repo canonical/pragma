@@ -1,57 +1,14 @@
-:root {
-  --ds-transition-duration-fast: 165ms;
-  --ds-transition-timing-ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
-  --ds-transition-duration-sleepy: 1s;
-  --ds-color-foreground-tooltip: light-dark(
-    var(--color-palette-gray-930),
-    var(--color-palette-gray-40)
-  );
-  --ds-typography-text-primary:
-    var(--typography-text-primary-font-weight)
-    var(--typography-text-primary-font-size) /
-    var(--typography-text-primary-line-height)
-    var(--typography-text-primary-font-family);
-  --ds-typography-text-secondary:
-    var(--typography-text-secondary-font-weight)
-    var(--typography-text-secondary-font-size) /
-    var(--typography-text-secondary-line-height)
-    var(--typography-text-secondary-font-family);
-  --ds-typography-text-secondary-bold:
-    var(--typography-text-secondary-bold-font-weight)
-    var(--typography-text-secondary-bold-font-size) /
-    var(--typography-text-secondary-bold-line-height)
-    var(--typography-text-secondary-bold-font-family);
-  --ds-typography-text-secondary-code:
-    var(--typography-text-secondary-code-font-weight)
-    var(--typography-text-secondary-code-font-size) /
-    var(--typography-text-secondary-code-line-height)
-    var(--typography-text-secondary-code-font-family);
-  --ds-typography-text-primary-bold:
-    var(--typography-text-primary-bold-font-weight)
-    var(--typography-text-primary-bold-font-size) /
-    var(--typography-text-primary-bold-line-height)
-    var(--typography-text-primary-bold-font-family);
-  --ds-typography-text-tertiary:
-    var(--typography-text-tertiary-font-weight)
-    var(--typography-text-tertiary-font-size) /
-    var(--typography-text-tertiary-line-height)
-    var(--typography-text-tertiary-font-family);
-  --ds-typography-text-tertiary-bold:
-    var(--typography-text-tertiary-bold-font-weight)
-    var(--typography-text-tertiary-bold-font-size) /
-    var(--typography-text-tertiary-bold-line-height)
-    var(--typography-text-tertiary-bold-font-family);
-  --ds-typography-heading-4:
-    var(--typography-heading-4-font-weight)
-    var(--typography-heading-4-font-size) /
-    var(--typography-heading-4-line-height)
-    var(--typography-heading-4-font-family);
-  --ds-typography-heading-5:
-    var(--typography-heading-5-font-weight)
-    var(--typography-heading-5-font-size) /
-    var(--typography-heading-5-line-height)
-    var(--typography-heading-5-font-family);
-}
+/* This sheet writes into two layers: the criticality shim below belongs in
+ * `ds.modifiers`, where the tokens it stands in for are generated, and
+ * everything else is this package's own and sits in `ds.components.app` with
+ * the rest of the tier. The shim is written first purely as ordering hygiene
+ * inside this file — it does not establish the layer order. `ds.modifiers` is
+ * already opened by `modifiers.theme.css`, which `ds-tokens.css` imports before
+ * this sheet is reached, so first-appearance order is the same either way
+ * (measured: 0 of 26,685 properties differ hoisted against un-hoisted).
+ *
+ * Layer: ds.components.app (@canonical/styles README, "Cascade layers").
+ */
 
 /* The criticality modifier exposes every color channel except the solid fill
  * and the on-surface text pairing, so a component painting a solid criticality
@@ -95,10 +52,67 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+@layer ds.components.app {
   :root {
-    --ds-transition-duration-fast: 0ms;
-    --ds-transition-duration-slow: 0ms;
-    --ds-transition-duration-sleepy: 0ms;
+    --ds-transition-duration-fast: 165ms;
+    --ds-transition-timing-ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+    --ds-transition-duration-sleepy: 1s;
+    --ds-color-foreground-tooltip: light-dark(
+      var(--color-palette-gray-930),
+      var(--color-palette-gray-40)
+    );
+    --ds-typography-text-primary:
+      var(--typography-text-primary-font-weight)
+      var(--typography-text-primary-font-size) /
+      var(--typography-text-primary-line-height)
+      var(--typography-text-primary-font-family);
+    --ds-typography-text-secondary:
+      var(--typography-text-secondary-font-weight)
+      var(--typography-text-secondary-font-size) /
+      var(--typography-text-secondary-line-height)
+      var(--typography-text-secondary-font-family);
+    --ds-typography-text-secondary-bold:
+      var(--typography-text-secondary-bold-font-weight)
+      var(--typography-text-secondary-bold-font-size) /
+      var(--typography-text-secondary-bold-line-height)
+      var(--typography-text-secondary-bold-font-family);
+    --ds-typography-text-secondary-code:
+      var(--typography-text-secondary-code-font-weight)
+      var(--typography-text-secondary-code-font-size) /
+      var(--typography-text-secondary-code-line-height)
+      var(--typography-text-secondary-code-font-family);
+    --ds-typography-text-primary-bold:
+      var(--typography-text-primary-bold-font-weight)
+      var(--typography-text-primary-bold-font-size) /
+      var(--typography-text-primary-bold-line-height)
+      var(--typography-text-primary-bold-font-family);
+    --ds-typography-text-tertiary:
+      var(--typography-text-tertiary-font-weight)
+      var(--typography-text-tertiary-font-size) /
+      var(--typography-text-tertiary-line-height)
+      var(--typography-text-tertiary-font-family);
+    --ds-typography-text-tertiary-bold:
+      var(--typography-text-tertiary-bold-font-weight)
+      var(--typography-text-tertiary-bold-font-size) /
+      var(--typography-text-tertiary-bold-line-height)
+      var(--typography-text-tertiary-bold-font-family);
+    --ds-typography-heading-4:
+      var(--typography-heading-4-font-weight)
+      var(--typography-heading-4-font-size) /
+      var(--typography-heading-4-line-height)
+      var(--typography-heading-4-font-family);
+    --ds-typography-heading-5:
+      var(--typography-heading-5-font-weight)
+      var(--typography-heading-5-font-size) /
+      var(--typography-heading-5-line-height)
+      var(--typography-heading-5-font-family);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      --ds-transition-duration-fast: 0ms;
+      --ds-transition-duration-slow: 0ms;
+      --ds-transition-duration-sleepy: 0ms;
+    }
   }
 }

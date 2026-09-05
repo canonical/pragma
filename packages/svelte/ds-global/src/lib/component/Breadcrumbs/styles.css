@@ -1,28 +1,32 @@
-/**
- * Breadcrumbs styles
- * @implements ds:global.component.breadcrumbs
- *
- * DSL anatomy mapping:
- * - layout.type: flow -> display: flex
- * - layout.direction: horizontal -> flex-direction: row
- * - layout.align: center -> align-items: center
- *
- * Typography and baseline alignment come from the `.p` class on the list
- * (the typography-text-primary tier, per the Figma spec).
- */
-.ds.breadcrumbs {
-  & > .list {
-    /* layout.type: flow, layout.direction: horizontal */
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
-    /* layout.align: center */
-    align-items: center;
+@layer ds.components.global {
+  /**
+   * Breadcrumbs styles
+   * @implements ds:global.component.breadcrumbs
+   *
+   * DSL anatomy mapping:
+   * - layout.type: flow -> display: flex
+   * - layout.direction: horizontal -> flex-direction: row
+   * - layout.align: center -> align-items: center
+   *
+   * Typography and baseline alignment come from the `.p` class on the list
+   * (the typography-text-primary tier, per the Figma spec).
+   */
+  .ds.breadcrumbs {
+    & > .list {
+      /* layout.type: flow, layout.direction: horizontal */
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
 
-    /* Reset list styles */
-    margin: 0;
-    padding: 0;
-    list-style: none;
+      /* layout.align: center */
+      align-items: center;
+
+      /* Reset list styles */
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
   }
 }

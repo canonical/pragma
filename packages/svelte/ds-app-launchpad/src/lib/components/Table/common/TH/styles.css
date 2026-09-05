@@ -1,21 +1,25 @@
-.ds.table-th {
-  div {
-    display: flex;
-    flex-flow: row wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--lp-dimension-spacing-inline-xxs);
-  }
+/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
-  &:not([aria-sort]),
-  &[aria-sort="none"] {
-    .ds.table-th-sort:not(:focus-visible) {
-      opacity: 0;
+@layer ds.components.app {
+  .ds.table-th {
+    div {
+      display: flex;
+      flex-flow: row wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--lp-dimension-spacing-inline-xxs);
     }
 
-    &:hover {
-      .ds.table-th-sort {
-        opacity: 1;
+    &:not([aria-sort]),
+    &[aria-sort="none"] {
+      .ds.table-th-sort:not(:focus-visible) {
+        opacity: 0;
+      }
+
+      &:hover {
+        .ds.table-th-sort {
+          opacity: 1;
+        }
       }
     }
   }

@@ -1,69 +1,73 @@
-.ds.modal {
-  /* TODO: Replace with a token */
-  --dimension-width-modal: 38rem;
+/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
-  position: fixed;
-  margin: auto;
-  inset: 0;
-  /* z-index on dialog is only relevant when opened as non-modal.
-  Modal dialogs are rendered on the top-layer anyways  */
-  /* TODO: Add z-index tokens */
-  z-index: 10;
-  width: min(100vw, var(--dimension-width-modal));
+@layer ds.components.app {
+  .ds.modal {
+    /* TODO: Replace with a token */
+    --dimension-width-modal: 38rem;
 
-  border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
+    position: fixed;
+    margin: auto;
+    inset: 0;
+    /* z-index on dialog is only relevant when opened as non-modal.
+    Modal dialogs are rendered on the top-layer anyways  */
+    /* TODO: Add z-index tokens */
+    z-index: 10;
+    width: min(100vw, var(--dimension-width-modal));
 
-  &,
-  &::backdrop {
-    opacity: 0;
-    transition-behavior: allow-discrete;
-    transition-property: display, opacity, overlay;
-    transition-duration: var(--ds-transition-duration-fast);
-  }
+    border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
 
-  &.no-transition {
     &,
     &::backdrop {
-      transition: none;
+      opacity: 0;
+      transition-behavior: allow-discrete;
+      transition-property: display, opacity, overlay;
+      transition-duration: var(--ds-transition-duration-fast);
     }
-  }
 
-  &::backdrop {
-    background-color: var(--modal-backdrop-color, var(--color-backdrop));
-  }
-
-  /*
-      [open] is a fallback for Safari that doesn't support the `:open`.
-
-      TODO(:open): Remove when Safari supports it (https://developer.mozilla.org/en-US/docs/Web/CSS/:open)
-    */
-  &:is(:open, [open]) {
-    &,
-    &::backdrop {
-      opacity: 1;
-    }
-  }
-
-  /* Starting styles only for modal dialogs, so the SSR opened shows up immediately */
-  &:modal {
-    @starting-style {
+    &.no-transition {
       &,
       &::backdrop {
-        opacity: 0;
+        transition: none;
+      }
+    }
+
+    &::backdrop {
+      background-color: var(--modal-backdrop-color, var(--color-backdrop));
+    }
+
+    /*
+        [open] is a fallback for Safari that doesn't support the `:open`.
+
+        TODO(:open): Remove when Safari supports it (https://developer.mozilla.org/en-US/docs/Web/CSS/:open)
+      */
+    &:is(:open, [open]) {
+      &,
+      &::backdrop {
+        opacity: 1;
+      }
+    }
+
+    /* Starting styles only for modal dialogs, so the SSR opened shows up immediately */
+    &:modal {
+      @starting-style {
+        &,
+        &::backdrop {
+          opacity: 0;
+        }
       }
     }
   }
-}
 
-.ds.modal-non-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background-color: var(--modal-backdrop-color, var(--color-backdrop));
-  display: none;
-  /* TODO: Add z-index tokens */
-  z-index: 10;
+  .ds.modal-non-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: var(--modal-backdrop-color, var(--color-backdrop));
+    display: none;
+    /* TODO: Add z-index tokens */
+    z-index: 10;
 
-  &:has(+ .ds.modal:is(:open, [open]):not(:modal)) {
-    display: block;
+    &:has(+ .ds.modal:is(:open, [open]):not(:modal)) {
+      display: block;
+    }
   }
 }

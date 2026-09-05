@@ -1,9 +1,13 @@
-.ds.timeline-hidden-events-link {
-  font: var(--ds-typography-text-tertiary);
-}
+/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
-.ds.timeline-hidden-events-link-separator {
-  font: var(--ds-typography-text-tertiary);
-  color: var(--color-text-muted);
-  margin-inline: var(--dimension-100);
+@layer ds.components.app {
+  .ds.timeline-hidden-events-link {
+    font: var(--ds-typography-text-tertiary);
+  }
+
+  .ds.timeline-hidden-events-link-separator {
+    font: var(--ds-typography-text-tertiary);
+    color: var(--color-text-muted);
+    margin-inline: var(--dimension-100);
+  }
 }

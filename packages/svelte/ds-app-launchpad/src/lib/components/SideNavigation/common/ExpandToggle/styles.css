@@ -1,14 +1,18 @@
-.ds.side-navigation-expand-toggle.button-primitive {
-  display: grid;
-  place-items: center;
-  box-sizing: content-box;
-  &[aria-expanded="true"] .expand-icon {
-    transform: rotate(180deg);
-  }
-  &[aria-expanded="false"] {
-    min-height: 1lh;
-    --dimension-padding-block-button: var(
-      --dimension-padding-block-side-navigation-item
-    );
+/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.app {
+  .ds.side-navigation-expand-toggle.button-primitive {
+    display: grid;
+    place-items: center;
+    box-sizing: content-box;
+    &[aria-expanded="true"] .expand-icon {
+      transform: rotate(180deg);
+    }
+    &[aria-expanded="false"] {
+      min-height: 1lh;
+      --dimension-padding-block-button: var(
+        --dimension-padding-block-side-navigation-item
+      );
+    }
   }
 }
