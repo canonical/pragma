@@ -157,7 +157,10 @@ describe.each(VANILLA_VERSIONS)(
       expect(computed(flipped, "vf-p").maxWidth).toBe("none");
     });
 
-    it("keeps pragma's motion under a reduced-motion preference", async (ctx) => {
+    it("animates nothing under a reduced-motion preference, on either page", async (ctx) => {
+      // Vanilla says `transition: none` with `!important`; pragma zeroes its
+      // motion tokens. The property lists differ, the behaviour must not: every
+      // duration inside pragma territory is 0s on both pages.
       ctx.skip(!PRAGMA_HONOURS_REDUCED_MOTION, MOTION_SKIP_REASON);
       await emulate({ reducedMotion: "reduce" });
       const mixed = await render(mixedPage(version));
@@ -166,9 +169,24 @@ describe.each(VANILLA_VERSIONS)(
         mixed.defaultView?.matchMedia("(prefers-reduced-motion: reduce)")
           .matches,
       ).toBe(true);
-      expect(computed(mixed, "ds-button").transitionProperty).toBe(
-        computed(pragma, "ds-button").transitionProperty,
-      );
+      const failures: string[] = [];
+      for (const [name, doc] of [
+        ["mixed", mixed],
+        ["pragma", pragma],
+      ] as const) {
+        for (const id of idsIn(PRAGMA_BLOCK)) {
+          const style = computed(doc, id);
+          for (const property of [
+            "transition-duration",
+            "animation-duration",
+          ]) {
+            const values = style.getPropertyValue(property).split(",");
+            if (values.some((value) => value.trim() !== "0s"))
+              failures.push(`${name} #${id} ${property}: ${values.join(",")}`);
+          }
+        }
+      }
+      expect(failures).toEqual([]);
     });
 
     it("inherits pragma's baseline at the root, not Vanilla's", async (ctx) => {
