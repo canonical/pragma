@@ -1,82 +1,88 @@
-/**
- * Breadcrumbs.Item styles
- * @implements ds:global.subcomponent.breadcrumbs-item
- *
- * DSL anatomy mapping:
- * - layout.type: flow -> display: flex
- * - layout.direction: horizontal -> flex-direction: row
- * - layout.align: center -> align-items: center
- *
- * Tokens follow the Figma spec: links use color-text-link, the current item
- * and the separator use color-text, and the separator margin uses the
- * dimension scale (Figma specs 6px, which is not on the scale; the nearest
- * token is dimension-100 = 8px).
- */
-.ds.breadcrumbs-item {
-  /* Component tokens — pure aliases to semantic tokens, component-scoped
-     per cs:styling.tokens.scoping */
-  --breadcrumbs-item-link-color: var(--color-text-link);
-  --breadcrumbs-item-current-color: var(--color-text);
-  --breadcrumbs-item-disabled-color: var(--color-text-disabled);
-  --breadcrumbs-item-separator-color: var(--color-text);
-  --breadcrumbs-item-separator-margin: var(--dimension-100);
-  --breadcrumbs-item-focus-color: var(--color-text-link);
+/* Layer: `ds.components.global` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-  /* layout.type: flow, layout.direction: horizontal */
-  display: flex;
-  flex-direction: row;
+@layer ds.components.global {
+  /**
+   * Breadcrumbs.Item styles
+   * @implements ds:global.subcomponent.breadcrumbs-item
+   *
+   * DSL anatomy mapping:
+   * - layout.type: flow -> display: flex
+   * - layout.direction: horizontal -> flex-direction: row
+   * - layout.align: center -> align-items: center
+   *
+   * Tokens follow the Figma spec: links use color-text-link, the current item
+   * and the separator use color-text, and the separator margin uses the
+   * dimension scale (Figma specs 6px, which is not on the scale; the nearest
+   * token is dimension-100 = 8px).
+   */
+  .ds.breadcrumbs-item {
+    /* Component tokens — pure aliases to semantic tokens, component-scoped
+       per cs:styling.tokens.scoping */
+    --breadcrumbs-item-link-color: var(--color-text-link);
+    --breadcrumbs-item-current-color: var(--color-text);
+    --breadcrumbs-item-disabled-color: var(--color-text-disabled);
+    --breadcrumbs-item-separator-color: var(--color-text);
+    --breadcrumbs-item-separator-margin: var(--dimension-100);
+    --breadcrumbs-item-focus-color: var(--color-text-link);
 
-  /* layout.align: center */
-  align-items: center;
+    /* layout.type: flow, layout.direction: horizontal */
+    display: flex;
+    flex-direction: row;
 
-  /* Remove list styling */
-  list-style: none;
+    /* layout.align: center */
+    align-items: center;
 
-  /* Link element — DSL role: link, typography.color: color/text/link */
-  & > .link {
-    color: var(--breadcrumbs-item-link-color);
-    text-decoration: none;
+    /* Remove list styling */
+    list-style: none;
 
-    /* Figma: typography-text-underline modifier on interaction. */
-    &:hover {
-      text-decoration: underline;
-    }
-
-    &:focus-visible {
-      outline: var(--dimension-stroke-thickness-large) solid
-        var(--breadcrumbs-item-focus-color);
-      outline-offset: var(--dimension-025);
-    }
-  }
-
-  /* Separator element — DSL role: separator. Rendered before the link so a
-     wrapped row starts with the slash; hidden on the first item. */
-  & > .separator {
-    margin-inline: var(--breadcrumbs-item-separator-margin);
-    color: var(--breadcrumbs-item-separator-color);
-  }
-
-  &:first-of-type > .separator {
-    display: none;
-  }
-
-  /* Current item (not a link) */
-  &.current > .link {
-    color: var(--breadcrumbs-item-current-color);
-    cursor: default;
-
-    &:hover {
+    /* Link element — DSL role: link, typography.color: color/text/link */
+    & > .link {
+      color: var(--breadcrumbs-item-link-color);
       text-decoration: none;
+
+      /* Figma: typography-text-underline modifier on interaction. */
+      &:hover {
+        text-decoration: underline;
+      }
+
+      &:focus-visible {
+        outline: var(--dimension-stroke-thickness-large) solid
+          var(--breadcrumbs-item-focus-color);
+        outline-offset: var(--dimension-025);
+      }
     }
-  }
 
-  /* Disabled item (not a link) */
-  &.disabled > .link {
-    color: var(--breadcrumbs-item-disabled-color);
-    cursor: not-allowed;
+    /* Separator element — DSL role: separator. Rendered before the link so a
+       wrapped row starts with the slash; hidden on the first item. */
+    & > .separator {
+      margin-inline: var(--breadcrumbs-item-separator-margin);
+      color: var(--breadcrumbs-item-separator-color);
+    }
 
-    &:hover {
-      text-decoration: none;
+    &:first-of-type > .separator {
+      display: none;
+    }
+
+    /* Current item (not a link) */
+    &.current > .link {
+      color: var(--breadcrumbs-item-current-color);
+      cursor: default;
+
+      &:hover {
+        text-decoration: none;
+      }
+    }
+
+    /* Disabled item (not a link) */
+    &.disabled > .link {
+      color: var(--breadcrumbs-item-disabled-color);
+      cursor: not-allowed;
+
+      &:hover {
+        text-decoration: none;
+      }
     }
   }
 }

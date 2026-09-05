@@ -1,28 +1,34 @@
-/**
- * Tile.Header styles
- * @implements ds:global.subcomponent.tile-header
- *
- * DSL anatomy mapping:
- * - layout.type: flow, layout.direction: horizontal -> flex row
- * - layout.align: center -> align-items: center
- * - spacing.internal.vertical: dimension/100, spacing.internal.horizontal:
- *   dimension/200 -> padding 100 (block) / 200 (inline). The header's block
- *   padding is 100 top and bottom; the content below adds its own top padding.
- */
-:root {
-  --tile-header-padding-block: var(--dimension-100);
-  --tile-header-padding-inline: var(--dimension-200);
-  --tile-header-gap: var(--dimension-100);
-}
+/* Layer: `ds.components.global` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-.ds.tile-header {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
+@layer ds.components.global {
+  /**
+   * Tile.Header styles
+   * @implements ds:global.subcomponent.tile-header
+   *
+   * DSL anatomy mapping:
+   * - layout.type: flow, layout.direction: horizontal -> flex row
+   * - layout.align: center -> align-items: center
+   * - spacing.internal.vertical: dimension/100, spacing.internal.horizontal:
+   *   dimension/200 -> padding 100 (block) / 200 (inline). The header's block
+   *   padding is 100 top and bottom; the content below adds its own top padding.
+   */
+  :root {
+    --tile-header-padding-block: var(--dimension-100);
+    --tile-header-padding-inline: var(--dimension-200);
+    --tile-header-gap: var(--dimension-100);
+  }
 
-  padding-block: var(--tile-header-padding-block);
-  padding-inline: var(--tile-header-padding-inline);
-  gap: var(--tile-header-gap);
+  .ds.tile-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
 
-  font-weight: var(--typography-weight-semibold, 600);
+    padding-block: var(--tile-header-padding-block);
+    padding-inline: var(--tile-header-padding-inline);
+    gap: var(--tile-header-gap);
+
+    font-weight: var(--typography-weight-semibold, 600);
+  }
 }

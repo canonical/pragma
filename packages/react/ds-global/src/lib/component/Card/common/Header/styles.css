@@ -1,24 +1,30 @@
-/**
- * Card.Header styles
- * @implements ds:global.subcomponent.card-header
- *
- * DSL anatomy: layout.type flow, space-between; title uses font/weight/semibold.
- * A content-bearing section: it pads itself (the card frame applies no general
- * padding). Vertical padding is in baseline multiples.
- */
-:root {
-  --card-header-gap: var(--dimension-200);
-  --card-header-padding-block: var(--dimension-200);
-  --card-header-padding-inline: var(--dimension-200);
-}
+/* Layer: `ds.components.global` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-.ds.card-header {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--card-header-gap);
+@layer ds.components.global {
+  /**
+   * Card.Header styles
+   * @implements ds:global.subcomponent.card-header
+   *
+   * DSL anatomy: layout.type flow, space-between; title uses font/weight/semibold.
+   * A content-bearing section: it pads itself (the card frame applies no general
+   * padding). Vertical padding is in baseline multiples.
+   */
+  :root {
+    --card-header-gap: var(--dimension-200);
+    --card-header-padding-block: var(--dimension-200);
+    --card-header-padding-inline: var(--dimension-200);
+  }
 
-  padding-block: var(--card-header-padding-block);
-  padding-inline: var(--card-header-padding-inline);
+  .ds.card-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--card-header-gap);
+
+    padding-block: var(--card-header-padding-block);
+    padding-inline: var(--card-header-padding-inline);
+  }
 }

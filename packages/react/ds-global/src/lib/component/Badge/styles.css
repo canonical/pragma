@@ -1,45 +1,51 @@
-/* Badge.css */
-.ds.badge {
-  /* Component tokens — sourced from @canonical/design-tokens */
-  --badge-color-background: var(--color-foreground-secondary);
-  --badge-color-text: var(--color-text-onForegroundSecondary);
+/* Layer: `ds.components.global` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-  --badge-border-radius: var(--dimension-radius-full);
-  --badge-font-family: var(--typography-text-tertiary-bold-font-family);
-  --badge-font-size: var(--typography-text-tertiary-bold-font-size);
-  --badge-font-weight: var(--typography-text-tertiary-bold-font-weight);
-  --badge-letter-spacing: var(--typography-text-tertiary-bold-letter-spacing);
-  --badge-line-height: var(--typography-text-tertiary-bold-line-height);
-  --badge-padding-vertical: 0;
-  --badge-padding-horizontal: var(--dimension-050);
-  --badge-margin-bottom: 0;
+@layer ds.components.global {
+  /* Badge.css */
+  .ds.badge {
+    /* Component tokens — sourced from @canonical/design-tokens */
+    --badge-color-background: var(--color-foreground-secondary);
+    --badge-color-text: var(--color-text-onForegroundSecondary);
 
-  --badge-min-width: calc(var(--badge-line-height) * 1em);
+    --badge-border-radius: var(--dimension-radius-full);
+    --badge-font-family: var(--typography-text-tertiary-bold-font-family);
+    --badge-font-size: var(--typography-text-tertiary-bold-font-size);
+    --badge-font-weight: var(--typography-text-tertiary-bold-font-weight);
+    --badge-letter-spacing: var(--typography-text-tertiary-bold-letter-spacing);
+    --badge-line-height: var(--typography-text-tertiary-bold-line-height);
+    --badge-padding-vertical: 0;
+    --badge-padding-horizontal: var(--dimension-050);
+    --badge-margin-bottom: 0;
 
-  /* Base badge styles using tokens */
-  background-color: var(
-    --modifier-color-foreground-secondary,
-    var(--badge-color-background)
-  );
-  border-radius: var(--badge-border-radius);
-  box-sizing: border-box;
-  /* Label sits on the badge's own (criticality) surface, so it reads the
-   * on-surface text channel — NOT --modifier-color-text (the standalone
-   * criticality text colour), which would render same-hue-on-same-hue with
-   * failing contrast. Falls back to the neutral on-surface token for the
-   * default (no-criticality) badge. */
-  color: var(
-    --modifier-color-text-onForegroundSecondary,
-    var(--badge-color-text)
-  );
-  display: inline-block;
-  font-family: var(--badge-font-family);
-  font-size: var(--badge-font-size);
-  font-weight: var(--badge-font-weight);
-  letter-spacing: var(--badge-letter-spacing);
-  line-height: var(--badge-line-height);
-  margin-bottom: var(--badge-margin-bottom);
-  min-width: var(--badge-min-width);
-  padding: var(--badge-padding-vertical) var(--badge-padding-horizontal);
-  text-align: center;
+    --badge-min-width: calc(var(--badge-line-height) * 1em);
+
+    /* Base badge styles using tokens */
+    background-color: var(
+      --modifier-color-foreground-secondary,
+      var(--badge-color-background)
+    );
+    border-radius: var(--badge-border-radius);
+    box-sizing: border-box;
+    /* Label sits on the badge's own (criticality) surface, so it reads the
+     * on-surface text channel — NOT --modifier-color-text (the standalone
+     * criticality text colour), which would render same-hue-on-same-hue with
+     * failing contrast. Falls back to the neutral on-surface token for the
+     * default (no-criticality) badge. */
+    color: var(
+      --modifier-color-text-onForegroundSecondary,
+      var(--badge-color-text)
+    );
+    display: inline-block;
+    font-family: var(--badge-font-family);
+    font-size: var(--badge-font-size);
+    font-weight: var(--badge-font-weight);
+    letter-spacing: var(--badge-letter-spacing);
+    line-height: var(--badge-line-height);
+    margin-bottom: var(--badge-margin-bottom);
+    min-width: var(--badge-min-width);
+    padding: var(--badge-padding-vertical) var(--badge-padding-horizontal);
+    text-align: center;
+  }
 }

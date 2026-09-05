@@ -1,31 +1,37 @@
-/**
- * Card.Footer styles
- * @implements ds:global.subcomponent.card-footer
- *
- * A content-bearing section: it pads itself (the card frame applies no general
- * padding). Vertical padding is in baseline multiples. Holds tags and labels,
- * which flow in a wrapping row.
- */
-:root {
-  --card-footer-gap: var(--dimension-100);
-  --card-footer-padding-block: var(--dimension-200);
-  --card-footer-padding-inline: var(--dimension-200);
-}
+/* Layer: `ds.components.global` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-.ds.card-footer {
-  /* Inline flow: badges, chips and inline text sit on a line and wrap. Children
-   * keep their natural width (`flex: 0 0 auto` — no grow, no shrink) and are
-   * vertically centred, so a Badge is not stretched to the footer width. */
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--card-footer-gap);
+@layer ds.components.global {
+  /**
+   * Card.Footer styles
+   * @implements ds:global.subcomponent.card-footer
+   *
+   * A content-bearing section: it pads itself (the card frame applies no general
+   * padding). Vertical padding is in baseline multiples. Holds tags and labels,
+   * which flow in a wrapping row.
+   */
+  :root {
+    --card-footer-gap: var(--dimension-100);
+    --card-footer-padding-block: var(--dimension-200);
+    --card-footer-padding-inline: var(--dimension-200);
+  }
 
-  padding-block: var(--card-footer-padding-block);
-  padding-inline: var(--card-footer-padding-inline);
+  .ds.card-footer {
+    /* Inline flow: badges, chips and inline text sit on a line and wrap. Children
+     * keep their natural width (`flex: 0 0 auto` — no grow, no shrink) and are
+     * vertically centred, so a Badge is not stretched to the footer width. */
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--card-footer-gap);
 
-  & > * {
-    flex: 0 0 auto;
+    padding-block: var(--card-footer-padding-block);
+    padding-inline: var(--card-footer-padding-inline);
+
+    & > * {
+      flex: 0 0 auto;
+    }
   }
 }

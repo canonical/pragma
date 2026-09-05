@@ -1,18 +1,24 @@
-:root {
-  --inline-code-color-text: var(--color-text);
-  --inline-code-color-background: var(--color-foreground-secondary);
-  --inline-code-padding-inline: var(--dimension-050);
-  --inline-code-border-radius: var(--dimension-radius-small);
-}
+/* Layer: `ds.components.global` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-/* The `.code` baseline utility (from @canonical/styles) supplies the
-   monospace typography tier and the baseline-grid padding-block nudges, so
-   the component sets no vertical padding. Per the Figma spec it adds only the
-   horizontal padding plus the code colour and background (both mode-aware). */
-.ds.inline-code {
-  color: var(--inline-code-color-text);
-  background-color: var(--inline-code-color-background);
+@layer ds.components.global {
+  :root {
+    --inline-code-color-text: var(--color-text);
+    --inline-code-color-background: var(--color-foreground-secondary);
+    --inline-code-padding-inline: var(--dimension-050);
+    --inline-code-border-radius: var(--dimension-radius-small);
+  }
 
-  padding-inline: var(--inline-code-padding-inline);
-  border-radius: var(--inline-code-border-radius);
+  /* The `.code` baseline utility (from @canonical/styles) supplies the
+     monospace typography tier and the baseline-grid padding-block nudges, so
+     the component sets no vertical padding. Per the Figma spec it adds only the
+     horizontal padding plus the code colour and background (both mode-aware). */
+  .ds.inline-code {
+    color: var(--inline-code-color-text);
+    background-color: var(--inline-code-color-background);
+
+    padding-inline: var(--inline-code-padding-inline);
+    border-radius: var(--inline-code-border-radius);
+  }
 }

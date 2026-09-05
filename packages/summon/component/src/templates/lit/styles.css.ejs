@@ -31,19 +31,23 @@
  *   - External CSS cannot pierce the shadow boundary — expose CSS custom properties for theming.
  */
 
-:host {
-  /*
-   * Host controls the outer layout role.
-   * Declare component CSS variables here when needed.
-   * Variables must be on :host to be accessible inside the shadow tree.
-   *
-   * Example:
-   * --<%= kebabName %>-color-background: var(--color-background-default);
-   * --<%= kebabName %>-color-text: var(--color-text-default);
-   */
-  display: inline-flex;
-}
+/* Layered so an app tier's rule wins by cascade layer, not by load order.
+ * See "Cascade layers" in the @canonical/styles README. */
+@layer ds.components.global {
+  :host {
+    /*
+     * Host controls the outer layout role.
+     * Declare component CSS variables here when needed.
+     * Variables must be on :host to be accessible inside the shadow tree.
+     *
+     * Example:
+     * --<%= kebabName %>-color-background: var(--color-background-default);
+     * --<%= kebabName %>-color-text: var(--color-text-default);
+     */
+    display: inline-flex;
+  }
 
-.ds.<%= kebabName %> {
-  /* Inner layout and visual styles go here. */
+  .ds.<%= kebabName %> {
+    /* Inner layout and visual styles go here. */
+  }
 }

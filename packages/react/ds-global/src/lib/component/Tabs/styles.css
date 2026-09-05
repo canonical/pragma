@@ -1,37 +1,43 @@
-/**
- * Tabs styles
- * @implements ds:global.component.tabs
- *
- * DSL anatomy mapping:
- * - layout.type: stack, layout.direction: horizontal -> flex row of tabs
- * - edges: tabs-tab (1..*), slot default -> the <li> children of .tabs-list
- *
- * Figma (node 4388-106316): a horizontal strip of tabs with no gap between
- * them, over a full-width muted bottom border; the strip fills its container
- * and scrolls horizontally on overflow.
- */
-:root {
-  --tabs-border-width: var(--dimension-strokeThickness-medium, 1px);
-}
+/* Layer: `ds.components.global` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-.ds.tabs {
-  display: block;
-}
+@layer ds.components.global {
+  /**
+   * Tabs styles
+   * @implements ds:global.component.tabs
+   *
+   * DSL anatomy mapping:
+   * - layout.type: stack, layout.direction: horizontal -> flex row of tabs
+   * - edges: tabs-tab (1..*), slot default -> the <li> children of .tabs-list
+   *
+   * Figma (node 4388-106316): a horizontal strip of tabs with no gap between
+   * them, over a full-width muted bottom border; the strip fills its container
+   * and scrolls horizontally on overflow.
+   */
+  :root {
+    --tabs-border-width: var(--dimension-strokeThickness-medium, 1px);
+  }
 
-.ds.tabs .tabs-list {
-  display: flex;
-  flex-direction: row;
-  /* No gap between tabs (Figma). */
-  gap: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  .ds.tabs {
+    display: block;
+  }
 
-  /* Full-width muted baseline; the active tab paints a highlighted segment
-     over it (see Tabs.Tab). */
-  border-bottom: var(--tabs-border-width) solid var(--color-border-muted);
+  .ds.tabs .tabs-list {
+    display: flex;
+    flex-direction: row;
+    /* No gap between tabs (Figma). */
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 
-  /* Overflow: the strip scrolls horizontally when the tabs exceed the
-     container width (Figma "Overflow"). */
-  overflow-x: auto;
+    /* Full-width muted baseline; the active tab paints a highlighted segment
+       over it (see Tabs.Tab). */
+    border-bottom: var(--tabs-border-width) solid var(--color-border-muted);
+
+    /* Overflow: the strip scrolls horizontally when the tabs exceed the
+       container width (Figma "Overflow"). */
+    overflow-x: auto;
+  }
 }

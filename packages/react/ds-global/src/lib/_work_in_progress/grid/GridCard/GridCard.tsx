@@ -5,6 +5,10 @@ import type React from "react";
 import type { GridCardProps } from "./types.js";
 import "./styles.css";
 
+// Pragma territory is the subtree under an element carrying `ds`, so every
+// component root declares it (cs:css.selectors.namespace).
+const componentCssClassName = "ds grid-card";
+
 /**
  * GridCard component
  */
@@ -14,7 +18,10 @@ export const GridCard = ({
   ...props
 }: GridCardProps): React.ReactNode => {
   return (
-    <div className={`grid-card${className ? ` ${className}` : ""}`} {...props}>
+    <div
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      {...props}
+    >
       Represents a card within the grid
     </div>
   );
