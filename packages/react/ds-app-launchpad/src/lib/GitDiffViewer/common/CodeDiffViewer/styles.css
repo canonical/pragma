@@ -1,27 +1,34 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
-.ds.code-diff-viewer {
-  font-size: 13px;
+/* Layer: `ds.components.app` — so this application tier's rule for the
+ * component beats the global tier's by cascade layer, not by whichever bundle a
+ * loader happened to emit last. See "Cascade layers" in the @canonical/styles
+ * README. */
 
-  .diff-table {
-    /* updated dynamically on window resize */
-    --table-width: 300px;
+@layer ds.components.app {
+  .ds.code-diff-viewer {
+    font-size: 13px;
 
-    table-layout: auto;
-    border-collapse: separate;
-    border-spacing: 1px 0;
-    display: block;
-    overflow: auto;
-    outline: none;
+    .diff-table {
+      /* updated dynamically on window resize */
+      --table-width: 300px;
 
-    tr {
-      /* remove outer spacing from the sides of the table */
-      margin-left: -1px;
-      margin-right: -1px;
+      table-layout: auto;
+      border-collapse: separate;
+      border-spacing: 1px 0;
+      display: block;
+      overflow: auto;
+      outline: none;
+
+      tr {
+        /* remove outer spacing from the sides of the table */
+        margin-left: -1px;
+        margin-right: -1px;
+      }
     }
-  }
 
-  > .svg-refs {
-    display: none;
+    > .svg-refs {
+      display: none;
+    }
   }
 }

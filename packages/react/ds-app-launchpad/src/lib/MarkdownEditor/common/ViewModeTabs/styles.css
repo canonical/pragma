@@ -1,41 +1,48 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 
-.ds.view-mode-tabs {
-  display: flex;
+/* Layer: `ds.components.app` — so this application tier's rule for the
+ * component beats the global tier's by cascade layer, not by whichever bundle a
+ * loader happened to emit last. See "Cascade layers" in the @canonical/styles
+ * README. */
 
-  & > .tab {
-    padding: var(--markdown-editor-tabs-vert-padding)
-      var(--markdown-editor-tabs-horizontal-padding);
-    border: 1px solid var(--markdown-editor-tabs-inactive-border-color);
-    border-width: 1px 1px 0 1px;
-    color: var(--markdown-editor-tabs-inactive-color);
-    background-color: var(--markdown-editor-tabs-inactive-background-color);
-    cursor: pointer;
+@layer ds.components.app {
+  .ds.view-mode-tabs {
+    display: flex;
 
-    &:hover,
-    &:focus {
-      color: var(--markdown-editor-tabs-hover-color);
-      background-color: var(--markdown-editor-tabs-hover-background-color);
-    }
-    &:focus {
-      outline-offset: -6px;
-    }
+    & > .tab {
+      padding: var(--markdown-editor-tabs-vert-padding)
+        var(--markdown-editor-tabs-horizontal-padding);
+      border: 1px solid var(--markdown-editor-tabs-inactive-border-color);
+      border-width: 1px 1px 0 1px;
+      color: var(--markdown-editor-tabs-inactive-color);
+      background-color: var(--markdown-editor-tabs-inactive-background-color);
+      cursor: pointer;
 
-    &.selected {
-      color: var(--markdown-editor-editor-color);
-      border-color: var(--markdown-editor-editor-border-color);
-      background-color: var(--markdown-editor-editor-background-color);
-      position: relative;
+      &:hover,
+      &:focus {
+        color: var(--markdown-editor-tabs-hover-color);
+        background-color: var(--markdown-editor-tabs-hover-background-color);
+      }
+      &:focus {
+        outline-offset: -6px;
+      }
 
-      /* hide the top border of the tab panel for the selected tab */
-      &::after {
-        content: "";
-        position: absolute;
-        bottom: -1px;
-        left: 0;
-        right: 0;
-        height: 1px;
+      &.selected {
+        color: var(--markdown-editor-editor-color);
+        border-color: var(--markdown-editor-editor-border-color);
         background-color: var(--markdown-editor-editor-background-color);
+        position: relative;
+
+        /* hide the top border of the tab panel for the selected tab */
+        &::after {
+          content: "";
+          position: absolute;
+          bottom: -1px;
+          left: 0;
+          right: 0;
+          height: 1px;
+          background-color: var(--markdown-editor-editor-background-color);
+        }
       }
     }
   }

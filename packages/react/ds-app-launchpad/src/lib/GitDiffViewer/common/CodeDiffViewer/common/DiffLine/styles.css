@@ -1,117 +1,124 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
-.ds.diff-line {
-  display: flex;
-  font-family: var(--font-family-mono);
-  min-width: var(--table-width);
-  color: var(--git-diff-viewer-code-default-color);
+/* Layer: `ds.components.app` — so this application tier's rule for the
+ * component beats the global tier's by cascade layer, not by whichever bundle a
+ * loader happened to emit last. See "Cascade layers" in the @canonical/styles
+ * README. */
 
-  td.diff-gutter {
-    min-width: var(--git-diff-viewer-gutter-width);
-    max-width: var(--git-diff-viewer-gutter-width);
-    padding: 0;
-    text-align: right;
-    border-right: 1px solid var(--git-diff-viewer-border-color-tinted);
-    user-select: none;
-    vertical-align: top;
+@layer ds.components.app {
+  .ds.diff-line {
+    display: flex;
+    font-family: var(--font-family-mono);
+    min-width: var(--table-width);
+    color: var(--git-diff-viewer-code-default-color);
 
-    &:not(.wrap) {
-      position: sticky;
-      left: 0;
-    }
+    td.diff-gutter {
+      min-width: var(--git-diff-viewer-gutter-width);
+      max-width: var(--git-diff-viewer-gutter-width);
+      padding: 0;
+      text-align: right;
+      border-right: 1px solid var(--git-diff-viewer-border-color-tinted);
+      user-select: none;
+      vertical-align: top;
 
-    .diff-line-numbers {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0px;
-    }
-    .line-num {
-      display: inline-block;
-      width: calc(var(--git-diff-viewer-gutter-width) / 2 - 4px);
-      text-align: center;
-      color: var(--git-diff-viewer-code-line-number-default-color);
-    }
-  }
+      &:not(.wrap) {
+        position: sticky;
+        left: 0;
+      }
 
-  td.diff-content {
-    /* padding: 0 0 0 calc(var(--git-diff-viewer-gutter-width) + 4px); */
-    padding: 0 0 0 4px;
-
-    pre {
-      margin: 0;
-      padding: 0 8px;
-      font-family: var(--font-family-mono);
-    }
-
-    &.wrap {
-      pre {
-        text-wrap: wrap;
+      .diff-line-numbers {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0px;
+      }
+      .line-num {
+        display: inline-block;
+        width: calc(var(--git-diff-viewer-gutter-width) / 2 - 4px);
+        text-align: center;
+        color: var(--git-diff-viewer-code-line-number-default-color);
       }
     }
-  }
 
-  &.diff-line-add {
-    background-color: var(--git-diff-viewer-code-insertion-background);
+    td.diff-content {
+      /* padding: 0 0 0 calc(var(--git-diff-viewer-gutter-width) + 4px); */
+      padding: 0 0 0 4px;
 
-    td.diff-gutter {
-      background-color: var(--git-diff-viewer-code-insertion-background);
-    }
-  }
+      pre {
+        margin: 0;
+        padding: 0 8px;
+        font-family: var(--font-family-mono);
+      }
 
-  &.diff-line-context {
-    background-color: var(--git-diff-viewer-code-default-background);
-
-    td.diff-gutter {
-      background-color: var(--git-diff-viewer-code-default-background);
-    }
-  }
-
-  &.diff-line-remove {
-    background-color: var(--git-diff-viewer-code-deletion-background);
-
-    td.diff-gutter {
-      background-color: var(--git-diff-viewer-code-deletion-background);
-    }
-  }
-
-  &.diff-line-hunk {
-    background-color: var(--git-diff-viewer-hunk-header-background);
-    color: var(--git-diff-viewer-hunk-header-color);
-    user-select: none;
-    border-color: var(--git-diff-viewer-border-color-tinted);
-    border-style: solid;
-    border-width: 1px 0;
-
-    &.is-first-hunk {
-      border-top-width: 0px;
-    }
-
-    td.diff-gutter {
-      background-color: var(--git-diff-viewer-hunk-header-background);
-      border-color: var(--git-diff-viewer-border-color-tinted);
-    }
-  }
-
-  &.interactive {
-    --icon-opacity: 0;
-
-    &:not(.diff-line-hunk) {
-      .diff-gutter {
-        cursor: pointer;
-        .comment-icon {
-          opacity: var(--icon-opacity);
-          padding: 0 4px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+      &.wrap {
+        pre {
+          text-wrap: wrap;
         }
       }
+    }
 
-      &:hover,
-      &:focus-within {
-        filter: brightness(0.9);
-        --icon-opacity: 1;
+    &.diff-line-add {
+      background-color: var(--git-diff-viewer-code-insertion-background);
+
+      td.diff-gutter {
+        background-color: var(--git-diff-viewer-code-insertion-background);
+      }
+    }
+
+    &.diff-line-context {
+      background-color: var(--git-diff-viewer-code-default-background);
+
+      td.diff-gutter {
+        background-color: var(--git-diff-viewer-code-default-background);
+      }
+    }
+
+    &.diff-line-remove {
+      background-color: var(--git-diff-viewer-code-deletion-background);
+
+      td.diff-gutter {
+        background-color: var(--git-diff-viewer-code-deletion-background);
+      }
+    }
+
+    &.diff-line-hunk {
+      background-color: var(--git-diff-viewer-hunk-header-background);
+      color: var(--git-diff-viewer-hunk-header-color);
+      user-select: none;
+      border-color: var(--git-diff-viewer-border-color-tinted);
+      border-style: solid;
+      border-width: 1px 0;
+
+      &.is-first-hunk {
+        border-top-width: 0px;
+      }
+
+      td.diff-gutter {
+        background-color: var(--git-diff-viewer-hunk-header-background);
+        border-color: var(--git-diff-viewer-border-color-tinted);
+      }
+    }
+
+    &.interactive {
+      --icon-opacity: 0;
+
+      &:not(.diff-line-hunk) {
+        .diff-gutter {
+          cursor: pointer;
+          .comment-icon {
+            opacity: var(--icon-opacity);
+            padding: 0 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+        }
+
+        &:hover,
+        &:focus-within {
+          filter: brightness(0.9);
+          --icon-opacity: 1;
+        }
       }
     }
   }

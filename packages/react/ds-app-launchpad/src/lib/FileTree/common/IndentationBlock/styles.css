@@ -1,32 +1,39 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 
-.ds.indentation-block {
-  display: inline-flex;
-  gap: var(--file-tree-node-items-gap);
-  align-items: center;
-  user-select: none;
+/* Layer: `ds.components.app` — so this application tier's rule for the
+ * component beats the global tier's by cascade layer, not by whichever bundle a
+ * loader happened to emit last. See "Cascade layers" in the @canonical/styles
+ * README. */
 
-  & > .indent-block {
-    width: var(--file-tree-node-indent-width);
-    position: relative;
-    isolation: isolate;
+@layer ds.components.app {
+  .ds.indentation-block {
+    display: inline-flex;
+    gap: var(--file-tree-node-items-gap);
+    align-items: center;
+    user-select: none;
 
-    padding: var(--file-tree-node-vertical-padding) 0;
-    &:not(.empty)::before {
-      content: "";
-      display: block;
-      position: absolute;
-      left: 50%;
-      top: 0;
-      bottom: 0;
-      transform: translateX(-50%);
-      width: var(--file-tree-node-indent-bar-width);
-      height: 100%;
-      background-color: var(--file-tree-node-indent-bar-color);
+    & > .indent-block {
+      width: var(--file-tree-node-indent-width);
+      position: relative;
+      isolation: isolate;
+
+      padding: var(--file-tree-node-vertical-padding) 0;
+      &:not(.empty)::before {
+        content: "";
+        display: block;
+        position: absolute;
+        left: 50%;
+        top: 0;
+        bottom: 0;
+        transform: translateX(-50%);
+        width: var(--file-tree-node-indent-bar-width);
+        height: 100%;
+        background-color: var(--file-tree-node-indent-bar-color);
+      }
     }
-  }
-  &:has(> .indent-block.empty) {
-    width: 0;
-    margin-left: calc(-1 * var(--file-tree-node-items-gap));
+    &:has(> .indent-block.empty) {
+      width: 0;
+      margin-left: calc(-1 * var(--file-tree-node-items-gap));
+    }
   }
 }

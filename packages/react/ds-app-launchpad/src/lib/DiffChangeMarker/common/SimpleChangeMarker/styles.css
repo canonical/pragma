@@ -1,29 +1,36 @@
 /* @canonical/generator-ds 0.9.0-experimental.12 */
 
-.ds.simple-change-marker {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: var(--diff-change-marker-simple-size);
-  width: var(--diff-change-marker-simple-size);
+/* Layer: `ds.components.app` — so this application tier's rule for the
+ * component beats the global tier's by cascade layer, not by whichever bundle a
+ * loader happened to emit last. See "Cascade layers" in the @canonical/styles
+ * README. */
 
-  > svg {
-    width: 100%;
-    height: 100%;
-  }
+@layer ds.components.app {
+  .ds.simple-change-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--diff-change-marker-simple-size);
+    width: var(--diff-change-marker-simple-size);
 
-  &.added {
-    color: var(--diff-change-marker-added-svg);
-    background-color: var(--diff-change-marker-added-alt);
-  }
+    > svg {
+      width: 100%;
+      height: 100%;
+    }
 
-  &.deleted {
-    color: var(--diff-change-marker-deleted-svg);
-    background-color: var(--diff-change-marker-deleted-alt);
-  }
+    &.added {
+      color: var(--diff-change-marker-added-svg);
+      background-color: var(--diff-change-marker-added-alt);
+    }
 
-  &.modified {
-    color: var(--diff-change-marker-modified-svg);
-    background-color: var(--diff-change-marker-modified-alt);
+    &.deleted {
+      color: var(--diff-change-marker-deleted-svg);
+      background-color: var(--diff-change-marker-deleted-alt);
+    }
+
+    &.modified {
+      color: var(--diff-change-marker-modified-svg);
+      background-color: var(--diff-change-marker-modified-alt);
+    }
   }
 }

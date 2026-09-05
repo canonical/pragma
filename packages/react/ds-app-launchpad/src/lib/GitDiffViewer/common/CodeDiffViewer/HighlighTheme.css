@@ -1,171 +1,178 @@
-.hljs {
-  display: block;
-  overflow-x: auto;
-  padding: 0.5em;
+/* Layer: `ds.components.app` — so this application tier's rule for the
+ * component beats the global tier's by cascade layer, not by whichever bundle a
+ * loader happened to emit last. See "Cascade layers" in the @canonical/styles
+ * README. */
 
-  color: #000000;
-  background: #f7f7f7;
-  font-family: var(--font-family-mono);
-}
+@layer ds.components.app {
+  .hljs {
+    display: block;
+    overflow-x: auto;
+    padding: 0.5em;
 
-.hljs-comment,
-.hljs-prolog,
-.hljs-doctype,
-.hljs-cdata {
-  color: #8b949e;
-}
+    color: #000000;
+    background: #f7f7f7;
+    font-family: var(--font-family-mono);
+  }
 
-.hljs-punctuation {
-  color: #000000;
-}
+  .hljs-comment,
+  .hljs-prolog,
+  .hljs-doctype,
+  .hljs-cdata {
+    color: #8b949e;
+  }
 
-.hljs-namespace {
-  opacity: 0.7;
-}
+  .hljs-punctuation {
+    color: #000000;
+  }
 
-.hljs-property,
-.hljs-tag,
-.hljs-boolean,
-.hljs-number,
-.hljs-constant,
-.hljs-symbol,
-.hljs-deleted {
-  color: #77216f;
-}
+  .hljs-namespace {
+    opacity: 0.7;
+  }
 
-.hljs-selector,
-.hljs-attr-name,
-.hljs-string,
-.hljs-char,
-.hljs-builtin,
-.hljs-inserted {
-  color: #0e811f;
-}
+  .hljs-property,
+  .hljs-tag,
+  .hljs-boolean,
+  .hljs-number,
+  .hljs-constant,
+  .hljs-symbol,
+  .hljs-deleted {
+    color: #77216f;
+  }
 
-.hljs-operator,
-.hljs-entity,
-.hljs-url,
-.language-css .hljs-string,
-.style .hljs-string {
-  color: #a86500;
-}
+  .hljs-selector,
+  .hljs-attr-name,
+  .hljs-string,
+  .hljs-char,
+  .hljs-builtin,
+  .hljs-inserted {
+    color: #0e811f;
+  }
 
-.hljs-atrule,
-.hljs-attr-value,
-.hljs-keyword {
-  color: #06c;
-}
+  .hljs-operator,
+  .hljs-entity,
+  .hljs-url,
+  .language-css .hljs-string,
+  .style .hljs-string {
+    color: #a86500;
+  }
 
-.hljs-function,
-.hljs-class-name {
-  color: #c7162b;
-}
+  .hljs-atrule,
+  .hljs-attr-value,
+  .hljs-keyword {
+    color: #06c;
+  }
 
-.hljs-regexp,
-.hljs-important,
-.hljs-variable {
-  color: #dc3023;
-}
+  .hljs-function,
+  .hljs-class-name {
+    color: #c7162b;
+  }
 
-.hljs-important,
-.hljs-bold {
-  font-weight: bold;
-}
+  .hljs-regexp,
+  .hljs-important,
+  .hljs-variable {
+    color: #dc3023;
+  }
 
-.hljs-italic {
-  font-style: italic;
-}
+  .hljs-important,
+  .hljs-bold {
+    font-weight: bold;
+  }
 
-.hljs-entity {
-  cursor: help;
-}
+  .hljs-italic {
+    font-style: italic;
+  }
 
-.hljs-attr,
-.hljs-attribute,
-.hljs-meta,
-.hljs-selector-attr,
-.hljs-selector-class,
-.hljs-selector-id {
-  color: #77216f;
-}
+  .hljs-entity {
+    cursor: help;
+  }
 
-.hljs-variable,
-.hljs-literal,
-.hljs-number,
-.hljs-doctag {
-  color: #77216f;
-}
+  .hljs-attr,
+  .hljs-attribute,
+  .hljs-meta,
+  .hljs-selector-attr,
+  .hljs-selector-class,
+  .hljs-selector-id {
+    color: #77216f;
+  }
 
-.hljs-params {
-  color: #000000;
-}
+  .hljs-variable,
+  .hljs-literal,
+  .hljs-number,
+  .hljs-doctag {
+    color: #77216f;
+  }
 
-.hljs-class,
-.hljs-tag,
-.hljs-title,
-.hljs-built_in {
-  color: #0e811f;
-}
+  .hljs-params {
+    color: #000000;
+  }
 
-.hljs-keyword,
-.hljs-type,
-.hljs-builtin-name,
-.hljs-meta-keyword,
-.hljs-template-tag,
-.hljs-template-variable {
-  color: #06c;
-}
+  .hljs-class,
+  .hljs-tag,
+  .hljs-title,
+  .hljs-built_in {
+    color: #0e811f;
+  }
 
-.hljs-string,
-.hljs-undefined {
-  color: #0e811f;
-}
+  .hljs-keyword,
+  .hljs-type,
+  .hljs-builtin-name,
+  .hljs-meta-keyword,
+  .hljs-template-tag,
+  .hljs-template-variable {
+    color: #06c;
+  }
 
-.hljs-regexp {
-  color: #dc3023;
-}
+  .hljs-string,
+  .hljs-undefined {
+    color: #0e811f;
+  }
 
-.hljs-symbol {
-  color: #77216f;
-}
+  .hljs-regexp {
+    color: #dc3023;
+  }
 
-.hljs-bullet {
-  color: #a86500;
-}
+  .hljs-symbol {
+    color: #77216f;
+  }
 
-.hljs-section {
-  color: #77216f;
-  font-weight: bold;
-}
+  .hljs-bullet {
+    color: #a86500;
+  }
 
-.hljs-quote,
-.hljs-name,
-.hljs-selector-tag,
-.hljs-selector-pseudo {
-  color: #0e811f;
-}
+  .hljs-section {
+    color: #77216f;
+    font-weight: bold;
+  }
 
-.hljs-emphasis {
-  color: #06c;
-  font-style: italic;
-}
+  .hljs-quote,
+  .hljs-name,
+  .hljs-selector-tag,
+  .hljs-selector-pseudo {
+    color: #0e811f;
+  }
 
-.hljs-strong {
-  color: #06c;
-  font-weight: bold;
-}
+  .hljs-emphasis {
+    color: #06c;
+    font-style: italic;
+  }
 
-.hljs-deletion {
-  color: #dc3023;
-  background-color: transparent;
-}
+  .hljs-strong {
+    color: #06c;
+    font-weight: bold;
+  }
 
-.hljs-addition {
-  color: #0e811f;
-  background-color: transparent;
-}
+  .hljs-deletion {
+    color: #dc3023;
+    background-color: transparent;
+  }
 
-.hljs-link {
-  color: #a86500;
-  font-style: underline;
+  .hljs-addition {
+    color: #0e811f;
+    background-color: transparent;
+  }
+
+  .hljs-link {
+    color: #a86500;
+    font-style: underline;
+  }
 }

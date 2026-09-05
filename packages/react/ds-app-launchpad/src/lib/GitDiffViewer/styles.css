@@ -1,26 +1,33 @@
-/* GitDiffViewer.css */
-.ds.git-diff-viewer {
-  --git-diff-viewer-code-default-background: #f7f7f7;
-  --git-diff-viewer-code-default-color: #000000;
-  --git-diff-viewer-code-line-number-default-color: #707070;
-  --git-diff-viewer-code-insertion-background: #dff1e2;
-  --git-diff-viewer-code-deletion-background: #f8e8ea;
+/* Layer: `ds.components.app` — so this application tier's rule for the
+ * component beats the global tier's by cascade layer, not by whichever bundle a
+ * loader happened to emit last. See "Cascade layers" in the @canonical/styles
+ * README. */
 
-  --git-diff-viewer-border-color: rgba(0, 0, 0, 0.2);
-  --git-diff-viewer-border-color-tinted: rgba(0, 0, 0, 0.1);
+@layer ds.components.app {
+  /* GitDiffViewer.css */
+  .ds.git-diff-viewer {
+    --git-diff-viewer-code-default-background: #f7f7f7;
+    --git-diff-viewer-code-default-color: #000000;
+    --git-diff-viewer-code-line-number-default-color: #707070;
+    --git-diff-viewer-code-insertion-background: #dff1e2;
+    --git-diff-viewer-code-deletion-background: #f8e8ea;
 
-  --git-diff-viewer-gutter-width: 7.5em;
-  --git-diff-viewer-hunk-header-background: #ffffff;
-  --git-diff-viewer-hunk-header-color: #707070;
+    --git-diff-viewer-border-color: rgba(0, 0, 0, 0.2);
+    --git-diff-viewer-border-color-tinted: rgba(0, 0, 0, 0.1);
 
-  --git-diff-file-header-horizontal-padding: 1em;
-  --git-diff-file-header-vertical-padding: 0.4em;
-  --git-diff-file-header-background-color: #ebebeb;
-  --git-diff-file-header-items-gap: 0.5em;
+    --git-diff-viewer-gutter-width: 7.5em;
+    --git-diff-viewer-hunk-header-background: #ffffff;
+    --git-diff-viewer-hunk-header-color: #707070;
 
-  --git-diff-file-header-button-background: transparent;
-  --git-diff-file-header-button-hover-background: rgba(0, 0, 0, 0.1);
-  --git-diff-file-header-button-focus-background: rgba(0, 0, 0, 0.1);
+    --git-diff-file-header-horizontal-padding: 1em;
+    --git-diff-file-header-vertical-padding: 0.4em;
+    --git-diff-file-header-background-color: #ebebeb;
+    --git-diff-file-header-items-gap: 0.5em;
 
-  border: 1px solid var(--git-diff-viewer-border-color);
+    --git-diff-file-header-button-background: transparent;
+    --git-diff-file-header-button-hover-background: rgba(0, 0, 0, 0.1);
+    --git-diff-file-header-button-focus-background: rgba(0, 0, 0, 0.1);
+
+    border: 1px solid var(--git-diff-viewer-border-color);
+  }
 }
