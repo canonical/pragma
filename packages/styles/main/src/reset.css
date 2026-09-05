@@ -23,9 +23,12 @@
  * `@canonical/styles-vanilla-adapter`, which compare every element of a pragma
  * block on a mixed page against the same block on a pragma-only page:
  * font-family, font-size, font-weight, line-height, colour, box-sizing, font
- * smoothing, and the two text-wrap longhands. `font-size` is deliberately not
- * declared — pragma's territory follows the reader's own root font size, which
- * is what a rem-based scale is for.
+ * smoothing, and both text-wrap longhands. The two longhands are declared by
+ * two different rules here — the style by `text-wrap-style`, the mode by
+ * `white-space` — because the second has to exclude the elements whose own
+ * wrapping is part of what they are. `font-size` is deliberately not declared:
+ * pragma's territory follows the reader's own root font size, which is what a
+ * rem-based scale is for.
  */
 
 @layer ds.reset {
@@ -49,11 +52,42 @@
       font-weight: normal;
       /* The style longhand, not the `text-wrap` shorthand: the shorthand also
          resets `text-wrap-mode`, which would overwrite the browser's own
-         `white-space: pre` on a `<select>` and let a long option wrap. Only the
-         style needs cancelling — a host page's `text-wrap: pretty` is what this
-         is here for. */
+         `white-space: pre` on a `<select>` and let a long option wrap. A host
+         page's `text-wrap: pretty` is what this cancels; how text wraps is
+         handled by the rule below, which can exclude the elements whose
+         wrapping is part of what they mean. */
       text-wrap-style: auto;
       -webkit-font-smoothing: auto;
+    }
+
+    /* How text wraps, which `text-wrap-style` above does NOT cover: `white-space`
+       is a shorthand for `white-space-collapse` and `text-wrap-mode`, both
+       inherited, so a host page's `html { white-space: nowrap }` otherwise
+       crosses into the territory and leaves every paragraph in it on one line.
+       Measured in Chromium: without this rule the root and its paragraphs
+       compute `nowrap`; with it they compute `normal`, and a page that sets
+       nothing is unchanged in every property.
+
+       The exclusions are elements whose own white-space is part of what they
+       are, and they matter only where such an element IS the outermost root —
+       a `<select class="ds input select chrome">` or a `<pre class="ds">`
+       dropped straight into a host page. Nested inside a territory they keep
+       their own value anyway, because the browser's rule for the element beats
+       an inherited one. This is a short, fixed list from HTML, not an inventory
+       of another framework's rules. */
+    :where(
+        :scope:not(
+          .ds *,
+          pre,
+          textarea,
+          select,
+          code,
+          kbd,
+          samp,
+          [contenteditable]
+        )
+      ) {
+      white-space: normal;
     }
   }
 
