@@ -13,6 +13,6 @@
 <Story name="Default" asChild>
   <SidePanel.Content.Footer>
     <Button>Reset</Button>
-    <Button severity="positive">Apply</Button>
+    <Button importance="primary" anticipation="constructive">Apply</Button>
   </SidePanel.Content.Footer>
 </Story>

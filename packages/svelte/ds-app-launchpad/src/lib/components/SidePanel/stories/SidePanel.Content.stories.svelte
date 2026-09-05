@@ -22,7 +22,9 @@
     </SidePanel.Content.Body>
     <SidePanel.Content.Footer>
       <Button>Reset</Button>
-      <Button severity="positive">Apply changes</Button>
+      <Button importance="primary" anticipation="constructive">
+        Apply changes
+      </Button>
     </SidePanel.Content.Footer>
   </SidePanel.Content>
 </Story>

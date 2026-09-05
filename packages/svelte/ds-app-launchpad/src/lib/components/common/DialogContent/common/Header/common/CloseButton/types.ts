@@ -4,5 +4,12 @@ import type { ButtonProps } from "../../../../../../Button/index.js";
 
 export type CloseButtonProps = Omit<
   Extract<ButtonProps, { href?: never }>,
-  "children" | "iconLeft" | "iconRight" | "severity" | "density"
+  | "children"
+  | "iconLeft"
+  | "iconRight"
+  | "importance"
+  | "anticipation"
+  | "emphasis"
+  | "criticality"
+  | "density"
 >;

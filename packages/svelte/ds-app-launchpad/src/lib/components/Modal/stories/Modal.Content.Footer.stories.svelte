@@ -13,6 +13,6 @@
 <Story name="Default" asChild>
   <Modal.Content.Footer>
     <Button>Cancel</Button>
-    <Button severity="positive">Save</Button>
+    <Button importance="primary" anticipation="constructive">Save</Button>
   </Modal.Content.Footer>
 </Story>

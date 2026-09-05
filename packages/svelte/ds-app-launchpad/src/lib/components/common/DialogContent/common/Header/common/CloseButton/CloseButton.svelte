@@ -18,7 +18,7 @@
 <Button
   class={[componentCssClassName, className]}
   aria-label={ariaLabel}
-  severity="base"
+  importance="tertiary"
   {type}
   {...rest}
 >
