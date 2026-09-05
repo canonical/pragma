@@ -158,7 +158,8 @@ ds:implementation.react-ds-global-form.global.subcomponent.select_input a ds:Imp
 ds:implementation.react-ds-global-form.global.subcomponent.switch_input a ds:ImplementationObject;
     ds:implementsBlock ds:global.subcomponent.switch_input;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global-form/src/lib/subcomponent/SwitchInput/SwitchInput.tsx";
-    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.37.0/packages/react/ds-global-form/src/lib/subcomponent/SwitchInput/SwitchInput.tsx".
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.37.0/packages/react/ds-global-form/src/lib/subcomponent/SwitchInput/SwitchInput.tsx";
+    ds:importStatement "import { SwitchInput } from \"@canonical/react-ds-global-form\";".
 ds:implementation.react-ds-global-form.global.subcomponent.text_input a ds:ImplementationObject;
     ds:implementsBlock ds:global.subcomponent.text_input;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global-form/src/lib/subcomponent/TextInput/TextInput.tsx";
