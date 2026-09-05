@@ -1,7 +1,12 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
 
-/*
-.ds.example-component {
+/* Left unlayered, this file would beat every rule the design system ships, because
+ * unlayered CSS outranks any layer. `app` sits above them all: it is where an application's own CSS goes. */
 
+@layer app {
+  /*
+  .ds.example-component {
+
+  }
+  */
 }
-*/

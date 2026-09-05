@@ -9,37 +9,42 @@
  * margin-box) sums back to a bU multiple, so the overflow is purely visual and
  * doesn't push the header off-grid. The circle-of-friends mark is a baseline-
  * unit square, offset from the top by a baseline-unit margin.
+ *
+ * Layer: ds.components.app (@canonical/styles README, "Cascade layers").
  */
-.ds.canonical-logo {
-  /* Mark geometry in baseline units (bU = --space-baseline). */
-  --mark-size: 2; /* mark side, in bU */
-  --mark-margin-top: 1; /* gap above the mark, in bU */
 
-  /* Rectangle height = bU multiples + a small overflow past the baseline. */
-  --logo-height: 4; /* base height, in bU */
-  --logo-overflow: 0.25rem; /* extra so the orange overshoots the grid line */
+@layer ds.components.app {
+  .ds.canonical-logo {
+    /* Mark geometry in baseline units (bU = --space-baseline). */
+    --mark-size: 2; /* mark side, in bU */
+    --mark-margin-top: 1; /* gap above the mark, in bU */
 
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  inline-size: var(--sidenav-start, 1.5rem);
-  block-size: calc(
-    var(--space-baseline) *
-    var(--logo-height) +
-    var(--logo-overflow)
-  );
-  /* Cancel the overshoot so the margin-box lands back on the grid: the rectangle
-     (logo-height bU + overflow) plus this margin sums to (logo-height + 1) bU. */
-  margin-block-end: calc(var(--space-baseline) - var(--logo-overflow));
-  padding: 0;
-  background: var(--color-background-logo);
+    /* Rectangle height = bU multiples + a small overflow past the baseline. */
+    --logo-height: 4; /* base height, in bU */
+    --logo-overflow: 0.25rem; /* extra so the orange overshoots the grid line */
 
-  & > .mark {
-    display: block;
-    /* Square sized in bU multiples so it lands on the grid. */
-    inline-size: calc(var(--space-baseline) * var(--mark-size));
-    block-size: calc(var(--space-baseline) * var(--mark-size));
-    /* Top offset in bU multiples. */
-    margin-block-start: calc(var(--space-baseline) * var(--mark-margin-top));
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    inline-size: var(--sidenav-start, 1.5rem);
+    block-size: calc(
+      var(--space-baseline) *
+      var(--logo-height) +
+      var(--logo-overflow)
+    );
+    /* Cancel the overshoot so the margin-box lands back on the grid: the rectangle
+       (logo-height bU + overflow) plus this margin sums to (logo-height + 1) bU. */
+    margin-block-end: calc(var(--space-baseline) - var(--logo-overflow));
+    padding: 0;
+    background: var(--color-background-logo);
+
+    & > .mark {
+      display: block;
+      /* Square sized in bU multiples so it lands on the grid. */
+      inline-size: calc(var(--space-baseline) * var(--mark-size));
+      block-size: calc(var(--space-baseline) * var(--mark-size));
+      /* Top offset in bU multiples. */
+      margin-block-start: calc(var(--space-baseline) * var(--mark-margin-top));
+    }
   }
 }

@@ -4,51 +4,56 @@
  * PR1: structural layout only. Colour/visual state (hover/active fills,
  * text/icon colour) is deferred to PR2 (token pairings). A bare focus outline
  * is included for keyboard focus visibility.
+ *
+ * Layer: ds.components.app (@canonical/styles README, "Cascade layers").
  */
-.ds.side-navigation-item {
-  list-style: none;
 
-  /* The row: link or label. Shares the SideNavigation row template so the
-     leading icon aligns with the header logo. [icon] [label] [end].
-     Baseline grid: a fixed 5bU/40px row height (matching the header) carries the
-     vertical rhythm. Every cell top-anchors (align-items: start) so the .p line
-     boxes (icon + label) start at the same row top with equal line-height — their
-     baselines line up on the grid. No block padding — the fixed height owns it. */
-  & > .row {
-    display: grid;
-    grid-template-columns: var(--sidenav-row-columns);
-    align-items: start;
-    gap: var(--dimension-100); /* 0.5rem */
-    width: 100%;
-    block-size: calc(var(--space-baseline) * 5); /* 40px — 5bU */
-    box-sizing: border-box;
-    padding-block: 0;
-    text-decoration: none;
-  }
+@layer ds.components.app {
+  .ds.side-navigation-item {
+    list-style: none;
 
-  /* Leading icon → start column. A .p line box: the icon is inline and rides the
-     baseline-snapped line like a text glyph, so it shares the label baseline. */
-  & .start {
-    text-align: center;
-
-    & > .ds.icon {
-      vertical-align: sub;
+    /* The row: link or label. Shares the SideNavigation row template so the
+       leading icon aligns with the header logo. [icon] [label] [end].
+       Baseline grid: a fixed 5bU/40px row height (matching the header) carries the
+       vertical rhythm. Every cell top-anchors (align-items: start) so the .p line
+       boxes (icon + label) start at the same row top with equal line-height — their
+       baselines line up on the grid. No block padding — the fixed height owns it. */
+    & > .row {
+      display: grid;
+      grid-template-columns: var(--sidenav-row-columns);
+      align-items: start;
+      gap: var(--dimension-100); /* 0.5rem */
+      width: 100%;
+      block-size: calc(var(--space-baseline) * 5); /* 40px — 5bU */
+      box-sizing: border-box;
+      padding-block: 0;
+      text-decoration: none;
     }
-  }
 
-  /* Label → middle (1fr) column. .p line box, top-anchored like .start. */
-  & .label {
-    min-width: 0;
-  }
+    /* Leading icon → start column. A .p line box: the icon is inline and rides the
+       baseline-snapped line like a text glyph, so it shares the label baseline. */
+    & .start {
+      text-align: center;
 
-  /* Trailing caret / slot → end (auto) column, top-anchored. */
-  & .end {
-    text-align: center;
-  }
+      & > .ds.icon {
+        vertical-align: sub;
+      }
+    }
 
-  /* Keyboard focus visibility (structural a11y; styling refined in PR2). */
-  & > .row:focus-visible {
-    outline: 2px solid currentColor;
-    outline-offset: -2px;
+    /* Label → middle (1fr) column. .p line box, top-anchored like .start. */
+    & .label {
+      min-width: 0;
+    }
+
+    /* Trailing caret / slot → end (auto) column, top-anchored. */
+    & .end {
+      text-align: center;
+    }
+
+    /* Keyboard focus visibility (structural a11y; styling refined in PR2). */
+    & > .row:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: -2px;
+    }
   }
 }
