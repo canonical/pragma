@@ -30,8 +30,17 @@ body,
  * but that file is only imported by the root SideNavigation component. The
  * subcomponent stories (Header, Item, NavTree, …) render inside a bare
  * `.ds.side-navigation` shell (withSideNavShell) without mounting the root, so
- * the vars would be undefined and the shared row grid would collapse. Re-declare
- * them here so the row template resolves on every isolated story.
+ * the component's sheet is not in those stories' chunk at all and the vars would
+ * be undefined — the shared row grid would collapse. They are re-declared here so
+ * the row template resolves on every isolated story.
+ *
+ * This harness file is unlayered and the component's sheet is in
+ * `ds.components.app`, so where both are on the page — the root SideNavigation
+ * stories — these two declarations now win rather than merely coming last. The
+ * values are identical, so nothing computes differently today, but the harness is
+ * the authority for them, in every story and in every Chromatic screenshot of
+ * one. The way out is for the story shell to import the component's sheet, after
+ * which this block can go; carried on PRA-153.
  */
 .ds.side-navigation {
   --sidenav-start: calc(var(--space-baseline) * 3); /* 1.5rem — 3bU */

@@ -100,6 +100,74 @@ describe("application/react generator", () => {
     expect(filePaths).not.toContain("my-app/src/domains/contact/routes.ts");
   });
 
+  /**
+   * The two stylesheets a generated application owns — the shell's and the
+   * example component's — carry its own rules, so they belong in `app`: the
+   * layer a consumer's CSS goes in, above every layer `@canonical/styles`
+   * names. Left unlayered they would outrank every design-system rule they
+   * touched, because unlayered CSS beats any layer.
+   *
+   * Nothing else checks a plain `.css` template. `renderedOutput.test.ts`
+   * covers `.ejs` files only, and the assertions above check that these two
+   * are emitted, not what is in them. The other half of the guarantee — that
+   * the entry imports `#styles/index.css`, and with it the order statement,
+   * before anything that pulls these files in — is asserted by the change that
+   * fixes that import order (canonical/pragma#1122).
+   */
+  it("emits the application's own CSS in @layer app", () => {
+    const result = dryRun(
+      generators["application/react"].generate({
+        appPath: "my-app",
+        forms: false,
+        intl: false,
+        rendering: "ssr",
+        relay: false,
+        runInstall: false,
+      }),
+    );
+
+    const contents = new Map(
+      result.effects
+        .filter((e) => e._tag === "WriteFile")
+        .map((e) => [
+          (e as { path: string }).path,
+          (e as { content: string }).content,
+        ]),
+    );
+
+    for (const emitted of [
+      "my-app/src/styles/app.css",
+      "my-app/src/lib/ExampleComponent/styles.css",
+    ]) {
+      const source = contents.get(emitted);
+      expect(source, emitted).toBeDefined();
+
+      // Exactly one layer, and it is the consumer's.
+      expect(source?.match(/@layer[^;{]*[;{]/g)).toEqual(["@layer app {"]);
+
+      // Both ends: anything outside the block is unlayered, and a rule
+      // appended below the wrapper is the easy one to miss — the file still
+      // opens with the block and still holds exactly one `@layer`.
+      const code = (source ?? "").replace(/\/\*[\s\S]*?\*\//g, "");
+      const open = code.indexOf("@layer app {");
+      expect(code.slice(0, open).trim()).toBe("");
+
+      // Walk to the brace that closes the wrapper rather than taking the last
+      // one in the file, which a rule appended below it would supply.
+      let depth = 0;
+      let close = -1;
+      for (let i = open; i < code.length; i += 1) {
+        if (code[i] === "{") depth += 1;
+        else if (code[i] === "}" && --depth === 0) {
+          close = i;
+          break;
+        }
+      }
+      expect(close).toBeGreaterThan(-1);
+      expect(code.slice(close + 1).trim()).toBe("");
+    }
+  });
+
   it("scaffolds every file present in the templates directory", () => {
     // Authoritative manifest-completeness guard: enumerate the templates dir on
     // disk and assert each file is emitted by the generator. The manifest is a
