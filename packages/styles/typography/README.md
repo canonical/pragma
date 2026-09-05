@@ -52,9 +52,9 @@ They are custom properties and nothing else. A custom property does nothing wher
 
 ### Why the `@property` registration is outside every layer
 
-A registration is not a style rule and is not cascaded at all: it says what a custom property *means* for the whole document — its syntax, whether it inherits, its initial value — and where two registrations of the same name exist, the last one in document order wins, whatever layer either of them is in. So a layer would have nothing to order it against and a scope no subtree to confine it to; the registration would sit in a layer and the layer would be inert.
+A registration says what a custom property *means* for the whole document — its syntax, whether it inherits, its initial value — and it applies wherever it is written. This package registers `--baseline-height` once and nothing else registers that name, so no layer has anything to order it against: moving the registration into `ds.typography` would change no computed value. It stays at the top level with the other declarations of its kind, which is a convention that makes it easy to find rather than something the cascade requires.
 
-This is worth stating precisely, because two plausible-sounding reasons are false and were measured false in Chromium 151 and Firefox 153: a browser does **not** reject `@property` inside `@layer` or inside `@scope` — both engines keep it and apply its initial value — and `@keyframes` is **not** unsorted, since both engines pick the animation from the higher layer over the later one in source order. `@font-face` shares the registration's reason; `@keyframes` does not, and this package ships none.
+That distinction is worth drawing, because three plausible-sounding claims about layers and at-rules are false, and all three were measured false in Chromium 151 and Firefox 153. A browser does **not** reject `@property` inside `@layer` or inside `@scope`: both engines keep the registration and apply its initial value. Registrations are **not** exempt from layer order: given two registrations of the same name, the one in the higher layer wins even when it is written first, and an unlayered one beats a layered one written after it. And `@font-face` and `@keyframes` behave the same way — the higher layer's font face or animation wins over the later one in source order. So the reason this registration is unlayered is that it is the only one of its name, not that a layer could not sort it.
 
 ### The root contract
 
@@ -114,13 +114,14 @@ The baseline engines solve this by computing where the first baseline falls with
  +----------------------------------------------+
 ```
 
-The `mod()` CSS function does the heavy lifting:
+The `mod()` CSS function does the heavy lifting. The engines call the two halves `--start-nudge` and `--end-nudge`:
 
 ```css
---top-nudge: calc(
+--start-nudge: calc(
   var(--baseline-height) -
   mod(var(--baseline-position), var(--baseline-height))
 );
+--end-nudge: calc(var(--baseline-height) - var(--start-nudge));
 ```
 
 Multi-line blocks stay on-grid because `line-height` is always set to a multiple of `--baseline-height`. The nudge only compensates for the first line's half-leading offset.
@@ -309,11 +310,11 @@ The baseline grid is rendered as a red 1px line overlay so alignment errors are 
 
 | Feature | Used by | Chrome | Safari | Firefox |
 |---------|---------|--------|--------|---------|
-| `@scope` | every rule in this package | 118 | 17.4 | 146 |
+| `@scope` | every element rule in this package | 118 | 17.4 | 146 |
 | `mod()` | all three engines | 125 | 17.4 | 128 |
 | `round()` | the mapper's line-height fallback | 125 | 17.4 | 128 |
 | `@property` | the `--baseline-height` registration | 85 | 16.4 | 128 |
 | `cap` unit | the cap and text-trim engines | 117 | 17.2 | 97 |
 | `text-box-trim` | the text-trim engine only | 133 | 18.2 | not yet |
 
-`@scope` is the binding floor: below it the whole block is dropped and none of this package applies. The design system targets current browsers and does not carry compatibility shims for older ones; an application that cannot move should pin a version.
+`@scope` is the binding floor: below it the whole block is dropped, so the engines and the element rules do not apply. What survives is what is outside the scope — the mapper's token shims in `ds.tokens`, and the `--baseline-height` registration — which style nothing on their own. The design system targets current browsers and does not carry compatibility shims for older ones; an application that cannot move should pin a version.

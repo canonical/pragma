@@ -11,9 +11,13 @@
  * file until now, leaving the engine inert on any page that never declared the
  * variable itself. The registration sits at the top level, outside the
  * `ds.typography` layer the engines are written into and outside its
- * `@scope (.ds)` block, because a registration is not cascaded at all — the last
- * one in document order wins, whatever layer it is in — so a layer would have
- * nothing to order it against and a scope no subtree to confine it to.
+ * `@scope (.ds)` block: it applies to the whole document wherever it is
+ * written, this package registers the name once and nothing else registers it,
+ * so no layer has anything to order it against and a layer would change no
+ * computed value. Keeping it here with the other declarations of its kind is a
+ * convention that makes it easy to find, not a requirement — layers do sort
+ * duplicate registrations, measured in Chromium 151 and Firefox 153; there
+ * simply are no duplicates. The README has the measurement.
  */
 @property --baseline-height {
   syntax: "<length>";
