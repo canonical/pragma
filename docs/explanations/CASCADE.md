@@ -73,8 +73,8 @@ miss is a visible bug on a production page.
 So the repair has to be structural, and of the criteria above, the layer is the only one above both
 specificity and order that an author's own stylesheets can arrange. Which is why the first thing
 pragma had to do was make its own declared contract real: every rule it ships in a named layer, one
-statement fixing their order, and the rules that select bare elements confined to the part of the page
-pragma owns.
+statement fixing their order, and the rules that select bare elements written inside a scope, so that
+a page can say where pragma's writ runs.
 
 ## One statement, ten names
 
@@ -103,9 +103,10 @@ able to overrule this?"
   depends on the layer its declaration sits in — it does not — but because overriding a token has to
   be possible from every layer that reads one, and because nothing should have to out-specify a token
   to use it.
-- **The root's baseline** — the font, colour, line height and box sizing the outermost marked element
-  declares for itself — sits above the tokens because it reads them, and below the typographic engine
-  and the components, which refine what it starts.
+- **The root's baseline** — the font, colour, line height and box sizing pragma's root declares for
+  itself, which is the document element unless another framework is on the page — sits above the
+  tokens because it reads them, and below the typographic engine and the components, which refine what
+  it starts.
 - **Typography above that**, because it is a more specific statement about text than the baseline is.
 - **Modifiers above typography**, because a modifier's whole job is to shift what the layers below
   produced. **Surfaces above modifiers**, because a surface re-points colour channels a modifier set.
@@ -156,44 +157,81 @@ the root itself — and on a page pragma does not own in its entirety, those rul
 someone else's markup, in a fight no layer ordering can settle because both systems are talking about
 the same `<p>`.
 
-So the layers whose rules select elements are written inside `@scope (.ds)` blocks at their source:
-the reset and the typographic engine, and the layout presets for a neighbouring reason — their class
-names are ordinary enough that a page pragma does not own may already use them for something else.
-Everything inside an element carrying the class `ds` is pragma's; everything outside it is not. That
-gives every element exactly one owner, and the question of who wins never arises.
+So the layers whose rules select elements are written inside a scope, at their source — the reset, the
+typographic engine, and the layout presets, whose class names are ordinary enough that a page pragma
+does not own may already use them for something else. The prelude is the whole design in one line:
 
-Two things follow from writing it that way rather than applying it afterwards. Pragma adds no
-transform of its own between what a contributor writes and what the browser runs, which is the
-constitution's rule about [no magic](../../CONSTITUTION.md) — the stylesheet in the source is the
-stylesheet in the browser. (A consumer's minifier may still rewrite it, which is its own section
-below.) And a block that says `@scope (.ds)` once is what a contributor who does nothing special will
-get right on the next rule they add; the alternative, appending a guard selector to every rule by
+```css
+@scope (html:not(.coexist), .ds) { … }
+```
+
+Read it as a switch with two positions.
+
+**On an ordinary page the switch is off, and pragma behaves as if the scope were not there.** The
+document element matches `html:not(.coexist)`, so it is a scoping root and every element in the
+document is inside it: the reset, the engine and the presets apply page-wide, exactly as they would
+unscoped. **An application that runs pragma alone therefore puts nothing on its root for this.** Its
+root contract is the context and density classes it already carried, and nothing else — the release
+asks for no new class.
+
+**A page that also runs another framework turns the switch on, by marking its document element
+`coexist`.** That marker is the adapter's, and it is the only place the two-system arrangement touches
+the page's own markup. With it present `html:not(.coexist)` stops matching, so the scoping roots that
+remain are the elements carrying `ds`: every pragma component, which carries it on its own root, and
+whatever regions the team has migrated. Pragma's element-level rules and the adapter's boundary then
+describe the same territory from either side, and no element has two owners. Retirement reverses it in
+one edit — drop the marker, and the document element is a scoping root again.
+
+That is why marking is an adapter concern and not a default. The alternative asked every pragma
+application to opt in to its own element styles with a class on the root; this asks the far smaller
+number of pages that run two systems to opt out of page-wide reach, and leaves everybody else's root
+alone.
+
+Two things follow from writing the confinement where the rules are rather than applying it afterwards.
+Pragma adds no transform of its own between what a contributor writes and what the browser runs, which
+is the constitution's rule about [no magic](../../CONSTITUTION.md) — the stylesheet in the source is
+the stylesheet in the browser. (A consumer's minifier may still rewrite it, which is its own section
+below.) And a block that opens with that prelude once is what a contributor who does nothing special
+will get right on the next rule they add; the alternative, appending a guard selector to every rule by
 hand, is one forgotten suffix away from a leak.
 
-The price is a browser floor, and it is narrower than it sounds: on Chrome and Safari the typographic
-engine already required more than `@scope` does, so only Firefox's floor rises. Below it a browser
-drops the scoped blocks whole — the baseline, the engine's element rules and the layout presets, inside
-components as well as between them — while the components' own rules stay. The README's browser table
-is the reference, and the package states that failure mode as a non-guarantee rather than leaving a
-reader to discover it.
+The price is a browser floor, and it is now paid on every page rather than only on mixed ones, because
+the element-level rules sit inside a scope everywhere. Below it a browser drops the scoped blocks
+whole: the baseline, the engine's element rules and the layout presets do not apply at all, inside
+components as well as between them, while the components' own rules stay. On Chrome and Safari the
+typographic engine already required more than `@scope` does, so only Firefox's floor rises; the
+README's browser table is the reference, and the package states the failure mode as a non-guarantee
+rather than leaving a reader to discover it.
 
-### The outermost root declares the baseline
+### The root declares the baseline
 
 Keeping another system's *rules* out of pragma territory does not keep its *inherited values* out. A
 host page that sets a colour, a font, a line height or a weight on its document element hands those
 down to every pragma component inside it, and reverting declarations cannot undo an inherited value.
-So the territory root declares pragma's baseline itself — which is what pragma's root should always
-have declared, and what makes a pragma region render as pragma's own wherever it is placed.
+So pragma's root declares the baseline itself — which is what a design system's root should always
+have declared, and what makes a pragma region render as pragma's own wherever it is placed. On an
+ordinary page those declarations land on `<html>`, where they would have landed anyway.
 
 A scoped selector is relative to its root and never matches that root, so the rule that reaches the
-root names `:scope`. But it must name it carefully. Every pragma component carries `ds` on its own
-root — bar three work-in-progress grid components the README names — so **a bare `:scope` matches
-every element carrying the class** — each component is a scoping
-root of its own — and the baseline would land on all of them: an icon inside a coloured link would
-reset to the baseline colour instead of inheriting the link's, a card inside a card would lose its
-container's font. Measured, in review, exactly like that. The baseline belongs to the element that
-*opens* the territory, so the selector says so: `:where(:scope:not(.ds *))`, the outermost marked
-element and only that one. Everything inside inherits from it, which is the point.
+root names `:scope`. But it must name it carefully, because on either setting of the switch there is
+more than one scoping root. Every pragma component carries `ds` on its own root — bar three
+work-in-progress grid components the README names — so **a bare `:scope` matches every element
+carrying the class**, each component being a scoping root of its own, and the baseline would land on
+all of them: an icon inside a coloured link would reset to the baseline colour instead of inheriting
+the link's, a card inside a card would lose its container's font. Measured, in review, exactly like
+that.
+
+So the rule names the two roots that are the page's, and nothing else:
+
+```css
+:where(:scope:is(html, html.coexist .ds:not(.ds *)))
+```
+
+The document element on an ordinary page; on a coexisting page the outermost `ds` beneath the marked
+root, which is where pragma's writ begins there. A component root nested inside another `ds` satisfies
+neither branch, so it inherits its container's text instead of resetting to the baseline — which is
+the point. A lone component dropped into a coexisting page *is* the outermost `ds` there, and does
+declare the baseline: that is what makes it render as pragma's own rather than as the host page's.
 
 Note what this does *not* rely on: scope proximity. Proximity is a real cascade criterion, but it is
 consulted after specificity and only between rules scoped to different roots, so it is too subtle a
@@ -202,18 +240,19 @@ next maintainer will read it.
 
 ### `:root` inside a scope matches nothing
 
-Also measured, and worth knowing before you spend an afternoon on it: a `:root` selector inside
-`@scope (.ds)` matches nothing at all, even when `ds` is on `<html>`. Every bare selector inside the
-block is read relative to the scoping root — as a descendant of it — and the document element is
-nobody's descendant. Token blocks that stay with
+Also measured, and worth knowing before you spend an afternoon on it: a `:root` selector inside the
+scope matches nothing at all — not even now that the document element is itself a scoping root. Every
+bare selector inside the block is read relative to that root, as a descendant of it, and the document
+element is nobody's descendant. Token blocks that stay with
 the file that reads them therefore sit inside their layer and outside any scope — which costs nothing,
 because a custom property does nothing where it is declared, only where a rule reads it, and every
 rule that reads one is either scoped or matches a design-system class.
 
 ### One rule opts out of the scope form
 
-The border-box declaration is written the long way — a `:where(.ds, .ds *)` selector in the same
-layer, outside the scope block. It is the only rule in the package with universal reach, so every
+The border-box declaration is written the long way — a plain selector list in the same layer, outside
+the scope block, spelling out the match set the prelude would have given it. It is the only rule in
+the package with universal reach, so every
 element on the page is a candidate for it and each candidate would pay a scope-activation check; the
 regression was measured on a large page, and the README records the number under
 [why the element-level layers are scoped](../../packages/styles/main/README.md#why-the-element-level-layers-are-scoped).
@@ -255,7 +294,7 @@ with the at-rules that may precede them — `@charset`, `@font-face`, `@property
 of the first. Where the statement does survive, the blocks stay in the order the files were imported
 and it is each name's *first* appearance that follows the statement, which is all the cascade ever
 promised. The
-[migration guide](../how-to-guides/MIGRATE_TO_LAYERED_STYLES.md#3-check-the-layers-on-a-built-page)
+[migration guide](../how-to-guides/MIGRATE_TO_LAYERED_STYLES.md#2-check-the-layers-on-a-built-page)
 carries the snippet that reads that sequence out of a live page. Pragma's own check works one step
 earlier — on the stylesheet a bundler resolves, before a minifier rewrites it, where the statement is
 still the first rule and every layer it opens can be compared with the README's tables.
@@ -266,21 +305,23 @@ once the component sheets carry their tier, which is the point of carrying it.
 
 ## Living beside another framework
 
-A page that runs pragma and another CSS framework at once gets one more layer at the bottom for that
-framework, one directly above it that reverts what the framework declared inside pragma territory back
-to the browser's own defaults (custom properties, `direction` and `unicode-bidi` sit outside `all`, so
-they still cross), and one between the design system's states and its components for a bridge that translates
-the other framework's theme signal into pragma's. Territories do the work the reset stylesheet could
-not: each element has exactly one owner, so nothing has to be enumerated per property, and nothing is
-transformed between authoring and the browser. The two consequences to keep in mind are that
-`!important` still inverts the order — so the other framework's important rules get *stronger* when it
-is layered lowest, and the ones that matter have to be answered rather than out-ranked — and that
-`revert` rolls back presentational attributes as well as author rules, since the cascade places those
-between the reader's origin and the author's, so an image sized by `width` and `height` attributes
-inside pragma territory measures its intrinsic size instead. Both are stated as non-guarantees where
-they belong. The adapter package, `@canonical/styles-vanilla-adapter`, is the reference for all of it
-— its README carries the numbered rules, the recipes, the non-guarantees and symptom-first
-troubleshooting — and it arrives with the coexistence release rather than with this one.
+A page that runs pragma and another CSS framework at once marks its document element `coexist`,
+which is what moves pragma's own element rules from page-wide to the `ds` subtrees, and gets one
+more layer at the bottom for that framework, one directly above it that reverts what the framework
+declared inside pragma territory back to the browser's own defaults (custom properties, `direction`
+and `unicode-bidi` sit outside `all`, so they still cross), and one between the design system's
+states and its components for a bridge that translates the other framework's theme signal into
+pragma's. Territories do the work the reset stylesheet could not: each element has exactly one
+owner, so nothing has to be enumerated per property, and nothing is transformed between authoring
+and the browser. The two consequences to keep in mind are that `!important` still inverts the order
+— so the other framework's important rules get *stronger* when it is layered lowest, and the ones
+that matter have to be answered rather than out-ranked — and that `revert` rolls back presentational
+attributes as well as author rules, since the cascade places those between the reader's origin and
+the author's, so an image sized by `width` and `height` attributes inside pragma territory measures
+its intrinsic size instead. Both are stated as non-guarantees where they belong. The adapter
+package, `@canonical/styles-vanilla-adapter`, is the reference for all of it — its README carries
+the numbered rules, the recipes, the non-guarantees and symptom-first troubleshooting — and it
+arrives with the coexistence release rather than with this one.
 
 ## Where each kind of statement lives
 

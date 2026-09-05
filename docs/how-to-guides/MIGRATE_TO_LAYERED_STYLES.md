@@ -1,14 +1,16 @@
 # Migrating to the layered styles release
 
 For the maintainer of an application that already uses `@canonical/styles` and nothing else — no other
-CSS framework — upgrading to the first release in which everything **that package** ships sits in a
-cascade layer and its element-level rules are confined to the part of the page you mark.
+CSS framework — upgrading to the first release in which everything that package ships sits in a
+cascade layer.
 
-Three changes need an answer from you, and none of them takes long. If your application also runs
-another CSS framework on the same pages, this guide is not enough on its own: you need the adapter
-package as well, `@canonical/styles-vanilla-adapter`, which arrives with the coexistence release. Its
-README supersedes step 1 here — during that migration your root carries the context, the density and
-`light`, and gets `ds` only at the very end.
+**Your markup does not change.** The root contract is what it always was, a context class and a
+density class; this release adds nothing to it and asks for no new class on `<html>`. What does change
+is how your own CSS meets the design system's, and that needs an answer from you.
+
+If your application also runs another CSS framework on the same pages, this guide is not enough on its
+own: you need the adapter package as well, `@canonical/styles-vanilla-adapter`, which arrives with the
+coexistence release, and the marker and territory rules come with it.
 
 Background reading, if you want the reasoning rather than the steps:
 [the cascade contract](../explanations/CASCADE.md).
@@ -17,43 +19,22 @@ Background reading, if you want the reasoning rather than the steps:
 
 Before this release the layer statement in the design system's entry point named four layers that
 almost nothing was written into, so its rules competed with yours on specificity and on load order.
-Now every rule it ships is in one of ten named layers whose order one statement fixes, and the rules
-that select bare elements — the reset and the typographic engine, and the layout presets with them —
-only apply inside an element carrying the class `ds`.
+Now every rule it ships is in one of ten named layers whose order one statement fixes.
+
+The rules that select bare elements — the reset, the typographic engine, the layout presets — are also
+written inside a scope now, which opens `@scope (html:not(.coexist), .ds)`. On your page the document
+element matches the first half of that, so it is a scoping root and those rules apply page-wide,
+exactly as they did before. The `coexist` marker in the second half is for a page that runs two
+systems, and belongs to the adapter; on a page that does not carry it, nothing about the scope is
+visible to you except the browser floor further down.
 
 That is `@canonical/styles` and the typographic engine it brings with it. The component packages'
 stylesheets move into the two component tiers in a separate change; until that lands they are still
 unlayered, and they still meet your CSS on specificity and source order rather than on layers.
 
-That produces exactly three questions: where your territory starts, what your own CSS should do now
-that it outranks the package, and how to confirm both on a real build.
+So there is one decision to take and one thing to check.
 
-## 1. Mark your root
-
-Add `ds` beside the context and density classes your root already carries:
-
-```html
-<html class="ds app comfortable">
-```
-
-Without it the reset and the typographic engine apply nowhere, and your page's text falls back to the
-browser's defaults. Components keep working — every component carries `ds` on its own root, so each is
-its own small territory — but everything between them stops being the design system's.
-
-Mark `<html>` if you can, or `<body>`: both put the body inside the territory, so its page margin is
-reset as it was before. A mark further in leaves the body outside, and the browser's own page gutter
-comes back for you to zero. The
-[root contract in the README](../../packages/styles/main/README.md#usage) is the reference for the
-three classes and for what a colour-scheme pin does.
-
-The layout presets moved with the reset: the preset class names now do nothing outside a marked
-subtree. If your markup uses one of them on an element that neither carries `ds` nor sits inside one,
-that is a layout change
-rather than a typographic one, and
-[the README's migrating section](../../packages/styles/main/README.md#migrating-to-the-layered-release)
-names the presets affected.
-
-## 2. Decide what your own CSS does
+## 1. Decide what your own CSS does
 
 **Your unlayered CSS now beats every rule `@canonical/styles` ships.** That is the cascade working as
 defined — a rule in no layer outranks a rule in any layer, whatever the selectors on either side — and
@@ -97,10 +78,9 @@ troubleshooting entry.
 
 `!important` in your CSS still wins, and among important declarations the layer order runs backwards,
 so an important rule in the lowest layer is the strongest author rule on the page. Neither fact
-changed, and
-neither is a good tool for this job.
+changed, and neither is a good tool for this job.
 
-## 3. Check the layers on a built page
+## 2. Check the layers on a built page
 
 Do not grep your built CSS for the statement. A minifier rewrites it: Lightning CSS, which pragma's
 own reference build configures Vite to use, merges the blocks that share a layer name, reorders them
@@ -122,13 +102,14 @@ statement itself — every name, in the order it declared them — followed by o
 in the order the browser read the files, which is not the declared order and does not need to be. If a
 minifier deleted the statement, the blocks themselves come back in the declared order. Either way the
 property to check is the same one: the **first** appearance of each name follows the order you
-declared, and if you layered your own CSS in step 2, `app` never appears before a design-system name.
+declared, and if you layered your own CSS in step 1, `app` never appears before a design-system name.
 A name that first appears too early is the bug — usually the one in the last troubleshooting entry
 below.
 
-Then check the root in the elements panel: `<html>` (or `<body>`) carries `ds`, with a context class
-and a density class on it or on some ancestor of your components — the reference application puts `ds`
-on `<html>` and `app comfortable` on `<body>`.
+Then check the root in the elements panel: a context class and a density class, on `<html>` or on any
+ancestor of the components that read them. That is the whole root contract. If a `coexist` class is
+there, something has given your page the two-system arrangement, and the first troubleshooting entry
+below is for you.
 
 ## What else moves on the page
 
@@ -147,10 +128,10 @@ file through us and wants the rest of it, depend on it directly.
 A subpath — one of the individual stylesheets the package exports, rather than the package entry —
 carries **no order statement**, because the statement is the first rule of the entry. The layers such a
 file opens are then ordered by wherever they first appear among your own rules, which is the accident
-the statement exists to remove. One of those subpaths now also brings a `@scope (.ds)` block with it.
+the statement exists to remove. One of those subpaths now also brings a scope block with it.
 
 Import the package entry unless you have a specific reason not to; if you must import a subpath, write
-the statement yourself, as in step 2.
+the statement yourself, as in step 1.
 
 ## The browser floor moved
 
@@ -159,36 +140,42 @@ already required, so nothing moves there; on Firefox the floor rises. The versio
 [the README's browser-floor table](../../packages/styles/main/README.md#browser-floor), beside the
 features the engine already needed.
 
-Below the floor a browser drops the scoped blocks whole: the root's baseline, the typographic engine's
-element rules and the layout presets do not apply — inside your components as well as between them.
-The border-box rule survives, because it is deliberately written outside the scope. A few shipped
-components carry a layout preset on their own root, so there the visible failure is a collapsed layout
-rather than only default text. If your application supports a browser below the floor, pin the previous
-release rather than shipping the scoped one.
+What is new is that this floor reaches every page, not only a page running two systems, because the
+element-level rules are inside a scope everywhere. Below it a browser drops the scoped blocks whole:
+the root's baseline, the typographic engine's element rules and the layout presets do not apply —
+inside your components as well as between them — while the components' own rules stay. The border-box
+rule survives, because it is deliberately written outside the scope. A few shipped components carry a
+layout preset on their own root, so there the visible failure is a collapsed layout rather than only
+default text. If your application supports a browser below the floor, pin the previous release rather
+than shipping the scoped one.
 
 ## Troubleshooting
 
 ### Text lost its font, its line height or its colour — but the components look right
 
-The element is outside the territory. Everything the reset and the typographic engine do is now
-confined to a subtree marked with `ds`, and components carry their own mark, which is why they survived
-while the page around them did not.
+Two causes. The likelier one is that your document element carries the class `coexist` — put there for
+a page that runs two CSS systems, or inherited from a template that does. With that marker present the
+design system's element-level rules apply only inside subtrees carrying `ds`, and every component
+carries `ds` itself, which is exactly why they survived while the text around them did not.
 
-Check the document element in devtools for the `ds` class. If it is on a wrapper further in — a
-`<main>`, a mounted app root — then anything outside that wrapper, header and footer included, is
-outside the territory. Move the mark up, or mark each region you own. If the class is there and the
-text is still unstyled, check the browser floor above: below it the scoped blocks are dropped whole,
-and the text inside your components goes with them — so if the components' own text also looks like
-the browser's defaults, suspect the floor rather than the mark.
+If the marker is not meant to be there, remove it and the rules cover the page again. If it is meant
+to be there, then this page is a coexistence page and the adapter README's rules apply: the region
+wants a `ds` root of its own.
 
-### An 8px gutter came back around the page
+The other cause is the browser floor above. Below it the scoped blocks are dropped whole, and then the
+text inside your components goes too — so if the components' own text also looks like the browser's
+defaults, suspect the floor rather than the marker.
 
-The mark is on a subtree rather than on `<html>` or `<body>`, so the body is outside the territory and
-the browser's own default margin on it is no longer reset. This is stated as a non-guarantee rather
-than a bug: the reset only reaches what you marked.
+### The design system's typography reached markup another framework owns
 
-Either move `ds` up to `<html>` (the recommended shape for an application that is the design system's
-throughout) or zero the body margin yourself in your own CSS.
+The mirror image, on a page that runs both systems: the document element is missing the `coexist`
+marker, so it is still a scoping root and the reset and typographic engine apply to the whole
+document, legacy markup included. The symptom is the other framework's pages taking the design
+system's fonts, spacing and line heights where nobody asked for them.
+
+Add the marker to `<html>`, as the adapter README's root rule says. Marking the regions you have
+already migrated with `ds` is the other half of that step: the marker alone confines the design system
+without giving it anywhere to apply.
 
 ### Your overrides stopped winning once you layered them
 
@@ -199,14 +186,15 @@ entry, `app` is established first and every design-system layer is appended *abo
 the design system also sets that property on that element, your rule now loses, however specific it
 is.
 
-Run the devtools snippet from step 3: if `app` comes back first in the list instead of last, that is
-this. The fix is the statement in step 2, written before the import — it fixes the rank of `app`
+Run the devtools snippet from step 2: if `app` comes back first in the list instead of last, that is
+this. The fix is the statement in step 1, written before the import — it fixes the rank of `app`
 whatever the load order, which is the whole reason to write one. Removing the `@layer app` wrapper is
 the other valid fix: unlayered, your CSS wins again.
 
 ## Related
 
-- [The cascade contract](../explanations/CASCADE.md) — why the order is what it is.
+- [The cascade contract](../explanations/CASCADE.md) — why the order is what it is, and what the scope
+  prelude does on each kind of page.
 - [`@canonical/styles` README](../../packages/styles/main/README.md) — what is layered where, the
   guarantees and the tests behind them.
 - [`@canonical/styles-typography` README](../../packages/styles/typography/README.md) — the engines'
