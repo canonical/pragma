@@ -5,6 +5,16 @@
   "main": "dist/esm/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
+  "style": "dist/esm/lib/index.css",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/esm/index.js"
+    },
+    "./index.css": "./dist/esm/lib/index.css",
+    "./package.json": "./package.json",
+    "./*": "./*"
+  },
   "files": [
     "dist"
   ],

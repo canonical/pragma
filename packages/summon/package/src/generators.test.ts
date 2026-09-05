@@ -297,7 +297,6 @@ describe("generated manifest — validity matrix", () => {
       if (withStorybook) {
         expect(manifest.scripts["build:storybook"]).toBeDefined();
         expect(allDependencies.storybook).toBeDefined();
-        expect(allDependencies["@storybook/addon-themes"]).toBeDefined();
         expect(allDependencies["@storybook/react-vite"]).toBeDefined();
         expect(allDependencies["@canonical/storybook-config"]).toBeDefined();
         expect(allDependencies["@canonical/styles-debug"]).toBeDefined();

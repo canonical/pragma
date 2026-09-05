@@ -12,28 +12,44 @@
  * for the whole document and the cascade does not sort it, so putting it in a
  * layer would say nothing and would only invite a reader to look for the layer
  * that "wins".
+ *
+ * The descriptors below are the ranges the files actually carry, read from
+ * each file's variation table (`fvar`) rather than copied from a specimen: a
+ * range wider than the file's own is a claim the browser silently clamps, so
+ * `font-weight: 900` would render at the heaviest weight the file has and the
+ * stylesheet would say otherwise.
  */
 
+/* Ubuntu Sans 1.006 — fvar: wdth 75–100, wght 100–800 (1000 units per em). */
 @font-face {
   font-family: "Ubuntu Sans";
   src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSans[wdth,wght].woff2")
     format("woff2-variations");
-  font-weight: 100 900;
-  font-stretch: 62.5% 100%;
+  font-weight: 100 800;
+  font-stretch: 75% 100%;
   font-style: normal;
   font-display: swap;
 }
 
+/* Ubuntu Sans Italic 1.006 — the same two axes over the same ranges. */
 @font-face {
   font-family: "Ubuntu Sans";
   src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSans-Italic[wdth,wght].woff2")
     format("woff2-variations");
-  font-weight: 100 900;
-  font-stretch: 62.5% 100%;
+  font-weight: 100 800;
+  font-stretch: 75% 100%;
   font-style: italic;
   font-display: swap;
 }
 
+/* The two mono descriptors below are UNVERIFIED, and knowingly so. The files
+ * @canonical/ds-assets ships under these two names are not fonts at all — each
+ * is a ~300 KB HTML error page committed in their place — so no variation
+ * table can be read and no range can be checked. The declarations are kept as
+ * written: a browser rejects the download and falls back to the generic
+ * monospace stack, and the day the assets are replaced with the real variable
+ * fonts these rules start working. Whoever replaces them: read the files'
+ * `fvar` and correct the ranges here in the same change. */
 @font-face {
   font-family: "Ubuntu Sans Mono";
   src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSansMono[wght].woff2")

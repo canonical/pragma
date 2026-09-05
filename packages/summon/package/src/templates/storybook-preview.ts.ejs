@@ -1,23 +1,34 @@
-import { withThemeByClassName } from "@storybook/addon-themes";
-import type { Preview, ReactRenderer } from "@storybook/react-vite";
-
 <% if (type === 'css') { -%>
+// The stylesheet comes first, before anything that imports a component: CSS is
+// emitted in the order the bundler evaluates the modules that import it, and
+// the layer order a browser applies is the one it reads first.
 import "../src/index.css";
 <% } -%>
 import "@canonical/styles-debug/baseline-grid";
+import type { Preview } from "@storybook/react-vite";
+
+// The root contract. Every design-system rule that selects an element is
+// authored inside `@scope (.ds)`, so it applies to the subtree of an element
+// marked `ds` and nowhere else — without this class the reset and the
+// typographic engine reach nothing. Beside it the document declares one
+// context (`app` | `site` | `docs`) and one density (`comfortable` | `dense`),
+// which together choose the spacing and control-height channel.
+//
+// It goes on the document element because a docs page renders several stories
+// into one document, and because the story container carries the grid presets,
+// which are themselves scoped and so must sit INSIDE the territory rather than
+// be its root. Applied at module scope, so the first paint already has it.
+//
+// Light and dark are NOT set here: `@canonical/storybook-addon-utils`, which
+// `createConfig` registers, owns the scheme toggle in the toolbar and puts
+// `light` / `dark` on this same element. One owner per element — a second
+// mechanism writing the same classes would silently undo the first.
+if (typeof document !== "undefined") {
+  document.documentElement.classList.add("ds", "app", "comfortable");
+}
 
 const preview: Preview = {
   tags: ["autodocs"],
-  decorators: [
-    withThemeByClassName<ReactRenderer>({
-      themes: {
-        light: "is-light",
-        dark: "dark",
-        paper: "is-paper",
-      },
-      defaultTheme: "light",
-    }),
-  ],
   parameters: {
     docs: {
       codePanel: true,

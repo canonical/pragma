@@ -1,10 +1,12 @@
+// The stylesheet comes first, before every component a story can reach: CSS is
+// emitted in the order the bundler evaluates the modules that import it, and
+// the layer order a browser applies is the one it reads first.
+import "../src/styles/index.css";
 import previewConfig from "@canonical/storybook-config/preview";
 import type { Preview } from "@storybook/react-vite";
 <% if (intl) { -%>
 import { withI18n } from "./decorators/index.js";
 <% } -%>
-
-import "../src/styles/index.css";
 
 const preview: Preview = {
   ...previewConfig,

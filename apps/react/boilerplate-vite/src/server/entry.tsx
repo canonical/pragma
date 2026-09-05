@@ -1,3 +1,9 @@
+// Styles first, for the same reason as in the client entry: the order the
+// bundler evaluates style imports in is the order the rules are emitted in.
+// The server build only needs the application's own sheet — the design
+// system's layers reach the browser through the client bundle's stylesheet,
+// which the renderer links from the built HTML.
+import "#styles/app.css";
 import { documentAttrs, isSupportedLocale } from "@canonical/i18n-core";
 import { I18nProvider } from "@canonical/i18n-react";
 import { HeadProvider } from "@canonical/react-head";
@@ -20,7 +26,6 @@ import {
   type SerializedRelayPayload,
   serverQueries,
 } from "../routes.js";
-import "#styles/app.css";
 
 interface InitialData extends Record<string, unknown> {
   readonly url?: string;

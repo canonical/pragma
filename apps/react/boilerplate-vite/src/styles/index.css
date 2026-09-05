@@ -1,3 +1,24 @@
+/* The application's one stylesheet, and the order it is built in.
+ *
+ * Order is the whole point of this file. The cascade sorts by layer, and the
+ * layer order is fixed by the first `@layer` statement a browser sees, so
+ * whatever arrives first decides how everything after it is arbitrated. That
+ * is why this file — not a component, not a route — is the first thing the
+ * client entry imports.
+ *
+ *   1. fonts       `@font-face` only. The cascade does not sort font faces, so
+ *                  they can sit ahead of the layer statement; they are a
+ *                  separate import because loading a typeface is a choice an
+ *                  application makes, not something a stylesheet imposes.
+ *   2. styles      the layer statement, the tokens, the reset, the modifiers.
+ *   3. components  every component stylesheet the design system ships, in one
+ *                  file, so that none of them arrives with a lazily-loaded
+ *                  route and lands after the application's own rules.
+ *   4. app         this application's own CSS, last, so it can win.
+ */
+
+@import url("@canonical/styles/fonts");
 @import url("@canonical/styles");
+@import url("@canonical/react-ds-global/index.css");
 @import url("@canonical/react-ds-global-form/dist/esm/index.css");
 @import url("./app.css");

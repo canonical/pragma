@@ -1,0 +1,73 @@
+/* @canonical/react-ds-global — every component stylesheet the package ships
+ *
+ * One file a consumer can link, so that all component CSS is on the page
+ * before the first route renders:
+ *
+ *   @import url("@canonical/react-ds-global/index.css");
+ *
+ * Why it exists. Each component imports its own `styles.css` from its module,
+ * which is how a component keeps its stylesheet next to itself and how a
+ * bundler tree-shakes what an application never renders. The cost is that the
+ * order in which those stylesheets reach the page follows the JavaScript
+ * import graph: a lazily-loaded route brings its components' CSS with it, and
+ * a stylesheet that arrives after the application's own can win a tie it
+ * should have lost. Importing this file once, early, fixes the order.
+ *
+ * It is deliberately a hand-written list and not a generated one: the
+ * repository's constitution asks for explicit imports over build machinery, so
+ * the list is source, and `index.css.test.ts` fails if it ever disagrees with
+ * the stylesheets on disk. Add a component, add its line, alphabetically.
+ *
+ * Importing this alongside the component modules does not duplicate anything a
+ * browser has to resolve twice — the rules are identical and idempotent — but
+ * it does mean the bytes can appear twice in a bundle. An application that
+ * links this file and imports components from the package pays that once, in
+ * the entry stylesheet, in exchange for a deterministic order.
+ */
+
+@import url("./_work_in_progress/Announcement/styles.css");
+@import url("./_work_in_progress/CategoriesSection/common/Category/styles.css");
+@import url("./_work_in_progress/CategoriesSection/styles.css");
+@import url("./_work_in_progress/ChatSection/styles.css");
+@import url("./_work_in_progress/DescriptionSection/styles.css");
+@import url("./_work_in_progress/IconSection/styles.css");
+@import url("./_work_in_progress/Label/styles.css");
+@import url("./_work_in_progress/Link/styles.css");
+@import url("./_work_in_progress/Rule/styles.css");
+@import url("./_work_in_progress/Section/styles.css");
+@import url("./_work_in_progress/SkipLink/styles.css");
+@import url("./_work_in_progress/TSection/styles.css");
+@import url("./_work_in_progress/grid/ApplicationLayout/styles.css");
+@import url("./_work_in_progress/grid/GridCard/styles.css");
+@import url("./_work_in_progress/grid/InnerGridDemo/styles.css");
+@import url("./_work_in_progress/grid/SettingsView/styles.css");
+@import url("./component/Accordion/common/Item/styles.css");
+@import url("./component/Accordion/styles.css");
+@import url("./component/Badge/styles.css");
+@import url("./component/Breadcrumbs/common/Item/styles.css");
+@import url("./component/Breadcrumbs/styles.css");
+@import url("./component/Button/styles.css");
+@import url("./component/Card/common/Content/styles.css");
+@import url("./component/Card/common/Footer/styles.css");
+@import url("./component/Card/common/Header/styles.css");
+@import url("./component/Card/common/Image/styles.css");
+@import url("./component/Card/styles.css");
+@import url("./component/Chip/styles.css");
+@import url("./component/ContextualMenu/common/Item/styles.css");
+@import url("./component/ContextualMenu/styles.css");
+@import url("./component/Icon/styles.css");
+@import url("./component/InlineCode/styles.css");
+@import url("./component/KeyboardKey/styles.css");
+@import url("./component/Popover/styles.css");
+@import url("./component/Tabs/common/Item/styles.css");
+@import url("./component/Tabs/styles.css");
+@import url("./component/Tile/common/Content/styles.css");
+@import url("./component/Tile/common/Header/styles.css");
+@import url("./component/Tile/styles.css");
+@import url("./component/Tooltip/styles.css");
+@import url("./group/Cards/styles.css");
+@import url("./group/KeyboardKeys/styles.css");
+@import url("./pattern/Timeline/common/Content/styles.css");
+@import url("./pattern/Timeline/common/Event/styles.css");
+@import url("./pattern/Timeline/styles.css");
+@import url("./subcomponent/Spinner/styles.css");

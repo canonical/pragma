@@ -57,6 +57,23 @@ import "@canonical/styles";
 
 `@canonical/styles` provides the global design tokens (colour, spacing, typography). Each component in this package co-locates its own component-level tokens in a `styles.css` file next to the component source. These component tokens reference the global tokens from `@canonical/design-tokens` and are included automatically when the component is imported.
 
+### The one file to link
+
+Every component stylesheet the package ships is also listed in a single aggregate:
+
+```css
+@import url("@canonical/styles");
+@import url("@canonical/react-ds-global/index.css");
+```
+
+That is the whole file — one `@import` per component stylesheet, nothing else — and it exists for order, not for content. Because each component imports its own stylesheet from its module, the order in which those stylesheets reach the page follows the JavaScript import graph: a lazily-loaded route brings its components' CSS with it, arriving after the application's own stylesheet and winning ties it should lose. Importing the aggregate once, immediately after `@canonical/styles` and before anything the application writes, puts every component rule on the page in a fixed position.
+
+Link it in the same stylesheet that imports `@canonical/styles`, so a bundler resolves both together and neither can be reordered by a code-splitting decision. The components still import their own CSS, so an application that does not link the aggregate loses nothing but the guarantee.
+
+The list is source, not output: it is written by hand, as the repository's constitution asks (an explicit import over a build step that discovers files by naming convention), and `src/lib/index.css.test.ts` fails the build if it stops matching the stylesheets on disk. **Adding a component means adding its line**, alphabetically, in `src/lib/index.css`.
+
+The published paths are `@canonical/react-ds-global/index.css` (the subpath) and `dist/esm/lib/index.css` (the file the `style` field names).
+
 ## Icon assets
 
 Components that render an icon — `Icon`, `Spinner`, and any component with an
