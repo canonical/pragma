@@ -55,6 +55,7 @@ The root `package.json` `workspaces` array lists each category explicitly, and e
   "workspaces": [
     "configs/*",
     "packages/*",
+    "packages/prism/*",
     "packages/react/*",
     "packages/runtime/*",
     "packages/storybook/*",

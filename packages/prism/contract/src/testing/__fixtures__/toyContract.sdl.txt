@@ -1,0 +1,16 @@
+type Query {
+  widget(id: ID!): Widget
+  widgets: [Widget!]!
+}
+
+type Widget {
+  id: ID!
+  label: String
+  size: Int!
+  kind: WidgetKind!
+}
+
+enum WidgetKind {
+  ROUND
+  SQUARE
+}

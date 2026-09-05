@@ -1,0 +1,2 @@
+type Query {
+  widget(id: ID!) Widget
