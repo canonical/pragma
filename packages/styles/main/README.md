@@ -99,9 +99,9 @@ Read it from the bottom up — each position is an argument.
 | `ds.modifiers` | Theme, the typographic scale, the intent families (anticipation, criticality, emphasis, importance) and their shims, and the context and density classes. | Above typography, because a modifier's job is to shift what the layers below produced. |
 | `ds.surfaces` | The surface families: `surface`, `contrasted`, `modal`. | Above the modifiers, because a surface re-points colour channels the modifiers set. |
 | `ds.states` | The derived hover, active and disabled channels. | Above the surfaces, because a state is derived from whatever the surface resolved to. |
-| `ds.components` | The layout presets this package ships, and any component stylesheet that belongs to no tier. | Highest of the eight top-level layers, so a component is the final word on its own box. |
-| `ds.components.global` | The stylesheets of the global component packages. | A sublayer of `ds.components`, named in the statement so that its order is fixed rather than left to whichever package a bundler emits first. |
-| `ds.components.app` | The stylesheets of the application tiers. | Above the global sublayer, so an application tier arbitrating a component it also ships wins by layer rather than by load order. |
+| `ds.components` | Nothing, by rule. It is the parent of the two tiers below and holds no rule of its own. | Highest of the eight top-level layers, so a component is the final word on its own box. A rule written *directly* into a parent layer sits in that layer's implicit final sublayer, which is above every named sublayer — so such a rule would outrank both tiers and no component package could override it by layer. Everything this package puts in `ds.components` therefore sits in a tier. |
+| `ds.components.global` | The stylesheets of the global component packages, and this package's own layout presets and content-flow container. | A sublayer of `ds.components`, named in the statement so that its order is fixed rather than left to whichever package a bundler emits first. |
+| `ds.components.app` | The stylesheets of the application tiers. | Above the global sublayer, so an application tier arbitrating a component it also ships wins by layer rather than by load order — including over one of the layout presets. |
 
 An order statement fixes the relative order of layers the first time they appear. A later statement
 may introduce new names but can never reorder the ones already fixed, so an application that needs to
@@ -115,12 +115,12 @@ interleave a layer of its own puts its statement before this import.
 | `reset.css` root declarations | `ds.reset` | yes |
 | `reset.css` box-sizing | `ds.reset` | yes, written `:where(.ds, .ds *)` rather than with `@scope` — see below |
 | `spacing.css` token block | `ds.tokens` | no |
-| `spacing.css` content-flow container | `ds.components` | yes |
+| `spacing.css` content-flow container | `ds.components.global` | yes |
 | `motion.css` | `ds.tokens` | no |
 | `overflow.css` root default | `ds.tokens` | no |
 | `overflow.css` `.surface` | `ds.surfaces` | no |
-| `grid.css` layout presets | `ds.components` | yes |
-| `grid.css` `:root` defaults | `ds.components` | no — component-scoped tokens stay with the rules that read them |
+| `grid.css` layout presets | `ds.components.global` | yes |
+| `grid.css` `:root` defaults | `ds.components.global` | no — component-scoped tokens stay with the rules that read them |
 | `modifiers.density.css` | `ds.modifiers` | no |
 | `modifiers.states.shim.css`, `modifiers.importance.shim.css`, `modifiers.criticality.shim.css` | `ds.modifiers` | no |
 | `controls.hover.shim.css` | `ds.surfaces` and `ds.states` | no |
