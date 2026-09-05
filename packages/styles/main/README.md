@@ -1,12 +1,13 @@
 # @canonical/styles
 
-The Canonical Design System's global stylesheet. One import brings in the reset, the typographic
-engine, the design tokens, the modifier families and the layout presets, all of them in named cascade
-layers, and all of the rules that select elements confined to the part of the page you mark as the
-design system's.
+This README is written for two readers: the person adding the design system to an application, and the
+person maintaining this package. Where a claim can be checked by a test, the test is named.
 
-This README is written for two readers: the person adding the design system to an application, and
-the person maintaining this package. Where a claim can be checked by a test, the test is named.
+The Canonical Design System's global stylesheet. One import brings in the reset, the typographic
+engine, the design tokens, the modifier families and the layout presets. Everything this package itself
+ships is in a named cascade layer, and the rules that select elements are confined to the part of the
+page you mark as the design system's. The typographic engine, which lives in
+`@canonical/styles-typography` and is released with this package, is layered and scoped the same way.
 
 ## Installation
 
@@ -42,19 +43,45 @@ That single line is the root contract, and it has three parts.
 | context | The kind of surface, which sets the comfortable/dense pair for every density value. | `app`, `site` or `docs` |
 | density | Which of that pair is in force. | `comfortable` or `dense` |
 
+Only `ds` has to be on the territory root. The context and density classes set custom properties, which
+inherit, so they may sit on the same element or on any ancestor of the components that read them — the
+reference application puts `ds` on `<html>` and `app comfortable` on `<body>`.
+
 A colour scheme is optional: `light` or `dark` pins one, and leaving both off lets the page follow the
 reader's operating system. Nothing else belongs on the root.
 
-`ds` does not have to be on `<html>`. Put it on a `<main>`, a section, or a single component's wrapper
-and only that subtree becomes the design system's; the rest of the page is untouched. That is what
-makes the package usable in an application that is still mostly built on something else. Every
-component this system ships already carries `ds` on its own root, so a component dropped into any page
-is its own small territory.
+**In an application that is the design system's throughout, mark `<html>`.** That is the shape. `<body>`
+is a fallback where you cannot reach the document element: it puts the body inside the territory, so
+the page margin is reset as before, but it leaves `<html>` outside, and a control's chrome derives from
+the root's font metrics — measured, an input's line height moves from 20px to 21px.
 
-## Cascade layers
+But `ds` does not have to be at the top. Put it on a `<main>`, a section, or a single component's
+wrapper and only that subtree becomes the design system's; the rest of the page is untouched. That is
+what makes the package usable in an application that is still mostly built on something else — with the
+one consequence that the body is then outside the territory, so the browser's 8px page gutter stays and
+you zero it yourself.
 
-Everything this package ships is in a named layer, and the order is fixed by one statement, the first
-rule of the stylesheet:
+Every component this system ships carries `ds` on its own root — except three work-in-progress grid
+components, `GridCard`, `SettingsView` and `ApplicationLayout`, which gain it when the component
+stylesheets are wrapped in their tier layers — so a component dropped into any page is its own small
+territory. Only the outermost
+`ds` in a subtree acts as a territory root: a component inside another one inherits from its container
+rather than resetting to the baseline.
+
+**An application that still runs another CSS framework marks its root differently**, and needs one more
+package: `@canonical/styles-vanilla-adapter`, which keeps the two systems out of each other's territory
+and bridges the theme signal between them. Its root carries the context, the density and `light` from
+day one and **not** `ds`, which goes on only at the last step of the migration, when nothing of the
+other framework is left. The paragraph above about leaving the colour scheme off is for an application
+that is the design system's throughout; during coexistence the root stays pinned `light`, because the
+other framework does not read `color-scheme` and would stay light around dark components. That
+package's README is the reference for all of it.
+
+## Cascade Layers
+
+Everything this package itself ships is in a named layer, and the order is fixed by one statement, the
+first rule of this stylesheet. The typographic engine, which this package imports, is layered and
+scoped the same way, and is released with it:
 
 ```css
 @layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers, ds.surfaces,
@@ -66,9 +93,9 @@ Read it from the bottom up — each position is an argument.
 | Layer | What is in it | Why it sits where it does |
 | --- | --- | --- |
 | `normalize` | This package's own reset, scoped. | Lowest, because everything else is meant to overrule it. |
-| `ds.tokens` | The primitive values, and the spacing, motion and overflow tokens. | Above the reset, because a token has to exist before anything reads it; below everything that reads one. |
-| `ds.reset` | The declarations the marked root makes for itself: font, colour, line height, weight, text wrap, font smoothing, and border-box sizing for everything inside. | Above the tokens because it reads them; below the typographic engine and the components, which refine what it starts. |
-| `ds.typography` | The semantic mapper and the baseline engine. | Above the reset because it is a more specific statement about text; below the modifiers, which can retune the scale. |
+| `ds.tokens` | The primitive values, the spacing, motion and overflow tokens, and the typography mapper's naming shims. | Above the reset, because a token has to exist before anything reads it; below everything that reads one. |
+| `ds.reset` | The declarations the outermost marked root makes for itself: font, colour, line height, weight, text-wrap style, font smoothing — and border-box sizing for it and everything inside. | Above the tokens because it reads them; below the typographic engine and the components, which refine what it starts. |
+| `ds.typography` | The semantic mapper and the baseline engine, from `@canonical/styles-typography`. | Above the reset because it is a more specific statement about text; below the modifiers, which can retune the scale. |
 | `ds.modifiers` | Theme, the typographic scale, the intent families (anticipation, criticality, emphasis, importance) and their shims, and the context and density classes. | Above typography, because a modifier's job is to shift what the layers below produced. |
 | `ds.surfaces` | The surface families: `surface`, `contrasted`, `modal`. | Above the modifiers, because a surface re-points colour channels the modifiers set. |
 | `ds.states` | The derived hover, active and disabled channels. | Above the surfaces, because a state is derived from whatever the surface resolved to. |
@@ -80,66 +107,77 @@ An order statement fixes the relative order of layers the first time they appear
 may introduce new names but can never reorder the ones already fixed, so an application that needs to
 interleave a layer of its own puts its statement before this import.
 
-The statement above, the table below and the list of what is deliberately
+The statement above, the tables below and the list of what is deliberately
 unlayered are not prose. `tests/layer-set.test.ts` reads them out of this file
 and compares them against the stylesheet a bundler resolves, so a README that
 disagrees with the CSS fails the build instead of misleading a reader.
 
-### What is layered where
+### What Is Layered Where
 
 | File | Layer | Scoped to `.ds`? |
 | --- | --- | --- |
 | `normalize.css` | `normalize` | yes |
-| `reset.css` | `ds.reset` | yes |
+| `reset.css` root declarations | `ds.reset` | yes |
+| `reset.css` box-sizing | `ds.reset` | yes, written `:where(.ds, .ds *)` rather than with `@scope` — see below |
 | `spacing.css` token block | `ds.tokens` | no |
 | `spacing.css` content-flow container | `ds.components` | yes |
 | `motion.css` | `ds.tokens` | no |
 | `overflow.css` root default | `ds.tokens` | no |
 | `overflow.css` `.surface` | `ds.surfaces` | no |
 | `grid.css` layout presets | `ds.components` | yes |
+| `grid.css` `:root` defaults | `ds.components` | no — component-scoped tokens stay with the rules that read them |
 | `modifiers.density.css` | `ds.modifiers` | no |
 | `modifiers.states.shim.css`, `modifiers.importance.shim.css`, `modifiers.criticality.shim.css` | `ds.modifiers` | no |
 | `controls.hover.shim.css` | `ds.surfaces` and `ds.states` | no |
 | `@canonical/styles-typography` element rules | `ds.typography` | yes |
-| `@canonical/styles-typography` token shims | `ds.tokens` and `ds.modifiers` | no |
+| `@canonical/styles-typography` token shims | `ds.tokens` for the mapper's naming shims, `ds.modifiers` for the typographic scale it re-exports | no |
 
-Each generated design-token file opens a layer of its own; which one is in
-[Design tokens](#design-tokens) below, and none of them is scoped, because they
-declare custom properties and nothing else.
+Each generated `@canonical/design-tokens` file opens a layer of its own, and
+which one is in [Design Tokens](#design-tokens) below. None of them is scoped.
 
-The scoped files are the ones whose rules select elements. The unscoped ones declare custom
+The scoped files are the ones whose rules select elements. The unscoped ones are almost all custom
 properties, which do nothing until a rule reads them, and a rule that reads one is either scoped or
-matches a design-system class.
+matches a design-system class. Two exceptions, both deliberate and both in files this package imports
+rather than writes:
 
-### What is deliberately unlayered
+- **`modifiers.theme.css` sets `color-scheme`** — `light dark` on `:root`, `light` on `.light`, `dark`
+  on `.dark` — unscoped and document-wide. That is the point of it: the colour scheme is what every
+  `light-dark()` token resolves against, including the browser's own form controls and scrollbars, and
+  it has to reach them. It is the one property this package sets outside a marked subtree.
+- **`states.css` derives its state channels on `*`** — thirty custom properties on every element. It
+  stays unscoped: it is a generated file this package cannot author a scope into, it declares nothing
+  but custom properties, and scoping it was measured to cost more than it saves on a page that is the
+  design system's throughout (the same elements match either way, plus the scope check).
 
-Two kinds of rule, and the same reason covers both: the cascade does not sort
-them, so putting them in a layer would say nothing and would only invite a reader
-to look for the layer that "wins". The list is exhaustive — the contract test
-fails on anything else outside a layer, and anything else outside a layer would
-beat every layer in the table above.
+### What Is Deliberately Unlayered
+
+Two things. Each is declared exactly once, here and nowhere else, so no layer has anything to order it
+against and putting either in a layer would change no computed value. Both apply document-wide
+wherever they are written. Keeping them at the top level, beside the other declarations of their kind,
+is a convention that makes them easy to find rather than something the cascade requires: layers do
+sort duplicate `@font-face` rules and duplicate `@property` registrations, measured in Chromium 151
+and Firefox 153 — there simply are no duplicates here.
 
 | Rule | Where it is written, and why a layer would say nothing about it | Reaches this stylesheet |
 | --- | --- | --- |
-| `@font-face` | `fonts.css`. It defines a font for the whole document, not a style for an element, and it is a separate opt-in import (`@canonical/styles/fonts`) so that an application already serving the same files does not download them twice. | no |
-| `@property` | `@canonical/styles-typography`. It registers what the baseline unit means for the whole document. | no |
+| `@font-face` | `fonts.css`. It defines a font for the whole document, not a style for an element. The file is opt-in and imported separately (`@canonical/styles/fonts`) so that an application already serving the same files does not download them twice. | no |
+| `@property` | `@canonical/styles-typography`. The registration of `--baseline-height` fixes the type, the inheritance and the initial value of one custom property for the whole document. That package's README carries the measurement. | yes |
 
-Neither reaches the stylesheet `@canonical/styles` resolves to, for two
-different reasons. The fonts are a separate entry point, by design. The one
-`@property` registration the design system writes today is `--baseline-height`,
-and browsers reject it: an `initial-value` has to be computationally independent
-and this one is in `rem`, which is not. That is a known defect, recorded beside
-the registration itself (`baseline-shim.css`) and not fixed there because a fix
-changes what an application that never sets `--baseline-height` renders. Nothing
-in the design system relies on the fallback. When it is fixed the registration
-will start appearing here, and the contract test will say so by failing on this
-table.
+The last column is the one worth checking, and `tests/layer-set.test.ts` checks
+it both ways: nothing sits outside a layer that this table does not name, and
+everything the table says reaches the stylesheet is found there. The fonts do not,
+because they are a separate entry point. The registration does, and that is not a
+formality — an earlier version of it gave `--baseline-height` an `initial-value`
+in `rem`, which is not computationally independent, so browsers threw the whole
+registration away and the fallback it promised did not exist. Nothing said so.
+Asserting the registration is *present* in the resolved stylesheet is what makes
+that failure visible the next time.
 
-### Why the element-level layers are scoped
+### Why the Element-Level Layers Are Scoped
 
-`normalize` and `ds.reset` here — and `ds.typography` in the typography package — are written inside
-`@scope (.ds)` blocks. That keeps their rules inside the subtree you marked, which matters for two
-reasons.
+`normalize` and `ds.reset` here, and `ds.typography` in the typography package, are written inside
+`@scope (.ds)` blocks. That keeps their rules inside the
+subtree you marked, which matters for two reasons.
 
 A page that is not entirely the design system's has other rules on its bare elements. If this
 package's reset applied to the whole document it would restyle them, and no layer ordering could stop
@@ -151,23 +189,33 @@ package is transformed between what a contributor writes and what the browser ru
 `@scope (.ds)` once is also what a contributor who does nothing special will get right on the next
 rule they add.
 
-A scoped selector never matches its own scoping root, so a rule that has to reach the root itself is
-written `:where(:scope)`. That is the marked element: the document element in an application that is
-the design system's throughout, a region or a single component in one that is not.
+A scoped selector never matches its own scoping root, so a rule that has to reach the root itself names
+`:scope`. The baseline declarations name it as `:where(:scope:not(.ds *))` — the *outermost* marked
+element, and only that one. Every component carries `ds` on its own root, so each of them opens a scope
+of its own; without the qualifier the baseline would land on every component and a component inside a
+coloured container would reset to the baseline colour instead of inheriting the container's. A rule
+that has to reach an element wherever it sits, including one that is itself the root, names both:
+`:where(:scope, :scope *)`.
 
-## What this package guarantees
+One rule takes the long form instead: the border-box declaration in `reset.css`, written
+`:where(.ds, .ds *)` in the same layer. It is the only rule in the package with universal reach, so
+every element in the tree is a candidate for it and each candidate would pay a scope-activation check;
+measured on a 10,000-element page that cost about 135 ms of a 200 ms style-recalc regression. The match
+set, the specificity and the layer are identical either way.
+
+## What This Package Guarantees
 
 | Guarantee | The check behind it |
 | --- | --- |
-| Every rule the package ships is in one of the ten declared layers, and the statement is the first rule of the stylesheet. | `tests/layer-set.test.ts`, which resolves this package's entry through Vite and walks the result's CSSOM in Chromium: the statement first, every layer opened one of the ten or a sublayer of one, none anonymous, and nothing at the top level that a layer could have sorted. The order fixtures in `@canonical/styles-vanilla-adapter` (`packages/styles/vanilla-adapter/tests/order.test.ts`) check the same statement from the other side of the boundary. |
-| An application tier's rule for a component beats the global tier's rule for the same component, whichever of the two a bundler loads first. | The two sublayers are named in the statement, so their order is fixed there rather than at first appearance. `tests/layer-set.test.ts` reads the statement back and asserts that these two are the only declared layers nothing writes to; the component packages move into them in step F-4 of the cascade programme, and until then the guarantee is vacuous. |
-| The package ships no `!important`. | `tests/layer-set.test.ts`, over the resolved stylesheet. An important declaration inverts the layer order and cannot be arbitrated, so one of them would undo the guarantee above. |
-| Inside a marked subtree, every element computes as it does on a page that is the design system's throughout — the same font, size, weight, line height, colour, box sizing, font smoothing and text wrapping. | The computed-style fixtures in `packages/styles/vanilla-adapter/tests/territory.test.ts`, which render the same block of markup on both kinds of page and compare every longhand on every element. |
-| The marked root declares its own baseline rather than inheriting the host page's. | The fixture named `inherits pragma's baseline at the root, not Vanilla's`, in the same file. |
-| Nothing this package ships restyles a bare element outside a marked subtree. | `packages/styles/vanilla-adapter/tests/vanilla-territory.test.ts`, which compares a page that loads this stylesheet against the same page without it, `html` and `body` included. |
-| A reader who asks their system for less motion gets no motion from anything reading the motion tokens. | The reduced-motion fixture in `territory.test.ts`. Components that hard-code a duration instead of reading a token are being moved onto the tokens separately (step F-6). |
+| Every rule the package itself ships is in one of the ten declared layers, and the statement is the first rule of this stylesheet. The typographic engine it imports is in them too. | `tests/layer-set.test.ts`, which resolves this package's entry through Vite and walks the result's CSSOM in Chromium: the statement first, every layer opened one of the ten or a sublayer of one, none anonymous, and nothing at the top level but the registration this README names. The order fixtures that arrive with the Vanilla adapter package check the same statement from the other side of the boundary. |
+| An application tier's rule for a component beats the global tier's rule for the same component, whichever of the two a bundler loads first. | The two sublayers are named in the statement, so their order is fixed there rather than at first appearance. `tests/layer-set.test.ts` reads the statement back and asserts which declared layers nothing writes to; the component packages move into them when their stylesheets are wrapped, which is a separate change, and until then the guarantee is vacuous. |
+| The package ships no `!important`. | `tests/layer-set.test.ts`, over the resolved stylesheet and over every file in `src/`. An important declaration inverts the layer order and cannot be arbitrated by layers at all, so one of them would undo the guarantee above. |
+| Under `prefers-reduced-motion: reduce`, every motion duration this package defines is `0s`. | `src/motion.css`, and the reduced-motion fixture arriving with the adapter package. Zeroing the token is the mechanism: a component reads the token, so nothing has to out-rank the component's own declaration. Whether a given component honours the tokens is that package's guarantee, not this one's. Sheets that still hard-code a duration, and so still animate under the preference, are being moved onto the tokens separately: in the form package the shared input chrome (`src/index.css`) and eight component sheets (`ChoicesField`, `RichChoicesField`, `CheckboxInput`, `RadioInput`, `ColorInput`, `ComboboxInput` and its list, `FileUploadInput`, `SwitchInput`); in the global package `Tooltip`, `ContextualMenu` and `Popover`, which set their own duration property; and one application-tier sheet, the launchpad diff viewer's file header. |
+| Inside a marked subtree, every element computes as it does on a page that is the design system's throughout — the same font, size, weight, line height, colour, box sizing, font smoothing and text wrapping. | The computed-style fixtures arriving with the adapter package, which render the same block of markup on both kinds of page and compare every longhand on every element. |
+| The outermost marked root declares its own baseline rather than inheriting the host page's, and everything inside it inherits from there. | The fixture named `inherits pragma's baseline at the root, not Vanilla's`, in the same file. |
+| Apart from `color-scheme` on the document root, nothing this package ships restyles a bare element outside a marked subtree. | The fixture that compares a page which loads this stylesheet against the same page without it, `html` and `body` included — at two viewport widths and against two versions of the other framework. |
 
-## What this package does not guarantee
+## What This Package Does Not Guarantee
 
 - **Unlayered application CSS beats every rule here.** That is how the cascade is defined: a rule in no
   layer outranks a rule in any layer. It is not a defect, and it is the escape hatch — but it also
@@ -176,29 +224,52 @@ the design system's throughout, a region or a single component in one that is no
 - **`!important` in application or third-party CSS beats every rule here**, and for important
   declarations the layer order runs backwards, so the lowest layer wins. Nothing this package can do
   changes that.
+- **The body's page margin is only reset when the body is inside the marked subtree.** `ds` on `<html>`
+  or on `<body>` gets it; a marked `<main>` or wrapper does not, and there the browser's 8px page gutter
+  stays. Zero it yourself, or mark higher up.
+- **`color-scheme` is set on the document root wherever this stylesheet is loaded**, marked subtree or
+  not, because that is what the `light-dark()` tokens and the browser's own controls resolve against.
 - **Below the browser floor, the scoped layers do not apply at all.** A browser that does not
-  understand `@scope` drops the whole block: components stay styled, the reset and the typographic
-  engine do not apply, and text falls back to the browser's own defaults.
+  understand `@scope` drops the whole block. That is the reset, the layout presets `grid`, `subgrid`,
+  `responsive`, `intrinsic` and `content-flow`, and the typographic engine's element rules. Three
+  shipped components carry a preset on their own root (`ds cards subgrid`, `ds form subgrid`,
+  `ds content-layout grid`), so below the floor the failure is a collapsed layout, not only default
+  text. Component styles themselves are unaffected.
 
-### Browser floor
+### Browser Floor
 
 | Feature | Used by | Chrome | Safari | Firefox |
 | --- | --- | --- | --- | --- |
-| `@scope` | this package's reset, the typography engine | 118 | 17.4 | 146 |
+| `@scope` | this package's reset, the layout presets, the typography engine | 118 | 17.4 | 146 |
 | `mod()` | the baseline engine | 125 | 17.4 | 128 |
-| `@property` | the baseline engine | 85 | 16.4 | 128 |
+| `@property` | the baseline engine's `--baseline-height` registration | 85 | 16.4 | 128 |
+
+The typographic engine also needs the `cap` unit and `round()`; `@canonical/styles-typography`'s
+"Browser Support" section is the full table for it.
 
 The design system targets current browsers and does not carry compatibility shims for older ones. An
 application that cannot move should pin a version.
 
-## Migrating to the layered release
+## Migrating to the Layered Release
 
 This release makes three changes that an application has to answer.
 
 1. **Add `ds` to your root**, beside the context and density classes you already have:
-   `<html class="ds app comfortable">`. Without it the reset and the typographic engine apply nowhere,
-   because they are now confined to the marked subtree. Components keep working — they carry `ds`
-   themselves — but the page's text will fall back to the browser's defaults.
+   `<html class="ds app comfortable">`. Without it the reset applies nowhere, because it is now
+   confined to the marked subtree. Components keep working — every one of them carries `ds` itself,
+   bar the three work-in-progress grid components named above — but the page's text falls back to the
+   browser's defaults.
+
+   Mark `<html>` if you can, or `<body>`: both put the body inside the territory, so its page margin is
+   reset as before. A root further in leaves the body outside, and the browser's 8px page gutter comes
+   back for you to zero.
+
+   The layout presets move with the reset. `grid`, `subgrid`, `responsive`, `intrinsic` and
+   `content-flow` now apply only inside a marked subtree, so a page that used one of those class names
+   on an element with no `ds` ancestor loses it — a `grid responsive` container outside the territory
+   computes `display: block`. That is the point of the scoping (the names are common enough that a page
+   the design system does not own may use them for something else), but it is a layout change, not a
+   typographic one.
 
 2. **Your unlayered CSS now beats every rule in this package.** Before this release most of what the
    package shipped was unlayered too, so your overrides competed with it by source order and
@@ -224,6 +295,24 @@ This release makes three changes that an application has to answer.
    layer rather than by accident of order — and a rule of yours that you later want overridden by a
    component can simply be moved down.
 
+If you import a subpath rather than the package entry — `@canonical/styles/spacing.css` and the four
+other subpaths this package exports — note that a subpath carries no order statement, so the layers it
+opens are ordered by wherever they first appear in your own stylesheet, and `spacing.css` now brings a
+`@scope (.ds)` block with it. Import the entry point unless you have a reason not to.
+
+### What Moves on the Page
+
+Measured in Chromium, an application that is the design system's throughout, before against after with
+`ds` added to the root. Four things change on every element, and one on `<hr>`; nothing else does.
+
+| What | Before | After | Why |
+| --- | --- | --- | --- |
+| `line-height`, everywhere it was not set | `1.15` inherited from the old reset | `normal` | the marked root declares its own baseline |
+| `color`, everywhere it was not set | `rgb(0, 0, 0)` | `oklch(0 0 0)` | the root declares `var(--color-text)`: the same black in the light scheme, but it now follows the theme instead of being the browser's default |
+| `box-sizing`, everywhere | `content-box` | `border-box` | the components are authored against it |
+| `font-family` on `<html>` | the browser's serif | the token stack | the root declares the font; `<body>` already had it from the typographic mapper |
+| `overflow` on `<hr>` | `visible` | `hidden` | the browser's own value; a rule has no content to overflow, so nothing shows |
+
 Two things that used to be true and are not:
 
 - The `normalize.css` package is no longer a dependency. This package writes its own reset, so it can
@@ -232,38 +321,36 @@ Two things that used to be true and are not:
 - The old README said component styles override modifier styles "regardless of source order". They did
   not: the layers were declared but almost nothing was written into them. They do now.
 
-## Design tokens
+## Design Tokens
 
-These generated files from `@canonical/design-tokens` are imported by the entry.
-Each opens its own layer, and the four layer names the generator emits —
-`ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states` — are part of this
-package's cascade contract, not that package's private business: they are four of
-the ten names in the statement, and `tests/layer-set.test.ts` checks each file
-against the layer this table gives it. A generator that renamed one would fail
-here.
+These token sets come from `@canonical/design-tokens`. Each generated file opens
+its own layer, and the four layer names the generator emits — `ds.tokens`,
+`ds.modifiers`, `ds.surfaces`, `ds.states` — are part of this package's cascade
+contract rather than that package's private business: they are four of the ten
+names in the statement above. `tests/layer-set.test.ts` checks every file in this
+table against the layer the table gives it, and checks the last column against
+what the entry actually imports, so a generator that renamed a layer, or an import
+added or dropped here without a word, fails.
 
-| Token set | Contents | Layer it opens |
-| --- | --- | --- |
-| `sets.primitive` | Base colour palette, spacing scale, font sizes | `ds.tokens` |
-| `modifiers.theme` | Light/dark theme mappings | `ds.modifiers` |
-| `modifiers.surfaces` | Surface elevation tokens | `ds.surfaces` |
-| `modifiers.anticipation` | Constructive/destructive/caution intents | `ds.modifiers` |
-| `modifiers.criticality` | Error/warning/success/information states | `ds.modifiers` |
-| `modifiers.emphasis` | Branded/highlighted/muted emphasis | `ds.modifiers` |
-| `states` | Interactive state tokens (hover, active, focus, disabled) | `ds.states` |
+| Token set | Contents | Layer it opens | Imported by the entry |
+| --- | --- | --- | --- |
+| `sets.primitive` | Base colour palette, spacing scale, font sizes | `ds.tokens` | yes |
+| `modifiers.theme` | Light/dark theme mappings, and `color-scheme` on the document root | `ds.modifiers` | yes |
+| `modifiers.surfaces` | Surface elevation tokens | `ds.surfaces` | yes |
+| `modifiers.anticipation` | Constructive/destructive/caution intents | `ds.modifiers` | yes |
+| `modifiers.criticality` | Error/warning/success/information states | `ds.modifiers` | yes |
+| `modifiers.emphasis` | Branded/highlighted/muted emphasis | `ds.modifiers` | yes |
+| `modifiers.importance` | Primary/secondary importance levels — the generated file is a header comment and nothing else, so the shipped mapping is this package's own shim | none | no |
+| `modifiers.typography` | The typographic scale, reached through `@canonical/styles-typography` rather than imported here | `ds.modifiers` | no |
+| `states` | Interactive state tokens (hover, active, focus, disabled) | `ds.states` | yes |
 
-`modifiers.importance` is generated but not imported. The file is a header
-comment and nothing else — no rule, no layer — so importing it added a name to
-the graph and nothing to the page. `modifiers.importance.shim.css` supplies the
-importance channels meanwhile, in `ds.modifiers`, where the rest of the modifier
-family lives. The import comes back in the `@canonical/design-tokens` release
-that emits the importance modifiers with content; until then the contract test
-holds both halves in place, by failing if that file stops being empty and by
-failing if any file the entry does import contributes no rule.
-
-The typography engine imports one more generated file of its own,
-`modifiers.typography.css`, which is why `@canonical/styles-typography` appears
-in the layer table as opening `ds.modifiers` as well as its own two layers.
+`modifiers.importance` is generated but not imported: the file has no rule and no
+layer, so the import added a name to the graph and nothing to the page, and an
+empty file that is known to be empty is what hides the next one that is empty by
+mistake. The import comes back in the `@canonical/design-tokens` release that
+emits the importance modifiers with content. Until then the test holds both halves
+in place — it fails if that file stops being empty, and it fails on any file the
+entry does import that contributes no rule.
 
 ## Dependencies
 
@@ -272,7 +359,7 @@ in the layer table as opening `ds.modifiers` as well as its own two layers.
 | `@canonical/design-tokens` | CSS custom properties for colour, spacing, and states |
 | `@canonical/styles-typography` | Baseline grid engine and typographic scale |
 
-## Package structure
+## Package Structure
 
 ```
 src/

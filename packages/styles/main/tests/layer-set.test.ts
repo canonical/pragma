@@ -30,6 +30,7 @@ import {
   openedLayers,
   parse,
   RESERVED_LAYERS,
+  registeredProperties,
   scopedLayers,
   scopes,
   sourceOf,
@@ -39,6 +40,7 @@ import {
   TOKEN_PLUGIN_LAYERS,
   tableUnder,
   ticked,
+  tokenTableRows,
   topLevelKinds,
   typographyCss,
   unlayeredKinds,
@@ -115,12 +117,16 @@ describe("the layer set used equals the layer set declared", () => {
     // A style rule here is the defect the programme exists to prevent: an
     // unlayered author rule beats every layered one, whatever the order says.
     expect(unexpected).toEqual([]);
+    // The one rule that is outside a layer on purpose, and has to be there: the
+    // typography engine's baseline-unit registration, which reaches the page
+    // through this entry.
+    expect(registeredProperties(entryCss)).toEqual(["--baseline-height"]);
   });
 });
 
 describe("the README says what the stylesheet does", () => {
   it("the statement the README quotes is the statement the stylesheet states", () => {
-    const quoted = statementFenceUnder("Cascade layers");
+    const quoted = statementFenceUnder("Cascade Layers");
     expect(quoted).toBe(statementOf(entryRaw));
     expect(quoted).toBe(statementOf(entryCss));
   });
@@ -158,8 +164,25 @@ describe("the README says what the stylesheet does", () => {
     }
   });
 
+  it("every row of the design-token table opens the layer it names, and is imported where it says", () => {
+    for (const row of tokenTableRows()) {
+      const css = sourceOf(row.file);
+      expect([row.file, css === undefined]).toEqual([row.file, false]);
+      // A row that names no layer claims the file is empty; one that names a
+      // layer claims that file opens exactly it, imported here or not.
+      expect([row.file, openedLayers(css as string)]).toEqual([
+        row.file,
+        [...row.layers].sort(),
+      ]);
+      expect([row.file, IMPORTED.includes(row.file)]).toEqual([
+        row.file,
+        row.imported,
+      ]);
+    }
+  });
+
   it("what the README calls deliberately unlayered is what sits outside the layers", () => {
-    const rows = tableUnder("What is deliberately unlayered").map((cells) => ({
+    const rows = tableUnder("What Is Deliberately Unlayered").map((cells) => ({
       rule: ticked(cells[0] as string)[0] as string,
       where: ticked(cells[1] as string)[0] as string,
       reaches: (cells[2] as string).toLowerCase().startsWith("yes"),
@@ -235,13 +258,14 @@ describe("@canonical/styles-typography carries the same contract", () => {
     expect(scopes(typographyCss).filter((s) => s.start !== ".ds")).toEqual([]);
   });
 
-  it("writes its @property registration outside every layer, and Chromium rejects it", () => {
+  it("registers --baseline-height outside every layer, and the browser keeps it", () => {
     expect(authorsAtTopLevel(typographyCss, "@property")).toBe(true);
-    // `--baseline-height` registers an `initial-value` in `rem`, which is not
-    // computationally independent, so the engine throws the whole registration
-    // away and no top-level rule survives. The defect is recorded beside the
-    // registration, in baseline-shim.css, and is not this step's to fix. When
-    // it is fixed this fails, and the README's unlayered table gains a `yes`.
-    expect(unlayeredKinds(typographyCss)).toEqual([]);
+    // Presence is the assertion, not absence. A registration whose
+    // `initial-value` is not computationally independent is thrown away whole by
+    // the engine — an earlier `0.25rem` was, and the fallback it promised
+    // silently did not exist. Reading the registration back out of the CSSOM is
+    // what makes that failure visible instead of invisible.
+    expect(registeredProperties(typographyCss)).toEqual(["--baseline-height"]);
+    expect(unlayeredKinds(typographyCss)).toEqual(["@property"]);
   });
 });

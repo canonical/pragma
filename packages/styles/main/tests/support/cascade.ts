@@ -20,6 +20,7 @@ import emphasisCss from "@canonical/design-tokens/dist/modifiers.emphasis.css?in
 import importanceCss from "@canonical/design-tokens/dist/modifiers.importance.css?inline";
 import surfacesCss from "@canonical/design-tokens/dist/modifiers.surfaces.css?inline";
 import themeCss from "@canonical/design-tokens/dist/modifiers.theme.css?inline";
+import typographyTokensCss from "@canonical/design-tokens/dist/modifiers.typography.css?inline";
 import primitiveCss from "@canonical/design-tokens/dist/sets.primitive.css?inline";
 import statesCss from "@canonical/design-tokens/dist/states.css?inline";
 import typographyCss from "@canonical/styles-typography?inline";
@@ -79,14 +80,17 @@ export const LOCAL_SOURCES: Record<string, string> = Object.fromEntries(
 );
 
 /**
- * The packages and generated files the entry imports by name. A static map is
- * unavoidable — a bundler cannot resolve a specifier a test computes at run time
- * — so the test asserts that its keys are exactly the specifiers the entry
- * imports, and an import added without a line here fails rather than passing
- * unchecked.
+ * The packages and generated files the README names, by specifier. A static map
+ * is unavoidable — a bundler cannot resolve a specifier a test computes at run
+ * time — so the test resolves every name the README uses through it, and a file
+ * documented without a line here fails rather than passing unchecked. Two of
+ * these the entry does not import: `modifiers.typography.css` reaches the page
+ * through the typography package, and `modifiers.importance.css` is empty.
  */
 export const EXTERNAL_SOURCES: Record<string, string> = {
   "@canonical/design-tokens/dist/modifiers.anticipation.css": antipationCss,
+  "@canonical/design-tokens/dist/modifiers.importance.css": importanceCss,
+  "@canonical/design-tokens/dist/modifiers.typography.css": typographyTokensCss,
   "@canonical/design-tokens/dist/modifiers.criticality.css": criticalityCss,
   "@canonical/design-tokens/dist/modifiers.emphasis.css": emphasisCss,
   "@canonical/design-tokens/dist/modifiers.surfaces.css": surfacesCss,
@@ -164,6 +168,12 @@ export const scopes = (css: string): { layer: string; start: string }[] => {
   walk(parse(css).cssRules, "");
   return found;
 };
+
+/** The custom properties a stylesheet registers at its top level, by name. */
+export const registeredProperties = (css: string): string[] =>
+  Array.from(parse(css).cssRules)
+    .filter((rule): rule is CSSPropertyRule => rule instanceof CSSPropertyRule)
+    .map((rule) => rule.name);
 
 /** The layers in which a stylesheet confines rules to pragma territory. */
 export const scopedLayers = (css: string): string[] =>
@@ -315,7 +325,7 @@ export const documentedFiles = (): Map<string, DocumentedFile> => {
     files.set(name, entry);
   };
 
-  for (const cells of tableUnder("What is layered where"))
+  for (const cells of tableUnder("What Is Layered Where"))
     for (const name of ticked(cells[0] as string).filter(isSourceName))
       add(
         name,
@@ -324,13 +334,29 @@ export const documentedFiles = (): Map<string, DocumentedFile> => {
       );
 
   // The generated token files carry their layer in the design-token table
-  // instead, so that the two tables state each fact once (F, §8.2 rule 1).
-  for (const cells of tableUnder("Design tokens"))
-    add(
-      `@canonical/design-tokens/dist/${ticked(cells[0] as string)[0]}.css`,
-      ticked(cells[2] as string),
-      false,
-    );
+  // instead, so that the two tables state each fact once (F, §8.2 rule 1). Only
+  // the ones the entry imports belong in this map; the other two are checked
+  // against the entry's imports from the other side, by tokenTableRows below.
+  for (const row of tokenTableRows())
+    if (row.imported) add(row.file, [...row.layers], false);
 
   return files;
 };
+
+/** What the design-token table says about one generated file. */
+export interface TokenTableRow {
+  /** The specifier, as `src/index.css` would write it. */
+  file: string;
+  /** The layer the file opens, empty when the table says it opens none. */
+  layers: Set<string>;
+  /** Whether the table claims this package's entry imports it. */
+  imported: boolean;
+}
+
+/** Every row of the design-token table: the contract with the generator. */
+export const tokenTableRows = (): TokenTableRow[] =>
+  tableUnder("Design Tokens").map((cells) => ({
+    file: `@canonical/design-tokens/dist/${ticked(cells[0] as string)[0]}.css`,
+    layers: new Set(ticked(cells[2] as string)),
+    imported: (cells[3] as string).toLowerCase().startsWith("yes"),
+  }));

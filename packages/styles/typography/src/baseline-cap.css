@@ -19,8 +19,8 @@
  *
  *   `.p` and `.code` are written twice, bare and `:scope.x`, because a scoped
  *   selector never matches its own scoping root and a `ds` root carries those
- *   classes: `<p class="ds field-error p">`, `<code class="ds inline-code code">`,
- *   `<kbd class="ds keyboard-key code">`. The `@property` registration this file
+ *   classes: `<p class="ds field-error p">`, `<output class="ds range-output p">`,
+ *   `<code class="ds inline-code code">`, `<kbd class="ds keyboard-key code">`. The `@property` registration this file
  *   imports stays outside both the layer and the scope; baseline-shim.css says
  *   why.
  */

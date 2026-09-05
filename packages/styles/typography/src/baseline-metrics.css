@@ -22,15 +22,21 @@
  *
  *   The block that used to sit on `:root` derives engine variables from the
  *   consumer's three font metrics; those are engine state rather than design
- *   tokens, so they stay with the engine. They are written on `:where(:scope)`,
- *   the territory root, because a scoped selector never matches its own scoping
- *   root and `:root` inside a scope therefore matches nothing at all — not even
- *   when the mark is on `<html>`. The three metrics the consumer sets on `:root`
- *   are read from there by inheritance, as before.
+ *   tokens, so they stay with the engine. It is written on `:where(:scope)` —
+ *   the territory root — rather than kept on `:root` outside the scope, because
+ *   the derivation has to run wherever the metrics are visible, and that is what
+ *   lets a region carry metrics of its own. Measured: with the block on
+ *   `:root`, metrics declared on a region root produced nothing
+ *   (`--natural-line-height` empty, no nudge); on `:where(:scope)` they work,
+ *   and metrics declared on `:root` still reach it by inheritance and compute
+ *   exactly as before. A plain `:where(:scope)` is right here, with no
+ *   `:not(.ds *)` qualifier: these are custom properties, so a nested component
+ *   root re-declaring the same derived value is inert.
  *
  *   `.p` and `.code` are written twice, bare and `:scope.x`, because a `ds` root
  *   carries those classes: `<p class="ds field-error p">`,
- *   `<code class="ds inline-code code">`, `<kbd class="ds keyboard-key code">`.
+ *   `<output class="ds range-output p">`, `<code class="ds inline-code code">`,
+ *   `<kbd class="ds keyboard-key code">`.
  */
 
 /* Baseline unit shim (--baseline-height 4px fallback) */

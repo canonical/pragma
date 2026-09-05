@@ -19,7 +19,8 @@
  *   --line-height     → <length> snapped to the baseline grid
  *   --font-weight     → <number>
  *   --space-after     → <number> in baseline-height units
- *   --baseline-height → set at :root (default: 0.5rem)
+ *   --baseline-height → set at :root or the marked element (0.25rem in
+ *                       @canonical/styles; 4px from the registration if unset)
  *
  * Exact Canonical line-height dimensions take precedence. The round() path is
  * retained only as a compatibility fallback for design-tokens 0.8.1 and is
@@ -43,20 +44,30 @@
  *   competed with the host page's own by source order and won half the time.
  *
  *   A scoped selector never matches its own scoping root, so the rule that used
- *   to target `body` is written `:where(:scope)` — the territory root, which is
- *   the document element in an application that is the design system's
- *   throughout and a region or a component anywhere else. It reads the same base
- *   font token as the root rule in @canonical/styles' own reset, so the two
- *   cannot disagree about the base font.
+ *   to target `body` is written `:where(:scope:not(.ds *))` — the OUTERMOST
+ *   territory root, which is the document element in an application that is the
+ *   design system's throughout and a region or a component anywhere else. The
+ *   `:not(.ds *)` is load-bearing: every component carries `ds` on its own root
+ *   and so opens a scope of its own, and a bare `:where(:scope)` would put the
+ *   base font on every one of them — a Card inside a container that sets a font
+ *   would lose it. The base font belongs to the element that opens the
+ *   territory; everything inside it inherits, which is the point. It is the same
+ *   token the root rule in @canonical/styles' own reset reads, and the same
+ *   shape that rule is written in, so the two cannot disagree. Engine custom
+ *   properties stay on a plain `:where(:scope)`, because a nested root that
+ *   re-declares the same value is inert and a region root needs them.
  *
  *   `.p`, `.code` and `.editorial` are written twice, bare and `:scope.x`,
- *   because a `ds` root carries them: a Field error and a Field description are
- *   `<p class="ds field-error p">`, an inline code span is
- *   `<code class="ds inline-code code">`, a keyboard key is
- *   `<kbd class="ds keyboard-key code">`, and `editorial` is a class an adopter
- *   puts on the region they flip, which is that region's root. `h1`–`h6` get no
- *   twin: nothing renders a heading as a territory root, and the mark belongs on
- *   the region rather than on one heading inside it.
+ *   because a `ds` root carries them. The complete inventory, grepped over the
+ *   React, Svelte and Lit packages: a Field error and a Field description are
+ *   `<p class="ds field-error p">` and `<p class="ds field-description p">`, a
+ *   Range input's readout is `<output class="ds range-output p">`, an inline code
+ *   span is `<code class="ds inline-code code">`, a keyboard key is
+ *   `<kbd class="ds keyboard-key code">` in React and
+ *   `<kbd class="ds keyboard-key surface code">` in Svelte, and `editorial` is a
+ *   class an adopter puts on the region they flip, which is that region's root.
+ *   `h1`–`h6` get no twin: nothing renders a heading as a territory root, and
+ *   the mark belongs on the region rather than on one heading inside it.
  */
 
 /* ── TEMP FIX: design-tokens naming mismatch ──────────────────────
@@ -115,10 +126,12 @@
 @layer ds.typography {
   @scope (.ds) {
     /* Base font — inherited by every element in the territory unless
-       overridden. On the territory root rather than on `body`, because that is
-       the element a scoped rule can address and because a territory is often
-       not a whole document. */
-    :where(:scope) {
+       overridden. On the OUTERMOST territory root rather than on `body`: that is
+       the element a scoped rule can address, a territory is often not a whole
+       document, and `:not(.ds *)` keeps the declaration off the nested
+       component roots that each open a scope of their own. Same shape and same
+       token as the root rule in @canonical/styles' reset, one layer below. */
+    :where(:scope:not(.ds *)) {
       font-family: var(--typography-text-primary-font-family);
     }
 
@@ -292,7 +305,8 @@
     /* Monospace counterpart of `.p`, mapped to the `text-primary-code` typography
        tier (monospace family). Class-only — consumers opt in with `class="code"`
        (e.g. InlineCode's <code>, KeyboardKey's <kbd>); bare <code>/<kbd> are not
-       targeted. Both of those components carry `ds` on the same element, so the
+       targeted. Both of those components carry `ds` on the same element (Svelte's adds
+       `surface`), so the
        `:scope.code` twin is what styles them when they are the outermost
        territory root.
 
