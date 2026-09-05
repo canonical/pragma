@@ -27,7 +27,7 @@
     "check:fix": "bun run check:ttl",
     "check:ttl": "bun scripts/validate-ttl.ts",
     "test": "bun run check:ttl",
-    "prepack": "rm -rf data && cp -r ../../data data"
+    "prepack": "rm -rf data && cp -r ../../../data data"
   },
   "devDependencies": {
     "n3": "^2.0.1",

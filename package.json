@@ -27,6 +27,9 @@
     "packages/styles/*",
     "packages/svelte/*",
     "packages/lit/*",
+    "packages/contracts/*",
+    "packages/assets/*",
+    "packages/semantics/*",
     "apps/*",
     "apps/react/*",
     "apps/lit/*"
