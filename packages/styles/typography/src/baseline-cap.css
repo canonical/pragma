@@ -1,8 +1,14 @@
 /* @canonical/styles-typography — Cap-unit engine (default)
  *
- * No JS font extraction required. Uses CSS `cap` unit and `mod()` for
- * baseline alignment. Broad browser support: Chrome 113+, Safari 17.4+,
- * Firefox 113+.
+ * No JS font extraction required. Uses the CSS `cap` unit and `mod()` for
+ * baseline alignment.
+ *
+ * Browser floor: Chrome 125, Safari 17.4, Firefox 146. `cap` itself goes back
+ * further (Chrome 117, Safari 17.2, Firefox 97), but the floor is set by the two
+ * features below it: `mod()` (Chrome 125, Safari 17.4, Firefox 128) and the
+ * `@scope` block every rule here is written in (Chrome 118, Safari 17.4,
+ * Firefox 146). A browser that does not understand `@scope` drops the whole
+ * block rather than part of it, so there is no partial support to fall back on.
  *
  * Consumer contract:
  *   :root { --baseline-height: <length>; }

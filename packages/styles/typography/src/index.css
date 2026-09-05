@@ -9,9 +9,10 @@
  *   - baseline-trim.css     — Uses text-box-trim + cap unit hybrid
  *
  * Each engine imports the --baseline-height shim itself (see baseline-shim.css),
- * so importing any single engine — as the typography example does — is meant to
- * carry the fallback with no consumer hardcoding. That file records a measured
- * defect in the registration that is not fixed here.
+ * so importing any single engine — as the typography example does — carries the
+ * fallback with no consumer hardcoding. The registration's initial value is 4px
+ * rather than 0.25rem, because an initial value has to be computationally
+ * independent and rem is not; baseline-shim.css has the measurement.
  *
  * Layers and scope: this package writes its token shims into `ds.tokens` and
  * every element rule into `ds.typography` inside `@scope (.ds)`. It states no

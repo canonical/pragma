@@ -1,8 +1,16 @@
 /* @canonical/styles-typography — Classic engine
  *
- * Widest browser support. Requires JS font extraction via `extractFontData`
- * and the following :root variables:
+ * Requires JS font extraction via `extractFontData` and the following :root
+ * variables:
  *   --ascender, --descender, --units-per-em
+ *
+ * Browser floor: Chrome 125, Safari 17.4, Firefox 146. This engine used to be
+ * the widest-support one because it needs no `cap` unit, but it needs `mod()`
+ * (Chrome 125, Safari 17.4, Firefox 128) like the others and, since every rule
+ * here is written inside a `@scope` block (Chrome 118, Safari 17.4, Firefox
+ * 146), all three engines now share one floor. Its advantage is the metrics, not
+ * the reach: it resolves them from numbers you supply rather than from the font
+ * the browser happens to use.
  *
  * Consumer contract:
  *   :root {

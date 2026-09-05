@@ -128,7 +128,7 @@ Multi-line blocks stay on-grid because `line-height` is always set to a multiple
 
 ## Engines
 
-Three engines implement the same grid-snap pattern with different trade-offs. Import the one that fits your constraints directly, or use `index.css` which re-exports the default (cap-unit). Each engine carries its own `@layer ds.typography { @scope (.ds) { … } }` block and its own imports, so linking one on its own is a complete engine.
+Three engines implement the same grid-snap pattern with different trade-offs. They no longer differ in reach — every rule in all three is written inside a `@scope` block, so they share one floor, and the per-engine tables below say which feature binds where. Import the one that fits your constraints directly, or use `index.css` which re-exports the default (cap-unit). Each engine carries its own `@layer ds.typography { @scope (.ds) { … } }` block and its own imports, so linking one on its own is a complete engine.
 
 ### baseline-cap.css — Cap unit (default)
 
@@ -140,11 +140,13 @@ Uses the browser-native `cap` CSS unit to resolve font metrics at render time. N
 
 The baseline position formula is `(line-height + 1cap) / 2` — the browser resolves `1cap` from the font's OpenType tables natively.
 
-| Browser | Minimum version |
-|---------|-----------------|
-| Chrome  | 117+            |
-| Safari  | 17.2+           |
-| Firefox | 97+             |
+| Browser | `cap` unit | This engine's floor |
+|---------|------------|---------------------|
+| Chrome  | 117+       | 125+                |
+| Safari  | 17.2+      | 17.4+               |
+| Firefox | 97+        | 146+                |
+
+The `cap` unit is not what sets the floor: `mod()` and the `@scope` block every rule is written in are, and a browser below the floor drops the block whole. The full table is under "Browser Support" at the end.
 
 ### baseline-metrics.css — Extracted metrics
 
@@ -174,13 +176,13 @@ Set the three metrics on `:root` as shown. The engine derives its own variables 
 
 The most modern approach. Uses `text-box: trim-both cap alphabetic` to remove half-leading entirely, then compensates with `mod()`-based margin to restore grid alignment. Results in tighter content boxes (useful for buttons, cards, optical centering).
 
-| Browser | Minimum version | Notes |
-|---------|-----------------|-------|
-| Chrome  | 133+            |       |
-| Safari  | 18.2+           |       |
-| Firefox | —               | Not yet implemented |
+| Browser | `text-box-trim` | This engine's floor |
+|---------|-----------------|---------------------|
+| Chrome  | 133+            | 133+                |
+| Safari  | 18.2+           | 18.2+               |
+| Firefox | not implemented | 146+                |
 
-Falls back gracefully: if `text-box-trim` is unsupported, the element keeps its default half-leading and the nudge still applies.
+The trim itself falls back gracefully: where `text-box-trim` is unsupported the element keeps its default half-leading and the nudge still applies, which is what happens in Firefox. The Firefox floor is the `@scope` block every rule is written in, and that is not a graceful fallback — below it the block is dropped whole and the engine does nothing.
 
 ## Consumer Contract
 
@@ -317,4 +319,6 @@ The baseline grid is rendered as a red 1px line overlay so alignment errors are 
 | `cap` unit | the cap and text-trim engines | 117 | 17.2 | 97 |
 | `text-box-trim` | the text-trim engine only | 133 | 18.2 | not yet |
 
-`@scope` is the binding floor: below it the whole block is dropped, so the engines and the element rules do not apply. What survives is what is outside the scope — the mapper's token shims in `ds.tokens`, and the `--baseline-height` registration — which style nothing on their own. The design system targets current browsers and does not carry compatibility shims for older ones; an application that cannot move should pin a version.
+Put together, that makes the floor **Chrome 125, Safari 17.4, Firefox 146** for the cap and metrics engines, and **Chrome 133, Safari 18.2, Firefox 146** for the text-trim one. Different features bind in different browsers: `mod()` in Chrome, `text-box-trim` in Chrome and Safari for the trim engine, `@scope` in Firefox.
+
+`@scope` is the one to watch, because it fails hardest: below it the whole block is dropped, so the engines and the element rules do not apply at all — there is no partial support to degrade to, as there is for `text-box-trim`. What survives is what is outside the scope — the mapper's token shims in `ds.tokens`, and the `--baseline-height` registration — which style nothing on their own. The design system targets current browsers and does not carry compatibility shims for older ones; an application that cannot move should pin a version.

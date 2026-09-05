@@ -1,8 +1,13 @@
 /* @canonical/styles-typography — Text-trim engine
  *
- * Most modern, narrowest browser support: Chrome 133+, Safari 18.2+.
  * Uses `text-box: trim-both cap alphabetic` for intrinsic baseline snapping.
  * No JS font extraction required.
+ *
+ * Browser floor: Chrome 133, Safari 18.2, Firefox 146. `text-box-trim` is the
+ * binding feature in Chrome and Safari and is not implemented in Firefox at all,
+ * where the trim degrades to the plain nudge; the Firefox number comes from the
+ * `@scope` block every rule here is written in (Chrome 118, Safari 17.4,
+ * Firefox 146), which a browser that does not understand it drops whole.
  *
  * Consumer contract:
  *   :root { --baseline-height: <length>; }
