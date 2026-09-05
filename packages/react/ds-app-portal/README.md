@@ -19,6 +19,20 @@ bun add @canonical/react-ds-app-portal
 
 The package builds on top of `@canonical/react-ds-global`.
 
+`@canonical/styles` comes with it as a dependency, but installing is not importing. Import it once, in your application's entry point:
+
+```ts
+import "@canonical/styles";
+```
+
+or, from a stylesheet:
+
+```css
+@import url("@canonical/styles");
+```
+
+Then mark your root — `<html class="ds app comfortable">` — as the [`@canonical/styles` README](../../styles/main/README.md) describes. That one import is also what puts this package's stylesheets in a defined order against the rest of the design system's: see [Every component stylesheet is in `ds.components.app`](#every-component-stylesheet-is-in-dscomponentsapp) below.
+
 ## Usage
 
 ```tsx
