@@ -6,5 +6,5 @@ export const MODIFIER_FAMILIES = {
   // TODO: old modifier family. Remove severity after its no longer used
   severity: ["neutral", "positive", "negative", "caution", "information"],
   // compact is launchpad-only; the global density family is comfortable/dense
-  density: ["comfortable", "dense", "compact"],
+  density: ["dense", "compact", "comfortable"],
 } as const satisfies Record<string, readonly string[]>;
