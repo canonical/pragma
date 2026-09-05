@@ -66,11 +66,20 @@ function createConfig<T extends keyof typeof frameworks>(
       name: frameworks[framework].framework,
       options: {},
     },
-    // Establish the full-height chain in the preview iframe so components with
-    // `height: 100%` (e.g. application layouts, SideNavigation) resolve against
-    // a real height. Storybook does not set this by default.
+    // Two things every preview page needs, whether or not a story renders on it.
+    //
+    // `ds` marks the preview document as the design system's territory, which is
+    // what its scoped element-level layers — the reset, the layout presets, the
+    // typography engine — apply inside. It is set here rather than only in the
+    // story decorator so that a docs-only MDX page, and the prose above the
+    // first story block on an autodocs page, carry it before first paint. The
+    // decorator sets it too, for a Storybook that does not use this config.
+    //
+    // The height chain establishes a real height in the preview iframe so
+    // components with `height: 100%` (application layouts, SideNavigation)
+    // resolve against one. Storybook does not set this by default.
     previewHead: (head) =>
-      `${head}\n<style>html, body, #storybook-root, #root-inner, #root { height: 100%; }</style>`,
+      `${head}\n<script>document.documentElement.classList.add("ds")</script>\n<style>html, body, #storybook-root, #root-inner, #root { height: 100%; }</style>`,
     core: {
       disableTelemetry: true,
     },
