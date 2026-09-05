@@ -1,18 +1,26 @@
-/* @canonical/styles-typography — baseline unit shim
+/* @canonical/styles-typography — the --baseline-height registration
  *
- * The engine only CONSUMES --baseline-height; the value normally comes from
- * @canonical/styles (spacing.css). A consumer that loads an engine without
- * styles-main — or before it — would leave --baseline-height unset and every
- * nudge would break. Registering the property with an initial-value makes 4px
- * the fallback whenever nothing else sets it, while any real declaration
- * (spacing.css, a theme, the testbed) still wins, regardless of load order.
- *
- * Single source for the 4px shim, imported by every engine so importing any one
- * of them carries the fallback. Consumers no longer hardcode --baseline-height
- * to keep the engine working.
+ * The engines only ever read --baseline-height; the value normally comes from
+ * @canonical/styles (spacing.css). Registering the property here gives it a type
+ * and an initial value, so an engine linked on its own — as the example does —
+ * still has a grid to snap to, while any real declaration wins over the initial
+ * value whatever the load order. The value is `4px` and not `0.25rem` because an
+ * initial value has to be computationally independent, and `rem` is not: it
+ * needs the root font size. Chromium 151 and Firefox 153 both throw the whole
+ * registration away when it is written in rem, which is what they did with this
+ * file until now, leaving the engine inert on any page that never declared the
+ * variable itself. The registration sits at the top level, outside the
+ * `ds.typography` layer the engines are written into and outside its
+ * `@scope (.ds)` block: it applies to the whole document wherever it is
+ * written, this package registers the name once and nothing else registers it,
+ * so no layer has anything to order it against and a layer would change no
+ * computed value. Keeping it here with the other declarations of its kind is a
+ * convention that makes it easy to find, not a requirement — layers do sort
+ * duplicate registrations, measured in Chromium 151 and Firefox 153; there
+ * simply are no duplicates. The README has the measurement.
  */
 @property --baseline-height {
   syntax: "<length>";
   inherits: true;
-  initial-value: 0.25rem;
+  initial-value: 4px;
 }

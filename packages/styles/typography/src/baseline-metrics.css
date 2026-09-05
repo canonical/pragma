@@ -1,8 +1,16 @@
 /* @canonical/styles-typography — Classic engine
  *
- * Widest browser support. Requires JS font extraction via `extractFontData`
- * and the following :root variables:
+ * Requires JS font extraction via `extractFontData` and the following :root
+ * variables:
  *   --ascender, --descender, --units-per-em
+ *
+ * Browser floor: Chrome 125, Safari 17.4, Firefox 146. This engine used to be
+ * the widest-support one because it needs no `cap` unit, but it needs `mod()`
+ * (Chrome 125, Safari 17.4, Firefox 128) like the others and, since every rule
+ * here is written inside a `@scope` block (Chrome 118, Safari 17.4, Firefox
+ * 146), all three engines now share one floor. Its advantage is the metrics, not
+ * the reach: it resolves them from numbers you supply rather than from the font
+ * the browser happens to use.
  *
  * Consumer contract:
  *   :root {
@@ -13,6 +21,30 @@
  *   }
  *   element { --font-size: <length>; --line-height: <length>; }
  *   (fallback: --line-height-multiplier: <number> if --line-height is unset)
+ *
+ * Layers and scope:
+ *   Every rule below sits in `ds.typography` inside `@scope (.ds)`, so the
+ *   engine reaches only the design system's own territory — the subtree rooted
+ *   at an element carrying the class `ds`. Each engine carries its own layer and
+ *   scope block, because a consumer may link one engine on its own.
+ *
+ *   The block that used to sit on `:root` derives engine variables from the
+ *   consumer's three font metrics; those are engine state rather than design
+ *   tokens, so they stay with the engine. It is written on `:where(:scope)` —
+ *   the territory root — rather than kept on `:root` outside the scope, because
+ *   the derivation has to run wherever the metrics are visible, and that is what
+ *   lets a region carry metrics of its own. Measured: with the block on
+ *   `:root`, metrics declared on a region root produced nothing
+ *   (`--natural-line-height` empty, no nudge); on `:where(:scope)` they work,
+ *   and metrics declared on `:root` still reach it by inheritance and compute
+ *   exactly as before. A plain `:where(:scope)` is right here, with no
+ *   `:not(.ds *)` qualifier: these are custom properties, so a nested component
+ *   root re-declaring the same derived value is inert.
+ *
+ *   `.p` and `.code` are written twice, bare and `:scope.x`, because a `ds` root
+ *   carries those classes: `<p class="ds field-error p">`,
+ *   `<output class="ds range-output p">`, `<code class="ds inline-code code">`,
+ *   `<kbd class="ds keyboard-key code">`.
  */
 
 /* Baseline unit shim (--baseline-height 4px fallback) */
@@ -21,88 +53,97 @@
 /* Typography scale tokens from design-tokens */
 @import url("@canonical/design-tokens/dist/modifiers.typography.css");
 
-:root {
-  /* Agnostic values */
-  --natural-line-height: calc((var(--ascender) - var(--descender)));
-  --line-height-scale: calc(
-    var(--natural-line-height) *
-    1rem /
-    var(--units-per-em)
-  );
-  --ascender-scale: calc(var(--ascender) * 1rem / var(--units-per-em));
-}
+@layer ds.typography {
+  @scope (.ds) {
+    :where(:scope) {
+      /* Agnostic values */
+      --natural-line-height: calc((var(--ascender) - var(--descender)));
+      --line-height-scale: calc(
+        var(--natural-line-height) *
+        1rem /
+        var(--units-per-em)
+      );
+      --ascender-scale: calc(var(--ascender) * 1rem / var(--units-per-em));
+    }
 
-/* Reset */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-.p,
-.code {
-  margin-block: 0;
-}
+    /* Reset */
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    p,
+    .p,
+    .code,
+    :scope.p,
+    :scope.code {
+      margin-block: 0;
+    }
 
-/* Baseline alignment — classic engine
- *
- * Both nudges use padding (not margin) so the element's border-box block size
- * participates correctly in flex and grid layouts. margin-block-end is reserved
- * solely for --space-after (editorial element-owned spacing, default 0).
- */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-.p,
-.code {
-  --computed-line-height: var(
-    --line-height,
-    calc(var(--baseline-height) * var(--line-height-multiplier))
-  );
-  line-height: var(--computed-line-height);
-  font-size: var(--font-size);
+    /* Baseline alignment — classic engine
+     *
+     * Both nudges use padding (not margin) so the element's border-box block size
+     * participates correctly in flex and grid layouts. margin-block-end is reserved
+     * solely for --space-after (editorial element-owned spacing, default 0).
+     */
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    p,
+    .p,
+    .code,
+    :scope.p,
+    :scope.code {
+      --computed-line-height: var(
+        --line-height,
+        calc(var(--baseline-height) * var(--line-height-multiplier))
+      );
+      line-height: var(--computed-line-height);
+      font-size: var(--font-size);
 
-  --line-height-scale: calc(
-    var(--natural-line-height) *
-    var(--font-size) /
-    var(--units-per-em)
-  );
-  --ascender-scale: calc(
-    var(--ascender) *
-    var(--font-size) /
-    var(--units-per-em)
-  );
+      --line-height-scale: calc(
+        var(--natural-line-height) *
+        var(--font-size) /
+        var(--units-per-em)
+      );
+      --ascender-scale: calc(
+        var(--ascender) *
+        var(--font-size) /
+        var(--units-per-em)
+      );
 
-  --baseline-position: calc(
-    ((var(--computed-line-height) - var(--line-height-scale)) / 2) +
-    var(--ascender-scale)
-  );
-  --start-nudge: calc(
-    var(--baseline-height) -
-    mod(var(--baseline-position), var(--baseline-height))
-  );
-  --end-nudge: calc(var(--baseline-height) - var(--start-nudge));
-}
+      --baseline-position: calc(
+        ((var(--computed-line-height) - var(--line-height-scale)) / 2) +
+        var(--ascender-scale)
+      );
+      --start-nudge: calc(
+        var(--baseline-height) -
+        mod(var(--baseline-position), var(--baseline-height))
+      );
+      --end-nudge: calc(var(--baseline-height) - var(--start-nudge));
+    }
 
-/* Block-level baseline nudges only — bare inline `.code` is excluded so it
- * does not double-pad inside a paragraph. Combine `.p.code` for a code block. */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-.p {
-  /* Nudges as padding — inside the box for flex/grid compatibility */
-  padding-block-start: var(--start-nudge);
-  padding-block-end: var(--end-nudge);
+    /* Block-level baseline nudges only — bare inline `.code` is excluded so it
+     * does not double-pad inside a paragraph. Combine `.p.code` for a code block. */
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    p,
+    .p,
+    :scope.p {
+      /* Nudges as padding — inside the box for flex/grid compatibility */
+      padding-block-start: var(--start-nudge);
+      padding-block-end: var(--end-nudge);
 
-  /* Element-owned spacing — only active in .editorial contexts */
-  margin-block-end: calc(var(--space-after, 0) * var(--baseline-height));
+      /* Element-owned spacing — only active in .editorial contexts */
+      margin-block-end: calc(var(--space-after, 0) * var(--baseline-height));
+    }
+  }
 }

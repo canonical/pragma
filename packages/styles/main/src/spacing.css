@@ -57,8 +57,8 @@
     /*                                                                    */
     /* Default: --space-after: 0 on all elements (app UI contexts).      */
     /* Editorial/prose contexts opt in via the .editorial class:          */
-    /*   h1, h2: --space-after: 2  (= 2 × 0.5rem = 1rem = 16px)        */
-    /*   h3-h6, p: --space-after: 1 (= 1 × 0.5rem = 0.5rem = 8px)     */
+    /*   h1, h2: --space-after: 2  (= 2 × 0.25rem = 0.5rem = 8px)     */
+    /*   h3-h6, p: --space-after: 1 (= 1 × 0.25rem = 4px)             */
     /*                                                                    */
     /* The tokens below are for NON-typographic elements.                 */
     /* When the spacing architecture is finalised, the typography         */

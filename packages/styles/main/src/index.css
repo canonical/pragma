@@ -7,9 +7,8 @@
  * layers whose rules select elements are authored so that they reach only pragma
  * territory — inside `@scope (.ds)`, or with an equivalent `:where(.ds, .ds *)`
  * prefix where one rule's universal reach makes the scope form expensive. The
- * typography package this file imports is layered into ds.typography and scoped
- * by the typography change stacked on this one; until that lands its rules ship
- * unlayered, which is why ds.typography is declared here and opened nowhere. The
+ * typography package this file imports writes its token shims into ds.tokens and
+ * every element rule into ds.typography, inside a scope block of its own. The
  * README's "Cascade layers" section is the reference for what is layered where
  * and what is deliberately not; the reasoning behind the order will live in
  * docs/explanations/CASCADE.md, arriving with the cascade documentation change.
@@ -24,7 +23,8 @@
 
 /* Read from the bottom up, each position is an argument:
  *   normalize      pragma's own reset, scoped to pragma territory
- *   ds.tokens      primitive values, spacing, motion, overflow
+ *   ds.tokens      primitive values, spacing, motion, overflow, and the
+ *                  typography mapper's naming shims
  *   ds.reset       the territory root's baseline: font, colour, box-sizing
  *   ds.typography  the semantic mapper and the baseline engines
  *   ds.modifiers   theme, the typographic scale, the channel families and
