@@ -1,131 +1,135 @@
-.ds.form-checkbox {
-  appearance: none;
-  box-sizing: border-box;
-  /* Positioning context for the masked checkmark/minus glyph (`::before`). */
-  position: relative;
-  /* Align to the field edge like the label (no side margin by default), not to
-   * the input's inner padding. Overridable via the shared variable. */
-  margin-inline: var(--form-label-padding-inline, 0);
-  /* A 16px control — a fixed element size, NOT a baseline multiple. It was
-     `--space-baseline × 2` (16px when the baseline was 8px), but the 4px-baseline
-     spike halved it to 8px. Size to the stable --dimension-200 (16px) so the
-     control size is decoupled from the baseline grid unit. */
-  width: var(--dimension-200);
-  height: var(--dimension-200);
-  border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
-  border-radius: var(--dimension-radius-small);
-  background: var(
-    --surface-color-foreground-checkbox-unselected,
-    var(--color-foreground-checkbox-unselected)
-  );
-  cursor: pointer;
-  transition:
-    background-color 150ms ease,
-    border-color 150ms ease;
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
-  /* The glyph is a masked pseudo-element layered over the box, NOT a
-   * background-image: a background-image SVG can't be recoloured by CSS, so the
-   * checkmark would ignore the theme. Masking + `background-color` lets the
-   * glyph take the checkmark token (same technique as PasswordInput's eye
-   * icon). The box keeps its own `background` for the selected fill.
-   *
-   * IMPORTANT: only the :checked / :indeterminate rules give the ::before a
-   * `mask-image` AND a `background-color`. The base ::before sets geometry only
-   * — with no mask-image the mask is `none`, which means NO clipping, so a
-   * `background-color` here would paint the WHOLE box as a solid square in the
-   * unchecked state (visible under any theme where the checkmark colour differs
-   * from the box). So the paint lives with the mask, never on its own. */
-  &::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    mask-repeat: no-repeat;
-    mask-position: center;
-    mask-size: 75%;
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    -webkit-mask-size: 75%;
-  }
-
-  &:checked {
+@layer ds.components.global {
+  .ds.form-checkbox {
+    appearance: none;
+    box-sizing: border-box;
+    /* Positioning context for the masked checkmark/minus glyph (`::before`). */
     position: relative;
-    /* Selected fill + checkmark read the surface-provided tokens (with a flat
-     * fallback) so the control adapts to OnSurface stepping. */
+    /* Align to the field edge like the label (no side margin by default), not to
+     * the input's inner padding. Overridable via the shared variable. */
+    margin-inline: var(--form-label-padding-inline, 0);
+    /* A 16px control — a fixed element size, NOT a baseline multiple. It was
+       `--space-baseline × 2` (16px when the baseline was 8px), but the 4px-baseline
+       spike halved it to 8px. Size to the stable --dimension-200 (16px) so the
+       control size is decoupled from the baseline grid unit. */
+    width: var(--dimension-200);
+    height: var(--dimension-200);
+    border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
+    border-radius: var(--dimension-radius-small);
     background: var(
-      --surface-color-foreground-checkbox-selected,
-      var(--color-foreground-checkbox-selected)
+      --surface-color-foreground-checkbox-unselected,
+      var(--color-foreground-checkbox-unselected)
     );
-    border-color: var(
-      --surface-color-foreground-checkbox-selected,
-      var(--color-foreground-checkbox-selected)
-    );
+    cursor: pointer;
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease;
 
+    /* The glyph is a masked pseudo-element layered over the box, NOT a
+     * background-image: a background-image SVG can't be recoloured by CSS, so the
+     * checkmark would ignore the theme. Masking + `background-color` lets the
+     * glyph take the checkmark token (same technique as PasswordInput's eye
+     * icon). The box keeps its own `background` for the selected fill.
+     *
+     * IMPORTANT: only the :checked / :indeterminate rules give the ::before a
+     * `mask-image` AND a `background-color`. The base ::before sets geometry only
+     * — with no mask-image the mask is `none`, which means NO clipping, so a
+     * `background-color` here would paint the WHOLE box as a solid square in the
+     * unchecked state (visible under any theme where the checkmark colour differs
+     * from the box). So the paint lives with the mask, never on its own. */
     &::before {
-      background-color: var(
-        --surface-color-foreground-checkbox-checkmark,
-        var(--color-foreground-checkbox-checkmark)
-      );
-      mask-image: url("/icons/checkmark.svg#checkmark");
-      -webkit-mask-image: url("/icons/checkmark.svg#checkmark");
+      content: "";
+      position: absolute;
+      inset: 0;
+      mask-repeat: no-repeat;
+      mask-position: center;
+      mask-size: 75%;
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      -webkit-mask-size: 75%;
     }
-  }
 
-  &:indeterminate {
-    position: relative;
-    background: var(
-      --surface-color-foreground-checkbox-selected,
-      var(--color-foreground-checkbox-selected)
-    );
-    border-color: var(
-      --surface-color-foreground-checkbox-selected,
-      var(--color-foreground-checkbox-selected)
-    );
-
-    &::before {
-      background-color: var(
-        --surface-color-foreground-checkbox-checkmark,
-        var(--color-foreground-checkbox-checkmark)
+    &:checked {
+      position: relative;
+      /* Selected fill + checkmark read the surface-provided tokens (with a flat
+       * fallback) so the control adapts to OnSurface stepping. */
+      background: var(
+        --surface-color-foreground-checkbox-selected,
+        var(--color-foreground-checkbox-selected)
       );
-      mask-image: url("/icons/minus.svg#minus");
-      -webkit-mask-image: url("/icons/minus.svg#minus");
+      border-color: var(
+        --surface-color-foreground-checkbox-selected,
+        var(--color-foreground-checkbox-selected)
+      );
+
+      &::before {
+        background-color: var(
+          --surface-color-foreground-checkbox-checkmark,
+          var(--color-foreground-checkbox-checkmark)
+        );
+        mask-image: url("/icons/checkmark.svg#checkmark");
+        -webkit-mask-image: url("/icons/checkmark.svg#checkmark");
+      }
     }
-  }
 
-  &:hover:not(:disabled):not(:checked):not(:indeterminate) {
-    background: var(--color-foreground-checkbox-unselected-hover);
-  }
+    &:indeterminate {
+      position: relative;
+      background: var(
+        --surface-color-foreground-checkbox-selected,
+        var(--color-foreground-checkbox-selected)
+      );
+      border-color: var(
+        --surface-color-foreground-checkbox-selected,
+        var(--color-foreground-checkbox-selected)
+      );
 
-  /* Hover on a selected/indeterminate box shifts ONLY the fill, not the
-   * checkmark/minus glyph (per design review): the background swaps to the
-   * hovered selected shade while `::before` keeps its own colour. The hover
-   * shade comes from the `--hover--…-selected` channel (criticality-style OKLCH
-   * delta shim), replacing the old whole-element `filter: brightness()` that
-   * also dimmed the glyph. */
-  &:checked:hover:not(:disabled),
-  &:indeterminate:hover:not(:disabled) {
-    background-color: var(--hover--color-foreground-checkbox-selected);
-    border-color: var(--hover--color-foreground-checkbox-selected);
-  }
+      &::before {
+        background-color: var(
+          --surface-color-foreground-checkbox-checkmark,
+          var(--color-foreground-checkbox-checkmark)
+        );
+        mask-image: url("/icons/minus.svg#minus");
+        -webkit-mask-image: url("/icons/minus.svg#minus");
+      }
+    }
 
-  &:focus-visible {
-    outline: none;
-    border-color: var(--color-focusRing);
-    box-shadow: 0 0 0 1px var(--color-focusRing);
-  }
+    &:hover:not(:disabled):not(:checked):not(:indeterminate) {
+      background: var(--color-foreground-checkbox-unselected-hover);
+    }
 
-  &:disabled {
-    border-color: var(--color-border-disabled);
-    background: var(--color-foreground-checkbox-unselected-disabled);
-    cursor: not-allowed;
-  }
+    /* Hover on a selected/indeterminate box shifts ONLY the fill, not the
+     * checkmark/minus glyph (per design review): the background swaps to the
+     * hovered selected shade while `::before` keeps its own colour. The hover
+     * shade comes from the `--hover--…-selected` channel (criticality-style OKLCH
+     * delta shim), replacing the old whole-element `filter: brightness()` that
+     * also dimmed the glyph. */
+    &:checked:hover:not(:disabled),
+    &:indeterminate:hover:not(:disabled) {
+      background-color: var(--hover--color-foreground-checkbox-selected);
+      border-color: var(--hover--color-foreground-checkbox-selected);
+    }
 
-  &:checked:disabled,
-  &:indeterminate:disabled {
-    background: var(--color-foreground-checkbox-selected-disabled);
-    border-color: var(--color-foreground-checkbox-selected-disabled);
+    &:focus-visible {
+      outline: none;
+      border-color: var(--color-focusRing);
+      box-shadow: 0 0 0 1px var(--color-focusRing);
+    }
 
-    &::before {
-      background-color: var(--color-foreground-checkbox-checkmark-disabled);
+    &:disabled {
+      border-color: var(--color-border-disabled);
+      background: var(--color-foreground-checkbox-unselected-disabled);
+      cursor: not-allowed;
+    }
+
+    &:checked:disabled,
+    &:indeterminate:disabled {
+      background: var(--color-foreground-checkbox-selected-disabled);
+      border-color: var(--color-foreground-checkbox-selected-disabled);
+
+      &::before {
+        background-color: var(--color-foreground-checkbox-checkmark-disabled);
+      }
     }
   }
 }

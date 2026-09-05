@@ -1,69 +1,73 @@
-.ds.form-combobox {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-rows: auto;
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
-  & > .selected-items {
-    grid-column: 1 / -1;
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-050);
-    margin-block-end: var(--space-050);
+@layer ds.components.global {
+  .ds.form-combobox {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto;
 
-    &:empty {
-      display: none;
-    }
-  }
+    & > .selected-items {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-050);
+      margin-block-end: var(--space-050);
 
-  & > .ds.input.combobox-input {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    anchor-name: --combobox-input;
-    display: flex;
-    align-items: stretch;
-    padding: 0;
-
-    & > input {
-      flex: 1;
-      min-width: 0;
-      border: none;
-      background: transparent;
-      color: inherit;
-      font-family: inherit;
-      outline: none;
-      padding-inline: var(--form-input-padding-inline);
+      &:empty {
+        display: none;
+      }
     }
 
-    & > .ds.combobox-reset-button {
-      flex-shrink: 0;
-    }
-  }
+    & > .ds.input.combobox-input {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      anchor-name: --combobox-input;
+      display: flex;
+      align-items: stretch;
+      padding: 0;
 
-  & > .ds.combobox-list {
-    grid-column: 1 / -1;
-  }
+      & > input {
+        flex: 1;
+        min-width: 0;
+        border: none;
+        background: transparent;
+        color: inherit;
+        font-family: inherit;
+        outline: none;
+        padding-inline: var(--form-input-padding-inline);
+      }
 
-  & > .selected-items > .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.125rem 0.5rem;
-    background-color: var(--color-foreground-secondary);
-    border: var(--dimension-stroke-thickness-medium) solid
-      var(--color-border-muted);
-    border-radius: var(--dimension-radius-full, 9999px);
-    font-size: var(--typography-text-secondary-font-size);
-    color: var(--color-text);
-    cursor: pointer;
-    transition: background-color 150ms ease;
-
-    &:hover {
-      background-color: var(--color-foreground-secondary-hover);
+      & > .ds.combobox-reset-button {
+        flex-shrink: 0;
+      }
     }
 
-    & > .remove-icon {
-      font-size: 0.75em;
-      line-height: 1;
+    & > .ds.combobox-list {
+      grid-column: 1 / -1;
+    }
+
+    & > .selected-items > .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.125rem 0.5rem;
+      background-color: var(--color-foreground-secondary);
+      border: var(--dimension-stroke-thickness-medium) solid
+        var(--color-border-muted);
+      border-radius: var(--dimension-radius-full, 9999px);
+      font-size: var(--typography-text-secondary-font-size);
+      color: var(--color-text);
+      cursor: pointer;
+      transition: background-color 150ms ease;
+
+      &:hover {
+        background-color: var(--color-foreground-secondary-hover);
+      }
+
+      & > .remove-icon {
+        font-size: 0.75em;
+        line-height: 1;
+      }
     }
   }
 }

@@ -1,12 +1,16 @@
-.ds.input.textarea {
-  /* This element IS the text-bearing leaf, so it carries the inline padding
-   * (`.ds.input.chrome` provides only the block padding). */
-  padding-inline: var(--form-input-padding-inline);
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
-  /* Block placement is supplied by density.css (baseline-grid seating of the
-     first line + grid-multiple line-height). The chrome contributes only its
-     block padding as the box's own inset; the baseline nudge lives in density. */
-  padding-block: var(--form-input-padding-block);
-  min-height: calc(5lh + var(--form-input-padding-block) * 2);
-  resize: vertical;
+@layer ds.components.global {
+  .ds.input.textarea {
+    /* This element IS the text-bearing leaf, so it carries the inline padding
+     * (`.ds.input.chrome` provides only the block padding). */
+    padding-inline: var(--form-input-padding-inline);
+
+    /* Block placement is supplied by density.css (baseline-grid seating of the
+       first line + grid-multiple line-height). The chrome contributes only its
+       block padding as the box's own inset; the baseline nudge lives in density. */
+    padding-block: var(--form-input-padding-block);
+    min-height: calc(5lh + var(--form-input-padding-block) * 2);
+    resize: vertical;
+  }
 }
