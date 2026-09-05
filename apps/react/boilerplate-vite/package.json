@@ -37,6 +37,7 @@
     "test:e2e": "vitest run --config vitest.e2e.config.ts"
   },
   "dependencies": {
+    "@canonical/ds-assets": "^0.37.0",
     "@canonical/i18n-core": "^0.37.0",
     "@canonical/i18n-react": "^0.37.0",
     "@canonical/react-ds-global": "^0.37.0",
