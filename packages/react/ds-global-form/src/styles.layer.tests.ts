@@ -13,6 +13,16 @@
  * (`files: ["dist"]`), and it exists to layer nothing — two `@import`s and one
  * `.rtl` utility for the preview page.
  *
+ * The second concern is motion. Every duration this package animates over must
+ * be read from a `--motion-duration-*` token, never written as a literal:
+ * `@canonical/styles` zeroes those tokens under
+ * `@media (prefers-reduced-motion: reduce)`, and that zeroing is the whole of
+ * pragma's reduced-motion mechanism (F.VANILLA_COEXISTENCE, VC.11, closing D14).
+ * A literal duration is invisible to it and keeps animating for a reader who
+ * asked their system not to. The assertion below is written over the shape of
+ * the value rather than over the presence of digits, so a bare `0s` and a
+ * future `steps()` still pass and only a time literal fails.
+ *
  * The `@import` case is this package's own. `src/index.css` imports
  * `density.css`, and that import must NOT carry a `layer()` keyword: measured in
  * Chromium 151, `@import url(x) layer(L)` on a sheet that itself declares
@@ -89,6 +99,32 @@ describe("stylesheets", () => {
         // it, and far easier to miss: the file still opens with the block.
         expect(close).toBeGreaterThan(-1);
         expect(tail.trim()).toBe("");
+      });
+
+      it("reads every duration from a motion token", () => {
+        // `transition` / `animation`, shorthand or the duration and delay
+        // longhands; `transition-property` carries no time and is not matched.
+        const declarations =
+          code.match(
+            /(?:^|[;{}])\s*(?:transition|animation)(?:-duration|-delay)?\s*:[^;{}]*/g,
+          ) ?? [];
+
+        for (const declaration of declarations) {
+          const value = declaration.slice(declaration.indexOf(":") + 1);
+          // A time literal is the defect. Zero is allowed: it says "no motion"
+          // outright and no token can make it move.
+          for (const [time] of value.matchAll(/(?<![\w-])\d*\.?\d+m?s\b/g)) {
+            expect([time, path]).toEqual(["0s", path]);
+          }
+          // And whatever is read must be a motion token: a duration from the
+          // three steps, an easing from the three curves.
+          for (const [, name] of value.matchAll(/var\(\s*(--[\w-]+)/g)) {
+            expect([name, path]).toEqual([
+              expect.stringMatching(/^--motion-(?:duration|easing)-/),
+              path,
+            ]);
+          }
+        }
       });
 
       it("imports without a layer() keyword", () => {

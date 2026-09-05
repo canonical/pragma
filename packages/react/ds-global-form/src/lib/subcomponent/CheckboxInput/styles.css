@@ -23,8 +23,8 @@
     );
     cursor: pointer;
     transition:
-      background-color 150ms ease,
-      border-color 150ms ease;
+      background-color var(--motion-duration-fast) ease,
+      border-color var(--motion-duration-fast) ease;
 
     /* The glyph is a masked pseudo-element layered over the box, NOT a
      * background-image: a background-image SVG can't be recoloured by CSS, so the
