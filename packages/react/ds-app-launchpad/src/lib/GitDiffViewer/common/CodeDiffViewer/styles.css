@@ -1,9 +1,5 @@
-/* @canonical/generator-canonical-ds 0.0.1 */
-
-/* Layer: `ds.components.app` — so this application tier's rule for the
- * component beats the global tier's by cascade layer, not by whichever bundle a
- * loader happened to emit last. See "Cascade layers" in the @canonical/styles
- * README. */
+/* @canonical/generator-canonical-ds 0.0.1
+ * Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
 @layer ds.components.app {
   .ds.code-diff-viewer {

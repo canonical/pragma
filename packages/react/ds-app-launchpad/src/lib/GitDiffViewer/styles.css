@@ -1,10 +1,7 @@
-/* Layer: `ds.components.app` — so this application tier's rule for the
- * component beats the global tier's by cascade layer, not by whichever bundle a
- * loader happened to emit last. See "Cascade layers" in the @canonical/styles
- * README. */
+/* GitDiffViewer.css
+ * Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
 @layer ds.components.app {
-  /* GitDiffViewer.css */
   .ds.git-diff-viewer {
     --git-diff-viewer-code-default-background: #f7f7f7;
     --git-diff-viewer-code-default-color: #000000;

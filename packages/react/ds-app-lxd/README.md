@@ -28,9 +28,11 @@ function AppHeader() {
 }
 ```
 
-## Cascade Layer
+## Styling
 
-Every `styles.css` in this package is wrapped in one cascade layer:
+### Every component stylesheet is in `ds.components.app`
+
+Every component stylesheet under `src/lib` is wrapped in one cascade layer:
 
 ```css
 @layer ds.components.app {
@@ -40,11 +42,17 @@ Every `styles.css` in this package is wrapped in one cascade layer:
 }
 ```
 
-`@canonical/styles` fixes the order of every layer in one statement, and that statement names both component tiers: `ds.components.global` for the global component packages, then `ds.components.app` for the application tiers, this package among them. Because the app tier is named after the global one, this package's `.ds.button` beats the `.ds.button` in `@canonical/react-ds-global` by layer alone. Which of the two won used to depend on whichever stylesheet a bundler emitted last: the two rules have the same selector at the same specificity, so nothing else could settle it. The app tier now wins whatever the import order, without a longer selector and without `!important`.
+`.storybook/styles.css` is deliberately not wrapped: it is the Storybook harness rather than a component stylesheet, it is not published, and it carries no component rules.
 
-An application's own **unlayered** CSS still beats every rule in this package, whatever the selectors on either side, because an unlayered author rule outranks every layered one. That is CSS working as designed, and it is the deliberate escape hatch: an application that needs to override a component writes a plain rule and it wins. An application that does *not* want to win by accident puts its CSS in `@layer app`.
+`@canonical/styles` fixes the order of every layer in one statement, and that statement names both component tiers: `ds.components.global` for the global component packages, then `ds.components.app` for the application tiers, this package among them. Three things follow.
 
-**Rule for contributors:** every stylesheet in this package opens with that wrapper. `@keyframes` and a component's own `:root` token defaults go inside it; `@property` and `@font-face` registrations stay outside, above the block, because no layer sorts a registration. Never reach for `!important` to win a fight — an important declaration inverts the layer order, so it cannot be arbitrated by layers at all. The "Cascade Layers" section of the `@canonical/styles` README is the reference for the full order and for what is deliberately left unlayered.
+`@canonical/react-ds-global` is not wrapped yet — at the time of writing its stylesheets carry no layer at all — so today it still beats this package for the opposite reason: unlayered beats layered, whatever the emit order. What the layer guarantees, once that package lands, is that this package's `.ds.button` beats the `.ds.button` in `@canonical/react-ds-global` by cascade layer instead of by whichever bundle a loader emitted last. Where the two rules have the same selector at the same specificity, the emit order used to decide; where the global tier reaches for a longer selector, as its density seat does at (0,3,0) against (0,2,0), specificity did.
+
+The guarantee needs `@canonical/styles` on the page, and needs its statement first. An order statement is what fixes the relative order of two sublayers; without it they fall back to the order they first appear in, and a bundle that emits this package before `@canonical/react-ds-global` hands the win back to the global tier. Nothing under `src/lib` imports `@canonical/styles` — an application imports it once, as the installation instructions above say.
+
+An application's own **unlayered** CSS now beats every rule in this package, whatever the selectors on either side, because an unlayered author rule outranks every layered one. That is CSS working as designed, and it is the deliberate escape hatch: an application that needs to override a component writes a plain rule and it wins. An application that does *not* want to win by accident puts its CSS in `@layer app`.
+
+**Rule for contributors:** every component stylesheet under `src/lib` opens with that wrapper, and `src/lib/styles.layer.tests.ts` fails if one does not. `@keyframes` and a component's own `:root` token defaults go inside it; `@property` and `@font-face` registrations stay outside, above the block, because no layer sorts a registration. Never reach for `!important` to win a fight — an important declaration inverts the layer order, so it cannot be arbitrated by layers at all. The "Cascade Layers" section of the `@canonical/styles` README is the reference for the full order and for what is deliberately left unlayered.
 
 ## Storybook
 
