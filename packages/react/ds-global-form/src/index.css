@@ -372,10 +372,14 @@
   /* ── Layout presets ───────────────────────────────────────────────── */
 
   /* This preset was the one rule in this package already in a layer, its own
-   * `@layer ds.components`. It is in the file's `ds.components.global` wrap now
-   * like every other rule here: one layer nearer the top of the order, still
-   * below an application tier's `ds.components.app`, and one layer for a reader
-   * of this file to hold rather than two. */
+   * `@layer ds.components` — which put it ABOVE both component tiers, not
+   * between them: a rule written directly into a layer lands in that layer's
+   * implicit final sublayer, and that outranks every named sublayer beneath it,
+   * `ds.components.app` included. It is in this file's `ds.components.global`
+   * wrap now like every other rule here, which demotes it to where it belongs —
+   * below an application tier's rules — and leaves one layer for a reader of
+   * this file to hold rather than two. Nothing pragma ships is written directly
+   * into `ds.components`. */
   /* Side layout: label beside input.
    * Apply on the form or a wrapper to switch all fields to side layout. */
   .form-layout-side {

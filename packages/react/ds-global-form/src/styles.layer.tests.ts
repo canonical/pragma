@@ -48,8 +48,25 @@ describe("stylesheets", () => {
     // `layer()` trap in prose, and `src/index.css` quotes both in its own
     // header, so a match over the raw text would read the documentation.
     const code = source.replace(/\/\*[\s\S]*?\*\//g, "");
-    const head = code.slice(0, code.indexOf(`@layer ${LAYER} {`));
+    const open = code.indexOf(`@layer ${LAYER} {`);
+    // A missing block leaves the whole file above it, so every case below fails.
+    const head = open === -1 ? code : code.slice(0, open);
     const imports = head.match(/@import\b[^;]*;/g) ?? [];
+    // Walk to the brace that closes the wrapper, so what follows it can be
+    // checked: an appended rule is as unlayered as one written above the block.
+    let depth = 0;
+    let close = -1;
+    for (let i = open; i < code.length && open !== -1; i += 1) {
+      if (code[i] === "{") depth += 1;
+      else if (code[i] === "}") {
+        depth -= 1;
+        if (depth === 0) {
+          close = i;
+          break;
+        }
+      }
+    }
+    const tail = close === -1 ? code.slice(open) : code.slice(close + 1);
 
     describe(path, () => {
       it(`is wrapped in ${LAYER}`, () => {
@@ -65,6 +82,13 @@ describe("stylesheets", () => {
         // would be a rule outside the layer.
         expect(imports.length).toBeLessThanOrEqual(1);
         expect(head.replace(/@import\b[^;]*;/g, "").trim()).toBe("");
+      });
+
+      it("closes the block at the end of the file", () => {
+        // A rule appended below the wrapper would be as unlayered as one above
+        // it, and far easier to miss: the file still opens with the block.
+        expect(close).toBeGreaterThan(-1);
+        expect(tail.trim()).toBe("");
       });
 
       it("imports without a layer() keyword", () => {
