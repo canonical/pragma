@@ -1,66 +1,64 @@
 /* component styles
  * Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
+/* This sheet is a DELTA over the Button in @canonical/react-ds-global, not a
+ * second copy of it. It declares only the properties on which this tier
+ * disagrees with the global one. Everything else — the component's `--button-*`
+ * tokens and their documentation, the box, the colour channels, the border
+ * width and style, the label weight, the state transition, the focus ring, the
+ * disabled treatment, the hover and active surfaces, the link variant, and the
+ * density seat that gives the button its height and its block padding — comes
+ * from the global sheet and is deliberately not repeated here.
+ *
+ * Repeating a declaration is not harmless. This layer sits above
+ * `ds.components.global`, so a repeated declaration wins whatever the global
+ * sheet's selector says: it beats that sheet's density seat, its `:disabled`
+ * rule and its `.link` rule as easily as it beats its base rule. And a repeated
+ * declaration that reads a custom property nobody declares any more still wins,
+ * then computes to nothing — an unresolvable `var()` makes the declaration
+ * invalid at computed-value time, which means the initial value, or the
+ * fallback where one is written.
+ *
+ * That is what this file used to be. Until this change it was a carry-forward
+ * of the shared `ds-react-core` Button stylesheet of 2025, copied into the four
+ * application tiers when they were split out and mechanically renamed from
+ * `--intent-*` to `--modifier-*`; it was never an application-tier design
+ * decision. Four of its declarations read `--button-margin-bottom`,
+ * `--button-margin-left`, `--button-padding-vertical` and
+ * `--button-padding-horizontal`. The two padding names the global tier has
+ * since renamed, to `--button-padding-inline-start` and `-end`, so those
+ * declarations erased the button's horizontal padding; the two margin names it
+ * dropped outright, declaring no margin at all. A fifth read `--modifier-color`,
+ * an anticipation channel also dropped outright — the anticipation modifiers
+ * now declare `--modifier-color-text`, `-border`, `-icon` and three
+ * `-foreground-*` names (`-ghost`, `-primary`, `-secondary`), while
+ * `--modifier-surface`, the property the global sheet reads for the fill, is a
+ * different, importance channel that the shim in @canonical/styles declares.
+ * Because the dead name fell through to `--button-color-background`, which is
+ * declared on `:root`, that fallback's own `var()` substituted where no
+ * modifier class exists, so every button was painted the neutral primary fill
+ * whatever its modifiers said.
+ *
+ * What remains is what this tier actually asserts. `display: inline-block` and
+ * `text-align: left` came from that same 2025 sheet, have no design source at
+ * any application tier, and cost the global sheet's 8px icon/label gap, so they
+ * are gone with the rest; the two below stay pending an owner's confirmation,
+ * recorded on Linear PRA-153. */
+
 @layer ds.components.app {
-  /* component variables
-      --button-color-background: background color of the button
-      --button-color-background-hover: background color of the button on hover
-      --button-color-background-active: background color of the button on active
-      --button-color-text: text color of the button
-      --button-color-border: border color of the button
-      --button-color-border-hover: border color of the button on hover
-      --button-color-border-active: border color of the button on active
-
-      --button-margin-left: left margin of the button
-      --button-margin-bottom: bottom margin of the button
-      --button-padding-vertical: vertical padding of the button
-      --button-padding-horizontal: horizontal padding of the button
-      --button-border-width: border width of the button
-      --button-font-size: font size of the button
-      --button-font-weight: font weight of the button
-      --button-line-height: line height of the button
-  */
   .ds.button {
-    display: inline-block;
-    cursor: pointer;
-
-    color: var(--modifier-color-text, var(--button-color-text));
-    background-color: var(--modifier-color, var(--button-color-background));
-    border-color: var(--modifier-color-border, var(--button-color-border));
-    border-style: solid;
-    border-width: var(--button-border-width);
+    /* A smaller label. The global sheet computes `--button-font-size` — the
+       14px text-secondary tier — and publishes it as `--font-size` for the
+       typography engine to pick up, but that engine applies `font-size` only to
+       the elements it governs and this button is not one, so the label would
+       fall back to the inherited 16px. This tier applies it. */
     font-size: var(--button-font-size);
-    font-weight: var(--button-font-weight);
-    line-height: var(--button-line-height);
-    margin-block-end: var(--button-margin-bottom);
-    margin-inline-end: var(--button-margin-left);
-    padding-block: var(--button-padding-vertical);
-    padding-inline: var(--button-padding-horizontal);
 
-    text-align: left;
-    text-decoration: none;
-
-    /* component states */
-    &:hover {
-      background-color: var(
-        --modifier-color-hover,
-        var(--button-color-background-hover)
-      );
-      border-color: var(
-        --modifier-color-border-hover,
-        var(--button-color-border-hover)
-      );
-    }
-
-    &:active {
-      background-color: var(
-        --modifier-color-active,
-        var(--button-color-background-active)
-      );
-      border-color: var(
-        --modifier-color-border-active,
-        var(--button-color-border-active)
-      );
-    }
+    /* The border is always drawn. The global sheet draws it only when an
+       importance modifier raises the outline channel, and leaves it transparent
+       otherwise; on this tier every button is bordered. Raising the channel is
+       the whole delta — redeclaring `border-color` here would also override the
+       global sheet's disabled border and its transparent border on `.link`. */
+    --modifier-outline: 1;
   }
 }
