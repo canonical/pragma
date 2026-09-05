@@ -61,11 +61,11 @@ import "@canonical/styles";
 
 Each component module imports its own stylesheet (`import "./styles.css"`), so importing a component is what puts its CSS on the page. A bundler collects those imports into the application's CSS; nothing here is injected at runtime, and there is no stylesheet to link by hand. The consequence is that a component you never import ships no CSS — and that the order a bundler happens to emit the sheets in is not something you can rely on, which is what the cascade layer below is for.
 
-An aggregate `index.css` with one `@import` per sheet — for consumers who want every component's CSS without importing every component — is being added separately and will be documented here when it lands.
+An aggregate `src/lib/index.css` with one `@import` per sheet — for consumers who want every component's CSS without importing every component — is being added separately and will be documented here when it lands. It carries no layer of its own: every sheet it imports already opens its own block.
 
-### Every stylesheet is in `ds.components.global`
+### Every component stylesheet is in `ds.components.global`
 
-Every `styles.css` in this package is wrapped in one cascade layer:
+Every component `styles.css` in this package is wrapped in one cascade layer:
 
 ```css
 @layer ds.components.global {
@@ -77,11 +77,11 @@ Every `styles.css` in this package is wrapped in one cascade layer:
 
 `@canonical/styles` declares the order of every layer in one statement, and `ds.components.global` sits near the top of it. Two things follow.
 
-An application tier (`@canonical/react-ds-app-lxd` and its siblings) writes its component CSS into `ds.components.app`, one layer higher. So when an app tier restyles a component this package also styles, the app tier wins by cascade layer — not by which bundle the loader emitted last, which is what decided it before.
+`ds.components.app`, one layer higher, is the application tiers' — `@canonical/react-ds-app-lxd` and its siblings. None of them is wrapped yet (at the time of writing, no stylesheet under `packages/react/ds-app-*` carries a layer at all); wrapping them is being done package by package alongside this one. Today an app tier still beats this package for the opposite reason — it is unlayered, and unlayered beats layered. What the layer guarantees, once those packages land, is that an app tier's rule for a component this package also styles wins by cascade layer rather than by whichever bundle the loader emitted last.
 
 An application's own **unlayered** CSS now beats every rule in this package, whatever the selectors on either side, because unlayered author rules outrank every layered one. That is CSS working as designed, and it is the deliberate escape hatch: an application that needs to override a component writes a plain rule and it wins. An application that does *not* want to win by accident puts its CSS in `@layer app`.
 
-**Rule for contributors:** every stylesheet in this package opens with that wrapper. `@keyframes` and the component's own `:root` token defaults go inside it; `@property` and `@font-face` registrations stay outside, above the block, because no layer sorts a registration. Never reach for `!important` to win a fight — an important declaration inverts the layer order and cannot be arbitrated by layers at all. The `@canonical/styles` README's "Cascade layers" section is the reference for the full order and for what is deliberately left unlayered.
+**Rule for contributors:** every component `styles.css` in this package opens with that wrapper. `@keyframes` and the component's own `:root` token defaults go inside it; `@property` and `@font-face` registrations stay outside, above the block, because no layer sorts a registration. Never reach for `!important` to win a fight — an important declaration inverts the layer order and cannot be arbitrated by layers at all. The package ships exactly one, `component/Tooltip/styles.css:18`, which strips the margin off whatever a tooltip is attached to; it is a known defect and the component-hygiene change removes it. The `@canonical/styles` README's "Cascade layers" section is the reference for the full order and for what is deliberately left unlayered.
 
 ### Components own the box of the natives they render
 

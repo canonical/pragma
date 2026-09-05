@@ -7,7 +7,7 @@
 
 import * as fs from "node:fs";
 import { dryRun, dryRunWith, type Effect, type Task } from "@canonical/task";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import pkg from "../package.json" with { type: "json" };
 import { generators } from "./index.js";
 import dryRunWithFileState from "./shared/file-operations/dryRunWithFileState.js";
@@ -577,5 +577,88 @@ describe("component-exists guard", () => {
     expect(() =>
       dryRunWithFileState(task, { "src/lib/components/Button": "" }),
     ).toThrow(/already exists/);
+  });
+});
+
+// =============================================================================
+// Cascade layer of the generated stylesheet
+// =============================================================================
+
+describe("generated stylesheet layer", () => {
+  const generateStyles = (
+    cwd: string,
+    generatorName: keyof typeof generators,
+    componentPath: string,
+  ) => {
+    const spy = vi.spyOn(process, "cwd").mockReturnValue(cwd);
+    try {
+      const task = generators[generatorName].generate({
+        componentPath,
+        withStyles: true,
+        withStories: false,
+        useTsStories: false,
+        withSsrTests: false,
+      });
+      const result = dryRunWithTemplates(task);
+      const file = result.effects.find(
+        (e) =>
+          e._tag === "WriteFile" &&
+          (e as { path: string }).path.endsWith("styles.css"),
+      );
+      return (file as { content: string }).content;
+    } finally {
+      spy.mockRestore();
+    }
+  };
+
+  it("wraps a global-tier component in ds.components.global", () => {
+    const content = generateStyles(
+      "/repo/packages/react/ds-global",
+      "component/react",
+      "src/lib/component/Banner",
+    );
+
+    expect(content).toContain("@layer ds.components.global {");
+    expect(content).not.toContain("ds.components.app");
+  });
+
+  it("wraps an app-tier component in ds.components.app", () => {
+    const content = generateStyles(
+      "/repo/packages/react/ds-app-lxd",
+      "component/react",
+      "src/lib/Banner",
+    );
+
+    expect(content).toContain("@layer ds.components.app {");
+    expect(content).not.toContain("ds.components.global");
+  });
+
+  it("follows the target package for svelte too", () => {
+    expect(
+      generateStyles(
+        "/repo/packages/svelte/ds-app-wpe",
+        "component/svelte",
+        "src/lib/components/Banner",
+      ),
+    ).toContain("@layer ds.components.app {");
+    expect(
+      generateStyles(
+        "/repo/packages/svelte/ds-global",
+        "component/svelte",
+        "src/lib/components/Banner",
+      ),
+    ).toContain("@layer ds.components.global {");
+  });
+
+  it("leaves the lit stylesheet unlayered: a shadow tree has its own cascade", () => {
+    const content = generateStyles(
+      "/repo/packages/lit/ds-app-wpe",
+      "component/lit",
+      "src/lib/Banner",
+    );
+
+    expect(content).not.toContain("@layer");
+    expect(content).toContain("No layer here");
+    expect(content).toContain(":host {");
   });
 });

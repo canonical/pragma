@@ -136,7 +136,12 @@ const ContextualMenu = ({
   const menuElement = (
     <div
       className={[
-        `${componentCssClassName}__surface`,
+        // Spelled out rather than interpolated from componentCssClassName: the
+        // portal target sits outside the caller's subtree, so this root marks
+        // its own pragma territory, and that must not depend on another
+        // constant keeping its "ds " prefix. SubMenu.tsx does the same.
+        "ds",
+        "contextual-menu__surface",
         "modal",
         bestPosition?.positionName,
       ]

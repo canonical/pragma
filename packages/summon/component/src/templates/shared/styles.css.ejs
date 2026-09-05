@@ -1,6 +1,6 @@
-/* Layered so an app tier's rule wins by cascade layer, not by load order.
- * See "Cascade layers" in the @canonical/styles README. */
-@layer ds.components.global {
+/* Layer: <%= componentLayer %> (@canonical/styles README, "Cascade layers"). */
+
+@layer <%= componentLayer %> {
   .ds.<%= kebabName %> {
     /* Component styles */
   }

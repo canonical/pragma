@@ -18,11 +18,9 @@
  *
  * NOTE: full token pairing (spacing, typography, radius) is deferred to ADR-Q02.
  * The values below cover layout + the criticality colour surface + the side bar.
+ *
+ * Layer: ds.components.global (@canonical/styles README, "Cascade layers").
  */
-
-/* Layer: `ds.components.global` — so an application tier's own rule for this
- * component wins by cascade layer, not by whichever bundle a loader happened to
- * emit last. See "Cascade layers" in the @canonical/styles README. */
 
 @layer ds.components.global {
   .ds.announcement {
