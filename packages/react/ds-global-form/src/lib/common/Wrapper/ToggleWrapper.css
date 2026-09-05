@@ -1,64 +1,70 @@
-/* Toggle field layout, top to bottom: an optional heading, a control row where
- * the input sits inline with its label, then the description and any error. */
-.ds.field.field-toggle {
-  display: flex;
-  flex-direction: column;
-  row-gap: var(--form-group-gap);
+/* Layer: `ds.components.global` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-  /* The heading is a mock label (a <legend>): reset the fieldset default so it
-     flows like the other block children. */
-  & > .field-toggle-heading {
-    padding: 0;
-  }
-
-  /* Control row: the control centres on the label's FIRST line, and a multi-line
-     (sentence) label wraps below — never centring the box on the whole paragraph
-     (AV-325). `align-items: start` tops the row so wrapped lines flow under the
-     first; the control is then nudged down half a line-box to sit centred on the
-     first line (see the control rule below). The first-line box is one density
-     line-height (`--density-line-height-effective`, set on the density scope;
-     falls back to `1lh` outside a density context). */
-  & > .field-toggle-control {
-    --toggle-control-line: var(--density-line-height-effective, 1lh);
-
+@layer ds.components.global {
+  /* Toggle field layout, top to bottom: an optional heading, a control row where
+   * the input sits inline with its label, then the description and any error. */
+  .ds.field.field-toggle {
     display: flex;
-    flex-direction: row;
-    align-items: start;
-    column-gap: var(--form-field-inline-gap);
+    flex-direction: column;
+    row-gap: var(--form-group-gap);
 
-    /* Every direct child that ISN'T the label is the control (checkbox / switch
-       input): a fixed 16px-tall box (--dimension-200 — checkbox 16×16, switch
-       track 16 high). Centre it on the first line by pushing it down half the
-       leftover between the line-box and the control's own height. The control
-       keeps its intrinsic size — only its vertical offset changes, so the click
-       target is untouched. */
-    & > :not(.ds.field-label) {
-      --toggle-control-size: var(--dimension-200);
-      align-self: start;
-      margin-block-start: max(
-        0px,
-        calc((var(--toggle-control-line) - var(--toggle-control-size)) / 2)
-      );
+    /* The heading is a mock label (a <legend>): reset the fieldset default so it
+       flows like the other block children. */
+    & > .field-toggle-heading {
+      padding: 0;
     }
 
-    /* The control label is often a full clickable sentence, so it reads as
-       regular body prose (not the bold heading weight the field label uses by
-       default): normal weight, left-aligned, pointer cursor, and it takes the
-       remaining width so it wraps beside the control instead of pushing it. */
-    & > .ds.field-label {
-      flex: 1;
-      min-width: 0;
-      font-weight: var(--typography-text-primary-font-weight);
-      text-align: start;
-      cursor: pointer;
-    }
+    /* Control row: the control centres on the label's FIRST line, and a multi-line
+       (sentence) label wraps below — never centring the box on the whole paragraph
+       (AV-325). `align-items: start` tops the row so wrapped lines flow under the
+       first; the control is then nudged down half a line-box to sit centred on the
+       first line (see the control rule below). The first-line box is one density
+       line-height (`--density-line-height-effective`, set on the density scope;
+       falls back to `1lh` outside a density context). */
+    & > .field-toggle-control {
+      --toggle-control-line: var(--density-line-height-effective, 1lh);
 
-    /* Label BEFORE the control (switch convention): the DOM stays
-       control-then-label for accessibility, so `row-reverse` moves the control
-       to the trailing (right) edge and the label to the leading (left) edge.
-       Logical `row-reverse` mirrors correctly in RTL. */
-    &.label-before {
-      flex-direction: row-reverse;
+      display: flex;
+      flex-direction: row;
+      align-items: start;
+      column-gap: var(--form-field-inline-gap);
+
+      /* Every direct child that ISN'T the label is the control (checkbox / switch
+         input): a fixed 16px-tall box (--dimension-200 — checkbox 16×16, switch
+         track 16 high). Centre it on the first line by pushing it down half the
+         leftover between the line-box and the control's own height. The control
+         keeps its intrinsic size — only its vertical offset changes, so the click
+         target is untouched. */
+      & > :not(.ds.field-label) {
+        --toggle-control-size: var(--dimension-200);
+        align-self: start;
+        margin-block-start: max(
+          0px,
+          calc((var(--toggle-control-line) - var(--toggle-control-size)) / 2)
+        );
+      }
+
+      /* The control label is often a full clickable sentence, so it reads as
+         regular body prose (not the bold heading weight the field label uses by
+         default): normal weight, left-aligned, pointer cursor, and it takes the
+         remaining width so it wraps beside the control instead of pushing it. */
+      & > .ds.field-label {
+        flex: 1;
+        min-width: 0;
+        font-weight: var(--typography-text-primary-font-weight);
+        text-align: start;
+        cursor: pointer;
+      }
+
+      /* Label BEFORE the control (switch convention): the DOM stays
+         control-then-label for accessibility, so `row-reverse` moves the control
+         to the trailing (right) edge and the label to the leading (left) edge.
+         Logical `row-reverse` mirrors correctly in RTL. */
+      &.label-before {
+        flex-direction: row-reverse;
+      }
     }
   }
 }

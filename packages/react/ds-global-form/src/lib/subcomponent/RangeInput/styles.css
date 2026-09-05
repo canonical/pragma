@@ -1,93 +1,99 @@
-.ds.range {
-  appearance: none;
-  width: 100%;
-  /* Element box is as tall as the THUMB (16px), so the thumb and its focus
-   * ring are never clipped in a flex row; the visible 8px track is painted by
-   * the track pseudo-elements below, vertically centred within this box. */
-  height: var(--dimension-200); /* 16px */
-  background: transparent;
-  border: none;
-  outline: none;
-  cursor: pointer;
+/* Layer: `ds.components.global` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-  /* WebKit/Chromium paints the bar via this pseudo-element, which keeps a UA
-   * border even after `appearance: none` on the element — THIS is the visible
-   * border. Style the track here: flat, no border, 8px tall. */
-  &::-webkit-slider-runnable-track {
-    height: var(--dimension-100); /* 8px */
-    background: var(--color-foreground-slider-track);
-    border: none;
-    border-radius: var(--dimension-radius-small);
-  }
-
-  /* Firefox draws the track via its own pseudo-element with its own UA border —
-   * zero it and paint the flat track here to match WebKit. */
-  &::-moz-range-track {
-    height: var(--dimension-100); /* 8px */
-    background: var(--color-foreground-slider-track);
-    border: none;
-    border-radius: var(--dimension-radius-small);
-  }
-
-  &::-webkit-slider-thumb {
+@layer ds.components.global {
+  .ds.range {
     appearance: none;
-    width: var(--dimension-200); /* 16px */
+    width: 100%;
+    /* Element box is as tall as the THUMB (16px), so the thumb and its focus
+     * ring are never clipped in a flex row; the visible 8px track is painted by
+     * the track pseudo-elements below, vertically centred within this box. */
     height: var(--dimension-200); /* 16px */
-    /* Re-centre the 16px thumb on the 8px runnable-track: (8 − 16) / 2 = −4px.
-       Derived from the actual track/thumb dimension tokens, not the baseline unit. */
-    margin-top: calc((var(--dimension-100) - var(--dimension-200)) / 2);
-    border-radius: 50%;
-    background: var(--color-foreground-slider-progress);
+    background: transparent;
     border: none;
-    cursor: pointer;
-  }
-
-  &::-moz-range-thumb {
-    width: var(--dimension-200); /* 16px */
-    height: var(--dimension-200); /* 16px */
-    border-radius: 50%;
-    background: var(--color-foreground-slider-progress);
-    border: none;
-    cursor: pointer;
-  }
-
-  &:focus-visible {
     outline: none;
+    cursor: pointer;
 
-    &::-webkit-slider-thumb {
-      box-shadow: 0 0 0 2px var(--color-focusRing);
-    }
-
-    &::-moz-range-thumb {
-      box-shadow: 0 0 0 2px var(--color-focusRing);
-    }
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-
-    /* Track colour lives on the pseudo-elements (the element box is transparent). */
+    /* WebKit/Chromium paints the bar via this pseudo-element, which keeps a UA
+     * border even after `appearance: none` on the element — THIS is the visible
+     * border. Style the track here: flat, no border, 8px tall. */
     &::-webkit-slider-runnable-track {
-      background: var(--color-foreground-slider-track-disabled);
+      height: var(--dimension-100); /* 8px */
+      background: var(--color-foreground-slider-track);
+      border: none;
+      border-radius: var(--dimension-radius-small);
     }
 
+    /* Firefox draws the track via its own pseudo-element with its own UA border —
+     * zero it and paint the flat track here to match WebKit. */
     &::-moz-range-track {
-      background: var(--color-foreground-slider-track-disabled);
+      height: var(--dimension-100); /* 8px */
+      background: var(--color-foreground-slider-track);
+      border: none;
+      border-radius: var(--dimension-radius-small);
     }
 
     &::-webkit-slider-thumb {
-      background: var(--color-foreground-slider-progress-disabled);
+      appearance: none;
+      width: var(--dimension-200); /* 16px */
+      height: var(--dimension-200); /* 16px */
+      /* Re-centre the 16px thumb on the 8px runnable-track: (8 − 16) / 2 = −4px.
+         Derived from the actual track/thumb dimension tokens, not the baseline unit. */
+      margin-top: calc((var(--dimension-100) - var(--dimension-200)) / 2);
+      border-radius: 50%;
+      background: var(--color-foreground-slider-progress);
+      border: none;
+      cursor: pointer;
     }
 
     &::-moz-range-thumb {
-      background: var(--color-foreground-slider-progress-disabled);
+      width: var(--dimension-200); /* 16px */
+      height: var(--dimension-200); /* 16px */
+      border-radius: 50%;
+      background: var(--color-foreground-slider-progress);
+      border: none;
+      cursor: pointer;
+    }
+
+    &:focus-visible {
+      outline: none;
+
+      &::-webkit-slider-thumb {
+        box-shadow: 0 0 0 2px var(--color-focusRing);
+      }
+
+      &::-moz-range-thumb {
+        box-shadow: 0 0 0 2px var(--color-focusRing);
+      }
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+
+      /* Track colour lives on the pseudo-elements (the element box is transparent). */
+      &::-webkit-slider-runnable-track {
+        background: var(--color-foreground-slider-track-disabled);
+      }
+
+      &::-moz-range-track {
+        background: var(--color-foreground-slider-track-disabled);
+      }
+
+      &::-webkit-slider-thumb {
+        background: var(--color-foreground-slider-progress-disabled);
+      }
+
+      &::-moz-range-thumb {
+        background: var(--color-foreground-slider-progress-disabled);
+      }
     }
   }
-}
 
-.ds.range-output {
-  display: block;
-  text-align: center;
-  /* .p class provides font-size, line-height, baseline nudges */
-  color: var(--color-text-muted);
+  .ds.range-output {
+    display: block;
+    text-align: center;
+    /* .p class provides font-size, line-height, baseline nudges */
+    color: var(--color-text-muted);
+  }
 }

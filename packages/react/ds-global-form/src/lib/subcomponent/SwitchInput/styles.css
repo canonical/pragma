@@ -1,105 +1,111 @@
-/* A switch is a checkbox (role="switch") styled as a sliding pill toggle.
- * The track is the <input> box; the knob is a `::before` pseudo-element that
- * slides from left (off) to right (on). Colours come from the switch token
- * channel; the geometry is in baseline multiples. */
-.ds.form-switch {
-  /* Geometry, all derived from the track size and a 1px inset. Fixed element sizes
-     (32×16px), NOT baseline multiples — the 4px-baseline spike halved the old
-     `--space-baseline × 4 / × 2`. Stable dimension tokens decouple the switch size
-     from the baseline grid unit. */
-  --switch-track-width: var(--dimension-400); /* 32px */
-  --switch-track-height: var(--dimension-200); /* 16px */
-  --switch-knob-inset: 1px;
-  --switch-knob-size: calc(
-    var(--switch-track-height) -
-    (var(--switch-knob-inset) * 2)
-  );
+/* Layer: `ds.components.global` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-  appearance: none;
-  box-sizing: border-box;
-  position: relative;
+@layer ds.components.global {
+  /* A switch is a checkbox (role="switch") styled as a sliding pill toggle.
+   * The track is the <input> box; the knob is a `::before` pseudo-element that
+   * slides from left (off) to right (on). Colours come from the switch token
+   * channel; the geometry is in baseline multiples. */
+  .ds.form-switch {
+    /* Geometry, all derived from the track size and a 1px inset. Fixed element sizes
+       (32×16px), NOT baseline multiples — the 4px-baseline spike halved the old
+       `--space-baseline × 4 / × 2`. Stable dimension tokens decouple the switch size
+       from the baseline grid unit. */
+    --switch-track-width: var(--dimension-400); /* 32px */
+    --switch-track-height: var(--dimension-200); /* 16px */
+    --switch-knob-inset: 1px;
+    --switch-knob-size: calc(
+      var(--switch-track-height) -
+      (var(--switch-knob-inset) * 2)
+    );
 
-  /* Align to the field edge like the label, not the input's inner padding. */
-  margin-inline: var(--form-label-padding-inline, 0);
+    appearance: none;
+    box-sizing: border-box;
+    position: relative;
 
-  /* Track: a 2:1 pill. No border, so the width/height are the exact track box
-     and the absolutely-positioned knob is measured against the same box (a
-     border under `box-sizing: border-box` would shrink the padding box the knob
-     is anchored to, throwing off the inset and slide). */
-  width: var(--switch-track-width);
-  height: var(--switch-track-height);
-  border-radius: var(--dimension-radius-full);
-  background: var(
-    --surface-color-foreground-switch-unselected,
-    var(--color-foreground-switch-unselected)
-  );
-  cursor: pointer;
-  transition: background-color 150ms ease;
+    /* Align to the field edge like the label, not the input's inner padding. */
+    margin-inline: var(--form-label-padding-inline, 0);
 
-  /* Knob: a circle inset from the track edges, sliding on the inline axis. */
-  &::before {
-    content: "";
-    position: absolute;
-    inset-block: var(--switch-knob-inset);
-    inset-inline-start: var(--switch-knob-inset);
-    width: var(--switch-knob-size);
-    height: var(--switch-knob-size);
+    /* Track: a 2:1 pill. No border, so the width/height are the exact track box
+       and the absolutely-positioned knob is measured against the same box (a
+       border under `box-sizing: border-box` would shrink the padding box the knob
+       is anchored to, throwing off the inset and slide). */
+    width: var(--switch-track-width);
+    height: var(--switch-track-height);
     border-radius: var(--dimension-radius-full);
-    /* Knob reads its surface-provided token (flat fallback) for OnSurface. */
     background: var(
-      --surface-color-foreground-switch-knob,
-      var(--color-foreground-switch-knob)
+      --surface-color-foreground-switch-unselected,
+      var(--color-foreground-switch-unselected)
     );
-    transition: translate 150ms ease;
-  }
+    cursor: pointer;
+    transition: background-color 150ms ease;
 
-  &:checked {
-    /* Selected track reads the surface-provided token (flat fallback). */
-    background: var(
-      --surface-color-foreground-switch-selected,
-      var(--color-foreground-switch-selected)
-    );
-
+    /* Knob: a circle inset from the track edges, sliding on the inline axis. */
     &::before {
-      /* Slide to the far edge: the space left over after the knob and both
-         insets are removed from the track width. */
-      translate: calc(
-          var(--switch-track-width) -
-          var(--switch-knob-size) -
-          (var(--switch-knob-inset) * 2)
-        )
-        0;
+      content: "";
+      position: absolute;
+      inset-block: var(--switch-knob-inset);
+      inset-inline-start: var(--switch-knob-inset);
+      width: var(--switch-knob-size);
+      height: var(--switch-knob-size);
+      border-radius: var(--dimension-radius-full);
+      /* Knob reads its surface-provided token (flat fallback) for OnSurface. */
+      background: var(
+        --surface-color-foreground-switch-knob,
+        var(--color-foreground-switch-knob)
+      );
+      transition: translate 150ms ease;
     }
-  }
 
-  /* Hover shifts ONLY the track background, not the knob (per design review):
-   * the track swaps to the hovered shade while the `::before` knob keeps its
-   * colour. Shades come from the `--hover--…` channels (criticality-style OKLCH
-   * delta shim), replacing the old whole-element `filter: brightness()` that
-   * also dimmed the knob. */
-  &:hover:not(:disabled):not(:checked) {
-    background: var(--hover--color-foreground-switch-unselected);
-  }
+    &:checked {
+      /* Selected track reads the surface-provided token (flat fallback). */
+      background: var(
+        --surface-color-foreground-switch-selected,
+        var(--color-foreground-switch-selected)
+      );
 
-  &:checked:hover:not(:disabled) {
-    background: var(--hover--color-foreground-switch-selected);
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 1px var(--color-focusRing);
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    background: var(--color-foreground-switch-unselected-disabled);
-
-    &::before {
-      background: var(--color-foreground-switch-knob-disabled);
+      &::before {
+        /* Slide to the far edge: the space left over after the knob and both
+           insets are removed from the track width. */
+        translate: calc(
+            var(--switch-track-width) -
+            var(--switch-knob-size) -
+            (var(--switch-knob-inset) * 2)
+          )
+          0;
+      }
     }
-  }
 
-  &:checked:disabled {
-    background: var(--color-foreground-switch-selected-disabled);
+    /* Hover shifts ONLY the track background, not the knob (per design review):
+     * the track swaps to the hovered shade while the `::before` knob keeps its
+     * colour. Shades come from the `--hover--…` channels (criticality-style OKLCH
+     * delta shim), replacing the old whole-element `filter: brightness()` that
+     * also dimmed the knob. */
+    &:hover:not(:disabled):not(:checked) {
+      background: var(--hover--color-foreground-switch-unselected);
+    }
+
+    &:checked:hover:not(:disabled) {
+      background: var(--hover--color-foreground-switch-selected);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 1px var(--color-focusRing);
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      background: var(--color-foreground-switch-unselected-disabled);
+
+      &::before {
+        background: var(--color-foreground-switch-knob-disabled);
+      }
+    }
+
+    &:checked:disabled {
+      background: var(--color-foreground-switch-selected-disabled);
+    }
   }
 }

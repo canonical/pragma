@@ -3,18 +3,24 @@
  * vertical stack for comparing two cells. No overrides that would shift text off
  * the grid — the examples must show the real seating. */
 
-.density-example__row {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: flex-start; /* controls are top-referenced; the seat is internal */
-  gap: calc(var(--baseline-height, 0.25rem) * 3); /* 12px */
-  overflow-x: auto;
-}
+/* Layer: `ds.components.global` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-.density-example__stack {
-  display: flex;
-  flex-direction: column;
-  /* One field-block gap between the compared cells, so the stack itself stays on
-     the grid. */
-  gap: calc(var(--baseline-height, 0.25rem) * 6); /* 24px */
+@layer ds.components.global {
+  .density-example__row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-start; /* controls are top-referenced; the seat is internal */
+    gap: calc(var(--baseline-height, 0.25rem) * 3); /* 12px */
+    overflow-x: auto;
+  }
+
+  .density-example__stack {
+    display: flex;
+    flex-direction: column;
+    /* One field-block gap between the compared cells, so the stack itself stays on
+       the grid. */
+    gap: calc(var(--baseline-height, 0.25rem) * 6); /* 24px */
+  }
 }

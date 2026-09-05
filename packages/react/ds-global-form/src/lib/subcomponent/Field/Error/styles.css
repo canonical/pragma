@@ -1,6 +1,12 @@
-.ds.field-error {
-  color: var(--form-error-color);
-  /* Align to the field edge like the label (no side padding by default), not
-   * to the input's inner padding. Overridable via the shared variable. */
-  padding-inline: var(--form-label-padding-inline, 0);
+/* Layer: `ds.components.global` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
+
+@layer ds.components.global {
+  .ds.field-error {
+    color: var(--form-error-color);
+    /* Align to the field edge like the label (no side padding by default), not
+     * to the input's inner padding. Overridable via the shared variable. */
+    padding-inline: var(--form-label-padding-inline, 0);
+  }
 }

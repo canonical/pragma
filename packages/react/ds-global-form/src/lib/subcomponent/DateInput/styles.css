@@ -3,25 +3,31 @@
  * from index.css's .ds.input.chrome rule. Component-specific overrides below.
  */
 
-.ds.input.date {
-  /* This element IS the text-bearing leaf, so it carries the inline padding
-   * (`.ds.input.chrome` provides only the block padding). */
-  padding-inline: var(--form-input-padding-inline);
+/* Layer: `ds.components.global` — so an application tier's own rule for this
+ * component wins by cascade layer, not by whichever bundle a loader happened to
+ * emit last. See "Cascade layers" in the @canonical/styles README. */
 
-  /* Suppress native calendar picker inconsistencies across browsers */
-  &::-webkit-inner-spin-button {
-    display: none;
+@layer ds.components.global {
+  .ds.input.date {
+    /* This element IS the text-bearing leaf, so it carries the inline padding
+     * (`.ds.input.chrome` provides only the block padding). */
+    padding-inline: var(--form-input-padding-inline);
+
+    /* Suppress native calendar picker inconsistencies across browsers */
+    &::-webkit-inner-spin-button {
+      display: none;
+    }
+
+    /* NOTE (design review) — two native-<input type="date"> limits parked for Diana:
+     * 1. "Suggested" format text → muted: NOT implementable in pure CSS. No
+     *    placeholder attribute (so `:placeholder-shown` never matches), and
+     *    `::-webkit-datetime-edit` colours the whole edit region — mask AND typed
+     *    value — with no empty-state selector, and Firefox ignores it. Needs a
+     *    custom (non-native) control or a JS empty-state hook.
+     * 2. Calendar indicator → pragma icon: no calendar glyph exists in
+     *    @canonical/ds-assets to mask onto `::-webkit-calendar-picker-indicator`,
+     *    and that pseudo-element is WebKit/Chromium-only (Firefox draws its own,
+     *    unstyleable). Needs a new ds-assets glyph + Chrome/Safari-only styling, or
+     *    a custom control. */
   }
-
-  /* NOTE (design review) — two native-<input type="date"> limits parked for Diana:
-   * 1. "Suggested" format text → muted: NOT implementable in pure CSS. No
-   *    placeholder attribute (so `:placeholder-shown` never matches), and
-   *    `::-webkit-datetime-edit` colours the whole edit region — mask AND typed
-   *    value — with no empty-state selector, and Firefox ignores it. Needs a
-   *    custom (non-native) control or a JS empty-state hook.
-   * 2. Calendar indicator → pragma icon: no calendar glyph exists in
-   *    @canonical/ds-assets to mask onto `::-webkit-calendar-picker-indicator`,
-   *    and that pseudo-element is WebKit/Chromium-only (Firefox draws its own,
-   *    unstyleable). Needs a new ds-assets glyph + Chrome/Safari-only styling, or
-   *    a custom control. */
 }

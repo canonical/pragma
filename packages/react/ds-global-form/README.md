@@ -23,6 +23,36 @@ The global styles provide the CSS reset, typography baseline, and design tokens 
 
 The package builds on top of `@canonical/react-ds-global`.
 
+### How component CSS reaches the page
+
+This package puts CSS on the page two ways. `dist/esm/index.css` — the file the snippet above imports — is the package-level stylesheet: the `--form-*` token block, the field grid, the shared input chrome, and `density.css`, which sizes every control to the context and density cell on the root. Each component module then imports its own stylesheet (`import "./styles.css"`), so importing a component is what puts that component's CSS on the page; a bundler collects those imports into the application's CSS. Nothing here is injected at runtime, and a component you never import ships no CSS.
+
+The consequence is that the order a bundler happens to emit these sheets in is not something you can rely on, which is what the cascade layer below is for.
+
+### Every stylesheet is in `ds.components.global`
+
+Every stylesheet in this package — the package entry, `density.css` and all 30 component sheets — is wrapped in one cascade layer:
+
+```css
+@layer ds.components.global {
+  .ds.field-label {
+    /* … */
+  }
+}
+```
+
+`@canonical/styles` declares the order of every layer in one statement, and `ds.components.global` sits near the top of it. Two things follow.
+
+An application tier (`@canonical/react-ds-app-lxd` and its siblings) writes its component CSS into `ds.components.app`, one layer higher. So when an app tier restyles a field or an input this package also styles, the app tier wins by cascade layer — not by which bundle the loader emitted last, which is what decided it before.
+
+An application's own **unlayered** CSS now beats every rule in this package, whatever the selectors on either side, because unlayered author rules outrank every layered one. That is CSS working as designed, and it is the deliberate escape hatch: an application that needs to override a form control writes a plain rule and it wins. An application that does *not* want to win by accident puts its CSS in `@layer app`.
+
+**Rule for contributors:** every stylesheet in this package opens with that wrapper. `@keyframes` and the package's own `:root` token defaults go inside it; `@property` and `@font-face` registrations stay outside, above the block, because no layer sorts a registration. An `@import` stays above the block too — an import is only valid before other rules — and it takes a `layer(ds.components.global)` keyword *only* when the sheet it names is not itself wrapped; `src/index.css` imports `density.css` bare, because `density.css` declares the layer itself and the keyword would nest that declaration into `ds.components.global.ds.components.global`, a sublayer that loses to `index.css`'s own rules. Never reach for `!important` to win a fight — an important declaration inverts the layer order and cannot be arbitrated by layers at all. The `@canonical/styles` README's "Cascade layers" section is the reference for the full order and for what is deliberately left unlayered.
+
+### Components own the box of the natives they render
+
+This package renders more native elements than any other: `<input>` in a dozen types, `<select>`, `<textarea>`, `<label>`, `<legend>`, `<fieldset>`, `<button>`. A component that renders a native element is responsible for that element's box — its margin, its width, its `min-width`, its `box-sizing` — and for `::placeholder` where it renders a text input. Anything a component leaves undeclared is filled in by whatever else the host page loads, and on a page that also runs another framework that is a visible bug rather than a default. Declaring the box is being done as its own change; until it lands, treat "the control looks right on our own page" as a weaker guarantee than it sounds.
+
 ## Dependencies
 
 The form system builds on two key libraries:
