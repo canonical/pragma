@@ -20,6 +20,7 @@ import { describe, expect, it } from "vitest";
 import {
   authorsAtTopLevel,
   DECLARED_LAYERS,
+  directRulesIn,
   documentedFiles,
   EXTERNAL_SOURCES,
   entryCss,
@@ -37,6 +38,7 @@ import {
   specifierName,
   statementFenceUnder,
   statementOf,
+  TIERS_ONLY_LAYER,
   TOKEN_PLUGIN_LAYERS,
   tableUnder,
   ticked,
@@ -44,6 +46,7 @@ import {
   topLevelKinds,
   typographyCss,
   unlayeredKinds,
+  usedLayers,
 } from "./support/cascade.js";
 
 /** The kinds of rule that may sit outside a layer, because no layer sorts them. */
@@ -83,11 +86,24 @@ describe("the layer set used equals the layer set declared", () => {
     expect(opened.filter((name) => !isDeclared(name))).toEqual([]);
   });
 
-  it("the only declared layers nothing writes to are the two reserved for the component tiers", () => {
-    const opened = new Set(openedLayers(entryCss));
-    expect(DECLARED_LAYERS.filter((name) => !opened.has(name))).toEqual(
+  it("the only declared layer nothing writes to is the one reserved for the application tiers", () => {
+    const used = new Set(usedLayers(entryCss, DECLARED_LAYERS));
+    expect(DECLARED_LAYERS.filter((name) => !used.has(name))).toEqual(
       RESERVED_LAYERS,
     );
+  });
+
+  it("nothing is written directly into ds.components: everything in it sits in a tier", () => {
+    // A rule written straight into a parent layer lands in that layer's implicit
+    // final sublayer, above every named one — so it would outrank both tiers and
+    // no component package could override it by layer. Measured in Chromium: a
+    // rule in `@layer ds.components` beats one in `@layer ds.components.app` at
+    // equal specificity, under a statement that declares both.
+    expect(directRulesIn(entryCss, TIERS_ONLY_LAYER)).toEqual([]);
+    // And the tier the presets moved to is not empty, so this is not vacuous.
+    expect(
+      directRulesIn(entryCss, "ds.components.global").length,
+    ).toBeGreaterThan(0);
   });
 
   it("every @scope block is scoped to .ds, and the element-level layers are the scoped ones", () => {
@@ -95,9 +111,10 @@ describe("the layer set used equals the layer set declared", () => {
     expect(found.length).toBeGreaterThan(0);
     expect(found.filter((scope) => scope.start !== ".ds")).toEqual([]);
     // `normalize`, `ds.reset` and `ds.typography` are the gate the adapter's
-    // fixtures wait on; `ds.components` is this package's two layout presets.
+    // fixtures wait on; `ds.components.global` is this package's two layout
+    // presets, which sit in the tier rather than in `ds.components` itself.
     expect(scopedLayers(entryCss)).toEqual([
-      "ds.components",
+      "ds.components.global",
       "ds.reset",
       "ds.typography",
       "normalize",

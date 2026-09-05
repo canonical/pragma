@@ -65,7 +65,7 @@
  *
  * Layers and scope:
  *   `grid` and `subgrid` set real properties on any element that carries them,
- *   so they are element-level rules and sit in `ds.components` inside
+ *   so they are element-level rules and sit in `ds.components.global` inside
  *   `@scope (.ds)` — a page that pragma does not own may already use a class of
  *   that name, and a design system must not restyle it. `responsive` and
  *   `intrinsic` set only `--modifier-grid-template`, which `grid` reads; they
@@ -77,11 +77,19 @@
  *   Cards group is `ds cards subgrid`). The bare form comes first so the pair
  *   reads in ascending specificity.
  *
+ *   The tier, `ds.components.global`, is not decoration: a rule written
+ *   directly into `@layer ds.components` lands in that layer's implicit final
+ *   sublayer, which sits ABOVE every named sublayer — measured, such a rule beats
+ *   one in `ds.components.app`. Writing the presets into the parent would put
+ *   them out of reach of both component tiers, so an application-tier sheet
+ *   could not override a preset by layer at all. Nothing pragma ships is written
+ *   directly into `ds.components`; everything in that layer sits in a tier.
+ *
  *   The `:root` defaults stay with the presets that read them, as component-
  *   scoped tokens, rather than moving to `ds.tokens`.
  */
 
-@layer ds.components {
+@layer ds.components.global {
   :root {
     --grid-col-min: 100px;
 

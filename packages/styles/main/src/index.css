@@ -31,9 +31,12 @@
  *                  their shims, the density and context classes
  *   ds.surfaces    the surface families
  *   ds.states      the derived hover / active / disabled channels
- *   ds.components  the layout presets this package ships, and any component
- *                  stylesheet that belongs to no tier
- *   ds.components.global  the global component packages' stylesheets
+ *   ds.components  the parent layer of the two component tiers. Nothing is
+ *                  written directly into it, by rule: a declaration in a parent
+ *                  layer sits in that layer's implicit final sublayer, above
+ *                  every named sublayer, so it would outrank both tiers
+ *   ds.components.global  the global component packages' stylesheets, and this
+ *                  package's own layout presets
  *   ds.components.app     the application tiers' stylesheets, so that an app
  *                  tier's own rule for a component beats the global one by
  *                  layer rather than by load order

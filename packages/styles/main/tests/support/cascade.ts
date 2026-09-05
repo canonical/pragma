@@ -45,12 +45,20 @@ export const DECLARED_LAYERS = [
 ];
 
 /**
- * The two layers the statement declares and this package deliberately leaves
- * empty: the component packages move into them in step F-4 of the cascade
- * programme. Naming them here rather than at first appearance is what fixes
- * their order, so they have to be declared before anything writes to them.
+ * The layer the statement declares that nothing yet writes to: the application
+ * tiers move into it when their stylesheets are wrapped. Naming it here rather
+ * than at first appearance is what fixes its order, so it has to be declared
+ * before anything writes to it.
  */
-export const RESERVED_LAYERS = ["ds.components.global", "ds.components.app"];
+export const RESERVED_LAYERS = ["ds.components.app"];
+
+/**
+ * The one layer nothing may ever write to directly. A rule written straight into
+ * a parent layer lands in that layer's implicit final sublayer, which sits above
+ * every named sublayer — so such a rule would outrank both component tiers and
+ * no component package could override it by layer at all.
+ */
+export const TIERS_ONLY_LAYER = "ds.components";
 
 /** The layer names the `@canonical/design-tokens` plugin emits (its README's row). */
 export const TOKEN_PLUGIN_LAYERS = {
@@ -174,6 +182,42 @@ export const registeredProperties = (css: string): string[] =>
   Array.from(parse(css).cssRules)
     .filter((rule): rule is CSSPropertyRule => rule instanceof CSSPropertyRule)
     .map((rule) => rule.name);
+
+/**
+ * Which of the declared layers a stylesheet uses. A parent counts as used when a
+ * sublayer of it carries rules: `ds.components` earns its place in the statement
+ * by ordering its tiers, not by holding rules of its own.
+ */
+export const usedLayers = (css: string, declared: string[]): string[] => {
+  const opened = openedLayers(css);
+  return declared.filter((name) =>
+    opened.some((open) => open === name || open.startsWith(`${name}.`)),
+  );
+};
+
+/**
+ * The selectors of every style rule whose nearest enclosing layer is exactly the
+ * named one — rules written into a layer itself rather than into one of its
+ * sublayers. Nesting inside `@scope`, `@media` or another style rule does not
+ * change which layer a rule is in.
+ */
+export const directRulesIn = (css: string, layer: string): string[] => {
+  const found: string[] = [];
+  const walk = (rules: CSSRuleList, current: string): void => {
+    for (const rule of rules) {
+      if (rule instanceof CSSLayerBlockRule) {
+        walk(rule.cssRules, current ? `${current}.${rule.name}` : rule.name);
+        continue;
+      }
+      if (rule instanceof CSSStyleRule && current === layer)
+        found.push(rule.selectorText);
+      const children = childRules(rule);
+      if (children) walk(children, current);
+    }
+  };
+  walk(parse(css).cssRules, "");
+  return found;
+};
 
 /** The layers in which a stylesheet confines rules to pragma territory. */
 export const scopedLayers = (css: string): string[] =>
