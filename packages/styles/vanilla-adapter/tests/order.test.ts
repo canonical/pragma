@@ -4,6 +4,7 @@ import {
   computed,
   differences,
   idsIn,
+  importantDeclarations,
   layerNames,
   layersCss,
   mixedPage,
@@ -78,7 +79,8 @@ describe("the order contract", () => {
   });
 
   it("pragma's CSS carries no !important (README rule 17)", () => {
-    expect(PRAGMA_CSS.match(/!\s*important/g) ?? []).toEqual([]);
+    expect(importantDeclarations(PRAGMA_CSS)).toEqual([]);
+    expect(PRAGMA_CSS.match(/!\s*important/gi) ?? []).toEqual([]);
   });
 
   it("@canonical/styles opens with its own statement, the mixed order minus the adapter's layers", (ctx) => {

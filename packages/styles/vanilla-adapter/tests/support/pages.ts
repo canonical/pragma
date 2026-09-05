@@ -417,4 +417,27 @@ export const layerNames = (css: string): string[] => {
   return names;
 };
 
+/**
+ * Every declaration marked important in a stylesheet text, as
+ * `selector property` lines, read from the CSSOM rather than from the text:
+ * a browser accepts `!IMPORTANT` and `!/**\/important` too.
+ */
+export const importantDeclarations = (css: string): string[] => {
+  const found: string[] = [];
+  const walk = (rules: CSSRuleList): void => {
+    for (const rule of rules) {
+      if (rule instanceof CSSStyleRule) {
+        for (const property of Array.from(rule.style)) {
+          if (rule.style.getPropertyPriority(property) === "important")
+            found.push(`${rule.selectorText} ${property}`);
+        }
+      }
+      const children = childRules(rule);
+      if (children) walk(children);
+    }
+  };
+  walk(parse(css).cssRules);
+  return found;
+};
+
 export { adapterCss, layersCss, parse, stylesCss };
