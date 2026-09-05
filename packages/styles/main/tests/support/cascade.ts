@@ -1,20 +1,28 @@
 /**
- * The stylesheet under test, and the README that documents it.
+ * The stylesheets under test, and the README that documents them.
  *
- * Everything here runs in the browser. `@layer` and `@scope` are cascade
- * structure, and the CSSOM of an engine that implements the cascade is the only
- * parser that answers questions about them honestly: a regular expression over
- * the text would report what was typed, not what a browser understood. So the
- * layer and scope facts below come from `CSSStyleSheet.replaceSync`, and the
- * text is read only for questions that are genuinely about text — which files
- * the entry imports, and what the README says.
+ * Everything here runs in the browser, and every question the cascade can answer
+ * is asked of the CSSOM. `@layer`, `@scope` and `!important` are cascade
+ * structure, and an engine that implements the cascade is the only parser that
+ * reports what a browser will do with them: a regular expression finds what was
+ * typed, which is a different question and, for importance, a different answer —
+ * a browser reads `!IMPORTANT`, and a comment between the bang and the word, as
+ * important, and neither is the literal string a search would look for.
+ *
+ * Two questions are left to the text on purpose, because they are questions
+ * about the text that the CSSOM cannot answer. Which files a stylesheet imports:
+ * `replaceSync` drops `@import` rules from a constructed stylesheet altogether.
+ * And where an `@import` sits relative to the rules: a browser drops a late
+ * `@import` outright, so it is missing from the CSSOM exactly when it is a
+ * defect — and Vite inlines it, so the resolved text hides it too. That check
+ * reads the unresolved file.
  *
  * Nothing is transformed. Vite resolves the `@import` graph the way a consumer's
  * bundler resolves it, `?inline` hands the resolved text to the test, and `?raw`
  * hands over a single file unresolved.
  */
 
-import antipationCss from "@canonical/design-tokens/dist/modifiers.anticipation.css?inline";
+import anticipationCss from "@canonical/design-tokens/dist/modifiers.anticipation.css?inline";
 import criticalityCss from "@canonical/design-tokens/dist/modifiers.criticality.css?inline";
 import emphasisCss from "@canonical/design-tokens/dist/modifiers.emphasis.css?inline";
 import importanceCss from "@canonical/design-tokens/dist/modifiers.importance.css?inline";
@@ -45,6 +53,32 @@ export const DECLARED_LAYERS = [
 ];
 
 /**
+ * The layers whose rules select elements, and which are therefore confined to
+ * pragma territory. Every style rule in one of them must sit inside a
+ * `@scope (.ds)` block, so that it reaches the marked subtree and nowhere else:
+ * a rule of theirs escaping into a page pragma does not own is the defect this
+ * whole release exists to close.
+ */
+export const ELEMENT_LAYERS = [
+  "normalize",
+  "ds.reset",
+  "ds.typography",
+  "ds.components.global",
+];
+
+/**
+ * The one rule in an element-level layer written outside a `@scope` block, and
+ * why. It has universal reach, so every element in the tree would pay a
+ * scope-activation check for it; measured on a 10,000-element page that cost
+ * about 135 ms of a 200 ms style-recalc regression. `:where(.ds, .ds *)` confines
+ * it exactly as the scope would — same match set, same specificity, same layer.
+ * Its own README row says so, and this is that row's check.
+ */
+export const UNSCOPED_BY_MEASUREMENT = [
+  "ds.reset :where(.ds, .ds *), :where(.ds, .ds *)::before, :where(.ds, .ds *)::after",
+];
+
+/**
  * The layer the statement declares that nothing yet writes to: the application
  * tiers move into it when their stylesheets are wrapped. Naming it here rather
  * than at first appearance is what fixes its order, so it has to be declared
@@ -68,23 +102,72 @@ export const TOKEN_PLUGIN_LAYERS = {
   states: "ds.states",
 };
 
+const byBasename = (
+  modules: Record<string, string>,
+  prefix: string,
+): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries(modules).map(([path, css]) => [
+      path.replace(prefix, ""),
+      css,
+    ]),
+  );
+
 /**
  * Every file the package's own `src/` holds, resolved. The glob is what makes a
  * new stylesheet fail the tables below: a file nobody documented still turns up
  * here, and a file the README names that no longer exists resolves to nothing.
  */
-const localSources = import.meta.glob<string>("../../src/*.css", {
-  eager: true,
-  import: "default",
-  query: "?inline",
-});
+export const LOCAL_SOURCES: Record<string, string> = byBasename(
+  import.meta.glob<string>("../../src/*.css", {
+    eager: true,
+    import: "default",
+    query: "?inline",
+  }),
+  "../../src/",
+);
 
-/** The same files by their basename, which is how the README names them. */
-export const LOCAL_SOURCES: Record<string, string> = Object.fromEntries(
-  Object.entries(localSources).map(([path, css]) => [
-    path.replace("../../src/", ""),
-    css,
-  ]),
+/** The same files unresolved, for the two questions that are about the text. */
+export const LOCAL_RAW: Record<string, string> = byBasename(
+  import.meta.glob<string>("../../src/*.css", {
+    eager: true,
+    import: "default",
+    query: "?raw",
+  }),
+  "../../src/",
+);
+
+/**
+ * The typography package's baseline files, each resolved on its own. The package
+ * entry imports one engine; the other two are documented as consumer-swappable
+ * entry points and reach a page only when a consumer imports them directly, so
+ * nothing would check them unless they are resolved alone. The shim is in the
+ * glob because the engines import it, and is separated out below.
+ */
+const baselineSources: Record<string, string> = byBasename(
+  import.meta.glob<string>("../../../typography/src/baseline-*.css", {
+    eager: true,
+    import: "default",
+    query: "?inline",
+  }),
+  "../../../typography/src/",
+);
+
+export const BASELINE_RAW: Record<string, string> = byBasename(
+  import.meta.glob<string>("../../../typography/src/baseline-*.css", {
+    eager: true,
+    import: "default",
+    query: "?raw",
+  }),
+  "../../../typography/src/",
+);
+
+/** The registration the engines share; not an engine, and layered by nothing. */
+export const BASELINE_SHIM = "baseline-shim.css";
+
+/** The three interchangeable engines, resolved one at a time. */
+export const ENGINE_SOURCES: Record<string, string> = Object.fromEntries(
+  Object.entries(baselineSources).filter(([name]) => name !== BASELINE_SHIM),
 );
 
 /**
@@ -96,13 +179,13 @@ export const LOCAL_SOURCES: Record<string, string> = Object.fromEntries(
  * through the typography package, and `modifiers.importance.css` is empty.
  */
 export const EXTERNAL_SOURCES: Record<string, string> = {
-  "@canonical/design-tokens/dist/modifiers.anticipation.css": antipationCss,
-  "@canonical/design-tokens/dist/modifiers.importance.css": importanceCss,
-  "@canonical/design-tokens/dist/modifiers.typography.css": typographyTokensCss,
+  "@canonical/design-tokens/dist/modifiers.anticipation.css": anticipationCss,
   "@canonical/design-tokens/dist/modifiers.criticality.css": criticalityCss,
   "@canonical/design-tokens/dist/modifiers.emphasis.css": emphasisCss,
+  "@canonical/design-tokens/dist/modifiers.importance.css": importanceCss,
   "@canonical/design-tokens/dist/modifiers.surfaces.css": surfacesCss,
   "@canonical/design-tokens/dist/modifiers.theme.css": themeCss,
+  "@canonical/design-tokens/dist/modifiers.typography.css": typographyTokensCss,
   "@canonical/design-tokens/dist/sets.primitive.css": primitiveCss,
   "@canonical/design-tokens/dist/states.css": statesCss,
   "@canonical/styles-typography": typographyCss,
@@ -111,6 +194,14 @@ export const EXTERNAL_SOURCES: Record<string, string> = {
 /** The resolved text of a file the README or the entry names, if it exists. */
 export const sourceOf = (name: string): string | undefined =>
   EXTERNAL_SOURCES[name] ?? LOCAL_SOURCES[name.replace(/^\.\//, "")];
+
+/** The same, for a name that must resolve: a README that names nothing fails here. */
+export const mustResolve = (name: string): string => {
+  const css = sourceOf(name);
+  if (css === undefined)
+    throw new Error(`"${name}" is named in the README and resolves to nothing`);
+  return css;
+};
 
 /** A file name as the README writes it: a relative import loses its `./`. */
 export const specifierName = (specifier: string): string =>
@@ -132,6 +223,65 @@ export const parse = (css: string): CSSStyleSheet => {
  */
 const childRules = (rule: CSSRule): CSSRuleList | undefined =>
   "cssRules" in rule ? (rule as CSSGroupingRule).cssRules : undefined;
+
+/** What the cascade knows about one style rule, wherever it is written. */
+export interface StyleRuleFact {
+  /** Its nearest enclosing layer, or `(unlayered)`. */
+  layer: string;
+  selector: string;
+  /** Whether a `@scope (.ds)` block encloses it, at any depth. */
+  confined: boolean;
+  /** The longhands it declares, custom properties included. */
+  properties: string[];
+  /** Those of them the browser reads as important. */
+  important: string[];
+}
+
+/**
+ * Every style rule in a stylesheet, with the layer and the scope it sits in.
+ * One walk answers four questions that would otherwise each need their own, and
+ * all four are cascade questions: which layer a rule is in, whether it is
+ * confined to pragma territory, what it declares, and what it declares
+ * importantly. Importance comes from `getPropertyPriority`, which is what the
+ * browser itself uses; `!IMPORTANT` and a comment between the bang and the word
+ * are both important and neither is a literal `!important`.
+ */
+export const styleRules = (css: string): StyleRuleFact[] => {
+  const found: StyleRuleFact[] = [];
+  const walk = (rules: CSSRuleList, layer: string, confined: boolean): void => {
+    for (const rule of rules) {
+      if (rule instanceof CSSLayerBlockRule) {
+        walk(
+          rule.cssRules,
+          layer ? `${layer}.${rule.name}` : rule.name,
+          confined,
+        );
+        continue;
+      }
+      if (rule instanceof CSSScopeRule) {
+        walk(rule.cssRules, layer, confined || rule.start === ".ds");
+        continue;
+      }
+      if (rule instanceof CSSStyleRule) {
+        const properties = Array.from(rule.style);
+        found.push({
+          layer: layer || "(unlayered)",
+          selector: rule.selectorText,
+          confined,
+          properties,
+          important: properties.filter(
+            (property) =>
+              rule.style.getPropertyPriority(property) === "important",
+          ),
+        });
+      }
+      const children = childRules(rule);
+      if (children) walk(children, layer, confined);
+    }
+  };
+  walk(parse(css).cssRules, "", false);
+  return found;
+};
 
 /**
  * Every layer a stylesheet opens with a block, at any depth, by its full name.
@@ -177,7 +327,61 @@ export const scopes = (css: string): { layer: string; start: string }[] => {
   return found;
 };
 
-/** The custom properties a stylesheet registers at its top level, by name. */
+/** The layers in which a stylesheet confines rules to pragma territory. */
+export const scopedLayers = (css: string): string[] =>
+  [...new Set(scopes(css).map((scope) => scope.layer))].sort();
+
+/**
+ * Every rule in one of the named layers that styles an element and that no
+ * `@scope (.ds)` block encloses, labelled by its layer. A rule here reaches every
+ * page the stylesheet is loaded on, which for an element selector is defect D3 of
+ * the cascade programme: pragma's typography competing with a host page's for the
+ * same `<p>`, settled by source order one property at a time.
+ *
+ * A rule that declares nothing but custom properties is not an element rule and
+ * is not counted: it changes no computed value until some other rule reads one of
+ * them, and the rules that read them are scoped. That is the README's own reason
+ * for leaving `grid.css`'s `:root` defaults where they are.
+ */
+export const unconfinedElementRules = (
+  css: string,
+  layers: string[],
+): string[] =>
+  styleRules(css)
+    .filter(
+      (rule) =>
+        layers.includes(rule.layer) &&
+        !rule.confined &&
+        rule.properties.some((property) => !property.startsWith("--")),
+    )
+    .map((rule) => `${rule.layer} ${rule.selector}`);
+
+/**
+ * The selectors of every style rule whose nearest enclosing layer is exactly the
+ * named one — rules written into a layer itself rather than into one of its
+ * sublayers. Nesting inside `@scope`, `@media` or another style rule does not
+ * change which layer a rule is in.
+ */
+export const directRulesIn = (css: string, layer: string): string[] =>
+  styleRules(css)
+    .filter((rule) => rule.layer === layer)
+    .map((rule) => rule.selector);
+
+/** The properties every style rule directly in a layer declares, labelled. */
+export const declarationsIn = (css: string, layer: string): string[] =>
+  styleRules(css)
+    .filter((rule) => rule.layer === layer)
+    .flatMap((rule) =>
+      rule.properties.map((property) => `${rule.selector} ${property}`),
+    );
+
+/** Every important declaration a stylesheet makes, labelled, as the browser reads it. */
+export const importantDeclarations = (css: string): string[] =>
+  styleRules(css).flatMap((rule) =>
+    rule.important.map((property) => `${rule.selector} ${property}`),
+  );
+
+/** The custom properties a stylesheet registers outside every layer, by name. */
 export const registeredProperties = (css: string): string[] =>
   Array.from(parse(css).cssRules)
     .filter((rule): rule is CSSPropertyRule => rule instanceof CSSPropertyRule)
@@ -195,39 +399,10 @@ export const usedLayers = (css: string, declared: string[]): string[] => {
   );
 };
 
-/**
- * The selectors of every style rule whose nearest enclosing layer is exactly the
- * named one — rules written into a layer itself rather than into one of its
- * sublayers. Nesting inside `@scope`, `@media` or another style rule does not
- * change which layer a rule is in.
- */
-export const directRulesIn = (css: string, layer: string): string[] => {
-  const found: string[] = [];
-  const walk = (rules: CSSRuleList, current: string): void => {
-    for (const rule of rules) {
-      if (rule instanceof CSSLayerBlockRule) {
-        walk(rule.cssRules, current ? `${current}.${rule.name}` : rule.name);
-        continue;
-      }
-      if (rule instanceof CSSStyleRule && current === layer)
-        found.push(rule.selectorText);
-      const children = childRules(rule);
-      if (children) walk(children, current);
-    }
-  };
-  walk(parse(css).cssRules, "");
-  return found;
-};
-
-/** The layers in which a stylesheet confines rules to pragma territory. */
-export const scopedLayers = (css: string): string[] =>
-  [...new Set(scopes(css).map((scope) => scope.layer))].sort();
-
 /** The at-rule a top-level rule is, named as it is written. */
 const kindOf = (rule: CSSRule): string => {
   if (rule instanceof CSSLayerStatementRule) return "@layer statement";
   if (rule instanceof CSSLayerBlockRule) return "@layer";
-  if (rule instanceof CSSImportRule) return "@import";
   if (rule instanceof CSSFontFaceRule) return "@font-face";
   if (rule instanceof CSSKeyframesRule) return "@keyframes";
   if (rule instanceof CSSPropertyRule) return "@property";
@@ -253,6 +428,10 @@ export const unlayeredKinds = (css: string): string[] => [
   ),
 ];
 
+/** Whether a stylesheet writes an at-rule of a kind outside every layer. */
+export const authorsAtTopLevel = (css: string, atRule: string): boolean =>
+  topLevelKinds(css).includes(atRule);
+
 // ---------------------------------------------------------------------------
 // The text
 // ---------------------------------------------------------------------------
@@ -275,16 +454,29 @@ export const statementOf = (css: string): string =>
 export const importsOf = (css: string): string[] =>
   Array.from(
     withoutComments(css).matchAll(/@import\s+url\(\s*["']([^"']+)["']\s*\)/g),
-    (match) => match[1] as string,
+    (match) => match[1] ?? "",
   );
 
 /**
- * Whether a file writes an at-rule at its top level. Every block in this
- * repository indents its contents, so a rule written at column zero is a rule
- * outside every block — which is the question the README's unlayered list asks.
+ * Every `@import` a file writes after its first block, which is every one a
+ * browser will refuse: an `@import` is only valid before any rule, a layer
+ * statement and `@charset` excepted. Vite inlines it anyway, so the resolved
+ * stylesheet the rest of this file reads cannot show it — this is the one check
+ * that has to read the file as written.
  */
-export const authorsAtTopLevel = (css: string, atRule: string): boolean =>
-  new RegExp(`^${atRule}\\b`, "m").test(withoutComments(css));
+export const lateImports = (raw: string): string[] => {
+  const text = withoutComments(raw);
+  const firstBlock = text.indexOf("{");
+  if (firstBlock === -1) return [];
+  return Array.from(
+    text.slice(firstBlock).matchAll(/@import\b[^;]*;/g),
+    (match) => oneLine(match[0] ?? ""),
+  );
+};
+
+/** How many `@property` registrations a file writes, whether or not they survive. */
+export const authoredProperties = (css: string): number =>
+  withoutComments(css).match(/@property\b/g)?.length ?? 0;
 
 // ---------------------------------------------------------------------------
 // The README
@@ -319,7 +511,11 @@ export const tableUnder = (heading: string): string[][] =>
 
 /** The backticked tokens in a cell, which is how the README names a thing. */
 export const ticked = (cell: string): string[] =>
-  Array.from(cell.matchAll(/`([^`]+)`/g), (match) => match[1] as string);
+  Array.from(cell.matchAll(/`([^`]+)`/g), (match) => match[1] ?? "");
+
+/** Whether a cell's answer is yes. */
+export const saysYes = (cell: string): boolean =>
+  cell.toLowerCase().startsWith("yes");
 
 /**
  * The fenced block under a heading that holds a layer statement and nothing
@@ -329,7 +525,7 @@ export const ticked = (cell: string): string[] =>
 export const statementFenceUnder = (heading: string): string => {
   const fences = Array.from(
     section(heading).matchAll(/```css\n([\s\S]*?)```/g),
-    (match) => (match[1] as string).trim(),
+    (match) => (match[1] ?? "").trim(),
   );
   const statement = fences.find((fence) => /^@layer\b[^;{]*;$/.test(fence));
   if (statement === undefined)
@@ -352,8 +548,10 @@ const isSourceName = (token: string): boolean =>
 /**
  * Every file the README's two layer tables name, merged. A file may appear in
  * more than one row — `spacing.css` puts its tokens in one layer and its
- * container rule in another — so the layers of a file are the union of its rows,
- * and the same for the ones each row marks scoped.
+ * container rule in another — so what the test binds is one answer per file and
+ * per layer: the layers of a file are the union of its rows, and a layer is
+ * scoped when a row that names it says yes. The README says as much, because
+ * reordering two rows of the same file changes nothing a browser can see.
  */
 export const documentedFiles = (): Map<string, DocumentedFile> => {
   const files = new Map<string, DocumentedFile>();
@@ -369,13 +567,9 @@ export const documentedFiles = (): Map<string, DocumentedFile> => {
     files.set(name, entry);
   };
 
-  for (const cells of tableUnder("What Is Layered Where"))
-    for (const name of ticked(cells[0] as string).filter(isSourceName))
-      add(
-        name,
-        ticked(cells[1] as string),
-        (cells[2] as string).toLowerCase().startsWith("yes"),
-      );
+  for (const [file, layer, scope] of tableUnder("What Is Layered Where"))
+    for (const name of ticked(file ?? "").filter(isSourceName))
+      add(name, ticked(layer ?? ""), saysYes(scope ?? ""));
 
   // The generated token files carry their layer in the design-token table
   // instead, so that the two tables state each fact once (F, §8.2 rule 1). Only
@@ -399,8 +593,8 @@ export interface TokenTableRow {
 
 /** Every row of the design-token table: the contract with the generator. */
 export const tokenTableRows = (): TokenTableRow[] =>
-  tableUnder("Design Tokens").map((cells) => ({
-    file: `@canonical/design-tokens/dist/${ticked(cells[0] as string)[0]}.css`,
-    layers: new Set(ticked(cells[2] as string)),
-    imported: (cells[3] as string).toLowerCase().startsWith("yes"),
+  tableUnder("Design Tokens").map(([set, , layer, imported]) => ({
+    file: `@canonical/design-tokens/dist/${ticked(set ?? "")[0]}.css`,
+    layers: new Set(ticked(layer ?? "")),
+    imported: saysYes(imported ?? ""),
   }));
