@@ -88,14 +88,16 @@ No JavaScript runtime or theme provider is required.
 
 ## Cascade layers
 
-Every rule the design system ships sits in a named cascade layer, and one statement fixes their order:
+One statement fixes the order of the design system's cascade layers:
 
 ```css
 @layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers, ds.surfaces,
        ds.states, ds.components, ds.components.global, ds.components.app;
 ```
 
-Read from the bottom up, each name is an argument about who should win: component rules beat the modifier classes, which beat the reset, whatever order the files happen to load in. Two consequences are worth knowing before you write any CSS of your own.
+Read from the bottom up, each name is an argument about who should win: component rules beat the modifier classes, which beat the reset, whatever order the files happen to load in.
+
+That is the order as declared, and `@canonical/styles` already places everything it ships in it. The component packages are being moved into `ds.components` now; until that lands their stylesheets sit outside the layers, where — as below — they beat every layered rule and settle ties between themselves by load order. Two consequences are worth knowing before you write any CSS of your own.
 
 - **Unlayered CSS beats all of it.** That is what the cascade says: a rule in no layer outranks every rule in one. So your own stylesheet wins by default — deliberately — and if you would rather it did not, put it in a layer of your own and name that layer in your own statement, prepended before this one.
 - **`!important` inverts the order.** For important declarations the earliest layer wins, which makes an important rule in the lowest layer the strongest thing on the page. The design system ships none.
