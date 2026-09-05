@@ -4,9 +4,10 @@ This README is written for two readers: the person adding the design system to a
 person maintaining this package. Where a claim can be checked by a test, the test is named.
 
 The Canonical Design System's global stylesheet. One import brings in the reset, the typographic
-engine, the design tokens, the modifier families and the layout presets, all of them in named cascade
-layers, and the rules that select elements confined to the part of the page you mark as the design
-system's.
+engine, the design tokens, the modifier families and the layout presets. Everything this package itself
+ships is in a named cascade layer, and the rules that select elements are confined to the part of the
+page you mark as the design system's. The typographic engine joins them with the typography change,
+stacked on this one and released with it; at this commit its rules still ship unlayered and unscoped.
 
 ## Installation
 
@@ -49,9 +50,10 @@ reference application puts `ds` on `<html>` and `app comfortable` on `<body>`.
 A colour scheme is optional: `light` or `dark` pins one, and leaving both off lets the page follow the
 reader's operating system. Nothing else belongs on the root.
 
-**In an application that is the design system's throughout, mark `<html>`.** `<body>` does the same job:
-either way the body is inside the territory and its page margin is reset, as it was before this
-release.
+**In an application that is the design system's throughout, mark `<html>`.** That is the shape. `<body>`
+is a fallback where you cannot reach the document element: it puts the body inside the territory, so
+the page margin is reset as before, but it leaves `<html>` outside, and a control's chrome derives from
+the root's font metrics — measured, an input's line height moves from 20px to 21px.
 
 But `ds` does not have to be at the top. Put it on a `<main>`, a section, or a single component's
 wrapper and only that subtree becomes the design system's; the rest of the page is untouched. That is
@@ -59,9 +61,10 @@ what makes the package usable in an application that is still mostly built on so
 one consequence that the body is then outside the territory, so the browser's 8px page gutter stays and
 you zero it yourself.
 
-Every component this system ships carries `ds` on its own root — except two work-in-progress grid
-components, `GridCard` and `SettingsView`, which gain it when the component stylesheets are wrapped in
-their tier layers — so a component dropped into any page is its own small territory. Only the outermost
+Every component this system ships carries `ds` on its own root — except three work-in-progress grid
+components, `GridCard`, `SettingsView` and `ApplicationLayout`, which gain it when the component
+stylesheets are wrapped in their tier layers — so a component dropped into any page is its own small
+territory. Only the outermost
 `ds` in a subtree acts as a territory root: a component inside another one inherits from its container
 rather than resetting to the baseline.
 
@@ -76,8 +79,9 @@ package's README is the reference for all of it.
 
 ## Cascade Layers
 
-Everything this package ships is in a named layer, and the order is fixed by one statement, the first
-rule of this stylesheet:
+Everything this package itself ships is in a named layer, and the order is fixed by one statement, the
+first rule of this stylesheet. The typographic engine, which this package imports, is layered and
+scoped by the typography change stacked on this one:
 
 ```css
 @layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers, ds.surfaces,
@@ -95,9 +99,9 @@ Read it from the bottom up — each position is an argument.
 | `ds.modifiers` | Theme, the typographic scale, the intent families (anticipation, criticality, emphasis, importance) and their shims, and the context and density classes. | Above typography, because a modifier's job is to shift what the layers below produced. |
 | `ds.surfaces` | The surface families: `surface`, `contrasted`, `modal`. | Above the modifiers, because a surface re-points colour channels the modifiers set. |
 | `ds.states` | The derived hover, active and disabled channels. | Above the surfaces, because a state is derived from whatever the surface resolved to. |
-| `ds.components` | The layout presets this package ships, and any component stylesheet that belongs to no tier. | Highest of the eight top-level layers, so a component is the final word on its own box. |
-| `ds.components.global` | The stylesheets of the global component packages. | A sublayer of `ds.components`, named in the statement so that its order is fixed rather than left to whichever package a bundler emits first. |
-| `ds.components.app` | The stylesheets of the application tiers. | Above the global sublayer, so an application tier arbitrating a component it also ships wins by layer rather than by load order. |
+| `ds.components` | Nothing, by rule. It is the parent of the two tiers below and holds no rule of its own. | Highest of the eight top-level layers, so a component is the final word on its own box. A rule written *directly* into a parent layer sits in that layer's implicit final sublayer, which is above every named sublayer — so such a rule would outrank both tiers and no component package could override it by layer. Everything this package puts in `ds.components` therefore sits in a tier. |
+| `ds.components.global` | The stylesheets of the global component packages, and this package's own layout presets and content-flow container. | A sublayer of `ds.components`, named in the statement so that its order is fixed rather than left to whichever package a bundler emits first. |
+| `ds.components.app` | The stylesheets of the application tiers. | Above the global sublayer, so an application tier arbitrating a component it also ships wins by layer rather than by load order — including over one of the layout presets. |
 
 An order statement fixes the relative order of layers the first time they appear. A later statement
 may introduce new names but can never reorder the ones already fixed, so an application that needs to
@@ -111,12 +115,12 @@ interleave a layer of its own puts its statement before this import.
 | `reset.css` root declarations | `ds.reset` | yes |
 | `reset.css` box-sizing | `ds.reset` | yes, written `:where(.ds, .ds *)` rather than with `@scope` — see below |
 | `spacing.css` token block | `ds.tokens` | no |
-| `spacing.css` content-flow container | `ds.components` | yes |
+| `spacing.css` content-flow container | `ds.components.global` | yes |
 | `motion.css` | `ds.tokens` | no |
 | `overflow.css` root default | `ds.tokens` | no |
 | `overflow.css` `.surface` | `ds.surfaces` | no |
-| `grid.css` layout presets | `ds.components` | yes |
-| `grid.css` `:root` defaults | `ds.components` | no — component-scoped tokens stay with the rules that read them |
+| `grid.css` layout presets | `ds.components.global` | yes |
+| `grid.css` `:root` defaults | `ds.components.global` | no — component-scoped tokens stay with the rules that read them |
 | `modifiers.density.css` | `ds.modifiers` | no |
 | `modifiers.states.shim.css`, `modifiers.importance.shim.css`, `modifiers.criticality.shim.css` | `ds.modifiers` | no |
 | `controls.hover.shim.css` | `ds.surfaces` and `ds.states` | no |
@@ -182,7 +186,7 @@ set, the specificity and the layer are identical either way.
 
 | Guarantee | The check behind it |
 | --- | --- |
-| Every rule the package ships is in one of the ten declared layers, and the statement is the first rule of this stylesheet. | The order fixtures that arrive with the Vanilla adapter package read the statement out of the resolved stylesheet and check every layer name the package opens against it. A check inside this package — that the set of layers used equals the set declared — is being added separately. |
+| Every rule the package itself ships is in one of the ten declared layers, and the statement is the first rule of this stylesheet. The typographic engine it imports joins them with the typography change stacked on this one. | The order fixtures that arrive with the Vanilla adapter package read the statement out of the resolved stylesheet and check every layer name the package opens against it. A check inside this package — that the set of layers used equals the set declared — is being added separately. |
 | An application tier's rule for a component beats the global tier's rule for the same component, whichever of the two a bundler loads first. | The two sublayers are named in the statement, so their order is fixed there rather than at first appearance, and the same order fixture reads it back. The component packages move into them when their stylesheets are wrapped, which is a separate change; until then both sublayers are empty and the guarantee is vacuous. |
 | The package ships no `!important`. | The same fixture file. An important declaration inverts the layer order and cannot be arbitrated by layers at all, so one of them would undo the guarantee above. |
 | Under `prefers-reduced-motion: reduce`, every motion duration this package defines is `0s`. | `src/motion.css`, and the reduced-motion fixture arriving with the adapter package. Zeroing the token is the mechanism: a component reads the token, so nothing has to out-rank the component's own declaration. Whether a given component honours the tokens is that package's guarantee, not this one's. Sheets that still hard-code a duration, and so still animate under the preference, are being moved onto the tokens separately: in the form package the shared input chrome (`src/index.css`) and eight component sheets (`ChoicesField`, `RichChoicesField`, `CheckboxInput`, `RadioInput`, `ColorInput`, `ComboboxInput` and its list, `FileUploadInput`, `SwitchInput`); in the global package `Tooltip`, `ContextualMenu` and `Popover`, which set their own duration property; and one application-tier sheet, the launchpad diff viewer's file header. |
@@ -231,8 +235,9 @@ This release makes three changes that an application has to answer.
 
 1. **Add `ds` to your root**, beside the context and density classes you already have:
    `<html class="ds app comfortable">`. Without it the reset applies nowhere, because it is now
-   confined to the marked subtree. Components keep working — they carry `ds` themselves — but the
-   page's text falls back to the browser's defaults.
+   confined to the marked subtree. Components keep working — every one of them carries `ds` itself,
+   bar the three work-in-progress grid components named above — but the page's text falls back to the
+   browser's defaults.
 
    Mark `<html>` if you can, or `<body>`: both put the body inside the territory, so its page margin is
    reset as before. A root further in leaves the body outside, and the browser's 8px page gutter comes
