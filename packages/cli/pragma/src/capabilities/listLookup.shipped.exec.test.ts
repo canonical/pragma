@@ -62,18 +62,22 @@ const NOUNS: readonly string[] = [...declaredStories]
   .map(([noun]) => noun);
 
 /**
- * Nouns whose shipped corpus is empty TODAY (`ds:Token` has no instances in
- * the current packs) — a data-content gap this suite does not own.
+ * Nouns whose shipped corpus is empty TODAY — a data-content gap this suite
+ * does not own.
  *
  * The allowlist EXPIRES BY CONSTRUCTION: an entry here is asserted to have
  * ZERO rows, so the moment upstream ships instances the entry goes red and
  * must be deleted. A list that merely skipped the non-empty assertion would
- * be a permanent blind spot — `token` gains data, nobody removes the entry,
- * a later regression back to zero rows stays vacuously green — which is
- * exactly the hidden-empty case this guard exists to prevent, sitting inside
- * the guard itself.
+ * be a permanent blind spot — a noun gains data, nobody removes the entry, a
+ * later regression back to zero rows stays vacuously green — which is exactly
+ * the hidden-empty case this guard exists to prevent, sitting inside the
+ * guard itself.
+ *
+ * It worked. `token` sat here because `ds:Token` has no instances in any
+ * pack; the noun now reads `dt:TokenSymbol`, published 707 rows, and this
+ * assertion is what said so.
  */
-const EMPTY_CORPUS_TODAY: readonly string[] = ["token"];
+const EMPTY_CORPUS_TODAY: readonly string[] = [];
 
 /** The verb `<noun> <verb>` from a compiled module, or throw naming the gap. */
 function verbOf(

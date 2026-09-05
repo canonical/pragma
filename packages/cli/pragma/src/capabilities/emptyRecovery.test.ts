@@ -38,6 +38,9 @@ const PREFIXES = {
   // The `standard` list query names `skos:broader` for its category roll-up —
   // a CORE prefix on the real build path, which this in-memory helper bypasses.
   skos: "http://www.w3.org/2004/02/skos/core#",
+  // The `token` list query names dt: — the noun reads the design-token
+  // semantic model, not ds:Token.
+  dt: "https://dt.canonical.com/",
   owl: "http://www.w3.org/2002/07/owl#",
   rdfs: "http://www.w3.org/2000/01/rdf-schema#",
   xsd: "http://www.w3.org/2001/XMLSchema#",
@@ -47,6 +50,7 @@ const PREFIXES = {
 const TTL = `
 @prefix ds: <https://ds.canonical.com/> .
 @prefix cs: <https://ds.canonical.com/code-standards/> .
+@prefix dt: <https://dt.canonical.com/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -54,6 +58,8 @@ ds:ModifierFamily a owl:Class .
 ds:Modifier a owl:Class .
 ds:Token a owl:Class .
 ds:TokenType a owl:Class .
+dt:TokenSymbol a owl:Class .
+dt:ResolvedValue a owl:Class .
 cs:CodeStandard a owl:Class .
 cs:Category a owl:Class .
 ds:name a owl:DatatypeProperty ; rdfs:domain ds:ModifierFamily ; rdfs:range xsd:string .
