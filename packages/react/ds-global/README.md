@@ -66,13 +66,17 @@ Every component stylesheet the package ships is also listed in a single aggregat
 @import url("@canonical/react-ds-global/index.css");
 ```
 
-That is the whole file — one `@import` per component stylesheet, nothing else — and it exists for order, not for content. Because each component imports its own stylesheet from its module, the order in which those stylesheets reach the page follows the JavaScript import graph: a lazily-loaded route brings its components' CSS with it, arriving after the application's own stylesheet and winning ties it should lose. Importing the aggregate once, immediately after `@canonical/styles` and before anything the application writes, puts every component rule on the page in a fixed position.
+That is the whole file — one `@import` per component stylesheet, nothing else — and what it buys is presence, not position.
 
-Link it in the same stylesheet that imports `@canonical/styles`, so a bundler resolves both together and neither can be reordered by a code-splitting decision. The components still import their own CSS, so an application that does not link the aggregate loses nothing but the guarantee.
+Each component imports its own stylesheet from its module, so without the aggregate a component's rules reach the page only when the JavaScript that renders it does. A lazily-loaded route therefore paints before its components' CSS arrives. Linking the aggregate puts every component rule in the entry stylesheet, present from the first paint, so no route can ever render unstyled.
+
+It does not fix where a rule sits in the built sheet. Both copies reach the build — the aggregate's and the component module's — and a minifier that removes duplicates keeps the **last**, which is the module's. Measured on the reference application: the surviving copy of every component rule sits after the application's own CSS, exactly where it sat without the aggregate; all the aggregate leaves ahead of it are the eleven `@media` / `@starting-style` / `:has()` fragments the minifier cannot collapse (1,033 bytes). Order between a component and the application is not settled here and should not be relied on. Once the component stylesheets are wrapped in `ds.components.global` and `ds.components.app` — the change running abreast of this one — the cascade arbitrates by layer and source position stops mattering at all.
 
 The list is source, not output: it is written by hand, as the repository's constitution asks (an explicit import over a build step that discovers files by naming convention), and `src/lib/index.css.test.ts` fails the build if it stops matching the stylesheets on disk. **Adding a component means adding its line**, alphabetically, in `src/lib/index.css`.
 
-The published paths are `@canonical/react-ds-global/index.css` (the subpath) and `dist/esm/lib/index.css` (the file the `style` field names).
+The bytes are already in the bundle either way: the package declares no `sideEffects`, so a bundler that reaches the barrel pulls all 46 sheets in regardless. On the reference build the aggregate adds 1,033 bytes to the minified stylesheet — the residue the duplicate removal leaves — and roughly 96 KB to a build that does not remove duplicates.
+
+The published paths are `@canonical/react-ds-global/index.css` (the subpath the `exports` map names) and `dist/esm/lib/index.css` (the file itself). The manifest also carries it as `style`, which some tools read to find a package's stylesheet without an import — the same field `@canonical/react-ds-global-form` uses for its own.
 
 ## Icon assets
 

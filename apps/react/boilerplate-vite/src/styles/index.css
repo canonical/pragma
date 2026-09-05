@@ -12,9 +12,15 @@
  *                  application makes, not something a stylesheet imposes.
  *   2. styles      the layer statement, the tokens, the reset, the modifiers.
  *   3. components  every component stylesheet the design system ships, in one
- *                  file, so that none of them arrives with a lazily-loaded
- *                  route and lands after the application's own rules.
- *   4. app         this application's own CSS, last, so it can win.
+ *                  file, so that every component rule is in this stylesheet
+ *                  from the first paint and no lazily-loaded route can render
+ *                  before its own CSS arrives. It does not decide which of a
+ *                  component's rules and this application's wins a tie: both
+ *                  copies of a component sheet reach the build and the
+ *                  minifier keeps the last, which is the module's — measured,
+ *                  it lands after this file's app.css. The layer wrapper now
+ *                  landing on the component packages is what settles that.
+ *   4. app         this application's own CSS, last.
  */
 
 @import url("@canonical/styles/fonts");

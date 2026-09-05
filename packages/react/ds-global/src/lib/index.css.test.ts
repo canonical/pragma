@@ -25,7 +25,10 @@ const libDir = path.dirname(fileURLToPath(import.meta.url));
 /** Every `styles.css` under `src/lib`, as a path relative to `src/lib`. */
 const stylesheetsOnDisk = readdirSync(libDir, { recursive: true })
   .map((entry) => String(entry).split(path.sep).join("/"))
-  .filter((rel) => rel.endsWith("/styles.css"));
+  // `rel === "styles.css"` catches a sheet placed directly at `src/lib`,
+  // whose relative path carries no separator; none exists today, and the day
+  // one does the list must still name it.
+  .filter((rel) => rel === "styles.css" || rel.endsWith("/styles.css"));
 
 /** The paths `index.css` imports, in the order it imports them. */
 const imported = [

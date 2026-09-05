@@ -31,7 +31,7 @@ bun add @canonical/react-ds-global-form
 
 ## 2. Import styles
 
-In your application entry point (e.g., `main.tsx` or `App.tsx`), import the global stylesheet and fonts:
+In your application entry point (`main.tsx`, or your framework's root layout), import the global stylesheet and fonts:
 
 ```tsx
 import "@canonical/styles/fonts";
@@ -41,7 +41,9 @@ import "@canonical/react-ds-global/index.css";
 
 **Order matters, and it matters first.** Import these before your routes and before any component, because the cascade fixes the layer order from the first `@layer` statement it reads: whatever reaches the page first decides how everything after it is arbitrated. In practice that means the stylesheet import is the first line of your entry file, above the route imports.
 
-The fonts import loads the `@font-face` declarations for Ubuntu Sans and Ubuntu Sans Mono; font faces are not sorted by the cascade, so they sit outside the layers. The main styles import brings the reset, the design tokens, the typographic engine, the modifier classes, the grid system, and the spacing scale, each in its own cascade layer. The third import is every component stylesheet in one file — components also import their own CSS, so this line is not about content but about order: without it, a component's rules arrive with whichever lazily-loaded route first renders it and can land after your own.
+The fonts import loads the `@font-face` declarations for Ubuntu Sans; font faces are not sorted by the cascade, so they sit outside the layers. The main styles import brings the reset, the design tokens, the typographic engine, the modifier classes, the grid system, and the spacing scale, each in its own cascade layer.
+
+The third import is every component stylesheet in one file, and what it buys is presence rather than position: components import their own CSS from their own modules, so without it a component's rules reach the page only when the code that renders it does, and a lazily-loaded route paints before its styles arrive. It does not decide which of a component's rules and yours wins a tie — both copies reach the build and a minifier keeps the last — and once the component stylesheets carry their `ds.components` layer, the cascade settles that by layer instead of by position.
 
 ## 3. Declare the root
 
@@ -101,7 +103,7 @@ The `@canonical/styles` README's **Cascade layers** section is the reference: wh
 
 ### Checking the layers on a built page
 
-Do not grep your built CSS for the statement above. CSS minifiers rewrite layer statements — Lightning CSS, which Vite uses, splits them and drops names it can prove are established by a later `@layer` block — so the literal text may not survive a production build even though the order it declared does.
+Do not grep your built CSS for the statement above. A minifier rewrites it: Lightning CSS, which Vite uses, merges the blocks that share a layer name, reorders them into the order the statement declared, deletes the statement, and emits a statement only for a declared name that no block establishes. The order survives; the text does not.
 
 Read the layers from the page instead. In devtools, on a page that has loaded your stylesheet:
 
@@ -113,7 +115,7 @@ Read the layers from the page instead. In devtools, on a page that has loaded yo
   .map((rule) => rule.name ?? rule.nameList.join(", "));
 ```
 
-The names come back in the order the browser applies them: a layer's position is fixed the first time it is named, whether by a statement or by a block. That order is the fact that matters; the text in the file is only how it was expressed.
+The names come back in the sequence the browser applies them, which is what the statement was for: on the reference build that sequence is exactly the ten declared names. A layer's position is fixed the first time it is named, whether by a statement or by a block, and only the unlayered at-rules the cascade does not sort (`@font-face`, `@property`, `@keyframes`, `@charset`) may appear before the first of them.
 
 ## Vite configuration
 
@@ -133,8 +135,8 @@ import "@canonical/react-ds-global/index.css";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="ds">
-      <body className="app comfortable">{children}</body>
+    <html lang="en" className="ds app comfortable">
+      <body>{children}</body>
     </html>
   );
 }

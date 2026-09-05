@@ -1,8 +1,11 @@
 <!doctype html>
-<!-- Territory declaration: `ds` marks this document as the design system's, which
-     is what its scoped element-level layers (the reset, the typography engine)
-     apply inside. -->
-<html lang="en" class="ds">
+<!-- The root contract, in one line. `ds` marks this document as the design
+     system's territory, which is what its scoped element-level layers (the
+     reset, the typography engine) apply inside; `app` is the context and
+     `comfortable` the density, which together choose the --density-* channel
+     every control reads. All three sit on the same element, as the
+     @canonical/styles README states the contract. -->
+<html lang="en" class="ds app comfortable">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -14,8 +17,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="https://assets.ubuntu.com/v1/be7e4cc6-COF-favicon-32x32.png">
     <title><%= name %></title>
   </head>
-  <!-- Surface declaration: context (app) + density (comfortable) — roots the design system's --density-* channel -->
-  <body class="app comfortable">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/client/entry.tsx"></script>
   </body>

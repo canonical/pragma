@@ -1,28 +1,30 @@
 /* @canonical/react-ds-global — every component stylesheet the package ships
  *
- * One file a consumer can link, so that all component CSS is on the page
- * before the first route renders:
+ * One file a consumer can link, so that every component rule is in the entry
+ * stylesheet from the first paint:
  *
  *   @import url("@canonical/react-ds-global/index.css");
  *
- * Why it exists. Each component imports its own `styles.css` from its module,
- * which is how a component keeps its stylesheet next to itself and how a
- * bundler tree-shakes what an application never renders. The cost is that the
- * order in which those stylesheets reach the page follows the JavaScript
- * import graph: a lazily-loaded route brings its components' CSS with it, and
- * a stylesheet that arrives after the application's own can win a tie it
- * should have lost. Importing this file once, early, fixes the order.
+ * What it buys is presence, not position. Each component imports its own
+ * stylesheet from its module, so without this file a component's rules reach
+ * the page only when the JavaScript that renders it does — and a lazily-loaded
+ * route paints before its CSS arrives. Linking this file means no route can
+ * ever render unstyled.
+ *
+ * It does NOT fix where a rule lands in the built sheet. Both copies reach
+ * the build, this one and the module's, and a minifier that removes
+ * duplicates keeps the last — which is the module's. Measured on the
+ * reference application, every surviving component rule sits after the
+ * application's own CSS either way; all this file leaves ahead of it are the
+ * eleven fragments the minifier cannot collapse. Order between a component
+ * and its consumer is not settled here. Once these sheets are wrapped in
+ * `ds.components.global` / `ds.components.app` the cascade arbitrates by
+ * layer and source position stops mattering.
  *
  * It is deliberately a hand-written list and not a generated one: the
  * repository's constitution asks for explicit imports over build machinery, so
  * the list is source, and `index.css.test.ts` fails if it ever disagrees with
  * the stylesheets on disk. Add a component, add its line, alphabetically.
- *
- * Importing this alongside the component modules does not duplicate anything a
- * browser has to resolve twice — the rules are identical and idempotent — but
- * it does mean the bytes can appear twice in a bundle. An application that
- * links this file and imports components from the package pays that once, in
- * the entry stylesheet, in exchange for a deterministic order.
  */
 
 @import url("./_work_in_progress/Announcement/styles.css");

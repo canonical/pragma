@@ -258,25 +258,28 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
   // attributes in sync with every switch.
   const { lang, dir } = documentAttrs(i18nConfig, locale);
 
-  // Paint the cookie-resolved theme on <html> for a flash-free first render —
-  // the same element `usePreferredTheme` toggles on the client, and one React
-  // does not hydrate (only `#root` is), so there is no mismatch to reconcile.
-  // `ds` beside it marks the whole document as the design system's territory,
-  // which its scoped element-level layers apply inside; index.html carries the
-  // same class for the client-only build.
+  // The root contract plus the theme, on one element. `ds` marks the document
+  // as the design system's territory, which its scoped element-level layers
+  // apply inside; `app` and `comfortable` are the context and the density that
+  // choose the --density-* channel. The cookie-resolved theme joins them so the
+  // first paint is flash-free — it is the same element `usePreferredTheme`
+  // toggles on the client, and React does not hydrate it (only `#root` is), so
+  // there is no mismatch to reconcile. index.html carries the same three
+  // classes for the client-only build.
   return (
     <html
       lang={lang}
       dir={dir}
-      className={["ds", initialData.theme].filter(Boolean).join(" ")}
+      className={["ds app comfortable", initialData.theme]
+        .filter(Boolean)
+        .join(" ")}
     >
       <head>
         {props.otherHeadElements}
         {props.scriptElements}
         {props.linkElements}
       </head>
-      {/* Surface declaration: context (app) + density (comfortable) — roots the design system's --density-* channel */}
-      <body className="app comfortable">
+      <body>
         <div id="root">
           <I18nProvider config={i18nConfig} catalogs={catalogs} locale={locale}>
             <HeadProvider>
