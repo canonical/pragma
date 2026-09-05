@@ -107,4 +107,20 @@ describe("SideNavigation", () => {
   //   fireEvent.click(screen.getByRole("button"));
   //   expect(onExpandedChange).toHaveBeenCalledWith(false);
   // });
+
+  it("does not respond to the collapse shortcut by default", () => {
+    const { container } = render(<SideNavigation root={root} />);
+    const el = container.firstElementChild as HTMLElement;
+    fireEvent.keyDown(window, { key: "e", ctrlKey: true });
+    expect(el.dataset.expanded).toBe("true");
+  });
+
+  it("responds to Ctrl+E when keyboardShortcut is enabled", () => {
+    const { container } = render(
+      <SideNavigation root={root} keyboardShortcut />,
+    );
+    const el = container.firstElementChild as HTMLElement;
+    fireEvent.keyDown(window, { key: "e", ctrlKey: true });
+    expect(el.dataset.expanded).toBe("false");
+  });
 });

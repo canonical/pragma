@@ -25,4 +25,38 @@
      in @canonical/styles/overflow.css): the spec calls for 1.75rem
      specifically at the Header/Content and Content/Footer seams. */
   --overflow-gradient-height: 1.75rem;
+
+  /* Collapsed (SPEC.md §1.2, §7): the rail narrows to fit just the logo
+     (see packages/styles/main/src/navigation.css §9.2), and no navigation
+     items show at all — not a styling choice, a deliberate scope cut (five
+     listed reasons in SPEC.md §7: icons aren't guaranteed, context
+     switchers can't render collapsed, expandable-item state is undefined,
+     the toggle needs to move, icon-only buttons are poor UX). The footer
+     stays visible (icon-only, SPEC.md §10 tooltip enhancement tracked
+     separately) — only Content is hidden. No stated transition for either
+     change (SPEC.md §10.4), so no `transition` property here. */
+  &.collapsed {
+    inline-size: var(--sidenav-rail-inline-size-collapsed);
+
+    & > .ds.content {
+      display: none;
+    }
+
+    /* Footer stays visible, icon-only — spec: "the collapsed state footer
+       items show their labels in tooltips when hovered after 800ms delay."
+       The tooltip itself is a documented follow-up (SPEC.md §10.14); this is
+       the icon-only layout half. */
+    & > .ds.footer {
+      .label,
+      .end {
+        display: none;
+      }
+
+      .row {
+        grid-template-columns: var(--sidenav-icon-column-inline-size);
+        justify-content: center;
+        padding-inline: 0;
+      }
+    }
+  }
 }

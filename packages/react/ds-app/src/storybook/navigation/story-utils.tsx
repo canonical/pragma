@@ -91,9 +91,9 @@ export const withNavigationRouterProps: Decorator = (Story, context) => {
  * render unstyled in isolation (they consume CSS defined on the root).
  */
 export const withSideNavShell: Decorator = (Story) => (
-  <div className="ds side-navigation">
+  <nav className="ds side-navigation">
     <Story />
-  </div>
+  </nav>
 );
 
 /**

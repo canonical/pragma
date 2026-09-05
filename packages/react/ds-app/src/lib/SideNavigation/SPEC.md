@@ -372,14 +372,17 @@ entirely and repositions `CollapseToggle` below the logo (§1.2, §10.9).
 
   ```ts
   // common/hooks/useCollapseShortcut/useCollapseShortcut.ts
-  export const COLLAPSE_SHORTCUT = { ctrlOrMeta: true, key: "e" } as const;
+  export const COLLAPSE_SHORTCUT = { key: "e", ctrlKey: true } as const;
   ```
 
   `SideNavigation` calls `useCollapseShortcut({ enabled: keyboardShortcut,
   onTrigger: handleToggle })`; `keyboardShortcut` defaults to `false`, so no
   listener attaches and no keydown is ever handled. The single named constant
   is the one place the key changes if/when design ratifies "Ctrl+E" vs. a
-  single letter (§10.1). Tested for both: enabling attaches and fires the
+  single letter (§10.1) — matching the spec's literal "Ctrl + E" only
+  (`event.ctrlKey`, not also `event.metaKey`/Cmd); extending it to Cmd on
+  macOS is a separate decision, not assumed here. Tested for both: enabling
+  attaches and fires the
   handler, and — the guarantee that matters — the *default* (disabled) case
   never does, even on the exact key combination.
 - **Enter key** — on a `link`/`button` item, activates it (native semantics —
@@ -463,7 +466,7 @@ file):
 | 3 | Provisional navigation tokens + full-spec styling (AC2) | ✅ this PR |
 | 4 | Group/GroupHeader/Separator/ItemExpandable, depth-1 type | ✅ this PR |
 | 5 | ItemButton/ItemSwitch/ContextSwitcher (AC3, AC4) | ✅ this PR |
-| 6 | Collapsed rail behaviour, tooltips, inert shortcut scaffold | pending |
+| 6 | Collapsed rail behaviour, tooltips, inert shortcut scaffold | ✅ this PR (footer-item tooltips deferred — §10.14) |
 | 7 | Secondary navigation, Help item, footerItems, certificate user | pending |
 | 8 | Responsive (<768px), text-overflow tooltips, focus-order/reduced-motion tests | pending |
 
@@ -690,4 +693,14 @@ Carried forward for design/engineering resolution; none block PR1.
     tests. Fixed to a plain class, matching `@canonical/react-ds-global`'s
     own working setup. Latent since ds-app had nothing exercising this path
     before.
+14. **Collapsed-footer tooltips are deferred.** The spec calls for footer
+    item labels to appear in a tooltip after an 800ms hover once collapsed
+    (§7, distinct from the collapse button's own 1000ms tooltip, §9.4). The
+    collapsed layout itself ships (icon-only footer rows, §2/§7), but wiring
+    the tooltip requires threading a "collapsed" flag through
+    `Footer` → `NavTree` → `renderEntry` → `Item`/`ItemButton` so each
+    footer row can conditionally wrap itself — cross-cutting, unlike the
+    collapse button's tooltip (self-contained in one component, shipped this
+    PR). Tracked as a follow-up rather than rushed alongside the rest of
+    PR6's collapsed-state mechanics.
 </content>

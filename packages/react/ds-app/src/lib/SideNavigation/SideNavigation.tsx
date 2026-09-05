@@ -1,5 +1,6 @@
 import type React from "react";
 import { useCallback, useId, useState } from "react";
+import { useCollapseShortcut } from "./common/hooks/useCollapseShortcut/index.js";
 import {
   CollapseToggle,
   Content,
@@ -23,7 +24,8 @@ const componentCssClassName = "ds side-navigation";
  * SideNavigation — full-height application navigation rendered from a WD405
  * Item tree. Owns its expand/collapse (rail) state — uncontrolled, seeded by
  * `defaultExpanded` — and wires the header's collapse toggle to the content
- * region it controls.
+ * region it controls. Collapsed, the rail narrows to the logo and shows no
+ * navigation items at all (SPEC.md §1.2, §7) — only the header and footer.
  *
  * Renders as a self-contained `<nav>` landmark (SPEC.md §1, §6); `aria-label`
  * defaults to `"Main navigation"` and may be overridden by the consumer.
@@ -46,6 +48,7 @@ const SideNavigation = ({
   // expanded: expandedProp,
   defaultExpanded = true,
   // onExpandedChange,
+  keyboardShortcut = false,
   "aria-label": ariaLabel,
   ...props
 }: SideNavigationProps): React.ReactElement => {
@@ -56,6 +59,10 @@ const SideNavigation = ({
   const handleToggle = useCallback(() => {
     setExpanded((current) => !current);
   }, []);
+
+  // Reserved (§10.1) — inert until a consumer opts in via `keyboardShortcut`,
+  // which defaults to `false`. See common/hooks/useCollapseShortcut.
+  useCollapseShortcut({ enabled: keyboardShortcut, onTrigger: handleToggle });
 
   // --- Controlled circuit (not official yet) -------------------------------
   // const [uncontrolledExpanded, setUncontrolledExpanded] =
