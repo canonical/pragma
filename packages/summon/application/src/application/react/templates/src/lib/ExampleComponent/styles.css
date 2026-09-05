@@ -3,9 +3,10 @@
 /* This application's own CSS, in `app`. Left unlayered it would beat every
  * rule the design system ships, because unlayered CSS outranks any layer —
  * by accident rather than by intent. `app` sorts above the design system's
- * own layers as long as the entry imports `#styles/index.css`, and with it
+ * own layers only while the entry imports `#styles/index.css`, and with it
  * `@canonical/styles`' order statement, before anything that pulls this file
- * in; that is why the generated entry imports the styles first. */
+ * in; that is what canonical/pragma#1122 puts in the generated entry, and
+ * this file lands after it. Keep that import first. */
 
 @layer app {
   /*
