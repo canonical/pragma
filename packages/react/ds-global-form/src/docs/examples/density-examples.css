@@ -1,11 +1,10 @@
 /* Layout for the density/baseline doc examples. Minimal: an inline row of
  * controls (so their baselines can be read against the overlay together) and a
  * vertical stack for comparing two cells. No overrides that would shift text off
- * the grid — the examples must show the real seating. */
-
-/* Layer: `ds.components.global` — so an application tier's own rule for this
- * component wins by cascade layer, not by whichever bundle a loader happened to
- * emit last. See "Cascade layers" in the @canonical/styles README. */
+ * the grid — the examples must show the real seating.
+ *
+ * Layer: ds.components.global (@canonical/styles README, "Cascade layers").
+ */
 
 @layer ds.components.global {
   .density-example__row {

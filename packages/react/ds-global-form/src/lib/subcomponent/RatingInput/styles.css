@@ -9,11 +9,9 @@
  * `starred` glyph is layered over it (`.star::after`) and its width is clipped
  * to 0%, 50% or 100% to show empty, half or full — so half-fill is one masked
  * shape rather than a separate half-width star.
+ *
+ * Layer: ds.components.global (@canonical/styles README, "Cascade layers").
  */
-
-/* Layer: `ds.components.global` — so an application tier's own rule for this
- * component wins by cascade layer, not by whichever bundle a loader happened to
- * emit last. See "Cascade layers" in the @canonical/styles README. */
 
 @layer ds.components.global {
   .ds.form-rating {

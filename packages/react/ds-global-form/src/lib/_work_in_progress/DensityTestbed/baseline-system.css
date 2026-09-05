@@ -5,11 +5,9 @@
  * (imported by src/index.css), so real components consume it by default. This
  * file keeps only the TESTBED-ONLY helpers: the size-agnostic `.baseline` proof
  * class and the `.spike-baseline-boxed` prototype + their proof surfaces.
+ *
+ * Layer: ds.components.global (@canonical/styles README, "Cascade layers").
  */
-
-/* Layer: `ds.components.global` — so an application tier's own rule for this
- * component wins by cascade layer, not by whichever bundle a loader happened to
- * emit last. See "Cascade layers" in the @canonical/styles README. */
 
 @layer ds.components.global {
   /* ── DS.01 — .baseline: snap any element to the grid, whatever its size ──────

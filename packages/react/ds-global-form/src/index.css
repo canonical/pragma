@@ -7,6 +7,8 @@
  * Terminology:
  *   block  = vertical axis   (block-start = top, block-end = bottom)
  *   inline = horizontal axis (inline-start = left in LTR, right in RTL)
+ *
+ * Layer: ds.components.global (@canonical/styles README, "Cascade layers").
  */
 
 /* Density & baseline alignment (context × density → control height + baseline).
@@ -18,10 +20,6 @@
  * takes `layer(ds.components.global)` only when the sheet it names is not itself
  * wrapped. */
 @import url("./density.css");
-
-/* Layer: `ds.components.global` — so an application tier's own rule for this
- * component wins by cascade layer, not by whichever bundle a loader happened to
- * emit last. See "Cascade layers" in the @canonical/styles README. */
 
 @layer ds.components.global {
   :root {

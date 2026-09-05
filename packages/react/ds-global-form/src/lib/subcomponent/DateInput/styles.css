@@ -1,11 +1,9 @@
 /* Date — native input wrapper with shared chrome.
  * The .chrome class provides border, padding, focus, and state styles
  * from index.css's .ds.input.chrome rule. Component-specific overrides below.
+ *
+ * Layer: ds.components.global (@canonical/styles README, "Cascade layers").
  */
-
-/* Layer: `ds.components.global` — so an application tier's own rule for this
- * component wins by cascade layer, not by whichever bundle a loader happened to
- * emit last. See "Cascade layers" in the @canonical/styles README. */
 
 @layer ds.components.global {
   .ds.input.date {

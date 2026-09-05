@@ -22,11 +22,9 @@
  * @canonical/styles (--control-seat-line/-basis): no fixed heights; border +
  * seat pads + line-height add up to the density cell. Zero-JS (cap-unit
  * approximation); holds to the cap tolerance.
+ *
+ * Layer: ds.components.global (@canonical/styles README, "Cascade layers").
  */
-
-/* Layer: `ds.components.global` — so an application tier's own rule for this
- * component wins by cascade layer, not by whichever bundle a loader happened to
- * emit last. See "Cascade layers" in the @canonical/styles README. */
 
 @layer ds.components.global {
   /* ── TRANSITIONAL: the fixed-height box (direct date/time chromes only) ──────

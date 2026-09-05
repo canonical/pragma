@@ -14,11 +14,9 @@
  * The baseline grid overlay comes from the styles-debug plugin (story
  * `parameters.baseline`); the box seat uses the shipped engine model (the
  * alternative top-align + external-margin model lives in SPIKE.md).
+ *
+ * Layer: ds.components.global (@canonical/styles README, "Cascade layers").
  */
-
-/* Layer: `ds.components.global` — so an application tier's own rule for this
- * component wins by cascade layer, not by whichever bundle a loader happened to
- * emit last. See "Cascade layers" in the @canonical/styles README. */
 
 @layer ds.components.global {
   /* ── The testbed root ── */
