@@ -113,7 +113,7 @@ Pragma uses pure CSS with no preprocessors, no CSS-in-JS, and no build-time tran
 
 The CSS architecture uses layered imports rather than a monolithic stylesheet. **@canonical/styles** (at `packages/styles/main`) is the aggregator package that imports all style layers in the correct order. Applications typically import only this package.
 
-The layers build upon each other: normalize.css provides the reset, **@canonical/styles-typography** supplies the baseline-grid alignment engine and typography scale tokens, and generated tokens from `@canonical/design-tokens` define colour, spacing, surface, and state custom properties, followed by grid, spacing, overflow, and motion tokens. **@canonical/styles-debug** offers opt-in development aids such as a baseline grid overlay.
+The layers build upon each other: **@canonical/styles** provides its own reset, scoped to the subtree an application marks with the `ds` class, **@canonical/styles-typography** supplies the baseline-grid alignment engine and typography scale tokens, and generated tokens from `@canonical/design-tokens` define colour, spacing, surface, and state custom properties, followed by grid, spacing, overflow, and motion tokens. **@canonical/styles-debug** offers opt-in development aids such as a baseline grid overlay.
 
 Component styles live with their components rather than in the styles packages. Each component imports its own `styles.css` file, which uses CSS custom properties that reference the design tokens. This co-location keeps styles maintainable and allows tree-shaking of unused component styles. The Button component, for example, defines its colours through custom properties like `--button-color-background` that can be overridden by consumers or themed through modifier classes.
 
@@ -241,7 +241,7 @@ The following tables list all workspace packages with their location and purpose
 
 | Package | Path | Description |
 |---------|------|-------------|
-| `@canonical/styles` | `packages/styles/main` | Global stylesheet aggregating normalize.css, typography, and design tokens |
+| `@canonical/styles` | `packages/styles/main` | Global stylesheet: the reset, typography, and design tokens, in named cascade layers |
 | `@canonical/styles-typography` | `packages/styles/typography` | Typography baseline alignment engines and scale tokens |
 | `@canonical/styles-debug` | `packages/styles/debug` | Development aids including baseline grid overlay |
 
