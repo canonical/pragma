@@ -253,7 +253,10 @@ export const removalPage = (flipped = true): PageSpec => ({
 
 /**
  * Render a page in an iframe and resolve with its document once its fonts are
- * settled. The iframe is removed when the test that rendered it finishes.
+ * settled. The iframe is tall enough that no page scrolls: a vertical scrollbar
+ * on one page and not the other would move every block's width by its own
+ * width, and the comparisons would report the scrollbar, not the cascade. The
+ * iframe is removed when the test that rendered it finishes.
  */
 export const render = async (
   spec: PageSpec,
@@ -261,7 +264,7 @@ export const render = async (
 ): Promise<Document> => {
   const iframe = document.createElement("iframe");
   iframe.style.width = `${width}px`;
-  iframe.style.height = "800px";
+  iframe.style.height = "6000px";
   iframe.style.border = "0";
   const head = spec.styles.map((css) => `<style>${css}</style>`).join("\n");
   iframe.srcdoc = `<!doctype html><html class="${spec.root}"><head><meta charset="utf-8">${head}</head><body>${spec.body}</body></html>`;
@@ -274,6 +277,11 @@ export const render = async (
   const doc = iframe.contentDocument;
   if (!doc) throw new Error("iframe has no document");
   await doc.fonts.ready;
+  const root = doc.documentElement;
+  if (root.scrollHeight > root.clientHeight)
+    throw new Error(
+      `page scrolls (${root.scrollHeight}px in ${root.clientHeight}px): make the iframe taller`,
+    );
   return doc;
 };
 
