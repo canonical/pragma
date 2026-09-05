@@ -1,0 +1,47 @@
+---
+# SideNavigation.ItemSwitch — a navigation row that toggles a setting instead
+# of navigating. One of the `control` variants selectable on a leaf entry
+# (SPEC.md §4.4) — the others are the default link and
+# side-navigation-item-button. The row is a label wrapping the switch input.
+node:
+  uri: apps.subcomponent.side-navigation-item-switch
+  styles:
+    layout.type: stack
+    layout.direction: column
+    size.width: fill
+  edges:
+    - node:
+        role: row
+        styles:
+          layout.type: flow
+          layout.direction: row
+          layout.align: center
+          interaction.cursor: pointer
+          spacing.padding.vertical: dimension/100
+          spacing.gap: dimension/100
+          appearance.background: color/foreground/navigation/primary
+          typography.text: typography/text/primary
+          typography.color: color/text
+        edges:
+          - node:
+              role: icon
+              styles:
+                appearance.color: color/icon
+            relation:
+              cardinality: "0..1"
+              slotName: icon
+          - node:
+              role: label
+              styles:
+                layout.flex: 1
+            relation:
+              cardinality: "1"
+              slotName: label
+          - node:
+              uri: global.subcomponent.switch_input
+            relation:
+              cardinality: "1"
+              slotName: end
+      relation:
+        cardinality: "1"
+        slotName: default

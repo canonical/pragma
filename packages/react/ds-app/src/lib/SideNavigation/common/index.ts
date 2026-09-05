@@ -2,10 +2,13 @@
 
 export * from "./CollapseToggle/index.js";
 export * from "./Content/index.js";
+export * from "./ContextSwitcher/index.js";
 export * from "./Footer/index.js";
 export * from "./Group/index.js";
 export * from "./GroupHeader/index.js";
 export * from "./Header/index.js";
 export * from "./Item/index.js";
+export * from "./ItemButton/index.js";
 export * from "./ItemExpandable/index.js";
+export * from "./ItemSwitch/index.js";
 export * from "./Separator/index.js";

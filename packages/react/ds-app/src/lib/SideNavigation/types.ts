@@ -12,12 +12,15 @@ import type {
 } from "react";
 import type { CollapseToggleProps } from "./common/CollapseToggle/types.js";
 import type { ContentProps } from "./common/Content/types.js";
+import type { ContextSwitcherProps } from "./common/ContextSwitcher/types.js";
 import type { FooterProps } from "./common/Footer/types.js";
 import type { GroupProps } from "./common/Group/types.js";
 import type { GroupHeaderProps } from "./common/GroupHeader/types.js";
 import type { HeaderProps } from "./common/Header/types.js";
 import type { ItemProps } from "./common/Item/types.js";
+import type { ItemButtonProps } from "./common/ItemButton/types.js";
 import type { ItemExpandableProps } from "./common/ItemExpandable/types.js";
+import type { ItemSwitchProps } from "./common/ItemSwitch/types.js";
 import type { SeparatorProps } from "./common/Separator/types.js";
 
 export type { LinkComponentProps };
@@ -25,12 +28,19 @@ export type { LinkComponentProps };
 /**
  * A single navigable, non-expandable row — the leaf of the content tree.
  * Renders as a link (via `LinkComponent`) when `url` is set, otherwise a
- * plain non-navigable label (SPEC.md §4.3).
+ * plain non-navigable label (SPEC.md §4.3). `control` selects one of three
+ * row variants (SPEC.md §4.4) — the default `"link"` (this description),
+ * `"button"` (an action row, `SideNavigation.ItemButton`), or `"switch"` (a
+ * toggle row, `SideNavigation.ItemSwitch`). `url`/`onClick`/the
+ * checked-state fields are each meaningful only for their own variant; the
+ * others are ignored — a discriminated union would be more precise but
+ * meaningfully more ceremony to author for what is, in practice, always one
+ * shape per authored item.
  */
 export interface LeafNavItem {
   /** Unique identifier when no `url` is present (e.g. a non-navigable label). */
   key?: string;
-  /** Navigation target. Renders as a link via `LinkComponent`; omitted (or absent) renders a plain label. */
+  /** Navigation target. Renders as a link via `LinkComponent`; omitted (or absent) renders a plain label. `control: "link"` only. */
   url?: string;
   /** Display text. Text only, matching the base WD405 `Item` contract — not JSX. */
   label?: string;
@@ -38,10 +48,20 @@ export interface LeafNavItem {
   disabled?: boolean;
   /** Leading icon (start slot), by ds-assets icon name. */
   icon?: IconName;
-  /** Trailing content (end slot): a badge, count, etc. */
+  /** Trailing content (end slot): a badge, count, etc. `control: "link"` only — `"switch"` uses the end slot for the switch itself. */
   slot?: ReactNode;
   /** CSS class name applied to this item's row, in addition to the base classes. */
   className?: string;
+  /** Selects the rendered control (SPEC.md §4.4). Defaults to `"link"`. */
+  control?: "link" | "button" | "switch";
+  /** `control: "button"` — called when activated. */
+  onClick?: () => void;
+  /** `control: "switch"` — controlled checked state. */
+  checked?: boolean;
+  /** `control: "switch"` — initial checked state when uncontrolled. */
+  defaultChecked?: boolean;
+  /** `control: "switch"` — called when toggled, with the next checked value. */
+  onCheckedChange?: (checked: boolean) => void;
 }
 
 /**
@@ -53,9 +73,19 @@ export interface LeafNavItem {
  * children... if a navigation item is already a child it can not contain
  * children itself"). No `slot` either — the end slot is always the
  * disclosure caret for an expandable row; there is nowhere for a badge to
- * render.
+ * render. `control` and its associated fields don't apply either — an
+ * expandable row is never a button or a switch (SPEC.md §4.4).
  */
-export type ExpandableNavItem = Omit<LeafNavItem, "url" | "slot"> & {
+export type ExpandableNavItem = Omit<
+  LeafNavItem,
+  | "url"
+  | "slot"
+  | "control"
+  | "onClick"
+  | "checked"
+  | "defaultChecked"
+  | "onCheckedChange"
+> & {
   /** Children revealed on expand. Always leaves — see the depth-1 note above. */
   items: LeafNavItem[];
 };
@@ -132,6 +162,11 @@ type _AnyNavNodeFields = {
   slot?: ReactNode;
   className?: string;
   separator?: true;
+  control?: "link" | "button" | "switch";
+  onClick?: () => void;
+  checked?: boolean;
+  defaultChecked?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
   items?: _AnyNavNode[];
 };
 
@@ -182,11 +217,14 @@ export type SideNavigationComponent = ((
 ) => ReactElement) & {
   CollapseToggle: (props: CollapseToggleProps) => ReactElement;
   Content: (props: ContentProps) => ReactElement;
+  ContextSwitcher: (props: ContextSwitcherProps) => ReactElement;
   Footer: (props: FooterProps) => ReactElement;
   Group: (props: GroupProps) => ReactElement;
   GroupHeader: (props: GroupHeaderProps) => ReactElement;
   Header: (props: HeaderProps) => ReactElement;
   Item: (props: ItemProps) => ReactElement;
+  ItemButton: (props: ItemButtonProps) => ReactElement;
   ItemExpandable: (props: ItemExpandableProps) => ReactElement;
+  ItemSwitch: (props: ItemSwitchProps) => ReactElement;
   Separator: (props: SeparatorProps) => ReactElement;
 };

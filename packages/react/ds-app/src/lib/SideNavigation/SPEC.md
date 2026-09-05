@@ -328,6 +328,18 @@ interface ContextSwitcherItem {
 }
 ```
 
+Implemented as a standalone, independently-composable subcomponent — **not**
+currently a `root.items` entry kind. §1.1's "content-defined position" is
+realised by composing `SideNavigation.ContextSwitcher` directly where wanted
+(e.g. via `SideNavigation.Content`'s `children` fallback), not by adding a
+fourth entry kind to `NavGroup`/`NavItem` alongside groups and separators.
+`ContextSwitcherItem` has a fundamentally different shape/state contract
+than a nav entry (no `url`/`disabled`/`icon`, a `currentContext`/`contexts`
+pair rather than a flat list) — folding it into the existing tiered model
+would have added a fourth heterogeneous shape to `_AnyNavNode` for a widget
+that isn't tree-shaped at all. Flagged in §10 as a scope boundary, not an
+oversight.
+
 ### 4.6 Collapsed state
 
 No new props — `expanded` (internal state) alone suppresses `Content`
@@ -450,7 +462,7 @@ file):
 | 2 | `<nav>` landmark + `ComponentProps`-based prop types (AC1) | ✅ done |
 | 3 | Provisional navigation tokens + full-spec styling (AC2) | ✅ this PR |
 | 4 | Group/GroupHeader/Separator/ItemExpandable, depth-1 type | ✅ this PR |
-| 5 | ItemButton/ItemSwitch/ContextSwitcher (AC3, AC4) | pending |
+| 5 | ItemButton/ItemSwitch/ContextSwitcher (AC3, AC4) | ✅ this PR |
 | 6 | Collapsed rail behaviour, tooltips, inert shortcut scaffold | pending |
 | 7 | Secondary navigation, Help item, footerItems, certificate user | pending |
 | 8 | Responsive (<768px), text-overflow tooltips, focus-order/reduced-motion tests | pending |
@@ -650,4 +662,32 @@ Carried forward for design/engineering resolution; none block PR1.
     and don't match §9.3 — not reconciled here since it's a story fixture,
     not the shipped component, but will look inconsistent in the `Maas`/`Lxd`
     stories until updated.
+11. **`control` is a flat field on `LeafNavItem`, not a discriminated union.**
+    `LeafNavItem` carries every field any of the three row variants might
+    use (`url`, `onClick`, `checked`, `defaultChecked`, `onCheckedChange`)
+    rather than three separate item shapes unioned on `control`. A
+    discriminated union would let TypeScript forbid e.g. `url` alongside
+    `control: "switch"` — this doesn't, and instead documents per-field which
+    `control` value it's meaningful for. Chosen for authoring simplicity (one
+    shape, matching every other tier in this model) over that extra type
+    safety; revisit if the field carries more than three variants' worth of
+    optional fields cleanly.
+12. **`ContextSwitcher` reuses `SwitchInput` from `@canonical/react-ds-global-form`
+    via a newly-curated top-level export**, extending the existing
+    `RatingInput` precedent (a component the package already documents as
+    usable standalone) rather than duplicating the switch's ~100 lines of
+    track/knob CSS locally. `@canonical/react-ds-global-form`'s
+    `package.json` also gained a proper `exports` map in the same pass — it
+    had neither `main` nor `exports`, only the bundler-only `module` field,
+    so nothing outside its own package (nor Node's own ESM resolver) could
+    actually resolve it; this had simply never been exercised before ds-app
+    became its first cross-package consumer.
+13. `packages/react/ds-app/vitest.setup.ts`'s `ResizeObserver` mock was
+    `vitest.fn().mockImplementation(arrowFn)` — arrow functions cannot be
+    invoked with `new`, so any component constructing a real
+    `new ResizeObserver(callback)` (as `Popover`'s window-fitment
+    positioning does, via `ContextSwitcher`) threw `is not a constructor` in
+    tests. Fixed to a plain class, matching `@canonical/react-ds-global`'s
+    own working setup. Latent since ds-app had nothing exercising this path
+    before.
 </content>

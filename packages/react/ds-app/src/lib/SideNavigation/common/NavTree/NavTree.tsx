@@ -1,3 +1,5 @@
+import type { _Item } from "@canonical/ds-types";
+import type { LinkComponent } from "@canonical/react-ds-global";
 import { useNavigationTree } from "@canonical/react-hooks";
 import { getItemId } from "@canonical/utils";
 import type React from "react";
@@ -5,12 +7,74 @@ import { useEffect } from "react";
 import type { _AnyNavNode } from "../../types.js";
 import { Group } from "../Group/index.js";
 import { Item } from "../Item/index.js";
+import { ItemButton } from "../ItemButton/index.js";
 import { ItemExpandable } from "../ItemExpandable/index.js";
+import { ItemSwitch } from "../ItemSwitch/index.js";
 import { Separator } from "../Separator/index.js";
 import type { NavTreeProps } from "./types.js";
 import "./styles.css";
 
 const componentCssClassName = "ds nav-tree";
+
+/**
+ * Renders a single content-tree entry (never an expandable's own row — the
+ * caller renders that directly; this is for entries with no `items`),
+ * dispatching on `control` to one of the three row variants (SPEC.md §4.4).
+ * Strips the tree-annotation fields (`_Item<T>`: `parentUrl`, `depth`) and
+ * every field not meaningful to the chosen variant before spreading the
+ * rest — several of those (`url`, `slot`, `onClick`, `checked`, …) either
+ * don't exist on the target's props at all, or collide with a same-named
+ * native HTML attribute of a different type (`slot` is a global attribute
+ * on every element; a bare `onClick` expects a `MouseEvent` handler, not
+ * this module's `() => void`), so leaving them in would either be a type
+ * error or a silent DOM leak.
+ */
+const renderEntry = (
+  entry: _Item<_AnyNavNode>,
+  active: boolean,
+  LinkComponent: LinkComponent,
+): React.ReactElement => {
+  const entryId = getItemId(entry);
+  const {
+    parentUrl: _parentUrl,
+    depth: _depth,
+    items: _items,
+    separator: _separator,
+    control,
+    onClick,
+    checked,
+    defaultChecked,
+    onCheckedChange,
+    ...rest
+  } = entry;
+
+  if (control === "button") {
+    const { url: _url, ...buttonFields } = rest;
+    return <ItemButton key={entryId} {...buttonFields} onClick={onClick} />;
+  }
+
+  if (control === "switch") {
+    const { url: _url, slot: _slot, ...switchFields } = rest;
+    return (
+      <ItemSwitch
+        key={entryId}
+        {...switchFields}
+        checked={checked}
+        defaultChecked={defaultChecked}
+        onCheckedChange={onCheckedChange}
+      />
+    );
+  }
+
+  return (
+    <Item
+      key={entryId}
+      {...rest}
+      active={active}
+      LinkComponent={LinkComponent}
+    />
+  );
+};
 
 /**
  * Internal: renders a content tree with two explicit loops (no recursion),
@@ -20,17 +84,19 @@ const componentCssClassName = "ds nav-tree";
  *   Loop 1 — root's direct children: each is either a SideNavigation.Group
  *     (rendered with its optional SideNavigation.GroupHeader) or a
  *     SideNavigation.Separator (a `separator: true` entry).
- *   Loop 2 — a group's entries: each is a SideNavigation.Item (leaf) or a
+ *   Loop 2 — a group's entries: each is a leaf row (renderEntry — Item,
+ *     ItemButton, or ItemSwitch, by `control`) or a
  *     SideNavigation.ItemExpandable (has `items` — its own children, always
- *     leaves, rendered by a nested loop inside this same pass).
+ *     leaves, rendered by a nested loop inside this same pass, through the
+ *     same renderEntry).
  *
  * The hook is generic over `_AnyNavNode` (the union of every field any tier
- * can carry — SPEC.md §4.3), so `icon`/`slot`/`separator`/`items` all survive
- * typed onto the annotated nodes regardless of which tier they came from.
- * `currentUrl` seeds initial selection and re-syncs it on navigation (the
- * hook's `initialUrl` is mount-only), so the active item — and, via
- * `inSelectedBranch`, its ItemExpandable ancestors' initial open state —
- * stays in sync with the consumer's router.
+ * can carry — SPEC.md §4.3), so `icon`/`slot`/`separator`/`control`/`items`
+ * all survive typed onto the annotated nodes regardless of which tier they
+ * came from. `currentUrl` seeds initial selection and re-syncs it on
+ * navigation (the hook's `initialUrl` is mount-only), so the active item —
+ * and, via `inSelectedBranch`, its ItemExpandable ancestors' initial open
+ * state — stays in sync with the consumer's router.
  */
 const NavTree = ({
   root,
@@ -76,65 +142,47 @@ const NavTree = ({
 
         return (
           <Group key={sectionId} label={section.label}>
-            {/* Loop 2 — a group's entries: leaf items or expandable items */}
+            {/* Loop 2 — a group's entries: leaf rows or expandable items */}
             {entries.map((entry) => {
               const entryId = getItemId(entry);
               const children = entry.items ?? [];
 
-              // Strip the tree-annotation fields (_Item<T>: parentUrl, depth)
-              // and `items`/`separator` (not part of Item/ItemExpandable's
-              // props) before spreading the rest onto a presentational
-              // subcomponent. The expandable branch also drops `slot` — an
-              // ExpandableNavItem never has one (SPEC.md §4.3: the end slot is
-              // always the caret), and leaving it in would otherwise collide
-              // with the native HTML global `slot` attribute (which
-              // `ComponentProps<"li">` still exposes, since
-              // `ItemExpandableProps` has no `slot` of its own to `Omit` it
-              // via `keyof OwnProps`).
-              const {
-                parentUrl: _parentUrl,
-                depth: _depth,
-                items: _items,
-                separator: _separator,
-                ...entryFields
-              } = entry;
-
               if (children.length > 0) {
-                const { slot: _slot, ...expandableFields } = entryFields;
+                const {
+                  parentUrl: _parentUrl,
+                  depth: _depth,
+                  items: _items,
+                  separator: _separator,
+                  control: _control,
+                  onClick: _onClick,
+                  checked: _checked,
+                  defaultChecked: _defaultChecked,
+                  onCheckedChange: _onCheckedChange,
+                  slot: _slot,
+                  url: _url,
+                  ...expandableFields
+                } = entry;
                 return (
                   <ItemExpandable
                     key={entryId}
                     {...expandableFields}
                     defaultExpanded={nav.getNodeStatus(entry).inSelectedBranch}
                   >
-                    {children.map((child) => {
-                      const {
-                        parentUrl: _childParentUrl,
-                        depth: _childDepth,
-                        items: _childItems,
-                        separator: _childSeparator,
-                        ...childFields
-                      } = child;
-                      return (
-                        <Item
-                          key={getItemId(child)}
-                          {...childFields}
-                          active={nav.getNodeStatus(child).selected}
-                          LinkComponent={LinkComponent}
-                        />
-                      );
-                    })}
+                    {children.map((child) =>
+                      renderEntry(
+                        child,
+                        nav.getNodeStatus(child).selected,
+                        LinkComponent,
+                      ),
+                    )}
                   </ItemExpandable>
                 );
               }
 
-              return (
-                <Item
-                  key={entryId}
-                  {...entryFields}
-                  active={nav.getNodeStatus(entry).selected}
-                  LinkComponent={LinkComponent}
-                />
+              return renderEntry(
+                entry,
+                nav.getNodeStatus(entry).selected,
+                LinkComponent,
               );
             })}
           </Group>

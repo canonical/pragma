@@ -3,12 +3,15 @@ import { useCallback, useId, useState } from "react";
 import {
   CollapseToggle,
   Content,
+  ContextSwitcher,
   Footer,
   Group,
   GroupHeader,
   Header,
   Item,
+  ItemButton,
   ItemExpandable,
+  ItemSwitch,
   Separator,
 } from "./common/index.js";
 import type { SideNavigationProps } from "./types.js";
@@ -102,12 +105,15 @@ const SideNavigation = ({
 
 SideNavigation.CollapseToggle = CollapseToggle;
 SideNavigation.Content = Content;
+SideNavigation.ContextSwitcher = ContextSwitcher;
 SideNavigation.Footer = Footer;
 SideNavigation.Group = Group;
 SideNavigation.GroupHeader = GroupHeader;
 SideNavigation.Header = Header;
 SideNavigation.Item = Item;
+SideNavigation.ItemButton = ItemButton;
 SideNavigation.ItemExpandable = ItemExpandable;
+SideNavigation.ItemSwitch = ItemSwitch;
 SideNavigation.Separator = Separator;
 
 export default SideNavigation;

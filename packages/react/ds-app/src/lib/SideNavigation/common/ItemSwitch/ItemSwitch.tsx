@@ -1,0 +1,63 @@
+import { Icon } from "@canonical/react-ds-global";
+import { SwitchInput } from "@canonical/react-ds-global-form";
+import type React from "react";
+import { useCallback } from "react";
+import type { ItemSwitchProps } from "./types.js";
+import "./styles.css";
+
+const componentCssClassName = "ds side-navigation-item-switch";
+
+/**
+ * SideNavigation.ItemSwitch — a navigation row that toggles a setting
+ * instead of navigating. One of the `control` variants selectable on a
+ * `LeafNavItem` (SPEC.md §4.4) — the others are Item (link, the default)
+ * and ItemButton. The row is a `<label>` wrapping the switch, so activating
+ * anywhere on the row toggles it (native label-wraps-input association —
+ * no `id`/`htmlFor` bookkeeping needed).
+ *
+ * @implements ds:apps.subcomponent.side-navigation-item-switch
+ */
+const ItemSwitch = ({
+  label,
+  icon,
+  disabled = false,
+  checked,
+  defaultChecked,
+  onCheckedChange,
+  className,
+  key: _key,
+  ...props
+}: ItemSwitchProps): React.ReactElement => {
+  const handleChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      onCheckedChange?.(event.currentTarget.checked);
+    },
+    [onCheckedChange],
+  );
+
+  return (
+    <li
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      data-disabled={disabled || undefined}
+      {...props}
+    >
+      {/* biome-ignore lint/a11y/noLabelWithoutControl: SwitchInput renders the actual <input> — biome's static check can't see through the component boundary to the control it wraps. */}
+      <label className="row">
+        {/* Start cell is always rendered (empty when no icon), matching
+            Item, so labels align whether or not a row has an icon. */}
+        <span className="start p">{icon ? <Icon icon={icon} /> : null}</span>
+        <span className="label p">{label}</span>
+        <span className="end">
+          <SwitchInput
+            checked={checked}
+            defaultChecked={defaultChecked}
+            disabled={disabled}
+            onChange={handleChange}
+          />
+        </span>
+      </label>
+    </li>
+  );
+};
+
+export default ItemSwitch;
