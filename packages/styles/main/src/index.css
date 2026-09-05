@@ -62,7 +62,15 @@
 @import url("@canonical/design-tokens/dist/modifiers.anticipation.css");
 @import url("@canonical/design-tokens/dist/modifiers.criticality.css");
 @import url("@canonical/design-tokens/dist/modifiers.emphasis.css");
-@import url("@canonical/design-tokens/dist/modifiers.importance.css");
+
+/* modifiers.importance.css is generated, and deliberately NOT imported: the file
+ * is a header comment and nothing else — no rule, no layer — so the import added
+ * a name to the graph and nothing to the page, and an empty file that is known
+ * to be empty is what hides the next one that is empty by mistake. The importance
+ * shim below stands in for it. Restore this import in the @canonical/design-tokens
+ * release that emits the importance modifiers with content: tests/layer-set.test.ts
+ * fails the day that file stops being empty, and fails on any file this entry does
+ * import that contributes no rule. */
 /* TEMP shims (remove once generated upstream):
    - states: writes the explicit per-state colour tokens into the modifier
      channel (the generated modifiers only expose root), so hover/active/
