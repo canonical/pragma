@@ -47,19 +47,20 @@ The third import is every component stylesheet in one file, and what it buys is 
 
 ## 3. Declare the root
 
-Those stylesheets do nothing until the document says where the design system applies:
+Two classes on the document root pick the spacing and control sizes every component reads:
 
 ```html
-<html class="ds app comfortable">
+<html class="app comfortable">
 ```
 
 | Class | What it means | Values |
 | --- | --- | --- |
-| `ds` | This subtree is the design system's. Its element-level rules — the reset, the typographic engine — apply inside it and nowhere else. | required |
 | context | The kind of surface, which selects the comfortable/dense pair for every density value. | `app`, `site` or `docs` |
 | density | Which of that pair is in force. | `comfortable` or `dense` |
 
-`ds` does not have to be on `<html>`. Put it on a `<main>`, a section, or one component's wrapper and only that subtree becomes the design system's — which is what makes the package adoptable in an application still built on something else.
+A colour scheme is optional: `light` or `dark` pins one, and leaving both off follows the reader's operating system. Nothing else belongs on the root.
+
+In particular, not `ds`. An ordinary page is the design system's, and each component carries `ds` on itself — you never write it. The one page that does mark its root is a page another framework already styles: it takes `coexist`, which keeps the element-level rules off the parts that framework owns, as the `@canonical/styles-vanilla-adapter` README explains.
 
 ## 4. Use components
 
@@ -99,7 +100,7 @@ Read from the bottom up, each name is an argument about who should win: componen
 - **Unlayered CSS beats all of it.** That is what the cascade says: a rule in no layer outranks every rule in one. So your own stylesheet wins by default — deliberately — and if you would rather it did not, put it in a layer of your own and name that layer in your own statement, prepended before this one.
 - **`!important` inverts the order.** For important declarations the earliest layer wins, which makes an important rule in the lowest layer the strongest thing on the page. The design system ships none.
 
-The `@canonical/styles` README's **Cascade layers** section is the reference: what is layered where, what is deliberately left unlayered, and why the element-level layers are scoped to `ds`. A longer explanation of the contract — the reasoning rather than the table — is being written as `docs/explanations/CASCADE.md` in the pragma repository.
+The `@canonical/styles` README's **Cascade layers** section is the reference: what is layered where, what is deliberately left unlayered, and how the element-level layers are scoped so that a page another framework partly owns can keep them off its territory. A longer explanation of the contract — the reasoning rather than the table — is being written as `docs/explanations/CASCADE.md` in the pragma repository.
 
 ### Checking the layers on a built page
 
@@ -135,7 +136,7 @@ import "@canonical/react-ds-global/index.css";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="ds app comfortable">
+    <html lang="en" className="app comfortable">
       <body>{children}</body>
     </html>
   );

@@ -258,19 +258,22 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
   // attributes in sync with every switch.
   const { lang, dir } = documentAttrs(i18nConfig, locale);
 
-  // The root contract plus the theme, on one element. `ds` marks the document
-  // as the design system's territory, which its scoped element-level layers
-  // apply inside; `app` and `comfortable` are the context and the density that
-  // choose the --density-* channel. The cookie-resolved theme joins them so the
-  // first paint is flash-free — it is the same element `usePreferredTheme`
-  // toggles on the client, and React does not hydrate it (only `#root` is), so
-  // there is no mismatch to reconcile. index.html carries the same three
-  // classes for the client-only build.
+  // The root declaration plus the theme, on one element. `app` is the context
+  // and `comfortable` the density; together they choose the --density-* channel
+  // every control reads. The cookie-resolved theme joins them so the first
+  // paint is flash-free — it is the same element `usePreferredTheme` toggles on
+  // the client, and React does not hydrate it (only `#root` is), so there is no
+  // mismatch to reconcile. index.html carries the same classes for the
+  // client-only build.
+  //
+  // No `ds` on the root: an ordinary page is the design system's by default,
+  // and each component carries `ds` on itself. Marking a whole document is an
+  // adapter concern, for a page another framework partly owns.
   return (
     <html
       lang={lang}
       dir={dir}
-      className={["ds app comfortable", initialData.theme]
+      className={["app comfortable", initialData.theme]
         .filter(Boolean)
         .join(" ")}
     >

@@ -126,20 +126,24 @@ describe("rendered template output is well-formed in every combination", () => {
 });
 
 /**
- * The root contract and the import order, asserted on the rendered text.
+ * The root declaration and the import order, asserted on the rendered text.
  *
- * These four facts are what makes a scaffolded application render as the
- * design system expects, and every one of them is a line in a template that a
- * later edit can quietly move: the class list on `<html>`, and the position of
- * the stylesheet among the entry's imports. The first decides whether the
- * scoped element-level layers apply at all; the second decides whether the
- * layer statement is the first thing in the built stylesheet or the 75th
- * kilobyte of it. Neither shows up as a syntax error, so neither is covered by
- * the parse gate above.
+ * These facts are what makes a scaffolded application render as the design
+ * system expects, and every one of them is a line in a template that a later
+ * edit can quietly move: the class list on `<html>`, and the position of the
+ * stylesheet among the entry's imports. The first decides which density
+ * channel every control reads; the second decides whether the layer statement
+ * is the first thing in the built stylesheet or the 75th kilobyte of it.
+ * Neither shows up as a syntax error, so neither is covered by the parse gate
+ * above.
+ *
+ * The root carries no `ds`. An ordinary page is the design system's by
+ * default and each component carries `ds` on itself; marking a whole document
+ * belongs to the adapter, on a page another framework partly owns.
  */
-describe("the rendered application declares the root contract", () => {
+describe("the rendered application declares its context and density", () => {
   /** The class list every rendered `<html>` must carry. */
-  const ROOT_CLASSES = "ds app comfortable";
+  const ROOT_CLASSES = "app comfortable";
 
   const render = (rel: string, combo: (typeof combos)[number]) =>
     renderString(
@@ -148,7 +152,7 @@ describe("the rendered application declares the root contract", () => {
     );
 
   for (const combo of combos) {
-    it(`${label(combo)}: <html> carries \`${ROOT_CLASSES}\``, () => {
+    it(`${label(combo)}: <html> carries \`${ROOT_CLASSES}\` and no \`ds\``, () => {
       const html = render("index.html.ejs", combo);
       expect(html).toContain(`<html lang="en" class="${ROOT_CLASSES}">`);
 

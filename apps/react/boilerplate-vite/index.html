@@ -1,11 +1,13 @@
 <!doctype html>
-<!-- The root contract, in one line. `ds` marks this document as the design
-     system's territory, which is what its scoped element-level layers (the
-     reset, the typography engine) apply inside; `app` is the context and
-     `comfortable` the density, which together choose the --density-* channel
-     every control reads. All three sit on the same element, as the
-     @canonical/styles README states the contract. -->
-<html lang="en" class="ds app comfortable">
+<!-- The root declaration: one context (`app`, `site` or `docs`) and one density
+     (`comfortable` or `dense`), which together choose the --density-* channel
+     every control reads. A colour scheme is optional — `light` or `dark` pins
+     one, leaving both off follows the reader's operating system.
+
+     No `ds` here. An ordinary page is the design system's by default; `ds` is
+     what each component carries on itself, and marking a whole document with
+     it is only needed where another framework owns part of the page. -->
+<html lang="en" class="app comfortable">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

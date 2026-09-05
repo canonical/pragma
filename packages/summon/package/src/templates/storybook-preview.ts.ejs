@@ -7,20 +7,16 @@ import "../src/index.css";
 import "@canonical/styles-debug/baseline-grid";
 import type { Preview } from "@storybook/react-vite";
 
-// The root contract, minus the part something else already declares.
+// The root declaration: one context (`app` | `site` | `docs`) and one density
+// (`comfortable` | `dense`), which together choose the spacing and
+// control-height channel every control reads. It goes on the document element,
+// because a docs page renders several stories into one document, and at module
+// scope, so the first paint already has it.
 //
-// `ds` marks the preview document as the design system's territory, which is
-// what its scoped element-level rules apply inside — and it is already there:
-// `@canonical/storybook-config`'s `createConfig` writes it into the preview
-// document's head, and `@canonical/storybook-addon-utils`, which the same
-// config registers, writes it again from its decorator. Writing it a third
-// time here would make this file the second owner its own rule forbids.
-//
-// What is left for this file is the context (`app` | `site` | `docs`) and the
-// density (`comfortable` | `dense`), which together choose the spacing and
-// control-height channel every control reads. They go on the document element,
-// beside `ds`, because a docs page renders several stories into one document.
-// Light and dark are the addon's too — its toolbar owns that toggle.
+// Nothing else belongs here. `@canonical/storybook-addon-utils`, which
+// `createConfig` registers, owns the light/dark toggle on this same element
+// from its toolbar; writing a scheme here would make this file a second owner
+// of it.
 if (typeof document !== "undefined") {
   document.documentElement.classList.add("app", "comfortable");
 }
