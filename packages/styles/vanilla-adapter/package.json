@@ -3,6 +3,7 @@
   "description": "Cascade layer order and boundary stylesheets for running pragma alongside Vanilla Framework.",
   "version": "0.37.0",
   "private": true,
+  "type": "module",
   "exports": {
     "./layers.css": "./layers.css",
     "./adapter.css": "./adapter.css"
@@ -28,13 +29,34 @@
     "access": "public"
   },
   "scripts": {
-    "check": "bun run check:biome",
-    "check:fix": "bun run check:biome:fix",
+    "check": "bun run check:biome && bun run check:ts",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
-    "check:biome:fix": "biome check --write"
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.11",
-    "@canonical/biome-config": "^0.37.0"
+    "@canonical/biome-config": "^0.37.0",
+    "@canonical/react-ds-global": "^0.37.0",
+    "@canonical/react-ds-global-form": "^0.37.0",
+    "@canonical/styles": "^0.37.0",
+    "@canonical/typescript-config": "^0.37.0",
+    "@vitest/browser": "^4.0.18",
+    "@vitest/browser-playwright": "^4.0.18",
+    "playwright": "^1.61.1",
+    "sass": "^1.104.0",
+    "typescript": "^5.9.3",
+    "vanilla-framework-4.56": "npm:vanilla-framework@4.56.0",
+    "vanilla-framework-4.58": "npm:vanilla-framework@4.58.0",
+    "vite": "^8.0.1",
+    "vitest": "^4.0.18"
+  },
+  "nx": {
+    "tags": [
+      "playwright"
+    ]
   }
 }
