@@ -263,10 +263,27 @@
    * --modifier-outline pattern), so a bordered and a borderless button share one
    * geometry; no per-importance branch.
    *
-   * `:is()` on the density scope (0,1,0) so `:is(...) .ds.button` (0,2,0) beats
-   * the button's own `.ds.button { align-items: center }` (0,1,0) — otherwise the
-   * label stays flex-CENTRED and the padding-based seat can't govern. */
-  :is(.comfortable, .dense, .app, .site, .docs) .ds.button {
+   * ORDER, NOT SPECIFICITY, arbitrates here. The seat selects the component root
+   * at the base rule's own specificity — `.ds.button`, (0,2,0) — and is the LAST
+   * rule in this sheet, so it beats `.ds.button { align-items: center }` above by
+   * source order. That is the only honest tie-break left: every component sheet
+   * of every package now sits in ONE layer (`ds.components.global`), so a
+   * selector lengthened purely to out-specify this file's own earlier rule also
+   * out-specifies other packages' legitimate (0,2,0) rules in that same layer —
+   * measured: with the seat at (0,3,0) the form package's
+   * `.ds.combobox-reset-button` lost `line-height`, `box-sizing`, `align-items`,
+   * `justify-content` and `padding-block-end` to it, and its glyph rose ~3px and
+   * left-aligned. See `cs:css.selectors.specificity` and
+   * `cs:css.layers.components` ("a component never escalates its selector to win
+   * against another component").
+   *
+   * `:where()` keeps what the prefix MEANS while contributing nothing to
+   * specificity: the seat's inputs (`--control-seat-basis`, `--control-seat-line`,
+   * `--density-line-height-effective`) are declared only on a density or context
+   * scope, so outside one the seat has no numbers to work with — measured, an
+   * ungated seat left an unscoped button at `align-items: flex-start` with a
+   * `normal` line box and no block padding. */
+  :where(.comfortable, .dense, .app, .site, .docs) .ds.button {
     /* Fold the button's own border into the shared basis HERE (a var() inside a
        custom property substitutes at its declaring element, so the shared layer
        cannot read this border). `1cap` in the basis resolves against the button's
