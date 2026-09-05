@@ -128,6 +128,52 @@ describe("ontology lookup (primary by-name read)", () => {
   });
 });
 
+describe("ontology lookup counts blank-node instances (A11)", () => {
+  // The shipped store models every `ds:Property` value as a blank node, so
+  // its 330 instances reported as 0 — and the render then omitted the count
+  // bracket entirely, hiding the wrong zero. The class list is the
+  // graph-truth surface: it must report named + anonymous instances.
+  const TTL = `
+@prefix an:   <https://an.test/vocab#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+an:Widget a owl:Class ; rdfs:label "Widget" .
+an:Knob a owl:Class ; rdfs:label "Knob" .
+an:name a owl:DatatypeProperty ; rdfs:domain an:Knob ; rdfs:range xsd:string .
+an:hasKnob a owl:ObjectProperty ; rdfs:domain an:Widget ; rdfs:range an:Knob .
+an:dial a owl:NamedIndividual, an:Widget ;
+  an:hasKnob [ a an:Knob ; an:name "volume" ] , [ a an:Knob ; an:name "gain" ] .
+`;
+  let anonRt: PragmaRuntime;
+  beforeAll(async () => {
+    ({ rt: anonRt } = await buildFixtureRuntime({
+      ttl: TTL,
+      prefixes: {
+        an: "https://an.test/vocab#",
+        owl: "http://www.w3.org/2002/07/owl#",
+        rdfs: "http://www.w3.org/2000/01/rdf-schema#",
+        xsd: "http://www.w3.org/2001/XMLSchema#",
+      },
+    }));
+  });
+  afterAll(async () => {
+    (await anonRt.store.get()).store.dispose();
+  });
+
+  it("a class whose only instances are blank nodes reports their count", async () => {
+    const data = (await lookupVerb.run(
+      { prefix: "an" },
+      anonRt,
+    )) as OntologyShowData;
+    const knob = data.classes.find((c) => c.uri.endsWith("Knob"));
+    expect(knob?.instanceCount).toBe(2);
+    // A class with named instances keeps its named count.
+    const widget = data.classes.find((c) => c.uri.endsWith("Widget"));
+    expect(widget?.instanceCount).toBe(1);
+  });
+});
+
 describe("ontology_lookup honours detail over MCP (B5)", () => {
   // The CLI B5 cases above seed `globalFlags.detail` and call `lookupVerb.run`
   // directly. Over MCP there are NO global flags — the ONLY detail channel is

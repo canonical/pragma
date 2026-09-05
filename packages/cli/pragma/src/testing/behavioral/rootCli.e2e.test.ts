@@ -70,6 +70,64 @@ describe("unknown verb / noun → suggestion + exit 2 (A3, e2e)", () => {
   });
 });
 
+describe("--help riding a typo still exits 2 (e2e)", () => {
+  // Commander answers `--help` BEFORE it rejects an unknown operand, so an
+  // unknown command with `--help` printed help and exited 0 — a typo
+  // reporting success. The bin's pre-parse guard resolves the tokens first.
+  it("an unknown noun with --help gets the SAME error as without it", () => {
+    const bare = runCli(["changelog"]);
+    const withHelp = runCli(["changelog", "--help"]);
+    expect(withHelp.exitCode).toBe(2);
+    expect(withHelp.stderr).toContain('Unknown command "changelog"');
+    // One diagnostic, not two dialects: byte-identical to the flagless typo.
+    expect(withHelp.stderr).toBe(bare.stderr);
+  });
+
+  it("an unknown verb under a known noun with --help exits 2, with suggestions", () => {
+    const result = runCli(["config", "sho", "--help"]);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('Unknown command "sho"');
+    expect(result.stderr).toContain("- show");
+  });
+
+  it("an explicit machine format gets the usual error envelope", () => {
+    const result = runCli(["changelog", "--help", "--format", "json"]);
+    expect(result.exitCode).toBe(2);
+    const envelope = JSON.parse(result.stderr) as {
+      ok: boolean;
+      error: { code: string };
+    };
+    expect(envelope.ok).toBe(false);
+    expect(envelope.error.code).toBe("UNKNOWN_VERB");
+  });
+
+  it("valid help forms keep exit 0: bare, noun, verb, and the mcp noun", () => {
+    for (const argv of [
+      ["--help"],
+      ["block", "--help"],
+      ["config", "show", "--help"],
+      ["mcp", "--help"],
+    ]) {
+      expect(runCli(argv).exitCode, argv.join(" ")).toBe(0);
+    }
+  });
+});
+
+describe("--help does not bypass the global value guards (e2e)", () => {
+  it("--help --format bogus exits 2 like its non-help twin", () => {
+    const result = runCli(["--help", "--format", "bogus"]);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('Invalid format "bogus"');
+    expect(result.stderr).toContain("plain, llm, json");
+  });
+
+  it("--help --detail bogus exits 2, naming the valid levels", () => {
+    const result = runCli(["config", "show", "--help", "--detail", "bogus"]);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('Invalid detail "bogus"');
+  });
+});
+
 describe("a global flag before the noun still works (A3, e2e)", () => {
   it("--format json ahead of the command is not mistaken for the noun", () => {
     const result = runCli(["--format", "json", "config", "show"]);

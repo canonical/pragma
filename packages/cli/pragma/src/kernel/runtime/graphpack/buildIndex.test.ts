@@ -88,6 +88,36 @@ describe("buildIndex — real-data counters/classifiers (backlog A)", () => {
     expect(byName("ds:datePicker").at(0)?.label).toBe("Date Picker");
   });
 
+  it("A11: blank-node instances count anonymously, never entering the name index", () => {
+    // The shipped-pack shape: every `ds:Property` individual is a blank node
+    // hanging off a `ds:hasProperty` edge — 330 real instances that reported
+    // as 0. The fixture carries two; they must land in the ANONYMOUS per-type
+    // counts (they are unnameable, so redefining the named count would let a
+    // browseable-collection surface promise entries it cannot list)…
+    expect(
+      index.anonymousInstanceCountByType?.["https://ds.canonical.com/Property"],
+    ).toBe(2);
+    // …the fixture's anonymous SHACL-style class (`[ a owl:Class ]`) is an
+    // anonymous owl:Class instance by the same rule…
+    expect(
+      index.anonymousInstanceCountByType?.[
+        "http://www.w3.org/2002/07/owl#Class"
+      ],
+    ).toBe(1);
+    // …while the NAMED count keeps its meaning: no named ds:Property
+    // instance exists, so the named record carries no key for it at all.
+    expect(
+      index.instanceCountByType["https://ds.canonical.com/Property"],
+    ).toBeUndefined();
+    // The name index stays blank-node-free: nothing anonymous is addressable.
+    for (const entity of index.entities) {
+      expect(entity.name.startsWith("_:")).toBe(false);
+      expect(entity.uri?.startsWith("_:") ?? false).toBe(false);
+    }
+    // The anonymous counts are a v3 enrichment — the version says so.
+    expect(index.version).toBe(3);
+  });
+
   it("A8: an OWL-punned subject emits BOTH its tbox and abox facet", () => {
     // ex:Slider is a class (tbox) AND an ex:Category individual (abox) — both
     // must survive, so its abox membership stays completable.

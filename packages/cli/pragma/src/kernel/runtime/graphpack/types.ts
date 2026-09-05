@@ -88,19 +88,40 @@ export interface PackIndexEntity {
 /**
  * The storeless entity index a pack ships as `index.json`.
  *
- * `version` is `2` for packs built by this kernel (the v2 enrichment fields on
- * each entity + the resource browser depend on it); `1` is a legacy artifact
- * whose enrichment is absent — the resources provider degrades to a "run
- * `pragma sources update`" hint rather than a live re-index.
+ * `version` is `3` for packs built by this kernel: v2 added the enrichment
+ * fields on each entity (which the resource browser depends on), v3 adds the
+ * anonymous per-type instance counts. `1` is a legacy artifact whose
+ * enrichment is absent — the resources provider degrades to a "run
+ * `pragma sources update`" hint rather than a live re-index. A `2` index is
+ * fully SERVABLE (every v2 reader's field is present); it merely lacks the
+ * anonymous counts until its next rebuild.
  */
 export interface PackIndex {
-  readonly version: 1 | 2;
+  readonly version: 1 | 2 | 3;
   /** The pack's content hash (matches its cache directory name). */
   readonly contentHash: string;
   readonly prefixes: Readonly<Record<string, string>>;
   readonly entities: readonly PackIndexEntity[];
-  /** Full-type-URI → count of asserted instances. */
+  /**
+   * Full-type-URI → count of NAMED (addressable) asserted instances.
+   *
+   * Deliberately excludes blank-node subjects: this is the number consumers
+   * with a browse-promise read (a resource collection advertising this count
+   * must be able to list that many entries, and a blank node cannot be
+   * addressed). The graph-truth total of a type is this plus its
+   * {@link anonymousInstanceCountByType} bucket.
+   */
   readonly instanceCountByType: Readonly<Record<string, number>>;
+  /**
+   * Full-type-URI → count of BLANK-NODE (anonymous) asserted instances —
+   * real instances of a named class that cannot themselves be named (the
+   * shipped pack models every `ds:Property`/`ds:ChangeLogEntry` this way).
+   * Sparse: only types with at least one anonymous instance carry a key.
+   * Absent on a pre-v3 index. Kept OUT of {@link instanceCountByType} so the
+   * named count keeps its browse-promise meaning; display surfaces that want
+   * the graph truth sum the two.
+   */
+  readonly anonymousInstanceCountByType?: Readonly<Record<string, number>>;
 }
 
 /**

@@ -20,6 +20,9 @@
  *   individual) — whose abox facet must survive alongside its tbox one (A8).
  * - MULTILINGUAL labels (`"Button"@en` / `"Bouton"@fr`) — resolved to a stable
  *   language, never whichever row the store returned first (A7).
+ * - BLANK-NODE domain instances (`ds:button`'s anonymous `ds:Property`
+ *   values) — real instances of a named class that cannot be named
+ *   themselves, which must COUNT without entering the name index (A11).
  *
  * The `ds:` half is a compact but faithful design-system slice (so `block list`
  * runs against it); the `ex:` half is generic OWL, proving the index is
@@ -84,6 +87,17 @@ ex:Slider a owl:Class, owl:NamedIndividual, ex:Category ;
 #      The blank node must NOT become ex:field's primary type. ----
 ex:field a owl:NamedIndividual, ex:FormControl, [ a owl:Class ] ;
   rdfs:label "Field" .
+
+# ---- BLANK-NODE domain instances (A11): the shipped-pack shape where every
+#      \`ds:Property\` individual is an anonymous node hanging off an edge.
+#      They are REAL instances of a NAMED class — they must reach the
+#      anonymous per-type counts — but they cannot be named, so they must
+#      never enter the entity name index. ----
+ds:Property a owl:Class ; rdfs:label "Property" .
+ds:hasProperty a owl:ObjectProperty ; rdfs:domain ds:UIBlock ; rdfs:range ds:Property .
+ds:button ds:hasProperty
+  [ a ds:Property ; ds:name "size" ] ,
+  [ a ds:Property ; ds:name "variant" ] .
 `;
 
 /** The distinct abox individuals this fixture declares (the `entityTotal` oracle). */
