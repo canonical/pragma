@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { fn } from "storybook/test";
 import {
   lxdContentRoot,
   lxdFooterRoot,
@@ -11,6 +12,7 @@ import {
   withNavigationRouterProps,
   withNavLayout,
 } from "../../storybook/navigation/story-utils.js";
+import type { ContextSwitcherItem } from "./common/ContextSwitcher/types.js";
 import SideNavigation from "./SideNavigation.js";
 
 const meta: Meta<typeof SideNavigation> = {
@@ -100,4 +102,49 @@ export const Mobile: Story = {
       </div>
     ),
   ],
+};
+
+const composedContexts: ContextSwitcherItem[] = [
+  { key: "default", name: "default" },
+  { key: "staging", name: "staging", description: "Staging environment" },
+];
+
+/**
+ * Fully composed `Content` — a consumer builds the navigation region
+ * directly out of JSX (via `children`) instead of the `root` data shape,
+ * to place a `ContextSwitcher` at its "content-defined position" (SPEC.md
+ * §1.1, §4.5) above the item groups. Exercises every row variant (`Item`,
+ * `ItemButton`, `ItemSwitch`, `ItemExpandable`) and `Separator` together.
+ */
+export const ComposedContent: Story = {
+  args: {
+    applicationName: "LXD",
+    children: (
+      <>
+        <SideNavigation.ContextSwitcher
+          currentContext={composedContexts[0]}
+          contexts={composedContexts}
+          onContextChange={fn()}
+        />
+        <SideNavigation.Group label="Project">
+          <SideNavigation.Item url="/instances" icon="containers">
+            Instances
+          </SideNavigation.Item>
+          <SideNavigation.ItemExpandable heading="Networking" icon="connected">
+            <SideNavigation.Item url="/networks">Networks</SideNavigation.Item>
+            <SideNavigation.Item url="/network-acls">ACLs</SideNavigation.Item>
+          </SideNavigation.ItemExpandable>
+        </SideNavigation.Group>
+        <SideNavigation.Separator />
+        <SideNavigation.Group label="Preferences">
+          <SideNavigation.ItemSwitch icon="dark-theme" defaultChecked>
+            Dark mode
+          </SideNavigation.ItemSwitch>
+          <SideNavigation.ItemButton icon="log-out" onClick={fn()}>
+            Log out
+          </SideNavigation.ItemButton>
+        </SideNavigation.Group>
+      </>
+    ),
+  },
 };

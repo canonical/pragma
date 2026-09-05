@@ -269,6 +269,14 @@ type OwnProps = {
    * (SPEC.md §5, §10.1). No story enables it.
    */
   keyboardShortcut?: boolean;
+  /**
+   * Fallback content region, rendered by `Content` in place of a `root`-
+   * derived tree — lets a consumer compose the main navigation region
+   * directly (e.g. a `SideNavigation.ContextSwitcher` alongside hand-written
+   * items) instead of authoring the WD405 `root` data shape. Ignored when
+   * `root` is given.
+   */
+  children?: ReactNode;
 };
 
 /**

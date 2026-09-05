@@ -146,4 +146,23 @@ describe("SideNavigation", () => {
       "Settings", // footer, top-to-bottom
     ]);
   });
+
+  it("renders children as the content region's fallback when no root is given (SPEC.md §4.5)", () => {
+    render(
+      <SideNavigation>
+        <SideNavigation.Item url="/machines">Machines</SideNavigation.Item>
+      </SideNavigation>,
+    );
+    expect(screen.getByRole("link", { name: "Machines" })).toBeInTheDocument();
+  });
+
+  it("prefers root over children when both are given", () => {
+    render(
+      <SideNavigation root={root}>
+        <SideNavigation.Item url="/composed">Composed</SideNavigation.Item>
+      </SideNavigation>,
+    );
+    expect(screen.getByText("Machines")).toBeInTheDocument();
+    expect(screen.queryByText("Composed")).not.toBeInTheDocument();
+  });
 });

@@ -53,6 +53,7 @@ const SideNavigation = ({
   // onExpandedChange,
   keyboardShortcut = false,
   "aria-label": ariaLabel,
+  children,
   ...props
 }: SideNavigationProps): React.ReactElement => {
   const contentId = useId();
@@ -101,7 +102,9 @@ const SideNavigation = ({
         root={root}
         LinkComponent={LinkComponent}
         currentUrl={currentUrl}
-      />
+      >
+        {children}
+      </Content>
       {(footerItems && footerItems.length > 0) || footerRoot ? (
         <Footer
           root={footerRoot}
