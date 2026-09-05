@@ -266,16 +266,22 @@
    * ORDER, NOT SPECIFICITY, arbitrates here. The seat selects the component root
    * at the base rule's own specificity — `.ds.button`, (0,2,0) — and is the LAST
    * rule in this sheet, so it beats `.ds.button { align-items: center }` above by
-   * source order. That is the only honest tie-break left: every component sheet
-   * of every package now sits in ONE layer (`ds.components.global`), so a
-   * selector lengthened purely to out-specify this file's own earlier rule also
-   * out-specifies other packages' legitimate (0,2,0) rules in that same layer —
-   * measured: with the seat at (0,3,0) the form package's
-   * `.ds.combobox-reset-button` lost `line-height`, `box-sizing`, `align-items`,
-   * `justify-content` and `padding-block-end` to it, and its glyph rose ~3px and
-   * left-aligned. See `cs:css.selectors.specificity` and
-   * `cs:css.layers.components` ("a component never escalates its selector to win
-   * against another component").
+   * source order. Inside one layer, order is the only tie-break left: every
+   * GLOBAL-TIER package writes its component sheets into ONE layer,
+   * `ds.components.global` (an application tier has its own, `ds.components.app`,
+   * which sorts above it). So a selector lengthened purely to out-specify this
+   * file's own earlier rule also out-specifies the other global-tier packages'
+   * legitimate (0,2,0) rules in that same layer — measured: with the seat at
+   * (0,3,0) the form package's `.ds.combobox-reset-button` lost `line-height`,
+   * `box-sizing`, `align-items`, `justify-content` and `padding-block-end` to it,
+   * and its glyph rose 1.5 to 3px by cell and left-aligned. See
+   * `cs:css.selectors.specificity` and `cs:css.layers.components` ("a component
+   * never escalates its selector to win against another component").
+   *
+   * Order is a tie-break, not a guarantee: which of two packages' sheets a
+   * bundler emits first is not fixed. So nothing in the global tier should
+   * redeclare the seat's properties on a `.ds.button` at all; the tier layers
+   * settle everything else.
    *
    * `:where()` keeps what the prefix MEANS while contributing nothing to
    * specificity: the seat's inputs (`--control-seat-basis`, `--control-seat-line`,
