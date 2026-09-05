@@ -25,22 +25,25 @@
  * `--intent-*` to `--modifier-*`; it was never an application-tier design
  * decision. Four of its declarations read `--button-margin-bottom`,
  * `--button-margin-left`, `--button-padding-vertical` and
- * `--button-padding-horizontal`, which the global tier has since renamed, so
- * they erased the button's horizontal padding. A fifth read `--modifier-color`,
- * an anticipation channel that was dropped outright — the anticipation
- * modifiers now declare `--modifier-color-text`, `-border`, `-icon` and the
- * `-foreground-*` pair, while `--modifier-surface`, the property the global
- * sheet reads for the fill, is a different channel that the importance shim in
- * @canonical/styles declares. Because the dead name fell through to
- * `--button-color-background`, which is declared on `:root`, that fallback's
- * own `var()` substituted where no anticipation class exists, so every button
- * was painted the neutral primary fill whatever its modifiers said.
+ * `--button-padding-horizontal`. The two padding names the global tier has
+ * since renamed, to `--button-padding-inline-start` and `-end`, so those
+ * declarations erased the button's horizontal padding; the two margin names it
+ * dropped outright, declaring no margin at all. A fifth read `--modifier-color`,
+ * an anticipation channel also dropped outright — the anticipation modifiers
+ * now declare `--modifier-color-text`, `-border`, `-icon` and three
+ * `-foreground-*` names (`-ghost`, `-primary`, `-secondary`), while
+ * `--modifier-surface`, the property the global sheet reads for the fill, is a
+ * different, importance channel that the shim in @canonical/styles declares.
+ * Because the dead name fell through to `--button-color-background`, which is
+ * declared on `:root`, that fallback's own `var()` substituted where no
+ * modifier class exists, so every button was painted the neutral primary fill
+ * whatever its modifiers said.
  *
  * What remains is what this tier actually asserts. `display: inline-block` and
  * `text-align: left` came from that same 2025 sheet, have no design source at
  * any application tier, and cost the global sheet's 8px icon/label gap, so they
  * are gone with the rest; the two below stay pending an owner's confirmation,
- * recorded on the F-6 hygiene carrier. */
+ * recorded on Linear PRA-153. */
 
 @layer ds.components.app {
   .ds.button {
