@@ -15,17 +15,17 @@
     padding-inline: var(--sidenav-inset-start) var(--sidenav-inset-end); /* 1rem / 1.5rem */
     box-sizing: border-box;
     color: var(--color-text);
-    background: var(--color-foreground-navigation-primary);
+    background: var(--sidenav-row-background);
     cursor: pointer;
   }
 
   &:not([data-disabled]) > .row:hover {
-    background: var(--color-foreground-navigation-primary-hover);
+    background: var(--sidenav-row-background-hover);
   }
 
   &[data-disabled] > .row {
     color: var(--color-text-disabled);
-    background: var(--color-foreground-navigation-primary-disabled);
+    background: var(--sidenav-row-background-disabled);
     cursor: default;
   }
 

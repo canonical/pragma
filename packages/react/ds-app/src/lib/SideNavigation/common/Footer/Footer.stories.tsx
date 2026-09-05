@@ -22,9 +22,32 @@ const meta: Meta<typeof Footer> = {
 export default meta;
 type Story = StoryObj<typeof Footer>;
 
-/** Renders the footer navigation from a WD405 root. */
+/** Renders the footer navigation from a WD405 root (the free-form escape hatch). */
 export const Default: Story = {
   args: {
     root: maasFooterRoot,
+  },
+};
+
+/** The spec's closed footer-items vocabulary: account, notifications, log out. */
+export const ClosedVocabulary: Story = {
+  args: {
+    items: [
+      { kind: "account", url: "/account", label: "Ada Lovelace" },
+      {
+        kind: "notifications",
+        url: "/notifications",
+        slot: <span>3</span>,
+      },
+      { kind: "logout", onClick: () => {} },
+    ],
+  },
+};
+
+/** A certificate user (e.g. LXD): the account icon becomes `certificate`, logout is hidden. */
+export const CertificateUser: Story = {
+  args: {
+    ...ClosedVocabulary.args,
+    certificateUser: true,
   },
 };

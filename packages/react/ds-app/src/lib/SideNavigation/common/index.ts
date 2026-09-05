@@ -11,4 +11,5 @@ export * from "./Item/index.js";
 export * from "./ItemButton/index.js";
 export * from "./ItemExpandable/index.js";
 export * from "./ItemSwitch/index.js";
+export * from "./Secondary/index.js";
 export * from "./Separator/index.js";

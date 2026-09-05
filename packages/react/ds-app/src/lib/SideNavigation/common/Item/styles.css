@@ -19,7 +19,7 @@
     box-sizing: border-box;
     text-decoration: none;
     color: var(--color-text);
-    background: var(--color-foreground-navigation-primary);
+    background: var(--sidenav-row-background);
   }
 
   /* Spec: "On-Hover the background colour of the navigation item changes" —
@@ -29,11 +29,11 @@
     cursor: pointer;
 
     &:hover {
-      background: var(--color-foreground-navigation-primary-hover);
+      background: var(--sidenav-row-background-hover);
     }
 
     &:active {
-      background: var(--color-foreground-navigation-primary-active);
+      background: var(--sidenav-row-background-active);
     }
 
     &:focus-visible {
@@ -43,14 +43,14 @@
   }
 
   &[data-active] > .row {
-    background: var(--color-foreground-navigation-primary-active);
+    background: var(--sidenav-row-background-active);
   }
 
   /* Declared after [data-active] so a disabled+active item (edge case) still
      reads as disabled. */
   &[data-disabled] > .row {
     color: var(--color-text-disabled);
-    background: var(--color-foreground-navigation-primary-disabled);
+    background: var(--sidenav-row-background-disabled);
     cursor: default;
   }
 

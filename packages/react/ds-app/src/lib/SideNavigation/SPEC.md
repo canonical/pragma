@@ -237,23 +237,40 @@ gap 1rem) — no separate padding token needed; the header uses the same
 | Prop | Spec property | Type | Default | Notes |
 |---|---|---|---|---|
 | `brand` | `logo` | `ReactNode` | — | **Deviation** — spec is a closed 8-product single-select; kept as `ReactNode` for consumer flexibility (§10.5) |
-| `brandHref` | `logo-target` | `string` | first navigable item under `root` | External URLs are rejected by the spec; validated as a same-app path |
+| `brandHref` | `logo-target` | — | — | **Not implemented** — the consumer's `brand` node owns its own link markup entirely (e.g. its own `<a href>`); SideNavigation never wraps it. A real `brandHref` would need SideNavigation to own that wrapping instead, a bigger change than any current acceptance criterion calls for. Tracked in §10.15 |
 | `applicationName` | — | `ReactNode` | — | Pre-existing, not in spec; kept |
-| `root` | `content` | `NavItem` | — | WD405 root; direct children render as groups (§4.3) |
-| `footerItems` | `footer-items` | `("account" \| "notifications" \| "logout")[]` | `[]` (footer hidden) | Closed vocabulary per spec — see §10.6 for the `footerRoot` escape hatch |
-| `certificateUser` | *(implied by "certificate user" usage note)* | `boolean` | `false` | Swaps the account icon `user` → `certificate`; forces `logout` out of `footerItems` |
+| `root` | `content` | `NavRoot` | — | WD405 root; direct children render as groups (§4.3) |
+| `footerItems` | `footer-items` | `FooterItem[]` | `[]` (footer hidden) | Closed vocabulary per spec (`FooterItem` carries each item's own `url`/`onClick`/`label`/`slot` — see §4.1's `FooterItem` below) — see §10.6 for the `footerRoot` escape hatch |
+| `certificateUser` | *(implied by "certificate user" usage note)* | `boolean` | `false` | Swaps the account icon `user` → `certificate`; drops any `logout` item from `footerItems` |
 | `LinkComponent` | — | `ComponentType<LinkComponentProps> \| "a"` | `"a"` | Router integration, per `cs:react.component.link_component` |
 | `currentUrl` | — | `string` | — | Drives `aria-current` + active state |
 | `defaultExpanded` | `is-open` | `boolean` | `true` | Uncontrolled; the DS has no controlled variant (deferred — see the commented-out controlled circuit in `SideNavigation.tsx`) |
 | `keyboardShortcut` | *(unratified — §10.1)* | `boolean` | **`false`** | Reserved. When `true`, binds the collapse shortcut in `COLLAPSE_SHORTCUT`. Ships disabled; no story enables it until design ratifies the key |
 
+```ts
+interface FooterItem {
+  kind: "account" | "notifications" | "logout";
+  url?: string; // present ⇒ renders as a link (Item)
+  label?: string; // defaults per kind: "Account settings" / "Notifications" / "Log out"
+  onClick?: () => void; // present (no url) ⇒ renders as a button (ItemButton)
+  slot?: ReactNode; // e.g. an unread-count badge on notifications
+}
+```
+
 ### 4.2 `SideNavigation.Secondary`
 
 | Prop | Spec property | Type | Notes |
 |---|---|---|---|
-| `title` | `title` | `ReactNode` | Rendered in the header; also the `aria-label` |
-| `root` | `content` | `NavItem` | Direct children render as groups; **items must not be `icon`- or `items`-bearing** — enforced by the narrower `SecondaryNavItem` type (icon and items omitted) |
-| `onClose` | *(derived from "hides on primary click")* | `() => void` | Called when a primary item without a secondary target is activated |
+| `title` | `title` | `string` | Rendered in the header; also the default `aria-label` |
+| `root` | `content` | `SecondaryNavRoot` | Direct children render as groups (and separators); a group's entries must not be `icon`- or `items`-bearing — enforced by the narrower `SecondaryNavItem` type (`LeafNavItem` without `icon`, and with no expandable variant at all) |
+
+Mounting and unmounting `SideNavigation.Secondary` — "hides on primary
+click" (§5) — is entirely a consumer decision: which (if any) primary item
+is active determines whether the consumer renders it at all, alongside
+`SideNavigation`, in the application shell. There is no `onClose` prop:
+Secondary has no internal control that would call it, and the event that
+triggers hiding (activating a *primary* item without a secondary target)
+happens on the primary nav's side, not Secondary's own.
 
 ### 4.3 `NavItem` (content vocabulary)
 
@@ -467,7 +484,7 @@ file):
 | 4 | Group/GroupHeader/Separator/ItemExpandable, depth-1 type | ✅ this PR |
 | 5 | ItemButton/ItemSwitch/ContextSwitcher (AC3, AC4) | ✅ this PR |
 | 6 | Collapsed rail behaviour, tooltips, inert shortcut scaffold | ✅ this PR (footer-item tooltips deferred — §10.14) |
-| 7 | Secondary navigation, Help item, footerItems, certificate user | pending |
+| 7 | Secondary navigation, Help item, footerItems, certificate user | ✅ this PR (`brandHref` deferred — §10.15) |
 | 8 | Responsive (<768px), text-overflow tooltips, focus-order/reduced-motion tests | pending |
 
 ---
@@ -703,4 +720,20 @@ Carried forward for design/engineering resolution; none block PR1.
     collapse button's tooltip (self-contained in one component, shipped this
     PR). Tracked as a follow-up rather than rushed alongside the rest of
     PR6's collapsed-state mechanics.
+15. **`brandHref`/`logo-target` is not implemented.** `brand` stays an
+    opaque `ReactNode` — the consumer's own logo markup, including its own
+    `<a href>` if it wants one; `SideNavigation` never wraps it in a link of
+    its own. Implementing `logo-target` properly (default: the first
+    navigable item under `root`) would mean `SideNavigation` owning that
+    anchor instead, which changes what `brand` even is (content vs. a
+    link's children) — a bigger change than any of AC1–AC4 calls for, so
+    deferred rather than half-built.
+16. **`createHelpItem` is a data-construction helper, not enforcement.**
+    Nothing prevents a consumer from omitting the mandatory Help item from
+    `root` entirely — the spec calls it mandatory in prose, not as a type
+    constraint this file can express (an omission is not a distinguishable
+    shape from a deliberately Help-less nav). The helper (§4.3-adjacent,
+    `packages/react/ds-app/src/lib/SideNavigation/helpItem.ts`) only makes
+    authoring it correctly (right icon, right external-link child, right
+    field names) a one-line call instead of five.
 </content>

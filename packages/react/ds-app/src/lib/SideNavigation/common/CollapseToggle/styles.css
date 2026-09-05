@@ -19,10 +19,10 @@
      hover; no stated transition on that change (SPEC.md §10.4), so no
      `transition` property here — the swap is instant. */
   &:hover {
-    background: var(--color-foreground-navigation-primary-hover);
+    background: var(--sidenav-row-background-hover);
   }
 
   &:active {
-    background: var(--color-foreground-navigation-primary-active);
+    background: var(--sidenav-row-background-active);
   }
 }

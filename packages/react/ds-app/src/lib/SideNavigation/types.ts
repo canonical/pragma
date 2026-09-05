@@ -21,6 +21,7 @@ import type { ItemProps } from "./common/Item/types.js";
 import type { ItemButtonProps } from "./common/ItemButton/types.js";
 import type { ItemExpandableProps } from "./common/ItemExpandable/types.js";
 import type { ItemSwitchProps } from "./common/ItemSwitch/types.js";
+import type { SecondaryProps } from "./common/Secondary/types.js";
 import type { SeparatorProps } from "./common/Separator/types.js";
 
 export type { LinkComponentProps };
@@ -137,12 +138,55 @@ export interface NavRoot {
 }
 
 /**
+ * A `SideNavigation.Secondary` entry — a `LeafNavItem` without `icon` and
+ * without an expandable variant at all (SPEC.md §1.3, §4.2: "only
+ * non-expandable navigation items without icons").
+ */
+export type SecondaryNavItem = Omit<LeafNavItem, "icon">;
+
+/** A `SideNavigation.Secondary` group — mirrors `NavGroup`, entries restricted to `SecondaryNavItem`. */
+export interface SecondaryNavGroup {
+  /** Required — see `NavGroup.key`'s doc: every tree node needs an identity. */
+  key: string;
+  label?: string;
+  items?: SecondaryNavItem[];
+}
+
+/** The root passed to `SideNavigation.Secondary`'s `root` prop. */
+export interface SecondaryNavRoot {
+  /** Required — see `NavGroup.key`'s doc: every tree node needs an identity. */
+  key: string;
+  items?: (SecondaryNavGroup | NavSeparator)[];
+}
+
+/**
+ * A `SideNavigation.Footer` entry from the spec's closed `footer-items`
+ * vocabulary (SPEC.md §4.1, §10.6) — Account settings, Notifications, or Log
+ * out. Exactly one of `url`/`onClick` is expected per item, mirroring the
+ * link-vs-button split `control` makes elsewhere in this file: present a
+ * `url` for a navigable footer item, or `onClick` for a plain action (most
+ * commonly `logout`, which is nearly always an action, never a page).
+ */
+export interface FooterItem {
+  kind: "account" | "notifications" | "logout";
+  /** Navigable footer items render as a link when this is set. */
+  url?: string;
+  /** Display text. Defaults per `kind` if omitted ("Account settings", "Notifications", "Log out"). */
+  label?: string;
+  /** Non-navigable footer items (most commonly `logout`) render as a button and call this when activated. */
+  onClick?: () => void;
+  /** Trailing content (e.g. an unread-count badge on `notifications`). */
+  slot?: ReactNode;
+}
+
+/**
  * Internal. `useNavigationTree` (`@canonical/react-hooks`) is generic over
  * ONE homogeneous item shape for the whole tree — it doesn't know about the
  * root/group/entry/expandable-child tiering above. This is that one shape:
  * the union of every field any tier can carry, so annotated nodes
  * (`_Item<_AnyNavNode>`) keep every field typed regardless of which tier they
- * actually came from. `NavRoot`/`NavGroup`/`NavItem`/`NavSeparator` are each
+ * actually came from. `NavRoot`/`NavGroup`/`NavItem`/`NavSeparator`/
+ * `SecondaryNavRoot`/`SecondaryNavGroup`/`SecondaryNavItem` are each
  * individually assignable to it (a subset of its optional fields), so no
  * cast is needed at the `useNavigationTree` call site. Exported (like
  * `@canonical/ds-types`' underscore-prefixed `_Item`/`_Index`) only because
@@ -180,8 +224,28 @@ type OwnProps = {
   applicationName?: ReactNode;
   /** Main navigation, as a root NavItem. Its direct children are rendered. */
   root?: NavRoot;
-  /** Footer navigation, as a root NavItem. Pinned to the bottom. */
+  /**
+   * Footer navigation as a free-form root — the pre-24.04 escape hatch for
+   * footers that don't fit the spec's closed `footerItems` vocabulary
+   * (SPEC.md §10.6). New consumers should prefer `footerItems`. Ignored when
+   * `footerItems` is also given.
+   */
   footerRoot?: NavRoot;
+  /**
+   * The footer's items, from the spec's closed vocabulary (SPEC.md §4.1):
+   * Account settings, Notifications, Log out — in the order given. Omit (or
+   * pass an empty array) to hide the footer entirely.
+   */
+  footerItems?: FooterItem[];
+  /**
+   * When `true`, the footer's `account` item shows the `certificate` icon
+   * instead of `user`, and any `logout` item is dropped — "If the
+   * application allows for a certificate user... instead of the profile
+   * icon the certificate icon is used and the logout option is hidden"
+   * (SPEC.md §4.1). Only affects `footerItems`; has no effect on the
+   * free-form `footerRoot`, which the consumer already fully controls.
+   */
+  certificateUser?: boolean;
   /**
    * Component used to render navigable items (those with a `url`). Receives
    * `LinkComponentProps`. Defaults to `"a"`. Pass a router `Link` (e.g.
@@ -234,5 +298,6 @@ export type SideNavigationComponent = ((
   ItemButton: (props: ItemButtonProps) => ReactElement;
   ItemExpandable: (props: ItemExpandableProps) => ReactElement;
   ItemSwitch: (props: ItemSwitchProps) => ReactElement;
+  Secondary: (props: SecondaryProps) => ReactElement;
   Separator: (props: SeparatorProps) => ReactElement;
 };

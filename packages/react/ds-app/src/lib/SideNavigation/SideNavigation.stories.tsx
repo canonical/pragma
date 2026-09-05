@@ -60,3 +60,20 @@ export const Collapsed: Story = {
     footerRoot: maasFooterRoot,
   },
 };
+
+/**
+ * A certificate-user app (spec's own example: "If the application allows
+ * for a certificate user (like LXD)"): the closed `footerItems` vocabulary,
+ * `account`'s icon becomes `certificate`, and `logout` is dropped entirely.
+ */
+export const CertificateUser: Story = {
+  args: {
+    applicationName: "LXD",
+    root: lxdContentRoot,
+    footerItems: [
+      { kind: "account", url: "/ui/settings/account", label: "admin" },
+      { kind: "logout" },
+    ],
+    certificateUser: true,
+  },
+};

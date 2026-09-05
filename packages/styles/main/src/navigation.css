@@ -46,4 +46,22 @@
      it, so this is a distinctly-scoped provisional value rather than reusing
      a spacing token for a sizing concern). */
   --sidenav-icon-column-inline-size: 1rem;
+
+  /* ── Row background channel ────────────────────────────────────────
+     Item/ItemButton/ItemSwitch/ItemExpandable/CollapseToggle consume THIS,
+     not the navigation-primary token directly, so SideNavigation.Secondary
+     can retint every descendant row to the secondary token in one place
+     (an inherited custom-property override on its own root) instead of
+     threading an "is this secondary?" flag through every row component.
+     Defaults to primary; Secondary/styles.css overrides all four. */
+  --sidenav-row-background: var(--color-foreground-navigation-primary);
+  --sidenav-row-background-hover: var(
+    --color-foreground-navigation-primary-hover
+  );
+  --sidenav-row-background-active: var(
+    --color-foreground-navigation-primary-active
+  );
+  --sidenav-row-background-disabled: var(
+    --color-foreground-navigation-primary-disabled
+  );
 }

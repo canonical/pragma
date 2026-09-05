@@ -18,18 +18,18 @@
     padding-inline: var(--sidenav-inset-start) var(--sidenav-inset-end); /* 1rem / 1.5rem */
     box-sizing: border-box;
     border: none;
-    background: var(--color-foreground-navigation-primary);
+    background: var(--sidenav-row-background);
     color: var(--color-text);
     font: inherit;
     text-align: start;
     cursor: pointer;
 
     &:hover {
-      background: var(--color-foreground-navigation-primary-hover);
+      background: var(--sidenav-row-background-hover);
     }
 
     &:active {
-      background: var(--color-foreground-navigation-primary-active);
+      background: var(--sidenav-row-background-active);
     }
 
     &:focus-visible {
@@ -39,7 +39,7 @@
 
     &:disabled {
       color: var(--color-text-disabled);
-      background: var(--color-foreground-navigation-primary-disabled);
+      background: var(--sidenav-row-background-disabled);
       cursor: default;
     }
   }

@@ -118,7 +118,7 @@
     padding-inline: var(--sidenav-inset-start) var(--sidenav-inset-end); /* 1rem / 1.5rem */
     list-style: none;
     color: var(--color-text);
-    background: var(--color-foreground-navigation-primary);
+    background: var(--sidenav-row-background);
     cursor: pointer;
 
     &::-webkit-details-marker {
@@ -126,7 +126,7 @@
     }
 
     &:hover {
-      background: var(--color-foreground-navigation-primary-hover);
+      background: var(--sidenav-row-background-hover);
     }
   }
 }

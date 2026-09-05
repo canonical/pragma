@@ -1,3 +1,4 @@
+import { createHelpItem } from "../../lib/SideNavigation/helpItem.js";
 import type { LeafNavItem, NavRoot } from "../../lib/SideNavigation/types.js";
 import { MockBadge } from "./story-utils.js";
 
@@ -78,6 +79,10 @@ export const maasContentRoot: NavRoot = {
         },
       ],
     },
+    // The mandatory collapsible "Help" item, with an external link to legal
+    // information (SPEC.md §1.1) — an unlabelled trailing group, the common
+    // placement for it.
+    { key: "help-group", items: [createHelpItem("https://ubuntu.com/legal")] },
   ],
 };
 
@@ -174,6 +179,12 @@ export const lxdContentRoot: NavRoot = {
         },
         { url: "/ui/settings", label: "Settings", icon: "settings" },
       ],
+    },
+    // The mandatory collapsible "Help" item, with an external link to legal
+    // information (SPEC.md §1.1) — an unlabelled trailing group.
+    {
+      key: "help-group",
+      items: [createHelpItem("https://ubuntu.com/legal")],
     },
   ],
 };

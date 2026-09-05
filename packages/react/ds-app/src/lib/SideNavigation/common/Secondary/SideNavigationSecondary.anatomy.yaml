@@ -1,0 +1,34 @@
+---
+# SideNavigation.Secondary — a second navigation landmark, a SIBLING of
+# SideNavigation rather than a child of it (SPEC.md §1.3). Cannot collapse.
+# Reuses SideNavigation.Content for its own content region.
+node:
+  uri: apps.pattern.side-navigation-secondary
+  styles:
+    layout.type: stack
+    layout.direction: column
+    size.height: fill
+    appearance.background: color/foreground/navigation/secondary
+  edges:
+    - node:
+        role: header
+        styles:
+          layout.type: flow
+          layout.direction: row
+        edges:
+          - node:
+              role: title
+              styles:
+                typography.text: typography/heading/5
+                typography.color: color/text
+            relation:
+              cardinality: "1"
+              slotName: title
+      relation:
+        cardinality: "1"
+        slotName: header
+    - node:
+        uri: apps.subcomponent.side-navigation-content
+      relation:
+        cardinality: "1"
+        slotName: default

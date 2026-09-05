@@ -13,6 +13,7 @@ import {
   ItemButton,
   ItemExpandable,
   ItemSwitch,
+  Secondary,
   Separator,
 } from "./common/index.js";
 import type { SideNavigationProps } from "./types.js";
@@ -42,6 +43,8 @@ const SideNavigation = ({
   applicationName,
   root,
   footerRoot,
+  footerItems,
+  certificateUser = false,
   LinkComponent = "a",
   currentUrl,
   // Controlled circuit — not official yet.
@@ -99,13 +102,15 @@ const SideNavigation = ({
         LinkComponent={LinkComponent}
         currentUrl={currentUrl}
       />
-      {footerRoot && (
+      {(footerItems && footerItems.length > 0) || footerRoot ? (
         <Footer
           root={footerRoot}
+          items={footerItems}
+          certificateUser={certificateUser}
           LinkComponent={LinkComponent}
           currentUrl={currentUrl}
         />
-      )}
+      ) : null}
     </nav>
   );
 };
@@ -121,6 +126,7 @@ SideNavigation.Item = Item;
 SideNavigation.ItemButton = ItemButton;
 SideNavigation.ItemExpandable = ItemExpandable;
 SideNavigation.ItemSwitch = ItemSwitch;
+SideNavigation.Secondary = Secondary;
 SideNavigation.Separator = Separator;
 
 export default SideNavigation;
