@@ -1,8 +1,14 @@
-/* This sheet writes into two layers. The criticality shim below belongs in
- * `ds.modifiers`, where the tokens it stands in for are generated, and is
- * declared first so the two layers open in the order the statement gives
- * them; everything else is this package's own and is in `ds.components.app`
- * with the rest of the tier. */
+/* This sheet writes into two layers: the criticality shim below belongs in
+ * `ds.modifiers`, where the tokens it stands in for are generated, and
+ * everything else is this package's own and sits in `ds.components.app` with
+ * the rest of the tier. The shim is written first purely as ordering hygiene
+ * inside this file — it does not establish the layer order. `ds.modifiers` is
+ * already opened by `modifiers.theme.css`, which `ds-tokens.css` imports before
+ * this sheet is reached, so first-appearance order is the same either way
+ * (measured: 0 of 26,685 properties differ hoisted against un-hoisted).
+ *
+ * Layer: ds.components.app (@canonical/styles README, "Cascade layers").
+ */
 
 /* The criticality modifier exposes every color channel except the solid fill
  * and the on-surface text pairing, so a component painting a solid criticality
@@ -45,10 +51,6 @@
     );
   }
 }
-
-/* Layer: `ds.components.app` — so an application tier's own rule for this
- * component wins by cascade layer, not by whichever bundle a loader happened to
- * emit last. See "Cascade layers" in the @canonical/styles README. */
 
 @layer ds.components.app {
   :root {

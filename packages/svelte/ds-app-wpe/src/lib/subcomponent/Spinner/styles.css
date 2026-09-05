@@ -5,11 +5,9 @@
  * The Spinner renders the `spinner` glyph and rotates it continuously. The
  * rotation is a linear, infinite animation so the motion reads as steady
  * rather than eased.
+ *
+ * Layer: ds.components.app (@canonical/styles README, "Cascade layers").
  */
-
-/* Layer: `ds.components.app` — so an application tier's own rule for this
- * component wins by cascade layer, not by whichever bundle a loader happened to
- * emit last. See "Cascade layers" in the @canonical/styles README. */
 
 @layer ds.components.app {
   /* A full 0→360deg turn. Keep it a full turn: Chromatic freezes infinite

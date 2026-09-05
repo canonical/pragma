@@ -1,6 +1,4 @@
-/* Layer: `ds.components.app` — so an application tier's own rule for this
- * component wins by cascade layer, not by whichever bundle a loader happened to
- * emit last. See "Cascade layers" in the @canonical/styles README. */
+/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
 
 @layer ds.components.app {
   .ds.description-list-item {

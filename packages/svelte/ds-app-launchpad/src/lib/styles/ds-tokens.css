@@ -2,35 +2,23 @@
  * see: packages/styles/main/src/index.css
  * That one imports normalize.css and the typography baseline engine,
  * which restyles every un-migrated component. Once the last component is migrated,
- * delete this file and move the import to ds-app-launchpad/src/lib/index.css */
+ * delete this file and move the import to ds-app-launchpad/src/lib/index.css
+ *
+ * Layer: ds.components.app (@canonical/styles README, "Cascade layers").
+ */
 
 @import "@canonical/design-tokens/dist/sets.primitive.css";
-
 @import "@canonical/design-tokens/dist/modifiers.theme.css";
-
 @import "@canonical/design-tokens/dist/modifiers.surfaces.css";
-
 @import "@canonical/design-tokens/dist/modifiers.typography.css";
-
 @import "@canonical/design-tokens/dist/modifiers.criticality.css";
-
 @import "@canonical/design-tokens/dist/modifiers.anticipation.css";
-
 @import "@canonical/design-tokens/dist/modifiers.emphasis.css";
-
 @import "@canonical/design-tokens/dist/modifiers.importance.css";
-
 @import "@canonical/design-tokens/dist/modifiers.lifecycle.css";
-
 @import "@canonical/design-tokens/dist/modifiers.release.css";
-
 @import "@canonical/design-tokens/dist/states.css";
-
 @import "@canonical/design-tokens/dist/sets.semantic.css";
-
-/* Layer: `ds.components.app` — so an application tier's own rule for this
- * component wins by cascade layer, not by whichever bundle a loader happened to
- * emit last. See "Cascade layers" in the @canonical/styles README. */
 
 @layer ds.components.app {
   /* Verbatim :root shim from packages/styles/typography/src/mapper.css
