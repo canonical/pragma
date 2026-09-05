@@ -13,7 +13,8 @@
       "!**/dist",
       "!**/*.gen.ts",
       "!**/storybook-static",
-      "!**/coverage"
+      "!**/coverage",
+      "!**/.build-cache"
     ]
   },
   "formatter": {
