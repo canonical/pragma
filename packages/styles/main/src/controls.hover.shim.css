@@ -33,11 +33,19 @@
  *
  * Components read the CHANNELS, never re-derive the maths. Part 1 is zero-
  * specificity (`:where()`) so it self-upgrades when upstream lands; Part 2 can be
- * dropped once the `--hover--…-selected` tokens are generated. Imported into
- * `ds.modifiers` after the generated tokens.
+ * dropped once the `--hover--…-selected` tokens are generated.
+ *
+ * Layers: this file shims two different generated files, so it opens two.
+ * Part 1 mirrors `modifiers.surfaces.css`, which opens `@layer ds.surfaces`, so
+ * Part 1 goes there — that is also what keeps its self-upgrade working, since
+ * the generated rules it defers to are in the same layer at higher specificity.
+ * Part 2 mirrors the `--hover--` tokens of `states.css`, which opens
+ * `@layer ds.states`. Neither generated file defines any of the tokens added
+ * here, so both blocks are purely additive. Custom properties only, so nothing
+ * here is scoped to pragma territory.
  */
 
-@layer ds.modifiers {
+@layer ds.surfaces {
   /* Part 1 — surface-provided selected tokens, per surface level (mirrors
    * modifiers.surfaces.css). No -selected-layerN primitives exist yet, so each
    * level aliases the flat base.
@@ -70,7 +78,9 @@
       --color-foreground-switch-unselected
     );
   }
+}
 
+@layer ds.states {
   /* Part 2 — hover channels, derived from the surface-aware base above. */
   :root {
     /* Checkbox — selected fill on :checked / :indeterminate hover. */

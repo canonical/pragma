@@ -13,19 +13,28 @@
  *
  * TODO: promote `--overflow-gradient-height` to a real semantic token in
  * @canonical/design-tokens (currently hard-coded here, like the spacing scale).
+ *
+ * Layers: the root default is `ds.tokens`; the `.surface` rule joins the
+ * generated surface family in `ds.surfaces`, whose selectors it mirrors. Both
+ * declare custom properties only, which act where a rule reads them, so neither
+ * is scoped to pragma territory.
  */
 
-:root {
-  /* Height of the overflow fade. Defaults to 2rem. */
-  --overflow-gradient-height: 2rem;
+@layer ds.tokens {
+  :root {
+    /* Height of the overflow fade. Defaults to 2rem. */
+    --overflow-gradient-height: 2rem;
+  }
 }
 
-.surface {
-  /* Fades from transparent to the current surface background, so it adapts to
-     whichever layer (.surface nesting) it paints over. */
-  --surface-overflow-gradient: linear-gradient(
-    to bottom,
-    transparent,
-    var(--surface-color-background)
-  );
+@layer ds.surfaces {
+  .surface {
+    /* Fades from transparent to the current surface background, so it adapts to
+       whichever layer (.surface nesting) it paints over. */
+    --surface-overflow-gradient: linear-gradient(
+      to bottom,
+      transparent,
+      var(--surface-color-background)
+    );
+  }
 }

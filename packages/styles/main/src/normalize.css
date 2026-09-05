@@ -1,0 +1,248 @@
+/* @canonical/styles — Pragma's own reset, scoped to pragma territory
+ *
+ * ── Third-party notice ──────────────────────────────────────────────────────
+ *
+ * Portions of this file are copied and adapted from normalize.css v8.0.1
+ * (github.com/necolas/normalize.css), which is MIT licensed. Its notice is
+ * retained here, as that licence requires, because the rules below are a
+ * substantial portion of it:
+ *
+ *   The MIT License (MIT)
+ *
+ *   Copyright © Nicolas Gallagher and Jonathan Neal
+ *
+ *   Permission is hereby granted, free of charge, to any person obtaining a
+ *   copy of this software and associated documentation files (the "Software"),
+ *   to deal in the Software without restriction, including without limitation
+ *   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ *   and/or sell copies of the Software, and to permit persons to whom the
+ *   Software is furnished to do so, subject to the following conditions:
+ *
+ *   The above copyright notice and this permission notice shall be included in
+ *   all copies or substantial portions of the Software.
+ *
+ *   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ *   DEALINGS IN THE SOFTWARE.
+ *
+ * The notice lives in this file rather than in a separate one because the
+ * package publishes only `src`, so this is what reaches anyone who installs it.
+ * The rest of the package is under the repository's own licence.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ *
+ * This replaces the `normalize.css` dependency. Two reasons, both structural:
+ *
+ *  1. A third-party file cannot be authored inside a `@scope` block, and every
+ *     element-level layer pragma ships has to be, so that its rules reach only
+ *     the subtree pragma owns — the subtree rooted at an element carrying the
+ *     class `ds` ("pragma territory"). Imported as a package, normalize's
+ *     `html`, `body`, `button` and `input` rules apply to the whole document,
+ *     including parts of a page another system owns.
+ *  2. The constitution prefers writing only the styles that are used
+ *     (principle XIII) over importing a file and stripping it afterwards.
+ *
+ * A scoped selector is relative to the scoping root and never matches the root
+ * itself, so `:where(:scope)` is how a rule addresses the territory root: the
+ * document element in an application that is pragma throughout, a region or a
+ * single component in one that is not. Every other selector here is relative
+ * to that root, and so reaches only what is inside the territory.
+ *
+ * A rule that must reach a control WHEREVER it sits — including a control that
+ * is itself the outermost root, `<button class="ds button">` dropped straight
+ * into a host page — is written `:where(:scope, :scope *):is(…)`, because a
+ * scoped selector alone never matches its own scoping root.
+ *
+ * ── What was ported from normalize.css 8.0.1, and why ────────────────────────
+ *
+ * Every rule here was kept because dropping it changed a value measured in
+ * Chromium, not because normalize carries it.
+ *
+ *  -webkit-text-size-adjust  iOS inflates text after an orientation change,
+ *                            which would move every line off the baseline grid.
+ *  body margin               the browser's 8px would show as a page gutter.
+ *                            The rule names the body twice: once as the
+ *                            territory root, for `<body class="ds …">`, and once
+ *                            as a descendant, for `<html class="ds …">`. It is
+ *                            not hoisted to the root in general, because margin
+ *                            does not inherit and zeroing the margin of a root a
+ *                            host page has placed is not this package's call.
+ *  form control font/margin  the natives pragma's form components render must
+ *                            inherit the page font and start with no margin —
+ *                            an inherited margin on `<input>` is exactly the
+ *                            field-spacing defect this programme exists to fix.
+ *                            Without it a bare `<button class="ds button">`
+ *                            computes the browser's 13.33px control font.
+ *  monospace font size       a browser applies a smaller default size when the
+ *                            computed font family is the bare `monospace`
+ *                            keyword, so a `<pre>` or `<code>` renders at about
+ *                            13px. `font-size: 1em` alone does not cancel it,
+ *                            because Blink scales the keyword size on the family
+ *                            switch itself; naming the family twice is what
+ *                            defeats it, which is why normalize carries both.
+ *                            Pragma renders both elements (the diff viewer's
+ *                            `<pre>`, the token table's `<code>`).
+ *  sub / sup                 a superscript that keeps its own line box would
+ *                            grow the line it sits on, and a whole-number
+ *                            multiple of the baseline unit is what the
+ *                            typography engine guarantees.
+ *  small                     the browser's `smaller` is not 80%; measured 11.67px
+ *                            against 11.2px at a 14px parent, and pragma's own
+ *                            stories render `<small>`.
+ *  progress                  the browser aligns it `-0.2em`, not on the baseline.
+ *  [type=search] and its     Safari draws its own search chrome — a rounded pill
+ *  ::-webkit-search-         and an inset outline — and the components that
+ *  decoration                render a search input (the file-tree search box,
+ *                            the token table) do not declare `appearance`.
+ *  -webkit-appearance:       keeps `<button>` and the submit/reset/button input
+ *  button on the button      types stylable on iOS and Safari.
+ *  types
+ *  legend                    the form package renders `<legend>` for a field
+ *                            group's label; the browser's own inline padding
+ *                            and `display: block` are visible there.
+ *
+ * ── What was dropped, and why ────────────────────────────────────────────────
+ *
+ * Each of these was measured against the browsers pragma targets and moved no
+ * computed value.
+ *
+ *  html line-height 1.15     superseded: the reset declares `line-height:
+ *                            normal` on the territory root (ds.reset).
+ *  h1 font-size and margin   the typography engine sets both on h1–h6, so the
+ *                            rule never reached the page.
+ *  hr                        `box-sizing: content-box` is overridden by the
+ *                            reset's `border-box` one layer up, and `height: 0`
+ *                            under `border-box` would collapse the rule's own
+ *                            border. `overflow: visible` moves the computed
+ *                            value from `hidden`, with nothing to show for it —
+ *                            a rule has no content to overflow.
+ *  main, details, summary,   already the browser's own behaviour in every engine
+ *  template, [hidden], a,    pragma targets (constitution X: current platforms,
+ *  img, b/strong, abbr,      no legacy burden). These rules exist in normalize
+ *  fieldset, textarea,       for Internet Explorer, legacy Edge, and browsers
+ *  [type=checkbox]/[radio],  older than pragma's floor.
+ *  button/input overflow
+ *  text-transform,           engine-specific control chrome that pragma's own
+ *  ::-moz-focus-inner,       components declare for themselves where they render
+ *  :-moz-focusring,          the control. Unmeasured on Gecko and WebKit, where
+ *  [type=number] spinners,   no browser was available; if one of them proves to
+ *  ::-webkit-file-upload-    matter it belongs in the component that renders the
+ *  button                    control, under "own the box of the natives you
+ *                            render".
+ */
+
+@layer normalize {
+  @scope (.ds) {
+    /* The outermost territory root. `:not(.ds *)` because every component
+       carries `ds` on its own root and each is a scoping root of its own, so a
+       bare `:where(:scope)` would land on every component. `:where()` keeps the
+       specificity at zero, so a single class in any pragma layer above this one
+       can override it. */
+    :where(:scope:not(.ds *)) {
+      /* Prevent the text inflation iOS applies after an orientation change. */
+      -webkit-text-size-adjust: 100%;
+    }
+
+    /* The document body, whichever side of the territory boundary it falls on:
+       as the territory root itself for `<body class="ds app comfortable">`, and
+       as a descendant for `<html class="ds app comfortable">`, the shape an
+       application that is pragma throughout should prefer. In a mixed
+       application the root is a region or a component, there is no body either
+       way, and the rule matches nothing. */
+    :where(:scope:is(body)),
+    body {
+      margin: 0;
+    }
+
+    /* Change the font styles in all browsers, and remove the margin Firefox and
+       Safari give form controls. Written to reach the control wherever it sits:
+       a control that is itself the outermost root is not matched by a scoped
+       selector alone. */
+    :where(:scope, :scope *):is(button, input, optgroup, select, textarea) {
+      font-family: inherit;
+      font-size: 100%;
+      line-height: 1.15;
+      margin: 0;
+    }
+
+    /* Correct the odd font size a browser gives the generic monospace family.
+       The family is named twice on purpose: Blink scales the keyword font size
+       when the computed family is the bare `monospace` keyword, and a list of
+       two defeats that. `font-size: 1em` then resolves against the parent. */
+    pre,
+    code,
+    kbd,
+    samp {
+      /* biome-ignore lint/suspicious/noDuplicateFontNames: the repetition is the
+         fix — Blink scales the keyword font size only when the computed family
+         is the bare `monospace` keyword, and a list of two is not that. */
+      font-family: monospace, monospace;
+      font-size: 1em;
+    }
+
+    /* Keep sub and sup from affecting the line box, and so the baseline grid. */
+    sub,
+    sup {
+      font-size: 75%;
+      line-height: 0;
+      position: relative;
+      vertical-align: baseline;
+    }
+
+    sub {
+      bottom: -0.25em;
+    }
+
+    sup {
+      top: -0.5em;
+    }
+
+    /* Add the correct font size. */
+    small {
+      font-size: 80%;
+    }
+
+    /* Add the correct vertical alignment. */
+    progress {
+      vertical-align: baseline;
+    }
+
+    /* Correct the inability to style clickable types in iOS and Safari. */
+    :where(:scope, :scope *):is(
+        button,
+        [type="button"],
+        [type="reset"],
+        [type="submit"]
+      ) {
+      -webkit-appearance: button;
+    }
+
+    /* Correct the odd appearance and the outline style in Safari, and remove
+       the inner padding it adds on macOS. Root-reaching, like the control font
+       rule above, so a search input that is itself the outermost root gets the
+       same chrome as one nested inside a territory. */
+    :where(:scope, :scope *):is([type="search"]) {
+      -webkit-appearance: textfield;
+      outline-offset: -2px;
+    }
+
+    [type="search"]::-webkit-search-decoration {
+      -webkit-appearance: none;
+    }
+
+    /* Correct the text wrapping, the colour inheritance and the padding on a
+       field group's caption. */
+    legend {
+      box-sizing: border-box;
+      color: inherit;
+      display: table;
+      max-width: 100%;
+      padding: 0;
+      white-space: normal;
+    }
+  }
+}

@@ -30,6 +30,12 @@
  *   per design, the secondary label never takes the anticipation colour. Only
  *   `.tertiary` leaves the text channel untouched, so the anticipation colour
  *   lands on the text — exactly the Figma treatment.
+ *
+ * Layer: ds.modifiers. The generated file this one stands in for is empty and
+ * therefore opens no layer at all, so the layer is taken from its family: every
+ * other generated modifier file (anticipation, criticality, emphasis, theme,
+ * typography) opens `@layer ds.modifiers`, and importance belongs beside them.
+ * Custom properties only, so nothing here is scoped to pragma territory.
  */
 
 @layer ds.modifiers {

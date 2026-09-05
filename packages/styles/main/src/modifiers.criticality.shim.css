@@ -35,9 +35,10 @@
  * per criticality; it just isn't wired into the modifier family. This exposes
  * it as a channel so on-surface criticality components read it generically.
  *
- * Imported into the `ds.modifiers` layer after the generated criticality
- * modifiers so these class rules compose at equal specificity, later source
- * order.
+ * Layer: ds.modifiers, the layer the generated `modifiers.criticality.css` this
+ * file extends opens for itself. Imported after it so these class rules compose
+ * at equal specificity, later source order. Custom properties only, so nothing
+ * here is scoped to pragma territory.
  */
 
 @layer ds.modifiers {

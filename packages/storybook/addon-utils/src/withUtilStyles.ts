@@ -198,6 +198,18 @@ export const withUtilStyles = (
     containerStyles = { "align-content": "start" };
   }
 
+  // Territory declaration. `ds` marks the preview document as the design
+  // system's, which is what its scoped element-level layers — the reset and the
+  // typography engine, authored inside `@scope (.ds)` — apply inside. It goes on
+  // the document element, not the story container, for two reasons: the
+  // container carries the grid presets, which are themselves scoped and so must
+  // sit INSIDE the territory rather than be its root; and a docs page renders
+  // several stories into one document. Applied synchronously, like the container
+  // classes and unlike the scheme below, so the first paint already has it.
+  if (typeof document !== "undefined") {
+    document.documentElement.classList.add("ds");
+  }
+
   for (const el of storyContainers(context)) {
     el.classList.remove(...CONTAINER_CLASSES);
     el.classList.add(...containerClasses);

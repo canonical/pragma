@@ -256,8 +256,15 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
   // Paint the cookie-resolved theme on <html> for a flash-free first render —
   // the same element `usePreferredTheme` toggles on the client, and one React
   // does not hydrate (only `#root` is), so there is no mismatch to reconcile.
+  // `ds` beside it marks the whole document as the design system's territory,
+  // which its scoped element-level layers apply inside; index.html carries the
+  // same class for the client-only build.
   return (
-    <html lang={lang} dir={dir} className={initialData.theme}>
+    <html
+      lang={lang}
+      dir={dir}
+      className={["ds", initialData.theme].filter(Boolean).join(" ")}
+    >
       <head>
         {props.otherHeadElements}
         {props.scriptElements}
