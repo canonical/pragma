@@ -5,6 +5,11 @@ Portal-specific components for the Pragma design system. This package provides s
 ## Prerequisites
 
 - React 19 or higher
+- `@canonical/react-ds-global`, with its Button stylesheet loaded. The Button
+  stylesheet in this package is a delta over the global tier’s Button, not a
+  standalone component sheet: it declares only what this tier changes, so a
+  button rendered without the global tier’s sheet on the page falls back to the
+  browser’s own button styling.
 
 ## Installation
 
@@ -60,6 +65,14 @@ An application's own **unlayered** CSS now beats every rule in this package, wha
 cd packages/react/ds-app-portal
 bun run storybook
 ```
+
+These previews load `@canonical/styles` and nothing else — not the global tier’s
+component stylesheets — so the Button story shows a near-native `<button>`
+rather than the composed component. Importing the global tier’s Button
+stylesheet here is waiting on canonical/pragma#1123, which puts that sheet in
+`ds.components.global` (unlayered today, it would outrank every layered rule),
+and canonical/pragma#1122, which adds the aggregate `./index.css` subpath to
+import.
 
 ## Component Specifications
 
