@@ -66,11 +66,11 @@ export const Disabled: Story = {
   },
 };
 
-/** A grouping label (no url). */
-export const GroupLabel: Story = {
+/** A non-navigable item (no `url`) — a plain label, e.g. a display-only name. */
+export const NonNavigable: Story = {
   args: {
-    key: "hardware",
-    label: "Hardware",
+    key: "current-user",
+    label: "Ada Lovelace",
   },
 };
 
@@ -83,16 +83,3 @@ export const WithSlot: Story = {
     slot: <MockBadge>42</MockBadge>,
   },
 };
-
-// An item with subitems renders a disclosure caret. The expand/collapse
-// behaviour (and whether children open below vs. to the side) is deferred
-// pending design input, so this story is commented out for now.
-//
-// export const WithSubitems: Story = {
-//   args: {
-//     key: "hardware",
-//     label: "Hardware",
-//     icon: "machines",
-//     items: [{ url: "/machines", label: "Machines" }],
-//   },
-// };

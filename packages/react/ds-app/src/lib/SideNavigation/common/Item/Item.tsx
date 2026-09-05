@@ -8,15 +8,12 @@ const componentCssClassName = "ds side-navigation-item";
 /**
  * SideNavigation.Item — the default renderer for a single navigation item.
  *
- * A flat leaf row, NOT recursive: traversal lives in NavTree's two loops. The
- * row is `[icon] [label] [end]` over a shared grid template (so the icon aligns
+ * A flat leaf row, NOT recursive — an entry with children is a
+ * SideNavigation.ItemExpandable instead (SPEC.md §4.3). The row is
+ * `[icon] [label] [end]` over a shared grid template (so the icon aligns
  * with the header logo). An item with a `url` renders as a link via
- * `LinkComponent` (default `"a"`); otherwise a non-navigable label.
- *
- * End slot is derived, not authored:
- * - has subitems → a disclosure caret (static affordance in PR1; expand/collapse
- *   behaviour is deferred);
- * - leaf → the optional `slot` (a badge, count, …), or nothing.
+ * `LinkComponent` (default `"a"`); otherwise a non-navigable label. The end
+ * slot is the optional `slot` (a badge, count, …), or nothing.
  *
  * @implements ds:apps.subcomponent.side-navigation-item
  */
@@ -28,14 +25,12 @@ const Item = ({
   disabled = false,
   active = false,
   LinkComponent = "a",
-  // NavItem fields not spread to the DOM.
+  // LeafNavItem's own identity field — not spread to the DOM.
   key: _key,
-  items,
   className,
   ...props
 }: ItemProps): React.ReactElement => {
   const Link = LinkComponent;
-  const hasSubitems = (items?.length ?? 0) > 0;
 
   const content = (
     <>
@@ -43,12 +38,7 @@ const Item = ({
           in the middle column — labels align whether or not a row has an icon. */}
       <span className="start p">{icon ? <Icon icon={icon} /> : null}</span>
       <span className="label p">{label}</span>
-      {/* End slot: caret for groups (static in PR1), else the leaf slot. */}
-      {hasSubitems ? (
-        <Icon icon="chevron-down" className="end caret" />
-      ) : slot ? (
-        <span className="end slot">{slot}</span>
-      ) : null}
+      {slot ? <span className="end slot">{slot}</span> : null}
     </>
   );
 

@@ -1,6 +1,16 @@
 import type React from "react";
 import { useCallback, useId, useState } from "react";
-import { Content, Footer, Header } from "./common/index.js";
+import {
+  CollapseToggle,
+  Content,
+  Footer,
+  Group,
+  GroupHeader,
+  Header,
+  Item,
+  ItemExpandable,
+  Separator,
+} from "./common/index.js";
 import type { SideNavigationProps } from "./types.js";
 import "./styles.css";
 
@@ -89,5 +99,15 @@ const SideNavigation = ({
     </nav>
   );
 };
+
+SideNavigation.CollapseToggle = CollapseToggle;
+SideNavigation.Content = Content;
+SideNavigation.Footer = Footer;
+SideNavigation.Group = Group;
+SideNavigation.GroupHeader = GroupHeader;
+SideNavigation.Header = Header;
+SideNavigation.Item = Item;
+SideNavigation.ItemExpandable = ItemExpandable;
+SideNavigation.Separator = Separator;
 
 export default SideNavigation;

@@ -1,22 +1,22 @@
-import type { NavItem } from "../../lib/SideNavigation/types.js";
+import type { LeafNavItem, NavRoot } from "../../lib/SideNavigation/types.js";
 import { MockBadge } from "./story-utils.js";
 
 /**
  * Story fixtures for SideNavigation. Story-only (this folder is excluded from
  * the package build); tests define their own minimal fixtures inline.
  *
- * Each fixture is a root `NavItem`: the root node itself is not rendered. Its
- * direct children are **level-1 groups** (a label renders as a group header;
- * no label → no header). Group children (level 2) are the navigable leaves
- * (`url`) — these may carry a leading `icon` and, for leaves, a trailing `slot`
- * (e.g. a badge).
+ * Each fixture is a `NavRoot`: the root node itself is not rendered. Its
+ * direct children are **groups** (`NavGroup` — a label renders as
+ * SideNavigation.GroupHeader; no label → no header). A group's own children
+ * are the navigable leaves (`NavItem`, i.e. `url`-bearing `LeafNavItem`) —
+ * these may carry a leading `icon` and a trailing `slot` (e.g. a badge).
  *
  * The MAAS and LXD trees mirror the real left-hand navigation of those
  * Canonical apps, to give stories a realistic information architecture.
  */
 
 /** A count badge used in fixtures via a leaf's `slot`. */
-const badge = (value: number | string): NavItem["slot"] => (
+const badge = (value: number | string): LeafNavItem["slot"] => (
   <MockBadge>{value}</MockBadge>
 );
 
@@ -25,9 +25,8 @@ const badge = (value: number | string): NavItem["slot"] => (
 // serves these under a base prefix (e.g. /MAAS/r/...).
 
 /** MAAS main navigation — grouped hardware/KVM/organisation/config/networking. */
-export const maasContentRoot: NavItem = {
+export const maasContentRoot: NavRoot = {
   key: "maas-content-root",
-  label: "MAAS navigation",
   items: [
     {
       key: "hardware",
@@ -83,9 +82,8 @@ export const maasContentRoot: NavItem = {
 };
 
 /** MAAS footer — admin settings and the logged-in user. */
-export const maasFooterRoot: NavItem = {
+export const maasFooterRoot: NavRoot = {
   key: "maas-footer-root",
-  label: "MAAS account",
   items: [
     {
       key: "maas-account-group",
@@ -102,9 +100,8 @@ export const maasFooterRoot: NavItem = {
 // Mirrors lxd-ui's project-scoped sidebar (default project).
 
 /** LXD main navigation — project-scoped, default project. */
-export const lxdContentRoot: NavItem = {
+export const lxdContentRoot: NavRoot = {
   key: "lxd-content-root",
-  label: "LXD navigation",
   items: [
     {
       key: "lxd-primary",
@@ -182,9 +179,8 @@ export const lxdContentRoot: NavItem = {
 };
 
 /** LXD footer — user, docs, and external links. */
-export const lxdFooterRoot: NavItem = {
+export const lxdFooterRoot: NavRoot = {
   key: "lxd-footer-root",
-  label: "LXD links",
   items: [
     {
       key: "lxd-links-group",
@@ -208,7 +204,7 @@ export const lxdFooterRoot: NavItem = {
  * Minimal fixture — a single unlabelled level-1 group of leaves (no header).
  * Visually flat; useful for base rendering without group headers.
  */
-export const flatRoot: NavItem = {
+export const flatRoot: NavRoot = {
   key: "flat-root",
   items: [
     {
@@ -223,7 +219,7 @@ export const flatRoot: NavItem = {
 };
 
 /** Fixture exercising a disabled leaf. */
-export const withDisabledRoot: NavItem = {
+export const withDisabledRoot: NavRoot = {
   key: "disabled-root",
   items: [
     {
@@ -243,7 +239,7 @@ export const withDisabledRoot: NavItem = {
 };
 
 /** Empty fixture — root with no children. Useful for empty-state rendering. */
-export const emptyRoot: NavItem = {
+export const emptyRoot: NavRoot = {
   key: "empty-root",
   items: [],
 };

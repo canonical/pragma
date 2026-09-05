@@ -1,11 +1,11 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import SideNavigation from "./SideNavigation.js";
-import type { NavItem } from "./types.js";
+import type { NavRoot } from "./types.js";
 
-// Level-1 items are groups; navigable links live at level 2. Here a single
-// unlabelled group holds the links (no header rendered).
-const root: NavItem = {
+// root.items are groups; navigable links live in a group's own items. Here a
+// single unlabelled group holds the links (no header rendered).
+const root: NavRoot = {
   key: "root",
   items: [
     {
@@ -18,7 +18,7 @@ const root: NavItem = {
   ],
 };
 
-const footerRoot: NavItem = {
+const footerRoot: NavRoot = {
   key: "footer",
   items: [
     { key: "footer-group", items: [{ url: "/settings", label: "Settings" }] },

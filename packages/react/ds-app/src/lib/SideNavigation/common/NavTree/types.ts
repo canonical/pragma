@@ -1,9 +1,9 @@
 import type { ComponentProps, ComponentType } from "react";
-import type { LinkComponentProps, NavItem } from "../../types.js";
+import type { LinkComponentProps, NavRoot } from "../../types.js";
 
 type OwnProps = {
-  /** Root NavItem whose direct children (level-1 groups) are rendered. */
-  root: NavItem;
+  /** Root NavItem whose direct children (level-1 groups/separators) are rendered. */
+  root: NavRoot;
   /** Live current location; resolves and keeps the active item in sync. */
   currentUrl?: string;
   /** Component used to render navigable items. Defaults to `"a"`. */

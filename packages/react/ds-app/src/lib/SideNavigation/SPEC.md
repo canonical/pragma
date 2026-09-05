@@ -449,7 +449,7 @@ file):
 | 1 | This spec + amended existing anatomy YAMLs | ✅ done |
 | 2 | `<nav>` landmark + `ComponentProps`-based prop types (AC1) | ✅ done |
 | 3 | Provisional navigation tokens + full-spec styling (AC2) | ✅ this PR |
-| 4 | Group/GroupHeader/Separator/ItemExpandable, depth-1 type | pending |
+| 4 | Group/GroupHeader/Separator/ItemExpandable, depth-1 type | ✅ this PR |
 | 5 | ItemButton/ItemSwitch/ContextSwitcher (AC3, AC4) | pending |
 | 6 | Collapsed rail behaviour, tooltips, inert shortcut scaffold | pending |
 | 7 | Secondary navigation, Help item, footerItems, certificate user | pending |

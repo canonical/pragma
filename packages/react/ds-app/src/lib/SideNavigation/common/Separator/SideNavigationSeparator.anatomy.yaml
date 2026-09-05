@@ -1,0 +1,8 @@
+---
+# SideNavigation.Separator — a plain rule between content sections, a
+# sibling of SideNavigation.Group among the content's direct entries.
+node:
+  uri: apps.subcomponent.side-navigation-separator
+  styles:
+    layout.type: flow
+    appearance.border: color/border/muted

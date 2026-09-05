@@ -10,19 +10,19 @@
   min-height: 0;
   overflow: hidden auto;
 
-  /* Tree structure (.group/.header/.list, including each group's own
-     0.5rem/1rem block padding) is owned by NavTree's own styles. Content adds
-     extra room at BOTH ends, on top of that padding, for the overflow fades
-     below — so the first and last groups are never permanently hidden behind
-     one. */
-  & .nav-tree > .group:first-child {
+  /* Tree structure (Group/GroupHeader/Separator/Item/ItemExpandable, including
+     each group's own 0.5rem/1rem block padding) is owned by those
+     components. Content adds extra room at BOTH ends, on top of that
+     padding, for the overflow fades below — so the first and last groups are
+     never permanently hidden behind one. */
+  & .nav-tree > .side-navigation-group:first-child {
     padding-block-start: calc(
       var(--dimension-100) +
       var(--overflow-gradient-height)
     );
   }
 
-  & .nav-tree > .group:last-child {
+  & .nav-tree > .side-navigation-group:last-child {
     padding-block-end: calc(
       var(--dimension-200) +
       var(--overflow-gradient-height)

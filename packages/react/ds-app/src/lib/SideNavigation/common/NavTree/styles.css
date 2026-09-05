@@ -1,49 +1,10 @@
 /*
- * SideNavigation NavTree — domain styles for the rendered tree structure
- * (level-1 groups → header + level-2 item list). Owned here so Content and
- * Footer can compose NavTree without re-declaring its internals.
+ * SideNavigation NavTree — internal wrapper for the rendered tree structure.
+ * `display: contents` makes it invisible in the box tree so Content/Footer's
+ * own flex/scroll layout applies directly to the rendered Group/Separator
+ * children. Group/GroupHeader/Separator/Item/ItemExpandable each own their
+ * own styles.
  */
 .ds.nav-tree {
   display: contents;
-
-  & > .group {
-    /* Spec: 0.5rem above the group's own header/items, 1rem below the last
-       item — the same figure applies to every group, so a flex column with
-       these paddings on each .group needs no first/last special-casing for
-       the paddings themselves (only the divider line is first-group
-       exempt, below). */
-    padding-block: var(--dimension-100) var(--dimension-200);
-
-    /* "Each navigation item group has a line at the top except the first". */
-    &:not(:first-child) {
-      border-block-start: var(--dimension-stroke-thickness-medium) solid
-        var(--color-border-muted);
-    }
-
-    > .header {
-      display: flex;
-      align-items: baseline;
-      /* Aligns the header's text with item LABELS (past the icon column +
-         its gap), not the row's own left edge. */
-      padding-inline-start: calc(
-        var(--sidenav-inset-start) +
-        var(--sidenav-icon-column-inline-size) +
-        var(--sidenav-icon-gap)
-      );
-      color: var(--color-text);
-      font-family: var(--typography-heading-5-font-family);
-      font-size: var(--typography-heading-5-font-size);
-      font-weight: var(--typography-heading-5-font-weight);
-      line-height: var(--typography-heading-5-line-height);
-      letter-spacing: var(--typography-heading-5-letter-spacing);
-    }
-
-    > .list {
-      display: flex;
-      flex-direction: column;
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-  }
 }
