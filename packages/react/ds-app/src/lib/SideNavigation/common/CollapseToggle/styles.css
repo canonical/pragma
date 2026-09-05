@@ -25,4 +25,29 @@
   &:active {
     background: var(--sidenav-row-background-active);
   }
+
+  /* Icon (desktop) vs "Menu"/"Close menu" text (mobile) — plain CSS-toggled
+     siblings, not a JS media-query read, so the choice needs no client-only
+     branch and stays SSR-identical. */
+  .mobile-only {
+    display: none;
+  }
+
+  /* Vanilla's "small" breakpoint (SPEC.md §7: "on all breakpoints above the
+     small breakpoint of Vanilla" / "at breakpoints below small"). */
+  @media (max-width: 767px) {
+    .desktop-only {
+      display: none;
+    }
+
+    .mobile-only {
+      display: inline;
+    }
+
+    /* No longer an icon-only square — a text button sized to its content. */
+    inline-size: auto;
+    block-size: auto;
+    padding-block: var(--sidenav-icon-gap); /* 0.5rem */
+    padding-inline: var(--sidenav-inset-start); /* 1rem */
+  }
 }

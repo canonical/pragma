@@ -35,7 +35,10 @@ const Secondary = ({
     aria-label={ariaLabel ?? title}
   >
     <header className="header">
-      <span className="title p">{title}</span>
+      {/* `title` attribute — native tooltip fallback for a truncated title; SPEC.md §10.17. */}
+      <span className="title p" title={title}>
+        {title}
+      </span>
     </header>
     <Content
       root={root}

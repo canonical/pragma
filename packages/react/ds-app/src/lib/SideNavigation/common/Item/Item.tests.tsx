@@ -62,4 +62,9 @@ describe("Item", () => {
     expect(el?.className).toContain("ds side-navigation-item");
     expect(el?.className).toContain("custom-class");
   });
+
+  it("sets title on the label as a native tooltip fallback for truncation (SPEC.md §10.17)", () => {
+    render(<Item url="/machines" label="Machines" />);
+    expect(screen.getByText("Machines")).toHaveAttribute("title", "Machines");
+  });
 });

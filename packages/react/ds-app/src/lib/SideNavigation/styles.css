@@ -59,4 +59,36 @@
       }
     }
   }
+
+  /* Responsive (SPEC.md §7): below Vanilla's "small" breakpoint, the rail
+     stops being a rail — the header is always shown; the body (Content AND
+     Footer, unlike the desktop collapsed state which keeps the footer
+     visible) is hidden until Menu is activated, then takes over the full
+     screen. Same `expanded` state and `collapsed` class as desktop; only
+     what they mean visually changes here. Drill-down navigation for
+     expandable/secondary-opening items (chevron-right + a back button) is
+     out of scope — SPEC.md §10.18. */
+  @media (max-width: 767px) {
+    inline-size: 100%;
+    flex-shrink: 1;
+    block-size: auto;
+
+    &:not(.collapsed) {
+      position: fixed;
+      inset: 0;
+      z-index: var(--z-index-overlay, 100);
+      inline-size: 100%;
+      block-size: 100dvh;
+    }
+
+    &.collapsed {
+      inline-size: 100%;
+
+      /* Overrides the desktop collapsed rule above: the body is hidden
+         entirely on mobile, not shown icon-only. */
+      & > .ds.footer {
+        display: none;
+      }
+    }
+  }
 }

@@ -40,4 +40,16 @@
       display: none;
     }
   }
+
+  /* Responsive (SPEC.md §7): "On mobile the header is always shown" in its
+     normal row layout — collapsed there means "menu closed", not "narrow
+     icon rail", so the centred-column rearrangement above doesn't apply. */
+  @media (max-width: 767px) {
+    &[data-expanded="false"] {
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding-inline: var(--sidenav-inset-start) var(--sidenav-inset-end);
+    }
+  }
 }

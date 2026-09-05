@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import ItemExpandable from "./ItemExpandable.js";
@@ -69,5 +71,27 @@ describe("ItemExpandable", () => {
     const el = container.firstElementChild;
     expect(el?.className).toContain("ds side-navigation-item-expandable");
     expect(el?.className).toContain("custom-class");
+  });
+
+  it("gates the caret's rotation transition behind prefers-reduced-motion (SPEC.md §6)", () => {
+    // jsdom doesn't apply this package's CSS (confirmed in PR3/PR6 — nested
+    // `&` rules and @media blocks aren't evaluated against computed styles
+    // here), so this asserts the guard exists in the stylesheet source
+    // rather than a computed transition value. Vitest runs with cwd at the
+    // package root, so a cwd-relative path resolves reliably regardless of
+    // how the test module's own URL is transformed.
+    const css = readFileSync(
+      join(
+        process.cwd(),
+        "src/lib/SideNavigation/common/ItemExpandable/styles.css",
+      ),
+      "utf-8",
+    );
+    const mediaBlockStart = css.indexOf(
+      "@media (prefers-reduced-motion: no-preference)",
+    );
+    expect(mediaBlockStart).toBeGreaterThan(-1);
+    const transitionIndex = css.indexOf("transition: transform");
+    expect(transitionIndex).toBeGreaterThan(mediaBlockStart);
   });
 });

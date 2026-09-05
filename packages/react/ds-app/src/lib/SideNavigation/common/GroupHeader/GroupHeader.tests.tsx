@@ -19,4 +19,17 @@ describe("GroupHeader", () => {
     render(<GroupHeader data-testid="header">Hardware</GroupHeader>);
     expect(screen.getByTestId("header")).toBeInTheDocument();
   });
+
+  it("sets title as a native tooltip fallback for truncation when children is text (SPEC.md §10.17)", () => {
+    render(<GroupHeader>Hardware</GroupHeader>);
+    expect(screen.getByText("Hardware")).toHaveAttribute("title", "Hardware");
+  });
+
+  it("lets a consumer-supplied title override the default", () => {
+    render(<GroupHeader title="Custom tooltip">Hardware</GroupHeader>);
+    expect(screen.getByText("Hardware")).toHaveAttribute(
+      "title",
+      "Custom tooltip",
+    );
+  });
 });

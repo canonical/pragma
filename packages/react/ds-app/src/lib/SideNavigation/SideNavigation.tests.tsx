@@ -123,4 +123,27 @@ describe("SideNavigation", () => {
     fireEvent.keyDown(window, { key: "e", ctrlKey: true });
     expect(el.dataset.expanded).toBe("false");
   });
+
+  it("orders focusable elements logo → collapse toggle → content → footer (SPEC.md §6)", () => {
+    const { container } = render(
+      <SideNavigation
+        root={root}
+        footerRoot={footerRoot}
+        brand={<a href="/">Home</a>}
+      />,
+    );
+    const focusable = Array.from(
+      container.querySelectorAll("a, button"),
+    ) as HTMLElement[];
+    const labels = focusable.map(
+      (el) => el.getAttribute("aria-label") || el.textContent,
+    );
+    expect(labels).toEqual([
+      "Home", // brand/logo
+      "Collapse navigation", // collapse toggle
+      "Machines", // content, top-to-bottom
+      "Devices",
+      "Settings", // footer, top-to-bottom
+    ]);
+  });
 });

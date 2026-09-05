@@ -1,11 +1,13 @@
 # SideNavigation — Component Specification
 
-> **Status:** Draft — rewritten against the 24.04 Side Navigation spec
-> (Figma: [App Mafia exploration](https://www.figma.com/design/4BxGmZUlhgWChPWu4lGzZv/24.04-Side-Navigation-exploration---App-Mafia?node-id=656-31955),
-> prose spec: *Side Navigation (App Layout)*). Anatomy, token pairings,
-> properties, state/keyboard, accessibility, and responsive behaviour are all
-> specified below; implementation lands across the PR sequence in
-> [§8 Implementation status](#8-implementation-status).
+> **Status:** Implemented, against the 24.04 Side Navigation spec (Figma:
+> [App Mafia exploration](https://www.figma.com/design/4BxGmZUlhgWChPWu4lGzZv/24.04-Side-Navigation-exploration---App-Mafia?node-id=656-31955),
+> prose spec: *Side Navigation (App Layout)*). All 8 PRs in
+> [§8 Implementation status](#8-implementation-status) have landed; several
+> spec details are deliberately deferred with rationale rather than rushed —
+> see [§10 Known issues](#10-known-issues) for the full list (mobile
+> drill-down, pixel-accurate truncation tooltips, collapsed-footer tooltips,
+> `brandHref`, and several inferred values pending design confirmation).
 
 ---
 
@@ -485,7 +487,7 @@ file):
 | 5 | ItemButton/ItemSwitch/ContextSwitcher (AC3, AC4) | ✅ this PR |
 | 6 | Collapsed rail behaviour, tooltips, inert shortcut scaffold | ✅ this PR (footer-item tooltips deferred — §10.14) |
 | 7 | Secondary navigation, Help item, footerItems, certificate user | ✅ this PR (`brandHref` deferred — §10.15) |
-| 8 | Responsive (<768px), text-overflow tooltips, focus-order/reduced-motion tests | pending |
+| 8 | Responsive (<768px), text-overflow tooltips, focus-order/reduced-motion tests | ✅ this PR (mobile drill-down and pixel-accurate truncation tooltips deferred — §10.17, §10.18) |
 
 ---
 
@@ -736,4 +738,26 @@ Carried forward for design/engineering resolution; none block PR1.
     `packages/react/ds-app/src/lib/SideNavigation/helpItem.ts`) only makes
     authoring it correctly (right icon, right external-link child, right
     field names) a one-line call instead of five.
+17. **Truncated-text tooltips use the native `title` attribute, not the
+    spec's custom 800ms-delay styled tooltip.** Every label (`Item`/
+    `ItemButton`/`ItemSwitch`/`ItemExpandable`/`GroupHeader`/`Secondary`'s
+    title) now sets `title` to its own text — a real, working fallback
+    (the browser's own tooltip, on native hover timing) but not a
+    pixel-accurate implementation of §7's spec. A precise version needs to
+    detect *actual* truncation (`scrollWidth > clientWidth`, typically via a
+    ResizeObserver-backed hook) and only then show the styled tooltip —
+    unconditionally wrapping every label in `withTooltip` would show it even
+    when the text isn't truncated at all. That detection hook doesn't exist
+    yet in either `ds-app` or `ds-global`; building and testing it properly
+    is a separable piece of work from the rest of PR8.
+18. **The mobile (<768px) drill-down is out of scope.** SPEC.md §7
+    describes expandable/secondary-opening items switching to a
+    `chevron-right` affordance that navigates to a full-screen "page" of
+    just that item's children, with a back button (`chevron-left`) to
+    return. This needs its own navigation-stack state (which "page" — root,
+    or a specific item's children — is currently shown) and a mobile-only
+    rendering path for `ItemExpandable`, distinct from its desktop
+    disclosure behaviour; it is a separate interaction mode, not a CSS
+    variation of what PR8 already ships (Menu/Close-menu button, fullscreen
+    reveal, header layout preserved on mobile). Tracked as a follow-up.
 </content>

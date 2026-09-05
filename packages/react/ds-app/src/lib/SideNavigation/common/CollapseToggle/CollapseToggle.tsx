@@ -21,7 +21,16 @@ const CollapseToggleButton = ({
       {...props}
       type="button"
     >
-      <Icon icon={expanded ? "collapse-side-nav" : "expand-side-nav"} />
+      {/* Desktop: an icon (SPEC.md §5, §9). Below the spec's small breakpoint
+          (<768px — SPEC.md §7), the icon gives way to a text label reading
+          "Menu"/"Close menu" instead — the two are simple CSS-toggled
+          siblings (see styles.css) rather than a media-query read in JS, so
+          this needs no client-only branch and stays SSR-identical. */}
+      <Icon
+        icon={expanded ? "collapse-side-nav" : "expand-side-nav"}
+        className="desktop-only"
+      />
+      <span className="mobile-only p">{expanded ? "Close menu" : "Menu"}</span>
     </button>
   );
 };

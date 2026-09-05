@@ -16,4 +16,8 @@
   font-weight: var(--typography-heading-5-font-weight);
   line-height: var(--typography-heading-5-line-height);
   letter-spacing: var(--typography-heading-5-letter-spacing);
+  /* Spec: group headers are single-line and truncate (§7 text overflow). */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
