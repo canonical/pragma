@@ -21,24 +21,36 @@ export const GLOBAL_COMPONENT_LAYER = "ds.components.global";
 export const APP_COMPONENT_LAYER = "ds.components.app";
 
 /**
- * True when the directory sits under `packages/<framework>/ds-app-*`, the
- * layout every application tier in the repository uses.
+ * True when the directory is `packages/<framework>/ds-app` or
+ * `packages/<framework>/ds-app-<product>`, the layout every application tier
+ * in the repository uses. The bare `ds-app` form matters:
+ * `packages/react/ds-app` and `packages/svelte/ds-app` are application tiers
+ * with no product suffix.
+ *
+ * The match stops at a segment boundary rather than being a bare prefix, so a
+ * future `packages/react/ds-approvals` is not read as an application tier.
  */
 function isAppTierDirectory(dir: string): boolean {
   const segments = dir.split(/[/\\]/).filter(Boolean);
-  return segments.some(
-    (segment, i) =>
-      segment === "packages" && (segments[i + 2] ?? "").startsWith("ds-app-"),
-  );
+  return segments.some((segment, i) => {
+    if (segment !== "packages") return false;
+    const pkg = segments[i + 2] ?? "";
+    return pkg === "ds-app" || pkg.startsWith("ds-app-");
+  });
 }
 
 /**
  * Decide the layer from the two things that identify the target package: the
  * name in its manifest and the directory it sits in. An application tier is
- * named `…-ds-app-…` (`@canonical/react-ds-app-lxd`,
- * `@canonical/svelte-ds-app-wpe`) and lives in `packages/<framework>/ds-app-*`.
- * Either signal alone is enough: a package can be scaffolded before it is
- * named, and a name can be read outside this repository's directory layout.
+ * named `…-ds-app` or `…-ds-app-<product>` (`@canonical/react-ds-app`,
+ * `@canonical/react-ds-app-lxd`, `@canonical/svelte-ds-app`,
+ * `@canonical/svelte-ds-app-wpe`) and lives in `packages/<framework>/ds-app`
+ * or `packages/<framework>/ds-app-<product>`. Either signal alone is enough: a
+ * package can be scaffolded before it is named, and a name can be read outside
+ * this repository's directory layout.
+ *
+ * As with the directory, the name matches at a boundary — the end of the name
+ * or the hyphen before the product — so `…-ds-approvals` stays global.
  *
  * Pure; exported for tests.
  */
@@ -46,7 +58,9 @@ export function componentLayerFor(
   packageName: string | undefined,
   dir: string,
 ): string {
-  if (packageName?.includes("-ds-app-")) return APP_COMPONENT_LAYER;
+  if (packageName && /-ds-app(-|$)/.test(packageName)) {
+    return APP_COMPONENT_LAYER;
+  }
   return isAppTierDirectory(dir) ? APP_COMPONENT_LAYER : GLOBAL_COMPONENT_LAYER;
 }
 

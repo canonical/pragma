@@ -16,12 +16,30 @@ describe("componentLayerFor", () => {
     );
   });
 
+  it("puts a suffixless application tier in ds.components.app by name", () => {
+    // @canonical/react-ds-app and @canonical/svelte-ds-app are application
+    // tiers with no product suffix; a pattern requiring a trailing hyphen sends
+    // their components to the global tier, silently.
+    expect(
+      componentLayerFor("@canonical/react-ds-app", "/somewhere/else"),
+    ).toBe(APP_COMPONENT_LAYER);
+    expect(componentLayerFor("@canonical/svelte-ds-app", "/tmp")).toBe(
+      APP_COMPONENT_LAYER,
+    );
+  });
+
   it("puts an application tier in ds.components.app by its directory", () => {
     expect(
       componentLayerFor(undefined, "/repo/packages/react/ds-app-lxd"),
     ).toBe(APP_COMPONENT_LAYER);
     expect(
       componentLayerFor(undefined, "/repo/packages/svelte/ds-app-wpe/src/lib"),
+    ).toBe(APP_COMPONENT_LAYER);
+    expect(componentLayerFor(undefined, "/repo/packages/react/ds-app")).toBe(
+      APP_COMPONENT_LAYER,
+    );
+    expect(
+      componentLayerFor(undefined, "/repo/packages/svelte/ds-app/src/lib"),
     ).toBe(APP_COMPONENT_LAYER);
   });
 
@@ -47,6 +65,17 @@ describe("componentLayerFor", () => {
     expect(componentLayerFor(undefined, "/repo/packages")).toBe(
       GLOBAL_COMPONENT_LAYER,
     );
+  });
+
+  it("matches ds-app at a boundary, not as a bare prefix", () => {
+    // Widening the pattern to catch the suffixless tiers must not sweep in a
+    // package that merely starts the same way.
+    expect(
+      componentLayerFor(
+        "@canonical/react-ds-approvals",
+        "/repo/packages/react/ds-approvals",
+      ),
+    ).toBe(GLOBAL_COMPONENT_LAYER);
   });
 
   it("does not mistake a directory merely named ds-app-… elsewhere", () => {
