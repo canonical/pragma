@@ -186,7 +186,9 @@ The `docs/` folder contains guides for working with the monorepo:
 |-------|-------------|
 | [Constitution](CONSTITUTION.md) | Design principles and decision rationale |
 | [Component Folder Structure](docs/explanations/COMPONENT_FOLDER_STRUCTURE.md) | Standard component anatomy and conventions |
+| [The Cascade Contract](docs/explanations/CASCADE.md) | Why the stylesheets are layered and scoped the way they are |
 | [Adding a Package](docs/how-to-guides/ADDING_A_PACKAGE.md) | How to create new packages in the monorepo |
+| [Migrating to the Layered Styles Release](docs/how-to-guides/MIGRATE_TO_LAYERED_STYLES.md) | Upgrading an application to the layered, scoped stylesheets |
 | [Versioning](docs/VERSIONING.md) | Commit message format and release process |
 | [CI/CD](docs/CI.md) | Continuous integration and deployment workflows |
 | [Code Ownership](docs/OWNERSHIP.md) | What does it mean to own a package |

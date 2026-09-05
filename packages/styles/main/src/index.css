@@ -10,9 +10,9 @@
  * typography package this file imports writes its token shims into ds.tokens and
  * every element rule into ds.typography, inside a scope block of its own. The
  * README's "Cascade layers" section is the reference for what is layered where
- * and what is deliberately not; the reasoning behind the order will live in
- * docs/explanations/CASCADE.md, arriving with the cascade documentation change.
- * Until it does, the README is the whole of it.
+ * and what is deliberately not; the reasoning behind the order — how a browser
+ * decides, why unlayered rules beat layered ones, why the element-level layers
+ * are scoped — is in docs/explanations/CASCADE.md.
  *
  * The order statement below must stay the first rule of this file. An `@import`
  * is only valid before other rules — a layer statement and `@charset` excepted —

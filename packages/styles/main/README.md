@@ -107,6 +107,11 @@ An order statement fixes the relative order of layers the first time they appear
 may introduce new names but can never reorder the ones already fixed, so an application that needs to
 interleave a layer of its own puts its statement before this import.
 
+This section is the reference: what is in each layer, and where. The reasoning behind the order — how
+a browser decides, why a rule in no layer beats every layered one, why the element-level layers are
+scoped, and what a bundler does to the statement — is
+[the cascade contract](../../../docs/explanations/CASCADE.md).
+
 The statement above, the tables below and the list of what is deliberately
 unlayered are not prose. `tests/layer-set.test.ts` reads them out of this file
 and compares them against the stylesheet a bundler resolves, so a README that
@@ -253,7 +258,9 @@ application that cannot move should pin a version.
 
 ## Migrating to the Layered Release
 
-This release makes three changes that an application has to answer.
+This release makes three changes that an application has to answer. They are summarised here;
+[Migrating to the layered styles release](../../../docs/how-to-guides/MIGRATE_TO_LAYERED_STYLES.md)
+is the step-by-step version, with the check to run on a built page and symptom-first troubleshooting.
 
 1. **Add `ds` to your root**, beside the context and density classes you already have:
    `<html class="ds app comfortable">`. Without it the reset applies nowhere, because it is now

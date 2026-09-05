@@ -34,6 +34,8 @@ A rule in no cascade layer outranks a rule in any layer, whatever the selectors 
 
 So the rules are layered, and the ones that select elements are confined to the part of the page the design system owns.
 
+What follows is the reference for this package's share of that arrangement. The reasoning behind the whole of it — how a browser decides, why a rule in no layer beats every layered one, why the element-level layers are scoped and what a bundler does to the statement — is [the cascade contract](../../../docs/explanations/CASCADE.md).
+
 ### What is in which layer
 
 | What | Layer | Inside `@scope (.ds)`? |
