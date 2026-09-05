@@ -21,7 +21,8 @@
 
 /* Read from the bottom up, each position is an argument:
  *   normalize      pragma's own reset, scoped to pragma territory
- *   ds.tokens      primitive values, spacing, motion, overflow
+ *   ds.tokens      primitive values, spacing, motion, overflow, and the
+ *                  typography mapper's naming shims
  *   ds.reset       the territory root's baseline: font, colour, box-sizing
  *   ds.typography  the semantic mapper and the baseline engines
  *   ds.modifiers   theme, the typographic scale, the channel families and

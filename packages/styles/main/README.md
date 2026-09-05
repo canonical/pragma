@@ -89,7 +89,7 @@ Read it from the bottom up — each position is an argument.
 | Layer | What is in it | Why it sits where it does |
 | --- | --- | --- |
 | `normalize` | This package's own reset, scoped. | Lowest, because everything else is meant to overrule it. |
-| `ds.tokens` | The primitive values, and the spacing, motion and overflow tokens. | Above the reset, because a token has to exist before anything reads it; below everything that reads one. |
+| `ds.tokens` | The primitive values, the spacing, motion and overflow tokens, and the typography mapper's naming shims. | Above the reset, because a token has to exist before anything reads it; below everything that reads one. |
 | `ds.reset` | The declarations the outermost marked root makes for itself: font, colour, line height, weight, text-wrap style, font smoothing — and border-box sizing for it and everything inside. | Above the tokens because it reads them; below the typographic engine and the components, which refine what it starts. |
 | `ds.typography` | The semantic mapper and the baseline engine — with the typography change, stacked on this one and released with it. Until then the typography package ships those rules unlayered, and this layer is empty. | Above the reset because it is a more specific statement about text; below the modifiers, which can retune the scale. |
 | `ds.modifiers` | Theme, the typographic scale, the intent families (anticipation, criticality, emphasis, importance) and their shims, and the context and density classes. | Above typography, because a modifier's job is to shift what the layers below produced. |
@@ -120,7 +120,7 @@ interleave a layer of its own puts its statement before this import.
 | `modifiers.density.css` | `ds.modifiers` | no |
 | `modifiers.states.shim.css`, `modifiers.importance.shim.css`, `modifiers.criticality.shim.css` | `ds.modifiers` | no |
 | `controls.hover.shim.css` | `ds.surfaces` and `ds.states` | no |
-| `@canonical/styles-typography` | `ds.typography` and `ds.modifiers`, with the typography change stacked on this one; unlayered until then | with that change |
+| `@canonical/styles-typography` | `ds.tokens` for the mapper's naming shims, `ds.typography` for every element rule, `ds.modifiers` for the typographic scale it re-exports | the `ds.typography` rules, yes; the shims, no |
 | `@canonical/design-tokens` distribution files | `ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states` — each file opens its own, except `modifiers.importance.css`, which is empty and opens none | no |
 
 The scoped files are the ones whose rules select elements. The unscoped ones are almost all custom
@@ -139,19 +139,20 @@ rather than writes:
 
 ### What Is Deliberately Unlayered
 
-Two things, and the same reason covers both: the cascade does not sort them, so putting them in a layer
-would say nothing and would invite a reader to look for the layer that "wins".
+Two things. Neither is a style rule, so neither is sorted by cascade layers, and putting either in a
+layer would say nothing while inviting a reader to look for the layer that "wins".
 
 - **`@font-face`**, in `fonts.css`. It defines a font for the whole document, not a style for an
   element. The file is opt-in and imported separately so that an application already serving the same
   files does not download them twice.
-- **`@property` registrations**, in `@canonical/styles-typography`. They register the type of a custom
-  property for the whole document.
+- **The `@property` registration** of `--baseline-height`, in `@canonical/styles-typography`. A
+  registration is not cascaded at all — the last one in document order wins, whatever layer it is in —
+  so a layer would have nothing to order it against.
 
 ### Why the Element-Level Layers Are Scoped
 
-`normalize` and `ds.reset` here — and `ds.typography` in the typography package, with the change
-stacked on this one — are written inside `@scope (.ds)` blocks. That keeps their rules inside the
+`normalize` and `ds.reset` here, and `ds.typography` in the typography package, are written inside
+`@scope (.ds)` blocks. That keeps their rules inside the
 subtree you marked, which matters for two reasons.
 
 A page that is not entirely the design system's has other rules on its bare elements. If this
@@ -217,7 +218,7 @@ set, the specificity and the layer are identical either way.
 | --- | --- | --- | --- | --- |
 | `@scope` | this package's reset, the layout presets, the typography engine | 118 | 17.4 | 146 |
 | `mod()` | the baseline engine | 125 | 17.4 | 128 |
-| `@property` | the baseline engine | 85 | 16.4 | 128 |
+| `@property` | the baseline engine's `--baseline-height` registration | 85 | 16.4 | 128 |
 
 The typographic engine also needs the `cap` unit and `round()`; `@canonical/styles-typography`'s
 "Browser Support" section is the full table for it.

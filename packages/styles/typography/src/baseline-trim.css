@@ -17,8 +17,8 @@
  *
  *   `.p` and `.code` are written twice, bare and `:scope.x`, because a scoped
  *   selector never matches its own scoping root and a `ds` root carries those
- *   classes: `<p class="ds field-error p">`, `<code class="ds inline-code code">`,
- *   `<kbd class="ds keyboard-key code">`.
+ *   classes: `<p class="ds field-error p">`, `<output class="ds range-output p">`,
+ *   `<code class="ds inline-code code">`, `<kbd class="ds keyboard-key code">`.
  */
 
 /* Baseline unit shim (--baseline-height 4px fallback) */
