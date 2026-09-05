@@ -12,7 +12,7 @@ Everything else follows from that rule.
 
 ## Prerequisites
 
-This package needs `@canonical/styles` at the first release whose element-level layers are scoped to pragma territory and whose territory root declares pragma's baseline; its changelog names it. With an older release the boundary still keeps Vanilla's rules out of pragma components, but everything pragma ships unlayered leaks into Vanilla territory, and a pragma root still inherits Vanilla's font, colour and line-height from the page.
+This package needs `@canonical/styles` at the first release whose element-level layers are written inside `@scope (html:not(.coexist), .ds)`, so that a root marked `coexist` confines them to pragma territory, and whose territory root declares pragma's baseline; its changelog names it. With an older release the boundary still keeps Vanilla's rules out of pragma components, but everything pragma ships unlayered leaks into Vanilla territory, and a pragma root still inherits Vanilla's font, colour and line-height from the page.
 
 Until that release exists, this package is marked private and is not published. The computed-style fixtures that prove its guarantees arrive with the second pull request (F-11 in pragma-adrs F); the package is published when they pass.
 
@@ -43,8 +43,8 @@ Numbered so a review can cite one. Each ends with the decision in pragma-adrs F 
 
 **Root declaration**
 
-10. From day one: `<html class="site comfortable light">` on a site, `app comfortable light` on an application. Exactly one context, exactly one density, and `light`. Not `ds` yet. (VC.09)
-11. The last state before Vanilla is removed adds `ds` to `<html>`: pragma's element styles then apply to the whole document and the boundary reverts every Vanilla rule everywhere. (VC.03)
+10. From day one: `<html class="coexist site comfortable light">` on a site, `coexist app comfortable light` on an application. Exactly one context, exactly one density, `light`, and `coexist`. The last one is this package's marker: it confines pragma's element styles and the boundary to the subtrees that carry `ds`. Without it the whole document is pragma territory, legacy markup included, which is what an ordinary pragma page wants and a coexisting page does not. (VC.09)
+11. The last state before Vanilla is removed drops `coexist` from `<html>`: pragma's element styles then apply to the whole document and the boundary reverts every Vanilla rule everywhere. (VC.03)
 
 **Theme**
 
@@ -67,7 +67,7 @@ Numbered so a review can cite one. Each ends with the decision in pragma-adrs F 
 
 **Removal**
 
-19. When no Vanilla class remains and `<html>` carries `ds`, remove Vanilla in four moves. Delete the `@layer vanilla` block and the Vanilla dependencies. Delete this package and its statement, so that `@canonical/styles`' own order takes over. Decide whether `light` stays. Check again. Nothing else changes; the bridge already computes pragma's default where Vanilla is absent. (VC.18)
+19. When no Vanilla class remains and `<html>` no longer carries `coexist`, remove Vanilla in four moves. Delete the `@layer vanilla` block and the Vanilla dependencies. Delete this package and its statement, so that `@canonical/styles`' own order takes over. Decide whether `light` stays. Check again. Nothing else changes. Remove Vanilla only after the marker is gone: while `coexist` is still on the root, a pragma root with no Vanilla theme context follows the operating system (`light dark`) for as long as the adapter is loaded. (VC.18)
 
 ## How it works
 
@@ -102,10 +102,10 @@ The two component tiers are named in the statement so that an app-tier package's
 /* abridged: the shipped file lists every WebKit form part Vanilla styles,
    then each Gecko form part in a rule of its own */
 @layer boundary {
-  :where(.ds, .ds *):where(:not(svg, svg *), svg a),
-  :where(.ds, .ds *):where(:not(svg, svg *), svg a)::before,
-  :where(.ds, .ds *):where(:not(svg, svg *), svg a)::after,
-  :where(.ds, .ds *)::placeholder {
+  :where(html:not(.coexist), html:not(.coexist) *, .ds, .ds *):where(:not(svg, svg *), svg a),
+  :where(html:not(.coexist), html:not(.coexist) *, .ds, .ds *):where(:not(svg, svg *), svg a)::before,
+  :where(html:not(.coexist), html:not(.coexist) *, .ds, .ds *):where(:not(svg, svg *), svg a)::after,
+  :where(html:not(.coexist), html:not(.coexist) *, .ds, .ds *)::placeholder {
     all: revert;
   }
 }
@@ -117,7 +117,7 @@ Its other layer, `adapter`, holds the theme bridge. Pragma keys every colour on 
 
 ```css
 @layer adapter {
-  :where(.ds:not(.ds *):not(html)) {
+  :where(html.coexist .ds:not(.ds *)) {
     color-scheme: var(--vf-theme-light, light) var(--vf-theme-dark, dark);
   }
 }
@@ -157,7 +157,7 @@ Under a light or paper ancestor that computes to `light`, under a dark ancestor 
 @import url("@canonical/styles-vanilla-adapter/adapter.css");
 ```
 
-Template: `<html class="site comfortable light">`; link `styles.css`, then `pragma.css`.
+Template: `<html class="coexist site comfortable light">`; link `styles.css`, then `pragma.css`.
 
 ### A bundler application (Vite, esbuild)
 
@@ -171,7 +171,7 @@ Template: `<html class="site comfortable light">`; link `styles.css`, then `prag
 @layer app { /* your pragma-era CSS */ }
 ```
 
-`<html class="app comfortable light">`.
+`<html class="coexist app comfortable light">`.
 
 ### A build-free page
 
@@ -242,7 +242,7 @@ Vanilla lays out its containers' direct children with `> *` rules, and the bound
 <a id="root-flip"></a>
 ### Everything Vanilla went missing across the whole page
 
-`<html>` carries `ds`. That is the final flip and belongs to the last step of adoption; remove it until then.
+`<html>` has no `coexist`. Without the marker the whole document is pragma territory and the boundary reverts every Vanilla rule. Put `coexist` back on the root until the last step of adoption, when dropping it is the final flip.
 
 <a id="fonts"></a>
 ### Two font downloads, or a half-pixel baseline difference between pragma and Vanilla text

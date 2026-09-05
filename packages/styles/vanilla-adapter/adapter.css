@@ -54,38 +54,112 @@
  * toggle is 42 to 46 percent cheaper with it, because the territory no longer
  * re-resolves Vanilla's variables. */
 @layer boundary {
-  :where(.ds, .ds *):where(:not(svg, svg *), svg a),
-  :where(.ds, .ds *):where(:not(svg, svg *), svg a)::before,
-  :where(.ds, .ds *):where(:not(svg, svg *), svg a)::after,
-  :where(.ds, .ds *)::placeholder,
-  :where(.ds, .ds *)::-webkit-file-upload-button,
-  :where(.ds, .ds *)::-webkit-search-decoration,
-  :where(.ds, .ds *)::-webkit-search-results-decoration,
-  :where(.ds, .ds *)::-webkit-calendar-picker-indicator,
-  :where(.ds, .ds *)::-webkit-inner-spin-button,
-  :where(.ds, .ds *)::-webkit-outer-spin-button,
-  :where(.ds, .ds *)::-webkit-slider-runnable-track,
-  :where(.ds, .ds *)::-webkit-slider-thumb {
+  :where(html:not(.coexist), html:not(.coexist) *, .ds, .ds *):where(
+    :not(svg, svg *),
+    svg a
+  ),
+  :where(html:not(.coexist), html:not(.coexist) *, .ds, .ds *):where(
+    :not(svg, svg *),
+    svg a
+  )::before,
+  :where(html:not(.coexist), html:not(.coexist) *, .ds, .ds *):where(
+    :not(svg, svg *),
+    svg a
+  )::after,
+  :where(html:not(.coexist), html:not(.coexist) *, .ds, .ds *)::placeholder,
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-webkit-file-upload-button,
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-webkit-search-decoration,
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-webkit-search-results-decoration,
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-webkit-calendar-picker-indicator,
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-webkit-inner-spin-button,
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-webkit-outer-spin-button,
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-webkit-slider-runnable-track,
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-webkit-slider-thumb {
     all: revert;
   }
 
-  :where(.ds, .ds *)::-moz-range-track {
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-moz-range-track {
     all: revert;
   }
 
-  :where(.ds, .ds *)::-moz-range-progress {
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-moz-range-progress {
     all: revert;
   }
 
-  :where(.ds, .ds *)::-moz-range-thumb {
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-moz-range-thumb {
     all: revert;
   }
 
-  :where(.ds, .ds *)::-moz-focus-inner {
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-moz-focus-inner {
     all: revert;
   }
 
-  :where(.ds, .ds *)::-moz-focus-outer {
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-moz-focus-outer {
     all: revert;
   }
 }
@@ -108,7 +182,7 @@
  * at zero specificity, and the `adapter` layer sits below `ds.components`, so a
  * component that sets its own scheme still wins. */
 @layer adapter {
-  :where(.ds:not(.ds *):not(html)) {
+  :where(html.coexist .ds:not(.ds *)) {
     color-scheme: var(--vf-theme-light, light) var(--vf-theme-dark, dark);
   }
 }
