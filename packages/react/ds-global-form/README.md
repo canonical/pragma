@@ -57,6 +57,10 @@ This package renders more native elements than any other: `<input>` in a dozen t
 
 Nothing in this package portals: no `createPortal`, no `appendChild`, no `<dialog>`. The two surfaces that escape their container — the combobox list (`ComboboxInput/common/List/List.tsx:42`) and the colour picker's swatch panel (`ColorInput/ColorInput.tsx:198`) — use the Popover API, which promotes an element to the top layer for painting but leaves it where it is in the DOM. So they stay inside the `.ds` subtree their caller marks, and the element-level layers `@canonical/styles` scopes to that subtree still reach them.
 
+### Transitions read the motion tokens
+
+Every transition in this package takes its duration from `--motion-duration-fast`, the fast step of the three duration tokens `@canonical/styles` declares, and never from a literal. That is not a tidiness rule. Under `prefers-reduced-motion: reduce` the styles package sets all three duration tokens to `0s`, and that is the whole of pragma's reduced-motion mechanism: a component's own `transition` declaration keeps its place in the cascade and simply resolves to no time at all. A hard-coded duration is invisible to it and keeps animating for a reader who asked their system not to. So: no literal durations here, and a new transition reads a token. The tokens themselves live in `@canonical/styles` (`motion.css`); if a control needs a step the three do not offer, the step is added there rather than written into a component.
+
 ## Dependencies
 
 The form system builds on two key libraries:
