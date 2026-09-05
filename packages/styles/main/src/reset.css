@@ -30,7 +30,15 @@
 
 @layer ds.reset {
   @scope (.ds) {
-    :where(:scope) {
+    /* The OUTERMOST territory root, and only that one. `:not(.ds *)` is
+       load-bearing: every component carries `ds` on its own root, so each is a
+       scoping root of its own and a bare `:where(:scope)` would put these
+       declarations on every component — an Icon inside a coloured link would
+       lose the link's colour, a Card inside a Card its container's font. The
+       baseline belongs to the element that opens the territory; everything
+       inside it inherits, which is the point. Same shape the adapter's theme
+       bridge uses for the same reason. */
+    :where(:scope:not(.ds *)) {
       /* The same token the typography mapper reads for the base font, so the
          root and the elements inside it cannot disagree. */
       font-family: var(--typography-text-primary-font-family);
@@ -39,7 +47,12 @@
       color: var(--color-text);
       line-height: normal;
       font-weight: normal;
-      text-wrap: auto;
+      /* The style longhand, not the `text-wrap` shorthand: the shorthand also
+         resets `text-wrap-mode`, which would overwrite the browser's own
+         `white-space: pre` on a `<select>` and let a long option wrap. Only the
+         style needs cancelling — a host page's `text-wrap: pretty` is what this
+         is here for. */
+      text-wrap-style: auto;
       -webkit-font-smoothing: auto;
     }
   }

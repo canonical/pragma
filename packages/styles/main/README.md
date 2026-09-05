@@ -49,12 +49,21 @@ reference application puts `ds` on `<html>` and `app comfortable` on `<body>`.
 A colour scheme is optional: `light` or `dark` pins one, and leaving both off lets the page follow the
 reader's operating system. Nothing else belongs on the root.
 
-`ds` does not have to be on `<html>`. Put it on a `<main>`, a section, or a single component's wrapper
-and only that subtree becomes the design system's; the rest of the page is untouched. That is what
-makes the package usable in an application that is still mostly built on something else. Every
-component this system ships carries `ds` on its own root — except two work-in-progress grid components,
-`GridCard` and `SettingsView`, which gain it when the component stylesheets are wrapped in their tier
-layers — so a component dropped into any page is its own small territory.
+**In an application that is the design system's throughout, mark `<html>`.** `<body>` does the same job:
+either way the body is inside the territory and its page margin is reset, as it was before this
+release.
+
+But `ds` does not have to be at the top. Put it on a `<main>`, a section, or a single component's
+wrapper and only that subtree becomes the design system's; the rest of the page is untouched. That is
+what makes the package usable in an application that is still mostly built on something else — with the
+one consequence that the body is then outside the territory, so the browser's 8px page gutter stays and
+you zero it yourself.
+
+Every component this system ships carries `ds` on its own root — except two work-in-progress grid
+components, `GridCard` and `SettingsView`, which gain it when the component stylesheets are wrapped in
+their tier layers — so a component dropped into any page is its own small territory. Only the outermost
+`ds` in a subtree acts as a territory root: a component inside another one inherits from its container
+rather than resetting to the baseline.
 
 **An application that still runs another CSS framework marks its root differently**, and needs one more
 package: `@canonical/styles-vanilla-adapter`, which keeps the two systems out of each other's territory
@@ -81,7 +90,7 @@ Read it from the bottom up — each position is an argument.
 | --- | --- | --- |
 | `normalize` | This package's own reset, scoped. | Lowest, because everything else is meant to overrule it. |
 | `ds.tokens` | The primitive values, and the spacing, motion and overflow tokens. | Above the reset, because a token has to exist before anything reads it; below everything that reads one. |
-| `ds.reset` | The declarations the marked root makes for itself: font, colour, line height, weight, text wrap, font smoothing, and border-box sizing for everything inside. | Above the tokens because it reads them; below the typographic engine and the components, which refine what it starts. |
+| `ds.reset` | The declarations the outermost marked root makes for itself: font, colour, line height, weight, text-wrap style, font smoothing — and border-box sizing for it and everything inside. | Above the tokens because it reads them; below the typographic engine and the components, which refine what it starts. |
 | `ds.typography` | The semantic mapper and the baseline engine — with the typography change, stacked on this one and released with it. Until then the typography package ships those rules unlayered, and this layer is empty. | Above the reset because it is a more specific statement about text; below the modifiers, which can retune the scale. |
 | `ds.modifiers` | Theme, the typographic scale, the intent families (anticipation, criticality, emphasis, importance) and their shims, and the context and density classes. | Above typography, because a modifier's job is to shift what the layers below produced. |
 | `ds.surfaces` | The surface families: `surface`, `contrasted`, `modal`. | Above the modifiers, because a surface re-points colour channels the modifiers set. |
@@ -155,9 +164,13 @@ package is transformed between what a contributor writes and what the browser ru
 `@scope (.ds)` once is also what a contributor who does nothing special will get right on the next
 rule they add.
 
-A scoped selector never matches its own scoping root, so a rule that has to reach the root itself is
-written `:where(:scope)`. That is the marked element: the document element in an application that is
-the design system's throughout, a region or a single component in one that is not.
+A scoped selector never matches its own scoping root, so a rule that has to reach the root itself names
+`:scope`. The baseline declarations name it as `:where(:scope:not(.ds *))` — the *outermost* marked
+element, and only that one. Every component carries `ds` on its own root, so each of them opens a scope
+of its own; without the qualifier the baseline would land on every component and a component inside a
+coloured container would reset to the baseline colour instead of inheriting the container's. A rule
+that has to reach an element wherever it sits, including one that is itself the root, names both:
+`:where(:scope, :scope *)`.
 
 One rule takes the long form instead: the border-box declaration in `reset.css`, written
 `:where(.ds, .ds *)` in the same layer. It is the only rule in the package with universal reach, so
@@ -172,9 +185,9 @@ set, the specificity and the layer are identical either way.
 | Every rule the package ships is in one of the ten declared layers, and the statement is the first rule of this stylesheet. | The order fixtures that arrive with the Vanilla adapter package read the statement out of the resolved stylesheet and check every layer name the package opens against it. A check inside this package — that the set of layers used equals the set declared — is being added separately. |
 | An application tier's rule for a component beats the global tier's rule for the same component, whichever of the two a bundler loads first. | The two sublayers are named in the statement, so their order is fixed there rather than at first appearance, and the same order fixture reads it back. The component packages move into them when their stylesheets are wrapped, which is a separate change; until then both sublayers are empty and the guarantee is vacuous. |
 | The package ships no `!important`. | The same fixture file. An important declaration inverts the layer order and cannot be arbitrated by layers at all, so one of them would undo the guarantee above. |
-| Under `prefers-reduced-motion: reduce`, every motion duration this package defines is `0s`. | `src/motion.css`, and the reduced-motion fixture arriving with the adapter package. Zeroing the token is the mechanism: a component reads the token, so nothing has to out-rank the component's own declaration. Whether a given component honours the tokens is that package's guarantee, not this one's — the components that still hard-code a duration are being moved onto the tokens separately. |
+| Under `prefers-reduced-motion: reduce`, every motion duration this package defines is `0s`. | `src/motion.css`, and the reduced-motion fixture arriving with the adapter package. Zeroing the token is the mechanism: a component reads the token, so nothing has to out-rank the component's own declaration. Whether a given component honours the tokens is that package's guarantee, not this one's. Sheets that still hard-code a duration, and so still animate under the preference, are being moved onto the tokens separately: in the form package the shared input chrome (`src/index.css`) and eight component sheets (`ChoicesField`, `RichChoicesField`, `CheckboxInput`, `RadioInput`, `ColorInput`, `ComboboxInput` and its list, `FileUploadInput`, `SwitchInput`); in the global package `Tooltip`, `ContextualMenu` and `Popover`, which set their own duration property; and one application-tier sheet, the launchpad diff viewer's file header. |
 | Inside a marked subtree, every element computes as it does on a page that is the design system's throughout — the same font, size, weight, line height, colour, box sizing, font smoothing and text wrapping. | The computed-style fixtures arriving with the adapter package, which render the same block of markup on both kinds of page and compare every longhand on every element. This one needs the typography change stacked on this release as well. |
-| The marked root declares its own baseline rather than inheriting the host page's. | The fixture named `inherits pragma's baseline at the root, not Vanilla's`, in the same file. |
+| The outermost marked root declares its own baseline rather than inheriting the host page's, and everything inside it inherits from there. | The fixture named `inherits pragma's baseline at the root, not Vanilla's`, in the same file. |
 | Apart from `color-scheme` on the document root, nothing this package ships restyles a bare element outside a marked subtree. | The fixture that compares a page which loads this stylesheet against the same page without it, `html` and `body` included. It needs the typography change too: until that lands, the typography package's `body`, `h1`–`h6` and `p` rules do reach the whole document. |
 
 ## What This Package Does Not Guarantee
@@ -186,9 +199,9 @@ set, the specificity and the layer are identical either way.
 - **`!important` in application or third-party CSS beats every rule here**, and for important
   declarations the layer order runs backwards, so the lowest layer wins. Nothing this package can do
   changes that.
-- **The body's page margin is only reset when the territory root is the document element.** The reset's
-  `body { margin: 0 }` lives inside the scope, so `<html class="ds …">` gets it and a marked `<main>` or
-  wrapper does not: there the browser's 8px page gutter stays. Zero it yourself, or mark `<html>`.
+- **The body's page margin is only reset when the body is inside the marked subtree.** `ds` on `<html>`
+  or on `<body>` gets it; a marked `<main>` or wrapper does not, and there the browser's 8px page gutter
+  stays. Zero it yourself, or mark higher up.
 - **`color-scheme` is set on the document root wherever this stylesheet is loaded**, marked subtree or
   not, because that is what the `light-dark()` tokens and the browser's own controls resolve against.
 - **Below the browser floor, the scoped layers do not apply at all.** A browser that does not
@@ -221,9 +234,16 @@ This release makes three changes that an application has to answer.
    confined to the marked subtree. Components keep working — they carry `ds` themselves — but the
    page's text falls back to the browser's defaults.
 
-   Mark `<html>` if you can. On a subtree the reset still applies inside it, but `body { margin: 0 }`
-   does not, because the body is then outside the marked subtree: the browser's 8px page gutter comes
-   back, and you zero it yourself.
+   Mark `<html>` if you can, or `<body>`: both put the body inside the territory, so its page margin is
+   reset as before. A root further in leaves the body outside, and the browser's 8px page gutter comes
+   back for you to zero.
+
+   The layout presets move with the reset. `grid`, `subgrid`, `responsive`, `intrinsic` and
+   `content-flow` now apply only inside a marked subtree, so a page that used one of those class names
+   on an element with no `ds` ancestor loses it — a `grid responsive` container outside the territory
+   computes `display: block`. That is the point of the scoping (the names are common enough that a page
+   the design system does not own may use them for something else), but it is a layout change, not a
+   typographic one.
 
 2. **Your unlayered CSS now beats every rule in this package.** Before this release most of what the
    package shipped was unlayered too, so your overrides competed with it by source order and
