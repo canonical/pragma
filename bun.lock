@@ -1304,6 +1304,14 @@
         "typescript": "^5.9.3",
       },
     },
+    "packages/styles/vanilla-adapter": {
+      "name": "@canonical/styles-vanilla-adapter",
+      "version": "0.37.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.5.11",
+        "@canonical/biome-config": "^0.37.0",
+      },
+    },
     "packages/summon/application": {
       "name": "@canonical/summon-application",
       "version": "0.37.0",
@@ -1858,6 +1866,8 @@
     "@canonical/styles-primitives-canonical": ["@canonical/styles-primitives-canonical@0.26.0", "", { "dependencies": { "@canonical/tokens": "^0.10.0-experimental.4", "@canonical/typography": "^0.17.1", "normalize.css": "^8.0.1" } }, "sha512-wOpedpXdnU+UB/Df6Ap4nf35aRyLjDDm1fTj0aXh2YMFZ5ZvCY5YBH+l23BYoz4DcOx3/orFDMh8ZHXCYL1O1w=="],
 
     "@canonical/styles-typography": ["@canonical/styles-typography@workspace:packages/styles/typography"],
+
+    "@canonical/styles-vanilla-adapter": ["@canonical/styles-vanilla-adapter@workspace:packages/styles/vanilla-adapter"],
 
     "@canonical/summon": ["@canonical/summon@workspace:packages/cli/summon"],
 

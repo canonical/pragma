@@ -1,0 +1,188 @@
+/* @canonical/styles-vanilla-adapter - Boundary and theme bridge
+ *
+ * Belongs in the pragma entry, the stylesheet that is never purged, next to
+ * @canonical/styles and the component stylesheets; its position inside that
+ * entry does not matter, because layer precedence comes from layers.css, not
+ * from source order. Never inside the `vanilla` layer.
+ *
+ *   @import url("@canonical/styles-vanilla-adapter/adapter.css");
+ *
+ * One boundary, one bridge, two layers, no tooling. What you read here is what
+ * the browser runs (pragma constitution VI and XIII). The reasoning is in
+ * pragma-adrs F, VC.24 and VC.09.
+ */
+
+/* ── The boundary ──────────────────────────────────────────────────────────
+ * Pragma territory is every element with the class `ds` and everything inside
+ * it. Vanilla must never style it, and a Vanilla rule leaks for every property a
+ * pragma component does not itself declare. So at the boundary every property is
+ * rolled back to the browser's own default with `revert`, in a layer that sits
+ * ABOVE `vanilla` and BELOW every pragma layer (layers.css):
+ *   - a property pragma declares wins, because pragma's layers are higher;
+ *   - a property only Vanilla declares is reverted to the browser default,
+ *     which is exactly what a pragma-only page has;
+ *   - custom properties are not part of `all`, so pragma's tokens and Vanilla's
+ *     theme toggles keep inheriting;
+ *   - inheritance is untouched, which is what pragma's territory-root reset and
+ *     the theme bridge below rely on.
+ *
+ * Pseudo-elements are separate boxes with their own cascade, and a pseudo-element
+ * cannot be named inside `:where()`, so each one Vanilla styles without a class
+ * gets its own selector: `::before` and `::after` (box-sizing), `::placeholder`
+ * (the muted placeholder colour on every text input), and the WebKit form parts
+ * (file upload button, search decorations, the datalist picker, number spinners,
+ * range track and thumb). The Gecko form parts sit in rules of their own, because
+ * a selector list that names a `-moz-` pseudo-element is dropped whole by other
+ * engines, whereas unknown `-webkit-` pseudo-elements are parsed as valid by all.
+ *
+ * SVG content is excluded, except an `<a>` inside it. `revert` also rolls back
+ * presentational attributes, and inline SVG draws with them (`fill`, `width`, `d`,
+ * `r`, `transform`). Vanilla's only class-free rules that reach SVG content are
+ * its universal box-sizing rule, which pragma sets to the same value, and its
+ * bare `a` rules, which would colour an SVG anchor; so anchors stay inside the
+ * boundary and their text inherits the reverted colour. The same rollback
+ * removes the sizing that `width` and `height` attributes give an `<img>`:
+ * pragma sizes replaced elements in CSS.
+ *
+ * `:where()` keeps the element selectors at zero specificity, so any rule an
+ * application places in the same layer beats them; the pseudo-element selectors
+ * carry a pseudo-element's own (0,0,1). Vanilla's `!important` declarations still
+ * win here, as they would anywhere; the only one that can match without a Vanilla
+ * class present is `* { animation: none !important; transition: none !important }`
+ * under reduced motion, which pragma will honour itself. Measured in Chromium 151,
+ * the rule adds nothing measurable to style recalculation, and a Vanilla theme
+ * toggle is 42 to 46 percent cheaper with it, because the territory no longer
+ * re-resolves Vanilla's variables. */
+@layer boundary {
+  :where(html:not(.coexist), html:not(.coexist) *, .ds, .ds *):where(
+    :not(svg, svg *),
+    svg a
+  ),
+  :where(html:not(.coexist), html:not(.coexist) *, .ds, .ds *):where(
+    :not(svg, svg *),
+    svg a
+  )::before,
+  :where(html:not(.coexist), html:not(.coexist) *, .ds, .ds *):where(
+    :not(svg, svg *),
+    svg a
+  )::after,
+  :where(html:not(.coexist), html:not(.coexist) *, .ds, .ds *)::placeholder,
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-webkit-file-upload-button,
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-webkit-search-decoration,
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-webkit-search-results-decoration,
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-webkit-calendar-picker-indicator,
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-webkit-inner-spin-button,
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-webkit-outer-spin-button,
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-webkit-slider-runnable-track,
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-webkit-slider-thumb {
+    all: revert;
+  }
+
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-moz-range-track {
+    all: revert;
+  }
+
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-moz-range-progress {
+    all: revert;
+  }
+
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-moz-range-thumb {
+    all: revert;
+  }
+
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-moz-focus-inner {
+    all: revert;
+  }
+
+  :where(
+    html:not(.coexist),
+    html:not(.coexist) *,
+    .ds,
+    .ds *
+  )::-moz-focus-outer {
+    all: revert;
+  }
+}
+
+/* ── The theme bridge ──────────────────────────────────────────────────────
+ * Pragma keys every colour on `color-scheme` (light-dark() values, inherited).
+ * Vanilla keys theme on two inherited space-toggle properties set by .is-light
+ * and .is-paper (light on, dark off) and by .is-dark (the reverse), which its
+ * themed strips, tooltips and accent strip all go through. Reading Vanilla's
+ * toggles and writing pragma's scheme makes the nearest Vanilla theme ancestor
+ * decide, by inheritance, with no selector-order fragility:
+ *   under a light or paper ancestor -> `light`
+ *   under a dark ancestor            -> `dark`
+ *   with no Vanilla theme at all     -> `light dark`, pragma's own default
+ * Only the boundary root is written (`.ds:not(.ds *)`), so nested pragma roots
+ * inherit from their pragma parent; <html> is excluded so the `light` pin on the
+ * root (README, rule 10) stays in force once the document is flipped to
+ * `html.ds`. The ancestors are the DOM's, so a surface portalled to <body> takes
+ * the body's theme, not the strip it was opened from. `:where()` keeps the rule
+ * at zero specificity, and the `adapter` layer sits below `ds.components`, so a
+ * component that sets its own scheme still wins. */
+@layer adapter {
+  :where(html.coexist .ds:not(.ds *)) {
+    color-scheme: var(--vf-theme-light, light) var(--vf-theme-dark, dark);
+  }
+}

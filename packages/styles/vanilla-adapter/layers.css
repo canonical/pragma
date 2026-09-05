@@ -1,0 +1,52 @@
+/* @canonical/styles-vanilla-adapter - Layer order for a mixed application
+ *
+ * This statement must be the FIRST rule of the FIRST stylesheet the browser sees;
+ * only @charset may precede it. The file sits at the package root so that Sass
+ * finds it by its extensionless path and inlines it in place:
+ *
+ *   @import "@canonical/styles-vanilla-adapter/layers";
+ *   @use "@canonical/styles-vanilla-adapter/layers";
+ *
+ * From plain CSS or a bundler:
+ *
+ *   @import url("@canonical/styles-vanilla-adapter/layers.css");
+ *
+ * Listed lowest first, each position is an argument (pragma-adrs F, VC.02):
+ *   vanilla        Vanilla Framework and everything built on it, one territory
+ *   boundary       `all: revert` on pragma territory (adapter.css): Vanilla ends here
+ *   normalize      pragma's authored reset, scoped to pragma territory
+ *   ds.tokens      primitive :root values, spacing, motion, overflow, mapper shims
+ *   ds.reset       pragma's element baseline and its territory-root declarations
+ *                  (font, colour, line-height, box-sizing), scoped
+ *   ds.typography  the mapper and the baseline engines, scoped
+ *   ds.modifiers   theme, scale, channels and their shims, density and context
+ *   ds.surfaces    .surface, .contrasted, .modal
+ *   ds.states      the universal derived-state rule, scoped
+ *   adapter        the theme bridge (adapter.css)
+ *   ds.components  every pragma component stylesheet, in one of two tiers:
+ *   ds.components.global  the global component packages
+ *   ds.components.app     the app-tier packages, which beat the global tier
+ *                  (both tiers are named here so that their order never depends
+ *                  on which component sheet the page happens to load first)
+ *   app            the application's own pragma-era CSS, whatever its context class
+ *
+ * `vanilla` is the lowest layer: in Vanilla territory nothing pragma ships
+ * competes with it, because pragma's element-level layers are scoped to `.ds`
+ * and its other layers are custom properties or component classes. `boundary`
+ * sits directly above it so that inside pragma territory every Vanilla
+ * declaration is reverted before pragma's layers apply.
+ */
+@layer vanilla,
+  boundary,
+  normalize,
+  ds.tokens,
+  ds.reset,
+  ds.typography,
+  ds.modifiers,
+  ds.surfaces,
+  ds.states,
+  adapter,
+  ds.components,
+  ds.components.global,
+  ds.components.app,
+  app;
