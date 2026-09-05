@@ -78,9 +78,10 @@ describe("component stylesheets", () => {
       });
 
       it("opens the block after the header and any registrations", () => {
-        // A registration is not a style rule and no layer sorts one, so
-        // `@property` and `@font-face` belong above the block; the README says
-        // so. Anything else up there would be a rule outside the layer.
+        // `@property` and `@font-face` sit above the block by convention, as
+        // the README says: not because a layer cannot reach them — it can —
+        // but so they read as what they are, declarations the whole document
+        // shares. Anything else up there would be a rule outside the layer.
         expect(head.replace(REGISTRATION, "").trim()).toBe("");
       });
 
