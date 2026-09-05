@@ -16,8 +16,10 @@
  * Layers: the token block is `ds.tokens`. These are custom properties, which
  * act only where a rule reads them, so they are not scoped to pragma territory.
  * The content-flow container at the end sets a real property on an element, so
- * it sits in `ds.components` inside `@scope (.ds)` and cannot reach a page
- * another system owns.
+ * it sits in `ds.components.global` — the global tier, not the parent layer,
+ * because a rule written directly into `@layer ds.components` outranks both
+ * component tiers — inside `@scope (.ds)`, so it cannot reach a page another
+ * system owns.
  */
 
 @layer ds.tokens {
@@ -118,7 +120,7 @@
 
 /* ── Content-flow container ─────────────────────────────────────── */
 
-@layer ds.components {
+@layer ds.components.global {
   @scope (.ds) {
     /* Content-flow container: establishes element-owned spacing context.
      * Children use their own margin-bottom; last child is reset to 0
