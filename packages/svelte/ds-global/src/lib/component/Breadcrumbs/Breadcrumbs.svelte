@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getItemId } from "@canonical/utils";
+  import { getItemId } from "@canonical/ds-utils";
   import { Item } from "./common/index.js";
   import type { BreadcrumbsProps } from "./types.js";
   import "./styles.css";

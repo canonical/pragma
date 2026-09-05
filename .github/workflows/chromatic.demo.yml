@@ -6,6 +6,7 @@ on:
       - configs/storybook/**
       - packages/styles/**
       - packages/utils/**
+      - packages/runtime/ds-utils/**
       - packages/react/ds-global/**
       - apps/react/demo/**
       - "!packages/react/ds-global/**/*.stories.*"
@@ -19,6 +20,7 @@ on:
       - configs/storybook/**
       - packages/styles/**
       - packages/utils/**
+      - packages/runtime/ds-utils/**
       - packages/react/ds-global/**
       - apps/react/demo/**
       - "!packages/react/ds-global/**/*.stories.*"
@@ -36,5 +38,6 @@ jobs:
         "configs/storybook/**",
         "packages/styles/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
         "packages/utils/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
+        "packages/runtime/ds-utils/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
         "packages/react/ds-global/**/!(*.test.*|*.stories.*|*.md|*.mdx)"
       ]'

@@ -58,8 +58,8 @@
   },
   "dependencies": {
     "@canonical/ds-assets": "^0.37.0",
-    "@canonical/styles": "^0.37.0",
-    "@canonical/utils": "^0.37.0"
+    "@canonical/ds-utils": "^0.37.0",
+    "@canonical/styles": "^0.37.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.11",

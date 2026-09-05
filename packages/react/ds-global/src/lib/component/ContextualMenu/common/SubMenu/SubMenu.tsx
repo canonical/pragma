@@ -1,5 +1,5 @@
 import type { _Item } from "@canonical/ds-types";
-import { getItemId } from "@canonical/utils";
+import { getItemId } from "@canonical/ds-utils";
 import type React from "react";
 import { type ReactElement, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";

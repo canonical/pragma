@@ -1,4 +1,4 @@
-import { debounce } from "@canonical/utils";
+import { debounce } from "@canonical/ds-utils";
 import { createElement, useCallback, useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 import type { Middleware } from "../../common/types.js";

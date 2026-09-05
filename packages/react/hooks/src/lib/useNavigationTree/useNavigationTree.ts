@@ -1,5 +1,5 @@
 import type { _Item, Item } from "@canonical/ds-types";
-import type { NavigationState, NodeStatus } from "@canonical/utils";
+import type { NavigationState, NodeStatus } from "@canonical/ds-utils";
 import {
   annotateTree,
   createNavigationReducer,
@@ -7,7 +7,7 @@ import {
   getItemId,
   NavigationActionType,
   prepareIndex,
-} from "@canonical/utils";
+} from "@canonical/ds-utils";
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import type {
   ItemProps,

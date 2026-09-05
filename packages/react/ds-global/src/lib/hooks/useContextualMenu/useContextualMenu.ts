@@ -1,14 +1,14 @@
 import type { _Item } from "@canonical/ds-types";
 import {
+  createCrossGroupStateReducer,
+  getFirstEnabledLeaf,
+} from "@canonical/ds-utils";
+import {
   getMenuProps as getMenuAriaProps,
   getMenuGroupProps,
   getMenuItemProps,
   useNavigationTree,
 } from "@canonical/react-hooks";
-import {
-  createCrossGroupStateReducer,
-  getFirstEnabledLeaf,
-} from "@canonical/utils";
 import { useCallback, useEffect, useMemo } from "react";
 import { useDisclosure } from "../useDisclosure/index.js";
 import type {

@@ -38,6 +38,8 @@ Packages live in subdirectories of `packages/` based on their category. The loca
 
 The top level `packages/` directory contains core infrastructure packages like `ds-types`, `ds-assets`, `utils`, and `webarchitect`. These packages have few dependencies and serve as foundations for other packages.
 
+Framework-agnostic runtime packages live in `packages/runtime/`. These are the engines the framework bindings are built on — `i18n-core`, `router-core` and `ds-utils` are shared by the React, Svelte and Lit implementations, while `task`, `harnesses` and `ke` are runtimes for Node and the CLI. If a library holds logic rather than markup, and more than one framework package needs it, it belongs here rather than at the top level.
+
 React component packages live in `packages/react/`. The subdirectory structure mirrors the component tier hierarchy: `ds-global` for universal components, `ds-app` for application components, and specialized packages like `ds-app-launchpad` for domain-specific components.
 
 Style packages live in `packages/styles/`. The structure reflects the CSS layering: `primitives/canonical` for design tokens, `elements` for base HTML styling, and `modes/*` for theming concerns like colour modes and density variants.

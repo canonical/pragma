@@ -1,5 +1,5 @@
 import type { _Index, _Item } from "@canonical/ds-types";
-import type { NodeStatus } from "@canonical/utils";
+import type { NodeStatus } from "@canonical/ds-utils";
 import { describe, expect, it } from "vitest";
 import type { UseNavigationTreeResult } from "../types.js";
 import getMenuGroupProps from "./getMenuGroupProps.js";

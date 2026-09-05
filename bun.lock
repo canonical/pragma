@@ -422,11 +422,11 @@
       "dependencies": {
         "@canonical/ds-assets": "^0.37.0",
         "@canonical/ds-types": "^0.37.0",
+        "@canonical/ds-utils": "^0.37.0",
         "@canonical/react-ds-global": "^0.37.0",
         "@canonical/react-hooks": "^0.37.0",
         "@canonical/storybook-config": "^0.37.0",
         "@canonical/styles": "^0.37.0",
-        "@canonical/utils": "^0.37.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
       },
@@ -543,9 +543,9 @@
       "name": "@canonical/react-ds-app-launchpad",
       "version": "0.37.0",
       "dependencies": {
+        "@canonical/ds-utils": "^0.37.0",
         "@canonical/storybook-config": "^0.37.0",
         "@canonical/styles": "^0.37.0",
-        "@canonical/utils": "^0.37.0",
         "@js-temporal/polyfill": "^0.5.1",
         "highlight.js": "^11.11.1",
         "react": ">=18.0.0 <20.0.0",
@@ -660,10 +660,10 @@
       "dependencies": {
         "@canonical/design-tokens": "0.8.1",
         "@canonical/ds-assets": "^0.37.0",
+        "@canonical/ds-utils": "^0.37.0",
         "@canonical/react-hooks": "^0.37.0",
         "@canonical/storybook-config": "^0.37.0",
         "@canonical/styles": "^0.37.0",
-        "@canonical/utils": "^0.37.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
       },
@@ -700,6 +700,7 @@
       "name": "@canonical/react-ds-global-form",
       "version": "0.37.0",
       "dependencies": {
+        "@canonical/ds-utils": "^0.37.0",
         "@canonical/react-ds-global": "^0.37.0",
         "@canonical/storybook-config": "^0.37.0",
         "@canonical/styles": "^0.37.0",
@@ -771,7 +772,7 @@
       "version": "0.37.0",
       "dependencies": {
         "@canonical/ds-types": "^0.37.0",
-        "@canonical/utils": "^0.37.0",
+        "@canonical/ds-utils": "^0.37.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
       },
@@ -969,6 +970,22 @@
         "storybook": "^10.3.1",
         "typescript": "^5.9.3",
         "vite": "^8.0.1",
+        "vitest": "^4.0.18",
+      },
+    },
+    "packages/runtime/ds-utils": {
+      "name": "@canonical/ds-utils",
+      "version": "0.37.0",
+      "dependencies": {
+        "@canonical/ds-types": "^0.37.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.5.11",
+        "@canonical/biome-config": "^0.37.0",
+        "@canonical/typescript-config": "^0.37.0",
+        "@canonical/webarchitect": "^0.37.0",
+        "@types/node": "^26.0.0",
+        "typescript": "^5.9.3",
         "vitest": "^4.0.18",
       },
     },
@@ -1523,8 +1540,8 @@
       "version": "0.37.0",
       "dependencies": {
         "@canonical/ds-assets": "^0.37.0",
+        "@canonical/ds-utils": "^0.37.0",
         "@canonical/styles": "^0.37.0",
-        "@canonical/utils": "^0.37.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.5.11",
@@ -1580,9 +1597,6 @@
     "packages/utils": {
       "name": "@canonical/utils",
       "version": "0.37.0",
-      "dependencies": {
-        "@canonical/ds-types": "^0.37.0",
-      },
       "devDependencies": {
         "@biomejs/biome": "2.5.11",
         "@canonical/biome-config": "^0.37.0",
@@ -1778,6 +1792,8 @@
     "@canonical/ds-implementations": ["@canonical/ds-implementations@workspace:packages/ds-implementations"],
 
     "@canonical/ds-types": ["@canonical/ds-types@workspace:packages/ds-types"],
+
+    "@canonical/ds-utils": ["@canonical/ds-utils@workspace:packages/runtime/ds-utils"],
 
     "@canonical/harnesses": ["@canonical/harnesses@workspace:packages/runtime/harnesses"],
 

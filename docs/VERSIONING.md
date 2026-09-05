@@ -50,6 +50,7 @@ The scope identifies which part of the codebase the commit affects. Scopes are o
 Package-based scopes reference specific packages:
 - `assets` for @canonical/ds-assets
 - `utils` for @canonical/utils
+- `ds-utils` for @canonical/ds-utils
 - `ds-types` for @canonical/ds-types
 - `webarchitect` for @canonical/webarchitect
 - `ds-global` for @canonical/react-ds-global
