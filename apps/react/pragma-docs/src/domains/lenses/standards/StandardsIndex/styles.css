@@ -1,0 +1,65 @@
+/*
+ * StandardsIndex — the index's composed layout: category jump-links west
+ * in the frame's --subnav-w column (CONSUMED, defined only by the Shell —
+ * the CatalogList precedent), category-grouped reading lists east. The
+ * east column is plain flow, not a card grid: an index of rules reads as
+ * lists. Zero conditional at-rules (the census); logical properties
+ * throughout.
+ */
+
+/* SUBGRID that spends the shell's columns (strict model): category
+ * jump-links take the westmost 2, the grouped lists take the rest. The
+ * chain reaches here unbroken from the shell. */
+.ds.standards-index {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  align-items: start;
+}
+
+/* Direct children are the <nav> (category jump-links) and the <div>
+ * .standards-groups — the span goes on those, not the inner <ul>. */
+.ds.standards-index > nav {
+  grid-column: span 2;
+}
+.ds.standards-index > .standards-groups {
+  grid-column: 3 / -1;
+  min-inline-size: 0;
+}
+
+.ds.standards-index .standards-category-links {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-100, 0.5rem);
+}
+
+.ds.standards-index .standards-category-links a {
+  color: var(--color-text-muted, #666);
+  text-decoration: none;
+}
+
+.ds.standards-index .standards-category-links a:hover {
+  text-decoration: underline;
+}
+
+.ds.standards-index .standards-groups h2 {
+  margin-block: var(--space-300, 1.5rem) var(--space-200, 1rem);
+}
+
+.ds.standards-index .standards-groups section:first-of-type h2 {
+  margin-block-start: 0;
+}
+
+.ds.standards-index .standards-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-100, 0.5rem);
+}
+
+.ds.standards-index .standards-more {
+  margin-block: var(--space-300, 1.5rem) 0;
+}

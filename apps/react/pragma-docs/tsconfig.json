@@ -1,0 +1,26 @@
+{
+  "extends": "@canonical/typescript-config-react",
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "types": [
+      "bun-types",
+      "node",
+      "react",
+      "react-dom",
+      "vitest/globals",
+      "@testing-library/jest-dom"
+    ],
+    "noEmit": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    ".storybook/*.ts",
+    ".storybook/*.tsx",
+    "vite.config.ts",
+    "vitest.setup.ts",
+    "vitest.config.ts",
+    "vitest.e2e.config.ts",
+    "test/**/*.ts"
+  ]
+}

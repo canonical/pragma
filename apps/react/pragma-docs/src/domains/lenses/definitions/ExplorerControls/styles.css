@@ -1,0 +1,133 @@
+/*
+ * The mode strip's two Definitions tenants: the chip toolbar
+ * (slot.explorer-controls) and the status figure (slot.explorer-status).
+ * Both live INSIDE the strip band, whose height (--strip-h) is stationary
+ * frame — nothing here may change it, or the canvas would jump on a lens
+ * switch (AX.6). Hence the fixed small metrics and `min-block-size: 0`
+ * postures below.
+ *
+ * At-rules: one prefers-reduced-motion block, census-EXEMPT (it cannot
+ * reflow layout — see frameStability.tests.tsx's query-TEXT exemption).
+ */
+
+.ds.explorer-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-200, 1rem);
+  min-inline-size: 0;
+  overflow-x: auto;
+}
+
+/* A fieldset per axis: the semantic grouping element, so each axis's
+ * chips are announced as a named set. The UA's default border/margin/
+ * padding are cleared — the grouping is for assistive tech, not a visible
+ * box, and the strip's band height is stationary frame. */
+.ds.explorer-controls .chip-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-inline-size: 0;
+}
+
+/* The chip: a real toggle button. At rest it is quiet; lit, it takes the
+ * text colour and a filled swatch — so the on/off distinction is carried
+ * by fill AND weight, never by hue alone (WCAG 1.4.1). */
+.ds.explorer-controls .explorer-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.1875rem 0.625rem;
+  border: 1px solid var(--color-border-muted, #ddd);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-muted, #666);
+  font: inherit;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.ds.explorer-controls .explorer-chip-swatch {
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  background: transparent;
+}
+
+.ds.explorer-controls .explorer-chip[aria-pressed="true"] {
+  color: var(--color-text, #000);
+  border-color: currentColor;
+  background: color-mix(
+    in oklab,
+    var(--color-text, #000) 6%,
+    var(--color-background, #fff)
+  );
+}
+
+.ds.explorer-controls
+  .explorer-chip[aria-pressed="true"]
+  .explorer-chip-swatch {
+  background: currentColor;
+}
+
+.ds.explorer-controls .explorer-chip:hover {
+  color: var(--color-text, #000);
+}
+
+.ds.explorer-controls .explorer-chip:focus-visible {
+  outline: 2px solid var(--color-background-contrasted, currentColor);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ */
+/* The status figure                                                   */
+/* ------------------------------------------------------------------ */
+
+.ds.explorer-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #666);
+  white-space: nowrap;
+}
+
+.ds.explorer-status figcaption {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The proportion bar. Its fill width IS the ratio the caption states, so
+ * the two can never disagree; the caption is the accessible channel and
+ * the bar is the glanceable one. */
+.ds.explorer-status .explorer-status-bar {
+  inline-size: 4rem;
+  block-size: 0.375rem;
+  border-radius: 999px;
+  background: var(--color-border-muted, #ddd);
+  overflow: hidden;
+}
+
+.ds.explorer-status .explorer-status-fill {
+  display: block;
+  block-size: 100%;
+  inline-size: var(--explorer-status-share, 100%);
+  background: var(--color-text-muted, #666);
+  transition: inline-size 0.15s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds.explorer-controls .explorer-chip,
+  .ds.explorer-status .explorer-status-fill {
+    transition: none;
+  }
+}
