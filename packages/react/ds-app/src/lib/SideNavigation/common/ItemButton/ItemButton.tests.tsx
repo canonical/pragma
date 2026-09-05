@@ -4,29 +4,29 @@ import ItemButton from "./ItemButton.js";
 
 describe("ItemButton", () => {
   it("renders a button with the label", () => {
-    render(<ItemButton label="Log out" />);
+    render(<ItemButton>Log out</ItemButton>);
     expect(screen.getByRole("button", { name: "Log out" })).toBeInTheDocument();
   });
 
   it("calls onClick when activated", () => {
     const onClick = vi.fn();
-    render(<ItemButton label="Log out" onClick={onClick} />);
+    render(<ItemButton onClick={onClick}>Log out</ItemButton>);
     fireEvent.click(screen.getByRole("button"));
     expect(onClick).toHaveBeenCalledOnce();
   });
 
   it("supports the native disabled attribute", () => {
-    render(<ItemButton label="Log out" disabled />);
+    render(<ItemButton disabled>Log out</ItemButton>);
     expect(screen.getByRole("button")).toBeDisabled();
   });
 
   it("renders the trailing slot", () => {
-    render(<ItemButton label="Notifications" slot={<span>3</span>} />);
+    render(<ItemButton slot={<span>3</span>}>Notifications</ItemButton>);
     expect(screen.getByText("3")).toBeInTheDocument();
   });
 
   it("always renders a button type, not submit", () => {
-    render(<ItemButton label="Log out" />);
+    render(<ItemButton>Log out</ItemButton>);
     expect(screen.getByRole("button")).toHaveAttribute("type", "button");
   });
 });

@@ -13,12 +13,13 @@ const componentCssClassName = "ds side-navigation-item-switch";
  * `LeafNavItem` (SPEC.md §4.4) — the others are Item (link, the default)
  * and ItemButton. The row is a `<label>` wrapping the switch, so activating
  * anywhere on the row toggles it (native label-wraps-input association —
- * no `id`/`htmlFor` bookkeeping needed).
+ * no `id`/`htmlFor` bookkeeping needed). Content is composed via
+ * `children`, matching `Button`'s own convention.
  *
  * @implements ds:apps.subcomponent.side-navigation-item-switch
  */
 const ItemSwitch = ({
-  label,
+  children,
   icon,
   disabled = false,
   checked,
@@ -44,11 +45,14 @@ const ItemSwitch = ({
       {/* biome-ignore lint/a11y/noLabelWithoutControl: SwitchInput renders the actual <input> — biome's static check can't see through the component boundary to the control it wraps. */}
       <label className="row">
         {/* Start cell is always rendered (empty when no icon), matching
-            Item, so labels align whether or not a row has an icon. */}
+            Item, so content stays aligned whether or not a row has an icon. */}
         <span className="start p">{icon ? <Icon icon={icon} /> : null}</span>
-        {/* `title` — native tooltip fallback for a truncated label; SPEC.md §10.17. */}
-        <span className="label p" title={label}>
-          {label}
+        {/* `title` — native tooltip fallback for truncated text; SPEC.md §10.17. */}
+        <span
+          className="label p"
+          title={typeof children === "string" ? children : undefined}
+        >
+          {children}
         </span>
         <span className="end">
           <SwitchInput

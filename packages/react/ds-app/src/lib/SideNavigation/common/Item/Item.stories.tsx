@@ -35,7 +35,7 @@ type Story = StoryObj<typeof Item>;
 export const Link: Story = {
   args: {
     url: "/machines",
-    label: "Machines",
+    children: "Machines",
   },
 };
 
@@ -43,7 +43,7 @@ export const Link: Story = {
 export const WithIcon: Story = {
   args: {
     url: "/machines",
-    label: "Machines",
+    children: "Machines",
     icon: "machines",
   },
 };
@@ -52,7 +52,7 @@ export const WithIcon: Story = {
 export const Active: Story = {
   args: {
     url: "/machines",
-    label: "Machines",
+    children: "Machines",
     active: true,
   },
 };
@@ -61,7 +61,7 @@ export const Active: Story = {
 export const Disabled: Story = {
   args: {
     url: "/networking",
-    label: "Networking",
+    children: "Networking",
     disabled: true,
   },
 };
@@ -70,7 +70,7 @@ export const Disabled: Story = {
 export const NonNavigable: Story = {
   args: {
     key: "current-user",
-    label: "Ada Lovelace",
+    children: "Ada Lovelace",
   },
 };
 
@@ -78,8 +78,21 @@ export const NonNavigable: Story = {
 export const WithSlot: Story = {
   args: {
     url: "/machines",
-    label: "Machines",
+    children: "Machines",
     icon: "machines",
     slot: <MockBadge>42</MockBadge>,
+  },
+};
+
+/** Composed (non-string) content — a consumer can pass anything, not only text. */
+export const ComposedContent: Story = {
+  args: {
+    url: "/machines",
+    icon: "machines",
+    children: (
+      <>
+        Machines <em>(42 online)</em>
+      </>
+    ),
   },
 };

@@ -5,9 +5,9 @@ import { describe, expect, it } from "vitest";
 import ItemExpandable from "./ItemExpandable.js";
 
 describe("ItemExpandable", () => {
-  it("renders the label and, when expanded, its children", () => {
+  it("renders the heading and, when expanded, its children", () => {
     render(
-      <ItemExpandable label="Hardware" defaultExpanded>
+      <ItemExpandable heading="Hardware" defaultExpanded>
         <li>Machines</li>
       </ItemExpandable>,
     );
@@ -17,7 +17,7 @@ describe("ItemExpandable", () => {
 
   it("starts closed by default", () => {
     const { container } = render(
-      <ItemExpandable label="Hardware">
+      <ItemExpandable heading="Hardware">
         <li>Machines</li>
       </ItemExpandable>,
     );
@@ -26,7 +26,7 @@ describe("ItemExpandable", () => {
 
   it("starts open when defaultExpanded is set", () => {
     const { container } = render(
-      <ItemExpandable label="Hardware" defaultExpanded>
+      <ItemExpandable heading="Hardware" defaultExpanded>
         <li>Machines</li>
       </ItemExpandable>,
     );
@@ -35,7 +35,7 @@ describe("ItemExpandable", () => {
 
   it("toggles open/closed when the summary is activated", () => {
     const { container } = render(
-      <ItemExpandable label="Hardware">
+      <ItemExpandable heading="Hardware">
         <li>Machines</li>
       </ItemExpandable>,
     );
@@ -51,7 +51,7 @@ describe("ItemExpandable", () => {
 
   it("ignores toggling when disabled", () => {
     const { container } = render(
-      <ItemExpandable label="Hardware" disabled>
+      <ItemExpandable heading="Hardware" disabled>
         <li>Machines</li>
       </ItemExpandable>,
     );
@@ -66,7 +66,7 @@ describe("ItemExpandable", () => {
 
   it("applies custom className", () => {
     const { container } = render(
-      <ItemExpandable label="Hardware" className="custom-class" />,
+      <ItemExpandable heading="Hardware" className="custom-class" />,
     );
     const el = container.firstElementChild;
     expect(el?.className).toContain("ds side-navigation-item-expandable");

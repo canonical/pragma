@@ -24,7 +24,7 @@ type Story = StoryObj<typeof ItemButton>;
 /** An action row — e.g. "Log out". */
 export const Default: Story = {
   args: {
-    label: "Log out",
+    children: "Log out",
     icon: "log-out",
   },
 };
@@ -40,7 +40,7 @@ export const Disabled: Story = {
 /** An action row with a trailing badge. */
 export const WithSlot: Story = {
   args: {
-    label: "Notifications",
+    children: "Notifications",
     icon: "notifications",
     slot: <span>3</span>,
   },

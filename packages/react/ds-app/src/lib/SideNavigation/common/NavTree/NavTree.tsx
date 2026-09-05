@@ -27,7 +27,9 @@ const componentCssClassName = "ds nav-tree";
  * native HTML attribute of a different type (`slot` is a global attribute
  * on every element; a bare `onClick` expects a `MouseEvent` handler, not
  * this module's `() => void`), so leaving them in would either be a type
- * error or a silent DOM leak.
+ * error or a silent DOM leak. `label` (the authored data field, a plain
+ * string) is passed in as `children` — Item/ItemButton/ItemSwitch each
+ * compose their content via `children`, not a same-named `label` prop.
  */
 const renderEntry = (
   entry: _Item<_AnyNavNode>,
@@ -40,6 +42,7 @@ const renderEntry = (
     depth: _depth,
     items: _items,
     separator: _separator,
+    label,
     control,
     onClick,
     checked,
@@ -50,7 +53,11 @@ const renderEntry = (
 
   if (control === "button") {
     const { url: _url, ...buttonFields } = rest;
-    return <ItemButton key={entryId} {...buttonFields} onClick={onClick} />;
+    return (
+      <ItemButton key={entryId} {...buttonFields} onClick={onClick}>
+        {label}
+      </ItemButton>
+    );
   }
 
   if (control === "switch") {
@@ -62,17 +69,16 @@ const renderEntry = (
         checked={checked}
         defaultChecked={defaultChecked}
         onCheckedChange={onCheckedChange}
-      />
+      >
+        {label}
+      </ItemSwitch>
     );
   }
 
   return (
-    <Item
-      key={entryId}
-      {...rest}
-      active={active}
-      LinkComponent={LinkComponent}
-    />
+    <Item key={entryId} {...rest} active={active} LinkComponent={LinkComponent}>
+      {label}
+    </Item>
   );
 };
 
@@ -160,12 +166,14 @@ const NavTree = ({
                   onCheckedChange: _onCheckedChange,
                   slot: _slot,
                   url: _url,
+                  label,
                   ...expandableFields
                 } = entry;
                 return (
                   <ItemExpandable
                     key={entryId}
                     {...expandableFields}
+                    heading={label}
                     defaultExpanded={nav.getNodeStatus(entry).inSelectedBranch}
                   >
                     {children.map((child) =>

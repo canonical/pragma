@@ -19,8 +19,12 @@ export const Labelled: Story = {
     label: "Hardware",
     children: (
       <>
-        <Item url="/machines" label="Machines" icon="machines" />
-        <Item url="/devices" label="Devices" icon="units" />
+        <Item url="/machines" icon="machines">
+          Machines
+        </Item>
+        <Item url="/devices" icon="units">
+          Devices
+        </Item>
       </>
     ),
   },
@@ -31,8 +35,8 @@ export const Unlabelled: Story = {
   args: {
     children: (
       <>
-        <Item url="/one" label="One" />
-        <Item url="/two" label="Two" />
+        <Item url="/one">One</Item>
+        <Item url="/two">Two</Item>
       </>
     ),
   },

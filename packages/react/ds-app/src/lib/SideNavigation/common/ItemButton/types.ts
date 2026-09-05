@@ -4,8 +4,8 @@ import type { ComponentProps, ReactNode } from "react";
 type OwnProps = {
   /** Identity field, mirroring LeafNavItem.key — not spread to the DOM. */
   key?: string;
-  /** Display text. */
-  label?: string;
+  /** Content, composed via children (matches `Button`'s own convention). */
+  children?: ReactNode;
   /** Leading icon (start slot), by ds-assets icon name. */
   icon?: IconName;
   /** Trailing content (end slot): a badge, count, etc. */

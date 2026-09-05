@@ -5,7 +5,7 @@ import ItemExpandable from "./ItemExpandable.js";
 describe("ItemExpandable SSR", () => {
   it("renders without hydration errors", () => {
     const html = renderToString(
-      <ItemExpandable label="Hardware" defaultExpanded>
+      <ItemExpandable heading="Hardware" defaultExpanded>
         <li>Machines</li>
       </ItemExpandable>,
     );

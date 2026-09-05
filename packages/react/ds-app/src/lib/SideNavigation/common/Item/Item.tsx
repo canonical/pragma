@@ -10,16 +10,18 @@ const componentCssClassName = "ds side-navigation-item";
  *
  * A flat leaf row, NOT recursive — an entry with children is a
  * SideNavigation.ItemExpandable instead (SPEC.md §4.3). The row is
- * `[icon] [label] [end]` over a shared grid template (so the icon aligns
+ * `[icon] [content] [end]` over a shared grid template (so the icon aligns
  * with the header logo). An item with a `url` renders as a link via
  * `LinkComponent` (default `"a"`); otherwise a non-navigable label. The end
- * slot is the optional `slot` (a badge, count, …), or nothing.
+ * slot is the optional `slot` (a badge, count, …), or nothing. Content is
+ * composed via `children`, matching `Button`'s own convention — pass
+ * anything, not only text.
  *
  * @implements ds:apps.subcomponent.side-navigation-item
  */
 const Item = ({
   url,
-  label,
+  children,
   icon,
   slot,
   disabled = false,
@@ -34,14 +36,19 @@ const Item = ({
 
   const content = (
     <>
-      {/* Start cell is always rendered (empty when no icon) so the label stays
-          in the middle column — labels align whether or not a row has an icon. */}
+      {/* Start cell is always rendered (empty when no icon) so the content
+          stays in the middle column — labels align whether or not a row has
+          an icon. */}
       <span className="start p">{icon ? <Icon icon={icon} /> : null}</span>
       {/* `title` is a progressive-enhancement fallback for the spec's
-         truncated-label tooltip (§7): the browser's own native tooltip,
-         not the custom 800ms-delay styled one — SPEC.md §10.17. */}
-      <span className="label p" title={label}>
-        {label}
+         truncated-label tooltip (§7): the browser's own native tooltip, not
+         the custom 800ms-delay styled one — SPEC.md §10.17. Only meaningful
+         when `children` is plain text (the common case). */}
+      <span
+        className="label p"
+        title={typeof children === "string" ? children : undefined}
+      >
+        {children}
       </span>
       {slot ? <span className="end slot">{slot}</span> : null}
     </>

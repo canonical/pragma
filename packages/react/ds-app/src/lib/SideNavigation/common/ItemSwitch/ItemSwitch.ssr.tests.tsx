@@ -5,7 +5,7 @@ import ItemSwitch from "./ItemSwitch.js";
 describe("ItemSwitch SSR", () => {
   it("renders without hydration errors", () => {
     const html = renderToString(
-      <ItemSwitch label="Dark mode" defaultChecked />,
+      <ItemSwitch defaultChecked>Dark mode</ItemSwitch>,
     );
     expect(html).toContain("ds side-navigation-item-switch");
     expect(html).toContain("Dark mode");

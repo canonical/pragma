@@ -26,12 +26,16 @@ type Story = StoryObj<typeof ItemExpandable>;
 /** Closed by default — activate the summary to reveal its children. */
 export const Closed: Story = {
   args: {
-    label: "Hardware",
+    heading: "Hardware",
     icon: "machines",
     children: (
       <>
-        <Item url="/machines" label="Machines" LinkComponent={HashLink} />
-        <Item url="/devices" label="Devices" LinkComponent={HashLink} />
+        <Item url="/machines" LinkComponent={HashLink}>
+          Machines
+        </Item>
+        <Item url="/devices" LinkComponent={HashLink}>
+          Devices
+        </Item>
       </>
     ),
   },

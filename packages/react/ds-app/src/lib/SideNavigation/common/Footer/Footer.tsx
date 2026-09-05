@@ -35,23 +35,20 @@ const renderFooterItem = (
 
   if (item.url) {
     return (
-      <Item
-        key={item.kind}
-        url={item.url}
-        label={label}
-        icon={icon}
-        slot={item.slot}
-      />
+      <Item key={item.kind} url={item.url} icon={icon} slot={item.slot}>
+        {label}
+      </Item>
     );
   }
   return (
     <ItemButton
       key={item.kind}
-      label={label}
       icon={icon}
       slot={item.slot}
       onClick={item.onClick}
-    />
+    >
+      {label}
+    </ItemButton>
   );
 };
 

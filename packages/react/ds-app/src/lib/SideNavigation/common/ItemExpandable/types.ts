@@ -4,8 +4,12 @@ import type { ComponentProps, ReactNode } from "react";
 type OwnProps = {
   /** Identity field, mirroring LeafNavItem.key — not spread to the DOM. */
   key?: string;
-  /** Display text. Text only, matching LeafNavItem's `label` — not JSX. */
-  label?: string;
+  /**
+   * The row's own label, in the `<summary>` — composed, not a string prop
+   * (matches `Accordion.Item`'s own `heading`/`children` split: `heading` is
+   * the trigger's label, `children` is what disclosure reveals).
+   */
+  heading?: ReactNode;
   /** Leading icon (start slot), by ds-assets icon name. */
   icon?: IconName;
   /** Whether the item (and its disclosure) is interactive. */

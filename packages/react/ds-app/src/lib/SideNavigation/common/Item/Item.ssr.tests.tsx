@@ -4,7 +4,7 @@ import Item from "./Item.js";
 
 describe("Item SSR", () => {
   it("renders without hydration errors", () => {
-    const html = renderToString(<Item url="/machines" label="Machines" />);
+    const html = renderToString(<Item url="/machines">Machines</Item>);
     expect(html).toContain("ds side-navigation-item");
     expect(html).toContain("Machines");
   });

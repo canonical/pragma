@@ -11,7 +11,9 @@ const componentCssClassName = "ds side-navigation-item-expandable";
  * (always-leaf) children instead of navigating (SPEC.md §4.3). Native
  * `<details>`/`<summary>` — no `role`/`aria-expanded` authored, per
  * `cs:ui_blocks.nojs.disclosure`; the element supplies the disclosure
- * semantics itself, correctly, without scripting.
+ * semantics itself, correctly, without scripting. `heading` (the summary's
+ * own label) and `children` (what disclosure reveals) are composed, not
+ * string props — matching `Accordion.Item`'s own `heading`/`children` split.
  *
  * Uncontrolled — seeded by `defaultExpanded`, mirroring SideNavigation's own
  * rail-collapse state, not Accordion.Item's externally-controlled circuit:
@@ -21,7 +23,7 @@ const componentCssClassName = "ds side-navigation-item-expandable";
  * @implements ds:apps.subcomponent.side-navigation-item-expandable
  */
 const ItemExpandable = ({
-  label,
+  heading,
   icon,
   disabled = false,
   defaultExpanded = false,
@@ -62,11 +64,14 @@ const ItemExpandable = ({
         {/* biome-ignore lint/a11y/noStaticElementInteractions: <summary> is the native disclosure trigger for its <details> (implicit button semantics per HTML-AAM); biome's static-element check doesn't recognise it. */}
         <summary className="row" onClick={handleSummaryClick}>
           {/* Start cell is always rendered (empty when no icon), matching
-              Item, so labels align whether or not a row has an icon. */}
+              Item, so content stays aligned whether or not a row has an icon. */}
           <span className="start p">{icon ? <Icon icon={icon} /> : null}</span>
-          {/* `title` — native tooltip fallback for a truncated label; SPEC.md §10.17. */}
-          <span className="label p" title={label}>
-            {label}
+          {/* `title` — native tooltip fallback for truncated text; SPEC.md §10.17. */}
+          <span
+            className="label p"
+            title={typeof heading === "string" ? heading : undefined}
+          >
+            {heading}
           </span>
           <Icon icon="chevron-down" className="end caret" />
         </summary>

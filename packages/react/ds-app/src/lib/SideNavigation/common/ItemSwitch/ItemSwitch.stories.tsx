@@ -24,7 +24,7 @@ type Story = StoryObj<typeof ItemSwitch>;
 /** An unchecked toggle row, uncontrolled. */
 export const Off: Story = {
   args: {
-    label: "Dark mode",
+    children: "Dark mode",
     icon: "dark-theme",
   },
 };
