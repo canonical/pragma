@@ -1,6 +1,12 @@
-/packages/svelte/ds-app-launchpad/   @canonical/launchpad-ui
-/packages/svelte/ds-app-wpe/         @canonical/workplace-engineering-ui
+# Svelte is owned by the pragma team by default. The app packages below add
+# their own product team on top, so either side can approve a change to them;
+# ds-app and ds-global match only this line, which is what makes them owned at
+# all — before it, they had no owner and any review satisfied them.
+/packages/svelte/                    @canonical/pragma
 
-/packages/svelte/ssr-test/    @canonical/launchpad-ui  @canonical/workplace-engineering-ui
-/configs/typescript-svelte/   @canonical/launchpad-ui  @canonical/workplace-engineering-ui
-/configs/biome/               @canonical/launchpad-ui  @canonical/workplace-engineering-ui  @advl
+/packages/svelte/ds-app-launchpad/   @canonical/launchpad-ui  @canonical/pragma
+/packages/svelte/ds-app-wpe/         @canonical/workplace-engineering-ui  @canonical/pragma
+
+/packages/svelte/ssr-test/    @canonical/launchpad-ui  @canonical/workplace-engineering-ui  @canonical/pragma
+/configs/typescript-svelte/   @canonical/launchpad-ui  @canonical/workplace-engineering-ui  @canonical/pragma
+/configs/biome/               @canonical/launchpad-ui  @canonical/workplace-engineering-ui  @canonical/pragma
