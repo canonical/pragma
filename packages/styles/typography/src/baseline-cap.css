@@ -3,9 +3,20 @@
  * No JS font extraction required. Uses the CSS `cap` unit and `mod()` for
  * baseline alignment.
  *
- * Browser floor: Chrome 125, Safari 17.4, Firefox 128 — set by `mod()`. The
- * `cap` unit itself goes back further (Chrome 117, Safari 17.2, Firefox 97),
- * so it is not what binds.
+ * Browser floor: Chrome 125, Safari 17.2, Firefox 128 — one feature binds each
+ * column. This engine uses three:
+ *
+ *   mod()            Chrome 125, Safari 15.4, Firefox 118
+ *   cap unit         Chrome 118, Safari 17.2, Firefox 97
+ *   @property        Chrome 85,  Safari 16.4, Firefox 128 (baseline-shim.css)
+ *
+ * So Chrome is held by `mod()`, Safari by the `cap` unit, and Firefox by
+ * `@property`.
+ *
+ * The Firefox number is `@property`'s, and it is a soft floor: below it the
+ * registration is ignored and the engine still runs wherever
+ * --baseline-height is declared — @canonical/styles declares it — losing only
+ * the 4px fallback for a page that declares it nowhere.
  *
  * Consumer contract:
  *   :root { --baseline-height: <length>; }
@@ -31,9 +42,6 @@
 
 /* Baseline unit shim (--baseline-height 4px fallback) */
 @import url("./baseline-shim.css");
-
-/* Typography scale tokens from design-tokens */
-@import url("@canonical/design-tokens/dist/modifiers.typography.css");
 
 @layer ds.typography {
   /* Reset */

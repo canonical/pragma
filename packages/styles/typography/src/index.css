@@ -19,25 +19,40 @@
  *   mapping, the element rules that apply it, and the default engine — which is
  *   what an ordinary page wants.
  *
- *   `./mapper.css` is the mapping that styles nothing: the naming shims, the
- *   typographic scale and the --baseline-height registration. `./elements.css`
- *   is the half that styles something: `body`, `h1`–`h6`, `p`, `.p`, `.code`
- *   and `.editorial`. They are separate files because a page that also runs
- *   another CSS framework takes the first and not the second, and gets its
- *   element rules from that framework's adapter instead, confined to the part of
- *   the page the design system owns. `@canonical/styles/core.css` is that
- *   stylesheet.
+ *   `./mapper.css` is the mapping that styles nothing: the naming shims and
+ *   the typographic scale they bridge to. `./mapper.elements.css` is the half
+ *   that styles something: `body`, `h1`–`h6`, `p`, `.p`, `.code` and
+ *   `.editorial`. They are separate files because a page that also runs another
+ *   CSS framework takes the first and not the second, and gets its element rules
+ *   from that framework's adapter instead, confined to the part of the page the
+ *   design system owns. `@canonical/styles/core.css` is that stylesheet, and it
+ *   imports `./baseline-shim.css` beside the mapper for the registration.
+ *
+ * The import graph, and why it is shaped this way:
+ *   this file    → mapper.elements.css → mapper.css → the typographic scale
+ *                → baseline-cap.css    → baseline-shim.css
+ *
+ *   Every file reaches a resolved stylesheet exactly once. A browser treats each
+ *   `@import` as its own sheet and does not de-duplicate, so a file reached
+ *   twice is delivered twice — which this graph did before: the scale and the
+ *   registration each arrived from two directions and the second copy was
+ *   48,270 wasted bytes and a duplicate `@property` rule. The division of
+ *   labour that prevents it: the mapper owns the scale it shims, and each engine
+ *   owns the registration of the grid unit it reads, so an engine linked on its
+ *   own is still complete. `@canonical/styles/core.css`, which takes the mapper
+ *   without an engine, imports the registration itself.
  *
  * Layers:
- *   The token shims go into `ds.tokens` and every element rule into
- *   `ds.typography`. This package states no layer order of its own, because it
- *   is imported by @canonical/styles after that package's order statement, which
- *   names both layers and is the first rule of the first stylesheet. Imported on
- *   its own — the example does exactly that — the layers are created where they
- *   first appear, which is well defined for a single package and settles nothing
- *   this package needs settled: no custom property is declared in more than one
- *   of the layers involved.
+ *   The naming shims go into `ds.tokens`, every element rule into
+ *   `ds.typography`, and the typographic scale opens `ds.modifiers` itself. The
+ *   registration is in no layer; baseline-shim.css says why. This package states
+ *   no layer order of its own, because it is imported by @canonical/styles after
+ *   that package's order statement, which names all three layers and is the
+ *   first rule of the first stylesheet. Imported on its own — the example does
+ *   exactly that — the layers are created where they first appear, which is well
+ *   defined for a single package and settles nothing this package needs settled:
+ *   no custom property is declared in more than one of the layers involved.
  */
 /* The element rules, then the engine that computes their nudges. */
-@import url("./elements.css");
+@import url("./mapper.elements.css");
 @import url("./baseline-cap.css");

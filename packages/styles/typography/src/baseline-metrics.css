@@ -4,11 +4,19 @@
  * variables:
  *   --ascender, --descender, --units-per-em
  *
- * Browser floor: Chrome 125, Safari 17.4, Firefox 128 — set by `mod()`, as for
- * the cap engine. This one needs no `cap` unit, but `cap` is not what binds
- * either engine, so the two reach the same browsers; the difference is where the
- * metrics come from — numbers you supply, rather than the font the browser
- * happens to use.
+ * Browser floor: Chrome 125, Safari 16.4, Firefox 128. This engine uses two
+ * features, and needs no `cap` unit, which is why its Safari number is lower
+ * than the cap engine's:
+ *
+ *   mod()            Chrome 125, Safari 15.4, Firefox 118
+ *   @property        Chrome 85,  Safari 16.4, Firefox 128 (baseline-shim.css)
+ *
+ * So Chrome is held by `mod()`, and Safari and Firefox by `@property`. Those
+ * two are soft: below them the registration is ignored and the engine still runs
+ * wherever --baseline-height is declared — @canonical/styles declares it —
+ * losing only the 4px fallback for a page that declares it nowhere. What this
+ * engine buys is not reach but control: the metrics are numbers you supply,
+ * rather than the font the browser happens to use.
  *
  * Consumer contract:
  *   :root {
@@ -39,9 +47,6 @@
 
 /* Baseline unit shim (--baseline-height 4px fallback) */
 @import url("./baseline-shim.css");
-
-/* Typography scale tokens from design-tokens */
-@import url("@canonical/design-tokens/dist/modifiers.typography.css");
 
 @layer ds.typography {
   :root {

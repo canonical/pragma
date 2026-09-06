@@ -15,13 +15,13 @@
  *   (same pattern for text.primary, text.secondary, text.tertiary)
  *
  * This file is the half of the mapping that styles nothing: the naming shims
- * below, the typographic scale they shim, and the --baseline-height
- * registration. Every rule in it is a custom-property declaration on :root, and
+ * below and the typographic scale they shim. Every rule in it is a
+ * custom-property declaration on :root, and
  * a custom property does nothing where it is declared — only where a rule reads
  * it — so importing this file adds no styling to any element.
  *
- * The other half is elements.css, which is where the reading happens: the rules
- * that put those values on `body`, `h1`–`h6`, `p`, `.p`, `.code` and
+ * The other half is mapper.elements.css, which is where the reading happens:
+ * the rules that put those values on `body`, `h1`–`h6`, `p`, `.p`, `.code` and
  * `.editorial`. The two are separate files because a stylesheet sometimes wants
  * this half alone. `@canonical/styles/core.css` is the case that exists today —
  * the design system's stylesheet for a page that also runs another CSS
@@ -31,12 +31,15 @@
  *
  * Layers: the shims sit in `ds.tokens`, beside the other primitive values
  * @canonical/styles ships, which is where a maintainer looking for a token name
- * will look. The scale opens `ds.modifiers` itself. The registration is in no
- * layer; baseline-shim.css says why.
+ * will look. The scale opens `ds.modifiers` itself.
+ *
+ * This file does not import the --baseline-height registration, though the
+ * values here are read by rules that need it. Each engine imports it instead, so
+ * that it reaches a resolved stylesheet exactly once — a browser does not
+ * de-duplicate `@import`, so a file reached from two directions is delivered
+ * twice. A stylesheet that takes this file without an engine imports
+ * `./baseline-shim.css` beside it; `@canonical/styles/core.css` does.
  */
-
-/* The --baseline-height registration: the grid unit every engine reads. */
-@import url("./baseline-shim.css");
 
 /* The typographic scale these shims bridge to. */
 @import url("@canonical/design-tokens/dist/modifiers.typography.css");

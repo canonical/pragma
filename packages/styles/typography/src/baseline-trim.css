@@ -3,10 +3,22 @@
  * Uses `text-box: trim-both cap alphabetic` for intrinsic baseline snapping.
  * No JS font extraction required.
  *
- * Browser floor: Chrome 133, Safari 18.2 — set by `text-box-trim` — and
- * Firefox 128, set by `mod()`. Firefox does not implement `text-box-trim` at
- * all; there the trim is skipped, the element keeps its default half-leading and
- * the nudge still applies, so the engine degrades rather than failing.
+ * Browser floor: Chrome 133, Safari 18.2, Firefox 154. This engine uses three
+ * features:
+ *
+ *   text-box-trim    Chrome 133, Safari 18.2, Firefox 154
+ *   mod()            Chrome 125, Safari 15.4, Firefox 118
+ *   @property        Chrome 85,  Safari 16.4, Firefox 128 (baseline-shim.css)
+ *
+ * `text-box-trim` binds every column. Below it the trim is skipped, the element
+ * keeps its default half-leading and the nudge still applies, so the engine
+ * degrades rather than failing: on that reading the floor is Chrome 125,
+ * Safari 16.4, Firefox 128, the same as the metrics engine's, and what a browser
+ * below 133 / 18.2 / 154 loses is the tighter content box, not the grid.
+ *
+ * The `@property` numbers are softer still: below them the registration is
+ * ignored and the engine runs wherever --baseline-height is declared —
+ * @canonical/styles declares it — losing only the 4px fallback.
  *
  * Consumer contract:
  *   :root { --baseline-height: <length>; }
@@ -32,9 +44,6 @@
 
 /* Baseline unit shim (--baseline-height 4px fallback) */
 @import url("./baseline-shim.css");
-
-/* Typography scale tokens from design-tokens */
-@import url("@canonical/design-tokens/dist/modifiers.typography.css");
 
 @layer ds.typography {
   /* Reset */
