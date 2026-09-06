@@ -1,7 +1,10 @@
 /* @canonical/styles-typography — the typography tokens
  *
- * The half of the semantic mapping that styles nothing: the design tokens'
- * typographic scale, and the naming shims that bridge it.
+ * The concept: the values. The names that map the design tokens' typographic
+ * scale onto what the engines and the element rules read.
+ *
+ * It declares custom properties and styles nothing: the scale as
+ * @canonical/design-tokens emits it, and the naming shims that bridge it.
  *
  * @canonical/design-tokens emits the scale as custom properties:
  *   --typography-heading-{1-6}-font-size      → e.g. var(--dimension-size-fontSize-700)

@@ -1,10 +1,12 @@
 /* @canonical/styles-typography — the element rules
  *
- * The half of the semantic mapping that styles something. Every rule here reads
- * a value tokens.css declares and puts it on an element: the base font on
- * `body`, and the per-tier font size, weight, line height and letter spacing on
- * `h1`–`h6`, `p`, `.p`, `.code` and the `.editorial` context, as the engine
- * variables the three baseline engines consume.
+ * The concept: what bare elements get. `body`, `h1`–`h6`, `p`, `.p`, `.code`
+ * and `.editorial`.
+ *
+ * Every rule here reads a value tokens.css declares and puts it on an element:
+ * the base font on `body`, and the per-tier font size, weight, line height and
+ * letter spacing on the rest, as the engine variables the three baseline engines
+ * consume.
  *
  * Exact Canonical line-height dimensions take precedence. The round() path is
  * retained only as a compatibility fallback for design-tokens 0.8.1 and is
