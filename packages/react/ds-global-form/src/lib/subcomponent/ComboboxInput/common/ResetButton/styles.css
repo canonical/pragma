@@ -1,21 +1,25 @@
-.ds.combobox-reset-button {
-  all: unset;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-inline: var(--component-padding-inline);
-  cursor: pointer;
-  color: var(--color-text-muted);
-  font-size: 1rem;
-  line-height: 1;
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
-  &:hover {
-    color: var(--color-text);
-  }
+@layer ds.components.global {
+  .ds.combobox-reset-button {
+    all: unset;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-inline: var(--component-padding-inline);
+    cursor: pointer;
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    line-height: 1;
 
-  &:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 1px var(--color-focusRing);
-    border-radius: var(--dimension-radius-small);
+    &:hover {
+      color: var(--color-text);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 1px var(--color-focusRing);
+      border-radius: var(--dimension-radius-small);
+    }
   }
 }

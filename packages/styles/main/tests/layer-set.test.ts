@@ -121,7 +121,7 @@ const documented = documentedFiles();
 /** The files `index.css` imports, named the way the README names them. */
 const IMPORTED = importsOf(entryRaw).map(specifierName);
 
-/** Every file any of the four entry points imports. */
+/** Every file any of the five entry points imports. */
 const IMPORTED_ANYWHERE = new Set(
   Object.values(ENTRIES_RAW).flatMap((raw) =>
     importsOf(raw).map(specifierName),
@@ -130,7 +130,7 @@ const IMPORTED_ANYWHERE = new Set(
 
 describe("the layer set used equals the layer set declared", () => {
   it("the statement is the first rule, and names the ten layers in order", () => {
-    // `entries.test.ts` checks that all four entry points quote the same
+    // `entries.test.ts` checks that all five entry points quote the same
     // statement; this checks that the statement is the one the README publishes,
     // in order, read back out of a browser rather than out of the file.
     const first = parse(entryCss).cssRules[0];
@@ -139,15 +139,24 @@ describe("the layer set used equals the layer set declared", () => {
     expect(Array.from(first.nameList)).toEqual(DECLARED_LAYERS);
   });
 
-  it("every layer any entry names is one of the ten or a sublayer of one, and none is anonymous", () => {
+  it("every layer any entry names is one of the thirteen or a sublayer of one, and none is anonymous", () => {
     // Named, not merely opened: a second `@layer` statement puts a name into the
     // order without opening anything, so a layer can join the cascade with no
     // block to give it away. An anonymous block reports as `(anonymous)`, which
     // is undeclarable by construction: nothing can name it, order it or override
     // it.
+    //
+    // The non-empty guard is asked of the entries the README says open a layer.
+    // `layers.css` opens none by design — it is the order statement and nothing
+    // else — and naming nothing beyond that statement is exactly what it is for.
+    const opensLayers = new Set(
+      entryTableRows()
+        .filter((row) => row.layers.size > 0)
+        .map((row) => row.entry),
+    );
     for (const [name, css] of Object.entries(ENTRIES)) {
       const named = namedLayers(css);
-      expect([name, named.length > 0]).toEqual([name, true]);
+      expect([name, named.length > 0]).toEqual([name, opensLayers.has(name)]);
       expect([name, named.filter((layer) => !isDeclared(layer))]).toEqual([
         name,
         [],
@@ -236,12 +245,14 @@ describe("the layer set used equals the layer set declared", () => {
   });
 });
 
-describe("the four entry points deliver what the README says they deliver", () => {
+describe("the five entry points deliver what the README says they deliver", () => {
   it("each opens exactly the layers the entry table gives it", () => {
     // Eight for the whole stylesheet, four for the values, three for the element
-    // rules and one for the layout presets. `entries.test.ts` pins three of the
-    // four from the file side as well; this reads all four out of a browser,
-    // which is the parser that decides what a page actually gets.
+    // rules, one for the layout presets, and none for the statement on its own.
+    // `entries.test.ts` pins several of them from the file side as well; this
+    // reads all five out of a browser, which is the parser that decides what a
+    // page actually gets — and for the statement-only entry it is the check that
+    // it opens nothing, which is the whole of what that file promises.
     const rows = entryTableRows();
     expect(rows.map((row) => row.entry).sort()).toEqual(
       Object.keys(ENTRIES).sort(),

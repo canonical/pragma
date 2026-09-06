@@ -74,9 +74,9 @@ describe("annotateTree", () => {
   });
 
   it("preserves extra properties on items", () => {
-    interface EnhancedItem extends Item {
-      icon?: string;
-    }
+    // `Item` is a union, so extra fields compose with `&`. An
+    // `interface … extends Item` here is TS2312 — see the note on `Item`.
+    type EnhancedItem = Item & { icon?: string };
     const root: EnhancedItem = {
       url: "/home",
       label: "Home",

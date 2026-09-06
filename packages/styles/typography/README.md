@@ -26,9 +26,17 @@ That's it. All `h1`–`h6` and `p` elements will align to the baseline grid. The
 
 A CSS pixel is a reference unit, not a device pixel: on a high-density display one CSS pixel covers several physical ones, and the browser's zoom changes how many. `px` buys you a grid that does not move with the font size; it does not buy alignment with the display's own pixels.
 
-**Declare it nowhere and the grid is `0.25rem`, four pixels at the usual root font size.** Every read of the variable in this package carries that same fallback, so an engine linked on its own still snaps text to a grid rather than doing nothing. `@canonical/styles` declares `--baseline-height` itself, so an application using the full stylesheet never sees the fallback.
+**Declare it nowhere and the grid is `0.25rem`, four pixels at the usual root font size.** The default is declared once, in `tokens.css`, inside the package's `ds.tokens` block:
 
-The fallback is written at each read rather than aliased into one internal custom property. That keeps each file complete on its own, which matters because any one of them can be linked without the rest, and it keeps a second name out of the surface for a consumer to set by mistake.
+```css
+:where(:root) {
+  --baseline-height: 0.25rem;
+}
+```
+
+`:where()` puts it at zero weight, so any real declaration of the property beats it whatever the order within the layer: `@canonical/styles` declares it at `:root` in `spacing.css`, an application may declare it on any element, and either is obeyed. `elements.css` and the three engines then read `var(--baseline-height)` bare, twenty-six times between them, with no fallback to keep in step.
+
+**The one case with no default is an engine linked without `tokens.css`.** No engine imports anything — that is the shape this package is cut to, and the composition lives in `index.css` — so a stylesheet taking one engine alone either declares `--baseline-height` itself or imports `./tokens.css` beside it; without one of those the nudges resolve to nothing and the engine does not run. The package entry composes both and is unaffected, as is anything importing `@canonical/styles`.
 
 ## How this package is cut
 
@@ -226,7 +234,7 @@ Every engine reads the same set of CSS custom properties per element:
 
 | Variable | Scope | Description |
 |----------|-------|-------------|
-| `--baseline-height` | `:root` | Grid unit size, in any length unit (e.g. `0.5rem` or `8px`) — optional, default `0.25rem` |
+| `--baseline-height` | `:root` | Grid unit size, in any length unit (e.g. `0.5rem` or `8px`) — optional wherever `tokens.css` is loaded, which declares the `0.25rem` default; required by an engine linked without it |
 | `--font-size` | element | Font size as a `<length>` |
 | `--line-height-multiplier` | element | Line height in baseline-height units |
 | `--line-height` | element | Optional override: explicit line height, bypasses the multiplier |

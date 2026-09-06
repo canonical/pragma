@@ -6,7 +6,7 @@ import type { MenuEntry, MenuItem } from "./types.js";
 const items: MenuEntry[] = [
   { key: "cut", label: "Cut", url: "#cut" },
   { key: "copy", label: "Copy", url: "#copy" },
-  { type: "separator" },
+  { type: "separator", key: "before-zoom" },
   { key: "zoom", label: "Zoom", url: "#zoom" },
 ];
 
@@ -333,10 +333,10 @@ describe("ContextualMenu", () => {
 
     it("skips leading and trailing separators on open, Home and End", () => {
       const edged: MenuEntry[] = [
-        { type: "separator" },
+        { type: "separator", key: "leading" },
         { key: "alpha", label: "Alpha", url: "#alpha" },
         { key: "beta", label: "Beta", url: "#beta" },
-        { type: "separator" },
+        { type: "separator", key: "trailing" },
       ];
       render(<ContextualMenu trigger="Actions" items={edged} wrap={false} />);
       const menu = openMenu();
@@ -358,10 +358,10 @@ describe("ContextualMenu", () => {
 
     it("wraps by default, looping past leading and trailing separators", () => {
       const edged: MenuEntry[] = [
-        { type: "separator" },
+        { type: "separator", key: "leading" },
         { key: "alpha", label: "Alpha", url: "#alpha" },
         { key: "beta", label: "Beta", url: "#beta" },
-        { type: "separator" },
+        { type: "separator", key: "trailing" },
       ];
       render(<ContextualMenu trigger="Actions" items={edged} />);
       const menu = openMenu();
@@ -385,7 +385,7 @@ describe("ContextualMenu", () => {
           label: "Parent",
           items: [
             { key: "sub1", label: "Sub one", url: "#sub1" },
-            { type: "separator" },
+            { type: "separator", key: "sub-divider" },
             { key: "sub2", label: "Sub two", url: "#sub2" },
           ],
         },
