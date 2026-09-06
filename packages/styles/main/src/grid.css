@@ -73,10 +73,11 @@
  *   The tier, `ds.components.global`, is not decoration: a rule written
  *   directly into `@layer ds.components` lands in that layer's implicit final
  *   sublayer, which sits ABOVE every named sublayer — measured, such a rule beats
- *   one in `ds.components.app`. Writing the presets into the parent would put
- *   them out of reach of both component tiers, so an application-tier sheet
- *   could not override a preset by layer at all. Nothing pragma ships is written
- *   directly into `ds.components`; everything in that layer sits in a tier.
+ *   one in `ds.components.apps`. Writing the presets into the parent would put
+ *   them out of reach of every tier, so a tier's own sheet could not override a
+ *   preset by layer at all. Nothing pragma ships is written directly into
+ *   `ds.components`; everything in that layer sits in a tier, and the presets
+ *   are the shared tier's.
  *
  *   The `:root` defaults stay with the presets that read them, as component-
  *   scoped tokens, rather than moving to `ds.tokens`.
