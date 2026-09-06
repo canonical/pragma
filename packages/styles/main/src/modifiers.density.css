@@ -44,9 +44,9 @@
  *
  * Layer: ds.modifiers, beside the generated modifier families this one composes
  * with. Every rule here declares custom properties only — the density channel —
- * which act where a component reads them, so the file is not scoped to pragma
- * territory: an application marks its root with the context and density classes
- * whether or not that root is also the territory root.
+ * which act where a component reads them. The context and density classes may
+ * sit on the document element or on any ancestor of the components that read
+ * them, because a custom property inherits.
  */
 
 @layer ds.modifiers {

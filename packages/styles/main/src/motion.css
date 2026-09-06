@@ -9,8 +9,8 @@
  * surface is visible in one place.
  *
  * Layer: ds.tokens. These are custom properties, which act only where a rule
- * reads them, so they are not scoped to pragma territory — a token that no rule
- * reads changes nothing, and a consumer may want to read them itself.
+ * reads them — a token that no rule reads changes nothing, and a consumer may
+ * want to read them itself.
  */
 
 @layer ds.tokens {

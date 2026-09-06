@@ -1,4 +1,4 @@
-/* @canonical/styles — Pragma's own reset, scoped to pragma territory
+/* @canonical/styles — Pragma's own reset
  *
  * ── Third-party notice ──────────────────────────────────────────────────────
  *
@@ -37,25 +37,17 @@
  *
  * This replaces the `normalize.css` dependency. Two reasons, both structural:
  *
- *  1. A third-party file cannot be authored inside a `@scope` block, and every
- *     element-level layer pragma ships has to be, so that its rules reach only
- *     the subtree pragma owns — the subtree rooted at an element carrying the
- *     class `ds` ("pragma territory"). Imported as a package, normalize's
- *     `html`, `body`, `button` and `input` rules apply to the whole document,
- *     including parts of a page another system owns.
+ *  1. The Vanilla adapter ships a confined copy of pragma's three element-level
+ *     layers, for a page that also runs another CSS framework and cannot let
+ *     pragma restyle the half it has not migrated. A copy has to derive from a
+ *     source pragma owns and can change deliberately, and a test binds the two
+ *     so they cannot drift; a third-party file in `node_modules` is neither.
  *  2. The constitution prefers writing only the styles that are used
  *     (principle XIII) over importing a file and stripping it afterwards.
  *
- * A scoped selector is relative to the scoping root and never matches the root
- * itself, so `:where(:scope)` is how a rule addresses the territory root: the
- * document element in an application that is pragma throughout, a region or a
- * single component in one that is not. Every other selector here is relative
- * to that root, and so reaches only what is inside the territory.
- *
- * A rule that must reach a control WHEREVER it sits — including a control that
- * is itself the outermost root, `<button class="ds button">` dropped straight
- * into a host page — is written `:where(:scope, :scope *):is(…)`, because a
- * scoped selector alone never matches its own scoping root.
+ * These rules style the whole page, as a reset does. Nothing about them is
+ * confined, nothing has to be marked, and a page that wants them confined uses
+ * the adapter.
  *
  * ── What was ported from normalize.css 8.0.1, and why ────────────────────────
  *
@@ -65,18 +57,12 @@
  *  -webkit-text-size-adjust  iOS inflates text after an orientation change,
  *                            which would move every line off the baseline grid.
  *  body margin               the browser's 8px would show as a page gutter.
- *                            The rule names the body twice: once as the
- *                            territory root, for `<body class="ds …">`, and once
- *                            as a descendant, for `<html class="ds …">`. It is
- *                            not hoisted to the root in general, because margin
- *                            does not inherit and zeroing the margin of a root a
- *                            host page has placed is not this package's call.
  *  form control font/margin  the natives pragma's form components render must
  *                            inherit the page font and start with no margin —
  *                            an inherited margin on `<input>` is exactly the
  *                            field-spacing defect this programme exists to fix.
- *                            Without it a bare `<button class="ds button">`
- *                            computes the browser's 13.33px control font.
+ *                            Without it a bare `<button>` computes the
+ *                            browser's 13.33px control font.
  *  monospace font size       a browser applies a smaller default size when the
  *                            computed font family is the bare `monospace`
  *                            keyword, so a `<pre>` or `<code>` renders at about
@@ -111,7 +97,7 @@
  * computed value.
  *
  *  html line-height 1.15     superseded: the reset declares `line-height:
- *                            normal` on the territory root (ds.reset).
+ *                            normal` on the root (ds.reset).
  *  h1 font-size and margin   the typography engine sets both on h1–h6, so the
  *                            rule never reached the page.
  *  hr                        `box-sizing: content-box` is overridden by the
@@ -136,113 +122,98 @@
  */
 
 @layer normalize {
-  @scope (.ds) {
-    /* The outermost territory root. `:not(.ds *)` because every component
-       carries `ds` on its own root and each is a scoping root of its own, so a
-       bare `:where(:scope)` would land on every component. `:where()` keeps the
-       specificity at zero, so a single class in any pragma layer above this one
-       can override it. */
-    :where(:scope:not(.ds *)) {
-      /* Prevent the text inflation iOS applies after an orientation change. */
-      -webkit-text-size-adjust: 100%;
-    }
+  html {
+    /* Prevent the text inflation iOS applies after an orientation change. */
+    -webkit-text-size-adjust: 100%;
+  }
 
-    /* The document body, whichever side of the territory boundary it falls on:
-       as the territory root itself for `<body class="ds app comfortable">`, and
-       as a descendant for `<html class="ds app comfortable">`, the shape an
-       application that is pragma throughout should prefer. In a mixed
-       application the root is a region or a component, there is no body either
-       way, and the rule matches nothing. */
-    :where(:scope:is(body)),
-    body {
-      margin: 0;
-    }
+  /* Remove the page gutter the browser gives the body. */
+  body {
+    margin: 0;
+  }
 
-    /* Change the font styles in all browsers, and remove the margin Firefox and
-       Safari give form controls. Written to reach the control wherever it sits:
-       a control that is itself the outermost root is not matched by a scoped
-       selector alone. */
-    :where(:scope, :scope *):is(button, input, optgroup, select, textarea) {
-      font-family: inherit;
-      font-size: 100%;
-      line-height: 1.15;
-      margin: 0;
-    }
+  /* Change the font styles in all browsers, and remove the margin Firefox and
+     Safari give form controls. */
+  button,
+  input,
+  optgroup,
+  select,
+  textarea {
+    font-family: inherit;
+    font-size: 100%;
+    line-height: 1.15;
+    margin: 0;
+  }
 
-    /* Correct the odd font size a browser gives the generic monospace family.
-       The family is named twice on purpose: Blink scales the keyword font size
-       when the computed family is the bare `monospace` keyword, and a list of
-       two defeats that. `font-size: 1em` then resolves against the parent. */
-    pre,
-    code,
-    kbd,
-    samp {
-      /* biome-ignore lint/suspicious/noDuplicateFontNames: the repetition is the
-         fix — Blink scales the keyword font size only when the computed family
-         is the bare `monospace` keyword, and a list of two is not that. */
-      font-family: monospace, monospace;
-      font-size: 1em;
-    }
+  /* Correct the odd font size a browser gives the generic monospace family.
+     The family is named twice on purpose: Blink scales the keyword font size
+     when the computed family is the bare `monospace` keyword, and a list of
+     two defeats that. `font-size: 1em` then resolves against the parent. */
+  pre,
+  code,
+  kbd,
+  samp {
+    /* biome-ignore lint/suspicious/noDuplicateFontNames: the repetition is the
+       fix — Blink scales the keyword font size only when the computed family
+       is the bare `monospace` keyword, and a list of two is not that. */
+    font-family: monospace, monospace;
+    font-size: 1em;
+  }
 
-    /* Keep sub and sup from affecting the line box, and so the baseline grid. */
-    sub,
-    sup {
-      font-size: 75%;
-      line-height: 0;
-      position: relative;
-      vertical-align: baseline;
-    }
+  /* Keep sub and sup from affecting the line box, and so the baseline grid. */
+  sub,
+  sup {
+    font-size: 75%;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+  }
 
-    sub {
-      bottom: -0.25em;
-    }
+  sub {
+    bottom: -0.25em;
+  }
 
-    sup {
-      top: -0.5em;
-    }
+  sup {
+    top: -0.5em;
+  }
 
-    /* Add the correct font size. */
-    small {
-      font-size: 80%;
-    }
+  /* Add the correct font size. */
+  small {
+    font-size: 80%;
+  }
 
-    /* Add the correct vertical alignment. */
-    progress {
-      vertical-align: baseline;
-    }
+  /* Add the correct vertical alignment. */
+  progress {
+    vertical-align: baseline;
+  }
 
-    /* Correct the inability to style clickable types in iOS and Safari. */
-    :where(:scope, :scope *):is(
-        button,
-        [type="button"],
-        [type="reset"],
-        [type="submit"]
-      ) {
-      -webkit-appearance: button;
-    }
+  /* Correct the inability to style clickable types in iOS and Safari. */
+  button,
+  [type="button"],
+  [type="reset"],
+  [type="submit"] {
+    -webkit-appearance: button;
+  }
 
-    /* Correct the odd appearance and the outline style in Safari, and remove
-       the inner padding it adds on macOS. Root-reaching, like the control font
-       rule above, so a search input that is itself the outermost root gets the
-       same chrome as one nested inside a territory. */
-    :where(:scope, :scope *):is([type="search"]) {
-      -webkit-appearance: textfield;
-      outline-offset: -2px;
-    }
+  /* Correct the odd appearance and the outline style in Safari, and remove the
+     inner padding it adds on macOS. */
+  [type="search"] {
+    -webkit-appearance: textfield;
+    outline-offset: -2px;
+  }
 
-    [type="search"]::-webkit-search-decoration {
-      -webkit-appearance: none;
-    }
+  [type="search"]::-webkit-search-decoration {
+    -webkit-appearance: none;
+  }
 
-    /* Correct the text wrapping, the colour inheritance and the padding on a
-       field group's caption. */
-    legend {
-      box-sizing: border-box;
-      color: inherit;
-      display: table;
-      max-width: 100%;
-      padding: 0;
-      white-space: normal;
-    }
+  /* Correct the text wrapping, the colour inheritance and the padding on a
+     field group's caption. */
+  legend {
+    box-sizing: border-box;
+    color: inherit;
+    display: table;
+    max-width: 100%;
+    padding: 0;
+    white-space: normal;
   }
 }
