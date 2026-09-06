@@ -17,8 +17,8 @@
  *   --line-height     → <length> snapped to the baseline grid
  *   --font-weight     → <number>
  *   --space-after     → <number> in baseline-height units
- *   --baseline-height → set at :root, in any length unit; optional, and every
- *                       read of it here falls back to 0.25rem
+ *   --baseline-height → set at :root, in any length unit; optional, because
+ *                       this file declares the 0.25rem default itself
  *
  * Heading padding-inline:
  *   Headings receive --heading-padding-inline (default: 0) so they can
@@ -68,7 +68,7 @@
           var(--typography-heading-1-font-size) *
           var(--typography-heading-1-line-height)
         ),
-        var(--baseline-height, 0.25rem)
+        var(--baseline-height)
       )
     );
     --space-after: 0;
@@ -89,7 +89,7 @@
           var(--typography-heading-2-font-size) *
           var(--typography-heading-2-line-height)
         ),
-        var(--baseline-height, 0.25rem)
+        var(--baseline-height)
       )
     );
     --space-after: 0;
@@ -110,7 +110,7 @@
           var(--typography-heading-3-font-size) *
           var(--typography-heading-3-line-height)
         ),
-        var(--baseline-height, 0.25rem)
+        var(--baseline-height)
       )
     );
     --space-after: 0;
@@ -131,7 +131,7 @@
           var(--typography-heading-4-font-size) *
           var(--typography-heading-4-line-height)
         ),
-        var(--baseline-height, 0.25rem)
+        var(--baseline-height)
       )
     );
     --space-after: 0;
@@ -152,7 +152,7 @@
           var(--typography-heading-5-font-size) *
           var(--typography-heading-5-line-height)
         ),
-        var(--baseline-height, 0.25rem)
+        var(--baseline-height)
       )
     );
     --space-after: 0;
@@ -183,7 +183,7 @@
           var(--typography-heading-6-font-size) *
           var(--typography-heading-6-line-height)
         ),
-        var(--baseline-height, 0.25rem)
+        var(--baseline-height)
       )
     );
     --space-after: 0;
@@ -207,7 +207,7 @@
           var(--typography-text-primary-font-size) *
           var(--typography-text-primary-line-height)
         ),
-        var(--baseline-height, 0.25rem)
+        var(--baseline-height)
       )
     );
     --space-after: 0;
@@ -240,7 +240,7 @@
           var(--typography-text-primary-code-font-size) *
           var(--typography-text-primary-code-line-height)
         ),
-        var(--baseline-height, 0.25rem)
+        var(--baseline-height)
       )
     );
     --space-after: 0;

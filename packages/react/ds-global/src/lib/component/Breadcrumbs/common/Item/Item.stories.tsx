@@ -58,7 +58,9 @@ const meta = {
 } satisfies Meta<typeof Component>;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+// Typed off the component, not `typeof meta`: these props carry the WD405
+// `Item` identity union, which Storybook's meta-driven arg inference collapses.
+type Story = StoryObj<typeof Component>;
 
 /**
  * Default breadcrumb item with link.
@@ -75,6 +77,7 @@ export const Default: Story = {
  */
 export const Current: Story = {
   args: {
+    url: "/products/details",
     label: "Product Details",
     current: true,
   },

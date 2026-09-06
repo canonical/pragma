@@ -1,4 +1,4 @@
-import type { _Item, Item } from "@canonical/ds-types";
+import type { _DistributiveOmit, _Item, Item } from "@canonical/ds-types";
 import type {
   ItemProps,
   MenuItemPropsResult,
@@ -16,7 +16,7 @@ import type {
  * shortcut) in addition to the base navigation fields. The slot is an optional
  * extension that survives tree annotation.
  */
-export interface MenuItem extends Item {
+export type MenuItem = _DistributiveOmit<Item, "items"> & {
   /** Content rendered right-aligned within the item, such as a badge or shortcut. */
   slot?: React.ReactNode;
   /** Icon rendered left of the label. */
@@ -32,7 +32,7 @@ export interface MenuItem extends Item {
   displayItemsType?: "default" | "custom";
   /** Custom component for rendering this item itself, when `displayItemsType` is `"custom"`. */
   Component?: React.ComponentType<{ item: MenuItem }>;
-}
+};
 
 /**
  * A non-interactive divider between menu entries, rendered as a horizontal
@@ -45,9 +45,10 @@ export interface MenuSeparator {
   type: "separator";
   /**
    * Unique identity within the menu, used as the React key and the navigation
-   * index id. Auto-generated when omitted.
+   * index id. Required: a separator is a node in the navigation tree, and
+   * every navigation item is identified by a `key` or a `url`.
    */
-  key?: string;
+  key: string;
   /**
    * Set by {@link useContextualMenu} before the tree is annotated — disabled
    * is what makes the navigation machinery skip the separator. Consumers
