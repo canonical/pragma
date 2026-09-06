@@ -105,7 +105,8 @@ layers:
 
 ```css
 @layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers, ds.surfaces,
-  ds.states, ds.components, ds.components.global, ds.components.app;
+  ds.states, ds.components, ds.components.global, ds.components.sites,
+  ds.components.documentation, ds.components.stores, ds.components.apps;
 ```
 
 Read it from the bottom up — each position is an argument.
@@ -119,9 +120,12 @@ Read it from the bottom up — each position is an argument.
 | `ds.modifiers` | Theme, the typographic scale, the intent families (anticipation, criticality, emphasis, importance) and their shims, and the context and density classes. | Above typography, because a modifier's job is to shift what the layers below produced. |
 | `ds.surfaces` | The surface families: `surface`, `contrasted`, `modal`. | Above the modifiers, because a surface re-points colour channels the modifiers set. |
 | `ds.states` | The derived hover, active and disabled channels. | Above the surfaces, because a state is derived from whatever the surface resolved to. |
-| `ds.components` | Nothing, by rule. It is the parent of the two tiers below and holds no rule of its own. | Highest of the eight top-level layers, so a component is the final word on its own box. A rule written *directly* into a parent layer sits in that layer's implicit final sublayer, which is above every named sublayer — so such a rule would outrank both tiers and no component package could override it by layer. Everything this package puts in `ds.components` therefore sits in a tier. |
-| `ds.components.global` | The stylesheets of the global component packages, and this package's own layout presets. | A sublayer of `ds.components`, named in the statement so that its order is fixed rather than left to whichever package a bundler emits first. |
-| `ds.components.app` | The stylesheets of the application tiers. | Above the global sublayer, so an application tier arbitrating a component it also ships wins by layer rather than by load order — including over one of the layout presets. |
+| `ds.components` | Nothing, by rule. It is the parent of the tier layers below and holds no rule of its own. | Highest of the eight top-level layers, so a component is the final word on its own box. A rule written *directly* into a parent layer sits in that layer's implicit final sublayer, which is above every named sublayer — so such a rule would outrank every tier and no component package could override it by layer. Everything this package puts in `ds.components` therefore sits in a tier. |
+| `ds.components.global` | The stylesheets of the shared component packages, and this package's own layout presets. | The base of the tier tree: what every other tier refines. |
+| `ds.components.sites` | The stylesheets of the sites tier. No entry point of this package opens it; the packages in that tier do. | The four second-level tiers never appear on the same page, so their order among themselves decides nothing. It is fixed here anyway, so that it can never come to depend on which package a bundler emits first. |
+| `ds.components.documentation` | The stylesheets of the documentation tier. No entry point of this package opens it; the packages in that tier do. | As above. |
+| `ds.components.stores` | The stylesheets of the stores tier. No entry point of this package opens it; the packages in that tier do. | As above. |
+| `ds.components.apps` | The stylesheets of the shared applications tier; one application's own tier declares a layer of its own above it. No entry point of this package opens it; the packages in that tier do. | As above. |
 
 An order statement fixes the relative order of layers the first time they appear. A later statement
 may introduce new names but can never reorder the ones already fixed, so an application that needs to
@@ -140,6 +144,35 @@ file has two rows for the same layer, because the test could only read the
 disjunction of two answers to one question; where a file needs two things said
 about one layer, the row says both. Reordering rows changes nothing a browser can
 see, and the test says nothing about it.
+
+#### The Component Tiers
+
+The component layers follow the design system's tier tree: who owns a component decides which layer
+its rules go in, and a deeper tier wins. Three rules make that work, and they are worth stating
+plainly because a package author has to follow them.
+
+**The second level is named here, in full.** `global`, `sites`, `documentation`, `stores` and `apps`
+are the design system's four second-level tiers plus the shared base, and this statement fixes their
+order. A package in one of those tiers wraps its stylesheets in its own name and needs to do nothing
+else.
+
+**A sub-tier declares its own layer, and that is what sorts it above.** One application's own package
+— the LXD tier, say — opens its CSS entry with `@layer ds.components.apps-lxd;` and wraps every sheet
+in that layer. Because this package's statement is always the first rule the browser sees, that name
+is new when the browser meets it, so it is appended after the names above, inside `ds.components`, and
+sorts above them. That is the tree's own rule — the more specific tier wins — and it means this
+stylesheet never has to know which applications exist. Measured: with this statement first, a rule in
+`ds.components.apps-lxd` beats the same rule in `ds.components.apps` and in `ds.components.global`,
+whatever order the files load in.
+
+**Nothing is ever written directly into `ds.components`.** A declaration in a parent layer sits in
+that layer's implicit final sublayer, which is above every named sublayer, so a rule written there
+would outrank every tier — the opposite of what the tiers are for.
+
+The names are tier ids from that tree, lowercased and hyphenated for a sub-tier (`apps-lxd`,
+`sites-webcomponentsprototype`). They are not the context words a page puts on its root (`app`,
+`site`, `docs`): a tier says who owns a component, a context says what kind of page it is being shown
+on, and the two are chosen by different people for different reasons.
 
 ### What Is Layered Where
 
@@ -284,7 +317,8 @@ to add to your root, and the reset applies exactly where it did before.
    ```css
    @layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers,
      ds.surfaces, ds.states, ds.components, ds.components.global,
-     ds.components.app, app;
+     ds.components.sites, ds.components.documentation, ds.components.stores,
+     ds.components.apps, app;
    @import url("@canonical/styles");
 
    @layer app {

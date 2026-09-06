@@ -53,6 +53,7 @@ import {
   LOCAL_RAW,
   LOCAL_SOURCES,
   lateImports,
+  layerTableNames,
   mustResolve,
   namedLayers,
   openedLayers,
@@ -153,7 +154,17 @@ describe("the layer set used equals the layer set declared", () => {
     }
   });
 
-  it("the only declared layer nothing writes to is the one reserved for the application tiers", () => {
+  it("the table that explains the layers names the same thirteen, in the same order", () => {
+    // The statement fixes the order; the table beside it is what a reader
+    // consults instead of the statement. A layer added to one and not the other
+    // is a reader sent to the wrong place, which is how this whole check started.
+    expect(layerTableNames()).toEqual(DECLARED_LAYERS);
+  });
+
+  it("the declared layers no entry opens are the second-level tiers", () => {
+    // Declared and empty on purpose: the packages in those tiers write to them,
+    // and the statement is here to fix their order before any of them appears.
+    // The README says so in each of their rows.
     const used = new Set(usedLayers(entryCss, DECLARED_LAYERS));
     expect(DECLARED_LAYERS.filter((name) => !used.has(name))).toEqual(
       RESERVED_LAYERS,

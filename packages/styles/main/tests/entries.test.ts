@@ -79,9 +79,48 @@ const hasTypeSelector = (selector: string): boolean =>
         .some((compound) => /^[a-zA-Z][a-zA-Z0-9-]*/.test(compound)),
     );
 
+/**
+ * The layers the statement names, in order. The five component layers are the
+ * second level of the design system's tier tree — who owns a component decides
+ * which layer its rules go in — and they are pinned here rather than only
+ * compared between entries, because dropping or reordering one is a silent
+ * change of meaning that every entry would agree on.
+ *
+ * Only the second level is named. A package below it declares its own layer as
+ * the first rule of its own entry (`@layer ds.components.apps-lxd;`); because
+ * this statement comes first, that name is appended after these inside
+ * `ds.components` and so sorts above them, which is the tier tree's own rule.
+ */
+const LAYERS = [
+  "normalize",
+  "ds.tokens",
+  "ds.reset",
+  "ds.typography",
+  "ds.modifiers",
+  "ds.surfaces",
+  "ds.states",
+  "ds.components",
+  "ds.components.global",
+  "ds.components.sites",
+  "ds.components.documentation",
+  "ds.components.stores",
+  "ds.components.apps",
+] as const;
+
 describe("the layer order statement", () => {
   it.each(ENTRIES)("is the first rule of %s", (file) => {
     expect(firstRule(readFileSync(srcPath(file), "utf8"))).toMatch(/^@layer /);
+  });
+
+  it.each(ENTRIES)("names the thirteen layers, in order, in %s", (file) => {
+    expect(statement(readFileSync(srcPath(file), "utf8"))).toEqual([...LAYERS]);
+  });
+
+  it("names no application's own tier: those are the packages' to declare", () => {
+    const named = statement(readFileSync(srcPath("index.css"), "utf8"));
+    expect(
+      named.filter((name) => name.startsWith("ds.components.apps-")),
+    ).toEqual([]);
   });
 
   it.each(ENTRIES)(

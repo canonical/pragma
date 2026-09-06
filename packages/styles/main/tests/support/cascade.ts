@@ -87,7 +87,10 @@ export const DECLARED_LAYERS = [
   "ds.states",
   "ds.components",
   "ds.components.global",
-  "ds.components.app",
+  "ds.components.sites",
+  "ds.components.documentation",
+  "ds.components.stores",
+  "ds.components.apps",
 ];
 
 /**
@@ -100,12 +103,19 @@ export const DECLARED_LAYERS = [
 export const ELEMENT_LAYERS = ["normalize", "ds.reset", "ds.typography"];
 
 /**
- * The layer the statement declares that nothing yet writes to: the application
- * tiers move into it when their stylesheets are wrapped. Naming it here rather
- * than at first appearance is what fixes its order, so it has to be declared
- * before anything writes to it.
+ * The layers the statement declares that no entry point of this package opens.
+ * They belong to the second-level tiers, and the packages in those tiers write to
+ * them: a package wraps its sheets in its own tier's name and needs to do nothing
+ * else. Naming them here rather than leaving them to first appearance is what
+ * fixes their order relative to one another, so they have to be declared before
+ * anything writes to them — and the README says as much in each of their rows.
  */
-export const RESERVED_LAYERS = ["ds.components.app"];
+export const RESERVED_LAYERS = [
+  "ds.components.sites",
+  "ds.components.documentation",
+  "ds.components.stores",
+  "ds.components.apps",
+];
 
 /**
  * The one layer nothing may ever write to directly. A rule written straight into
@@ -543,6 +553,10 @@ const section = (heading: string): string => {
   const end = rest.findIndex((line) => /^#+ /.test(line));
   return (end === -1 ? rest : rest.slice(0, end)).join("\n");
 };
+
+/** The layers the README's order table names, in the order it names them. */
+export const layerTableNames = (): string[] =>
+  tableUnder("Cascade Layers").map(([layer]) => ticked(layer ?? "")[0] ?? "");
 
 /** The body rows of the one table under a heading, cell by trimmed cell. */
 export const tableUnder = (heading: string): string[][] =>

@@ -43,19 +43,34 @@
  *                  their shims, the density and context classes
  *   ds.surfaces    the surface families
  *   ds.states      the derived hover / active / disabled channels
- *   ds.components  the parent layer of the two component tiers. Nothing is
- *                  written directly into it, by rule: a declaration in a parent
- *                  layer sits in that layer's implicit final sublayer, above
- *                  every named sublayer, so it would outrank both tiers
- *   ds.components.global  the global component packages' stylesheets, and this
+ *   ds.components  the parent of the tier layers. Nothing is written directly
+ *                  into it, by rule: a declaration in a parent layer sits in
+ *                  that layer's implicit final sublayer, above every named
+ *                  sublayer, so it would outrank every tier
+ *   ds.components.global         the shared component packages, and this
  *                  package's own layout presets
- *   ds.components.app     the application tiers' stylesheets, so that an app
- *                  tier's own rule for a component beats the global one by
- *                  layer rather than by load order
+ *   ds.components.sites          }  the four second-level tiers of the design
+ *   ds.components.documentation  }  system's tier tree. They never share a
+ *   ds.components.stores         }  page, so their order among themselves is
+ *   ds.components.apps           }  arbitrary — but it is fixed here so that
+ *                  it can never depend on which package a bundler emits first
  *
- * The two sublayers are named here rather than left to first appearance,
- * because first appearance depends on the order a bundler happens to emit the
- * component packages in, and their relative order is a guarantee. */
+ * The component layers follow the tier tree of the design system: who owns a
+ * component decides which layer its rules go in, and a deeper tier wins.
+ *
+ * The second level is named here in full, and only the second level. A package
+ * below it — one application's own tier, say — declares its own layer as the
+ * first rule of its CSS entry, `@layer ds.components.apps-lxd;`, and wraps its
+ * sheets in it. Because this statement always comes first, that name is new
+ * when the browser meets it and is appended after the names above, inside
+ * `ds.components`, so it sorts above them. That is the tree's own rule — the
+ * more specific tier wins — and it means this stylesheet never has to know
+ * which applications exist.
+ *
+ * The names are tier ids from that tree, lowercased and hyphenated for a
+ * sub-tier (`apps-lxd`), not the context words a page puts on its root
+ * (`app`, `site`, `docs`). A tier says who owns a component; a context says
+ * what kind of page it is being shown on. */
 @layer normalize,
   ds.tokens,
   ds.reset,
@@ -65,7 +80,10 @@
   ds.states,
   ds.components,
   ds.components.global,
-  ds.components.app;
+  ds.components.sites,
+  ds.components.documentation,
+  ds.components.stores,
+  ds.components.apps;
 
 /* Reset: pragma's own */
 @import url("./normalize.css");
