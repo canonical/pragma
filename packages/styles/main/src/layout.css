@@ -1,11 +1,11 @@
 /* @canonical/styles — the layout presets
  *
- * The grid presets, and nothing else: `grid`, `subgrid`, `responsive` and
- * `intrinsic`. They set real properties on any element carrying one of those
- * class names, so they are the design system claiming four names in a page's
- * class namespace — which is why they are separable from the values and from
- * the element rules, and why a page that already means something else by
- * `grid` can leave this file out.
+ * The layout presets, and nothing else: `grid`, `subgrid`, `responsive`,
+ * `intrinsic` and `content-flow`. They set real properties on any element
+ * carrying one of those class names, so they are the design system claiming five
+ * names in a page's class namespace — which is why they are separable from the
+ * values and from the element rules, and why a page that already means something
+ * else by `grid` can leave this file out.
  *
  * One of four entry points. `index.css` is the whole stylesheet and is what an
  * ordinary page imports; `tokens.css`, `elements.css` and `layout.css` are it

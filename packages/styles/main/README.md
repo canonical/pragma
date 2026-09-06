@@ -72,7 +72,7 @@ above. The other three are that stylesheet in parts.
 | `@canonical/styles` | everything: the values, the element rules and the layout presets. |
 | `@canonical/styles/tokens.css` | every custom property the design system declares, and not one rule that styles an element. Import it and nothing changes on the page until something reads a value from it. |
 | `@canonical/styles/elements.css` | every rule the design system applies to a plain element: the reset, the root's baseline, and the typography with its baseline engine. |
-| `@canonical/styles/layout.css` | the grid presets — `grid`, `subgrid`, `responsive`, `intrinsic` — which claim those four class names in a page's namespace. |
+| `@canonical/styles/layout.css` | the layout presets — `grid`, `subgrid`, `responsive`, `intrinsic` and `content-flow` — which claim those five class names in a page's namespace. |
 
 The parts exist for one reason. A page that also runs another CSS framework cannot take the element
 rules: the other framework has its own `p` rule, and only one of the two can own `line-height`. Such a
@@ -116,7 +116,7 @@ Read it from the bottom up — each position is an argument.
 | `ds.surfaces` | The surface families: `surface`, `contrasted`, `modal`. | Above the modifiers, because a surface re-points colour channels the modifiers set. |
 | `ds.states` | The derived hover, active and disabled channels. | Above the surfaces, because a state is derived from whatever the surface resolved to. |
 | `ds.components` | Nothing, by rule. It is the parent of the two tiers below and holds no rule of its own. | Highest of the eight top-level layers, so a component is the final word on its own box. A rule written *directly* into a parent layer sits in that layer's implicit final sublayer, which is above every named sublayer — so such a rule would outrank both tiers and no component package could override it by layer. Everything this package puts in `ds.components` therefore sits in a tier. |
-| `ds.components.global` | The stylesheets of the global component packages, and this package's own layout presets and content-flow container. | A sublayer of `ds.components`, named in the statement so that its order is fixed rather than left to whichever package a bundler emits first. |
+| `ds.components.global` | The stylesheets of the global component packages, and this package's own layout presets. | A sublayer of `ds.components`, named in the statement so that its order is fixed rather than left to whichever package a bundler emits first. |
 | `ds.components.app` | The stylesheets of the application tiers. | Above the global sublayer, so an application tier arbitrating a component it also ships wins by layer rather than by load order — including over one of the layout presets. |
 
 An order statement fixes the relative order of layers the first time they appear. A later statement
@@ -130,12 +130,11 @@ interleave a layer of its own puts its statement before this import.
 | `normalize.css` | `normalize` | yes |
 | `reset.css` root declarations | `ds.reset` | yes |
 | `reset.css` box-sizing | `ds.reset` | yes — `*`, `::before`, `::after` |
-| `spacing.css` token block | `ds.tokens` | no |
-| `spacing.css` content-flow container | `ds.components.global` | yes |
+| `spacing.css` | `ds.tokens` | no |
 | `motion.css` | `ds.tokens` | no |
 | `overflow.css` root default | `ds.tokens` | no |
 | `overflow.css` `.surface` | `ds.surfaces` | no |
-| `grid.css` layout presets | `ds.components.global` | yes |
+| `grid.css` layout presets, and the content-flow container | `ds.components.global` | yes |
 | `grid.css` `:root` defaults | `ds.components.global` | no — tokens the presets read, kept with them rather than moved to `ds.tokens` |
 | `modifiers.density.css` | `ds.modifiers` | no |
 | `modifiers.states.shim.css`, `modifiers.importance.shim.css`, `modifiers.criticality.shim.css` | `ds.modifiers` | no |
@@ -320,7 +319,7 @@ src/
   index.css                       -- entry point: the layer statement, then the imports
   normalize.css                   -- this package's own reset
   reset.css                       -- the document root's baseline
-  spacing.css                     -- spacing tokens, and the content-flow container
+  spacing.css                     -- spacing tokens
   motion.css                      -- motion tokens, and reduced motion
   overflow.css                    -- scroll overflow affordance
   grid.css                        -- layout presets
