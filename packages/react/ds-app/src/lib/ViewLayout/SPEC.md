@@ -60,7 +60,7 @@ No colour pairings: layouts divide space and paint nothing.
 |---|---|---|
 | `children` | `ReactNode` | Default slot, `1fr` column |
 | `aside` | `ReactNode` | Named slot, trailing `min-content` column |
-| …rest | `HTMLAttributes<HTMLDivElement>` | Spread onto the root |
+| …rest | `ComponentProps<"div">` | Spread onto the root |
 
 ---
 
