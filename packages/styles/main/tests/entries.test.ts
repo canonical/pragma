@@ -146,6 +146,40 @@ describe("tokens.css", () => {
     ).toEqual([]);
   });
 
+  it("declares no property that is not a custom property", () => {
+    // The layer pin above says which layers the entry opens; this says what it
+    // is allowed to declare inside them, which is the claim its header and the
+    // README actually make. Without it a real declaration added to a layer the
+    // entry already opens — a colour on a surface, say — passes every other
+    // check here, and the only thing contradicting it is prose.
+    //
+    // One exception, and it is the theme file's documented one: `color-scheme`
+    // on the root and on the two theme classes. It is not a style so much as the
+    // switch every `light-dark()` token resolves against, it has to reach the
+    // document element for the browser's own controls to follow it, and it
+    // paints nothing by itself.
+    // `color-scheme` on the root or on either theme class is the one exception,
+    // and it is the theme file's documented one: it is not a style so much as
+    // the switch every `light-dark()` token resolves against, it has to reach
+    // the document element for the browser's own controls to follow it, and it
+    // paints nothing by itself. Those rules declare custom properties too, so
+    // the exception is per declaration rather than per rule.
+    const allowed = new Set([
+      ":root | color-scheme",
+      ".light | color-scheme",
+      ".dark | color-scheme",
+    ]);
+    expect(
+      inventory(css).flatMap((rule) =>
+        rule.properties
+          .filter((property) => !property.startsWith("--"))
+          .map((property) => `${rule.selector} | ${property}`)
+          .filter((declaration) => !allowed.has(declaration))
+          .map((declaration) => `${rule.layer} | ${declaration}`),
+      ),
+    ).toEqual([]);
+  });
+
   it("has no rule that claims one of the engine's classes", () => {
     const engineClasses = /(^|[\s,>+~(])\.(p|code|editorial)\b/;
     expect(
