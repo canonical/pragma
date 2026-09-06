@@ -154,11 +154,27 @@ fixes it anyway, so that it can never come to depend on which package a bundler 
 each of them needs is only to sit above `ds.components.global`, and that is what the statement
 guarantees.
 
-**A sub-tier package declares its own layer**, first in its CSS entry —
-`@layer ds.components.apps-lxd;` — and does not appear in pragma's statement. A name the statement
-does not carry is placed where it first appears, which for a package loaded after the design system's
-entry is after all thirteen: the sub-tier lands above the second level, which is where it belongs.
-Nothing needs to reserve it in advance, and pragma does not have to know which sub-tiers exist.
+**A sub-tier package declares its own layer**, and the order of three lines in its CSS entry is the
+whole of the recipe:
+
+```css
+@import url("@canonical/styles/layers.css");   /* 1. fix the thirteen */
+@layer ds.components.apps-lxd;                 /* 2. then name your own */
+/* 3. then import your stylesheets */
+```
+
+The sub-tier name is not in pragma's statement, and does not need to be: a name the statement does not
+carry is placed where it first appears, so a name that first appears *after* the thirteen lands above
+them, which is where a sub-tier belongs. Nothing has to be reserved in advance, and pragma does not
+have to know which sub-tiers exist.
+
+What the first line buys is that "after" stops depending on the bundler. Without it, the sub-tier's
+declaration is read wherever the bundler happened to emit that package: emitted before the design
+system's entry, the sub-tier name is first and therefore lowest, and every design-system layer is
+appended above it — the exact inversion the tier is meant to prevent. Measured over the four emission
+orders a bundler can produce for one such package: declared before the statement is read, the
+application tier won in one of the four; with the import first, in four of four. The import costs
+nothing, because the statement is idempotent — the second reading of the same order changes no rank.
 
 **The names are flat, and the hyphen is load-bearing.** `ds.components.apps-lxd` is a sublayer of
 `ds.components`, a sibling of `ds.components.apps`. Written as `ds.components.apps.lxd` it would be a
@@ -190,8 +206,8 @@ The two demands cannot be met by one file, so pragma does not try to meet them t
 stylesheet stays plain: no `@scope`, no marker class on any root, no switch that changes what a rule
 means.** The confinement lives in the package that exists for the pages that need it.
 
-So the package is cut along that seam, into four entries, and the adapter carries a copy of one of
-them:
+So the package is cut along that seam into four entries, with a fifth that is only the order
+statement, and the adapter carries a copy of one of them:
 
 | Entry | What is in it | A pragma page | A mixed page |
 | --- | --- | --- | --- |
@@ -199,6 +215,7 @@ them:
 | `@canonical/styles/tokens.css` | Four layers of values — `ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states` — and the classes that set them. No rule that selects an element, with the one exception below. | (in the whole) | imports this |
 | `@canonical/styles/elements.css` | `normalize`, `ds.reset`, `ds.typography` — what bare elements get. | (in the whole) | takes the adapter's copy instead |
 | `@canonical/styles/layout.css` | The layout presets, `content-flow` among them, which claim five class names in a page's namespace. | (in the whole) | imports this |
+| `@canonical/styles/layers.css` | The order statement and nothing else: no rule, no value. It is there for a package that has to fix the order before it declares a layer of its own — a sub-tier component package, below. | — | — |
 
 One exception is worth knowing before you import the values on their own: the design tokens' generated
 theme sheet declares `color-scheme` on `:root`, `.light` and `.dark` beside the colour tokens, and that
@@ -212,7 +229,9 @@ Every entry opens with the same order statement, so importing one settles the la
 importing all of them does. And in this package no entry imports another: an `@layer` statement inside
 a layer block declares sublayers rather than top-level layers, so a whole that imported its parts would
 nest the order instead of repeating it. A page may load one, two or all of them, in any order, and get
-the same result, each file parsed once. The typography package is cut along the same line — a
+the same result, each file parsed once — the statement is idempotent, and reading the same one twice
+does nothing the first reading did not already do. That is what makes `layers.css` safe for a package
+to import in front of its own layers. The typography package is cut along the same line — a
 `tokens.css` and an `elements.css` of its own, beside its engines — and the styles package's entries
 import from it.
 
