@@ -6,7 +6,7 @@
  *
  * Consumer contract:
  *   :root {
- *     --baseline-height: <length>;
+ *     --baseline-height: <length>;   (optional, default 0.25rem)
  *     --ascender: <number>;
  *     --descender: <number>;
  *     --units-per-em: <number>;
@@ -14,20 +14,25 @@
  *   element { --font-size: <length>; --line-height: <length>; }
  *   (fallback: --line-height-multiplier: <number> if --line-height is unset)
  *
- * Browser floor: Chrome 125, Safari 16.4, Firefox 128. This engine uses two
- * features, and needs no `cap` unit, which is why its Safari number differs
- * from the cap engine's:
+ * Browser floor: Chrome 125, Safari 15.4, Firefox 118, all three set by
+ * `mod()`, the only feature this engine needs. It reaches further than the cap
+ * engine in Safari, which needs the `cap` unit as well; what it buys beyond
+ * that is not reach but control, since the metrics are numbers you supply rather
+ * than the font the browser happens to use.
  *
- *   mod()            Chrome 125, Safari 15.4, Firefox 118
- *   @property        Chrome 85,  Safari 16.4, Firefox 128 (baseline-shim.css)
+ * The grid unit:
+ *   --baseline-height may be a length in any unit — 0.5rem and 8px are both
+ *   fine, and rem is the usual choice because the grid then follows the reader's
+ *   own font size. Every read of it here carries the same fallback,
+ *   `var(--baseline-height, 0.25rem)`, so an application that declares it
+ *   nowhere gets a 4px grid rather than no grid at all.
  *
- * Chrome is held by `mod()`, Safari and Firefox by `@property` — a registration
- * no browser currently accepts, because its initial value is written in `rem`,
- * which is not computationally independent. The next change in this series
- * removes it and gives the engines a fallback of their own; this engine's floor
- * becomes Chrome 125, Safari 15.4, Firefox 118 with it. What it buys is not
- * reach but control: the metrics are numbers you supply, rather than the font
- * the browser happens to use.
+ *   The fallback is written at each read rather than aliased into one internal
+ *   custom property, for two reasons: this file stays complete on its own, which
+ *   matters because it can be linked without the rest of the package, and no
+ *   second name enters the surface for a consumer to set by mistake. The default
+ *   is stated in the consumer contract above so it can be checked without
+ *   reading the rules.
  *
  * Layers:
  *   Every rule below sits in `ds.typography`. Unlayered, these rules outranked
@@ -38,14 +43,8 @@
  *   layers below it, also deliberately.
  *
  *   The rules select elements by name, so they apply to the whole document,
- *   which is what a design system's typography is for. The `@property`
- *   registration this file imports stays outside the layer, because a
- *   registration is not cascaded: the last one in document order wins whatever
- *   layer it sits in, so a layer would have nothing to order it against.
+ *   which is what a design system's typography is for.
  */
-
-/* Baseline unit shim (--baseline-height 4px fallback) */
-@import url("./baseline-shim.css");
 
 /* Typography scale tokens from design-tokens */
 @import url("@canonical/design-tokens/dist/modifiers.typography.css");
@@ -92,7 +91,7 @@
   .code {
     --computed-line-height: var(
       --line-height,
-      calc(var(--baseline-height) * var(--line-height-multiplier))
+      calc(var(--baseline-height, 0.25rem) * var(--line-height-multiplier))
     );
     line-height: var(--computed-line-height);
     font-size: var(--font-size);
@@ -113,10 +112,10 @@
       var(--ascender-scale)
     );
     --start-nudge: calc(
-      var(--baseline-height) -
-      mod(var(--baseline-position), var(--baseline-height))
+      var(--baseline-height, 0.25rem) -
+      mod(var(--baseline-position), var(--baseline-height, 0.25rem))
     );
-    --end-nudge: calc(var(--baseline-height) - var(--start-nudge));
+    --end-nudge: calc(var(--baseline-height, 0.25rem) - var(--start-nudge));
   }
 
   /* Block-level baseline nudges only — bare inline `.code` is excluded so it
@@ -134,6 +133,9 @@
     padding-block-end: var(--end-nudge);
 
     /* Element-owned spacing — only active in .editorial contexts */
-    margin-block-end: calc(var(--space-after, 0) * var(--baseline-height));
+    margin-block-end: calc(
+      var(--space-after, 0) *
+      var(--baseline-height, 0.25rem)
+    );
   }
 }

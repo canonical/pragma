@@ -4,17 +4,29 @@ Baseline grid alignment for the Canonical Design System. This package provides t
 
 ## Quick Start
 
-Import the default engine (cap-unit) and set your baseline height:
+Import the default engine (cap-unit):
 
 ```css
 @import url("@canonical/styles-typography");
-
-:root {
-  --baseline-height: 0.5rem;
-}
 ```
 
 That's it. All `h1`–`h6` and `p` elements will align to the baseline grid. The default engine uses the CSS `cap` unit and requires no JavaScript font extraction.
+
+### The grid unit
+
+`--baseline-height` is the size of one grid step, and it is optional. Declare it in whatever length unit suits the page:
+
+```css
+:root {
+  --baseline-height: 0.5rem;  /* or 8px, or 0.25rem, or 6pt */
+}
+```
+
+`rem` is the usual choice, because the grid then follows the reader's own font size: a reader who sets a larger base size gets a proportionally larger grid, and the type stays on it. `px` pins the grid to device pixels instead, which is what you want if the grid has to line up with something measured in pixels — a background image, or a rule drawn by another system.
+
+**Declare it nowhere and the grid is `0.25rem`, four pixels at the usual root font size.** Every read of the variable in this package carries that same fallback, so an engine linked on its own still snaps text to a grid rather than doing nothing. `@canonical/styles` declares `--baseline-height` itself, so an application using the full stylesheet never sees the fallback.
+
+The fallback is written at each read rather than aliased into one internal custom property. That keeps each file complete on its own, which matters because any one of them can be linked without the rest, and it keeps a second name out of the surface for a consumer to set by mistake.
 
 ## Cascade layers
 
@@ -27,12 +39,11 @@ A rule in no cascade layer outranks a rule in any layer, whatever the selectors 
 | `mapper.css` — the design-tokens naming shims (`:root`, custom properties only) | `ds.tokens` |
 | `mapper.css` — the `body`, `h1`–`h6`, `p`, `.p`, `.code` and `.editorial` rules | `ds.typography` |
 | `baseline-cap.css`, `baseline-metrics.css`, `baseline-trim.css` — every rule | `ds.typography` |
-| `baseline-shim.css` — the `@property` registration | none, by design |
 | `@canonical/design-tokens/dist/modifiers.typography.css`, imported by each engine | `ds.modifiers`, which that file opens itself |
 
 `ds.typography` sits above `ds.reset` and below `ds.modifiers` in the order `@canonical/styles` declares, so the typographic scale in `ds.modifiers` can retune what the engine produces, and a component stylesheet — higher still — is always the final word on its own text.
 
-The naming shims are in `ds.tokens` and not `ds.typography` because they are custom properties and nothing else: a custom property does nothing where it is declared, only where a rule reads it, so they belong beside the other primitive values. The `@property` registration is in no layer because a registration is not cascaded at all — the last one in document order wins whatever layer it sits in, so a layer would have nothing to order it against.
+The naming shims are in `ds.tokens` and not `ds.typography` because they are custom properties and nothing else: a custom property does nothing where it is declared, only where a rule reads it, so they belong beside the other primitive values.
 
 These rules select elements by name — `body`, `h1`, `p` — so they apply to the whole document. That is what a design system's typography is for.
 
@@ -84,13 +95,13 @@ Uses the browser-native `cap` CSS unit to resolve font metrics at render time. N
 
 The baseline position formula is `(line-height + 1cap) / 2` — the browser resolves `1cap` from the font's OpenType tables natively.
 
-| Browser | `mod()` | `cap` unit | `@property` | This engine's floor |
-|---------|----------|------------|--------------|---------------------|
-| Chrome  | 125+     | 118+       | 85+          | **125+**            |
-| Safari  | 15.4+    | 17.2+      | 16.4+        | **17.2+**           |
-| Firefox | 118+     | 97+        | 128+         | **128+**            |
+| Browser | `mod()` | `cap` unit | This engine's floor |
+|---------|----------|------------|---------------------|
+| Chrome  | 125+     | 118+       | **125+**            |
+| Safari  | 15.4+    | 17.2+      | **17.2+**           |
+| Firefox | 118+     | 97+        | **118+**            |
 
-A different feature binds each column: `mod()` in Chrome, the `cap` unit in Safari, `@property` in Firefox — and see the note under "Browser Support" about that last one.
+`mod()` binds Chrome and Firefox, the `cap` unit binds Safari.
 
 ### baseline-metrics.css — Extracted metrics
 
@@ -118,11 +129,11 @@ The baseline position is computed from these metrics: `((line-height - line-heig
 
 The most modern approach. Uses `text-box: trim-both cap alphabetic` to remove half-leading entirely, then compensates with `mod()`-based margin to restore grid alignment. Results in tighter content boxes (useful for buttons, cards, optical centering).
 
-| Browser | `text-box-trim` | `mod()` | `@property` | This engine's floor |
-|---------|-----------------|----------|--------------|---------------------|
-| Chrome  | 133+            | 125+     | 85+          | **133+**            |
-| Safari  | 18.2+           | 15.4+    | 16.4+        | **18.2+**           |
-| Firefox | 154+            | 118+     | 128+         | **154+**            |
+| Browser | `text-box-trim` | `mod()` | This engine's floor |
+|---------|-----------------|----------|---------------------|
+| Chrome  | 133+            | 125+     | **133+**            |
+| Safari  | 18.2+           | 15.4+    | **18.2+**           |
+| Firefox | 154+            | 118+     | **154+**            |
 
 `text-box-trim` binds every column.
 
@@ -249,7 +260,6 @@ All engines require `mod()` for the grid-snap calculation:
 |---------|---------|--------|--------|---------|
 | `mod()` | all three engines | 125 | 15.4 | 118 |
 | `round()` | the mapper's line-height fallback | 125 | 15.4 | 118 |
-| `@property` | the `--baseline-height` registration | 85 | 16.4 | 128 |
 | `cap` unit | the cap and text-trim engines | 118 | 17.2 | 97 |
 | `text-box-trim` | the text-trim engine only | 133 | 18.2 | 154 |
 
@@ -257,14 +267,10 @@ Read the table by engine, not row by row — an engine's floor is the highest nu
 
 | Engine | Chrome | Safari | Firefox | What binds |
 |--------|--------|--------|---------|------------|
-| `baseline-cap.css` | 125 | 17.2 | 128 | `mod()`, then the `cap` unit, then `@property` |
-| `baseline-metrics.css` | 125 | 16.4 | 128 | `mod()`, then `@property` |
+| `baseline-cap.css` | 125 | 17.2 | 118 | `mod()`, and the `cap` unit in Safari |
+| `baseline-metrics.css` | 125 | 15.4 | 118 | `mod()` throughout |
 | `baseline-trim.css` | 133 | 18.2 | 154 | `text-box-trim` throughout |
 
-Two caveats on that table, both real.
-
-`@property` holds the Firefox column for two of the engines, and Safari for one, for a registration **no browser currently accepts**. `baseline-shim.css` writes its initial value in `rem`, which is not computationally independent, so Chromium and Firefox alike throw the whole rule away and the 4px fallback it promises does not exist. The next change in this series removes the registration and gives the engines a fallback of their own; those numbers drop to Chrome 125, Safari 15.4, Firefox 118 with it.
-
-`text-box-trim` is soft in a different way: below it the trim is skipped and the element keeps its default half-leading, but the nudge still applies and the grid still holds, so the text-trim engine degrades to the alignment the other two give rather than failing.
+One caveat on that table. `text-box-trim` is soft: below it the trim is skipped and the element keeps its default half-leading, but the nudge still applies and the grid still holds, so the text-trim engine degrades to the alignment the other two give rather than failing.
 
 `mod()` is the hard one. Below it no engine computes a nudge and text falls back to its natural leading.
