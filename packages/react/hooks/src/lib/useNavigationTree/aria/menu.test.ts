@@ -114,4 +114,19 @@ describe("contextual-menu ARIA helpers", () => {
       true,
     );
   });
+
+  it("does not mark a presentational node aria-disabled", () => {
+    // The two flags stay readable apart at the ARIA boundary. A separator is
+    // not a menu item the user may not choose; `aria-disabled` on it would
+    // announce it as one. It is skipped by traversal and left unmarked here.
+    const separator: _Item = {
+      key: "sep",
+      parentUrl: "menu",
+      depth: 2,
+      presentational: true,
+    };
+    expect(
+      getMenuItemProps(createMockNav(), separator)["aria-disabled"],
+    ).toBeUndefined();
+  });
 });

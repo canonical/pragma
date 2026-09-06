@@ -1,190 +1,200 @@
-.ds.form-choices {
-  border: none;
-  padding: 0;
-  padding-inline: var(--form-input-padding-inline);
-  margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  /* Row gap gives stacked/wrapped options vertical breathing room (was 0, so
-   * stacked items touched); column gap is the inline separation (per review). */
-  gap: var(--form-group-gap) var(--container-gap-loose);
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
-  /* Stacked: one option per line */
-  &.stacked {
-    flex-direction: column;
-    flex-wrap: nowrap;
-  }
-
-  /* Columns: a grid of equal-width columns. Each option fills its cell, so the
-   * option WIDTH is column-based rather than content-based. The column count
-   * comes from `--choices-columns` (set from the `columns` prop). */
-  &.columns {
-    display: grid;
-    grid-template-columns: repeat(var(--choices-columns, 2), 1fr);
-    gap: var(--form-group-gap) var(--container-gap-loose);
-  }
-
-  /* Each option (common/Option, `.ds.option`) is styled here, scoped to this
-   * group so the generic class cannot collide with options elsewhere. */
-  & > .ds.option {
-    direction: inherit;
+@layer ds.components.global {
+  .ds.form-choices {
+    border: none;
+    padding: 0;
+    padding-inline: var(--form-input-padding-inline);
+    margin: 0;
     display: flex;
-    align-items: baseline;
-    gap: var(--space-100);
-    cursor: pointer;
+    flex-wrap: wrap;
+    /* Row gap gives stacked/wrapped options vertical breathing room (was 0, so
+     * stacked items touched); column gap is the inline separation (per review). */
+    gap: var(--form-group-gap) var(--container-gap-loose);
 
-    &.disabled {
-      cursor: not-allowed;
-      opacity: 0.5;
+    /* Stacked: one option per line */
+    &.stacked {
+      flex-direction: column;
+      flex-wrap: nowrap;
     }
 
-    & > input[type="radio"] {
-      appearance: none;
-      box-sizing: border-box;
-      width: var(--dimension-200); /* 16px */
-      height: var(--dimension-200); /* 16px */
-      border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
-      border-radius: 50%;
-      background-color: var(
-        --surface-color-foreground-radio-unselected,
-        var(--color-foreground-radio-unselected)
-      );
-      cursor: inherit;
-      transition:
-        background-color 150ms ease,
-        border-color 150ms ease;
-
-      &:checked {
-        border-color: var(
-          --surface-color-foreground-radio-selected,
-          var(--color-foreground-radio-selected)
-        );
-        background: radial-gradient(
-          var(
-              --surface-color-foreground-radio-selected,
-              var(--color-foreground-radio-selected)
-            )
-            40%,
-          var(
-              --surface-color-foreground-radio-unselected,
-              var(--color-foreground-radio-unselected)
-            )
-            41%
-        );
-      }
-
-      &:hover:not(:disabled):not(:checked) {
-        background-color: var(--color-foreground-radio-unselected-hover);
-      }
-
-      /* Hover shifts only the dot's fill (channel shade), not a whole-element
-       * brightness filter that would also dim the ring. */
-      &:checked:hover:not(:disabled) {
-        border-color: var(--hover--color-foreground-radio-selected);
-        background: radial-gradient(
-          var(--hover--color-foreground-radio-selected) 40%,
-          var(
-              --surface-color-foreground-radio-unselected,
-              var(--color-foreground-radio-unselected)
-            )
-            41%
-        );
-      }
-
-      &:focus-visible {
-        outline: none;
-        border-color: var(--color-focusRing);
-        box-shadow: 0 0 0 1px var(--color-focusRing);
-      }
-
-      &:disabled {
-        border-color: var(--color-border-disabled);
-        background-color: var(--color-foreground-radio-unselected-disabled);
-      }
+    /* Columns: a grid of equal-width columns. Each option fills its cell, so the
+     * option WIDTH is column-based rather than content-based. The column count
+     * comes from `--choices-columns` (set from the `columns` prop). */
+    &.columns {
+      display: grid;
+      grid-template-columns: repeat(var(--choices-columns, 2), 1fr);
+      gap: var(--form-group-gap) var(--container-gap-loose);
     }
 
-    & > input[type="checkbox"] {
-      appearance: none;
-      box-sizing: border-box;
-      position: relative;
-      width: var(--dimension-200); /* 16px */
-      height: var(--dimension-200); /* 16px */
-      border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
-      border-radius: var(--dimension-radius-small);
-      background-color: var(
-        --surface-color-foreground-checkbox-unselected,
-        var(--color-foreground-checkbox-unselected)
-      );
-      cursor: inherit;
-      transition:
-        background-color 150ms ease,
-        border-color 150ms ease;
+    /* Each option (common/Option, `.ds.option`) is styled here, scoped to this
+     * group so the generic class cannot collide with options elsewhere. */
+    & > .ds.option {
+      direction: inherit;
+      display: flex;
+      align-items: baseline;
+      gap: var(--space-100);
+      cursor: pointer;
 
-      /* Glyph as a masked pseudo-element so it takes the checkmark token
-       * (see CheckboxInput); the colour+mask live together under :checked so
-       * the unchecked box never paints a solid square. */
-      &::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        mask-repeat: no-repeat;
-        mask-position: center;
-        mask-size: 75%;
-        -webkit-mask-repeat: no-repeat;
-        -webkit-mask-position: center;
-        -webkit-mask-size: 75%;
+      &.disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
       }
 
-      &:checked {
-        background: var(
-          --surface-color-foreground-checkbox-selected,
-          var(--color-foreground-checkbox-selected)
+      & > input[type="radio"] {
+        appearance: none;
+        box-sizing: border-box;
+        width: var(--dimension-200); /* 16px */
+        height: var(--dimension-200); /* 16px */
+        border: var(--dimension-stroke-thickness-medium) solid
+          var(--color-border);
+        border-radius: 50%;
+        background-color: var(
+          --surface-color-foreground-radio-unselected,
+          var(--color-foreground-radio-unselected)
         );
-        border-color: var(
-          --surface-color-foreground-checkbox-selected,
-          var(--color-foreground-checkbox-selected)
-        );
+        cursor: inherit;
+        transition:
+          background-color 150ms ease,
+          border-color 150ms ease;
 
-        &::before {
-          background-color: var(
-            --surface-color-foreground-checkbox-checkmark,
-            var(--color-foreground-checkbox-checkmark)
+        &:checked {
+          border-color: var(
+            --surface-color-foreground-radio-selected,
+            var(--color-foreground-radio-selected)
           );
-          mask-image: url("/icons/checkmark.svg#checkmark");
-          -webkit-mask-image: url("/icons/checkmark.svg#checkmark");
+          background: radial-gradient(
+            var(
+                --surface-color-foreground-radio-selected,
+                var(--color-foreground-radio-selected)
+              )
+              40%,
+            var(
+                --surface-color-foreground-radio-unselected,
+                var(--color-foreground-radio-unselected)
+              )
+              41%
+          );
+        }
+
+        &:hover:not(:disabled):not(:checked) {
+          background-color: var(--color-foreground-radio-unselected-hover);
+        }
+
+        /* Hover shifts only the dot's fill (channel shade), not a whole-element
+         * brightness filter that would also dim the ring. */
+        &:checked:hover:not(:disabled) {
+          border-color: var(--hover--color-foreground-radio-selected);
+          background: radial-gradient(
+            var(--hover--color-foreground-radio-selected) 40%,
+            var(
+                --surface-color-foreground-radio-unselected,
+                var(--color-foreground-radio-unselected)
+              )
+              41%
+          );
+        }
+
+        &:focus-visible {
+          outline: none;
+          border-color: var(--color-focusRing);
+          box-shadow: 0 0 0 1px var(--color-focusRing);
+        }
+
+        &:disabled {
+          border-color: var(--color-border-disabled);
+          background-color: var(--color-foreground-radio-unselected-disabled);
         }
       }
 
-      &:hover:not(:disabled):not(:checked) {
-        background-color: var(--color-foreground-checkbox-unselected-hover);
-      }
+      & > input[type="checkbox"] {
+        appearance: none;
+        box-sizing: border-box;
+        position: relative;
+        width: var(--dimension-200); /* 16px */
+        height: var(--dimension-200); /* 16px */
+        border: var(--dimension-stroke-thickness-medium) solid
+          var(--color-border);
+        border-radius: var(--dimension-radius-small);
+        background-color: var(
+          --surface-color-foreground-checkbox-unselected,
+          var(--color-foreground-checkbox-unselected)
+        );
+        cursor: inherit;
+        transition:
+          background-color 150ms ease,
+          border-color 150ms ease;
 
-      /* Hover shifts only the fill (channel shade), not the masked checkmark. */
-      &:checked:hover:not(:disabled) {
-        background-color: var(--hover--color-foreground-checkbox-selected);
-        border-color: var(--hover--color-foreground-checkbox-selected);
-      }
-
-      &:focus-visible {
-        outline: none;
-        border-color: var(--color-focusRing);
-        box-shadow: 0 0 0 1px var(--color-focusRing);
-      }
-
-      &:disabled {
-        border-color: var(--color-border-disabled);
-        background-color: var(--color-foreground-checkbox-unselected-disabled);
-      }
-
-      /* A checked+disabled box must keep the SELECTED (not unselected) disabled
-       * fill — the generic `:disabled` above would otherwise leave the checkmark
-       * on the unselected-disabled background. Matches CheckboxInput. */
-      &:checked:disabled {
-        background: var(--color-foreground-checkbox-selected-disabled);
-        border-color: var(--color-foreground-checkbox-selected-disabled);
-
+        /* Glyph as a masked pseudo-element so it takes the checkmark token
+         * (see CheckboxInput); the colour+mask live together under :checked so
+         * the unchecked box never paints a solid square. */
         &::before {
-          background-color: var(--color-foreground-checkbox-checkmark-disabled);
+          content: "";
+          position: absolute;
+          inset: 0;
+          mask-repeat: no-repeat;
+          mask-position: center;
+          mask-size: 75%;
+          -webkit-mask-repeat: no-repeat;
+          -webkit-mask-position: center;
+          -webkit-mask-size: 75%;
+        }
+
+        &:checked {
+          background: var(
+            --surface-color-foreground-checkbox-selected,
+            var(--color-foreground-checkbox-selected)
+          );
+          border-color: var(
+            --surface-color-foreground-checkbox-selected,
+            var(--color-foreground-checkbox-selected)
+          );
+
+          &::before {
+            background-color: var(
+              --surface-color-foreground-checkbox-checkmark,
+              var(--color-foreground-checkbox-checkmark)
+            );
+            mask-image: url("/icons/checkmark.svg#checkmark");
+            -webkit-mask-image: url("/icons/checkmark.svg#checkmark");
+          }
+        }
+
+        &:hover:not(:disabled):not(:checked) {
+          background-color: var(--color-foreground-checkbox-unselected-hover);
+        }
+
+        /* Hover shifts only the fill (channel shade), not the masked checkmark. */
+        &:checked:hover:not(:disabled) {
+          background-color: var(--hover--color-foreground-checkbox-selected);
+          border-color: var(--hover--color-foreground-checkbox-selected);
+        }
+
+        &:focus-visible {
+          outline: none;
+          border-color: var(--color-focusRing);
+          box-shadow: 0 0 0 1px var(--color-focusRing);
+        }
+
+        &:disabled {
+          border-color: var(--color-border-disabled);
+          background-color: var(
+            --color-foreground-checkbox-unselected-disabled
+          );
+        }
+
+        /* A checked+disabled box must keep the SELECTED (not unselected) disabled
+         * fill — the generic `:disabled` above would otherwise leave the checkmark
+         * on the unselected-disabled background. Matches CheckboxInput. */
+        &:checked:disabled {
+          background: var(--color-foreground-checkbox-selected-disabled);
+          border-color: var(--color-foreground-checkbox-selected-disabled);
+
+          &::before {
+            background-color: var(
+              --color-foreground-checkbox-checkmark-disabled
+            );
+          }
         }
       }
     }
