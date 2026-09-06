@@ -32,7 +32,10 @@ const MIXED_ORDER = [
   "ds.adapter",
   "ds.components",
   "ds.components.global",
-  "ds.components.app",
+  "ds.components.sites",
+  "ds.components.documentation",
+  "ds.components.stores",
+  "ds.components.apps",
   "app",
 ];
 
@@ -63,7 +66,7 @@ const withoutImports = (css: string): string =>
   css.replace(/^\s*@import[^;]*;/gm, "");
 
 describe("the order contract", () => {
-  it("layers.css is a single statement naming the fourteen layers in order", () => {
+  it("layers.css is a single statement naming the seventeen layers in order", () => {
     const sheet = parse(layersCss);
     expect(sheet.cssRules.length).toBe(1);
     expect(sheet.cssRules[0]).toBeInstanceOf(CSSLayerStatementRule);
@@ -175,7 +178,7 @@ describe("the order contract", () => {
     );
   });
 
-  it("sorts all 91 pairs of the fourteen names as written, by computed style", async () => {
+  it("sorts all 136 pairs of the seventeen names as written, by computed style", async () => {
     // The name list alone cannot show this: a top-level layer written between
     // two sublayers of `ds` sorts above all of `ds`, which is how a top-level
     // `adapter` sat above the component tiers until it became `ds.adapter`.
@@ -183,7 +186,7 @@ describe("the order contract", () => {
     // source order would favour the earlier one; the later layer must still
     // win. The two exceptions are a parent against its own sublayers: a rule
     // written directly into `ds.components` sits in its implicit final
-    // sublayer, above both tiers, which is why nothing is written into it.
+    // sublayer, above every tier, which is why nothing is written into it.
     const pairs: [number, number][] = [];
     let css = "";
     let body = "";
@@ -194,7 +197,7 @@ describe("the order contract", () => {
         css += `@layer ${MIXED_ORDER[j]} { #${id} { color: rgb(2, 2, 2) } } @layer ${MIXED_ORDER[i]} { #${id} { color: rgb(1, 1, 1) } }\n`;
         body += `<i id="${id}"></i>`;
       }
-    expect(pairs.length).toBe(91);
+    expect(pairs.length).toBe(136);
     const doc = await render({ root: "", styles: [layersCss, css], body });
     const parentWins = (i: number, j: number): boolean =>
       MIXED_ORDER[j]?.startsWith(`${MIXED_ORDER[i]}.`) ?? false;
@@ -206,6 +209,30 @@ describe("the order contract", () => {
       )
       .map(([i, j]) => `${MIXED_ORDER[i]} < ${MIXED_ORDER[j]}`);
     expect(failures).toEqual([]);
+  });
+
+  it("a sub-tier layer declared later sorts above its tier and below `app` on a mixed page", async () => {
+    // A package below a tier declares its own layer, flat beside the five,
+    // first in its own entry (README, VC.31). Appearing after the statement
+    // puts it above the five and still below `app`; the higher layer's rule
+    // is written first each time so that source order cannot be the reason.
+    const spec = mixedPage("4.58");
+    const doc = await render({
+      ...spec,
+      styles: [
+        ...spec.styles,
+        [
+          "@layer ds.components.apps-lxd;",
+          "@layer ds.components.apps-lxd { #tier { color: rgb(2, 2, 2) } }",
+          "@layer ds.components.apps { #tier { color: rgb(1, 1, 1) } }",
+          "@layer app { #top { color: rgb(3, 3, 3) } }",
+          "@layer ds.components.apps-lxd { #top { color: rgb(2, 2, 2) } }",
+        ].join("\n"),
+      ],
+      body: `${spec.body}<i id="tier"></i><i id="top"></i>`,
+    });
+    expect(computed(doc, "tier").color).toBe("rgb(2, 2, 2)");
+    expect(computed(doc, "top").color).toBe("rgb(3, 3, 3)");
   });
 
   it("order-independence: adapter.css may sit anywhere inside the pragma entry", async () => {
