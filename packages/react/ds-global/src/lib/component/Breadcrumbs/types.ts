@@ -18,7 +18,7 @@ import type { ItemProps, LinkComponentProps } from "./common/Item/types.js";
  * products only. Not designed/approved for Canonical products; Canonical
  * products must use the default Breadcrumbs.Item.
  */
-export interface BreadcrumbItem extends Item {
+export type BreadcrumbItem = Item & {
   /**
    * Whether this is the current page.
    * When true, renders as text instead of link.
@@ -32,7 +32,7 @@ export interface BreadcrumbItem extends Item {
    */
   // biome-ignore lint/suspicious/noExplicitAny: Component accepts any props
   Component?: ComponentType<any>;
-}
+};
 
 type OwnProps = {
   /**

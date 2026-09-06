@@ -152,6 +152,34 @@ describe("the layer order statement", () => {
     },
   );
 
+  it("layers.css is the statement and nothing else", () => {
+    // The file a sub-tier package imports before declaring its own layer. It
+    // has to be inert: a page that loads it alongside an entry must get the
+    // statement twice and nothing twice. So no rule, no import, no
+    // declaration — strip the comments and one statement is all that is left.
+    const css = readFileSync(srcPath("layers.css"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .trim();
+    expect(css).toMatch(/^@layer\s[^;{}]+;$/);
+  });
+
+  it.each([...ENTRIES, "layers.css"] as const)(
+    "declares the statement identically, byte for byte, in %s",
+    (file) => {
+      // Not just the same names in the same order: the same text. A sub-tier
+      // package imports layers.css to fix the order before it declares its own
+      // layer, and the two only agree for certain if they are the same bytes.
+      const raw = (name: string): string => {
+        const match = readFileSync(srcPath(name), "utf8")
+          .replace(/\/\*[\s\S]*?\*\//g, "")
+          .match(/@layer[^;]+;/);
+        if (!match) throw new Error(`no layer statement in ${name}`);
+        return match[0];
+      };
+      expect(raw(file)).toBe(raw("layers.css"));
+    },
+  );
+
   it.each(ENTRIES)("is not nested inside a layer in %s", (file) => {
     // An `@layer` statement inside a layer block declares sublayers of it, not
     // top-level layers. That is why no entry imports another.

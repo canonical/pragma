@@ -1,4 +1,4 @@
-import type { Item } from "@canonical/ds-types";
+import type { _DistributiveOmit, Item } from "@canonical/ds-types";
 import type { Snippet } from "svelte";
 import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
@@ -20,22 +20,23 @@ export type ItemAnchorProps = Omit<
  *
  * @implements ds:global.subcomponent.breadcrumbs-item
  */
-export interface ItemProps extends ItemAnchorProps, Omit<Item, "items"> {
-  /**
-   * The link content (snippet)
-   * Falls back to `label` from Item if not provided
-   */
-  children?: Snippet;
-  /**
-   * Whether this is the current/active breadcrumb
-   * When true, renders as text instead of link
-   */
-  current?: boolean;
-  /** CSS class applied to this item's `<li>`, in addition to the base classes. */
-  class?: ClassValue;
-  /**
-   * Custom separator character or snippet
-   * @default "/"
-   */
-  separator?: Snippet | string;
-}
+export type ItemProps = ItemAnchorProps &
+  _DistributiveOmit<Item, "items"> & {
+    /**
+     * The link content (snippet)
+     * Falls back to `label` from Item if not provided
+     */
+    children?: Snippet;
+    /**
+     * Whether this is the current/active breadcrumb
+     * When true, renders as text instead of link
+     */
+    current?: boolean;
+    /** CSS class applied to this item's `<li>`, in addition to the base classes. */
+    class?: ClassValue;
+    /**
+     * Custom separator character or snippet
+     * @default "/"
+     */
+    separator?: Snippet | string;
+  };

@@ -41,6 +41,8 @@ import elementsCss from "../../src/elements.css?inline";
 import elementsRaw from "../../src/elements.css?raw";
 import entryCss from "../../src/index.css?inline";
 import entryRaw from "../../src/index.css?raw";
+import layersCss from "../../src/layers.css?inline";
+import layersRaw from "../../src/layers.css?raw";
 import layoutCss from "../../src/layout.css?inline";
 import layoutRaw from "../../src/layout.css?raw";
 import tokensCss from "../../src/tokens.css?inline";
@@ -49,15 +51,17 @@ import tokensRaw from "../../src/tokens.css?raw";
 export { entryCss, entryRaw, importanceCss, readme, typographyCss };
 
 /**
- * The four entry points, resolved. `index.css` is the whole stylesheet; the
- * other three are it in parts, and no entry imports another, so each resolves on
- * its own.
+ * The five entry points, resolved. `index.css` is the whole stylesheet; three of
+ * the others are it in parts; `layers.css` is the order statement alone, for a
+ * package that has to fix the order before declaring a layer of its own. No entry
+ * imports another, so each resolves on its own.
  */
 export const ENTRIES: Record<string, string> = {
   "index.css": entryCss,
   "tokens.css": tokensCss,
   "elements.css": elementsCss,
   "layout.css": layoutCss,
+  "layers.css": layersCss,
 };
 
 /** The same four unresolved, for the questions that are about the text. */
@@ -66,6 +70,7 @@ export const ENTRIES_RAW: Record<string, string> = {
   "tokens.css": tokensRaw,
   "elements.css": elementsRaw,
   "layout.css": layoutRaw,
+  "layers.css": layersRaw,
 };
 
 /** How the README's entry table names each of them. */
@@ -74,6 +79,7 @@ export const ENTRY_SPECIFIERS: Record<string, string> = {
   "@canonical/styles/tokens.css": "tokens.css",
   "@canonical/styles/elements.css": "elements.css",
   "@canonical/styles/layout.css": "layout.css",
+  "@canonical/styles/layers.css": "layers.css",
 };
 
 /** The layers the order statement names, in order. Nothing else may be opened. */
