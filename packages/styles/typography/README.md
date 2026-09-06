@@ -186,15 +186,23 @@ The design tokens provide variables like:
 --typography-heading-1-font-family
 ```
 
-`elements.css` converts these into the engine variables for each element (`h1`–`h6`, `p`), including computing `--line-height-multiplier` by snapping the typographic line-height to the nearest baseline-grid unit:
+`elements.css` converts these into the engine variables for each element (`h1`–`h6`, `p`, `.p`, `.code`). It sets `--line-height` as a length, never a multiplier: it prefers the exact dimension the design tokens carry, and falls back to the tier's ratio snapped up onto the grid.
 
 ```css
---line-height-multiplier: round(
-  up,
-  calc(font-size × line-height-ratio / baseline-height),
-  1
+--line-height: var(
+  --typography-heading-1-line-height-dimension,
+  round(
+    up,
+    calc(
+      var(--typography-heading-1-font-size) *
+      var(--typography-heading-1-line-height)
+    ),
+    var(--baseline-height, 0.25rem)
+  )
 );
 ```
+
+`--line-height-multiplier` is the other half of the engines' contract, for a consumer who drives an engine directly rather than through this mapping: an engine reads `--line-height` if it is set, and `calc(--baseline-height * --line-height-multiplier)` if it is not. The example uses the multiplier; `elements.css` uses the length.
 
 ## Package Structure
 
