@@ -1,5 +1,10 @@
 /**
- * Every component stylesheet this package ships sits in `ds.components.app`.
+ * Every component stylesheet this package ships sits in `ds.components.apps-anbox`, and
+ * `index.css` names that layer before any of them can.
+ *
+ * The name comes from the tier this package implements. It is one flat name,
+ * not a nesting: `@canonical/styles` names the tiers one level up, so this one
+ * is appended after them and sits above the tier it specialises.
  *
  * Nothing else in the repository catches an unwrapped sheet: biome has no such
  * rule, webarchitect validates JSON against schemas, and a sheet that is simply
@@ -11,47 +16,85 @@
  * `styles.css` is exactly the one a contributor is most likely to add
  * unwrapped.
  *
- * Both ends of the file are checked, because a rule appended below the wrapper
- * is exactly as unlayered as one written above it and far easier to miss — the
- * file still opens with the block.
+ * Both ends of each sheet are checked, because a rule appended below the
+ * wrapper is exactly as unlayered as one written above it and far easier to
+ * miss — the file still opens with the block.
  *
  * The README says `@property` and `@font-face` registrations belong above the
  * block, since no layer sorts a registration, so the head check accepts them.
  * No sheet in this package has one today; the allowance is the documented rule
- * written down rather than a live case. An `@import` is not accepted: none of
- * these sheets has one either, and the first one will have to decide whether it
- * carries a `layer()` keyword — see the equivalent test in
- * `@canonical/react-ds-global-form`, where that keyword turned out to nest the
- * imported sheet a level deeper than intended.
+ * written down rather than a live case. An `@import` is accepted only in
+ * `index.css`, which is nothing but imports, and there it must carry no
+ * `layer()` keyword — the keyword would nest each imported sheet's own block a
+ * level deeper than intended.
  */
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const LAYER = "ds.components.app";
+const LAYER = "ds.components.apps-anbox";
+const ENTRY = "./index.css";
 
 const sheets = import.meta.glob("./**/*.css", {
   query: "?url",
   eager: true,
 });
 
+// Comments are stripped before every check: each sheet's header names the layer
+// in prose, and this file explains the rules in its own, so a match over the
+// raw text would be reading the documentation.
+const read = (path: string) =>
+  readFileSync(fileURLToPath(new URL(path, import.meta.url)), "utf-8").replace(
+    /\/\*[\s\S]*?\*\//g,
+    "",
+  );
+
+const paths = Object.keys(sheets).sort();
+const componentSheets = paths.filter((path) => path !== ENTRY);
+
 describe("component stylesheets", () => {
-  it("finds the package's 1 stylesheet", () => {
+  it("finds the package's 2 stylesheets", () => {
     // A glob that silently matched nothing, or a sheet added without a case,
     // would make every case below vacuous.
-    expect(Object.keys(sheets).sort()).toHaveLength(1);
+    expect(paths).toHaveLength(2);
   });
 
-  for (const path of Object.keys(sheets).sort()) {
-    const source = readFileSync(
-      fileURLToPath(new URL(path, import.meta.url)),
-      "utf-8",
-    );
-    // Comments are stripped first: every sheet's header names the layer in
-    // prose, and this file explains the rules in its own, so a match over the
-    // raw text would be reading the documentation.
-    const code = source.replace(/\/\*[\s\S]*?\*\//g, "");
+  it("has a CSS entry", () => {
+    expect(paths).toContain(ENTRY);
+  });
+
+  describe(ENTRY, () => {
+    const code = read(ENTRY);
+
+    it(`opens with @layer ${LAYER};`, () => {
+      // The layer takes its place in the order the first time its name is seen.
+      // Naming it here, before any block can open with it, is what makes that
+      // place independent of which sheet a bundler emits first.
+      expect(code.trim().startsWith(`@layer ${LAYER};`)).toBe(true);
+    });
+
+    it("declares no block of its own", () => {
+      expect(code).not.toContain("{");
+    });
+
+    it("imports every other stylesheet exactly once", () => {
+      const imported = (code.match(/@import\s+url\(\s*"([^"]+)"\s*\)/g) ?? [])
+        .map((rule) => rule.replace(/^@import\s+url\(\s*"|"\s*\)$/g, ""))
+        .sort();
+
+      expect(imported).toEqual(componentSheets);
+    });
+
+    it("imports without a layer() keyword", () => {
+      // Each imported sheet opens its own block with this same name; the
+      // keyword would nest it at `<layer>.<layer>`, below the block's own rules.
+      expect(code).not.toMatch(/\blayer\s*\(/);
+    });
+  });
+
+  for (const path of componentSheets) {
+    const code = read(path);
     const open = code.indexOf(`@layer ${LAYER} {`);
     // A missing block leaves the whole file above it, so every case below fails.
     const head = open === -1 ? code : code.slice(0, open);

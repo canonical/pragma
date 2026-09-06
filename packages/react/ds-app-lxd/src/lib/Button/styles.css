@@ -1,5 +1,5 @@
 /* component styles
- * Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
+ * Layer: ds.components.apps-lxd (@canonical/styles README, "Cascade layers"). */
 
 /* This sheet is a DELTA over the Button in @canonical/react-ds-global, not a
  * second copy of it. It declares only the properties on which this tier
@@ -45,7 +45,7 @@
  * are gone with the rest; the two below stay pending an owner's confirmation,
  * recorded on Linear PRA-153. */
 
-@layer ds.components.app {
+@layer ds.components.apps-lxd {
   .ds.button {
     /* A smaller label. The global sheet computes `--button-font-size` — the
        14px text-secondary tier — and publishes it as `--font-size` for the
