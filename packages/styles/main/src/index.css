@@ -3,14 +3,23 @@
  * Single import for consumers:
  *   @import url("@canonical/styles");
  *
- * Everything this package itself ships sits in a named cascade layer, and the
- * layers whose rules select elements are authored so that they reach only pragma
- * territory — inside `@scope (.ds)`, or with an equivalent `:where(.ds, .ds *)`
- * prefix where one rule's universal reach makes the scope form expensive. The
- * typography package this file imports writes its token shims into ds.tokens and
- * every element rule into ds.typography, inside a scope block of its own. The
- * README's "Cascade layers" section is the reference for what is layered where
- * and what is deliberately not; the reasoning behind the order will live in
+ * Everything this package itself ships sits in a named cascade layer. Three of
+ * those layers select elements rather than declare custom properties —
+ * `normalize`, `ds.reset` and `ds.typography` — and they style the whole page,
+ * as a reset does. Nothing is confined and nothing has to be marked.
+ *
+ * A page that also runs another CSS framework, and so cannot let this stylesheet
+ * restyle the half it has not migrated, uses `@canonical/styles-vanilla-adapter`.
+ * That package ships a confined copy of those three element layers and a test
+ * that binds the copy to the files here, so the two cannot drift. An entry that
+ * leaves the element layers out altogether, `core.css`, arrives with the
+ * typography change stacked on this one.
+ *
+ * The typography package this file imports is layered into `ds.typography` by
+ * that same change; until it lands its rules ship unlayered, which is why
+ * `ds.typography` is declared here and opened nowhere. The README's "Cascade
+ * layers" section is the reference for what is layered where and what is
+ * deliberately not; the reasoning behind the order will live in
  * docs/explanations/CASCADE.md, arriving with the cascade documentation change.
  * Until it does, the README is the whole of it.
  *
@@ -22,10 +31,9 @@
  */
 
 /* Read from the bottom up, each position is an argument:
- *   normalize      pragma's own reset, scoped to pragma territory
- *   ds.tokens      primitive values, spacing, motion, overflow, and the
- *                  typography mapper's naming shims
- *   ds.reset       the territory root's baseline: font, colour, box-sizing
+ *   normalize      pragma's own reset
+ *   ds.tokens      primitive values, spacing, motion, overflow
+ *   ds.reset       the page's baseline: font, colour, box-sizing
  *   ds.typography  the semantic mapper and the baseline engines
  *   ds.modifiers   theme, the typographic scale, the channel families and
  *                  their shims, the density and context classes
@@ -55,7 +63,7 @@
   ds.components.global,
   ds.components.app;
 
-/* Reset: pragma's own, scoped to pragma territory */
+/* Reset: pragma's own */
 @import url("./normalize.css");
 @import url("./reset.css");
 
