@@ -390,7 +390,14 @@ describe("@canonical/styles-typography carries the same contract", () => {
       authoredProperties(typographyCss),
     );
     expect(registeredProperties(typographyCss).length).toBeGreaterThan(0);
-    expect(unlayeredKinds(typographyCss)).toEqual(["@property"]);
+    // Nothing else outside a layer. Written as a filter rather than as the exact
+    // list so that the registration moving between the files that import it —
+    // the mapper and the engines each pull the shim in — is not a failure. Where
+    // it is written is that package's business; that it survives, and that
+    // nothing joins it outside the layers, is this one's.
+    expect(
+      unlayeredKinds(typographyCss).filter((kind) => kind !== "@property"),
+    ).toEqual([]);
     // Both entries carry them onto the page unchanged: the registration travels
     // with the mapper, which `core.css` takes without the element rules.
     expect(registeredProperties(entryCss)).toEqual(
@@ -425,10 +432,19 @@ describe("@canonical/styles-typography carries the same contract", () => {
         name,
         true,
       ]);
-      expect([name, unlayeredKinds(css)]).toEqual([name, ["@property"]]);
+      expect([
+        name,
+        unlayeredKinds(css).filter((kind) => kind !== "@property"),
+      ]).toEqual([name, []]);
       expect([name, registeredProperties(css).length]).toEqual([
         name,
         authoredProperties(css),
+      ]);
+      // Every engine registers the baseline unit, whichever file it takes it
+      // from: a consumer who imports one engine on its own gets the fallback.
+      expect([name, registeredProperties(css).length > 0]).toEqual([
+        name,
+        true,
       ]);
       expect([name, importantDeclarations(css)]).toEqual([name, []]);
     }
