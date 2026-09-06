@@ -33,14 +33,14 @@ A rule in no cascade layer outranks a rule in any layer, whatever the selectors 
 | What | Layer |
 | --- | --- |
 | `mapper.css` — the design-tokens naming shims (`:root`, custom properties only) | `ds.tokens` |
-| `mapper.css` — the `body`, `h1`–`h6`, `p`, `.p`, `.code` and `.editorial` rules | `ds.typography` |
+| `elements.css` — the `body`, `h1`–`h6`, `p`, `.p`, `.code` and `.editorial` rules | `ds.typography` |
 | `baseline-cap.css`, `baseline-metrics.css`, `baseline-trim.css` — every rule | `ds.typography` |
 | `baseline-shim.css` — the `@property` registration | none, by design |
 | `@canonical/design-tokens/dist/modifiers.typography.css`, imported by each engine | `ds.modifiers`, which that file opens itself |
 
 `ds.typography` sits above `ds.reset` and below `ds.modifiers` in the order `@canonical/styles` declares, so the typographic scale in `ds.modifiers` can retune what the engine produces, and a component stylesheet — higher still — is always the final word on its own text.
 
-### Why the mapper's shims are in `ds.tokens`
+### Why the naming shims are in `ds.tokens`
 
 They are custom properties and nothing else. A custom property does nothing where it is declared; it does something where a rule reads it. Putting them beside the other primitive values — which is what `ds.tokens` holds — is where a maintainer looking for a token name will look. They exist because `modifiers.typography.css` references kebab-case names that `sets.primitive.css` emits in camelCase; they go away when that is fixed upstream.
 
@@ -54,13 +54,17 @@ That distinction is worth drawing, because three plausible-sounding claims about
 
 They select elements by name. `body`, `h1`, `p` — nothing narrows them, and nothing is meant to: a design system's typography is for the document.
 
-A page that also runs another CSS framework has a problem with that, because the other framework has its own `p` rule and only one of them can own `line-height`. Keeping the two apart is the coexistence adapter's job, not this package's. The adapter ships its own copy of the design system's three element layers, confined to the part of the page the design system owns, and a page that loads the adapter takes `@canonical/styles/core.css` — the same stylesheet without those three layers — so the element rules arrive once, from the adapter. Nothing in this package changes for that, and nothing here has to know about it.
+A page that also runs another CSS framework has a problem with that, because the other framework has its own `p` rule and only one of them can own `line-height`. Keeping the two apart is the coexistence adapter's job, not this package's. The adapter ships its own copy of the design system's element rules, confined to the part of the page the design system owns, built from four source files: `@canonical/styles`' `normalize.css` and `reset.css`, this package's `elements.css`, and whichever of the three engines the application uses. Such a page takes `@canonical/styles/core.css` — the same stylesheet with no element rule in it — so those rules arrive once, from the adapter. Nothing in this package changes for that.
 
-### The mapper on its own
+### The two halves of the mapping
 
-`@canonical/styles-typography/mapper.css` is a second entry point: the mapper without the engines. It carries the naming shims and the rules that turn the semantic typography tokens into the engine's per-element variables, and nothing that computes a nudge.
+The semantic mapping is two files, because a stylesheet sometimes wants one of them and not the other.
 
-Take it when your element rules come from somewhere else and you only need the mapping — which is what `@canonical/styles/core.css` does. Two things travel with the engines rather than with the mapper, and a stylesheet taking the mapper alone has to supply them: the typographic scale (`@canonical/design-tokens/dist/modifiers.typography.css`), which is where the `--typography-*` values the mapper reads come from, and the `--baseline-height` registration in `baseline-shim.css`.
+`mapper.css` is the half that styles nothing: the naming shims, the typographic scale they bridge to, and the `--baseline-height` registration every engine reads. Every rule in it declares custom properties on `:root`, and a custom property does nothing where it is declared, only where a rule reads it.
+
+`elements.css` is the half that styles something: the rules that put those values on `body`, `h1`–`h6`, `p`, `.p`, `.code` and `.editorial`.
+
+Both are entry points, and `index.css` is both plus the default engine. Take `mapper.css` alone when your element rules come from somewhere else — which is exactly what `@canonical/styles/core.css` does, and why the split exists: a page that also runs another CSS framework must not load `elements.css`, or the design system would restyle that framework's headings and paragraphs.
 
 ### Using an engine on its own
 
@@ -75,7 +79,7 @@ One caveat for anyone linking an engine from a plain HTML file, as the example d
 | Guarantee | The check behind it |
 | --- | --- |
 | Every rule ships in `ds.tokens` or `ds.typography`; the only thing outside a layer is the `@property` registration, and it survives parsing as a live registration rather than being dropped. | The order fixtures in `@canonical/styles-vanilla-adapter` (`packages/styles/vanilla-adapter/tests/order.test.ts`) read the resolved `@canonical/styles` stylesheet back and check every layer it opens against the statement. A check inside `@canonical/styles` that the layer set used equals the layer set declared is being added separately (step F-3 of the cascade programme). |
-| The mapper can be taken without the engines, and `@canonical/styles/core.css` is the same stylesheet without the three files whose rules select plain elements. | `packages/styles/main/tests/core.test.ts`, which checks that `core.css` and `index.css` open the same layer order statement, that `core.css` imports none of those three files, and that it imports everything else in the same order. |
+| The mapping can be taken without the element rules, and `@canonical/styles/core.css` contains no rule that selects an element. | `packages/styles/main/tests/core.test.ts`, which resolves the whole import graph of both entry points and checks that they open the same layer order statement, that `core.css` opens no `normalize`, `ds.reset` or `ds.typography` block and has no rule with a tag-name selector or one of the engine's classes, and that splitting the mapping changed no rule of what `index.css` delivers. |
 | The package ships no `!important`. | The same fixture files. An important declaration inverts the layer order — the lowest layer would win — so one of them would undo the guarantee above. |
 
 ## What this package does not guarantee
@@ -198,7 +202,7 @@ These are read, not declared, by the engine's element rules, so setting them on 
 
 ## Token Mapper
 
-The `mapper.css` file bridges the semantic typography tokens from `@canonical/design-tokens` to the engine's variable contract. It is imported automatically by the default engine (`baseline-cap.css`).
+`mapper.css` and `elements.css` together bridge the semantic typography tokens from `@canonical/design-tokens` to the engine's variable contract. Both are imported by `index.css`, the package's default entry point.
 
 The design tokens provide variables like:
 
@@ -210,7 +214,7 @@ The design tokens provide variables like:
 --typography-heading-1-font-family
 ```
 
-The mapper converts these into the engine variables for each element (`h1`–`h6`, `p`, `.p`, `.code`). It sets `--line-height` as a length, not a multiplier: it prefers the exact dimension the design tokens carry, and falls back to the ratio snapped up onto the grid.
+`elements.css` converts these into the engine variables for each element (`h1`–`h6`, `p`, `.p`, `.code`). It sets `--line-height` as a length, not a multiplier: it prefers the exact dimension the design tokens carry, and falls back to the ratio snapped up onto the grid.
 
 ```css
 --line-height: var(
@@ -226,15 +230,15 @@ The mapper converts these into the engine variables for each element (`h1`–`h6
 );
 ```
 
-`--line-height-multiplier` is the other half of the contract, for a consumer that drives the engine directly rather than through the mapper: an engine reads `--line-height` if it is set and `calc(--baseline-height * --line-height-multiplier)` if it is not. The example uses the multiplier; the mapper uses the length.
+`--line-height-multiplier` is the other half of the contract, for a consumer that drives the engine directly rather than through the mapping: an engine reads `--line-height` if it is set and `calc(--baseline-height * --line-height-multiplier)` if it is not. The example uses the multiplier; `elements.css` uses the length.
 
 ## Package Structure
 
 ```
 src/
   index.css              ← default entry point: re-exports baseline-cap.css
-  mapper.css             ← second entry point, and the semantic token → engine
-                           variable bridge the engines import
+  mapper.css             ← entry point: the mapping that styles nothing
+  elements.css           ← entry point: the rules that apply it to elements
   baseline-cap.css       ← cap-unit engine
   baseline-metrics.css   ← extracted-metrics engine
   baseline-trim.css      ← text-box-trim + cap hybrid
@@ -304,7 +308,7 @@ The baseline grid is rendered as a red 1px line overlay so alignment errors are 
 | Feature | Used by | Chrome | Safari | Firefox |
 |---------|---------|--------|--------|---------|
 | `mod()` | all three engines | 125 | 17.4 | 128 |
-| `round()` | the mapper's line-height fallback | 125 | 17.4 | 128 |
+| `round()` | the line-height fallback in `elements.css` | 125 | 17.4 | 128 |
 | `@property` | the `--baseline-height` registration | 85 | 16.4 | 128 |
 | `cap` unit | the cap and text-trim engines | 117 | 17.2 | 97 |
 | `text-box-trim` | the text-trim engine only | 133 | 18.2 | not yet |

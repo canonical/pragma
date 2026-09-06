@@ -77,18 +77,24 @@ that is the design system's throughout; during coexistence the root stays pinned
 other framework does not read `color-scheme` and would stay light around dark components. That
 package's README is the reference for all of it.
 
-### Taking it without the element layers
+### Taking it without the element rules
 
-Three of the files this stylesheet imports have rules that select plain elements: `normalize.css`, the
-root baseline in `reset.css`, and the typographic engine. `@canonical/styles/core.css` is the same
-stylesheet without those three — the order statement, the design tokens, the modifier families, the
-layout presets, the spacing, density, overflow and motion tokens, and the typography mapper's naming
-shims — for a page whose element rules have to come from somewhere else. There is one such case today:
-a page that also runs another CSS framework loads the coexistence adapter, which ships its own copy of
-those three layers confined to the part of the page the design system owns, and loads `core.css`
-rather than `index.css` so that the element rules arrive once. A page that does not run another
-framework imports `index.css` and gets everything; that is the ordinary case. The two entry points
-open the same layer order statement, and `tests/core.test.ts` keeps them identical.
+`@canonical/styles/core.css` is this stylesheet without a single rule that selects an element. Four
+files supply those, and none of them is in `core.css`: `normalize.css`, the root baseline in
+`reset.css`, the typographic engine, and the element rules that apply the typographic mapping
+(`@canonical/styles-typography/elements.css`). Everything else is there, including the other half of
+that mapping — the naming shims, the typographic scale and the `--baseline-height` registration —
+which declares custom properties and styles nothing, so a host supplying its own element rules finds
+the values they need already declared.
+
+There is one such host today. A page that also runs another CSS framework loads the coexistence
+adapter, which ships its own copy of those four files, confined to the part of the page the design
+system owns, and loads `core.css` rather than `index.css` so the element rules arrive once and
+confined. A page that does not run another framework imports `index.css` and gets everything; that is
+the ordinary case. `tests/core.test.ts` holds both halves of the contract: that the two entry points
+open the same layer order statement, and that the resolved `core.css` opens no `normalize`,
+`ds.reset` or `ds.typography` block and contains no rule with a tag-name selector or one of the
+engine's classes.
 
 ## Cascade Layers
 

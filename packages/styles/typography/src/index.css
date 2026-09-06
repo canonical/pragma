@@ -15,14 +15,21 @@
  * independent and rem is not; baseline-shim.css has the measurement.
  *
  * Entry points:
- *   this file (`@canonical/styles-typography`) is the engine and the mapper
- *   together, which is what an ordinary page wants. `./mapper.css` is the mapper
- *   on its own — the semantic tokens turned into the engine's variables, with no
- *   engine and no element rules of the engine's — for a stylesheet that supplies
- *   its own element rules and only needs the mapping.
+ *   this file (`@canonical/styles-typography`) is the whole package — the token
+ *   mapping, the element rules that apply it, and the default engine — which is
+ *   what an ordinary page wants.
+ *
+ *   `./mapper.css` is the mapping that styles nothing: the naming shims, the
+ *   typographic scale and the --baseline-height registration. `./elements.css`
+ *   is the half that styles something: `body`, `h1`–`h6`, `p`, `.p`, `.code`
+ *   and `.editorial`. They are separate files because a page that also runs
+ *   another CSS framework takes the first and not the second, and gets its
+ *   element rules from that framework's adapter instead, confined to the part of
+ *   the page the design system owns. `@canonical/styles/core.css` is that
+ *   stylesheet.
  *
  * Layers:
- *   The mapper's token shims go into `ds.tokens` and every element rule into
+ *   The token shims go into `ds.tokens` and every element rule into
  *   `ds.typography`. This package states no layer order of its own, because it
  *   is imported by @canonical/styles after that package's order statement, which
  *   names both layers and is the first rule of the first stylesheet. Imported on
@@ -31,4 +38,6 @@
  *   this package needs settled: no custom property is declared in more than one
  *   of the layers involved.
  */
+/* The element rules, then the engine that computes their nudges. */
+@import url("./elements.css");
 @import url("./baseline-cap.css");

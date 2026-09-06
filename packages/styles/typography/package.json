@@ -6,6 +6,10 @@
   "exports": {
     ".": "./src/index.css",
     "./mapper.css": "./src/mapper.css",
+    "./elements.css": "./src/elements.css",
+    "./baseline-cap.css": "./src/baseline-cap.css",
+    "./baseline-metrics.css": "./src/baseline-metrics.css",
+    "./baseline-trim.css": "./src/baseline-trim.css",
     "./src/*": "./src/*"
   },
   "type": "module",

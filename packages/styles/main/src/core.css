@@ -1,9 +1,14 @@
 /* @canonical/styles — the stylesheet without the element layers
  *
- * This is everything `index.css` brings in except the three files whose rules
- * select plain elements: the reset (`normalize.css`), the root baseline
- * (`reset.css`) and the typographic engine. Import it when those rules have to
- * come from somewhere else.
+ * This is everything `index.css` brings in except the rules that select
+ * elements. Import it when those have to come from somewhere else.
+ *
+ * Four files supply them, and none of them is here: the reset
+ * (`normalize.css`), the root baseline (`reset.css`), the typographic engine
+ * and the element rules that apply the typographic mapping
+ * (`@canonical/styles-typography`'s `elements.css`). What is here from that
+ * package is the other half of the mapping, `mapper.css`, which declares custom
+ * properties and styles nothing.
  *
  * There is one such case today. A page that also runs another CSS framework has
  * two sets of rules for the same `<p>`, and the way they are kept apart is that
@@ -16,15 +21,15 @@
  *
  * What is here: the order statement, the design tokens, the modifier families
  * and their shims, the layout presets, the spacing, density, overflow and motion
- * tokens, and the typography mapper's naming shims. What is not: the reset, the
- * root baseline, and the baseline engines.
+ * tokens, and the whole of the typographic mapping that is not an element rule —
+ * the naming shims, the typographic scale, and the `--baseline-height`
+ * registration every engine reads. So a host supplying its own element rules
+ * finds the values those rules need already declared.
  *
- * Two things travel with the engines rather than with the mapper, so a host that
- * takes this file has to supply them alongside its own element rules: the
- * typographic scale (`@canonical/design-tokens/dist/modifiers.typography.css`),
- * which is where the `--typography-*` values the mapper reads come from, and the
- * `--baseline-height` registration in `@canonical/styles-typography`'s
- * `baseline-shim.css`. The adapter's copy of the element layers carries both.
+ * A test in this package holds the line: it resolves this file's whole import
+ * graph and fails if it opens `normalize`, `ds.reset` or `ds.typography`, or if
+ * any rule in it selects an element by tag name or claims one of the engine's
+ * classes.
  *
  * The order statement below is the same list, in the same order, as the one in
  * `index.css`, and a test in this package keeps the two identical. It must stay
@@ -38,7 +43,7 @@
  *   ds.tokens      primitive values, spacing, motion, overflow, and the
  *                  typography mapper's naming shims
  *   ds.reset       the root's baseline: font, colour, box-sizing — not here
- *   ds.typography  the semantic mapper; the engines are not here
+ *   ds.typography  nothing — the element rules are not here
  *   ds.modifiers   theme, the typographic scale, the channel families and
  *                  their shims, the density and context classes
  *   ds.surfaces    the surface families
@@ -67,9 +72,9 @@
   ds.components.global,
   ds.components.app;
 
-/* Typography: the semantic mapper only — the naming shims in ds.tokens and the
- * element rules that turn the design tokens into the engine's variables. The
- * engines themselves are not imported; see the note at the top of this file. */
+/* Typography: the mapping that styles nothing — the naming shims in ds.tokens,
+ * the typographic scale, and the --baseline-height registration. The element
+ * rules and the engines are not imported; see the note at the top. */
 @import url("@canonical/styles-typography/mapper.css");
 
 /* Design tokens — colour, spacing, surfaces, states.

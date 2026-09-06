@@ -16,6 +16,26 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import {
+  fingerprint,
+  inventory,
+  layersOpened,
+  resolve,
+} from "./support/css.js";
+
+/**
+ * A selector has a type selector when one of its compounds starts with an
+ * element name. The universal selector is not one: `*` matches everything and
+ * the design tokens use it to hang custom properties, which style nothing on
+ * their own.
+ */
+const hasTypeSelector = (selector: string): boolean =>
+  selector.split(",").some((part) =>
+    part
+      .trim()
+      .split(/[\s>+~]+/)
+      .some((compound) => /^[a-zA-Z][a-zA-Z0-9-]*/.test(compound)),
+  );
 
 const src = (file: string): string =>
   readFileSync(join(import.meta.dirname, "..", "src", file), "utf8");
@@ -96,5 +116,54 @@ describe("core.css against index.css", () => {
       (file) => file !== "@canonical/styles-typography/mapper.css",
     );
     expect(actual).toEqual(expected);
+  });
+});
+
+/**
+ * The reason `core.css` exists is that a page which also runs another CSS
+ * framework takes its element rules from that framework's adapter, in a confined
+ * copy, rather than from here. So the load-bearing property is not which files
+ * `core.css` names — that is the check above — but what it delivers once every
+ * `@import` is followed: no rule that selects an element by tag name, and none
+ * that claims one of the engine's classes. Either would restyle the host page's
+ * own headings and paragraphs on every mixed page.
+ */
+describe("resolved core.css", () => {
+  const css = resolve(join(import.meta.dirname, "..", "src", "core.css"));
+
+  it("opens no element layer", () => {
+    for (const layer of ["normalize", "ds.reset", "ds.typography"]) {
+      expect(layersOpened(css)).not.toContain(layer);
+    }
+  });
+
+  it("has no rule that selects an element by tag name", () => {
+    const offenders = inventory(css)
+      .filter((rule) => hasTypeSelector(rule.selector))
+      .map((rule) => `${rule.layer} | ${rule.selector}`);
+    expect(offenders).toEqual([]);
+  });
+
+  it("has no rule that claims one of the engine's classes", () => {
+    const engineClasses = /(^|[\s,>+~(])\.(p|code|editorial)\b/;
+    const offenders = inventory(css)
+      .filter((rule) => engineClasses.test(rule.selector))
+      .map((rule) => `${rule.layer} | ${rule.selector}`);
+    expect(offenders).toEqual([]);
+  });
+});
+
+/**
+ * The full stylesheet has to be unaffected by all of this. `index.css` is what
+ * an ordinary page loads, and splitting the typography package's mapper into a
+ * token half and an element half must not change one rule of what it delivers.
+ * The snapshot is the rule inventory — every selector with its layer and the
+ * properties it sets, sorted, so a reordering is not a failure and a lost or
+ * gained declaration is.
+ */
+describe("resolved index.css", () => {
+  it("delivers the same rules it always has", () => {
+    const css = resolve(join(import.meta.dirname, "..", "src", "index.css"));
+    expect(fingerprint(css)).toMatchSnapshot();
   });
 });
