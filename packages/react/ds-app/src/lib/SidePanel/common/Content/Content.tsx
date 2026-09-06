@@ -7,6 +7,8 @@ const componentCssClassName = "ds side-panel-content";
 /**
  * Body of a SidePanel, and the only part of it that scrolls: however tall its
  * children are, the header and footer stay visible.
+ *
+ * @implements ds:apps.subcomponent.side_panel-content
  */
 const Content = ({
   children,

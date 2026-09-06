@@ -36,6 +36,10 @@
   --side-panel-color-border: var(--color-border-muted);
   /* One inline padding, read by the header, content and footer alike. */
   --side-panel-padding-inline: var(--dimension-300);
+  /* Block padding of the two pinned regions, so the rhythm is tunable. */
+  --side-panel-header-padding-block: var(--dimension-200);
+  --side-panel-footer-padding-block: var(--dimension-200);
+  --side-panel-content-padding-block: var(--dimension-200);
   --side-panel-transition-duration: var(--motion-duration-medium);
   --side-panel-transition-easing-enter: var(--motion-easing-decelerate);
   --side-panel-transition-easing-exit: var(--motion-easing-accelerate);
@@ -82,10 +86,11 @@
   /*
     The panel is focused when it opens so that reading starts inside it, but it
     is a container rather than a control: a focus ring drawn around the whole
-    panel reads as a border. Its focusable children keep their own rings.
+    panel reads as a border. Suppressed for pointer focus only — a keyboard
+    user must still be able to see where focus landed, so `:focus-visible`
+    keeps its ring. Its focusable children keep their own either way.
   */
-  &:focus,
-  &:focus-visible {
+  &:focus {
     outline: none;
   }
 
@@ -100,6 +105,17 @@
   overflow-x: hidden;
   /* Don't hand the scroll to the page behind once the panel bottoms out. */
   overscroll-behavior: contain;
+
+  /*
+    Two consequences worth knowing, both from this file: a scroll container
+    clips its descendants, and the `transform` below makes the panel the
+    containing block for any `position: fixed` descendant. So an overlay that
+    escapes the panel's box — ds-global's Popover and ContextualMenu position
+    their content with `position: fixed` — is both clipped at the panel edge
+    and anchored to the panel instead of the viewport. Documented in
+    SidePanel.tsx; the fix belongs upstream, in overlays that use the top
+    layer rather than fixed positioning.
+  */
 
   /*
     Read the surface channels HERE rather than in :root. A custom property

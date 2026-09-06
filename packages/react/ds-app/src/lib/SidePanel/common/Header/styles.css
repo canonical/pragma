@@ -16,7 +16,7 @@
   align-items: center;
   gap: var(--dimension-200);
 
-  padding-block: var(--dimension-200);
+  padding-block: var(--side-panel-header-padding-block, var(--dimension-200));
 
   > .title {
     flex: 1 1 auto;

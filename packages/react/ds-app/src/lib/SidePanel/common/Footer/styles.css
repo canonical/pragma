@@ -17,9 +17,13 @@
     because the panel is the scroller now: a border on the content would scroll
     away with it, whereas this one is pinned by the sticky footer. The panel's
     inline padding already insets it, so it stops short of both panel edges.
+
+    The colour is the panel's to own, and is read without a local fallback so
+    the two cannot state different defaults: `--side-panel-color-border` is
+    declared in the panel's `:root` block.
   */
   border-block-start: var(--dimension-stroke-thickness-medium) solid
-    var(--side-panel-color-border, var(--color-border-muted));
+    var(--side-panel-color-border);
 
   display: flex;
   justify-content: flex-end;
@@ -27,5 +31,5 @@
   gap: var(--dimension-200);
   flex-wrap: wrap;
 
-  padding-block: var(--dimension-200);
+  padding-block: var(--side-panel-footer-padding-block, var(--dimension-200));
 }

@@ -7,6 +7,8 @@ const componentCssClassName = "ds side-panel-footer";
 /**
  * Footer for SidePanel. Never scrolls: it stays visible while
  * `SidePanel.Content` scrolls above it, so its actions are always reachable.
+ *
+ * @implements ds:apps.subcomponent.side_panel-footer
  */
 const Footer = ({
   children,
