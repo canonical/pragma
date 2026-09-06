@@ -110,6 +110,19 @@ An order statement fixes the relative order of layers the first time they appear
 may introduce new names but can never reorder the ones already fixed, so an application that needs to
 interleave a layer of its own puts its statement before this import.
 
+The statement above, the tables below and the list of what is deliberately
+unlayered are not prose. `tests/layer-set.test.ts` reads them out of this file and
+compares them against the stylesheet a bundler resolves, so a README that
+disagrees with the CSS fails the build instead of misleading a reader.
+
+What the test binds is one answer per file and per layer. A file may appear twice
+when it writes to two layers — `spacing.css` puts its tokens in one and its
+container rule in another — and it is then checked on the union of its rows. No
+file has two rows for the same layer, because the test could only read the
+disjunction of two answers to one question; where a file needs two things said
+about one layer, the row says both. Reordering rows changes nothing a browser can
+see, and the test says nothing about it.
+
 ### What Is Layered Where
 
 | File | Layer | Selects elements? |
@@ -122,13 +135,17 @@ interleave a layer of its own puts its statement before this import.
 | `motion.css` | `ds.tokens` | no |
 | `overflow.css` root default | `ds.tokens` | no |
 | `overflow.css` `.surface` | `ds.surfaces` | no |
-| `grid.css` layout presets | `ds.components.global` | yes |
-| `grid.css` `:root` defaults | `ds.components.global` | no — tokens the presets read, kept with them rather than moved to `ds.tokens` |
+| `grid.css` | `ds.components.global` | yes — the layout presets; the `:root` block beside them declares only the tokens those presets read, kept with them rather than moved to `ds.tokens` |
 | `modifiers.density.css` | `ds.modifiers` | no |
 | `modifiers.states.shim.css`, `modifiers.importance.shim.css`, `modifiers.criticality.shim.css` | `ds.modifiers` | no |
 | `controls.hover.shim.css` | `ds.surfaces` and `ds.states` | no |
-| `@canonical/styles-typography` | `ds.tokens` for the mapper's naming shims, `ds.typography` for every element rule, `ds.modifiers` for the typographic scale it re-exports | the `ds.typography` rules, yes; the shims, no |
-| `@canonical/design-tokens` distribution files | `ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states` — each file opens its own, except `modifiers.importance.css`, which is empty and opens none | no |
+| `@canonical/styles-typography` element rules | `ds.typography` | yes |
+| `@canonical/styles-typography` naming shims and scale | `ds.tokens` and `ds.modifiers` | no |
+
+Each generated `@canonical/design-tokens` file opens a layer of its own, and
+which one is in [Design Tokens](#design-tokens) below, with the same
+selects-elements answer this table gives. One of them answers yes, for the reason
+under the table.
 
 The files marked yes are the ones the adapter's confined copy has to mirror. The rest are almost all
 custom properties, which do nothing until a rule reads them, and a rule that reads one matches a
@@ -152,12 +169,21 @@ is a convention that makes them easy to find rather than something the cascade r
 sort duplicate `@font-face` rules and duplicate `@property` registrations, measured in Chromium 151
 and Firefox 153 — there simply are no duplicates here.
 
-- **`@font-face`**, in `fonts.css`. It defines a font for the whole document, not a style for an
-  element. The file is opt-in and imported separately so that an application already serving the same
-  files does not download them twice.
-- **The `@property` registration** of `--baseline-height`, in `@canonical/styles-typography`. It fixes
-  the type, the inheritance and the initial value of one custom property for the whole document. That
-  package's README carries the measurement.
+| Rule | Where it is written, and why a layer would say nothing about it | Reaches this stylesheet |
+| --- | --- | --- |
+| `@font-face` | `fonts.css`. It defines a font for the whole document, not a style for an element. The file is opt-in and imported separately (`@canonical/styles/fonts`) so that an application already serving the same files does not download them twice. | no |
+| `@property` | `@canonical/styles-typography`. The registration of `--baseline-height` fixes the type, the inheritance and the initial value of one custom property for the whole document. That package's README carries the measurement. | yes |
+
+The last column is the one worth checking, and `tests/layer-set.test.ts` checks it
+both ways: nothing sits outside a layer that this table does not name, and
+everything the table says reaches the stylesheet is found there. The fonts do not,
+because they are a separate entry point. The registration does — it travels with
+the mapper, so both entry points carry it — and that is not a formality. An
+earlier version of it gave `--baseline-height` an `initial-value` in `rem`, which
+is not computationally independent, so browsers threw the whole registration away
+and the fallback it promised did not exist. Nothing said so. Asserting that the
+registration is *present* in the resolved stylesheet is what makes that failure
+visible the next time.
 
 ### Where the Element-Level Rules Apply
 
@@ -180,9 +206,13 @@ it installs it; a page that does not never hears about it.
 
 | Guarantee | The check behind it |
 | --- | --- |
-| Every rule the package itself ships is in one of the ten declared layers, and the statement is the first rule of this stylesheet. The typographic engine it imports is in them too. | The order fixtures that arrive with the Vanilla adapter package read the statement out of the resolved stylesheet and check every layer name the package opens against it. A check inside this package — that the set of layers used equals the set declared — is being added separately. |
-| An application tier's rule for a component beats the global tier's rule for the same component, whichever of the two a bundler loads first. | The two sublayers are named in the statement, so their order is fixed there rather than at first appearance, and the same order fixture reads it back. The component packages move into them when their stylesheets are wrapped, which is a separate change; until then both sublayers are empty and the guarantee is vacuous. |
-| The package ships no `!important`. | The same fixture file. An important declaration inverts the layer order and cannot be arbitrated by layers at all, so one of them would undo the guarantee above. |
+| Every rule the package itself ships is in one of the ten declared layers, and the statement is the first rule of this stylesheet. The typographic engine it imports is in them too. | `tests/layer-set.test.ts`, which resolves the entry through a bundler and walks the result's CSSOM in Chromium: the statement first with the ten names in order, every layer named anywhere one of the ten or a sublayer of one, none anonymous, the exact set each entry point opens, and nothing at the top level but the registration this README names. A second `@layer` statement is read too, because a statement puts a name into the order without opening a block for it. |
+| An application tier's rule for a component beats the global tier's rule for the same component, whichever of the two a bundler loads first. | The two sublayers are named in the statement, so their order is fixed there rather than at first appearance. `tests/layer-set.test.ts` reads the statement back and asserts that `ds.components.app` is the one declared layer still waiting for content; the component packages move into the tiers when their stylesheets are wrapped, which is a separate change. |
+| Nothing this package ships is written directly into `ds.components`: everything in that layer sits in a tier, so a component package can always override it by layer. | `tests/layer-set.test.ts` walks the resolved stylesheet for rules whose nearest enclosing layer is `ds.components` itself and requires none — every kind the cascade sorts by layer, not only style rules, because a browser settles duplicate `@keyframes`, `@font-face` and `@property` by layer too. A rule written straight into a parent layer lands in that layer's implicit final sublayer, above every named one. |
+| This stylesheet confines nothing. | `tests/layer-set.test.ts` requires that neither entry point contains a single `@scope` block. Confining these rules to part of a page is the adapter's job, and it does it in its own copy; a scope appearing here would mean this stylesheet had quietly started doing it too, on pages that never asked. |
+| `core.css` is `index.css` minus the three element layers and nothing else. | `tests/core.test.ts` checks the two entry points against each other as files: the same order statement, the same imports in the same order bar the three, and no rule in the resolved `core.css` that selects an element by tag name or claims one of the typographic engine's classes. `tests/layer-set.test.ts` adds what a browser makes of it — the exact layer set `core.css` opens, and that every layer the two share carries the same rules in both. |
+| No file writes an `@import` after a rule. | `tests/layer-set.test.ts`, on every file this package and `@canonical/styles-typography` ship, as written rather than as resolved. A browser drops a late `@import` outright and a bundler inlines it, so the defect is invisible in both the shipped stylesheet and the built one — and the file that was meant to be imported is simply absent from the page. |
+| The package ships no `!important`. | `tests/layer-set.test.ts` asks the browser, not the text: it reads `getPropertyPriority` for every declaration of every rule in both resolved entry points, which is what the cascade itself reads, and which reports `!IMPORTANT` and a comment written between the bang and the word as important too. A scan of each file in `src/` stays on top of it as source hygiene. An important declaration inverts the layer order and cannot be arbitrated by layers at all, so one of them would undo the guarantee above. |
 | Under `prefers-reduced-motion: reduce`, every motion duration this package defines is `0s`. | `src/motion.css`, and the reduced-motion fixture arriving with the adapter package. Zeroing the token is the mechanism: a component reads the token, so nothing has to out-rank the component's own declaration. Whether a given component honours the tokens is that package's guarantee, not this one's. Sheets that still hard-code a duration, and so still animate under the preference, are being moved onto the tokens separately: in the form package the shared input chrome (`src/index.css`) and eight component sheets (`ChoicesField`, `RichChoicesField`, `CheckboxInput`, `RadioInput`, `ColorInput`, `ComboboxInput` and its list, `FileUploadInput`, `SwitchInput`); in the global package `Tooltip`, `ContextualMenu` and `Popover`, which set their own duration property; and one application-tier sheet, the launchpad diff viewer's file header. |
 | The document root declares the baseline — font, colour, line height, weight, text wrapping, font smoothing — and the page inherits from there rather than from the browser's defaults. | The computed-style fixtures arriving with the adapter package, which read those properties off every element of a rendered block. |
 
@@ -284,19 +314,34 @@ Two things that used to be true and are not:
 
 ## Design Tokens
 
-The following token sets from `@canonical/design-tokens` are included:
+These token sets come from `@canonical/design-tokens`. Each generated file opens
+its own layer, and the four layer names the generator emits — `ds.tokens`,
+`ds.modifiers`, `ds.surfaces`, `ds.states` — are part of this package's cascade
+contract rather than that package's private business: they are four of the ten
+names in the statement above. `tests/layer-set.test.ts` checks every file in this
+table against the layer the table gives it, and checks the last column against
+what the entry actually imports, so a generator that renamed a layer, or an import
+added or dropped here without a word, fails.
 
-| Token set | Contents | Layer it opens |
-| --- | --- | --- |
-| `sets.primitive` | Base colour palette, spacing scale, font sizes | `ds.tokens` |
-| `modifiers.theme` | Light/dark theme mappings, and `color-scheme` on the document root | `ds.modifiers` |
-| `modifiers.surfaces` | Surface elevation tokens | `ds.surfaces` |
-| `modifiers.anticipation` | Constructive/destructive/caution intents | `ds.modifiers` |
-| `modifiers.criticality` | Error/warning/success/information states | `ds.modifiers` |
-| `modifiers.emphasis` | Branded/highlighted/muted emphasis | `ds.modifiers` |
-| `modifiers.importance` | Primary/secondary importance levels — the generated file is empty today, so the shipped mapping is this package's own shim, and a stacked change drops the import until the generated file has content | none |
-| `modifiers.typography` | The typographic scale, through `@canonical/styles-typography` | `ds.modifiers` |
-| `states` | Interactive state tokens (hover, active, focus, disabled) | `ds.states` |
+| Token set | Contents | Layer it opens | Imported by the entry | Selects elements? |
+| --- | --- | --- | --- | --- |
+| `sets.primitive` | Base colour palette, spacing scale, font sizes | `ds.tokens` | yes | no |
+| `modifiers.theme` | Light/dark theme mappings, and `color-scheme` on the document root | `ds.modifiers` | yes | yes — `color-scheme`, and nothing else, for the reason above |
+| `modifiers.surfaces` | Surface elevation tokens | `ds.surfaces` | yes | no |
+| `modifiers.anticipation` | Constructive/destructive/caution intents | `ds.modifiers` | yes | no |
+| `modifiers.criticality` | Error/warning/success/information states | `ds.modifiers` | yes | no |
+| `modifiers.emphasis` | Branded/highlighted/muted emphasis | `ds.modifiers` | yes | no |
+| `modifiers.importance` | Primary/secondary importance levels — the generated file is a header comment and nothing else, so the shipped mapping is this package's own shim | none | no | no |
+| `modifiers.typography` | The typographic scale, reached through `@canonical/styles-typography` rather than imported here | `ds.modifiers` | no | no |
+| `states` | Interactive state tokens (hover, active, focus, disabled) | `ds.states` | yes | no |
+
+`modifiers.importance` is generated but not imported, by either entry point: the
+file has no rule and no layer, so the import added a name to the graph and nothing
+to the page, and an empty file that is known to be empty is what hides the next one
+that is empty by mistake. The import comes back in the `@canonical/design-tokens`
+release that emits the importance modifiers with content. Until then the test holds
+both halves in place — it fails if that file stops being empty, and it fails on any
+file an entry does import that contributes no rule.
 
 ## Dependencies
 
@@ -310,6 +355,7 @@ The following token sets from `@canonical/design-tokens` are included:
 ```
 src/
   index.css                       -- entry point: the layer statement, then the imports
+  core.css                        -- the same, without the three element layers
   normalize.css                   -- this package's own reset
   reset.css                       -- the document root's baseline
   spacing.css                     -- spacing tokens, and the content-flow container
@@ -320,4 +366,8 @@ src/
   modifiers.*.shim.css            -- temporary shims for unfinished generated modifiers
   controls.hover.shim.css         -- temporary shim for control selected/hover channels
   fonts.css                       -- opt-in @font-face, unlayered
+tests/
+  core.test.ts                    -- the two entry points against each other, as files
+  layer-set.test.ts               -- the cascade contract, in a browser
+  support/                        -- the file resolver, and the CSSOM walks
 ```
