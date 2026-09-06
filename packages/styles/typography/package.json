@@ -2,14 +2,15 @@
   "name": "@canonical/styles-typography",
   "description": "Typography baseline alignment engines and scale tokens for the Canonical Design System.",
   "version": "0.37.0",
-  "main": "src/index.css",
   "exports": {
     ".": "./src/index.css",
     "./mapper.css": "./src/mapper.css",
-    "./elements.css": "./src/elements.css",
+    "./mapper.elements.css": "./src/mapper.elements.css",
+    "./baseline-shim.css": "./src/baseline-shim.css",
     "./baseline-cap.css": "./src/baseline-cap.css",
     "./baseline-metrics.css": "./src/baseline-metrics.css",
     "./baseline-trim.css": "./src/baseline-trim.css",
+    "./package.json": "./package.json",
     "./src/*": "./src/*"
   },
   "type": "module",

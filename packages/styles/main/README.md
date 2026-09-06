@@ -66,7 +66,7 @@ package or the markup of a page that does not need it.
 `@canonical/styles/core.css` is this stylesheet without a single rule that selects an element. Four
 files supply those, and none of them is in `core.css`: `normalize.css`, the root baseline in
 `reset.css`, the typographic engine, and the element rules that apply the typographic mapping
-(`@canonical/styles-typography/elements.css`). Everything else is there, including the other half of
+(`@canonical/styles-typography/mapper.elements.css`). Everything else is there, including the other half of
 that mapping — the naming shims, the typographic scale and the `--baseline-height` registration —
 which declares custom properties and styles nothing, so a host supplying its own element rules finds
 the values they need already declared.
@@ -167,7 +167,7 @@ against and putting either in a layer would change no computed value. Both apply
 wherever they are written. Keeping them at the top level, beside the other declarations of their kind,
 is a convention that makes them easy to find rather than something the cascade requires: layers do
 sort duplicate `@font-face` rules and duplicate `@property` registrations, measured in Chromium 151
-and Firefox 153 — there simply are no duplicates here.
+and Firefox 153 — there simply are no duplicates here, and the test in this package checks that the import graph keeps it that way.
 
 | Rule | Where it is written, and why a layer would say nothing about it | Reaches this stylesheet |
 | --- | --- | --- |
@@ -243,15 +243,20 @@ reaches a bare element outside such a region. `@canonical/styles-vanilla-adapter
 | Feature | Used by | Chrome | Safari | Firefox |
 | --- | --- | --- | --- | --- |
 | `light-dark()` | every colour token, including the `--color-text` the reset declares on the root | 123 | 17.5 | 120 |
-| `mod()` | the baseline engine | 125 | 17.4 | 128 |
+| `mod()` | the baseline engine | 125 | 15.4 | 118 |
+| `round()` | the baseline engine's line-height fallback | 125 | 15.4 | 118 |
 | `@property` | the baseline engine's `--baseline-height` registration | 85 | 16.4 | 128 |
+| `cap` unit | the default baseline engine | 118 | 17.2 | 97 |
 
 Read the table as a whole, not row by row: the floor is the highest number in each column, because the
 stylesheet uses all of it. A browser without `light-dark()` drops the root's `color` declaration as
 invalid and falls back to its own text colour, so the reset applies but the page is not themed.
 
-The typographic engine also needs the `cap` unit and `round()`; `@canonical/styles-typography`'s
-"Browser Support" section is the full table for it.
+That makes the floor for this stylesheet with its default engine **Chrome 125, Safari 17.5,
+Firefox 128**. Two of those rows are softer than the rest: `@property` only supplies the 4px fallback
+for the grid unit, which this package declares anyway, and an application that swaps the default
+engine for `baseline-trim.css` raises the floor to Chrome 133, Safari 18.2, Firefox 154.
+`@canonical/styles-typography`'s "Browser Support" section is the full table, engine by engine.
 
 The design system targets current browsers and does not carry compatibility shims for older ones. An
 application that cannot move should pin a version.
@@ -285,15 +290,15 @@ to add to your root, and the reset applies exactly where it did before.
    layer rather than by accident of order — and a rule of yours that you later want overridden by a
    component can simply be moved down.
 
-If you import a subpath rather than the package entry — `@canonical/styles/spacing.css` and the four
+If you import a subpath rather than the package entry — `@canonical/styles/spacing.css` and the five
 other subpaths this package exports — note that a subpath carries no order statement, so the layers it
 opens are ordered by wherever they first appear in your own stylesheet. Import the entry point unless
 you have a reason not to.
 
 ### What Moves on the Page
 
-Measured in Chromium, an application that is the design system's throughout, before against after with
-`ds` added to the root. Four things change on every element, and one on `<hr>`; nothing else does.
+Measured in Chromium, an application that is the design system's throughout, before against after, with
+nothing added to the root. Four things change on every element, and one on `<hr>`; nothing else does.
 
 | What | Before | After | Why |
 | --- | --- | --- | --- |
