@@ -22,9 +22,10 @@
  *
  *   `./tokens.css` is the values and nothing that styles an element.
  *   `./elements.css` is the rules that read them. `./baseline-cap.css` and its
- *   two siblings are the engines. Each is an entry point of its own, and none
- *   of them imports another: a stylesheet that wants a different arrangement —
- *   the tokens without the element rules, say — composes what it needs.
+ *   two siblings are the engines. Each is an entry point of its own, and none of
+ *   them imports another file of this package — only tokens.css reaches outside
+ *   it, for the design tokens' typographic scale that it shims — so a stylesheet
+ *   that wants a different arrangement composes what it needs.
  */
 /* The values, then the rules that read them, then the engine that computes
  * their nudges. Each of the three is a file a stylesheet can take on its own. */
