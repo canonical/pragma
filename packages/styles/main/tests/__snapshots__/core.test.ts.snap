@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`resolved index.css > delivers the same rules it always has 1`] = `
+exports[`resolved index.css > delivers the rules recorded for it 1`] = `
 [
   "ds.components.global |  | .content-flow > :last-child | margin-bottom",
   "ds.components.global |  | .grid | column-gap display grid-template-columns row-gap",

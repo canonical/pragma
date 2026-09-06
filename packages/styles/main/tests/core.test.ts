@@ -37,6 +37,17 @@ const hasTypeSelector = (selector: string): boolean =>
       .some((compound) => /^[a-zA-Z][a-zA-Z0-9-]*/.test(compound)),
   );
 
+const typographyFile = (file: string): string =>
+  join(
+    import.meta.dirname,
+    "..",
+    "node_modules",
+    "@canonical",
+    "styles-typography",
+    "src",
+    file,
+  );
+
 const src = (file: string): string =>
   readFileSync(join(import.meta.dirname, "..", "src", file), "utf8");
 
@@ -162,8 +173,37 @@ describe("resolved core.css", () => {
  * gained declaration is.
  */
 describe("resolved index.css", () => {
-  it("delivers the same rules it always has", () => {
-    const css = resolve(join(import.meta.dirname, "..", "src", "index.css"));
+  const css = resolve(join(import.meta.dirname, "..", "src", "index.css"));
+
+  /**
+   * The split's own invariant, and the one that does not move when anything
+   * else in this package does: what the full stylesheet delivers in the two
+   * layers the typography package writes to is exactly what its two halves
+   * deliver between them. A rule lost in the split, or delivered twice, fails
+   * here and names itself.
+   */
+  it("loses nothing, and repeats nothing, from either half", () => {
+    const halves = [
+      ...new Set(
+        ["mapper.css", "elements.css"].flatMap((half) =>
+          fingerprint(resolve(typographyFile(half))),
+        ),
+      ),
+    ];
+    const delivered = fingerprint(css);
+    const lost = halves.filter((line) => !delivered.includes(line));
+    const repeated = halves.filter(
+      (line) => delivered.filter((other) => other === line).length > 1,
+    );
+    expect({ lost, repeated }).toEqual({ lost: [], repeated: [] });
+  });
+
+  /**
+   * And the whole inventory, as a record of what an ordinary page gets: every
+   * selector with its layer and the properties it sets, sorted, so a reordering
+   * is not a failure and a lost or gained declaration is.
+   */
+  it("delivers the rules recorded for it", () => {
     expect(fingerprint(css)).toMatchSnapshot();
   });
 });
