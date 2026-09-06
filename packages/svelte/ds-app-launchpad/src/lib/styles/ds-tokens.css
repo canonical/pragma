@@ -4,7 +4,7 @@
  * which restyles every un-migrated component. Once the last component is migrated,
  * delete this file and move the import to ds-app-launchpad/src/lib/index.css
  *
- * Layer: ds.components.app (@canonical/styles README, "Cascade layers").
+ * Layer: ds.components.apps-launchpad (@canonical/styles README, "Cascade layers").
  */
 
 @import "@canonical/design-tokens/dist/sets.primitive.css";
@@ -20,7 +20,7 @@
 @import "@canonical/design-tokens/dist/states.css";
 @import "@canonical/design-tokens/dist/sets.semantic.css";
 
-@layer ds.components.app {
+@layer ds.components.apps-launchpad {
   /* Verbatim :root shim from packages/styles/typography/src/mapper.css
    * (@canonical/styles-typography) avoiding h1-h6/p element selectors
    * 

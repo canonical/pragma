@@ -1,6 +1,6 @@
-/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
+/* Layer: ds.components.apps-launchpad (@canonical/styles README, "Cascade layers"). */
 
-@layer ds.components.app {
+@layer ds.components.apps-launchpad {
   .ds.textarea {
     --color-background-textarea-input-active: var(--lp-color-background-active);
     --color-background-textarea-input-hover: var(--lp-color-background-hover);

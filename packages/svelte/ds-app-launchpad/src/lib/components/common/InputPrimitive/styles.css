@@ -1,6 +1,6 @@
-/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
+/* Layer: ds.components.apps-launchpad (@canonical/styles README, "Cascade layers"). */
 
-@layer ds.components.app {
+@layer ds.components.apps-launchpad {
   .ds.input-primitive {
     --color-background-input-active: var(--lp-color-background-active);
     --color-background-input-hover: var(--lp-color-background-hover);

@@ -15,7 +15,7 @@ the light DOM and no stylesheet here ever reaches the document.
 That is why these sheets carry no `@layer` wrapper, unlike the React and Svelte
 component packages. A shadow tree is its own cascade context: the document's
 `@layer` order statement — the one `@canonical/styles` declares, which ranks
-`ds.components.global` and `ds.components.app` — does not order layers declared
+`ds.components.global` and `ds.components.apps` — does not order layers declared
 inside a shadow root, and a document rule cannot select a shadow-tree element at
 all (verified in Chromium: a `.ds.button` rule in `ds.components.global` in the
 document leaves the button inside `<ds-button>`'s shadow root untouched). So a

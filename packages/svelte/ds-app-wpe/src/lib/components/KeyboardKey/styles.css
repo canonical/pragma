@@ -1,6 +1,6 @@
-/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
+/* Layer: ds.components.apps (@canonical/styles README, "Cascade layers"). */
 
-@layer ds.components.app {
+@layer ds.components.apps {
   :root {
     /* Static (surface-independent) chrome tokens only. The COLOUR reads that
        depend on the surface stack are NOT declared here — a custom property set at

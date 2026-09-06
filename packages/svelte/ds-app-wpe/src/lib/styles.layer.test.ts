@@ -1,5 +1,5 @@
 /**
- * Every component stylesheet this package ships sits in `ds.components.app`,
+ * Every component stylesheet this package ships sits in `ds.components.apps`,
  * the tier above `ds.components.global`, so this package's rule for a component
  * a global tier also styles wins by cascade layer rather than by load order.
  *
@@ -22,7 +22,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const LAYER = "ds.components.app";
+const LAYER = "ds.components.apps";
 
 /** Sheets that hold only `@import` rules and therefore open no layer. */
 const IMPORT_ONLY = ["./index.css", "./styles/index.css"];

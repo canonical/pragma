@@ -17,19 +17,21 @@ bun add @canonical/svelte-ds-app-wpe
 
 Each component module imports its own stylesheet (`import "./styles.css"`), so importing a component is what puts its CSS on the page. A bundler collects those imports into the application's CSS; nothing here is injected at runtime. The consequence is that a component you never import ships no CSS — and that the order a bundler happens to emit the sheets in is not something you can rely on, which is what the cascade layer below is for.
 
-### Every component stylesheet is in `ds.components.app`
+### Every component stylesheet is in `ds.components.apps`
 
 13 of the 15 stylesheets in this package — every component `styles.css` is wrapped in one cascade layer:
 
 ```css
-@layer ds.components.app {
+@layer ds.components.apps {
   .ds.my-component {
     /* … */
   }
 }
 ```
 
-`@canonical/styles` declares the order of every layer in one statement. It names two component tiers: `ds.components.global` for the packages every application gets (`@canonical/svelte-ds-global` and `@canonical/react-ds-global`), and `ds.components.app` — this one — for an application tier's own. `ds.components.app` sits above `ds.components.global`, so when this package restyles a component a global tier also styles, this package wins by cascade layer, not by which bundle the loader emitted last, which is what decided it before.
+`@canonical/styles` declares the order of every layer in one statement, and the component tiers in it follow the design system's tier tree, flat. `ds.components.global` holds the packages every application gets (`@canonical/svelte-ds-global` and `@canonical/react-ds-global`). `ds.components.apps` sits above it and holds the application tiers — this one. So when this package restyles a component a global tier also styles, this package wins by cascade layer, not by which bundle the loader emitted last, which is what decided it before.
+
+An application the design system gives its own sub-tier writes into a layer named for that tier instead, declared by that package rather than here — `@canonical/svelte-ds-app-launchpad` uses `ds.components.apps-launchpad`. Those layers sit inside `ds.components.apps` and so above `ds.components.global` too.
 
 An application's own **unlayered** CSS now beats every rule in this package, whatever the selectors on either side, because unlayered author rules outrank every layered one. That is CSS working as designed, and it is the deliberate escape hatch: an application that needs to override a component writes a plain rule and it wins. An application that does *not* want to win by accident puts its CSS in `@layer app`.
 

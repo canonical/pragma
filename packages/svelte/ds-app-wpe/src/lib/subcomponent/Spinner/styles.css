@@ -6,10 +6,10 @@
  * rotation is a linear, infinite animation so the motion reads as steady
  * rather than eased.
  *
- * Layer: ds.components.app (@canonical/styles README, "Cascade layers").
+ * Layer: ds.components.apps (@canonical/styles README, "Cascade layers").
  */
 
-@layer ds.components.app {
+@layer ds.components.apps {
   /* A full 0→360deg turn. Keep it a full turn: Chromatic freezes infinite
      animations at the last frame of the cycle, so a complete rotation lands on
      360deg (visually identical to 0deg) and the snapshot stays deterministic. A

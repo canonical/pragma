@@ -1,7 +1,10 @@
 /**
- * Every stylesheet this package ships sits in `ds.components.app`, the tier
- * above `ds.components.global`, so this package's rule for a component a global
- * tier also styles wins by cascade layer rather than by load order.
+ * Every stylesheet this package ships sits in `ds.components.apps-launchpad`.
+ * Component-tier layers follow the design system's tier tree, flat: this package
+ * is the Launchpad app sub-tier, so it writes into its own layer rather than the
+ * shared `ds.components.apps`, and `src/lib/index.css` opens with a statement
+ * naming it, which is what fixes that layer's position whatever order a bundler
+ * emits the component sheets in.
  *
  * Nothing else in the repository catches an unwrapped sheet: biome has no such
  * rule, webarchitect validates JSON against schemas, and a sheet that is simply
@@ -28,10 +31,13 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const LAYER = "ds.components.app";
+const LAYER = "ds.components.apps-launchpad";
+
+/** This package's CSS entry: a layer statement, then imports, and no rules. */
+const ENTRY = "./index.css";
 
 /** Sheets that hold only `@import` rules and therefore open no layer. */
-const IMPORT_ONLY = ["./index.css", "./modifier-families/styles/index.css"];
+const IMPORT_ONLY = [ENTRY, "./modifier-families/styles/index.css"];
 
 /** A sheet of `@font-face` registrations only: no layer sorts a registration. */
 const REGISTRATIONS_ONLY = "./styles/font-faces.css";
@@ -68,6 +74,21 @@ describe("stylesheets", () => {
       expect(Object.keys(sheets)).toContain(path);
   });
 
+  describe(ENTRY, () => {
+    const source = rulesOnly(read(ENTRY));
+
+    it(`opens with the statement that places ${LAYER}`, () => {
+      // A layer's order is fixed where the name first appears. Left to the
+      // component sheets, that would be whichever one a bundler emitted first;
+      // the statement here is this package's first rule, so it decides instead.
+      expect(source.trim().split("\n")[0].trim()).toBe(`@layer ${LAYER};`);
+    });
+
+    it("declares the layer once and opens no block", () => {
+      expect(source.match(/@layer[^;{]*[;{]/g)).toEqual([`@layer ${LAYER};`]);
+    });
+  });
+
   describe(TWO_LAYERS, () => {
     it("writes into ds.modifiers and then this package's tier, in that order", () => {
       expect(layerRules(read(TWO_LAYERS))).toEqual([
@@ -101,17 +122,18 @@ describe("stylesheets", () => {
 
     if (IMPORT_ONLY.includes(path)) {
       describe(path, () => {
-        it("holds nothing but comments and imports", () => {
+        it("holds nothing but comments, imports and layer statements", () => {
           expect(
             source
               .replace(/\/\*[\s\S]*?\*\//g, "")
               .replace(/@import[^;]*;/g, "")
+              .replace(/@layer[^;{]*;/g, "")
               .trim(),
           ).toBe("");
         });
 
-        it("opens no layer and layers no import", () => {
-          expect(rulesOnly(source)).not.toMatch(/@layer/);
+        it("opens no layer block and layers no import", () => {
+          expect(rulesOnly(source)).not.toMatch(/@layer[^;]*\{/);
           expect(rulesOnly(source)).not.toMatch(/layer\s*\(/);
         });
       });

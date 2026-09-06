@@ -1,6 +1,6 @@
-/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
+/* Layer: ds.components.apps-launchpad (@canonical/styles README, "Cascade layers"). */
 
-@layer ds.components.app {
+@layer ds.components.apps-launchpad {
   .ds.button-primitive {
     --border-style-button: solid;
     --color-background-button-active: var(--lp-color-background-neutral-active);

@@ -1,6 +1,6 @@
-/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
+/* Layer: ds.components.apps-launchpad (@canonical/styles README, "Cascade layers"). */
 
-@layer ds.components.app {
+@layer ds.components.apps-launchpad {
   .ds.timeline-title-row {
     --dimension-gap-timeline-event-title-row: var(--dimension-100);
     /* TODO(@Enzo): Add a missing token */

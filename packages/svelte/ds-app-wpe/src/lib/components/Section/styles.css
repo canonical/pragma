@@ -1,6 +1,6 @@
-/* Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
+/* Layer: ds.components.apps (@canonical/styles README, "Cascade layers"). */
 
-@layer ds.components.app {
+@layer ds.components.apps {
   /* Component tokens — sourced from @canonical/design-tokens */
   :root {
     --section-padding-bottom-spacing-shallow: var(--dimension-300);
