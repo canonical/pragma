@@ -16,12 +16,19 @@
  *   cap unit         Chrome 118, Safari 17.2, Firefox 97
  *
  * The `cap` unit is there because the nudge measures the cap height itself:
- * `mod(calc(-1 * 1cap), …)`. `text-box-trim` binds every column. Below it the
- * trim is skipped, the element keeps its default half-leading and the nudge
- * still applies, so the engine degrades rather than failing; on that reading its
- * floor is the cap engine's, Chrome 125, Safari 17.2, Firefox 118. What a
- * browser below 133 / 18.2 / 154 loses is the tighter content box, not the
- * grid.
+ * `mod(calc(-1 * 1cap), …)`.
+ *
+ * `text-box-trim` binds every column, and below it this engine does not hold
+ * the grid. The trim is skipped, the element gets its half-leading back, and the
+ * nudge that survives — `mod(calc(-1 * 1cap), unit)` — was computed for a
+ * trimmed box: it never reads the line height, so it cannot compensate for
+ * leading it did not expect. Measured in Chromium with a 16px serif on a 24px
+ * line, the first baseline moves 6.516px when the trim is ignored, which is 1.63
+ * units on a 4px grid, 0.81 on an 8px grid and 0.54 on a 12px grid — a fraction
+ * of a unit every time. The element's outer height stays a whole number of
+ * units, so blocks still stack on the grid; the text inside them does not sit on
+ * it. Use the cap engine below the floor: its nudge is computed from the
+ * untrimmed line box, which is what such a browser has.
  *
  * The grid unit:
  *   --baseline-height may be a length in any unit — 0.5rem and 8px are both
