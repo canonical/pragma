@@ -180,8 +180,10 @@ rather than writes:
 
 ### What Is Deliberately Unlayered
 
-One thing, and the cascade does not sort it, so putting it in a layer would say
-nothing and would invite a reader to look for the layer that "wins".
+One thing. A layer would have nothing to sort it against: a browser does settle
+duplicate `@font-face` rules by layer, measured in Chromium 151 and Firefox 153,
+but there is only ever one of these, so naming a layer for it would say nothing
+and would invite a reader to look for the layer that "wins".
 
 | Rule | Where it is written, and why a layer would say nothing about it | Reaches an entry |
 | --- | --- | --- |

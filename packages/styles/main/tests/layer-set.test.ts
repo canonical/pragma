@@ -75,8 +75,28 @@ import {
   usedLayers,
 } from "./support/cascade.js";
 
+/** What the README says about each kind of rule it leaves outside the layers. */
+const UNLAYERED_ROWS = tableUnder("What Is Deliberately Unlayered").map(
+  ([rule, where, reaches]) => ({
+    rule: ticked(rule ?? "")[0] ?? "",
+    where: ticked(where ?? "")[0] ?? "",
+    reaches: saysYes(reaches ?? ""),
+  }),
+);
+
 /**
- * The kinds of rule that may sit outside a layer, because no layer sorts them.
+ * What may sit at an entry point's top level: the order statement, the layer
+ * blocks, and whatever the README's unlayered table names. Read from the README
+ * rather than listed here, so that the two checks below cannot disagree about
+ * the same rule — one saying a kind is allowed outside a layer while the other
+ * says nothing of that kind reaches an entry.
+ *
+ * Not "because no layer sorts them": a browser settles duplicate `@font-face`
+ * rules and duplicate `@property` registrations by layer, measured in Chromium
+ * 151 and Firefox 153, and `sortedByLayer` in the support module counts them for
+ * exactly that reason. They sit outside the layers because there is only ever one
+ * of each, so a layer would have nothing to sort it against.
+ *
  * `@import` is not among them and cannot be: `replaceSync` removes import rules
  * from a constructed stylesheet, so one can never appear here. Where an import
  * sits is checked on the unresolved file instead.
@@ -84,8 +104,7 @@ import {
 const ALLOWED_AT_TOP_LEVEL = new Set([
   "@layer statement",
   "@layer",
-  "@property",
-  "@font-face",
+  ...UNLAYERED_ROWS.map((row) => row.rule),
 ]);
 
 /** Whether a layer name is one of the declared ten, or a sublayer of one. */
@@ -207,9 +226,9 @@ describe("the layer set used equals the layer set declared", () => {
 
 describe("the four entry points deliver what the README says they deliver", () => {
   it("each opens exactly the layers the entry table gives it", () => {
-    // Eight for the whole stylesheet, five for the values, three for the element
-    // rules and one for the layout presets. `entries.test.ts` checks the last
-    // two from the file side as well; this reads all four out of a browser,
+    // Eight for the whole stylesheet, four for the values, three for the element
+    // rules and one for the layout presets. `entries.test.ts` pins three of the
+    // four from the file side as well; this reads all four out of a browser,
     // which is the parser that decides what a page actually gets.
     const rows = entryTableRows();
     expect(rows.map((row) => row.entry).sort()).toEqual(
@@ -306,13 +325,7 @@ describe("the README says what the stylesheet does", () => {
   });
 
   it("what the README calls deliberately unlayered is what sits outside the layers", () => {
-    const rows = tableUnder("What Is Deliberately Unlayered").map(
-      ([rule, where, reaches]) => ({
-        rule: ticked(rule ?? "")[0] ?? "",
-        where: ticked(where ?? "")[0] ?? "",
-        reaches: saysYes(reaches ?? ""),
-      }),
-    );
+    const rows = UNLAYERED_ROWS;
     expect(rows.length).toBeGreaterThan(0);
     // The list is exhaustive downwards: nothing outside a layer that it omits.
     for (const [name, css] of Object.entries(ENTRIES))
