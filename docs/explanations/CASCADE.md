@@ -196,9 +196,17 @@ them:
 | Entry | What is in it | A pragma page | A mixed page |
 | --- | --- | --- | --- |
 | `@canonical/styles` | Everything: the values, what bare elements get, and the layout presets. The file is `index.css`. | imports this | — |
-| `@canonical/styles/tokens.css` | Four layers of values — `ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states` — and the classes that set them. Not one rule that styles an element. | (in the whole) | imports this |
+| `@canonical/styles/tokens.css` | Four layers of values — `ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states` — and the classes that set them. No rule that selects an element, with the one exception below. | (in the whole) | imports this |
 | `@canonical/styles/elements.css` | `normalize`, `ds.reset`, `ds.typography` — what bare elements get. | (in the whole) | takes the adapter's copy instead |
 | `@canonical/styles/layout.css` | The layout presets, `content-flow` among them, which claim five class names in a page's namespace. | (in the whole) | imports this |
+
+One exception is worth knowing before you import the values on their own: the design tokens' generated
+theme sheet declares `color-scheme` on `:root`, `.light` and `.dark` beside the colour tokens, and that
+property is not inert. It decides the canvas, the form controls, the scrollbars and the system colours
+whether or not anything reads a token. It cannot be separated out here, because the sheet is generated
+with those declarations inside the same rules as the tokens; the README says what an application that
+must not have it can do instead, and a test allows exactly those three declarations and no other
+non-custom property, so nothing else can join them unnoticed.
 
 Every entry opens with the same order statement, so importing one settles the layer order exactly as
 importing all of them does. And in this package no entry imports another: an `@layer` statement inside
