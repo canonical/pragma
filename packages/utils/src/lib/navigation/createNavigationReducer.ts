@@ -357,12 +357,13 @@ function handlePageJump<T extends Item = Item>(
     targetIdx = Math.max(0, Math.min(len - 1, targetIdx));
   }
 
-  // The raw landing may be DISABLED (e.g. a menu separator). Continue in the
-  // jump direction to the nearest interactive sibling — a non-interactive landing must
-  // not swallow the jump while every other movement path (arrows, Home/End,
-  // type-ahead) already skips them. With wrapping on, the scan
-  // follows the ring across the boundary; without it, the scan stops at the
-  // edge and falls back toward the current item instead.
+  // The raw landing may be a node the user cannot occupy — a disabled item, or
+  // a presentational one such as a separator. Continue in the jump direction to
+  // the nearest interactive sibling: a landing there must not swallow the jump
+  // while every other movement path (arrows, Home/End, type-ahead) passes over
+  // the same nodes. With wrapping on, the scan follows the ring across the
+  // boundary; without it, the scan stops at the edge and falls back toward the
+  // current item instead.
   const direction = delta > 0 ? 1 : -1;
   let landingIdx = -1;
   if (wrapEnabled) {

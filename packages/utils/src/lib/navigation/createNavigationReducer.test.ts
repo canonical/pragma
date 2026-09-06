@@ -602,7 +602,7 @@ describe("HOME/END on all-disabled siblings", () => {
 });
 
 describe("PAGE_DOWN/PAGE_UP landing on a disabled item", () => {
-  // 12 items where index 10 is disabled (a separator in a flat menu): a page
+  // 12 items where index 10 is disabled: a page
   // jump whose raw landing is disabled must not swallow the jump.
   const items = Array.from({ length: 12 }, (_, i) => ({
     url: `/i${i}`,
