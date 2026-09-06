@@ -3,7 +3,7 @@ import type { LinkComponent } from "@canonical/react-ds-global";
 import { useNavigationTree } from "@canonical/react-hooks";
 import { getItemId } from "@canonical/utils";
 import type React from "react";
-import { useEffect } from "react";
+import { Fragment, useEffect } from "react";
 import type { _AnyNavNode } from "../../types.js";
 import { Group } from "../Group/index.js";
 import { Item } from "../Item/index.js";
@@ -87,9 +87,15 @@ const renderEntry = (
  * deriving active/expanded state from useNavigationTree. Shared by Content
  * and Footer — each region drives its own hook instance over its own root.
  *
- *   Loop 1 — root's direct children: each is either a SideNavigation.Group
- *     (rendered with its optional SideNavigation.GroupHeader) or a
- *     SideNavigation.Separator (a `separator: true` entry).
+ *   Loop 1 — root's direct children: each is a SideNavigation.Group
+ *     (rendered with its optional SideNavigation.GroupHeader), optionally
+ *     preceded by a SideNavigation.Separator when the group's own
+ *     `separator: true` flag is set — this replaces every-group-except-
+ *     the-first automatic CSS divider with an explicit per-group opt-in
+ *     (SPEC.md §4.3). A section with no `items` at all (the bare
+ *     `NavSeparator` shape — no group content, just a divider between two
+ *     groups) renders *only* the Separator; a phantom empty Group is never
+ *     emitted for it.
  *   Loop 2 — a group's entries: each is a leaf row (renderEntry — Item,
  *     ItemButton, or ItemSwitch, by `control`) or a
  *     SideNavigation.ItemExpandable (has `items` — its own children, always
@@ -136,64 +142,69 @@ const NavTree = ({
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       {...props}
     >
-      {/* Loop 1 — root's direct children: groups or separators */}
+      {/* Loop 1 — root's direct children: groups, each optionally preceded
+          by a separator (section.separator); a section with no items at
+          all is a bare divider — Separator only, no empty Group. */}
       {sections.map((section) => {
         const sectionId = getItemId(section);
-
-        if (section.separator) {
-          return <Separator key={sectionId} />;
-        }
 
         const entries = section.items ?? [];
 
         return (
-          <Group key={sectionId} label={section.label}>
-            {/* Loop 2 — a group's entries: leaf rows or expandable items */}
-            {entries.map((entry) => {
-              const entryId = getItemId(entry);
-              const children = entry.items ?? [];
+          <Fragment key={sectionId}>
+            {section.separator && <Separator />}
+            {entries.length > 0 && (
+              <Group label={section.label}>
+                {/* Loop 2 — a group's entries: leaf rows or expandable items */}
+                {entries.map((entry) => {
+                  const entryId = getItemId(entry);
+                  const children = entry.items ?? [];
 
-              if (children.length > 0) {
-                const {
-                  parentUrl: _parentUrl,
-                  depth: _depth,
-                  items: _items,
-                  separator: _separator,
-                  control: _control,
-                  onClick: _onClick,
-                  checked: _checked,
-                  defaultChecked: _defaultChecked,
-                  onCheckedChange: _onCheckedChange,
-                  slot: _slot,
-                  url: _url,
-                  label,
-                  ...expandableFields
-                } = entry;
-                return (
-                  <ItemExpandable
-                    key={entryId}
-                    {...expandableFields}
-                    heading={label}
-                    defaultExpanded={nav.getNodeStatus(entry).inSelectedBranch}
-                  >
-                    {children.map((child) =>
-                      renderEntry(
-                        child,
-                        nav.getNodeStatus(child).selected,
-                        LinkComponent,
-                      ),
-                    )}
-                  </ItemExpandable>
-                );
-              }
+                  if (children.length > 0) {
+                    const {
+                      parentUrl: _parentUrl,
+                      depth: _depth,
+                      items: _items,
+                      separator: _separator,
+                      control: _control,
+                      onClick: _onClick,
+                      checked: _checked,
+                      defaultChecked: _defaultChecked,
+                      onCheckedChange: _onCheckedChange,
+                      slot: _slot,
+                      url: _url,
+                      label,
+                      ...expandableFields
+                    } = entry;
+                    return (
+                      <ItemExpandable
+                        key={entryId}
+                        {...expandableFields}
+                        heading={label}
+                        defaultExpanded={
+                          nav.getNodeStatus(entry).inSelectedBranch
+                        }
+                      >
+                        {children.map((child) =>
+                          renderEntry(
+                            child,
+                            nav.getNodeStatus(child).selected,
+                            LinkComponent,
+                          ),
+                        )}
+                      </ItemExpandable>
+                    );
+                  }
 
-              return renderEntry(
-                entry,
-                nav.getNodeStatus(entry).selected,
-                LinkComponent,
-              );
-            })}
-          </Group>
+                  return renderEntry(
+                    entry,
+                    nav.getNodeStatus(entry).selected,
+                    LinkComponent,
+                  );
+                })}
+              </Group>
+            )}
+          </Fragment>
         );
       })}
     </div>

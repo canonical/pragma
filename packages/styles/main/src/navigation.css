@@ -30,8 +30,8 @@
   /* Height stated directly by the spec (2.25rem). Width is NOT stated; per
      an explicit 1:2 (width:height) aspect ratio, width = height ÷ 2 — see
      SPEC.md §9.3. */
-  --sidenav-logo-block-size: 2.25rem;
-  --sidenav-logo-inline-size: 1.125rem;
+  --sidenav-logo-block-size: 2.5rem;
+  --sidenav-logo-inline-size: 1.25rem;
 
   /* ── Row insets (Header + Item, shared so icons/logo/toggle line up) ─ */
   /* 1rem from the left; 1.5rem from the right (aligns with the collapse

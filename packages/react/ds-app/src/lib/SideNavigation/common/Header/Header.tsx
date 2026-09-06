@@ -4,6 +4,7 @@ import type React from "react";
 import { CollapseToggle } from "../CollapseToggle/index.js";
 import type { HeaderProps } from "./types.js";
 import "./styles.css";
+import Separator from "../Separator/Separator.js";
 
 const componentCssClassName = "ds side-navigation-header";
 
@@ -26,26 +27,31 @@ const Header = ({
   ...props
 }: HeaderProps): React.ReactElement => {
   return (
-    <header
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
-      data-expanded={expanded}
-      {...props}
-    >
-      <div className="brand">{brand}</div>
-      {/* Optional, consumer-supplied; the grid's middle column is simply empty
+    <>
+      <header
+        className={[componentCssClassName, className].filter(Boolean).join(" ")}
+        data-expanded={expanded}
+        {...props}
+      >
+        <div className="brand-container">
+          <div className="brand">{brand}</div>
+          {/* Optional, consumer-supplied; the grid's middle column is simply empty
           when no application name is given. Hidden entirely when collapsed —
           there's no room, and the spec's collapsed header has no title. */}
-      {applicationName != null && (
-        <span className="title p">{applicationName}</span>
-      )}
-      {onToggle && (
-        <CollapseToggle
-          expanded={expanded}
-          aria-controls={collapseControls}
-          onClick={onToggle}
-        />
-      )}
-    </header>
+          {applicationName != null && (
+            <h1 className="title">{applicationName}</h1>
+          )}
+        </div>
+        {onToggle && (
+          <CollapseToggle
+            expanded={expanded}
+            aria-controls={collapseControls}
+            onClick={onToggle}
+          />
+        )}
+      </header>
+      <Separator />
+    </>
   );
 };
 

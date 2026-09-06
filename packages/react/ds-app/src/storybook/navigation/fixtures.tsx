@@ -46,6 +46,7 @@ export const maasContentRoot: NavRoot = {
     {
       key: "kvm",
       label: "KVM",
+      separator: true,
       items: [
         { url: "/kvm/lxd", label: "LXD", icon: "containers" },
         { url: "/kvm/virsh", label: "Virsh", icon: "pods" },
@@ -54,6 +55,7 @@ export const maasContentRoot: NavRoot = {
     {
       key: "organisation",
       label: "Organisation",
+      separator: true,
       items: [
         { url: "/tags", label: "Tags", icon: "tag" },
         { url: "/zones", label: "AZs", icon: "cluster-host" },
@@ -63,11 +65,13 @@ export const maasContentRoot: NavRoot = {
     {
       key: "configuration",
       label: "Configuration",
+      separator: true,
       items: [{ url: "/images", label: "Images", icon: "image" }],
     },
     {
       key: "networking",
       label: "Networking",
+      separator: true,
       items: [
         { url: "/networks", label: "Networks", icon: "connected" },
         { url: "/domains", label: "DNS", icon: "code" },
@@ -92,10 +96,11 @@ export const maasFooterRoot: NavRoot = {
   items: [
     {
       key: "maas-account-group",
+      separator: true,
       items: [
         { url: "/settings", label: "Settings", icon: "settings" },
         { url: "/account/prefs", label: "Ada Lovelace", icon: "user" },
-        { key: "logout", label: "Log out" },
+        { key: "logout", label: "Log out", icon: "log-out" },
       ],
     },
   ],
@@ -126,6 +131,7 @@ export const lxdContentRoot: NavRoot = {
     {
       key: "networking",
       label: "Networking",
+      separator: true,
       items: [
         {
           url: "/ui/project/default/networks",
@@ -147,6 +153,7 @@ export const lxdContentRoot: NavRoot = {
     {
       key: "storage",
       label: "Storage",
+      separator: true,
       items: [
         {
           url: "/ui/project/default/storage/pools",
@@ -168,6 +175,7 @@ export const lxdContentRoot: NavRoot = {
     {
       key: "lxd-server",
       label: "Server",
+      separator: true,
       items: [
         { url: "/ui/server", label: "Server", icon: "cluster-host" },
         { url: "/ui/operations", label: "Operations", icon: "status" },
@@ -184,6 +192,7 @@ export const lxdContentRoot: NavRoot = {
     // information (SPEC.md §1.1) — an unlabelled trailing group.
     {
       key: "help-group",
+      separator: true,
       items: [createHelpItem("https://ubuntu.com/legal")],
     },
   ],
@@ -195,6 +204,7 @@ export const lxdFooterRoot: NavRoot = {
   items: [
     {
       key: "lxd-links-group",
+      separator: true,
       items: [
         { key: "lxd-user", label: "admin", icon: "user" },
         {

@@ -5,23 +5,31 @@
      top-align at the same 0.5rem inset so the collapse icon lines up with
      the logo and, below it, every item's leading icon. */
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
   /* 1rem, spec: "1rem to the right of the collapse button" */
   gap: var(--sidenav-inset-start);
-  padding-block-start: var(--sidenav-icon-gap); /* 0.5rem */
-  padding-inline: var(--sidenav-inset-start) var(--sidenav-inset-end); /* 1rem / 1.5rem — lines up with item row insets */
+  padding-inline: var(--sidenav-inset-start);
 
-  .brand {
+  .brand-container {
     display: flex;
-    align-items: center;
-    block-size: var(--sidenav-logo-block-size); /* 2.25rem, spec-stated */
-    /* 1.125rem, derived — SPEC.md §9.3 */
-    inline-size: var(--sidenav-logo-inline-size);
-  }
+    align-items: baseline;
+    gap: var(--dimension-050);
 
-  .title {
-    min-width: 0;
+    .brand {
+      block-size: var(--sidenav-logo-block-size); /* 2.25rem, spec-stated */
+      /* 1.125rem, derived — SPEC.md §9.3 */
+      inline-size: var(--sidenav-logo-inline-size);
+    }
+
+    /* `.title` (the <h1> beside the logo) is a sibling of `.brand`, not its
+       descendant — the collapsed-state `[data-expanded="false"] .title`
+       override below needs to reach the same specificity family, or the
+       cascade order between them isn't guaranteed. */
+    .title {
+      min-width: 0;
+      max-height: 0;
+    }
   }
 
   /* Collapsed (SPEC.md §1.2): a centred column — logo on top, the collapse

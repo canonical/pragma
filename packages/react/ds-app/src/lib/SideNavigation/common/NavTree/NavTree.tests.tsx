@@ -23,7 +23,7 @@ describe("NavTree", () => {
     );
   });
 
-  it("renders a separator between groups", () => {
+  it("renders a bare separator entry as a divider alone, with no empty group", () => {
     const root: NavRoot = {
       key: "root",
       items: [
@@ -34,6 +34,51 @@ describe("NavTree", () => {
     };
     const { container } = render(<NavTree root={root} />);
     expect(container.querySelector("hr")).toBeInTheDocument();
+    // A bare separator (no `items`) must not also render an empty Group —
+    // exactly two groups (one/two), not three.
+    expect(
+      container.querySelectorAll(".ds.side-navigation-group"),
+    ).toHaveLength(2);
+  });
+
+  it("renders a separator immediately before a group that opts in via its own `separator` flag", () => {
+    const root: NavRoot = {
+      key: "root",
+      items: [
+        { key: "one-group", items: [{ url: "/one", label: "One" }] },
+        {
+          key: "two-group",
+          label: "Two",
+          separator: true,
+          items: [{ url: "/two", label: "Two" }],
+        },
+      ],
+    };
+    const { container } = render(<NavTree root={root} />);
+    const groups = container.querySelectorAll(".ds.side-navigation-group");
+    expect(groups).toHaveLength(2);
+    // The separator sits between the two groups, not before the first.
+    expect(container.querySelector("hr")?.previousElementSibling).toBe(
+      groups[0],
+    );
+    expect(container.querySelector("hr")?.nextElementSibling).toBe(groups[1]);
+  });
+
+  it("does not warn about React keys when rendering separators and groups", () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const root: NavRoot = {
+      key: "root",
+      items: [
+        { key: "one-group", items: [{ url: "/one", label: "One" }] },
+        { key: "sep", separator: true },
+        { key: "two-group", items: [{ url: "/two", label: "Two" }] },
+      ],
+    };
+    render(<NavTree root={root} />);
+    expect(consoleError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 
   it("dispatches control: button to ItemButton", () => {

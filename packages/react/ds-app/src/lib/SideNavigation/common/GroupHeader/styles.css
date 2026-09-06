@@ -3,19 +3,14 @@
 .ds.side-navigation-group-header {
   display: flex;
   align-items: baseline;
-  /* Aligns the header's text with item LABELS (past the icon column + its
-     gap), not the group's own left edge. */
-  padding-inline-start: calc(
-    var(--sidenav-inset-start) +
-    var(--sidenav-icon-column-inline-size) +
-    var(--sidenav-icon-gap)
-  );
-  color: var(--color-text);
+  color: var(--color-text-muted);
   font-family: var(--typography-heading-5-font-family);
   font-size: var(--typography-heading-5-font-size);
   font-weight: var(--typography-heading-5-font-weight);
   line-height: var(--typography-heading-5-line-height);
   letter-spacing: var(--typography-heading-5-letter-spacing);
+  padding-top: var(--sidenav-icon-gap);
+  padding-inline: var(--sidenav-inset-start); /* 1 rem */
   /* Figma's group-heading component sets its text style's case to `UPPER`
      (a literal transform of the authored string, confirmed against the
      source file — not a font feature): "Header" renders as "HEADER", not

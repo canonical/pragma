@@ -72,6 +72,21 @@ variant), and **separator**. The only mandatory content item is a
 collapsible **"Help"** navigation item that contains, at minimum, one
 external link to legal information.
 
+A `SideNavigation.Separator` also sits at the Header/Content seam itself
+(§9.10) — this reverses ADR-T02/ADR-T07's original "not divided, gradient
+fade instead" reading of the spec. Direct inspection of the Figma source
+file's fill data (not a rendered screenshot) found an `hr` node there and
+another at the Content/Footer seam, both identical to the ones between item
+groups — the file draws one divider type throughout, not a
+divider-between-groups/gradient-at-the-frame-edges split. `Header` renders
+its own seam separator directly; a footer's Content/Footer seam divider
+needs no special-casing at all — it's just its `root`'s trailing group
+setting the same per-group `separator: true` flag every other group divider
+uses (§4.3, §9.10). The overflow gradient (ADR-T07, §9.4) this reversed was
+since removed pending further design discussion (§9.12) — not found
+anywhere in the Figma file, and its reserved spacing broke the spec's own
+stated item insets.
+
 ### 1.2 Primary navigation — collapsed
 
 ```
@@ -182,18 +197,18 @@ Where none exists, see §9.
 | `color.foreground.navigation.secondary.$root` | Secondary rail background (base) |
 | `color.foreground.navigation.secondary.$hover` / `$active` / `$disabled` | Secondary item row states |
 
-### ADR-T02 — Borders and dividers · *Approved (was: not used)*
+### ADR-T02 — Borders and dividers · *Approved (was: not used) — Header/Content and Content/Footer seams corrected, §9.10*
 
 | Token | Applied to |
 |---|---|
-| `color.border.muted.$root` | Group top divider (all groups except the first); Header/Content and Content/Footer seams are **not** divided per spec (gradient fade instead, ADR-T07) |
+| `color.border.muted.$root` | Group top divider (all groups except the first, via each group's own `separator` flag — §4.3); **also** the Header/Content seam (`Header`'s own trailing `Separator`) and the Content/Footer seam (a footer `root`'s trailing group setting the same `separator` flag — no special-casing) — corrects this row's own prior claim that those two seams are "not divided" (§9.10) |
 
-### ADR-T03 — Text color · *Approved*
+### ADR-T03 — Text color · *Approved — group headers corrected, §9.9*
 
 | Token | Applied to |
 |---|---|
-| `color.text.$root` | Navigation item labels, group headers, secondary title |
-| `color.text.muted.$root` | Context-switcher item description |
+| `color.text.$root` | Navigation item labels, secondary title |
+| `color.text.muted.$root` | Group headers (§9.9 — corrects this row's own prior claim that group headers share `color.text` with item labels); context-switcher item description |
 | `color.text.disabled.$root` | Disabled item label |
 
 ### ADR-T04 — Icon color · *Approved*
@@ -217,11 +232,11 @@ Superseded by the exact measurements in §2 (header top inset 0.5rem, logo↔tog
 gap 1rem) — no separate padding token needed; the header uses the same
 `--dimension-100`/`--dimension-200` primitives as the rest of the rail.
 
-### ADR-T07 — Overflow fade · *Approved*
+### ADR-T07 — Overflow fade · *Removed pending design discussion, §9.12*
 
 | Token | Applied to |
 |---|---|
-| `surface.overflow_gradient.$root` (`--surface-overflow-gradient`) | Header/Footer seam fades, height overridden to 1.75rem (§9.4) |
+| `surface.overflow_gradient.$root` (`--surface-overflow-gradient`) | **No longer applied anywhere.** Was Content's own top/bottom scroll-edge fades (height overridden to 1.75rem, §9.4); not present in the Figma file and its reserved spacing broke the spec's stated item insets, so removed — pending a further design discussion on whether a fade belongs at these seams at all (§9.12). The hard Header/Content divider (ADR-T02, §9.10) covers the seam in the meantime |
 
 ### ADR-T08 — Motion · *Approved, scoped*
 
@@ -278,8 +293,17 @@ happens on the primary nav's side, not Secondary's own.
 
 `root.items` are **groups** (rendered by `SideNavigation.GroupHeader` +
 `SideNavigation.Group`); each group's `items` are the actual navigation
-entries. A `SideNavigation.Separator` is a sibling entry in `root.items`
-that renders as an `<hr>` instead of a group.
+entries. A group's own `separator?: boolean` renders a
+`SideNavigation.Separator` immediately before it — an explicit per-group
+opt-in that replaced the pre-24.04 implementation's automatic "every group
+except the first" CSS divider (`Group`'s own `:not(:first-child)` border is
+removed; `NavTree` renders the `<Separator>` itself, from the flag, instead —
+§9.10). `NavSeparator` still exists as a sibling entry in `root.items` for a
+bare divider with no group of its own; `NavTree` renders it as `<Separator>`
+alone, never wrapped in an empty `Group` (a bug in an earlier draft of this
+same change — a bare `{ separator: true }` entry rendered *both* the divider
+*and* an empty, padded `Group` with nothing in it; fixed by gating the
+`Group` render on `entries.length > 0`).
 
 | Field | Spec property | Type | Notes |
 |---|---|---|---|
@@ -290,6 +314,7 @@ that renders as an `<hr>` instead of a group.
 | `items` | `children` | `LeafNavItem[]?` | Presence makes this an `ExpandableNavItem`. **Depth is exactly 1** — a `LeafNavItem` cannot itself carry `items` (type-level, not just documented) |
 | `control` | *(new — §4.4)* | `"link" \| "button" \| "switch"` | Default `"link"`. Selects the rendered subcomponent |
 | `disabled` | — | `boolean?` | |
+| `separator` *(`NavGroup` only)* | — | `boolean?` | Renders a `SideNavigation.Separator` immediately before this group (§9.10) |
 
 ```ts
 type LeafNavItem = Omit<Item, "items"> & {
@@ -535,11 +560,12 @@ Spec states logo height (`2.25rem`) but not width. Per explicit direction,
 ```
 
 No semantic or primitive token names a logo size; both are new provisional
-tokens. The existing story-only `CanonicalLogo` placeholder
-(`packages/react/ds-app/src/storybook/navigation/CanonicalLogo`) uses
-different, older dimensions (`--mark-size`/`--logo-height` in baseline
-units) and is out of scope here — it is a Storybook fixture, not the shipped
-component; reconciling it is noted in §10.10 but not required for AC1/AC2.
+tokens. **Revised in §9.11** to `2.5rem`/`1.25rem` (ratio unchanged); the
+values above are the original inference, kept for the record. The existing
+story-only `CanonicalLogo` placeholder
+(`packages/react/ds-app/src/storybook/navigation/CanonicalLogo`) now
+consumes `--sidenav-logo-block-size`/`--sidenav-logo-inline-size` directly
+(§9.11) rather than its own independent baseline-unit formula.
 
 ### 9.4 — Overflow gradient height: `1.75rem`, and a symmetric top fade
 
@@ -569,6 +595,17 @@ at both ends, not a header-only or footer-only effect. Flagged for design to
 confirm a top fade is actually wanted — the spec's one image
 (`§Header/Footer spacing and gradient`) isn't machine-readable so this is an
 inference, not a visual confirmation, consistent with §9.5.
+
+**Superseded, §9.12: the fade was removed by design, pending discussion.**
+`Content`'s `::before`/`::after` rules (and the extra first/last-group
+padding that reserved room for them) have been removed entirely — not a
+recolour, a deliberate removal. Per direction: the gradient isn't present
+anywhere in the Figma file (this section's "spec calls for 1.75rem" was
+itself an inference from the written spec's prose, never independently
+confirmed against the file the way §9.9/§9.10's dividers were), and the
+reserved spacing it needed broke the spec's own stated item insets. Kept
+out pending a further design discussion on whether a fade belongs here at
+all — see §9.12.
 
 ### 9.5 — Colour pairings (ADR-T01–T05)
 
@@ -618,6 +655,13 @@ fallback, which is always `1rem` in practice — no consumer in this repo sets
 token `--sidenav-icon-column-inline-size`, scoped separately from the
 spacing-dimension tokens since it names a sizing concern, not a spacing one.
 
+**Fixed:** `Item`, `ItemButton`, `ItemExpandable`, and `ItemSwitch` now all
+pass explicit `width={16} height={16}` to their leading `Icon` instead of
+relying on that default — a real robustness improvement, since the rendered
+size no longer silently depends on no consumer having set
+`--size-icon-default` (this section's own stated risk). Applied to all four
+row variants together, not just one.
+
 ### 9.9 — Group header text case: literal uppercase, confirmed against the source file
 
 A direct re-check against the Figma file (`group-heading`, node `656:31955`)
@@ -634,15 +678,157 @@ missing case transform). The DOM text itself stays mixed-case — a CSS
 transform, not a data transform — so this doesn't affect a11y tree text,
 search, or copy/paste.
 
-Flagged, not fixed: the same Figma node's text fill is a mid grey
+Flagged, and now fixed: the same Figma node's text fill is a mid grey
 (`{r,g,b} ≈ 0.788` on the file's dark canvas, oklch L ≈ 82%), sitting
 between `color.text` (white, ADR-T03) and `color.text.muted` (oklch L 64%)
-— closer to neither, and not a swatch this pass can respell into a `color.*`
-token pick with confidence. ADR-T03 currently assigns group headers
-`color.text.$root` (the same token as item labels, which *are* full white in
-the reference image) — worth a design re-check on whether group headers
-should instead be `color.text.muted.$root`, but left as-authored (ADR-T03
-is marked Approved) rather than overridden on inferred pixel math alone.
+— closer to neither, so no available token reproduces it exactly. `color.
+text.muted` is the direction that matters (muted, not full white) even
+though it isn't a precise swatch match; `GroupHeader/styles.css` now uses
+it (ADR-T03 updated to match — it previously grouped group headers with
+item labels under `color.text`, which *are* full white in the reference).
+The header's own left inset was also simplified in the same pass — the
+Figma `group-heading` component's own padding is a flat 16px/1rem, not
+indented past the icon column to align with item LABEL text as the
+pre-24.04 implementation had it; captions now sit flush with `Item`'s icon
+column instead.
+
+### 9.10 — Header/Content seam: a hard divider, not gradient-only — Content/Footer left asymmetric
+
+Re-checking the Figma file's fill data directly (not a rendered screenshot)
+found an `hr` node at the Header/Content seam and another at the
+Content/Footer seam, both filled identically to the `hr` nodes between item
+groups — one divider type throughout the file, not "gradient at the frame
+edges, hard line between groups" as ADR-T02/ADR-T07 originally read.
+
+- **Header/Content**: `SideNavigation.Header` renders its own trailing
+  separator directly — a self-contained
+  `<><header>…</header><Separator /></>` — since every consumer of `Header`
+  wants the seam divider, not just `SideNavigation` itself.
+- **Content/Footer**: no special-casing needed. `Footer` renders `root`
+  (when given, in preference to `children`) through the same `NavTree` as
+  `Content` — and `NavTree` already renders a `NavGroup`'s own `separator`
+  flag as a `Separator` immediately before it (§4.3). A footer root's last
+  (or only) group setting `separator: true` gets the seam divider for free,
+  through the identical per-group mechanism every other divider in the tree
+  uses — see `maasFooterRoot`/`lxdFooterRoot` in
+  `src/storybook/navigation/fixtures.tsx`, both of which already do this.
+  `Footer`'s *other* path — the closed `items` (`FooterItem[]`) vocabulary,
+  §4.1 — bypasses `NavTree`/`NavGroup` entirely (a flat list, no grouping
+  construct to hang a `separator` flag on), so has no divider mechanism at
+  all; not addressed here, since neither fixture uses that path for its
+  footer.
+
+Also unverified: whether the Header/Content divider should render in the
+**collapsed** rail state — it renders unconditionally today (matching how
+row insets already behave the same collapsed or not), but the Figma file's
+collapsed variant wasn't independently re-checked for its own `hr`
+presence.
+
+### 9.11 — Logo dimensions revised: `2.5rem` × `1.25rem`
+
+§9.3 originally derived `1.125rem` width from a spec-stated `2.25rem`
+height via an explicit 1:2 aspect ratio. Both figures were revised upward
+to `2.5rem` height / `1.25rem` width in this pass — the aspect ratio (2:1)
+is unchanged, only the absolute size. This revision is carried in
+`packages/styles/main/src/navigation.css`
+(`--sidenav-logo-block-size`/`--sidenav-logo-inline-size`) and the
+Storybook-only `CanonicalLogo` fixture now consumes those same two tokens
+directly (previously its own independent `--space-baseline`-derived
+formula, per §10's now-superseded item 10 below) instead of computing its
+own box from baseline units — so the fixture and the shipped component
+can no longer drift out of sync on this measurement. Not independently
+re-verified against the Figma file by this pass; carried as-implemented.
+
+### 9.12 — Overflow gradient removed pending design discussion
+
+An earlier pass in this same change first re-pointed the Header/Footer
+overflow-gradient bars (ADR-T07, §9.4) from a generic
+`var(--surface-color-background, var(--color-background))` to the rail's
+own `var(--color-foreground-navigation-primary)` — a real fix, since the
+fade should resolve to whatever colour the rail *actually* paints, not an
+unrelated ambient page token. That entire fade mechanism (the `::before`/
+`::after` rules on `Content`, and the extra first/last-group padding that
+reserved room for them) has since been removed outright — by direction,
+not by accident: it isn't present anywhere in the Figma file (§9.4's "spec
+calls for 1.75rem" was an inference from the written spec's *prose*, never
+independently checked against the file the way the §9.10 dividers were),
+and the padding it reserved was breaking the spec's own stated item insets.
+Superseded by the hard Header/Content divider (§9.10) for now, pending a
+further design discussion on whether a fade belongs here at all —
+`--overflow-gradient-height: 1.75rem` stays set on `.ds.side-navigation`
+and on `Secondary` (which shares `Content`) as a harmless no-op in the
+meantime (nothing in `Content/styles.css` reads it while the fade is out),
+rather than removed and re-added if the discussion goes the other way.
+
+### 9.13 — Open question: row-end inset is no longer consistent across row variants
+
+`Item`'s own row now pads `padding-inline: var(--sidenav-inset-start)`
+(1rem, symmetric) instead of `var(--sidenav-inset-start)
+var(--sidenav-inset-end)` (1rem start / 1.5rem end, per §2's stated
+measurements). `ItemButton`, `ItemSwitch`, `ItemExpandable`,
+`ContextSwitcher`'s trigger, and `Secondary`'s rows still use the
+asymmetric 1rem/1.5rem inset (`--sidenav-inset-end` is unchanged in
+`navigation.css` and still consumed by all of them) — so a plain `Item`
+with a trailing badge now sits 0.5rem closer to the rail's edge than the
+exact same badge in any other row variant. Not reconciled in this pass:
+flagged rather than guessed at, since resolving it means picking a side
+(propagate `Item`'s symmetric inset everywhere, or revert `Item` back to
+the asymmetric one) without a re-check of which is actually correct.
+
+### 9.14 — Header's application-name element is now an `<h1>`
+
+`Header` wraps `brand` and `applicationName` in a new `.brand-container`
+and renders `applicationName` as `<h1 className="title">` (previously a
+plain `<span>`). An `<h1>` inside every mounted `SideNavigation.Header`
+gives the navigation's own branding a heading-level landmark for
+screen-reader heading-list navigation — but it also means a page with its
+own content `<h1>` now has two, and a consumer who mounts more than one
+`SideNavigation` (unusual, but not prevented) would have more still. Not
+reconciled in this pass: worth an accessibility review before treating this
+as settled rather than experimental.
+
+`.title`'s `max-height: 0` (alongside `min-width: 0`, which is unrelated
+and sound — it lets the label truncate inside the flex row instead of
+forcing the row wider) is a fix for `.brand-container`'s
+`align-items: baseline`: without it, the `<h1>`'s own line-height
+contributes to the flex line's cross-axis size and baseline calculation
+the same way `.brand` (a fixed-height box, `--sidenav-logo-block-size`)
+does, growing `.brand-container` past the logo's height and/or shifting
+the two out of the intended alignment. Zeroing `.title`'s box removes its
+line-height from that calculation while the text itself still paints
+(default `overflow: visible`) at the position baseline alignment puts it.
+
+### 9.15 — Group's own block padding moved to GroupHeader and Item
+
+`Group` itself no longer sets any `padding-block` — that spacing now lives
+on the elements that actually need it, rather than on the group wrapper:
+`GroupHeader` carries its own `padding-top` (0.5rem, the "above the
+group's own header" measurement from §2), and `Item`'s row already carries
+`padding-block` (0.5rem top and bottom, §9.7) on every entry, labelled
+group or not. `Group`'s `:not(:first-child)` divider border was removed in
+the same pass, superseded by the per-group `separator` flag (§4.3, §9.10).
+
+### 9.16 — Minor spacing adjustments accompanying the divider changes
+
+A few smaller, self-consistent tweaks landed alongside §9.10's divider
+work, all in service of the new `<hr>`s having their own breathing room
+now that they're real flex children rather than a CSS border on `Group`:
+
+- `.ds.side-navigation`'s own flex `gap` (Header/Content/Footer spacing)
+  dropped from `--dimension-200` (1rem) to `--dimension-100` (0.5rem), plus
+  a new `box-sizing: border-box`.
+- `Separator` gained `margin-block: var(--dimension-025)` (0.25rem),
+  alongside its existing `margin-inline: var(--dimension-100)` (0.5rem) —
+  so a divider now sits with 0.75rem total clearance from each neighbour
+  (0.5rem container gap + 0.25rem of its own margin on that side), inset
+  0.5rem from the rail's edges rather than running edge-to-edge.
+- `GroupHeader` gained `padding-top: var(--sidenav-icon-gap)` (0.5rem) —
+  see §9.15 for where `Group`'s own padding went.
+- `.ds.side-navigation.collapsed` gained `justify-content: space-between`.
+
+Not independently re-verified against the Figma file measurement-by-
+measurement; carried as-implemented, consistent with how the rest of §9
+treats provisional spacing values.
 
 ---
 
@@ -709,10 +895,11 @@ Carried forward for design/engineering resolution; none block PR1.
    ambiguity, expand-button relocation, icon-only affordance) is individually
    revisited — out of scope now, the spec is explicit that no navigation
    items show while collapsed.
-10. The Storybook-only `CanonicalLogo` fixture's dimensions predate this spec
-    and don't match §9.3 — not reconciled here since it's a story fixture,
-    not the shipped component, but will look inconsistent in the `Maas`/`Lxd`
-    stories until updated.
+10. ~~The Storybook-only `CanonicalLogo` fixture's dimensions predate this
+    spec and don't match §9.3~~ — **resolved, §9.11**: it now consumes
+    `--sidenav-logo-block-size`/`--sidenav-logo-inline-size` directly instead
+    of its own independent formula, so it can't drift from the shipped
+    component's own logo sizing again.
 11. **`control` is a flat field on `LeafNavItem`, not a discriminated union.**
     `LeafNavItem` carries every field any of the three row variants might
     use (`url`, `onClick`, `checked`, `defaultChecked`, `onCheckedChange`)

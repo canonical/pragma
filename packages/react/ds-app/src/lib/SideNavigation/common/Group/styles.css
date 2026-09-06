@@ -3,13 +3,6 @@
 .ds.side-navigation-group {
   /* Spec: 0.5rem above the group's own header/items, 1rem below the last
      item — applies to every group. */
-  padding-block: var(--dimension-100) var(--dimension-200);
-
-  /* "Each navigation item group has a line at the top except the first". */
-  &:not(:first-child) {
-    border-block-start: var(--dimension-stroke-thickness-medium) solid
-      var(--color-border-muted);
-  }
 
   > .list {
     display: flex;

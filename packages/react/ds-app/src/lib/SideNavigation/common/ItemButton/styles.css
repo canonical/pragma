@@ -49,6 +49,9 @@
     align-items: center;
     justify-content: center;
     color: var(--color-icon);
+    width: var(--dimension-200);
+    height: var(--dimension-200);
+    padding: var(--dimension-200);
   }
 
   & > .row:disabled .start {

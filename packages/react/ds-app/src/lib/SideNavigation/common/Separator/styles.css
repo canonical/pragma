@@ -5,4 +5,6 @@
   border: none;
   border-block-start: var(--dimension-stroke-thickness-medium) solid
     var(--color-border-muted);
+  margin-inline: var(--dimension-100);
+  margin-block: var(--dimension-025);
 }

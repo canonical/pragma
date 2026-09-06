@@ -15,7 +15,7 @@
     gap: var(--sidenav-icon-gap); /* 0.5rem */
     width: 100%;
     padding-block: var(--sidenav-icon-gap); /* 0.5rem */
-    padding-inline: var(--sidenav-inset-start) var(--sidenav-inset-end); /* 1rem / 1.5rem */
+    padding-inline: var(--sidenav-inset-start); /* 1 rem */
     box-sizing: border-box;
     text-decoration: none;
     color: var(--color-text);

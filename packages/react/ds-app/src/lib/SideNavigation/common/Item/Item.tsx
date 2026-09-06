@@ -39,7 +39,9 @@ const Item = ({
       {/* Start cell is always rendered (empty when no icon) so the content
           stays in the middle column — labels align whether or not a row has
           an icon. */}
-      <span className="start p">{icon ? <Icon icon={icon} /> : null}</span>
+      <span className="start p">
+        {icon ? <Icon width={16} height={16} icon={icon} /> : null}
+      </span>
       {/* `title` is a progressive-enhancement fallback for the spec's
          truncated-label tooltip (§7): the browser's own native tooltip, not
          the custom 800ms-delay styled one — SPEC.md §10.17. Only meaningful

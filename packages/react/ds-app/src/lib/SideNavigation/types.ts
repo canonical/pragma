@@ -113,13 +113,26 @@ export interface NavGroup {
   key: string;
   /** Group header text, rendered via `SideNavigation.GroupHeader`. Omitted when absent. */
   label?: string;
+  /**
+   * Renders a `SideNavigation.Separator` immediately before this group
+   * (SPEC.md §4.3, §9.10) — an explicit per-group opt-in, replacing the
+   * pre-24.04 implementation's automatic "every group except the first"
+   * CSS divider. Set on every group but the first to reproduce that rule;
+   * a consumer can instead put a line before (or skip it on) any specific
+   * group.
+   */
+  separator?: boolean;
   /** The group's navigation entries. */
   items?: NavItem[];
 }
 
 /**
- * A plain rule between content sections — a sibling of `NavGroup` among
- * `root.items`, rendering as `SideNavigation.Separator` instead of a group.
+ * A plain rule between content sections, with no group of its own — a
+ * sibling of `NavGroup` among `root.items` for when a divider is wanted
+ * without an adjacent group opting into its own `separator` flag (e.g.
+ * between two groups neither of which "owns" the line). Renders as
+ * `SideNavigation.Separator` alone — never wrapped in an empty
+ * `SideNavigation.Group`.
  */
 export interface NavSeparator {
   /** Required — see `NavGroup.key`'s doc: every tree node needs an identity. */
@@ -205,7 +218,7 @@ type _AnyNavNodeFields = {
   icon?: IconName;
   slot?: ReactNode;
   className?: string;
-  separator?: true;
+  separator?: boolean;
   control?: "link" | "button" | "switch";
   onClick?: () => void;
   checked?: boolean;
