@@ -33,6 +33,12 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 * `ButtonBaseProps` is no longer exported from
   `@canonical/react-ds-global`. Use `ButtonProps`.
+* `ChipPropsType` is removed. `ChipProps` is again the full prop surface —
+  import that. 0.37.0 briefly made `ChipProps` the design-system half only,
+  which broke references such as `ChipProps["onClick"]`; those resolve again.
+  `ChipProps` is a discriminated union on `onClick` (a chip with a handler
+  renders a `<button>`, one without renders a `<span>`), so a value assigned
+  to it may need narrowing where a single object type was assumed.
 * **storybook-config:** `disabledAddons` has been removed from CreateConfigOptions.
 * the legacy hand-rolled schema shape
   `{ "~standard": { output, validate } }` is no longer accepted — use full

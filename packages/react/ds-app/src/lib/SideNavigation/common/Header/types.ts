@@ -1,6 +1,6 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
-export interface HeaderProps extends HTMLAttributes<HTMLDivElement> {
+type OwnProps = {
   /** Brand content (logo mark) rendered at the start of the header. */
   brand?: ReactNode;
   /** Optional application name/wordmark shown beside the brand. Omitted when absent. */
@@ -11,4 +11,10 @@ export interface HeaderProps extends HTMLAttributes<HTMLDivElement> {
   onToggle?: () => void;
   /** id of the navigation region the collapse toggle controls (`aria-controls`). */
   collapseControls?: string;
-}
+};
+
+// The root is a `<header>` landmark, not a `<div>` — the previous
+// `HTMLAttributes<HTMLDivElement>` named an element this component has never
+// rendered.
+export type HeaderProps = OwnProps &
+  Omit<ComponentProps<"header">, keyof OwnProps>;
