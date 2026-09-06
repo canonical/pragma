@@ -238,7 +238,7 @@ gap 1rem) — no separate padding token needed; the header uses the same
 
 | Prop | Spec property | Type | Default | Notes |
 |---|---|---|---|---|
-| `brand` | `logo` | `ReactNode` | — | **Deviation** — spec is a closed 8-product single-select; kept as `ReactNode` for consumer flexibility (§10.5) |
+| `brand` | `logo` | `ReactNode` | — | **Deviation** — spec is a closed 21-product single-select (`Product` variant, `logo` component set, node `655:46599`); kept as `ReactNode` for consumer flexibility (§10.5) |
 | `brandHref` | `logo-target` | — | — | **Not implemented** — the consumer's `brand` node owns its own link markup entirely (e.g. its own `<a href>`); SideNavigation never wraps it. A real `brandHref` would need SideNavigation to own that wrapping instead, a bigger change than any current acceptance criterion calls for. Tracked in §10.15 |
 | `applicationName` | — | `ReactNode` | — | Pre-existing, not in spec; kept |
 | `root` | `content` | `NavRoot` | — | WD405 root; direct children render as groups (§4.3) |
@@ -618,6 +618,32 @@ fallback, which is always `1rem` in practice — no consumer in this repo sets
 token `--sidenav-icon-column-inline-size`, scoped separately from the
 spacing-dimension tokens since it names a sizing concern, not a spacing one.
 
+### 9.9 — Group header text case: literal uppercase, confirmed against the source file
+
+A direct re-check against the Figma file (`group-heading`, node `656:31955`)
+found its text style sets `textCase: "UPPER"` — a literal transform of the
+authored string ("Header" renders as "HEADER"), not a font feature. This was
+missed in the original ADR-T05 pass: `typography.heading.5` supplies
+`font-variant: small-caps` instead, which for a mixed-case label (e.g.
+"Hardware") renders unevenly — only the leading capital stays full-height,
+the rest becomes reduced-height caps — not the spec's uniform block
+capitals. Fixed by adding `text-transform: uppercase` to
+`GroupHeader/styles.css`, layered on top of the ADR-T05 token (still the
+right choice for size/weight/line-height/letter-spacing; this only adds the
+missing case transform). The DOM text itself stays mixed-case — a CSS
+transform, not a data transform — so this doesn't affect a11y tree text,
+search, or copy/paste.
+
+Flagged, not fixed: the same Figma node's text fill is a mid grey
+(`{r,g,b} ≈ 0.788` on the file's dark canvas, oklch L ≈ 82%), sitting
+between `color.text` (white, ADR-T03) and `color.text.muted` (oklch L 64%)
+— closer to neither, and not a swatch this pass can respell into a `color.*`
+token pick with confidence. ADR-T03 currently assigns group headers
+`color.text.$root` (the same token as item labels, which *are* full white in
+the reference image) — worth a design re-check on whether group headers
+should instead be `color.text.muted.$root`, but left as-authored (ADR-T03
+is marked Approved) rather than overridden on inferred pixel math alone.
+
 ---
 
 ## 10. Known issues
@@ -645,9 +671,12 @@ Carried forward for design/engineering resolution; none block PR1.
    or both. Both are treated as instant (no CSS `transition`) — the more
    conservative reading, and consistent with the rail's own collapse/expand
    having no stated animation either.
-5. **`logo` is a closed 8-product single-select in the spec; the API is
-   `brand: ReactNode`.** Kept as `ReactNode` — a closed enum would block any
-   consumer outside the named 8 products and contradicts this being a
+5. **`logo` is a closed 21-product single-select in the spec (`Product`
+   variant on the `logo` component set, node `655:46599` — Canonical,
+   Ubuntu, Admin UI, and 18 named `Canonical <product>` entries, each with a
+   `Tag only` boolean for the collapsed rail); the API is `brand:
+   ReactNode`.** Kept as `ReactNode` — a closed enum would block any
+   consumer outside the named 21 products and contradicts this being a
    general-purpose design-system component. Recorded as a deliberate
    deviation, not an oversight.
 6. **`footer-items` is a closed 3-item vocabulary in the spec

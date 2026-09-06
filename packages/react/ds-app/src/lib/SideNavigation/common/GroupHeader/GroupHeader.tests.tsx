@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import GroupHeader from "./GroupHeader.js";
@@ -31,5 +33,18 @@ describe("GroupHeader", () => {
       "title",
       "Custom tooltip",
     );
+  });
+
+  it("renders in uppercase, matching the Figma spec's literal text case (not a font small-caps feature — the DOM text stays mixed-case for a11y/search/copy)", () => {
+    const { container } = render(<GroupHeader>Hardware</GroupHeader>);
+    const css = readFileSync(
+      join(
+        process.cwd(),
+        "src/lib/SideNavigation/common/GroupHeader/styles.css",
+      ),
+      "utf-8",
+    );
+    expect(css).toContain("text-transform: uppercase");
+    expect(container.textContent).toBe("Hardware");
   });
 });
