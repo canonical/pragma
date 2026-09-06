@@ -35,15 +35,19 @@ the light DOM — `createRenderRoot() { return this }`, or a sheet imported into
 the document — that sheet is document CSS and belongs in
 `@layer ds.components.global { … }` like the other global-tier packages.
 
-### The `ds` marker on the host
+### The shadow boundary, and what reaches across it
 
-`@canonical/styles` writes its element-level layers inside `@scope (.ds)`, so
-they reach only elements in design-system territory. That scope stops at the
-shadow boundary in both directions: it never reaches inside a shadow root, and
-the class on the host does not change what the shadow tree computes. What the
-marker does change is the **host's own** box and the values the shadow tree
-inherits through it. Measured on a page whose root is not marked: adding `ds` to
-a `<ds-button>` host moves the host from `content-box` to `border-box` and from
-the browser's default text colour to pragma's. Components in this package do not
-put `ds` on their host today; on a page whose root carries `ds` — every Storybook
-page here does — the host is already inside territory and nothing is missing.
+`@canonical/styles` styles the document: its baseline is a `:where(html)` rule
+and a universal `box-sizing: border-box` in `ds.reset`, with no marker class
+required on any root. None of it reaches inside a shadow root — a document rule
+cannot select a shadow-tree element at all — so what a component's shadow tree
+computes comes from that component's own sheet, plus whatever it inherits
+through its host and the custom properties in scope there.
+
+Components here put no class on their host, and nothing is missing for it.
+Measured in Chromium on a page carrying `@canonical/styles`: adding `ds` to a
+`<ds-button>` host changes nothing, on the host or inside its shadow tree. The
+host already gets `border-box` and the page's text colour from the document
+baseline. What a host does still owe is its own layout role — a custom element is
+`display: inline` by default — which is why all but one sheet here set `display` on
+`:host` (`SiteLayout` styles only its inner element).
