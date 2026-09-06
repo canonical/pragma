@@ -31,13 +31,17 @@
  *   Set --heading-padding-inline on a layout context to activate.
  *
  * Layers:
- *   Everything here used to sit in no cascade layer at all, at the specificity
- *   of a bare element selector. A rule in no layer outranks a rule in any layer,
- *   whatever the selectors on either side, and two unlayered rules of equal
- *   specificity are settled by whichever stylesheet the bundler emitted second.
- *   So an application's own `p` rule competed with this one by load order and
- *   won about half the time, one property at a time. In a layer it loses or wins
- *   for a stated reason.
+ *   Everything here used to sit in no cascade layer at all, and a rule in no
+ *   layer outranks a rule in any layer whatever the selectors on either side, so
+ *   nothing an application wrote in a layer could beat any of it.
+ *
+ *   Among themselves the rules differ. The element selectors — `body`, `h1`–`h6`
+ *   and `p` — sit at specificity (0,0,1), so an application's own `p` rule tied
+ *   with this one and the bundler's output order decided the winner, one property
+ *   at a time. `.p`, `.code` and `.editorial` are classes, `:root` is a
+ *   pseudo-class, and the nested editorial rules are more specific still, so
+ *   those beat an application's element rules outright. In a layer, all of them
+ *   lose or win for a stated reason instead.
  *
  *   The shim block below is custom properties and nothing else, and a custom
  *   property does nothing where it is declared — only where a rule reads it — so

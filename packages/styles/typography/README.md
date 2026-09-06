@@ -20,7 +20,11 @@ That's it. All `h1`–`h6` and `p` elements will align to the baseline grid. The
 
 Two facts about the CSS cascade shape this package.
 
-A rule in no cascade layer outranks a rule in any layer, whatever the selectors on either side. And within one layer, two rules of equal specificity are settled by which one loaded second. This package used to ship its rules in no layer at all, at specificity `(0,0,1)` — `p`, `h1`, `body` — so an application's own `p` rule tied with this one and the bundler's output order decided the winner, one property at a time. Layered, the design system loses to an application's unlayered CSS, deliberately and predictably, and beats the layers below it, also deliberately.
+A rule in no cascade layer outranks a rule in any layer, whatever the selectors on either side. And within one layer, two rules of equal specificity are settled by which one loaded second.
+
+This package used to ship every one of its rules in no layer at all, so the first fact applied to all of them: nothing an application wrote in a layer could beat them. The second fact bit hardest on the element selectors, `body`, `h1`–`h6` and `p`, which sit at specificity `(0,0,1)`: an application's own `p` rule tied with this one exactly, and the bundler's output order decided the winner, one property at a time. The rest of the file is more specific than that — `.p`, `.code` and `.editorial` are classes, `:root` is a pseudo-class, and `.editorial h1` is a class and an element together — so those won on specificity rather than by luck, which is its own problem when an application meant to override them.
+
+Layered, the design system loses to an application's unlayered CSS, deliberately and predictably, and beats the layers below it, also deliberately.
 
 | What | Layer |
 | --- | --- |
@@ -88,9 +92,9 @@ The baseline position formula is `(line-height + 1cap) / 2` — the browser reso
 |---------|----------|------------|--------------|---------------------|
 | Chrome  | 125+     | 118+       | 85+          | **125+**            |
 | Safari  | 15.4+    | 17.2+      | 16.4+        | **17.2+**           |
-| Firefox | 118+     | 97+        | 128+         | **128+**            |
+| Firefox | 118+     | 97+        | 128+         | **118+**            |
 
-A different feature binds each column: `mod()` in Chrome, the `cap` unit in Safari, `@property` in Firefox — and see the note under "Browser Support" about that last one.
+`mod()` binds Chrome and Firefox, the `cap` unit binds Safari. The `@property` column is listed for completeness and does not enter the floor: the registration it refers to is invalid and discarded in every browser, so raising a browser to 128 buys nothing. See the note under "Browser Support".
 
 ### baseline-metrics.css — Extracted metrics
 
@@ -124,9 +128,9 @@ The most modern approach. Uses `text-box: trim-both cap alphabetic` to remove ha
 | Safari  | 18.2+           | 15.4+    | 16.4+        | **18.2+**           |
 | Firefox | 154+            | 118+     | 128+         | **154+**            |
 
-`text-box-trim` binds every column.
+`text-box-trim` binds every column. The `@property` column is listed for completeness and does not enter the floor; see the note under "Browser Support".
 
-Falls back gracefully: if `text-box-trim` is unsupported, the element keeps its default half-leading and the nudge still applies.
+**It does not fall back to the grid.** Below the floor the trim is skipped and the element gets its half-leading back, but the nudge that survives was computed for a trimmed box and never reads the line height, so the text lands off the grid by a fraction of a unit — measured, 6.516px on a 16px serif at a 24px line, whatever the unit is. Use the cap engine for those browsers.
 
 ## Consumer Contract
 
@@ -257,14 +261,14 @@ Read the table by engine, not row by row — an engine's floor is the highest nu
 
 | Engine | Chrome | Safari | Firefox | What binds |
 |--------|--------|--------|---------|------------|
-| `baseline-cap.css` | 125 | 17.2 | 128 | `mod()`, then the `cap` unit, then `@property` |
-| `baseline-metrics.css` | 125 | 16.4 | 128 | `mod()`, then `@property` |
+| `baseline-cap.css` | 125 | 17.2 | 118 | `mod()`, and the `cap` unit in Safari |
+| `baseline-metrics.css` | 125 | 15.4 | 118 | `mod()` throughout |
 | `baseline-trim.css` | 133 | 18.2 | 154 | `text-box-trim` throughout |
 
-Two caveats on that table, both real.
+Two things that table does not say, and both matter.
 
-`@property` holds the Firefox column for two of the engines, and Safari for one, for a registration **no browser currently accepts**. `baseline-shim.css` writes its initial value in `rem`, which is not computationally independent, so Chromium and Firefox alike throw the whole rule away and the 4px fallback it promises does not exist. The next change in this series removes the registration and gives the engines a fallback of their own; those numbers drop to Chrome 125, Safari 15.4, Firefox 118 with it.
+**`@property` is not in it, on purpose.** The registration in `baseline-shim.css` writes its initial value in `rem`, which is not computationally independent, so Chromium and Firefox alike throw the whole rule away: it is invalid everywhere and cannot raise a minimum version, because there is no version at which it starts working. The engines therefore run wherever `mod()` does, given a consumer-declared `--baseline-height` — which the consumer contract asks for. Without that declaration no browser gives the engine a grid, old or new, because the fallback the registration promises does not exist. The next change in this series deletes the registration and gives every read of the unit a `0.25rem` fallback, which is what makes the contract's "optional" true.
 
-`text-box-trim` is soft in a different way: below it the trim is skipped and the element keeps its default half-leading, but the nudge still applies and the grid still holds, so the text-trim engine degrades to the alignment the other two give rather than failing.
+**Below `text-box-trim`, the text-trim engine does not hold the grid.** The trim is skipped, the element gets its half-leading back, and the nudge that survives — `mod(calc(-1 * 1cap), unit)` — was computed for a trimmed box and never reads the line height, so it cannot compensate. Measured in Chromium with a 16px serif on a 24px line: with the trim applied the first baseline sits at 12px on a 4px grid, 16px on an 8px grid and 12px on a 12px grid, every one a whole number of units; with the trim ignored it moves 6.516px in each case, which is 1.63, 0.81 and 0.54 units. The element's outer height stays a whole number of units, so blocks still stack on the grid, but the text inside them does not sit on it. A browser below the floor should use the cap engine, whose nudge is computed from the untrimmed line box.
 
-`mod()` is the hard one. Below it no engine computes a nudge and text falls back to its natural leading.
+`mod()` is the hard floor. Below it no engine computes a nudge at all and text falls back to its natural leading.

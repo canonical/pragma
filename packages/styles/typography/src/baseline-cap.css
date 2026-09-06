@@ -8,19 +8,22 @@
  *   element { --font-size: <length>; --line-height: <length>; }
  *   (fallback: --line-height-multiplier: <number> if --line-height is unset)
  *
- * Browser floor: Chrome 125, Safari 17.2, Firefox 128. A different feature binds
- * each column, and this engine uses three:
+ * Browser floor: Chrome 125, Safari 17.2, Firefox 118. Two features bind it:
  *
  *   mod()            Chrome 125, Safari 15.4, Firefox 118
  *   cap unit         Chrome 118, Safari 17.2, Firefox 97
- *   @property        Chrome 85,  Safari 16.4, Firefox 128 (baseline-shim.css)
  *
- * So Chrome is held by `mod()`, Safari by the `cap` unit and Firefox by
- * `@property`. That last one is a floor for a registration that no browser
- * currently accepts: its initial value is written in `rem`, which is not
- * computationally independent, so every engine throws the rule away. The next
- * change in this series removes the registration and gives the engines a
- * fallback of their own, and the Firefox number drops to 118 with it.
+ * Chrome and Firefox are held by `mod()`, Safari by the `cap` unit. Given the
+ * consumer-declared --baseline-height the contract above asks for, that is the
+ * whole requirement.
+ *
+ * The `@property` registration this file imports does not enter the floor. Its
+ * initial value is written in `rem`, which is not computationally independent,
+ * so every browser throws the rule away: it is invalid everywhere, not
+ * unsupported below some version, and there is no version at which it starts
+ * working. So an application that declares no --baseline-height gets no grid in
+ * any browser, new or old. The next change in this series deletes the
+ * registration and gives every read of the unit a 0.25rem fallback.
  *
  * Layers:
  *   Every rule below sits in `ds.typography`. Unlayered, these rules outranked

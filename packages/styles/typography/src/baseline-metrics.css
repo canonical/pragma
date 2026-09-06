@@ -14,20 +14,19 @@
  *   element { --font-size: <length>; --line-height: <length>; }
  *   (fallback: --line-height-multiplier: <number> if --line-height is unset)
  *
- * Browser floor: Chrome 125, Safari 16.4, Firefox 128. This engine uses two
- * features, and needs no `cap` unit, which is why its Safari number differs
- * from the cap engine's:
+ * Browser floor: Chrome 125, Safari 15.4, Firefox 118, all three set by
+ * `mod()`, the only feature this engine needs. It needs no `cap` unit, which is
+ * why it reaches further than the cap engine in Safari; what it buys beyond that
+ * is not reach but control, since the metrics are numbers you supply rather than
+ * the font the browser happens to use.
  *
- *   mod()            Chrome 125, Safari 15.4, Firefox 118
- *   @property        Chrome 85,  Safari 16.4, Firefox 128 (baseline-shim.css)
- *
- * Chrome is held by `mod()`, Safari and Firefox by `@property` — a registration
- * no browser currently accepts, because its initial value is written in `rem`,
- * which is not computationally independent. The next change in this series
- * removes it and gives the engines a fallback of their own; this engine's floor
- * becomes Chrome 125, Safari 15.4, Firefox 118 with it. What it buys is not
- * reach but control: the metrics are numbers you supply, rather than the font
- * the browser happens to use.
+ * The `@property` registration this file imports does not enter the floor. Its
+ * initial value is written in `rem`, which is not computationally independent,
+ * so every browser throws the rule away: it is invalid everywhere rather than
+ * unsupported below some version. An application that declares no
+ * --baseline-height therefore gets no grid in any browser. The next change in
+ * this series deletes the registration and gives every read of the unit a
+ * 0.25rem fallback.
  *
  * Layers:
  *   Every rule below sits in `ds.typography`. Unlayered, these rules outranked
