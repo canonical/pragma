@@ -9,6 +9,12 @@
  *   - baseline-metrics.css  — Uses extracted font metrics (ascender/descender/unitsPerEm)
  *   - baseline-trim.css     — Uses text-box-trim + cap unit hybrid
  *
+ * The grid unit, --baseline-height, is optional. Every engine reads it with the
+ * same fallback, `var(--baseline-height, 0.25rem)`, so importing any single
+ * engine — as the typography example does — snaps text to a 4px grid with
+ * nothing declared, and any length the consumer does declare, in rem or px,
+ * replaces it.
+ *
  * Entry points:
  *   this file is the package composed — the typography tokens, the element
  *   rules that read them, and the default engine — which is what an ordinary
