@@ -72,8 +72,8 @@ miss is a visible bug on a production page.
 
 So the repair has to be structural, and of the criteria above, the layer is the only one above both
 specificity and order that an author's own stylesheets can arrange. Which is why the first thing
-pragma had to do was make its own declared contract real: every rule it ships in a named layer, and
-one statement fixing their order. Where the rules that select bare elements have to be confined is a
+pragma had to do was make its own declared contract real: every rule that declares style in a named
+layer, and one statement fixing their order. Where the rules that select bare elements have to be confined is a
 question with its own answer, further down: not in pragma's stylesheet, but in the package written for
 the pages that need it.
 

@@ -21,7 +21,9 @@ Background reading, if you want the reasoning rather than the steps:
 
 Before this release the layer statement in the design system's entry point named four layers that
 almost nothing was written into, so its rules competed with yours on specificity and on load order.
-Now every rule it ships is in one of thirteen named layers whose order one statement fixes.
+Now every rule it ships that declares style is in one of thirteen named layers whose order one
+statement fixes. (`@font-face` stays outside them, deliberately: it names a font rather than styling
+an element, so no layer has anything to sort it against.)
 
 Three of those thirteen style bare elements, and they stay exactly as plain as they were: no scope, no
 marker class, no condition. Your paragraphs, headings and controls are styled because of what they
