@@ -164,18 +164,26 @@ The two demands cannot be met by one file, so pragma does not try to meet them t
 stylesheet stays plain: no `@scope`, no marker class on any root, no switch that changes what a rule
 means.** The confinement lives in the package that exists for the pages that need it.
 
-So the system has two entries and one copy:
+So the package is cut along that seam, into four entries, and the adapter carries a copy of one of
+them:
 
-| What | What it is | Who imports it |
-| --- | --- | --- |
-| `@canonical/styles` | The whole stylesheet: ten layers, three of which style elements page-wide. | An application that runs pragma and nothing else. |
-| `core.css` | A second entry of the same package: that stylesheet **minus** the three element layers. | An application that also runs another CSS framework. |
-| `elements.css` | The adapter package's copy of the three element layers, written inside `@scope (.ds)` so their rules reach only pragma's own islands. | The same application, beside `core.css`. |
+| Entry | What is in it | A pragma page | A mixed page |
+| --- | --- | --- | --- |
+| `index.css` | The whole of it: the three below, composed. | imports this | — |
+| `tokens.css` | `ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states` — the values, and the classes that set them. | (in `index.css`) | imports this |
+| `elements.css` | `normalize`, `ds.reset`, `ds.typography` — what bare elements get. | (in `index.css`) | takes the adapter's copy instead |
+| `layout.css` | The layout presets. | (in `index.css`) | imports this |
 
-A pragma page imports the first and is done — one import, no markup change, nothing about coexistence
-in its stylesheet or its templates. A mixed page imports `core.css` and the adapter's `elements.css`
-instead, and gets the same design system with its element rules confined to the subtrees that are
-pragma's, which are the elements carrying `ds`: every component carries it on its own root, and a
+An entry is self-contained and opens with the order statement, so importing one settles the layer
+order the same way importing all of them does; the leaf stylesheets underneath import nothing and are
+not a way in. The typography package is cut the same way — a `tokens.css` and an `elements.css` of its
+own, beside its engines — and `@canonical/styles` composes from it.
+
+A pragma page imports `index.css` and is done: one import, no markup change, nothing about coexistence
+in its stylesheet or its templates. A mixed page imports `tokens.css` and `layout.css` from the
+package, and the adapter's own `elements.css` in place of the package's — the same three layers, the
+same declarations, written inside `@scope (.ds)` so that they reach only the subtrees that are
+pragma's. Those are the elements carrying `ds`: every component carries it on its own root, and a
 migrated region carries it because the team put it there.
 
 ### Why a copy, and how it stays honest
@@ -189,17 +197,18 @@ and a stylesheet a contributor can read without knowing that a second arrangemen
 arrangements that avoid the copy all do it by moving the coexistence concern into pragma's own files
 and into every application's root markup, so that the many pay for the few.
 
-What keeps it true is a test, in the adapter, that binds `elements.css` to pragma's source files: it
-reads the three element layers out of the package and compares them with the copy, so a rule added to
-pragma's reset or its engine that the copy does not carry fails the adapter's build. The copy is
+What keeps it true is a test, in the adapter, that binds its `elements.css` to the package's: it reads
+the three element layers out of pragma's source files and compares them with the copy, so a rule added
+to the reset or the engine that the copy does not carry fails the adapter's build. The copy is
 written by hand and checked by machine — not maintained by memory, and not generated at build time,
 because nothing here is transformed between what a contributor writes and what the browser runs
 ([no magic](../../CONSTITUTION.md)).
 
 ### The one file with `@scope` in it
 
-`elements.css` is the only file in the system that uses `@scope`. That matters twice over: the idioms
-below are local to it, and so is its browser floor.
+The adapter's `elements.css` is the only file in the system that uses `@scope`; the package's own
+`elements.css`, which it copies, is plain. That matters twice over: the idioms below are local to that one file,
+and so is its browser floor.
 
 A scoped selector is relative to its scoping root and never matches that root, so a rule that has to
 reach the root itself names `:scope`. Two idioms do that, and the difference between them is the
@@ -258,23 +267,26 @@ next maintainer will read it.
 
 ## What stays outside a layer
 
-Two things, and the reason is not the one most people give.
+One thing, and the reason is not the one most people give.
 
-`@font-face` and `@property` define a *name* — a font family, a registered custom property — rather
-than declaring style on an element. There is nothing in them for an unlayered rule to win with, so
-leaving them at the top level creates none of the hazard that an unlayered style rule does. Pragma
-writes them beside the other declarations of their kind, which makes them easy to find. (Not quite
-none: pragma's unlayered registration would out-rank a consumer's layered registration of the same
-name. That is a corner nobody is standing in.)
+`@font-face` defines a *name* — a font family — rather than declaring style on an element. There is
+nothing in it for an unlayered rule to win with, so leaving it at the top level creates none of the
+hazard that an unlayered style rule does. Pragma writes its font faces in a file of their own, beside
+the other declarations of their kind, which makes them easy to find.
 
-The claim to avoid is that layers cannot sort them. They can, and it was measured in current Chromium
-and Firefox: given two registrations of the same property name, or two font faces of the same family,
-the one in the higher layer wins even when it is written first, and an unlayered one beats a layered
-one written after it. The reason pragma's are unlayered is that there is exactly one of each name, so
-no layer has anything to order it against — not that a layer would be ignored.
+The claim to avoid is that layers cannot sort at-rules of this kind. They can, and it was measured in
+current Chromium and Firefox: given two font faces of the same family, or two registrations of the
+same custom property, the one in the higher layer wins even when it is written first, and an unlayered
+one beats a layered one written after it. The reason pragma's font faces are unlayered is that there
+is exactly one of each name, so no layer has anything to order them against — not that a layer would
+be ignored.
 
-The consequence for a maintainer: if you ever ship a second registration or a second face of the same
-name, you are relying on layer order whether you meant to or not, and it should be layered on purpose.
+The consequence for a maintainer: if you ever ship a second face of the same family, or a
+`@property` registration of a name something else also registers, you are relying on layer order
+whether you meant to or not, and it should be layered on purpose. Pragma ships no registration today
+— the one it used to have, for the baseline unit, is gone, and the engines carry their own fallback for
+a page that declares nothing. That is also what frees the unit to be declared in `rem` or in `px`: a
+registration's initial value has to be computationally independent, and `rem` is not.
 
 ## What a bundler does to the statement
 
@@ -301,26 +313,27 @@ once the component sheets carry their tier, which is the point of carrying it.
 
 ## Living beside another framework
 
-A page that runs pragma and another CSS framework at once swaps pragma's entry for `core.css`, adds
-the adapter's confined copy of the element layers, and gains three layers: one at the bottom for
-that framework, one directly above it that reverts what the framework declared inside pragma's
-islands back to the browser's own defaults (custom properties, `direction` and `unicode-bidi` sit
-outside `all`, so they still cross), and one between the design system's states and its components
-for a bridge that translates the other framework's theme signal into pragma's. Territories do the
-work the reset stylesheet could not: each element has exactly one owner, so nothing has to be
-enumerated per property, and nothing is transformed between authoring and the browser. No markup
-changes hands in either direction — there is no class to add to the root of either kind of page —
-and that is what makes removal a stylesheet edit and nothing else: swap `core.css` back for the
-package entry, delete the adapter's files and its order statement, and nothing is left in the
-templates to clean up. The two consequences to keep in mind are that `!important` still inverts the
-order — so the other framework's important rules get *stronger* when it is layered lowest, and the
-ones that matter have to be answered rather than out-ranked — and that `revert` rolls back
-presentational attributes as well as author rules, since the cascade places those between the
-reader's origin and the author's, so an image sized by `width` and `height` attributes inside a
-pragma island measures its intrinsic size instead. Both are stated as non-guarantees where they
-belong. The adapter package, `@canonical/styles-vanilla-adapter`, is the reference for all of it —
-its README carries the numbered rules, the recipes, the non-guarantees and symptom-first
-troubleshooting — and it arrives with the coexistence release rather than with this one.
+A page that runs pragma and another CSS framework at once takes the package's `tokens.css` and
+`layout.css` in place of its `index.css`, adds the adapter's confined `elements.css`, and gains
+three layers: one at the bottom for that framework, one directly above it that reverts what the
+framework declared inside pragma's islands back to the browser's own defaults (custom properties,
+`direction` and `unicode-bidi` sit outside `all`, so they still cross), and one between the design
+system's states and its components for a bridge that translates the other framework's theme signal
+into pragma's. Territories do the work the reset stylesheet could not: each element has exactly one
+owner, so nothing has to be enumerated per property, and nothing is transformed between authoring
+and the browser. No markup changes hands in either direction — there is no class to add to the root
+of either kind of page — and that is what makes removal a stylesheet edit and nothing else: swap
+`index.css` back in for the two entries and the copy, delete the adapter's files and its order
+statement, and nothing is left in the templates to clean up. The two consequences to keep in mind
+are that `!important` still inverts the order — so the other framework's important rules get
+*stronger* when it is layered lowest, and the ones that matter have to be answered rather than
+out-ranked — and that `revert` rolls back presentational attributes as well as author rules, since
+the cascade places those between the reader's origin and the author's, so an image sized by `width`
+and `height` attributes inside a pragma island measures its intrinsic size instead. Both are stated
+as non-guarantees where they belong. The adapter package, `@canonical/styles-vanilla-adapter`, is
+the reference for all of it — its README carries the numbered rules, the recipes, the non-guarantees
+and symptom-first troubleshooting — and it arrives with the coexistence release rather than with
+this one.
 
 ## Where each kind of statement lives
 

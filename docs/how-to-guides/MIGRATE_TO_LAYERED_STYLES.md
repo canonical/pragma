@@ -4,15 +4,15 @@ For the maintainer of an application that already uses `@canonical/styles` and n
 CSS framework — upgrading to the first release in which everything that package ships sits in a
 cascade layer.
 
-**Nothing in your markup changes, and no class is added to any root.** The rules that style bare
-elements — the reset, the root's baseline, the typographic engine — still apply to your whole page,
-written plainly, the way they always were. What does change is how your own CSS meets the design
-system's, and that needs an answer from you.
+**Nothing in your markup changes, and no class is added to any root.** You import `index.css` as you
+always did, and the rules that style bare elements — the reset, the root's baseline, the typographic
+engine — still apply to your whole page, written plainly, the way they always were. What does change
+is how your own CSS meets the design system's, and that needs an answer from you.
 
 If your application also runs another CSS framework on the same pages, this guide is not enough on its
-own. Your imports change there — a second entry of this package, `core.css`, in place of the package
-entry, plus the adapter package's confined copy of the element rules — and
-`@canonical/styles-vanilla-adapter`'s README owns that recipe. It arrives with the coexistence release.
+own. Your imports change there — two of this package's smaller entries in place of `index.css`, plus
+the adapter package's confined copy of the element rules — and `@canonical/styles-vanilla-adapter`'s
+README owns that recipe. It arrives with the coexistence release.
 
 Background reading, if you want the reasoning rather than the steps:
 [the cascade contract](../explanations/CASCADE.md).
@@ -120,17 +120,19 @@ One dependency change rides along: the design system no longer depends on the `n
 because it writes its own reset, containing only the rules the system relies on. If your application
 was getting that file through us and wants the rest of it, depend on it directly.
 
-## If you import a subpath
+## The entries, and everything else
 
-A subpath — one of the individual stylesheets the package exports, rather than the package entry —
-carries **no order statement**, because the statement is the first rule of the entry. The layers such
-a file opens are then ordered by wherever they first appear among your own rules, which is the
-accident the statement exists to remove.
+The package has four **entries**: `index.css` is the whole of it, and `tokens.css` (the values, and the
+classes that set them), `elements.css` (what bare elements get) and `layout.css` (the layout presets)
+are the parts it composes from. Each of the four opens with the order statement, so each is safe to
+import on its own. The three smaller ones exist for a page that also runs another CSS framework and
+takes its element rules from the adapter instead; if that is not you, `index.css` is your import, as
+it always was.
 
-`core.css` is a second entry rather than a subpath, and it is not the one you want: it is the whole
-stylesheet minus the three layers that style bare elements, for a page that gets those from the
-adapter instead. Import the package entry unless you have a specific reason not to; if you must import
-a subpath, write the statement yourself, as in step 1.
+Anything below an entry is a leaf stylesheet, and a leaf **carries no order statement**, because the
+statement is an entry's first rule. The layers such a file opens are ordered by wherever they first
+appear among your own rules, which is the accident the statement exists to remove. If you have a
+reason to reach past the entries, write the statement yourself, as in step 1.
 
 ## The browser floor
 
@@ -165,15 +167,15 @@ This is the mixed-page symptom, and it means the page imported the wrong entry. 
 carries the three element layers, and they style every paragraph, heading and control on the page,
 including the ones that belong to the other framework.
 
-A page that runs both imports `core.css` — the same stylesheet without those three layers — and the
-adapter's copy of them, which reaches only the subtrees that are the design system's. The adapter
-README carries the import recipe for each kind of build.
+A page that runs both takes `tokens.css` and `layout.css` from this package and the adapter's own
+`elements.css` in place of the package's — the same three layers, confined to the subtrees that are
+the design system's. The adapter README carries the import recipe for each kind of build.
 
 ### On a mixed page, the components lost their text styles
 
-The other half of the same mistake: `core.css` on its own is the design system with no element rules
-at all, so a component's own stylesheet still paints it but nothing sets the text inside it. Import
-the adapter's copy beside `core.css`.
+The other half of the same mistake: `tokens.css` and `layout.css` without any `elements.css` is the
+design system with no element rules at all, so a component's own stylesheet still paints it while
+nothing sets the text inside it. Import the adapter's `elements.css` beside them.
 
 If both imports are there and the text is still the browser's, check the `@scope` floor above: below
 it that copy is dropped whole, which produces the same symptom on every browser too old to understand
