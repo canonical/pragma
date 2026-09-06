@@ -5,7 +5,7 @@ import type { Item } from "@canonical/ds-types";
 // Breadcrumbs, and Tabs use one interface. Re-exported so this module's existing
 // import sites (Content/Footer/NavTree/Item, the story harness) resolve it here.
 import type { LinkComponentProps } from "@canonical/react-ds-global";
-import type { ComponentType, HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ComponentType, ReactNode } from "react";
 
 export type { LinkComponentProps };
 
@@ -32,7 +32,7 @@ export interface NavItem extends Omit<Item, "items"> {
   className?: string;
 }
 
-export interface SideNavigationProps extends HTMLAttributes<HTMLDivElement> {
+type OwnProps = {
   /** Brand content (logo/wordmark) rendered in the header. */
   brand?: ReactNode;
   /** Optional application name/wordmark shown beside the brand in the header. */
@@ -56,4 +56,7 @@ export interface SideNavigationProps extends HTMLAttributes<HTMLDivElement> {
   currentUrl?: string;
   /** Initial expanded (rail) state when uncontrolled. Defaults to `true`. */
   defaultExpanded?: boolean;
-}
+};
+
+export type SideNavigationProps = OwnProps &
+  Omit<ComponentProps<"div">, keyof OwnProps>;
