@@ -2,7 +2,7 @@
 
 For the team adopting pragma in an application that still runs Vanilla Framework.
 
-Three stylesheets, one dependency, no tooling. `layers.css` declares the layer order both systems share. `adapter.css` holds the boundary that keeps Vanilla out of pragma territory and the bridge that carries Vanilla's theme into pragma's, and it loads the other two things a mixed page needs: pragma's own stylesheet without its element layers (`@canonical/styles/core.css`) and `elements.css`, this package's copy of those element layers, confined to pragma territory. What you read in those three files is what the browser runs. The argument behind every rule below is in pragma's cascade explanation (`docs/explanations/CASCADE.md`, arriving with the styles release this package needs); the decision record it cites is pragma-adrs F (`F.VANILLA_COEXISTENCE`), by decision id.
+Three stylesheets, one dependency, no tooling. `layers.css` declares the layer order both systems share. `adapter.css` holds the boundary that keeps Vanilla out of pragma territory and the bridge that carries Vanilla's theme into pragma's, and it loads the other things a mixed page needs: two of pragma's three entries, `@canonical/styles/tokens.css` and `@canonical/styles/layout.css`, and `elements.css`, this package's copy of pragma's third entry, its element layers, confined to pragma territory. What you read in those three files is what the browser runs. The argument behind every rule below is in pragma's cascade explanation (`docs/explanations/CASCADE.md`, arriving with the styles release this package needs); the decision record it cites is pragma-adrs F (`F.VANILLA_COEXISTENCE`), by decision id.
 
 ## The one rule that is not negotiable
 
@@ -12,7 +12,7 @@ Everything else follows from that rule.
 
 ## Prerequisites
 
-This package needs `@canonical/styles` at the first release that exposes `core.css`, its stylesheet without the three element layers, and ships those layers plain; its changelog names it. With an older release the import of `core.css` in `adapter.css` does not resolve, and there is nothing for this package's copy to be a copy of. This package depends on that release directly, as a regular dependency with a caret range, the way the component packages depend on it: the range pins the release the copy in `elements.css` was taken from, and the binding test holds the copy to that release's source in this repository.
+This package needs `@canonical/styles` at the first release that ships its stylesheet as three entries, `tokens.css`, `elements.css` and `layout.css`, each self-contained with pragma's order statement first; its changelog names it. With an older release the imports in `adapter.css` do not resolve, and there is nothing for this package's copy to be a copy of. This package depends on that release directly, as a regular dependency with a caret range, the way the component packages depend on it: the range pins the release the copy in `elements.css` was taken from, and the binding test holds the copy to that release's source in this repository.
 
 Until that release exists, this package is marked private and is not published. The computed-style fixtures that prove its guarantees arrive with the second pull request (F-11 in pragma-adrs F); the package is published when they pass.
 
@@ -32,7 +32,7 @@ bun add @canonical/styles-vanilla-adapter @canonical/ds-assets
 @import url("@canonical/styles-vanilla-adapter/adapter.css");
 ```
 
-The second import brings `@canonical/styles/core.css` and `elements.css` with it. A mixed page never imports `@canonical/styles` itself: that entry styles the whole page, which is what a pragma-only page wants and a mixed page does not.
+The second import brings `@canonical/styles/tokens.css`, `@canonical/styles/layout.css` and this package's `elements.css` with it. A mixed page never imports `@canonical/styles` itself, nor its `elements.css`: those style the whole page, which is what a pragma-only page wants and a mixed page does not.
 
 ## The rules
 
@@ -43,7 +43,7 @@ Numbered so a review can cite one. Each ends with the decision in pragma-adrs F 
 1. The first rule of the first stylesheet is the order statement in `layers.css`. From Sass, import it by its extensionless path so Sass inlines it in place: `@import "@canonical/styles-vanilla-adapter/layers";` or `@use "@canonical/styles-vanilla-adapter/layers";`. Nothing precedes it except `@charset`. (VC.02)
 2. Vanilla Framework and everything built on it go inside one `@layer vanilla { … }` block: the `@import "vanilla-framework"` line itself, the site's own patterns, its overrides, and the third-party CSS it inlines. The import goes inside because Vanilla emits one rule at import time (`hr.is-fixed-width`); nested, it lands in the layer. No Vanilla-era rule stays outside it. (VC.01)
 3. In a Sass entry, never a `.css`-suffixed or `url()` import. Sass does not inline those: at top level it hoists them above the statement, and inside a block it emits an invalid nested `@import`. Extensionless imports only. (VC.27)
-4. Pragma's CSS is a second entry, `pragma.css`: `adapter.css`, then the component packages' stylesheets. `adapter.css` loads `@canonical/styles/core.css` and this package's `elements.css` itself, so never `@canonical/styles` on a mixed page. Resolve the entry with whatever your pipeline already resolves package imports with. The order inside it does not matter, because precedence comes from the layers, but none of it goes inside the `vanilla` layer. (VC.27, VC.30)
+4. Pragma's CSS is a second entry, `pragma.css`: `adapter.css`, then the component packages' stylesheets. `adapter.css` loads `@canonical/styles/tokens.css`, `@canonical/styles/layout.css` and this package's `elements.css` itself, so never `@canonical/styles` on a mixed page. Resolve the entry with whatever your pipeline already resolves package imports with. The order inside it does not matter, because precedence comes from the layers, but none of it goes inside the `vanilla` layer. (VC.27, VC.30)
 5. Link `styles.css` (the Vanilla layer), then `pragma.css`, then any React-island CSS. Link order does not decide precedence either; the layers do. What matters is that the statement is the first rule the browser sees. (VC.02)
 6. If you purge CSS, never purge `pragma.css`: its classes are not in your templates until you render the components. (VC.26)
 
@@ -56,7 +56,7 @@ Numbered so a review can cite one. Each ends with the decision in pragma-adrs F 
 **Root declaration**
 
 10. From day one: `<html class="site comfortable light">` on a site, `app comfortable light` on an application. Exactly one context, exactly one density, and `light`. Nothing marks the page as mixed: pragma territory is the islands, the elements that carry `ds`, and `elements.css` confines pragma's element styles to them on its own. Never `ds` on `<html>` while Vanilla is in the page; that makes the whole document an island, and the boundary reverts every Vanilla rule in it. (VC.09, VC.30)
-11. There is no flip. A pragma page and a mixed page carry the same root classes; what differs is the stylesheet. A pragma page loads `@canonical/styles`, whose element layers style the whole page. A mixed page loads this package instead, which loads pragma's `core.css` and its own confined copy of those layers. The last state before Vanilla is removed is simply a page with no Vanilla class left in it. (VC.03, VC.30)
+11. There is no flip. A pragma page and a mixed page carry the same root classes; what differs is the stylesheet. A pragma page loads `@canonical/styles`, whose element layers style the whole page. A mixed page loads this package instead, which loads pragma's `tokens.css` and `layout.css` and its own confined copy of the third entry, the element layers. The last state before Vanilla is removed is simply a page with no Vanilla class left in it. (VC.03, VC.30)
 
 **Theme**
 
@@ -106,14 +106,15 @@ Three facts about the cascade carry the design, and pragma's cascade explanation
 
 The two component tiers are named in the statement so that an app-tier package's rule beats the global one whatever order your entry loads the component stylesheets in; a sublayer left to first appearance would make that order matter again.
 
-The bridge's layer, `ds.adapter`, is a sublayer of `ds` on purpose. Sublayers sort inside their parent, and `ds` takes its place in the order at its first mention (`ds.tokens`), so a top-level layer written between `ds.states` and `ds.components` would not sit there at all: it would sit above every `ds.*` sublayer, the component tiers included, and a component that sets its own `color-scheme` could never beat the bridge (measured: a modal's `dark` computed `light`). As a sublayer between `ds.states` and `ds.components` the bridge is above the theme modifiers and below the components, which is where rule 13 and a component's own scheme both need it. The fixtures check all 91 pairs of the fourteen names by computed style, not by the list. Pragma's own statement, the same list without `vanilla`, `boundary`, `ds.adapter` and `app`, arrives later through `core.css` and changes nothing: a later statement can add names but never reorder the ones already fixed, and it adds none.
+The bridge's layer, `ds.adapter`, is a sublayer of `ds` on purpose. Sublayers sort inside their parent, and `ds` takes its place in the order at its first mention (`ds.tokens`), so a top-level layer written between `ds.states` and `ds.components` would not sit there at all: it would sit above every `ds.*` sublayer, the component tiers included, and a component that sets its own `color-scheme` could never beat the bridge (measured: a modal's `dark` computed `light`). As a sublayer between `ds.states` and `ds.components` the bridge is above the theme modifiers and below the components, which is where rule 13 and a component's own scheme both need it. The fixtures check all 91 pairs of the fourteen names by computed style, not by the list. Pragma's own statement, the same list without `vanilla`, `boundary`, `ds.adapter` and `app`, arrives later at the top of each of its entries and changes nothing: a later statement can add names but never reorder the ones already fixed, and it adds none.
 
 `app` is the name of your own layer whatever your context class is; a site with `class="site …"` still writes `@layer app`.
 
-`adapter.css` opens with the two imports, then fills the boundary with one declaration, so that inside pragma territory every property Vanilla set is reverted to the browser default and pragma's layers, all higher, apply on top exactly as on a pragma-only page:
+`adapter.css` opens with the three imports, then fills the boundary with one declaration, so that inside pragma territory every property Vanilla set is reverted to the browser default and pragma's layers, all higher, apply on top exactly as on a pragma-only page:
 
 ```css
-@import url("@canonical/styles/core.css");
+@import url("@canonical/styles/tokens.css");
+@import url("@canonical/styles/layout.css");
 @import url("./elements.css");
 
 /* abridged: the shipped file lists every WebKit form part Vanilla styles,
@@ -146,20 +147,20 @@ Under a light or paper ancestor that computes to `light`, under a dark ancestor 
 
 ## The confined copy and its test
 
-Pragma's own stylesheet is plain. Its three element layers, `normalize` (its reset), `ds.reset` (the page's baseline: font, colour, line height, weight, text wrapping, box sizing) and `ds.typography` (the typography package's element rules and its baseline engine), style the whole page, and on a pragma-only page that is right. On a mixed page those same rules must reach only the islands, so `elements.css` carries a copy of them, rule for rule and declaration for declaration, wrapped in `@scope (.ds)` and re-addressed to an island root. `core.css` is everything else pragma ships, and `adapter.css` loads both.
+Pragma's own stylesheet is plain, and it ships as three entries: `tokens.css` (`ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states`), `layout.css` (the grid presets) and `elements.css`, the three element layers, `normalize` (its reset), `ds.reset` (the page's baseline: font, colour, line height, weight, text wrapping, box sizing) and `ds.typography` (the typography package's element rules and its baseline engine). Those style the whole page, and on a pragma-only page that is right. On a mixed page the same rules must reach only the islands, so this package's `elements.css` carries a copy of them, rule for rule and declaration for declaration, wrapped in `@scope (.ds)` and re-addressed to an island root. The two files share a name because they are the same thing: pragma's `elements.css` is the three layers addressed to the page, this package's is the three layers addressed to an island. `adapter.css` loads pragma's other two entries and this copy.
 
 The copy differs from the original only in its selectors, by a short mapping:
 
 - the document element, `html` or `:where(html)`, becomes the outermost island root, `:where(:scope:not(.ds *))`, and keeps any `:not()` list it carried;
-- `body { margin: 0 }` becomes `:where(:scope:is(body))`: the body's margin is zeroed only when the body itself is the island, because the margin of an element a host page owns is not this package's call; anything else the body declares (the mapper's base font) lands on the island root;
+- `body { margin: 0 }` becomes `:where(:scope:is(body))`: the body's margin is zeroed only when the body itself is the island, because the margin of an element a host page owns is not this package's call; anything else the body declares (the base font from the typography element rules) lands on the island root;
 - a list of controls, `button, input, optgroup, select, textarea` and the button and search types, becomes `:where(:scope, :scope *):is(…)`, so that a control that is itself an island is reached;
 - the universal box-sizing rule, `*, ::before, ::after`, is written outside the scope block as `:where(.ds, .ds *)` and its two pseudo-elements, for a measured reason: it is the only rule with universal reach, and inside a scope block it cost about 135 ms of a 200 ms style-recalculation regression on a 10,000-element page;
 - a class an island root can carry (`.p` on a field error, `.code` on an inline code span, `.editorial` on a flipped region) is written twice, bare and `:scope.p`;
 - everything else is itself.
 
-What is not copied stays in `core.css`, which reaches it through the typography package's `mapper.css`: the naming shims, the typographic scale and the `--baseline-height` registration, which are tokens and a registration and act wherever they are written. The copy carries the engine `@canonical/styles` loads, the cap-unit one; a page that links another engine on its own links it unconfined.
+What is not copied is in `tokens.css`: the naming shims and the typographic scale, which are tokens and act wherever they are written; the engine reads `--baseline-height` with a fallback of its own, so nothing else travels. The copy carries the engine pragma's `elements.css` names, the cap-unit one; a page that links another engine on its own links it unconfined.
 
-The copy is kept honest by `tests/elements.test.ts`, which runs under `bun run test` without a browser. It reads pragma's source files from the workspace (every local file the entry `packages/styles/main/src/index.css` imports that opens one of the three layers, `normalize.css` and `reset.css` today, and what the typography entry names: `packages/styles/typography/src/mapper.elements.css` and the engine, `baseline-cap.css` today, with every local file they import) and this package's `elements.css`, strips comments, walks the rules of both, and asserts that the layer names and their order are the same on both sides, that every rule in pragma's files has exactly one counterpart in the copy with the same declarations in the same order, in the same order within each layer, under the same `@media` or `@supports` condition, and that each counterpart's selector is the mapping above applied to the original. It also checks the other side of the split: that `core.css` opens with pragma's ten-name statement, brings no element rule with it, and carries the scale and the registration. When pragma changes one of those files the test fails naming the rule; bring the copy up to date, apply the mapping, run it again. A rule that exists on one side only is listed in the test with its reason, and the test fails if the reason goes stale.
+The copy is kept honest by `tests/elements.test.ts`, which runs under `bun run test` without a browser. It reads pragma's source files from the workspace (everything `packages/styles/main/src/elements.css` composes, followed through its imports: `normalize.css`, `reset.css`, the typography package's `elements.css` and the engine it names, `baseline-cap.css` today) and this package's `elements.css`, strips comments, walks the rules of both, and asserts that the layer names and their order are the same on both sides, that every rule in pragma's files has exactly one counterpart in the copy with the same declarations in the same order, in the same order within each layer, under the same `@media` or `@supports` condition, and that each counterpart's selector is the mapping above applied to the original. It also checks the other side of the split: that every entry opens with pragma's ten-name statement, that `tokens.css` and `layout.css` bring no element rule with them, and that `tokens.css` carries the scale. When pragma changes one of those files the test fails naming the rule; bring the copy up to date, apply the mapping, run it again. A rule that exists on one side only is listed in the test with its reason, and the test fails if the reason goes stale.
 
 ## The `.ds` pattern in plain words
 
@@ -320,7 +321,7 @@ Same cause as above. If the boundary is present and the leak persists, the rule 
 <a id="pragma-everywhere"></a>
 ### Vanilla's headings, paragraphs or the page font took pragma's type
 
-`@canonical/styles` is loaded on the mixed page. Its element layers style the whole page, and they sit above `vanilla`. Load `adapter.css` instead: it brings `core.css` and the confined copy, and nothing else of pragma's reaches a bare element.
+`@canonical/styles` is loaded on the mixed page. Its element layers style the whole page, and they sit above `vanilla`. Load `adapter.css` instead: it brings `tokens.css`, `layout.css` and the confined copy, and nothing else of pragma's reaches a bare element.
 
 <a id="theme-flip"></a>
 ### Pragma components went dark on a light page, or native controls turned dark

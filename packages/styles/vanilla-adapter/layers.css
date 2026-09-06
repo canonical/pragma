@@ -16,10 +16,10 @@
  *   boundary       `all: revert` on pragma territory (adapter.css): Vanilla ends here
  *   normalize      pragma's authored reset; on a mixed page the copy in this
  *                  package's elements.css, confined to the islands
- *   ds.tokens      primitive :root values, spacing, motion, overflow, mapper shims
+ *   ds.tokens      primitive :root values, spacing, motion, overflow, naming shims
  *   ds.reset       pragma's element baseline and its island-root declarations
  *                  (font, colour, line-height, box-sizing); the confined copy
- *   ds.typography  the mapper's element rules and the baseline engine; the
+ *   ds.typography  the typography element rules and the baseline engine; the
  *                  confined copy
  *   ds.modifiers   theme, scale, channels and their shims, density and context
  *   ds.surfaces    .surface, .contrasted, .modal
@@ -40,15 +40,15 @@
  *
  * `vanilla` is the lowest layer: in Vanilla territory nothing pragma ships
  * competes with it, because a mixed page loads pragma's three element layers
- * only as the confined copy in this package's elements.css, and everything else
- * pragma ships (core.css) is custom properties or component classes. Pragma
- * itself confines nothing: its own stylesheet styles the whole page, as a
- * pragma-only page wants. `boundary` sits directly above `vanilla` so that
+ * only as the confined copy in this package's elements.css, and pragma's other
+ * two entries (tokens.css, layout.css) are custom properties or component
+ * classes. Pragma itself confines nothing: its own elements.css styles the
+ * whole page, as a pragma-only page wants. `boundary` sits directly above `vanilla` so that
  * inside pragma territory every Vanilla declaration is reverted before pragma's
  * layers apply. Pragma's own statement, the same list without `vanilla`,
- * `boundary`, `ds.adapter` and `app`, arrives later through core.css and changes
- * nothing: a later statement can add names but never reorder the ones already
- * fixed, and it adds none.
+ * `boundary`, `ds.adapter` and `app`, arrives later at the top of each of its
+ * entries and changes nothing: a later statement can add names but never
+ * reorder the ones already fixed, and it adds none.
  */
 @layer vanilla,
   boundary,

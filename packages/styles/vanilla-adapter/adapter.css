@@ -1,24 +1,28 @@
 /* @canonical/styles-vanilla-adapter - Boundary and theme bridge
  *
- * This is the pragma entry's first import on a mixed page. It loads pragma's
- * stylesheet without its element layers (core.css), then this package's confined
- * copy of those layers (elements.css), then adds the boundary and the bridge. The
- * component stylesheets follow it in the same entry, the one that is never
- * purged; the order inside that entry does not matter, because layer precedence
- * comes from layers.css, not from source order. Never inside the `vanilla` layer,
- * and never next to `@canonical/styles` itself: that entry styles the whole page.
+ * This is the pragma entry's first import on a mixed page. It loads two of
+ * pragma's three entries, tokens.css and layout.css, then this package's
+ * confined copy of the third (elements.css), then adds the boundary and the
+ * bridge. The component stylesheets follow it in the same entry, the one that
+ * is never purged; the order inside that entry does not matter, because layer
+ * precedence comes from layers.css, not from source order. Never inside the
+ * `vanilla` layer, and never next to `@canonical/styles` itself, whose
+ * elements.css styles the whole page.
  *
  *   @import url("@canonical/styles-vanilla-adapter/adapter.css");
  *
- * Two imports, one boundary, one bridge, two layers, no tooling. What you read
+ * Three imports, one boundary, one bridge, two layers, no tooling. What you read
  * here is what the browser runs (pragma constitution VI and XIII). The reasoning
  * is in pragma-adrs F, VC.24, VC.09 and VC.30.
  */
 
-/* Pragma's CSS for a mixed page. The two imports have to come before any rule,
+/* Pragma's CSS for a mixed page. The imports have to come before any rule,
  * which is why they sit above the layer blocks; the order statement in
- * layers.css, loaded before this file, has already fixed every layer they open. */
-@import url("@canonical/styles/core.css");
+ * layers.css, loaded before this file, has already fixed every layer they open,
+ * and each of pragma's entries repeats pragma's own statement, which adds
+ * nothing to it. */
+@import url("@canonical/styles/tokens.css");
+@import url("@canonical/styles/layout.css");
 @import url("./elements.css");
 
 /* ── The boundary ──────────────────────────────────────────────────────────
