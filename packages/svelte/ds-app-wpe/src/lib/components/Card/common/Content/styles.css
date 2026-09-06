@@ -1,6 +1,6 @@
-/* Layer: ds.components.apps (@canonical/styles README, "Cascade layers"). */
+/* Layer: ds.components.apps-workplaceengineering (@canonical/styles README, "Cascade layers"). */
 
-@layer ds.components.apps {
+@layer ds.components.apps-workplaceengineering {
   /**
    * Card.Content styles
    * @implements ds:global.subcomponent.card-content

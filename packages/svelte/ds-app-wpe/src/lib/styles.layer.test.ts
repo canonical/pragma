@@ -1,7 +1,9 @@
 /**
- * Every component stylesheet this package ships sits in `ds.components.apps`,
- * the tier above `ds.components.global`, so this package's rule for a component
- * a global tier also styles wins by cascade layer rather than by load order.
+ * Every component stylesheet this package ships sits in
+ * `ds.components.apps-workplaceengineering`. Component-tier layers follow the
+ * design system's tier tree, flat: this package is the Workplace Engineering app
+ * sub-tier, so it writes into its own layer rather than the shared
+ * `ds.components.apps`, and `src/lib/index.css` declares that name.
  *
  * Nothing else in the repository catches an unwrapped sheet: biome has no such
  * rule, webarchitect validates JSON against schemas, and a sheet that is simply
@@ -22,10 +24,13 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const LAYER = "ds.components.apps";
+const LAYER = "ds.components.apps-workplaceengineering";
 
-/** Sheets that hold only `@import` rules and therefore open no layer. */
-const IMPORT_ONLY = ["./index.css", "./styles/index.css"];
+/** This package's CSS entry: an import, then the statement placing its layer. */
+const ENTRY = "./index.css";
+
+/** Sheets that open no layer block of their own. */
+const IMPORT_ONLY = [ENTRY, "./styles/index.css"];
 
 const sheets = import.meta.glob("./**/*.css", {
   query: "?url",
@@ -109,8 +114,25 @@ describe("stylesheets", () => {
     expect(Object.keys(sheets).length).toBeGreaterThanOrEqual(15);
   });
 
-  it("finds the import-only sheets it exempts", () => {
+  it("finds the sheets that open no layer block", () => {
     for (const path of IMPORT_ONLY) expect(Object.keys(sheets)).toContain(path);
+  });
+
+  describe(ENTRY, () => {
+    const source = rulesOnly(read(ENTRY));
+
+    it(`declares ${LAYER} exactly once, and opens no block`, () => {
+      expect(source.match(/@layer[^;{]*[;{]/g)).toEqual([`@layer ${LAYER};`]);
+    });
+
+    it("declares it after the styles import, not before", () => {
+      // A layer is placed where its name first appears. The import pulls in
+      // @canonical/styles, whose own statement places the tiers below this one;
+      // declared above that import, this name would be fixed first and
+      // ds.components.global would be appended above it instead. Measured in
+      // Chromium: the global tier then won three of the four bundle orders.
+      expect(source.indexOf("@import")).toBeLessThan(source.indexOf("@layer"));
+    });
   });
 
   for (const path of Object.keys(sheets).sort()) {
@@ -118,17 +140,18 @@ describe("stylesheets", () => {
 
     if (IMPORT_ONLY.includes(path)) {
       describe(path, () => {
-        it("holds nothing but comments and imports", () => {
+        it("holds nothing but comments, imports and layer statements", () => {
           expect(
             source
               .replace(/\/\*[\s\S]*?\*\//g, "")
               .replace(/@import[^;]*;/g, "")
+              .replace(/@layer[^;{]*;/g, "")
               .trim(),
           ).toBe("");
         });
 
-        it("opens no layer and layers no import", () => {
-          expect(rulesOnly(source)).not.toMatch(/@layer/);
+        it("opens no layer block and layers no import", () => {
+          expect(rulesOnly(source)).not.toMatch(/@layer[^;{]*\{/);
           expect(rulesOnly(source)).not.toMatch(/layer\s*\(/);
         });
       });

@@ -1,4 +1,21 @@
 /* TODO(jmuzina): remove this file once pragma tokens are ready and used in the project */
+
 /* No layer block here: the sheet this file imports carries its own layers, and
  * an `@import` may not appear inside a layer block. */
 @import "./styles/index.css";
+
+/* This package is the Workplace Engineering app sub-tier, so it writes into its
+ * own layer rather than the shared `ds.components.apps`. Its components carry a
+ * global block's name — the Card here implements `ds:global.component.card` —
+ * which is exactly why the sub-tier layer is needed: this sheet has to beat the
+ * global tier's Card by layer rather than by whichever bundle loaded last.
+ *
+ * The statement below is what places that layer, and it sits *after* the import
+ * rather than at the top of the file. A layer is placed where its name first
+ * appears, and the import above pulls in `@canonical/styles`, whose own
+ * statement places `ds.components.global`. Declared first, this name would be
+ * fixed before that statement was read, and `ds.components.global` would then be
+ * appended above it — measured in Chromium: the global tier's rule won in three
+ * of the four bundle orders. After the import, the tiers below are already
+ * placed and this one lands above them, as it should. */
+@layer ds.components.apps-workplaceengineering;
