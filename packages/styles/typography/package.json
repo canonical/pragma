@@ -20,7 +20,9 @@
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
-    "check:ts": "tsc --noEmit"
+    "check:ts": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest"
   },
   "author": {
     "email": "webteam@canonical.com",
@@ -41,7 +43,8 @@
     "@canonical/typescript-config": "^0.37.0",
     "@types/bun": "^1.3.10",
     "@types/node": "^26.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   },
   "peerDependencies": {
     "typescript": "^5.9.3"
