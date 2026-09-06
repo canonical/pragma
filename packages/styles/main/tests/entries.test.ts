@@ -44,12 +44,21 @@ const statement = (css: string): string[] => {
     .filter(Boolean);
 };
 
-/** The first rule of a stylesheet, ignoring comments and blank lines. */
-const firstRule = (css: string): string =>
-  css
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .split(/[;{]/)[0]
-    .trim();
+/**
+ * The first rule of a stylesheet, ignoring comments and blank lines, with the
+ * character that ended it. The terminator is the point: `@layer a, b;` is an
+ * order statement and `@layer a { … }` is a block, they are spelled almost the
+ * same, and only the first may be followed by `@import`. Reporting the rule
+ * without it would let a block pass for a statement.
+ */
+const firstRule = (css: string): { rule: string; terminator: string } => {
+  const text = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const end = text.search(/[;{]/);
+  return {
+    rule: (end === -1 ? text : text.slice(0, end)).trim(),
+    terminator: end === -1 ? "" : text[end],
+  };
+};
 
 /** Every specifier a stylesheet imports, before any of them is followed. */
 const imports = (css: string): string[] =>
@@ -108,8 +117,19 @@ const LAYERS = [
 ] as const;
 
 describe("the layer order statement", () => {
-  it.each(ENTRIES)("is the first rule of %s", (file) => {
-    expect(firstRule(readFileSync(srcPath(file), "utf8"))).toMatch(/^@layer /);
+  it.each(ENTRIES)("is the first rule of %s, as a statement", (file) => {
+    // Both halves matter. An `@import` is only valid before other rules, a
+    // layer statement and `@charset` excepted, so the statement has to come
+    // first — and it has to be a statement: `@layer normalize { … }` opens a
+    // block, which is a rule, and every `@import` after it would be dropped.
+    const first = firstRule(readFileSync(srcPath(file), "utf8"));
+    expect({
+      rule: first.rule.split(/\s+/)[0],
+      terminator: first.terminator,
+    }).toEqual({
+      rule: "@layer",
+      terminator: ";",
+    });
   });
 
   it.each(ENTRIES)("names the thirteen layers, in order, in %s", (file) => {
