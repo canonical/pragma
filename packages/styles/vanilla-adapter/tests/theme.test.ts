@@ -65,6 +65,23 @@ describe.each(VANILLA_VERSIONS)("theme-bridge (Vanilla %s)", (version) => {
     }
   });
 
+  it("lets a component that sets its own scheme beat the bridge", async () => {
+    // `ds.adapter` sits below the component tiers, so a component's own
+    // `color-scheme` wins on its island, under any Vanilla theme and over
+    // pragma's theme classes too.
+    const spec = mixedPage(version);
+    const mixed = await render({
+      ...spec,
+      styles: [
+        ...spec.styles,
+        "@layer ds.components.global { .ds.modal { color-scheme: dark } }",
+      ],
+      body: `${spec.body}<div class="ds modal" id="theme-component"></div><div class="is-dark"><div class="ds modal light" id="theme-component-in-dark"></div></div>`,
+    });
+    expect(computed(mixed, "theme-component").colorScheme).toBe("dark");
+    expect(computed(mixed, "theme-component-in-dark").colorScheme).toBe("dark");
+  });
+
   it("ignores a pragma theme class on a root inside a Vanilla page", async () => {
     const spec = mixedPage(version);
     const mixed = await render({

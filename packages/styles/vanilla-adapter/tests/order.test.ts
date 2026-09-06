@@ -27,14 +27,14 @@ const MIXED_ORDER = [
   "ds.modifiers",
   "ds.surfaces",
   "ds.states",
-  "adapter",
+  "ds.adapter",
   "ds.components",
   "ds.components.global",
   "ds.components.app",
   "app",
 ];
 
-const ADAPTER_ONLY = ["vanilla", "boundary", "adapter", "app"];
+const ADAPTER_ONLY = ["vanilla", "boundary", "ds.adapter", "app"];
 
 /** Pragma's own order: the mixed order minus the adapter's four layers. */
 const PRAGMA_ORDER = MIXED_ORDER.filter((name) => !ADAPTER_ONLY.includes(name));
@@ -84,7 +84,10 @@ describe("the order contract", () => {
     ).filter(
       (rule): rule is CSSLayerBlockRule => rule instanceof CSSLayerBlockRule,
     );
-    expect(blocks.map((block) => block.name)).toEqual(["boundary", "adapter"]);
+    expect(blocks.map((block) => block.name)).toEqual([
+      "boundary",
+      "ds.adapter",
+    ]);
     const [boundary, bridge] = blocks;
     // Chromium drops the Gecko-only rules one by one, as designed, and must
     // never drop the list that names the WebKit parts and the placeholder.
@@ -167,6 +170,39 @@ describe("the order contract", () => {
     expect(MIXED_ORDER.filter((name) => PRAGMA_ORDER.includes(name))).toEqual(
       PRAGMA_ORDER,
     );
+  });
+
+  it("sorts all 91 pairs of the fourteen names as written, by computed style", async () => {
+    // The name list alone cannot show this: a top-level layer written between
+    // two sublayers of `ds` sorts above all of `ds`, which is how a top-level
+    // `adapter` sat above the component tiers until it became `ds.adapter`.
+    // Each pair gets one element, the later layer's rule written first so that
+    // source order would favour the earlier one; the later layer must still
+    // win. The two exceptions are a parent against its own sublayers: a rule
+    // written directly into `ds.components` sits in its implicit final
+    // sublayer, above both tiers, which is why nothing is written into it.
+    const pairs: [number, number][] = [];
+    let css = "";
+    let body = "";
+    for (let i = 0; i < MIXED_ORDER.length; i += 1)
+      for (let j = i + 1; j < MIXED_ORDER.length; j += 1) {
+        const id = `pair-${i}-${j}`;
+        pairs.push([i, j]);
+        css += `@layer ${MIXED_ORDER[j]} { #${id} { color: rgb(2, 2, 2) } } @layer ${MIXED_ORDER[i]} { #${id} { color: rgb(1, 1, 1) } }\n`;
+        body += `<i id="${id}"></i>`;
+      }
+    expect(pairs.length).toBe(91);
+    const doc = await render({ root: "", styles: [layersCss, css], body });
+    const parentWins = (i: number, j: number): boolean =>
+      MIXED_ORDER[j]?.startsWith(`${MIXED_ORDER[i]}.`) ?? false;
+    const failures = pairs
+      .filter(
+        ([i, j]) =>
+          computed(doc, `pair-${i}-${j}`).color !==
+          (parentWins(i, j) ? "rgb(1, 1, 1)" : "rgb(2, 2, 2)"),
+      )
+      .map(([i, j]) => `${MIXED_ORDER[i]} < ${MIXED_ORDER[j]}`);
+    expect(failures).toEqual([]);
   });
 
   it("order-independence: adapter.css may sit anywhere inside the pragma entry", async () => {
