@@ -16,6 +16,18 @@ interface ItemFields {
   disabled?: boolean;
 
   /**
+   * Flag marking a node that exists to structure or decorate the list rather
+   * than to be chosen — a separator, a group heading, a spacer.
+   * e.g. true on the rule drawn between two groups of menu items.
+   *
+   * This is not a stronger `disabled`. `disabled` says "an item you may not
+   * choose right now"; `presentational` says "not an item", which makes
+   * `disabled` meaningless rather than false. Keyboard navigation skips both,
+   * but only `presentational` nodes are absent from the count a user perceives.
+   */
+  presentational?: boolean;
+
+  /**
    * Array of child items for nested navigation structures.
    * e.g. Submenu items under a parent like 'Settings'.
    */
