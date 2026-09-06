@@ -8,17 +8,20 @@
  *   element { --font-size: <length>; --line-height: <length>; }
  *   (fallback: --line-height-multiplier: <number> if --line-height is unset)
  *
- * Browser floor: Chrome 133, Safari 18.2, Firefox 154. This engine uses two
+ * Browser floor: Chrome 133, Safari 18.2, Firefox 154. This engine uses three
  * features:
  *
  *   text-box-trim    Chrome 133, Safari 18.2, Firefox 154
  *   mod()            Chrome 125, Safari 15.4, Firefox 118
+ *   cap unit         Chrome 118, Safari 17.2, Firefox 97
  *
- * `text-box-trim` binds every column. Below it the trim is skipped, the element
- * keeps its default half-leading and the nudge still applies, so the engine
- * degrades rather than failing; on that reading its floor is the metrics
- * engine's, Chrome 125, Safari 15.4, Firefox 118. What a browser below
- * 133 / 18.2 / 154 loses is the tighter content box, not the grid.
+ * The `cap` unit is there because the nudge measures the cap height itself:
+ * `mod(calc(-1 * 1cap), …)`. `text-box-trim` binds every column. Below it the
+ * trim is skipped, the element keeps its default half-leading and the nudge
+ * still applies, so the engine degrades rather than failing; on that reading its
+ * floor is the cap engine's, Chrome 125, Safari 17.2, Firefox 118. What a
+ * browser below 133 / 18.2 / 154 loses is the tighter content box, not the
+ * grid.
  *
  * The grid unit:
  *   --baseline-height may be a length in any unit — 0.5rem and 8px are both
