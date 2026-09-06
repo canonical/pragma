@@ -2,19 +2,21 @@ import { describe, expect, it } from "vitest";
 import {
   adapterCss,
   computed,
-  coreCss,
   differences,
   elementsCss,
   idsIn,
   importantDeclarations,
   layerNames,
   layersCss,
+  layoutCss,
   MIXED_PRAGMA_CSS,
   mixedPage,
   PRAGMA_CSS,
   parse,
+  pragmaElementsCss,
   render,
   stylesCss,
+  tokensCss,
 } from "./support/pages.js";
 
 const MIXED_ORDER = [
@@ -68,15 +70,16 @@ describe("the order contract", () => {
     expect(layerNames(layersCss)).toEqual(MIXED_ORDER);
   });
 
-  it("adapter.css opens with its two imports, then the boundary block and the bridge block, and Chromium keeps the boundary's list whole", () => {
-    // The two imports are the first rules of the file (README rule 4): core.css
-    // first, so that pragma's tokens arrive before the copy that reads them.
+  it("adapter.css opens with its three imports, then the boundary block and the bridge block, and Chromium keeps the boundary's list whole", () => {
+    // The imports are the first rules of the file (README rule 4): pragma's
+    // tokens first, so that they arrive before the copy that reads them.
     const statements = uncommented(adapterCss)
       .split(";")
       .map((line) => line.trim())
       .filter(Boolean);
-    expect(statements.slice(0, 2)).toEqual([
-      '@import url("@canonical/styles/core.css")',
+    expect(statements.slice(0, 3)).toEqual([
+      '@import url("@canonical/styles/tokens.css")',
+      '@import url("@canonical/styles/layout.css")',
       '@import url("./elements.css")',
     ]);
     const blocks = Array.from(
@@ -156,12 +159,12 @@ describe("the order contract", () => {
     }
   });
 
-  it("@canonical/styles and core.css open with pragma's own statement, the mixed order minus the adapter's four", () => {
-    // The mixed page sees the adapter's statement first and pragma's later,
-    // through core.css. A later statement can add layers but never reorder the
-    // ones already fixed; this one adds none and lists them in the same order,
-    // so it changes nothing.
-    for (const css of [stylesCss, coreCss]) {
+  it("@canonical/styles and each of its entries open with pragma's own statement, the mixed order minus the adapter's four", () => {
+    // The mixed page sees the adapter's statement first and pragma's later, at
+    // the top of each entry. A later statement can add layers but never
+    // reorder the ones already fixed; this one adds none and lists them in the
+    // same order, so it changes nothing.
+    for (const css of [stylesCss, tokensCss, layoutCss, pragmaElementsCss]) {
       const first = parse(css).cssRules[0];
       expect(first).toBeInstanceOf(CSSLayerStatementRule);
       if (!(first instanceof CSSLayerStatementRule)) return;

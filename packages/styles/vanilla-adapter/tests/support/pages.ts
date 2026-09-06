@@ -2,10 +2,10 @@
  * Builds whole documents in iframes so computed styles can be compared across
  * pages that differ only in which stylesheets they load. Everything here runs
  * in the browser; the CSS strings are resolved by Vite at test time: Vanilla
- * through its `sass` export condition (vite.config.ts), pragma's stylesheets
- * through their entry points, adapter.css with its two imports resolved, and
- * the component sheets from their packages' sources, which are what the built
- * entries are made of.
+ * through its `sass` export condition (vite.config.ts), pragma's stylesheet
+ * and its entries through their entry points, adapter.css with its imports
+ * resolved, and the component sheets from their packages' sources, which are
+ * what the built entries are made of.
  */
 
 import buttonCss from "@canonical/react-ds-global/src/lib/component/Button/styles.css?inline";
@@ -14,7 +14,9 @@ import formCss from "@canonical/react-ds-global-form/src/index.css?inline";
 import selectCss from "@canonical/react-ds-global-form/src/lib/subcomponent/SelectInput/styles.css?inline";
 import textareaCss from "@canonical/react-ds-global-form/src/lib/subcomponent/TextareaInput/styles.css?inline";
 import textInputCss from "@canonical/react-ds-global-form/src/lib/subcomponent/TextInput/styles.css?inline";
-import coreCss from "@canonical/styles/core.css?inline";
+import pragmaElementsCss from "@canonical/styles/elements.css?inline";
+import layoutCss from "@canonical/styles/layout.css?inline";
+import tokensCss from "@canonical/styles/tokens.css?inline";
 import stylesCss from "@canonical/styles?inline";
 import vanilla456 from "vanilla-framework-4.56/scss/build.scss?inline";
 import vanilla458 from "vanilla-framework-4.58/scss/build.scss?inline";
@@ -62,8 +64,9 @@ export const COMPONENT_CSS = [
 export const PRAGMA_CSS = [stylesCss, COMPONENT_CSS].join("\n");
 
 /**
- * Pragma's CSS as a mixed page loads it: adapter.css, which brings core.css and
- * elements.css with it (README rule 4), then components.
+ * Pragma's CSS as a mixed page loads it: adapter.css, which brings tokens.css,
+ * layout.css and this package's elements.css with it (README rule 4), then
+ * components.
  */
 export const MIXED_PRAGMA_CSS = [adapterResolved, COMPONENT_CSS].join("\n");
 
@@ -192,8 +195,9 @@ export interface PageSpec {
 /**
  * The mixed page: layers, Vanilla in its layer, then pragma's CSS as a mixed
  * page loads it. `adapter` places adapter.css before or after the component
- * sheets, or leaves it out: then the page still loads core.css and
- * elements.css, so that only the boundary and the bridge are missing.
+ * sheets, or leaves it out: then the page still loads tokens.css, layout.css
+ * and this package's elements.css, so that only the boundary and the bridge
+ * are missing.
  */
 export const mixedPage = (
   vanilla: VanillaVersion,
@@ -201,7 +205,8 @@ export const mixedPage = (
 ): PageSpec => {
   const adapter = options.adapter ?? "after";
   const styles = [layersCss, vanillaCss[vanilla]];
-  if (adapter === "none") styles.push(coreCss, elementsCss, COMPONENT_CSS);
+  if (adapter === "none")
+    styles.push(tokensCss, layoutCss, elementsCss, COMPONENT_CSS);
   else if (adapter === "before") styles.push(adapterResolved, COMPONENT_CSS);
   else styles.push(COMPONENT_CSS, adapterResolved);
   return {
@@ -439,4 +444,13 @@ export const importantDeclarations = (css: string): string[] => {
   return found;
 };
 
-export { adapterCss, coreCss, elementsCss, layersCss, parse, stylesCss };
+export {
+  adapterCss,
+  elementsCss,
+  layersCss,
+  layoutCss,
+  parse,
+  pragmaElementsCss,
+  stylesCss,
+  tokensCss,
+};
