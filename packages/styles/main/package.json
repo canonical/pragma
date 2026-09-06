@@ -3,14 +3,19 @@
   "description": "Canonical Design System global stylesheet. The reset, typography, and design tokens, in named cascade layers.",
   "version": "0.37.0",
   "main": "src/index.css",
+  "type": "module",
   "exports": {
     ".": "./src/index.css",
+    "./tokens.css": "./src/tokens.css",
+    "./elements.css": "./src/elements.css",
+    "./layout.css": "./src/layout.css",
     "./fonts": "./src/fonts.css",
     "./modifiers.states.shim.css": "./src/modifiers.states.shim.css",
     "./modifiers.importance.shim.css": "./src/modifiers.importance.shim.css",
     "./modifiers.criticality.shim.css": "./src/modifiers.criticality.shim.css",
     "./modifiers.density.css": "./src/modifiers.density.css",
-    "./spacing.css": "./src/spacing.css"
+    "./spacing.css": "./src/spacing.css",
+    "./package.json": "./package.json"
   },
   "files": [
     "src"
@@ -28,14 +33,21 @@
     "access": "public"
   },
   "scripts": {
-    "check": "bun run check:biome",
-    "check:fix": "bun run check:biome:fix",
+    "check": "bun run check:biome && bun run check:ts",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
-    "check:biome:fix": "biome check --write"
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.11",
-    "@canonical/biome-config": "^0.37.0"
+    "@canonical/biome-config": "^0.37.0",
+    "@canonical/typescript-config": "^0.37.0",
+    "@types/node": "^26.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   },
   "dependencies": {
     "@canonical/design-tokens": "0.8.1",

@@ -62,6 +62,37 @@ systems out of each other's way, and bridges the theme signal between them. A te
 binds its copy to the files here so the two cannot drift. Nothing about that arrangement changes this
 package or the markup of a page that does not need it.
 
+## Entry points
+
+Four, and `@canonical/styles` is the one an ordinary page wants: the whole stylesheet, in the order
+above. The other three are that stylesheet in parts.
+
+| Entry | What it is |
+| --- | --- |
+| `@canonical/styles` | everything: the values, the element rules and the layout presets. |
+| `@canonical/styles/tokens.css` | every custom property the design system declares, and not one rule that styles an element. Import it and nothing changes on the page until something reads a value from it. |
+| `@canonical/styles/elements.css` | every rule the design system applies to a plain element: the reset, the root's baseline, and the typography with its baseline engine. |
+| `@canonical/styles/layout.css` | the grid presets — `grid`, `subgrid`, `responsive`, `intrinsic` — which claim those four class names in a page's namespace. |
+
+The parts exist for one reason. A page that also runs another CSS framework cannot take the element
+rules: the other framework has its own `p` rule, and only one of the two can own `line-height`. Such a
+page takes `tokens.css` and `layout.css`, and gets its element rules from that framework's adapter
+instead, in a copy confined to the part of the page the design system owns —
+`@canonical/styles-vanilla-adapter` builds that copy out of the same files `elements.css` imports.
+
+Two properties make the parts safe to mix, and a test in this package holds both.
+
+**Every entry opens with the same layer order statement.** It has to be the first rule of whichever
+stylesheet a page loads first, because it fixes the order of every layer for that page; two entries
+declaring different orders would mean the same rules arbitrating differently depending on which entry
+a consumer picked.
+
+**No entry imports another.** An `@layer` statement inside a layer block declares sublayers of that
+layer rather than top-level layers, so an entry that composed another would nest the order instead of
+repeating it. Keeping them independent means a page may load one, two or all three, in any order, and
+get the same result — and that each file is fetched, parsed and applied once, which matters because a
+browser treats every `@import` as its own stylesheet and de-duplicates nothing.
+
 ## Cascade Layers
 
 Everything this package itself ships is in a named layer, and the order is fixed by one statement, the
