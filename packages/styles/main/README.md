@@ -190,7 +190,7 @@ reaches a bare element outside such a region. `@canonical/styles-vanilla-adapter
 | Feature | Used by | Chrome | Safari | Firefox |
 | --- | --- | --- | --- | --- |
 | `light-dark()` | every colour token, including the `--color-text` the reset declares on the root | 123 | 17.5 | 120 |
-| `mod()` | the baseline engine | 125 | 17.4 | 128 |
+| `mod()` | the baseline engine | 125 | 15.4 | 118 |
 | `@property` | the baseline engine | 85 | 16.4 | 128 |
 
 Read the table as a whole, not row by row: the floor is the highest number in each column, because the
@@ -232,15 +232,15 @@ to add to your root, and the reset applies exactly where it did before.
    layer rather than by accident of order — and a rule of yours that you later want overridden by a
    component can simply be moved down.
 
-If you import a subpath rather than the package entry — `@canonical/styles/spacing.css` and the four
+If you import a subpath rather than the package entry — `@canonical/styles/spacing.css` and the five
 other subpaths this package exports — note that a subpath carries no order statement, so the layers it
 opens are ordered by wherever they first appear in your own stylesheet. Import the entry point unless
 you have a reason not to.
 
 ### What Moves on the Page
 
-Measured in Chromium, an application that is the design system's throughout, before against after with
-`ds` added to the root. Four things change on every element, and one on `<hr>`; nothing else does.
+Measured in Chromium, an application that is the design system's throughout, before against after, with
+nothing added to the root. Four things change on every element, and one on `<hr>`; nothing else does.
 
 | What | Before | After | Why |
 | --- | --- | --- | --- |

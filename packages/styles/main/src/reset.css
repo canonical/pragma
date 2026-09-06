@@ -15,9 +15,10 @@
  * declared — the page follows the reader's own root font size, which is what a
  * rem-based scale is for.
  *
- * `:where()` appears where a zero specificity matters: these are defaults, and
- * a single class in any layer above `ds.reset` — the typographic engine, a
- * modifier, a component — has to be able to override one without escalating.
+ * `:where()` appears where a zero specificity matters: these are defaults.
+ * Layers sort before specificity, so any layer above `ds.reset` beats these
+ * whatever its weight; the zero weight is for a rule written into `ds.reset`
+ * itself, which must win by coming later, never by outweighing a default.
  */
 
 @layer ds.reset {
@@ -58,7 +59,8 @@
   /* Border-box for everything, pseudo-elements included. The components are
      authored against it: without it a padded control's width no longer includes
      its padding and border, and every control's box grows. Not wrapped in
-     `:where()` — the universal selector already carries no specificity — and
+     `:where()` — `*` carries no specificity and each pseudo-element one, less
+     than any class — and
      kept as one rule because it is the only one in the package with universal
      reach, where an extra matching pass is measurable on a large page. */
   *,
