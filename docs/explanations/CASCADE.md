@@ -77,7 +77,7 @@ one statement fixing their order. Where the rules that select bare elements have
 question with its own answer, further down: not in pragma's stylesheet, but in the package written for
 the pages that need it.
 
-## One statement, ten names
+## One statement, thirteen names
 
 Layer order is settled by first appearance. A layer that first appears in whichever file a bundler
 happened to emit first takes a position nobody chose, and once a layer exists a later statement can add
@@ -87,7 +87,8 @@ is legal after it because a layer statement and `@charset` are the only rules an
 
 ```css
 @layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers, ds.surfaces,
-  ds.states, ds.components, ds.components.global, ds.components.app;
+  ds.states, ds.components, ds.components.global, ds.components.sites,
+  ds.components.documentation, ds.components.stores, ds.components.apps;
 ```
 
 (The [README's layer table](../../packages/styles/main/README.md#cascade-layers) is the reference for
@@ -123,7 +124,7 @@ shape.
 
 A rule written straight into a parent layer does not sit beside its sublayers — it sits in the layer's
 implicit final sublayer, which is *above* every named one. So `@layer ds.components { .thing { … } }`
-beats `@layer ds.components.app { .thing { … } }` no matter what the statement says. Measured, and the
+beats `@layer ds.components.apps { .thing { … } }` no matter what the statement says. Measured, and the
 reason pragma's layout presets moved out of the parent layer and into the global tier: a component
 package could not override them by layer, only by specificity, which is the failure the layers were
 meant to end.
@@ -133,16 +134,36 @@ package holds to it and its test enforces it there; one sheet in the form packag
 layout preset straight into `ds.components`, and the change that wraps the component stylesheets by
 tier folds it into a tier with the rest.
 
-### Both tiers are named in the statement
+### The component tiers follow the tier tree, flat
 
-`ds.components.global` is for the global component packages' stylesheets; `ds.components.app` is for
-the application tiers', so that an application tier arbitrating a component it also ships wins by
-layer rather than by whichever package a bundler loaded last. (The component packages are being
-wrapped in their tier separately; until they are, the styles package's own layout presets are what
-sits in the global tier, and the README's guarantees say which of the two is still empty.) That
-ordering only holds because both names appear in the statement. A sublayer left to a
-`@layer ds.components.app { … }` block somewhere in the tree takes its position from whichever file
-opened it first, which is exactly the bundler-order dependency the statement exists to remove.
+Component packages are organised in tiers — a global tier and, above it, tiers for the kinds of
+product the system serves. The layers under `ds.components` are those tiers, named by their tier id
+and not by a context word, so that the layer a stylesheet writes into is the tier the graph already
+says it belongs to, with no second vocabulary to keep in step.
+
+**The second level is named in the statement**, all five of it:
+`ds.components.global`, then `ds.components.sites`, `ds.components.documentation`,
+`ds.components.stores` and `ds.components.apps`. That is what makes a product tier's rule for a
+component beat the global tier's rule for the same component whatever order a bundler loaded the two
+packages in. A sublayer left to a `@layer ds.components.apps { … }` block somewhere in the tree would
+take its position from whichever file opened it first, which is exactly the bundler-order dependency
+the statement exists to remove.
+
+**A sub-tier package declares its own layer**, first in its CSS entry —
+`@layer ds.components.apps-lxd;` — and does not appear in pragma's statement. A name the statement
+does not carry is placed where it first appears, which for a package loaded after the design system's
+entry is after all thirteen: the sub-tier lands above the second level, which is where it belongs.
+Nothing needs to reserve it in advance, and pragma does not have to know which sub-tiers exist.
+
+**The names are flat, and the hyphen is load-bearing.** `ds.components.apps-lxd` is a sublayer of
+`ds.components`, a sibling of `ds.components.apps`. Written as `ds.components.apps.lxd` it would be a
+sublayer of `ds.components.apps` instead, and the section above says what happens then: the rules the
+`apps` tier writes directly into its own layer would sit in that layer's implicit final sublayer and
+outrank everything under it, so a sub-tier could never override its parent by layer. The tree in the
+graph is a hierarchy; the layer names that mirror it have to be flat to keep that hierarchy working.
+
+(The styles change that carries these names is stacked below this one; the README's statement is the
+copy a test binds to the stylesheet.)
 
 One related trap, measured: importing a stylesheet with `@import url("…") layer(L)` when that
 stylesheet itself opens `L` nests it as `L.L` — a sublayer that loses to `L`'s own rules. Pragma's own
@@ -151,8 +172,8 @@ third-party file that carries none.
 
 ## Where the confinement lives
 
-Three of pragma's ten layers select bare elements: `normalize`, `ds.reset` and `ds.typography` — the
-reset, the root's baseline and the typographic engine. On a page that is pragma's, that is exactly
+Three of pragma's thirteen layers select bare elements: `normalize`, `ds.reset` and `ds.typography`
+— the reset, the root's baseline and the typographic engine. On a page that is pragma's, that is exactly
 what you want. A paragraph is styled because it is a paragraph, wherever it sits and whoever wrote the
 markup, and nothing has to opt in.
 

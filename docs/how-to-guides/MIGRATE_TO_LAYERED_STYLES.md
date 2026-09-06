@@ -21,9 +21,9 @@ Background reading, if you want the reasoning rather than the steps:
 
 Before this release the layer statement in the design system's entry point named four layers that
 almost nothing was written into, so its rules competed with yours on specificity and on load order.
-Now every rule it ships is in one of ten named layers whose order one statement fixes.
+Now every rule it ships is in one of thirteen named layers whose order one statement fixes.
 
-Three of those ten style bare elements, and they stay exactly as plain as they were: no scope, no
+Three of those thirteen style bare elements, and they stay exactly as plain as they were: no scope, no
 marker class, no condition. Your paragraphs, headings and controls are styled because of what they
 are, page-wide, as before.
 
@@ -54,7 +54,8 @@ system's import:
 ```css
 @layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers,
   ds.surfaces, ds.states, ds.components, ds.components.global,
-  ds.components.app, app;
+  ds.components.sites, ds.components.documentation, ds.components.stores,
+  ds.components.apps, app;
 @import url("@canonical/styles");
 
 @layer app {
