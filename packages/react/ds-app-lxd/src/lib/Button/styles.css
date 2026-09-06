@@ -1,7 +1,7 @@
 /* component styles
- * Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
+ * Layer: ds.components.apps-lxd (@canonical/styles README, "Cascade layers"). */
 
-@layer ds.components.app {
+@layer ds.components.apps-lxd {
   /* component variables
       --button-color-background: background color of the button
       --button-color-background-hover: background color of the button on hover

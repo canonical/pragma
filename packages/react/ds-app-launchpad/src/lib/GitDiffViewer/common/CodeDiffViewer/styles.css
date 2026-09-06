@@ -1,7 +1,7 @@
 /* @canonical/generator-canonical-ds 0.0.1
- * Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
+ * Layer: ds.components.apps-launchpad (@canonical/styles README, "Cascade layers"). */
 
-@layer ds.components.app {
+@layer ds.components.apps-launchpad {
   .ds.code-diff-viewer {
     font-size: 13px;
 

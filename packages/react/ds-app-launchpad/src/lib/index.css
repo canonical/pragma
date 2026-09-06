@@ -1,0 +1,43 @@
+/* @canonical/react-ds-app-launchpad — every component stylesheet in one import.
+ *
+ * The first rule is this package's own cascade layer. A layer takes its place
+ * in the order the first time its name is seen, so naming it here — before any
+ * component sheet can open a block with it — is what keeps that place the same
+ * whichever sheet a bundler emits first.
+ *
+ * The name comes from the tier this package implements, which is why it is a
+ * single flat name and not a nesting of one. `@canonical/styles` names the
+ * tiers one level up, so a name like this one is appended after them and sits
+ * above the tier it specialises. See "Cascade layers" in the
+ * `@canonical/styles` README.
+ *
+ * The imports below carry no `layer()` keyword on purpose: each sheet opens its
+ * own block with the same name, and the keyword would nest it one level deeper.
+ *
+ * Importing a component already brings its own stylesheet, so this file is for
+ * a consumer who wants every component's CSS without importing every component.
+ */
+@layer ds.components.apps-launchpad;
+
+@import url("./DiffChangeMarker/common/DetailedChangeMarker/styles.css");
+@import url("./DiffChangeMarker/common/SimpleChangeMarker/styles.css");
+@import url("./DiffChangeMarker/styles.css");
+@import url("./EditableBlock/styles.css");
+@import url("./FileTree/common/File/styles.css");
+@import url("./FileTree/common/Folder/styles.css");
+@import url("./FileTree/common/IndentationBlock/styles.css");
+@import url("./FileTree/common/Node/styles.css");
+@import url("./FileTree/common/SearchBox/styles.css");
+@import url("./FileTree/styles.css");
+@import url("./GitDiffViewer/common/CodeDiffViewer/HighlighTheme.css");
+@import url("./GitDiffViewer/common/CodeDiffViewer/common/AnnotatedDiffLine/styles.css");
+@import url("./GitDiffViewer/common/CodeDiffViewer/common/DiffLine/styles.css");
+@import url("./GitDiffViewer/common/CodeDiffViewer/styles.css");
+@import url("./GitDiffViewer/common/FileHeader/styles.css");
+@import url("./GitDiffViewer/styles.css");
+@import url("./MarkdownEditor/common/Toolbar/common/Button/styles.css");
+@import url("./MarkdownEditor/common/Toolbar/common/Group/styles.css");
+@import url("./MarkdownEditor/common/Toolbar/common/Separator/styles.css");
+@import url("./MarkdownEditor/common/Toolbar/styles.css");
+@import url("./MarkdownEditor/common/ViewModeTabs/styles.css");
+@import url("./MarkdownEditor/styles.css");
