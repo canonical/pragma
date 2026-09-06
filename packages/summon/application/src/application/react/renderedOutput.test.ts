@@ -137,9 +137,9 @@ describe("rendered template output is well-formed in every combination", () => {
  * Neither shows up as a syntax error, so neither is covered by the parse gate
  * above.
  *
- * The root carries no `ds`. An ordinary page is the design system's by
- * default and each component carries `ds` on itself; marking a whole document
- * belongs to the adapter, on a page another framework partly owns.
+ * The root carries context and density, and the theme where the server
+ * resolves one. Nothing on it declares the design system itself: its
+ * stylesheet applies to the page as it stands.
  */
 describe("the rendered application declares its context and density", () => {
   /** The class list every rendered `<html>` must carry. */

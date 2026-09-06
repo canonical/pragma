@@ -266,9 +266,9 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
   // mismatch to reconcile. index.html carries the same classes for the
   // client-only build.
   //
-  // No `ds` on the root: an ordinary page is the design system's by default,
-  // and each component carries `ds` on itself. Marking a whole document is an
-  // adapter concern, for a page another framework partly owns.
+  // Context, density and the theme are the whole of the root contract. Nothing
+  // on this element declares the design system itself: its stylesheet applies
+  // to the page as it stands.
   return (
     <html
       lang={lang}
