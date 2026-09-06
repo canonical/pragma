@@ -31,7 +31,7 @@ export default function getMenuItemProps<T extends Item = Item>(
   };
 
   if (hasChildren) {
-    result["aria-haspopup"] = true;
+    result["aria-haspopup"] = "menu";
     result["aria-expanded"] = nav.isOpen && status.inHighlightedBranch;
   }
 
