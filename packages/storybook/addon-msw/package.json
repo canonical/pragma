@@ -6,6 +6,7 @@
     "dist",
     "public"
   ],
+  "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
   "author": {
     "email": "webteam@canonical.com",
@@ -39,12 +40,14 @@
     "build:all": "bun run build:package",
     "build:package": "bun run build:package:tsc",
     "build:package:tsc": "tsc -p tsconfig.build.json",
-    "storybook": "storybook dev -p 6007 --no-open --host 0.0.0.0",
-    "check": "bun run check:biome && bun run check:ts",
+    "storybook": "storybook dev -p 6005 --no-open --host 0.0.0.0",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
-    "check:ts": "tsc --noEmit"
+    "check:ts": "tsc --noEmit",
+    "check:webarchitect": "webarchitect library",
+    "test": "echo 'No unit tests yet'"
   },
   "dependencies": {
     "@canonical/styles-debug": "^0.37.0",
@@ -55,6 +58,7 @@
     "@canonical/biome-config": "^0.37.0",
     "@canonical/storybook-config": "^0.37.0",
     "@canonical/typescript-config-react": "^0.37.0",
+    "@canonical/webarchitect": "^0.37.0",
     "@storybook/addon-docs": "^10.3.1",
     "@storybook/react-vite": "^10.3.1",
     "@types/node": "^26.0.0",

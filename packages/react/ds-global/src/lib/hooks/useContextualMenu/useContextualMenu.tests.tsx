@@ -17,7 +17,7 @@ const menu: MenuItem = {
   items: [
     { key: "a1", label: "A one", url: "/a1" },
     { key: "a2", label: "A two", url: "/a2" },
-    { type: "separator" },
+    { type: "separator", key: "before-b1" },
     { key: "b1", label: "B one", url: "/b1" },
   ],
 };
@@ -83,13 +83,13 @@ describe("useContextualMenu", () => {
     expect(result.current.highlightedItems.at(-2)?.key).toBe("menu");
   });
 
-  it("feeds separators to the tree as disabled nodes with generated keys", () => {
-    // The tree machinery skips DISABLED nodes — that, plus a guaranteed key
-    // (the index throws on identity-less nodes), is the entire separator
-    // contract. The discriminant survives annotation for the render layer.
+  it("feeds separators to the tree as disabled nodes", () => {
+    // The tree machinery skips DISABLED nodes — that, plus the key every
+    // navigation item carries, is the entire separator contract. The
+    // discriminant survives annotation for the render layer.
     const { result } = renderHook(() => useContextualMenu({ root: menu }));
 
-    const separator = result.current.index["separator-0"];
+    const separator = result.current.index["before-b1"];
     expect(separator).toBeDefined();
     expect(separator?.disabled).toBe(true);
     expect(separator && "type" in separator ? separator.type : undefined).toBe(

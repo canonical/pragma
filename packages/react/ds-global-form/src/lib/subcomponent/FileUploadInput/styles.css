@@ -1,138 +1,144 @@
-.ds.input.file-upload {
-  display: flex;
-  flex-direction: column;
-  gap: var(--form-group-gap);
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
-  & > .drop-zone {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    min-height: calc(var(--dimension-400) * 4); /* 128px */
-    /* Compensate padding for border so total stays on baseline grid */
-    padding: calc(
-        var(--form-input-padding-block) -
-        var(--form-input-border-width)
-      )
-      var(--form-input-padding-inline);
-    border: var(--form-input-border-width) dashed var(--form-input-border-color);
-    border-radius: var(--form-input-border-radius);
-    background-color: var(--form-input-background);
-    color: var(--color-text-muted);
-    cursor: pointer;
-    transition:
-      border-color 150ms ease,
-      background-color 150ms ease;
-
-    & > input[type="file"] {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-
-    &:hover:not(:disabled) {
-      background-color: var(
-        --hover--color-foreground-input,
-        var(--color-foreground-input-hover)
-      );
-    }
-
-    &:focus-visible {
-      outline: none;
-      border-color: var(--form-input-border-color-focus);
-      box-shadow: 0 0 0 1px var(--form-focus-ring-color);
-    }
-
-    &.drag-over {
-      border-color: var(--form-input-border-color-focus);
-      background-color: var(
-        --hover--color-foreground-input,
-        var(--color-foreground-input-hover)
-      );
-    }
-
-    &:disabled {
-      background-color: var(--form-input-background-disabled);
-      color: var(--form-input-color-disabled);
-      cursor: not-allowed;
-    }
-  }
-
-  & > .file-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+@layer ds.components.global {
+  .ds.input.file-upload {
     display: flex;
     flex-direction: column;
     gap: var(--form-group-gap);
-  }
 
-  & > .file-list > .file-item {
-    display: flex;
-    align-items: baseline;
-    gap: var(--form-field-inline-gap);
-    box-sizing: border-box;
-    height: var(--form-input-height);
-    padding-block: 0;
-    padding-inline: var(--form-input-padding-inline);
-    border: var(--form-input-border-width) solid var(--form-input-border-color);
-    border-radius: var(--form-input-border-radius);
-    background-color: var(--form-input-background);
-  }
+    & > .drop-zone {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      min-height: calc(var(--dimension-400) * 4); /* 128px */
+      /* Compensate padding for border so total stays on baseline grid */
+      padding: calc(
+          var(--form-input-padding-block) -
+          var(--form-input-border-width)
+        )
+        var(--form-input-padding-inline);
+      border: var(--form-input-border-width) dashed
+        var(--form-input-border-color);
+      border-radius: var(--form-input-border-radius);
+      background-color: var(--form-input-background);
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition:
+        border-color 150ms ease,
+        background-color 150ms ease;
 
-  & > .file-list > .file-item > .file-preview {
-    width: var(--dimension-400); /* 32px */
-    height: var(--dimension-400); /* 32px */
-    object-fit: cover;
-    border-radius: var(--form-input-border-radius);
-    flex-shrink: 0;
-  }
+      & > input[type="file"] {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
 
-  & > .file-list > .file-item > .file-name {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+      &:hover:not(:disabled) {
+        background-color: var(
+          --hover--color-foreground-input,
+          var(--color-foreground-input-hover)
+        );
+      }
 
-  & > .file-list > .file-item > .file-size {
-    color: var(--color-text-muted);
-    white-space: nowrap;
-  }
+      &:focus-visible {
+        outline: none;
+        border-color: var(--form-input-border-color-focus);
+        box-shadow: 0 0 0 1px var(--form-focus-ring-color);
+      }
 
-  & > .file-list > .file-item > .file-remove {
-    appearance: none;
-    border: none;
-    background: none;
-    color: var(--color-text-muted);
-    cursor: pointer;
-    padding: 0 0.25rem;
+      &.drag-over {
+        border-color: var(--form-input-border-color-focus);
+        background-color: var(
+          --hover--color-foreground-input,
+          var(--color-foreground-input-hover)
+        );
+      }
 
-    &:hover {
-      color: var(--color-text);
+      &:disabled {
+        background-color: var(--form-input-background-disabled);
+        color: var(--form-input-color-disabled);
+        cursor: not-allowed;
+      }
     }
 
-    /* biome-ignore lint/style/noDescendingSpecificity: :disabled follows :hover by
-       interaction-state order; both target the same element and reordering would
-       change the cascade for no visual gain. */
-    &:disabled {
-      cursor: not-allowed;
-      opacity: 0.5;
+    & > .file-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--form-group-gap);
+    }
+
+    & > .file-list > .file-item {
+      display: flex;
+      align-items: baseline;
+      gap: var(--form-field-inline-gap);
+      box-sizing: border-box;
+      height: var(--form-input-height);
+      padding-block: 0;
+      padding-inline: var(--form-input-padding-inline);
+      border: var(--form-input-border-width) solid
+        var(--form-input-border-color);
+      border-radius: var(--form-input-border-radius);
+      background-color: var(--form-input-background);
+    }
+
+    & > .file-list > .file-item > .file-preview {
+      width: var(--dimension-400); /* 32px */
+      height: var(--dimension-400); /* 32px */
+      object-fit: cover;
+      border-radius: var(--form-input-border-radius);
+      flex-shrink: 0;
+    }
+
+    & > .file-list > .file-item > .file-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    & > .file-list > .file-item > .file-size {
+      color: var(--color-text-muted);
+      white-space: nowrap;
+    }
+
+    & > .file-list > .file-item > .file-remove {
+      appearance: none;
+      border: none;
+      background: none;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      padding: 0 0.25rem;
+
+      &:hover {
+        color: var(--color-text);
+      }
+
+      /* biome-ignore lint/style/noDescendingSpecificity: :disabled follows :hover by
+         interaction-state order; both target the same element and reordering would
+         change the cascade for no visual gain. */
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
     }
   }
-}
 
-/* Danger state */
-.danger > .payload .ds.input.file-upload > .drop-zone {
-  border-color: var(--form-input-border-color-error);
-}
+  /* Danger state */
+  .danger > .payload .ds.input.file-upload > .drop-zone {
+    border-color: var(--form-input-border-color-error);
+  }
 
-.danger > .payload .ds.input.file-upload > .drop-zone:focus-visible {
-  border-color: var(--form-focus-ring-color-error);
-  box-shadow: 0 0 0 1px var(--form-focus-ring-color-error);
+  .danger > .payload .ds.input.file-upload > .drop-zone:focus-visible {
+    border-color: var(--form-focus-ring-color-error);
+    box-shadow: 0 0 0 1px var(--form-focus-ring-color-error);
+  }
 }

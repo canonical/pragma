@@ -297,7 +297,6 @@ describe("generated manifest — validity matrix", () => {
       if (withStorybook) {
         expect(manifest.scripts["build:storybook"]).toBeDefined();
         expect(allDependencies.storybook).toBeDefined();
-        expect(allDependencies["@storybook/addon-themes"]).toBeDefined();
         expect(allDependencies["@storybook/react-vite"]).toBeDefined();
         expect(allDependencies["@canonical/storybook-config"]).toBeDefined();
         expect(allDependencies["@canonical/styles-debug"]).toBeDefined();
@@ -321,4 +320,69 @@ describe("generated manifest — validity matrix", () => {
       }
     },
   );
+});
+
+describe("generated Storybook preview", () => {
+  // The preview file is where a generated package says which spacing and
+  // control sizes its stories render at, and it is a template: a later edit
+  // can drop a line without anything failing. These assertions pin what the
+  // file must do and what it must not do any more.
+  const renderPreview = (
+    answers: PackageAnswers,
+    monorepoInfo: MonorepoInfo = { isMonorepo: false },
+  ): string =>
+    renderString(
+      readFileSync(
+        new URL("./templates/storybook-preview.ts.ejs", import.meta.url),
+        "utf-8",
+      ),
+      createTemplateContext(answers, monorepoInfo),
+    );
+
+  const answersFor = (type: PackageAnswers["type"]): PackageAnswers => ({
+    name: "@canonical/my-pkg",
+    type,
+    description: "A package",
+    withReact: true,
+    withStorybook: true,
+    withCli: false,
+    withPrTemplate: false,
+    runInstall: false,
+  });
+
+  it.each(["tool-ts", "library", "css"] as const)(
+    "%s: declares one context and one density on the preview document",
+    (type) => {
+      const preview = renderPreview(answersFor(type));
+
+      expect(preview).toContain(
+        'document.documentElement.classList.add("app", "comfortable");',
+      );
+    },
+  );
+
+  it.each(["tool-ts", "library", "css"] as const)(
+    "%s: leaves the theme toggle to the shared Storybook addon",
+    (type) => {
+      const preview = renderPreview(answersFor(type));
+
+      // The old preview carried its own theme decorator, whose class names
+      // (`is-light`, `is-paper`) belonged to a different framework and fought
+      // the toolbar the shared config already provides.
+      expect(preview).not.toContain("@storybook/addon-themes");
+      expect(preview).not.toContain("withThemeByClassName");
+      expect(preview).not.toContain("is-light");
+      expect(preview).not.toContain("is-paper");
+    },
+  );
+
+  it("imports the package stylesheet first, and only for a css package", () => {
+    const css = renderPreview(answersFor("css"));
+    const library = renderPreview(answersFor("library"));
+
+    // First import: a stylesheet reaches the page in the order the bundler
+    // evaluates the modules that import it, so this one has to lead.
+    expect(css.match(/^import .*$/m)?.[0]).toBe('import "../src/index.css";');
+    expect(library).not.toContain('import "../src/index.css";');
+  });
 });
