@@ -1,8 +1,6 @@
-import type React from "react";
+import type { ComponentProps } from "react";
 
-type NativeDateInputProps = React.InputHTMLAttributes<HTMLInputElement>;
-
-type AdditionalDateProps = {
+type OwnProps = {
   /** Minimum date value (YYYY-MM-DD format) */
   min?: string;
 
@@ -10,5 +8,7 @@ type AdditionalDateProps = {
   max?: string;
 };
 
-/** Props for the presentational date input (no react-hook-form). */
-export type DateInputProps = NativeDateInputProps & AdditionalDateProps;
+/** Props for the presentational date input (no react-hook-form). Renders an
+ * `<input type="date">` as its root. */
+export type DateInputProps = OwnProps &
+  Omit<ComponentProps<"input">, keyof OwnProps>;

@@ -27,6 +27,7 @@ export const Choices = ({
   options,
   value,
   onChange,
+  ...rest
 }: ChoicesPresentationProps): React.ReactElement => {
   const type = isMultiple ? "checkbox" : "radio";
 
@@ -42,6 +43,7 @@ export const Choices = ({
 
   return (
     <fieldset
+      {...rest}
       id={id}
       style={layoutStyle}
       className={[componentCssClassName, layout, className]

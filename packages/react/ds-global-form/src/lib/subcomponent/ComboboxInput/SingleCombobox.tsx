@@ -43,6 +43,7 @@ export const SingleCombobox = forwardRef<HTMLInputElement, ComboboxInputProps>(
       convertItemToString = defaultConvertItemToString,
       convertValueToItem = defaultConvertValueToItem,
       filterItems = defaultFilterItems,
+      ...rest
     },
     fieldRef,
   ) {
@@ -114,6 +115,7 @@ export const SingleCombobox = forwardRef<HTMLInputElement, ComboboxInputProps>(
 
     return (
       <div
+        {...rest}
         id={id}
         style={style}
         className={[componentCssClassName, className].filter(Boolean).join(" ")}

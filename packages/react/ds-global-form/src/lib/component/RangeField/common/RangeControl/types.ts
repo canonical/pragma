@@ -1,16 +1,6 @@
-import type React from "react";
+import type { ComponentProps } from "react";
 
-type NativeInputAttrs = Omit<
-  React.InputHTMLAttributes<HTMLInputElement>,
-  "min" | "max"
->;
-
-/**
- * Props for the presentational Range control (no react-hook-form). The field
- * tier binds the NUMBER input (the canonical, registered control) by spreading
- * react-hook-form's `register()` result here; the slider is a JS-only mirror.
- */
-export type RangeControlProps = NativeInputAttrs & {
+type OwnProps = {
   /**
    * Lower bound, required as a number. Both the number input and the slider
    * share it, so the two controls represent the same range (an omitted `min`
@@ -29,3 +19,15 @@ export type RangeControlProps = NativeInputAttrs & {
    */
   sliderLabel?: string;
 };
+
+/**
+ * Props for the presentational Range control (no react-hook-form). The field
+ * tier binds the NUMBER input (the canonical, registered control) by spreading
+ * react-hook-form's `register()` result here; the slider is a JS-only mirror.
+ *
+ * The rendered root is a presentational `<div class="ds range-control">` that
+ * lays the two controls out; the component's native props are the number
+ * `<input>`'s — the labelable, registered control they are forwarded to.
+ */
+export type RangeControlProps = OwnProps &
+  Omit<ComponentProps<"input">, keyof OwnProps>;

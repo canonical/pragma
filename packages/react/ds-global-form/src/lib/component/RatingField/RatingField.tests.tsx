@@ -25,6 +25,22 @@ describe("RatingField", () => {
     expect(screen.getByRole("radio", { name: "3 of 5 stars" })).toBeChecked();
   });
 
+  it("passes native attributes through to its root element", () => {
+    renderWithForm(
+      <RatingField
+        name="score"
+        label="Rate"
+        data-testid="score-field"
+        title="Your rating"
+      />,
+    );
+    const root = screen.getByTestId("score-field");
+    expect(root).toHaveAttribute("title", "Your rating");
+    expect(root).toHaveAttribute("role", "radiogroup");
+    // the design-system class is merged, not replaced
+    expect(root).toHaveClass("ds", "form-rating");
+  });
+
   // The Field router dispatch (`<Field inputType="rating" />`) is type-checked
   // by the discriminated FieldProps union; a runtime test is omitted here
   // because importing the Field router pulls in ds-global (via ResetButton),
