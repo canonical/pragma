@@ -154,6 +154,13 @@ export type _Item<T extends Item = Item> = _DistributiveOmit<T, "items"> & {
  * member-shaped. The conditional is only on the `Omit` half — the annotation
  * fields above stay a concrete object type, so generic code can access
  * `parentUrl`/`depth`/`items` without resolving the conditional.
+ *
+ * Exported, but private in the same sense as `_Item` and `_Index`: it is for
+ * code that DEFINES an item type, not for code that passes items around. An
+ * application composing its own item adds fields with `&` and needs nothing
+ * from here; it is the packages declaring `BreadcrumbItem`, `TabItem` and the
+ * rest that must drop a field from a union, and they live behind this same
+ * `_` convention.
  */
 export type _DistributiveOmit<T, K extends PropertyKey> = T extends unknown
   ? Omit<T, K>
