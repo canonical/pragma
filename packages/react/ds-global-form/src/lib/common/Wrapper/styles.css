@@ -1,37 +1,41 @@
-.ds.field {
-  display: grid;
-  grid-template-columns: subgrid;
-  grid-column: var(--form-field-columns, 1 / -1);
-  /* Vertical gap from the label row down to the payload row. Uses the block-axis
-     label-gap token — NOT --form-field-inline-gap (that is horizontal-only now).
-     Default is the label→control gap (--form-field-label-gap, 8px); when a
-     description LEADS the payload the row below tightens it to the label→
-     description gap (--form-field-label-description-gap, 4px), per the 15/07
-     review's field-spacing spec. */
-  row-gap: var(--form-field-label-gap);
-  align-items: baseline;
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
-  /* Label sits closer to a leading description than to a bare control. */
-  &:has(> .payload > .ds.field-description:first-child) {
-    row-gap: var(
-      --form-field-label-description-gap,
-      var(--form-field-label-gap)
-    );
-  }
-
-  & > .ds.field-label {
-    grid-column: var(--form-label-columns, 1 / -1);
-  }
-
-  & > .payload {
-    grid-column: var(--form-payload-columns, 1 / -1);
+@layer ds.components.global {
+  .ds.field {
     display: grid;
     grid-template-columns: subgrid;
-    row-gap: var(--form-group-gap);
-  }
+    grid-column: var(--form-field-columns, 1 / -1);
+    /* Vertical gap from the label row down to the payload row. Uses the block-axis
+       label-gap token — NOT --form-field-inline-gap (that is horizontal-only now).
+       Default is the label→control gap (--form-field-label-gap, 8px); when a
+       description LEADS the payload the row below tightens it to the label→
+       description gap (--form-field-label-description-gap, 4px), per the 15/07
+       review's field-spacing spec. */
+    row-gap: var(--form-field-label-gap);
+    align-items: baseline;
 
-  /* Inputs that don't need columns span the full payload width */
-  & > .payload > * {
-    grid-column: 1 / -1;
+    /* Label sits closer to a leading description than to a bare control. */
+    &:has(> .payload > .ds.field-description:first-child) {
+      row-gap: var(
+        --form-field-label-description-gap,
+        var(--form-field-label-gap)
+      );
+    }
+
+    & > .ds.field-label {
+      grid-column: var(--form-label-columns, 1 / -1);
+    }
+
+    & > .payload {
+      grid-column: var(--form-payload-columns, 1 / -1);
+      display: grid;
+      grid-template-columns: subgrid;
+      row-gap: var(--form-group-gap);
+    }
+
+    /* Inputs that don't need columns span the full payload width */
+    & > .payload > * {
+      grid-column: 1 / -1;
+    }
   }
 }
