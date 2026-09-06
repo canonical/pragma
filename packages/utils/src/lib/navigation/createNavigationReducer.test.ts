@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { annotateTree } from "./annotateTree.js";
 import createNavigationReducer from "./createNavigationReducer.js";
 import findAncestorPath from "./findAncestorPath.js";
-import getFirstEnabledChild from "./getFirstEnabledChild.js";
-import getLastEnabledChild from "./getLastEnabledChild.js";
+import getFirstInteractiveChild from "./getFirstInteractiveChild.js";
+import getLastInteractiveChild from "./getLastInteractiveChild.js";
 import getParentItem from "./getParentItem.js";
 import {
   NavigationActionType,
@@ -78,9 +78,9 @@ describe("findAncestorPath", () => {
   });
 });
 
-describe("getFirstEnabledChild", () => {
+describe("getFirstInteractiveChild", () => {
   it("returns first non-disabled child", () => {
-    const child = getFirstEnabledChild(index["/a"]);
+    const child = getFirstInteractiveChild(index["/a"]);
     expect(child?.url).toBe("/a/1");
   });
 
@@ -95,11 +95,11 @@ describe("getFirstEnabledChild", () => {
         { url: "/enabled", parentUrl: "test", depth: 1 },
       ],
     };
-    expect(getFirstEnabledChild(node)?.url).toBe("/enabled");
+    expect(getFirstInteractiveChild(node)?.url).toBe("/enabled");
   });
 
   it("returns undefined for item with no children", () => {
-    expect(getFirstEnabledChild(index["/c"])).toBeUndefined();
+    expect(getFirstInteractiveChild(index["/c"])).toBeUndefined();
   });
 
   it("returns undefined when all children are disabled", () => {
@@ -112,23 +112,23 @@ describe("getFirstEnabledChild", () => {
         { url: "/d2", disabled: true, parentUrl: "test", depth: 1 },
       ],
     };
-    expect(getFirstEnabledChild(node)).toBeUndefined();
+    expect(getFirstInteractiveChild(node)).toBeUndefined();
   });
 });
 
-describe("getLastEnabledChild", () => {
+describe("getLastInteractiveChild", () => {
   it("returns last non-disabled child", () => {
-    const child = getLastEnabledChild(index["/a"]);
+    const child = getLastInteractiveChild(index["/a"]);
     expect(child?.url).toBe("/a/2");
   });
 
   it("returns undefined for item with no children", () => {
-    expect(getLastEnabledChild(index["/c"])).toBeUndefined();
+    expect(getLastInteractiveChild(index["/c"])).toBeUndefined();
   });
 
   it("returns undefined for item with no items array", () => {
     const node: _Item = { key: "x", parentUrl: null, depth: 0 };
-    expect(getLastEnabledChild(node)).toBeUndefined();
+    expect(getLastInteractiveChild(node)).toBeUndefined();
   });
 
   it("returns undefined when all children are disabled", () => {
@@ -141,7 +141,7 @@ describe("getLastEnabledChild", () => {
         { url: "/d2", disabled: true, parentUrl: "test", depth: 1 },
       ],
     };
-    expect(getLastEnabledChild(node)).toBeUndefined();
+    expect(getLastInteractiveChild(node)).toBeUndefined();
   });
 });
 
@@ -548,7 +548,7 @@ describe("HOME/END when all siblings disabled", () => {
       keysSoFar: "",
     };
     const next = reduce(state, { type: NavigationActionType.HOME });
-    // getFirstEnabledChild returns undefined → !target → return state
+    // getFirstInteractiveChild returns undefined → !target → return state
     expect(next).toBe(state);
   });
 
@@ -585,8 +585,8 @@ describe("HOME/END on all-disabled siblings", () => {
 
   it("END lands on disabled last item — returns state unchanged", () => {
     // Only 2 items: /ok and /d1 (disabled). END from /ok goes to /d1.
-    // getLastEnabledChild skips /d1, returns /ok (same item) — covered.
-    // But if ALL siblings are disabled except current, getLastEnabledChild returns current.
+    // getLastInteractiveChild skips /d1, returns /ok (same item) — covered.
+    // But if ALL siblings are disabled except current, getLastInteractiveChild returns current.
     const state: NavigationState = {
       selectedItems: [root],
       highlightedItems: findAncestorPath(idx, idx["/ok"]),
@@ -596,52 +596,145 @@ describe("HOME/END on all-disabled siblings", () => {
       keysSoFar: "",
     };
     const next = reduce(state, { type: NavigationActionType.END });
-    // getLastEnabledChild returns /ok (not disabled), so it works
+    // getLastInteractiveChild returns /ok (not disabled), so it works
     expect(next.highlightedItems.at(-1)?.url).toBe("/ok");
   });
 });
 
-describe("PAGE_DOWN landing on disabled item", () => {
-  // Tree: /a, /b (disabled), /c — page down from /a by 1 should land on /b (disabled)
-  const mixedTree: Item = {
-    key: "root",
-    label: "Root",
-    items: [
-      { url: "/first", label: "First" },
-      { url: "/disabled-mid", label: "Mid", disabled: true },
-      { url: "/last", label: "Last" },
-    ],
-  };
+describe("PAGE_DOWN/PAGE_UP landing on a disabled item", () => {
+  // 12 items where index 10 is disabled: a page
+  // jump whose raw landing is disabled must not swallow the jump.
+  const items = Array.from({ length: 12 }, (_, i) => ({
+    url: `/i${i}`,
+    label: `Item ${i}`,
+    disabled: i === 10,
+  }));
+  const mixedTree: Item = { key: "root", label: "Root", items };
   const root = annotateTree(mixedTree);
   const idx = prepareIndex(root);
+  const reduce = createNavigationReducer(idx, {
+    rootItem: root,
+    orientation: "vertical",
+    wrap: false,
+  });
+  const stateAt = (url: string): NavigationState => ({
+    selectedItems: [root],
+    highlightedItems: findAncestorPath(idx, idx[url]),
+    currentDepth: 1,
+    isOpen: false,
+    inputValue: "",
+    keysSoFar: "",
+  });
 
-  it("returns state when page jump lands on disabled item", () => {
-    // Use delta=1 to land exactly on the disabled item
-    // handlePageJump with delta=1 from /first → index 0+1=1 → /disabled-mid (disabled) → return state
-    const _reduce = createNavigationReducer(idx, {
-      rootItem: root,
+  it("continues in the jump direction past the disabled landing", () => {
+    // From /i0, PAGE_DOWN (+10) lands raw on /i10 (disabled) → skips to /i11.
+    const next = reduce(stateAt("/i0"), {
+      type: NavigationActionType.PAGE_DOWN,
+    });
+    expect(next.highlightedItems.at(-1)?.url).toBe("/i11");
+  });
+
+  it("falls back toward the current item at the edge", () => {
+    // 12 items with BOTH trailing slots disabled: from /i0, PAGE_DOWN lands
+    // raw on index 10 (disabled), scans forward past index 11 (disabled) off
+    // the edge, then falls back to the nearest enabled sibling at index 9.
+    const edgedItems = items.map((item, i) =>
+      i >= 10 ? { ...item, disabled: true } : item,
+    );
+    const edgedRoot = annotateTree({
+      key: "root",
+      label: "Root",
+      items: edgedItems,
+    });
+    const edgedIdx = prepareIndex(edgedRoot);
+    const edgedReduce = createNavigationReducer(edgedIdx, {
+      rootItem: edgedRoot,
       orientation: "vertical",
       wrap: false,
     });
-    const _state: NavigationState = {
-      selectedItems: [root],
-      highlightedItems: findAncestorPath(idx, idx["/first"]),
+    const next = edgedReduce(
+      {
+        selectedItems: [edgedRoot],
+        highlightedItems: findAncestorPath(edgedIdx, edgedIdx["/i0"]),
+        currentDepth: 1,
+        isOpen: false,
+        inputValue: "",
+        keysSoFar: "",
+      },
+      { type: NavigationActionType.PAGE_DOWN },
+    );
+    expect(next.highlightedItems.at(-1)?.url).toBe("/i9");
+  });
+
+  it("wraps the skip scan across the boundary when wrapping is on", () => {
+    // 12 items with BOTH trailing slots disabled and wrap ON: from /i1,
+    // PAGE_DOWN lands raw on index 11 (disabled); the scan must follow the
+    // ring across the boundary to index 0 rather than stopping at the edge.
+    const ringItems = items.map((item, i) =>
+      i >= 10 ? { ...item, disabled: true } : item,
+    );
+    const ringRoot = annotateTree({
+      key: "root",
+      label: "Root",
+      items: ringItems,
+    });
+    const ringIdx = prepareIndex(ringRoot);
+    const ringReduce = createNavigationReducer(ringIdx, {
+      rootItem: ringRoot,
+      orientation: "vertical",
+      wrap: true,
+    });
+    const ringState = (url: string): NavigationState => ({
+      selectedItems: [ringRoot],
+      highlightedItems: findAncestorPath(ringIdx, ringIdx[url]),
       currentDepth: 1,
       isOpen: false,
       inputValue: "",
       keysSoFar: "",
-    };
-    // PAGE_DOWN uses delta=10, but with 3 items clamped to index 2 = /last (not disabled)
-    // We need PAGE_UP from /last with delta=-1... but PAGE_UP uses delta=-10
-    // Actually, the delta is always ±10. With 3 items, from /first (idx 0), +10 → clamped to 2 = /last (not disabled)
-    // We can't easily land on a disabled item with ±10 delta and clamping.
-    // But with wrapping: from /last (idx 2), +10 → (2+10)%3 = 0 = /first (not disabled)
-    // The only way to hit L406 is if the target at the clamped/wrapped index IS disabled.
-    // With a tree where the target position IS disabled:
-    // 3 items: [/first, /disabled, /last]. From /last (2), PAGE_UP → 2-10 clamped to 0 = /first
-    // Still not disabled. This line is unreachable with normal trees.
-    // Actually with 2 items: [/ok, /disabled]. From /ok (0), PAGE_DOWN clamped to 1 = /disabled. YES!
-    expect(true).toBe(true); // placeholder
+    });
+
+    const next = ringReduce(ringState("/i1"), {
+      type: NavigationActionType.PAGE_DOWN,
+    });
+    expect(next.highlightedItems.at(-1)?.url).toBe("/i0");
+
+    // From /i0 the ring walk comes full circle back to the current item —
+    // a no-op, not a crash or a landing on a disabled slot.
+    const full = ringReduce(ringState("/i0"), {
+      type: NavigationActionType.PAGE_DOWN,
+    });
+    expect(full.highlightedItems.at(-1)?.url).toBe("/i0");
+  });
+
+  it("skips a disabled landing on PAGE_UP too", () => {
+    // From /i11 with index 10 disabled... PAGE_UP (-10) lands raw on /i1
+    // (enabled) — use a tree with index 1 disabled instead.
+    const upItems = Array.from({ length: 12 }, (_, i) => ({
+      url: `/u${i}`,
+      label: `Item ${i}`,
+      disabled: i === 1,
+    }));
+    const upRoot = annotateTree({ key: "root", label: "Root", items: upItems });
+    const upIdx = prepareIndex(upRoot);
+    const upReduce = createNavigationReducer(upIdx, {
+      rootItem: upRoot,
+      orientation: "vertical",
+      wrap: false,
+    });
+    const next = upReduce(
+      {
+        selectedItems: [upRoot],
+        highlightedItems: findAncestorPath(upIdx, upIdx["/u11"]),
+        currentDepth: 1,
+        isOpen: false,
+        inputValue: "",
+        keysSoFar: "",
+      },
+      { type: NavigationActionType.PAGE_UP },
+    );
+    // Raw landing /u1 is disabled; continuing in the jump direction (up)
+    // lands on /u0.
+    expect(next.highlightedItems.at(-1)?.url).toBe("/u0");
   });
 });
 
@@ -920,7 +1013,7 @@ describe("horizontal reducer", () => {
     });
 
     // Highlight /a with currentDepth 2 (deeper), then ARROW_RIGHT → /b
-    // Auto-drill: /b has items but all disabled → getFirstEnabledChild returns undefined → fallthrough to non-drill path
+    // Auto-drill: /b has items but all disabled → getFirstInteractiveChild returns undefined → fallthrough to non-drill path
     const state: NavigationState = {
       selectedItems: [disabledRoot],
       highlightedItems: findAncestorPath(disabledIdx, disabledIdx["/a"]),
@@ -1016,5 +1109,100 @@ describe("mixed orientation", () => {
         type: NavigationActionType.ARROW_DOWN,
       }).highlightedItems.at(-1)?.url,
     ).toBe("/a/2");
+  });
+});
+
+describe("presentational nodes", () => {
+  // A separator sits between two real items. It is not disabled — nothing about
+  // it is temporarily unavailable — it simply is not an item, and traversal must
+  // pass over it exactly as it passes over a disabled one.
+  const withSeparator: Item = {
+    key: "root",
+    label: "Root",
+    items: [
+      { url: "/one", label: "One" },
+      { key: "sep", presentational: true },
+      { url: "/two", label: "Two" },
+    ],
+  };
+  const sepRoot = annotateTree(withSeparator);
+  const sepIdx = prepareIndex(sepRoot);
+  const reduce = createNavigationReducer(sepIdx, {
+    rootItem: sepRoot,
+    orientation: "vertical",
+    wrap: false,
+  });
+
+  const stateAt = (url: string): NavigationState => ({
+    selectedItems: [sepRoot],
+    highlightedItems: findAncestorPath(sepIdx, sepIdx[url]),
+    currentDepth: 1,
+    isOpen: true,
+    inputValue: "",
+    keysSoFar: "",
+  });
+
+  it("ARROW_DOWN steps over a separator to the next real item", () => {
+    const next = reduce(stateAt("/one"), {
+      type: NavigationActionType.ARROW_DOWN,
+    });
+    expect(next.highlightedItems.at(-1)?.url).toBe("/two");
+  });
+
+  it("ARROW_UP steps over a separator to the previous real item", () => {
+    const next = reduce(stateAt("/two"), {
+      type: NavigationActionType.ARROW_UP,
+    });
+    expect(next.highlightedItems.at(-1)?.url).toBe("/one");
+  });
+
+  it("END lands on the last real item, not on a trailing separator", () => {
+    const trailing = annotateTree({
+      key: "root",
+      items: [
+        { url: "/one", label: "One" },
+        { key: "sep", presentational: true },
+      ],
+    } satisfies Item);
+    const idx = prepareIndex(trailing);
+    const r = createNavigationReducer(idx, {
+      rootItem: trailing,
+      orientation: "vertical",
+      wrap: false,
+    });
+    const next = r(
+      {
+        selectedItems: [trailing],
+        highlightedItems: findAncestorPath(idx, idx["/one"]),
+        currentDepth: 1,
+        isOpen: true,
+        inputValue: "",
+        keysSoFar: "",
+      },
+      { type: NavigationActionType.END },
+    );
+    expect(next.highlightedItems.at(-1)?.url).toBe("/one");
+  });
+
+  it("getFirstInteractiveChild skips a leading separator", () => {
+    const leading = annotateTree({
+      key: "root",
+      items: [
+        { key: "sep", presentational: true },
+        { url: "/two", label: "Two" },
+      ],
+    } satisfies Item);
+    expect(getFirstInteractiveChild(leading)?.url).toBe("/two");
+  });
+
+  it("getLastInteractiveChild skips a trailing separator", () => {
+    const trailing = annotateTree({
+      key: "root",
+      items: [
+        { url: "/one", label: "One" },
+        { key: "sep", presentational: true },
+      ],
+    } satisfies Item);
+    expect(getLastInteractiveChild(trailing)?.url).toBe("/one");
   });
 });

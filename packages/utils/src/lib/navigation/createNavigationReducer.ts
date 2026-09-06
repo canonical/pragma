@@ -1,8 +1,9 @@
 import type { _Index, _Item, Item } from "@canonical/ds-types";
 import findAncestorPath from "./findAncestorPath.js";
-import getFirstEnabledChild from "./getFirstEnabledChild.js";
-import getLastEnabledChild from "./getLastEnabledChild.js";
+import getFirstInteractiveChild from "./getFirstInteractiveChild.js";
+import getLastInteractiveChild from "./getLastInteractiveChild.js";
 import getParentItem from "./getParentItem.js";
+import { isInteractive } from "./isInteractive.js";
 import {
   type NavigationAction,
   NavigationActionType,
@@ -70,7 +71,7 @@ export default function createNavigationReducer<T extends Item = Item>(
       }
 
       case NavigationActionType.OPEN: {
-        const firstChild = getFirstEnabledChild(rootItem);
+        const firstChild = getFirstInteractiveChild(rootItem);
         return {
           ...state,
           isOpen: true,
@@ -100,7 +101,7 @@ export default function createNavigationReducer<T extends Item = Item>(
             currentDepth: 0,
           };
         }
-        const firstChild = getFirstEnabledChild(rootItem);
+        const firstChild = getFirstInteractiveChild(rootItem);
         return {
           ...state,
           isOpen: true,
@@ -215,7 +216,7 @@ function getSibling<T extends Item = Item>(
       return undefined;
     }
 
-    if (!siblings[nextIndex].disabled) {
+    if (isInteractive(siblings[nextIndex])) {
       return siblings[nextIndex];
     }
     nextIndex += direction;
@@ -246,7 +247,7 @@ function handleArrowKey<T extends Item = Item>(
         state.currentDepth > sibling.depth &&
         sibling.items?.length
       ) {
-        const child = getFirstEnabledChild(sibling);
+        const child = getFirstInteractiveChild(sibling);
         if (child) {
           return {
             ...state,
@@ -270,7 +271,7 @@ function handleArrowKey<T extends Item = Item>(
         state.currentDepth > sibling.depth &&
         sibling.items?.length
       ) {
-        const child = getFirstEnabledChild(sibling);
+        const child = getFirstInteractiveChild(sibling);
         if (child) {
           return {
             ...state,
@@ -298,7 +299,7 @@ function handleArrowKey<T extends Item = Item>(
     }
 
     case "child": {
-      const child = getFirstEnabledChild(currentItem);
+      const child = getFirstInteractiveChild(currentItem);
       if (!child) return state;
       return {
         ...state,
@@ -322,8 +323,8 @@ function handleHomeEnd<T extends Item = Item>(
 
   const target =
     position === "first"
-      ? getFirstEnabledChild(parent)
-      : getLastEnabledChild(parent);
+      ? getFirstInteractiveChild(parent)
+      : getLastInteractiveChild(parent);
 
   if (!target) return state;
   return {
@@ -347,18 +348,52 @@ function handlePageJump<T extends Item = Item>(
 
   const siblings = parent.items;
   const currentIdx = siblings.indexOf(currentItem);
+  const len = siblings.length;
 
   let targetIdx = currentIdx + delta;
   if (wrapEnabled) {
-    targetIdx =
-      ((targetIdx % siblings.length) + siblings.length) % siblings.length;
+    targetIdx = ((targetIdx % len) + len) % len;
   } else {
-    targetIdx = Math.max(0, Math.min(siblings.length - 1, targetIdx));
+    targetIdx = Math.max(0, Math.min(len - 1, targetIdx));
   }
 
-  const target = siblings[targetIdx];
-  if (!target || target.disabled) return state;
+  // The raw landing may be a node the user cannot occupy — a disabled item, or
+  // a presentational one such as a separator. Continue in the jump direction to
+  // the nearest interactive sibling: a landing there must not swallow the jump
+  // while every other movement path (arrows, Home/End, type-ahead) passes over
+  // the same nodes. With wrapping on, the scan follows the ring across the
+  // boundary; without it, the scan stops at the edge and falls back toward the
+  // current item instead.
+  const direction = delta > 0 ? 1 : -1;
+  let landingIdx = -1;
+  if (wrapEnabled) {
+    let idx = targetIdx;
+    for (let i = 0; i < len; i++) {
+      if (isInteractive(siblings[idx])) {
+        landingIdx = idx;
+        break;
+      }
+      idx = (idx + direction + len) % len;
+    }
+  } else {
+    for (let idx = targetIdx; idx >= 0 && idx < len; idx += direction) {
+      if (isInteractive(siblings[idx])) {
+        landingIdx = idx;
+        break;
+      }
+    }
+    if (landingIdx === -1) {
+      for (let idx = targetIdx; idx >= 0 && idx < len; idx -= direction) {
+        if (isInteractive(siblings[idx])) {
+          landingIdx = idx;
+          break;
+        }
+      }
+    }
+  }
+  if (landingIdx === -1 || landingIdx === currentIdx) return state;
 
+  const target = siblings[landingIdx];
   return {
     ...state,
     highlightedItems: findAncestorPath(index, target),
@@ -378,7 +413,7 @@ function handleTypeAhead<T extends Item = Item>(
   const parent = getParentItem(index, currentItem);
   if (!parent?.items) return { ...state, keysSoFar: newKeysSoFar };
 
-  const siblings = parent.items.filter((i) => !i.disabled);
+  const siblings = parent.items.filter(isInteractive);
   const search = newKeysSoFar.toLowerCase();
 
   const isRepeatedChar =

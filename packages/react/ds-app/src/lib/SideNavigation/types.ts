@@ -1,11 +1,11 @@
 import type { IconName } from "@canonical/ds-assets";
-import type { Item } from "@canonical/ds-types";
+import type { _DistributiveOmit, Item } from "@canonical/ds-types";
 // The custom-link contract is shared across every link-injecting component
 // (cs:react.component.link_component); sourced from ds-global so SideNavigation,
 // Breadcrumbs, and Tabs use one interface. Re-exported so this module's existing
 // import sites (Content/Footer/NavTree/Item, the story harness) resolve it here.
 import type { LinkComponentProps } from "@canonical/react-ds-global";
-import type { ComponentType, HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ComponentType, ReactNode } from "react";
 
 export type { LinkComponentProps };
 
@@ -21,7 +21,7 @@ export type { LinkComponentProps };
  * No discriminated union to author: the caret-vs-slot choice is structural,
  * derived from whether the item has `items`.
  */
-export interface NavItem extends Omit<Item, "items"> {
+export type NavItem = _DistributiveOmit<Item, "items"> & {
   /** Leading icon (start slot), by ds-assets icon name. */
   icon?: IconName;
   /** Trailing content for leaf items (end slot). Ignored if the item has subitems. */
@@ -30,9 +30,9 @@ export interface NavItem extends Omit<Item, "items"> {
   items?: NavItem[];
   /** CSS class name applied to this item's row, in addition to the base classes. */
   className?: string;
-}
+};
 
-export interface SideNavigationProps extends HTMLAttributes<HTMLDivElement> {
+type OwnProps = {
   /** Brand content (logo/wordmark) rendered in the header. */
   brand?: ReactNode;
   /** Optional application name/wordmark shown beside the brand in the header. */
@@ -56,4 +56,7 @@ export interface SideNavigationProps extends HTMLAttributes<HTMLDivElement> {
   currentUrl?: string;
   /** Initial expanded (rail) state when uncontrolled. Defaults to `true`. */
   defaultExpanded?: boolean;
-}
+};
+
+export type SideNavigationProps = OwnProps &
+  Omit<ComponentProps<"div">, keyof OwnProps>;

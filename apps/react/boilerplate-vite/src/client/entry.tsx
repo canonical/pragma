@@ -1,3 +1,10 @@
+// The stylesheet comes first, before the routes and before every component
+// import below. CSS is emitted in the order the bundler evaluates the modules
+// that import it, so a component imported earlier would put its own rules —
+// and its own `@layer` blocks — ahead of the design system's layer statement,
+// and the layer order a browser applies is the one it reads first. Keeping
+// this line at the top is what makes the built stylesheet deterministic.
+import "#styles/index.css";
 import { isSupportedLocale, negotiateLocale } from "@canonical/i18n-core";
 import { I18nProvider } from "@canonical/i18n-react";
 import { HeadProvider } from "@canonical/react-head";
@@ -18,7 +25,6 @@ import {
   resolveRelayPayloads,
   type SerializedRelayPayload,
 } from "../routes.js";
-import "#styles/index.css";
 
 // Seed the browser-session Relay environment FIRST — before the router exists
 // — from the server-captured payloads riding __INITIAL_DATA__ (SSR pages) so
