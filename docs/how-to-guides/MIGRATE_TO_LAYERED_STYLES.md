@@ -4,13 +4,15 @@ For the maintainer of an application that already uses `@canonical/styles` and n
 CSS framework — upgrading to the first release in which everything that package ships sits in a
 cascade layer.
 
-**Your markup does not change.** The root contract is what it always was, a context class and a
-density class; this release adds nothing to it and asks for no new class on `<html>`. What does change
-is how your own CSS meets the design system's, and that needs an answer from you.
+**Nothing in your markup changes, and no class is added to any root.** The rules that style bare
+elements — the reset, the root's baseline, the typographic engine — still apply to your whole page,
+written plainly, the way they always were. What does change is how your own CSS meets the design
+system's, and that needs an answer from you.
 
 If your application also runs another CSS framework on the same pages, this guide is not enough on its
-own: you need the adapter package as well, `@canonical/styles-vanilla-adapter`, which arrives with the
-coexistence release, and the marker and territory rules come with it.
+own. Your imports change there — a second entry of this package, `core.css`, in place of the package
+entry, plus the adapter package's confined copy of the element rules — and
+`@canonical/styles-vanilla-adapter`'s README owns that recipe. It arrives with the coexistence release.
 
 Background reading, if you want the reasoning rather than the steps:
 [the cascade contract](../explanations/CASCADE.md).
@@ -21,12 +23,9 @@ Before this release the layer statement in the design system's entry point named
 almost nothing was written into, so its rules competed with yours on specificity and on load order.
 Now every rule it ships is in one of ten named layers whose order one statement fixes.
 
-The rules that select bare elements — the reset, the typographic engine, the layout presets — are also
-written inside a scope now, which opens `@scope (html:not(.coexist), .ds)`. On your page the document
-element matches the first half of that, so it is a scoping root and those rules apply page-wide,
-exactly as they did before. The `coexist` marker in the second half is for a page that runs two
-systems, and belongs to the adapter; on a page that does not carry it, nothing about the scope is
-visible to you except the browser floor further down.
+Three of those ten style bare elements, and they stay exactly as plain as they were: no scope, no
+marker class, no condition. Your paragraphs, headings and controls are styled because of what they
+are, page-wide, as before.
 
 That is `@canonical/styles` and the typographic engine it brings with it. The component packages'
 stylesheets move into the two component tiers in a separate change; until that lands they are still
@@ -73,8 +72,8 @@ being deleted or fought with a longer selector.
 
 Skipping the statement and writing only `@layer app { … }` is the one arrangement that bites: the
 position of `app` is then decided by whether your block or the design system's import reaches the
-browser first, and if it is yours, `app` sits *below* everything the design system ships. See the last
-troubleshooting entry.
+browser first, and if it is yours, `app` sits *below* everything the design system ships. See the
+first troubleshooting entry.
 
 `!important` in your CSS still wins, and among important declarations the layer order runs backwards,
 so an important rule in the lowest layer is the strongest author rule on the page. Neither fact
@@ -103,13 +102,11 @@ in the order the browser read the files, which is not the declared order and doe
 minifier deleted the statement, the blocks themselves come back in the declared order. Either way the
 property to check is the same one: the **first** appearance of each name follows the order you
 declared, and if you layered your own CSS in step 1, `app` never appears before a design-system name.
-A name that first appears too early is the bug — usually the one in the last troubleshooting entry
-below.
+A name that first appears too early is the bug — the first troubleshooting entry below.
 
 Then check the root in the elements panel: a context class and a density class, on `<html>` or on any
-ancestor of the components that read them. That is the whole root contract. If a `coexist` class is
-there, something has given your page the two-system arrangement, and the first troubleshooting entry
-below is for you.
+ancestor of the components that read them. That is the whole root contract, and this release does not
+add to it.
 
 ## What else moves on the page
 
@@ -120,62 +117,33 @@ listed and explained in
 release intends.
 
 One dependency change rides along: the design system no longer depends on the `normalize.css` package,
-because it writes its own reset so that the reset can be scoped. If your application was getting that
-file through us and wants the rest of it, depend on it directly.
+because it writes its own reset, containing only the rules the system relies on. If your application
+was getting that file through us and wants the rest of it, depend on it directly.
 
 ## If you import a subpath
 
 A subpath — one of the individual stylesheets the package exports, rather than the package entry —
-carries **no order statement**, because the statement is the first rule of the entry. The layers such a
-file opens are then ordered by wherever they first appear among your own rules, which is the accident
-the statement exists to remove. One of those subpaths now also brings a scope block with it.
+carries **no order statement**, because the statement is the first rule of the entry. The layers such
+a file opens are then ordered by wherever they first appear among your own rules, which is the
+accident the statement exists to remove.
 
-Import the package entry unless you have a specific reason not to; if you must import a subpath, write
-the statement yourself, as in step 1.
+`core.css` is a second entry rather than a subpath, and it is not the one you want: it is the whole
+stylesheet minus the three layers that style bare elements, for a page that gets those from the
+adapter instead. Import the package entry unless you have a specific reason not to; if you must import
+a subpath, write the statement yourself, as in step 1.
 
-## The browser floor moved
+## The browser floor
 
-The scoped blocks need `@scope`. On Chrome and Safari that is below what the typographic engine
-already required, so nothing moves there; on Firefox the floor rises. The versions are in
-[the README's browser-floor table](../../packages/styles/main/README.md#browser-floor), beside the
-features the engine already needed.
+**It did not move for you.** Your floor is what the typographic engine already required —
+[the README's browser-floor table](../../packages/styles/main/README.md#browser-floor) lists it — and
+this release adds nothing to it.
 
-What is new is that this floor reaches every page, not only a page running two systems, because the
-element-level rules are inside a scope everywhere. Below it a browser drops the scoped blocks whole:
-the root's baseline, the typographic engine's element rules and the layout presets do not apply —
-inside your components as well as between them — while the components' own rules stay. The border-box
-rule survives, because it is deliberately written outside the scope. A few shipped components carry a
-layout preset on their own root, so there the visible failure is a collapsed layout rather than only
-default text. If your application supports a browser below the floor, pin the previous release rather
-than shipping the scoped one.
+`@scope`, whose floor is newer, appears in exactly one file in the whole system: the adapter's copy of
+the element rules, which only a page running two CSS frameworks imports. If you ever become such a
+page, that floor becomes yours, and below it a browser drops the copy whole — components keep their
+own styles while the text inside them falls back to the browser's.
 
 ## Troubleshooting
-
-### Text lost its font, its line height or its colour — but the components look right
-
-Two causes. The likelier one is that your document element carries the class `coexist` — put there for
-a page that runs two CSS systems, or inherited from a template that does. With that marker present the
-design system's element-level rules apply only inside subtrees carrying `ds`, and every component
-carries `ds` itself, which is exactly why they survived while the text around them did not.
-
-If the marker is not meant to be there, remove it and the rules cover the page again. If it is meant
-to be there, then this page is a coexistence page and the adapter README's rules apply: the region
-wants a `ds` root of its own.
-
-The other cause is the browser floor above. Below it the scoped blocks are dropped whole, and then the
-text inside your components goes too — so if the components' own text also looks like the browser's
-defaults, suspect the floor rather than the marker.
-
-### The design system's typography reached markup another framework owns
-
-The mirror image, on a page that runs both systems: the document element is missing the `coexist`
-marker, so it is still a scoping root and the reset and typographic engine apply to the whole
-document, legacy markup included. The symptom is the other framework's pages taking the design
-system's fonts, spacing and line heights where nobody asked for them.
-
-Add the marker to `<html>`, as the adapter README's root rule says. Marking the regions you have
-already migrated with `ds` is the other half of that step: the marker alone confines the design system
-without giving it anywhere to apply.
 
 ### Your overrides stopped winning once you layered them
 
@@ -191,11 +159,31 @@ this. The fix is the statement in step 1, written before the import — it fixes
 whatever the load order, which is the whole reason to write one. Removing the `@layer app` wrapper is
 the other valid fix: unlayered, your CSS wins again.
 
+### The design system's text styles reached markup another framework owns
+
+This is the mixed-page symptom, and it means the page imported the wrong entry. `@canonical/styles`
+carries the three element layers, and they style every paragraph, heading and control on the page,
+including the ones that belong to the other framework.
+
+A page that runs both imports `core.css` — the same stylesheet without those three layers — and the
+adapter's copy of them, which reaches only the subtrees that are the design system's. The adapter
+README carries the import recipe for each kind of build.
+
+### On a mixed page, the components lost their text styles
+
+The other half of the same mistake: `core.css` on its own is the design system with no element rules
+at all, so a component's own stylesheet still paints it but nothing sets the text inside it. Import
+the adapter's copy beside `core.css`.
+
+If both imports are there and the text is still the browser's, check the `@scope` floor above: below
+it that copy is dropped whole, which produces the same symptom on every browser too old to understand
+it.
+
 ## Related
 
-- [The cascade contract](../explanations/CASCADE.md) — why the order is what it is, and what the scope
-  prelude does on each kind of page.
+- [The cascade contract](../explanations/CASCADE.md) — why the order is what it is, and why the
+  confinement for mixed pages lives in the adapter rather than here.
 - [`@canonical/styles` README](../../packages/styles/main/README.md) — what is layered where, the
   guarantees and the tests behind them.
-- [`@canonical/styles-typography` README](../../packages/styles/typography/README.md) — the engines'
-  layer and scope, for an application that imports one directly.
+- [`@canonical/styles-typography` README](../../packages/styles/typography/README.md) — the engines
+  and their layer, for an application that imports one directly.
