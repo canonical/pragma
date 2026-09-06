@@ -14,10 +14,11 @@
  * them here as well would deliver each rule twice, unconfined.
  */
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   fingerprint,
+  graph,
   inventory,
   layersOpened,
   resolve,
@@ -29,13 +30,20 @@ import {
  * the design tokens use it to hang custom properties, which style nothing on
  * their own.
  */
-const hasTypeSelector = (selector: string): boolean =>
-  selector.split(",").some((part) =>
+const hasTypeSelector = (selector: string): boolean => {
+  // `:is(pre, textarea)` selects by tag name as surely as `pre, textarea` does,
+  // so a functional pseudo-class is unwrapped and its contents read too.
+  const unwrapped = selector.replace(
+    /:(?:is|where|not|has|matches|any)\(/g,
+    ",",
+  );
+  return unwrapped.split(/[,()]/).some((part) =>
     part
       .trim()
       .split(/[\s>+~]+/)
       .some((compound) => /^[a-zA-Z][a-zA-Z0-9-]*/.test(compound)),
   );
+};
 
 const typographyFile = (file: string): string =>
   join(
@@ -48,8 +56,10 @@ const typographyFile = (file: string): string =>
     file,
   );
 
-const src = (file: string): string =>
-  readFileSync(join(import.meta.dirname, "..", "src", file), "utf8");
+const srcPath = (file: string): string =>
+  join(import.meta.dirname, "..", "src", file);
+
+const src = (file: string): string => readFileSync(srcPath(file), "utf8");
 
 const INDEX = src("index.css");
 const CORE = src("core.css");
@@ -86,13 +96,6 @@ describe("core.css against index.css", () => {
     expect(statement(CORE)).toEqual(statement(INDEX));
   });
 
-  it("declares every layer the full stylesheet declares", () => {
-    // Spelled out so a failure names the layer rather than a whole array.
-    for (const layer of statement(INDEX)) {
-      expect(statement(CORE)).toContain(layer);
-    }
-  });
-
   it.each(["index.css", "core.css"] as const)(
     "%s makes the statement its first rule",
     (file) => {
@@ -122,10 +125,15 @@ describe("core.css against index.css", () => {
       "./reset.css",
       "@canonical/styles-typography",
     ]);
+    // core.css takes the typography package in two pieces where index.css takes
+    // it whole: the mapping that styles nothing, and the registration each
+    // engine would otherwise carry.
+    const typographyPieces = new Set([
+      "@canonical/styles-typography/mapper.css",
+      "@canonical/styles-typography/baseline-shim.css",
+    ]);
     const expected = imports(INDEX).filter((file) => !elementFiles.has(file));
-    const actual = imports(CORE).filter(
-      (file) => file !== "@canonical/styles-typography/mapper.css",
-    );
+    const actual = imports(CORE).filter((file) => !typographyPieces.has(file));
     expect(actual).toEqual(expected);
   });
 });
@@ -176,34 +184,50 @@ describe("resolved index.css", () => {
   const css = resolve(join(import.meta.dirname, "..", "src", "index.css"));
 
   /**
-   * The split's own invariant, and the one that does not move when anything
-   * else in this package does: what the full stylesheet delivers in the two
-   * layers the typography package writes to is exactly what its two halves
-   * deliver between them. A rule lost in the split, or delivered twice, fails
-   * here and names itself.
+   * The full stylesheet is the entry without the element rules, plus the element
+   * rules. Every rule `index.css` delivers comes from `core.css` or from one of
+   * the four files the adapter's confined copy is built out of, and every rule
+   * those five deliver is in `index.css`. That is the relationship `core.css`
+   * exists to have, it is what makes the adapter's copy a copy of something, and
+   * unlike a snapshot of the whole inventory it does not move when a token is
+   * added or a reset rule is reworded.
    */
-  it("loses nothing, and repeats nothing, from either half", () => {
-    const halves = [
-      ...new Set(
-        ["mapper.css", "elements.css"].flatMap((half) =>
-          fingerprint(resolve(typographyFile(half))),
-        ),
-      ),
+  it("is core.css plus the four files that carry element rules", () => {
+    const parts = [
+      srcPath("core.css"),
+      srcPath("normalize.css"),
+      srcPath("reset.css"),
+      typographyFile("mapper.elements.css"),
+      typographyFile("baseline-cap.css"),
     ];
-    const delivered = fingerprint(css);
-    const lost = halves.filter((line) => !delivered.includes(line));
-    const repeated = halves.filter(
-      (line) => delivered.filter((other) => other === line).length > 1,
+    const fromParts = new Set(
+      parts.flatMap((part) => fingerprint(resolve(part))),
     );
-    expect({ lost, repeated }).toEqual({ lost: [], repeated: [] });
+    const delivered = new Set(fingerprint(css));
+    expect({
+      inIndexOnly: [...delivered].filter((rule) => !fromParts.has(rule)).sort(),
+      inPartsOnly: [...fromParts].filter((rule) => !delivered.has(rule)).sort(),
+    }).toEqual({ inIndexOnly: [], inPartsOnly: [] });
   });
+});
 
-  /**
-   * And the whole inventory, as a record of what an ordinary page gets: every
-   * selector with its layer and the properties it sets, sorted, so a reordering
-   * is not a failure and a lost or gained declaration is.
-   */
-  it("delivers the rules recorded for it", () => {
-    expect(fingerprint(css)).toMatchSnapshot();
+/**
+ * A browser treats every `@import` as its own stylesheet and does not
+ * de-duplicate: a file two imports reach is fetched, parsed and applied twice.
+ * So the import graph of each entry point has to name each file once. It did
+ * not, before this test: the typographic scale and the `--baseline-height`
+ * registration each arrived from two directions, and the resolved entry carried
+ * 48,270 duplicated bytes and two `@property` rules for one custom property.
+ */
+describe.each(["index.css", "core.css"])("the import graph of %s", (file) => {
+  it("inlines each file exactly once", () => {
+    const counted = new Map<string, number>();
+    for (const inlined of graph(srcPath(file)))
+      counted.set(inlined, (counted.get(inlined) ?? 0) + 1);
+    const twice = [...counted]
+      .filter(([, count]) => count > 1)
+      .map(([inlined, count]) => `${basename(inlined)} x${count}`)
+      .sort();
+    expect(twice).toEqual([]);
   });
 });

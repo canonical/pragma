@@ -53,20 +53,78 @@ const specifier = (spec: string, fromFile: string): string => {
   }
 };
 
-/** The entry's `@import` graph, inlined into one stylesheet. */
+/**
+ * The entry's `@import` graph, inlined into one stylesheet, the way a browser
+ * builds it: each `@import` is its own sheet and a file reached twice is
+ * delivered twice. Nothing is de-duplicated, because de-duplicating here would
+ * hide exactly the defect this is used to look for.
+ */
 export const resolve = (entry: string): string => {
-  const seen = new Set<string>();
+  const open: string[] = [];
   const load = (file: string): string => {
-    if (seen.has(file)) return "";
-    seen.add(file);
+    if (open.includes(file))
+      throw new Error(`import cycle: ${[...open, file].join(" -> ")}`);
+    open.push(file);
     // Comments go first, so an `@import` quoted in a header is not mistaken
     // for a real one.
     const text = readFileSync(file, "utf8").replace(COMMENT, "");
-    return text.replace(IMPORT, (_match, spec: string) =>
+    const inlined = text.replace(IMPORT, (_match, spec: string) =>
       load(specifier(spec, file)),
     );
+    open.pop();
+    return inlined;
   };
   return load(resolvePath(entry));
+};
+
+/**
+ * Every file the entry's graph inlines, in the order a browser would reach
+ * them, with repeats kept. A file that appears twice is delivered twice.
+ */
+export const graph = (entry: string): string[] => {
+  const files: string[] = [];
+  const open: string[] = [];
+  const load = (file: string): void => {
+    if (open.includes(file))
+      throw new Error(`import cycle: ${[...open, file].join(" -> ")}`);
+    open.push(file);
+    files.push(file);
+    const text = readFileSync(file, "utf8").replace(COMMENT, "");
+    for (const [, spec] of text.matchAll(IMPORT)) load(specifier(spec, file));
+    open.pop();
+  };
+  load(resolvePath(entry));
+  return files;
+};
+
+/**
+ * A declaration block with every nested block removed. Text is buffered as it is
+ * read and flushed at each `;`, so a declaration survives; when a `{` arrives
+ * the buffer is a nested rule's prelude, not a declaration, and is discarded
+ * along with the block it opens.
+ */
+const withoutBlocks = (body: string): string => {
+  let depth = 0;
+  let pending = "";
+  let out = "";
+  for (const char of body) {
+    if (char === "{") {
+      depth++;
+      if (depth === 1) pending = "";
+      continue;
+    }
+    if (char === "}") {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+    if (depth > 0) continue;
+    pending += char;
+    if (char === ";") {
+      out += pending;
+      pending = "";
+    }
+  }
+  return out + pending;
 };
 
 export interface Rule {
@@ -111,12 +169,29 @@ export const inventory = (css: string): Rule[] => {
             const name = at[2].trim();
             walk(inner, layer ? `${layer}.${name}` : name, prefix);
           } else if (at) {
-            walk(inner, layer, `${prefix}${at[0]} `);
-          } else {
-            const properties = inner
+            // An at-rule may hold declarations of its own — a `@media` block
+            // nested inside a style rule, retuning one custom property. Those
+            // belong to the rule that encloses it, under this at-rule's prelude.
+            const own = withoutBlocks(inner)
               .split(";")
               .map((part) => part.split(":")[0].trim())
-              .filter((name) => name && !name.includes("{"));
+              .filter(Boolean);
+            if (own.length > 0 && prefix)
+              rules.push({
+                layer,
+                context: `${prefix}${at[0]}`.trim(),
+                selector: "",
+                properties: [...own].sort(),
+              });
+            walk(inner, layer, `${prefix}${at[0]} `);
+          } else {
+            // Strip nested blocks first — a media query or a nested rule
+            // inside this one is walked separately, and leaving its text here
+            // would record its braces as a property name.
+            const properties = withoutBlocks(inner)
+              .split(";")
+              .map((part) => part.split(":")[0].trim())
+              .filter(Boolean);
             rules.push({
               layer,
               context: prefix.trim(),
