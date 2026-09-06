@@ -15,11 +15,11 @@
  * imports `core.css` beside it — this stylesheet with no element rule in it at
  * all — so those rules arrive once, from the adapter, already confined.
  *
- * The typography package this file imports writes its naming shims, the
- * typographic scale and the `--baseline-height` registration into `ds.tokens`
- * and no layer at all, and its element rules into `ds.typography`; the two
- * halves are separate files there, which is what lets `core.css` take the first
- * without the second. The README's "Cascade layers" section is the reference for
+ * The typography package this file imports writes its naming shims into
+ * `ds.tokens`, the typographic scale into `ds.modifiers`, its element rules into
+ * `ds.typography`, and the `--baseline-height` registration into no layer at
+ * all. The mapping and the element rules are separate files there, which is what
+ * lets `core.css` take the first without the second. The README's "Cascade layers" section is the reference for
  * what is layered where and what is deliberately not; the reasoning behind the
  * order will live in
  * docs/explanations/CASCADE.md, arriving with the cascade documentation change.
