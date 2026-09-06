@@ -48,16 +48,18 @@ Not for what it includes, and never for what it leaves out.
 
 Each of the five is an entry point, and the name in the manifest is the name of the concept.
 
-### Leaves import nothing; entries compose
+### Leaves import no sibling; entries compose
 
-The four leaves import nothing at all. Only `index.css` imports, and only the three it composes.
+No leaf imports another file of this package. Only `index.css` does, and only the three it composes.
+
+One leaf imports outside the package: `tokens.css` pulls in `@canonical/design-tokens`' typographic scale, the file whose names it shims. That is a dependency rather than a sibling, and it is the only one — the engines and `elements.css` import nothing at all.
 
 That is not tidiness. A browser treats every `@import` as its own stylesheet and de-duplicates
 nothing, so a file reached by two paths is fetched, parsed and applied twice. The first cut of this
 package had `elements.css` importing `tokens.css` while the engines imported the scale as well, and
 the resolved stylesheet carried the typographic scale twice — 48,270 duplicated bytes, a quarter of
-the entry. Leaves that import nothing make one path per file true by construction rather than by
-vigilance.
+the entry. Leaves that import no sibling make one path per file true by construction rather than by
+vigilance, and the one outside import is reached from `tokens.css` alone.
 
 What it asks of a consumer is small and worth stating: **link a file and you get what that file is,
 and you declare what it reads.** An engine on its own reads `--baseline-height` and `--font-size`;
