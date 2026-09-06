@@ -1,6 +1,6 @@
 import type React from "react";
 import "./styles.css";
-import type { ChipPropsType } from "./types.js";
+import type { ChipProps } from "./types.js";
 
 const componentCssClassName = "ds chip";
 
@@ -15,7 +15,7 @@ const componentCssClassName = "ds chip";
  *
  * @implements ds:global.component.chip
  */
-const Chip = (props: ChipPropsType): React.ReactElement => {
+const Chip = (props: ChipProps): React.ReactElement => {
   const className = [
     componentCssClassName,
     props.criticality,
