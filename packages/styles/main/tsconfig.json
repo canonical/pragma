@@ -1,0 +1,7 @@
+{
+  "extends": "@canonical/typescript-config",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["tests/**/*.ts", "*.ts"]
+}
