@@ -125,6 +125,19 @@ describe("tokens.css", () => {
     }
   });
 
+  it("opens these layers and no others", () => {
+    // Pinned exactly, not just checked for the three element layers, because a
+    // rule that styles an element can hide in a layer that is not one of them:
+    // a component-tier rule reached through a file this entry imports for its
+    // tokens would open ds.components.global here and go unnoticed.
+    expect(layersOpened(css)).toEqual([
+      "ds.modifiers",
+      "ds.states",
+      "ds.surfaces",
+      "ds.tokens",
+    ]);
+  });
+
   it("has no rule that selects an element by tag name", () => {
     expect(
       inventory(css)
