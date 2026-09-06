@@ -2,7 +2,6 @@ import type { _Index, _Item } from "@canonical/ds-types";
 import type { NodeStatus } from "@canonical/utils";
 import { describe, expect, it } from "vitest";
 import type { UseNavigationTreeResult } from "../types.js";
-import getMenuGroupProps from "./getMenuGroupProps.js";
 import getMenuItemProps from "./getMenuItemProps.js";
 import getMenuProps from "./getMenuProps.js";
 
@@ -45,30 +44,23 @@ function createMockNav(
 }
 
 describe("contextual-menu ARIA helpers", () => {
-  it("getMenuProps returns role=menu with an accessible name", () => {
+  it("getMenuProps returns role=menu, vertical, with an accessible name", () => {
     const nav = createMockNav();
+    // The menu is navigated with Up/Down, so it declares a vertical orientation.
     expect(getMenuProps(nav, { label: "Actions" })).toEqual({
       role: "menu",
+      "aria-orientation": "vertical",
       "aria-label": "Actions",
     });
     expect(getMenuProps(nav, { labelledBy: "trigger-id" })).toEqual({
       role: "menu",
+      "aria-orientation": "vertical",
       "aria-labelledby": "trigger-id",
     });
-    expect(getMenuProps(nav)).toEqual({ role: "menu" });
-  });
-
-  it("getMenuGroupProps returns role=group with an accessible name", () => {
-    const nav = createMockNav();
-    expect(getMenuGroupProps(nav, { label: "Edit" })).toEqual({
-      role: "group",
-      "aria-label": "Edit",
+    expect(getMenuProps(nav)).toEqual({
+      role: "menu",
+      "aria-orientation": "vertical",
     });
-    expect(getMenuGroupProps(nav, { labelledBy: "heading-id" })).toEqual({
-      role: "group",
-      "aria-labelledby": "heading-id",
-    });
-    expect(getMenuGroupProps(nav)).toEqual({ role: "group" });
   });
 
   it("getMenuItemProps makes the highlighted item the roving tab stop", () => {
@@ -105,7 +97,9 @@ describe("contextual-menu ARIA helpers", () => {
       createMockNav({}, { inHighlightedBranch: true }),
       parent,
     );
-    expect(result["aria-haspopup"]).toBe(true);
+    // A submenu opens another menu, so haspopup names the popup type "menu"
+    // (the boolean `true` is the menubar variant's convention).
+    expect(result["aria-haspopup"]).toBe("menu");
     expect(result["aria-expanded"]).toBe(true);
   });
 

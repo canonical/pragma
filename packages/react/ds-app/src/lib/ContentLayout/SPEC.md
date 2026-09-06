@@ -64,7 +64,7 @@ No colour pairings: layouts divide space and paint nothing.
 |---|---|---|
 | `children` | `ReactNode` | Default slot — direct grid items |
 | `grid` | `"responsive" \| "intrinsic"` | Grid preset; defaults to `responsive` (fixed-responsive) |
-| …rest | `HTMLAttributes<HTMLDivElement>` | Spread onto the root |
+| …rest | `ComponentProps<"div">` | Spread onto the root |
 
 ---
 

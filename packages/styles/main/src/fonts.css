@@ -7,6 +7,11 @@
  *
  *   @import url("@canonical/styles/fonts");
  *   @import url("@canonical/styles");
+ *
+ * Deliberately unlayered. `@font-face` is not a style rule: it defines a font
+ * for the whole document and the cascade does not sort it, so putting it in a
+ * layer would say nothing and would only invite a reader to look for the layer
+ * that "wins".
  */
 
 @font-face {

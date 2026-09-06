@@ -2,6 +2,20 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import Component from "./Icon.js";
 
+/**
+ * `Icon.mdx` hands `ICON_METADATA` straight to the `IconExplorer` docs block.
+ * MDX sits outside every `tsconfig` include, so nothing else would notice if
+ * the two shapes drifted apart. This pins the assignment at compile time.
+ */
+type IconMetadataFitsExplorer =
+  typeof import("@canonical/ds-assets")["ICON_METADATA"] extends Readonly<
+    Record<string, import("@canonical/storybook-helpers").IconExplorerMetadata>
+  >
+    ? true
+    : never;
+const iconMetadataFitsExplorer: IconMetadataFitsExplorer = true;
+void iconMetadataFitsExplorer;
+
 describe("Icon component", () => {
   it("renders decoratively by default", () => {
     const { container } = render(<Component icon={"user"} />);

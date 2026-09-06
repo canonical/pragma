@@ -1,0 +1,71 @@
+/* @canonical/styles — The page's baseline
+ *
+ * The root of the page declares the design system's baseline: its font, its
+ * colour, its line height and weight, how text wraps, and how glyphs are
+ * smoothed. Everything else on the page inherits from there, which is what
+ * makes a component render the same whether it sits in a card, a table cell or
+ * a dialog.
+ *
+ * The property set is not a matter of taste. It is the set an embedded copy of
+ * this stylesheet has to declare for a region to render as the design system's
+ * own inside a page that also runs another CSS framework, and it is fixed by
+ * the computed-style fixtures in `@canonical/styles-vanilla-adapter`: font
+ * family, font size, font weight, line height, colour, box sizing, font
+ * smoothing, and both text-wrap longhands. `font-size` is deliberately not
+ * declared — the page follows the reader's own root font size, which is what a
+ * rem-based scale is for.
+ *
+ * `:where()` appears where a zero specificity matters: these are defaults.
+ * Layers sort before specificity, so any layer above `ds.reset` beats these
+ * whatever its weight; the zero weight is for a rule written into `ds.reset`
+ * itself, which must win by coming later, never by outweighing a default.
+ */
+
+@layer ds.reset {
+  :where(html) {
+    /* The same token the typography mapper reads for the base font, so the
+       root and the elements inside it cannot disagree. */
+    font-family: var(--typography-text-primary-font-family);
+    /* A `light-dark()` token, resolved against the root's own colour scheme
+       (see the theme modifiers), so this one declaration is correct in both. */
+    color: var(--color-text);
+    line-height: normal;
+    font-weight: normal;
+    /* The style longhand, not the `text-wrap` shorthand: the shorthand also
+       resets `text-wrap-mode`, which would overwrite the browser's own
+       `white-space: pre` on a `<select>` and let a long option wrap. How text
+       wraps is the rule below, which can exclude the elements whose wrapping is
+       part of what they mean. */
+    text-wrap-style: auto;
+    -webkit-font-smoothing: auto;
+  }
+
+  /* Whether text wraps, which `text-wrap-style` above does not cover:
+     `white-space` is a shorthand for `white-space-collapse` and
+     `text-wrap-mode`, both inherited. Declaring it on the root gives the page a
+     known starting point instead of whichever value the browser or an embedding
+     document happened to hand down.
+
+     The exclusions are elements whose own white-space is part of what they are.
+     They are inert here, because the browser's rule for `pre` or `select` beats
+     an inherited value anyway; they are load-bearing in the adapter's embedded
+     copy, where this rule lands on a region root that may itself be one of
+     them, and they are kept identical so the two cannot drift. A short, fixed
+     list from HTML, not an inventory of another framework's rules. */
+  :where(html:not(pre, textarea, select, code, kbd, samp, [contenteditable])) {
+    white-space: normal;
+  }
+
+  /* Border-box for everything, pseudo-elements included. The components are
+     authored against it: without it a padded control's width no longer includes
+     its padding and border, and every control's box grows. Not wrapped in
+     `:where()` — `*` carries no specificity and each pseudo-element one, less
+     than any class — and
+     kept as one rule because it is the only one in the package with universal
+     reach, where an extra matching pass is measurable on a large page. */
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+  }
+}

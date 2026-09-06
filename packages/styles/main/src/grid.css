@@ -62,9 +62,26 @@
  *
  *   <!-- Separate row/column gaps -->
  *   <div class="grid responsive" style="--grid-row-gap: 1.5rem; --grid-column-gap: 1rem">...</div>
+ *
+ * Layers:
+ *   `grid` and `subgrid` set real properties on any element that carries them;
+ *   `responsive` and `intrinsic` set only `--modifier-grid-template`, which
+ *   `grid` reads, and are the presets' other half. All four sit in
+ *   `ds.components.global`.
+ *
+ *   The tier, `ds.components.global`, is not decoration: a rule written
+ *   directly into `@layer ds.components` lands in that layer's implicit final
+ *   sublayer, which sits ABOVE every named sublayer — measured, such a rule beats
+ *   one in `ds.components.app`. Writing the presets into the parent would put
+ *   them out of reach of both component tiers, so an application-tier sheet
+ *   could not override a preset by layer at all. Nothing pragma ships is written
+ *   directly into `ds.components`; everything in that layer sits in a tier.
+ *
+ *   The `:root` defaults stay with the presets that read them, as component-
+ *   scoped tokens, rather than moving to `ds.tokens`.
  */
 
-@layer ds.components {
+@layer ds.components.global {
   :root {
     --grid-col-min: 100px;
 

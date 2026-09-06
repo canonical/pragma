@@ -27,6 +27,19 @@ const isValidIcon = (name: string): name is IconName =>
   ICON_NAMES.includes(name as IconName);
 ```
 
+### Finding an Icon
+
+`ICON_METADATA` carries the words people search for, so an icon picker can find `delete` when someone types "trash":
+
+```typescript
+import { ICON_METADATA, ICON_CATEGORIES } from "@canonical/ds-assets";
+
+ICON_METADATA.delete.tags; // ["trash", "bin", "remove", ...]
+ICON_METADATA["starred-off"].aliases; // ["unstarred"]
+```
+
+Every icon has tags and at least one category from `ICON_CATEGORIES`; see [docs/ICONS.md](docs/ICONS.md) for the full shape.
+
 ### SVG Files
 
 Raw SVG files live in the `icons/` directory. Each icon uses a 16x16 viewBox and `currentColor` fill, allowing icons to inherit text colour from their context.

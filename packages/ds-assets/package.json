@@ -3,6 +3,7 @@
   "description": "Assets for Pragma.",
   "version": "0.37.0",
   "type": "module",
+  "sideEffects": false,
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
   "files": [
