@@ -1306,9 +1306,16 @@
     "packages/styles/vanilla-adapter": {
       "name": "@canonical/styles-vanilla-adapter",
       "version": "0.37.0",
+      "dependencies": {
+        "@canonical/styles": "^0.37.0",
+      },
       "devDependencies": {
         "@biomejs/biome": "2.5.11",
         "@canonical/biome-config": "^0.37.0",
+        "@canonical/typescript-config": "^0.37.0",
+        "@types/node": "^26.0.0",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
       },
     },
     "packages/summon/application": {
