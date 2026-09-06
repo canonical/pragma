@@ -46,9 +46,6 @@
  *   which is what a design system's typography is for.
  */
 
-/* Typography scale tokens from design-tokens */
-@import url("@canonical/design-tokens/dist/modifiers.typography.css");
-
 @layer ds.typography {
   :root {
     /* Agnostic values */

@@ -1,6 +1,6 @@
 # @canonical/styles-typography
 
-Baseline grid alignment for the Canonical Design System. This package provides three interchangeable CSS engines that snap text baselines to a configurable grid, plus a semantic token mapper that bridges `@canonical/design-tokens` typography tokens to the engine's variable contract.
+Baseline grid alignment for the Canonical Design System. This package provides three interchangeable CSS engines that snap text baselines to a configurable grid, plus the typography tokens and the element rules that bridge `@canonical/design-tokens` to the engine's variable contract.
 
 ## Quick Start
 
@@ -36,14 +36,27 @@ A rule in no cascade layer outranks a rule in any layer, whatever the selectors 
 
 | What | Layer |
 | --- | --- |
-| `mapper.css` — the design-tokens naming shims (`:root`, custom properties only) | `ds.tokens` |
-| `mapper.css` — the `body`, `h1`–`h6`, `p`, `.p`, `.code` and `.editorial` rules | `ds.typography` |
+| `tokens.css` — the design-tokens naming shims (`:root`, custom properties only) | `ds.tokens` |
+| `tokens.css` — the typographic scale it imports | `ds.modifiers`, which that file opens itself |
+| `elements.css` — the `body`, `h1`–`h6`, `p`, `.p`, `.code` and `.editorial` rules | `ds.typography` |
 | `baseline-cap.css`, `baseline-metrics.css`, `baseline-trim.css` — every rule | `ds.typography` |
-| `@canonical/design-tokens/dist/modifiers.typography.css`, imported by each engine | `ds.modifiers`, which that file opens itself |
 
 `ds.typography` sits above `ds.reset` and below `ds.modifiers` in the order `@canonical/styles` declares, so the typographic scale in `ds.modifiers` can retune what the engine produces, and a component stylesheet — higher still — is always the final word on its own text.
 
 The naming shims are in `ds.tokens` and not `ds.typography` because they are custom properties and nothing else: a custom property does nothing where it is declared, only where a rule reads it, so they belong beside the other primitive values.
+
+## Entry points
+
+Five files, none of which imports another.
+
+| Entry | What it is |
+| --- | --- |
+| `@canonical/styles-typography` | the package composed: the tokens, the element rules and the default engine, in that order. What an ordinary page wants. |
+| `@canonical/styles-typography/tokens.css` | the typographic scale and the naming shims. Declares custom properties and styles nothing. |
+| `@canonical/styles-typography/elements.css` | the rules that read those values and put them on `body`, `h1`–`h6`, `p`, `.p`, `.code` and `.editorial`. |
+| `@canonical/styles-typography/baseline-cap.css` and its two siblings | the engines, which compute the nudges that put a line on the grid. |
+
+The leaves import nothing, and the composed entry imports the three it needs. That way a stylesheet that wants a different arrangement — the values without the element rules, or an engine on its own — takes the files it wants and gets each of them exactly once, rather than fighting a file that drags in its own dependencies. A browser treats every `@import` as its own stylesheet and de-duplicates nothing, so a file reached from two directions is fetched, parsed and applied twice.
 
 These rules select elements by name — `body`, `h1`, `p` — so they apply to the whole document. That is what a design system's typography is for.
 
@@ -159,9 +172,9 @@ The **metrics engine** additionally requires on `:root`:
 | `--descender` | Font descender value (unitless, negative) |
 | `--units-per-em` | Font units-per-em value |
 
-## Token Mapper
+## Tokens and elements
 
-The `mapper.css` file bridges the semantic typography tokens from `@canonical/design-tokens` to the engine's variable contract. It is imported automatically by the default engine (`baseline-cap.css`).
+`tokens.css` and `elements.css` together bridge the semantic typography tokens from `@canonical/design-tokens` to the engine's variable contract. Both are imported by `index.css`, the package's composed entry point.
 
 The design tokens provide variables like:
 
@@ -173,7 +186,7 @@ The design tokens provide variables like:
 --typography-heading-1-font-family
 ```
 
-The mapper converts these into the engine variables for each element (`h1`–`h6`, `p`), including computing `--line-height-multiplier` by snapping the typographic line-height to the nearest baseline-grid unit:
+`elements.css` converts these into the engine variables for each element (`h1`–`h6`, `p`), including computing `--line-height-multiplier` by snapping the typographic line-height to the nearest baseline-grid unit:
 
 ```css
 --line-height-multiplier: round(
@@ -187,11 +200,12 @@ The mapper converts these into the engine variables for each element (`h1`–`h6
 
 ```
 src/
-  index.css              ← re-exports baseline-cap.css (default)
+  index.css              ← the package composed (tokens, elements, cap engine)
+  tokens.css             ← the typographic scale and the naming shims
+  elements.css           ← the rules that read them
   baseline-cap.css       ← cap-unit engine
   baseline-metrics.css   ← extracted-metrics engine
   baseline-trim.css      ← text-box-trim + cap hybrid
-  mapper.css             ← semantic token → engine variable bridge
   scripts/
     extractFontData.ts   ← CLI for extracting font metrics
 example/
@@ -259,7 +273,7 @@ All engines require `mod()` for the grid-snap calculation:
 | Feature | Used by | Chrome | Safari | Firefox |
 |---------|---------|--------|--------|---------|
 | `mod()` | all three engines | 125 | 15.4 | 118 |
-| `round()` | the mapper's line-height fallback | 125 | 15.4 | 118 |
+| `round()` | the line-height fallback in `elements.css` | 125 | 15.4 | 118 |
 | `cap` unit | the cap and text-trim engines | 118 | 17.2 | 97 |
 | `text-box-trim` | the text-trim engine only | 133 | 18.2 | 154 |
 

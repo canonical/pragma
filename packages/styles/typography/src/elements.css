@@ -1,18 +1,14 @@
-/* @canonical/styles-typography — Semantic token mapper
+/* @canonical/styles-typography — the element rules
  *
- * Bridges the gap between the semantic typography tokens emitted by
- * @canonical/design-tokens (--typography-heading-{N}-*, --typography-text-{tier}-*)
- * and the engine variables consumed by the baseline alignment engines
- * (--font-size, --line-height, --font-weight, --space-after, etc.).
+ * The half of the semantic mapping that styles something. Every rule here reads
+ * a value tokens.css declares and puts it on an element: the base font on
+ * `body`, and the per-tier font size, weight, line height and letter spacing on
+ * `h1`–`h6`, `p`, `.p`, `.code` and the `.editorial` context, as the engine
+ * variables the three baseline engines consume.
  *
- * The design-tokens modifier provides:
- *   --typography-heading-{1-6}-font-size      → e.g. var(--dimension-size-fontSize-700)
- *   --typography-heading-{1-6}-font-weight     → e.g. var(--typography-weight-medium)
- *   --typography-heading-{1-6}-line-height     → unitless DTCG projection
- *   --typography-heading-{1-6}-line-height-dimension → exact Canonical length (when available)
- *   --typography-heading-{1-6}-letter-spacing  → e.g. var(--dimension-letterSpacing-default)
- *   --typography-heading-{1-6}-font-family     → e.g. var(--typography-fontFamily-default)
- *   (same pattern for text.primary, text.secondary, text.tertiary)
+ * Exact Canonical line-height dimensions take precedence. The round() path is
+ * retained only as a compatibility fallback for design-tokens 0.8.1 and is
+ * removed with the broader typography migration.
  *
  * The engine expects per-element:
  *   --font-size       → <length>
@@ -22,92 +18,23 @@
  *   --baseline-height → set at :root, in any length unit; optional, and every
  *                       read of it here falls back to 0.25rem
  *
- * Exact Canonical line-height dimensions take precedence. The round() path is
- * retained only as a compatibility fallback for design-tokens 0.8.1 and is
- * removed with the broader typography migration.
- *
  * Heading padding-inline:
  *   Headings receive --heading-padding-inline (default: 0) so they can
  *   optionally align with padded blocks (cards, inputs, containers).
  *   Set --heading-padding-inline on a layout context to activate.
  *
- * Layers:
- *   Everything here used to sit in no cascade layer at all, at the specificity
- *   of a bare element selector. A rule in no layer outranks a rule in any layer,
- *   whatever the selectors on either side, and two unlayered rules of equal
- *   specificity are settled by whichever stylesheet the bundler emitted second.
- *   So an application's own `p` rule competed with this one by load order and
- *   won about half the time, one property at a time. In a layer it loses or wins
- *   for a stated reason.
+ * Layers: `ds.typography`, above `ds.reset` because this is a more specific
+ * statement about text than the reset's baseline, and below `ds.modifiers`, so
+ * the typographic scale can retune what the mapping produces. A component
+ * stylesheet, higher still, is always the final word on its own text.
  *
- *   The shim block below is custom properties and nothing else, and a custom
- *   property does nothing where it is declared — only where a rule reads it — so
- *   it sits in `ds.tokens`, beside the other primitive values @canonical/styles
- *   ships, which is where a maintainer looking for a token name will look.
+ * These rules select elements by name, so they apply to the whole document.
+ * That is what a design system's typography is for.
  *
- *   Everything after it selects elements, and sits in `ds.typography`. That
- *   layer is above `ds.reset`, because this is a more specific statement about
- *   text than the reset's baseline, and below `ds.modifiers`, so the typographic
- *   scale can retune what the mapper produces; a component stylesheet, higher
- *   still, is always the final word on its own text.
- *
- *   These rules select elements by name — `body`, `h1`–`h6`, `p` — so they
- *   apply to the whole document. That is what a design system's typography is
- *   for.
+ * This file imports nothing. index.css composes it with tokens.css, which
+ * declares the values it reads, and with an engine, which computes the nudges;
+ * a stylesheet that wants a different arrangement composes the three itself.
  */
-
-/* ── TEMP FIX: design-tokens naming mismatch ──────────────────────
- * modifiers.typography.css uses kebab-case references but
- * sets.primitive.css defines camelCase tokens. This shim bridges the
- * gap until the tokens package is fixed upstream.
- */
-@layer ds.tokens {
-  :root {
-    /* ── Font family shims ────────────────────────────────────────── */
-    --typography-font-family-default: var(--typography-fontFamily-default);
-    --typography-font-family-code: var(--typography-fontFamily-code);
-    --typography-font-family-sans-serif: var(--typography-fontFamily-sansSerif);
-    --typography-font-family-monospace: var(--typography-fontFamily-monospace);
-
-    /* ── Font weight shims ────────────────────────────────────────── */
-    --typography-weight-semi-bold: var(--typography-weight-semiBold);
-    --typography-weight-extra-bold: var(--typography-weight-extraBold);
-    --typography-weight-extra-light: var(--typography-weight-extraLight);
-
-    /* ── Font size shims ──────────────────────────────────────────── */
-    --dimension-size-font-size-250: var(--dimension-size-fontSize-250);
-    --dimension-size-font-size-300: var(--dimension-size-fontSize-300);
-    --dimension-size-font-size-350: var(--dimension-size-fontSize-350);
-    --dimension-size-font-size-400: var(--dimension-size-fontSize-400);
-    --dimension-size-font-size-500: var(--dimension-size-fontSize-500);
-    --dimension-size-font-size-600: var(--dimension-size-fontSize-600);
-    --dimension-size-font-size-700: var(--dimension-size-fontSize-700);
-
-    /* ── Letter spacing shims ─────────────────────────────────────── */
-    --dimension-letter-spacing-default: var(--dimension-letterSpacing-default);
-    --dimension-letter-spacing-wide: var(--dimension-letterSpacing-wide);
-
-    /* ── Line height shims ────────────────────────────────────────── *
-     * number.tokens.json defines these as $type:"number" but the
-     * terrazzo plugin does not emit them in sets.primitive.css.
-     * Hardcoded here until the build pipeline includes number tokens.
-     *
-     * These are unitless RATIOS (font-size × ratio = target line-height). The
-     * engine then does round(up, font-size × ratio, --baseline-height), which
-     * snaps the result onto the grid. So the 4px baseline needs NO change here:
-     * a 1rem × 1.5 = 24px line snaps to 24px at both 8px (3 units) and 4px
-     * (6 units) — the px is identical, only the unit COUNT differs. (An earlier
-     * pass wrongly doubled these, which doubled the actual line-height and drifted
-     * from the controls; reverted to the design-token ratios.) */
-    --number-line-height-250: 1.3333;
-    --number-line-height-300: 1.4286;
-    --number-line-height-350: 1.5;
-    --number-line-height-400: 1.3333;
-    --number-line-height-500: 1.3333;
-    --number-line-height-600: 1.25;
-    --number-line-height-700: 1.1429;
-  }
-}
 
 @layer ds.typography {
   /* Base font — inherited by all elements unless overridden */

@@ -42,12 +42,6 @@
  *   which is what a design system's typography is for.
  */
 
-/* Typography scale tokens from design-tokens */
-@import url("@canonical/design-tokens/dist/modifiers.typography.css");
-
-/* Semantic token → engine variable mapper */
-@import url("./mapper.css");
-
 @layer ds.typography {
   /* Reset */
   h1,

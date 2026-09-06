@@ -1,15 +1,27 @@
 /*
  * @canonical/styles-typography — Baseline Grid Engine
  *
- * Re-exports the default baseline engine (cap-unit approach).
+ * The package composed: the typography tokens, the element rules that read
+ * them, and the default engine.
  *
  * Available engines:
  *   - baseline-cap.css      — Uses the CSS `cap` unit (no extraction needed) [default]
  *   - baseline-metrics.css  — Uses extracted font metrics (ascender/descender/unitsPerEm)
  *   - baseline-trim.css     — Uses text-box-trim + cap unit hybrid
  *
- * Each engine registers the --baseline-height 4px shim itself (see the
- * `@property` at the top of each), so importing any single engine — as the
- * typography example does — carries the fallback with no consumer hardcoding.
+ * Entry points:
+ *   this file is the package composed — the typography tokens, the element
+ *   rules that read them, and the default engine — which is what an ordinary
+ *   page wants.
+ *
+ *   `./tokens.css` is the values and nothing that styles an element.
+ *   `./elements.css` is the rules that read them. `./baseline-cap.css` and its
+ *   two siblings are the engines. Each is an entry point of its own, and none
+ *   of them imports another: a stylesheet that wants a different arrangement —
+ *   the tokens without the element rules, say — composes what it needs.
  */
+/* The values, then the rules that read them, then the engine that computes
+ * their nudges. Each of the three is a file a stylesheet can take on its own. */
+@import url("./tokens.css");
+@import url("./elements.css");
 @import url("./baseline-cap.css");
