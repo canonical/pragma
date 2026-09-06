@@ -149,6 +149,11 @@ packages in. A sublayer left to a `@layer ds.components.apps { … }` block some
 take its position from whichever file opened it first, which is exactly the bundler-order dependency
 the statement exists to remove.
 
+Among the four product tiers the order decides nothing — no page loads two of them — and the statement
+fixes it anyway, so that it can never come to depend on which package a bundler emitted first. What
+each of them needs is only to sit above `ds.components.global`, and that is what the statement
+guarantees.
+
 **A sub-tier package declares its own layer**, first in its CSS entry —
 `@layer ds.components.apps-lxd;` — and does not appear in pragma's statement. A name the statement
 does not carry is placed where it first appears, which for a package loaded after the design system's

@@ -28,6 +28,77 @@ That's it. All `h1`–`h6` and `p` elements will align to the baseline grid. The
 
 The fallback is written at each read rather than aliased into one internal custom property. That keeps each file complete on its own, which matters because any one of them can be linked without the rest, and it keeps a second name out of the surface for a consumer to set by mistake.
 
+## How this package is cut
+
+Five files, and the cut between them is the point of this section: it is a pattern, not a filing
+decision, and the same pattern runs through `@canonical/styles` and the Vanilla adapter.
+
+### A file is a concept, named for what it is
+
+Not for what it includes, and never for what it leaves out.
+
+| File | The concept |
+| --- | --- |
+| `tokens.css` | **the values.** The names that map the design tokens' typographic scale onto what the engines and the element rules read. It declares custom properties and styles nothing. |
+| `elements.css` | **what bare elements get.** `body`, `h1`–`h6`, `p`, `.p`, `.code`, `.editorial`. |
+| `baseline-cap.css`, `baseline-metrics.css`, `baseline-trim.css` | **the engines.** The arithmetic that puts a line on the grid. Interchangeable, one loaded at a time. |
+| `index.css` | **the whole**, and nothing else. It composes the tokens, the element rules and the default engine, in that order. |
+
+Each of the five is an entry point, and the name in the manifest is the name of the concept.
+
+### Leaves import nothing; entries compose
+
+The four leaves import nothing at all. Only `index.css` imports, and only the three it composes.
+
+That is not tidiness. A browser treats every `@import` as its own stylesheet and de-duplicates
+nothing, so a file reached by two paths is fetched, parsed and applied twice. The first cut of this
+package had `elements.css` importing `tokens.css` while the engines imported the scale as well, and
+the resolved stylesheet carried the typographic scale twice — 48,270 duplicated bytes, a quarter of
+the entry. Leaves that import nothing make one path per file true by construction rather than by
+vigilance.
+
+What it asks of a consumer is small and worth stating: **link a file and you get what that file is,
+and you declare what it reads.** An engine on its own reads `--baseline-height` and `--font-size`;
+the element rules read the values `tokens.css` declares. The baseline unit may be written in `rem`
+or `px`, and defaults to `0.25rem` when nothing declares it.
+
+### The same word means the same thing in every package
+
+`@canonical/styles` is cut the same way and uses the same three nouns. Its `tokens.css` is the values
+and takes this package's `tokens.css`; its `elements.css` is what bare elements get and takes this
+package's `elements.css` and the default engine; its `layout.css` is the layout presets. Its
+`index.css` is the whole.
+
+`@canonical/styles-vanilla-adapter` ships an `elements.css` too: the same three element layers, built
+from the same source files, addressed to an island rather than to the page.
+
+Three contexts, one vocabulary. A reader who has understood `elements.css` once has understood it
+everywhere, and the only thing left to ask is which page region it is aimed at.
+
+### Why the old names went
+
+`mapper.css` was jargon — an internal word for the file that named the tokens, which told a reader
+nothing about what was inside it and hid the fact that the file was doing two jobs.
+
+The styles package's `core.css` was worse, because it named an inclusion rather than a concept:
+"everything except the element layers". A name defined by subtraction tells you what a file is not.
+You cannot tell whether a rule belongs in it without first knowing the whole list it is subtracting
+from, and when the list changes the name silently stops being true. `tokens.css`, `elements.css` and
+`layout.css` each name something a rule either is or is not.
+
+### How to add a file
+
+Decide which concept it belongs to. That one decision settles the rest:
+
+- **its name** — the concept's noun;
+- **its layer** — `ds.tokens` for values, `ds.typography` for element rules and engines;
+- **which entries import it** — the entry for that concept, and no other.
+
+If it belongs to no concept, that is the finding: either the concept is missing, or the file is two
+files. `@canonical/styles`' `tests/entries.test.ts` pins the composition — which layers each entry
+opens, that its tokens entry declares nothing but custom properties, that each file is reached once —
+and this package's `exports` map is the contract for what a consumer may link.
+
 ## Cascade layers
 
 Two facts about the CSS cascade shape this package.
@@ -45,24 +116,11 @@ A rule in no cascade layer outranks a rule in any layer, whatever the selectors 
 
 The naming shims are in `ds.tokens` and not `ds.typography` because they are custom properties and nothing else: a custom property does nothing where it is declared, only where a rule reads it, so they belong beside the other primitive values.
 
-This section is the reference for this package's share of the arrangement. The reasoning behind the whole of it — how a browser decides, why a rule in no layer beats every layered one, and where the confinement for a page running a second CSS framework lives — is [the cascade contract](../../../docs/explanations/CASCADE.md).
-
-## Entry points
-
-Five files, none of which imports another.
-
-| Entry | What it is |
-| --- | --- |
-| `@canonical/styles-typography` | the package composed: the tokens, the element rules and the default engine, in that order. What an ordinary page wants. |
-| `@canonical/styles-typography/tokens.css` | the typographic scale and the naming shims. Declares custom properties and styles nothing. |
-| `@canonical/styles-typography/elements.css` | the rules that read those values and put them on `body`, `h1`–`h6`, `p`, `.p`, `.code` and `.editorial`. |
-| `@canonical/styles-typography/baseline-cap.css` and its two siblings | the engines, which compute the nudges that put a line on the grid. |
-
-The leaves import nothing, and the composed entry imports the three it needs. That way a stylesheet that wants a different arrangement — the values without the element rules, or an engine on its own — takes the files it wants and gets each of them exactly once, rather than fighting a file that drags in its own dependencies. A browser treats every `@import` as its own stylesheet and de-duplicates nothing, so a file reached from two directions is fetched, parsed and applied twice.
-
 These rules select elements by name — `body`, `h1`, `p` — so they apply to the whole document. That is what a design system's typography is for.
 
-This package states no layer order of its own: it is imported by `@canonical/styles` after that package's order statement, which is the first rule of the first stylesheet and names both layers. Linked on its own, as the example does, the layers are created where they first appear, which is well defined for a single package and settles nothing this package needs settled — no custom property is declared in more than one of the layers involved.
+This package states no layer order of its own: it is imported by `@canonical/styles` after that package's order statement, which is the first rule of the first stylesheet and names all three layers this package writes to. Linked on its own, as the example does, the layers are created where they first appear, which is well defined for a single package and settles nothing this package needs settled — no custom property is declared in more than one of the layers involved.
+
+This section is the reference for this package's share of the arrangement. The reasoning behind the whole of it — how a browser decides, why a rule in no layer beats every layered one, and where the confinement for a page running a second CSS framework lives — is [the cascade contract](../../../docs/explanations/CASCADE.md).
 
 ## How It Works
 

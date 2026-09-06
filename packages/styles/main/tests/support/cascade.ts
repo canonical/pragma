@@ -87,7 +87,10 @@ export const DECLARED_LAYERS = [
   "ds.states",
   "ds.components",
   "ds.components.global",
-  "ds.components.app",
+  "ds.components.sites",
+  "ds.components.documentation",
+  "ds.components.stores",
+  "ds.components.apps",
 ];
 
 /**
@@ -100,12 +103,19 @@ export const DECLARED_LAYERS = [
 export const ELEMENT_LAYERS = ["normalize", "ds.reset", "ds.typography"];
 
 /**
- * The layer the statement declares that nothing yet writes to: the application
- * tiers move into it when their stylesheets are wrapped. Naming it here rather
- * than at first appearance is what fixes its order, so it has to be declared
- * before anything writes to it.
+ * The layers the statement declares that no entry point of this package opens.
+ * They belong to the second-level tiers, and the packages in those tiers write to
+ * them: a package wraps its sheets in its own tier's name and needs to do nothing
+ * else. Naming them here rather than leaving them to first appearance is what
+ * fixes their order relative to one another, so they have to be declared before
+ * anything writes to them — and the README says as much in each of their rows.
  */
-export const RESERVED_LAYERS = ["ds.components.app"];
+export const RESERVED_LAYERS = [
+  "ds.components.sites",
+  "ds.components.documentation",
+  "ds.components.stores",
+  "ds.components.apps",
+];
 
 /**
  * The one layer nothing may ever write to directly. A rule written straight into
@@ -442,6 +452,30 @@ export const directRulesIn = (css: string, layer: string): string[] => {
 };
 
 /**
+ * Every rule in a stylesheet that does something, at any depth — a style rule, a
+ * keyframes block, a font face, a property registration — labelled as written.
+ *
+ * Counting the top-level rules instead would answer a different question: a file
+ * reduced to `@layer ds.tokens {}` has one top-level rule and delivers nothing,
+ * which is exactly the case the import check exists to catch.
+ */
+export const effectiveRules = (css: string): string[] => {
+  const found: string[] = [];
+  const walk = (rules: CSSRuleList): void => {
+    for (const rule of rules) {
+      const label = sortedByLayer(rule);
+      if (label !== undefined) found.push(label);
+      // A keyframes rule holds keyframes, not rules that stand on their own.
+      if (rule instanceof CSSKeyframesRule) continue;
+      const children = childRules(rule);
+      if (children) walk(children);
+    }
+  };
+  walk(parse(css).cssRules);
+  return found;
+};
+
+/**
  * Which of the declared layers a stylesheet uses. A parent counts as used when a
  * sublayer of it carries rules: `ds.components` earns its place in the statement
  * by ordering its tiers, not by holding rules of its own.
@@ -544,6 +578,10 @@ const section = (heading: string): string => {
   return (end === -1 ? rest : rest.slice(0, end)).join("\n");
 };
 
+/** The layers the README's order table names, in the order it names them. */
+export const layerTableNames = (): string[] =>
+  tableUnder("Cascade Layers").map(([layer]) => ticked(layer ?? "")[0] ?? "");
+
 /** The body rows of the one table under a heading, cell by trimmed cell. */
 export const tableUnder = (heading: string): string[][] =>
   section(heading)
@@ -615,8 +653,8 @@ const isSourceName = (token: string): boolean =>
 
 /**
  * Every file the README's two layer tables name, merged. A file may appear in
- * more than one row — `spacing.css` puts its tokens in one layer and its
- * container rule in another — so what the test binds is one answer per file and
+ * more than one row — `overflow.css` puts its root default in one layer and its
+ * surface channel in another — so what the test binds is one answer per file and
  * per layer: the layers of a file are the union of its rows, and a file selects
  * elements in a layer when a row naming that layer says yes. The README says as
  * much, because reordering two rows of the same file changes nothing a browser
