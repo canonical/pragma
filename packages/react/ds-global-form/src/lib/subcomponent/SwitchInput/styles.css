@@ -37,7 +37,7 @@
       var(--color-foreground-switch-unselected)
     );
     cursor: pointer;
-    transition: background-color 150ms ease;
+    transition: background-color var(--motion-duration-fast) ease;
 
     /* Knob: a circle inset from the track edges, sliding on the inline axis. */
     &::before {
@@ -53,7 +53,7 @@
         --surface-color-foreground-switch-knob,
         var(--color-foreground-switch-knob)
       );
-      transition: translate 150ms ease;
+      transition: translate var(--motion-duration-fast) ease;
     }
 
     &:checked {

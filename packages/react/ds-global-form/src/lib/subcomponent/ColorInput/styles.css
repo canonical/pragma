@@ -22,8 +22,8 @@
     line-height: var(--form-input-line-height);
     cursor: pointer;
     transition:
-      border-color 150ms ease,
-      box-shadow 150ms ease;
+      border-color var(--motion-duration-fast) ease,
+      box-shadow var(--motion-duration-fast) ease;
     text-align: start;
     anchor-name: --color-trigger;
 
@@ -86,8 +86,8 @@
     border: 2px solid transparent;
     cursor: pointer;
     transition:
-      border-color 150ms ease,
-      transform 150ms ease;
+      border-color var(--motion-duration-fast) ease,
+      transform var(--motion-duration-fast) ease;
 
     &:hover:not(:disabled) {
       transform: scale(1.15);
@@ -130,8 +130,8 @@
     border-radius: var(--form-input-border-radius);
     background-color: var(--form-input-background);
     transition:
-      border-color 150ms ease,
-      box-shadow 150ms ease;
+      border-color var(--motion-duration-fast) ease,
+      box-shadow var(--motion-duration-fast) ease;
 
     &:focus-within {
       outline: none;
