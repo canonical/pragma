@@ -215,7 +215,7 @@ statement, and the adapter carries a copy of one of them:
 | `@canonical/styles/tokens.css` | Four layers of values — `ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states` — and the classes that set them. No rule that selects an element, with the one exception below. | (in the whole) | imports this |
 | `@canonical/styles/elements.css` | `normalize`, `ds.reset`, `ds.typography` — what bare elements get. | (in the whole) | takes the adapter's copy instead |
 | `@canonical/styles/layout.css` | The layout presets, `content-flow` among them, which claim five class names in a page's namespace. | (in the whole) | imports this |
-| `@canonical/styles/layers.css` | The order statement and nothing else: no rule, no value. It is there for a package that has to fix the order before it declares a layer of its own — a sub-tier component package, below. | — | — |
+| `@canonical/styles/layers.css` | The order statement and nothing else: no rule, no import, no declaration, and no layer opened — a statement places names in an order, it does not put a rule in one. It is there for a package that has to fix the order before declaring a layer of its own — a sub-tier component package, below. | — | — |
 
 One exception is worth knowing before you import the values on their own: the design tokens' generated
 theme sheet declares `color-scheme` on `:root`, `.light` and `.dark` beside the colour tokens, and that
@@ -339,10 +339,13 @@ be ignored.
 
 The consequence for a maintainer: if you ever ship a second face of the same family, or a
 `@property` registration of a name something else also registers, you are relying on layer order
-whether you meant to or not, and it should be layered on purpose. Pragma ships no registration today
-— the one it used to have, for the baseline unit, is gone, and the engines carry their own fallback for
-a page that declares nothing. That is also what frees the unit to be declared in `rem` or in `px`: a
-registration's initial value has to be computationally independent, and `rem` is not.
+whether you meant to or not, and it should be layered on purpose. Pragma ships no registration today.
+The one it used to have, for the baseline unit, is gone: the default now sits in the values entry as an
+ordinary declaration at zero weight, `:where(:root) { --baseline-height: 0.25rem }`, which any real
+declaration beats whatever the order within the layer, and the engines read the property bare. That is
+also what frees the unit to be written in `rem` or in `px`: a registration's initial value has to be
+computationally independent, and `rem` is not. An engine linked on its own, without the values, is the
+one case with no default at all.
 
 ## What a bundler does to the statement
 
