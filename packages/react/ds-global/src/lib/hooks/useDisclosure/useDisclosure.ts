@@ -46,7 +46,7 @@ import type {
  * @param props Forwarded to the useWindowFitment hook.
  * @returns The open state, imperative controls, positioning refs and style, and prop-getters.
  */
-const useDisclosure = ({
+const useDisclosure = <TTarget extends HTMLElement = HTMLElement>({
   mode = "hover",
   isOpen: isOpenProp,
   deactivateDelay,
@@ -61,7 +61,7 @@ const useDisclosure = ({
   closeOnOutsideClick = true,
   returnFocus = true,
   ...props
-}: UseDisclosureProps): UseDisclosureResult => {
+}: UseDisclosureProps): UseDisclosureResult<TTarget> => {
   const isServer = typeof window === "undefined";
   const isClick = mode === "click";
   const [isFocused, setIsFocused] = useState(false);
@@ -91,7 +91,7 @@ const useDisclosure = ({
     popupPositionStyle,
     arrowOffset,
     direction,
-  } = useWindowFitment({
+  } = useWindowFitment<TTarget>({
     ...props,
     isOpen,
   });

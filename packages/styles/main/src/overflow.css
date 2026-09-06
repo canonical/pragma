@@ -16,8 +16,7 @@
  *
  * Layers: the root default is `ds.tokens`; the `.surface` rule joins the
  * generated surface family in `ds.surfaces`, whose selectors it mirrors. Both
- * declare custom properties only, which act where a rule reads them, so neither
- * is scoped to pragma territory.
+ * declare custom properties only, which act where a rule reads them.
  */
 
 @layer ds.tokens {
