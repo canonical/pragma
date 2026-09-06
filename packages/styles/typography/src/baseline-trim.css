@@ -1,6 +1,5 @@
 /* @canonical/styles-typography — Text-trim engine
  *
- * Most modern, narrowest browser support: Chrome 133+, Safari 18.2+.
  * Uses `text-box: trim-both cap alphabetic` for intrinsic baseline snapping.
  * No JS font extraction required.
  *
@@ -8,6 +7,39 @@
  *   :root { --baseline-height: <length>; }
  *   element { --font-size: <length>; --line-height: <length>; }
  *   (fallback: --line-height-multiplier: <number> if --line-height is unset)
+ *
+ * Browser floor: Chrome 133, Safari 18.2, Firefox 154. This engine uses three
+ * features:
+ *
+ *   text-box-trim    Chrome 133, Safari 18.2, Firefox 154
+ *   mod()            Chrome 125, Safari 15.4, Firefox 118
+ *   @property        Chrome 85,  Safari 16.4, Firefox 128 (baseline-shim.css)
+ *
+ * `text-box-trim` binds every column, and below it this engine does not hold
+ * the grid. The trim is skipped, the element gets its half-leading back, and the
+ * nudge that survives — `mod(calc(-1 * 1cap), unit)` — was computed for a
+ * trimmed box: it never reads the line height, so it cannot compensate for
+ * leading it did not expect. Measured in Chromium with a 16px serif on a 24px
+ * line, the first baseline moves 6.516px when the trim is ignored, which is 1.63
+ * units on a 4px grid, 0.81 on an 8px grid and 0.54 on a 12px grid — a fraction
+ * of a unit every time. The element's outer height stays a whole number of
+ * units, so blocks still stack on the grid; the text inside them does not sit on
+ * it. Use the cap engine below the floor: its nudge is computed from the
+ * untrimmed line box, which is what such a browser has.
+ *
+ * Layers:
+ *   Every rule below sits in `ds.typography`. Unlayered, these rules outranked
+ *   every layered rule in the page whatever the selectors on either side, and
+ *   tied with an application's own `p` rule on specificity so that load order
+ *   decided the winner one property at a time. In a layer the design system
+ *   loses to the application's own layered CSS, deliberately, and beats the
+ *   layers below it, also deliberately.
+ *
+ *   The rules select elements by name, so they apply to the whole document,
+ *   which is what a design system's typography is for. The `@property`
+ *   registration this file imports stays outside the layer, because a
+ *   registration is not cascaded: the last one in document order wins whatever
+ *   layer it sits in, so a layer would have nothing to order it against.
  */
 
 /* Baseline unit shim (--baseline-height 4px fallback) */
@@ -16,61 +48,63 @@
 /* Typography scale tokens from design-tokens */
 @import url("@canonical/design-tokens/dist/modifiers.typography.css");
 
-/* Reset */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-.p,
-.code {
-  margin-block: 0;
-}
+@layer ds.typography {
+  /* Reset */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  .p,
+  .code {
+    margin-block: 0;
+  }
 
-/* Baseline alignment — text-trim engine
- *
- * Both nudges use padding (not margin) so the element's border-box block size
- * participates correctly in flex and grid layouts. margin-block-end is reserved
- * solely for --space-after (editorial element-owned spacing, default 0).
- */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-.p,
-.code {
-  --computed-line-height: var(
-    --line-height,
-    calc(var(--baseline-height) * var(--line-height-multiplier))
-  );
-  line-height: var(--computed-line-height);
-  font-size: var(--font-size);
-}
+  /* Baseline alignment — text-trim engine
+   *
+   * Both nudges use padding (not margin) so the element's border-box block size
+   * participates correctly in flex and grid layouts. margin-block-end is reserved
+   * solely for --space-after (editorial element-owned spacing, default 0).
+   */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  .p,
+  .code {
+    --computed-line-height: var(
+      --line-height,
+      calc(var(--baseline-height) * var(--line-height-multiplier))
+    );
+    line-height: var(--computed-line-height);
+    font-size: var(--font-size);
+  }
 
-/* Block-level baseline trimming/nudges only — bare inline `.code` is excluded
- * so it does not double-pad inside a paragraph. Combine `.p.code` for a block. */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-.p {
-  text-box: trim-both cap alphabetic;
+  /* Block-level baseline trimming/nudges only — bare inline `.code` is excluded
+   * so it does not double-pad inside a paragraph. Combine `.p.code` for a block. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  .p {
+    text-box: trim-both cap alphabetic;
 
-  /* Nudges as padding — inside the box for flex/grid compatibility */
-  padding-block-start: mod(calc(-1 * 1cap), var(--baseline-height));
-  padding-block-end: calc(
-    var(--baseline-height) -
-    mod(calc(-1 * 1cap), var(--baseline-height))
-  );
+    /* Nudges as padding — inside the box for flex/grid compatibility */
+    padding-block-start: mod(calc(-1 * 1cap), var(--baseline-height));
+    padding-block-end: calc(
+      var(--baseline-height) -
+      mod(calc(-1 * 1cap), var(--baseline-height))
+    );
 
-  /* Element-owned spacing — only active in .editorial contexts */
-  margin-block-end: calc(var(--space-after, 0) * var(--baseline-height));
+    /* Element-owned spacing — only active in .editorial contexts */
+    margin-block-end: calc(var(--space-after, 0) * var(--baseline-height));
+  }
 }

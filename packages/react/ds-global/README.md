@@ -61,8 +61,48 @@ import "@canonical/styles";
 
 Each component module imports its own stylesheet (`import "./styles.css"`), so importing a component is what puts its CSS on the page. A bundler collects those imports into the application's CSS; nothing here is injected at runtime, and there is no stylesheet to link by hand. The consequence is that a component you never import ships no CSS — and that the order a bundler happens to emit the sheets in is not something you can rely on, which is what the cascade layer below is for.
 
-An aggregate `src/lib/index.css` with one `@import` per sheet — for consumers who want every component's CSS without importing every component — is being added separately and will be documented here when it lands. It carries no layer of its own, and its imports are bare: every sheet it imports already opens its own block.
+That is what the aggregate below is for. It carries no layer of its own, and its imports are bare: every sheet it imports already opens its own block, so importing one with `layer(…)` would nest it a level deeper instead of placing it.
 
+### The one file to link
+
+Every component stylesheet the package ships is also listed in a single aggregate:
+
+```css
+@import url("@canonical/styles");
+@import url("@canonical/react-ds-global/index.css");
+```
+
+That is the whole file — one `@import` per component stylesheet, nothing else — and what it buys is presence, not position.
+
+Each component imports its own stylesheet from its module, so without the aggregate a component's rules reach the page only when the JavaScript that renders it does. A lazily-loaded route therefore paints before its components' CSS arrives. Linking the aggregate puts every component rule in the entry stylesheet, present from the first paint, so no route can ever render unstyled.
+
+It does not fix where a rule sits in the built sheet. Both copies reach the build — the aggregate's and the component module's — and a minifier that removes duplicates keeps the **last**, which is the module's. Measured on the reference application: the surviving copy of every component rule sits after the application's own CSS, exactly where it sat without the aggregate; all the aggregate leaves ahead of it are the eleven `@media` / `@starting-style` / `:has()` fragments the minifier cannot collapse (1,033 bytes). Order between a component and the application is not settled here and should not be relied on. With the component stylesheets wrapped in `ds.components.global` — the section below — the cascade arbitrates by layer and source position stops mattering at all.
+
+The list is source, not output: it is written by hand, as the repository's constitution asks (an explicit import over a build step that discovers files by naming convention), and `src/lib/index.css.test.ts` fails the build if it stops matching the stylesheets on disk. **Adding a component means adding its line**, alphabetically, in `src/lib/index.css`.
+
+The bytes are already in the bundle either way: the package declares no `sideEffects`, so a bundler that reaches the barrel pulls all 46 sheets in regardless. On the reference build the aggregate adds 1,033 bytes to the minified stylesheet — the residue the duplicate removal leaves — and roughly 96 KB to a build that does not remove duplicates.
+
+The published paths are `@canonical/react-ds-global/index.css` (the subpath the `exports` map names) and `dist/esm/lib/index.css` (the file itself). The manifest also carries it as `style`, which some tools read to find a package's stylesheet without an import — the same field `@canonical/react-ds-global-form` uses for its own.
+
+### What the package publishes, and how to import it
+
+The manifest now carries an `exports` map, which is the list of paths this package answers to:
+
+| Specifier | What it gives you |
+| --- | --- |
+| `@canonical/react-ds-global` | the components |
+| `@canonical/react-ds-global/index.css` | the aggregate stylesheet above |
+| `@canonical/react-ds-global/dist/…` | any published file, by its exact path |
+| `@canonical/react-ds-global/package.json` | the manifest |
+
+**This is a breaking change for anyone importing by a path the map does not answer.** Before, a package with no `exports` map let a resolver reach any file in the directory and, in most bundlers, guess at the rest — the extension you left off, or the `index.js` inside a folder you named. Two things stop working:
+
+- **A folder instead of a file.** `@canonical/react-ds-global/dist/esm` and `@canonical/react-ds-global/dist/esm/lib/component/Button` used to find the `index.js` inside them. Name the file: `…/dist/esm/index.js`, `…/dist/esm/lib/component/Button/index.js`.
+- **Anything outside `dist`.** `@canonical/react-ds-global/README.md`, or any `src/…` path that happened to resolve in a workspace checkout, now fails with `ERR_PACKAGE_PATH_NOT_EXPORTED`. Those files are not published anyway; `files` has only ever listed `dist`.
+
+Leaving the extension off a real file (`…/Button/Button`) still works in the resolvers we tested, but it depends on the resolver rather than on this package — write the extension.
+
+Importing the package by name, or the stylesheet by its subpath, is unaffected, and that is what nearly every consumer does.
 ### Every component stylesheet is in `ds.components.global`
 
 Every component `styles.css` in this package is wrapped in one cascade layer:
@@ -77,7 +117,9 @@ Every component `styles.css` in this package is wrapped in one cascade layer:
 
 `@canonical/styles` declares the order of every layer in one statement, and `ds.components.global` sits near the top of it. Two things follow.
 
-`ds.components.app`, one layer higher, is the application tiers' — `@canonical/react-ds-app-lxd` and its siblings. None of them is wrapped yet (at the time of writing, no stylesheet under `packages/react/ds-app-*` carries a layer at all); wrapping them is being done package by package alongside this one. Today an app tier still beats this package for the opposite reason — it is unlayered, and unlayered beats layered. What the layer guarantees, once those packages land, is that an app tier's rule for a component this package also styles wins by cascade layer rather than by whichever bundle the loader emitted last.
+Above it are the other component tiers, which follow the design system's own tier tree, flat: `ds.components.sites`, `ds.components.documentation`, `ds.components.stores` and `ds.components.apps`, and above each of those a sub-tier layer for one product's own components — `ds.components.apps-lxd`, which that package declares itself, first rule in its CSS entry, because the styles package's order statement cannot know a product's name. Flat rather than nested: a nested `ds.components.apps.lxd` would sort *inside* `ds.components.apps` and so lose to every rule written directly there, the opposite of what a product tier needs.
+
+None of those packages is wrapped yet — at the time of writing no stylesheet under `packages/react/ds-app*` or `packages/svelte/ds-app*` carries a layer at all — and wrapping them is being done package by package alongside this one. So today a product tier still beats this package for the opposite reason: it is unlayered, and unlayered beats layered. What the layers guarantee, once those packages land, is that a product tier's rule for a component this package also styles wins by cascade layer rather than by whichever bundle the loader emitted last.
 
 An application's own **unlayered** CSS now beats every rule in this package, whatever the selectors on either side, because unlayered author rules outrank every layered one. That is CSS working as designed, and it is the deliberate escape hatch: an application that needs to override a component writes a plain rule and it wins. An application that does *not* want to win by accident puts its CSS in `@layer app`.
 

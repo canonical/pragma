@@ -61,7 +61,7 @@ from slot content and the surface cascade.
 |---|---|---|
 | `navigation` | `ReactNode` | Named slot, leading `min-content` column |
 | `children` | `ReactNode` | Default slot, `1fr` column |
-| …rest | `HTMLAttributes<HTMLDivElement>` | Spread onto the root |
+| …rest | `ComponentProps<"div">` | Spread onto the root |
 
 ---
 

@@ -1,25 +1,29 @@
-.ds.field-label {
-  font-weight: var(--form-label-font-weight, normal);
-  color: var(--form-label-color);
-  /* No side padding by default — the label aligns to the field edge, not the
-   * input's inner padding. Overridable via the variable. */
-  padding-inline: var(--form-label-padding-inline, 0);
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
-  /* Required marker. Drawn as a pseudo-element (NOT label text) so it never
-   * enters the accessible name — a screen reader announces the field's required
-   * state from `aria-required` on the input, not an "asterisk". The marker glyph
-   * and the gap after it are themeable; the gap stands in for the requested
-   * non-breaking space and, being a margin, never wraps away from the label.
-   * Inherits the label colour by default (overridable via the variable). */
-  &[data-required]::before {
-    content: var(--form-required-marker, "*");
-    margin-inline-end: var(--form-required-marker-gap, 0.25ch);
-    color: var(--form-required-marker-color, var(--form-label-color));
-  }
+@layer ds.components.global {
+  .ds.field-label {
+    font-weight: var(--form-label-font-weight, normal);
+    color: var(--form-label-color);
+    /* No side padding by default — the label aligns to the field edge, not the
+     * input's inner padding. Overridable via the variable. */
+    padding-inline: var(--form-label-padding-inline, 0);
 
-  /* The "(optional)" suffix is a muted hint, visually subordinate to the label
-   * — distinguished by colour (the label now uses regular paragraph weight too). */
-  & > .optional {
-    color: var(--color-text-muted);
+    /* Required marker. Drawn as a pseudo-element (NOT label text) so it never
+     * enters the accessible name — a screen reader announces the field's required
+     * state from `aria-required` on the input, not an "asterisk". The marker glyph
+     * and the gap after it are themeable; the gap stands in for the requested
+     * non-breaking space and, being a margin, never wraps away from the label.
+     * Inherits the label colour by default (overridable via the variable). */
+    &[data-required]::before {
+      content: var(--form-required-marker, "*");
+      margin-inline-end: var(--form-required-marker-gap, 0.25ch);
+      color: var(--form-required-marker-color, var(--form-label-color));
+    }
+
+    /* The "(optional)" suffix is a muted hint, visually subordinate to the label
+     * — distinguished by colour (the label now uses regular paragraph weight too). */
+    & > .optional {
+      color: var(--color-text-muted);
+    }
   }
 }

@@ -619,17 +619,28 @@ describe("generated stylesheet layer", () => {
     );
 
     expect(content).toContain("@layer ds.components.global {");
-    expect(content).not.toContain("ds.components.app");
+    expect(content).not.toContain("ds.components.apps");
   });
 
-  it("wraps an app-tier component in ds.components.app", () => {
+  it("wraps a second-level tier component in that tier's layer", () => {
+    const content = generateStyles(
+      "/repo/packages/react/ds-app",
+      "component/react",
+      "src/lib/Banner",
+    );
+
+    expect(content).toContain("@layer ds.components.apps {");
+    expect(content).not.toContain("ds.components.global");
+  });
+
+  it("wraps a sub-tier component in a layer named after the product", () => {
     const content = generateStyles(
       "/repo/packages/react/ds-app-lxd",
       "component/react",
       "src/lib/Banner",
     );
 
-    expect(content).toContain("@layer ds.components.app {");
+    expect(content).toContain("@layer ds.components.apps-lxd {");
     expect(content).not.toContain("ds.components.global");
   });
 
@@ -640,7 +651,7 @@ describe("generated stylesheet layer", () => {
         "component/svelte",
         "src/lib/components/Banner",
       ),
-    ).toContain("@layer ds.components.app {");
+    ).toContain("@layer ds.components.apps-wpe {");
     expect(
       generateStyles(
         "/repo/packages/svelte/ds-global",
@@ -648,6 +659,30 @@ describe("generated stylesheet layer", () => {
         "src/lib/components/Banner",
       ),
     ).toContain("@layer ds.components.global {");
+  });
+
+  it("follows the tier tree for the other second-level tiers", () => {
+    expect(
+      generateStyles(
+        "/repo/packages/react/ds-site-ubuntu",
+        "component/react",
+        "src/lib/Banner",
+      ),
+    ).toContain("@layer ds.components.sites-ubuntu {");
+    expect(
+      generateStyles(
+        "/repo/packages/react/ds-docs",
+        "component/react",
+        "src/lib/Banner",
+      ),
+    ).toContain("@layer ds.components.documentation {");
+    expect(
+      generateStyles(
+        "/repo/packages/react/ds-store-snap",
+        "component/react",
+        "src/lib/Banner",
+      ),
+    ).toContain("@layer ds.components.stores-snap {");
   });
 
   it("leaves the lit stylesheet unlayered: a shadow tree has its own cascade", () => {
