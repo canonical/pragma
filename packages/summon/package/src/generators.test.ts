@@ -403,75 +403,75 @@ describe("generated manifest — validity matrix", () => {
     ),
   );
 
-  it.each(combos)("renders a consistent manifest for %j", ({
-    type,
-    framework,
-    withStorybook,
-    withCli,
-  }) => {
-    // renderManifest JSON.parses — an unparseable render fails here.
-    const answers = {
-      ...base,
-      type,
-      framework,
-      withStorybook,
-      withCli,
-    };
-    const manifest = renderManifest(answers);
-    // Coercions the guard applies before any template sees the answers.
-    const isSvelte = framework === "svelte" && type === "library";
-    const hasCli = withCli && !isSvelte;
-    const devDependencies = manifest.devDependencies ?? {};
-    const allDependencies = {
-      ...devDependencies,
-      ...(manifest.dependencies ?? {}),
-    };
+  it.each(combos)(
+    "renders a consistent manifest for %j",
+    ({ type, framework, withStorybook, withCli }) => {
+      // renderManifest JSON.parses — an unparseable render fails here.
+      const answers = {
+        ...base,
+        type,
+        framework,
+        withStorybook,
+        withCli,
+      };
+      const manifest = renderManifest(answers);
+      // Coercions the guard applies before any template sees the answers.
+      const isSvelte = framework === "svelte" && type === "library";
+      const hasCli = withCli && !isSvelte;
+      const devDependencies = manifest.devDependencies ?? {};
+      const allDependencies = {
+        ...devDependencies,
+        ...(manifest.dependencies ?? {}),
+      };
 
-    // Scripts must not reference binaries the manifest does not declare.
-    if (manifest.scripts["check:webarchitect"] !== undefined) {
-      expect(allDependencies["@canonical/webarchitect"]).toBeDefined();
-    }
-    expect(manifest.scripts.storybook !== undefined).toBe(withStorybook);
-    if (withStorybook) {
-      expect(manifest.scripts["build:storybook"]).toBeDefined();
-      expect(allDependencies.storybook).toBeDefined();
-      expect(allDependencies["@canonical/storybook-config"]).toBeDefined();
-      expect(allDependencies["@canonical/styles-debug"]).toBeDefined();
-      if (isSvelte) {
-        expect(allDependencies["@storybook/svelte-vite"]).toBeDefined();
-        expect(allDependencies["@storybook/addon-svelte-csf"]).toBeDefined();
-      } else {
-        expect(allDependencies["@storybook/react-vite"]).toBeDefined();
-        // The react renderer needs react even when the package itself is not
-        // a react package.
-        expect(allDependencies.react).toBeDefined();
-        expect(allDependencies["react-dom"]).toBeDefined();
+      // Scripts must not reference binaries the manifest does not declare.
+      if (manifest.scripts["check:webarchitect"] !== undefined) {
+        expect(allDependencies["@canonical/webarchitect"]).toBeDefined();
       }
-    }
+      expect(manifest.scripts.storybook !== undefined).toBe(withStorybook);
+      if (withStorybook) {
+        expect(manifest.scripts["build:storybook"]).toBeDefined();
+        expect(allDependencies.storybook).toBeDefined();
+        expect(allDependencies["@canonical/storybook-config"]).toBeDefined();
+        expect(allDependencies["@canonical/styles-debug"]).toBeDefined();
+        if (isSvelte) {
+          expect(allDependencies["@storybook/svelte-vite"]).toBeDefined();
+          expect(allDependencies["@storybook/addon-svelte-csf"]).toBeDefined();
+        } else {
+          expect(allDependencies["@storybook/react-vite"]).toBeDefined();
+          // The react renderer needs react even when the package itself is not
+          // a react package.
+          expect(allDependencies.react).toBeDefined();
+          expect(allDependencies["react-dom"]).toBeDefined();
+        }
+      }
 
-    // Every test runner named by a script must be installable.
-    if (manifest.scripts.test?.includes("vitest")) {
-      expect(allDependencies.vitest).toBeDefined();
-    }
-    if (isSvelte) {
-      expect(manifest.scripts.build).toContain("svelte-package");
-      expect(allDependencies["@sveltejs/package"]).toBeDefined();
-      expect(manifest.scripts["check:ts"]).toContain("svelte-check");
-      expect(allDependencies["svelte-check"]).toBeDefined();
-      expect(manifest.peerDependencies?.svelte).toBeDefined();
-    }
+      // Every test runner named by a script must be installable.
+      if (manifest.scripts.test?.includes("vitest")) {
+        expect(allDependencies.vitest).toBeDefined();
+      }
+      if (isSvelte) {
+        expect(manifest.scripts.build).toContain("svelte-package");
+        expect(allDependencies["@sveltejs/package"]).toBeDefined();
+        expect(manifest.scripts["check:ts"]).toContain("svelte-check");
+        expect(allDependencies["svelte-check"]).toBeDefined();
+        expect(manifest.peerDependencies?.svelte).toBeDefined();
+      }
 
-    // A bin entry must point inside the published file set.
-    if (hasCli && type !== "css") {
-      const binPath = Object.values(manifest.bin ?? {})[0];
-      expect(binPath).toBeDefined();
-      expect(
-        manifest.files.some((dir) => (binPath as string).startsWith(`${dir}/`)),
-      ).toBe(true);
-    } else {
-      expect(manifest.bin).toBeUndefined();
-    }
-  });
+      // A bin entry must point inside the published file set.
+      if (hasCli && type !== "css") {
+        const binPath = Object.values(manifest.bin ?? {})[0];
+        expect(binPath).toBeDefined();
+        expect(
+          manifest.files.some((dir) =>
+            (binPath as string).startsWith(`${dir}/`),
+          ),
+        ).toBe(true);
+      } else {
+        expect(manifest.bin).toBeUndefined();
+      }
+    },
+  );
 });
 
 describe("generated Storybook preview", () => {

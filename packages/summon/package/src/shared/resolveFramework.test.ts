@@ -19,21 +19,21 @@ describe("resolveFramework", () => {
     ).toEqual({ framework: "react", withCli: true, warnings: [] });
   });
 
-  it.each([
-    "react",
-    "svelte",
-  ] as const)("drops %s on a tool-ts package, with a warning", (framework) => {
-    const result = resolveFramework({
-      type: "tool-ts",
-      framework,
-      withCli: false,
-    });
+  it.each(["react", "svelte"] as const)(
+    "drops %s on a tool-ts package, with a warning",
+    (framework) => {
+      const result = resolveFramework({
+        type: "tool-ts",
+        framework,
+        withCli: false,
+      });
 
-    expect(result.framework).toBe("none");
-    expect(result.warnings).toHaveLength(1);
-    expect(result.warnings[0]).toContain(`--framework=${framework}`);
-    expect(result.warnings[0]).toContain("tool-ts");
-  });
+      expect(result.framework).toBe("none");
+      expect(result.warnings).toHaveLength(1);
+      expect(result.warnings[0]).toContain(`--framework=${framework}`);
+      expect(result.warnings[0]).toContain("tool-ts");
+    },
+  );
 
   it("drops a framework on a css package, with a warning", () => {
     const result = resolveFramework({
