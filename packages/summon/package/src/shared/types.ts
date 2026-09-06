@@ -27,6 +27,10 @@ export interface MonorepoInfo {
 }
 
 export interface TemplateContext {
+  /** The cascade layer this package's component stylesheets sit in */
+  componentLayer: string;
+  /** Whether this package must declare that layer itself (a sub-tier package) */
+  declaresComponentLayer: boolean;
   /** Package short name (without scope) */
   shortName: string;
   /** Full package name (as entered, e.g., @canonical/my-package) */

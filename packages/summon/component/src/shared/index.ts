@@ -9,7 +9,6 @@ export * from "./file-operations/index.js";
 export { PACKAGE_NAME } from "./packageName.js";
 export { packageVersion } from "./packageVersion.js";
 export {
-  APP_COMPONENT_LAYER,
   componentLayerFor,
   default as resolveComponentLayer,
   GLOBAL_COMPONENT_LAYER,

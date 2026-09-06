@@ -23,6 +23,17 @@ export type {
 } from "./types/index.js";
 
 // =============================================================================
+// Cascade layers (which component tier a package's stylesheets sit in)
+// =============================================================================
+
+export {
+  COMPONENT_TIER_LAYERS,
+  componentLayerFor,
+  GLOBAL_COMPONENT_LAYER,
+  isSubTierLayer,
+} from "./layer/index.js";
+
+// =============================================================================
 // Stamps (generated file stamp comments)
 // =============================================================================
 
