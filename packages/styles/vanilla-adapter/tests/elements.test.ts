@@ -8,13 +8,13 @@
  * the original. It runs without a browser: the question is what the files say,
  * not what a browser computes from them; the browser fixtures answer that one.
  *
- * The sources are read from pragma's entries rather than named: every local
- * file `@canonical/styles`' index.css imports that opens one of the three
- * layers, and what the typography entry brings in, its element file and the
- * engine it names, with every local file they import. The mapping from a
- * source selector to its confined form is the table in `confined()` below, in
- * words in the README's section on the confined copy. The exceptions, rules
- * that exist on one side only, each carry their reason.
+ * The sources are read from pragma's entry rather than named: everything
+ * `@canonical/styles/elements.css` composes, pragma's own copy of the three
+ * layers addressed to the page, followed through its local and typography
+ * imports. The mapping from a source selector to its confined form is the
+ * table in `confined()` below, in words in the README's section on the
+ * confined copy. The exceptions, rules that exist on one side only, each carry
+ * their reason.
  */
 
 import { readFileSync } from "node:fs";
@@ -26,7 +26,7 @@ const read = (path: string): string => {
     return readFileSync(new URL(path, import.meta.url), "utf8");
   } catch {
     throw new Error(
-      `${path} is not in the workspace: this test binds the copy to the @canonical/styles release that ships plain element layers and core.css`,
+      `${path} is not in the workspace: this test binds the copy to the @canonical/styles release that ships its stylesheet as entries (tokens.css, elements.css, layout.css)`,
     );
   }
 };
@@ -34,7 +34,7 @@ const read = (path: string): string => {
 /** The layers the copy carries, in pragma's order. */
 const ELEMENT_LAYERS = ["normalize", "ds.reset", "ds.typography"];
 
-/** Pragma's own order statement, which core.css must open with. */
+/** Pragma's own order statement, which each of its entries opens with. */
 const PRAGMA_ORDER =
   "@layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers, ds.surfaces, ds.states, ds.components, ds.components.global, ds.components.app";
 
@@ -367,42 +367,49 @@ const main = (file: string): Walked =>
 const typography = (file: string): Walked =>
   walk(read(`../../typography/src/${file}`), `typography/src/${file}`);
 
-/** A typography file and, recursively, the local files it imports. */
-const typographyFiles = (file: string, seen = new Set<string>()): Walked[] => {
-  if (seen.has(file)) return [];
-  seen.add(file);
-  const walked = typography(file);
-  const locals = importsOf(walked)
-    .map(localImport)
-    .filter((name): name is string => Boolean(name));
-  return [walked, ...locals.flatMap((name) => typographyFiles(name, seen))];
-};
-
-/** The local files @canonical/styles' entry imports, in its order. */
-const mainFiles = importsOf(main("index.css"))
-  .map(localImport)
-  .filter((name): name is string => Boolean(name))
-  .map(main);
+/** The file a typography package import names, or undefined. */
+const typographyImport = (line: string): string | undefined =>
+  /["']@canonical\/styles-typography\/(?:src\/)?([\w.-]+\.css)["']/.exec(
+    line,
+  )?.[1];
 
 /**
- * What the typography entry brings in: its element file, the engine it names,
- * and every local file they import. The entry is read rather than the file
- * names assumed, so a change of engine or a renamed file shows up here.
+ * The files an entry composes, in import order: its local imports and the
+ * typography package's files, each followed through its own imports once.
  */
-const typographySources = typographyFiles("index.css");
+const composition = (entry: Walked): Walked[] => {
+  const seen = new Set<string>([entry.file]);
+  const follow = (walked: Walked): Walked[] =>
+    importsOf(walked).flatMap((line) => {
+      const local = localImport(line);
+      const packaged = typographyImport(line);
+      let next: Walked | undefined;
+      if (local)
+        next = walked.file.startsWith("typography/")
+          ? typography(local)
+          : main(local);
+      else if (packaged) next = typography(packaged);
+      if (!next || seen.has(next.file)) return [];
+      seen.add(next.file);
+      return [next, ...follow(next)];
+    });
+  return follow(entry);
+};
 
-/** The engine @canonical/styles loads: the one the typography entry names. */
+/** Pragma's elements entry: the three layers addressed to the page. */
+const elementsEntry = main("elements.css");
+
+/** The engine the entry names: the typography file it imports that is one. */
 const engineFile = ((): string => {
-  const match = importsOf(typography("index.css"))
-    .map(localImport)
+  const match = importsOf(elementsEntry)
+    .map(typographyImport)
     .find((name): name is string => /^baseline-[a-z]+\.css$/.test(name ?? ""));
-  if (!match)
-    throw new Error("typography/src/index.css imports no baseline engine");
+  if (!match) throw new Error("main/src/elements.css names no baseline engine");
   return match;
 })();
 
-/** The sources the copy binds to: the entry's files that open an element layer. */
-const sources = [...mainFiles.filter(opensElementLayer), ...typographySources];
+/** The sources the copy binds to: everything the elements entry composes. */
+const sources = composition(elementsEntry);
 const copy = walk(read("../elements.css"), "vanilla-adapter/elements.css");
 
 /** The source rules the copy binds to: those in the three element layers. */
@@ -410,20 +417,24 @@ const sourceRules = sources.flatMap((walked) =>
   walked.rules.filter((rule) => ELEMENT_LAYERS.includes(rule.layer)),
 );
 
-/** The source rules in any other layer, which stay in core.css. */
+/** The source rules in any other layer, which is nothing the entry should compose. */
 const otherRules = sources.flatMap((walked) =>
   walked.rules.filter((rule) => !ELEMENT_LAYERS.includes(rule.layer)),
 );
 
 describe("elements.css is pragma's element layers, confined", () => {
-  it("binds to the files pragma's entries name", () => {
-    // The main side is every local file index.css imports that opens one of
-    // the three layers; the typography side is what its entry brings in.
+  it("binds to the files pragma's elements entry composes", () => {
+    // Pragma's elements.css is the three layers addressed to the page; this
+    // package's elements.css is the same three layers addressed to an island.
+    // Its imports name the reset, the root baseline, the typography element
+    // rules and one engine, and every file it composes opens an element layer.
     const files = sources.map((walked) => walked.file);
     expect(files).toContain("main/src/normalize.css");
     expect(files).toContain("main/src/reset.css");
+    expect(files).toContain("typography/src/elements.css");
     expect(files).toContain(`typography/src/${engineFile}`);
     expect(engineFile).toBe("baseline-cap.css");
+    expect(sources.filter((walked) => !opensElementLayer(walked))).toEqual([]);
     // The element rules that feed the engine come from a typography file that
     // is not the engine; without them a heading inside an island would compute
     // the paragraph's size.
@@ -442,14 +453,15 @@ describe("elements.css is pragma's element layers, confined", () => {
       layerOrder(sourceRules).filter((name) => ELEMENT_LAYERS.includes(name)),
     ).toEqual(ELEMENT_LAYERS);
     // No import, no registration, no statement of its own: the layer order
-    // comes from layers.css and the `@property` registration from core.css.
+    // comes from layers.css, and the engine reads its baseline unit with a
+    // fallback rather than a registration.
     expect(copy.statements).toEqual([]);
     expect(copy.blocks).toEqual([]);
   });
 
   it("leaves nothing in pragma's other layers but custom properties", () => {
-    // What these files keep outside the element layers stays in core.css, so it
-    // must be inert outside an island: custom properties and nothing else.
+    // What these files keep outside the element layers would reach the page
+    // unconfined, so it must be inert there: custom properties and nothing else.
     const styling = otherRules
       .filter((rule) => !tokensOnly(rule))
       .map((rule) => `${label(rule)}: ${rule.declarations.join("; ")}`);
@@ -550,49 +562,33 @@ describe("elements.css is pragma's element layers, confined", () => {
 });
 
 describe("@canonical/styles exposes what a mixed page needs", () => {
-  /** The files core.css brings in from this workspace, core.css first. */
-  const coreFiles = ((): Walked[] => {
-    const core = main("core.css");
-    const seen = new Set<string>();
-    const follow = (walked: Walked): Walked[] =>
-      importsOf(walked).flatMap((line) => {
-        const local = localImport(line);
-        const packaged =
-          /["']@canonical\/styles-typography\/(?:src\/)?([\w.-]+\.css)["']/.exec(
-            line,
-          )?.[1];
-        let next: Walked | undefined;
-        if (local)
-          next = walked.file.startsWith("typography/")
-            ? typography(local)
-            : main(local);
-        else if (packaged) next = typography(packaged);
-        if (!next || seen.has(next.file)) return [];
-        seen.add(next.file);
-        return [next, ...follow(next)];
-      });
-    return [core, ...follow(core)];
-  })();
+  /** An entry and the files it composes. */
+  const entry = (file: string): Walked[] => {
+    const walked = main(file);
+    return [walked, ...composition(walked)];
+  };
+  const tokens = entry("tokens.css");
+  const layout = entry("layout.css");
 
-  it("loads the three element layers from the files this test binds to", () => {
-    const imports = importsOf(main("index.css"));
-    expect(imports.some((line) => line.includes("./normalize.css"))).toBe(true);
-    expect(imports.some((line) => line.includes("./reset.css"))).toBe(true);
-    expect(
-      imports.some((line) => line.includes("@canonical/styles-typography")),
-    ).toBe(true);
+  it("every entry opens with pragma's ten-name statement, the mixed order minus the adapter's four", () => {
+    // The adapter's statement comes first on a mixed page; each entry repeats
+    // pragma's own, which can add layers but never reorder the ones already
+    // fixed, and adds none.
+    for (const file of [
+      "index.css",
+      "tokens.css",
+      "elements.css",
+      "layout.css",
+    ])
+      expect(main(file).statements[0], file).toBe(PRAGMA_ORDER);
   });
 
-  it("core.css opens with pragma's ten-name statement, the mixed order minus the adapter's four", () => {
-    expect(coreFiles[0]?.statements[0]).toBe(PRAGMA_ORDER);
-  });
-
-  it("core.css brings no element rule with it", () => {
-    // The mixed page takes core.css for everything but the three layers, so
-    // what core.css brings into those layers must be inert outside an island:
-    // custom properties, or nothing. An element rule here would style Vanilla's
-    // headings and paragraphs from a pragma layer that sits above `vanilla`.
-    const leaks = coreFiles
+  it("tokens.css and layout.css bring no element rule with them", () => {
+    // The mixed page takes both unconfined, so what they bring into the three
+    // layers must be inert outside an island: custom properties, or nothing.
+    // An element rule there would style Vanilla's headings and paragraphs
+    // from a pragma layer that sits above `vanilla`.
+    const leaks = [...tokens, ...layout]
       .flatMap((walked) => walked.rules)
       .filter(
         (rule) => ELEMENT_LAYERS.includes(rule.layer) && !tokensOnly(rule),
@@ -601,17 +597,31 @@ describe("@canonical/styles exposes what a mixed page needs", () => {
     expect(leaks).toEqual([]);
   });
 
-  it("core.css carries the typographic scale and the --baseline-height registration", () => {
-    // The copy's engine reads both and carries neither: a registration applies
-    // to the whole document wherever it is written, and the scale is tokens.
-    const imports = coreFiles.flatMap(importsOf);
+  it("tokens.css carries the typographic scale the copy reads", () => {
+    // The element rules read the `--typography-*` values; the scale is tokens
+    // and acts wherever it is written, so the copy carries none of it.
+    const imports = tokens.flatMap(importsOf);
     expect(
       imports.some((line) => line.includes("dist/modifiers.typography.css")),
     ).toBe(true);
+  });
+
+  it("the elements entry composes the element files and nothing else", () => {
+    // What index.css loads for the three layers is what elements.css composes,
+    // so a pragma-only page and a mixed page start from the same rules.
+    const indexImports = importsOf(main("index.css"));
+    expect(indexImports.some((line) => line.includes("./normalize.css"))).toBe(
+      true,
+    );
+    expect(indexImports.some((line) => line.includes("./reset.css"))).toBe(
+      true,
+    );
     expect(
-      coreFiles
-        .flatMap((walked) => walked.blocks)
-        .some((prelude) => prelude === "@property --baseline-height"),
+      indexImports.some((line) =>
+        line.includes("@canonical/styles-typography"),
+      ),
     ).toBe(true);
+    expect(elementsEntry.rules).toEqual([]);
+    expect(importsOf(elementsEntry).length).toBe(4);
   });
 });

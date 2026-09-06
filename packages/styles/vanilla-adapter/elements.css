@@ -7,9 +7,11 @@
  * elements that carry the class `ds`, and everything inside them. This file is
  * that. It is a copy of the three layers, rule for rule and declaration for
  * declaration, re-addressed to an island root by wrapping each layer's rules in
- * `@scope (.ds)`. adapter.css loads it right after @canonical/styles/core.css,
- * which is pragma's stylesheet without these three layers, so a mixed page
- * never loads pragma's unconfined entry.
+ * `@scope (.ds)`. Pragma ships those layers as an entry of the same name,
+ * @canonical/styles/elements.css, addressed to the page; this file is the same
+ * three layers addressed to an island. adapter.css loads it right after
+ * pragma's other two entries, tokens.css and layout.css, so a mixed page never
+ * loads pragma's element layers unconfined.
  *
  * Two root idioms recur, and both follow from one fact about `@scope`: a rule
  * inside the block never matches its own scoping root, only what is inside it,
@@ -38,9 +40,9 @@
  *
  * `:where()` around every root selector keeps it at zero specificity, so the
  * copy weighs what pragma's original weighed or less, and a single class in any
- * layer above these three overrides it. The `@property` registration the
- * typography engine relies on is not here: it applies to the whole document
- * wherever it is written and stays with the mapper's tokens in core.css.
+ * layer above these three overrides it. The tokens the copy reads, the
+ * typographic scale among them, come from tokens.css; the engine reads
+ * `--baseline-height` with a fallback of its own, so nothing else travels.
  *
  * What keeps this copy honest: tests/elements.test.ts reads pragma's source
  * files from the workspace and this file, walks the rules of both, and fails
@@ -205,8 +207,8 @@
     /* The OUTERMOST island root, and only that one: a nested component root
        must inherit its container's font and colour, not restate the baseline. */
     :where(:scope:not(.ds *)) {
-      /* The same token the typography mapper reads for the base font, so the
-         root and the elements inside it cannot disagree. */
+      /* The same token the typography element rules read for the base font,
+         so the root and the elements inside it cannot disagree. */
       font-family: var(--typography-text-primary-font-family);
       /* A `light-dark()` token, resolved against the root's own colour scheme,
          which the theme bridge in adapter.css sets. */
@@ -257,10 +259,9 @@
 }
 
 /* ── ds.typography: the element rules and the baseline engine ──────────────
- * Copied from @canonical/styles-typography: src/mapper.elements.css (the
- * element half of the mapper; the values it reads come from src/mapper.css,
- * which stays in core.css) and the engine @canonical/styles loads,
- * src/baseline-cap.css. A
+ * Copied from @canonical/styles-typography: src/elements.css (the element
+ * rules; the tokens they read are in src/tokens.css, which tokens.css brings
+ * in) and the engine pragma's elements entry names, src/baseline-cap.css. A
  * consumer who links another engine on a mixed page links it unconfined; only
  * the default engine is copied here. */
 @layer ds.typography {
@@ -284,7 +285,7 @@
             var(--typography-heading-1-font-size) *
             var(--typography-heading-1-line-height)
           ),
-          var(--baseline-height)
+          var(--baseline-height, 0.25rem)
         )
       );
       --space-after: 0;
@@ -305,7 +306,7 @@
             var(--typography-heading-2-font-size) *
             var(--typography-heading-2-line-height)
           ),
-          var(--baseline-height)
+          var(--baseline-height, 0.25rem)
         )
       );
       --space-after: 0;
@@ -326,7 +327,7 @@
             var(--typography-heading-3-font-size) *
             var(--typography-heading-3-line-height)
           ),
-          var(--baseline-height)
+          var(--baseline-height, 0.25rem)
         )
       );
       --space-after: 0;
@@ -347,7 +348,7 @@
             var(--typography-heading-4-font-size) *
             var(--typography-heading-4-line-height)
           ),
-          var(--baseline-height)
+          var(--baseline-height, 0.25rem)
         )
       );
       --space-after: 0;
@@ -368,7 +369,7 @@
             var(--typography-heading-5-font-size) *
             var(--typography-heading-5-line-height)
           ),
-          var(--baseline-height)
+          var(--baseline-height, 0.25rem)
         )
       );
       --space-after: 0;
@@ -394,7 +395,7 @@
             var(--typography-heading-6-font-size) *
             var(--typography-heading-6-line-height)
           ),
-          var(--baseline-height)
+          var(--baseline-height, 0.25rem)
         )
       );
       --space-after: 0;
@@ -421,7 +422,7 @@
             var(--typography-text-primary-font-size) *
             var(--typography-text-primary-line-height)
           ),
-          var(--baseline-height)
+          var(--baseline-height, 0.25rem)
         )
       );
       --space-after: 0;
@@ -446,7 +447,7 @@
             var(--typography-text-primary-code-font-size) *
             var(--typography-text-primary-code-line-height)
           ),
-          var(--baseline-height)
+          var(--baseline-height, 0.25rem)
         )
       );
       --space-after: 0;
@@ -507,17 +508,17 @@
     :scope.code {
       --computed-line-height: var(
         --line-height,
-        calc(var(--baseline-height) * var(--line-height-multiplier))
+        calc(var(--baseline-height, 0.25rem) * var(--line-height-multiplier))
       );
       line-height: var(--computed-line-height);
       font-size: var(--font-size);
 
       --baseline-position: calc((var(--computed-line-height) + 1cap) / 2);
       --start-nudge: calc(
-        var(--baseline-height) -
-        mod(var(--baseline-position), var(--baseline-height))
+        var(--baseline-height, 0.25rem) -
+        mod(var(--baseline-position), var(--baseline-height, 0.25rem))
       );
-      --end-nudge: calc(var(--baseline-height) - var(--start-nudge));
+      --end-nudge: calc(var(--baseline-height, 0.25rem) - var(--start-nudge));
     }
 
     /* Block-level baseline nudges only: bare inline `.code` is excluded so it
@@ -536,7 +537,10 @@
       padding-block-end: var(--end-nudge);
 
       /* Element-owned spacing — only active in .editorial contexts */
-      margin-block-end: calc(var(--space-after, 0) * var(--baseline-height));
+      margin-block-end: calc(
+        var(--space-after, 0) *
+        var(--baseline-height, 0.25rem)
+      );
     }
   }
 }
