@@ -1,37 +1,41 @@
-/* Native popover + CSS anchor positioning.
- * Anchored to --combobox-input defined on the combobox's <input>. */
-.ds.combobox-list {
-  /* Reset popover defaults */
-  margin: 0;
-  padding: 0;
-  inset: unset;
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
-  /* Anchor to combobox input */
-  position-anchor: --combobox-input;
-  position-area: block-end span-inline-end;
-  width: anchor-size(inline);
-  margin-block-start: 2px;
+@layer ds.components.global {
+  /* Native popover + CSS anchor positioning.
+   * Anchored to --combobox-input defined on the combobox's <input>. */
+  .ds.combobox-list {
+    /* Reset popover defaults */
+    margin: 0;
+    padding: 0;
+    inset: unset;
 
-  max-height: 15rem;
-  overflow-y: auto;
-  background-color: var(--color-background);
-  border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
-  border-radius: var(--dimension-radius-small);
-  box-shadow: 0 4px 6px -1px oklch(0% 0 0 / 0.1);
-  list-style: none;
+    /* Anchor to combobox input */
+    position-anchor: --combobox-input;
+    position-area: block-end span-inline-end;
+    width: anchor-size(inline);
+    margin-block-start: 2px;
 
-  & > li {
-    padding: var(--component-padding-block) var(--component-padding-inline);
-    cursor: pointer;
-    transition: background-color 100ms ease;
+    max-height: 15rem;
+    overflow-y: auto;
+    background-color: var(--color-background);
+    border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
+    border-radius: var(--dimension-radius-small);
+    box-shadow: 0 4px 6px -1px oklch(0% 0 0 / 0.1);
+    list-style: none;
 
-    &.selected {
-      font-weight: bold;
-    }
+    & > li {
+      padding: var(--component-padding-block) var(--component-padding-inline);
+      cursor: pointer;
+      transition: background-color 100ms ease;
 
-    &.highlighted,
-    &:hover {
-      background-color: var(--color-foreground-ghost-hover);
+      &.selected {
+        font-weight: bold;
+      }
+
+      &.highlighted,
+      &:hover {
+        background-color: var(--color-foreground-ghost-hover);
+      }
     }
   }
 }
