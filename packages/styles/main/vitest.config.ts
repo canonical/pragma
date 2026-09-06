@@ -3,12 +3,12 @@ import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
 /**
- * The package ships CSS, and its two test suites ask two different kinds of
- * question, so they run in two different places.
+ * The package ships CSS, and its two suites ask two different kinds of question,
+ * so they run in two different places.
  *
- * `entries` asks how the entry points relate to one another — which files each
- * one imports, and what the resolved text of each contains. That is answered by
- * reading the files, and it runs in Node.
+ * `entries` asks how the four entry points relate to one another: which files
+ * each pulls in, how often, and what the resolved text of each contains. That is
+ * answered by reading the files, and it runs in Node.
  *
  * `contract` asks what a browser makes of the resolved stylesheet: which layers
  * exist and in what order, what is nested inside what, which declarations are
@@ -32,7 +32,7 @@ export default defineConfig({
       {
         test: {
           name: "entries",
-          include: ["tests/core.test.ts"],
+          include: ["tests/entries.test.ts"],
         },
       },
       {

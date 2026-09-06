@@ -3,23 +3,20 @@
  *
  * Everything here runs in the browser, and every question the cascade can answer
  * is asked of the CSSOM. `@layer` and `!important` are cascade structure, and an
- * engine that implements the cascade is the only parser that
- * reports what a browser will do with them: a regular expression finds what was
- * typed, which is a different question and, for importance, a different answer —
- * a browser reads `!IMPORTANT`, and a comment between the bang and the word, as
- * important, and neither is the literal string a search would look for.
+ * engine that implements the cascade is the only parser that reports what a
+ * browser will do with them: a regular expression finds what was typed, which is
+ * a different question and, for importance, a different answer — a browser reads
+ * `!IMPORTANT`, and a comment between the bang and the word, as important, and
+ * neither is the literal string a search would look for.
  *
- * Four questions are left to the text, and each is a question about the text.
+ * Three questions are left to the text, and each is a question about the text.
  * Which files a stylesheet imports: `replaceSync` drops `@import` rules from a
  * constructed stylesheet altogether. Where an `@import` sits relative to the
  * rules: a browser drops a late one outright, so it is missing from the CSSOM
  * exactly when it is a defect, and a bundler inlines it, so the resolved text
- * hides it too — that check reads the unresolved file. How many `@property`
- * registrations a file writes, which is the number the CSSOM's count is compared
- * against, and which only the source can say, because a rejected registration
- * leaves nothing behind. And a scan for `!important` in each file as source
- * hygiene, which reaches files the entry never imports and so never parses; the
- * live guarantee is the CSSOM's, next to it.
+ * hides it too — that check reads the unresolved file. And a scan for
+ * `!important` in each file as source hygiene, which reaches files no entry
+ * imports and so never parses; the live guarantee is the CSSOM's, beside it.
  *
  * Nothing is transformed. Vite resolves the `@import` graph the way a consumer's
  * bundler resolves it, `?inline` hands the resolved text to the test, and `?raw`
@@ -35,24 +32,51 @@ import themeCss from "@canonical/design-tokens/dist/modifiers.theme.css?inline";
 import typographyTokensCss from "@canonical/design-tokens/dist/modifiers.typography.css?inline";
 import primitiveCss from "@canonical/design-tokens/dist/sets.primitive.css?inline";
 import statesCss from "@canonical/design-tokens/dist/states.css?inline";
+import typographyBaselineCss from "@canonical/styles-typography/baseline-cap.css?inline";
+import typographyElementsCss from "@canonical/styles-typography/elements.css?inline";
+import typographyTokenCss from "@canonical/styles-typography/tokens.css?inline";
 import typographyCss from "@canonical/styles-typography?inline";
 import readme from "../../README.md?raw";
-import coreCss from "../../src/core.css?inline";
-import coreRaw from "../../src/core.css?raw";
+import elementsCss from "../../src/elements.css?inline";
+import elementsRaw from "../../src/elements.css?raw";
 import entryCss from "../../src/index.css?inline";
 import entryRaw from "../../src/index.css?raw";
+import layoutCss from "../../src/layout.css?inline";
+import layoutRaw from "../../src/layout.css?raw";
+import tokensCss from "../../src/tokens.css?inline";
+import tokensRaw from "../../src/tokens.css?raw";
 
-export {
-  coreCss,
-  coreRaw,
-  entryCss,
-  entryRaw,
-  importanceCss,
-  readme,
-  typographyCss,
+export { entryCss, entryRaw, importanceCss, readme, typographyCss };
+
+/**
+ * The four entry points, resolved. `index.css` is the whole stylesheet; the
+ * other three are it in parts, and no entry imports another, so each resolves on
+ * its own.
+ */
+export const ENTRIES: Record<string, string> = {
+  "index.css": entryCss,
+  "tokens.css": tokensCss,
+  "elements.css": elementsCss,
+  "layout.css": layoutCss,
 };
 
-/** The layers the entry's statement names, in order. Nothing else may be opened. */
+/** The same four unresolved, for the questions that are about the text. */
+export const ENTRIES_RAW: Record<string, string> = {
+  "index.css": entryRaw,
+  "tokens.css": tokensRaw,
+  "elements.css": elementsRaw,
+  "layout.css": layoutRaw,
+};
+
+/** How the README's entry table names each of them. */
+export const ENTRY_SPECIFIERS: Record<string, string> = {
+  "@canonical/styles": "index.css",
+  "@canonical/styles/tokens.css": "tokens.css",
+  "@canonical/styles/elements.css": "elements.css",
+  "@canonical/styles/layout.css": "layout.css",
+};
+
+/** The layers the order statement names, in order. Nothing else may be opened. */
 export const DECLARED_LAYERS = [
   "normalize",
   "ds.tokens",
@@ -69,28 +93,11 @@ export const DECLARED_LAYERS = [
 /**
  * The three layers whose rules select plain elements rather than declare custom
  * properties. They style the whole page, as a reset does, and that is the whole
- * of it: no marker, no subtree, nothing to remember. `index.css` opens all three
- * and `core.css` opens none of them, which is the single difference between the
- * two entry points and the reason the second exists.
+ * of it: no marker, no subtree, nothing to remember. They are what `elements.css`
+ * is, and what `tokens.css` and `layout.css` deliberately leave out, so that a
+ * page whose element rules come from somewhere else can take the rest.
  */
 export const ELEMENT_LAYERS = ["normalize", "ds.reset", "ds.typography"];
-
-/** Every layer `index.css` opens. The two it declares and leaves empty are below. */
-export const INDEX_LAYERS = [
-  "normalize",
-  "ds.tokens",
-  "ds.reset",
-  "ds.typography",
-  "ds.modifiers",
-  "ds.surfaces",
-  "ds.states",
-  "ds.components.global",
-];
-
-/** Every layer `core.css` opens: the same list without the three element layers. */
-export const CORE_LAYERS = INDEX_LAYERS.filter(
-  (layer) => !ELEMENT_LAYERS.includes(layer),
-);
 
 /**
  * The layer the statement declares that nothing yet writes to: the application
@@ -152,13 +159,12 @@ export const LOCAL_RAW: Record<string, string> = byBasename(
 );
 
 /**
- * The typography package's baseline files, each resolved on its own. The package
- * entry imports one engine; the other two are documented as consumer-swappable
- * entry points and reach a page only when a consumer imports them directly, so
- * nothing would check them unless they are resolved alone. The shim is in the
- * glob because the engines import it, and is separated out below.
+ * The typography package's three baseline engines, each resolved on its own. The
+ * package entry imports one; the other two are documented as consumer-swappable
+ * entry points and reach a page only when a consumer imports one directly, so
+ * nothing would check them unless they are resolved alone.
  */
-const baselineSources: Record<string, string> = byBasename(
+export const ENGINE_SOURCES: Record<string, string> = byBasename(
   import.meta.glob<string>("../../../typography/src/baseline-*.css", {
     eager: true,
     import: "default",
@@ -168,8 +174,8 @@ const baselineSources: Record<string, string> = byBasename(
 );
 
 /**
- * Every stylesheet the typography package writes, unresolved. The entry pulls
- * that package in, so a late `@import` written there reaches this stylesheet's
+ * Every stylesheet the typography package writes, unresolved. The entries pull
+ * that package in, so a late `@import` written there reaches this package's
  * consumers exactly as one written here would — and the resolved text cannot
  * show it either, for the same reason.
  */
@@ -182,21 +188,13 @@ export const TYPOGRAPHY_RAW: Record<string, string> = byBasename(
   "../../../typography/src/",
 );
 
-/** The registration the engines share; not an engine, and layered by nothing. */
-export const BASELINE_SHIM = "baseline-shim.css";
-
-/** The three interchangeable engines, resolved one at a time. */
-export const ENGINE_SOURCES: Record<string, string> = Object.fromEntries(
-  Object.entries(baselineSources).filter(([name]) => name !== BASELINE_SHIM),
-);
-
 /**
  * The packages and generated files the README names, by specifier. A static map
  * is unavoidable — a bundler cannot resolve a specifier a test computes at run
  * time — so the test resolves every name the README uses through it, and a file
- * documented without a line here fails rather than passing unchecked. Two of
- * these the entry does not import: `modifiers.typography.css` reaches the page
- * through the typography package, and `modifiers.importance.css` is empty.
+ * documented without a line here fails rather than passing unchecked. One of
+ * these no entry imports: `modifiers.typography.css` reaches the page through
+ * the typography package's own token half.
  */
 export const EXTERNAL_SOURCES: Record<string, string> = {
   "@canonical/design-tokens/dist/modifiers.anticipation.css": anticipationCss,
@@ -209,9 +207,14 @@ export const EXTERNAL_SOURCES: Record<string, string> = {
   "@canonical/design-tokens/dist/sets.primitive.css": primitiveCss,
   "@canonical/design-tokens/dist/states.css": statesCss,
   "@canonical/styles-typography": typographyCss,
+  // The typography package's own halves, which the split entry points take
+  // one at a time rather than through that package's entry.
+  "@canonical/styles-typography/baseline-cap.css": typographyBaselineCss,
+  "@canonical/styles-typography/elements.css": typographyElementsCss,
+  "@canonical/styles-typography/tokens.css": typographyTokenCss,
 };
 
-/** The resolved text of a file the README or the entry names, if it exists. */
+/** The resolved text of a file the README or an entry names, if it exists. */
 export const sourceOf = (name: string): string | undefined =>
   EXTERNAL_SOURCES[name] ?? LOCAL_SOURCES[name.replace(/^\.\//, "")];
 
@@ -260,8 +263,7 @@ export interface StyleRuleFact {
  * three questions that would otherwise each need their own, and all three are
  * cascade questions: which layer a rule is in, what it declares, and what it
  * declares importantly. Importance comes from `getPropertyPriority`, which is
- * what the browser itself uses; `!IMPORTANT` and a comment written between the
- * bang and the word are both important and neither is a literal `!important`.
+ * what the browser itself uses.
  */
 export const styleRules = (css: string): StyleRuleFact[] => {
   const found: StyleRuleFact[] = [];
@@ -383,6 +385,20 @@ export const elementRulesIn = (css: string, layer: string): string[] =>
     )
     .map((rule) => rule.selector);
 
+/** The properties every style rule directly in a layer declares, labelled. */
+export const declarationsIn = (css: string, layer: string): string[] =>
+  styleRules(css)
+    .filter((rule) => rule.layer === layer)
+    .flatMap((rule) =>
+      rule.properties.map((property) => `${rule.selector} ${property}`),
+    );
+
+/** Every important declaration a stylesheet makes, labelled, as the browser reads it. */
+export const importantDeclarations = (css: string): string[] =>
+  styleRules(css).flatMap((rule) =>
+    rule.important.map((property) => `${rule.selector} ${property}`),
+  );
+
 /**
  * How a rule that the cascade sorts by layer is labelled, or nothing for a rule
  * it does not sort. Style rules are the obvious ones; a browser also settles
@@ -402,8 +418,8 @@ const sortedByLayer = (rule: CSSRule): string | undefined => {
 /**
  * Every rule the cascade sorts whose nearest enclosing layer is exactly the named
  * one — rules written into a layer itself rather than into one of its sublayers.
- * Nesting inside `@scope`, `@media` or another style rule does not change which
- * layer a rule is in.
+ * Nesting inside `@media` or another style rule does not change which layer a
+ * rule is in.
  */
 export const directRulesIn = (css: string, layer: string): string[] => {
   const found: string[] = [];
@@ -424,26 +440,6 @@ export const directRulesIn = (css: string, layer: string): string[] => {
   walk(parse(css).cssRules, "");
   return found;
 };
-
-/** The properties every style rule directly in a layer declares, labelled. */
-export const declarationsIn = (css: string, layer: string): string[] =>
-  styleRules(css)
-    .filter((rule) => rule.layer === layer)
-    .flatMap((rule) =>
-      rule.properties.map((property) => `${rule.selector} ${property}`),
-    );
-
-/** Every important declaration a stylesheet makes, labelled, as the browser reads it. */
-export const importantDeclarations = (css: string): string[] =>
-  styleRules(css).flatMap((rule) =>
-    rule.important.map((property) => `${rule.selector} ${property}`),
-  );
-
-/** The custom properties a stylesheet registers outside every layer, by name. */
-export const registeredProperties = (css: string): string[] =>
-  Array.from(parse(css).cssRules)
-    .filter((rule): rule is CSSPropertyRule => rule instanceof CSSPropertyRule)
-    .map((rule) => rule.name);
 
 /**
  * Which of the declared layers a stylesheet uses. A parent counts as used when a
@@ -503,7 +499,7 @@ export const oneLine = (text: string): string =>
 
 /**
  * The `@layer` order statement a stylesheet states, as written. Comments go
- * first: this package's entry quotes its own import line in its header.
+ * first: an entry quotes its own import line in its header.
  */
 export const statementOf = (css: string): string =>
   oneLine(withoutComments(css).match(/@layer\b[^;{]*;/)?.[0] ?? "");
@@ -518,7 +514,7 @@ export const importsOf = (css: string): string[] =>
 /**
  * Every `@import` a file writes after its first block, which is every one a
  * browser will refuse: an `@import` is only valid before any rule, a layer
- * statement and `@charset` excepted. Vite inlines it anyway, so the resolved
+ * statement and `@charset` excepted. A bundler inlines it anyway, so the resolved
  * stylesheet the rest of this file reads cannot show it — this is the one check
  * that has to read the file as written.
  */
@@ -531,10 +527,6 @@ export const lateImports = (raw: string): string[] => {
     (match) => oneLine(match[0] ?? ""),
   );
 };
-
-/** How many `@property` registrations a file writes, whether or not they survive. */
-export const authoredProperties = (css: string): number =>
-  withoutComments(css).match(/@property\b/g)?.length ?? 0;
 
 // ---------------------------------------------------------------------------
 // The README
@@ -591,6 +583,24 @@ export const statementFenceUnder = (heading: string): string => {
   return oneLine(statement);
 };
 
+/** What the README's entry table says one entry point opens. */
+export interface EntryTableRow {
+  /** The file, as `src/` names it. */
+  entry: string;
+  /** The layers the table says it opens. */
+  layers: Set<string>;
+}
+
+/** Every row of the entry table: what each of the four delivers, by layer. */
+export const entryTableRows = (): EntryTableRow[] =>
+  tableUnder("Entry points").map(([entry, , layers]) => {
+    const specifier = ticked(entry ?? "")[0] ?? "";
+    const file = ENTRY_SPECIFIERS[specifier];
+    if (file === undefined)
+      throw new Error(`the entry table names "${specifier}", which is not one`);
+    return { entry: file, layers: new Set(ticked(layers ?? "")) };
+  });
+
 /** What one of the README's layer tables says about one file. */
 export interface DocumentedFile {
   /** Every layer a row gives the file. */
@@ -631,9 +641,9 @@ export const documentedFiles = (): Map<string, DocumentedFile> => {
       add(name, ticked(layer ?? ""), saysYes(selects ?? ""));
 
   // The generated token files carry their layer in the design-token table
-  // instead, so that the two tables state each fact once (F, §8.2 rule 1). Only
-  // the ones the entry imports belong in this map; the other two are checked
-  // against the entry's imports from the other side, by tokenTableRows below.
+  // instead, so that the two tables state each fact once. Only the ones an entry
+  // imports belong in this map; the rest are checked against the import lists
+  // from the other side, by tokenTableRows below.
   for (const row of tokenTableRows())
     if (row.imported) add(row.file, [...row.layers], row.selects);
 
@@ -642,11 +652,11 @@ export const documentedFiles = (): Map<string, DocumentedFile> => {
 
 /** What the design-token table says about one generated file. */
 export interface TokenTableRow {
-  /** The specifier, as `src/index.css` would write it. */
+  /** The specifier, as an entry would write it. */
   file: string;
   /** The layer the file opens, empty when the table says it opens none. */
   layers: Set<string>;
-  /** Whether the table claims this package's entry imports it. */
+  /** Whether the table claims an entry point imports it. */
   imported: boolean;
   /** Whether the table claims it sets a property other than a custom one. */
   selects: boolean;

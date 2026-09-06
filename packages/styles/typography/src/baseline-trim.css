@@ -3,27 +3,36 @@
  * Uses `text-box: trim-both cap alphabetic` for intrinsic baseline snapping.
  * No JS font extraction required.
  *
- * Browser floor: Chrome 133, Safari 18.2, Firefox 154. This engine uses three
+ * Consumer contract:
+ *   :root { --baseline-height: <length>; }   (optional, default 0.25rem)
+ *   element { --font-size: <length>; --line-height: <length>; }
+ *   (fallback: --line-height-multiplier: <number> if --line-height is unset)
+ *
+ * Browser floor: Chrome 133, Safari 18.2, Firefox 154. This engine uses two
  * features:
  *
  *   text-box-trim    Chrome 133, Safari 18.2, Firefox 154
  *   mod()            Chrome 125, Safari 15.4, Firefox 118
- *   @property        Chrome 85,  Safari 16.4, Firefox 128 (baseline-shim.css)
  *
  * `text-box-trim` binds every column. Below it the trim is skipped, the element
  * keeps its default half-leading and the nudge still applies, so the engine
- * degrades rather than failing: on that reading the floor is Chrome 125,
- * Safari 16.4, Firefox 128, the same as the metrics engine's, and what a browser
- * below 133 / 18.2 / 154 loses is the tighter content box, not the grid.
+ * degrades rather than failing; on that reading its floor is the metrics
+ * engine's, Chrome 125, Safari 15.4, Firefox 118. What a browser below
+ * 133 / 18.2 / 154 loses is the tighter content box, not the grid.
  *
- * The `@property` numbers are softer still: below them the registration is
- * ignored and the engine runs wherever --baseline-height is declared —
- * @canonical/styles declares it — losing only the 4px fallback.
+ * The grid unit:
+ *   --baseline-height may be a length in any unit — 0.5rem and 8px are both
+ *   fine, and rem is the usual choice because the grid then follows the reader's
+ *   own font size. Every read of it here carries the same fallback,
+ *   `var(--baseline-height, 0.25rem)`, so an application that declares it
+ *   nowhere gets a 4px grid rather than no grid at all.
  *
- * Consumer contract:
- *   :root { --baseline-height: <length>; }
- *   element { --font-size: <length>; --line-height: <length>; }
- *   (fallback: --line-height-multiplier: <number> if --line-height is unset)
+ *   The fallback is written at each read rather than aliased into one internal
+ *   custom property, for two reasons: this file stays complete on its own, which
+ *   matters because it can be linked without the rest of the package, and no
+ *   second name enters the surface for a consumer to set by mistake. The default
+ *   is stated in the consumer contract above so it can be checked without
+ *   reading the rules.
  *
  * Layers:
  *   Every rule below sits in `ds.typography`. Unlayered, these rules outranked
@@ -33,17 +42,9 @@
  *   loses to the application's own layered CSS, deliberately, and beats the
  *   layers below it, also deliberately.
  *
- *   The rules select elements by name, so they apply to the whole document —
- *   which is what a design system's typography is for. Keeping them off a page
- *   that also runs another framework is that framework's adapter's job, not
- *   this file's.
- *
- *   The `@property` registration this file imports stays outside the layer;
- *   baseline-shim.css says why.
+ *   The rules select elements by name, so they apply to the whole document,
+ *   which is what a design system's typography is for.
  */
-
-/* Baseline unit shim (--baseline-height 4px fallback) */
-@import url("./baseline-shim.css");
 
 @layer ds.typography {
   /* Reset */
@@ -76,7 +77,7 @@
   .code {
     --computed-line-height: var(
       --line-height,
-      calc(var(--baseline-height) * var(--line-height-multiplier))
+      calc(var(--baseline-height, 0.25rem) * var(--line-height-multiplier))
     );
     line-height: var(--computed-line-height);
     font-size: var(--font-size);
@@ -95,13 +96,16 @@
     text-box: trim-both cap alphabetic;
 
     /* Nudges as padding — inside the box for flex/grid compatibility */
-    padding-block-start: mod(calc(-1 * 1cap), var(--baseline-height));
+    padding-block-start: mod(calc(-1 * 1cap), var(--baseline-height, 0.25rem));
     padding-block-end: calc(
-      var(--baseline-height) -
-      mod(calc(-1 * 1cap), var(--baseline-height))
+      var(--baseline-height, 0.25rem) -
+      mod(calc(-1 * 1cap), var(--baseline-height, 0.25rem))
     );
 
     /* Element-owned spacing — only active in .editorial contexts */
-    margin-block-end: calc(var(--space-after, 0) * var(--baseline-height));
+    margin-block-end: calc(
+      var(--space-after, 0) *
+      var(--baseline-height, 0.25rem)
+    );
   }
 }

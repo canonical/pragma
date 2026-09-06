@@ -1,37 +1,25 @@
-/* @canonical/styles — Global stylesheet entry point
+/* @canonical/styles — the values
  *
- * Single import for consumers:
- *   @import url("@canonical/styles");
+ * Every custom property the design system declares, and not one rule that styles
+ * an element. Import this and nothing changes on the page until something reads
+ * a value from it: the colour palette and the semantic colour tokens, the
+ * spacing and density scales, the motion and overflow tokens, the modifier
+ * families that re-point colour channels, and the typographic scale.
  *
- * Everything this package itself ships sits in a named cascade layer. Three of
- * those layers select elements rather than declare custom properties —
- * `normalize`, `ds.reset` and `ds.typography` — and they style the whole page,
- * as a reset does. Nothing is confined and nothing has to be marked.
+ * One of four entry points. `index.css` is the whole stylesheet and is what an
+ * ordinary page imports; `tokens.css`, `elements.css` and `layout.css` are it
+ * in three parts, for a page that wants some of it and supplies the rest.
  *
- * A page that also runs another CSS framework, and so cannot let this stylesheet
- * restyle the half it has not migrated, uses `@canonical/styles-vanilla-adapter`.
- * That package ships a confined copy of those three element layers and a test
- * that binds the copy to the files here, so the two cannot drift. Such a page
- * imports `tokens.css` and `layout.css` from this package instead of this file,
- * and takes its element rules from the adapter.
- *
- * This file is one of four entry points, and the one an ordinary page wants.
- * `tokens.css` is every custom property and no rule that styles an element;
- * `elements.css` is every rule that styles a plain element; `layout.css` is the
- * grid presets. Each opens with the same statement below, and none imports
- * another — an `@layer` statement inside a layer block would declare sublayers
- * rather than top-level layers. The README's "Entry points" section says more,
- * and a test in this package holds both properties. The README's "Cascade
- * layers" section is the reference for what is layered where and what is
- * deliberately not; the reasoning behind the order will live in
- * docs/explanations/CASCADE.md, arriving with the cascade documentation change.
- * Until it does, the README is the whole of it.
- *
- * The order statement below must stay the first rule of this file. An `@import`
- * is only valid before other rules — a layer statement and `@charset` excepted —
- * so "the statement, then the imports" is the one legal shape. A consumer who
- * must interleave their own layers prepends their own statement; a later
- * statement can add names but never reorder the ones already fixed here.
+ * Every entry opens with the same layer order statement, and none of them
+ * imports another. Both of those matter. The statement has to be the first rule
+ * of whichever stylesheet a page loads first, because it fixes the order of
+ * every layer for that page — if two entries declared different orders, the same
+ * rules would arbitrate differently depending on which one a consumer picked.
+ * And an `@layer` statement inside a layer block would declare sublayers of it
+ * rather than top-level layers, so entries composing each other would nest the
+ * order rather than repeat it; keeping them independent means a page may load
+ * one, two or all three, in any order, and get the same result. A test in this
+ * package holds both properties.
  */
 
 /* Read from the bottom up, each position is an argument:
@@ -67,13 +55,6 @@
   ds.components.global,
   ds.components.app;
 
-/* Reset: pragma's own */
-@import url("./normalize.css");
-@import url("./reset.css");
-
-/* Typography: interpreter engine + scale tokens */
-@import url("@canonical/styles-typography");
-
 /* Design tokens — colour, spacing, surfaces, states.
  * Each generated file opens its own `@layer` block, so none of these imports
  * carries a `layer()` keyword: that would nest the file's layer inside another. */
@@ -103,9 +84,6 @@
 @import url("./controls.hover.shim.css");
 @import url("@canonical/design-tokens/dist/states.css");
 
-/* Grid layout presets */
-@import url("./grid.css");
-
 /* Spacing architecture tokens */
 @import url("./spacing.css");
 
@@ -118,3 +96,7 @@
 
 /* Motion tokens (placeholder durations/easings) */
 @import url("./motion.css");
+
+/* The typographic scale and the naming shims that bridge it. The rules that
+ * read these values are in elements.css, not here. */
+@import url("@canonical/styles-typography/tokens.css");

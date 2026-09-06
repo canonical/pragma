@@ -1,58 +1,27 @@
 /*
  * @canonical/styles-typography — Baseline Grid Engine
  *
- * Re-exports the default baseline engine (cap-unit approach).
+ * The package composed: the typography tokens, the element rules that read
+ * them, and the default engine.
  *
  * Available engines:
  *   - baseline-cap.css      — Uses the CSS `cap` unit (no extraction needed) [default]
  *   - baseline-metrics.css  — Uses extracted font metrics (ascender/descender/unitsPerEm)
  *   - baseline-trim.css     — Uses text-box-trim + cap unit hybrid
  *
- * Each engine imports the --baseline-height shim itself (see baseline-shim.css),
- * so importing any single engine — as the typography example does — carries the
- * fallback with no consumer hardcoding. The registration's initial value is 4px
- * rather than 0.25rem, because an initial value has to be computationally
- * independent and rem is not; baseline-shim.css has the measurement.
- *
  * Entry points:
- *   this file (`@canonical/styles-typography`) is the whole package — the token
- *   mapping, the element rules that apply it, and the default engine — which is
- *   what an ordinary page wants.
+ *   this file is the package composed — the typography tokens, the element
+ *   rules that read them, and the default engine — which is what an ordinary
+ *   page wants.
  *
- *   `./mapper.css` is the mapping that styles nothing: the naming shims and
- *   the typographic scale they bridge to. `./mapper.elements.css` is the half
- *   that styles something: `body`, `h1`–`h6`, `p`, `.p`, `.code` and
- *   `.editorial`. They are separate files because a page that also runs another
- *   CSS framework takes the first and not the second, and gets its element rules
- *   from that framework's adapter instead, confined to the part of the page the
- *   design system owns. `@canonical/styles/core.css` is that stylesheet, and it
- *   imports `./baseline-shim.css` beside the mapper for the registration.
- *
- * The import graph, and why it is shaped this way:
- *   this file    → mapper.elements.css → mapper.css → the typographic scale
- *                → baseline-cap.css    → baseline-shim.css
- *
- *   Every file reaches a resolved stylesheet exactly once. A browser treats each
- *   `@import` as its own sheet and does not de-duplicate, so a file reached
- *   twice is delivered twice — which this graph did before: the scale and the
- *   registration each arrived from two directions and the second copy was
- *   48,270 wasted bytes and a duplicate `@property` rule. The division of
- *   labour that prevents it: the mapper owns the scale it shims, and each engine
- *   owns the registration of the grid unit it reads, so an engine linked on its
- *   own is still complete. `@canonical/styles/core.css`, which takes the mapper
- *   without an engine, imports the registration itself.
- *
- * Layers:
- *   The naming shims go into `ds.tokens`, every element rule into
- *   `ds.typography`, and the typographic scale opens `ds.modifiers` itself. The
- *   registration is in no layer; baseline-shim.css says why. This package states
- *   no layer order of its own, because it is imported by @canonical/styles after
- *   that package's order statement, which names all three layers and is the
- *   first rule of the first stylesheet. Imported on its own — the example does
- *   exactly that — the layers are created where they first appear, which is well
- *   defined for a single package and settles nothing this package needs settled:
- *   no custom property is declared in more than one of the layers involved.
+ *   `./tokens.css` is the values and nothing that styles an element.
+ *   `./elements.css` is the rules that read them. `./baseline-cap.css` and its
+ *   two siblings are the engines. Each is an entry point of its own, and none
+ *   of them imports another: a stylesheet that wants a different arrangement —
+ *   the tokens without the element rules, say — composes what it needs.
  */
-/* The element rules, then the engine that computes their nudges. */
-@import url("./mapper.elements.css");
+/* The values, then the rules that read them, then the engine that computes
+ * their nudges. Each of the three is a file a stylesheet can take on its own. */
+@import url("./tokens.css");
+@import url("./elements.css");
 @import url("./baseline-cap.css");

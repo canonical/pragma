@@ -1,11 +1,9 @@
-/* @canonical/styles-typography — Semantic token mapper (tokens only)
+/* @canonical/styles-typography — the typography tokens
  *
- * Bridges the gap between the semantic typography tokens emitted by
- * @canonical/design-tokens (--typography-heading-{N}-*, --typography-text-{tier}-*)
- * and the engine variables consumed by the baseline alignment engines
- * (--font-size, --line-height, --font-weight, --space-after, etc.).
+ * The half of the semantic mapping that styles nothing: the design tokens'
+ * typographic scale, and the naming shims that bridge it.
  *
- * The design-tokens modifier provides:
+ * @canonical/design-tokens emits the scale as custom properties:
  *   --typography-heading-{1-6}-font-size      → e.g. var(--dimension-size-fontSize-700)
  *   --typography-heading-{1-6}-font-weight     → e.g. var(--typography-weight-medium)
  *   --typography-heading-{1-6}-line-height     → unitless DTCG projection
@@ -14,42 +12,29 @@
  *   --typography-heading-{1-6}-font-family     → e.g. var(--typography-fontFamily-default)
  *   (same pattern for text.primary, text.secondary, text.tertiary)
  *
- * This file is the half of the mapping that styles nothing: the naming shims
- * below and the typographic scale they shim. Every rule in it is a
- * custom-property declaration on :root, and
- * a custom property does nothing where it is declared — only where a rule reads
- * it — so importing this file adds no styling to any element.
+ * Every rule here declares custom properties on :root and nothing else, and a
+ * custom property does nothing where it is declared — only where a rule reads
+ * it — so importing this file adds no styling to any element. elements.css is
+ * where the reading happens.
  *
- * The other half is mapper.elements.css, which is where the reading happens:
- * the rules that put those values on `body`, `h1`–`h6`, `p`, `.p`, `.code` and
- * `.editorial`. The two are separate files because a stylesheet sometimes wants
- * this half alone. `@canonical/styles/core.css` is the case that exists today —
- * the design system's stylesheet for a page that also runs another CSS
- * framework, which takes its element rules from that framework's adapter
- * instead, in a confined copy, and would otherwise restyle the host page's own
- * headings and paragraphs.
+ * The two are separate files because a stylesheet sometimes wants this half
+ * alone: one that supplies its own element rules, and needs the values those
+ * rules read.
  *
  * Layers: the shims sit in `ds.tokens`, beside the other primitive values
  * @canonical/styles ships, which is where a maintainer looking for a token name
  * will look. The scale opens `ds.modifiers` itself.
- *
- * This file does not import the --baseline-height registration, though the
- * values here are read by rules that need it. Each engine imports it instead, so
- * that it reaches a resolved stylesheet exactly once — a browser does not
- * de-duplicate `@import`, so a file reached from two directions is delivered
- * twice. A stylesheet that takes this file without an engine imports
- * `./baseline-shim.css` beside it; `@canonical/styles/core.css` does.
  */
 
 /* The typographic scale these shims bridge to. */
 @import url("@canonical/design-tokens/dist/modifiers.typography.css");
 
+/* ── TEMP FIX: design-tokens naming mismatch ──────────────────────
+ * modifiers.typography.css uses kebab-case references but
+ * sets.primitive.css defines camelCase tokens. This shim bridges the
+ * gap until the tokens package is fixed upstream.
+ */
 @layer ds.tokens {
-  /* ── TEMP FIX: design-tokens naming mismatch ──────────────────────
-   * modifiers.typography.css uses kebab-case references but
-   * sets.primitive.css defines camelCase tokens. This shim bridges the
-   * gap until the tokens package is fixed upstream.
-   */
   :root {
     /* ── Font family shims ────────────────────────────────────────── */
     --typography-font-family-default: var(--typography-fontFamily-default);

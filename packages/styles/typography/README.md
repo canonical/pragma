@@ -1,8 +1,6 @@
 # @canonical/styles-typography
 
-Baseline grid alignment for the Canonical Design System. This package provides three interchangeable CSS engines that snap text baselines to a configurable grid, plus a semantic token mapper that bridges `@canonical/design-tokens` typography tokens to the engine's variable contract.
-
-This README is written for the person maintaining this package or another of the design system's stylesheets. An application author does not normally import it: `@canonical/styles` does, and the full layer order is documented there. Where a claim here can be checked, the check is named.
+Baseline grid alignment for the Canonical Design System. This package provides three interchangeable CSS engines that snap text baselines to a configurable grid, plus the typography tokens and the element rules that bridge `@canonical/design-tokens` to the engine's variable contract.
 
 ## Quick Start
 
@@ -12,15 +10,23 @@ Import the default engine (cap-unit):
 @import url("@canonical/styles-typography");
 ```
 
-Every `h1`–`h6`, `p` and `.p` in the document then aligns to the baseline grid. There is no class to add and nothing to mark: these are element rules, and they apply to the page. The default engine uses the CSS `cap` unit and requires no JavaScript font extraction.
+That's it. All `h1`–`h6` and `p` elements will align to the baseline grid. The default engine uses the CSS `cap` unit and requires no JavaScript font extraction.
 
-The grid unit is `--baseline-height`. `@canonical/styles` sets it, to `0.25rem` — four pixels at the default root font size — and `baseline-shim.css` registers the property with a `4px` initial value, so an engine linked on its own still has a grid to snap to. Set it yourself if you want a different one:
+### The grid unit
+
+`--baseline-height` is the size of one grid step, and it is optional. Declare it in whatever length unit suits the page:
 
 ```css
 :root {
-  --baseline-height: 0.5rem;
+  --baseline-height: 0.5rem;  /* or 8px, or 0.25rem, or 6pt */
 }
 ```
+
+`rem` is the usual choice, because the grid then follows the reader's own font size: a reader who sets a larger base size gets a proportionally larger grid, and the type stays on it. `px` pins the grid to device pixels instead, which is what you want if the grid has to line up with something measured in pixels — a background image, or a rule drawn by another system.
+
+**Declare it nowhere and the grid is `0.25rem`, four pixels at the usual root font size.** Every read of the variable in this package carries that same fallback, so an engine linked on its own still snaps text to a grid rather than doing nothing. `@canonical/styles` declares `--baseline-height` itself, so an application using the full stylesheet never sees the fallback.
+
+The fallback is written at each read rather than aliased into one internal custom property. That keeps each file complete on its own, which matters because any one of them can be linked without the rest, and it keeps a second name out of the surface for a consumer to set by mistake.
 
 ## Cascade layers
 
@@ -28,70 +34,39 @@ Two facts about the CSS cascade shape this package.
 
 A rule in no cascade layer outranks a rule in any layer, whatever the selectors on either side. And within one layer, two rules of equal specificity are settled by which one loaded second. This package used to ship its rules in no layer at all, at specificity `(0,0,1)` — `p`, `h1`, `body` — so an application's own `p` rule tied with this one and the bundler's output order decided the winner, one property at a time. Layered, the design system loses to an application's unlayered CSS, deliberately and predictably, and beats the layers below it, also deliberately.
 
-### What is in which layer
-
 | What | Layer |
 | --- | --- |
-| `mapper.css` — the design-tokens naming shims (`:root`, custom properties only) | `ds.tokens` |
-| `mapper.elements.css` — the `body`, `h1`–`h6`, `p`, `.p`, `.code` and `.editorial` rules | `ds.typography` |
+| `tokens.css` — the design-tokens naming shims (`:root`, custom properties only) | `ds.tokens` |
+| `tokens.css` — the typographic scale it imports | `ds.modifiers`, which that file opens itself |
+| `elements.css` — the `body`, `h1`–`h6`, `p`, `.p`, `.code` and `.editorial` rules | `ds.typography` |
 | `baseline-cap.css`, `baseline-metrics.css`, `baseline-trim.css` — every rule | `ds.typography` |
-| `baseline-shim.css` — the `@property` registration | none, by design |
-| `@canonical/design-tokens/dist/modifiers.typography.css`, imported by each engine | `ds.modifiers`, which that file opens itself |
 
 `ds.typography` sits above `ds.reset` and below `ds.modifiers` in the order `@canonical/styles` declares, so the typographic scale in `ds.modifiers` can retune what the engine produces, and a component stylesheet — higher still — is always the final word on its own text.
 
-### Why the naming shims are in `ds.tokens`
+The naming shims are in `ds.tokens` and not `ds.typography` because they are custom properties and nothing else: a custom property does nothing where it is declared, only where a rule reads it, so they belong beside the other primitive values.
 
-They are custom properties and nothing else. A custom property does nothing where it is declared; it does something where a rule reads it. Putting them beside the other primitive values — which is what `ds.tokens` holds — is where a maintainer looking for a token name will look. They exist because `modifiers.typography.css` references kebab-case names that `sets.primitive.css` emits in camelCase; they go away when that is fixed upstream.
+## Entry points
 
-### Why the `@property` registration is outside every layer
+Five files, none of which imports another.
 
-A registration says what a custom property *means* for the whole document — its syntax, whether it inherits, its initial value — and it applies wherever it is written. This package registers `--baseline-height` in one file, `baseline-shim.css`, and nothing else registers that name; the import graph is arranged so that file reaches a resolved stylesheet exactly once, which the test in `@canonical/styles` checks. So no layer has anything to order it against: moving the registration into `ds.typography` would change no computed value. It stays at the top level with the other declarations of its kind, which is a convention that makes it easy to find rather than something the cascade requires.
-
-That distinction is worth drawing, because three plausible-sounding claims about layers and at-rules are false, and all three were measured false in Chromium 151 and Firefox 153. A browser does **not** reject `@property` inside `@layer`: both engines keep the registration and apply its initial value. Registrations are **not** exempt from layer order: given two registrations of the same name, the one in the higher layer wins even when it is written first, and an unlayered one beats a layered one written after it. And `@font-face` and `@keyframes` behave the same way. So the reason this registration is unlayered is that it is the only one of its name, not that a layer could not sort it.
-
-### These rules apply to the whole page
-
-They select elements by name. `body`, `h1`, `p` — nothing narrows them, and nothing is meant to: a design system's typography is for the document.
-
-A page that also runs another CSS framework has a problem with that, because the other framework has its own `p` rule and only one of them can own `line-height`. Keeping the two apart is the coexistence adapter's job, not this package's. The adapter ships its own copy of the design system's element rules, confined to the part of the page the design system owns, built from four source files: `@canonical/styles`' `normalize.css` and `reset.css`, this package's `mapper.elements.css`, and whichever of the three engines the application uses. Such a page takes `@canonical/styles/core.css` — the same stylesheet with no element rule in it — so those rules arrive once, from the adapter. Nothing in this package changes for that.
-
-### The two halves of the mapping
-
-The semantic mapping is two files, because a stylesheet sometimes wants one of them and not the other.
-
-`mapper.css` is the half that styles nothing: the naming shims, the typographic scale they bridge to, and the `--baseline-height` registration every engine reads. Every rule in it declares custom properties on `:root`, and a custom property does nothing where it is declared, only where a rule reads it.
-
-`mapper.elements.css` is the half that styles something: the rules that put those values on `body`, `h1`–`h6`, `p`, `.p`, `.code` and `.editorial`.
-
-Both are entry points, and `index.css` is both plus the default engine. Take `mapper.css` alone when your element rules come from somewhere else — which is exactly what `@canonical/styles/core.css` does, and why the split exists: a page that also runs another CSS framework must not load `mapper.elements.css`, or the design system would restyle that framework's headings and paragraphs.
-
-### Using an engine on its own
-
-This package states no layer order of its own. It does not need one: it is imported by `@canonical/styles` after that package's order statement, which is the first rule of the first stylesheet and names both `ds.tokens` and `ds.typography`.
-
-Linked on its own — which is what the example in `example/` does — the layers are created where they first appear. That is well defined for a single package, and it settles nothing this package needs settled: no custom property is declared in more than one of the three layers involved (`ds.modifiers` from the design tokens, `ds.tokens` for the shims, `ds.typography` for the rules), so their relative order cannot change a computed value. An application that loads this package next to CSS of its own should load `@canonical/styles` and get the statement with it.
-
-One caveat for anyone linking an engine from a plain HTML file, as the example does: the engines import `@canonical/design-tokens/dist/modifiers.typography.css` by its bare package name, which a browser cannot resolve on its own. In the example that import 404s and `ds.modifiers` is never created, so the example drives the engine with per-element variables of its own instead of the typographic scale. Anything with an import resolver — a bundler, or a pipeline running `postcss-import` — resolves it normally.
-
-## What this package guarantees
-
-| Guarantee | The check behind it |
+| Entry | What it is |
 | --- | --- |
-| Every rule ships in `ds.tokens` or `ds.typography`; the only thing outside a layer is the `@property` registration, and it survives parsing as a live registration rather than being dropped. | The order fixtures in `@canonical/styles-vanilla-adapter` (`packages/styles/vanilla-adapter/tests/order.test.ts`) read the resolved `@canonical/styles` stylesheet back and check every layer it opens against the statement. A check inside `@canonical/styles` that the layer set used equals the layer set declared is being added separately (step F-3 of the cascade programme). |
-| The mapping can be taken without the element rules, and `@canonical/styles/core.css` contains no rule that selects an element. | `packages/styles/main/tests/core.test.ts`, which resolves the whole import graph of both entry points and checks that they open the same layer order statement, that `core.css` opens no `normalize`, `ds.reset` or `ds.typography` block and has no rule with a tag-name selector or one of the engine's classes, and that splitting the mapping changed no rule of what `index.css` delivers. |
-| The package ships no `!important`. | The same fixture files. An important declaration inverts the layer order — the lowest layer would win — so one of them would undo the guarantee above. |
+| `@canonical/styles-typography` | the package composed: the tokens, the element rules and the default engine, in that order. What an ordinary page wants. |
+| `@canonical/styles-typography/tokens.css` | the typographic scale and the naming shims. Declares custom properties and styles nothing. |
+| `@canonical/styles-typography/elements.css` | the rules that read those values and put them on `body`, `h1`–`h6`, `p`, `.p`, `.code` and `.editorial`. |
+| `@canonical/styles-typography/baseline-cap.css` and its two siblings | the engines, which compute the nudges that put a line on the grid. |
 
-## What this package does not guarantee
+The leaves import nothing, and the composed entry imports the three it needs. That way a stylesheet that wants a different arrangement — the values without the element rules, or an engine on its own — takes the files it wants and gets each of them exactly once, rather than fighting a file that drags in its own dependencies. A browser treats every `@import` as its own stylesheet and de-duplicates nothing, so a file reached from two directions is fetched, parsed and applied twice.
 
-- **Below the browser floor, the engines do not run.** `mod()` is what binds; see the table at the end for what that means per engine.
-- **Unlayered application CSS beats every rule here**, as the cascade defines. That is the escape hatch, and the reason an application that wants this order to hold for its own CSS puts that CSS in a layer of its own.
+These rules select elements by name — `body`, `h1`, `p` — so they apply to the whole document. That is what a design system's typography is for.
+
+This package states no layer order of its own: it is imported by `@canonical/styles` after that package's order statement, which is the first rule of the first stylesheet and names both layers. Linked on its own, as the example does, the layers are created where they first appear, which is well defined for a single package and settles nothing this package needs settled — no custom property is declared in more than one of the layers involved.
 
 ## How It Works
 
 The browser adds invisible **half-leading** above and below each line of text. The exact amount depends on the font's internal metrics, the computed `font-size`, and `line-height`. This makes vertical alignment between different text elements unpredictable.
 
-The baseline engines solve this by computing where the first baseline falls within a line box, then splitting one grid unit between the top and the bottom of the element's own box: `padding-block-start` takes the start nudge, which pushes the first baseline onto a grid line, and `padding-block-end` takes the remainder, `--baseline-height - --start-nudge`, so the element's block size stays a whole number of grid units. Both nudges are padding, not margin, so the border-box size is the one that lands on the grid and the element behaves in flex and grid layouts. `margin-block-end` is left for `--space-after`, the element-owned editorial spacing, which is `0` outside an `.editorial` context.
+The baseline engines solve this by computing where the first baseline falls within a line box, then applying a `padding-top` / `margin-bottom` pair that nudges the element so its baseline lands exactly on a grid line. The complementary `margin-bottom` ensures the element's total outer height remains a multiple of `--baseline-height`.
 
 ```
  line-height (computed)
@@ -108,21 +83,20 @@ The baseline engines solve this by computing where the first baseline falls with
  +----------------------------------------------+
 ```
 
-The `mod()` CSS function does the heavy lifting. The engines call the two halves `--start-nudge` and `--end-nudge`:
+The `mod()` CSS function does the heavy lifting:
 
 ```css
---start-nudge: calc(
+--top-nudge: calc(
   var(--baseline-height) -
   mod(var(--baseline-position), var(--baseline-height))
 );
---end-nudge: calc(var(--baseline-height) - var(--start-nudge));
 ```
 
 Multi-line blocks stay on-grid because `line-height` is always set to a multiple of `--baseline-height`. The nudge only compensates for the first line's half-leading offset.
 
 ## Engines
 
-Three engines implement the same grid-snap pattern with different trade-offs. The cap and metrics engines reach nearly the same browsers, differing only in Safari, where the cap engine needs the `cap` unit; the text-trim one asks for more. The per-engine tables below say which feature binds where. Import the one that fits your constraints directly, or use `index.css` which re-exports the default (cap-unit). Each engine carries its own `@layer ds.typography { … }` block and its own imports, so linking one on its own is a complete engine.
+Three engines implement the same grid-snap pattern with different trade-offs. Import the one that fits your constraints directly, or use `index.css` which re-exports the default (cap-unit).
 
 ### baseline-cap.css — Cap unit (default)
 
@@ -134,15 +108,13 @@ Uses the browser-native `cap` CSS unit to resolve font metrics at render time. N
 
 The baseline position formula is `(line-height + 1cap) / 2` — the browser resolves `1cap` from the font's OpenType tables natively.
 
-| Browser | `mod()` | `cap` unit | `@property` | This engine's floor |
-|---------|----------|------------|--------------|---------------------|
-| Chrome  | 125+     | 118+       | 85+          | **125+**            |
-| Safari  | 15.4+    | 17.2+      | 16.4+        | **17.2+**           |
-| Firefox | 118+     | 97+        | 128+         | **128+**            |
+| Browser | `mod()` | `cap` unit | This engine's floor |
+|---------|----------|------------|---------------------|
+| Chrome  | 125+     | 118+       | **125+**            |
+| Safari  | 15.4+    | 17.2+      | **17.2+**           |
+| Firefox | 118+     | 97+        | **118+**            |
 
-A different feature binds each column: `mod()` in Chrome, the `cap` unit in Safari, `@property` in Firefox. The Firefox number is the soft one — see the note under "Browser Support".
-
-The full table, and what the soft floors mean, is under "Browser Support" at the end.
+`mod()` binds Chrome and Firefox, the `cap` unit binds Safari.
 
 ### baseline-metrics.css — Extracted metrics
 
@@ -162,8 +134,6 @@ The original engine with the widest browser support. Requires three CSS variable
 
 The baseline position is computed from these metrics: `((line-height - line-height-scale) / 2) + ascender-scale`. More verbose, but works everywhere `mod()` is supported.
 
-Set the three metrics on `:root` as shown; the engine derives its own variables from them there, and every element inherits the result.
-
 ### baseline-trim.css — Text-box-trim hybrid
 
 ```css
@@ -172,15 +142,15 @@ Set the three metrics on `:root` as shown; the engine derives its own variables 
 
 The most modern approach. Uses `text-box: trim-both cap alphabetic` to remove half-leading entirely, then compensates with `mod()`-based margin to restore grid alignment. Results in tighter content boxes (useful for buttons, cards, optical centering).
 
-| Browser | `text-box-trim` | `mod()` | `@property` | This engine's floor |
-|---------|-----------------|----------|--------------|---------------------|
-| Chrome  | 133+            | 125+     | 85+          | **133+**            |
-| Safari  | 18.2+           | 15.4+    | 16.4+        | **18.2+**           |
-| Firefox | 154+            | 118+     | 128+         | **154+**            |
+| Browser | `text-box-trim` | `mod()` | This engine's floor |
+|---------|-----------------|----------|---------------------|
+| Chrome  | 133+            | 125+     | **133+**            |
+| Safari  | 18.2+           | 15.4+    | **18.2+**           |
+| Firefox | 154+            | 118+     | **154+**            |
 
 `text-box-trim` binds every column.
 
-The trim itself falls back gracefully: below those numbers it is skipped, the element keeps its default half-leading and the nudge still applies, so the grid still holds. On that reading the floor is **Chrome 125, Safari 16.4, Firefox 128** — the metrics engine's — and what a browser below 133 / 18.2 / 154 loses is the tighter content box, not the alignment.
+Falls back gracefully: if `text-box-trim` is unsupported, the element keeps its default half-leading and the nudge still applies.
 
 ## Consumer Contract
 
@@ -188,7 +158,7 @@ Every engine reads the same set of CSS custom properties per element:
 
 | Variable | Scope | Description |
 |----------|-------|-------------|
-| `--baseline-height` | `:root` | Grid unit size (`0.25rem` in `@canonical/styles`; `4px` if nothing declares it) |
+| `--baseline-height` | `:root` | Grid unit size (e.g. `0.5rem`) |
 | `--font-size` | element | Font size as a `<length>` |
 | `--line-height-multiplier` | element | Line height in baseline-height units |
 | `--line-height` | element | Optional override: explicit line height, bypasses the multiplier |
@@ -202,11 +172,9 @@ The **metrics engine** additionally requires on `:root`:
 | `--descender` | Font descender value (unitless, negative) |
 | `--units-per-em` | Font units-per-em value |
 
-These are read, not declared, by the engine's element rules, so setting them on `:root` works: a custom property inherits from there into every element that reads it.
+## Tokens and elements
 
-## Token Mapper
-
-`mapper.css` and `mapper.elements.css` together bridge the semantic typography tokens from `@canonical/design-tokens` to the engine's variable contract. Both are imported by `index.css`, the package's default entry point.
+`tokens.css` and `elements.css` together bridge the semantic typography tokens from `@canonical/design-tokens` to the engine's variable contract. Both are imported by `index.css`, the package's composed entry point.
 
 The design tokens provide variables like:
 
@@ -218,35 +186,26 @@ The design tokens provide variables like:
 --typography-heading-1-font-family
 ```
 
-`mapper.elements.css` converts these into the engine variables for each element (`h1`–`h6`, `p`, `.p`, `.code`). It sets `--line-height` as a length, not a multiplier: it prefers the exact dimension the design tokens carry, and falls back to the ratio snapped up onto the grid.
+`elements.css` converts these into the engine variables for each element (`h1`–`h6`, `p`), including computing `--line-height-multiplier` by snapping the typographic line-height to the nearest baseline-grid unit:
 
 ```css
---line-height: var(
-  --typography-heading-1-line-height-dimension,
-  round(
-    up,
-    calc(
-      var(--typography-heading-1-font-size) *
-      var(--typography-heading-1-line-height)
-    ),
-    var(--baseline-height)
-  )
+--line-height-multiplier: round(
+  up,
+  calc(font-size × line-height-ratio / baseline-height),
+  1
 );
 ```
-
-`--line-height-multiplier` is the other half of the contract, for a consumer that drives the engine directly rather than through the mapping: an engine reads `--line-height` if it is set and `calc(--baseline-height * --line-height-multiplier)` if it is not. The example uses the multiplier; `mapper.elements.css` uses the length.
 
 ## Package Structure
 
 ```
 src/
-  index.css              ← default entry point: re-exports baseline-cap.css
-  mapper.css             ← entry point: the mapping that styles nothing
-  mapper.elements.css    ← entry point: the rules that apply it to elements
+  index.css              ← the package composed (tokens, elements, cap engine)
+  tokens.css             ← the typographic scale and the naming shims
+  elements.css           ← the rules that read them
   baseline-cap.css       ← cap-unit engine
   baseline-metrics.css   ← extracted-metrics engine
   baseline-trim.css      ← text-box-trim + cap hybrid
-  baseline-shim.css      ← the --baseline-height @property registration
   scripts/
     extractFontData.ts   ← CLI for extracting font metrics
 example/
@@ -309,11 +268,12 @@ The baseline grid is rendered as a red 1px line overlay so alignment errors are 
 
 ## Browser Support
 
+All engines require `mod()` for the grid-snap calculation:
+
 | Feature | Used by | Chrome | Safari | Firefox |
 |---------|---------|--------|--------|---------|
 | `mod()` | all three engines | 125 | 15.4 | 118 |
-| `round()` | the line-height fallback in `mapper.elements.css` | 125 | 15.4 | 118 |
-| `@property` | the `--baseline-height` registration | 85 | 16.4 | 128 |
+| `round()` | the line-height fallback in `elements.css` | 125 | 15.4 | 118 |
 | `cap` unit | the cap and text-trim engines | 118 | 17.2 | 97 |
 | `text-box-trim` | the text-trim engine only | 133 | 18.2 | 154 |
 
@@ -321,16 +281,10 @@ Read the table by engine, not row by row — an engine's floor is the highest nu
 
 | Engine | Chrome | Safari | Firefox | What binds |
 |--------|--------|--------|---------|------------|
-| `baseline-cap.css` | 125 | 17.2 | 128 | `mod()`, then the `cap` unit, then `@property` |
-| `baseline-metrics.css` | 125 | 16.4 | 128 | `mod()`, then `@property` |
+| `baseline-cap.css` | 125 | 17.2 | 118 | `mod()`, and the `cap` unit in Safari |
+| `baseline-metrics.css` | 125 | 15.4 | 118 | `mod()` throughout |
 | `baseline-trim.css` | 133 | 18.2 | 154 | `text-box-trim` throughout |
 
-Two of those are softer than they look.
-
-`@property` is a **soft floor**. Below it the registration is ignored and the engine still runs wherever `--baseline-height` is declared — `@canonical/styles` declares it — so all that is lost is the 4px fallback for a page that declares the grid unit nowhere. It is what holds Firefox at 128 for the cap and metrics engines, and Safari at 16.4 for the metrics one.
-
-`text-box-trim` is soft in a different way: below it the trim is skipped and the element keeps its default half-leading, but the nudge still applies and the grid still holds, so the text-trim engine degrades to the same alignment the others give from Chrome 125, Safari 16.4 and Firefox 128.
+One caveat on that table. `text-box-trim` is soft: below it the trim is skipped and the element keeps its default half-leading, but the nudge still applies and the grid still holds, so the text-trim engine degrades to the alignment the other two give rather than failing.
 
 `mod()` is the hard one. Below it no engine computes a nudge and text falls back to its natural leading.
-
-The design system targets current browsers and does not carry compatibility shims for older ones; an application that cannot move should pin a version.

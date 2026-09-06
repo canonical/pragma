@@ -7,42 +7,46 @@
  * work started from was a README that described a layer order the CSS had never
  * implemented, and nothing in the repository could tell. So every claim the
  * README makes about the cascade is read out of the README here and compared
- * with the resolved stylesheet: the statement, the table of what is layered
- * where, the list of what is deliberately unlayered, and the layer each
- * generated design-token file opens. A README that disagrees with the CSS fails.
+ * with the resolved stylesheet: the statement, the layers each entry point
+ * opens, the table of what is layered where, the list of what is deliberately
+ * unlayered, and the layer each generated design-token file opens. A README that
+ * disagrees with the CSS fails.
  *
  * It runs in Chromium because the cascade is what is under test, and the CSSOM
  * of an engine that implements the cascade is the only parser that answers
  * honestly what a browser will do with a stylesheet. `tests/support/cascade.ts`
- * says which four questions are left to the text, and why each of them has to be.
+ * says which three questions are left to the text, and why each has to be.
  *
- * `tests/core.test.ts` is the other half, and reads the files rather than a
- * browser: it checks that `core.css` and `index.css` state the same layer order,
- * import the same files in the same order bar the three element ones, and that
- * nothing in the resolved `core.css` selects an element by tag name or claims one
- * of the typographic engine's classes. Those assertions are not repeated here.
- * What this file adds about `core.css` is the layer set it opens and the two
- * properties the cascade decides: no scope, and no important declaration.
+ * `tests/entries.test.ts` is the other half, and reads the files rather than a
+ * browser: that the statement is each entry's first rule and names the same
+ * layers in all four, that no entry imports another, that `tokens.css` pulls in
+ * no file carrying element rules and delivers no rule with a type selector or an
+ * engine class, that each entry's import graph inlines every file exactly once,
+ * and that the three parts together deliver exactly what the whole does. None of
+ * that is repeated here.
+ *
+ * One thing neither file checks, and nothing else does either: that the layout
+ * presets match what they claim to — `grid`, `subgrid`, `responsive`,
+ * `intrinsic`. That is a question about what a selector matches, not about where
+ * a rule sits, so it needs a rendered page rather than a parsed stylesheet.
  */
 
 import { describe, expect, it } from "vitest";
 import {
-  authoredProperties,
   authorsAtTopLevel,
-  CORE_LAYERS,
-  coreCss,
-  coreRaw,
   DECLARED_LAYERS,
   declarationsIn,
   directRulesIn,
   documentedFiles,
   ELEMENT_LAYERS,
   ENGINE_SOURCES,
+  ENTRIES,
+  ENTRIES_RAW,
   EXTERNAL_SOURCES,
   elementRulesIn,
   entryCss,
   entryRaw,
-  INDEX_LAYERS,
+  entryTableRows,
   importanceCss,
   importantDeclarations,
   importsOf,
@@ -54,13 +58,11 @@ import {
   openedLayers,
   parse,
   RESERVED_LAYERS,
-  registeredProperties,
   saysYes,
   scopes,
   specifierName,
   statementFenceUnder,
   statementOf,
-  styleRules,
   TIERS_ONLY_LAYER,
   TOKEN_PLUGIN_LAYERS,
   TYPOGRAPHY_RAW,
@@ -95,40 +97,41 @@ const isDeclared = (name: string): boolean =>
 /** Every file the README documents, and the layers each of its rows gives it. */
 const documented = documentedFiles();
 
-/** The files the entry imports, named the way the README names them. */
+/** The files `index.css` imports, named the way the README names them. */
 const IMPORTED = importsOf(entryRaw).map(specifierName);
+
+/** Every file any of the four entry points imports. */
+const IMPORTED_ANYWHERE = new Set(
+  Object.values(ENTRIES_RAW).flatMap((raw) =>
+    importsOf(raw).map(specifierName),
+  ),
+);
 
 describe("the layer set used equals the layer set declared", () => {
   it("the statement is the first rule, and names the ten layers in order", () => {
-    // `core.test.ts` checks that the two entry points quote the same statement;
-    // this checks that the statement is the one the README publishes, in order.
+    // `entries.test.ts` checks that all four entry points quote the same
+    // statement; this checks that the statement is the one the README publishes,
+    // in order, read back out of a browser rather than out of the file.
     const first = parse(entryCss).cssRules[0];
     expect(first).toBeInstanceOf(CSSLayerStatementRule);
     if (!(first instanceof CSSLayerStatementRule)) return;
     expect(Array.from(first.nameList)).toEqual(DECLARED_LAYERS);
   });
 
-  it("every layer named anywhere is one of the ten or a sublayer of one, and none is anonymous", () => {
+  it("every layer any entry names is one of the ten or a sublayer of one, and none is anonymous", () => {
     // Named, not merely opened: a second `@layer` statement puts a name into the
     // order without opening anything, so a layer can join the cascade with no
-    // block to give it away.
-    const named = namedLayers(entryCss);
-    expect(named.length).toBeGreaterThan(0);
-    // An anonymous block reports as `(anonymous)`, which is undeclarable by
-    // construction: nothing can name it, order it or override it.
-    expect(named.filter((name) => !isDeclared(name))).toEqual([]);
-  });
-
-  it("index.css opens exactly the layers it should", () => {
-    expect(openedLayers(entryCss)).toEqual([...INDEX_LAYERS].sort());
-  });
-
-  it("the three layers that style elements are all present, and none is empty", () => {
-    for (const layer of ELEMENT_LAYERS)
-      expect([layer, elementRulesIn(entryCss, layer).length > 0]).toEqual([
-        layer,
-        true,
+    // block to give it away. An anonymous block reports as `(anonymous)`, which
+    // is undeclarable by construction: nothing can name it, order it or override
+    // it.
+    for (const [name, css] of Object.entries(ENTRIES)) {
+      const named = namedLayers(css);
+      expect([name, named.length > 0]).toEqual([name, true]);
+      expect([name, named.filter((layer) => !isDeclared(layer))]).toEqual([
+        name,
+        [],
       ]);
+    }
   });
 
   it("the only declared layer nothing writes to is the one reserved for the application tiers", () => {
@@ -149,40 +152,38 @@ describe("the layer set used equals the layer set declared", () => {
     // browser settles duplicate `@keyframes`, `@font-face` and `@property` by
     // layer too, so one of those written here would outrank the tiers as surely
     // as a style rule would.
-    expect(directRulesIn(entryCss, TIERS_ONLY_LAYER)).toEqual([]);
+    for (const [name, css] of Object.entries(ENTRIES))
+      expect([name, directRulesIn(css, TIERS_ONLY_LAYER)]).toEqual([name, []]);
     // And the tier the presets sit in is not empty, so this is not vacuous.
     expect(
       directRulesIn(entryCss, "ds.components.global").length,
     ).toBeGreaterThan(0);
   });
 
-  it("the stylesheet confines nothing: there is no @scope anywhere in it", () => {
+  it("no entry confines anything: there is no @scope in any of them", () => {
     // The rules here style the whole page, as a reset does. Confining them to
     // part of a page is the adapter package's job, and it does it in its own
     // copy; a scope appearing here would mean this stylesheet had quietly
     // started doing it too, on pages that never asked for it.
-    expect(scopes(entryCss)).toEqual([]);
-    expect(scopes(coreCss)).toEqual([]);
+    for (const [name, css] of Object.entries(ENTRIES))
+      expect([name, scopes(css)]).toEqual([name, []]);
   });
 
-  it("neither entry makes an important declaration", () => {
+  it("no entry makes an important declaration", () => {
     // Asked of the browser, not of the text: `getPropertyPriority` is what the
     // cascade itself reads, and it says important for `!IMPORTANT` and for a
     // comment between the bang and the word, neither of which a search for the
     // literal string finds.
-    expect(importantDeclarations(entryCss)).toEqual([]);
-    expect(importantDeclarations(coreCss)).toEqual([]);
+    for (const [name, css] of Object.entries(ENTRIES))
+      expect([name, importantDeclarations(css)]).toEqual([name, []]);
     // The text scan stays as source hygiene, per file, so that a bang written
-    // into a file the entry does not import is caught too.
+    // into a file no entry imports is caught too.
     for (const [name, css] of Object.entries(LOCAL_SOURCES))
       expect([name, css.match(/!\s*important/gi) ?? []]).toEqual([name, []]);
   });
 
-  it("nothing sits at the top level that a layer could have sorted", () => {
-    for (const [name, css] of Object.entries({
-      "index.css": entryCss,
-      "core.css": coreCss,
-    }))
+  it("nothing sits at the top level of any entry that a layer could have sorted", () => {
+    for (const [name, css] of Object.entries(ENTRIES))
       expect([
         name,
         topLevelKinds(css).filter((kind) => !ALLOWED_AT_TOP_LEVEL.has(kind)),
@@ -193,7 +194,7 @@ describe("the layer set used equals the layer set declared", () => {
     // An `@import` is only valid before any rule, a layer statement and
     // `@charset` excepted. A bundler inlines a late one regardless, so the
     // resolved stylesheet cannot show the defect and this reads files as written
-    // — both packages' files, because the entry pulls the typography package in
+    // — both packages' files, because the entries pull the typography package in
     // and a late import written there reaches a consumer just the same.
     const files = { ...LOCAL_RAW, ...TYPOGRAPHY_RAW };
     // An empty glob would pass this loop without reading anything.
@@ -201,30 +202,47 @@ describe("the layer set used equals the layer set declared", () => {
     expect(Object.keys(TYPOGRAPHY_RAW).length).toBeGreaterThan(0);
     for (const [name, raw] of Object.entries(files))
       expect([name, lateImports(raw)]).toEqual([name, []]);
-    expect(lateImports(coreRaw)).toEqual([]);
   });
 });
 
-describe("core.css is the same stylesheet without the element layers", () => {
-  it("opens every layer index.css opens except the three that style elements", () => {
-    // Which files it imports, and that nothing in it selects an element by tag
-    // name or claims an engine class, are `core.test.ts`. This is the layer set
-    // that follows from those imports, read out of a browser rather than a file.
-    expect(openedLayers(coreCss)).toEqual([...CORE_LAYERS].sort());
-    for (const layer of ELEMENT_LAYERS)
-      expect([layer, openedLayers(coreCss).includes(layer)]).toEqual([
-        layer,
-        false,
+describe("the four entry points deliver what the README says they deliver", () => {
+  it("each opens exactly the layers the entry table gives it", () => {
+    // Eight for the whole stylesheet, five for the values, three for the element
+    // rules and one for the layout presets. `entries.test.ts` checks the last
+    // two from the file side as well; this reads all four out of a browser,
+    // which is the parser that decides what a page actually gets.
+    const rows = entryTableRows();
+    expect(rows.map((row) => row.entry).sort()).toEqual(
+      Object.keys(ENTRIES).sort(),
+    );
+    for (const row of rows) {
+      const css = ENTRIES[row.entry];
+      expect(css).toBeTypeOf("string");
+      if (typeof css !== "string") return;
+      expect([row.entry, openedLayers(css)]).toEqual([
+        row.entry,
+        [...row.layers].sort(),
       ]);
+    }
   });
 
-  it("names every layer index.css names, so the order is the same either way", () => {
-    // The two entries declare the same ten and open different subsets of them.
-    // A layer opened by one and unknown to the other would mean a page
-    // arbitrating differently depending on which entry a consumer picked.
-    expect(namedLayers(coreCss).filter((name) => !isDeclared(name))).toEqual(
-      [],
-    );
+  it("the three layers that style elements are the three the parts split on", () => {
+    // Present and non-empty in the whole stylesheet and in the element half;
+    // absent from the other two, which is the whole reason those two exist.
+    for (const layer of ELEMENT_LAYERS)
+      for (const entry of ["index.css", "elements.css"])
+        expect([
+          entry,
+          layer,
+          elementRulesIn(ENTRIES[entry] ?? "", layer),
+        ]).not.toEqual([entry, layer, []]);
+    for (const entry of ["tokens.css", "layout.css"])
+      expect([
+        entry,
+        openedLayers(ENTRIES[entry] ?? "").filter((layer) =>
+          ELEMENT_LAYERS.includes(layer),
+        ),
+      ]).toEqual([entry, []]);
   });
 });
 
@@ -235,7 +253,7 @@ describe("the README says what the stylesheet does", () => {
     expect(quoted).toBe(statementOf(entryCss));
   });
 
-  it("the layer tables name every file the entry imports, and nothing else", () => {
+  it("the layer tables name every file index.css imports, and nothing else", () => {
     expect([...documented.keys()].sort()).toEqual([...IMPORTED].sort());
   });
 
@@ -280,7 +298,7 @@ describe("the README says what the stylesheet does", () => {
         row.file,
         [...row.layers].sort(),
       ]);
-      expect([row.file, IMPORTED.includes(row.file)]).toEqual([
+      expect([row.file, IMPORTED_ANYWHERE.has(row.file)]).toEqual([
         row.file,
         row.imported,
       ]);
@@ -297,12 +315,14 @@ describe("the README says what the stylesheet does", () => {
     );
     expect(rows.length).toBeGreaterThan(0);
     // The list is exhaustive downwards: nothing outside a layer that it omits.
-    expect(unlayeredKinds(entryCss).sort()).toEqual(
-      rows
-        .filter((row) => row.reaches)
-        .map((row) => row.rule)
-        .sort(),
-    );
+    for (const [name, css] of Object.entries(ENTRIES))
+      expect([name, unlayeredKinds(css).sort()]).toEqual([
+        name,
+        rows
+          .filter((row) => row.reaches)
+          .map((row) => row.rule)
+          .sort(),
+      ]);
     // And upwards: every rule kind it names is written where it says it is.
     for (const row of rows)
       expect([
@@ -311,48 +331,50 @@ describe("the README says what the stylesheet does", () => {
       ]).toEqual([row.rule, true]);
   });
 
-  it("fonts.css is the @font-face file, entire, and neither entry pulls it in", () => {
+  it("fonts.css is the @font-face file, entire, and no entry pulls it in", () => {
     const fonts = mustResolve("fonts.css");
     expect(new Set(topLevelKinds(fonts))).toEqual(new Set(["@font-face"]));
     expect(openedLayers(fonts)).toEqual([]);
-    expect(IMPORTED).not.toContain("fonts.css");
-    expect(importsOf(coreRaw).map(specifierName)).not.toContain("fonts.css");
+    expect([...IMPORTED_ANYWHERE]).not.toContain("fonts.css");
   });
 });
 
-describe("every file the entry imports earns its import", () => {
-  it("each one contributes at least one rule", () => {
-    // A file that resolves to nothing is a name in the graph and nothing on
-    // the page. The one this package found — modifiers.importance.css — was
-    // dropped; this is what makes the next one loud instead of invisible.
-    for (const name of IMPORTED)
-      expect([name, parse(mustResolve(name)).cssRules.length > 0]).toEqual([
+describe("every file an entry imports earns its import", () => {
+  /** The files the README says are generated empty, and are imported anyway. */
+  const documentedEmpty = new Set(
+    tokenTableRows()
+      .filter((row) => row.layers.size === 0)
+      .map((row) => row.file),
+  );
+
+  it("each one contributes at least one rule, or is one the README says is empty", () => {
+    for (const name of IMPORTED_ANYWHERE) {
+      // A file that resolves to nothing is a name in the graph and nothing on
+      // the page. One is: the generated importance modifiers, which the design
+      // token table records as opening no layer. Every other one has to earn its
+      // place, so the next file that quietly empties is loud.
+      const rules = parse(mustResolve(name)).cssRules.length;
+      expect([name, rules > 0 || documentedEmpty.has(name)]).toEqual([
         name,
         true,
       ]);
+    }
+    // And the exemption is not a blanket one: it names exactly one file today.
+    expect([...documentedEmpty]).toEqual([
+      "@canonical/design-tokens/dist/modifiers.importance.css",
+    ]);
+    expect(parse(importanceCss).cssRules.length).toBe(0);
   });
 
   it("no stylesheet in src/ is orphaned", () => {
     const reachable = new Set([
-      ...IMPORTED,
-      ...importsOf(coreRaw).map(specifierName),
-      "index.css",
-      "core.css",
+      ...IMPORTED_ANYWHERE,
+      ...Object.keys(ENTRIES),
       "fonts.css",
     ]);
     expect(
       Object.keys(LOCAL_SOURCES).filter((name) => !reachable.has(name)),
     ).toEqual([]);
-  });
-
-  it("modifiers.importance.css is still empty, which is why neither entry imports it", () => {
-    // When this fails, the generator has started emitting the importance
-    // modifiers: restore the import in both entries and the row in the README's
-    // design-token table, and retire modifiers.importance.shim.css.
-    expect(parse(importanceCss).cssRules.length).toBe(0);
-    const importance = "@canonical/design-tokens/dist/modifiers.importance.css";
-    expect(IMPORTED).not.toContain(importance);
-    expect(importsOf(coreRaw).map(specifierName)).not.toContain(importance);
   });
 });
 
@@ -365,46 +387,18 @@ describe("@canonical/styles-typography carries the same contract", () => {
     ]);
     expect(scopes(typographyCss)).toEqual([]);
     expect(importantDeclarations(typographyCss)).toEqual([]);
+    expect(unlayeredKinds(typographyCss)).toEqual([]);
   });
 
   it("declares nothing but custom properties in ds.tokens", () => {
     // The reason a layer needs no element rules is that it declares custom
     // properties, which do nothing until a rule reads them. A real property
-    // there would style the page from the layer the mapper shares with the
+    // there would style the page from the layer the mapping shares with the
     // tokens, which is not what either half is for.
     const declarations = declarationsIn(typographyCss, "ds.tokens");
     expect(declarations.length).toBeGreaterThan(0);
     expect(declarations.filter((entry) => !/ --[\w-]+$/.test(entry))).toEqual(
       [],
-    );
-  });
-
-  it("registers every @property it writes outside every layer, and the browser keeps them all", () => {
-    expect(authorsAtTopLevel(typographyCss, "@property")).toBe(true);
-    // Counted, not named. A registration whose `initial-value` is not
-    // computationally independent is thrown away whole by the engine — an
-    // earlier `0.25rem` was, and the fallback it promised silently did not
-    // exist. Comparing what the source writes against what the CSSOM keeps is
-    // what makes a dead registration visible, and it stays true of the next one.
-    expect(registeredProperties(typographyCss).length).toBe(
-      authoredProperties(typographyCss),
-    );
-    expect(registeredProperties(typographyCss).length).toBeGreaterThan(0);
-    // Nothing else outside a layer. Written as a filter rather than as the exact
-    // list so that the registration moving between the files that import it —
-    // the mapper and the engines each pull the shim in — is not a failure. Where
-    // it is written is that package's business; that it survives, and that
-    // nothing joins it outside the layers, is this one's.
-    expect(
-      unlayeredKinds(typographyCss).filter((kind) => kind !== "@property"),
-    ).toEqual([]);
-    // Both entries carry them onto the page unchanged: the registration travels
-    // with the mapper, which `core.css` takes without the element rules.
-    expect(registeredProperties(entryCss)).toEqual(
-      registeredProperties(typographyCss),
-    );
-    expect(registeredProperties(coreCss)).toEqual(
-      registeredProperties(typographyCss),
     );
   });
 
@@ -432,45 +426,8 @@ describe("@canonical/styles-typography carries the same contract", () => {
         name,
         true,
       ]);
-      expect([
-        name,
-        unlayeredKinds(css).filter((kind) => kind !== "@property"),
-      ]).toEqual([name, []]);
-      expect([name, registeredProperties(css).length]).toEqual([
-        name,
-        authoredProperties(css),
-      ]);
-      // Every engine registers the baseline unit, whichever file it takes it
-      // from: a consumer who imports one engine on its own gets the fallback.
-      expect([name, registeredProperties(css).length > 0]).toEqual([
-        name,
-        true,
-      ]);
+      expect([name, unlayeredKinds(css)]).toEqual([name, []]);
       expect([name, importantDeclarations(css)]).toEqual([name, []]);
     }
-  });
-});
-
-/** Nothing outside a layer, in either entry, is a rule the cascade sorts. */
-describe("the two entries agree about everything but the element layers", () => {
-  it("open the same layers apart from those three, and no others", () => {
-    const only = (a: string[], b: string[]) => a.filter((x) => !b.includes(x));
-    expect(only(openedLayers(entryCss), openedLayers(coreCss)).sort()).toEqual(
-      [...ELEMENT_LAYERS].sort(),
-    );
-    expect(only(openedLayers(coreCss), openedLayers(entryCss))).toEqual([]);
-  });
-
-  it("carry the same rules in every layer they share", () => {
-    // The point of `core.css` is that it subtracts three layers and changes
-    // nothing else. A rule appearing in one and not the other, in a layer both
-    // open, would mean a page taking the adapter's route got something a page
-    // taking the ordinary route did not.
-    const inShared = (css: string) =>
-      styleRules(css)
-        .filter((rule) => CORE_LAYERS.includes(rule.layer))
-        .map((rule) => `${rule.layer} | ${rule.selector}`)
-        .sort();
-    expect(inShared(coreCss)).toEqual(inShared(entryCss));
   });
 });
