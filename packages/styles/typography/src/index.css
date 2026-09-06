@@ -14,13 +14,21 @@
  * rather than 0.25rem, because an initial value has to be computationally
  * independent and rem is not; baseline-shim.css has the measurement.
  *
- * Layers and scope: this package writes its token shims into `ds.tokens` and
- * every element rule into `ds.typography` inside `@scope (.ds)`. It states no
- * layer order of its own, because it is imported by @canonical/styles after that
- * package's order statement, which names both layers and is the first rule of
- * the first stylesheet. Imported on its own — the example does exactly that —
- * the two layers are created where they first appear, which is well defined for
- * a single package and settles nothing this package needs settled: no custom
- * property is declared in more than one of the layers involved.
+ * Entry points:
+ *   this file (`@canonical/styles-typography`) is the engine and the mapper
+ *   together, which is what an ordinary page wants. `./mapper.css` is the mapper
+ *   on its own — the semantic tokens turned into the engine's variables, with no
+ *   engine and no element rules of the engine's — for a stylesheet that supplies
+ *   its own element rules and only needs the mapping.
+ *
+ * Layers:
+ *   The mapper's token shims go into `ds.tokens` and every element rule into
+ *   `ds.typography`. This package states no layer order of its own, because it
+ *   is imported by @canonical/styles after that package's order statement, which
+ *   names both layers and is the first rule of the first stylesheet. Imported on
+ *   its own — the example does exactly that — the layers are created where they
+ *   first appear, which is well defined for a single package and settles nothing
+ *   this package needs settled: no custom property is declared in more than one
+ *   of the layers involved.
  */
 @import url("./baseline-cap.css");
