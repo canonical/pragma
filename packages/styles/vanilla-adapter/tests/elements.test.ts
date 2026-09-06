@@ -1,0 +1,578 @@
+// @vitest-environment node
+
+/**
+ * elements.css is a copy of pragma's three element layers, re-addressed to an
+ * island root. A copy drifts, so this test binds it to pragma's source files in
+ * the workspace: it reads both sides, walks their rules, and fails when a rule,
+ * a declaration or the layer order differs from the confined form of the
+ * original. It runs without a browser: the question is what the files say, not
+ * what a browser computes from them; the browser fixtures answer that one.
+ *
+ * The sources are `@canonical/styles`' normalize.css and reset.css, and what
+ * the typography entry `@canonical/styles` loads brings in: its element file
+ * and the engine it names, with every local file they import. The mapping from
+ * a source selector to its confined form is the table in `confined()` below,
+ * in words in the README's section on the confined copy. The exceptions, rules
+ * that exist on one side only, each carry their reason.
+ */
+
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+/** A file relative to this test, as text; a missing one names what is needed. */
+const read = (path: string): string => {
+  try {
+    return readFileSync(new URL(path, import.meta.url), "utf8");
+  } catch {
+    throw new Error(
+      `${path} is not in the workspace: this test binds the copy to the @canonical/styles release that ships plain element layers and core.css`,
+    );
+  }
+};
+
+/** The layers the copy carries, in pragma's order. */
+const ELEMENT_LAYERS = ["normalize", "ds.reset", "ds.typography"];
+
+/** Pragma's own order statement, which core.css must open with. */
+const PRAGMA_ORDER =
+  "@layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers, ds.surfaces, ds.states, ds.components, ds.components.global, ds.components.app";
+
+/** The scope prelude every confined block uses. */
+const SCOPE = "(.ds)";
+
+/** A selector that is a control, or a control type, in pragma's reset. */
+const CONTROLS = new Set([
+  "button",
+  "input",
+  "optgroup",
+  "select",
+  "textarea",
+  '[type="button"]',
+  '[type="reset"]',
+  '[type="submit"]',
+  '[type="search"]',
+]);
+
+/** The outermost island root. */
+const ROOT = ":where(:scope:not(.ds *))";
+
+/** The universal selector and its two pseudo-elements, in either spelling. */
+const UNIVERSAL = new Set([
+  "*",
+  "::before",
+  "::after",
+  "*::before",
+  "*::after",
+]);
+
+/** The universal box-sizing rule, written outside the scope block. */
+const UNIVERSAL_CONFINED = [
+  ":where(.ds, .ds *)",
+  ":where(.ds, .ds *)::before",
+  ":where(.ds, .ds *)::after",
+];
+
+interface Rule {
+  /** The file the rule came from, for messages. */
+  file: string;
+  /** The layer the rule sits in, dotted when nested. */
+  layer: string;
+  /** The `@scope` prelude the rule sits in, or null when unscoped. */
+  scope: string | null;
+  /** The selector lists from the outermost style rule inward, in source order. */
+  path: string[][];
+  /** The rule's own declarations, `property: value`, in source order. */
+  declarations: string[];
+}
+
+interface Walked {
+  file: string;
+  rules: Rule[];
+  /** At-rule statements (`@import`, `@layer a, b;`), whitespace collapsed. */
+  statements: string[];
+  /** Preludes of the at-rules that opened a block, `@layer` and `@scope` excepted. */
+  blocks: string[];
+}
+
+/** Whitespace collapsed, no space inside parentheses, one space after a comma. */
+const collapse = (text: string): string =>
+  text
+    .replace(/\s+/g, " ")
+    .replace(/\(\s+/g, "(")
+    .replace(/\s+\)/g, ")")
+    .replace(/\s*,\s*/g, ", ")
+    .trim();
+
+/** A selector list split on the commas outside parentheses. */
+const splitList = (selector: string): string[] => {
+  const out: string[] = [];
+  let depth = 0;
+  let current = "";
+  for (const char of selector) {
+    if (char === "(") depth += 1;
+    if (char === ")") depth -= 1;
+    if (char === "," && depth === 0) {
+      out.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) out.push(current.trim());
+  return out;
+};
+
+/** `property: value`, one space after the colon, no trailing semicolon. */
+const declaration = (text: string): string => {
+  const colon = text.indexOf(":");
+  return `${text.slice(0, colon).trim()}: ${text.slice(colon + 1).trim()}`;
+};
+
+/**
+ * Walk a stylesheet's rules with a prelude walker: each `{` is read back to
+ * the previous `{`, `}` or `;`, whitespace collapsed; `@layer` and `@scope`
+ * nesting is tracked; a style rule's declarations are the `;`-separated texts
+ * inside its block that are not blocks of their own.
+ */
+const walk = (css: string, file: string): Walked => {
+  const text = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const rules: Rule[] = [];
+  const statements: string[] = [];
+  const blocks: string[] = [];
+  type Frame =
+    | { kind: "layer"; name: string }
+    | { kind: "scope"; prelude: string }
+    | { kind: "at" }
+    | { kind: "style"; rule: Rule };
+  const stack: Frame[] = [];
+  const layerOf = (): string =>
+    stack
+      .filter(
+        (frame): frame is { kind: "layer"; name: string } =>
+          frame.kind === "layer",
+      )
+      .map((frame) => frame.name)
+      .join(".");
+  const scopeOf = (): string | null => {
+    for (let i = stack.length - 1; i >= 0; i -= 1) {
+      const frame = stack[i];
+      if (frame?.kind === "scope") return frame.prelude;
+    }
+    return null;
+  };
+  const pathOf = (): string[][] =>
+    stack
+      .filter(
+        (frame): frame is { kind: "style"; rule: Rule } =>
+          frame.kind === "style",
+      )
+      .map((frame) => frame.rule.path[frame.rule.path.length - 1] ?? []);
+  const top = (): Frame | undefined => stack[stack.length - 1];
+
+  const open = (prelude: string): void => {
+    if (prelude.startsWith("@layer ")) {
+      stack.push({ kind: "layer", name: prelude.slice("@layer ".length) });
+    } else if (prelude.startsWith("@scope ")) {
+      stack.push({ kind: "scope", prelude: prelude.slice("@scope ".length) });
+    } else if (prelude.startsWith("@")) {
+      blocks.push(prelude);
+      stack.push({ kind: "at" });
+    } else {
+      const rule: Rule = {
+        file,
+        layer: layerOf(),
+        scope: scopeOf(),
+        path: [...pathOf(), splitList(prelude)],
+        declarations: [],
+      };
+      rules.push(rule);
+      stack.push({ kind: "style", rule });
+    }
+  };
+  const statement = (body: string): void => {
+    if (!body) return;
+    const frame = top();
+    if (frame?.kind === "style")
+      frame.rule.declarations.push(declaration(body));
+    else if (body.startsWith("@")) statements.push(body);
+    else if (frame?.kind !== "at")
+      throw new Error(`${file}: stray text "${body}"`);
+  };
+
+  let buffer = "";
+  let depth = 0;
+  let quote: string | null = null;
+  for (const char of text) {
+    if (quote) {
+      buffer += char;
+      if (char === quote) quote = null;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      buffer += char;
+      continue;
+    }
+    if (char === "(") depth += 1;
+    if (char === ")") depth -= 1;
+    if (depth > 0) {
+      buffer += char;
+      continue;
+    }
+    if (char === "{") {
+      open(collapse(buffer));
+      buffer = "";
+    } else if (char === "}") {
+      statement(collapse(buffer));
+      buffer = "";
+      if (!stack.pop()) throw new Error(`${file}: unbalanced braces`);
+    } else if (char === ";") {
+      statement(collapse(buffer));
+      buffer = "";
+    } else {
+      buffer += char;
+    }
+  }
+  if (stack.length) throw new Error(`${file}: unclosed block`);
+  return { file, rules, statements, blocks };
+};
+
+/** The `@import` statements of a walked file. */
+const importsOf = (walked: Walked): string[] =>
+  walked.statements.filter((line) => line.startsWith("@import"));
+
+/** The file a local import (`./x.css`) names, or undefined. */
+const localImport = (line: string): string | undefined =>
+  /["']\.\/([\w.-]+\.css)["']/.exec(line)?.[1];
+
+/** The distinct top-level layer names, in order of first appearance. */
+const layerOrder = (rules: Rule[]): string[] =>
+  Array.from(new Set(rules.map((rule) => rule.layer)));
+
+/** Whether a rule declares a property. */
+const declares = (rule: Rule, property: string): boolean =>
+  rule.declarations.some((line) => line.startsWith(`${property}:`));
+
+/** Whether a rule declares custom properties and nothing else. */
+const tokensOnly = (rule: Rule): boolean =>
+  rule.declarations.every((line) => line.startsWith("--"));
+
+/**
+ * The document element in the spellings pragma uses: `html` or `:root`, bare
+ * or inside `:where()`, with or without a `:not()` list. Returns the list.
+ */
+const documentElement = (
+  selector: string,
+): { excluded: string | undefined } | undefined => {
+  const match =
+    /^:where\((?:html|:root)(?::not\((.+)\))?\)$/.exec(selector) ??
+    /^(?:html|:root)(?::not\((.+)\))?$/.exec(selector);
+  return match ? { excluded: match[1] } : undefined;
+};
+
+/**
+ * The confined form of a source rule's outermost selector list, or null for a
+ * rule the copy leaves out. This is the mapping table.
+ */
+const confined = (rule: Rule): string[] | null => {
+  const list = rule.path[0] ?? [];
+  const only = list.length === 1 ? list[0] : undefined;
+  // The document element becomes the outermost island root, and a `:not()`
+  // list it carries stays: on the page it is inert, on an island root it keeps
+  // a control or a preformatted block that is itself the root at its default.
+  const root = only === undefined ? undefined : documentElement(only);
+  if (root)
+    return [
+      root.excluded ? `:where(:scope:not(.ds *, ${root.excluded}))` : ROOT,
+    ];
+  // The body: its margin is zeroed only when the body itself is the island,
+  // because the margin of an element a host page owns is not this package's
+  // call; anything else the body declares is the island root's.
+  if (only === "body")
+    return declares(rule, "margin") ? [":where(:scope:is(body))"] : [ROOT];
+  // The universal box-sizing rule sits outside the scope block, the long way.
+  if (list.every((selector) => UNIVERSAL.has(selector)))
+    return UNIVERSAL_CONFINED;
+  // A list of controls reaches a control that is itself the island.
+  if (list.every((selector) => CONTROLS.has(selector)))
+    return [`:where(:scope, :scope *):is(${list.join(", ")})`];
+  // Everything else is itself, and a class an island root can carry (`.p` on a
+  // field error, `.code` on an inline code span, `.editorial` on a flipped
+  // region) gets its `:scope.x` twin.
+  return list.flatMap((selector) =>
+    /^\.[\w-]+$/.test(selector) ? [selector, `:scope${selector}`] : [selector],
+  );
+};
+
+/** Rules present in pragma's files that the copy leaves out, with the reason. */
+const SOURCE_ONLY: ReadonlyArray<{
+  layer: string;
+  selector: string;
+  reason: string;
+}> = [];
+
+/** Rules present in the copy that pragma's files do not have, with the reason. */
+const COPY_ONLY: ReadonlyArray<{
+  layer: string;
+  selector: string;
+  reason: string;
+}> = [];
+
+/** A rule's identity for matching: its layer and its selector lists, each sorted. */
+const key = (layer: string, path: string[][]): string =>
+  JSON.stringify([layer, path.map((list) => [...list].sort())]);
+
+/** A rule's identity for messages. */
+const label = (rule: Rule): string =>
+  `${rule.file} [${rule.layer}] ${rule.path.map((list) => list.join(", ")).join(" { ")}`;
+
+const main = (file: string): Walked =>
+  walk(read(`../../main/src/${file}`), `main/src/${file}`);
+const typography = (file: string): Walked =>
+  walk(read(`../../typography/src/${file}`), `typography/src/${file}`);
+
+/** A typography file and, recursively, the local files it imports. */
+const typographyFiles = (file: string, seen = new Set<string>()): Walked[] => {
+  if (seen.has(file)) return [];
+  seen.add(file);
+  const walked = typography(file);
+  const locals = importsOf(walked)
+    .map(localImport)
+    .filter((name): name is string => Boolean(name));
+  return [walked, ...locals.flatMap((name) => typographyFiles(name, seen))];
+};
+
+/**
+ * What the typography entry brings in: its element file, the engine it names,
+ * and every local file they import. The entry is read rather than the file
+ * names assumed, so a change of engine shows up here.
+ */
+const typographySources = typographyFiles("index.css");
+
+/** The engine @canonical/styles loads: the one the typography entry names. */
+const engineFile = ((): string => {
+  const match = importsOf(typography("index.css"))
+    .map(localImport)
+    .find((name): name is string => /^baseline-[a-z]+\.css$/.test(name ?? ""));
+  if (!match)
+    throw new Error("typography/src/index.css imports no baseline engine");
+  return match;
+})();
+
+const sources = [
+  main("normalize.css"),
+  main("reset.css"),
+  ...typographySources,
+];
+const copy = walk(read("../elements.css"), "vanilla-adapter/elements.css");
+
+/** The source rules the copy binds to: those in the three element layers. */
+const sourceRules = sources.flatMap((walked) =>
+  walked.rules.filter((rule) => ELEMENT_LAYERS.includes(rule.layer)),
+);
+
+/** The source rules in any other layer, which stay in core.css. */
+const otherRules = sources.flatMap((walked) =>
+  walked.rules.filter((rule) => !ELEMENT_LAYERS.includes(rule.layer)),
+);
+
+describe("elements.css is pragma's element layers, confined", () => {
+  it("carries the three layers in pragma's order and nothing else", () => {
+    expect(layerOrder(copy.rules)).toEqual(ELEMENT_LAYERS);
+    expect(
+      layerOrder(sourceRules).filter((name) => ELEMENT_LAYERS.includes(name)),
+    ).toEqual(ELEMENT_LAYERS);
+    // No import, no registration, no statement of its own: the layer order
+    // comes from layers.css and the `@property` registration from core.css.
+    expect(copy.statements).toEqual([]);
+    expect(copy.blocks).toEqual([]);
+  });
+
+  it("copies the engine @canonical/styles loads, and the element rules that feed it", () => {
+    expect(engineFile).toBe("baseline-cap.css");
+    const files = sources.map((walked) => walked.file);
+    expect(files).toContain(`typography/src/${engineFile}`);
+    expect(files).toContain("typography/src/elements.css");
+    // The element rules are what give the engine its variables; without them
+    // a heading inside an island would compute the paragraph's size.
+    expect(
+      sourceRules.some(
+        (rule) =>
+          rule.layer === "ds.typography" && declares(rule, "--font-size"),
+      ),
+    ).toBe(true);
+  });
+
+  it("leaves nothing in pragma's other layers but custom properties", () => {
+    // What these files keep outside the element layers stays in core.css, so it
+    // must be inert outside an island: custom properties and nothing else.
+    const styling = otherRules
+      .filter((rule) => !tokensOnly(rule))
+      .map((rule) => `${label(rule)}: ${rule.declarations.join("; ")}`);
+    expect(styling).toEqual([]);
+  });
+
+  it("reads pragma's rules in their plain form, not a scoped one", () => {
+    // The copy binds to pragma's plain stylesheet (VC.30): a scoped source
+    // would mean pragma confines its own layers again, and the mapping below
+    // would no longer describe the copy.
+    const scoped = sourceRules.filter((rule) => rule.scope !== null);
+    expect(scoped.map(label)).toEqual([]);
+  });
+
+  it("confines every rule to an island: inside `@scope (.ds)`, or the universal rule outside it", () => {
+    const loose = copy.rules.filter(
+      (rule) =>
+        rule.scope !== SCOPE &&
+        !(
+          rule.scope === null &&
+          rule.path.length === 1 &&
+          rule.path[0]?.every((selector) =>
+            selector.startsWith(":where(.ds, .ds *)"),
+          )
+        ),
+    );
+    expect(loose.map(label)).toEqual([]);
+    const preludes = new Set(
+      copy.rules.map((rule) => rule.scope).filter((scope) => scope !== null),
+    );
+    expect(Array.from(preludes)).toEqual([SCOPE]);
+  });
+
+  it("gives every rule in pragma's files exactly one counterpart, with the same declarations, under the confined selector", () => {
+    // Counterparts are paired in source order within a key, because a file may
+    // carry two rules with the same selector list (the engine's margin reset
+    // and its variables), and the copy keeps them in the same order.
+    const queues = new Map<string, Rule[]>();
+    for (const rule of copy.rules) {
+      const id = key(rule.layer, rule.path);
+      queues.set(id, [...(queues.get(id) ?? []), rule]);
+    }
+    const failures: string[] = [];
+    for (const rule of sourceRules) {
+      const exception = SOURCE_ONLY.find(
+        (entry) =>
+          entry.layer === rule.layer &&
+          entry.selector === (rule.path[0] ?? []).join(", "),
+      );
+      const expected = exception ? null : confined(rule);
+      if (expected === null) continue;
+      const path = [expected, ...rule.path.slice(1)];
+      const counterpart = queues.get(key(rule.layer, path))?.shift();
+      if (!counterpart) {
+        failures.push(
+          `${label(rule)}: no counterpart at "${path.map((list) => list.join(", ")).join(" { ")}"`,
+        );
+        continue;
+      }
+      if (
+        JSON.stringify(counterpart.declarations) !==
+        JSON.stringify(rule.declarations)
+      )
+        failures.push(
+          `${label(rule)}: declarations differ\n  pragma: ${rule.declarations.join("; ")}\n  copy:   ${counterpart.declarations.join("; ")}`,
+        );
+    }
+    for (const rule of Array.from(queues.values()).flat()) {
+      const exception = COPY_ONLY.find(
+        (entry) =>
+          entry.layer === rule.layer &&
+          entry.selector === (rule.path[0] ?? []).join(", "),
+      );
+      if (!exception)
+        failures.push(`${label(rule)}: no rule in pragma's files`);
+    }
+    expect(failures).toEqual([]);
+  });
+
+  it("names every exception to a rule that exists", () => {
+    // An exception that no longer matches anything is a stale one.
+    for (const entry of SOURCE_ONLY) {
+      expect(
+        sourceRules.some(
+          (rule) =>
+            rule.layer === entry.layer &&
+            (rule.path[0] ?? []).join(", ") === entry.selector,
+        ),
+        `${entry.layer} ${entry.selector}: ${entry.reason}`,
+      ).toBe(true);
+    }
+    for (const entry of COPY_ONLY) {
+      expect(
+        copy.rules.some(
+          (rule) =>
+            rule.layer === entry.layer &&
+            (rule.path[0] ?? []).join(", ") === entry.selector,
+        ),
+        `${entry.layer} ${entry.selector}: ${entry.reason}`,
+      ).toBe(true);
+    }
+  });
+});
+
+describe("@canonical/styles exposes what a mixed page needs", () => {
+  /** The files core.css brings in from this workspace, core.css first. */
+  const coreFiles = ((): Walked[] => {
+    const core = main("core.css");
+    const seen = new Set<string>();
+    const follow = (walked: Walked): Walked[] =>
+      importsOf(walked).flatMap((line) => {
+        const local = localImport(line);
+        const packaged =
+          /["']@canonical\/styles-typography\/(?:src\/)?([\w.-]+\.css)["']/.exec(
+            line,
+          )?.[1];
+        let next: Walked | undefined;
+        if (local)
+          next = walked.file.startsWith("typography/")
+            ? typography(local)
+            : main(local);
+        else if (packaged) next = typography(packaged);
+        if (!next || seen.has(next.file)) return [];
+        seen.add(next.file);
+        return [next, ...follow(next)];
+      });
+    return [core, ...follow(core)];
+  })();
+
+  it("loads the three element layers from the files this test binds to", () => {
+    const imports = importsOf(main("index.css"));
+    expect(imports.some((line) => line.includes("./normalize.css"))).toBe(true);
+    expect(imports.some((line) => line.includes("./reset.css"))).toBe(true);
+    expect(
+      imports.some((line) => line.includes("@canonical/styles-typography")),
+    ).toBe(true);
+  });
+
+  it("core.css opens with pragma's ten-name statement, the mixed order minus the adapter's four", () => {
+    expect(coreFiles[0]?.statements[0]).toBe(PRAGMA_ORDER);
+  });
+
+  it("core.css brings no element rule with it", () => {
+    // The mixed page takes core.css for everything but the three layers, so
+    // what core.css brings into those layers must be inert outside an island:
+    // custom properties, or nothing. An element rule here would style Vanilla's
+    // headings and paragraphs from a pragma layer that sits above `vanilla`.
+    const leaks = coreFiles
+      .flatMap((walked) => walked.rules)
+      .filter(
+        (rule) => ELEMENT_LAYERS.includes(rule.layer) && !tokensOnly(rule),
+      )
+      .map((rule) => `${label(rule)}: ${rule.declarations.join("; ")}`);
+    expect(leaks).toEqual([]);
+  });
+
+  it("core.css carries the typographic scale and the --baseline-height registration", () => {
+    // The copy's engine reads both and carries neither: a registration applies
+    // to the whole document wherever it is written, and the scale is tokens.
+    const imports = coreFiles.flatMap(importsOf);
+    expect(
+      imports.some((line) => line.includes("dist/modifiers.typography.css")),
+    ).toBe(true);
+    expect(
+      coreFiles
+        .flatMap((walked) => walked.blocks)
+        .some((prelude) => prelude === "@property --baseline-height"),
+    ).toBe(true);
+  });
+});

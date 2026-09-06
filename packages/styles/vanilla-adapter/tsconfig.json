@@ -3,7 +3,7 @@
   "compilerOptions": {
     "skipLibCheck": true,
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
-    "types": ["vite/client"],
+    "types": ["vite/client", "node"],
     "noEmit": true
   },
   "include": ["tests/**/*.ts", "vite.config.ts"]
