@@ -1,0 +1,118 @@
+/* @canonical/styles — the stylesheet without the element layers
+ *
+ * This is everything `index.css` brings in except the three files whose rules
+ * select plain elements: the reset (`normalize.css`), the root baseline
+ * (`reset.css`) and the typographic engine. Import it when those rules have to
+ * come from somewhere else.
+ *
+ * There is one such case today. A page that also runs another CSS framework has
+ * two sets of rules for the same `<p>`, and the way they are kept apart is that
+ * the coexistence adapter ships its own copy of those three layers, confined to
+ * the part of the page the design system owns. Such a page loads this file and
+ * the adapter, rather than `index.css`, so that the element rules arrive once,
+ * from the adapter, already confined. A page that does not run another framework
+ * imports `index.css` and gets everything — that is the ordinary case, and it is
+ * the one this package optimises for.
+ *
+ * What is here: the order statement, the design tokens, the modifier families
+ * and their shims, the layout presets, the spacing, density, overflow and motion
+ * tokens, and the typography mapper's naming shims. What is not: the reset, the
+ * root baseline, and the baseline engines.
+ *
+ * Two things travel with the engines rather than with the mapper, so a host that
+ * takes this file has to supply them alongside its own element rules: the
+ * typographic scale (`@canonical/design-tokens/dist/modifiers.typography.css`),
+ * which is where the `--typography-*` values the mapper reads come from, and the
+ * `--baseline-height` registration in `@canonical/styles-typography`'s
+ * `baseline-shim.css`. The adapter's copy of the element layers carries both.
+ *
+ * The order statement below is the same list, in the same order, as the one in
+ * `index.css`, and a test in this package keeps the two identical. It must stay
+ * the first rule of this file: an `@import` is only valid before other rules, a
+ * layer statement and `@charset` excepted, so "the statement, then the imports"
+ * is the one legal shape.
+ */
+
+/* Read from the bottom up, each position is an argument:
+ *   normalize      pragma's own reset — not imported here
+ *   ds.tokens      primitive values, spacing, motion, overflow, and the
+ *                  typography mapper's naming shims
+ *   ds.reset       the root's baseline: font, colour, box-sizing — not here
+ *   ds.typography  the semantic mapper; the engines are not here
+ *   ds.modifiers   theme, the typographic scale, the channel families and
+ *                  their shims, the density and context classes
+ *   ds.surfaces    the surface families
+ *   ds.states      the derived hover / active / disabled channels
+ *   ds.components  the parent layer of the two component tiers. Nothing is
+ *                  written directly into it, by rule: a declaration in a parent
+ *                  layer sits in that layer's implicit final sublayer, above
+ *                  every named sublayer, so it would outrank both tiers
+ *   ds.components.global  the global component packages' stylesheets, and this
+ *                  package's own layout presets
+ *   ds.components.app     the application tiers' stylesheets, so that an app
+ *                  tier's own rule for a component beats the global one by
+ *                  layer rather than by load order
+ *
+ * The three layers this file leaves empty are still named, and named in the same
+ * places, because whoever fills them has to land in the same order relative to
+ * everything else. */
+@layer normalize,
+  ds.tokens,
+  ds.reset,
+  ds.typography,
+  ds.modifiers,
+  ds.surfaces,
+  ds.states,
+  ds.components,
+  ds.components.global,
+  ds.components.app;
+
+/* Typography: the semantic mapper only — the naming shims in ds.tokens and the
+ * element rules that turn the design tokens into the engine's variables. The
+ * engines themselves are not imported; see the note at the top of this file. */
+@import url("@canonical/styles-typography/mapper.css");
+
+/* Design tokens — colour, spacing, surfaces, states.
+ * Each generated file opens its own `@layer` block, so none of these imports
+ * carries a `layer()` keyword: that would nest the file's layer inside another. */
+@import url("@canonical/design-tokens/dist/sets.primitive.css");
+@import url("@canonical/design-tokens/dist/modifiers.theme.css");
+@import url("@canonical/design-tokens/dist/modifiers.surfaces.css");
+@import url("@canonical/design-tokens/dist/modifiers.anticipation.css");
+@import url("@canonical/design-tokens/dist/modifiers.criticality.css");
+@import url("@canonical/design-tokens/dist/modifiers.emphasis.css");
+@import url("@canonical/design-tokens/dist/modifiers.importance.css");
+/* TEMP shims (remove once generated upstream):
+   - states: writes the explicit per-state colour tokens into the modifier
+     channel (the generated modifiers only expose root), so hover/active/
+     disabled compose with anticipation. Imported after the anticipation/
+     emphasis modifiers so the anticipation-class overrides win.
+   - importance: maps the (currently empty) importance modifiers to channel
+     hints so importance-driven components can render their hierarchy.
+   - criticality: adds an icon channel (--modifier-icon) mapping each
+     criticality class to its glyph, so criticality components render the icon
+     from the modifier rather than hard-coding it.
+   - controls-hover: adds the missing selected-state (and switch unselected)
+     `--hover--color-foreground-*` shades so checkbox/radio/switch hover shifts
+     only the fill/track, not the masked glyph/knob. */
+@import url("./modifiers.states.shim.css");
+@import url("./modifiers.importance.shim.css");
+@import url("./modifiers.criticality.shim.css");
+@import url("./controls.hover.shim.css");
+@import url("@canonical/design-tokens/dist/states.css");
+
+/* Grid layout presets */
+@import url("./grid.css");
+
+/* Spacing architecture tokens */
+@import url("./spacing.css");
+
+/* Density modifier family (context × density → control height + baseline).
+ * After spacing.css, which supplies the --baseline-height these primitives use. */
+@import url("./modifiers.density.css");
+
+/* Scroll overflow affordance tokens */
+@import url("./overflow.css");
+
+/* Motion tokens (placeholder durations/easings) */
+@import url("./motion.css");

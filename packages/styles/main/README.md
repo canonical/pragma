@@ -77,6 +77,19 @@ that is the design system's throughout; during coexistence the root stays pinned
 other framework does not read `color-scheme` and would stay light around dark components. That
 package's README is the reference for all of it.
 
+### Taking it without the element layers
+
+Three of the files this stylesheet imports have rules that select plain elements: `normalize.css`, the
+root baseline in `reset.css`, and the typographic engine. `@canonical/styles/core.css` is the same
+stylesheet without those three — the order statement, the design tokens, the modifier families, the
+layout presets, the spacing, density, overflow and motion tokens, and the typography mapper's naming
+shims — for a page whose element rules have to come from somewhere else. There is one such case today:
+a page that also runs another CSS framework loads the coexistence adapter, which ships its own copy of
+those three layers confined to the part of the page the design system owns, and loads `core.css`
+rather than `index.css` so that the element rules arrive once. A page that does not run another
+framework imports `index.css` and gets everything; that is the ordinary case. The two entry points
+open the same layer order statement, and `tests/core.test.ts` keeps them identical.
+
 ## Cascade Layers
 
 Everything this package itself ships is in a named layer, and the order is fixed by one statement, the
