@@ -5,6 +5,7 @@ import {
   createNavigationReducer,
   findAncestorPath,
   getItemId,
+  isInteractive,
   NavigationActionType,
   prepareIndex,
 } from "@canonical/utils";
@@ -91,7 +92,7 @@ export default function useNavigationTree<T extends Item = Item>(
     if (highlighted) return highlighted;
     const selected = state.selectedItems[state.selectedItems.length - 1];
     if (selected && selected !== annotatedRoot) return selected;
-    const firstChild = annotatedRoot.items?.find((i) => !i.disabled);
+    const firstChild = annotatedRoot.items?.find(isInteractive);
     return firstChild ?? null;
   }, [focus, state.highlightedItems, state.selectedItems, annotatedRoot]);
 
@@ -254,13 +255,13 @@ export default function useNavigationTree<T extends Item = Item>(
         }),
         onClick: (e: React.SyntheticEvent) => {
           e.stopPropagation();
-          if (item.disabled) return;
+          if (!isInteractive(item)) return;
           dispatch({ type: NavigationActionType.ITEM_SELECT, item });
           userProps?.onClick?.(e);
         },
         onMouseMove: (e: React.SyntheticEvent) => {
           e.stopPropagation();
-          if (item.disabled) return;
+          if (!isInteractive(item)) return;
           dispatch({ type: NavigationActionType.ITEM_HIGHLIGHT, item });
           userProps?.onMouseMove?.(e);
         },

@@ -1,5 +1,5 @@
 import type { IconName } from "@canonical/ds-assets";
-import type { Item } from "@canonical/ds-types";
+import type { _DistributiveOmit, Item } from "@canonical/ds-types";
 // The custom-link contract is shared across every link-injecting component
 // (cs:react.component.link_component); sourced from ds-global so SideNavigation,
 // Breadcrumbs, and Tabs use one interface. Re-exported so this module's existing
@@ -21,7 +21,7 @@ export type { LinkComponentProps };
  * No discriminated union to author: the caret-vs-slot choice is structural,
  * derived from whether the item has `items`.
  */
-export interface NavItem extends Omit<Item, "items"> {
+export type NavItem = _DistributiveOmit<Item, "items"> & {
   /** Leading icon (start slot), by ds-assets icon name. */
   icon?: IconName;
   /** Trailing content for leaf items (end slot). Ignored if the item has subitems. */
@@ -30,7 +30,7 @@ export interface NavItem extends Omit<Item, "items"> {
   items?: NavItem[];
   /** CSS class name applied to this item's row, in addition to the base classes. */
   className?: string;
-}
+};
 
 type OwnProps = {
   /** Brand content (logo/wordmark) rendered in the header. */
