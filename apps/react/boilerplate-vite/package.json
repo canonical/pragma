@@ -30,7 +30,7 @@
     "check:ts": "tsc --noEmit",
     "relay": "relay-compiler",
     "relay:watch": "relay-compiler --watch",
-    "storybook": "storybook dev -p 6010 --no-open --host 0.0.0.0",
+    "storybook": "storybook dev -p 6009 --no-open --host 0.0.0.0",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
