@@ -27,7 +27,7 @@ type OwnProps = Pick<
   trigger: ReactNode;
   /**
    * The menu entries: one flat list of items and separators
-   * (`{ type: "separator" }`). An item's own `items` form its submenu, which
+   * (`{ type: "separator", key: "…" }`). An item's own `items` form its submenu, which
    * may itself contain separators.
    */
   items: MenuEntry[];

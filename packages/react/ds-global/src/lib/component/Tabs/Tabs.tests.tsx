@@ -35,7 +35,7 @@ describe("Tabs", () => {
     render(
       <Tabs
         aria-label="Sections"
-        navigationRoot={{ label: "Root label", items: root.items }}
+        navigationRoot={{ key: "root", label: "Root label", items: root.items }}
       />,
     );
     expect(screen.queryByText("Root label")).not.toBeInTheDocument();
@@ -58,7 +58,10 @@ describe("Tabs", () => {
     render(
       <Tabs
         aria-label="Sections"
-        navigationRoot={{ items: [{ key: "soon", label: "Coming soon" }] }}
+        navigationRoot={{
+          key: "root",
+          items: [{ key: "soon", label: "Coming soon" }],
+        }}
       />,
     );
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
