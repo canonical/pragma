@@ -3,15 +3,18 @@
   "description": "Canonical Design System global stylesheet. The reset, typography, and design tokens, in named cascade layers.",
   "version": "0.37.0",
   "type": "module",
-  "main": "src/index.css",
   "exports": {
     ".": "./src/index.css",
+    "./tokens.css": "./src/tokens.css",
+    "./elements.css": "./src/elements.css",
+    "./layout.css": "./src/layout.css",
     "./fonts": "./src/fonts.css",
     "./modifiers.states.shim.css": "./src/modifiers.states.shim.css",
     "./modifiers.importance.shim.css": "./src/modifiers.importance.shim.css",
     "./modifiers.criticality.shim.css": "./src/modifiers.criticality.shim.css",
     "./modifiers.density.css": "./src/modifiers.density.css",
-    "./spacing.css": "./src/spacing.css"
+    "./spacing.css": "./src/spacing.css",
+    "./package.json": "./package.json"
   },
   "files": [
     "src"
@@ -41,6 +44,7 @@
     "@biomejs/biome": "2.5.11",
     "@canonical/biome-config": "^0.37.0",
     "@canonical/typescript-config": "^0.37.0",
+    "@types/node": "^26.0.0",
     "@vitest/browser": "^4.0.18",
     "@vitest/browser-playwright": "^4.0.18",
     "playwright": "^1.61.1",

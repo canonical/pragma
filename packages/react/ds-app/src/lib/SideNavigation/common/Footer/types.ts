@@ -1,8 +1,8 @@
 import type { Item as NavItem } from "@canonical/ds-types";
-import type { ComponentType, HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ComponentType, ReactNode } from "react";
 import type { LinkComponentProps } from "../../types.js";
 
-export interface FooterProps extends HTMLAttributes<HTMLDivElement> {
+type OwnProps = {
   /** Root item whose direct children are rendered as the footer nav list. */
   root?: NavItem;
   /** Component used to render navigable items. Defaults to `"a"`. */
@@ -11,4 +11,7 @@ export interface FooterProps extends HTMLAttributes<HTMLDivElement> {
   currentUrl?: string;
   /** Fallback content when no `root` is provided. */
   children?: ReactNode;
-}
+};
+
+export type FooterProps = OwnProps &
+  Omit<ComponentProps<"div">, keyof OwnProps>;

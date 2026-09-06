@@ -8,7 +8,7 @@ else's file.
 It is the reasoning, not the reference. What is layered where, which files open which layer, which
 browser floors apply and which guarantees have a test behind them live in the package READMEs —
 [`@canonical/styles`](../../packages/styles/main/README.md#cascade-layers) and
-[`@canonical/styles-typography`](../../packages/styles/typography/README.md#cascade-layers-and-scope)
+[`@canonical/styles-typography`](../../packages/styles/typography/README.md#cascade-layers)
 — and a test reads the first of those back out of the file and compares it with the stylesheet a
 bundler resolves. Where the same fact appears here and there, the README is the one that is checked.
 
@@ -169,17 +169,20 @@ them:
 
 | Entry | What is in it | A pragma page | A mixed page |
 | --- | --- | --- | --- |
-| `index.css` | The whole of it: the three below, composed. | imports this | — |
-| `tokens.css` | `ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states` — the values, and the classes that set them. | (in `index.css`) | imports this |
-| `elements.css` | `normalize`, `ds.reset`, `ds.typography` — what bare elements get. | (in `index.css`) | takes the adapter's copy instead |
-| `layout.css` | The layout presets. | (in `index.css`) | imports this |
+| `@canonical/styles` | Everything: the values, what bare elements get, and the layout presets. The file is `index.css`. | imports this | — |
+| `@canonical/styles/tokens.css` | Four layers of values — `ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states` — and the classes that set them. Not one rule that styles an element. | (in the whole) | imports this |
+| `@canonical/styles/elements.css` | `normalize`, `ds.reset`, `ds.typography` — what bare elements get. | (in the whole) | takes the adapter's copy instead |
+| `@canonical/styles/layout.css` | The layout presets, `content-flow` among them, which claim five class names in a page's namespace. | (in the whole) | imports this |
 
-An entry is self-contained and opens with the order statement, so importing one settles the layer
-order the same way importing all of them does; the leaf stylesheets underneath import nothing and are
-not a way in. The typography package is cut the same way — a `tokens.css` and an `elements.css` of its
-own, beside its engines — and `@canonical/styles` composes from it.
+Every entry opens with the same order statement, so importing one settles the layer order exactly as
+importing all of them does. And in this package no entry imports another: an `@layer` statement inside
+a layer block declares sublayers rather than top-level layers, so a whole that imported its parts would
+nest the order instead of repeating it. A page may load one, two or all of them, in any order, and get
+the same result, each file parsed once. The typography package is cut along the same line — a
+`tokens.css` and an `elements.css` of its own, beside its engines — and the styles package's entries
+import from it.
 
-A pragma page imports `index.css` and is done: one import, no markup change, nothing about coexistence
+A pragma page imports the whole and is done: one import, no markup change, nothing about coexistence
 in its stylesheet or its templates. A mixed page imports `tokens.css` and `layout.css` from the
 package, and the adapter's own `elements.css` in place of the package's — the same three layers, the
 same declarations, written inside `@scope (.ds)` so that they reach only the subtrees that are
@@ -314,7 +317,7 @@ once the component sheets carry their tier, which is the point of carrying it.
 ## Living beside another framework
 
 A page that runs pragma and another CSS framework at once takes the package's `tokens.css` and
-`layout.css` in place of its `index.css`, adds the adapter's confined `elements.css`, and gains
+`layout.css` in place of its whole entry, adds the adapter's confined `elements.css`, and gains
 three layers: one at the bottom for that framework, one directly above it that reverts what the
 framework declared inside pragma's islands back to the browser's own defaults (custom properties,
 `direction` and `unicode-bidi` sit outside `all`, so they still cross), and one between the design
@@ -323,7 +326,7 @@ into pragma's. Territories do the work the reset stylesheet could not: each elem
 owner, so nothing has to be enumerated per property, and nothing is transformed between authoring
 and the browser. No markup changes hands in either direction — there is no class to add to the root
 of either kind of page — and that is what makes removal a stylesheet edit and nothing else: swap
-`index.css` back in for the two entries and the copy, delete the adapter's files and its order
+the whole entry back in for the two parts and the copy, delete the adapter's files and its order
 statement, and nothing is left in the templates to clean up. The two consequences to keep in mind
 are that `!important` still inverts the order — so the other framework's important rules get
 *stronger* when it is layered lowest, and the ones that matter have to be answered rather than

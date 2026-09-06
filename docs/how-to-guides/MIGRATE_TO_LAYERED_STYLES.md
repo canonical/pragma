@@ -4,13 +4,13 @@ For the maintainer of an application that already uses `@canonical/styles` and n
 CSS framework — upgrading to the first release in which everything that package ships sits in a
 cascade layer.
 
-**Nothing in your markup changes, and no class is added to any root.** You import `index.css` as you
-always did, and the rules that style bare elements — the reset, the root's baseline, the typographic
+**Nothing in your markup changes, and no class is added to any root.** You import `@canonical/styles`
+as you always did, and the rules that style bare elements — the reset, the root's baseline, the typographic
 engine — still apply to your whole page, written plainly, the way they always were. What does change
 is how your own CSS meets the design system's, and that needs an answer from you.
 
 If your application also runs another CSS framework on the same pages, this guide is not enough on its
-own. Your imports change there — two of this package's smaller entries in place of `index.css`, plus
+own. Your imports change there — two of this package's smaller entries in place of the whole, plus
 the adapter package's confined copy of the element rules — and `@canonical/styles-vanilla-adapter`'s
 README owns that recipe. It arrives with the coexistence release.
 
@@ -122,12 +122,12 @@ was getting that file through us and wants the rest of it, depend on it directly
 
 ## The entries, and everything else
 
-The package has four **entries**: `index.css` is the whole of it, and `tokens.css` (the values, and the
-classes that set them), `elements.css` (what bare elements get) and `layout.css` (the layout presets)
-are the parts it composes from. Each of the four opens with the order statement, so each is safe to
-import on its own. The three smaller ones exist for a page that also runs another CSS framework and
-takes its element rules from the adapter instead; if that is not you, `index.css` is your import, as
-it always was.
+The package has four **entries**: `@canonical/styles` is the whole of it, and `tokens.css` (four layers
+of values, and the classes that set them), `elements.css` (what bare elements get) and `layout.css`
+(the layout presets) are that same stylesheet in parts. Each of the four opens with the order
+statement, and none imports another, so any of them is safe to import on its own and in any order. The
+three smaller ones exist for a page that also runs another CSS framework and takes its element rules
+from the adapter instead; if that is not you, the package entry is your import, as it always was.
 
 Anything below an entry is a leaf stylesheet, and a leaf **carries no order statement**, because the
 statement is an entry's first rule. The layers such a file opens are ordered by wherever they first

@@ -42,7 +42,7 @@
  * Part 2 mirrors the `--hover--` tokens of `states.css`, which opens
  * `@layer ds.states`. Neither generated file defines any of the tokens added
  * here, so both blocks are purely additive. Custom properties only, so nothing
- * here is scoped to pragma territory.
+ * here selects an element.
  */
 
 @layer ds.surfaces {

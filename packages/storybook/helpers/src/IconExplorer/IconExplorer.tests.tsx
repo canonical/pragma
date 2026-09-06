@@ -357,21 +357,14 @@ describe("IconExplorer", () => {
     expect(root.style.getPropertyValue("--icon-explorer-size")).toBe("40px");
   });
 
-  it("previews on a dark surface using the scheme class convention", () => {
+  it("follows the page colour scheme instead of forcing its own", () => {
     const { container } = renderExplorer();
-    const body = () => container.querySelector(".preview-area") as HTMLElement;
+    const body = container.querySelector(".preview-area") as HTMLElement;
 
-    expect(body()).toHaveClass("light");
-    expect(body()).not.toHaveClass("dark");
-    expect(body().style.colorScheme).toBe("light");
-
-    fireEvent.click(screen.getByLabelText(/dark preview/i));
-
-    expect(body()).toHaveClass("dark");
-    expect(body()).not.toHaveClass("light");
-    // The class alone would be inert without a stylesheet; the block sets the
-    // scheme itself so the preview really changes.
-    expect(body().style.colorScheme).toBe("dark");
+    expect(screen.queryByLabelText(/dark preview/i)).toBeNull();
+    expect(body.style.colorScheme).toBe("");
+    expect(body).not.toHaveClass("light");
+    expect(body).not.toHaveClass("dark");
   });
 
   it("suggests related icons by shared tags", () => {

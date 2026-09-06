@@ -13,13 +13,11 @@
  * or themes may set; they are documented so the full API surface
  * is visible in one place.
  *
- * Layers: the token block is `ds.tokens`. These are custom properties, which
- * act only where a rule reads them, so they are not scoped to pragma territory.
- * The content-flow container at the end sets a real property on an element, so
- * it sits in `ds.components.global` — the global tier, not the parent layer,
- * because a rule written directly into `@layer ds.components` outranks both
- * component tiers — inside `@scope (.ds)`, so it cannot reach a page another
- * system owns.
+ * Layers: everything here is `ds.tokens`. These are custom properties, which
+ * act only where a rule reads them, so this file styles nothing on its own —
+ * which is what lets the tokens entry carry it. The content-flow container,
+ * which used to sit at the end of this file, sets a real property on an element
+ * and now travels with the layout presets in grid.css for that reason.
  */
 
 @layer ds.tokens {
@@ -57,8 +55,8 @@
     /*                                                                    */
     /* Default: --space-after: 0 on all elements (app UI contexts).      */
     /* Editorial/prose contexts opt in via the .editorial class:          */
-    /*   h1, h2: --space-after: 2  (= 2 × 0.25rem = 0.5rem = 8px)     */
-    /*   h3-h6, p: --space-after: 1 (= 1 × 0.25rem = 4px)             */
+    /*   h1, h2: --space-after: 2  (= 2 × 0.5rem = 1rem = 16px)        */
+    /*   h3-h6, p: --space-after: 1 (= 1 × 0.5rem = 0.5rem = 8px)     */
     /*                                                                    */
     /* The tokens below are for NON-typographic elements.                 */
     /* When the spacing architecture is finalised, the typography         */
@@ -115,24 +113,5 @@
     /* ── Heading alignment ──────────────────────────────────────────── */
     /* Inline padding for headings to align with padded blocks.           */
     /* --heading-padding-inline: … ; */ /* set by layout context, default 0 */
-  }
-}
-
-/* ── Content-flow container ─────────────────────────────────────── */
-
-@layer ds.components.global {
-  @scope (.ds) {
-    /* Content-flow container: establishes element-owned spacing context.
-     * Children use their own margin-bottom; last child is reset to 0
-     * to prevent double spacing at the container boundary.
-     *
-     * Two selectors, because a scoped selector never matches its own scoping
-     * root: `.content-flow` is a container inside the territory,
-     * `:scope.content-flow` is a pragma root that carries the class itself.
-     */
-    .content-flow > :last-child,
-    :scope.content-flow > :last-child {
-      margin-bottom: 0;
-    }
   }
 }

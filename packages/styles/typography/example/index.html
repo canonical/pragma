@@ -1,9 +1,5 @@
 <!doctype html>
-<!-- `ds` marks the document as design-system territory. The engines are written
-     inside `@scope (.ds)`, so without this class nothing below is styled by
-     them. In a real application the same class sits beside the context and
-     density classes: <html class="ds app comfortable">. -->
-<html lang="en" class="ds">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <title>Font Baseline Alignment Demo</title>
@@ -34,6 +30,11 @@
        * space-after  = spaceAfter / baseline
        */
 
+      /* The grid unit. Any length unit works: 0.25rem here, and 4px would give
+         the same grid at the usual root font size. rem makes the grid follow the
+         reader's own font size; px pins it to device pixels. Delete this rule
+         and the engines fall back to 0.25rem, so the page still snaps to a grid
+         — try it. */
       :root {
         --baseline-height: 0.25rem;
       }

@@ -13,6 +13,7 @@
  *   .grid.responsive Breakpoint-driven column grid
  *   .grid.intrinsic  Fluid auto-fill grid
  *   .subgrid         CSS subgrid child — inherits parent columns
+ *   .content-flow    Container whose children carry their own bottom margin
  *
  * Customization:
  *   --grid-gap        Shorthand: sets both row-gap and column-gap (default: var(--grid-gutter))
@@ -63,19 +64,11 @@
  *   <!-- Separate row/column gaps -->
  *   <div class="grid responsive" style="--grid-row-gap: 1.5rem; --grid-column-gap: 1rem">...</div>
  *
- * Layers and scope:
- *   `grid` and `subgrid` set real properties on any element that carries them,
- *   so they are element-level rules and sit in `ds.components.global` inside
- *   `@scope (.ds)` — a page that pragma does not own may already use a class of
- *   that name, and a design system must not restyle it. `responsive` and
- *   `intrinsic` set only `--modifier-grid-template`, which `grid` reads; they
- *   are the presets' other half and stay with them.
- *
- *   Every preset is written twice, because a scoped selector never matches its
- *   own scoping root: `.x` is an element inside the territory, `:scope.x` is the
- *   pragma root that carries the preset itself (a Form is `ds form subgrid`, a
- *   Cards group is `ds cards subgrid`). The bare form comes first so the pair
- *   reads in ascending specificity.
+ * Layers:
+ *   `grid` and `subgrid` set real properties on any element that carries them;
+ *   `responsive` and `intrinsic` set only `--modifier-grid-template`, which
+ *   `grid` reads, and are the presets' other half. All four sit in
+ *   `ds.components.global`.
  *
  *   The tier, `ds.components.global`, is not decoration: a rule written
  *   directly into `@layer ds.components` lands in that layer's implicit final
@@ -100,41 +93,52 @@
     );
   }
 
-  @scope (.ds) {
-    .grid,
-    :scope.grid {
-      display: grid;
-      grid-template-columns: var(--modifier-grid-template);
-      column-gap: var(
-        --grid-column-gap,
-        var(--grid-gap, var(--grid-gutter, 1.5rem))
-      );
-      row-gap: var(--grid-row-gap, var(--grid-gap, var(--grid-gutter, 1.5rem)));
+  .grid {
+    display: grid;
+    grid-template-columns: var(--modifier-grid-template);
+    column-gap: var(
+      --grid-column-gap,
+      var(--grid-gap, var(--grid-gutter, 1.5rem))
+    );
+    row-gap: var(--grid-row-gap, var(--grid-gap, var(--grid-gutter, 1.5rem)));
+  }
+
+  .responsive {
+    --modifier-grid-template: repeat(4, 1fr);
+
+    @media (min-width: 768px) {
+      --modifier-grid-template: repeat(8, 1fr);
     }
 
-    .responsive,
-    :scope.responsive {
-      --modifier-grid-template: repeat(4, 1fr);
-
-      @media (min-width: 768px) {
-        --modifier-grid-template: repeat(8, 1fr);
-      }
-
-      @media (min-width: 1280px) {
-        --modifier-grid-template: repeat(12, 1fr);
-      }
+    @media (min-width: 1280px) {
+      --modifier-grid-template: repeat(12, 1fr);
     }
+  }
 
-    .intrinsic,
-    :scope.intrinsic {
-      --modifier-grid-template: var(--grid-intrinsic);
-    }
+  .intrinsic {
+    --modifier-grid-template: var(--grid-intrinsic);
+  }
 
-    .subgrid,
-    :scope.subgrid {
-      display: grid;
-      grid-template-columns: subgrid;
-      grid-column: var(--subgrid-span, 1 / -1);
-    }
+  .subgrid {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: var(--subgrid-span, 1 / -1);
+  }
+}
+
+/* Content-flow container: establishes element-owned spacing context. Children
+ * use their own margin-bottom; the last child is reset to 0 so the container
+ * does not gain a trailing gap.
+ *
+ * It lives here rather than with the spacing tokens it belongs to by subject,
+ * because it is a rule that styles an element and the tokens entry must carry
+ * none: a page that also runs another CSS framework takes the tokens and the
+ * layout presets and supplies its own element rules. This is a preset like the
+ * grid ones — it claims a class name and sets a real property — so it travels
+ * with them.
+ */
+@layer ds.components.global {
+  .content-flow > :last-child {
+    margin-bottom: 0;
   }
 }

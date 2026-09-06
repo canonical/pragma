@@ -43,7 +43,7 @@ const Popover = ({
     bestPosition,
     getToggleProps,
     getContentProps,
-  } = useDisclosure({
+  } = useDisclosure<HTMLDetailsElement>({
     mode: "click",
     isOpen: open,
     // Auto-fit by default, opening toward the reading direction first.
@@ -80,7 +80,7 @@ const Popover = ({
         .filter(Boolean)
         .join(" ")}
       open={isOpen}
-      ref={targetRef as React.Ref<HTMLDetailsElement>}
+      ref={targetRef}
       {...props}
     >
       {/* biome-ignore lint/a11y/noStaticElementInteractions: <summary> is natively interactive (it toggles its <details>); the click handler augments that behaviour */}
