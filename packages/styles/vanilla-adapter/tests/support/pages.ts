@@ -2,9 +2,10 @@
  * Builds whole documents in iframes so computed styles can be compared across
  * pages that differ only in which stylesheets they load. Everything here runs
  * in the browser; the CSS strings are resolved by Vite at test time: Vanilla
- * through its `sass` export condition (vite.config.ts), pragma's global
- * stylesheet through its entry point, and the component sheets from their
- * packages' sources, which are what the built entries are made of.
+ * through its `sass` export condition (vite.config.ts), pragma's stylesheets
+ * through their entry points, adapter.css with its two imports resolved, and
+ * the component sheets from their packages' sources, which are what the built
+ * entries are made of.
  */
 
 import buttonCss from "@canonical/react-ds-global/src/lib/component/Button/styles.css?inline";
@@ -13,12 +14,15 @@ import formCss from "@canonical/react-ds-global-form/src/index.css?inline";
 import selectCss from "@canonical/react-ds-global-form/src/lib/subcomponent/SelectInput/styles.css?inline";
 import textareaCss from "@canonical/react-ds-global-form/src/lib/subcomponent/TextareaInput/styles.css?inline";
 import textInputCss from "@canonical/react-ds-global-form/src/lib/subcomponent/TextInput/styles.css?inline";
+import coreCss from "@canonical/styles/core.css?inline";
 import stylesCss from "@canonical/styles?inline";
 import vanilla456 from "vanilla-framework-4.56/scss/build.scss?inline";
 import vanilla458 from "vanilla-framework-4.58/scss/build.scss?inline";
 import { onTestFinished } from "vitest";
 import { commands } from "vitest/browser";
+import adapterResolved from "../../adapter.css?inline";
 import adapterCss from "../../adapter.css?raw";
+import elementsCss from "../../elements.css?raw";
 import layersCss from "../../layers.css?raw";
 import type { MediaEmulation } from "../../vite.config.js";
 
@@ -44,9 +48,8 @@ const vanillaCss: Record<VanillaVersion, string> = {
   "4.58": vanillaLayer(vanilla458),
 };
 
-/** Pragma's CSS as a consumer loads it: the global stylesheet, then components. */
-export const PRAGMA_CSS = [
-  stylesCss,
+/** The component stylesheets, which both kinds of page load after their entry. */
+export const COMPONENT_CSS = [
   formCss,
   textInputCss,
   selectCss,
@@ -54,6 +57,15 @@ export const PRAGMA_CSS = [
   buttonCss,
   cardCss,
 ].join("\n");
+
+/** Pragma's CSS as a pragma-only page loads it: the global stylesheet, then components. */
+export const PRAGMA_CSS = [stylesCss, COMPONENT_CSS].join("\n");
+
+/**
+ * Pragma's CSS as a mixed page loads it: adapter.css, which brings core.css and
+ * elements.css with it (README rule 4), then components.
+ */
+export const MIXED_PRAGMA_CSS = [adapterResolved, COMPONENT_CSS].join("\n");
 
 const parse = (css: string): CSSStyleSheet => {
   const sheet = new CSSStyleSheet();
@@ -68,26 +80,6 @@ const parse = (css: string): CSSStyleSheet => {
 const childRules = (rule: CSSRule): CSSRuleList | undefined =>
   "cssRules" in rule ? (rule as CSSGroupingRule).cssRules : undefined;
 
-/** The layers in which a stylesheet scopes rules to pragma territory. */
-const scopedLayers = (css: string): Set<string> => {
-  const found = new Set<string>();
-  const walk = (rules: CSSRuleList, layer: string): void => {
-    for (const rule of rules) {
-      if (rule instanceof CSSLayerBlockRule) {
-        walk(rule.cssRules, layer ? `${layer}.${rule.name}` : rule.name);
-      } else if (rule instanceof CSSScopeRule) {
-        if (/(^|[\s(,])\.ds(?![\w-])/.test(rule.start ?? "")) found.add(layer);
-        walk(rule.cssRules, layer);
-      } else {
-        const children = childRules(rule);
-        if (children) walk(children, layer);
-      }
-    }
-  };
-  walk(parse(css).cssRules, "");
-  return found;
-};
-
 /** Whether a stylesheet has a media rule on the given feature, at any depth. */
 const hasMediaRule = (css: string, feature: string): boolean => {
   const walk = (rules: CSSRuleList): boolean => {
@@ -101,20 +93,6 @@ const hasMediaRule = (css: string, feature: string): boolean => {
   };
   return walk(parse(css).cssRules);
 };
-
-/**
- * Whether the loaded `@canonical/styles` release scopes its element-level layers
- * to pragma territory (pragma-adrs F, band A): a `@scope (.ds)` block inside
- * both `normalize` and `ds.reset`. Fixtures that need it skip with SKIP_REASON
- * until it ships; the boundary's own guarantees do not need it.
- */
-export const PRAGMA_IS_SCOPED = ((): boolean => {
-  const layers = scopedLayers(stylesCss);
-  return layers.has("normalize") && layers.has("ds.reset");
-})();
-
-export const SKIP_REASON =
-  "needs the @canonical/styles release whose element layers are scoped to .ds (pragma-adrs F, band A)";
 
 /**
  * Whether pragma states its own reduced-motion rule (pragma-adrs F, VC.11,
@@ -196,6 +174,13 @@ const THEME_BLOCK = `
 <div class="is-dark"><div class="is-light"><div class="ds card" id="theme-light-in-dark"><p id="theme-light-in-dark-p">x</p></div></div></div>
 <div class="is-paper"><div class="ds card" id="theme-paper"><p id="theme-paper-p">x</p></div></div>`;
 
+/**
+ * A root that carries pragma's own theme class: overruled by the bridge while
+ * adapter.css is loaded (README rule 13), in force once it is gone (rule 19).
+ */
+const REMOVAL_BLOCK = `
+<div class="ds card dark" id="removal-dark"><p id="removal-dark-p">x</p></div>`;
+
 export interface PageSpec {
   /** Classes on `<html>`. */
   root: string;
@@ -204,18 +189,23 @@ export interface PageSpec {
   body: string;
 }
 
-/** The mixed page: layers, Vanilla in its layer, pragma, the adapter. */
+/**
+ * The mixed page: layers, Vanilla in its layer, then pragma's CSS as a mixed
+ * page loads it. `adapter` places adapter.css before or after the component
+ * sheets, or leaves it out: then the page still loads core.css and
+ * elements.css, so that only the boundary and the bridge are missing.
+ */
 export const mixedPage = (
   vanilla: VanillaVersion,
   options: { root?: string; adapter?: "before" | "after" | "none" } = {},
 ): PageSpec => {
   const adapter = options.adapter ?? "after";
   const styles = [layersCss, vanillaCss[vanilla]];
-  if (adapter === "before") styles.push(adapterCss);
-  styles.push(PRAGMA_CSS);
-  if (adapter === "after") styles.push(adapterCss);
+  if (adapter === "none") styles.push(coreCss, elementsCss, COMPONENT_CSS);
+  else if (adapter === "before") styles.push(adapterResolved, COMPONENT_CSS);
+  else styles.push(COMPONENT_CSS, adapterResolved);
   return {
-    root: options.root ?? "coexist app comfortable light",
+    root: options.root ?? "app comfortable light",
     styles,
     body:
       PRAGMA_BLOCK +
@@ -226,7 +216,7 @@ export const mixedPage = (
   };
 };
 
-/** The pragma-only page: pragma's CSS alone, nothing on the root but context and density. */
+/** The pragma-only page: pragma's own stylesheet, the same root classes as the mixed page. */
 export const pragmaPage = (theme: "light" | "dark" = "light"): PageSpec => ({
   root: `app comfortable ${theme}`,
   styles: [PRAGMA_CSS],
@@ -241,14 +231,14 @@ export const vanillaPage = (vanilla: VanillaVersion): PageSpec => ({
 });
 
 /**
- * The removal step of README rule 19: Vanilla gone, the adapter not yet. The
- * document has dropped `coexist` by then (rule 11); `flipped: false` is the
- * violation, the marker still on.
+ * The removal of README rule 19, Vanilla gone: with this package still loaded
+ * (`adapter`), or swapped for `@canonical/styles` (`styles`). Nothing on any
+ * root changes between the two.
  */
-export const removalPage = (flipped = true): PageSpec => ({
-  root: `${flipped ? "" : "coexist "}app comfortable light`,
-  styles: [layersCss, PRAGMA_CSS, adapterCss],
-  body: PRAGMA_BLOCK + THEME_BLOCK,
+export const removalPage = (variant: "adapter" | "styles"): PageSpec => ({
+  root: "app comfortable light",
+  styles: variant === "adapter" ? [layersCss, MIXED_PRAGMA_CSS] : [PRAGMA_CSS],
+  body: PRAGMA_BLOCK + THEME_BLOCK + REMOVAL_BLOCK,
 });
 
 /**
@@ -449,4 +439,4 @@ export const importantDeclarations = (css: string): string[] => {
   return found;
 };
 
-export { adapterCss, layersCss, parse, stylesCss };
+export { adapterCss, coreCss, elementsCss, layersCss, parse, stylesCss };

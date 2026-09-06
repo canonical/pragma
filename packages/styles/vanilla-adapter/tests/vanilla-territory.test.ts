@@ -5,9 +5,7 @@ import {
   idsIn,
   isLayoutOutput,
   mixedPage,
-  PRAGMA_IS_SCOPED,
   render,
-  SKIP_REASON,
   VANILLA_BLOCK,
   VANILLA_VERSIONS,
   vanillaPage,
@@ -45,17 +43,16 @@ describe.each(VANILLA_VERSIONS)(
       expect(root.boxSizing).toBe("border-box");
     });
 
-    it("keeps Vanilla's root line-height", async (ctx) => {
-      // It loses to pragma's unlayered normalize until the scoped release (D1).
-      ctx.skip(!PRAGMA_IS_SCOPED, SKIP_REASON);
+    it("keeps Vanilla's root line-height", async () => {
+      // Pragma's reset is confined to the islands by elements.css, so Vanilla's
+      // `html` rule stands on the document element.
       const mixed = await render(mixedPage(version));
       expect(computed(mixed, mixed.documentElement).lineHeight).toBe("24px");
     });
 
     it.for([1280, 1700])(
       "equals the Vanilla-only page for every longhand at %ipx, html and body included",
-      async (width, ctx) => {
-        ctx.skip(!PRAGMA_IS_SCOPED, SKIP_REASON);
+      async (width) => {
         const mixed = await render(mixedPage(version), width);
         const vanilla = await render(vanillaPage(version), width);
         const failures = [

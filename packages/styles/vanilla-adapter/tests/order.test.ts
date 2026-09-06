@@ -2,17 +2,18 @@ import { describe, expect, it } from "vitest";
 import {
   adapterCss,
   computed,
+  coreCss,
   differences,
+  elementsCss,
   idsIn,
   importantDeclarations,
   layerNames,
   layersCss,
+  MIXED_PRAGMA_CSS,
   mixedPage,
   PRAGMA_CSS,
-  PRAGMA_IS_SCOPED,
   parse,
   render,
-  SKIP_REASON,
   stylesCss,
 } from "./support/pages.js";
 
@@ -35,11 +36,29 @@ const MIXED_ORDER = [
 
 const ADAPTER_ONLY = ["vanilla", "boundary", "adapter", "app"];
 
+/** Pragma's own order: the mixed order minus the adapter's four layers. */
+const PRAGMA_ORDER = MIXED_ORDER.filter((name) => !ADAPTER_ONLY.includes(name));
+
+/** The layers elements.css carries, in pragma's order. */
+const ELEMENT_LAYERS = ["normalize", "ds.reset", "ds.typography"];
+
 /** Whether a layer name is one of the declared ones or a sublayer of one. */
 const isDeclared = (name: string): boolean =>
   MIXED_ORDER.some(
     (declared) => name === declared || name.startsWith(`${declared}.`),
   );
+
+/** A stylesheet text without its comments. */
+const uncommented = (css: string): string =>
+  css.replace(/\/\*[\s\S]*?\*\//g, "");
+
+/** A selector list split on the commas outside parentheses. */
+const selectorsOf = (rule: CSSStyleRule): string[] =>
+  rule.selectorText.split(/,\s*(?![^()]*\))/);
+
+/** A stylesheet text without its `@import` statements, which a constructed sheet drops. */
+const withoutImports = (css: string): string =>
+  css.replace(/^\s*@import[^;]*;/gm, "");
 
 describe("the order contract", () => {
   it("layers.css is a single statement naming the fourteen layers in order", () => {
@@ -49,8 +68,20 @@ describe("the order contract", () => {
     expect(layerNames(layersCss)).toEqual(MIXED_ORDER);
   });
 
-  it("adapter.css is the boundary block and the bridge block, and Chromium keeps the boundary's list whole", () => {
-    const blocks = Array.from(parse(adapterCss).cssRules).filter(
+  it("adapter.css opens with its two imports, then the boundary block and the bridge block, and Chromium keeps the boundary's list whole", () => {
+    // The two imports are the first rules of the file (README rule 4): core.css
+    // first, so that pragma's tokens arrive before the copy that reads them.
+    const statements = uncommented(adapterCss)
+      .split(";")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    expect(statements.slice(0, 2)).toEqual([
+      '@import url("@canonical/styles/core.css")',
+      '@import url("./elements.css")',
+    ]);
+    const blocks = Array.from(
+      parse(withoutImports(adapterCss)).cssRules,
+    ).filter(
       (rule): rule is CSSLayerBlockRule => rule instanceof CSSLayerBlockRule,
     );
     expect(blocks.map((block) => block.name)).toEqual(["boundary", "adapter"]);
@@ -62,34 +93,79 @@ describe("the order contract", () => {
     if (!(list instanceof CSSStyleRule)) return;
     expect(list.selectorText).toContain("::placeholder");
     expect(list.selectorText).toContain("::-webkit-slider-thumb");
+    expect(list.selectorText).not.toContain("html");
     expect(list.style.cssText).toBe("all: revert;");
     const rule = bridge?.cssRules[0];
     expect(rule).toBeInstanceOf(CSSStyleRule);
     if (!(rule instanceof CSSStyleRule)) return;
     expect(bridge?.cssRules.length).toBe(1);
+    expect(rule.selectorText).toBe(":where(.ds:not(.ds *))");
     expect(rule.style.colorScheme).toBe(
       "var(--vf-theme-light, light) var(--vf-theme-dark, dark)",
     );
   });
 
-  it("every layer pragma's CSS uses is in the statement, and none is anonymous", () => {
-    const names = layerNames(PRAGMA_CSS);
-    expect(names.length).toBeGreaterThan(0);
-    expect(names.filter((name) => !isDeclared(name))).toEqual([]);
+  it("elements.css is the three element layers, every rule confined to an island", () => {
+    const blocks = Array.from(parse(elementsCss).cssRules);
+    expect(
+      blocks.map((rule) =>
+        rule instanceof CSSLayerBlockRule ? rule.name : rule.cssText,
+      ),
+    ).toEqual(ELEMENT_LAYERS);
+    const loose: string[] = [];
+    let scoped = 0;
+    for (const block of blocks) {
+      if (!(block instanceof CSSLayerBlockRule)) continue;
+      for (const rule of block.cssRules) {
+        if (rule instanceof CSSScopeRule) {
+          expect(rule.start).toBe(".ds");
+          scoped += rule.cssRules.length;
+        } else if (rule instanceof CSSStyleRule) {
+          // The universal box-sizing rule, outside its block by design.
+          for (const selector of selectorsOf(rule))
+            if (!selector.startsWith(":where(.ds, .ds *)"))
+              loose.push(`${block.name} ${selector}`);
+        } else {
+          loose.push(`${block.name} ${rule.cssText.slice(0, 60)}`);
+        }
+      }
+    }
+    expect(loose).toEqual([]);
+    // Chromium parses the scope blocks rather than dropping them.
+    expect(scoped).toBeGreaterThan(20);
   });
 
-  it("pragma's CSS carries no !important (README rule 17)", () => {
-    expect(importantDeclarations(PRAGMA_CSS)).toEqual([]);
-    expect(PRAGMA_CSS.match(/!\s*important/gi) ?? []).toEqual([]);
+  it("every layer pragma's CSS uses is in the statement, and none is anonymous, on both kinds of page", () => {
+    for (const css of [PRAGMA_CSS, MIXED_PRAGMA_CSS]) {
+      const names = layerNames(css);
+      expect(names.length).toBeGreaterThan(0);
+      expect(names.filter((name) => !isDeclared(name))).toEqual([]);
+    }
   });
 
-  it("@canonical/styles opens with its own statement, the mixed order minus the adapter's layers", (ctx) => {
-    ctx.skip(!PRAGMA_IS_SCOPED, SKIP_REASON);
-    const first = parse(stylesCss).cssRules[0];
-    expect(first).toBeInstanceOf(CSSLayerStatementRule);
-    if (!(first instanceof CSSLayerStatementRule)) return;
-    expect(Array.from(first.nameList)).toEqual(
-      MIXED_ORDER.filter((name) => !ADAPTER_ONLY.includes(name)),
+  it("pragma's CSS carries no !important on either kind of page (README rule 17)", () => {
+    // The CSSOM is the check; the text match is a second look at what a
+    // browser might read differently, with the comments taken out, because
+    // adapter.css's own comment names Vanilla's important declarations.
+    for (const css of [PRAGMA_CSS, MIXED_PRAGMA_CSS]) {
+      expect(importantDeclarations(css)).toEqual([]);
+      expect(uncommented(css).match(/!\s*important/gi) ?? []).toEqual([]);
+    }
+  });
+
+  it("@canonical/styles and core.css open with pragma's own statement, the mixed order minus the adapter's four", () => {
+    // The mixed page sees the adapter's statement first and pragma's later,
+    // through core.css. A later statement can add layers but never reorder the
+    // ones already fixed; this one adds none and lists them in the same order,
+    // so it changes nothing.
+    for (const css of [stylesCss, coreCss]) {
+      const first = parse(css).cssRules[0];
+      expect(first).toBeInstanceOf(CSSLayerStatementRule);
+      if (!(first instanceof CSSLayerStatementRule)) return;
+      expect(Array.from(first.nameList)).toEqual(PRAGMA_ORDER);
+    }
+    expect(MIXED_ORDER.filter((name) => PRAGMA_ORDER.includes(name))).toEqual(
+      PRAGMA_ORDER,
     );
   });
 

@@ -9,10 +9,8 @@ import {
   mixedPage,
   PRAGMA_BLOCK,
   PRAGMA_HONOURS_REDUCED_MOTION,
-  PRAGMA_IS_SCOPED,
   pragmaPage,
   render,
-  SKIP_REASON,
   VANILLA_VERSIONS,
   vanillaPage,
 } from "./support/pages.js";
@@ -59,8 +57,9 @@ const LEAK_PROPERTIES = [
 
 /**
  * What a pragma root inherits from the page around it. The boundary cannot
- * revert inheritance; pragma's territory root declares these (VC.25), and this
- * list is the property set that declaration must cover.
+ * revert inheritance; the island root declares these in the confined copy of
+ * pragma's baseline (VC.25), and this list is the property set that
+ * declaration must cover.
  */
 const ROOT_INHERITED = [
   "font-family",
@@ -148,9 +147,11 @@ describe.each(VANILLA_VERSIONS)(
       expect(computed(mixed, "neg-label").display).toBe("inline");
     });
 
-    it("reverts every Vanilla rule once the document root drops `coexist`", async () => {
+    it("makes the whole document pragma territory if `ds` is put on the root, which rule 10 forbids while Vanilla is in the page", async () => {
+      // Pragma territory is wherever `ds` is, and nothing else: the boundary
+      // follows the class, so a root that carries it reverts every Vanilla rule.
       const flipped = await render(
-        mixedPage(version, { root: "app comfortable light" }),
+        mixedPage(version, { root: "ds app comfortable light" }),
       );
       expect(computed(flipped, "vf-input").marginBottom).toBe("0px");
       expect(computed(flipped, "vf-button").marginBottom).toBe("0px");
@@ -189,15 +190,13 @@ describe.each(VANILLA_VERSIONS)(
       expect(failures).toEqual([]);
     });
 
-    it("inherits pragma's baseline at the root, not Vanilla's", async (ctx) => {
-      ctx.skip(!PRAGMA_IS_SCOPED, SKIP_REASON);
+    it("inherits pragma's baseline at the root, not Vanilla's", async () => {
       const mixed = await render(mixedPage(version));
       const pragma = await render(pragmaPage());
       expect(compare(mixed, pragma, ROOT_INHERITED)).toEqual([]);
     });
 
-    it("computes every longhand inside pragma territory as on a pragma-only page", async (ctx) => {
-      ctx.skip(!PRAGMA_IS_SCOPED, SKIP_REASON);
+    it("computes every longhand inside pragma territory as on a pragma-only page", async () => {
       const mixed = await render(mixedPage(version));
       const pragma = await render(pragmaPage());
       const failures = idsIn(PRAGMA_BLOCK).flatMap((id) =>

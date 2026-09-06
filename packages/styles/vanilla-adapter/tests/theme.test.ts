@@ -3,11 +3,9 @@ import {
   computed,
   emulate,
   mixedPage,
-  PRAGMA_IS_SCOPED,
   pragmaPage,
   removalPage,
   render,
-  SKIP_REASON,
   VANILLA_VERSIONS,
 } from "./support/pages.js";
 
@@ -52,11 +50,9 @@ describe.each(VANILLA_VERSIONS)("theme-bridge (Vanilla %s)", (version) => {
 
   // The colour is the resolved value of `--color-text`, a `light-dark()` token
   // whose computed value is the same text under both schemes; only the colour
-  // shows which side was taken. It follows the scheme once pragma's territory
-  // root declares `color: var(--color-text)` (VC.25); until then the root
-  // inherits Vanilla's.
-  it("resolves token colours in every theme case as on the matching pragma page", async (ctx) => {
-    ctx.skip(!PRAGMA_IS_SCOPED, SKIP_REASON);
+  // shows which side was taken. It follows the scheme because the island root
+  // declares `color: var(--color-text)` in the confined copy (VC.25).
+  it("resolves token colours in every theme case as on the matching pragma page", async () => {
     const mixed = await render(mixedPage(version));
     const pages = {
       light: await render(pragmaPage("light")),
@@ -83,17 +79,36 @@ describe.each(VANILLA_VERSIONS)("theme-bridge (Vanilla %s)", (version) => {
 });
 
 describe("removal (README rule 19)", () => {
-  it("keeps the pin on every root while the adapter outlives Vanilla, because the document has dropped `coexist`", async () => {
-    const page = await render(removalPage());
-    expect(computed(page, page.documentElement).colorScheme).toBe("light");
-    expect(computed(page, "ds-root").colorScheme).toBe("light");
-    expect(computed(page, "theme-dark").colorScheme).toBe("light");
-  });
-
-  it("lets every root follow the operating system if Vanilla is removed while `coexist` is still on the root", async () => {
-    const page = await render(removalPage(false));
+  it("with the adapter still loaded, every outermost island follows the operating system and pragma's theme class on a root stays ignored", async () => {
+    // No Vanilla theme is left for the bridge to read, so it writes pragma's
+    // default, `light dark`, on every outermost island; the pin on <html> does
+    // not reach them, and a nested root inherits from its island.
+    const page = await render(removalPage("adapter"));
     expect(computed(page, page.documentElement).colorScheme).toBe("light");
     expect(computed(page, "ds-root").colorScheme).toBe("light dark");
+    expect(computed(page, "ds-nested").colorScheme).toBe("light dark");
     expect(computed(page, "theme-dark").colorScheme).toBe("light dark");
+    expect(computed(page, "removal-dark").colorScheme).toBe("light dark");
+  });
+
+  it("with the adapter still loaded, a dark operating system renders the islands dark", async () => {
+    await emulate({ colorScheme: "dark" });
+    const page = await render(removalPage("adapter"));
+    const dark = await render(pragmaPage("dark"));
+    const light = await render(pragmaPage("light"));
+    expect(computed(page, page.documentElement).colorScheme).toBe("light");
+    expect(computed(page, "ds-p").color).toBe(computed(dark, "ds-p").color);
+    expect(computed(page, "ds-p").color).not.toBe(
+      computed(light, "ds-p").color,
+    );
+  });
+
+  it("with the adapter swapped for @canonical/styles, every root follows the theme classes", async () => {
+    const page = await render(removalPage("styles"));
+    expect(computed(page, page.documentElement).colorScheme).toBe("light");
+    expect(computed(page, "ds-root").colorScheme).toBe("light");
+    expect(computed(page, "ds-nested").colorScheme).toBe("light");
+    expect(computed(page, "theme-dark").colorScheme).toBe("light");
+    expect(computed(page, "removal-dark").colorScheme).toBe("dark");
   });
 });
