@@ -1,6 +1,6 @@
 import { Button } from "@canonical/react-ds-global";
 import type React from "react";
-import { useSidePanelContext } from "../SidePanelContext.js";
+import { useSidePanelContext } from "../../hooks/index.js";
 import type { HeaderProps } from "./types.js";
 import "./styles.css";
 
@@ -13,6 +13,8 @@ const componentCssClassName = "ds side-panel-header";
  * Owns the heading the panel is labelled by, and the close button — which is
  * wired through context, so rendering this outside a SidePanel yields a plain
  * heading rather than an error.
+ *
+ * @implements ds:apps.subcomponent.side_panel-header
  */
 const Header = ({
   children,

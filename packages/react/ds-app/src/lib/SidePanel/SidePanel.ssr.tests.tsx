@@ -11,10 +11,16 @@ describe("SidePanel SSR", () => {
         <SidePanel.Footer>Actions</SidePanel.Footer>
       </SidePanel>,
     );
-    expect(html).toContain("ds side-panel");
-    expect(html).toContain("ds side-panel-header");
-    expect(html).toContain("ds side-panel-content");
-    expect(html).toContain("ds side-panel-footer");
+    /*
+      Matched as whole class attributes rather than with `toContain`: every
+      part's class starts with the panel's own, so `toContain("ds side-panel")`
+      would pass on the strength of the header alone even if the dialog's
+      class were gone.
+    */
+    expect(html).toContain('class="ds side-panel"');
+    expect(html).toContain('class="ds side-panel-header"');
+    expect(html).toContain('class="ds side-panel-content"');
+    expect(html).toContain('class="ds side-panel-footer"');
     expect(html).toContain("Panel title");
     expect(html).toContain("Test content");
     expect(html).toContain("Actions");
