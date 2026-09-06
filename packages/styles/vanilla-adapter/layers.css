@@ -28,14 +28,25 @@
  *                  purpose: sublayers sort inside their parent, and `ds` takes
  *                  its place in the order at its first mention (`ds.tokens`),
  *                  so a top-level layer written here would not sit here at all
- *                  but above every `ds.*` sublayer, the component tiers
+ *                  but above every `ds.*` sublayer, the component layers
  *                  included, and a component's own `color-scheme` could never
  *                  beat the bridge (measured: a modal's `dark` computed `light`)
- *   ds.components  every pragma component stylesheet, in one of two tiers:
- *   ds.components.global  the global component packages
- *   ds.components.app     the app-tier packages, which beat the global tier
- *                  (both tiers are named here so that their order never depends
- *                  on which component sheet the page happens to load first)
+ *   ds.components  every pragma component stylesheet, in the layer of its tier.
+ *                  The five below follow the design system's tier tree, flat,
+ *                  lowest first, so that a higher tier's rule for a component
+ *                  beats a lower tier's by layer whatever order the page loads
+ *                  the sheets in (pragma-adrs F, VC.31):
+ *   ds.components.global         the global component packages
+ *   ds.components.sites          the sites tier
+ *   ds.components.documentation  the documentation tier
+ *   ds.components.stores         the stores tier
+ *   ds.components.apps           the applications tier
+ *                  A package below a tier declares its own layer, flat beside
+ *                  these (`@layer ds.components.apps-lxd;`), first in its own
+ *                  entry; by appearing later than this statement it sorts
+ *                  above the five, and still below `app`. Nothing is written
+ *                  directly into `ds.components`: a rule there would sit in its
+ *                  implicit final sublayer, above every tier
  *   app            the application's own pragma-era CSS, whatever its context class
  *
  * `vanilla` is the lowest layer: in Vanilla territory nothing pragma ships
@@ -43,12 +54,12 @@
  * only as the confined copy in this package's elements.css, and pragma's other
  * two entries (tokens.css, layout.css) are custom properties or component
  * classes. Pragma itself confines nothing: its own elements.css styles the
- * whole page, as a pragma-only page wants. `boundary` sits directly above `vanilla` so that
- * inside pragma territory every Vanilla declaration is reverted before pragma's
- * layers apply. Pragma's own statement, the same list without `vanilla`,
- * `boundary`, `ds.adapter` and `app`, arrives later at the top of each of its
- * entries and changes nothing: a later statement can add names but never
- * reorder the ones already fixed, and it adds none.
+ * whole page, as a pragma-only page wants. `boundary` sits directly above
+ * `vanilla` so that inside pragma territory every Vanilla declaration is
+ * reverted before pragma's layers apply. Pragma's own statement, the same list
+ * without `vanilla`, `boundary`, `ds.adapter` and `app`, arrives later at the
+ * top of each of its entries and changes nothing: a later statement can add
+ * names but never reorder the ones already fixed, and it adds none.
  */
 @layer vanilla,
   boundary,
@@ -62,5 +73,8 @@
   ds.adapter,
   ds.components,
   ds.components.global,
-  ds.components.app,
+  ds.components.sites,
+  ds.components.documentation,
+  ds.components.stores,
+  ds.components.apps,
   app;

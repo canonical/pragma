@@ -36,7 +36,7 @@ const ELEMENT_LAYERS = ["normalize", "ds.reset", "ds.typography"];
 
 /** Pragma's own order statement, which each of its entries opens with. */
 const PRAGMA_ORDER =
-  "@layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers, ds.surfaces, ds.states, ds.components, ds.components.global, ds.components.app";
+  "@layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers, ds.surfaces, ds.states, ds.components, ds.components.global, ds.components.sites, ds.components.documentation, ds.components.stores, ds.components.apps";
 
 /** The scope prelude every confined block uses. */
 const SCOPE = "(.ds)";
@@ -570,7 +570,7 @@ describe("@canonical/styles exposes what a mixed page needs", () => {
   const tokens = entry("tokens.css");
   const layout = entry("layout.css");
 
-  it("every entry opens with pragma's ten-name statement, the mixed order minus the adapter's four", () => {
+  it("every entry opens with pragma's thirteen-name statement, the mixed order minus the adapter's four", () => {
     // The adapter's statement comes first on a mixed page; each entry repeats
     // pragma's own, which can add layers but never reorder the ones already
     // fixed, and adds none.
