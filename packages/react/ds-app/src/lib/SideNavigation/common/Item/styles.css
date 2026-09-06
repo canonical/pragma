@@ -5,10 +5,10 @@
  * text/icon colour) is deferred to PR2 (token pairings). A bare focus outline
  * is included for keyboard focus visibility.
  *
- * Layer: ds.components.app (@canonical/styles README, "Cascade layers").
+ * Layer: ds.components.apps (@canonical/styles README, "Cascade layers").
  */
 
-@layer ds.components.app {
+@layer ds.components.apps {
   .ds.side-navigation-item {
     list-style: none;
 

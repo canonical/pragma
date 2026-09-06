@@ -4,10 +4,10 @@
  * Footer can compose NavTree without re-declaring its internals. Structural
  * only; colour/visual tokens are deferred to PR2.
  *
- * Layer: ds.components.app (@canonical/styles README, "Cascade layers").
+ * Layer: ds.components.apps (@canonical/styles README, "Cascade layers").
  */
 
-@layer ds.components.app {
+@layer ds.components.apps {
   .ds.nav-tree {
     display: contents;
 

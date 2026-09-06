@@ -1,5 +1,5 @@
 /**
- * Every component stylesheet this package ships sits in `ds.components.app`,
+ * Every component stylesheet this package ships sits in `ds.components.apps`,
  * and nothing sits outside it.
  *
  * Nothing else in the repository catches an unwrapped sheet: biome has no such
@@ -25,7 +25,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const LAYER = "ds.components.app";
+const LAYER = "ds.components.apps";
 
 /** `@property` and `@font-face` blocks, the two things allowed above the block. */
 const REGISTRATION = /@(?:property|font-face)\b[^{]*\{[^}]*\}/g;

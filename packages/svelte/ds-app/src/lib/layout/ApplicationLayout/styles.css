@@ -1,7 +1,7 @@
 /* Ported from @canonical/react-ds-app ApplicationLayout
- * Layer: ds.components.app (@canonical/styles README, "Cascade layers"). */
+ * Layer: ds.components.apps (@canonical/styles README, "Cascade layers"). */
 
-@layer ds.components.app {
+@layer ds.components.apps {
   .ds.application-layout {
     /* Application shell: navigation rail (min-content) + content (1fr), per
   	   the ontology instance apps.layout.application_layout. The rail/content

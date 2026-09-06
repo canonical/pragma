@@ -10,10 +10,10 @@
  * doesn't push the header off-grid. The circle-of-friends mark is a baseline-
  * unit square, offset from the top by a baseline-unit margin.
  *
- * Layer: ds.components.app (@canonical/styles README, "Cascade layers").
+ * Layer: ds.components.apps (@canonical/styles README, "Cascade layers").
  */
 
-@layer ds.components.app {
+@layer ds.components.apps {
   .ds.canonical-logo {
     /* Mark geometry in baseline units (bU = --space-baseline). */
     --mark-size: 2; /* mark side, in bU */

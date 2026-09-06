@@ -35,7 +35,7 @@ body,
  * the row template resolves on every isolated story.
  *
  * This harness file is unlayered and the component's sheet is in
- * `ds.components.app`, so where both are on the page — the root SideNavigation
+ * `ds.components.apps`, so where both are on the page — the root SideNavigation
  * stories — these two declarations now win rather than merely coming last. The
  * values are identical, so nothing computes differently today, but the harness is
  * the authority for them, in every story and in every Chromatic screenshot of
