@@ -452,6 +452,30 @@ export const directRulesIn = (css: string, layer: string): string[] => {
 };
 
 /**
+ * Every rule in a stylesheet that does something, at any depth — a style rule, a
+ * keyframes block, a font face, a property registration — labelled as written.
+ *
+ * Counting the top-level rules instead would answer a different question: a file
+ * reduced to `@layer ds.tokens {}` has one top-level rule and delivers nothing,
+ * which is exactly the case the import check exists to catch.
+ */
+export const effectiveRules = (css: string): string[] => {
+  const found: string[] = [];
+  const walk = (rules: CSSRuleList): void => {
+    for (const rule of rules) {
+      const label = sortedByLayer(rule);
+      if (label !== undefined) found.push(label);
+      // A keyframes rule holds keyframes, not rules that stand on their own.
+      if (rule instanceof CSSKeyframesRule) continue;
+      const children = childRules(rule);
+      if (children) walk(children);
+    }
+  };
+  walk(parse(css).cssRules);
+  return found;
+};
+
+/**
  * Which of the declared layers a stylesheet uses. A parent counts as used when a
  * sublayer of it carries rules: `ds.components` earns its place in the statement
  * by ordering its tiers, not by holding rules of its own.
@@ -629,8 +653,8 @@ const isSourceName = (token: string): boolean =>
 
 /**
  * Every file the README's two layer tables name, merged. A file may appear in
- * more than one row — `spacing.css` puts its tokens in one layer and its
- * container rule in another — so what the test binds is one answer per file and
+ * more than one row — `overflow.css` puts its root default in one layer and its
+ * surface channel in another — so what the test binds is one answer per file and
  * per layer: the layers of a file are the union of its rows, and a file selects
  * elements in a layer when a row naming that layer says yes. The README says as
  * much, because reordering two rows of the same file changes nothing a browser

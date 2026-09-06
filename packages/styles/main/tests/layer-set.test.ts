@@ -43,6 +43,7 @@ import {
   ENTRIES,
   ENTRIES_RAW,
   EXTERNAL_SOURCES,
+  effectiveRules,
   elementRulesIn,
   entryCss,
   entryRaw,
@@ -377,7 +378,10 @@ describe("every file an entry imports earns its import", () => {
       // the page. One is: the generated importance modifiers, which the design
       // token table records as opening no layer. Every other one has to earn its
       // place, so the next file that quietly empties is loud.
-      const rules = parse(mustResolve(name)).cssRules.length;
+      //
+      // Counted inside the blocks, not at the top level: a file reduced to
+      // `@layer ds.tokens {}` has a top-level rule and delivers nothing.
+      const rules = effectiveRules(mustResolve(name)).length;
       expect([name, rules > 0 || documentedEmpty.has(name)]).toEqual([
         name,
         true,
@@ -387,7 +391,7 @@ describe("every file an entry imports earns its import", () => {
     expect([...documentedEmpty]).toEqual([
       "@canonical/design-tokens/dist/modifiers.importance.css",
     ]);
-    expect(parse(importanceCss).cssRules.length).toBe(0);
+    expect(effectiveRules(importanceCss)).toEqual([]);
   });
 
   it("no stylesheet in src/ is orphaned", () => {

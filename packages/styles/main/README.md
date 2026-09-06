@@ -69,7 +69,7 @@ above. The other three are that stylesheet in parts.
 | Entry | What it is | Layers it opens |
 | --- | --- | --- |
 | `@canonical/styles` | everything: the values, the element rules and the layout presets. | `normalize`, `ds.tokens`, `ds.reset`, `ds.typography`, `ds.modifiers`, `ds.surfaces`, `ds.states`, `ds.components.global` |
-| `@canonical/styles/tokens.css` | every custom property the design system declares, and not one rule that styles an element. Import it and nothing changes on the page until something reads a value from it. | `ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states` |
+| `@canonical/styles/tokens.css` | every custom property the design system declares, and no rule that styles an element by tag name. One property does reach the page on its own: `color-scheme` on the document root, which is what every `light-dark()` value resolves against, and which native controls and scrollbars follow — see the [Design Tokens](#design-tokens) table, where the theme file is the one row answering yes to the selects-elements column. Everything else waits until something reads a value from it. | `ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states` |
 | `@canonical/styles/elements.css` | every rule the design system applies to a plain element: the reset, the root's baseline, and the typography with its baseline engine. | `normalize`, `ds.reset`, `ds.typography` |
 | `@canonical/styles/layout.css` | the layout presets — `grid`, `subgrid`, `responsive`, `intrinsic` and `content-flow` — which claim those five class names in a page's namespace. | `ds.components.global` |
 
