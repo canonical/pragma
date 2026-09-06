@@ -69,7 +69,7 @@ above. The other three are that stylesheet in parts.
 | Entry | What it is | Layers it opens |
 | --- | --- | --- |
 | `@canonical/styles` | everything: the values, the element rules and the layout presets. | `normalize`, `ds.tokens`, `ds.reset`, `ds.typography`, `ds.modifiers`, `ds.surfaces`, `ds.states`, `ds.components.global` |
-| `@canonical/styles/tokens.css` | every custom property the design system declares, and no rule that styles an element by tag name. One property does reach the page on its own: `color-scheme` on the document root, which is what every `light-dark()` value resolves against, and which native controls and scrollbars follow — see the [Design Tokens](#design-tokens) table, where the theme file is the one row answering yes to the selects-elements column. Everything else waits until something reads a value from it. | `ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states` |
+| `@canonical/styles/tokens.css` | every custom property the design system declares, and not one rule that selects an element. Nothing here changes the page until something reads a value from it, with one exception noted below. | `ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states` |
 | `@canonical/styles/elements.css` | every rule the design system applies to a plain element: the reset, the root's baseline, and the typography with its baseline engine. | `normalize`, `ds.reset`, `ds.typography` |
 | `@canonical/styles/layout.css` | the layout presets — `grid`, `subgrid`, `responsive`, `intrinsic` and `content-flow` — which claim those five class names in a page's namespace. | `ds.components.global` |
 
@@ -77,6 +77,17 @@ Eight, four, three and one. The whole opens every layer any part opens, and the
 three parts between them open every layer the whole does — the element layers are
 exactly what `tokens.css` and `layout.css` leave out, which is the split's whole
 point. `tests/layer-set.test.ts` reads that last column back out of a browser.
+
+One exception to "changes nothing", and it is worth knowing before you import `tokens.css`. The design
+tokens' generated theme sheet declares `color-scheme` on `:root`, `.light` and `.dark` alongside the
+colour tokens, and that property is not inert: it decides the colour of the canvas, the form controls,
+the scrollbars and the system colours, whether or not anything reads a token, and on a mixed page an
+element of the other framework's carrying `light` or `dark` picks it up too. It cannot be split out
+here — the sheet is generated and the declarations sit in the same rules as the tokens — so separating
+them is a change to the tokens package's emitter, tracked as PRA-149. An application that must not have
+it declares `color-scheme` itself, in a layer above `ds.modifiers` or unlayered. The entries test
+allows exactly those three declarations and no other non-custom property, so nothing else can join
+them unnoticed.
 
 The parts exist for one reason. A page that also runs another CSS framework cannot take the element
 rules: the other framework has its own `p` rule, and only one of the two can own `line-height`. Such a

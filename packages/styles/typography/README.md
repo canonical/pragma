@@ -22,7 +22,9 @@ That's it. All `h1`–`h6` and `p` elements will align to the baseline grid. The
 }
 ```
 
-`rem` is the usual choice, because the grid then follows the reader's own font size: a reader who sets a larger base size gets a proportionally larger grid, and the type stays on it. `px` pins the grid to device pixels instead, which is what you want if the grid has to line up with something measured in pixels — a background image, or a rule drawn by another system.
+`rem` is the usual choice, because the grid then follows the reader's own font size: a reader who sets a larger base size gets a proportionally larger grid, and the type stays on it. `px` fixes the grid in CSS pixels instead, so it stays the same whatever the reader's font size, which is what you want when the grid has to line up with something else measured the same way — a background image, or a rule drawn by another system.
+
+A CSS pixel is a reference unit, not a device pixel: on a high-density display one CSS pixel covers several physical ones, and the browser's zoom changes how many. `px` buys you a grid that does not move with the font size; it does not buy alignment with the display's own pixels.
 
 **Declare it nowhere and the grid is `0.25rem`, four pixels at the usual root font size.** Every read of the variable in this package carries that same fallback, so an engine linked on its own still snaps text to a grid rather than doing nothing. `@canonical/styles` declares `--baseline-height` itself, so an application using the full stylesheet never sees the fallback.
 
@@ -46,16 +48,18 @@ Not for what it includes, and never for what it leaves out.
 
 Each of the five is an entry point, and the name in the manifest is the name of the concept.
 
-### Leaves import nothing; entries compose
+### Leaves import no sibling; entries compose
 
-The four leaves import nothing at all. Only `index.css` imports, and only the three it composes.
+No leaf imports another file of this package. Only `index.css` does, and only the three it composes.
+
+One leaf imports outside the package: `tokens.css` pulls in `@canonical/design-tokens`' typographic scale, the file whose names it shims. That is a dependency rather than a sibling, and it is the only one — the engines and `elements.css` import nothing at all.
 
 That is not tidiness. A browser treats every `@import` as its own stylesheet and de-duplicates
 nothing, so a file reached by two paths is fetched, parsed and applied twice. The first cut of this
 package had `elements.css` importing `tokens.css` while the engines imported the scale as well, and
 the resolved stylesheet carried the typographic scale twice — 48,270 duplicated bytes, a quarter of
-the entry. Leaves that import nothing make one path per file true by construction rather than by
-vigilance.
+the entry. Leaves that import no sibling make one path per file true by construction rather than by
+vigilance, and the one outside import is reached from `tokens.css` alone.
 
 What it asks of a consumer is small and worth stating: **link a file and you get what that file is,
 and you declare what it reads.** An engine on its own reads `--baseline-height` and `--font-size`;
@@ -103,7 +107,11 @@ and this package's `exports` map is the contract for what a consumer may link.
 
 Two facts about the CSS cascade shape this package.
 
-A rule in no cascade layer outranks a rule in any layer, whatever the selectors on either side. And within one layer, two rules of equal specificity are settled by which one loaded second. This package used to ship its rules in no layer at all, at specificity `(0,0,1)` — `p`, `h1`, `body` — so an application's own `p` rule tied with this one and the bundler's output order decided the winner, one property at a time. Layered, the design system loses to an application's unlayered CSS, deliberately and predictably, and beats the layers below it, also deliberately.
+A rule in no cascade layer outranks a rule in any layer, whatever the selectors on either side. And within one layer, two rules of equal specificity are settled by which one loaded second.
+
+This package used to ship every one of its rules in no layer at all, so the first fact applied to all of them: nothing an application wrote in a layer could beat them. The second fact bit hardest on the element selectors, `body`, `h1`–`h6` and `p`, which sit at specificity `(0,0,1)`: an application's own `p` rule tied with this one exactly, and the bundler's output order decided the winner, one property at a time. The rest of the file is more specific than that — `.p`, `.code` and `.editorial` are classes, `:root` is a pseudo-class, and `.editorial h1` is a class and an element together — so those won on specificity rather than by luck, which is its own problem when an application meant to override them.
+
+Layered, the design system loses to an application's unlayered CSS, deliberately and predictably, and beats the layers below it, also deliberately.
 
 | What | Layer |
 | --- | --- |
@@ -210,7 +218,7 @@ The most modern approach. Uses `text-box: trim-both cap alphabetic` to remove ha
 
 `text-box-trim` binds every column. The `cap` unit is in the list because the nudge measures the cap height itself, `mod(calc(-1 * 1cap), …)`, so this engine needs it as much as the cap engine does.
 
-Falls back gracefully: if `text-box-trim` is unsupported, the element keeps its default half-leading and the nudge still applies — on that reading the floor is the cap engine's, Chrome 125, Safari 17.2, Firefox 118.
+**It does not fall back to the grid.** Below the floor the trim is skipped and the element gets its half-leading back, but the nudge that survives was computed for a trimmed box and never reads the line height, so the text lands off the grid by a fraction of a unit — measured, 6.516px on a 16px serif at a 24px line, whatever the unit is. Use the cap engine for those browsers.
 
 ## Consumer Contract
 
@@ -353,6 +361,8 @@ Read the table by engine, not row by row — an engine's floor is the highest nu
 | `baseline-metrics.css` | 125 | 15.4 | 118 | `mod()` throughout |
 | `baseline-trim.css` | 133 | 18.2 | 154 | `text-box-trim` throughout |
 
-One caveat on that table. `text-box-trim` is soft: below it the trim is skipped and the element keeps its default half-leading, but the nudge still applies and the grid still holds, so the text-trim engine degrades to the cap engine's floor — Chrome 125, Safari 17.2, Firefox 118 — rather than failing. It reads `1cap` for its nudge, so it needs the `cap` unit wherever it runs.
+One caveat on that table, and it is a real one.
 
-`mod()` is the hard one. Below it no engine computes a nudge and text falls back to its natural leading.
+**Below `text-box-trim`, the text-trim engine does not hold the grid.** The trim is skipped, the element gets its half-leading back, and the nudge that survives — `mod(calc(-1 * 1cap), unit)` — was computed for a trimmed box and never reads the line height, so it cannot compensate. Measured in Chromium with a 16px serif on a 24px line: with the trim applied the first baseline sits at 12px on a 4px grid, 16px on an 8px grid and 12px on a 12px grid, every one a whole number of units; with the trim ignored it moves 6.516px in each case, which is 1.63, 0.81 and 0.54 units. The element's outer height stays a whole number of units, so blocks still stack on the grid, but the text inside them does not sit on it. A browser below the floor should use the cap engine, whose nudge is computed from the untrimmed line box.
+
+`mod()` is the hard floor. Below it no engine computes a nudge at all and text falls back to its natural leading.

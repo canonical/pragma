@@ -30,6 +30,17 @@
  * the typographic scale can retune what the mapping produces. A component
  * stylesheet, higher still, is always the final word on its own text.
  *
+ * Being unlayered used to mean two different things for these rules. A rule in
+ * no layer outranks a rule in any layer whatever the selectors on either side,
+ * so nothing an application wrote in a layer could beat any of them. Among
+ * themselves they differ: the element selectors — `body`, `h1`–`h6` and `p` —
+ * sit at specificity (0,0,1), so an application's own `p` rule tied with this
+ * one and the bundler's output order decided the winner, one property at a
+ * time, while `.p`, `.code` and `.editorial` are classes and the nested
+ * editorial rules are more specific still, so those beat an application's
+ * element rules outright. In a layer, all of them lose or win for a stated
+ * reason instead.
+ *
  * These rules select elements by name, so they apply to the whole document.
  * That is what a design system's typography is for.
  *
