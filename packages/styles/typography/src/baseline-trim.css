@@ -3,17 +3,18 @@
  * Uses `text-box: trim-both cap alphabetic` for intrinsic baseline snapping.
  * No JS font extraction required.
  *
- * Browser floor: Chrome 133, Safari 18.2, Firefox 154. This engine uses three
+ * Browser floor: Chrome 133, Safari 18.2, Firefox 154. This engine uses four
  * features:
  *
  *   text-box-trim    Chrome 133, Safari 18.2, Firefox 154
  *   mod()            Chrome 125, Safari 15.4, Firefox 118
+ *   cap unit         Chrome 118, Safari 17.2, Firefox 97  (the nudge)
  *   @property        Chrome 85,  Safari 16.4, Firefox 128 (baseline-shim.css)
  *
  * `text-box-trim` binds every column. Below it the trim is skipped, the element
  * keeps its default half-leading and the nudge still applies, so the engine
  * degrades rather than failing: on that reading the floor is Chrome 125,
- * Safari 16.4, Firefox 128, the same as the metrics engine's, and what a browser
+ * Safari 17.2, Firefox 128, the same as the cap engine's, and what a browser
  * below 133 / 18.2 / 154 loses is the tighter content box, not the grid.
  *
  * The `@property` numbers are softer still: below them the registration is

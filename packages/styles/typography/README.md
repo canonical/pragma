@@ -36,7 +36,7 @@ A rule in no cascade layer outranks a rule in any layer, whatever the selectors 
 | `mapper.elements.css` — the `body`, `h1`–`h6`, `p`, `.p`, `.code` and `.editorial` rules | `ds.typography` |
 | `baseline-cap.css`, `baseline-metrics.css`, `baseline-trim.css` — every rule | `ds.typography` |
 | `baseline-shim.css` — the `@property` registration | none, by design |
-| `@canonical/design-tokens/dist/modifiers.typography.css`, imported by each engine | `ds.modifiers`, which that file opens itself |
+| `@canonical/design-tokens/dist/modifiers.typography.css`, imported by `mapper.css` | `ds.modifiers`, which that file opens itself |
 
 `ds.typography` sits above `ds.reset` and below `ds.modifiers` in the order `@canonical/styles` declares, so the typographic scale in `ds.modifiers` can retune what the engine produces, and a component stylesheet — higher still — is always the final word on its own text.
 
@@ -72,7 +72,7 @@ This package states no layer order of its own. It does not need one: it is impor
 
 Linked on its own — which is what the example in `example/` does — the layers are created where they first appear. That is well defined for a single package, and it settles nothing this package needs settled: no custom property is declared in more than one of the three layers involved (`ds.modifiers` from the design tokens, `ds.tokens` for the shims, `ds.typography` for the rules), so their relative order cannot change a computed value. An application that loads this package next to CSS of its own should load `@canonical/styles` and get the statement with it.
 
-One caveat for anyone linking an engine from a plain HTML file, as the example does: the engines import `@canonical/design-tokens/dist/modifiers.typography.css` by its bare package name, which a browser cannot resolve on its own. In the example that import 404s and `ds.modifiers` is never created, so the example drives the engine with per-element variables of its own instead of the typographic scale. Anything with an import resolver — a bundler, or a pipeline running `postcss-import` — resolves it normally.
+One note for anyone linking an engine from a plain HTML file, as the example does: an engine imports only the `@property` shim beside it, not the typographic scale, so `ds.modifiers` is never created there and the example drives the engine with per-element variables of its own. The scale comes with `mapper.css`, whose import of `@canonical/design-tokens/dist/modifiers.typography.css` uses a bare package name that only an import resolver — a bundler, or a pipeline running `postcss-import` — resolves.
 
 ## What this package guarantees
 
@@ -172,15 +172,15 @@ Set the three metrics on `:root` as shown; the engine derives its own variables 
 
 The most modern approach. Uses `text-box: trim-both cap alphabetic` to remove half-leading entirely, then compensates with `mod()`-based margin to restore grid alignment. Results in tighter content boxes (useful for buttons, cards, optical centering).
 
-| Browser | `text-box-trim` | `mod()` | `@property` | This engine's floor |
-|---------|-----------------|----------|--------------|---------------------|
-| Chrome  | 133+            | 125+     | 85+          | **133+**            |
-| Safari  | 18.2+           | 15.4+    | 16.4+        | **18.2+**           |
-| Firefox | 154+            | 118+     | 128+         | **154+**            |
+| Browser | `text-box-trim` | `mod()` | `cap` | `@property` | This engine's floor |
+|---------|-----------------|----------|-------|--------------|---------------------|
+| Chrome  | 133+            | 125+     | 118+  | 85+          | **133+**            |
+| Safari  | 18.2+           | 15.4+    | 17.2+ | 16.4+        | **18.2+**           |
+| Firefox | 154+            | 118+     | 97+   | 128+         | **154+**            |
 
 `text-box-trim` binds every column.
 
-The trim itself falls back gracefully: below those numbers it is skipped, the element keeps its default half-leading and the nudge still applies, so the grid still holds. On that reading the floor is **Chrome 125, Safari 16.4, Firefox 128** — the metrics engine's — and what a browser below 133 / 18.2 / 154 loses is the tighter content box, not the alignment.
+The trim itself falls back gracefully: below those numbers it is skipped, the element keeps its default half-leading and the nudge still applies, so the grid still holds. On that reading the floor is **Chrome 125, Safari 17.2, Firefox 128** — the cap engine's, since the nudge uses the `cap` unit — and what a browser below 133 / 18.2 / 154 loses is the tighter content box, not the alignment.
 
 ## Consumer Contract
 

@@ -176,9 +176,10 @@ describe("resolved core.css", () => {
  * The full stylesheet has to be unaffected by all of this. `index.css` is what
  * an ordinary page loads, and splitting the typography package's mapper into a
  * token half and an element half must not change one rule of what it delivers.
- * The snapshot is the rule inventory — every selector with its layer and the
- * properties it sets, sorted, so a reordering is not a failure and a lost or
- * gained declaration is.
+ * The check is a set identity over the rule inventory — every selector with
+ * its layer and the properties it sets: what `index.css` delivers equals what
+ * `core.css` delivers plus the four element files — so a reordering is not a
+ * failure and a lost or gained declaration is.
  */
 describe("resolved index.css", () => {
   const css = resolve(join(import.meta.dirname, "..", "src", "index.css"));
