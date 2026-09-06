@@ -142,15 +142,15 @@ The baseline position is computed from these metrics: `((line-height - line-heig
 
 The most modern approach. Uses `text-box: trim-both cap alphabetic` to remove half-leading entirely, then compensates with `mod()`-based margin to restore grid alignment. Results in tighter content boxes (useful for buttons, cards, optical centering).
 
-| Browser | `text-box-trim` | `mod()` | This engine's floor |
-|---------|-----------------|----------|---------------------|
-| Chrome  | 133+            | 125+     | **133+**            |
-| Safari  | 18.2+           | 15.4+    | **18.2+**           |
-| Firefox | 154+            | 118+     | **154+**            |
+| Browser | `text-box-trim` | `mod()` | `cap` unit | This engine's floor |
+|---------|-----------------|----------|------------|---------------------|
+| Chrome  | 133+            | 125+     | 118+       | **133+**            |
+| Safari  | 18.2+           | 15.4+    | 17.2+      | **18.2+**           |
+| Firefox | 154+            | 118+     | 97+        | **154+**            |
 
-`text-box-trim` binds every column.
+`text-box-trim` binds every column. The `cap` unit is in the list because the nudge measures the cap height itself, `mod(calc(-1 * 1cap), …)`, so this engine needs it as much as the cap engine does.
 
-Falls back gracefully: if `text-box-trim` is unsupported, the element keeps its default half-leading and the nudge still applies.
+Falls back gracefully: if `text-box-trim` is unsupported, the element keeps its default half-leading and the nudge still applies — on that reading the floor is the cap engine's, Chrome 125, Safari 17.2, Firefox 118.
 
 ## Consumer Contract
 
@@ -158,7 +158,7 @@ Every engine reads the same set of CSS custom properties per element:
 
 | Variable | Scope | Description |
 |----------|-------|-------------|
-| `--baseline-height` | `:root` | Grid unit size (e.g. `0.5rem`) |
+| `--baseline-height` | `:root` | Grid unit size, in any length unit (e.g. `0.5rem` or `8px`) — optional, default `0.25rem` |
 | `--font-size` | element | Font size as a `<length>` |
 | `--line-height-multiplier` | element | Line height in baseline-height units |
 | `--line-height` | element | Optional override: explicit line height, bypasses the multiplier |
@@ -186,15 +186,23 @@ The design tokens provide variables like:
 --typography-heading-1-font-family
 ```
 
-`elements.css` converts these into the engine variables for each element (`h1`–`h6`, `p`), including computing `--line-height-multiplier` by snapping the typographic line-height to the nearest baseline-grid unit:
+`elements.css` converts these into the engine variables for each element (`h1`–`h6`, `p`, `.p`, `.code`). It sets `--line-height` as a length, never a multiplier: it prefers the exact dimension the design tokens carry, and falls back to the tier's ratio snapped up onto the grid.
 
 ```css
---line-height-multiplier: round(
-  up,
-  calc(font-size × line-height-ratio / baseline-height),
-  1
+--line-height: var(
+  --typography-heading-1-line-height-dimension,
+  round(
+    up,
+    calc(
+      var(--typography-heading-1-font-size) *
+      var(--typography-heading-1-line-height)
+    ),
+    var(--baseline-height, 0.25rem)
+  )
 );
 ```
+
+`--line-height-multiplier` is the other half of the engines' contract, for a consumer who drives an engine directly rather than through this mapping: an engine reads `--line-height` if it is set, and `calc(--baseline-height * --line-height-multiplier)` if it is not. The example uses the multiplier; `elements.css` uses the length.
 
 ## Package Structure
 
@@ -285,6 +293,6 @@ Read the table by engine, not row by row — an engine's floor is the highest nu
 | `baseline-metrics.css` | 125 | 15.4 | 118 | `mod()` throughout |
 | `baseline-trim.css` | 133 | 18.2 | 154 | `text-box-trim` throughout |
 
-One caveat on that table. `text-box-trim` is soft: below it the trim is skipped and the element keeps its default half-leading, but the nudge still applies and the grid still holds, so the text-trim engine degrades to the alignment the other two give rather than failing.
+One caveat on that table. `text-box-trim` is soft: below it the trim is skipped and the element keeps its default half-leading, but the nudge still applies and the grid still holds, so the text-trim engine degrades to the cap engine's floor — Chrome 125, Safari 17.2, Firefox 118 — rather than failing. It reads `1cap` for its nudge, so it needs the `cap` unit wherever it runs.
 
 `mod()` is the hard one. Below it no engine computes a nudge and text falls back to its natural leading.

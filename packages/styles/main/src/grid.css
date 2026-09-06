@@ -13,6 +13,7 @@
  *   .grid.responsive Breakpoint-driven column grid
  *   .grid.intrinsic  Fluid auto-fill grid
  *   .subgrid         CSS subgrid child — inherits parent columns
+ *   .content-flow    Container whose children carry their own bottom margin
  *
  * Customization:
  *   --grid-gap        Shorthand: sets both row-gap and column-gap (default: var(--grid-gutter))
@@ -122,5 +123,22 @@
     display: grid;
     grid-template-columns: subgrid;
     grid-column: var(--subgrid-span, 1 / -1);
+  }
+}
+
+/* Content-flow container: establishes element-owned spacing context. Children
+ * use their own margin-bottom; the last child is reset to 0 so the container
+ * does not gain a trailing gap.
+ *
+ * It lives here rather than with the spacing tokens it belongs to by subject,
+ * because it is a rule that styles an element and the tokens entry must carry
+ * none: a page that also runs another CSS framework takes the tokens and the
+ * layout presets and supplies its own element rules. This is a preset like the
+ * grid ones — it claims a class name and sets a real property — so it travels
+ * with them.
+ */
+@layer ds.components.global {
+  .content-flow > :last-child {
+    margin-bottom: 0;
   }
 }
