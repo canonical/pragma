@@ -112,14 +112,19 @@
  * Only the outermost island root is written (`.ds:not(.ds *)`), so nested pragma
  * roots inherit from their pragma parent. The ancestors are the DOM's, so a
  * surface portalled to <body> takes the body's theme, not the strip it was
- * opened from. `:where()` keeps the rule at zero specificity, and the `adapter`
- * layer sits above `ds.modifiers` and below `ds.components`, so pragma's own
- * theme classes on an island root are overruled while this file is loaded
- * (README, rule 13) and a component that sets its own scheme still wins. The
- * third case is what every island shows once Vanilla is removed and this file
- * is still loaded: islands follow the operating system until the page swaps
- * this package for `@canonical/styles` (README, rule 19). */
-@layer adapter {
+ * opened from. `:where()` keeps the rule at zero specificity, and the bridge
+ * sits in `ds.adapter`, a sublayer of `ds` between `ds.states` and
+ * `ds.components`: above `ds.modifiers`, so pragma's own theme classes on an
+ * island root are overruled while this file is loaded (README, rule 13), and
+ * below the component tiers, so a component that sets its own scheme still
+ * wins. A sublayer on purpose: a top-level layer cannot sit between two
+ * sublayers of `ds`, because sublayers sort inside their parent and `ds` takes
+ * its place at its first mention, so a top-level `adapter` would sit above
+ * every `ds.*` sublayer and no component could beat the bridge. The third case
+ * is what every island shows once Vanilla is removed and this file is still
+ * loaded: islands follow the operating system until the page swaps this
+ * package for `@canonical/styles` (README, rule 19). */
+@layer ds.adapter {
   :where(.ds:not(.ds *)) {
     color-scheme: var(--vf-theme-light, light) var(--vf-theme-dark, dark);
   }

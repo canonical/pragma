@@ -98,11 +98,13 @@
       -webkit-text-size-adjust: 100%;
     }
 
-    /* The document body, when the body itself is the island: the last state
-       before Vanilla is removed, `<body class="ds app comfortable">` with no
-       Vanilla left inside it. Pragma's file zeroes the body's margin on every
-       page; here the rule matches only when the body is pragma's, because the
-       margin of an element a host page owns is not this package's call. */
+    /* The document body, when the body itself is the island: `<body class="ds …">`
+       with nothing but pragma inside it. Pragma's file zeroes the body's margin
+       on every page; here the rule matches only when the body is pragma's,
+       because the margin of an element a host page owns is not this package's
+       call. A page that keeps this package after Vanilla is gone gets the
+       browser's 8px gutter back unless its body carries `ds` or the page's own
+       layer zeroes it (README, rule 19). */
     :where(:scope:is(body)) {
       margin: 0;
     }
@@ -255,9 +257,10 @@
 }
 
 /* ── ds.typography: the element rules and the baseline engine ──────────────
- * Copied from @canonical/styles-typography: src/elements.css (the element half
- * of the mapper; the values it reads come from src/mapper.css, which stays in
- * core.css) and the engine @canonical/styles loads, src/baseline-cap.css. A
+ * Copied from @canonical/styles-typography: src/mapper.elements.css (the
+ * element half of the mapper; the values it reads come from src/mapper.css,
+ * which stays in core.css) and the engine @canonical/styles loads,
+ * src/baseline-cap.css. A
  * consumer who links another engine on a mixed page links it unconfined; only
  * the default engine is copied here. */
 @layer ds.typography {

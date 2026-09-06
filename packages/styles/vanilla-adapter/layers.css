@@ -24,7 +24,13 @@
  *   ds.modifiers   theme, scale, channels and their shims, density and context
  *   ds.surfaces    .surface, .contrasted, .modal
  *   ds.states      the universal derived-state rule, custom properties only
- *   adapter        the theme bridge (adapter.css)
+ *   ds.adapter     the theme bridge (adapter.css). A sublayer of `ds` on
+ *                  purpose: sublayers sort inside their parent, and `ds` takes
+ *                  its place in the order at its first mention (`ds.tokens`),
+ *                  so a top-level layer written here would not sit here at all
+ *                  but above every `ds.*` sublayer, the component tiers
+ *                  included, and a component's own `color-scheme` could never
+ *                  beat the bridge (measured: a modal's `dark` computed `light`)
  *   ds.components  every pragma component stylesheet, in one of two tiers:
  *   ds.components.global  the global component packages
  *   ds.components.app     the app-tier packages, which beat the global tier
@@ -40,7 +46,7 @@
  * pragma-only page wants. `boundary` sits directly above `vanilla` so that
  * inside pragma territory every Vanilla declaration is reverted before pragma's
  * layers apply. Pragma's own statement, the same list without `vanilla`,
- * `boundary`, `adapter` and `app`, arrives later through core.css and changes
+ * `boundary`, `ds.adapter` and `app`, arrives later through core.css and changes
  * nothing: a later statement can add names but never reorder the ones already
  * fixed, and it adds none.
  */
@@ -53,7 +59,7 @@
   ds.modifiers,
   ds.surfaces,
   ds.states,
-  adapter,
+  ds.adapter,
   ds.components,
   ds.components.global,
   ds.components.app,
