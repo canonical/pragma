@@ -19,16 +19,14 @@
  * The grid unit:
  *   --baseline-height may be a length in any unit — 0.5rem and 8px are both
  *   fine, and rem is the usual choice because the grid then follows the reader's
- *   own font size. Every read of it here carries the same fallback,
- *   `var(--baseline-height, 0.25rem)`, so an application that declares it
- *   nowhere gets a 4px grid rather than no grid at all.
+ *   own font size. This file reads it bare, without a fallback of its own: the
+ *   default lives once, in mapper.css's `ds.tokens` block, as
+ *   `:where(:root) { --baseline-height: 0.25rem }`. Zero weight, so any real
+ *   declaration wins — @canonical/styles declares it at :root in spacing.css,
+ *   and an application may declare it on any element.
  *
- *   The fallback is written at each read rather than aliased into one internal
- *   custom property, for two reasons: this file stays complete on its own, which
- *   matters because it can be linked without the rest of the package, and no
- *   second name enters the surface for a consumer to set by mistake. The default
- *   is stated in the consumer contract above so it can be checked without
- *   reading the rules.
+ *   Linked on its own this file still has the default, because it imports
+ *   mapper.css for the mapping.
  *
  * Layers:
  *   Every rule below sits in `ds.typography`. Unlayered, these rules outranked
@@ -86,17 +84,17 @@
   .code {
     --computed-line-height: var(
       --line-height,
-      calc(var(--baseline-height, 0.25rem) * var(--line-height-multiplier))
+      calc(var(--baseline-height) * var(--line-height-multiplier))
     );
     line-height: var(--computed-line-height);
     font-size: var(--font-size);
 
     --baseline-position: calc((var(--computed-line-height) + 1cap) / 2);
     --start-nudge: calc(
-      var(--baseline-height, 0.25rem) -
-      mod(var(--baseline-position), var(--baseline-height, 0.25rem))
+      var(--baseline-height) -
+      mod(var(--baseline-position), var(--baseline-height))
     );
-    --end-nudge: calc(var(--baseline-height, 0.25rem) - var(--start-nudge));
+    --end-nudge: calc(var(--baseline-height) - var(--start-nudge));
   }
 
   /* Block-level baseline nudges.
@@ -121,9 +119,6 @@
     padding-block-end: var(--end-nudge);
 
     /* Element-owned spacing — only active in .editorial contexts */
-    margin-block-end: calc(
-      var(--space-after, 0) *
-      var(--baseline-height, 0.25rem)
-    );
+    margin-block-end: calc(var(--space-after, 0) * var(--baseline-height));
   }
 }

@@ -8,10 +8,15 @@
  *   - baseline-metrics.css  — Uses extracted font metrics (ascender/descender/unitsPerEm)
  *   - baseline-trim.css     — Uses text-box-trim + cap unit hybrid
  *
- * The grid unit, --baseline-height, is optional. Every engine reads it with the
- * same fallback, `var(--baseline-height, 0.25rem)`, so importing any single
- * engine — as the typography example does — snaps text to a 4px grid with
- * nothing declared, and any length the consumer does declare, in rem or px,
- * replaces it.
+ * The grid unit, --baseline-height, is optional. Its default is declared once,
+ * in mapper.css, at zero weight: `:where(:root) { --baseline-height: 0.25rem }`.
+ * Import this file and text snaps to a 4px grid with nothing declared, and any
+ * length the consumer does declare, in rem or px, replaces it — a zero-weight
+ * declaration loses to every real one, wherever it sits.
+ *
+ * An engine linked without mapper.css is the one case with no default: the
+ * metrics and text-trim engines import nothing that declares the unit, so a
+ * stylesheet taking one of them alone declares it, or imports `./mapper.css`
+ * beside it. The cap engine imports the mapper itself and is unaffected.
  */
 @import url("./baseline-cap.css");

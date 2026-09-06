@@ -26,9 +26,17 @@ That's it. All `h1`–`h6` and `p` elements will align to the baseline grid. The
 
 A CSS pixel is a reference unit, not a device pixel: on a high-density display one CSS pixel covers several physical ones, and the browser's zoom changes how many. `px` buys you a grid that does not move with the font size; it does not buy alignment with the display's own pixels.
 
-**Declare it nowhere and the grid is `0.25rem`, four pixels at the usual root font size.** Every read of the variable in this package carries that same fallback, so an engine linked on its own still snaps text to a grid rather than doing nothing. `@canonical/styles` declares `--baseline-height` itself, so an application using the full stylesheet never sees the fallback.
+**Declare it nowhere and the grid is `0.25rem`, four pixels at the usual root font size.** The default is declared once, in `mapper.css`, inside the package's `ds.tokens` block:
 
-The fallback is written at each read rather than aliased into one internal custom property. That keeps each file complete on its own, which matters because any one of them can be linked without the rest, and it keeps a second name out of the surface for a consumer to set by mistake.
+```css
+:where(:root) {
+  --baseline-height: 0.25rem;
+}
+```
+
+`:where()` puts it at zero weight, so any real declaration of the property beats it whatever the order within the layer: `@canonical/styles` declares it at `:root` in `spacing.css`, an application may declare it on any element, and either is obeyed. The engines and the element rules then read `var(--baseline-height)` bare, twenty-six times between them, with no fallback to keep in step.
+
+**The one case with no default is an engine linked without the mapper.** `baseline-metrics.css` and `baseline-trim.css` import nothing that declares the unit, so a stylesheet taking one of them alone either declares `--baseline-height` itself or imports `./mapper.css` beside it; without one of those the nudges resolve to nothing and the engine does not run. `baseline-cap.css` imports the mapper for the mapping, so it carries the default with it, and so does the package entry.
 
 ## Cascade layers
 
@@ -151,7 +159,7 @@ Every engine reads the same set of CSS custom properties per element:
 
 | Variable | Scope | Description |
 |----------|-------|-------------|
-| `--baseline-height` | `:root` | Grid unit size, in any length unit (e.g. `0.5rem` or `8px`) — optional, default `0.25rem` |
+| `--baseline-height` | `:root` | Grid unit size, in any length unit (e.g. `0.5rem` or `8px`) — optional wherever `mapper.css` is loaded, which declares the `0.25rem` default; required by the metrics and text-trim engines when they are linked alone |
 | `--font-size` | element | Font size as a `<length>` |
 | `--line-height-multiplier` | element | Line height in baseline-height units |
 | `--line-height` | element | Optional override: explicit line height, bypasses the multiplier |

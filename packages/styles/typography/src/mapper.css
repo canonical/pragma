@@ -19,8 +19,8 @@
  *   --line-height     → <length> snapped to the baseline grid
  *   --font-weight     → <number>
  *   --space-after     → <number> in baseline-height units
- *   --baseline-height → set at :root, in any length unit; optional, and every
- *                       read of it here falls back to 0.25rem
+ *   --baseline-height → set at :root, in any length unit; optional, because
+ *                       this file declares the 0.25rem default itself
  *
  * Exact Canonical line-height dimensions take precedence. The round() path is
  * retained only as a compatibility fallback for design-tokens 0.8.1 and is
@@ -66,6 +66,25 @@
  * gap until the tokens package is fixed upstream.
  */
 @layer ds.tokens {
+  /* The default grid unit.
+   *
+   * Declared once, here, so the engines and the element rules can read
+   * --baseline-height bare rather than repeating a fallback at each of the
+   * twenty-six places they read it — where the value would drift the first time
+   * someone changed one of them.
+   *
+   * At zero weight, on purpose. `:where(:root)` has the specificity of nothing
+   * at all, so any real declaration of the property beats it whatever the order
+   * within this layer: @canonical/styles declares it at :root in spacing.css,
+   * one class's worth of weight, and an application or a component may declare
+   * it on any element, in rem or px, and be obeyed.
+   *
+   * A stylesheet that takes an engine without this file has no default and must
+   * declare the unit itself; see the engine headers. */
+  :where(:root) {
+    --baseline-height: 0.25rem;
+  }
+
   :root {
     /* ── Font family shims ────────────────────────────────────────── */
     --typography-font-family-default: var(--typography-fontFamily-default);
@@ -132,7 +151,7 @@
           var(--typography-heading-1-font-size) *
           var(--typography-heading-1-line-height)
         ),
-        var(--baseline-height, 0.25rem)
+        var(--baseline-height)
       )
     );
     --space-after: 0;
@@ -153,7 +172,7 @@
           var(--typography-heading-2-font-size) *
           var(--typography-heading-2-line-height)
         ),
-        var(--baseline-height, 0.25rem)
+        var(--baseline-height)
       )
     );
     --space-after: 0;
@@ -174,7 +193,7 @@
           var(--typography-heading-3-font-size) *
           var(--typography-heading-3-line-height)
         ),
-        var(--baseline-height, 0.25rem)
+        var(--baseline-height)
       )
     );
     --space-after: 0;
@@ -195,7 +214,7 @@
           var(--typography-heading-4-font-size) *
           var(--typography-heading-4-line-height)
         ),
-        var(--baseline-height, 0.25rem)
+        var(--baseline-height)
       )
     );
     --space-after: 0;
@@ -216,7 +235,7 @@
           var(--typography-heading-5-font-size) *
           var(--typography-heading-5-line-height)
         ),
-        var(--baseline-height, 0.25rem)
+        var(--baseline-height)
       )
     );
     --space-after: 0;
@@ -247,7 +266,7 @@
           var(--typography-heading-6-font-size) *
           var(--typography-heading-6-line-height)
         ),
-        var(--baseline-height, 0.25rem)
+        var(--baseline-height)
       )
     );
     --space-after: 0;
@@ -271,7 +290,7 @@
           var(--typography-text-primary-font-size) *
           var(--typography-text-primary-line-height)
         ),
-        var(--baseline-height, 0.25rem)
+        var(--baseline-height)
       )
     );
     --space-after: 0;
@@ -304,7 +323,7 @@
           var(--typography-text-primary-code-font-size) *
           var(--typography-text-primary-code-line-height)
         ),
-        var(--baseline-height, 0.25rem)
+        var(--baseline-height)
       )
     );
     --space-after: 0;
