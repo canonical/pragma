@@ -1,0 +1,45 @@
+/* @canonical/styles — The layer order, on its own
+ *
+ * This file is the order statement and nothing else: no rule, no import, no
+ * declaration. It is the same statement the four real entries open with, so
+ * importing it changes nothing about a page that already loads one of them —
+ * a second identical statement names no layer the first has not already fixed,
+ * and a statement can only append names, never reorder them.
+ *
+ * It exists for one reader: a package whose components belong to a tier below
+ * the second level, one application's own tier. Such a package declares its own
+ * layer and wraps its sheets in it:
+ *
+ *   @import url("@canonical/styles/layers.css");
+ *   @layer ds.components.apps-lxd;
+ *
+ *   @import url("./Button/styles.css");
+ *   … the rest of the package's sheets …
+ *
+ * The import on the first line is what makes the second line mean the same
+ * thing every time. A layer name is placed the moment the browser first meets
+ * it, and a name met before this statement is read is placed BELOW the tier
+ * names it declares — so the sub-tier would sit under the very tiers it is
+ * meant to beat. Whether that happened used to depend on which file a bundler
+ * emitted first, which is not something a package can control from inside
+ * itself. Reading the statement first settles it: the thirteen names are fixed,
+ * and the sub-tier's name, being new, is appended after them inside
+ * `ds.components`, where it sorts above every tier — the tier tree's own rule,
+ * the more specific tier wins.
+ *
+ * A page that loads `@canonical/styles`, or the parts, does not need this file.
+ */
+
+@layer normalize,
+  ds.tokens,
+  ds.reset,
+  ds.typography,
+  ds.modifiers,
+  ds.surfaces,
+  ds.states,
+  ds.components,
+  ds.components.global,
+  ds.components.sites,
+  ds.components.documentation,
+  ds.components.stores,
+  ds.components.apps;
