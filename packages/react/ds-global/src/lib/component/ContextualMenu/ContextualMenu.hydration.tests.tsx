@@ -7,7 +7,7 @@ import type { MenuEntry } from "./types.js";
 
 const items: MenuEntry[] = [
   { key: "cut", label: "Cut", url: "#cut" },
-  { type: "separator" },
+  { type: "separator", key: "before-zoom" },
   { key: "zoom", label: "Zoom", url: "#zoom" },
 ];
 
