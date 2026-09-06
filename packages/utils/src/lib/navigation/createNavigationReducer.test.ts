@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { annotateTree } from "./annotateTree.js";
 import createNavigationReducer from "./createNavigationReducer.js";
 import findAncestorPath from "./findAncestorPath.js";
-import getFirstEnabledChild from "./getFirstEnabledChild.js";
-import getLastEnabledChild from "./getLastEnabledChild.js";
+import getFirstInteractiveChild from "./getFirstInteractiveChild.js";
+import getLastInteractiveChild from "./getLastInteractiveChild.js";
 import getParentItem from "./getParentItem.js";
 import {
   NavigationActionType,
@@ -78,9 +78,9 @@ describe("findAncestorPath", () => {
   });
 });
 
-describe("getFirstEnabledChild", () => {
+describe("getFirstInteractiveChild", () => {
   it("returns first non-disabled child", () => {
-    const child = getFirstEnabledChild(index["/a"]);
+    const child = getFirstInteractiveChild(index["/a"]);
     expect(child?.url).toBe("/a/1");
   });
 
@@ -95,11 +95,11 @@ describe("getFirstEnabledChild", () => {
         { url: "/enabled", parentUrl: "test", depth: 1 },
       ],
     };
-    expect(getFirstEnabledChild(node)?.url).toBe("/enabled");
+    expect(getFirstInteractiveChild(node)?.url).toBe("/enabled");
   });
 
   it("returns undefined for item with no children", () => {
-    expect(getFirstEnabledChild(index["/c"])).toBeUndefined();
+    expect(getFirstInteractiveChild(index["/c"])).toBeUndefined();
   });
 
   it("returns undefined when all children are disabled", () => {
@@ -112,23 +112,23 @@ describe("getFirstEnabledChild", () => {
         { url: "/d2", disabled: true, parentUrl: "test", depth: 1 },
       ],
     };
-    expect(getFirstEnabledChild(node)).toBeUndefined();
+    expect(getFirstInteractiveChild(node)).toBeUndefined();
   });
 });
 
-describe("getLastEnabledChild", () => {
+describe("getLastInteractiveChild", () => {
   it("returns last non-disabled child", () => {
-    const child = getLastEnabledChild(index["/a"]);
+    const child = getLastInteractiveChild(index["/a"]);
     expect(child?.url).toBe("/a/2");
   });
 
   it("returns undefined for item with no children", () => {
-    expect(getLastEnabledChild(index["/c"])).toBeUndefined();
+    expect(getLastInteractiveChild(index["/c"])).toBeUndefined();
   });
 
   it("returns undefined for item with no items array", () => {
     const node: _Item = { key: "x", parentUrl: null, depth: 0 };
-    expect(getLastEnabledChild(node)).toBeUndefined();
+    expect(getLastInteractiveChild(node)).toBeUndefined();
   });
 
   it("returns undefined when all children are disabled", () => {
@@ -141,7 +141,7 @@ describe("getLastEnabledChild", () => {
         { url: "/d2", disabled: true, parentUrl: "test", depth: 1 },
       ],
     };
-    expect(getLastEnabledChild(node)).toBeUndefined();
+    expect(getLastInteractiveChild(node)).toBeUndefined();
   });
 });
 
@@ -548,7 +548,7 @@ describe("HOME/END when all siblings disabled", () => {
       keysSoFar: "",
     };
     const next = reduce(state, { type: NavigationActionType.HOME });
-    // getFirstEnabledChild returns undefined → !target → return state
+    // getFirstInteractiveChild returns undefined → !target → return state
     expect(next).toBe(state);
   });
 
@@ -585,8 +585,8 @@ describe("HOME/END on all-disabled siblings", () => {
 
   it("END lands on disabled last item — returns state unchanged", () => {
     // Only 2 items: /ok and /d1 (disabled). END from /ok goes to /d1.
-    // getLastEnabledChild skips /d1, returns /ok (same item) — covered.
-    // But if ALL siblings are disabled except current, getLastEnabledChild returns current.
+    // getLastInteractiveChild skips /d1, returns /ok (same item) — covered.
+    // But if ALL siblings are disabled except current, getLastInteractiveChild returns current.
     const state: NavigationState = {
       selectedItems: [root],
       highlightedItems: findAncestorPath(idx, idx["/ok"]),
@@ -596,7 +596,7 @@ describe("HOME/END on all-disabled siblings", () => {
       keysSoFar: "",
     };
     const next = reduce(state, { type: NavigationActionType.END });
-    // getLastEnabledChild returns /ok (not disabled), so it works
+    // getLastInteractiveChild returns /ok (not disabled), so it works
     expect(next.highlightedItems.at(-1)?.url).toBe("/ok");
   });
 });
@@ -1013,7 +1013,7 @@ describe("horizontal reducer", () => {
     });
 
     // Highlight /a with currentDepth 2 (deeper), then ARROW_RIGHT → /b
-    // Auto-drill: /b has items but all disabled → getFirstEnabledChild returns undefined → fallthrough to non-drill path
+    // Auto-drill: /b has items but all disabled → getFirstInteractiveChild returns undefined → fallthrough to non-drill path
     const state: NavigationState = {
       selectedItems: [disabledRoot],
       highlightedItems: findAncestorPath(disabledIdx, disabledIdx["/a"]),
@@ -1109,5 +1109,100 @@ describe("mixed orientation", () => {
         type: NavigationActionType.ARROW_DOWN,
       }).highlightedItems.at(-1)?.url,
     ).toBe("/a/2");
+  });
+});
+
+describe("presentational nodes", () => {
+  // A separator sits between two real items. It is not disabled — nothing about
+  // it is temporarily unavailable — it simply is not an item, and traversal must
+  // pass over it exactly as it passes over a disabled one.
+  const withSeparator: Item = {
+    key: "root",
+    label: "Root",
+    items: [
+      { url: "/one", label: "One" },
+      { key: "sep", presentational: true },
+      { url: "/two", label: "Two" },
+    ],
+  };
+  const sepRoot = annotateTree(withSeparator);
+  const sepIdx = prepareIndex(sepRoot);
+  const reduce = createNavigationReducer(sepIdx, {
+    rootItem: sepRoot,
+    orientation: "vertical",
+    wrap: false,
+  });
+
+  const stateAt = (url: string): NavigationState => ({
+    selectedItems: [sepRoot],
+    highlightedItems: findAncestorPath(sepIdx, sepIdx[url]),
+    currentDepth: 1,
+    isOpen: true,
+    inputValue: "",
+    keysSoFar: "",
+  });
+
+  it("ARROW_DOWN steps over a separator to the next real item", () => {
+    const next = reduce(stateAt("/one"), {
+      type: NavigationActionType.ARROW_DOWN,
+    });
+    expect(next.highlightedItems.at(-1)?.url).toBe("/two");
+  });
+
+  it("ARROW_UP steps over a separator to the previous real item", () => {
+    const next = reduce(stateAt("/two"), {
+      type: NavigationActionType.ARROW_UP,
+    });
+    expect(next.highlightedItems.at(-1)?.url).toBe("/one");
+  });
+
+  it("END lands on the last real item, not on a trailing separator", () => {
+    const trailing = annotateTree({
+      key: "root",
+      items: [
+        { url: "/one", label: "One" },
+        { key: "sep", presentational: true },
+      ],
+    } satisfies Item);
+    const idx = prepareIndex(trailing);
+    const r = createNavigationReducer(idx, {
+      rootItem: trailing,
+      orientation: "vertical",
+      wrap: false,
+    });
+    const next = r(
+      {
+        selectedItems: [trailing],
+        highlightedItems: findAncestorPath(idx, idx["/one"]),
+        currentDepth: 1,
+        isOpen: true,
+        inputValue: "",
+        keysSoFar: "",
+      },
+      { type: NavigationActionType.END },
+    );
+    expect(next.highlightedItems.at(-1)?.url).toBe("/one");
+  });
+
+  it("getFirstInteractiveChild skips a leading separator", () => {
+    const leading = annotateTree({
+      key: "root",
+      items: [
+        { key: "sep", presentational: true },
+        { url: "/two", label: "Two" },
+      ],
+    } satisfies Item);
+    expect(getFirstInteractiveChild(leading)?.url).toBe("/two");
+  });
+
+  it("getLastInteractiveChild skips a trailing separator", () => {
+    const trailing = annotateTree({
+      key: "root",
+      items: [
+        { url: "/one", label: "One" },
+        { key: "sep", presentational: true },
+      ],
+    } satisfies Item);
+    expect(getLastInteractiveChild(trailing)?.url).toBe("/one");
   });
 });

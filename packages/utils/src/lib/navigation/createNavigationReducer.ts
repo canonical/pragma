@@ -1,8 +1,9 @@
 import type { _Index, _Item, Item } from "@canonical/ds-types";
 import findAncestorPath from "./findAncestorPath.js";
-import getFirstEnabledChild from "./getFirstEnabledChild.js";
-import getLastEnabledChild from "./getLastEnabledChild.js";
+import getFirstInteractiveChild from "./getFirstInteractiveChild.js";
+import getLastInteractiveChild from "./getLastInteractiveChild.js";
 import getParentItem from "./getParentItem.js";
+import { isInteractive } from "./isInteractive.js";
 import {
   type NavigationAction,
   NavigationActionType,
@@ -70,7 +71,7 @@ export default function createNavigationReducer<T extends Item = Item>(
       }
 
       case NavigationActionType.OPEN: {
-        const firstChild = getFirstEnabledChild(rootItem);
+        const firstChild = getFirstInteractiveChild(rootItem);
         return {
           ...state,
           isOpen: true,
@@ -100,7 +101,7 @@ export default function createNavigationReducer<T extends Item = Item>(
             currentDepth: 0,
           };
         }
-        const firstChild = getFirstEnabledChild(rootItem);
+        const firstChild = getFirstInteractiveChild(rootItem);
         return {
           ...state,
           isOpen: true,
@@ -215,7 +216,7 @@ function getSibling<T extends Item = Item>(
       return undefined;
     }
 
-    if (!siblings[nextIndex].disabled) {
+    if (isInteractive(siblings[nextIndex])) {
       return siblings[nextIndex];
     }
     nextIndex += direction;
@@ -246,7 +247,7 @@ function handleArrowKey<T extends Item = Item>(
         state.currentDepth > sibling.depth &&
         sibling.items?.length
       ) {
-        const child = getFirstEnabledChild(sibling);
+        const child = getFirstInteractiveChild(sibling);
         if (child) {
           return {
             ...state,
@@ -270,7 +271,7 @@ function handleArrowKey<T extends Item = Item>(
         state.currentDepth > sibling.depth &&
         sibling.items?.length
       ) {
-        const child = getFirstEnabledChild(sibling);
+        const child = getFirstInteractiveChild(sibling);
         if (child) {
           return {
             ...state,
@@ -298,7 +299,7 @@ function handleArrowKey<T extends Item = Item>(
     }
 
     case "child": {
-      const child = getFirstEnabledChild(currentItem);
+      const child = getFirstInteractiveChild(currentItem);
       if (!child) return state;
       return {
         ...state,
@@ -322,8 +323,8 @@ function handleHomeEnd<T extends Item = Item>(
 
   const target =
     position === "first"
-      ? getFirstEnabledChild(parent)
-      : getLastEnabledChild(parent);
+      ? getFirstInteractiveChild(parent)
+      : getLastInteractiveChild(parent);
 
   if (!target) return state;
   return {
@@ -357,9 +358,9 @@ function handlePageJump<T extends Item = Item>(
   }
 
   // The raw landing may be DISABLED (e.g. a menu separator). Continue in the
-  // jump direction to the nearest enabled sibling — a disabled landing must
+  // jump direction to the nearest interactive sibling — a non-interactive landing must
   // not swallow the jump while every other movement path (arrows, Home/End,
-  // type-ahead) already skips disabled nodes. With wrapping on, the scan
+  // type-ahead) already skips them. With wrapping on, the scan
   // follows the ring across the boundary; without it, the scan stops at the
   // edge and falls back toward the current item instead.
   const direction = delta > 0 ? 1 : -1;
@@ -367,7 +368,7 @@ function handlePageJump<T extends Item = Item>(
   if (wrapEnabled) {
     let idx = targetIdx;
     for (let i = 0; i < len; i++) {
-      if (!siblings[idx].disabled) {
+      if (isInteractive(siblings[idx])) {
         landingIdx = idx;
         break;
       }
@@ -375,14 +376,14 @@ function handlePageJump<T extends Item = Item>(
     }
   } else {
     for (let idx = targetIdx; idx >= 0 && idx < len; idx += direction) {
-      if (!siblings[idx].disabled) {
+      if (isInteractive(siblings[idx])) {
         landingIdx = idx;
         break;
       }
     }
     if (landingIdx === -1) {
       for (let idx = targetIdx; idx >= 0 && idx < len; idx -= direction) {
-        if (!siblings[idx].disabled) {
+        if (isInteractive(siblings[idx])) {
           landingIdx = idx;
           break;
         }
@@ -411,7 +412,7 @@ function handleTypeAhead<T extends Item = Item>(
   const parent = getParentItem(index, currentItem);
   if (!parent?.items) return { ...state, keysSoFar: newKeysSoFar };
 
-  const siblings = parent.items.filter((i) => !i.disabled);
+  const siblings = parent.items.filter(isInteractive);
   const search = newKeysSoFar.toLowerCase();
 
   const isRepeatedChar =
