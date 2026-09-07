@@ -50,6 +50,10 @@ const meta = {
 Pairs a trigger with a panel it toggles — for **transient, local panels**:
 forms, filters, anything that the consumer doesn't need to know the state of the side panel. The dialog's native open
 state is the only one; the toggle reads it and flips it.
+
+The trigger can be anything that takes an \`onClick\` — a \`Button\`, the
+router's \`Link\`, a bare anchor — and its own \`onClick\` still runs,
+first, when pressed.
        `,
       },
       story: {

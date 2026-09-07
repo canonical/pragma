@@ -17,11 +17,15 @@ import type { SidePanelHandle, SidePanelProps } from "./types.js";
 export type SidePanelChildren = ReactNode | ((close: () => void) => ReactNode);
 
 /**
- * The one prop a trigger must accept. Written in method syntax on purpose:
- * TypeScript checks method parameters bivariantly, which lets a trigger with
- * a more specific event (`MouseEventHandler<HTMLButtonElement>`, say) satisfy
- * this — property syntax would demand the reverse and reject every real
- * trigger.
+ * The one prop a trigger must accept — and the only requirement on it.
+ * `Button`, the router's `Link`, a bare `<a>`, any custom control: if it
+ * takes an `onClick`, it can be a trigger, because `onClick` is how the HOC
+ * wires the toggle. A component without one cannot be a trigger.
+ *
+ * Written in method syntax on purpose: TypeScript checks method parameters
+ * bivariantly, which lets a trigger with a more specific event
+ * (`MouseEventHandler<HTMLButtonElement>`, say) satisfy this — property
+ * syntax would demand the reverse and reject every real trigger.
  */
 export type WithSidePanelTriggerProps = {
   onClick?(event: MouseEvent): void;
@@ -54,7 +58,8 @@ export type WithSidePanelTriggerProps = {
  * ```
  *
  * @param Trigger The component that toggles the panel — anything that takes
- * an `onClick`.
+ * an `onClick` (`Button`, the router's `Link`, a bare `<a>`, …). Its own
+ * `onClick` still runs, first, when pressed.
  * @param panelChildren The panel's content, or a function receiving `close`.
  * @param panelProps Props for the panel itself — `aria-label` when there is
  * no header, `closeOnOutsideClick`, and so on. `ref` and `children` belong
