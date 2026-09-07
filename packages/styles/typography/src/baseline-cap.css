@@ -4,7 +4,8 @@
  * baseline alignment.
  *
  * Consumer contract:
- *   :root { --baseline-height: <length>; }   (optional, default 0.25rem)
+ *   :root { --baseline-height: <length>; }
+ *     (default 0.25rem with tokens.css loaded; required without it)
  *   element { --font-size: <length>; --line-height: <length>; }
  *   (fallback: --line-height-multiplier: <number> if --line-height is unset)
  *
@@ -20,13 +21,16 @@
  *   --baseline-height may be a length in any unit — 0.5rem and 8px are both
  *   fine, and rem is the usual choice because the grid then follows the reader's
  *   own font size. This file reads it bare, without a fallback of its own: the
- *   default lives once, in mapper.css's `ds.tokens` block, as
+ *   default lives once, in tokens.css's `ds.tokens` block, as
  *   `:where(:root) { --baseline-height: 0.25rem }`. Zero weight, so any real
  *   declaration wins — @canonical/styles declares it at :root in spacing.css,
  *   and an application may declare it on any element.
  *
- *   Linked on its own this file still has the default, because it imports
- *   mapper.css for the mapping.
+ *   Linked on its own this file has no default. No engine here imports
+ *   anything at all — the composition lives in index.css — so a
+ *   stylesheet taking one engine alone either declares --baseline-height itself
+ *   or imports `./tokens.css` beside it. Without one of those the nudges here
+ *   resolve to nothing and the engine does not run.
  *
  * Layers:
  *   Every rule below sits in `ds.typography`. Unlayered, these rules outranked
@@ -39,12 +43,6 @@
  *   The rules select elements by name, so they apply to the whole document,
  *   which is what a design system's typography is for.
  */
-
-/* Typography scale tokens from design-tokens */
-@import url("@canonical/design-tokens/dist/modifiers.typography.css");
-
-/* Semantic token → engine variable mapper */
-@import url("./mapper.css");
 
 @layer ds.typography {
   /* Reset */

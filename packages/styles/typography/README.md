@@ -1,6 +1,6 @@
 # @canonical/styles-typography
 
-Baseline grid alignment for the Canonical Design System. This package provides three interchangeable CSS engines that snap text baselines to a configurable grid, plus a semantic token mapper that bridges `@canonical/design-tokens` typography tokens to the engine's variable contract.
+Baseline grid alignment for the Canonical Design System. This package provides three interchangeable CSS engines that snap text baselines to a configurable grid, plus the typography tokens and the element rules that bridge `@canonical/design-tokens` to the engine's variable contract.
 
 ## Quick Start
 
@@ -26,7 +26,7 @@ That's it. All `h1`–`h6` and `p` elements will align to the baseline grid. The
 
 A CSS pixel is a reference unit, not a device pixel: on a high-density display one CSS pixel covers several physical ones, and the browser's zoom changes how many. `px` buys you a grid that does not move with the font size; it does not buy alignment with the display's own pixels.
 
-**Declare it nowhere and the grid is `0.25rem`, four pixels at the usual root font size.** The default is declared once, in `mapper.css`, inside the package's `ds.tokens` block:
+**Declare it nowhere and the grid is `0.25rem`, four pixels at the usual root font size.** The default is declared once, in `tokens.css`, inside the package's `ds.tokens` block:
 
 ```css
 :where(:root) {
@@ -34,9 +34,82 @@ A CSS pixel is a reference unit, not a device pixel: on a high-density display o
 }
 ```
 
-`:where()` puts it at zero weight, so any real declaration of the property beats it whatever the order within the layer: `@canonical/styles` declares it at `:root` in `spacing.css`, an application may declare it on any element, and either is obeyed. The engines and the element rules then read `var(--baseline-height)` bare, twenty-six times between them, with no fallback to keep in step.
+`:where()` puts it at zero weight, so any real declaration of the property beats it whatever the order within the layer: `@canonical/styles` declares it at `:root` in `spacing.css`, an application may declare it on any element, and either is obeyed. `elements.css` and the three engines then read `var(--baseline-height)` bare, twenty-six times between them, with no fallback to keep in step.
 
-**The one case with no default is an engine linked without the mapper.** `baseline-metrics.css` and `baseline-trim.css` import nothing that declares the unit, so a stylesheet taking one of them alone either declares `--baseline-height` itself or imports `./mapper.css` beside it; without one of those the nudges resolve to nothing and the engine does not run. `baseline-cap.css` imports the mapper for the mapping, so it carries the default with it, and so does the package entry.
+**The one case with no default is an engine linked without `tokens.css`.** No engine imports anything — that is the shape this package is cut to, and the composition lives in `index.css` — so a stylesheet taking one engine alone either declares `--baseline-height` itself or imports `./tokens.css` beside it; without one of those the nudges resolve to nothing and the engine does not run. The package entry composes both and is unaffected, as is anything importing `@canonical/styles`.
+
+## How this package is cut
+
+Five files, and the cut between them is the point of this section: it is a pattern, not a filing
+decision, and the same pattern runs through `@canonical/styles` and the Vanilla adapter.
+
+### A file is a concept, named for what it is
+
+Not for what it includes, and never for what it leaves out.
+
+| File | The concept |
+| --- | --- |
+| `tokens.css` | **the values.** The names that map the design tokens' typographic scale onto what the engines and the element rules read. It declares custom properties and styles nothing. |
+| `elements.css` | **what bare elements get.** `body`, `h1`–`h6`, `p`, `.p`, `.code`, `.editorial`. |
+| `baseline-cap.css`, `baseline-metrics.css`, `baseline-trim.css` | **the engines.** The arithmetic that puts a line on the grid. Interchangeable, one loaded at a time. |
+| `index.css` | **the whole**, and nothing else. It composes the tokens, the element rules and the default engine, in that order. |
+
+Each of the five is an entry point, and the name in the manifest is the name of the concept.
+
+### Leaves import no sibling; entries compose
+
+No leaf imports another file of this package. Only `index.css` does, and only the three it composes.
+
+One leaf imports outside the package: `tokens.css` pulls in `@canonical/design-tokens`' typographic scale, the file whose names it shims. That is a dependency rather than a sibling, and it is the only one — the engines and `elements.css` import nothing at all.
+
+That is not tidiness. A browser treats every `@import` as its own stylesheet and de-duplicates
+nothing, so a file reached by two paths is fetched, parsed and applied twice. The first cut of this
+package had `elements.css` importing `tokens.css` while the engines imported the scale as well, and
+the resolved stylesheet carried the typographic scale twice — 48,270 duplicated bytes, a quarter of
+the entry. Leaves that import no sibling make one path per file true by construction rather than by
+vigilance, and the one outside import is reached from `tokens.css` alone.
+
+What it asks of a consumer is small and worth stating: **link a file and you get what that file is,
+and you declare what it reads.** An engine on its own reads `--baseline-height` and `--font-size`;
+the element rules read the values `tokens.css` declares. The baseline unit may be written in `rem`
+or `px`, and defaults to `0.25rem` when nothing declares it.
+
+### The same word means the same thing in every package
+
+`@canonical/styles` is cut the same way and uses the same three nouns. Its `tokens.css` is the values
+and takes this package's `tokens.css`; its `elements.css` is what bare elements get and takes this
+package's `elements.css` and the default engine; its `layout.css` is the layout presets. Its
+`index.css` is the whole.
+
+`@canonical/styles-vanilla-adapter` ships an `elements.css` too: the same three element layers, built
+from the same source files, addressed to an island rather than to the page.
+
+Three contexts, one vocabulary. A reader who has understood `elements.css` once has understood it
+everywhere, and the only thing left to ask is which page region it is aimed at.
+
+### Why the old names went
+
+`mapper.css` was jargon — an internal word for the file that named the tokens, which told a reader
+nothing about what was inside it and hid the fact that the file was doing two jobs.
+
+The styles package's `core.css` was worse, because it named an inclusion rather than a concept:
+"everything except the element layers". A name defined by subtraction tells you what a file is not.
+You cannot tell whether a rule belongs in it without first knowing the whole list it is subtracting
+from, and when the list changes the name silently stops being true. `tokens.css`, `elements.css` and
+`layout.css` each name something a rule either is or is not.
+
+### How to add a file
+
+Decide which concept it belongs to. That one decision settles the rest:
+
+- **its name** — the concept's noun;
+- **its layer** — `ds.tokens` for values, `ds.typography` for element rules and engines;
+- **which entries import it** — the entry for that concept, and no other.
+
+If it belongs to no concept, that is the finding: either the concept is missing, or the file is two
+files. `@canonical/styles`' `tests/entries.test.ts` pins the composition — which layers each entry
+opens, that its tokens entry declares nothing but custom properties, that each file is reached once —
+and this package's `exports` map is the contract for what a consumer may link.
 
 ## Cascade layers
 
@@ -50,10 +123,10 @@ Layered, the design system loses to an application's unlayered CSS, deliberately
 
 | What | Layer |
 | --- | --- |
-| `mapper.css` — the design-tokens naming shims (`:root`, custom properties only) | `ds.tokens` |
-| `mapper.css` — the `body`, `h1`–`h6`, `p`, `.p`, `.code` and `.editorial` rules | `ds.typography` |
+| `tokens.css` — the design-tokens naming shims (`:root`, custom properties only) | `ds.tokens` |
+| `tokens.css` — the typographic scale it imports | `ds.modifiers`, which that file opens itself |
+| `elements.css` — the `body`, `h1`–`h6`, `p`, `.p`, `.code` and `.editorial` rules | `ds.typography` |
 | `baseline-cap.css`, `baseline-metrics.css`, `baseline-trim.css` — every rule | `ds.typography` |
-| `@canonical/design-tokens/dist/modifiers.typography.css`, imported by each engine | `ds.modifiers`, which that file opens itself |
 
 `ds.typography` sits above `ds.reset` and below `ds.modifiers` in the order `@canonical/styles` declares, so the typographic scale in `ds.modifiers` can retune what the engine produces, and a component stylesheet — higher still — is always the final word on its own text.
 
@@ -61,7 +134,7 @@ The naming shims are in `ds.tokens` and not `ds.typography` because they are cus
 
 These rules select elements by name — `body`, `h1`, `p` — so they apply to the whole document. That is what a design system's typography is for.
 
-This package states no layer order of its own: it is imported by `@canonical/styles` after that package's order statement, which is the first rule of the first stylesheet and names both layers. Linked on its own, as the example does, the layers are created where they first appear, which is well defined for a single package and settles nothing this package needs settled — no custom property is declared in more than one of the layers involved.
+This package states no layer order of its own: it is imported by `@canonical/styles` after that package's order statement, which is the first rule of the first stylesheet and names all three layers this package writes to. Linked on its own, as the example does, the layers are created where they first appear, which is well defined for a single package and settles nothing this package needs settled — no custom property is declared in more than one of the layers involved.
 
 ## How It Works
 
@@ -159,7 +232,7 @@ Every engine reads the same set of CSS custom properties per element:
 
 | Variable | Scope | Description |
 |----------|-------|-------------|
-| `--baseline-height` | `:root` | Grid unit size, in any length unit (e.g. `0.5rem` or `8px`) — optional wherever `mapper.css` is loaded, which declares the `0.25rem` default; required by the metrics and text-trim engines when they are linked alone |
+| `--baseline-height` | `:root` | Grid unit size, in any length unit (e.g. `0.5rem` or `8px`) — optional wherever `tokens.css` is loaded, which declares the `0.25rem` default; required by an engine linked without it |
 | `--font-size` | element | Font size as a `<length>` |
 | `--line-height-multiplier` | element | Line height in baseline-height units |
 | `--line-height` | element | Optional override: explicit line height, bypasses the multiplier |
@@ -173,9 +246,9 @@ The **metrics engine** additionally requires on `:root`:
 | `--descender` | Font descender value (unitless, negative) |
 | `--units-per-em` | Font units-per-em value |
 
-## Token Mapper
+## Tokens and elements
 
-The `mapper.css` file bridges the semantic typography tokens from `@canonical/design-tokens` to the engine's variable contract. It is imported automatically by the default engine (`baseline-cap.css`).
+`tokens.css` and `elements.css` together bridge the semantic typography tokens from `@canonical/design-tokens` to the engine's variable contract. Both are imported by `index.css`, the package's composed entry point.
 
 The design tokens provide variables like:
 
@@ -187,25 +260,34 @@ The design tokens provide variables like:
 --typography-heading-1-font-family
 ```
 
-The mapper converts these into the engine variables for each element (`h1`–`h6`, `p`), including computing `--line-height-multiplier` by snapping the typographic line-height to the nearest baseline-grid unit:
+`elements.css` converts these into the engine variables for each element (`h1`–`h6`, `p`, `.p`, `.code`). It sets `--line-height` as a length, never a multiplier: it prefers the exact dimension the design tokens carry, and falls back to the tier's ratio snapped up onto the grid.
 
 ```css
---line-height-multiplier: round(
-  up,
-  calc(font-size × line-height-ratio / baseline-height),
-  1
+--line-height: var(
+  --typography-heading-1-line-height-dimension,
+  round(
+    up,
+    calc(
+      var(--typography-heading-1-font-size) *
+      var(--typography-heading-1-line-height)
+    ),
+    var(--baseline-height, 0.25rem)
+  )
 );
 ```
+
+`--line-height-multiplier` is the other half of the engines' contract, for a consumer who drives an engine directly rather than through this mapping: an engine reads `--line-height` if it is set, and `calc(--baseline-height * --line-height-multiplier)` if it is not. The example uses the multiplier; `elements.css` uses the length.
 
 ## Package Structure
 
 ```
 src/
-  index.css              ← re-exports baseline-cap.css (default)
+  index.css              ← the package composed (tokens, elements, cap engine)
+  tokens.css             ← the typographic scale and the naming shims
+  elements.css           ← the rules that read them
   baseline-cap.css       ← cap-unit engine
   baseline-metrics.css   ← extracted-metrics engine
   baseline-trim.css      ← text-box-trim + cap hybrid
-  mapper.css             ← semantic token → engine variable bridge
   scripts/
     extractFontData.ts   ← CLI for extracting font metrics
 example/
@@ -273,7 +355,7 @@ All engines require `mod()` for the grid-snap calculation:
 | Feature | Used by | Chrome | Safari | Firefox |
 |---------|---------|--------|--------|---------|
 | `mod()` | all three engines | 125 | 15.4 | 118 |
-| `round()` | the mapper's line-height fallback | 125 | 15.4 | 118 |
+| `round()` | the line-height fallback in `elements.css` | 125 | 15.4 | 118 |
 | `cap` unit | the cap and text-trim engines | 118 | 17.2 | 97 |
 | `text-box-trim` | the text-trim engine only | 133 | 18.2 | 154 |
 
