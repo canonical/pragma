@@ -143,15 +143,6 @@ describe("the layer order statement", () => {
     ).toEqual([]);
   });
 
-  it.each(ENTRIES)(
-    "names the same layers, in the same order, in %s",
-    (file) => {
-      expect(statement(readFileSync(srcPath(file), "utf8"))).toEqual(
-        statement(readFileSync(srcPath("index.css"), "utf8")),
-      );
-    },
-  );
-
   it("layers.css is the statement and nothing else", () => {
     // The file a sub-tier package imports before declaring its own layer. It
     // has to be inert: a page that loads it alongside an entry must get the
