@@ -13,5 +13,5 @@ opt in. A page that also runs another CSS framework takes those three layers fro
 `@canonical/styles-vanilla-adapter` instead, in a copy confined to the subtrees the design system
 owns.
 
-[The cascade contract](CASCADE.md) explains how a browser arrives at that arrangement, what each layer
+[The cascade contract](STYLES_CASCADE.md) explains how a browser arrives at that arrangement, what each layer
 is for, where that confinement lives and why it is not here, and what a bundler does to the statement.

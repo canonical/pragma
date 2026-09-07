@@ -144,7 +144,7 @@ interleave a layer of its own puts its statement before this import.
 This section is the reference: what is in each layer, and where. The reasoning behind the order — how
 a browser decides, why a rule in no layer beats every layered one, why the confinement a mixed page
 needs lives in the adapter rather than here, and what a bundler does to the statement — is
-[the cascade contract](../../../docs/explanations/CASCADE.md).
+[the cascade contract](../../../docs/explanations/STYLES_CASCADE.md).
 
 #### The Component Tiers
 

@@ -15,7 +15,7 @@ the adapter package's confined copy of the element rules — and `@canonical/sty
 README owns that recipe. It arrives with the coexistence release.
 
 Background reading, if you want the reasoning rather than the steps:
-[the cascade contract](../explanations/CASCADE.md).
+[the cascade contract](../explanations/STYLES_CASCADE.md).
 
 ## What changed
 
@@ -192,7 +192,7 @@ it.
 
 ## Related
 
-- [The cascade contract](../explanations/CASCADE.md) — why the order is what it is, and why the
+- [The cascade contract](../explanations/STYLES_CASCADE.md) — why the order is what it is, and why the
   confinement for mixed pages lives in the adapter rather than here.
 - [`@canonical/styles` README](../../packages/styles/main/README.md) — what is layered where, and
   what the package guarantees.
