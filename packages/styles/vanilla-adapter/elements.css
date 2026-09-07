@@ -104,9 +104,10 @@
        with nothing but pragma inside it. Pragma's file zeroes the body's margin
        on every page; here the rule matches only when the body is pragma's,
        because the margin of an element a host page owns is not this package's
-       call. A page that keeps this package after Vanilla is gone gets the
-       browser's 8px gutter back unless its body carries `ds` or the page's own
-       layer zeroes it (README, rule 19). */
+       call. Pragma's own file zeroes the body on every page, so the two differ
+       only where this package is loaded without Vanilla, which it is not meant
+       to be (README, rule 19): there the body keeps the browser's 8px gutter
+       unless it carries `ds` itself. */
     :where(:scope:is(body)) {
       margin: 0;
     }

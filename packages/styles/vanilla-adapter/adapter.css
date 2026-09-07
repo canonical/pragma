@@ -125,9 +125,10 @@
  * sublayers of `ds`, because sublayers sort inside their parent and `ds` takes
  * its place at its first mention, so a top-level `adapter` would sit above
  * every `ds.*` sublayer and no component could beat the bridge. The third case
- * is what every island shows once Vanilla is removed and this file is still
- * loaded: islands follow the operating system until the page swaps this
- * package for `@canonical/styles` (README, rule 19). */
+ * never runs while Vanilla is loaded, because Vanilla's own `:root, .is-light`
+ * sets both toggles; it is what an island computes where this file is loaded
+ * without Vanilla, which is not an arrangement this package supports — it stays
+ * until Vanilla is gone and the two leave together (README, rule 19). */
 @layer ds.adapter {
   :where(.ds:not(.ds *)) {
     color-scheme: var(--vf-theme-light, light) var(--vf-theme-dark, dark);
