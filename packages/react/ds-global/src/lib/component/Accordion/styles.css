@@ -1,37 +1,41 @@
-/**
- * Accordion styles
- * @implements ds:global.component.accordion
- *
- * DSL anatomy mapping:
- * - layout.type: stack -> display: flex; flex-direction: column
- * - layout.direction: vertical -> flex-direction: column
- * - appearance.border: color-border-$root
- *
- * Tokens follow the Figma spec.
- */
-:root {
-  --accordion-border-radius: var(--dimension-radius-small);
-}
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
-.ds.accordion {
-  /* layout.type: stack, layout.direction: vertical */
-  display: flex;
-  flex-direction: column;
+@layer ds.components.global {
+  /**
+   * Accordion styles
+   * @implements ds:global.component.accordion
+   *
+   * DSL anatomy mapping:
+   * - layout.type: stack -> display: flex; flex-direction: column
+   * - layout.direction: vertical -> flex-direction: column
+   * - appearance.border: color-border-$root
+   *
+   * Tokens follow the Figma spec.
+   */
+  :root {
+    --accordion-border-radius: var(--dimension-radius-small);
+  }
 
-  /* When placed in a grid, span all columns (inert outside a grid). The
-     accordion is a full-width block, not a grid cell. */
-  grid-column: 1 / -1;
+  .ds.accordion {
+    /* layout.type: stack, layout.direction: vertical */
+    display: flex;
+    flex-direction: column;
 
-  /* The accordion background uses the surface channel, which auto-steps with
-     .surface nesting (surface 1 -> base, 2 -> layer2, 3 -> layer3). Referenced
-     here on the element (not in :root) so the value resolves in the element's
-     .surface context; outside any .surface it defaults to the base background. */
-  background: var(--surface-color-background, var(--color-background));
+    /* When placed in a grid, span all columns (inert outside a grid). The
+       accordion is a full-width block, not a grid cell. */
+    grid-column: 1 / -1;
 
-  /* Per the Figma anatomy the accordion has no outer border/frame — only the
-     per-item dividers (see Accordion.Item). */
-  border-radius: var(--accordion-border-radius);
+    /* The accordion background uses the surface channel, which auto-steps with
+       .surface nesting (surface 1 -> base, 2 -> layer2, 3 -> layer3). Referenced
+       here on the element (not in :root) so the value resolves in the element's
+       .surface context; outside any .surface it defaults to the base background. */
+    background: var(--surface-color-background, var(--color-background));
 
-  /* Clip item corners to the accordion radius */
-  overflow: hidden;
+    /* Per the Figma anatomy the accordion has no outer border/frame — only the
+       per-item dividers (see Accordion.Item). */
+    border-radius: var(--accordion-border-radius);
+
+    /* Clip item corners to the accordion radius */
+    overflow: hidden;
+  }
 }

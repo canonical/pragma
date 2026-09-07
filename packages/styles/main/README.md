@@ -6,9 +6,8 @@ person maintaining this package. Where a claim can be checked by a test, the tes
 The Canonical Design System's global stylesheet. One import brings in the reset, the typographic
 engine, the design tokens, the modifier families and the layout presets. Everything this package
 itself ships is in a named cascade layer, and its element-level rules style the whole page, as a
-reset does — nothing is confined and nothing has to be marked. The typographic engine joins the
-layers with the typography change, stacked on this one and released with it; at this commit its
-rules still ship unlayered.
+reset does — nothing is confined and nothing has to be marked. The typographic engine, which lives in
+`@canonical/styles-typography` and is released with this package, is in the same layers.
 
 ## Installation
 
@@ -62,15 +61,62 @@ systems out of each other's way, and bridges the theme signal between them. A te
 binds its copy to the files here so the two cannot drift. Nothing about that arrangement changes this
 package or the markup of a page that does not need it.
 
+## Entry points
+
+Five. `@canonical/styles` is the one an ordinary page wants: the whole stylesheet, in the order
+above. Three more are that stylesheet in parts, and the fifth is the order statement on its own, for a
+package rather than a page.
+
+| Entry | What it is |
+| --- | --- |
+| `@canonical/styles` | everything: the values, the element rules and the layout presets. |
+| `@canonical/styles/tokens.css` | every custom property the design system declares, and not one rule that selects an element. Nothing here changes the page until something reads a value from it, with one exception noted below. |
+| `@canonical/styles/elements.css` | every rule the design system applies to a plain element: the reset, the root's baseline, and the typography with its baseline engine. |
+| `@canonical/styles/layout.css` | the layout presets — `grid`, `subgrid`, `responsive`, `intrinsic` and `content-flow` — which claim those five class names in a page's namespace. |
+| `@canonical/styles/layers.css` | the order statement and nothing else: no rule, no import, no declaration. The same statement the four above open with, for a package that needs the order fixed before it declares a layer of its own. A page never needs it. |
+
+One exception to "changes nothing", and it is worth knowing before you import `tokens.css`. The design
+tokens' generated theme sheet declares `color-scheme` on `:root`, `.light` and `.dark` alongside the
+colour tokens, and that property is not inert: it decides the colour of the canvas, the form controls,
+the scrollbars and the system colours, whether or not anything reads a token, and on a mixed page an
+element of the other framework's carrying `light` or `dark` picks it up too. It cannot be split out
+here — the sheet is generated and the declarations sit in the same rules as the tokens — so separating
+them is a change to the tokens package's emitter, tracked as PRA-149. An application that must not have
+it declares `color-scheme` itself, in a layer above `ds.modifiers` or unlayered. Those three
+declarations are the only non-custom properties `tokens.css` carries; everything else in it is a
+custom property, which does nothing until a rule reads it.
+
+The parts exist for one reason. A page that also runs another CSS framework cannot take the element
+rules: the other framework has its own `p` rule, and only one of the two can own `line-height`. Such a
+page takes `tokens.css` and `layout.css`, and gets its element rules from that framework's adapter
+instead, in a copy confined to the part of the page the design system owns —
+`@canonical/styles-vanilla-adapter` builds that copy out of the same files `elements.css` imports.
+
+Two properties make the parts safe to mix, and both are visible in how the entries are written.
+
+**Every entry imports the order first, and the order is written in one file.** `layers.css` holds the
+statement and nothing else; each of the four entries imports it as its first rule. The order has to
+reach the browser before any rule it orders, and writing it once means two entries can never disagree
+— which they could if each repeated the list, and which would leave the same rules arbitrating
+differently depending on the entry a consumer picked. Measured in Chromium: a statement read through
+an `@import` orders the importing sheet exactly as one written in place would.
+
+**No entry imports another entry.** An `@layer` statement inside a layer block declares sublayers of
+that layer rather than top-level layers, so an entry that composed another would nest the order
+instead of sharing it. Keeping them independent means a page may load one, two or all three, in any order, and
+get the same result — and that each file is fetched, parsed and applied once, which matters because a
+browser treats every `@import` as its own stylesheet and de-duplicates nothing.
+
 ## Cascade Layers
 
-Everything this package itself ships is in a named layer, and the order is fixed by one statement, the
-first rule of this stylesheet. The typographic engine, which this package imports, joins the layers
-with the typography change stacked on this one:
+Everything this package itself ships is in a named layer, and the order is fixed by one statement,
+which lives in `layers.css` and which every entry imports before anything else. The typographic engine, which this package imports, is in the same
+layers:
 
 ```css
 @layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers, ds.surfaces,
-  ds.states, ds.components, ds.components.global, ds.components.app;
+  ds.states, ds.components, ds.components.global, ds.components.sites,
+  ds.components.documentation, ds.components.stores, ds.components.apps;
 ```
 
 Read it from the bottom up — each position is an argument.
@@ -80,17 +126,67 @@ Read it from the bottom up — each position is an argument.
 | `normalize` | This package's own reset. | Lowest, because everything else is meant to overrule it. |
 | `ds.tokens` | The primitive values, and the spacing, motion and overflow tokens. | Above the reset, because a token has to exist before anything reads it; below everything that reads one. |
 | `ds.reset` | The declarations the document root makes for itself: font, colour, line height, weight, text wrapping, font smoothing — and border-box sizing for it and everything inside. | Above the tokens because it reads them; below the typographic engine and the components, which refine what it starts. |
-| `ds.typography` | The semantic mapper and the baseline engine — with the typography change, stacked on this one and released with it. Until then the typography package ships those rules unlayered, and this layer is empty. | Above the reset because it is a more specific statement about text; below the modifiers, which can retune the scale. |
+| `ds.typography` | The element rules that apply the typographic mapping, and the baseline engine, from `@canonical/styles-typography`. | Above the reset because it is a more specific statement about text; below the modifiers, which can retune the scale. |
 | `ds.modifiers` | Theme, the typographic scale, the intent families (anticipation, criticality, emphasis, importance) and their shims, and the context and density classes. | Above typography, because a modifier's job is to shift what the layers below produced. |
 | `ds.surfaces` | The surface families: `surface`, `contrasted`, `modal`. | Above the modifiers, because a surface re-points colour channels the modifiers set. |
 | `ds.states` | The derived hover, active and disabled channels. | Above the surfaces, because a state is derived from whatever the surface resolved to. |
-| `ds.components` | Nothing, by rule. It is the parent of the two tiers below and holds no rule of its own. | Highest of the eight top-level layers, so a component is the final word on its own box. A rule written *directly* into a parent layer sits in that layer's implicit final sublayer, which is above every named sublayer — so such a rule would outrank both tiers and no component package could override it by layer. Everything this package puts in `ds.components` therefore sits in a tier. |
-| `ds.components.global` | The stylesheets of the global component packages, and this package's own layout presets and content-flow container. | A sublayer of `ds.components`, named in the statement so that its order is fixed rather than left to whichever package a bundler emits first. |
-| `ds.components.app` | The stylesheets of the application tiers. | Above the global sublayer, so an application tier arbitrating a component it also ships wins by layer rather than by load order — including over one of the layout presets. |
+| `ds.components` | Nothing, by rule. It is the parent of the tier layers below and holds no rule of its own. | Highest of the eight top-level layers, so a component is the final word on its own box. A rule written *directly* into a parent layer sits in that layer's implicit final sublayer, which is above every named sublayer — so such a rule would outrank every tier and no component package could override it by layer. Everything this package puts in `ds.components` therefore sits in a tier. |
+| `ds.components.global` | The stylesheets of the shared component packages, and this package's own layout presets. | The base of the tier tree: what every other tier refines. |
+| `ds.components.sites` | The stylesheets of the sites tier. | The four second-level tiers never appear on the same page, so their order among themselves decides nothing. It is fixed here anyway, so that it can never come to depend on which package a bundler emits first. |
+| `ds.components.documentation` | The stylesheets of the documentation tier. | As above. |
+| `ds.components.stores` | The stylesheets of the stores tier. | As above. |
+| `ds.components.apps` | The stylesheets of the shared applications tier; one application's own tier declares a layer of its own above it. | As above. |
 
 An order statement fixes the relative order of layers the first time they appear. A later statement
 may introduce new names but can never reorder the ones already fixed, so an application that needs to
 interleave a layer of its own puts its statement before this import.
+
+#### The Component Tiers
+
+The component layers follow the design system's tier tree: who owns a component decides which layer
+its rules go in, and a deeper tier wins. Three rules make that work, and they are worth stating
+plainly because a package author has to follow them.
+
+**The second level is named here, in full.** `global`, `sites`, `documentation`, `stores` and `apps`
+are the design system's four second-level tiers plus the shared base, and this statement fixes their
+order. A package in one of those tiers wraps its stylesheets in its own name and needs to do nothing
+else.
+
+**A sub-tier declares its own layer, and that is what sorts it above.** One application's own package
+— the LXD tier, say — writes its CSS entry in this order, and the order is the whole recipe:
+
+```css
+@import url("@canonical/styles/layers.css");
+@layer ds.components.apps-lxd;
+
+@import url("./Button/styles.css");
+/* … the rest of the package's sheets, each wrapped in that layer … */
+```
+
+The first line is what makes the second mean the same thing every time. A layer name is placed the
+moment the browser first meets it, so a name met *before* this package's statement is read is placed
+**below** the tier names that statement declares — and the sub-tier would sit under the very tiers it
+is meant to beat. Whether that happened depended on which file the application's bundler emitted
+first, which is not something the package can control from inside itself. Reading the statement first
+settles it: the thirteen names are fixed, and `ds.components.apps-lxd`, being new, is appended after
+them inside `ds.components`, where it sorts above every tier. That is the tree's own rule — the more
+specific tier wins — and it means this stylesheet never has to know which applications exist.
+
+Importing `layers.css` costs a page nothing: it is the same statement the other four entries open
+with, and a second identical statement names no layer the first has not already fixed.
+
+Measured on a scratch package entry in all four emission orders a bundler can produce: with the import
+first, a rule in `ds.components.apps-lxd` beats the same rule in `ds.components.apps` and in
+`ds.components.global` in 4 of 4; without it, in 1 of 4.
+
+**Nothing is ever written directly into `ds.components`.** A declaration in a parent layer sits in
+that layer's implicit final sublayer, which is above every named sublayer, so a rule written there
+would outrank every tier — the opposite of what the tiers are for.
+
+The names are tier ids from that tree, lowercased and hyphenated for a sub-tier (`apps-lxd`,
+`sites-webcomponentsprototype`). They are not the context words a page puts on its root (`app`,
+`site`, `docs`): a tier says who owns a component, a context says what kind of page it is being shown
+on, and the two are chosen by different people for different reasons.
 
 ### What Is Layered Where
 
@@ -99,17 +195,16 @@ interleave a layer of its own puts its statement before this import.
 | `normalize.css` | `normalize` | yes |
 | `reset.css` root declarations | `ds.reset` | yes |
 | `reset.css` box-sizing | `ds.reset` | yes — `*`, `::before`, `::after` |
-| `spacing.css` token block | `ds.tokens` | no |
-| `spacing.css` content-flow container | `ds.components.global` | yes |
+| `spacing.css` | `ds.tokens` | no |
 | `motion.css` | `ds.tokens` | no |
 | `overflow.css` root default | `ds.tokens` | no |
 | `overflow.css` `.surface` | `ds.surfaces` | no |
-| `grid.css` layout presets | `ds.components.global` | yes |
+| `grid.css` layout presets, and the content-flow container | `ds.components.global` | yes |
 | `grid.css` `:root` defaults | `ds.components.global` | no — tokens the presets read, kept with them rather than moved to `ds.tokens` |
 | `modifiers.density.css` | `ds.modifiers` | no |
 | `modifiers.states.shim.css`, `modifiers.importance.shim.css`, `modifiers.criticality.shim.css` | `ds.modifiers` | no |
 | `controls.hover.shim.css` | `ds.surfaces` and `ds.states` | no |
-| `@canonical/styles-typography` | `ds.typography` and `ds.modifiers`, with the typography change stacked on this one; unlayered until then | with that change |
+| `@canonical/styles-typography` | `ds.tokens` for its naming shims, `ds.typography` for its element rules and engine, `ds.modifiers` for the typographic scale it imports | its element rules, yes; its tokens, no |
 | `@canonical/design-tokens` distribution files | `ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states` — each file opens its own, except `modifiers.importance.css`, which is empty and opens none | no |
 
 The files marked yes are the ones the adapter's confined copy has to mirror. The rest are almost all
@@ -127,20 +222,19 @@ rather than writes:
 
 ### What Is Deliberately Unlayered
 
-Two things, and the same reason covers both: the cascade does not sort them, so putting them in a layer
-would say nothing and would invite a reader to look for the layer that "wins".
+One thing: **`@font-face`**, in `fonts.css`. It defines a font for the whole document, not a style for
+an element, and this stylesheet declares each face exactly once, so no layer has anything to order it
+against — putting it in one would change no computed value. The file is opt-in and imported separately
+so that an application already serving the same files does not download them twice.
 
-- **`@font-face`**, in `fonts.css`. It defines a font for the whole document, not a style for an
-  element. The file is opt-in and imported separately so that an application already serving the same
-  files does not download them twice.
-- **`@property` registrations**, in `@canonical/styles-typography`. They register the type of a custom
-  property for the whole document.
+(Layers do sort `@font-face` rules where two of them declare the same family: the higher layer's face
+wins over the later one in source order. There simply are no duplicates here.)
 
 ### Where the Element-Level Rules Apply
 
 To the whole page. Three of the layers select elements rather than declare custom properties —
-`normalize`, `ds.reset`, and `ds.typography` once the typography change lands — and they apply the way
-a reset always has: the stylesheet is loaded, so the rules are in force. There is no marker to add and
+`normalize`, `ds.reset` and `ds.typography` — and they apply the way a reset always has: the
+stylesheet is loaded, so the rules are in force. There is no marker to add and
 no subtree to nominate.
 
 That is a deliberate ruling, not an oversight. An earlier draft of this release confined those layers
@@ -157,7 +251,7 @@ it installs it; a page that does not never hears about it.
 
 | Guarantee | The check behind it |
 | --- | --- |
-| Every rule the package itself ships is in one of the ten declared layers, and the statement is the first rule of this stylesheet. The typographic engine it imports joins them with the typography change stacked on this one. | The order fixtures that arrive with the Vanilla adapter package read the statement out of the resolved stylesheet and check every layer name the package opens against it. A check inside this package — that the set of layers used equals the set declared — is being added separately. |
+| Every rule the package itself ships is in one of the thirteen declared layers, and the statement reaches the browser before any of them, through the import every entry opens with. The typographic engine it imports is in them too. | The order fixtures that arrive with the Vanilla adapter package read the statement out of the resolved stylesheet and check every layer name the package opens against it. A check inside this package — that the set of layers used equals the set declared — is being added separately. |
 | An application tier's rule for a component beats the global tier's rule for the same component, whichever of the two a bundler loads first. | The two sublayers are named in the statement, so their order is fixed there rather than at first appearance, and the same order fixture reads it back. The component packages move into them when their stylesheets are wrapped, which is a separate change; until then both sublayers are empty and the guarantee is vacuous. |
 | The package ships no `!important`. | The same fixture file. An important declaration inverts the layer order and cannot be arbitrated by layers at all, so one of them would undo the guarantee above. |
 | Under `prefers-reduced-motion: reduce`, every motion duration this package defines is `0s`. | `src/motion.css`, and the reduced-motion fixture arriving with the adapter package. Zeroing the token is the mechanism: a component reads the token, so nothing has to out-rank the component's own declaration. Whether a given component honours the tokens is that package's guarantee, not this one's. Sheets that still hard-code a duration, and so still animate under the preference, are being moved onto the tokens separately: in the form package the shared input chrome (`src/index.css`) and eight component sheets (`ChoicesField`, `RichChoicesField`, `CheckboxInput`, `RadioInput`, `ColorInput`, `ComboboxInput` and its list, `FileUploadInput`, `SwitchInput`); in the global package `Tooltip`, `ContextualMenu` and `Popover`, which set their own duration property; and one application-tier sheet, the launchpad diff viewer's file header. |
@@ -191,14 +285,17 @@ reaches a bare element outside such a region. `@canonical/styles-vanilla-adapter
 | --- | --- | --- | --- | --- |
 | `light-dark()` | every colour token, including the `--color-text` the reset declares on the root | 123 | 17.5 | 120 |
 | `mod()` | the baseline engine | 125 | 15.4 | 118 |
-| `@property` | the baseline engine | 85 | 16.4 | 128 |
+| `cap` unit | the default baseline engine | 118 | 17.2 | 97 |
 
 Read the table as a whole, not row by row: the floor is the highest number in each column, because the
 stylesheet uses all of it. A browser without `light-dark()` drops the root's `color` declaration as
 invalid and falls back to its own text colour, so the reset applies but the page is not themed.
 
-The typographic engine also needs the `cap` unit and `round()`; `@canonical/styles-typography`'s
-"Browser Support" section is the full table for it.
+That makes the floor for this stylesheet with its default engine **Chrome 125, Safari 17.5,
+Firefox 120**. An application that swaps the default engine for `baseline-trim.css` raises it to
+Chrome 133, Safari 18.2, Firefox 154. The typographic engine also uses `round()`, on the same numbers
+as `mod()`; `@canonical/styles-typography`'s "Browser Support" section is the full table, engine by
+engine.
 
 The design system targets current browsers and does not carry compatibility shims for older ones. An
 application that cannot move should pin a version.
@@ -220,7 +317,8 @@ to add to your root, and the reset applies exactly where it did before.
    ```css
    @layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers,
      ds.surfaces, ds.states, ds.components, ds.components.global,
-     ds.components.app, app;
+     ds.components.sites, ds.components.documentation, ds.components.stores,
+     ds.components.apps, app;
    @import url("@canonical/styles");
 
    @layer app {
@@ -289,7 +387,7 @@ src/
   index.css                       -- entry point: the layer statement, then the imports
   normalize.css                   -- this package's own reset
   reset.css                       -- the document root's baseline
-  spacing.css                     -- spacing tokens, and the content-flow container
+  spacing.css                     -- spacing tokens
   motion.css                      -- motion tokens, and reduced motion
   overflow.css                    -- scroll overflow affordance
   grid.css                        -- layout presets

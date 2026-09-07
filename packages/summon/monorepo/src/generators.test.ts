@@ -81,6 +81,12 @@ describe("monorepo generator", () => {
       expect(filePaths).toContain(
         "test-monorepo/.github/actions/lerna-version/git-commit.sh",
       );
+      expect(filePaths).toContain(
+        "test-monorepo/.github/actions/apply-type-label/action.yml",
+      );
+      expect(filePaths).toContain(
+        "test-monorepo/.github/actions/apply-type-label/apply-type-label.cjs",
+      );
 
       // PR template
       expect(filePaths).toContain(
@@ -189,6 +195,60 @@ describe("monorepo generator", () => {
       // a step the publish never runs in. OIDC needs neither secret.
       expect(tagFile?.content).toContain("id-token: write");
       expect(tagFile?.content).not.toContain("NPM_AUTH_TOKEN");
+    });
+
+    it("keeps the type vocabulary in step across the two files it spans", () => {
+      // `pr-lint.yml` decides which titles are legal; the label action's
+      // `TYPES` decides which labels are managed. They were one list inside a
+      // single `script:` block and are now two lists in two files, so nothing
+      // but this assertion stops them drifting apart. Order is compared too:
+      // it means nothing to either consumer, but two lists that must mirror
+      // each other are only readable side by side while they do.
+      const files = getFiles(dryRun(generator.generate(defaultAnswers)));
+      const workflow = files.find(
+        (f) => f.path === "test-monorepo/.github/workflows/pr-lint.yml",
+      );
+      const action = files.find(
+        (f) =>
+          f.path ===
+          "test-monorepo/.github/actions/apply-type-label/apply-type-label.cjs",
+      );
+      expect(workflow).toBeDefined();
+      expect(action).toBeDefined();
+
+      const declared =
+        /types: \|\n((?:\s+\w+\n)+)/
+          .exec(workflow?.content ?? "")?.[1]
+          ?.split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean) ?? [];
+      const managed = JSON.parse(
+        /const TYPES = (\[[^\]]*\]);/.exec(action?.content ?? "")?.[1] ?? "[]",
+      );
+
+      expect(declared).toEqual(managed);
+      expect(declared.length).toBeGreaterThan(0);
+    });
+
+    it("emits the file the label action requires at runtime", () => {
+      // The action names its script by path in a string the generator never
+      // reads, so a renamed template would fail only on a runner, in a repo
+      // nobody has generated yet.
+      const files = getFiles(dryRun(generator.generate(defaultAnswers)));
+      const action = files.find(
+        (f) =>
+          f.path ===
+          "test-monorepo/.github/actions/apply-type-label/action.yml",
+      );
+      expect(action).toBeDefined();
+
+      const required = /GITHUB_ACTION_PATH\}\/([\w.-]+)`\)/.exec(
+        action?.content ?? "",
+      )?.[1];
+      expect(required).toBeDefined();
+      expect(files.map((f) => f.path)).toContain(
+        `test-monorepo/.github/actions/apply-type-label/${required}`,
+      );
     });
 
     it("canonicalizes a noncanonical repository URL in the metadata", () => {

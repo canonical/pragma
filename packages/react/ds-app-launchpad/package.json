@@ -36,15 +36,15 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "storybook": "storybook dev -p 6006 --no-open --host 0.0.0.0",
+    "storybook": "storybook dev -p 6008 --no-open --host 0.0.0.0",
     "test": "bun run test:vitest",
     "test:vitest": "vitest run",
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
+    "@canonical/ds-utils": "^0.37.0",
     "@canonical/storybook-config": "^0.37.0",
     "@canonical/styles": "^0.37.0",
-    "@canonical/utils": "^0.37.0",
     "@js-temporal/polyfill": "^0.5.1",
     "highlight.js": "^11.11.1",
     "react": ">=18.0.0 <20.0.0",

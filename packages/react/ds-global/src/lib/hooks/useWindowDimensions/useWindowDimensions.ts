@@ -1,4 +1,4 @@
-import { debounce } from "@canonical/utils";
+import { debounce } from "@canonical/ds-utils";
 import { useEffect, useMemo, useState } from "react";
 import type {
   UseWindowDimensionProps,

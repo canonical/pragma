@@ -22,7 +22,11 @@ describe("Tabs Item (internal renderer)", () => {
 
   it("renders an item without a url as inert text (a span), marked data-inert", () => {
     inList(
-      <Item item={{ label: "Coming soon" }} active={false} LinkComponent="a" />,
+      <Item
+        item={{ key: "soon", label: "Coming soon" }}
+        active={false}
+        LinkComponent="a"
+      />,
     );
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
     expect(screen.getByText("Coming soon").tagName).toBe("SPAN");

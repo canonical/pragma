@@ -12,14 +12,7 @@ cd pragma
 bun install
 ```
 
-Storybook runs per-package rather than at the monorepo root. Navigate to a component package and start its Storybook server to see the components in action.
-
-```bash
-cd packages/react/ds-global
-bun run storybook
-```
-
-The server starts at http://localhost:6006. Each component package has its own Storybook configuration with package-specific stories and documentation.
+See [Storybook](#storybook) below for how to run a package's Storybook server and which port it uses.
 
 ## Prerequisites
 
@@ -78,6 +71,43 @@ The server starts at http://localhost:6006. Each component package has its own S
 - Installing Bun via the snap package is not recommended as it may cause permission issues. This is a known [issue](https://github.com/shakeelansari63/snap-packages/issues/79). Use the official installation script instead.
 
 
+## Storybook
+
+Storybook runs per-package rather than at the monorepo root. Navigate to a component package and start its Storybook server to see the components in action.
+
+```bash
+cd packages/react/ds-global
+bun run storybook
+```
+
+Each component package has its own Storybook configuration with package-specific stories and documentation.
+
+Ports are pooled by tier rather than assigned one-per-package, since it's unlikely you'd run two packages from the same pool at once. If you do, Storybook autodetects the collision and picks the next free port.
+
+When adding a new Storybook-enabled package, assign it to the pool matching its tier below. Only reach for a new port if it genuinely doesn't fit an existing pool.
+
+| Pool | Port | Package | Path |
+|------|------|---------|------|
+| Storybook addons | 6005 | `@canonical/storybook-addon-msw` | `packages/storybook/addon-msw` |
+| Storybook addons | 6005 | `@canonical/storybook-addon-utils` | `packages/storybook/addon-utils` |
+| Global | 6006 | `@canonical/react-ds-global` | `packages/react/ds-global` |
+| Global | 6006 | `@canonical/svelte-ds-global` | `packages/svelte/ds-global` |
+| Form | 6007 | `@canonical/react-ds-global-form` | `packages/react/ds-global-form` |
+| App packages | 6008 | `@canonical/react-ds-app` | `packages/react/ds-app` |
+| App packages | 6008 | `@canonical/react-ds-app-anbox` | `packages/react/ds-app-anbox` |
+| App packages | 6008 | `@canonical/react-ds-app-landscape` | `packages/react/ds-app-landscape` |
+| App packages | 6008 | `@canonical/react-ds-app-launchpad` | `packages/react/ds-app-launchpad` |
+| App packages | 6008 | `@canonical/react-ds-app-lxd` | `packages/react/ds-app-lxd` |
+| App packages | 6008 | `@canonical/react-ds-app-portal` | `packages/react/ds-app-portal` |
+| App packages | 6008 | `@canonical/svelte-ds-app` | `packages/svelte/ds-app` |
+| App packages | 6008 | `@canonical/svelte-ds-app-launchpad` | `packages/svelte/ds-app-launchpad` |
+| App packages | 6008 | `@canonical/svelte-ds-app-wpe` | `packages/svelte/ds-app-wpe` |
+| Apps | 6009 | `@canonical/react-boilerplate-vite` | `apps/react/boilerplate-vite` |
+| Apps | 6009 | `@canonical/ds-demo-site` | `apps/react/demo` |
+| Apps | 6009 | `@canonical/react-tokens` | `packages/react/tokens` |
+| Apps | 6009 | `@canonical/lit-ds-prototype` | `packages/lit/ds-prototype` |
+| Hub | 6100 | `@canonical/storybook-hub` | `apps/react/storybook-hub` |
+
 ## Repository Structure
 
 The monorepo uses Lerna for versioning and publishing, with Nx providing task caching and dependency-aware execution. Lerna keeps package versions in lockstep (currently the 0.29.x line, tracked in [`lerna.json`](lerna.json)) to eliminate compatibility matrices between internal dependencies.
@@ -99,13 +129,13 @@ The tiers correspond to the [Design System Ontology](https://github.com/canonica
 
 ### Core Infrastructure
 
-Three packages provide the foundation that component packages build upon.
+These packages provide the foundation that component packages build upon.
 
 **@canonical/ds-types** defines TypeScript types for modifier families. A modifier family is a set of related visual variants that components can support. For example, the `severity` modifier family includes `neutral`, `positive`, `negative`, `caution`, and `information`. The `ModifierFamily<'severity'>` type resolves to a union of these string literals, ensuring type safety when applying modifiers to components.
 
 **@canonical/ds-assets** contains icons and shared visual assets. Icons use `currentColor` for fill, allowing them to inherit text colour from their context, and a 16x16 viewBox as the standard size.
 
-**@canonical/utils** provides battle-tested utility functions like `debounce` and `throttle`. Functions only enter this package after proving useful across multiple packages; premature abstraction is actively avoided.
+**@canonical/utils** provides battle-tested, framework-neutral utility functions: string casing, `invariant`, `indent` and `join`. Design-system helpers with a runtime of their own — navigation trees, `debounce`, `throttle`, `humanizeNumber`, `pluralize` — live in **@canonical/ds-utils** under Runtime. Functions only enter either package after proving useful across multiple packages; premature abstraction is actively avoided.
 
 ### Styles Architecture
 
@@ -227,6 +257,7 @@ The following tables list all workspace packages with their location and purpose
 | Package | Path | Description |
 |---------|------|-------------|
 | `@canonical/svelte-ds-global` | `packages/svelte/ds-global` | Global components for Svelte 5 |
+| `@canonical/svelte-ds-app` | `packages/svelte/ds-app` | App components for Svelte 5 |
 | `@canonical/svelte-ds-app-launchpad` | `packages/svelte/ds-app-launchpad` | Launchpad-specific Svelte components |
 | `@canonical/svelte-ds-app-wpe` | `packages/svelte/ds-app-wpe` | WPE-specific Svelte components |
 | `@canonical/svelte-ssr-test` | `packages/svelte/ssr-test` | Test package for Svelte SSR testing |
@@ -255,6 +286,7 @@ The following tables list all workspace packages with their location and purpose
 | `@canonical/i18n-core` | `packages/runtime/i18n` | Framework-agnostic internationalization core built on native Intl |
 | `@canonical/task` | `packages/runtime/task` | Monadic effect framework for composable, testable, dry-runnable CLI operations |
 | `@canonical/harnesses` | `packages/runtime/harnesses` | AI harness detection and MCP config read/write (Claude Code, Cursor, Windsurf, Cline, Roo Code) |
+| `@canonical/ds-utils` | `packages/runtime/ds-utils` | Framework-agnostic design system helpers: navigation trees, debounce, throttle, humanizeNumber, pluralize |
 
 ### Core Infrastructure
 
@@ -262,7 +294,7 @@ The following tables list all workspace packages with their location and purpose
 |---------|------|-------------|
 | `@canonical/ds-types` | `packages/ds-types` | TypeScript types for modifier families and component props |
 | `@canonical/ds-assets` | `packages/ds-assets` | Icons and shared visual assets |
-| `@canonical/utils` | `packages/utils` | Utility functions: debounce, throttle, casing, pluralize, and more |
+| `@canonical/utils` | `packages/utils` | Utility functions: casing, invariant, indent, and join |
 
 ### Developer Tooling
 

@@ -8,6 +8,7 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
+      - packages/runtime/ds-utils/**
       - packages/react/ds-global/**
       - packages/react/ds-app-lxd/**
       - "!packages/react/ds-global/**/*.stories.*"
@@ -23,6 +24,7 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
+      - packages/runtime/ds-utils/**
       - packages/react/ds-global/**
       - packages/react/ds-app-lxd/**
       - "!packages/react/ds-global/**/*.stories.*"
@@ -42,5 +44,6 @@ jobs:
         "packages/tokens/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
         "packages/styles/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
         "packages/utils/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
+        "packages/runtime/ds-utils/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
         "packages/react/ds-global/**/!(*.test.*|*.stories.*|*.md|*.mdx)"
       ]'

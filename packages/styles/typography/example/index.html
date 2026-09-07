@@ -30,6 +30,12 @@
        * space-after  = spaceAfter / baseline
        */
 
+      /* The grid unit. Any length unit works: 0.25rem here, and 4px would give
+         the same grid at the usual root font size. rem makes the grid follow the
+         reader's own font size; px fixes it in CSS pixels, which are a reference
+         unit rather than the display's own pixels. Delete this rule and the
+         engines fall back to 0.25rem, so the page still snaps to a grid — try
+         it. */
       :root {
         --baseline-height: 0.25rem;
       }

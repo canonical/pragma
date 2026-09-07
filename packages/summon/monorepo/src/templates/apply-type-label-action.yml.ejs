@@ -1,0 +1,29 @@
+name: Apply type label
+description: Reconciles a pull request's managed type labels against its title.
+inputs:
+  github-token:
+    description: >-
+      Token used to read the pull request and write its labels. Defaults to the
+      job's own token, which is all the labelling needs. Note that supplying a
+      wider one does not extend the action to pull requests from forks: those
+      are skipped on principle, not for want of permission.
+    required: false
+    default: ${{ github.token }}
+runs:
+  using: composite
+  steps:
+    # The logic sits in a sibling `.cjs` file rather than inline in this YAML,
+    # where it would have no syntax checking, no editor support and nothing
+    # able to load it. `github-script` injects `github`, `context` and `core`,
+    # and builds `context` from the runner environment rather than from the
+    # calling workflow — so the module needs nothing passed down but the token
+    # above. The path comes from the environment rather than from a `${{ }}`
+    # expression: interpolating one into a JavaScript string literal would put
+    # a Windows runner's backslashes inside quotes, where they are escapes.
+    - name: Reconcile the managed labels against the title
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const applyTypeLabel = require(`${process.env.GITHUB_ACTION_PATH}/apply-type-label.cjs`);
+          await applyTypeLabel({ github, context, core });

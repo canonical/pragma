@@ -22,8 +22,8 @@ describe("monorepo generator undo plan", () => {
     const task = generator.generate(defaultAnswers);
     const undos = collectUndos(task);
 
-    // 9 mkdirs + 19 templates × 2 = 47
-    expect(undos.length).toBe(47);
+    // 10 mkdirs + 21 templates × 2 = 52
+    expect(undos.length).toBe(52);
   });
 
   it("exec effects (initGit, runInstall, chmod) produce no undos", () => {

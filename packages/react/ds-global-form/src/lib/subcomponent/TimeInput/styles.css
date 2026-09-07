@@ -1,23 +1,27 @@
 /* Time — native input wrapper with shared chrome.
  * The .chrome class provides border, padding, focus, and state styles
  * from index.css's .ds.input.chrome rule. Component-specific overrides below.
+ *
+ * Layer: ds.components.global (@canonical/styles README, "Cascade layers").
  */
 
-.ds.input.time {
-  /* This element IS the text-bearing leaf, so it carries the inline padding
-   * (`.ds.input.chrome` provides only the block padding). */
-  padding-inline: var(--form-input-padding-inline);
+@layer ds.components.global {
+  .ds.input.time {
+    /* This element IS the text-bearing leaf, so it carries the inline padding
+     * (`.ds.input.chrome` provides only the block padding). */
+    padding-inline: var(--form-input-padding-inline);
 
-  /* Suppress native clock picker inconsistencies across browsers */
-  &::-webkit-inner-spin-button {
-    display: none;
+    /* Suppress native clock picker inconsistencies across browsers */
+    &::-webkit-inner-spin-button {
+      display: none;
+    }
+
+    /* NOTE (design review — clock indicator → pragma icon): parked. There is no
+     * clock/time glyph in @canonical/ds-assets to mask onto
+     * `::-webkit-calendar-picker-indicator`, and that pseudo-element is
+     * WebKit/Chromium-only (Firefox renders its own picker button that CSS cannot
+     * target), so a custom icon can't be made consistent across browsers on a
+     * native <input type="time">. Needs a new ds-assets glyph + accepting
+     * Chrome/Safari-only styling, or a custom (non-native) control. */
   }
-
-  /* NOTE (design review — clock indicator → pragma icon): parked. There is no
-   * clock/time glyph in @canonical/ds-assets to mask onto
-   * `::-webkit-calendar-picker-indicator`, and that pseudo-element is
-   * WebKit/Chromium-only (Firefox renders its own picker button that CSS cannot
-   * target), so a custom icon can't be made consistent across browsers on a
-   * native <input type="time">. Needs a new ds-assets glyph + accepting
-   * Chrome/Safari-only styling, or a custom (non-native) control. */
 }

@@ -37,6 +37,7 @@
       "name": "@canonical/react-boilerplate-vite",
       "version": "0.37.0",
       "dependencies": {
+        "@canonical/ds-assets": "^0.37.0",
         "@canonical/i18n-core": "^0.37.0",
         "@canonical/i18n-react": "^0.37.0",
         "@canonical/react-ds-global": "^0.37.0",
@@ -348,6 +349,7 @@
         "@biomejs/biome": "2.5.11",
         "@canonical/biome-config": "^0.37.0",
         "@canonical/typescript-config": "^0.37.0",
+        "@canonical/webarchitect": "^0.37.0",
         "@types/bun": "^1.3.10",
         "@types/node": "^26.0.0",
         "@types/omelette": "^0.4.5",
@@ -422,11 +424,11 @@
       "dependencies": {
         "@canonical/ds-assets": "^0.37.0",
         "@canonical/ds-types": "^0.37.0",
+        "@canonical/ds-utils": "^0.37.0",
         "@canonical/react-ds-global": "^0.37.0",
         "@canonical/react-hooks": "^0.37.0",
         "@canonical/storybook-config": "^0.37.0",
         "@canonical/styles": "^0.37.0",
-        "@canonical/utils": "^0.37.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
       },
@@ -543,9 +545,9 @@
       "name": "@canonical/react-ds-app-launchpad",
       "version": "0.37.0",
       "dependencies": {
+        "@canonical/ds-utils": "^0.37.0",
         "@canonical/storybook-config": "^0.37.0",
         "@canonical/styles": "^0.37.0",
-        "@canonical/utils": "^0.37.0",
         "@js-temporal/polyfill": "^0.5.1",
         "highlight.js": "^11.11.1",
         "react": ">=18.0.0 <20.0.0",
@@ -660,10 +662,10 @@
       "dependencies": {
         "@canonical/design-tokens": "0.8.1",
         "@canonical/ds-assets": "^0.37.0",
+        "@canonical/ds-utils": "^0.37.0",
         "@canonical/react-hooks": "^0.37.0",
         "@canonical/storybook-config": "^0.37.0",
         "@canonical/styles": "^0.37.0",
-        "@canonical/utils": "^0.37.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
       },
@@ -700,6 +702,7 @@
       "name": "@canonical/react-ds-global-form",
       "version": "0.37.0",
       "dependencies": {
+        "@canonical/ds-utils": "^0.37.0",
         "@canonical/react-ds-global": "^0.37.0",
         "@canonical/storybook-config": "^0.37.0",
         "@canonical/styles": "^0.37.0",
@@ -771,7 +774,7 @@
       "version": "0.37.0",
       "dependencies": {
         "@canonical/ds-types": "^0.37.0",
-        "@canonical/utils": "^0.37.0",
+        "@canonical/ds-utils": "^0.37.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
       },
@@ -897,6 +900,7 @@
         "@canonical/biome-config": "^0.37.0",
         "@canonical/typescript-config": "^0.37.0",
         "@canonical/vitest-config-react": "^0.37.0",
+        "@canonical/webarchitect": "^0.37.0",
         "@cloudflare/workers-types": "^5.0.0",
         "@vitest/coverage-v8": "^4.0.18",
         "typescript": "^5.9.3",
@@ -914,6 +918,7 @@
         "@canonical/biome-config": "^0.37.0",
         "@canonical/typescript-config": "^0.37.0",
         "@canonical/vitest-config-react": "^0.37.0",
+        "@canonical/webarchitect": "^0.37.0",
         "@types/node": "^26.0.0",
         "@vitest/coverage-v8": "^4.0.18",
         "typescript": "^5.9.3",
@@ -931,6 +936,7 @@
         "@canonical/biome-config": "^0.37.0",
         "@canonical/typescript-config": "^0.37.0",
         "@canonical/vitest-config-react": "^0.37.0",
+        "@canonical/webarchitect": "^0.37.0",
         "@types/node": "^26.0.0",
         "@vitest/coverage-v8": "^4.0.18",
         "typescript": "^5.9.3",
@@ -969,6 +975,22 @@
         "storybook": "^10.3.1",
         "typescript": "^5.9.3",
         "vite": "^8.0.1",
+        "vitest": "^4.0.18",
+      },
+    },
+    "packages/runtime/ds-utils": {
+      "name": "@canonical/ds-utils",
+      "version": "0.37.0",
+      "dependencies": {
+        "@canonical/ds-types": "^0.37.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.5.11",
+        "@canonical/biome-config": "^0.37.0",
+        "@canonical/typescript-config": "^0.37.0",
+        "@canonical/webarchitect": "^0.37.0",
+        "@types/node": "^26.0.0",
+        "typescript": "^5.9.3",
         "vitest": "^4.0.18",
       },
     },
@@ -1093,6 +1115,7 @@
         "@biomejs/biome": "2.5.11",
         "@canonical/biome-config": "^0.37.0",
         "@canonical/typescript-config-react": "^0.37.0",
+        "@canonical/webarchitect": "^0.37.0",
         "@storybook/react-vite": "^10.3.1",
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
@@ -1121,6 +1144,7 @@
         "@canonical/biome-config": "^0.37.0",
         "@canonical/storybook-config": "^0.37.0",
         "@canonical/typescript-config-react": "^0.37.0",
+        "@canonical/webarchitect": "^0.37.0",
         "@storybook/addon-docs": "^10.3.1",
         "@storybook/react-vite": "^10.3.1",
         "@types/node": "^26.0.0",
@@ -1193,6 +1217,7 @@
         "@canonical/storybook-addon-shell-theme": "^0.37.0",
         "@canonical/styles": "^0.37.0",
         "@canonical/typescript-config-react": "^0.37.0",
+        "@canonical/webarchitect": "^0.37.0",
         "@storybook/addon-docs": "^10.3.1",
         "@storybook/react-vite": "^10.3.1",
         "@testing-library/jest-dom": "^7.0.0",
@@ -1298,6 +1323,7 @@
         "@types/bun": "^1.3.10",
         "@types/node": "^26.0.0",
         "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
       },
       "peerDependencies": {
         "typescript": "^5.9.3",
@@ -1522,8 +1548,8 @@
       "version": "0.37.0",
       "dependencies": {
         "@canonical/ds-assets": "^0.37.0",
+        "@canonical/ds-utils": "^0.37.0",
         "@canonical/styles": "^0.37.0",
-        "@canonical/utils": "^0.37.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.5.11",
@@ -1566,6 +1592,7 @@
         "@biomejs/biome": "2.5.11",
         "@canonical/biome-config": "^0.37.0",
         "@canonical/typescript-config": "^0.37.0",
+        "@canonical/webarchitect": "^0.37.0",
         "@sveltejs/vite-plugin-svelte": "^7.0.0",
         "@types/jsdom": "^28.0.0",
         "typescript": "^5.9.3",
@@ -1579,9 +1606,6 @@
     "packages/utils": {
       "name": "@canonical/utils",
       "version": "0.37.0",
-      "dependencies": {
-        "@canonical/ds-types": "^0.37.0",
-      },
       "devDependencies": {
         "@biomejs/biome": "2.5.11",
         "@canonical/biome-config": "^0.37.0",
@@ -1777,6 +1801,8 @@
     "@canonical/ds-implementations": ["@canonical/ds-implementations@workspace:packages/ds-implementations"],
 
     "@canonical/ds-types": ["@canonical/ds-types@workspace:packages/ds-types"],
+
+    "@canonical/ds-utils": ["@canonical/ds-utils@workspace:packages/runtime/ds-utils"],
 
     "@canonical/harnesses": ["@canonical/harnesses@workspace:packages/runtime/harnesses"],
 
