@@ -107,7 +107,7 @@ Decide which concept it belongs to. That one decision settles the rest:
 - **which entries import it** — the entry for that concept, and no other.
 
 If it belongs to no concept, that is the finding: either the concept is missing, or the file is two
-files. `@canonical/styles`' `tests/entries.test.ts` pins the composition — which layers each entry
+files. `@canonical/styles`' `tests/entries.test.js` pins the composition — which layers each entry
 opens, that its tokens entry declares nothing but custom properties, that each file is reached once —
 and this package's `exports` map is the contract for what a consumer may link.
 

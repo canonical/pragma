@@ -32,20 +32,16 @@
     "access": "public"
   },
   "scripts": {
-    "check": "bun run check:biome && bun run check:ts",
-    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check": "bun run check:biome",
+    "check:fix": "bun run check:biome:fix",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
-    "check:ts": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.11",
     "@canonical/biome-config": "^0.37.0",
-    "@canonical/typescript-config": "^0.37.0",
-    "@types/node": "^26.0.0",
-    "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   },
   "dependencies": {

@@ -6,6 +6,6 @@ export default defineConfig({
     // The package ships CSS; the tests are about how the entry points relate to
     // one another, so they read the files rather than a built artefact and live
     // outside `src`, which is what npm publishes.
-    include: ["tests/**/*.test.ts"],
+    include: ["tests/**/*.test.js"],
   },
 });

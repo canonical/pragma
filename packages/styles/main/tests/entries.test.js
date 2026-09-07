@@ -22,18 +22,12 @@ import {
   resolve,
 } from "./support/css.js";
 
-const ENTRIES = [
-  "index.css",
-  "tokens.css",
-  "elements.css",
-  "layout.css",
-] as const;
+const ENTRIES = ["index.css", "tokens.css", "elements.css", "layout.css"];
 
-const srcPath = (file: string): string =>
-  join(import.meta.dirname, "..", "src", file);
+const srcPath = (file) => join(import.meta.dirname, "..", "src", file);
 
 /** The names in a stylesheet's first `@layer` statement, in order. */
-const statement = (css: string): string[] => {
+const statement = (css) => {
   const match = css
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .match(/@layer\s+([^;{]+);/);
@@ -50,8 +44,10 @@ const statement = (css: string): string[] => {
  * order statement and `@layer a { … }` is a block, they are spelled almost the
  * same, and only the first may be followed by `@import`. Reporting the rule
  * without it would let a block pass for a statement.
+ *
+ * @returns {{ rule: string, terminator: string }} the rule, and what ended it
  */
-const firstRule = (css: string): { rule: string; terminator: string } => {
+const firstRule = (css) => {
   const text = css.replace(/\/\*[\s\S]*?\*\//g, "");
   const end = text.search(/[;{]/);
   return {
@@ -61,7 +57,7 @@ const firstRule = (css: string): { rule: string; terminator: string } => {
 };
 
 /** Every specifier a stylesheet imports, before any of them is followed. */
-const imports = (css: string): string[] =>
+const imports = (css) =>
   Array.from(
     css
       .replace(/\/\*[\s\S]*?\*\//g, "")
@@ -77,7 +73,7 @@ const imports = (css: string): string[] =>
  * everything and the design tokens use it to hang custom properties, which style
  * nothing on their own.
  */
-const hasTypeSelector = (selector: string): boolean =>
+const hasTypeSelector = (selector) =>
   selector
     .replace(/:(?:is|where|not|has|matches|any)\(/g, ",")
     .split(/[,()]/)
@@ -237,7 +233,8 @@ describe("layout.css", () => {
  */
 describe.each(ENTRIES)("the import graph of %s", (file) => {
   it("inlines each file exactly once", () => {
-    const counted = new Map<string, number>();
+    /** @type {Map<string, number>} */
+    const counted = new Map();
     for (const inlined of graph(srcPath(file)))
       counted.set(inlined, (counted.get(inlined) ?? 0) + 1);
     expect(
