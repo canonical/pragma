@@ -10,7 +10,6 @@
     importance?: ModifierFamilyValues["importance"];
     anticipation?: ModifierFamilyValues["anticipation"];
     emphasis?: Extract<ModifierFamilyValues["emphasis"], "branded">;
-    criticality?: Extract<ModifierFamilyValues["criticality"], "information">;
   };
 
   type MatrixColumn = {
@@ -24,7 +23,6 @@
       label: anticipation,
       variant: { anticipation },
     })),
-    { label: "information", variant: { criticality: "information" } },
     { label: "branded", variant: { emphasis: "branded" } },
   ];
 
@@ -46,6 +44,10 @@
 {#snippet variantMatrix(props: { disabled?: boolean; loading?: boolean })}
   <div class="matrix">
     <span></span>
+    <span></span>
+    <span class="matrix-family matrix-family-anticipation">anticipation</span>
+    <span class="matrix-family">emphasis</span>
+    <span class="matrix-family">importance</span>
     {#each MATRIX_COLUMNS as column (column.label)}
       <span class="matrix-label">{column.label}</span>
     {/each}
@@ -90,14 +92,6 @@
         </Button>
       {/each}
     </div>
-  {/snippet}
-</Story>
-
-<Story name="Criticality">
-  {#snippet template(args)}
-    <Button {...args} criticality="information" onclick={fn()}>
-      information
-    </Button>
   {/snippet}
 </Story>
 
@@ -214,10 +208,19 @@
 <style>
   .matrix {
     display: grid;
-    grid-template-columns: repeat(7, max-content);
+    grid-template-columns: repeat(6, max-content);
     gap: var(--dimension-150);
     align-items: center;
     justify-items: start;
+  }
+
+  .matrix-family {
+    font: var(--ds-typography-text-secondary);
+    color: var(--color-text-muted);
+  }
+
+  .matrix-family-anticipation {
+    grid-column: span 3;
   }
 
   .matrix-label {

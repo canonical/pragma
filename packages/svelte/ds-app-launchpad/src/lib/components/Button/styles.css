@@ -82,24 +82,6 @@
     }
   }
 
-  /* Button-specific modifiers */
-  &.information {
-    --modifier-color-foreground-primary-hover: var(
-      --color-foreground-primary-information-hover
-    );
-    --modifier-color-foreground-primary-active: var(
-      --color-foreground-primary-information-active
-    );
-    --modifier-color-foreground-primary-disabled: var(
-      --color-foreground-primary-information-disabled
-    );
-    --modifier-color-border-disabled: var(--color-border-information-disabled);
-  }
-
-  &.information.tertiary {
-    --modifier-color-text-disabled: var(--color-text-information-disabled);
-    --modifier-color-icon-disabled: var(--color-icon-information-disabled);
-  }
   &.compact {
     --dimension-padding-block-button: 0;
     --dimension-padding-inline-button: var(--dimension-100);

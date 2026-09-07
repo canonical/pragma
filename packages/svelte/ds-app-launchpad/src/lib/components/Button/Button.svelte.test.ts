@@ -119,14 +119,6 @@ describe("Button component", () => {
       await expect.element(componentLocator(page)).toHaveClass("branded");
     });
 
-    it("applies criticality class", async () => {
-      const page = render(Component, {
-        ...baseProps,
-        criticality: "information",
-      });
-      await expect.element(componentLocator(page)).toHaveClass("information");
-    });
-
     it("applies density class", async () => {
       const page = render(Component, {
         ...baseProps,

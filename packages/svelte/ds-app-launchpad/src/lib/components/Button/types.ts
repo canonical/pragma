@@ -9,6 +9,5 @@ export type ButtonProps = ButtonPrimitiveProps & {
   importance?: ModifierFamilyValues["importance"];
   anticipation?: ModifierFamilyValues["anticipation"];
   emphasis?: Extract<ModifierFamilyValues["emphasis"], "branded">;
-  criticality?: Extract<ModifierFamilyValues["criticality"], "information">;
   density?: ModifierFamilyValues["density"];
 };

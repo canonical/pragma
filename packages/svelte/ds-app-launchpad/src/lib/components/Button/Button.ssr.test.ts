@@ -93,13 +93,6 @@ describe("Button SSR", () => {
       expect(componentLocator(page).classList).toContain("branded");
     });
 
-    it("applies the criticality class", () => {
-      const page = render(Component, {
-        props: { ...baseProps, criticality: "information" },
-      });
-      expect(componentLocator(page).classList).toContain("information");
-    });
-
     it("applies density class", () => {
       const page = render(Component, {
         props: { ...baseProps, density: "dense" },

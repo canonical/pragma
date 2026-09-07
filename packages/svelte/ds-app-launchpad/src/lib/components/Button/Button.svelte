@@ -13,7 +13,6 @@
     importance = "secondary",
     anticipation,
     emphasis,
-    criticality,
     density,
     children,
     iconLeft,
@@ -34,7 +33,6 @@
     importance,
     anticipation,
     emphasis,
-    criticality,
     density,
     { loading, "explicit-disabled": disabled },
   ]}
