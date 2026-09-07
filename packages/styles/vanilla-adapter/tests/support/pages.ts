@@ -5,15 +5,12 @@
  * through its `sass` export condition (vite.config.ts), pragma's stylesheet
  * and its entries through their entry points, adapter.css with its imports
  * resolved, and the component sheets from their packages' sources, which are
- * what the built entries are made of.
+ * what the built entries are made of. Those six are read by their path in this
+ * repository rather than by package name: a package's export map describes what
+ * it publishes, which is its built output, and these tests read the sources the
+ * build is made of.
  */
 
-import buttonCss from "@canonical/react-ds-global/src/lib/component/Button/styles.css?inline";
-import cardCss from "@canonical/react-ds-global/src/lib/component/Card/styles.css?inline";
-import formCss from "@canonical/react-ds-global-form/src/index.css?inline";
-import selectCss from "@canonical/react-ds-global-form/src/lib/subcomponent/SelectInput/styles.css?inline";
-import textareaCss from "@canonical/react-ds-global-form/src/lib/subcomponent/TextareaInput/styles.css?inline";
-import textInputCss from "@canonical/react-ds-global-form/src/lib/subcomponent/TextInput/styles.css?inline";
 import pragmaElementsCss from "@canonical/styles/elements.css?inline";
 import layoutCss from "@canonical/styles/layout.css?inline";
 import tokensCss from "@canonical/styles/tokens.css?inline";
@@ -22,6 +19,12 @@ import vanilla456 from "vanilla-framework-4.56/scss/build.scss?inline";
 import vanilla458 from "vanilla-framework-4.58/scss/build.scss?inline";
 import { onTestFinished } from "vitest";
 import { commands } from "vitest/browser";
+import buttonCss from "../../../../react/ds-global/src/lib/component/Button/styles.css?inline";
+import cardCss from "../../../../react/ds-global/src/lib/component/Card/styles.css?inline";
+import formCss from "../../../../react/ds-global-form/src/index.css?inline";
+import selectCss from "../../../../react/ds-global-form/src/lib/subcomponent/SelectInput/styles.css?inline";
+import textareaCss from "../../../../react/ds-global-form/src/lib/subcomponent/TextareaInput/styles.css?inline";
+import textInputCss from "../../../../react/ds-global-form/src/lib/subcomponent/TextInput/styles.css?inline";
 import adapterResolved from "../../adapter.css?inline";
 import adapterCss from "../../adapter.css?raw";
 import elementsCss from "../../elements.css?raw";
