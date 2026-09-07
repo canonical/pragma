@@ -25,10 +25,10 @@ import formCss from "../../../../react/ds-global-form/src/index.css?inline";
 import selectCss from "../../../../react/ds-global-form/src/lib/subcomponent/SelectInput/styles.css?inline";
 import textareaCss from "../../../../react/ds-global-form/src/lib/subcomponent/TextareaInput/styles.css?inline";
 import textInputCss from "../../../../react/ds-global-form/src/lib/subcomponent/TextInput/styles.css?inline";
-import adapterResolved from "../../adapter.css?inline";
-import adapterCss from "../../adapter.css?raw";
-import elementsCss from "../../elements.css?raw";
-import layersCss from "../../layers.css?raw";
+import adapterResolved from "../../src/adapter.css?inline";
+import adapterCss from "../../src/adapter.css?raw";
+import elementsCss from "../../src/elements.css?raw";
+import layersCss from "../../src/layers.css?raw";
 import type { MediaEmulation } from "../../vite.config.js";
 
 /** The Vanilla releases the fixtures run against: the sites' pin and the latest. */
