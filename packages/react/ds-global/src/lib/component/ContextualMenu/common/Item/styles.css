@@ -1,33 +1,4 @@
-/* Component tokens — sourced from @canonical/design-tokens.
-   Mapped strictly to the Figma "Contextual menu item" frame:
-   px = dimension-200 (16px), py = dimension-050 (4px), gap = dimension-050 (4px)
-   between icon<->text and text<->caret, text = color-text (black),
-   fills = color-foreground-ghost/-active, line-height 24px.
-   No min-height — the item is padding + line-height. */
-:root {
-  --contextual-menu-item-color-text: var(--color-text);
-  --contextual-menu-item-color-text-disabled: var(--color-text-disabled);
-  --contextual-menu-item-color-background: var(--color-foreground-ghost);
-  --contextual-menu-item-color-background-hover: var(
-    --color-foreground-ghost-hover
-  );
-  --contextual-menu-item-color-background-active: var(
-    --color-foreground-ghost-active
-  );
-  --contextual-menu-item-padding-block: var(--dimension-050);
-  --contextual-menu-item-padding-inline: var(--dimension-200);
-  /* 4px gap: icon<->text and text<->caret (per the spec). */
-  --contextual-menu-item-gap: var(--dimension-050);
-  /* De-emphasised slot text (badge / shortcut) — muted, matching
-     KeyboardKey / Tabs. */
-  --contextual-menu-item-slot-color: var(--color-text-muted);
-  /* Keyboard focus ring (Button precedent) — the semantic focus-ring colour,
-     with a currentColor backstop should the theme layer not be loaded. */
-  --contextual-menu-item-focus-ring-color: var(--color-focusRing, currentColor);
-  --contextual-menu-item-focus-ring-width: var(
-    --dimension-stroke-thickness-large
-  );
-}
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
 @layer ds.components.global {
   /* Component tokens — sourced from @canonical/design-tokens.

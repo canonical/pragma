@@ -16,13 +16,13 @@ const surfaceCssClassName = "ds side-navigation-context-switcher-surface";
  * not a cast at each read site, carries them through construction and both
  * custom renderers below.
  */
-interface ContextMenuItem extends MenuItem {
+type ContextMenuItem = MenuItem & {
   description?: ContextSwitcherItem["description"];
   badge?: ContextSwitcherItem["badge"];
   isCurrent?: boolean;
   /** "Create context" only — the visible (possibly rich) label; `label` itself stays a plain string for type-ahead. */
   renderLabel?: React.ReactNode;
-}
+};
 
 /**
  * A context in the dropdown list — rendered custom (not `ContextualMenu`'s
