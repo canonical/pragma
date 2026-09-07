@@ -193,7 +193,7 @@ it.
 
 - [The cascade contract](../explanations/CASCADE.md) — why the order is what it is, and why the
   confinement for mixed pages lives in the adapter rather than here.
-- [`@canonical/styles` README](../../packages/styles/main/README.md) — what is layered where, the
-  guarantees and the tests behind them.
+- [`@canonical/styles` README](../../packages/styles/main/README.md) — what is layered where, and
+  what the package guarantees.
 - [`@canonical/styles-typography` README](../../packages/styles/typography/README.md) — the engines
   and their layer, for an application that imports one directly.

@@ -6,11 +6,13 @@ expects it, and so that you can tell a deliberate arrangement from an accident w
 else's file.
 
 It is the reasoning, not the reference. What is layered where, which files open which layer, which
-browser floors apply and which guarantees have a test behind them live in the package READMEs —
+browser floors apply and what each package guarantees live in the package READMEs —
 [`@canonical/styles`](../../packages/styles/main/README.md#cascade-layers) and
-[`@canonical/styles-typography`](../../packages/styles/typography/README.md#cascade-layers)
-— and a test reads the first of those back out of the file and compares it with the stylesheet a
-bundler resolves. Where the same fact appears here and there, the README is the one that is checked.
+[`@canonical/styles-typography`](../../packages/styles/typography/README.md#cascade-layers). Where
+the same fact appears here and there, the README is the one to trust: it is next to the stylesheet it
+describes. The contract itself is checked from outside, by the fixtures in
+`@canonical/styles-vanilla-adapter`, which render both kinds of page in a browser; where something
+here is asserted rather than argued, that is what asserts it.
 
 If you are upgrading an application to the first layered release rather than maintaining the styles,
 read [Migrating to the layered styles release](../how-to-guides/MIGRATE_TO_LAYERED_STYLES.md) instead.
@@ -46,9 +48,10 @@ the [migration guide](../how-to-guides/MIGRATE_TO_LAYERED_STYLES.md) exists to e
 **`!important` runs the layer order backwards.** Among important declarations the *earliest* layer
 wins, and an unlayered important declaration loses to a layered one. So an important rule in the
 lowest layer is the strongest author rule on the page, and it cannot be arbitrated by layers at all.
-That is why the styles package ships none, and why the guarantee that it ships none is one a test
-checks rather than one a README asserts. One important declaration is still left elsewhere in pragma,
-a margin on the Tooltip; removing it belongs to the hygiene step of the same programme.
+That is why the styles package ships none, and the adapter's fixtures check it from the outside, over
+pragma's CSS on both kinds of page rather than over a claim in a README. One important declaration is
+still left elsewhere in pragma, a margin on the Tooltip; removing it belongs to the hygiene step of
+the same programme.
 
 ## Why this needed deciding
 
@@ -92,7 +95,7 @@ is legal after it because a layer statement and `@charset` are the only rules an
 ```
 
 (The [README's layer table](../../packages/styles/main/README.md#cascade-layers) is the reference for
-what goes in each of them, and the test binds it to the stylesheet.)
+what goes in each of them.)
 
 Read it from the bottom up; each position is an argument, and each is the answer to "what should be
 able to overrule this?"
@@ -130,9 +133,9 @@ package could not override them by layer, only by specificity, which is the fail
 meant to end.
 
 The rule for a maintainer is short: if you are writing a component rule, name a tier. The styles
-package holds to it and its test enforces it there; one sheet in the form package still writes a
-layout preset straight into `ds.components`, and the change that wraps the component stylesheets by
-tier folds it into a tier with the rest.
+package holds to it; one sheet in the form package still writes a layout preset straight into
+`ds.components`, and the change that wraps the component stylesheets by tier folds it into a tier with
+the rest.
 
 ### The component tiers follow the tier tree, flat
 
@@ -196,8 +199,7 @@ the border-box declaration further down is one — takes a judgement about inten
 judgement a test can make; a check that tried would either miss the resets or condemn the rules the
 system depends on.
 
-(The styles change that carries these names is stacked below this one; the README's statement is the
-copy a test binds to the stylesheet.)
+(The styles change that carries these names is stacked below this one.)
 
 One related trap, measured: importing a stylesheet with `@import url("…") layer(L)` when that
 stylesheet itself opens `L` nests it as `L.L` — a sublayer that loses to `L`'s own rules. Pragma's own
@@ -235,8 +237,10 @@ theme sheet declares `color-scheme` on `:root`, `.light` and `.dark` beside the 
 property is not inert. It decides the canvas, the form controls, the scrollbars and the system colours
 whether or not anything reads a token. It cannot be separated out here, because the sheet is generated
 with those declarations inside the same rules as the tokens; the README says what an application that
-must not have it can do instead, and a test allows exactly those three declarations and no other
-non-custom property, so nothing else can join them unnoticed.
+must not have it can do instead. What the adapter's fixtures do assert is the neighbouring property,
+and it is the one that matters on a mixed page: neither the values entry nor the layout entry puts
+anything but custom properties into the three element layers, so nothing of pragma's reaches the other
+framework's headings and paragraphs from a layer above it.
 
 Every entry opens with the same order statement, so importing one settles the layer order exactly as
 importing all of them does. And in this package no entry imports another: an `@layer` statement inside
@@ -384,9 +388,11 @@ of the first. Where the statement does survive, the blocks stay in the order the
 and it is each name's *first* appearance that follows the statement, which is all the cascade ever
 promised. The
 [migration guide](../how-to-guides/MIGRATE_TO_LAYERED_STYLES.md#2-check-the-layers-on-a-built-page)
-carries the snippet that reads that sequence out of a live page. Pragma's own check works one step
-earlier — on the stylesheet a bundler resolves, before a minifier rewrites it, where the statement is
-still the first rule and every layer it opens can be compared with the README's tables.
+carries the snippet that reads that sequence out of a live page. The adapter's fixtures ask the same
+question of a browser rather than of a file: they load both kinds of page and assert that every layer
+pragma's CSS uses is one the statement names, that each exported entry states the same order, and that
+the ranks come out as written — including a sub-tier layer declared later, which must sort above its
+tier.
 
 One more thing a bundler cannot fix: an aggregate stylesheet imported first does not pin a rule's
 position on such a build, because the duplicate that survives is the last one. Position stops mattering
@@ -426,10 +432,10 @@ So that the next fact you add goes to one place and not to three:
 | Kind | Home |
 | --- | --- |
 | Why the arrangement is what it is | this document |
-| What is layered where, the statement, the floors, the guarantees and their tests | the package READMEs |
+| What is layered where, the statement, the floors and what each package guarantees | the package READMEs |
 | How to change an application to fit it | [the migration guide](../how-to-guides/MIGRATE_TO_LAYERED_STYLES.md) and the adapter README |
 | The rules a reviewer cites | the CSS code standards (`canonical/web-code-standards`): every rule in a named layer, one statement first, component tiers, scoped element layers, no `!important`, reserved class names, components own the box of the natives they render, and territories |
 | The decision, with its measurements and the alternatives that were closed | the decision record `F.VANILLA_COEXISTENCE` in `pragma-adrs` |
 
-A fact that has to appear twice points at its home from the other place, and where it can be checked
-against the code, it is.
+A fact that has to appear twice points at its home from the other place, and the properties a browser
+can be asked about are asked of one, in the adapter's fixtures.
