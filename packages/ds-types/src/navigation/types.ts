@@ -1,27 +1,8 @@
 /**
- * Navigation item - Public API (WD405)
- *
- * A unified type for navigation items across the design system.
- * Used by Breadcrumbs, SiteNavigation, FileTree, MegaMenu, etc.
- *
- * Only fields consumed by the shared navigation utilities belong here.
- * Styling and rendering customization (CSS classes, custom renderers)
- * belong on the item types that components declare by extending this
- * one (e.g. BreadcrumbItem, MenuItem), using each framework's own idioms.
+ * Fields every navigation item carries, independent of its identity.
+ * Composed into `Item` alongside `ItemIdentity`.
  */
-export interface Item {
-  /**
-   * Unique identifier for the item when a URL is not provided.
-   * e.g. 'section-header' for a non-navigable grouping item.
-   */
-  key?: string;
-
-  /**
-   * Navigation URL for the item, used for navigable links.
-   * e.g. '/dashboard' for directing to the dashboard page.
-   */
-  url?: string;
-
+interface ItemFields {
   /**
    * Display text for the item in the navigation UI.
    * e.g. 'Dashboard' as the visible label.
@@ -35,11 +16,92 @@ export interface Item {
   disabled?: boolean;
 
   /**
+   * Flag marking a node that exists to structure or decorate the list rather
+   * than to be chosen — a separator, a group heading, a spacer.
+   * e.g. true on the rule drawn between two groups of menu items.
+   *
+   * This is not a stronger `disabled`. `disabled` says "an item you may not
+   * choose right now"; `presentational` says "not an item", which makes
+   * `disabled` meaningless rather than false. Keyboard navigation skips both,
+   * but only `presentational` nodes are absent from the count a user perceives.
+   */
+  presentational?: boolean;
+
+  /**
    * Array of child items for nested navigation structures.
    * e.g. Submenu items under a parent like 'Settings'.
    */
   items?: Item[];
 }
+
+/**
+ * The identity of a navigation item - Public API (WD405)
+ *
+ * Every item must be addressable: the shared navigation utilities index a tree
+ * by item id, so an item with no identity has no place in that index. One of
+ * `url` or `key` is therefore required — either, or both — and the requirement
+ * is carried by the type instead of being checked at runtime.
+ *
+ * `url` wins when both are present, so the union discriminates on it: the
+ * `key`-only arm states `url?: undefined`, which is what lets a check on `url`
+ * prove that `key` is there.
+ */
+type ItemIdentity =
+  | {
+      /**
+       * Unique identifier for the item, required when no URL is provided.
+       * This is the answer for a non-navigable node,
+       * e.g. 'section-header' for a grouping item.
+       */
+      key: string;
+
+      /** Absent — an item without a URL is identified by its `key`. */
+      url?: undefined;
+    }
+  | {
+      /**
+       * Unique identifier for the item, optional alongside a URL.
+       * `url` takes precedence over it when both are present.
+       */
+      key?: string;
+
+      /**
+       * Navigation URL for the item, used for navigable links.
+       * e.g. '/dashboard' for directing to the dashboard page.
+       * Doubles as the item's identity, taking precedence over `key`.
+       */
+      url: string;
+    };
+
+/**
+ * Navigation item - Public API (WD405)
+ *
+ * A unified type for navigation items across the design system.
+ * Used by Breadcrumbs, SiteNavigation, FileTree, MegaMenu, etc.
+ *
+ * Only fields consumed by the shared navigation utilities belong here.
+ * Styling and rendering customization (CSS classes, custom renderers)
+ * belong on the item types that components declare by composing this
+ * one (e.g. BreadcrumbItem, MenuItem), using each framework's own idioms.
+ *
+ * The identity requirement makes `Item` a union, so compose it with `&`
+ * rather than `interface … extends` (which cannot extend a union), and drop
+ * fields from it with `_DistributiveOmit` rather than `Omit`.
+ */
+export type Item = ItemFields & ItemIdentity;
+
+/** Type-level assertion: fails to compile unless `T` resolves to `true`. */
+type Assert<T extends true> = T;
+
+/**
+ * Compile-time proof of the identity requirement: an object carrying neither a
+ * `key` nor a `url` is not an `Item`. That is what lets `getItemId` be total,
+ * so it is asserted where the type is declared rather than left to a runtime
+ * check downstream.
+ */
+type _IdentityIsRequired = Assert<
+  { label: string } extends Item ? false : true
+>;
 
 /**
  * Annotated navigation item - Private API (WD405)
@@ -92,15 +154,27 @@ export type _Item<T extends Item = Item> = _DistributiveOmit<T, "items"> & {
 };
 
 /**
+ * A distributing `Omit` - Private API (WD405)
+ *
  * An `Omit` that distributes over union types: `_DistributiveOmit<A | B, K>`
  * is `Omit<A, K> | Omit<B, K>`, where the plain `Omit<A | B, K>` would first
- * collapse the union to its common keys. Intersecting the annotation fields
+ * collapse the union to its common keys. `Item` is itself a union — its
+ * identity requirement is one — so dropping a field from it (a flat trail with
+ * no `items`, say) needs this rather than `Omit`, which would quietly make
+ * both `key` and `url` optional again. Intersecting the annotation fields
  * with the distributed union then distributes too, keeping `_Item<A | B>`
  * member-shaped. The conditional is only on the `Omit` half — the annotation
  * fields above stay a concrete object type, so generic code can access
  * `parentUrl`/`depth`/`items` without resolving the conditional.
+ *
+ * Exported, but private in the same sense as `_Item` and `_Index`: it is for
+ * code that DEFINES an item type, not for code that passes items around. An
+ * application composing its own item adds fields with `&` and needs nothing
+ * from here; it is the packages declaring `BreadcrumbItem`, `TabItem` and the
+ * rest that must drop a field from a union, and they live behind this same
+ * `_` convention.
  */
-type _DistributiveOmit<T, K extends PropertyKey> = T extends unknown
+export type _DistributiveOmit<T, K extends PropertyKey> = T extends unknown
   ? Omit<T, K>
   : never;
 

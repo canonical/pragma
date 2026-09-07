@@ -1,5 +1,5 @@
 import type { _Item } from "@canonical/ds-types";
-import { getItemId } from "@canonical/utils";
+import { getItemId } from "@canonical/ds-utils";
 import type React from "react";
 import { useMemo } from "react";
 import { createPortal } from "react-dom";
@@ -136,7 +136,12 @@ const ContextualMenu = ({
   const menuElement = (
     <div
       className={[
-        `${componentCssClassName}__surface`,
+        // Spelled out rather than interpolated from componentCssClassName: the
+        // portal target sits outside the caller's subtree, so this root marks
+        // its own pragma territory, and that must not depend on another
+        // constant keeping its "ds " prefix. SubMenu.tsx does the same.
+        "ds",
+        "contextual-menu__surface",
         "modal",
         bestPosition?.positionName,
       ]

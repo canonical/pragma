@@ -44,7 +44,7 @@
   },
   "dependencies": {
     "@canonical/ds-types": "^0.37.0",
-    "@canonical/utils": "^0.37.0",
+    "@canonical/ds-utils": "^0.37.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },

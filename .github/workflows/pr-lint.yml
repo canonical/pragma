@@ -38,6 +38,21 @@ jobs:
     name: Apply type label
     needs: validate-pr-metadata
     runs-on: ubuntu-latest
+    # ONE run at a time per pull request. Two edits in quick succession queue
+    # two runs, and run side by side they can each read the labels before the
+    # other writes them: a `feat` → `docs` → `fix` retitle then leaves BOTH
+    # `docs` and `fix` behind, each run having removed only the `feat` it saw.
+    # A newer run cancels an older one, whether that older run is still queued
+    # or already executing. Only the newest run can be right: the label is
+    # reconciled from the title read live below, so a run still working on a
+    # title that has since been edited is doing work that will be undone.
+    # Cancelling has one window — this job adds labels before it removes them,
+    # so an interrupted run can leave the old label sitting beside the new one
+    # — and the run whose arrival caused the cancellation closes it, because it
+    # reconciles the whole managed set against the current title.
+    concurrency:
+      group: apply-type-label-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     permissions:
       pull-requests: write
       # Creating a managed label that does not exist yet goes through the issues API.
@@ -60,7 +75,16 @@ jobs:
             COLORS[BREAKING] = "b60205";
 
             const { owner, repo } = context.repo;
-            const pr = context.payload.pull_request;
+            // Read the pull request as it stands NOW, not as the event payload
+            // snapshotted it when the edit was queued. A run that starts after
+            // a later edit would otherwise reconcile a title and a label set
+            // that are already history, and converge on the wrong answer while
+            // reporting success.
+            const { data: pr } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: context.payload.pull_request.number,
+            });
 
             // A fork PR gets a read-only token, so labelling would fail the run.
             if (pr.head.repo.full_name !== `${owner}/${repo}`) {
@@ -99,6 +123,19 @@ jobs:
               await github.rest.issues.addLabels({ owner, repo, issue_number: pr.number, labels: add });
             }
             for (const name of remove) {
-              await github.rest.issues.removeLabel({ owner, repo, issue_number: pr.number, name });
+              // A label that is already gone is the outcome this loop wants,
+              // not an error. Anyone may remove one between the read above and
+              // the write here — a maintainer clicking it off, another
+              // automation — and GitHub answers a removal of an absent label
+              // with a 404, which would fail the whole job over a state that
+              // is already correct. The add loop above also catches a 404,
+              // but for a different condition: there it means the repository
+              // has no such label defined yet, and the answer is to create it.
+              try {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number: pr.number, name });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                core.info(`Label "${name}" was already absent`);
+              }
             }
             core.info(`${pr.title}\n  added:   ${add.join(", ") || "—"}\n  removed: ${remove.join(", ") || "—"}`);

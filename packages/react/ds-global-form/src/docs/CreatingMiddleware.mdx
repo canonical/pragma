@@ -311,10 +311,10 @@ Usage — a city select that populates when the country field changes:
 
 ### Debouncing API calls
 
-Any middleware that makes API calls on value changes should debounce to avoid flooding the server. The form package uses the `debounce` utility from `@canonical/utils`:
+Any middleware that makes API calls on value changes should debounce to avoid flooding the server. The form package uses the `debounce` utility from `@canonical/ds-utils`:
 
 ```typescript
-import { debounce } from "@canonical/utils";
+import { debounce } from "@canonical/ds-utils";
 import { useCallback, useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 import type { Middleware } from "@canonical/react-ds-global-form";

@@ -51,10 +51,10 @@ const rowActions: MenuEntry[] = [
   { key: "view", label: "View details", url: "#view" },
   { key: "edit", label: "Edit configuration", url: "#edit" },
   { key: "tags", label: "Edit tags", url: "#tags" },
-  { type: "separator" },
+  { type: "separator", key: "before-power" },
   { key: "restart", label: "Restart", url: "#restart" },
   { key: "shutdown", label: "Shut down", url: "#shutdown" },
-  { type: "separator" },
+  { type: "separator", key: "before-delete" },
   { key: "delete", label: "Delete", url: "#delete" },
 ];
 
@@ -101,7 +101,7 @@ export const AccountMenu: Story = {
       { key: "profile", label: "Your profile", url: "#profile" },
       { key: "subs", label: "Subscriptions", url: "#subscriptions" },
       { key: "billing", label: "Billing", url: "#billing", disabled: true },
-      { type: "separator" },
+      { type: "separator", key: "before-signout" },
       { key: "signout", label: "Sign out", url: "#signout" },
     ],
   },
@@ -121,7 +121,7 @@ export const WithShortcuts_NotCoreApi: Story = {
     items: [
       { key: "undo", label: "Undo", url: "#undo", slot: "⌘Z" },
       { key: "redo", label: "Redo", url: "#redo", slot: "⇧⌘Z" },
-      { type: "separator" },
+      { type: "separator", key: "before-clipboard" },
       { key: "cut", label: "Cut", url: "#cut", slot: "⌘X" },
       { key: "copy", label: "Copy", url: "#copy", slot: "⌘C" },
       { key: "paste", label: "Paste", url: "#paste", slot: "⌘V" },
@@ -183,7 +183,7 @@ const nestedActions: MenuEntry[] = [
     items: [
       { key: "share-link", label: "Copy link", url: "#link" },
       { key: "share-email", label: "Email", url: "#email" },
-      { type: "separator" },
+      { type: "separator", key: "share-before-teams" },
       {
         key: "share-teams",
         label: "Send to team",
@@ -205,7 +205,7 @@ const nestedActions: MenuEntry[] = [
       { key: "export-json", label: "JSON", url: "#json" },
     ],
   },
-  { type: "separator" },
+  { type: "separator", key: "before-delete" },
   { key: "delete", label: "Delete", url: "#delete" },
 ];
 
@@ -261,7 +261,7 @@ const rtlActions: MenuEntry[] = [
     ],
   },
   { key: "rename", label: "إعادة تسمية", url: "#rename" },
-  { type: "separator" },
+  { type: "separator", key: "before-delete" },
   { key: "delete", label: "حذف", url: "#delete" },
 ];
 

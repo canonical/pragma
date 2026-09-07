@@ -1,5 +1,5 @@
 import type { _Index, _Item } from "@canonical/ds-types";
-import type { NodeStatus } from "@canonical/utils";
+import type { NodeStatus } from "@canonical/ds-utils";
 import { describe, expect, it } from "vitest";
 import type { UseNavigationTreeResult } from "../types.js";
 import getMenuItemProps from "./getMenuItemProps.js";
@@ -113,5 +113,20 @@ describe("contextual-menu ARIA helpers", () => {
     expect(getMenuItemProps(createMockNav(), disabled)["aria-disabled"]).toBe(
       true,
     );
+  });
+
+  it("does not mark a presentational node aria-disabled", () => {
+    // The two flags stay readable apart at the ARIA boundary. A separator is
+    // not a menu item the user may not choose; `aria-disabled` on it would
+    // announce it as one. It is skipped by traversal and left unmarked here.
+    const separator: _Item = {
+      key: "sep",
+      parentUrl: "menu",
+      depth: 2,
+      presentational: true,
+    };
+    expect(
+      getMenuItemProps(createMockNav(), separator)["aria-disabled"],
+    ).toBeUndefined();
   });
 });

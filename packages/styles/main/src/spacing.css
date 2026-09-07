@@ -13,12 +13,11 @@
  * or themes may set; they are documented so the full API surface
  * is visible in one place.
  *
- * Layers: the token block is `ds.tokens`. These are custom properties, which
- * act only where a rule reads them.
- * The content-flow container at the end sets a real property on an element, so
- * it sits in `ds.components.global` — the global tier, not the parent layer,
- * because a rule written directly into `@layer ds.components` outranks both
- * component tiers.
+ * Layers: everything here is `ds.tokens`. These are custom properties, which
+ * act only where a rule reads them, so this file styles nothing on its own —
+ * which is what lets the tokens entry carry it. The content-flow container,
+ * which used to sit at the end of this file, sets a real property on an element
+ * and now travels with the layout presets in grid.css for that reason.
  */
 
 @layer ds.tokens {
@@ -114,17 +113,5 @@
     /* ── Heading alignment ──────────────────────────────────────────── */
     /* Inline padding for headings to align with padded blocks.           */
     /* --heading-padding-inline: … ; */ /* set by layout context, default 0 */
-  }
-}
-
-/* ── Content-flow container ─────────────────────────────────────── */
-
-@layer ds.components.global {
-  /* Content-flow container: establishes element-owned spacing context.
-   * Children use their own margin-bottom; last child is reset to 0
-   * to prevent double spacing at the container boundary.
-   */
-  .content-flow > :last-child {
-    margin-bottom: 0;
   }
 }

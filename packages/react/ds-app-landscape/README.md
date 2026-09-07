@@ -5,11 +5,6 @@ Landscape-specific components for the Pragma design system. This package provide
 ## Prerequisites
 
 - React 19 or higher
-- `@canonical/react-ds-global`, with its Button stylesheet loaded. The Button
-  stylesheet in this package is a delta over the global tier’s Button, not a
-  standalone component sheet: it declares only what this tier changes, so a
-  button rendered without the global tier’s sheet on the page falls back to the
-  browser’s own button styling.
 
 ## Installation
 
@@ -83,7 +78,7 @@ The order needs `@canonical/styles` on the page, needs its statement first, and 
 
 An application's own **unlayered** CSS now beats every rule in this package, whatever the selectors on either side, because an unlayered author rule outranks every layered one. That is CSS working as designed, and it is the deliberate escape hatch: an application that needs to override a component writes a plain rule and it wins. An application that does *not* want to win by accident puts its CSS in `@layer app`.
 
-**Rule for contributors:** every component stylesheet under `src/lib` opens with that wrapper, `src/lib/index.css` names the layer and imports the new sheet, and `src/lib/styles.layer.tests.ts` fails if either is missed. `@keyframes` and a component's own `:root` token defaults go inside the wrapper; `@property` and `@font-face` registrations stay outside, above the block, because no layer sorts a registration. Never reach for `!important` to win a fight — an important declaration inverts the layer order, so it cannot be arbitrated by layers at all. The "Cascade Layers" section of the `@canonical/styles` README is the reference for the full order and for what is deliberately left unlayered.
+**Rule for contributors:** every component stylesheet under `src/lib` opens with that wrapper, `src/lib/index.css` names the layer and imports the new sheet. `@keyframes` and a component's own `:root` token defaults go inside the wrapper; `@property` and `@font-face` registrations stay outside, above the block, because no layer sorts a registration. Never reach for `!important` to win a fight — an important declaration inverts the layer order, so it cannot be arbitrated by layers at all. The "Cascade Layers" section of the `@canonical/styles` README is the reference for the full order and for what is deliberately left unlayered.
 
 ## Storybook
 
@@ -91,14 +86,6 @@ An application's own **unlayered** CSS now beats every rule in this package, wha
 cd packages/react/ds-app-landscape
 bun run storybook
 ```
-
-These previews load `@canonical/styles` and nothing else — not the global tier’s
-component stylesheets — so the Button story shows a near-native `<button>`
-rather than the composed component. Importing the global tier’s Button
-stylesheet here is waiting on canonical/pragma#1123, which puts that sheet in
-`ds.components.global` (unlayered today, it would outrank every layered rule),
-and canonical/pragma#1122, which adds the aggregate `./index.css` subpath to
-import.
 
 ## Component Specifications
 

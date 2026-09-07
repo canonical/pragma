@@ -47,13 +47,16 @@ const roundAndAddUnit = (
  * Formats a large number into a compact, human-readable string with a unit suffix.
  * This function returns a humanized representation of a number, along with the selected unit and the original value if needed for further processing.
  *
+ * The display value is truncated to three characters, and `overflowIndicator`
+ * ("+" by default) is appended whenever that truncation loses precision.
+ *
  * @param value The number to format. It is expected to be a finite, non-negative number.
  * @param options Optional configuration for units, humanization type, and display constraints.
- * @returns A formatted string representation of the number (e.g., "1.2k", "15M").
+ * @returns The display string, the original value, and the unit that was applied.
  *
  * @example
- * humanizeNumber(12345); // Returns "12k"
- * humanizeNumber(999999); // Returns "999k"
+ * humanizeNumber(12345); // Returns { displayValue: "12k+", value: 12345, unit: "k" }
+ * humanizeNumber(1500000); // Returns { displayValue: "1.5M", value: 1500000, unit: "M" }
  */
 const humanizeNumber = (
   value: number,

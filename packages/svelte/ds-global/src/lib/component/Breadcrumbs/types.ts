@@ -1,4 +1,4 @@
-import type { Item } from "@canonical/ds-types";
+import type { _DistributiveOmit, Item } from "@canonical/ds-types";
 import type { Snippet } from "svelte";
 import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 import type { ItemAnchorProps } from "./common/Item/types.js";
@@ -17,15 +17,16 @@ import type { ItemAnchorProps } from "./common/Item/types.js";
  * Omits `items` (nested children) from the shared Item type: breadcrumbs
  * are always a flat trail, so that field has no meaning here.
  */
-export interface BreadcrumbItem extends ItemAnchorProps, Omit<Item, "items"> {
-  /**
-   * Whether this is the current page.
-   * When true, renders as text instead of link.
-   */
-  current?: boolean;
-  /** CSS class applied to this item's `<li>`, in addition to the base classes. */
-  class?: ClassValue;
-}
+export type BreadcrumbItem = ItemAnchorProps &
+  _DistributiveOmit<Item, "items"> & {
+    /**
+     * Whether this is the current page.
+     * When true, renders as text instead of link.
+     */
+    current?: boolean;
+    /** CSS class applied to this item's `<li>`, in addition to the base classes. */
+    class?: ClassValue;
+  };
 
 type BaseProps = SvelteHTMLElements["nav"];
 
