@@ -386,3 +386,57 @@ describe("generated Storybook preview", () => {
     expect(library).not.toContain('import "../src/index.css";');
   });
 });
+
+// =============================================================================
+// The component-tier layer a scaffolded package declares
+// =============================================================================
+
+/** Render the CSS entry template the way the generator does. */
+const renderIndexCss = (name: string): string =>
+  renderString(
+    readFileSync(
+      new URL("./templates/index.css.ejs", import.meta.url),
+      "utf-8",
+    ),
+    createTemplateContext(
+      {
+        name,
+        type: "css",
+        description: "Styles",
+        withReact: false,
+        withStorybook: false,
+        withCli: false,
+        withPrTemplate: false,
+        runInstall: false,
+      },
+      { isMonorepo: false },
+    ),
+  );
+
+describe("component tier layer in the CSS entry", () => {
+  it("declares its own layer for a sub-tier package", () => {
+    // The styles package's order statement names the five second-level tiers
+    // and cannot know a product's name, so the product declares it, first rule.
+    const css = renderIndexCss("@canonical/react-ds-app-lxd");
+
+    expect(css).toContain("@layer ds.components.apps-lxd;");
+    expect(css.replace(/\/\*[\s\S]*?\*\//g, "").trim()).toBe(
+      "@layer ds.components.apps-lxd;",
+    );
+  });
+
+  it("declares nothing for a second-level tier, which the statement names", () => {
+    for (const name of [
+      "@canonical/react-ds-app",
+      "@canonical/react-ds-docs",
+      "@canonical/react-ds-global",
+      "@canonical/react-ds-global-form",
+    ]) {
+      expect(renderIndexCss(name)).not.toContain("@layer");
+    }
+  });
+
+  it("declares nothing for a package outside the tier tree", () => {
+    expect(renderIndexCss("@canonical/my-styles")).not.toContain("@layer");
+  });
+});

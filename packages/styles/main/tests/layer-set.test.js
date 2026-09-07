@@ -14,7 +14,7 @@
  *
  * It runs in Chromium because the cascade is what is under test, and the CSSOM
  * of an engine that implements the cascade is the only parser that answers
- * honestly what a browser will do with a stylesheet. `tests/support/cascade.ts`
+ * honestly what a browser will do with a stylesheet. `tests/support/cascade.js`
  * says which three questions are left to the text, and why each has to be.
  *
  * `tests/entries.test.ts` is the other half, and reads the files rather than a
@@ -110,7 +110,7 @@ const ALLOWED_AT_TOP_LEVEL = new Set([
 ]);
 
 /** Whether a layer name is one of the declared ten, or a sublayer of one. */
-const isDeclared = (name: string): boolean =>
+const isDeclared = (name) =>
   DECLARED_LAYERS.some(
     (declared) => name === declared || name.startsWith(`${declared}.`),
   );

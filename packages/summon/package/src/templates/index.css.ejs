@@ -3,3 +3,10 @@
  *
  * <%= description || 'TODO: Add description' %>
  */
+<% if (declaresComponentLayer) { %>
+/* This package is a sub-tier of the design system's component tiers, so it
+ * declares its own layer: the styles package's order statement names the five
+ * second-level tiers, and cannot know a product's name. First rule in the
+ * entry, so the layer is placed before any sheet writes into it. */
+@layer <%= componentLayer %>;
+<% } %>

@@ -55,8 +55,8 @@
         );
         cursor: inherit;
         transition:
-          background-color 150ms ease,
-          border-color 150ms ease;
+          background-color var(--motion-duration-fast) ease,
+          border-color var(--motion-duration-fast) ease;
 
         &:checked {
           border-color: var(
@@ -122,8 +122,8 @@
         );
         cursor: inherit;
         transition:
-          background-color 150ms ease,
-          border-color 150ms ease;
+          background-color var(--motion-duration-fast) ease,
+          border-color var(--motion-duration-fast) ease;
 
         /* Glyph as a masked pseudo-element so it takes the checkmark token
          * (see CheckboxInput); the colour+mask live together under :checked so

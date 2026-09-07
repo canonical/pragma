@@ -1,109 +1,113 @@
-/* Component tokens — sourced from @canonical/design-tokens */
-:root {
-  --chip-color-background: var(--color-foreground-secondary);
-  --chip-color-background-hover: var(--color-foreground-secondary-hover);
-  --chip-color-background-active: var(--color-foreground-secondary-active);
-  --chip-color-border: var(--color-border-high-contrast);
-  --chip-color-text: var(--color-text);
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
-  --chip-border-radius: 1rem;
-  --chip-font-size: var(--font-size-small);
-  --chip-font-weight: var(--font-weight-default);
-  --chip-line-height: var(--line-height-small);
-  --chip-border-width: var(--spacing-border-width);
-  --chip-padding-vertical: var(--spacing-vertical-xsmall);
-  --chip-padding-horizontal: var(--spacing-horizontal-small);
-  --chip-margin-bottom: var(--spacing-vertical-small);
-  --chip-margin-left: var(--spacing-horizontal-medium);
-}
+@layer ds.components.global {
+  /* Component tokens — sourced from @canonical/design-tokens */
+  :root {
+    --chip-color-background: var(--color-foreground-secondary);
+    --chip-color-background-hover: var(--color-foreground-secondary-hover);
+    --chip-color-background-active: var(--color-foreground-secondary-active);
+    --chip-color-border: var(--color-border-high-contrast);
+    --chip-color-text: var(--color-text);
 
-.ds.chip {
-  border-color: var(--modifier-color-border, var(--chip-color-border));
-  border-style: solid;
-  border-radius: var(--chip-border-radius);
-  border-width: var(--chip-border-width);
-
-  color: var(--modifier-color-text, var(--chip-color-text));
-  background-color: var(
-    --modifier-color-foreground-secondary,
-    var(--chip-color-background)
-  );
-
-  display: inline-flex;
-  align-items: baseline;
-
-  user-select: none;
-  white-space: nowrap;
-
-  font-size: var(--chip-font-size);
-  font-weight: var(--chip-font-weight);
-  line-height: var(--chip-line-height);
-
-  margin-block-end: var(--chip-margin-bottom);
-  margin-inline-end: var(--chip-margin-left);
-  padding-block: var(--chip-padding-vertical);
-  padding-inline: var(--chip-padding-horizontal);
-
-  & > .lead {
-    font-variant-caps: all-small-caps;
-    font-variant-numeric: oldstyle-nums;
+    --chip-border-radius: 1rem;
+    --chip-font-size: var(--font-size-small);
+    --chip-font-weight: var(--font-weight-default);
+    --chip-line-height: var(--line-height-small);
+    --chip-border-width: var(--spacing-border-width);
+    --chip-padding-vertical: var(--spacing-vertical-xsmall);
+    --chip-padding-horizontal: var(--spacing-horizontal-small);
+    --chip-margin-bottom: var(--spacing-vertical-small);
+    --chip-margin-left: var(--spacing-horizontal-medium);
   }
 
-  & > .lead + .value::before {
-    content: ": ";
-  }
+  .ds.chip {
+    border-color: var(--modifier-color-border, var(--chip-color-border));
+    border-style: solid;
+    border-radius: var(--chip-border-radius);
+    border-width: var(--chip-border-width);
 
-  & > .lead,
-  & > .value {
-    display: inline;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  & > .dismiss {
-    background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%23000' fill-rule='nonzero' d='M13.041 1.898l1.06 1.06L9.062 8l5.04 5.042-1.06 1.06L8 9.062 2.96 14.1l-1.06-1.06L6.938 8 1.9 2.96l1.06-1.06 5.04 5.04z'/%3E%3C/svg%3E");
-    background-color: var(--chip-color-background);
-    align-self: center;
-    background-size: 0.75rem;
-    background-repeat: no-repeat;
-    background-position: center;
-    display: inline-block;
-    cursor: pointer;
-    margin-left: var(--spacing-horizontal-xsmall);
-    flex: 0 0 auto;
-    border-radius: 50%;
-    border-color: transparent;
-    height: var(--font-size-default);
-    width: var(--font-size-default);
-  }
-
-  &:is(button) {
-    cursor: pointer;
-  }
-
-  &:hover:not(:has(.dismiss)),
-  & > .dismiss:hover {
+    color: var(--modifier-color-text, var(--chip-color-text));
     background-color: var(
-      --hover--color-foreground-secondary,
-      var(--chip-color-background-hover)
+      --modifier-color-foreground-secondary,
+      var(--chip-color-background)
     );
-  }
 
-  &:active:not(:has(.dismiss)),
-  & > .dismiss:active {
-    background-color: var(
-      --active--color-foreground-secondary,
-      var(--chip-color-background-active)
-    );
-  }
+    display: inline-flex;
+    align-items: baseline;
 
-  /* Context-specific styling for badges within chips */
-  & .ds.badge {
-    /** Pull the badge closer to the edge of a chip */
-    --badge-chip-margin-tweak: var(--dimension-025);
+    user-select: none;
+    white-space: nowrap;
 
-    align-self: center;
-    margin-left: var(--spacing-horizontal-small);
-    margin-right: var(--badge-chip-margin-tweak);
+    font-size: var(--chip-font-size);
+    font-weight: var(--chip-font-weight);
+    line-height: var(--chip-line-height);
+
+    margin-block-end: var(--chip-margin-bottom);
+    margin-inline-end: var(--chip-margin-left);
+    padding-block: var(--chip-padding-vertical);
+    padding-inline: var(--chip-padding-horizontal);
+
+    & > .lead {
+      font-variant-caps: all-small-caps;
+      font-variant-numeric: oldstyle-nums;
+    }
+
+    & > .lead + .value::before {
+      content: ": ";
+    }
+
+    & > .lead,
+    & > .value {
+      display: inline;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    & > .dismiss {
+      background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%23000' fill-rule='nonzero' d='M13.041 1.898l1.06 1.06L9.062 8l5.04 5.042-1.06 1.06L8 9.062 2.96 14.1l-1.06-1.06L6.938 8 1.9 2.96l1.06-1.06 5.04 5.04z'/%3E%3C/svg%3E");
+      background-color: var(--chip-color-background);
+      align-self: center;
+      background-size: 0.75rem;
+      background-repeat: no-repeat;
+      background-position: center;
+      display: inline-block;
+      cursor: pointer;
+      margin-left: var(--spacing-horizontal-xsmall);
+      flex: 0 0 auto;
+      border-radius: 50%;
+      border-color: transparent;
+      height: var(--font-size-default);
+      width: var(--font-size-default);
+    }
+
+    &:is(button) {
+      cursor: pointer;
+    }
+
+    &:hover:not(:has(.dismiss)),
+    & > .dismiss:hover {
+      background-color: var(
+        --hover--color-foreground-secondary,
+        var(--chip-color-background-hover)
+      );
+    }
+
+    &:active:not(:has(.dismiss)),
+    & > .dismiss:active {
+      background-color: var(
+        --active--color-foreground-secondary,
+        var(--chip-color-background-active)
+      );
+    }
+
+    /* Context-specific styling for badges within chips */
+    & .ds.badge {
+      /** Pull the badge closer to the edge of a chip */
+      --badge-chip-margin-tweak: var(--dimension-025);
+
+      align-self: center;
+      margin-left: var(--spacing-horizontal-small);
+      margin-right: var(--badge-chip-margin-tweak);
+    }
   }
 }

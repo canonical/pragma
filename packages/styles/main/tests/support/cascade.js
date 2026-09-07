@@ -56,7 +56,7 @@ export { entryCss, entryRaw, importanceCss, readme, typographyCss };
  * package that has to fix the order before declaring a layer of its own. No entry
  * imports another, so each resolves on its own.
  */
-export const ENTRIES: Record<string, string> = {
+export const ENTRIES = {
   "index.css": entryCss,
   "tokens.css": tokensCss,
   "elements.css": elementsCss,
@@ -65,7 +65,7 @@ export const ENTRIES: Record<string, string> = {
 };
 
 /** The same four unresolved, for the questions that are about the text. */
-export const ENTRIES_RAW: Record<string, string> = {
+export const ENTRIES_RAW = {
   "index.css": entryRaw,
   "tokens.css": tokensRaw,
   "elements.css": elementsRaw,
@@ -74,7 +74,7 @@ export const ENTRIES_RAW: Record<string, string> = {
 };
 
 /** How the README's entry table names each of them. */
-export const ENTRY_SPECIFIERS: Record<string, string> = {
+export const ENTRY_SPECIFIERS = {
   "@canonical/styles": "index.css",
   "@canonical/styles/tokens.css": "tokens.css",
   "@canonical/styles/elements.css": "elements.css",
@@ -139,10 +139,8 @@ export const TOKEN_PLUGIN_LAYERS = {
   states: "ds.states",
 };
 
-const byBasename = (
-  modules: Record<string, string>,
-  prefix: string,
-): Record<string, string> =>
+/** The files a glob returned, re-keyed by basename rather than by path. */
+const byBasename = (modules, prefix) =>
   Object.fromEntries(
     Object.entries(modules).map(([path, css]) => [
       path.replace(prefix, ""),
@@ -155,8 +153,8 @@ const byBasename = (
  * new stylesheet fail the tables below: a file nobody documented still turns up
  * here, and a file the README names that no longer exists resolves to nothing.
  */
-export const LOCAL_SOURCES: Record<string, string> = byBasename(
-  import.meta.glob<string>("../../src/*.css", {
+export const LOCAL_SOURCES = byBasename(
+  import.meta.glob("../../src/*.css", {
     eager: true,
     import: "default",
     query: "?inline",
@@ -165,8 +163,8 @@ export const LOCAL_SOURCES: Record<string, string> = byBasename(
 );
 
 /** The same files unresolved, for the questions above that are about the text. */
-export const LOCAL_RAW: Record<string, string> = byBasename(
-  import.meta.glob<string>("../../src/*.css", {
+export const LOCAL_RAW = byBasename(
+  import.meta.glob("../../src/*.css", {
     eager: true,
     import: "default",
     query: "?raw",
@@ -180,8 +178,8 @@ export const LOCAL_RAW: Record<string, string> = byBasename(
  * entry points and reach a page only when a consumer imports one directly, so
  * nothing would check them unless they are resolved alone.
  */
-export const ENGINE_SOURCES: Record<string, string> = byBasename(
-  import.meta.glob<string>("../../../typography/src/baseline-*.css", {
+export const ENGINE_SOURCES = byBasename(
+  import.meta.glob("../../../typography/src/baseline-*.css", {
     eager: true,
     import: "default",
     query: "?inline",
@@ -195,8 +193,8 @@ export const ENGINE_SOURCES: Record<string, string> = byBasename(
  * consumers exactly as one written here would — and the resolved text cannot
  * show it either, for the same reason.
  */
-export const TYPOGRAPHY_RAW: Record<string, string> = byBasename(
-  import.meta.glob<string>("../../../typography/src/*.css", {
+export const TYPOGRAPHY_RAW = byBasename(
+  import.meta.glob("../../../typography/src/*.css", {
     eager: true,
     import: "default",
     query: "?raw",
@@ -212,7 +210,7 @@ export const TYPOGRAPHY_RAW: Record<string, string> = byBasename(
  * these no entry imports: `modifiers.typography.css` reaches the page through
  * the typography package's own token half.
  */
-export const EXTERNAL_SOURCES: Record<string, string> = {
+export const EXTERNAL_SOURCES = {
   "@canonical/design-tokens/dist/modifiers.anticipation.css": anticipationCss,
   "@canonical/design-tokens/dist/modifiers.criticality.css": criticalityCss,
   "@canonical/design-tokens/dist/modifiers.emphasis.css": emphasisCss,
@@ -231,11 +229,11 @@ export const EXTERNAL_SOURCES: Record<string, string> = {
 };
 
 /** The resolved text of a file the README or an entry names, if it exists. */
-export const sourceOf = (name: string): string | undefined =>
+export const sourceOf = (name) =>
   EXTERNAL_SOURCES[name] ?? LOCAL_SOURCES[name.replace(/^\.\//, "")];
 
 /** The same, for a name that must resolve: a README that names nothing fails here. */
-export const mustResolve = (name: string): string => {
+export const mustResolve = (name) => {
   const css = sourceOf(name);
   if (css === undefined)
     throw new Error(`"${name}" is named in the README and resolves to nothing`);
@@ -243,14 +241,13 @@ export const mustResolve = (name: string): string => {
 };
 
 /** A file name as the README writes it: a relative import loses its `./`. */
-export const specifierName = (specifier: string): string =>
-  specifier.replace(/^\.\//, "");
+export const specifierName = (specifier) => specifier.replace(/^\.\//, "");
 
 // ---------------------------------------------------------------------------
 // The CSSOM
 // ---------------------------------------------------------------------------
 
-export const parse = (css: string): CSSStyleSheet => {
+export const parse = (css) => {
   const sheet = new CSSStyleSheet();
   sheet.replaceSync(css);
   return sheet;
@@ -260,20 +257,14 @@ export const parse = (css: string): CSSStyleSheet => {
  * The child rules of any rule that has them: grouping rules, and style rules
  * with nested rules, which Chromium does not derive from CSSGroupingRule.
  */
-const childRules = (rule: CSSRule): CSSRuleList | undefined =>
-  "cssRules" in rule ? (rule as CSSGroupingRule).cssRules : undefined;
+const childRules = (rule) => ("cssRules" in rule ? rule.cssRules : undefined);
 
-/** What the cascade knows about one style rule, wherever it is written. */
-export interface StyleRuleFact {
-  /** Its nearest enclosing layer, or `(unlayered)`. */
-  layer: string;
-  selector: string;
-  /** The longhands it declares, custom properties included. */
-  properties: string[];
-  /** Those of them the browser reads as important. */
-  important: string[];
-}
-
+/**
+ * What the cascade knows about one style rule, wherever it is written: the
+ * nearest layer enclosing it (or `(unlayered)`), its selector, the longhands it
+ * declares with custom properties among them, and the subset of those the browser
+ * reads as important.
+ */
 /**
  * Every style rule in a stylesheet, with the layer it sits in. One walk answers
  * three questions that would otherwise each need their own, and all three are
@@ -281,9 +272,9 @@ export interface StyleRuleFact {
  * declares importantly. Importance comes from `getPropertyPriority`, which is
  * what the browser itself uses.
  */
-export const styleRules = (css: string): StyleRuleFact[] => {
-  const found: StyleRuleFact[] = [];
-  const walk = (rules: CSSRuleList, layer: string): void => {
+export const styleRules = (css) => {
+  const found = [];
+  const walk = (rules, layer) => {
     for (const rule of rules) {
       if (rule instanceof CSSLayerBlockRule) {
         walk(rule.cssRules, layer ? `${layer}.${rule.name}` : rule.name);
@@ -316,9 +307,9 @@ export const styleRules = (css: string): StyleRuleFact[] => {
  * `(anonymous)`: it opens a layer nothing can ever name, order or override, so
  * it can only fail the declared-set check.
  */
-export const openedLayers = (css: string): string[] => {
-  const names = new Set<string>();
-  const walk = (rules: CSSRuleList, prefix: string): void => {
+export const openedLayers = (css) => {
+  const names = new Set();
+  const walk = (rules, prefix) => {
     for (const rule of rules) {
       if (rule instanceof CSSLayerBlockRule) {
         const name = rule.name ? prefix + rule.name : "(anonymous)";
@@ -345,10 +336,10 @@ export const openedLayers = (css: string): string[] => {
  * `openedLayers` stays block-only, because what a file writes to is the question
  * the README's tables ask and the question `usedLayers` answers.
  */
-export const namedLayers = (css: string): string[] => {
+export const namedLayers = (css) => {
   const names = new Set(openedLayers(css));
-  const statements: string[][] = [];
-  const walk = (rules: CSSRuleList): void => {
+  const statements = [];
+  const walk = (rules) => {
     for (const rule of rules) {
       if (rule instanceof CSSLayerStatementRule)
         statements.push(Array.from(rule.nameList));
@@ -368,9 +359,9 @@ export const namedLayers = (css: string): string[] => {
  * adapter package's job, and a scope appearing here would mean this stylesheet
  * had started doing it too — quietly, on pages that never asked.
  */
-export const scopes = (css: string): string[] => {
-  const found: string[] = [];
-  const walk = (rules: CSSRuleList, layer: string): void => {
+export const scopes = (css) => {
+  const found = [];
+  const walk = (rules, layer) => {
     for (const rule of rules) {
       if (rule instanceof CSSLayerBlockRule) {
         walk(rule.cssRules, layer ? `${layer}.${rule.name}` : rule.name);
@@ -392,7 +383,7 @@ export const scopes = (css: string): string[] => {
  * The README says of each file whether it selects elements; this is what that
  * column means, and the two are compared.
  */
-export const elementRulesIn = (css: string, layer: string): string[] =>
+export const elementRulesIn = (css, layer) =>
   styleRules(css)
     .filter(
       (rule) =>
@@ -402,7 +393,7 @@ export const elementRulesIn = (css: string, layer: string): string[] =>
     .map((rule) => rule.selector);
 
 /** The properties every style rule directly in a layer declares, labelled. */
-export const declarationsIn = (css: string, layer: string): string[] =>
+export const declarationsIn = (css, layer) =>
   styleRules(css)
     .filter((rule) => rule.layer === layer)
     .flatMap((rule) =>
@@ -410,7 +401,7 @@ export const declarationsIn = (css: string, layer: string): string[] =>
     );
 
 /** Every important declaration a stylesheet makes, labelled, as the browser reads it. */
-export const importantDeclarations = (css: string): string[] =>
+export const importantDeclarations = (css) =>
   styleRules(css).flatMap((rule) =>
     rule.important.map((property) => `${rule.selector} ${property}`),
   );
@@ -423,7 +414,7 @@ export const importantDeclarations = (css: string): string[] =>
  * in that layer. Grouping rules are not listed: they hold rules, and the rules
  * they hold are reached by walking through them.
  */
-const sortedByLayer = (rule: CSSRule): string | undefined => {
+const sortedByLayer = (rule) => {
   if (rule instanceof CSSStyleRule) return `style rule (${rule.selectorText})`;
   if (rule instanceof CSSKeyframesRule) return `@keyframes ${rule.name}`;
   if (rule instanceof CSSFontFaceRule) return "@font-face";
@@ -437,9 +428,9 @@ const sortedByLayer = (rule: CSSRule): string | undefined => {
  * Nesting inside `@media` or another style rule does not change which layer a
  * rule is in.
  */
-export const directRulesIn = (css: string, layer: string): string[] => {
-  const found: string[] = [];
-  const walk = (rules: CSSRuleList, current: string): void => {
+export const directRulesIn = (css, layer) => {
+  const found = [];
+  const walk = (rules, current) => {
     for (const rule of rules) {
       if (rule instanceof CSSLayerBlockRule) {
         walk(rule.cssRules, current ? `${current}.${rule.name}` : rule.name);
@@ -465,9 +456,9 @@ export const directRulesIn = (css: string, layer: string): string[] => {
  * reduced to `@layer ds.tokens {}` has one top-level rule and delivers nothing,
  * which is exactly the case the import check exists to catch.
  */
-export const effectiveRules = (css: string): string[] => {
-  const found: string[] = [];
-  const walk = (rules: CSSRuleList): void => {
+export const effectiveRules = (css) => {
+  const found = [];
+  const walk = (rules) => {
     for (const rule of rules) {
       const label = sortedByLayer(rule);
       if (label !== undefined) found.push(label);
@@ -486,7 +477,7 @@ export const effectiveRules = (css: string): string[] => {
  * sublayer of it carries rules: `ds.components` earns its place in the statement
  * by ordering its tiers, not by holding rules of its own.
  */
-export const usedLayers = (css: string, declared: string[]): string[] => {
+export const usedLayers = (css, declared) => {
   const opened = openedLayers(css);
   return declared.filter((name) =>
     opened.some((open) => open === name || open.startsWith(`${name}.`)),
@@ -494,7 +485,7 @@ export const usedLayers = (css: string, declared: string[]): string[] => {
 };
 
 /** The at-rule a top-level rule is, named as it is written. */
-const kindOf = (rule: CSSRule): string => {
+const kindOf = (rule) => {
   if (rule instanceof CSSLayerStatementRule) return "@layer statement";
   if (rule instanceof CSSLayerBlockRule) return "@layer";
   if (rule instanceof CSSFontFaceRule) return "@font-face";
@@ -505,8 +496,7 @@ const kindOf = (rule: CSSRule): string => {
 };
 
 /** Every rule at a stylesheet's top level, by kind, in order. */
-export const topLevelKinds = (css: string): string[] =>
-  Array.from(parse(css).cssRules, kindOf);
+export const topLevelKinds = (css) => Array.from(parse(css).cssRules, kindOf);
 
 /**
  * The top-level rules that are neither the statement nor a layer — everything a
@@ -514,7 +504,7 @@ export const topLevelKinds = (css: string): string[] =>
  * this test exists to catch: an unlayered author rule beats every layered one,
  * whatever the layer order says.
  */
-export const unlayeredKinds = (css: string): string[] => [
+export const unlayeredKinds = (css) => [
   ...new Set(
     topLevelKinds(css).filter(
       (kind) => kind !== "@layer" && kind !== "@layer statement",
@@ -523,29 +513,27 @@ export const unlayeredKinds = (css: string): string[] => [
 ];
 
 /** Whether a stylesheet writes an at-rule of a kind outside every layer. */
-export const authorsAtTopLevel = (css: string, atRule: string): boolean =>
+export const authorsAtTopLevel = (css, atRule) =>
   topLevelKinds(css).includes(atRule);
 
 // ---------------------------------------------------------------------------
 // The text
 // ---------------------------------------------------------------------------
 
-const withoutComments = (css: string): string =>
-  css.replace(/\/\*[\s\S]*?\*\//g, "");
+const withoutComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, "");
 
 /** Whitespace runs collapsed, so a statement can be compared across two files. */
-export const oneLine = (text: string): string =>
-  text.trim().replace(/\s+/g, " ");
+export const oneLine = (text) => text.trim().replace(/\s+/g, " ");
 
 /**
  * The `@layer` order statement a stylesheet states, as written. Comments go
  * first: an entry quotes its own import line in its header.
  */
-export const statementOf = (css: string): string =>
+export const statementOf = (css) =>
   oneLine(withoutComments(css).match(/@layer\b[^;{]*;/)?.[0] ?? "");
 
 /** The files a stylesheet imports, in order, as written. */
-export const importsOf = (css: string): string[] =>
+export const importsOf = (css) =>
   Array.from(
     withoutComments(css).matchAll(/@import\s+url\(\s*["']([^"']+)["']\s*\)/g),
     (match) => match[1] ?? "",
@@ -558,7 +546,7 @@ export const importsOf = (css: string): string[] =>
  * stylesheet the rest of this file reads cannot show it — this is the one check
  * that has to read the file as written.
  */
-export const lateImports = (raw: string): string[] => {
+export const lateImports = (raw) => {
   const text = withoutComments(raw);
   const firstBlock = text.indexOf("{");
   if (firstBlock === -1) return [];
@@ -573,7 +561,7 @@ export const lateImports = (raw: string): string[] => {
 // ---------------------------------------------------------------------------
 
 /** The lines under a heading, up to the next heading of any level. */
-const section = (heading: string): string => {
+const section = (heading) => {
   const lines = readme.split("\n");
   const start = lines.findIndex(
     (line) => /^#+ /.test(line) && line.replace(/^#+ /, "") === heading,
@@ -585,11 +573,11 @@ const section = (heading: string): string => {
 };
 
 /** The layers the README's order table names, in the order it names them. */
-export const layerTableNames = (): string[] =>
+export const layerTableNames = () =>
   tableUnder("Cascade Layers").map(([layer]) => ticked(layer ?? "")[0] ?? "");
 
 /** The body rows of the one table under a heading, cell by trimmed cell. */
-export const tableUnder = (heading: string): string[][] =>
+export const tableUnder = (heading) =>
   section(heading)
     .split("\n")
     .filter((line) => line.trimStart().startsWith("|"))
@@ -604,19 +592,18 @@ export const tableUnder = (heading: string): string[][] =>
     .slice(1);
 
 /** The backticked tokens in a cell, which is how the README names a thing. */
-export const ticked = (cell: string): string[] =>
+export const ticked = (cell) =>
   Array.from(cell.matchAll(/`([^`]+)`/g), (match) => match[1] ?? "");
 
 /** Whether a cell's answer is yes. */
-export const saysYes = (cell: string): boolean =>
-  cell.toLowerCase().startsWith("yes");
+export const saysYes = (cell) => cell.toLowerCase().startsWith("yes");
 
 /**
  * The fenced block under a heading that holds a layer statement and nothing
  * else. The "Migrating" section's block also opens with a statement, and is not
  * this one; a heading is passed so the test names which block it is reading.
  */
-export const statementFenceUnder = (heading: string): string => {
+export const statementFenceUnder = (heading) => {
   const fences = Array.from(
     section(heading).matchAll(/```css\n([\s\S]*?)```/g),
     (match) => (match[1] ?? "").trim(),
@@ -627,16 +614,12 @@ export const statementFenceUnder = (heading: string): string => {
   return oneLine(statement);
 };
 
-/** What the README's entry table says one entry point opens. */
-export interface EntryTableRow {
-  /** The file, as `src/` names it. */
-  entry: string;
-  /** The layers the table says it opens. */
-  layers: Set<string>;
-}
-
-/** Every row of the entry table: what each of the four delivers, by layer. */
-export const entryTableRows = (): EntryTableRow[] =>
+/**
+ * Every row of the entry table: for each entry, the file as `src/` names it and
+ * the set of layers the README says it opens. A statement-only entry opens none,
+ * and its row says so.
+ */
+export const entryTableRows = () =>
   tableUnder("Entry points").map(([entry, , layers]) => {
     const specifier = ticked(entry ?? "")[0] ?? "";
     const file = ENTRY_SPECIFIERS[specifier];
@@ -645,16 +628,8 @@ export const entryTableRows = (): EntryTableRow[] =>
     return { entry: file, layers: new Set(ticked(layers ?? "")) };
   });
 
-/** What one of the README's layer tables says about one file. */
-export interface DocumentedFile {
-  /** Every layer a row gives the file. */
-  layers: Set<string>;
-  /** The layers in which a row says the file selects elements. */
-  selecting: Set<string>;
-}
-
 /** Whether a backticked token in a table cell names a stylesheet or a package. */
-const isSourceName = (token: string): boolean =>
+const isSourceName = (token) =>
   token.endsWith(".css") || token.startsWith("@canonical/");
 
 /**
@@ -666,12 +641,12 @@ const isSourceName = (token: string): boolean =>
  * much, because reordering two rows of the same file changes nothing a browser
  * can see.
  */
-export const documentedFiles = (): Map<string, DocumentedFile> => {
-  const files = new Map<string, DocumentedFile>();
-  const add = (name: string, layers: string[], selects: boolean): void => {
+export const documentedFiles = () => {
+  const files = new Map();
+  const add = (name, layers, selects) => {
     const entry = files.get(name) ?? {
-      layers: new Set<string>(),
-      selecting: new Set<string>(),
+      layers: new Set(),
+      selecting: new Set(),
     };
     for (const layer of layers) {
       entry.layers.add(layer);
@@ -694,20 +669,13 @@ export const documentedFiles = (): Map<string, DocumentedFile> => {
   return files;
 };
 
-/** What the design-token table says about one generated file. */
-export interface TokenTableRow {
-  /** The specifier, as an entry would write it. */
-  file: string;
-  /** The layer the file opens, empty when the table says it opens none. */
-  layers: Set<string>;
-  /** Whether the table claims an entry point imports it. */
-  imported: boolean;
-  /** Whether the table claims it sets a property other than a custom one. */
-  selects: boolean;
-}
-
-/** Every row of the design-token table: the contract with the generator. */
-export const tokenTableRows = (): TokenTableRow[] =>
+/**
+ * Every row of the design-token table: the contract with the generator. Each row
+ * carries the specifier as an entry would write it, the layer the file opens
+ * (empty when the table says it opens none), whether an entry imports it, and
+ * whether it sets a property other than a custom one.
+ */
+export const tokenTableRows = () =>
   tableUnder("Design Tokens").map(([set, , layer, imported, selects]) => ({
     file: `@canonical/design-tokens/dist/${ticked(set ?? "")[0]}.css`,
     layers: new Set(ticked(layer ?? "")),
