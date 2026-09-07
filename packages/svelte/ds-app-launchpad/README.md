@@ -62,7 +62,7 @@ A layer's position is fixed where its name first appears, and left to the compon
 @layer ds.components.apps-launchpad;
 ```
 
-That statement is the entry's first rule, and the layer test asserts it stays there. A consumer who imports this package's CSS entry therefore gets the layer in the right place whatever else they load.
+That statement is the entry's first rule, and it has to stay there. A consumer who imports this package's CSS entry therefore gets the layer in the right place whatever else they load.
 
 It names the two tiers below this one, and that is a fallback rather than the general rule: this entry does not import `@canonical/styles`, so on a page built from this package alone there is no other statement to place them. A package whose entry does import it declares only its own layer, after that import — `@canonical/svelte-ds-app-wpe` is the example.
 
