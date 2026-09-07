@@ -1,23 +1,28 @@
-import { withThemeByClassName } from "@storybook/addon-themes";
-import type { Preview, ReactRenderer } from "@storybook/react-vite";
-
 <% if (type === 'css') { -%>
+// The stylesheet comes first, before anything that imports a component: CSS is
+// emitted in the order the bundler evaluates the modules that import it, and
+// the layer order a browser applies is the one it reads first.
 import "../src/index.css";
 <% } -%>
 import "@canonical/styles-debug/baseline-grid";
+import type { Preview } from "@storybook/react-vite";
+
+// The root declaration: one context (`app` | `site` | `docs`) and one density
+// (`comfortable` | `dense`), which together choose the spacing and
+// control-height channel every control reads. It goes on the document element,
+// because a docs page renders several stories into one document, and at module
+// scope, so the first paint already has it.
+//
+// Nothing else belongs here. `@canonical/storybook-addon-utils`, which
+// `createConfig` registers, owns the light/dark toggle on this same element
+// from its toolbar; writing a scheme here would make this file a second owner
+// of it.
+if (typeof document !== "undefined") {
+  document.documentElement.classList.add("app", "comfortable");
+}
 
 const preview: Preview = {
   tags: ["autodocs"],
-  decorators: [
-    withThemeByClassName<ReactRenderer>({
-      themes: {
-        light: "is-light",
-        dark: "dark",
-        paper: "is-paper",
-      },
-      defaultTheme: "light",
-    }),
-  ],
   parameters: {
     docs: {
       codePanel: true,

@@ -23,6 +23,46 @@ The global styles provide the CSS reset, typography baseline, and design tokens 
 
 The package builds on top of `@canonical/react-ds-global`.
 
+### How component CSS reaches the page
+
+This package puts CSS on the page two ways. `dist/esm/index.css` — the file the snippet above imports — is the package-level stylesheet: the `--form-*` token block, the field grid, the shared input chrome, and `density.css`, which sizes every control to the context and density cell on the root. Each component module then imports its own stylesheet (`import "./styles.css"`), so importing a component is what puts that component's CSS on the page; a bundler collects those imports into the application's CSS. Nothing here is injected at runtime, and a component you never import ships no CSS.
+
+The consequence is that the order a bundler happens to emit these sheets in is not something you can rely on, which is what the cascade layer below is for.
+
+### Every stylesheet is in `ds.components.global`
+
+Every stylesheet under `src/` — the package entry, `density.css`, the 29 component sheets and the density docs example, 32 in all — is wrapped in one cascade layer:
+
+```css
+@layer ds.components.global {
+  .ds.field-label {
+    /* … */
+  }
+}
+```
+
+`@canonical/styles` declares the order of every layer in one statement, and `ds.components.global` sits near the top of it. Two things follow.
+
+`ds.components.app`, one layer higher, is the application tiers' — `@canonical/react-ds-app-lxd` and its siblings. None of them is wrapped yet (at the time of writing, no stylesheet under `packages/react/ds-app-*` carries a layer at all); wrapping them is being done package by package alongside this one. Today an app tier still beats this package for the opposite reason — it is unlayered, and unlayered beats layered. What the layer guarantees, once those packages land, is that an app tier's rule for a field or an input this package also styles wins by cascade layer rather than by whichever bundle the loader emitted last.
+
+The parent layer `ds.components` sits above both tiers, not between them: a rule written directly into it lands in that layer's implicit final sublayer, which outranks every named sublayer under it. So nothing pragma ships is written directly into `ds.components` — the layout presets in `src/index.css` used to be, in a lone `@layer ds.components` block, and they are in this package's own wrap now like everything else.
+
+An application's own **unlayered** CSS now beats every rule in this package, whatever the selectors on either side, because unlayered author rules outrank every layered one. That is CSS working as designed, and it is the deliberate escape hatch: an application that needs to override a form control writes a plain rule and it wins. An application that does *not* want to win by accident puts its CSS in `@layer app`.
+
+**Rule for contributors:** every stylesheet under `src/` opens with that wrapper, and `src/styles.layer.tests.ts` fails `bun run test` if one does not (it is a test, not a build step — `tsconfig.build.json` keeps it out of `dist`). `@keyframes` and the package's own `:root` token defaults go inside it; `@property` and `@font-face` registrations stay above the block. That last one is a convention, not something the cascade forces: measured in Chromium 151, two registrations sharing a name are sorted exactly like style rules — the one in the higher layer wins whatever the source order, and an unlayered one beats a layered one — for `@property`, `@font-face` and `@keyframes` alike. Keeping registrations above the block is what makes them the document-wide authority they read as, and puts them where someone looking up what a name is registered as will find them. An `@import` stays above the block too — an import is only valid before other rules — and it takes a `layer(ds.components.global)` keyword *only* when the sheet it names is not itself wrapped; `src/index.css` imports `density.css` bare, because `density.css` declares the layer itself and the keyword would nest that declaration into `ds.components.global.ds.components.global`, a sublayer that loses to `index.css`'s own rules. Never reach for `!important` to win a fight — an important declaration inverts the layer order and cannot be arbitrated by layers at all. The `@canonical/styles` README's "Cascade layers" section is the reference for the full order and for what is deliberately left unlayered. The one exemption is `.storybook/styles.css`, which is deliberately outside `src/`: it is the Storybook harness rather than part of the package — never published (`files: ["dist"]`), there to pull this package's CSS into the preview page and add one `.rtl` utility — and staying unlayered is what lets it override the preview.
+
+### Components own the box of the natives they render
+
+This package renders more native elements than any other: `<input>` in a dozen types, `<select>`, `<textarea>`, `<label>`, `<legend>`, `<fieldset>`, `<button>`. A component that renders a native element is responsible for that element's box — its margin, its width, its `min-width`, its `box-sizing` — and for `::placeholder` where it renders a text input. Anything a component leaves undeclared is filled in by whatever else the host page loads, and on a page that also runs another framework that is a visible bug rather than a default. Declaring the box is being done as its own change; until it lands, treat "the control looks right on our own page" as a weaker guarantee than it sounds.
+
+Nothing in this package portals: no `createPortal`, no `appendChild`, no `<dialog>`. The two surfaces that escape their container — the combobox list (`ComboboxInput/common/List/List.tsx:42`) and the colour picker's swatch panel (`ColorInput/ColorInput.tsx:198`) — use the Popover API, which promotes an element to the top layer for painting but leaves it where it is in the DOM. So they stay inside the `.ds` subtree their caller marks, and the element-level layers `@canonical/styles` scopes to that subtree still reach them.
+
+### Transitions read the motion tokens
+
+Every transition in this package takes its duration from `--motion-duration-fast`, the fast step of the three duration tokens `@canonical/styles` declares, and never from a literal. That is not a tidiness rule. Under `prefers-reduced-motion: reduce` the styles package sets all three duration tokens to `0s`, and that zeroing is the whole of pragma's reduced-motion mechanism: a component's own `transition` declaration keeps its place in the cascade and simply resolves to no time at all. A hard-coded duration is invisible to it and keeps animating for a reader who asked their system not to. This is the code standard `cs:css.properties.values` ("design tokens over raw values") with teeth on it.
+
+**Rule for contributors:** no literal duration in a `transition` or an `animation`; a new one reads a token, and `src/styles.layer.tests.ts` fails `bun run test` if it does not — the same per-sheet loop that checks the layer wrapper asserts that every time value in a `transition` or `animation` declaration is a `var(--motion-duration-*)` read, with a bare `0s` allowed because it already says "no motion". The tokens themselves live in `@canonical/styles` (`motion.css`); if a control needs a step the three do not offer, the step is added there rather than written into a component. Easings are the exception, and a deliberate one: they are still the literal `ease` here rather than `var(--motion-easing-standard)`, because that token is `ease-out` and swapping it is a second change to how the controls feel — it rides on PRA-153 with the missing sub-`fast` duration step.
+
 ## Dependencies
 
 The form system builds on two key libraries:
