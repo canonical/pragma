@@ -278,9 +278,14 @@
     font-family: var(--typography-text-primary-font-family);
     font-size: var(--form-input-font-size);
     line-height: var(--form-input-line-height);
+    /* Durations come from the motion token, never from a literal: `@canonical/styles`
+     * zeroes the three duration tokens under `prefers-reduced-motion: reduce`, so a
+     * literal here would keep animating for a reader who asked their system not to.
+     * Every transition in this package reads `--motion-duration-fast` for that
+     * reason (motion.css, "Reduced motion"). */
     transition:
-      border-color 150ms ease,
-      box-shadow 150ms ease;
+      border-color var(--motion-duration-fast) ease,
+      box-shadow var(--motion-duration-fast) ease;
 
     &:hover:not(:disabled, :has(input:disabled)) {
       background-color: var(
