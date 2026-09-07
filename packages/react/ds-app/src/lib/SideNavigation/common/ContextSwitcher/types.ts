@@ -1,4 +1,4 @@
-import type { PopoverProps } from "@canonical/react-ds-global";
+import type { ContextualMenuProps } from "@canonical/react-ds-global";
 import type { ComponentProps, ReactNode } from "react";
 
 /** A single entry in the context switcher's list — user-generated (SPEC.md §4.5). */
@@ -14,7 +14,7 @@ export interface ContextSwitcherItem {
 }
 
 type OwnProps = Pick<
-  PopoverProps,
+  ContextualMenuProps,
   | "open"
   | "onOpenChange"
   | "preferredDirections"
@@ -22,9 +22,15 @@ type OwnProps = Pick<
   | "gutter"
   | "maxWidth"
   | "autoFit"
-  | "closeOnEscape"
-  | "closeOnOutsideClick"
 > & {
+  /**
+   * A caption rendered above the dropdown field (e.g. "Context"), via
+   * `SideNavigation.GroupHeader` — an intrinsic part of this component in
+   * the Figma source (its own `group-heading` sub-component, node
+   * `657:39353`'s "Title and input wrapper"), not something a consumer
+   * composes separately above it. Omitted renders no caption.
+   */
+  title?: ReactNode;
   /** The currently selected context, shown in the dropdown field. */
   currentContext: ContextSwitcherItem;
   /** The user-generated list of available contexts. */
@@ -38,9 +44,15 @@ type OwnProps = Pick<
 };
 
 /**
- * Renders via Popover, whose own root is a `<details>` — extending its
- * native props (rather than `<div>`) matches what this component actually
- * becomes once rendered.
+ * Renders via `ContextualMenu` — a real `<button>` trigger with
+ * `aria-haspopup="menu"`/`aria-expanded`, and a `role="menu"` popup with
+ * full roving-focus keyboard navigation (arrow keys, Home/End, type-ahead)
+ * — a "select"-like widget, not a bare disclosure (SPEC.md §9.21). Extends
+ * `<div>` (`ContextualMenu`'s own root), not `<details>` — this stopped
+ * being a `Popover` in that pass. `onSelect` is a native `<div>` text-
+ * selection event unrelated to this component's own item-selection
+ * callback (`onContextChange`) — explicitly excluded, or the two would
+ * collide under one name with two incompatible signatures.
  */
 export type ContextSwitcherProps = OwnProps &
-  Omit<ComponentProps<"details">, keyof OwnProps | "onToggle">;
+  Omit<ComponentProps<"div">, keyof OwnProps | "onSelect">;

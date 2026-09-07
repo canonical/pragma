@@ -5,6 +5,7 @@ import {
   lxdFooterRoot,
   maasContentRoot,
   maasFooterRoot,
+  showcaseFooterRoot,
 } from "../../storybook/navigation/fixtures.js";
 import {
   CanonicalLogo,
@@ -122,6 +123,7 @@ export const ComposedContent: Story = {
     children: (
       <>
         <SideNavigation.ContextSwitcher
+          title="Project"
           currentContext={composedContexts[0]}
           contexts={composedContexts}
           onContextChange={fn()}
@@ -143,6 +145,65 @@ export const ComposedContent: Story = {
           <SideNavigation.ItemButton icon="log-out" onClick={fn()}>
             Log out
           </SideNavigation.ItemButton>
+        </SideNavigation.Group>
+      </>
+    ),
+  },
+};
+
+/**
+ * Everything neither MAAS nor LXD's own fixtures exercise, in one screen:
+ *
+ * - `ContextSwitcher` (content-defined position, composed via `children` —
+ *   it isn't a `root.items` entry kind at all, SPEC.md §4.5).
+ * - `ItemButton` and `ItemSwitch` in the *main content* (both fixtures only
+ *   use plain links/labels there).
+ * - An `ItemExpandable` with real multiple-choice options (each child a
+ *   `control: "button"`, not a link) — "Theme: Light/Dark/System" — rather
+ *   than a sub-navigation list.
+ * - The same three (switch, expandable-with-options, button) *again* in the
+ *   footer, via `showcaseFooterRoot` (`footerRoot`, not `footerItems`,
+ *   since an expandable has no place in the closed `footerItems`
+ *   vocabulary) — proving a footer's own items support exactly what a
+ *   content group's do (SPEC.md §4.1, §4.3).
+ */
+export const Showcase: Story = {
+  args: {
+    applicationName: "Canonical",
+    footerRoot: showcaseFooterRoot,
+    children: (
+      <>
+        <SideNavigation.ContextSwitcher
+          title="Context"
+          currentContext={composedContexts[0]}
+          contexts={composedContexts}
+          onContextChange={fn()}
+          onCreateContext={fn()}
+        />
+        <SideNavigation.Group label="Workspace">
+          <SideNavigation.Item url="/overview" icon="status" active>
+            Overview
+          </SideNavigation.Item>
+          <SideNavigation.ItemButton icon="restart" onClick={fn()}>
+            Restart service
+          </SideNavigation.ItemButton>
+          <SideNavigation.ItemSwitch icon="warning" defaultChecked>
+            Maintenance mode
+          </SideNavigation.ItemSwitch>
+        </SideNavigation.Group>
+        <SideNavigation.Separator />
+        <SideNavigation.Group label="Preferences">
+          <SideNavigation.ItemExpandable heading="Theme" icon="dark-theme">
+            <SideNavigation.ItemButton icon="light-theme" onClick={fn()}>
+              Light
+            </SideNavigation.ItemButton>
+            <SideNavigation.ItemButton icon="dark-theme" onClick={fn()}>
+              Dark
+            </SideNavigation.ItemButton>
+            <SideNavigation.ItemButton icon="system-theme" onClick={fn()}>
+              System
+            </SideNavigation.ItemButton>
+          </SideNavigation.ItemExpandable>
         </SideNavigation.Group>
       </>
     ),

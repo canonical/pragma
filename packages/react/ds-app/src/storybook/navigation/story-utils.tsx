@@ -107,7 +107,7 @@ export const withNavLayout: Decorator = (Story) => (
   <div
     style={{
       display: "grid",
-      gridTemplateColumns: "240px auto",
+      gridTemplateColumns: "1fr auto",
       // The single row must be a DEFINITE height (not the default content-sized
       // `auto`), otherwise the row grows to fit the nav and the nav's
       // max-height:100% resolves against that grown height — no cap, no scroll.

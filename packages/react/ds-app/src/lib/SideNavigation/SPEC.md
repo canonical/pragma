@@ -145,7 +145,7 @@ titled "Account settings").
 | `SideNavigation.ItemExpandable` | `<details>`/`<summary>` | 0..* | `apps.subcomponent.side-navigation-item-expandable` *(new)* |
 | `SideNavigation.ItemButton` | `<button type="button">` | 0..* | `apps.subcomponent.side-navigation-item-button` *(new)* |
 | `SideNavigation.ItemSwitch` | row + `SwitchInput` | 0..* | `apps.subcomponent.side-navigation-item-switch` *(new)* |
-| `SideNavigation.ContextSwitcher` | `<details>`/`<summary>` (via `Popover`) | 0..1 | `apps.subcomponent.side-navigation-context-switcher` *(new)* |
+| `SideNavigation.ContextSwitcher` | `<button>` + `role="menu"` (via `ContextualMenu` — §9.21) | 0..1 | `apps.subcomponent.side-navigation-context-switcher` *(new)* |
 | `SideNavigation.Secondary` | `<nav>` | 0..1 | `apps.pattern.side-navigation-secondary` *(new)* |
 
 Anatomy files: existing components keep their current `.anatomy.yaml`
@@ -262,20 +262,24 @@ gap 1rem) — no separate padding token needed; the header uses the same
 | `brandHref` | `logo-target` | — | — | **Not implemented** — the consumer's `brand` node owns its own link markup entirely (e.g. its own `<a href>`); SideNavigation never wraps it. A real `brandHref` would need SideNavigation to own that wrapping instead, a bigger change than any current acceptance criterion calls for. Tracked in §10.15 |
 | `applicationName` | — | `ReactNode` | — | Pre-existing, not in spec; kept |
 | `root` | `content` | `NavRoot` | — | WD405 root; direct children render as groups (§4.3) |
-| `footerItems` | `footer-items` | `FooterItem[]` | `[]` (footer hidden) | Closed vocabulary per spec (`FooterItem` carries each item's own `url`/`onClick`/`label`/`slot` — see §4.1's `FooterItem` below) — see §10.6 for the `footerRoot` escape hatch |
+| `footerItems` | `footer-items` | `FooterItem[]` | `[]` (footer hidden) | Closed 3-kind vocabulary per spec (`FooterItem` carries each item's own `url`/`control`/`onClick`/`checked`/`label`/`slot` — see §4.1's `FooterItem` below); `control` gives footer items the same three row variants a content group's `NavItem`s have (§9.19) — see §10.6 for the `footerRoot` escape hatch, needed only for entries the closed *kind* set itself can't express (e.g. an expandable) |
 | `certificateUser` | *(implied by "certificate user" usage note)* | `boolean` | `false` | Swaps the account icon `user` → `certificate`; drops any `logout` item from `footerItems` |
 | `LinkComponent` | — | `ComponentType<LinkComponentProps> \| "a"` | `"a"` | Router integration, per `cs:react.component.link_component` |
 | `currentUrl` | — | `string` | — | Drives `aria-current` + active state |
 | `defaultExpanded` | `is-open` | `boolean` | `true` | Uncontrolled; the DS has no controlled variant (deferred — see the commented-out controlled circuit in `SideNavigation.tsx`) |
-| `keyboardShortcut` | *(unratified — §10.1)* | `boolean` | **`false`** | Reserved. When `true`, binds the collapse shortcut in `COLLAPSE_SHORTCUT`. Ships disabled; no story enables it until design ratifies the key |
+| `keyboardShortcut` | *(ratified — §9.18)* | `boolean` | **`true`** | When `true`, binds the collapse shortcut in `COLLAPSE_SHORTCUT` (`Ctrl+.`). Enabled by default; pass `false` to opt out |
 
 ```ts
 interface FooterItem {
   kind: "account" | "notifications" | "logout";
-  url?: string; // present ⇒ renders as a link (Item)
+  url?: string; // control: "link" (the default when url is set) ⇒ renders as a link (Item)
   label?: string; // defaults per kind: "Account settings" / "Notifications" / "Log out"
-  onClick?: () => void; // present (no url) ⇒ renders as a button (ItemButton)
-  slot?: ReactNode; // e.g. an unread-count badge on notifications
+  control?: "link" | "button" | "switch"; // defaults to "link" if url is set, "button" otherwise
+  onClick?: () => void; // control: "button" (the default without a url)
+  checked?: boolean; // control: "switch" — controlled
+  defaultChecked?: boolean; // control: "switch" — uncontrolled
+  onCheckedChange?: (checked: boolean) => void; // control: "switch"
+  slot?: ReactNode; // control: "link" only — e.g. an unread-count badge on notifications
 }
 ```
 
@@ -361,12 +365,13 @@ above).
 
 | Prop | Spec property | Type | Notes |
 |---|---|---|---|
+| `title` | *(the component's own `group-heading` sub-part — §9.20)* | `ReactNode` | Caption above the dropdown field, via `SideNavigation.GroupHeader`. Omitted renders no caption |
 | `currentContext` | `current-context` | `ContextSwitcherItem` | |
 | `contexts` | `contexts` | `ContextSwitcherItem[]` | User-generated list |
 | `onContextChange` | *(click a context item)* | `(context: ContextSwitcherItem) => void` | |
-| `open` / `onOpenChange` | `is-open` | `boolean` / `(open: boolean) => void` | Uncontrolled by default, mirrors `Popover` |
+| `open` / `onOpenChange` | `is-open` | `boolean` / `(open: boolean) => void` | Uncontrolled by default, mirrors `ContextualMenu` (§9.21 — was `Popover`) |
 | `onCreateContext` | *("create context" button)* | `() => void` | |
-| `createContextLabel` | — | `ReactNode` | Default `"Create context"` |
+| `createContextLabel` | — | `ReactNode` | Default `"Create context"`. Rendered with a leading `plus` icon (§9.20) |
 
 ```ts
 interface ContextSwitcherItem {
@@ -415,25 +420,24 @@ entirely and repositions `CollapseToggle` below the logo (§1.2, §10.9).
   rendering decision at the application-shell level, analogous to how
   `ApplicationLayout` composes `navigation`.
 - **Context switcher** — uncontrolled `open` state by default (via
-  `Popover`), `current-context` is consumer-controlled (no context is
-  auto-selected by the component).
-- **Keyboard shortcut (collapse)** — **scaffolded, inert**:
+  `ContextualMenu`, §9.21 — was `Popover`), `current-context` is
+  consumer-controlled (no context is auto-selected by the component).
+- **Keyboard shortcut (collapse)** — **ratified and on by default** (§9.18):
 
   ```ts
   // common/hooks/useCollapseShortcut/useCollapseShortcut.ts
-  export const COLLAPSE_SHORTCUT = { key: "e", ctrlKey: true } as const;
+  export const COLLAPSE_SHORTCUT = { key: ".", ctrlKey: true } as const;
   ```
 
   `SideNavigation` calls `useCollapseShortcut({ enabled: keyboardShortcut,
-  onTrigger: handleToggle })`; `keyboardShortcut` defaults to `false`, so no
-  listener attaches and no keydown is ever handled. The single named constant
-  is the one place the key changes if/when design ratifies "Ctrl+E" vs. a
-  single letter (§10.1) — matching the spec's literal "Ctrl + E" only
-  (`event.ctrlKey`, not also `event.metaKey`/Cmd); extending it to Cmd on
+  onTrigger: handleToggle })`; `keyboardShortcut` defaults to `true`, so the
+  listener attaches and toggles the rail on `Ctrl+.` unless a consumer opts
+  out with `keyboardShortcut={false}`. The single named constant is still
+  the one place the key changes if design ever revisits it — matching only
+  `event.ctrlKey` (not also `event.metaKey`/Cmd); extending it to Cmd on
   macOS is a separate decision, not assumed here. Tested for both: enabling
-  attaches and fires the
-  handler, and — the guarantee that matters — the *default* (disabled) case
-  never does, even on the exact key combination.
+  attaches and fires the handler, and the *disabled* (opt-out) case never
+  does, even on the exact key combination.
 - **Enter key** — on a `link`/`button` item, activates it (native semantics —
   no custom handler needed). On an `ItemExpandable`'s `<summary>`, toggles
   open/closed (native `<details>` semantics) and, on opening via keyboard,
@@ -515,7 +519,7 @@ file):
 | 3 | Provisional navigation tokens + full-spec styling (AC2) | ✅ this PR |
 | 4 | Group/GroupHeader/Separator/ItemExpandable, depth-1 type | ✅ this PR |
 | 5 | ItemButton/ItemSwitch/ContextSwitcher (AC3, AC4) | ✅ this PR |
-| 6 | Collapsed rail behaviour, tooltips, inert shortcut scaffold | ✅ this PR (footer-item tooltips deferred — §10.14) |
+| 6 | Collapsed rail behaviour, tooltips, ratified shortcut (§9.18) | ✅ this PR (footer-item tooltips deferred — §10.14) |
 | 7 | Secondary navigation, Help item, footerItems, certificate user | ✅ this PR (`brandHref` deferred — §10.15) |
 | 8 | Responsive (<768px), text-overflow tooltips, focus-order/reduced-motion tests | ✅ this PR (mobile drill-down and pixel-accurate truncation tooltips deferred — §10.17, §10.18) |
 
@@ -625,12 +629,18 @@ design to verify against the actual swatches.
 ### 9.6 — Context switcher surfaces
 
 No tokens exist for a dropdown field / list / "create context" button
-specific to navigation. Provisionally, `ContextSwitcher` reuses
-`ContextualMenu`'s existing item tokens
-(`--contextual-menu-item-color-background{,-hover,-active}`) rather than
-inventing new ones, since both are ghost-style interactive rows over a
-floating surface. Flagged for design to confirm this reuse is intentional
-rather than the two ever needing to diverge.
+specific to navigation. `ContextSwitcher` now renders literally through
+`ContextualMenu` (§9.21 — this used to be a `Popover`-based fallback-token
+borrowing arrangement, not the real thing), so its context-item rows use
+`ContextualMenu`'s own item tokens
+(`--contextual-menu-item-color-background{,-hover,-active}`) directly and
+unoverridden (§9.22) rather than inventing new ones from scratch, since
+both are ghost-style interactive rows over a floating surface. Flagged for
+design to confirm this reuse is intentional rather than the two ever
+needing to diverge. The *outer* surfaces (trigger field, dropdown
+background, "create context" text colour) were re-checked directly
+against the Figma source and corrected — see §9.20/§9.22; this section's
+own scope is the *item* rows within the dropdown only.
 
 ### 9.7 — Item row height: reversed back to fixed — `2rem`, all four row variants
 
@@ -937,18 +947,235 @@ Separately, in the same area: the Storybook-only `MockBadge` fixture
 amber/orange badge fill (`#f99b11`) the Figma file's own notification-count
 badge actually uses, rather than an arbitrary placeholder colour.
 
+### 9.18 — Keyboard shortcut ratified: `Ctrl+.`, enabled by default
+
+§10's Known Issue #1 (below) tracked this as unratified: the spec's prose
+states "Ctrl + E", then in the same paragraph argues for a single letter
+instead, for the reasons a modifier combination is a poor choice in a web
+app — self-contradictory, so the binding shipped scaffolded but inert
+(`keyboardShortcut` defaulting to `false`) pending a decision.
+
+**Resolved, per direction.** `COLLAPSE_SHORTCUT` (`common/hooks/
+useCollapseShortcut/useCollapseShortcut.ts`) changed from `{ key: "e",
+ctrlKey: true }` to `{ key: ".", ctrlKey: true }`, and both
+`useCollapseShortcut`'s own `enabled` default and `SideNavigationProps`'
+`keyboardShortcut` default flipped from `false` to `true` — the shortcut is
+now live out of the box; a consumer opts *out* with `keyboardShortcut={false}`
+rather than opting in. `Ctrl+.` sidesteps the spec's own "Ctrl+E" vs.
+"single letter" contradiction entirely (neither), and avoids the far more
+common browser/OS reservations single letters and `Ctrl+E` collide with
+(address-bar search in several browsers, "focus search" in others). Not a
+value stated anywhere in the Figma file or written spec — a provisional
+engineering pick, same status as the other numbered decisions in this log.
+Tests updated to fire `.` instead of `e`, and to check the *default*
+(enabled) and explicit-opt-out cases rather than default-disabled/opt-in.
+
+### 9.19 — `FooterItem` gained `control`, matching `LeafNavItem`
+
+`footerItems` (the closed 3-kind vocabulary, §4.1) had no way to render a
+`notifications`/`account`/`logout` entry as anything but a link (`url` set)
+or a plain button (`url` absent) — no switch, and `control` wasn't a field
+on `FooterItem` at all. A content group's own `NavItem`s have had three
+control variants since `control` was introduced (SPEC.md §4.4); there's no
+reason the footer's closed vocabulary should have fewer, so `FooterItem`
+gained the same `control?: "link" | "button" | "switch"` field (plus the
+switch-specific `checked`/`defaultChecked`/`onCheckedChange`), and
+`Footer`'s `renderFooterItem` dispatches on it exactly the way `NavTree`'s
+`renderEntry` does — explicit `control` wins over the old `url`-presence
+inference, which is otherwise unchanged (no existing `FooterItem` sets
+`control`, so nothing already shipped changes behaviour).
+
+This does *not* extend to expandable footer items — an expandable has
+`items`, and the closed `kind` vocabulary (`"account" | "notifications" |
+"logout"`) has no fourth member to hang that on; adding one would be a
+bigger, spec-contradicting change (§10 item 6 is explicit that the closed
+vocabulary is exactly those three). A footer item that needs to be
+expandable (e.g. a "Theme" entry with Light/Dark/System as its own
+options) still needs `footerRoot`'s free-form `NavItem` tree — which
+already supported this, and everything else a content group's items can
+do, with no code change at all: it's rendered through the same `NavTree`
+`Content` is. See the `showcaseFooterRoot` fixture
+(`src/storybook/navigation/fixtures.tsx`) and the `Showcase` story
+(`SideNavigation.stories.tsx`) for both paths demonstrated side by side.
+
+### 9.20 — `ContextSwitcher` re-checked directly against the Figma source; three real mismatches
+
+A direct re-check against the Figma file (`context-switcher`, node
+`657:39353`) — its fill data and a rendered image, not a description —
+found `ContextSwitcher` didn't match on three structural/visual points.
+(Written while this component still rendered via `Popover`; the fixes
+below carried over unchanged when it moved to `ContextualMenu` — §9.21 —
+only the underlying markup/class names they land on changed.)
+
+1. **Missing caption.** The Figma component's own children are "Title and
+   input wrapper" (a `group-heading` sub-component, e.g. "CONTEXT", above
+   the dropdown field) and "Dropdown content" — the caption is an
+   *intrinsic* part of the component, not something a consumer composes
+   separately above it as every one of this file's own examples had it
+   until now. Fixed: new `title` prop, rendered via
+   `SideNavigation.GroupHeader` — literally the same sub-component the
+   Figma source itself reuses between `Group` and `ContextSwitcher` (the
+   `group-heading` node appears under both in the file), so reusing our own
+   `GroupHeader` component here isn't just convenient, it's what the source
+   does too. `ContextSwitcher` returns a `Fragment` (`title` + the menu),
+   the same shape `Header` already uses for its own trailing `Separator`.
+2. **Trigger styled as a nav row, not an input field.** The Figma trigger
+   fills `#2f2f2f` (oklch 30.52%) with a `#999999` (oklch 68.3%) border —
+   neither matches any `--sidenav-row-background*` state, which this
+   previously (wrongly) reused, with no border at all. Fixed: background is
+   `--color-foreground-input` — the design system's own existing, already
+   light/dark-paired "this is an input-like control" semantic token (dark
+   value oklch 18.67% — not a close swatch match, picked for semantic
+   correctness over pixel-matching, per direction — see §9.22); the border
+   reuses the existing semantic `--color-border` (oklch 64.01% dark, within
+   4 points of the measured swatch). Light theme untouched (no Figma
+   evidence for it) — now resolves through `--color-foreground-input`'s
+   own light value, not `--sidenav-row-background`.
+3. **Dropdown background was the ambient page background.** The rendering
+   mechanism's own default (`--surface-color-background, --color-
+   background`) is a generic "whatever's behind this" token; the Figma
+   dropdown fills `#404040` (oklch 37.15%) — a colour of its own,
+   deliberately a step lighter than the (corrected) trigger. Fixed with
+   `--color-foreground-navigation-primary-layer2` — again an existing,
+   already-paired semantic token (the navigation family's own "one surface
+   layer up" value) rather than a swatch-matched literal — see §9.22.
+
+Also fixed in the same pass, smaller but equally directly confirmed: "Create
+context" is a plain white icon+label row in the source (`Icons/plus` +
+`Create context` text, both `#ffffff`) — not the link-styled (blue) text
+this previously read as, and missing the leading `+` icon entirely.
+`ContextSwitcher.tsx` now renders an `Icon icon="plus"` before
+`createContextLabel`; its own CSS colour changed from `--color-text-link`
+to `--color-text`.
+
+Not re-checked in this pass, so still exactly as §9.6 already flagged:
+the context-item rows' own colours (name/description/badge), still on
+`ContextualMenu`'s reused tokens. **Update, §9.21: those item colours did
+end up needing a correction — not from new Figma evidence, but as a direct
+consequence of fix #3 above.**
+
+### 9.21 — `ContextSwitcher` rebuilt on `ContextualMenu`, not `Popover`: a real "select"-like widget
+
+§9.20 corrected what `ContextSwitcher` looked like without changing what
+kind of widget it *was*: a `<details>`/`<summary>` disclosure (via
+`Popover`) containing a plain `<ul>` of `<button>`s. To a screen reader,
+that's a generic expand/collapse region with some buttons inside it — not
+"combobox, collapsed, Acme Corp selected, 1 of 3" the way a native
+`<select>` (or a correctly-built custom equivalent) announces. No arrow-key
+navigation between contexts either; each option was reachable only by
+sequential Tab. Per direction, re-checked as an interaction-model question,
+not a visual one this time.
+
+**Rebuilt on `ContextualMenu`** (`@canonical/react-ds-global`) instead —
+this was already the intended pairing, not a new dependency introduced for
+this fix: `ContextSwitcher`'s own CSS had reused `ContextualMenu`'s item
+tokens (`--contextual-menu-item-color-background{,-hover,-active}`) since
+before this pass, a hint the two were meant to go together (§9.6) that had
+never actually been followed through. `ContextualMenu` gives, for free,
+what a hand-rolled fix on `Popover` would have had to build from
+scratch: a real `<button>` trigger (`aria-haspopup="menu"`,
+`aria-expanded`), a `role="menu"` popup, and full roving-focus keyboard
+navigation (arrow keys, Home/End, type-ahead) via `useNavigationTree` —
+already-tested machinery, not new code written for this component
+specifically.
+
+**Not a strict `listbox`/`option` ("select") pattern — a menu-of-actions
+pattern instead, and that's a real, acknowledged trade-off, not an
+oversight.** `ContextualMenu`'s items are `role="menuitem"` (actions), not
+`role="option"` (persistent selectable state) — there is no
+`aria-selected`/`menuitemradio` concept available through it. The
+currently-selected context is marked visually only (bold, via a `.current`
+class this component's own custom item renderer adds — `ContextualMenu`'s
+`MenuItem` has no "selected" field to carry an `aria-*` state through to
+the element it renders), not through any ARIA property a screen reader
+would announce as "selected". Weighed against the alternative — hand-
+building `role="listbox"`/`role="option"` with roving `aria-
+activedescendant` and arrow-key handling directly on `Popover`, entirely
+new and untested — this trades perfect "select" semantics for reusing a
+correct, already-tested "menu button" pattern. Flagged for design/
+engineering to revisit if the distinction matters enough to justify the
+custom-build path instead.
+
+**A required, minimal addition to the shared `ContextualMenu` primitive
+itself:** its popup surface is portaled to `document.body`, so it is never
+a DOM descendant of `ContextualMenu`'s own root — no `className` prop
+reaches it (custom-property inheritance follows the rendered DOM tree, not
+the React tree, and a portal breaks that ancestry), and nothing else did
+either. Added `surfaceClassName` (purely additive, opt-in, every existing
+consumer unaffected) so `ContextSwitcher` — or anything else using
+`ContextualMenu` — has a way to theme the surface itself, not just the
+trigger. Landing this fix for the corrected dropdown background (§9.20 fix
+#3) needed it; the underlying dark-theme background/border-radius
+constants for its "modal" surface (`--surface-color-background`, via
+`.modal`, `@canonical/design-tokens/dist/modifiers.surfaces.css`) are
+otherwise fixed per-app, not per-instance.
+
+**A consequence of fix #3, not new Figma evidence — since resolved
+differently, §9.22.** Correcting the dropdown's own background put it
+*lighter* than `ContextualMenu`'s own ghost-item tokens as they stood at
+the time, which would have read backwards against it. §9.22 replaces the
+specific token choice this originally landed with, which is why the two
+token names disagree — this section is kept for the *reasoning* (why a
+mismatch existed at all), §9.22 for what actually ships.
+
+Also changed, for consistency, not because it was itself confirmed wrong:
+the trigger's own inner `.row` layout moved from a CSS grid to a flex row,
+matching how the surrounding markup already describes it.
+
+### 9.22 — Per direction: no component-authored `light-dark()` pairs — existing semantic tokens only
+
+§9.20/§9.21 landed three colour choices as `light-dark(<existing semantic
+token>, <hand-picked dark-only primitive>)` — the trigger background, and
+the dropdown-surface background plus its own item-state overrides. Per
+explicit direction: a component may reference an existing token (which is
+already properly light/dark-paired *inside its own definition*), but must
+not construct its own new light/dark pair by grafting a hand-picked
+primitive onto one side of an existing semantic token — that produces a
+value that is not really "the token", just borrowing its name for the
+light side. Corrected to reference existing, already-paired semantic
+tokens directly, with no override at all where reasonable:
+
+- **Trigger background**: `--color-palette-gray-820` (a swatch-matched
+  primitive, only in the dark branch of a hand-built pair) →
+  `--color-foreground-input` — the design system's own "this is an
+  input-like control" semantic family. Its dark value (oklch 18.67%) is
+  not a close match to the measured Figma swatch (oklch 30.52%) — picked
+  for being the semantically-correct existing token, not for the swatch,
+  which this section's own governing instruction prioritises. Hover
+  follows the same family: `--color-foreground-input-hover`.
+- **Dropdown surface background**: `--color-palette-gray-700` (again, only
+  in the dark branch) → `--color-foreground-navigation-primary-layer2` —
+  the navigation family's own "one surface layer above the base rail"
+  token, the same relationship `.surface .surface`'s nesting-depth system
+  expresses for real (non-portaled) DOM nesting via
+  `--surface-color-foreground-navigation-primary`; referenced by its
+  layer-2 name directly, since the popup's portal breaks that nesting
+  and the indirection has nothing to resolve through.
+- **Dropdown item states**: removed the override entirely, rather than
+  replace it with another hand-built pair. `--color-foreground-navigation-
+  primary-layer2`'s own dark value (oklch 23.08%) happens to equal
+  `ContextualMenu`'s default ghost-item background dark value exactly (both
+  derive from `--color-palette-gray-930`) — so the §9.21 mismatch this was
+  responding to no longer exists with the corrected surface token above;
+  `ContextualMenu`'s own `--color-foreground-ghost{,-hover,-active}`
+  defaults (oklch 23/27/30% dark) once again read correctly (lighter on
+  hover/active than the 23.08% surface) with no override needed at all.
+
+None of these three swatch-matches the Figma source as precisely as the
+values §9.20/§9.21 picked — that is the accepted cost of this correction,
+not an oversight. Light theme is unaffected either way, since every one of
+these tokens already carries its own (untouched) light value.
+
 ---
 
 ## 10. Known issues
 
 Carried forward for design/engineering resolution; none block PR1.
 
-1. **Keyboard shortcut is unratified.** The spec's prose states "Ctrl + E"
-   toggles the rail, then in the same paragraph argues for a single letter
-   ("A") instead, for the reasons a modifier combination is a poor choice in
-   a web app. Per explicit direction, the binding is scaffolded
-   (`COLLAPSE_SHORTCUT`, §5) but shipped **disabled by default**
-   (`keyboardShortcut = false`) until design rules on the actual key.
+1. ~~**Keyboard shortcut is unratified.**~~ — **resolved, §9.18**: the
+   spec's own "Ctrl+E" vs. "single letter" contradiction is sidestepped
+   entirely — ratified as `Ctrl+.`, `keyboardShortcut` now defaults to
+   `true` (a consumer opts out, rather than in).
 2. **Collapsed rail width is derived, not specified** — see §9.2. Needs
    design sign-off, especially whether the sizing reference should be the
    logo or the item icon column.
@@ -979,6 +1206,9 @@ Carried forward for design/engineering resolution; none block PR1.
    implement `certificateUser`'s icon swap and logout suppression);
    `footerRoot` is kept as a documented escape hatch for footers that don't
    fit the closed vocabulary. New consumers should prefer `footerItems`.
+   `footerItems` now also has all three `control` variants (§9.19) — the
+   remaining gap against `footerRoot` is expandable entries only, which the
+   closed 3-kind vocabulary structurally can't express.
 7. **Ontology drift.** The knowledge graph (`ds:apps.component.side_navigation`)
    carries only a summary — no anatomy, modifiers, or subcomponents — while
    this file's `@implements` tags and anatomy YAMLs use
@@ -1017,7 +1247,7 @@ Carried forward for design/engineering resolution; none block PR1.
     shape, matching every other tier in this model) over that extra type
     safety; revisit if the field carries more than three variants' worth of
     optional fields cleanly.
-12. **`ContextSwitcher` reuses `SwitchInput` from `@canonical/react-ds-global-form`
+12. **`ItemSwitch` reuses `SwitchInput` from `@canonical/react-ds-global-form`
     via a newly-curated top-level export**, extending the existing
     `RatingInput` precedent (a component the package already documents as
     usable standalone) rather than duplicating the switch's ~100 lines of
@@ -1030,11 +1260,11 @@ Carried forward for design/engineering resolution; none block PR1.
 13. `packages/react/ds-app/vitest.setup.ts`'s `ResizeObserver` mock was
     `vitest.fn().mockImplementation(arrowFn)` — arrow functions cannot be
     invoked with `new`, so any component constructing a real
-    `new ResizeObserver(callback)` (as `Popover`'s window-fitment
-    positioning does, via `ContextSwitcher`) threw `is not a constructor` in
-    tests. Fixed to a plain class, matching `@canonical/react-ds-global`'s
-    own working setup. Latent since ds-app had nothing exercising this path
-    before.
+    `new ResizeObserver(callback)` (as `Popover`'s and `ContextualMenu`'s
+    shared window-fitment positioning does, via `ContextSwitcher` — §9.21)
+    threw `is not a constructor` in tests. Fixed to a plain class, matching
+    `@canonical/react-ds-global`'s own working setup. Latent since ds-app
+    had nothing exercising this path before.
 14. **Collapsed-footer tooltips are deferred.** The spec calls for footer
     item labels to appear in a tooltip after an 800ms hover once collapsed
     (§7, distinct from the collapse button's own 1000ms tooltip, §9.4). The

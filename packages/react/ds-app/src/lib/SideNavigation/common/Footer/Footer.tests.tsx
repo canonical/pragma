@@ -86,5 +86,60 @@ describe("Footer", () => {
         container.querySelector("use[href$='certificate.svg#certificate']"),
       ).toBeInTheDocument();
     });
+
+    it("renders a control: switch item as ItemSwitch, not a link", () => {
+      render(
+        <Footer
+          items={[
+            {
+              kind: "notifications",
+              control: "switch",
+              defaultChecked: true,
+            },
+          ]}
+        />,
+      );
+      const toggle = screen.getByRole("switch", { name: "Notifications" });
+      expect(toggle).toBeChecked();
+      expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    });
+
+    it("calls onCheckedChange for a control: switch item", () => {
+      const onCheckedChange = vi.fn();
+      render(
+        <Footer
+          items={[
+            {
+              kind: "notifications",
+              control: "switch",
+              checked: false,
+              onCheckedChange,
+            },
+          ]}
+        />,
+      );
+      screen.getByRole("switch").click();
+      expect(onCheckedChange).toHaveBeenCalledWith(true);
+    });
+
+    it("control: button always wins over url, even when both are given", () => {
+      const onClick = vi.fn();
+      render(
+        <Footer
+          items={[
+            {
+              kind: "account",
+              url: "/account",
+              control: "button",
+              onClick,
+            },
+          ]}
+        />,
+      );
+      expect(
+        screen.getByRole("button", { name: "Account settings" }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    });
   });
 });

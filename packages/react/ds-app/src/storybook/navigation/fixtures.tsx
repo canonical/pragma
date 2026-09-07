@@ -1,3 +1,4 @@
+import { fn } from "storybook/test";
 import { createHelpItem } from "../../lib/SideNavigation/helpItem.js";
 import type { LeafNavItem, NavRoot } from "../../lib/SideNavigation/types.js";
 import { MockBadge } from "./story-utils.js";
@@ -214,6 +215,79 @@ export const lxdFooterRoot: NavRoot = {
         },
         { key: "report-bug", label: "Report a bug", icon: "bug" },
         { key: "lxd-logout", label: "Log out" },
+      ],
+    },
+  ],
+};
+
+// --- Showcase --------------------------------------------------------------
+// Neither MAAS nor LXD's own footer exercises anything beyond a plain link
+// or a bare (non-navigable) label — no `control: "switch"`/`"button"`, no
+// expandable-with-real-options entry. A footer's own items are ordinary
+// `NavItem`s once routed through `footerRoot` (the same tree `NavTree`
+// renders for `root`/`Content`), so they support exactly what a content
+// group does — this fixture is the demonstration, not a capability that
+// needed adding for `footerRoot` itself (only the closed `footerItems`
+// vocabulary needed a `control` field of its own — SPEC.md §4.1).
+
+/**
+ * A footer with every control variant a content group can have: a plain
+ * link, a toggle (`control: "switch"`), an expandable with real
+ * multiple-choice options (`control: "button"` per option — each an
+ * action, not a page), and an action button. Demonstrates that
+ * `footerRoot` gives footer items the same options `root` gives content
+ * items — nothing here is footer-specific.
+ */
+export const showcaseFooterRoot: NavRoot = {
+  key: "showcase-footer-root",
+  items: [
+    {
+      key: "showcase-footer-group",
+      separator: true,
+      items: [
+        { url: "/account", label: "Ada Lovelace", icon: "user" },
+        {
+          key: "notifications-toggle",
+          label: "Notifications",
+          icon: "notifications",
+          control: "switch",
+          defaultChecked: true,
+        },
+        {
+          key: "theme",
+          label: "Theme",
+          icon: "dark-theme",
+          items: [
+            {
+              key: "theme-light",
+              label: "Light",
+              icon: "light-theme",
+              control: "button",
+              onClick: fn(),
+            },
+            {
+              key: "theme-dark",
+              label: "Dark",
+              icon: "dark-theme",
+              control: "button",
+              onClick: fn(),
+            },
+            {
+              key: "theme-system",
+              label: "System",
+              icon: "system-theme",
+              control: "button",
+              onClick: fn(),
+            },
+          ],
+        },
+        {
+          key: "showcase-logout",
+          label: "Log out",
+          icon: "log-out",
+          control: "button",
+          onClick: fn(),
+        },
       ],
     },
   ],

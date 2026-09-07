@@ -175,20 +175,32 @@ export interface SecondaryNavRoot {
 /**
  * A `SideNavigation.Footer` entry from the spec's closed `footer-items`
  * vocabulary (SPEC.md §4.1, §10.6) — Account settings, Notifications, or Log
- * out. Exactly one of `url`/`onClick` is expected per item, mirroring the
- * link-vs-button split `control` makes elsewhere in this file: present a
- * `url` for a navigable footer item, or `onClick` for a plain action (most
- * commonly `logout`, which is nearly always an action, never a page).
+ * out. `control` selects the rendered row the same way it does on a
+ * `LeafNavItem` elsewhere in this file (SPEC.md §4.4) — the closed `kind`
+ * vocabulary and the free-form `NavItem` shape are otherwise two different
+ * things, but there's no reason the footer's own items should have *fewer*
+ * control options than a `root`/`footerRoot` group's do. Defaults to
+ * `"link"` when `url` is set, `"button"` otherwise — unchanged from before
+ * this field existed, so existing `FooterItem`s (none of which set
+ * `control`) keep rendering exactly as they did.
  */
 export interface FooterItem {
   kind: "account" | "notifications" | "logout";
-  /** Navigable footer items render as a link when this is set. */
+  /** Navigable footer items render as a link when this is set. `control: "link"` only. */
   url?: string;
   /** Display text. Defaults per `kind` if omitted ("Account settings", "Notifications", "Log out"). */
   label?: string;
-  /** Non-navigable footer items (most commonly `logout`) render as a button and call this when activated. */
+  /** Selects the rendered control (SPEC.md §4.4). Defaults to `"link"` when `url` is set, `"button"` otherwise. */
+  control?: "link" | "button" | "switch";
+  /** `control: "button"` (the default without a `url`) — called when activated. */
   onClick?: () => void;
-  /** Trailing content (e.g. an unread-count badge on `notifications`). */
+  /** `control: "switch"` — controlled checked state. */
+  checked?: boolean;
+  /** `control: "switch"` — initial checked state when uncontrolled. */
+  defaultChecked?: boolean;
+  /** `control: "switch"` — called when toggled, with the next checked value. */
+  onCheckedChange?: (checked: boolean) => void;
+  /** Trailing content (e.g. an unread-count badge on `notifications`). `control: "link"` only — `"switch"` uses the end slot for the switch itself. */
   slot?: ReactNode;
 }
 

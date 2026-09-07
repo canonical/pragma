@@ -3,6 +3,7 @@ import type React from "react";
 import type { FooterItem } from "../../types.js";
 import { Item } from "../Item/index.js";
 import { ItemButton } from "../ItemButton/index.js";
+import { ItemSwitch } from "../ItemSwitch/index.js";
 import { NavTree } from "../NavTree/index.js";
 import type { FooterProps } from "./types.js";
 import "./styles.css";
@@ -19,10 +20,14 @@ const FOOTER_ITEM_DEFAULTS: Record<
 };
 
 /**
- * Renders one footer item from the closed vocabulary. Navigable
- * (`url` set) items render as `Item` (a link); action items (most commonly
+ * Renders one footer item from the closed vocabulary, dispatching on
+ * `control` the same way `NavTree`'s own `renderEntry` does (SPEC.md
+ * §4.4) — `"switch"` renders `ItemSwitch`; otherwise, navigable (`url` set)
+ * items render as `Item` (a link), and action items (most commonly
  * `logout`, which nearly always has no page of its own) render as
- * `ItemButton`.
+ * `ItemButton`. Explicit `control` always wins over the `url`-presence
+ * inference, so a `notifications` item can be a switch even though it
+ * would otherwise default to a link.
  */
 const renderFooterItem = (
   item: FooterItem,
@@ -33,13 +38,28 @@ const renderFooterItem = (
     item.kind === "account" && certificateUser ? "certificate" : defaults.icon;
   const label = item.label ?? defaults.label;
 
-  if (item.url) {
+  if (item.control === "switch") {
+    return (
+      <ItemSwitch
+        key={item.kind}
+        icon={icon}
+        checked={item.checked}
+        defaultChecked={item.defaultChecked}
+        onCheckedChange={item.onCheckedChange}
+      >
+        {label}
+      </ItemSwitch>
+    );
+  }
+
+  if (item.control !== "button" && item.url) {
     return (
       <Item key={item.kind} url={item.url} icon={icon} slot={item.slot}>
         {label}
       </Item>
     );
   }
+
   return (
     <ItemButton
       key={item.kind}
