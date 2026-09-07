@@ -5,13 +5,11 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./layers.css": "./layers.css",
-    "./adapter.css": "./adapter.css"
+    "./layers.css": "./src/layers.css",
+    "./adapter.css": "./src/adapter.css"
   },
   "files": [
-    "adapter.css",
-    "elements.css",
-    "layers.css"
+    "src"
   ],
   "author": {
     "email": "webteam@canonical.com",

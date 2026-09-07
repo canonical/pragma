@@ -1,11 +1,11 @@
 /* @canonical/styles-vanilla-adapter - Layer order for a mixed application
  *
  * This statement must be the FIRST rule of the FIRST stylesheet the browser sees;
- * only @charset may precede it. The file sits at the package root so that Sass
- * finds it by its extensionless path and inlines it in place:
+ * only @charset may precede it. Sass finds this file by its path inside the
+ * package and inlines it in place, which is what a Sass entry wants:
  *
- *   @import "@canonical/styles-vanilla-adapter/layers";
- *   @use "@canonical/styles-vanilla-adapter/layers";
+ *   @import "@canonical/styles-vanilla-adapter/src/layers";
+ *   @use "@canonical/styles-vanilla-adapter/src/layers";
  *
  * From plain CSS or a bundler:
  *

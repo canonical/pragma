@@ -424,7 +424,7 @@ const engineFile = ((): string => {
 
 /** The sources the copy binds to: everything the elements entry composes. */
 const sources = composition(elementsEntry);
-const copy = walk(read("../elements.css"), "vanilla-adapter/elements.css");
+const copy = walk(read("../src/elements.css"), "vanilla-adapter/elements.css");
 
 /** The source rules the copy binds to: those in the three element layers. */
 const sourceRules = sources.flatMap((walked) =>
