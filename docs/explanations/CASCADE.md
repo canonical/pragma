@@ -85,8 +85,11 @@ the pages that need it.
 Layer order is settled by first appearance. A layer that first appears in whichever file a bundler
 happened to emit first takes a position nobody chose, and once a layer exists a later statement can add
 names after it but can never reorder it. One statement, first, is the only arrangement in which the
-order is a decision instead of an accident — so pragma's entry point opens with it, and an `@import`
-is legal after it because a layer statement and `@charset` are the only rules an import may follow:
+order is a decision instead of an accident. Pragma declares it in one file, `layers.css`, which holds
+the statement and nothing else, and every entry imports that file as its first rule — a statement read
+through an `@import` orders the importing sheet exactly as one written in place would, measured in a
+browser. Writing it once is the point: five copies of one ordered list are five chances to drift, and
+the order is the thing least able to survive drifting. The order itself reads:
 
 ```css
 @layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers, ds.surfaces,
@@ -242,10 +245,10 @@ and it is the one that matters on a mixed page: neither the values entry nor the
 anything but custom properties into the three element layers, so nothing of pragma's reaches the other
 framework's headings and paragraphs from a layer above it.
 
-Every entry opens with the same order statement, so importing one settles the layer order exactly as
-importing all of them does. And in this package no entry imports another: an `@layer` statement inside
-a layer block declares sublayers rather than top-level layers, so a whole that imported its parts would
-nest the order instead of repeating it. A page may load one, two or all of them, in any order, and get
+Every entry imports the order before anything else, so importing one settles the layer order exactly as
+importing all of them does — and there is only one file to be right about. No entry imports another
+entry, though: an `@layer` statement inside a layer block declares sublayers rather than top-level
+layers, so a whole that imported its parts would nest the order instead of sharing it. A page may load one, two or all of them, in any order, and get
 the same result, each file parsed once — the statement is idempotent, and reading the same one twice
 does nothing the first reading did not already do. That is what makes `layers.css` safe for a package
 to import in front of its own layers. The typography package is cut along the same line — a
@@ -390,7 +393,7 @@ promised. The
 [migration guide](../how-to-guides/MIGRATE_TO_LAYERED_STYLES.md#2-check-the-layers-on-a-built-page)
 carries the snippet that reads that sequence out of a live page. The adapter's fixtures ask the same
 question of a browser rather than of a file: they load both kinds of page and assert that every layer
-pragma's CSS uses is one the statement names, that each exported entry states the same order, and that
+pragma's CSS uses is one the statement names, that every entry reads the one file that declares the order, and that
 the ranks come out as written — including a sub-tier layer declared later, which must sort above its
 tier.
 
