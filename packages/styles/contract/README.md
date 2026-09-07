@@ -8,11 +8,13 @@ never published, and has no source of its own — only tests.
 
 ## What it guards
 
-`@canonical/styles` has four entry points: `index.css`, the whole stylesheet, and `tokens.css`,
-`elements.css` and `layout.css`, which are it in three parts. The parts exist so that a page which also
-runs another CSS framework can take the design system's values and layout presets without its element
-rules, and get those from that framework's adapter instead, confined to the part of the page the design
-system owns.
+`@canonical/styles` has five entry points: `index.css`, the whole stylesheet; `tokens.css`,
+`elements.css` and `layout.css`, which are it in three parts; and `layers.css`, which is the layer
+order statement on its own. The parts exist so that a page which also runs another CSS framework can
+take the design system's values and layout presets without its element rules, and get those from that
+framework's adapter instead, confined to the part of the page the design system owns. `layers.css` is
+for a package rather than a page: a component package in a tier below the second level imports it to
+fix the layer order before declaring a layer of its own.
 
 Four things have to be true for that to work, and none of them is visible in any single file:
 

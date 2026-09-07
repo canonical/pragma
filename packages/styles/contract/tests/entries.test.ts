@@ -1,11 +1,15 @@
 /**
- * This package has four entry points: `index.css`, the whole stylesheet, and
- * `tokens.css`, `elements.css` and `layout.css`, which are it in three parts.
- * The parts exist because a page that also runs another CSS framework cannot
- * take the element rules — the other framework has its own `p` rule and only one
- * of the two can own `line-height` — so it takes the values and the layout
- * presets and gets its element rules from that framework's adapter instead, in a
- * confined copy.
+ * `@canonical/styles` has five entry points: `index.css`, the whole stylesheet;
+ * `tokens.css`, `elements.css` and `layout.css`, which are it in three parts;
+ * and `layers.css`, the layer order statement on its own. The parts exist
+ * because a page that also runs another CSS framework cannot take the element
+ * rules — the other framework has its own `p` rule and only one of the two can
+ * own `line-height` — so it takes the values and the layout presets and gets its
+ * element rules from that framework's adapter instead, in a confined copy.
+ * `layers.css` is for a package rather than a page: a component package in a
+ * tier below the second level imports it to fix the layer order before declaring
+ * a layer of its own, so `ENTRIES` below is the four real entries and the
+ * statement checks add `layers.css` where it belongs.
  *
  * Four things have to hold for that to work, and none of them is visible in any
  * one file. They are checked here, against the resolved stylesheet each entry
