@@ -141,11 +141,14 @@ An order statement fixes the relative order of layers the first time they appear
 may introduce new names but can never reorder the ones already fixed, so an application that needs to
 interleave a layer of its own puts its statement before this import.
 
+<<<<<<< HEAD
 This section is the reference: what is in each layer, and where. The reasoning behind the order — how
 a browser decides, why a rule in no layer beats every layered one, why the confinement a mixed page
 needs lives in the adapter rather than here, and what a bundler does to the statement — is
 [the cascade contract](../../../docs/explanations/STYLES_CASCADE.md).
 
+=======
+>>>>>>> origin/main
 #### The Component Tiers
 
 The component layers follow the design system's tier tree: who owns a component decides which layer
