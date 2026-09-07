@@ -38,7 +38,7 @@ export default defineConfig({
       {
         test: {
           name: "contract",
-          include: ["tests/layer-set.test.js"],
+          include: ["tests/layer-set.test.ts"],
           browser: {
             enabled: true,
             headless: true,

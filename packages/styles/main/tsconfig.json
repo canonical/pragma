@@ -1,7 +1,10 @@
 {
   "extends": "@canonical/typescript-config",
   "compilerOptions": {
-    "types": ["node"]
+    "skipLibCheck": true,
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node", "vite/client"],
+    "noEmit": true
   },
   "include": ["tests/**/*.ts", "*.ts"]
 }
