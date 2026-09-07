@@ -132,13 +132,14 @@ statement, and none imports another, so any of them is safe to import on its own
 three smaller ones exist for a page that also runs another CSS framework and takes its element rules
 from the adapter instead; if that is not you, the package entry is your import, as it always was.
 
-There is also `layers.css`, which is the order statement and nothing else. An application does not
-need it — every entry above already carries the statement — but a package that declares a cascade
+There is also `layers.css`, which is the order statement and nothing else, and which is where the
+order is declared: every entry above imports it as its first rule rather than repeating the list. An
+application does not need it — importing any entry brings it — but a package that declares a cascade
 layer of its own imports it first, so that its layer is named after the design system's and therefore
 ranks above them. The cascade contract has the recipe.
 
 Anything below an entry is a leaf stylesheet, and a leaf **carries no order statement**, because the
-statement is an entry's first rule. The layers such a file opens are ordered by wherever they first
+order arrives through the entry that imports it. The layers such a file opens are ordered by wherever they first
 appear among your own rules, which is the accident the statement exists to remove. If you have a
 reason to reach past the entries, write the statement yourself, as in step 1.
 
