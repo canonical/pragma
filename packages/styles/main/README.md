@@ -82,9 +82,9 @@ the scrollbars and the system colours, whether or not anything reads a token, an
 element of the other framework's carrying `light` or `dark` picks it up too. It cannot be split out
 here — the sheet is generated and the declarations sit in the same rules as the tokens — so separating
 them is a change to the tokens package's emitter, tracked as PRA-149. An application that must not have
-it declares `color-scheme` itself, in a layer above `ds.modifiers` or unlayered. The entries test
-allows exactly those three declarations and no other non-custom property, so nothing else can join
-them unnoticed.
+it declares `color-scheme` itself, in a layer above `ds.modifiers` or unlayered. The contract tests
+allow exactly those three declarations and no other non-custom property, so nothing else can join them
+unnoticed.
 
 The parts exist for one reason. A page that also runs another CSS framework cannot take the element
 rules: the other framework has its own `p` rule, and only one of the two can own `line-height`. Such a
@@ -92,7 +92,9 @@ page takes `tokens.css` and `layout.css`, and gets its element rules from that f
 instead, in a copy confined to the part of the page the design system owns —
 `@canonical/styles-vanilla-adapter` builds that copy out of the same files `elements.css` imports.
 
-Two properties make the parts safe to mix, and a test in this package holds both.
+Two properties make the parts safe to mix, and `@canonical/styles-contract` holds both. That package
+is private and never published; this one publishes stylesheets and carries no test machinery of its
+own, so the checking lives beside the contract it checks rather than inside the subject.
 
 **Every entry opens with the same layer order statement.** It has to be the first rule of whichever
 stylesheet a page loads first, because it fixes the order of every layer for that page; two entries

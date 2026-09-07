@@ -12,7 +12,8 @@
  * builds rather than against the text a maintainer reads.
  */
 import { readFileSync } from "node:fs";
-import { basename, join } from "node:path";
+import { createRequire } from "node:module";
+import { basename, dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   fingerprint,
@@ -29,8 +30,18 @@ const ENTRIES = [
   "layout.css",
 ] as const;
 
-const srcPath = (file: string): string =>
-  join(import.meta.dirname, "..", "src", file);
+/**
+ * The subject lives in another package, so it is resolved through the workspace
+ * rather than by walking up from here: `@canonical/styles` exports its own
+ * manifest, and its stylesheets sit beside it in `src`. That keeps this file
+ * honest about what it is testing — the installed package, by its public name,
+ * not a path that happens to work from this directory.
+ */
+const stylesRoot = dirname(
+  createRequire(import.meta.url).resolve("@canonical/styles/package.json"),
+);
+
+const srcPath = (file: string): string => join(stylesRoot, "src", file);
 
 /** The names in a stylesheet's first `@layer` statement, in order. */
 const statement = (css: string): string[] => {
