@@ -40,9 +40,11 @@
  *
  * `:where()` around every root selector keeps it at zero specificity, so the
  * copy weighs what pragma's original weighed or less, and a single class in any
- * layer above these three overrides it. The tokens the copy reads, the
- * typographic scale among them, come from tokens.css; the engine reads
- * `--baseline-height` with a fallback of its own, so nothing else travels.
+ * layer above these three overrides it. The tokens the copy reads come from
+ * tokens.css: the typographic scale, and the baseline grid unit, which the
+ * typography package declares once at zero weight so that the rules below can
+ * read it bare. Both are custom properties on the page's root, and an island
+ * inherits them, so nothing else travels with the copy.
  *
  * What keeps this copy honest: tests/elements.test.ts reads pragma's source
  * files from the workspace and this file, walks the rules of both, and fails
@@ -286,7 +288,7 @@
             var(--typography-heading-1-font-size) *
             var(--typography-heading-1-line-height)
           ),
-          var(--baseline-height, 0.25rem)
+          var(--baseline-height)
         )
       );
       --space-after: 0;
@@ -307,7 +309,7 @@
             var(--typography-heading-2-font-size) *
             var(--typography-heading-2-line-height)
           ),
-          var(--baseline-height, 0.25rem)
+          var(--baseline-height)
         )
       );
       --space-after: 0;
@@ -328,7 +330,7 @@
             var(--typography-heading-3-font-size) *
             var(--typography-heading-3-line-height)
           ),
-          var(--baseline-height, 0.25rem)
+          var(--baseline-height)
         )
       );
       --space-after: 0;
@@ -349,7 +351,7 @@
             var(--typography-heading-4-font-size) *
             var(--typography-heading-4-line-height)
           ),
-          var(--baseline-height, 0.25rem)
+          var(--baseline-height)
         )
       );
       --space-after: 0;
@@ -370,7 +372,7 @@
             var(--typography-heading-5-font-size) *
             var(--typography-heading-5-line-height)
           ),
-          var(--baseline-height, 0.25rem)
+          var(--baseline-height)
         )
       );
       --space-after: 0;
@@ -396,7 +398,7 @@
             var(--typography-heading-6-font-size) *
             var(--typography-heading-6-line-height)
           ),
-          var(--baseline-height, 0.25rem)
+          var(--baseline-height)
         )
       );
       --space-after: 0;
@@ -423,7 +425,7 @@
             var(--typography-text-primary-font-size) *
             var(--typography-text-primary-line-height)
           ),
-          var(--baseline-height, 0.25rem)
+          var(--baseline-height)
         )
       );
       --space-after: 0;
@@ -448,7 +450,7 @@
             var(--typography-text-primary-code-font-size) *
             var(--typography-text-primary-code-line-height)
           ),
-          var(--baseline-height, 0.25rem)
+          var(--baseline-height)
         )
       );
       --space-after: 0;
@@ -509,17 +511,17 @@
     :scope.code {
       --computed-line-height: var(
         --line-height,
-        calc(var(--baseline-height, 0.25rem) * var(--line-height-multiplier))
+        calc(var(--baseline-height) * var(--line-height-multiplier))
       );
       line-height: var(--computed-line-height);
       font-size: var(--font-size);
 
       --baseline-position: calc((var(--computed-line-height) + 1cap) / 2);
       --start-nudge: calc(
-        var(--baseline-height, 0.25rem) -
-        mod(var(--baseline-position), var(--baseline-height, 0.25rem))
+        var(--baseline-height) -
+        mod(var(--baseline-position), var(--baseline-height))
       );
-      --end-nudge: calc(var(--baseline-height, 0.25rem) - var(--start-nudge));
+      --end-nudge: calc(var(--baseline-height) - var(--start-nudge));
     }
 
     /* Block-level baseline nudges only: bare inline `.code` is excluded so it
@@ -538,10 +540,7 @@
       padding-block-end: var(--end-nudge);
 
       /* Element-owned spacing — only active in .editorial contexts */
-      margin-block-end: calc(
-        var(--space-after, 0) *
-        var(--baseline-height, 0.25rem)
-      );
+      margin-block-end: calc(var(--space-after, 0) * var(--baseline-height));
     }
   }
 }
