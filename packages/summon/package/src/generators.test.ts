@@ -420,8 +420,10 @@ describe("component tier layer in the CSS entry", () => {
     const css = renderIndexCss("@canonical/react-ds-app-lxd");
 
     expect(css).toContain("@layer ds.components.apps-lxd;");
+    // The order first, then the layer: a name met before the design system's
+    // statement is read sorts below the tiers that statement declares.
     expect(css.replace(/\/\*[\s\S]*?\*\//g, "").trim()).toBe(
-      "@layer ds.components.apps-lxd;",
+      ['@import url("@canonical/styles/layers.css");', "@layer ds.components.apps-lxd;"].join("\n"),
     );
   });
 

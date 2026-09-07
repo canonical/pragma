@@ -5,8 +5,17 @@
  */
 <% if (declaresComponentLayer) { %>
 /* This package is a sub-tier of the design system's component tiers, so it
- * declares its own layer: the styles package's order statement names the five
- * second-level tiers, and cannot know a product's name. First rule in the
- * entry, so the layer is placed before any sheet writes into it. */
+ * declares its own layer: the order statement in @canonical/styles names the
+ * five second-level tiers and cannot know a product's name.
+ *
+ * The import comes first, and it is what makes the declaration mean the same
+ * thing every time. A layer takes its place the moment a browser first meets
+ * its name, so a name met before the design system's statement is read is
+ * placed below the tiers that statement declares — the opposite of what a
+ * product tier is for. Which of the two a page reads first is a property of
+ * the bundler, not of this package; reading the statement here settles it.
+ * Importing it twice costs nothing: a statement can add names, never reorder
+ * the ones already fixed. */
+@import url("@canonical/styles/layers.css");
 @layer <%= componentLayer %>;
 <% } %>

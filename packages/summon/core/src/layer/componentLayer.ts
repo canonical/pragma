@@ -38,6 +38,20 @@ const TIERS = [
   { tier: "apps", stems: ["ds-apps", "ds-app"], subTiers: true },
 ] as const;
 
+/**
+ * Product suffixes a package name abbreviates, and the tier id behind each.
+ *
+ * A layer is named for the tier in the design system's tree, and a package is
+ * named for the team that says it out loud, which is not always the same word:
+ * `@canonical/svelte-ds-app-wpe` implements the Workplace Engineering tier.
+ * Without this, the suffix would become the layer, the package's own sheets
+ * would say one name and a generated component another, and the two would sort
+ * as different layers.
+ */
+const SUFFIX_ALIASES: Record<string, string> = {
+  wpe: "workplaceengineering",
+};
+
 /** Every second-level layer name, in the order pragma's statement names them. */
 export const COMPONENT_TIER_LAYERS = TIERS.map(
   ({ tier }) => `ds.components.${tier}`,
@@ -65,7 +79,8 @@ export function componentLayerFor(packageName: string | undefined): string {
     for (const s of stems) {
       if (stem === s) return `ds.components.${tier}`;
       if (subTiers && stem.startsWith(`${s}-`)) {
-        return `ds.components.${tier}-${stem.slice(s.length + 1)}`;
+        const suffix = stem.slice(s.length + 1);
+        return `ds.components.${tier}-${SUFFIX_ALIASES[suffix] ?? suffix}`;
       }
       // A tier without sub-tiers absorbs its suffixed packages: ds-global-form
       // is more of the global tier, not a product of its own.

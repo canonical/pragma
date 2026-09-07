@@ -61,8 +61,11 @@ describe("componentLayerFor", () => {
     expect(componentLayerFor("@canonical/react-ds-app-lxd")).toBe(
       "ds.components.apps-lxd",
     );
+    // The layer is named for the tier in the design system's tree, and the
+    // package for the team that says it out loud. Where the two differ, the
+    // tier wins: this package implements the Workplace Engineering tier.
     expect(componentLayerFor("@canonical/svelte-ds-app-wpe")).toBe(
-      "ds.components.apps-wpe",
+      "ds.components.apps-workplaceengineering",
     );
     expect(componentLayerFor("@canonical/react-ds-site-ubuntu")).toBe(
       "ds.components.sites-ubuntu",
