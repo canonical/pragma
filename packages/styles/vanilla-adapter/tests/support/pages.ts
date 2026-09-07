@@ -236,9 +236,12 @@ export const vanillaPage = (vanilla: VanillaVersion): PageSpec => ({
 });
 
 /**
- * The removal of README rule 19, Vanilla gone: with this package still loaded
- * (`adapter`), or swapped for `@canonical/styles` (`styles`). Nothing on any
- * root changes between the two.
+ * A page with no Vanilla in it. `styles` is the removal of README rule 19,
+ * where Vanilla and this package leave in the same change and pragma's own
+ * stylesheet takes over. `adapter` is the arrangement that rule rules out,
+ * this package still loaded with Vanilla gone: not supported (VC.34), kept
+ * here because what it computes is worth recording. Nothing on any root
+ * changes between the two.
  */
 export const removalPage = (variant: "adapter" | "styles"): PageSpec => ({
   root: "app comfortable light",

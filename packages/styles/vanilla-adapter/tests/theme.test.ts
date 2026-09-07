@@ -96,10 +96,22 @@ describe.each(VANILLA_VERSIONS)("theme-bridge (Vanilla %s)", (version) => {
 });
 
 describe("removal (README rule 19)", () => {
-  it("with the adapter still loaded, every outermost island follows the operating system and pragma's theme class on a root stays ignored", async () => {
-    // No Vanilla theme is left for the bridge to read, so it writes pragma's
-    // default, `light dark`, on every outermost island; the pin on <html> does
-    // not reach them, and a nested root inherits from its island.
+  it("removes Vanilla and this package in one change, and every root then follows pragma's theme classes", async () => {
+    const page = await render(removalPage("styles"));
+    expect(computed(page, page.documentElement).colorScheme).toBe("light");
+    expect(computed(page, "ds-root").colorScheme).toBe("light");
+    expect(computed(page, "ds-nested").colorScheme).toBe("light");
+    expect(computed(page, "theme-dark").colorScheme).toBe("light");
+    expect(computed(page, "removal-dark").colorScheme).toBe("dark");
+  });
+
+  it("computes `light dark` on every island in the unsupported arrangement, this package loaded with Vanilla gone", async () => {
+    // Not a step of the migration: this package stays until Vanilla is gone
+    // and the two leave together (VC.34). Recorded because a page that reaches
+    // it by accident looks like this. No Vanilla theme is left for the bridge
+    // to read, so it writes pragma's default, `light dark`, on every outermost
+    // island; the pin on <html> does not reach them, and a nested root
+    // inherits from its island.
     const page = await render(removalPage("adapter"));
     expect(computed(page, page.documentElement).colorScheme).toBe("light");
     expect(computed(page, "ds-root").colorScheme).toBe("light dark");
@@ -108,7 +120,7 @@ describe("removal (README rule 19)", () => {
     expect(computed(page, "removal-dark").colorScheme).toBe("light dark");
   });
 
-  it("with the adapter still loaded, a dark operating system renders the islands dark", async () => {
+  it("renders the islands dark under a dark operating system in that same unsupported arrangement", async () => {
     await emulate({ colorScheme: "dark" });
     const page = await render(removalPage("adapter"));
     const dark = await render(pragmaPage("dark"));
@@ -118,14 +130,5 @@ describe("removal (README rule 19)", () => {
     expect(computed(page, "ds-p").color).not.toBe(
       computed(light, "ds-p").color,
     );
-  });
-
-  it("with the adapter swapped for @canonical/styles, every root follows the theme classes", async () => {
-    const page = await render(removalPage("styles"));
-    expect(computed(page, page.documentElement).colorScheme).toBe("light");
-    expect(computed(page, "ds-root").colorScheme).toBe("light");
-    expect(computed(page, "ds-nested").colorScheme).toBe("light");
-    expect(computed(page, "theme-dark").colorScheme).toBe("light");
-    expect(computed(page, "removal-dark").colorScheme).toBe("dark");
   });
 });
