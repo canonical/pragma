@@ -40,7 +40,7 @@ Numbered so a review can cite one. Each ends with the decision in pragma-adrs F 
 
 **Imports**
 
-1. The first rule of the first stylesheet is the order statement in `layers.css`. From Sass, import it by its extensionless path so Sass inlines it in place: `@import "@canonical/styles-vanilla-adapter/layers";` or `@use "@canonical/styles-vanilla-adapter/layers";`. Nothing precedes it except `@charset`. (VC.02)
+1. The first rule of the first stylesheet is the order statement in `layers.css`. From Sass, import it by its extensionless path so Sass inlines it in place: `@import "@canonical/styles-vanilla-adapter/src/layers";` or `@use "@canonical/styles-vanilla-adapter/src/layers";`. Nothing precedes it except `@charset`. (VC.02)
 2. Vanilla Framework and everything built on it go inside one `@layer vanilla { … }` block: the `@import "vanilla-framework"` line itself, the site's own patterns, its overrides, and the third-party CSS it inlines. The import goes inside because Vanilla emits one rule at import time (`hr.is-fixed-width`); nested, it lands in the layer. No Vanilla-era rule stays outside it. (VC.01)
 3. In a Sass entry, never a `.css`-suffixed or `url()` import. Sass does not inline those: at top level it hoists them above the statement, and inside a block it emits an invalid nested `@import`. Extensionless imports only. (VC.27)
 4. Pragma's CSS is a second entry, `pragma.css`: `adapter.css`, then the component packages' stylesheets. `adapter.css` loads `@canonical/styles/tokens.css`, `@canonical/styles/layout.css` and this package's `elements.css` itself, so never `@canonical/styles` on a mixed page. Resolve the entry with whatever your pipeline already resolves package imports with. The order inside it does not matter, because precedence comes from the layers, but none of it goes inside the `vanilla` layer. (VC.27, VC.30)
@@ -235,7 +235,7 @@ A browser below the `@scope` floor drops each confined block whole, so islands r
 
 ```scss
 /* 1. The order contract. Extensionless: Sass inlines it in place. */
-@import "@canonical/styles-vanilla-adapter/layers";
+@import "@canonical/styles-vanilla-adapter/src/layers";
 
 /* 2. Vanilla and everything built on it: one layer, one territory.
       Your settings file points $font-base-family and $font-monospace
