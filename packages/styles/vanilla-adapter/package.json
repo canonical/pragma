@@ -38,8 +38,7 @@
     "check:webarchitect": "webarchitect assets",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:sources": "vitest run --project=sources",
-    "test:fixtures": "vitest run --project=fixtures"
+    "test:sources": "vitest run --project=sources"
   },
   "dependencies": {
     "@canonical/styles": "^0.37.0"
