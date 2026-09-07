@@ -2,13 +2,14 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { createRef } from "react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import SidePanel from "./SidePanel.js";
+import type { SidePanelHandle } from "./types.js";
 
 /*
   jsdom 28 implements no part of the dialog API — `show`, `showModal` and
   `close` are all `undefined` (verified against this package's jsdom). These
   stubs are the minimum the component needs: reflect the `open` attribute, and
-  dispatch `close` the way the platform does, so the desync guard can be
-  exercised too.
+  dispatch `close` the way the platform does, so every close funnels through
+  the dialog's `close` event as it does in a browser.
 */
 const originalShow = HTMLDialogElement.prototype.show;
 const originalClose = HTMLDialogElement.prototype.close;
@@ -35,11 +36,17 @@ const getDialog = (container: HTMLElement): HTMLDialogElement => {
   return dialog;
 };
 
+/** Opens the panel through its handle, the only way it opens now. */
+const openPanel = (handle: SidePanelHandle | null): void => {
+  if (!handle) throw new Error("SidePanel exposed no handle");
+  handle.open();
+};
+
 describe("SidePanel", () => {
   describe("rendering", () => {
     it("applies the base and custom class to the dialog", () => {
       const { container } = render(
-        <SidePanel open={false} onOpenChange={vi.fn()} className="custom-class">
+        <SidePanel className="custom-class">
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
@@ -48,23 +55,31 @@ describe("SidePanel", () => {
       expect(dialog.className).toContain("custom-class");
     });
 
-    it("renders closed until asked to open", () => {
+    it("renders closed until opened through its handle", () => {
+      const handle = createRef<SidePanelHandle>();
       const { container } = render(
-        <SidePanel open={false} onOpenChange={vi.fn()}>
+        <SidePanel ref={handle}>
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
       expect(getDialog(container)).not.toHaveAttribute("open");
+
+      openPanel(handle.current);
+      expect(getDialog(container)).toHaveAttribute("open");
     });
 
     it("renders the composed parts", () => {
+      const handle = createRef<SidePanelHandle>();
       render(
-        <SidePanel open={true} onOpenChange={vi.fn()}>
+        <SidePanel ref={handle}>
           <SidePanel.Header>Panel title</SidePanel.Header>
           <SidePanel.Content>Body</SidePanel.Content>
           <SidePanel.Footer>Actions</SidePanel.Footer>
         </SidePanel>,
       );
+      // Open so the parts are visible: a closed dialog is `display: none`,
+      // and role queries skip hidden elements.
+      openPanel(handle.current);
       expect(
         screen.getByRole("heading", { name: "Panel title" }),
       ).toBeInTheDocument();
@@ -74,11 +89,7 @@ describe("SidePanel", () => {
 
     it("passes through additional props", () => {
       render(
-        <SidePanel
-          open={false}
-          onOpenChange={vi.fn()}
-          data-testid="test-component"
-        >
+        <SidePanel data-testid="test-component">
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
@@ -86,152 +97,186 @@ describe("SidePanel", () => {
     });
   });
 
-  describe("consumer ref", () => {
-    it("forwards the dialog element to a consumer ref object", () => {
-      const consumerRef = createRef<HTMLDialogElement>();
+  describe("handle", () => {
+    it("exposes the handle to a consumer ref object", () => {
+      const consumerRef = createRef<SidePanelHandle>();
       const { container } = render(
-        <SidePanel open={false} onOpenChange={vi.fn()} ref={consumerRef}>
+        <SidePanel ref={consumerRef}>
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
-      expect(consumerRef.current).toBe(getDialog(container));
+      expect(typeof consumerRef.current?.open).toBe("function");
+      expect(typeof consumerRef.current?.close).toBe("function");
+      expect(consumerRef.current?.element).toBe(getDialog(container));
     });
 
-    it("calls a consumer callback ref with the dialog element", () => {
+    it("calls a consumer callback ref with the handle", () => {
       const consumerRef = vi.fn();
       render(
-        <SidePanel open={false} onOpenChange={vi.fn()} ref={consumerRef}>
+        <SidePanel ref={consumerRef}>
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
-      expect(consumerRef).toHaveBeenCalledWith(expect.any(HTMLDialogElement));
+      expect(consumerRef).toHaveBeenCalledWith(
+        expect.objectContaining({
+          open: expect.any(Function),
+          close: expect.any(Function),
+        }),
+      );
     });
 
-    it("keeps the panel's own ref working when a consumer ref is supplied", () => {
-      const consumerRef = createRef<HTMLDialogElement>();
-      const props = {
-        onOpenChange: vi.fn(),
-        "aria-label": "Panel",
-        ref: consumerRef,
-      };
-      const { rerender } = render(
-        <SidePanel open={false} {...props}>
-          <SidePanel.Content>Body</SidePanel.Content>
-        </SidePanel>,
-      );
-      expect(consumerRef.current).not.toHaveAttribute("open");
-
-      // Opens through the panel's internal ref — which a consumer ref must
-      // not displace.
-      rerender(
-        <SidePanel open={true} {...props}>
-          <SidePanel.Content>Body</SidePanel.Content>
-        </SidePanel>,
-      );
-      expect(consumerRef.current).toHaveAttribute("open");
-    });
-  });
-
-  describe("open state", () => {
-    it("follows the open prop in both directions", () => {
-      const props = { onOpenChange: vi.fn() };
-      const { container, rerender } = render(
-        <SidePanel open={false} aria-label="Panel" {...props}>
+    it("opens and closes the dialog", () => {
+      const handle = createRef<SidePanelHandle>();
+      const { container } = render(
+        <SidePanel ref={handle} aria-label="Panel">
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
       const dialog = getDialog(container);
-      expect(dialog).not.toHaveAttribute("open");
 
-      rerender(
-        <SidePanel open={true} aria-label="Panel" {...props}>
-          <SidePanel.Content>Body</SidePanel.Content>
-        </SidePanel>,
-      );
+      openPanel(handle.current);
       expect(dialog).toHaveAttribute("open");
 
-      rerender(
-        <SidePanel open={false} aria-label="Panel" {...props}>
-          <SidePanel.Content>Body</SidePanel.Content>
-        </SidePanel>,
-      );
+      handle.current?.close();
       expect(dialog).not.toHaveAttribute("open");
     });
 
+    it("is a no-op when opening twice or closing a closed panel", () => {
+      const handle = createRef<SidePanelHandle>();
+      const onOpenChange = vi.fn();
+      render(
+        <SidePanel ref={handle} onOpenChange={onOpenChange} aria-label="Panel">
+          <SidePanel.Content>Body</SidePanel.Content>
+        </SidePanel>,
+      );
+
+      handle.current?.close();
+      expect(onOpenChange).not.toHaveBeenCalled();
+
+      openPanel(handle.current);
+      openPanel(handle.current);
+      expect(onOpenChange).toHaveBeenCalledTimes(1);
+      expect(onOpenChange).toHaveBeenCalledWith(true);
+    });
+  });
+
+  describe("focus", () => {
     it("moves focus into the panel when it opens", () => {
-      const props = { onOpenChange: vi.fn() };
-      const { container, rerender } = render(
-        <SidePanel open={false} aria-label="Panel" {...props}>
+      const handle = createRef<SidePanelHandle>();
+      const { container } = render(
+        <SidePanel ref={handle} aria-label="Panel">
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
-      rerender(
-        <SidePanel open={true} aria-label="Panel" {...props}>
-          <SidePanel.Content>Body</SidePanel.Content>
-        </SidePanel>,
-      );
+      openPanel(handle.current);
       expect(document.activeElement).toBe(getDialog(container));
     });
 
+    it("hands focus back when it closes while focus is inside it", () => {
+      // Stands in for the trigger that opened the panel.
+      const trigger = document.createElement("button");
+      document.body.appendChild(trigger);
+      trigger.focus();
+
+      const handle = createRef<SidePanelHandle>();
+      render(
+        <SidePanel ref={handle} aria-label="Panel">
+          <SidePanel.Content>Body</SidePanel.Content>
+        </SidePanel>,
+      );
+      openPanel(handle.current);
+      expect(document.activeElement).not.toBe(trigger);
+
+      handle.current?.close();
+      expect(document.activeElement).toBe(trigger);
+
+      trigger.remove();
+    });
+
     it("hands focus back when it unmounts while still open", () => {
-      const props = { onOpenChange: vi.fn() };
       // Stands in for the trigger that opened the panel. Outside the render
       // tree so React's cleanup does not remove it before focus returns.
       const trigger = document.createElement("button");
       document.body.appendChild(trigger);
       trigger.focus();
 
-      const { rerender, unmount } = render(
-        <SidePanel open={false} aria-label="Panel" {...props}>
+      const handle = createRef<SidePanelHandle>();
+      const { unmount } = render(
+        <SidePanel ref={handle} aria-label="Panel">
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
-      rerender(
-        <SidePanel open={true} aria-label="Panel" {...props}>
-          <SidePanel.Content>Body</SidePanel.Content>
-        </SidePanel>,
-      );
+      openPanel(handle.current);
       expect(document.activeElement).not.toBe(trigger);
 
       // A consumer rendering `{isOpen && <SidePanel …/>}` closes the panel this
-      // way — `open` never flips, so only the unmount path can restore focus.
+      // way — the handle never runs, so only the unmount path can restore
+      // focus.
       unmount();
       expect(document.activeElement).toBe(trigger);
 
       trigger.remove();
     });
+  });
 
-    it("reports a close the platform initiated, so open cannot desync", () => {
+  describe("reporting", () => {
+    it("reports both directions of a change made through the handle", () => {
+      const handle = createRef<SidePanelHandle>();
       const onOpenChange = vi.fn();
-      const { container } = render(
-        <SidePanel open={true} onOpenChange={onOpenChange} aria-label="Panel">
+      render(
+        <SidePanel ref={handle} onOpenChange={onOpenChange} aria-label="Panel">
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
-      // What a native close request looks like to React: the dialog closes
-      // without the consumer's state having changed.
-      fireEvent(getDialog(container), new Event("close"));
+
+      openPanel(handle.current);
+      expect(onOpenChange).toHaveBeenLastCalledWith(true);
+
+      handle.current?.close();
+      expect(onOpenChange).toHaveBeenLastCalledWith(false);
+      expect(onOpenChange).toHaveBeenCalledTimes(2);
+    });
+
+    it("reports a close the platform initiated, so consumers cannot desync", () => {
+      const handle = createRef<SidePanelHandle>();
+      const onOpenChange = vi.fn();
+      const { container } = render(
+        <SidePanel ref={handle} onOpenChange={onOpenChange} aria-label="Panel">
+          <SidePanel.Content>Body</SidePanel.Content>
+        </SidePanel>,
+      );
+      openPanel(handle.current);
+      onOpenChange.mockClear();
+
+      // A path that bypasses the handle entirely — the raw element, or a
+      // `<form method="dialog">` inside the content. The panel still reports.
+      getDialog(container).close();
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
   });
 
   describe("escape", () => {
-    it("asks to close on Escape from inside the panel", () => {
+    it("closes on Escape from inside the panel", () => {
+      const handle = createRef<SidePanelHandle>();
       const onOpenChange = vi.fn();
       const { container } = render(
-        <SidePanel open={true} onOpenChange={onOpenChange} aria-label="Panel">
+        <SidePanel ref={handle} onOpenChange={onOpenChange} aria-label="Panel">
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
+      openPanel(handle.current);
+
       fireEvent.keyDown(getDialog(container), { key: "Escape" });
-      expect(onOpenChange).toHaveBeenCalledWith(false);
+      expect(getDialog(container)).not.toHaveAttribute("open");
+      expect(onOpenChange).toHaveBeenLastCalledWith(false);
     });
 
     it("ignores Escape when closeOnEscape is false", () => {
+      const handle = createRef<SidePanelHandle>();
       const onOpenChange = vi.fn();
       const { container } = render(
         <SidePanel
-          open={true}
+          ref={handle}
           onOpenChange={onOpenChange}
           closeOnEscape={false}
           aria-label="Panel"
@@ -239,39 +284,50 @@ describe("SidePanel", () => {
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
+      openPanel(handle.current);
+
       fireEvent.keyDown(getDialog(container), { key: "Escape" });
-      expect(onOpenChange).not.toHaveBeenCalled();
+      expect(getDialog(container)).toHaveAttribute("open");
+      expect(onOpenChange).toHaveBeenCalledTimes(1);
     });
 
     it("ignores other keys", () => {
+      const handle = createRef<SidePanelHandle>();
       const onOpenChange = vi.fn();
       const { container } = render(
-        <SidePanel open={true} onOpenChange={onOpenChange} aria-label="Panel">
+        <SidePanel ref={handle} onOpenChange={onOpenChange} aria-label="Panel">
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
+      openPanel(handle.current);
+
       fireEvent.keyDown(getDialog(container), { key: "Enter" });
-      expect(onOpenChange).not.toHaveBeenCalled();
+      expect(getDialog(container)).toHaveAttribute("open");
+      expect(onOpenChange).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("outside press", () => {
     it("stays open by default, because the page behind is interactive", () => {
+      const handle = createRef<SidePanelHandle>();
       const onOpenChange = vi.fn();
       render(
-        <SidePanel open={true} onOpenChange={onOpenChange} aria-label="Panel">
+        <SidePanel ref={handle} onOpenChange={onOpenChange} aria-label="Panel">
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
+      openPanel(handle.current);
+
       fireEvent.pointerDown(document.body);
-      expect(onOpenChange).not.toHaveBeenCalled();
+      expect(onOpenChange).toHaveBeenCalledTimes(1);
     });
 
-    it("asks to close when closeOnOutsideClick is set", () => {
+    it("closes when closeOnOutsideClick is set", () => {
+      const handle = createRef<SidePanelHandle>();
       const onOpenChange = vi.fn();
-      render(
+      const { container } = render(
         <SidePanel
-          open={true}
+          ref={handle}
           onOpenChange={onOpenChange}
           closeOnOutsideClick={true}
           aria-label="Panel"
@@ -279,15 +335,19 @@ describe("SidePanel", () => {
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
+      openPanel(handle.current);
+
       fireEvent.pointerDown(document.body);
-      expect(onOpenChange).toHaveBeenCalledWith(false);
+      expect(getDialog(container)).not.toHaveAttribute("open");
+      expect(onOpenChange).toHaveBeenLastCalledWith(false);
     });
 
     it("ignores a press that lands inside the panel", () => {
+      const handle = createRef<SidePanelHandle>();
       const onOpenChange = vi.fn();
       render(
         <SidePanel
-          open={true}
+          ref={handle}
           onOpenChange={onOpenChange}
           closeOnOutsideClick={true}
           aria-label="Panel"
@@ -295,15 +355,18 @@ describe("SidePanel", () => {
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
+      openPanel(handle.current);
+
       fireEvent.pointerDown(screen.getByText("Body"));
-      expect(onOpenChange).not.toHaveBeenCalled();
+      expect(onOpenChange).toHaveBeenCalledTimes(1);
     });
 
-    it("does not listen while closed", () => {
+    it("ignores a press while closed", () => {
+      const handle = createRef<SidePanelHandle>();
       const onOpenChange = vi.fn();
       render(
         <SidePanel
-          open={false}
+          ref={handle}
           onOpenChange={onOpenChange}
           closeOnOutsideClick={true}
         >
@@ -317,12 +380,16 @@ describe("SidePanel", () => {
 
   describe("accessible name", () => {
     it("is labelled by the header's heading", () => {
+      const handle = createRef<SidePanelHandle>();
       const { container } = render(
-        <SidePanel open={true} onOpenChange={vi.fn()}>
+        <SidePanel ref={handle}>
           <SidePanel.Header>Panel title</SidePanel.Header>
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
+      // Open so the heading is visible: a closed dialog is `display: none`,
+      // and role queries skip hidden elements.
+      openPanel(handle.current);
       const heading = screen.getByRole("heading", { name: "Panel title" });
       expect(getDialog(container)).toHaveAttribute(
         "aria-labelledby",
@@ -332,7 +399,7 @@ describe("SidePanel", () => {
 
     it("defers to a consumer aria-label, rather than pointing at nothing", () => {
       const { container } = render(
-        <SidePanel open={true} onOpenChange={vi.fn()} aria-label="Filters">
+        <SidePanel aria-label="Filters">
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
@@ -343,7 +410,7 @@ describe("SidePanel", () => {
 
     it("carries no aria-modal: the page behind is not inert", () => {
       const { container } = render(
-        <SidePanel open={true} onOpenChange={vi.fn()} aria-label="Panel">
+        <SidePanel aria-label="Panel">
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
@@ -352,13 +419,15 @@ describe("SidePanel", () => {
 
     it("warns when a panel opens with neither a header nor a label", () => {
       const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const handle = createRef<SidePanelHandle>();
       render(
-        <SidePanel open={true} onOpenChange={vi.fn()}>
+        <SidePanel ref={handle}>
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
       // `aria-labelledby` would point at an id nothing rendered, leaving the
       // dialog unnamed — invisible in the markup, so it is said out loud.
+      openPanel(handle.current);
       expect(warn).toHaveBeenCalledWith(
         expect.stringContaining("no accessible name"),
       );
@@ -367,50 +436,47 @@ describe("SidePanel", () => {
 
     it("stays quiet when a header names the panel", () => {
       const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const handle = createRef<SidePanelHandle>();
       render(
-        <SidePanel open={true} onOpenChange={vi.fn()}>
+        <SidePanel ref={handle}>
           <SidePanel.Header>Panel title</SidePanel.Header>
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
+      openPanel(handle.current);
       expect(warn).not.toHaveBeenCalled();
       warn.mockRestore();
     });
 
     it("stays quiet when the consumer supplies a label", () => {
       const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const handle = createRef<SidePanelHandle>();
       render(
-        <SidePanel open={true} onOpenChange={vi.fn()} aria-label="Filters">
+        <SidePanel ref={handle} aria-label="Filters">
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
-      expect(warn).not.toHaveBeenCalled();
-      warn.mockRestore();
-    });
-
-    it("stays quiet while the panel is closed", () => {
-      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-      render(
-        <SidePanel open={false} onOpenChange={vi.fn()}>
-          <SidePanel.Content>Body</SidePanel.Content>
-        </SidePanel>,
-      );
+      openPanel(handle.current);
       expect(warn).not.toHaveBeenCalled();
       warn.mockRestore();
     });
   });
 
   describe("dismissal from the header", () => {
-    it("asks to close when the header's close button is pressed", () => {
+    it("closes the panel when the header's close button is pressed", () => {
+      const handle = createRef<SidePanelHandle>();
       const onOpenChange = vi.fn();
-      render(
-        <SidePanel open={true} onOpenChange={onOpenChange}>
+      const { container } = render(
+        <SidePanel ref={handle} onOpenChange={onOpenChange}>
           <SidePanel.Header>Panel title</SidePanel.Header>
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
+      openPanel(handle.current);
+
       fireEvent.click(screen.getByRole("button", { name: "Close panel" }));
-      expect(onOpenChange).toHaveBeenCalledWith(false);
+      expect(getDialog(container)).not.toHaveAttribute("open");
+      expect(onOpenChange).toHaveBeenLastCalledWith(false);
     });
   });
 });

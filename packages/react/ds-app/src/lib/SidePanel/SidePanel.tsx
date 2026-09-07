@@ -1,9 +1,14 @@
 import type React from "react";
-import { useCallback, useEffect, useId, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useRef,
+} from "react";
 import SidePanelContext from "./Context.js";
 import { Content, Footer, Header } from "./common/index.js";
-import mergeRefs from "./common/mergeRefs.js";
-import type { SidePanelProps } from "./types.js";
+import type { SidePanelHandle, SidePanelProps } from "./types.js";
 import "./styles.css";
 
 const componentCssClassName = "ds side-panel";
@@ -20,15 +25,18 @@ const componentCssClassName = "ds side-panel";
  * the last two itself. It deliberately carries no `aria-modal`, because the
  * page is not inert and saying otherwise would misinform assistive technology.
  *
- * `open` is controlled: the panel reports dismissal through `onOpenChange` and
- * never closes itself.
+ * The panel is controlled through its `ref`: `open()` shows it and moves focus
+ * in, `close()` hides it and hands focus back. The dialog's native open state
+ * is the single source of truth — there is no `open` prop to mirror it, and
+ * every change is reported through `onOpenChange`, whether the handle, a
+ * dismissal gesture, or the platform caused it.
  *
  * Compose the body from `SidePanel.Header`, `SidePanel.Content` and
  * `SidePanel.Footer`. Header and footer stay put; only the content scrolls.
  *
  * The panel needs an accessible name: the header's heading provides it, so a
  * panel without a `SidePanel.Header` must pass `aria-label` instead.
- * Development warns when an open panel has neither.
+ * Development warns when an opening panel has neither.
  *
  * Because the panel is its own scroll container and is offset with a
  * transform, it both clips and re-anchors its descendants: an overlay that
@@ -42,8 +50,6 @@ const componentCssClassName = "ds side-panel";
  * @implements ds:apps.pattern.side_panel
  */
 const SidePanel = ({
-  open,
-  onOpenChange,
   closeOnEscape = true,
   closeOnOutsideClick = false,
   className,
@@ -52,6 +58,7 @@ const SidePanel = ({
   "aria-label": ariaLabel,
   onKeyDown,
   onClose,
+  onOpenChange,
   ...props
 }: SidePanelProps): React.ReactElement => {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -59,76 +66,112 @@ const SidePanel = ({
   /** Where focus was before the panel opened, so it can be handed back. */
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   /**
-   * A live mirror of the latest `open`. Cleanups cannot read props — they only
-   * see what was captured when they were created — so the unmount cleanup reads
-   * this instead to answer "was the panel still open when it died?". That only
-   * matters for the conditional-render close (`{isOpen && <SidePanel …/>}`),
-   * where the panel unmounts without `open` ever flipping and the open/close
-   * effect never runs.
+   * A live mirror of the dialog's open state. Cleanups cannot read the ref —
+   * by the time an unmount cleanup runs, React has already detached it — so
+   * the unmount cleanup reads this instead to answer "was the panel still open
+   * when it died?".
    */
   const openRef = useRef(false);
 
-  const requestClose = useCallback(() => onOpenChange(false), [onOpenChange]);
-
-  // Mirror `open` onto the dialog. `show()` — not `showModal()` — is what keeps
-  // the rest of the page interactive, and it is the reason this component is a
-  // non-modal dialog at all. Focus is moved into the panel but never trapped.
-  useEffect(() => {
-    // Keep the mirror current — the unmount cleanup reads it after we're gone.
-    openRef.current = open;
+  const openPanel = useCallback(() => {
     const dialog = dialogRef.current;
-    if (!dialog) return;
+    if (!dialog || dialog.open) return;
 
-    if (open && !dialog.open) {
-      previouslyFocusedRef.current =
-        document.activeElement instanceof HTMLElement
-          ? document.activeElement
-          : null;
-      dialog.show();
-      dialog.focus();
-    } else if (!open && dialog.open) {
-      dialog.close();
-      // Hand focus back only if it is still inside the panel; the user may have
-      // moved on to the application, and stealing focus back would be rude.
-      if (dialog.contains(document.activeElement)) {
-        previouslyFocusedRef.current?.focus();
+    // A panel labelled by an absent heading has no accessible name at all, and
+    // nothing about that is visible: warn the way Button does for the icon-only
+    // case. Dev-only, and checked where opening actually happens rather than in
+    // an effect — the panel no longer re-renders to say it is open.
+    if (
+      typeof process !== "undefined" &&
+      process.env.NODE_ENV !== "production"
+    ) {
+      if (ariaLabel === undefined && !document.getElementById(titleId)) {
+        console.warn(
+          "SidePanel has no accessible name: render a <SidePanel.Header>, or pass `aria-label` when the panel has no header.",
+        );
       }
-      previouslyFocusedRef.current = null;
     }
-  }, [open]);
+
+    previouslyFocusedRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    // `show()` — not `showModal()` — is what keeps the rest of the page
+    // interactive, and it is the reason this component is a non-modal dialog
+    // at all. Focus is moved into the panel but never trapped.
+    dialog.show();
+    openRef.current = true;
+    dialog.focus();
+    onOpenChange?.(true);
+  }, [ariaLabel, titleId, onOpenChange]);
+
+  const closePanel = useCallback(() => {
+    dialogRef.current?.close();
+  }, []);
+
+  // The panel keeps its own dialog ref (show()/close() run through it) and
+  // exposes the imperative handle — not the raw element — to a consumer ref.
+  useImperativeHandle(
+    ref,
+    (): SidePanelHandle => ({
+      open: openPanel,
+      close: closePanel,
+      element: dialogRef.current,
+    }),
+    [openPanel, closePanel],
+  );
 
   // Close a still-open panel on an outside press, when asked to. Off by
   // default: with the application live behind the panel, a press there is
-  // ordinary work rather than a dismissal gesture.
+  // ordinary work rather than a dismissal gesture. The listener is gated on
+  // the dialog's own open state — there is no prop to gate it on anymore.
   useEffect(() => {
-    if (!open || !closeOnOutsideClick) return;
+    if (!closeOnOutsideClick) return;
 
     const onPointerDown = (event: PointerEvent): void => {
       const dialog = dialogRef.current;
-      if (!dialog) return;
+      if (!dialog?.open) return;
       if (event.target instanceof Node && !dialog.contains(event.target)) {
-        requestClose();
+        closePanel();
       }
     };
 
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [open, closeOnOutsideClick, requestClose]);
+  }, [closeOnOutsideClick, closePanel]);
 
-  // Hand focus back when the panel is removed from the tree while still open.
-  // The effect above never runs for an unmount — a consumer who conditionally
-  // renders the panel (`{isOpen && <SidePanel …/>}`) closes it that way rather
-  // than by flipping `open`, and focus would otherwise fall to the document.
+  // Hand focus back if the panel disappears while still open.
   //
-  // Reads `openRef` rather than the dialog: by the time an unmount cleanup
-  // runs, React has already detached the ref and the node.
+  // There are two ways a panel closes:
+  //
+  // 1. `panelRef.current.close()` — the handle closes it, and its close
+  //    handler already handed focus back. This effect then has nothing to do
+  //    (openRef is already false, so it bails out below).
+  //
+  // 2. The panel is unmounted while open — nobody called close(), React just
+  //    removed it. The typical case is navigation: the user moves to another
+  //    route and the whole subtree, panel included, goes away. (A consumer
+  //    conditionally rendering the panel — `{isOpen && <SidePanel …/>}` —
+  //    also lands here, though the mounted-always pattern is the intended
+  //    one.) Focus is sitting on an element that no longer exists, so the
+  //    browser dumps it on <body>, and a keyboard user lands in the middle of
+  //    nowhere. This cleanup catches that case and puts focus back where it
+  //    was before the panel opened — usually the button that opened it.
   useEffect(() => {
     return () => {
       const previouslyFocused = previouslyFocusedRef.current;
+
+      // Bail out when the panel was already closed (its close already handled
+      // focus), or when we never recorded where focus came from.
       if (!openRef.current || !previouslyFocused) return;
-      // Focus has nowhere to be: the browser drops it to the body when the
-      // focused node is removed. Anything else means the user moved on to the
-      // application, and taking focus back would be rude.
+
+      // Where is focus right now?
+      // - On <body> (or nothing): focus died with the panel — the browser
+      //   always moves focus to <body> when the focused element is removed.
+      //   Rescue it and send it back.
+      // - Anywhere else: the user clicked something in the application behind
+      //   the panel before it went away. They chose where to be — moving
+      //   focus back would override that choice.
       const active = document.activeElement;
       if (active === null || active === document.body) {
         previouslyFocused.focus();
@@ -136,25 +179,9 @@ const SidePanel = ({
     };
   }, []);
 
-  // A panel labelled by an absent heading has no accessible name at all, and
-  // nothing about that is visible: warn the way Button does for the icon-only
-  // case. Dev-only and effect-bound, so it costs nothing in production and
-  // never runs on the server.
-  useEffect(() => {
-    if (typeof process === "undefined") return;
-    if (process.env.NODE_ENV === "production") return;
-    if (!open || ariaLabel !== undefined) return;
-    if (document.getElementById(titleId)) return;
-    console.warn(
-      "SidePanel has no accessible name: render a <SidePanel.Header>, or pass `aria-label` when the panel has no header.",
-    );
-  }, [open, ariaLabel, titleId]);
-
   return (
     <dialog
-      // The panel keeps its own ref (show()/close() and the focus hand-back
-      // run through it) and fans the element out to a consumer ref alongside.
-      ref={mergeRefs(dialogRef, ref)}
+      ref={dialogRef}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       // The header's heading names the panel. Without a header the consumer
       // supplies `aria-label`, and pointing at an absent element is worse than
@@ -173,18 +200,29 @@ const SidePanel = ({
           event.key === "Escape" &&
           !event.defaultPrevented
         ) {
-          requestClose();
+          closePanel();
         }
       }}
-      // The platform can close a dialog without going through our handlers.
-      // Report that, or `open` and the DOM desync and reopening stops working.
+      // Every close funnels through the platform's `close` event — the
+      // handle's `close()`, a dismissal gesture, or a path the component did
+      // not drive at all (a `<form method="dialog">` submits one). Tidy up the
+      // open state, hand focus back, and report it, in that one place.
       onClose={(event) => {
         onClose?.(event);
-        if (open) requestClose();
+        openRef.current = false;
+        const dialog = dialogRef.current;
+        // Hand focus back only if it is still inside the panel; the user may
+        // have moved on to the application, and stealing focus back would be
+        // rude.
+        if (dialog?.contains(document.activeElement)) {
+          previouslyFocusedRef.current?.focus();
+        }
+        previouslyFocusedRef.current = null;
+        onOpenChange?.(false);
       }}
       {...props}
     >
-      <SidePanelContext.Provider value={{ requestClose, titleId }}>
+      <SidePanelContext.Provider value={{ close: closePanel, titleId }}>
         {children}
       </SidePanelContext.Provider>
     </dialog>
