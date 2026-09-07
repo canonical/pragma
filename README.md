@@ -215,6 +215,7 @@ The `docs/` folder contains guides for working with the monorepo:
 | Guide | Description |
 |-------|-------------|
 | [Constitution](CONSTITUTION.md) | Design principles and decision rationale |
+| [Domains](docs/explanations/DOMAINS.md) | What each package folder is for, and why folder and npm name may differ |
 | [Component Folder Structure](docs/explanations/COMPONENT_FOLDER_STRUCTURE.md) | Standard component anatomy and conventions |
 | [Adding a Package](docs/how-to-guides/ADDING_A_PACKAGE.md) | How to create new packages in the monorepo |
 | [Versioning](docs/VERSIONING.md) | Commit message format and release process |
@@ -294,6 +295,7 @@ The following tables list all workspace packages with their location and purpose
 |---------|------|-------------|
 | `@canonical/ds-types` | `packages/ds-types` | TypeScript types for modifier families and component props |
 | `@canonical/ds-assets` | `packages/ds-assets` | Icons and shared visual assets |
+| `@canonical/ds-implementations` | `packages/semantics/ds-implementations` | The implementation graph as Turtle (RDF), generated from `@implements` annotations |
 | `@canonical/utils` | `packages/utils` | Utility functions: casing, invariant, indent, and join |
 
 ### Developer Tooling

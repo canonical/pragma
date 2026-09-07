@@ -65,6 +65,7 @@ The root `package.json` `workspaces` array lists each category explicitly, and e
     "packages/styles/*",
     "packages/svelte/*",
     "packages/lit/*",
+    "packages/semantics/*",
     "apps/*",
     "apps/react/*",
     "apps/lit/*"
