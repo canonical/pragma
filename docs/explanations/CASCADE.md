@@ -183,6 +183,19 @@ sublayer of `ds.components.apps` instead, and the section above says what happen
 outrank everything under it, so a sub-tier could never override its parent by layer. The tree in the
 graph is a hierarchy; the layer names that mirror it have to be flat to keep that hierarchy working.
 
+**A package resets only the elements it renders.** A universal reset in a component layer —
+`* { margin: 0; padding: 0 }`, the habit a page-level stylesheet teaches — reaches every element on
+the page, the components of every other package included, and the tiers cannot arbitrate it. They are
+exactly the machinery for that argument, and they settle it the wrong way round: a higher tier beats a
+lower one whatever the selectors say, so a blunt universal rule in an application tier quietly defeats
+a deliberate one in the global tier. Measured, such a reset flattened a global-tier component's 16px
+padding to zero. Reset what you render, and nothing else.
+
+This one is written down rather than checked. Telling a reset apart from a legitimate universal rule —
+the border-box declaration further down is one — takes a judgement about intent, which is not a
+judgement a test can make; a check that tried would either miss the resets or condemn the rules the
+system depends on.
+
 (The styles change that carries these names is stacked below this one; the README's statement is the
 copy a test binds to the stylesheet.)
 
@@ -234,6 +247,15 @@ does nothing the first reading did not already do. That is what makes `layers.cs
 to import in front of its own layers. The typography package is cut along the same line — a
 `tokens.css` and an `elements.css` of its own, beside its engines — and the styles package's entries
 import from it.
+
+One rule of composition follows, and it is worth stating on its own because the instinct runs the
+other way: **a value the composition always declares is read bare.** One file declares it, every
+reader reads it without a fallback, and a file that can be loaded outside the composition says so in
+its own header rather than carrying a private default. A fallback at each read looks defensive and is
+the opposite — it is a second declaration of the value, repeated once per reader, and the copies drift
+apart the first time the value changes. The baseline unit is the worked example: the values entry
+declares it, the element rules and the engines read it bare, and an engine linked on its own, outside
+the composition, has no default at all and says so.
 
 A pragma page imports the whole and is done: one import, no markup change, nothing about coexistence
 in its stylesheet or its templates. A mixed page imports `tokens.css` and `layout.css` from the
@@ -381,18 +403,21 @@ system's states and its components for a bridge that translates the other framew
 into pragma's. Territories do the work the reset stylesheet could not: each element has exactly one
 owner, so nothing has to be enumerated per property, and nothing is transformed between authoring
 and the browser. No markup changes hands in either direction — there is no class to add to the root
-of either kind of page — and that is what makes removal a stylesheet edit and nothing else: swap
-the whole entry back in for the two parts and the copy, delete the adapter's files and its order
-statement, and nothing is left in the templates to clean up. The two consequences to keep in mind
-are that `!important` still inverts the order — so the other framework's important rules get
-*stronger* when it is layered lowest, and the ones that matter have to be answered rather than
-out-ranked — and that `revert` rolls back presentational attributes as well as author rules, since
-the cascade places those between the reader's origin and the author's, so an image sized by `width`
-and `height` attributes inside a pragma island measures its intrinsic size instead. Both are stated
-as non-guarantees where they belong. The adapter package, `@canonical/styles-vanilla-adapter`, is
-the reference for all of it — its README carries the numbered rules, the recipes, the non-guarantees
-and symptom-first troubleshooting — and it arrives with the coexistence release rather than with
-this one.
+of either kind of page — and that is what makes removal a stylesheet edit and nothing else. The
+adapter's lifetime is Vanilla's: there is no supported state in between, no page that has dropped the
+other framework and kept the adapter, so removal is one change rather than a sequence. It drops the
+other framework's import, drops the adapter and its confined copy, and swaps `tokens.css` and
+`layout.css` back to the whole entry, together. Nothing is left in the templates to clean up.
+
+The two consequences to keep in mind are that `!important` still inverts the order — so the other
+framework's important rules get *stronger* when it is layered lowest, and the ones that matter have
+to be answered rather than out-ranked — and that `revert` rolls back presentational attributes as
+well as author rules, since the cascade places those between the reader's origin and the author's,
+so an image sized by `width` and `height` attributes inside a pragma island measures its intrinsic
+size instead. Both are stated as non-guarantees where they belong. The adapter package,
+`@canonical/styles-vanilla-adapter`, is the reference for all of it — its README carries the
+numbered rules, the recipes, the non-guarantees and symptom-first troubleshooting — and it arrives
+with the coexistence release rather than with this one.
 
 ## Where each kind of statement lives
 
