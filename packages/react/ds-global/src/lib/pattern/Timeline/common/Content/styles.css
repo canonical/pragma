@@ -1,13 +1,17 @@
-/**
- * Timeline.Content styles
- * @implements ds:global.subcomponent.timeline-content
- *
- * DSL anatomy mapping:
- * - layout.type: stack -> display: flex; flex-direction: column
- * - layout.direction: vertical -> flex-direction: column
- */
-.ds.timeline-content {
-  /* layout.type: stack, layout.direction: vertical */
-  display: flex;
-  flex-direction: column;
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /**
+   * Timeline.Content styles
+   * @implements ds:global.subcomponent.timeline-content
+   *
+   * DSL anatomy mapping:
+   * - layout.type: stack -> display: flex; flex-direction: column
+   * - layout.direction: vertical -> flex-direction: column
+   */
+  .ds.timeline-content {
+    /* layout.type: stack, layout.direction: vertical */
+    display: flex;
+    flex-direction: column;
+  }
 }

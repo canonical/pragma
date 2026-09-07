@@ -1,3 +1,4 @@
+import { componentLayerFor, isSubTierLayer } from "@canonical/summon-core";
 import getEntryPoints from "./config/getEntryPoints.js";
 import getLicense from "./config/getLicense.js";
 import getRuleset from "./config/getRuleset.js";
@@ -17,7 +18,14 @@ export default function createTemplateContext(
     ? (monorepoInfo.version ?? "0.1.0")
     : "0.1.0";
 
+  const componentLayer = componentLayerFor(answers.name);
+
   return {
+    componentLayer,
+    // Only a sub-tier package declares its own layer. The five second-level
+    // tiers are already named in the styles package's order statement, and a
+    // second statement naming one of them again could only reorder it.
+    declaresComponentLayer: isSubTierLayer(componentLayer),
     shortName: getPackageShortName(answers.name),
     name: answers.name,
     description: answers.description,

@@ -21,8 +21,8 @@
     );
     cursor: pointer;
     transition:
-      background-color 150ms ease,
-      border-color 150ms ease;
+      background-color var(--motion-duration-fast) ease,
+      border-color var(--motion-duration-fast) ease;
 
     &:checked {
       /* Dot = selected token, ring fill = unselected token; both surface-provided

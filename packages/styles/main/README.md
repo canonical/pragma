@@ -67,20 +67,13 @@ Five. `@canonical/styles` is the one an ordinary page wants: the whole styleshee
 above. Three more are that stylesheet in parts, and the fifth is the order statement on its own, for a
 package rather than a page.
 
-| Entry | What it is | Layers it opens |
-| --- | --- | --- |
-| `@canonical/styles` | everything: the values, the element rules and the layout presets. | `normalize`, `ds.tokens`, `ds.reset`, `ds.typography`, `ds.modifiers`, `ds.surfaces`, `ds.states`, `ds.components.global` |
-| `@canonical/styles/tokens.css` | every custom property the design system declares, and not one rule that selects an element. Nothing here changes the page until something reads a value from it, with one exception noted below. | `ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states` |
-| `@canonical/styles/elements.css` | every rule the design system applies to a plain element: the reset, the root's baseline, and the typography with its baseline engine. | `normalize`, `ds.reset`, `ds.typography` |
-| `@canonical/styles/layout.css` | the layout presets — `grid`, `subgrid`, `responsive`, `intrinsic` and `content-flow` — which claim those five class names in a page's namespace. | `ds.components.global` |
-| `@canonical/styles/layers.css` | the order statement and nothing else: no rule, no import, no declaration. The same statement the four above open with, for a package that needs the order fixed before it declares a layer of its own. A page never needs it. | none: a statement fixes an order, it does not open a layer |
-
-Eight, four, three, one and none. The whole opens every layer any part opens, and
-the three parts between them open every layer the whole does — the element layers
-are exactly what `tokens.css` and `layout.css` leave out, which is the split's
-whole point. The fifth entry opens nothing at all: a statement places names in an
-order, it does not put a rule in any of them. `tests/layer-set.test.ts` reads that
-last column back out of a browser.
+| Entry | What it is |
+| --- | --- |
+| `@canonical/styles` | everything: the values, the element rules and the layout presets. |
+| `@canonical/styles/tokens.css` | every custom property the design system declares, and not one rule that selects an element. Nothing here changes the page until something reads a value from it, with one exception noted below. |
+| `@canonical/styles/elements.css` | every rule the design system applies to a plain element: the reset, the root's baseline, and the typography with its baseline engine. |
+| `@canonical/styles/layout.css` | the layout presets — `grid`, `subgrid`, `responsive`, `intrinsic` and `content-flow` — which claim those five class names in a page's namespace. |
+| `@canonical/styles/layers.css` | the order statement and nothing else: no rule, no import, no declaration. The same statement the four above open with, for a package that needs the order fixed before it declares a layer of its own. A page never needs it. |
 
 One exception to "changes nothing", and it is worth knowing before you import `tokens.css`. The design
 tokens' generated theme sheet declares `color-scheme` on `:root`, `.light` and `.dark` alongside the
@@ -89,9 +82,9 @@ the scrollbars and the system colours, whether or not anything reads a token, an
 element of the other framework's carrying `light` or `dark` picks it up too. It cannot be split out
 here — the sheet is generated and the declarations sit in the same rules as the tokens — so separating
 them is a change to the tokens package's emitter, tracked as PRA-149. An application that must not have
-it declares `color-scheme` itself, in a layer above `ds.modifiers` or unlayered. The entries test
-allows exactly those three declarations and no other non-custom property, so nothing else can join
-them unnoticed.
+it declares `color-scheme` itself, in a layer above `ds.modifiers` or unlayered. Those three
+declarations are the only non-custom properties `tokens.css` carries; everything else in it is a
+custom property, which does nothing until a rule reads it.
 
 The parts exist for one reason. A page that also runs another CSS framework cannot take the element
 rules: the other framework has its own `p` rule, and only one of the two can own `line-height`. Such a
@@ -99,7 +92,7 @@ page takes `tokens.css` and `layout.css`, and gets its element rules from that f
 instead, in a copy confined to the part of the page the design system owns —
 `@canonical/styles-vanilla-adapter` builds that copy out of the same files `elements.css` imports.
 
-Two properties make the parts safe to mix, and a test in this package holds both.
+Two properties make the parts safe to mix, and both are visible in how the entries are written.
 
 **Every entry opens with the same layer order statement.** It has to be the first rule of whichever
 stylesheet a page loads first, because it fixes the order of every layer for that page; two entries
@@ -137,10 +130,10 @@ Read it from the bottom up — each position is an argument.
 | `ds.states` | The derived hover, active and disabled channels. | Above the surfaces, because a state is derived from whatever the surface resolved to. |
 | `ds.components` | Nothing, by rule. It is the parent of the tier layers below and holds no rule of its own. | Highest of the eight top-level layers, so a component is the final word on its own box. A rule written *directly* into a parent layer sits in that layer's implicit final sublayer, which is above every named sublayer — so such a rule would outrank every tier and no component package could override it by layer. Everything this package puts in `ds.components` therefore sits in a tier. |
 | `ds.components.global` | The stylesheets of the shared component packages, and this package's own layout presets. | The base of the tier tree: what every other tier refines. |
-| `ds.components.sites` | The stylesheets of the sites tier. No entry point of this package opens it; the packages in that tier do. | The four second-level tiers never appear on the same page, so their order among themselves decides nothing. It is fixed here anyway, so that it can never come to depend on which package a bundler emits first. |
-| `ds.components.documentation` | The stylesheets of the documentation tier. No entry point of this package opens it; the packages in that tier do. | As above. |
-| `ds.components.stores` | The stylesheets of the stores tier. No entry point of this package opens it; the packages in that tier do. | As above. |
-| `ds.components.apps` | The stylesheets of the shared applications tier; one application's own tier declares a layer of its own above it. No entry point of this package opens it; the packages in that tier do. | As above. |
+| `ds.components.sites` | The stylesheets of the sites tier. | The four second-level tiers never appear on the same page, so their order among themselves decides nothing. It is fixed here anyway, so that it can never come to depend on which package a bundler emits first. |
+| `ds.components.documentation` | The stylesheets of the documentation tier. | As above. |
+| `ds.components.stores` | The stylesheets of the stores tier. | As above. |
+| `ds.components.apps` | The stylesheets of the shared applications tier; one application's own tier declares a layer of its own above it. | As above. |
 
 An order statement fixes the relative order of layers the first time they appear. A later statement
 may introduce new names but can never reorder the ones already fixed, so an application that needs to
@@ -150,20 +143,6 @@ This section is the reference: what is in each layer, and where. The reasoning b
 a browser decides, why a rule in no layer beats every layered one, why the confinement a mixed page
 needs lives in the adapter rather than here, and what a bundler does to the statement — is
 [the cascade contract](../../../docs/explanations/CASCADE.md).
-
-The statement above, the tables below, the entry table's last column and the list
-of what is deliberately unlayered are not prose. `tests/layer-set.test.ts` reads
-them out of this file and compares them against the stylesheets a bundler
-resolves, so a README that disagrees with the CSS fails the build instead of
-misleading a reader.
-
-What the test binds is one answer per file and per layer. A file may appear twice
-when it writes to two layers — `overflow.css` puts its root default in one and
-its surface channel in another — and it is then checked on the union of its rows. No
-file has two rows for the same layer, because the test could only read the
-disjunction of two answers to one question; where a file needs two things said
-about one layer, the row says both. Reordering rows changes nothing a browser can
-see, and the test says nothing about it.
 
 #### The Component Tiers
 
@@ -223,17 +202,13 @@ on, and the two are chosen by different people for different reasons.
 | `motion.css` | `ds.tokens` | no |
 | `overflow.css` root default | `ds.tokens` | no |
 | `overflow.css` `.surface` | `ds.surfaces` | no |
-| `grid.css` | `ds.components.global` | yes — the layout presets and the content-flow container; the `:root` block beside them declares only the tokens those presets read, kept with them rather than moved to `ds.tokens` |
+| `grid.css` layout presets, and the content-flow container | `ds.components.global` | yes |
+| `grid.css` `:root` defaults | `ds.components.global` | no — tokens the presets read, kept with them rather than moved to `ds.tokens` |
 | `modifiers.density.css` | `ds.modifiers` | no |
 | `modifiers.states.shim.css`, `modifiers.importance.shim.css`, `modifiers.criticality.shim.css` | `ds.modifiers` | no |
 | `controls.hover.shim.css` | `ds.surfaces` and `ds.states` | no |
-| `@canonical/styles-typography` element rules and engine | `ds.typography` | yes |
-| `@canonical/styles-typography` naming shims, and the typographic scale it imports | `ds.tokens` and `ds.modifiers` | no |
-
-Each generated `@canonical/design-tokens` file opens a layer of its own, and
-which one is in [Design Tokens](#design-tokens) below, with the same
-selects-elements answer this table gives. One of them answers yes, for the reason
-under the table.
+| `@canonical/styles-typography` | `ds.tokens` for its naming shims, `ds.typography` for its element rules and engine, `ds.modifiers` for the typographic scale it imports | its element rules, yes; its tokens, no |
+| `@canonical/design-tokens` distribution files | `ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states` — each file opens its own, except `modifiers.importance.css`, which is empty and opens none | no |
 
 The files marked yes are the ones the adapter's confined copy has to mirror. The rest are almost all
 custom properties, which do nothing until a rule reads them, and a rule that reads one matches a
@@ -250,23 +225,13 @@ rather than writes:
 
 ### What Is Deliberately Unlayered
 
-One thing, and a layer has nothing to order it against: this stylesheet declares
-each face exactly once, so putting it in a layer would change no computed value
-and would invite a reader to look for the layer that "wins". Layers do sort
-`@font-face` rules where two of them declare the same family — the higher layer's
-face wins over the later one in source order — and there simply are no duplicates
-here.
+One thing: **`@font-face`**, in `fonts.css`. It defines a font for the whole document, not a style for
+an element, and this stylesheet declares each face exactly once, so no layer has anything to order it
+against — putting it in one would change no computed value. The file is opt-in and imported separately
+so that an application already serving the same files does not download them twice.
 
-| Rule | Where it is written, and why a layer would say nothing about it | Reaches an entry |
-| --- | --- | --- |
-| `@font-face` | `fonts.css`. It defines a font for the whole document, not a style for an element. The file is opt-in and imported separately (`@canonical/styles/fonts`) so that an application already serving the same files does not download them twice. | no |
-
-The last column is the one worth checking, and `tests/layer-set.test.ts` checks it
-both ways: nothing sits outside a layer in any of the five entry points that this
-table does not name, and everything the table says reaches an entry is found
-there. The fonts do not, because they are a separate entry point — so every rule
-the entries deliver is inside a layer, with nothing left over to outrank them
-all.
+(Layers do sort `@font-face` rules where two of them declare the same family: the higher layer's face
+wins over the later one in source order. There simply are no duplicates here.)
 
 ### Where the Element-Level Rules Apply
 
@@ -341,9 +306,7 @@ application that cannot move should pin a version.
 ## Migrating to the Layered Release
 
 This release makes two changes that an application has to answer. Neither is markup: there is nothing
-to add to your root, and the reset applies exactly where it did before. They are summarised here;
-[Migrating to the layered styles release](../../../docs/how-to-guides/MIGRATE_TO_LAYERED_STYLES.md)
-is the step-by-step version, with the check to run on a built page and symptom-first troubleshooting.
+to add to your root, and the reset applies exactly where it did before.
 
 1. **Your unlayered CSS now beats every rule in this package.** Before this release most of what the
    package shipped was unlayered too, so your overrides competed with it by source order and
@@ -399,33 +362,19 @@ Two things that used to be true and are not:
 
 ## Design Tokens
 
-These token sets come from `@canonical/design-tokens`. Each generated file opens
-its own layer, and the four layer names the generator emits — `ds.tokens`,
-`ds.modifiers`, `ds.surfaces`, `ds.states` — are part of this package's cascade
-contract rather than that package's private business: they are four of the ten
-names in the statement above. `tests/layer-set.test.ts` checks every file in this
-table against the layer the table gives it, and checks the last two columns
-against what the entry points actually import and deliver, so a generator that
-renamed a layer, or an import added or dropped here without a word, fails.
+The following token sets from `@canonical/design-tokens` are included:
 
-| Token set | Contents | Layer it opens | Imported by an entry | Selects elements? |
-| --- | --- | --- | --- | --- |
-| `sets.primitive` | Base colour palette, spacing scale, font sizes | `ds.tokens` | yes | no |
-| `modifiers.theme` | Light/dark theme mappings, and `color-scheme` on the document root | `ds.modifiers` | yes | yes — `color-scheme`, and nothing else, for the reason above |
-| `modifiers.surfaces` | Surface elevation tokens | `ds.surfaces` | yes | no |
-| `modifiers.anticipation` | Constructive/destructive/caution intents | `ds.modifiers` | yes | no |
-| `modifiers.criticality` | Error/warning/success/information states | `ds.modifiers` | yes | no |
-| `modifiers.emphasis` | Branded/highlighted/muted emphasis | `ds.modifiers` | yes | no |
-| `modifiers.importance` | Primary/secondary importance levels — generated empty, so the shipped mapping is this package's own shim | none | yes | no |
-| `modifiers.typography` | The typographic scale, reached through `@canonical/styles-typography` rather than imported here | `ds.modifiers` | no | no |
-| `states` | Interactive state tokens (hover, active, focus, disabled) | `ds.states` | yes | no |
-
-`modifiers.importance` is the one file an entry imports that contributes no rule,
-and the empty *Layer it opens* cell is how the test knows to allow it: every other
-file an entry imports has to deliver something, so the next one that quietly
-empties fails instead of passing unnoticed. The shim beside it supplies the
-importance channels meanwhile; both go when the generator emits that family with
-content.
+| Token set | Contents | Layer it opens |
+| --- | --- | --- |
+| `sets.primitive` | Base colour palette, spacing scale, font sizes | `ds.tokens` |
+| `modifiers.theme` | Light/dark theme mappings, and `color-scheme` on the document root | `ds.modifiers` |
+| `modifiers.surfaces` | Surface elevation tokens | `ds.surfaces` |
+| `modifiers.anticipation` | Constructive/destructive/caution intents | `ds.modifiers` |
+| `modifiers.criticality` | Error/warning/success/information states | `ds.modifiers` |
+| `modifiers.emphasis` | Branded/highlighted/muted emphasis | `ds.modifiers` |
+| `modifiers.importance` | Primary/secondary importance levels — the generated file is empty today, so the shipped mapping is this package's own shim, and a stacked change drops the import until the generated file has content | none |
+| `modifiers.typography` | The typographic scale, through `@canonical/styles-typography` | `ds.modifiers` |
+| `states` | Interactive state tokens (hover, active, focus, disabled) | `ds.states` |
 
 ## Dependencies
 

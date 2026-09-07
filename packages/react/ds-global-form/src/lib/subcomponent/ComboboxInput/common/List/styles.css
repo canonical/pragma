@@ -26,7 +26,7 @@
     & > li {
       padding: var(--component-padding-block) var(--component-padding-inline);
       cursor: pointer;
-      transition: background-color 100ms ease;
+      transition: background-color var(--motion-duration-fast) ease;
 
       &.selected {
         font-weight: bold;

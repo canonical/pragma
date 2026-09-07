@@ -1,31 +1,35 @@
-/**
- * Breadcrumbs styles
- * @implements ds:global.component.breadcrumbs
- *
- * DSL anatomy mapping:
- * - layout.type: flow -> display: flex
- * - layout.direction: horizontal -> flex-direction: row
- * - layout.align: center -> align-items: center
- *
- * Typography and baseline alignment come from the `.p` class on the list
- * (the typography-text-primary tier, per the Figma spec).
- */
-.ds.breadcrumbs {
-  & > .list {
-    /* layout.type: flow, layout.direction: horizontal */
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
-    /* Guidelines: 4px vertical distance between wrapped rows */
-    row-gap: var(--dimension-050);
+@layer ds.components.global {
+  /**
+   * Breadcrumbs styles
+   * @implements ds:global.component.breadcrumbs
+   *
+   * DSL anatomy mapping:
+   * - layout.type: flow -> display: flex
+   * - layout.direction: horizontal -> flex-direction: row
+   * - layout.align: center -> align-items: center
+   *
+   * Typography and baseline alignment come from the `.p` class on the list
+   * (the typography-text-primary tier, per the Figma spec).
+   */
+  .ds.breadcrumbs {
+    & > .list {
+      /* layout.type: flow, layout.direction: horizontal */
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
 
-    /* layout.align: center */
-    align-items: center;
+      /* Guidelines: 4px vertical distance between wrapped rows */
+      row-gap: var(--dimension-050);
 
-    /* Reset list styles */
-    margin: 0;
-    padding: 0;
-    list-style: none;
+      /* layout.align: center */
+      align-items: center;
+
+      /* Reset list styles */
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
   }
 }
