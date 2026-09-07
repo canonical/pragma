@@ -39,7 +39,16 @@ const NavTree = ({
   className,
   ...props
 }: NavTreeProps): React.ReactElement => {
-  const nav = useNavigationTree<_AnyNavNode>({ root, initialUrl: currentUrl });
+  // `LeafNavItem` deliberately leaves `key`/`url` both optional (types.ts's
+  // own doc: a discriminated union is "meaningfully more ceremony" for what
+  // is, in practice, always one shape per authored item) — looser than
+  // `_AnyNavNode`'s WD405 identity requirement, which `useNavigationTree`'s
+  // own `T extends Item` bound needs structurally. The cast trusts that
+  // contract rather than tightening the public `NavItem` shape.
+  const nav = useNavigationTree<_AnyNavNode>({
+    root: root as _AnyNavNode,
+    initialUrl: currentUrl,
+  });
   const { index, selectItem } = nav;
 
   useEffect(() => {

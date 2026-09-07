@@ -42,7 +42,7 @@ export interface LeafNavItem {
   slot?: ReactNode;
   /** CSS class name applied to this item's row, in addition to the base classes. */
   className?: string;
-};
+}
 
 /**
  * A collapsible row that discloses its own children instead of navigating.
@@ -73,8 +73,13 @@ export type NavItem = LeafNavItem | ExpandableNavItem;
  * are groups... each group's `items` are the actual navigation entries."
  */
 export interface NavGroup {
-  /** Unique identifier for this group (e.g. for React reconciliation when unlabelled). */
-  key?: string;
+  /**
+   * Unique identifier for this group — required: the shared navigation tree
+   * (`useNavigationTree`, WD405 `Item`) indexes every node, group tier
+   * included, by `key` or `url`; a group never has a `url`, so `key` alone
+   * carries its identity.
+   */
+  key: string;
   /** Group header text, rendered via `SideNavigation.GroupHeader`. Omitted when absent. */
   label?: string;
   /** The group's navigation entries. */
@@ -86,7 +91,8 @@ export interface NavGroup {
  * `root.items`, rendering as `SideNavigation.Separator` instead of a group.
  */
 export interface NavSeparator {
-  key?: string;
+  /** Required — see `NavGroup.key`'s doc: every tree node needs an identity. */
+  key: string;
   separator: true;
 }
 
@@ -95,7 +101,8 @@ export interface NavSeparator {
  * its direct children (`NavGroup | NavSeparator`) are.
  */
 export interface NavRoot {
-  key?: string;
+  /** Required — see `NavGroup.key`'s doc: every tree node needs an identity. */
+  key: string;
   items?: (NavGroup | NavSeparator)[];
 }
 
@@ -110,10 +117,15 @@ export interface NavRoot {
  * cast is needed at the `useNavigationTree` call site. Exported (like
  * `@canonical/ds-types`' underscore-prefixed `_Item`/`_Index`) only because
  * `NavTree` lives in a different module — not part of the public API.
+ *
+ * Carries the same key-or-url identity requirement as the shared WD405
+ * `Item` (`useNavigationTree<T extends Item>`'s own bound) — every node this
+ * tree annotates, group/separator/root tiers included, is looked up by
+ * `getItemId`, which needs one of the two. The fields below stay a plain
+ * object type intersected with that identity union, mirroring `Item`'s own
+ * `ItemFields & ItemIdentity` composition.
  */
-export interface _AnyNavNode {
-  key?: string;
-  url?: string;
+type _AnyNavNodeFields = {
   label?: string;
   disabled?: boolean;
   icon?: IconName;
@@ -121,7 +133,10 @@ export interface _AnyNavNode {
   className?: string;
   separator?: true;
   items?: _AnyNavNode[];
-}
+};
+
+export type _AnyNavNode = _AnyNavNodeFields &
+  ({ key: string; url?: undefined } | { key?: string; url: string });
 
 type OwnProps = {
   /** Brand content (logo/wordmark) rendered in the header. */
