@@ -10,7 +10,7 @@ import type {
  * rules between it and the single-letter alternative the same prose argues
  * for (SPEC.md §5, §10.1).
  */
-export const COLLAPSE_SHORTCUT = { key: "e", ctrlKey: true } as const;
+export const COLLAPSE_SHORTCUT = { key: ".", ctrlKey: true } as const;
 
 /**
  * Reserved: binds `COLLAPSE_SHORTCUT` to `onTrigger` while `enabled`.
@@ -19,7 +19,7 @@ export const COLLAPSE_SHORTCUT = { key: "e", ctrlKey: true } as const;
  * inert, until a consumer opts in (and design ratifies the key).
  */
 export const useCollapseShortcut = ({
-  enabled = false,
+  enabled = true,
   onTrigger,
 }: UseCollapseShortcutProps): UseCollapseShortcutResult => {
   useEffect(() => {

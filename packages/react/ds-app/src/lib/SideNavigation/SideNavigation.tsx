@@ -51,7 +51,7 @@ const SideNavigation = ({
   // expanded: expandedProp,
   defaultExpanded = true,
   // onExpandedChange,
-  keyboardShortcut = false,
+  keyboardShortcut = true,
   "aria-label": ariaLabel,
   children,
   ...props

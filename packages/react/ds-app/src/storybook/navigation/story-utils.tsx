@@ -143,7 +143,7 @@ export const MockBadge = ({ children }: { children: ReactNode }): ReactNode => (
       borderRadius: "0.625rem",
       fontSize: "0.75rem",
       lineHeight: 1.4,
-      background: "rgb(0 0 0 / 0.25)",
+      background: "var(--color-icon-warning)",
     }}
   >
     {children}

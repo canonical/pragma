@@ -108,20 +108,20 @@ describe("SideNavigation", () => {
   //   expect(onExpandedChange).toHaveBeenCalledWith(false);
   // });
 
-  it("does not respond to the collapse shortcut by default", () => {
+  it("responds to the collapse shortcut by default", () => {
     const { container } = render(<SideNavigation root={root} />);
     const el = container.firstElementChild as HTMLElement;
-    fireEvent.keyDown(window, { key: "e", ctrlKey: true });
-    expect(el.dataset.expanded).toBe("true");
+    fireEvent.keyDown(window, { key: ".", ctrlKey: true });
+    expect(el.dataset.expanded).toBe("false");
   });
 
-  it("responds to Ctrl+E when keyboardShortcut is enabled", () => {
+  it("does not respond to the collapse shortcut when keyboardShortcut is disabled", () => {
     const { container } = render(
-      <SideNavigation root={root} keyboardShortcut />,
+      <SideNavigation root={root} keyboardShortcut={false} />,
     );
     const el = container.firstElementChild as HTMLElement;
-    fireEvent.keyDown(window, { key: "e", ctrlKey: true });
-    expect(el.dataset.expanded).toBe("false");
+    fireEvent.keyDown(window, { key: ".", ctrlKey: true });
+    expect(el.dataset.expanded).toBe("true");
   });
 
   it("orders focusable elements logo → collapse toggle → content → footer (SPEC.md §6)", () => {

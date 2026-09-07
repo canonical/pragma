@@ -104,7 +104,11 @@ stated item insets.
 
 No navigation items render while collapsed — not a styling choice, a
 deliberate scope cut (see §4.5 and §10). Only the logo, the (relocated)
-expand control, and the footer icons remain.
+expand control, and the footer icons remain. The `├──────────┤` line between
+the logo and the expand button above is a real divider, not just a table
+border — `SideNavigation.Header` renders one there when collapsed, in place
+of (not in addition to) its usual trailing one after the whole header when
+expanded (§9.10).
 
 ### 1.3 Secondary navigation
 
@@ -219,12 +223,13 @@ Where none exists, see §9.
 | `color.icon.muted.$root` | Context-switcher chevron |
 | `color.icon.disabled.$root` | Disabled item icon |
 
-### ADR-T05 — Typography · *Approved*
+### ADR-T05 — Typography · *Approved — group headers corrected, §9.9*
 
 | Token | Applied to |
 |---|---|
 | `typography.text.primary.$root` | Item labels, footer item labels |
-| `typography.heading.5.$root` | Group headers, secondary navigation title |
+| `typography.text.tertiary.bold.$root` | Group headers (§9.9 — corrects this row's own prior `typography.heading.5` pick) |
+| `typography.heading.5.$root` | Secondary navigation title |
 
 ### ADR-T06 — Header internal padding · *Resolved*
 
@@ -232,11 +237,11 @@ Superseded by the exact measurements in §2 (header top inset 0.5rem, logo↔tog
 gap 1rem) — no separate padding token needed; the header uses the same
 `--dimension-100`/`--dimension-200` primitives as the rest of the rail.
 
-### ADR-T07 — Overflow fade · *Removed pending design discussion, §9.12*
+### ADR-T07 — Overflow fade · *Approved, reinstated with conditional rendering — §9.12*
 
 | Token | Applied to |
 |---|---|
-| `surface.overflow_gradient.$root` (`--surface-overflow-gradient`) | **No longer applied anywhere.** Was Content's own top/bottom scroll-edge fades (height overridden to 1.75rem, §9.4); not present in the Figma file and its reserved spacing broke the spec's stated item insets, so removed — pending a further design discussion on whether a fade belongs at these seams at all (§9.12). The hard Header/Content divider (ADR-T02, §9.10) covers the seam in the meantime |
+| `surface.overflow_gradient.$root` (`--surface-overflow-gradient`) | Content's own top/bottom scroll-edge fades, height overridden to 1.75rem (§9.4) — now rendered only when there's actually more content to scroll to in that direction (CSS `scroll-state` container queries, §9.12), not unconditionally |
 
 ### ADR-T08 — Motion · *Approved, scoped*
 
@@ -596,16 +601,14 @@ confirm a top fade is actually wanted — the spec's one image
 (`§Header/Footer spacing and gradient`) isn't machine-readable so this is an
 inference, not a visual confirmation, consistent with §9.5.
 
-**Superseded, §9.12: the fade was removed by design, pending discussion.**
-`Content`'s `::before`/`::after` rules (and the extra first/last-group
-padding that reserved room for them) have been removed entirely — not a
-recolour, a deliberate removal. Per direction: the gradient isn't present
-anywhere in the Figma file (this section's "spec calls for 1.75rem" was
-itself an inference from the written spec's prose, never independently
-confirmed against the file the way §9.9/§9.10's dividers were), and the
-reserved spacing it needed broke the spec's own stated item insets. Kept
-out pending a further design discussion on whether a fade belongs here at
-all — see §9.12.
+**Superseded, §9.12: reinstated with conditional rendering, not removed.**
+`Content`'s fade briefly went through a removed state in this same change —
+per direction, it isn't present anywhere in the Figma file (this section's
+"spec calls for 1.75rem" was itself an inference from the written spec's
+*prose*, never independently confirmed against the file the way §9.9/§9.10's
+dividers were), and its old always-on implementation reserved extra
+first/last-group padding that broke the spec's own stated item insets. It's
+back now under a different mechanism that avoids both problems — see §9.12.
 
 ### 9.5 — Colour pairings (ADR-T01–T05)
 
@@ -629,7 +632,7 @@ inventing new ones, since both are ghost-style interactive rows over a
 floating surface. Flagged for design to confirm this reuse is intentional
 rather than the two ever needing to diverge.
 
-### 9.7 — Item row vertical padding (no stated row height)
+### 9.7 — Item row height: reversed back to fixed — `2rem`, all four row variants
 
 The spec states the item row's horizontal insets (1rem/1.5rem) and the
 icon↔label gap (0.5rem) exactly, but never states a row *height*. The
@@ -637,30 +640,55 @@ pre-24.04 implementation had a fixed row height derived from
 `--space-baseline` (documented as "5bU/40px") — but `--space-baseline` was
 changed from 8px to 4px in a prior, unrelated pass
 (`packages/styles/main/src/spacing.css` §"Baseline grid") without updating
-that comment, so the derived value is now 20px, not 40px, and no longer a
-credible row height for a 1rem icon plus label text. Rather than perpetuate
-a stale derivation, the row's height is now intrinsic: `padding-block:
-var(--sidenav-icon-gap)` (0.5rem top and bottom) around the icon/label/end
-content. This is an inference, not a spec value — flagged for design.
+that comment, so the derived value was 20px, not 40px, and no longer a
+credible row height for a 1rem icon plus label text. An earlier pass in
+this same change made the row's height intrinsic instead (`padding-block:
+var(--sidenav-icon-gap)`, 0.5rem top and bottom) to stop perpetuating that
+stale derivation.
 
-### 9.8 — Fixed leading-icon column width: `1rem`
+**Reversed again, across all four row variants.** `Item`, `ItemButton`, and
+`ItemSwitch` each set an explicit `height: var(--dimension-400)` (2rem/32px)
+on their own root `<li>`, with `.row` at `height: 100%` filling it
+(`align-items: center` still centres the icon/label/end within that fixed
+box) — all three are a flat `<li>` → row structure, so the fixed height and
+the flex centring that gives `height: 100%` something to resolve against
+both live on the same element. `ItemExpandable` can't use that shape: its
+`<li>` wraps a `<details>` that must stay auto-height to make room for the
+disclosed `.children` list when open, so its `<summary class="row">` gets
+`height: var(--dimension-400)` directly instead, with no outer wrapper
+indirection. Each row variant's leading-icon wrapper (`.start`) also gained
+a fixed `width`/`height: var(--dimension-250)` (1.25rem/20px) around the
+now-explicitly-`16`×`16`-sized icon (§9.8) — a 20px box holding a 16px icon,
+2px of breathing room on each side. None of this is a spec value (no row
+height is stated, as this section's title still says); it's a provisional,
+round-number row-height system applied consistently, not a derivation from
+anything in the file.
+
+### 9.8 — Fixed leading-icon column width: `1.5rem`
 
 The item row's leading-icon column must be a **fixed** width — not
 content-sized (`auto`) — so labels align down the rail whether or not a
 given row has an icon (an empty icon slot must reserve the same space as a
-present one). `1rem` is not a spec value; it matches the `Icon` component's
-own default rendered size (`@canonical/react-ds-global`'s `--icon-size`
+present one). Originally set to `1rem` to match the `Icon` component's own
+default rendered size (`@canonical/react-ds-global`'s `--icon-size`
 fallback, which is always `1rem` in practice — no consumer in this repo sets
-`--size-icon-default`, the token it would otherwise prefer). New provisional
-token `--sidenav-icon-column-inline-size`, scoped separately from the
-spacing-dimension tokens since it names a sizing concern, not a spacing one.
+`--size-icon-default`, the token it would otherwise prefer); **widened to
+`1.5rem`** now that the icon itself is explicitly sized (16px, below) rather
+than left to that default — the column is deliberately larger than the icon
+it holds, giving the fixed-size icon room to sit centred within it rather
+than exactly filling it. Neither `1rem` nor `1.5rem` is a spec value.
+Provisional token `--sidenav-icon-column-inline-size`, scoped separately
+from the spacing-dimension tokens since it names a sizing concern, not a
+spacing one.
 
-**Fixed:** `Item`, `ItemButton`, `ItemExpandable`, and `ItemSwitch` now all
-pass explicit `width={16} height={16}` to their leading `Icon` instead of
-relying on that default — a real robustness improvement, since the rendered
-size no longer silently depends on no consumer having set
-`--size-icon-default` (this section's own stated risk). Applied to all four
-row variants together, not just one.
+**Fixed, and applied consistently:** `Item`, `ItemButton`, `ItemExpandable`,
+and `ItemSwitch` now all pass explicit `width={16} height={16}` to their
+leading `Icon` instead of relying on that default — a real robustness
+improvement, since the rendered size no longer silently depends on no
+consumer having set `--size-icon-default` (this section's own stated risk).
+All four also wrap that icon in the same fixed `1.25rem` box (§9.7) inside
+the `1.5rem` column — the icon-sizing and row-height changes landed
+together, across every row variant, not just `Item`.
 
 ### 9.9 — Group header text case: literal uppercase, confirmed against the source file
 
@@ -672,11 +700,20 @@ missed in the original ADR-T05 pass: `typography.heading.5` supplies
 "Hardware") renders unevenly — only the leading capital stays full-height,
 the rest becomes reduced-height caps — not the spec's uniform block
 capitals. Fixed by adding `text-transform: uppercase` to
-`GroupHeader/styles.css`, layered on top of the ADR-T05 token (still the
-right choice for size/weight/line-height/letter-spacing; this only adds the
-missing case transform). The DOM text itself stays mixed-case — a CSS
+`GroupHeader/styles.css`. The DOM text itself stays mixed-case — a CSS
 transform, not a data transform — so this doesn't affect a11y tree text,
 search, or copy/paste.
+
+**The underlying typography token was also revised, superseding this
+section's original "layered on top of the ADR-T05 token, still the right
+choice" framing.** `GroupHeader` moved from `typography.heading.5` to
+`typography.text.tertiary.bold` (ADR-T05 updated to match). Beyond being a
+smaller, caption-scaled style — a closer match to the Figma text style's own
+12px size than a full heading level — `typography.text.tertiary.bold` has
+no `font-variant: small-caps` at all, so it no longer fights the
+`text-transform: uppercase` added above; the two tokens were never meant to
+compose (small-caps assumes it's shaping mixed-case text, not text that's
+already been transformed to uppercase before the font ever sees it).
 
 Flagged, and now fixed: the same Figma node's text fill is a mid grey
 (`{r,g,b} ≈ 0.788` on the file's dark canvas, oklch L ≈ 82%), sitting
@@ -702,8 +739,18 @@ edges, hard line between groups" as ADR-T02/ADR-T07 originally read.
 
 - **Header/Content**: `SideNavigation.Header` renders its own trailing
   separator directly — a self-contained
-  `<><header>…</header><Separator /></>` — since every consumer of `Header`
-  wants the seam divider, not just `SideNavigation` itself.
+  `<><header>…</header><Separator /></>` when *expanded*.
+
+  **Collapsed, it relocates rather than disappears.** §1.2's collapsed
+  anatomy diagram already drew a line between the logo box and the expand
+  button (`├──────────┤` in the ASCII art) — `Header` now reproduces that
+  literally: `{!expanded && <Separator />}` renders *inside* the `<header>`,
+  between `.brand-container` and `CollapseToggle`, and the header's own
+  trailing `<Separator />` is gated on `expanded` so it doesn't also render
+  after the whole header in that state. `Separator` gained
+  `align-self: stretch` for this — inside the header's centred flex column
+  it needs to fill the cross-axis width, not shrink to its own content
+  size the way a bare `<hr>` would as a block-level sibling.
 - **Content/Footer**: no special-casing needed. `Footer` renders `root`
   (when given, in preference to `children`) through the same `NavTree` as
   `Content` — and `NavTree` already renders a `NavGroup`'s own `separator`
@@ -717,12 +764,6 @@ edges, hard line between groups" as ADR-T02/ADR-T07 originally read.
   construct to hang a `separator` flag on), so has no divider mechanism at
   all; not addressed here, since neither fixture uses that path for its
   footer.
-
-Also unverified: whether the Header/Content divider should render in the
-**collapsed** rail state — it renders unconditionally today (matching how
-row insets already behave the same collapsed or not), but the Figma file's
-collapsed variant wasn't independently re-checked for its own `hr`
-presence.
 
 ### 9.11 — Logo dimensions revised: `2.5rem` × `1.25rem`
 
@@ -739,7 +780,7 @@ own box from baseline units — so the fixture and the shipped component
 can no longer drift out of sync on this measurement. Not independently
 re-verified against the Figma file by this pass; carried as-implemented.
 
-### 9.12 — Overflow gradient removed pending design discussion
+### 9.12 — Overflow gradient: reinstated, conditional on `scroll-state`
 
 An earlier pass in this same change first re-pointed the Header/Footer
 overflow-gradient bars (ADR-T07, §9.4) from a generic
@@ -747,18 +788,53 @@ overflow-gradient bars (ADR-T07, §9.4) from a generic
 own `var(--color-foreground-navigation-primary)` — a real fix, since the
 fade should resolve to whatever colour the rail *actually* paints, not an
 unrelated ambient page token. That entire fade mechanism (the `::before`/
-`::after` rules on `Content`, and the extra first/last-group padding that
-reserved room for them) has since been removed outright — by direction,
-not by accident: it isn't present anywhere in the Figma file (§9.4's "spec
-calls for 1.75rem" was an inference from the written spec's *prose*, never
-independently checked against the file the way the §9.10 dividers were),
-and the padding it reserved was breaking the spec's own stated item insets.
-Superseded by the hard Header/Content divider (§9.10) for now, pending a
-further design discussion on whether a fade belongs here at all —
-`--overflow-gradient-height: 1.75rem` stays set on `.ds.side-navigation`
-and on `Secondary` (which shares `Content`) as a harmless no-op in the
-meantime (nothing in `Content/styles.css` reads it while the fade is out),
-rather than removed and re-added if the discussion goes the other way.
+`::after` rules on `Content`, plus the extra first/last-group padding that
+reserved room for them) was then removed outright, for real reasons: the
+gradient isn't present anywhere in the Figma file (§9.4's "spec calls for
+1.75rem" was an inference from the written spec's *prose*, never
+independently checked against the file the way the §9.9/§9.10 findings
+were), and the always-reserved padding was breaking the spec's own stated
+item insets.
+
+It's back now under a different, more precise mechanism — CSS `scroll-state`
+container queries:
+
+```css
+.ds.content {
+  container-type: scroll-state;
+
+  @container scroll-state(scrollable: top) {
+    &::before { /* fade, at the top */ }
+  }
+
+  @container scroll-state(scrollable: bottom) {
+    &::after { /* fade, at the bottom */ }
+  }
+}
+```
+
+The `::before`/`::after` rules only apply — via `content: none` as the
+unconditional default, `content: ""` inside the container query — when
+`Content` actually *has* more to scroll to in that direction, rather than
+painting an always-on fade regardless of scroll position. This resolves
+both original objections at once: no permanent padding reservation is
+needed (the bars are `position: sticky` with a negative margin pulling them
+back over content, same trick as before, just no longer paired with extra
+group padding to make room), and the fade only appears when there's
+something to fade — closer to what a Figma static frame *can't* show at
+all (it has no scroll state), rather than asserting the file settles the
+question either way.
+
+`--overflow-gradient-height: 1.75rem` (on `.ds.side-navigation` and on
+`Secondary`, which shares `Content`) is live again, not dead code.
+`&::-webkit-scrollbar { display: none }` was added alongside it to hide
+the native scrollbar, presumably so it doesn't visually compete with the
+fade at the same edge. Not yet flagged anywhere in this file: `scroll-state`
+container queries are a very new CSS feature (Chromium ~embedder support
+from mid-2024; no Firefox or Safari support at time of writing) — browsers
+without it simply never satisfy either `@container` condition, so the fade
+degrades to "never shown" rather than "always shown," a graceful but
+unverified fallback.
 
 ### 9.13 — Open question: row-end inset is no longer consistent across row variants
 
@@ -825,10 +901,41 @@ now that they're real flex children rather than a CSS border on `Group`:
 - `GroupHeader` gained `padding-top: var(--sidenav-icon-gap)` (0.5rem) —
   see §9.15 for where `Group`'s own padding went.
 - `.ds.side-navigation.collapsed` gained `justify-content: space-between`.
+- `Header`'s own internal `gap` (between `.brand-container` and
+  `CollapseToggle`) dropped from `--sidenav-inset-start` (1rem) to
+  `--dimension-100` (0.5rem).
+- `Separator` gained `align-self: stretch` (§9.10 — needed once it can sit
+  inside `Header`'s flex row, not just as a block-level sibling of
+  `Header`/`Content`/`Footer`).
+- The collapsed footer's icon-only row lost its explicit
+  `justify-content: center; padding-inline: 0` — it now relies on the
+  fixed icon column/wrapper sizing (§9.7/§9.8) to centre the icon, rather
+  than overriding the row's own layout for that state.
 
 Not independently re-verified against the Figma file measurement-by-
 measurement; carried as-implemented, consistent with how the rest of §9
 treats provisional spacing values.
+
+### 9.17 — `.p` typography utility dropped from row content
+
+`Item`, `ItemButton`, `ItemExpandable`, `ItemSwitch`, and
+`ContextSwitcher`'s `.start`/`.label` spans previously carried a second
+`p` class alongside their own (`className="start p"`, `"label p"`) —
+`@canonical/styles/typography`'s shared utility (the same rules `<p>`
+itself gets), which applies `typography.text.primary`'s baseline-trim
+metrics. Dropped from all five in this pass. Plausible reason, not stated
+outright: that baseline-trim machinery computes its own effective
+line-height/vertical-metrics for flowing paragraph text, which doesn't
+obviously compose with `Item`'s new fixed-height row (§9.7) — the row now
+centres its content by simple flex/grid `align-items: center` inside an
+exact pixel box, not by anything `.p` would otherwise be trimming. Not
+confirmed against a visual diff; carried as-implemented.
+
+Separately, in the same area: the Storybook-only `MockBadge` fixture
+(`story-utils.tsx`) changed its background from a flat translucent black
+(`rgb(0 0 0 / 0.25)`) to `var(--color-icon-warning)` — closer to the
+amber/orange badge fill (`#f99b11`) the Figma file's own notification-count
+badge actually uses, rather than an arbitrary placeholder colour.
 
 ---
 

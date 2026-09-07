@@ -8,7 +8,7 @@
   align-items: baseline;
   justify-content: space-between;
   /* 1rem, spec: "1rem to the right of the collapse button" */
-  gap: var(--sidenav-inset-start);
+  gap: var(--dimension-100);
   padding-inline: var(--sidenav-inset-start);
 
   .brand-container {

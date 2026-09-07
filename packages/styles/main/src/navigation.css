@@ -45,7 +45,7 @@
      rendered size (its --icon-size fallback is 1rem; no design token names
      it, so this is a distinctly-scoped provisional value rather than reusing
      a spacing token for a sizing concern). */
-  --sidenav-icon-column-inline-size: 1rem;
+  --sidenav-icon-column-inline-size: 1.5rem;
 
   /* ── Row background channel ────────────────────────────────────────
      Item/ItemButton/ItemSwitch/ItemExpandable/CollapseToggle consume THIS,

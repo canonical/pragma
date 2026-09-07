@@ -42,6 +42,7 @@ const Header = ({
             <h1 className="title">{applicationName}</h1>
           )}
         </div>
+        {!expanded && <Separator />}
         {onToggle && (
           <CollapseToggle
             expanded={expanded}
@@ -50,7 +51,7 @@ const Header = ({
           />
         )}
       </header>
-      <Separator />
+      {expanded && <Separator />}
     </>
   );
 };

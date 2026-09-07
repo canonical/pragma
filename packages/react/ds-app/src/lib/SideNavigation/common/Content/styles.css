@@ -3,10 +3,50 @@
 .ds.content {
   position: relative;
   flex: 1;
-  /* min-height:0 lets this flex item shrink below its content height so it can
-     scroll internally (flex items default to min-height:auto, which refuses to
-     shrink and would push the whole nav taller instead). Vertical scroll only;
-     never horizontal (long labels must not cause sideways scroll). */
   min-height: 0;
   overflow: hidden auto;
+  container-type: scroll-state;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  &::before,
+  &::after {
+    content: none;
+  }
+
+  @container scroll-state(scrollable: top) {
+    &::before {
+      content: "";
+      position: sticky;
+      top: 0;
+      display: block;
+      block-size: var(--overflow-gradient-height);
+      margin-block-end: calc(-1 * var(--overflow-gradient-height));
+      background: linear-gradient(
+        to bottom,
+        var(--color-foreground-navigation-primary),
+        transparent
+      );
+      pointer-events: none;
+    }
+  }
+
+  @container scroll-state(scrollable: bottom) {
+    &::after {
+      content: "";
+      position: sticky;
+      bottom: 0;
+      display: block;
+      block-size: var(--overflow-gradient-height);
+      margin-block-start: calc(-1 * var(--overflow-gradient-height));
+      background: linear-gradient(
+        to bottom,
+        transparent,
+        var(--color-foreground-navigation-primary)
+      );
+      pointer-events: none;
+    }
+  }
 }

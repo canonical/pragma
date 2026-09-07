@@ -33,7 +33,7 @@ const ContextSwitcher = ({
     className={[componentCssClassName, className].filter(Boolean).join(" ")}
     trigger={
       <span className="row">
-        <span className="label p">{currentContext.name}</span>
+        <span className="label">{currentContext.name}</span>
         <Icon icon="chevron-down" className="end caret" />
       </span>
     }

@@ -57,8 +57,6 @@
 
       .row {
         grid-template-columns: var(--sidenav-icon-column-inline-size);
-        justify-content: center;
-        padding-inline: 0;
       }
     }
   }

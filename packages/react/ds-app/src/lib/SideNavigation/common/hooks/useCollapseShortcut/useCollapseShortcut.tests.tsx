@@ -3,24 +3,31 @@ import { describe, expect, it, vi } from "vitest";
 import { useCollapseShortcut } from "./useCollapseShortcut.js";
 
 describe("useCollapseShortcut", () => {
-  it("does not attach a listener when disabled (the default)", () => {
+  it("attaches a listener when enabled (the default)", () => {
     const onTrigger = vi.fn();
     renderHook(() => useCollapseShortcut({ onTrigger }));
-    fireEvent.keyDown(window, { key: "e", ctrlKey: true });
+    fireEvent.keyDown(window, { key: ".", ctrlKey: true });
+    expect(onTrigger).toHaveBeenCalledOnce();
+  });
+
+  it("does not attach a listener when explicitly disabled", () => {
+    const onTrigger = vi.fn();
+    renderHook(() => useCollapseShortcut({ enabled: false, onTrigger }));
+    fireEvent.keyDown(window, { key: ".", ctrlKey: true });
     expect(onTrigger).not.toHaveBeenCalled();
   });
 
-  it("calls onTrigger on Ctrl+E when enabled", () => {
+  it("calls onTrigger on Ctrl+. when enabled", () => {
     const onTrigger = vi.fn();
     renderHook(() => useCollapseShortcut({ enabled: true, onTrigger }));
-    fireEvent.keyDown(window, { key: "e", ctrlKey: true });
+    fireEvent.keyDown(window, { key: ".", ctrlKey: true });
     expect(onTrigger).toHaveBeenCalledOnce();
   });
 
   it("ignores the key without the Ctrl modifier, even when enabled", () => {
     const onTrigger = vi.fn();
     renderHook(() => useCollapseShortcut({ enabled: true, onTrigger }));
-    fireEvent.keyDown(window, { key: "e", ctrlKey: false });
+    fireEvent.keyDown(window, { key: ".", ctrlKey: false });
     expect(onTrigger).not.toHaveBeenCalled();
   });
 
@@ -39,7 +46,7 @@ describe("useCollapseShortcut", () => {
       { initialProps: { enabled: true } },
     );
     rerender({ enabled: false });
-    fireEvent.keyDown(window, { key: "e", ctrlKey: true });
+    fireEvent.keyDown(window, { key: ".", ctrlKey: true });
     expect(onTrigger).not.toHaveBeenCalled();
   });
 });

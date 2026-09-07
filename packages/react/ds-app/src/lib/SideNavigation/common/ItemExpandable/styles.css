@@ -16,14 +16,18 @@
 
   /* The row: identical geometry to SideNavigation.Item's row (shares the
      insets/gap/icon-column tokens so icons line up down the rail), but a
-     <summary> instead of a link/label. */
+     <summary> instead of a link/label. Its height is set directly here
+     (`--dimension-400`, matching Item/ItemButton/ItemSwitch) rather than via
+     an outer wrapper's fixed height + `height: 100%`, the way those three
+     do it — `.details`/the root `<li>` must stay auto-height here, to make
+     room for the disclosed `.children` list when open. */
   & > .details > .row {
     display: grid;
     grid-template-columns: var(--sidenav-icon-column-inline-size) 1fr auto;
     align-items: center;
     gap: var(--sidenav-icon-gap); /* 0.5rem */
     width: 100%;
-    padding-block: var(--sidenav-icon-gap); /* 0.5rem */
+    height: var(--dimension-400);
     padding-inline: var(--sidenav-inset-start) var(--sidenav-inset-end); /* 1rem / 1.5rem */
     box-sizing: border-box;
     color: var(--color-text);
@@ -57,6 +61,8 @@
     align-items: center;
     justify-content: center;
     color: var(--color-icon);
+    width: var(--dimension-250);
+    height: var(--dimension-250);
   }
 
   &[data-disabled] .start {

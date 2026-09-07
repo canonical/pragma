@@ -39,7 +39,7 @@ const Item = ({
       {/* Start cell is always rendered (empty when no icon) so the content
           stays in the middle column — labels align whether or not a row has
           an icon. */}
-      <span className="start p">
+      <span className="start">
         {icon ? <Icon width={16} height={16} icon={icon} /> : null}
       </span>
       {/* `title` is a progressive-enhancement fallback for the spec's
@@ -47,7 +47,7 @@ const Item = ({
          the custom 800ms-delay styled one — SPEC.md §10.17. Only meaningful
          when `children` is plain text (the common case). */}
       <span
-        className="label p"
+        className="label"
         title={typeof children === "string" ? children : undefined}
       >
         {children}

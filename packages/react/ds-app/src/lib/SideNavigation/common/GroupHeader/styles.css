@@ -4,11 +4,11 @@
   display: flex;
   align-items: baseline;
   color: var(--color-text-muted);
-  font-family: var(--typography-heading-5-font-family);
-  font-size: var(--typography-heading-5-font-size);
-  font-weight: var(--typography-heading-5-font-weight);
-  line-height: var(--typography-heading-5-line-height);
-  letter-spacing: var(--typography-heading-5-letter-spacing);
+  font-family: var(--typography-text-tertiary-bold-font-family);
+  font-size: var(--typography-text-tertiary-bold-font-size);
+  font-weight: var(--typography-text-tertiary-bold-font-weight);
+  line-height: var(--typography-text-tertiary-bold-line-height);
+  letter-spacing: var(--typography-text-tertiary-bold-letter-spacing);
   padding-top: var(--sidenav-icon-gap);
   padding-inline: var(--sidenav-inset-start); /* 1 rem */
   /* Figma's group-heading component sets its text style's case to `UPPER`
