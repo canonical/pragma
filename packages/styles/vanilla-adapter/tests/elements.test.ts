@@ -448,7 +448,16 @@ describe("elements.css is pragma's element layers, confined", () => {
     expect(files).toContain("typography/src/elements.css");
     expect(files).toContain(`typography/src/${engineFile}`);
     expect(engineFile).toBe("baseline-cap.css");
-    expect(sources.filter((walked) => !opensElementLayer(walked))).toEqual([]);
+    // `layers.css` rides in the composition because the entry imports the
+    // order before anything else. It declares no rule, so there is nothing for
+    // the copy to mirror, and the copy takes its order from this package's own
+    // statement instead.
+    expect(
+      sources.filter(
+        (walked) =>
+          !opensElementLayer(walked) && !walked.file.endsWith("layers.css"),
+      ),
+    ).toEqual([]);
     // The element rules that feed the engine come from a typography file that
     // is not the engine; without them a heading inside an island would compute
     // the paragraph's size.
@@ -584,33 +593,53 @@ describe("@canonical/styles exposes what a mixed page needs", () => {
   const tokens = entry("tokens.css");
   const layout = entry("layout.css");
 
-  it("states one order, pragma's thirteen names, in every exported file that states one", () => {
+  it("declares one order, pragma's thirteen names, in one file, and every entry reads it first", () => {
     // The adapter's statement comes first on a mixed page; pragma's arrives
-    // later, at the top of each of its entries, and a later statement can add
-    // layers but never reorder the ones already fixed. So every file the
-    // package exports that states an order has to state the same one, and
-    // state it first: the file list comes from the package's own export map,
-    // so an entry added later is checked without this test being edited.
-    const stating: string[] = [];
+    // later, through its entries, and a later statement can add layers but
+    // never reorder the ones already fixed. Pragma declares its order in
+    // exactly one file, `layers.css`, and every other exported entry imports
+    // that file as its first rule rather than repeating the list — five copies
+    // of one ordered list is five chances to drift. Measured in Chromium: a
+    // statement read through an `@import` orders the importing sheet exactly
+    // as one written in place would. The file list comes from the package's own
+    // export map, so an entry added later is checked without editing this test.
+    const ENTRY_FILES = [
+      "index.css",
+      "tokens.css",
+      "elements.css",
+      "layout.css",
+    ];
+    const declaring: string[] = [];
     const failures: string[] = [];
     for (const file of exportedFiles) {
       const walked = main(file);
       const statements = walked.statements.filter((line) =>
         line.startsWith("@layer "),
       );
-      if (!statements.length) continue;
-      stating.push(file);
-      if (walked.statements[0] !== statements[0])
-        failures.push(`${file}: the statement is not the first rule`);
-      for (const statement of statements)
-        if (statement !== PRAGMA_ORDER) failures.push(`${file}: ${statement}`);
+      if (statements.length) {
+        declaring.push(file);
+        if (walked.statements[0] !== statements[0])
+          failures.push(`${file}: the statement is not the first rule`);
+        for (const statement of statements)
+          if (statement !== PRAGMA_ORDER)
+            failures.push(`${file}: ${statement}`);
+        continue;
+      }
+      // An entry has to reach the order before any rule it orders, which
+      // means importing the file that declares it, first. The other exported
+      // subpaths are single files a consumer adds to a page that already has
+      // the order; they declare nothing and import nothing.
+      if (!ENTRY_FILES.includes(file)) continue;
+      const first = walked.statements[0];
+      if (!first?.startsWith("@import") || !first.includes("layers.css"))
+        failures.push(`${file}: does not import the order first`);
     }
     expect(failures).toEqual([]);
-    // The entry a pragma-only page loads, and the two a mixed page loads.
-    for (const file of ["index.css", "tokens.css", "layout.css"])
-      expect(stating, file).toContain(file);
-    // And the entry this package's copy is a copy of.
-    expect(stating).toContain("elements.css");
+    // Exactly one file declares it, and it is the statement-only entry.
+    expect(declaring).toEqual(["layers.css"]);
+    // The entry a pragma-only page loads, and the two a mixed page loads, are
+    // among them: checked above, and named here so a deletion is loud.
+    for (const file of ENTRY_FILES) expect(exportedFiles, file).toContain(file);
   });
 
   it("tokens.css and layout.css bring no element rule with them", () => {
@@ -652,6 +681,10 @@ describe("@canonical/styles exposes what a mixed page needs", () => {
       ),
     ).toBe(true);
     expect(elementsEntry.rules).toEqual([]);
-    expect(importsOf(elementsEntry).length).toBe(4);
+    // The order, then the four element files: the reset, the root baseline,
+    // the typography element rules and one engine.
+    const entryImports = importsOf(elementsEntry);
+    expect(entryImports.length).toBe(5);
+    expect(entryImports[0]).toContain("layers.css");
   });
 });
