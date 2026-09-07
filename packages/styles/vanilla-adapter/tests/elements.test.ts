@@ -362,6 +362,20 @@ const counterpartKey = (rule: Rule): string | null => {
 const label = (rule: Rule): string =>
   `${rule.file} [${rule.layer}]${rule.conditions.length ? ` ${rule.conditions.join(" ")}` : ""} ${rule.path.map((list) => list.join(", ")).join(" { ")}`;
 
+/** The `.css` files @canonical/styles exports, by their name under `src`. */
+const exportedFiles = ((): string[] => {
+  const manifest = JSON.parse(read("../../main/package.json")) as {
+    exports: Record<string, string>;
+  };
+  return Array.from(
+    new Set(
+      Object.values(manifest.exports)
+        .map((target) => /^\.\/src\/([\w.-]+\.css)$/.exec(target)?.[1])
+        .filter((name): name is string => Boolean(name)),
+    ),
+  );
+})();
+
 const main = (file: string): Walked =>
   walk(read(`../../main/src/${file}`), `main/src/${file}`);
 const typography = (file: string): Walked =>
@@ -570,17 +584,33 @@ describe("@canonical/styles exposes what a mixed page needs", () => {
   const tokens = entry("tokens.css");
   const layout = entry("layout.css");
 
-  it("every entry opens with pragma's thirteen-name statement, the mixed order minus the adapter's four", () => {
-    // The adapter's statement comes first on a mixed page; each entry repeats
-    // pragma's own, which can add layers but never reorder the ones already
-    // fixed, and adds none.
-    for (const file of [
-      "index.css",
-      "tokens.css",
-      "elements.css",
-      "layout.css",
-    ])
-      expect(main(file).statements[0], file).toBe(PRAGMA_ORDER);
+  it("states one order, pragma's thirteen names, in every exported file that states one", () => {
+    // The adapter's statement comes first on a mixed page; pragma's arrives
+    // later, at the top of each of its entries, and a later statement can add
+    // layers but never reorder the ones already fixed. So every file the
+    // package exports that states an order has to state the same one, and
+    // state it first: the file list comes from the package's own export map,
+    // so an entry added later is checked without this test being edited.
+    const stating: string[] = [];
+    const failures: string[] = [];
+    for (const file of exportedFiles) {
+      const walked = main(file);
+      const statements = walked.statements.filter((line) =>
+        line.startsWith("@layer "),
+      );
+      if (!statements.length) continue;
+      stating.push(file);
+      if (walked.statements[0] !== statements[0])
+        failures.push(`${file}: the statement is not the first rule`);
+      for (const statement of statements)
+        if (statement !== PRAGMA_ORDER) failures.push(`${file}: ${statement}`);
+    }
+    expect(failures).toEqual([]);
+    // The entry a pragma-only page loads, and the two a mixed page loads.
+    for (const file of ["index.css", "tokens.css", "layout.css"])
+      expect(stating, file).toContain(file);
+    // And the entry this package's copy is a copy of.
+    expect(stating).toContain("elements.css");
   });
 
   it("tokens.css and layout.css bring no element rule with them", () => {
