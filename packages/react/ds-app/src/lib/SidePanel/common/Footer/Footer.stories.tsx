@@ -1,21 +1,45 @@
 import { Button } from "@canonical/react-ds-global";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import { SidePanelFrame } from "../../../../storybook/side-panel/story-utils.js";
 import SidePanel from "../../SidePanel.js";
+import type { SidePanelHandle } from "../../types.js";
 import Footer from "./Footer.js";
+
+/*
+  The story source shown in docs: the footer renders in a real panel, and the
+  callback ref opens it on mount because a story is a static fixture — in an
+  application the open comes from an event handler instead.
+*/
+const openOnMount = `
+  ref={(handle: SidePanelHandle | null) => {
+    handle?.open();
+  }}
+`;
 
 const meta: Meta<typeof Footer> = {
   title: "Components/SidePanel/Footer",
   component: Footer,
+  parameters: {
+    docs: {
+      story: {
+        // The footer's panel is `position: fixed`: inside its own iframe it
+        // fills the frame and stays contained in the docs page.
+        inline: false,
+        iframeHeight: "12rem",
+      },
+    },
+  },
   // The footer renders in a real panel, where its hairline is inset by the
   // panel's gutter. Header-less, so the panel is named with `aria-label`.
   render: (args) => (
-    <SidePanelFrame blockSize="12rem">
-      <SidePanel open={true} onOpenChange={() => {}} aria-label="Panel footer">
-        <Footer {...args} />
-      </SidePanel>
-    </SidePanelFrame>
+    <SidePanel
+      aria-label="Panel footer"
+      ref={(handle: SidePanelHandle | null) => {
+        handle?.open();
+      }}
+    >
+      <Footer {...args} />
+    </SidePanel>
   ),
 };
 
@@ -38,12 +62,45 @@ export const Default: Story = {
       </>
     ),
   },
+  parameters: {
+    docs: {
+      source: {
+        code: `
+<SidePanel
+  aria-label="Panel footer"${openOnMount}
+>
+  <SidePanel.Footer>
+    <Button>Cancel</Button>
+    <Button importance="primary" anticipation="constructive">
+      Save
+    </Button>
+  </SidePanel.Footer>
+</SidePanel>
+        `,
+      },
+    },
+  },
 };
 
 /** A single action sits at the end edge like any other. */
 export const SingleAction: Story = {
   args: {
     children: <Button onClick={fn()}>Close</Button>,
+  },
+  parameters: {
+    docs: {
+      source: {
+        code: `
+<SidePanel
+  aria-label="Panel footer"${openOnMount}
+>
+  <SidePanel.Footer>
+    <Button>Close</Button>
+  </SidePanel.Footer>
+</SidePanel>
+        `,
+      },
+    },
   },
 };
 
@@ -60,5 +117,25 @@ export const Wrapping: Story = {
         </Button>
       </>
     ),
+  },
+  parameters: {
+    docs: {
+      source: {
+        code: `
+<SidePanel
+  aria-label="Panel footer"${openOnMount}
+>
+  <SidePanel.Footer>
+    <Button>Reset to defaults</Button>
+    <Button>Save as draft</Button>
+    <Button>Cancel</Button>
+    <Button importance="primary" anticipation="constructive">
+      Save and apply
+    </Button>
+  </SidePanel.Footer>
+</SidePanel>
+        `,
+      },
+    },
   },
 };

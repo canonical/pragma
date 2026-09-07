@@ -10,7 +10,7 @@ const renderInPanel = (
 ) =>
   render(
     <SidePanelContext.Provider
-      value={{ requestClose: vi.fn(), titleId: "title-id", ...context }}
+      value={{ close: vi.fn(), titleId: "title-id", ...context }}
     >
       {ui}
     </SidePanelContext.Provider>,
@@ -41,11 +41,11 @@ describe("SidePanel.Header", () => {
   });
 
   describe("close button", () => {
-    it("asks the panel to close when pressed", async () => {
-      const requestClose = vi.fn();
-      renderInPanel(<Header>Panel title</Header>, { requestClose });
+    it("closes the panel when pressed", async () => {
+      const close = vi.fn();
+      renderInPanel(<Header>Panel title</Header>, { close });
       screen.getByRole("button", { name: "Close panel" }).click();
-      expect(requestClose).toHaveBeenCalledTimes(1);
+      expect(close).toHaveBeenCalledTimes(1);
     });
 
     it("takes a custom accessible name", () => {

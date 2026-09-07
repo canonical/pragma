@@ -1,19 +1,43 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { SidePanelFrame } from "../../../../storybook/side-panel/story-utils.js";
 import SidePanel from "../../SidePanel.js";
+import type { SidePanelHandle } from "../../types.js";
 import Content from "./Content.js";
+
+/*
+  The story source shown in docs: the body renders in a real panel, and the
+  callback ref opens it on mount because a story is a static fixture — in an
+  application the open comes from an event handler instead.
+*/
+const openOnMount = `
+  ref={(handle: SidePanelHandle | null) => {
+    handle?.open();
+  }}
+`;
 
 const meta: Meta<typeof Content> = {
   title: "Components/SidePanel/Content",
   component: Content,
+  parameters: {
+    docs: {
+      story: {
+        // The body's panel is `position: fixed`: inside its own iframe it
+        // fills the frame and stays contained in the docs page.
+        inline: false,
+        iframeHeight: "12rem",
+      },
+    },
+  },
   // The body renders in a real panel, in the text column it would occupy in
   // one. Header-less, so the panel is named with `aria-label` instead.
   render: (args) => (
-    <SidePanelFrame blockSize="12rem">
-      <SidePanel open={true} onOpenChange={() => {}} aria-label="Panel body">
-        <Content {...args} />
-      </SidePanel>
-    </SidePanelFrame>
+    <SidePanel
+      aria-label="Panel body"
+      ref={(handle: SidePanelHandle | null) => {
+        handle?.open();
+      }}
+    >
+      <Content {...args} />
+    </SidePanel>
   ),
 };
 
@@ -24,6 +48,21 @@ type Story = StoryObj<typeof Content>;
 export const Default: Story = {
   args: {
     children: <p>The application behind this panel is still usable.</p>,
+  },
+  parameters: {
+    docs: {
+      source: {
+        code: `
+<SidePanel
+  aria-label="Panel body"${openOnMount}
+>
+  <SidePanel.Content>
+    <p>The application behind this panel is still usable.</p>
+  </SidePanel.Content>
+</SidePanel>
+        `,
+      },
+    },
   },
 };
 
@@ -39,5 +78,21 @@ export const Tall: Story = {
     ).map((key, index) => (
       <p key={key}>Paragraph {index + 1} of filler content.</p>
     )),
+  },
+  parameters: {
+    docs: {
+      source: {
+        code: `
+<SidePanel
+  aria-label="Panel body"${openOnMount}
+>
+  <SidePanel.Content>
+    {/* Taller than the panel: the panel scrolls, this region grows. */}
+    {paragraphs}
+  </SidePanel.Content>
+</SidePanel>
+        `,
+      },
+    },
   },
 };

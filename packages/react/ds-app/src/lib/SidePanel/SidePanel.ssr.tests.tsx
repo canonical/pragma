@@ -5,7 +5,7 @@ import SidePanel from "./SidePanel.js";
 describe("SidePanel SSR", () => {
   it("renders its parts without hydration errors", () => {
     const html = renderToString(
-      <SidePanel open={false} onOpenChange={() => {}}>
+      <SidePanel>
         <SidePanel.Header>Panel title</SidePanel.Header>
         <SidePanel.Content>Test content</SidePanel.Content>
         <SidePanel.Footer>Actions</SidePanel.Footer>
@@ -28,20 +28,17 @@ describe("SidePanel SSR", () => {
 
   it("never paints an open dialog on the server", () => {
     const html = renderToString(
-      <SidePanel open={true} onOpenChange={() => {}}>
+      <SidePanel>
         <SidePanel.Content>Test content</SidePanel.Content>
       </SidePanel>,
     );
     /*
-      Opening runs through `show()` in an effect, which the server never
-      executes, so the markup is always closed and the panel appears after
-      hydration. Documented behaviour rather than a defect: a server-painted
-      panel would need the `open` attribute, and a dialog opened by attribute is
-      not the same thing as one opened by `show()`.
-
-      Asserted against the opening tag rather than the whole document, and on a
-      tag that must exist: `not.toContain("<dialog open")` would pass just as
-      happily if `open` were emitted after another attribute.
+      Opening runs through the handle's `show()`, which the server never
+      executes — the markup is always closed and the panel appears only once a
+      client opens it. Asserted against the opening tag rather than the whole
+      document, and on a tag that must exist: `not.toContain("<dialog open")`
+      would pass just as happily if `open` were emitted after another
+      attribute.
     */
     const dialogTag = html.match(/<dialog[^>]*>/)?.[0];
     expect(dialogTag).toBeDefined();
@@ -50,7 +47,7 @@ describe("SidePanel SSR", () => {
 
   it("does not claim to be modal", () => {
     const html = renderToString(
-      <SidePanel open={true} onOpenChange={() => {}} aria-label="Filters">
+      <SidePanel aria-label="Filters">
         <SidePanel.Content>Test content</SidePanel.Content>
       </SidePanel>,
     );

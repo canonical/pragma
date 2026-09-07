@@ -38,7 +38,7 @@ const Header = ({
           className="close"
           icon="close"
           importance="tertiary"
-          onClick={context.requestClose}
+          onClick={context.close}
           // Icon-only, so the accessible name has to come from here — Button
           // warns in development when it is missing.
           aria-label={dismissLabel}
