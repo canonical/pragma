@@ -214,7 +214,7 @@ export const lxdFooterRoot: NavRoot = {
           icon: "book",
         },
         { key: "report-bug", label: "Report a bug", icon: "bug" },
-        { key: "lxd-logout", label: "Log out" },
+        { key: "lxd-logout", label: "Log out", icon: "log-out" },
       ],
     },
   ],
