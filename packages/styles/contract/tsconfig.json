@@ -1,7 +1,7 @@
 {
   "extends": "@canonical/typescript-config",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node", "vite/client"]
   },
   "include": ["tests/**/*.ts", "*.ts"]
 }
