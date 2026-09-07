@@ -17,16 +17,17 @@
  * ordinary page imports; `tokens.css`, `elements.css` and `layout.css` are it
  * in three parts, for a page that wants some of it and supplies the rest.
  *
- * Every entry opens with the same layer order statement, and none of them
- * imports another. Both of those matter. The statement has to be the first rule
- * of whichever stylesheet a page loads first, because it fixes the order of
- * every layer for that page — if two entries declared different orders, the same
- * rules would arbitrate differently depending on which one a consumer picked.
- * And an `@layer` statement inside a layer block would declare sublayers of it
- * rather than top-level layers, so entries composing each other would nest the
- * order rather than repeat it; keeping them independent means a page may load
- * one, two or all three, in any order, and get the same result. A test in this
- * package holds both properties.
+ * Every entry imports `layers.css` first, and none of them imports another
+ * entry. Both of those matter. The order has to reach the browser before any
+ * rule of the page it orders, and it is declared in exactly one file so that
+ * two entries can never disagree — if they did, the same rules would arbitrate
+ * differently depending on which entry a consumer picked. Measured in Chromium:
+ * a statement read through an `@import` orders the importing sheet exactly as
+ * one written in place would. Entries stay independent of each other because an
+ * `@layer` statement inside a layer block would declare sublayers rather than
+ * top-level layers, so an entry composing another would nest the order instead
+ * of sharing it; independent, a page may load one, two or all three, in any
+ * order, and get the same result.
  */
 
 /* Read from the bottom up, each position is an argument:
@@ -66,19 +67,7 @@
  * sub-tier (`apps-lxd`), not the context words a page puts on its root
  * (`app`, `site`, `docs`). A tier says who owns a component; a context says
  * what kind of page it is being shown on. */
-@layer normalize,
-  ds.tokens,
-  ds.reset,
-  ds.typography,
-  ds.modifiers,
-  ds.surfaces,
-  ds.states,
-  ds.components,
-  ds.components.global,
-  ds.components.sites,
-  ds.components.documentation,
-  ds.components.stores,
-  ds.components.apps;
+@import url("./layers.css");
 
 /* Reset: pragma's own */
 @import url("./normalize.css");

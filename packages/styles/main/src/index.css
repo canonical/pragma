@@ -18,8 +18,7 @@
  * This file is one of four entry points, and the one an ordinary page wants.
  * `tokens.css` is every custom property and no rule that styles an element;
  * `elements.css` is every rule that styles a plain element; `layout.css` is the
- * grid presets. Each opens with the same statement below, and none imports
- * another — an `@layer` statement inside a layer block would declare sublayers
+ * grid presets. Each imports `layers.css` first, and none imports another — an `@layer` statement inside a layer block would declare sublayers
  * rather than top-level layers. The README's "Entry points" section says more,
  * and a test in this package holds both properties. The README's "Cascade
  * layers" section is the reference for what is layered where and what is
@@ -27,11 +26,18 @@
  * docs/explanations/CASCADE.md, arriving with the cascade documentation change.
  * Until it does, the README is the whole of it.
  *
- * The order statement below must stay the first rule of this file. An `@import`
- * is only valid before other rules — a layer statement and `@charset` excepted —
- * so "the statement, then the imports" is the one legal shape. A consumer who
- * must interleave their own layers prepends their own statement; a later
- * statement can add names but never reorder the ones already fixed here.
+ * The order is declared in one place, `layers.css`, and this file imports it
+ * first. That import is what fixes the order for a page loading this entry,
+ * and it is the reason the order is written once rather than in each entry: a
+ * repeated list is a list that can drift. Measured in Chromium: a statement
+ * read through an `@import` orders the layers of the sheet that imported it,
+ * exactly as a statement written in place would.
+ *
+ * The import must stay first. An `@import` is only valid before other rules —
+ * a layer statement and `@charset` excepted — so "the order, then the rest" is
+ * the one legal shape. A consumer who must interleave their own layers
+ * prepends their own statement; a later statement can add names but never
+ * reorder the ones already fixed.
  */
 
 /* Read from the bottom up, each position is an argument:
@@ -71,19 +77,7 @@
  * sub-tier (`apps-lxd`), not the context words a page puts on its root
  * (`app`, `site`, `docs`). A tier says who owns a component; a context says
  * what kind of page it is being shown on. */
-@layer normalize,
-  ds.tokens,
-  ds.reset,
-  ds.typography,
-  ds.modifiers,
-  ds.surfaces,
-  ds.states,
-  ds.components,
-  ds.components.global,
-  ds.components.sites,
-  ds.components.documentation,
-  ds.components.stores,
-  ds.components.apps;
+@import url("./layers.css");
 
 /* Reset: pragma's own */
 @import url("./normalize.css");

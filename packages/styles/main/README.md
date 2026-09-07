@@ -94,21 +94,23 @@ instead, in a copy confined to the part of the page the design system owns —
 
 Two properties make the parts safe to mix, and both are visible in how the entries are written.
 
-**Every entry opens with the same layer order statement.** It has to be the first rule of whichever
-stylesheet a page loads first, because it fixes the order of every layer for that page; two entries
-declaring different orders would mean the same rules arbitrating differently depending on which entry
-a consumer picked.
+**Every entry imports the order first, and the order is written in one file.** `layers.css` holds the
+statement and nothing else; each of the four entries imports it as its first rule. The order has to
+reach the browser before any rule it orders, and writing it once means two entries can never disagree
+— which they could if each repeated the list, and which would leave the same rules arbitrating
+differently depending on the entry a consumer picked. Measured in Chromium: a statement read through
+an `@import` orders the importing sheet exactly as one written in place would.
 
-**No entry imports another.** An `@layer` statement inside a layer block declares sublayers of that
-layer rather than top-level layers, so an entry that composed another would nest the order instead of
-repeating it. Keeping them independent means a page may load one, two or all three, in any order, and
+**No entry imports another entry.** An `@layer` statement inside a layer block declares sublayers of
+that layer rather than top-level layers, so an entry that composed another would nest the order
+instead of sharing it. Keeping them independent means a page may load one, two or all three, in any order, and
 get the same result — and that each file is fetched, parsed and applied once, which matters because a
 browser treats every `@import` as its own stylesheet and de-duplicates nothing.
 
 ## Cascade Layers
 
-Everything this package itself ships is in a named layer, and the order is fixed by one statement, the
-first rule of this stylesheet. The typographic engine, which this package imports, is in the same
+Everything this package itself ships is in a named layer, and the order is fixed by one statement,
+which lives in `layers.css` and which every entry imports before anything else. The typographic engine, which this package imports, is in the same
 layers:
 
 ```css
@@ -249,7 +251,7 @@ it installs it; a page that does not never hears about it.
 
 | Guarantee | The check behind it |
 | --- | --- |
-| Every rule the package itself ships is in one of the ten declared layers, and the statement is the first rule of this stylesheet. The typographic engine it imports is in them too. | The order fixtures that arrive with the Vanilla adapter package read the statement out of the resolved stylesheet and check every layer name the package opens against it. A check inside this package — that the set of layers used equals the set declared — is being added separately. |
+| Every rule the package itself ships is in one of the thirteen declared layers, and the statement reaches the browser before any of them, through the import every entry opens with. The typographic engine it imports is in them too. | The order fixtures that arrive with the Vanilla adapter package read the statement out of the resolved stylesheet and check every layer name the package opens against it. A check inside this package — that the set of layers used equals the set declared — is being added separately. |
 | An application tier's rule for a component beats the global tier's rule for the same component, whichever of the two a bundler loads first. | The two sublayers are named in the statement, so their order is fixed there rather than at first appearance, and the same order fixture reads it back. The component packages move into them when their stylesheets are wrapped, which is a separate change; until then both sublayers are empty and the guarantee is vacuous. |
 | The package ships no `!important`. | The same fixture file. An important declaration inverts the layer order and cannot be arbitrated by layers at all, so one of them would undo the guarantee above. |
 | Under `prefers-reduced-motion: reduce`, every motion duration this package defines is `0s`. | `src/motion.css`, and the reduced-motion fixture arriving with the adapter package. Zeroing the token is the mechanism: a component reads the token, so nothing has to out-rank the component's own declaration. Whether a given component honours the tokens is that package's guarantee, not this one's. Sheets that still hard-code a duration, and so still animate under the preference, are being moved onto the tokens separately: in the form package the shared input chrome (`src/index.css`) and eight component sheets (`ChoicesField`, `RichChoicesField`, `CheckboxInput`, `RadioInput`, `ColorInput`, `ComboboxInput` and its list, `FileUploadInput`, `SwitchInput`); in the global package `Tooltip`, `ContextualMenu` and `Popover`, which set their own duration property; and one application-tier sheet, the launchpad diff viewer's file header. |
