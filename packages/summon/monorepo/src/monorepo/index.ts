@@ -50,6 +50,11 @@ const templates = {
   lernaVersionAction: path.join(templatesDir, "lerna-version-action.yml.ejs"),
   versionSh: path.join(templatesDir, "version.sh.ejs"),
   gitCommitSh: path.join(templatesDir, "git-commit.sh.ejs"),
+  applyTypeLabelAction: path.join(
+    templatesDir,
+    "apply-type-label-action.yml.ejs",
+  ),
+  applyTypeLabelCjs: path.join(templatesDir, "apply-type-label.cjs.ejs"),
   renovateJson: path.join(templatesDir, "renovate.json.ejs"),
 };
 
@@ -194,6 +199,7 @@ POST-SETUP:
       mkdir(path.join(repoDir, ".github", "actions", "setup-env")),
       mkdir(path.join(repoDir, ".github", "actions", "setup-git")),
       mkdir(path.join(repoDir, ".github", "actions", "lerna-version")),
+      mkdir(path.join(repoDir, ".github", "actions", "apply-type-label")),
 
       // Root config files
       template({
@@ -326,6 +332,28 @@ POST-SETUP:
           "actions",
           "lerna-version",
           "git-commit.sh",
+        ),
+        vars: ctx,
+      }),
+      template({
+        source: templates.applyTypeLabelAction,
+        dest: path.join(
+          repoDir,
+          ".github",
+          "actions",
+          "apply-type-label",
+          "action.yml",
+        ),
+        vars: ctx,
+      }),
+      template({
+        source: templates.applyTypeLabelCjs,
+        dest: path.join(
+          repoDir,
+          ".github",
+          "actions",
+          "apply-type-label",
+          "apply-type-label.cjs",
         ),
         vars: ctx,
       }),
