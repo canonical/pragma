@@ -215,6 +215,7 @@ The `docs/` folder contains guides for working with the monorepo:
 | Guide | Description |
 |-------|-------------|
 | [Constitution](CONSTITUTION.md) | Design principles and decision rationale |
+| [Domains](docs/explanations/DOMAINS.md) | What each package folder is for, and why folder and npm name may differ |
 | [Component Folder Structure](docs/explanations/COMPONENT_FOLDER_STRUCTURE.md) | Standard component anatomy and conventions |
 | [The Cascade Contract](docs/explanations/STYLES_CASCADE.md) | Why the stylesheets are layered the way they are, and where a mixed page's confinement lives |
 | [Adding a Package](docs/how-to-guides/ADDING_A_PACKAGE.md) | How to create new packages in the monorepo |
@@ -304,6 +305,7 @@ The documentation-site layer. The dependency arrow points one way — see "The d
 |---------|------|-------------|
 | `@canonical/ds-types` | `packages/ds-types` | TypeScript types for modifier families and component props |
 | `@canonical/ds-assets` | `packages/ds-assets` | Icons and shared visual assets |
+| `@canonical/ds-implementations` | `packages/semantics/ds-implementations` | The implementation graph as Turtle (RDF), generated from `@implements` annotations |
 | `@canonical/utils` | `packages/utils` | Utility functions: casing, invariant, indent, and join |
 
 ### Developer Tooling

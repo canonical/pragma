@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { Parser } from "n3";
 import { glob } from "tinyglobby";
 
-const dataDir = join(import.meta.dir, "..", "..", "..", "data");
+const dataDir = join(import.meta.dir, "..", "..", "..", "..", "data");
 const files = await glob("**/*.ttl", { cwd: dataDir, absolute: true });
 
 if (files.length === 0) {

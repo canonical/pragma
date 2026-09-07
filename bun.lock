@@ -375,14 +375,6 @@
         "vitest": "^4.0.18",
       },
     },
-    "packages/ds-implementations": {
-      "name": "@canonical/ds-implementations",
-      "version": "0.37.0",
-      "devDependencies": {
-        "n3": "^2.0.1",
-        "tinyglobby": "^0.2.14",
-      },
-    },
     "packages/ds-types": {
       "name": "@canonical/ds-types",
       "version": "0.37.0",
@@ -1108,6 +1100,14 @@
         "vitest": "^4.0.18",
       },
     },
+    "packages/semantics/ds-implementations": {
+      "name": "@canonical/ds-implementations",
+      "version": "0.37.0",
+      "devDependencies": {
+        "n3": "^2.0.1",
+        "tinyglobby": "^0.2.14",
+      },
+    },
     "packages/storybook/addon-canonical-shell-theme": {
       "name": "@canonical/storybook-addon-shell-theme",
       "version": "0.37.0",
@@ -1820,7 +1820,7 @@
 
     "@canonical/ds-demo-site": ["@canonical/ds-demo-site@workspace:apps/react/demo"],
 
-    "@canonical/ds-implementations": ["@canonical/ds-implementations@workspace:packages/ds-implementations"],
+    "@canonical/ds-implementations": ["@canonical/ds-implementations@workspace:packages/semantics/ds-implementations"],
 
     "@canonical/ds-types": ["@canonical/ds-types@workspace:packages/ds-types"],
 
