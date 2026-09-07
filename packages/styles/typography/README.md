@@ -134,6 +134,8 @@ These rules select elements by name — `body`, `h1`, `p` — so they apply to t
 
 This package states no layer order of its own: it is imported by `@canonical/styles` after that package's order statement, which is the first rule of the first stylesheet and names all three layers this package writes to. Linked on its own, as the example does, the layers are created where they first appear, which is well defined for a single package and settles nothing this package needs settled — no custom property is declared in more than one of the layers involved.
 
+This section is the reference for this package's share of the arrangement. The reasoning behind the whole of it — how a browser decides, why a rule in no layer beats every layered one, and where the confinement for a page running a second CSS framework lives — is [the cascade contract](../../../docs/explanations/STYLES_CASCADE.md).
+
 ## How It Works
 
 The browser adds invisible **half-leading** above and below each line of text. The exact amount depends on the font's internal metrics, the computed `font-size`, and `line-height`. This makes vertical alignment between different text elements unpredictable.
