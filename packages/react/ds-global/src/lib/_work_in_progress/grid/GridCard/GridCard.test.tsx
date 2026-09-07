@@ -17,6 +17,7 @@ describe("GridCard", () => {
     render(<GridCard className="custom-class">Content</GridCard>);
     // The root element carries the classes; children may render in a descendant.
     const element = document.querySelector(".custom-class") as HTMLElement;
+    expect(element).toHaveClass("ds");
     expect(element).toHaveClass("grid-card");
     expect(element).toHaveClass("custom-class");
   });

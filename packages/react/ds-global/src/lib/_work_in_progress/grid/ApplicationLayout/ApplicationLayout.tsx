@@ -6,6 +6,10 @@ import type { ApplicationLayoutProps } from "./types.js";
 import "./styles.css";
 import { InnerGridDemo } from "../InnerGridDemo/index.js";
 
+// Pragma territory is the subtree under an element carrying `ds`, so every
+// component root declares it (cs:css.selectors.namespace).
+const componentCssClassName = "ds application-layout";
+
 /**
  * ApplicationLayout component
  */
@@ -16,7 +20,7 @@ export const ApplicationLayout = ({
 }: ApplicationLayoutProps): React.ReactNode => {
   return (
     <div
-      className={`application-layout${className ? ` ${className}` : ""}`}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
       {...props}
     >
       <aside className="sidebar">Sidebar content</aside>

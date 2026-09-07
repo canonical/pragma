@@ -16,27 +16,20 @@ import type {
 
 /**
  * Prepare a menu entry for the navigation tree. A separator becomes a
- * disabled, label-less node with a guaranteed-unique key: `disabled` is what
- * makes the shared navigation machinery (arrow keys, Home/End, type-ahead,
- * roving focus) skip it with no separator awareness of its own, and the key
- * gives it the identity the tree's index requires. Items recurse into their
- * submenu entries; `counter` numbers auto-keyed separators tree-wide.
+ * disabled, label-less node: `disabled` is what makes the shared navigation
+ * machinery (arrow keys, Home/End, type-ahead, roving focus) skip it with no
+ * separator awareness of its own. Its `key` is the identity the tree's index
+ * requires, and the type already guarantees it. Items recurse into their
+ * submenu entries.
  */
-const prepareEntry = (
-  entry: MenuEntry,
-  counter: { next: number },
-): MenuEntry => {
+const prepareEntry = (entry: MenuEntry): MenuEntry => {
   if (isMenuSeparator(entry)) {
-    return {
-      ...entry,
-      key: entry.key ?? `separator-${counter.next++}`,
-      disabled: true,
-    };
+    return { ...entry, disabled: true };
   }
   if (!entry.items?.length) return entry;
   return {
     ...entry,
-    items: entry.items.map((child) => prepareEntry(child, counter)),
+    items: entry.items.map(prepareEntry),
   };
 };
 
@@ -75,12 +68,9 @@ const useContextualMenu = ({
     getToggleProps: getDisclosureToggleProps,
   } = useDisclosure({ ...props, mode: "click" });
 
-  // Separators become disabled nodes with guaranteed keys BEFORE the tree
-  // annotates the root, so useNavigationTree runs unmodified.
-  const preparedRoot = useMemo(
-    () => prepareEntry(root, { next: 0 }) as MenuItem,
-    [root],
-  );
+  // Separators become disabled nodes BEFORE the tree annotates the root, so
+  // useNavigationTree runs unmodified.
+  const preparedRoot = useMemo(() => prepareEntry(root) as MenuItem, [root]);
 
   const nav = useNavigationTree<MenuEntry>({
     root: preparedRoot,

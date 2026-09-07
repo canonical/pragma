@@ -12,14 +12,7 @@ cd pragma
 bun install
 ```
 
-Storybook runs per-package rather than at the monorepo root. Navigate to a component package and start its Storybook server to see the components in action.
-
-```bash
-cd packages/react/ds-global
-bun run storybook
-```
-
-The server starts at http://localhost:6006. Each component package has its own Storybook configuration with package-specific stories and documentation.
+See [Storybook](#storybook) below for how to run a package's Storybook server and which port it uses.
 
 ## Prerequisites
 
@@ -77,6 +70,43 @@ The server starts at http://localhost:6006. Each component package has its own S
 - Installing Node via the snap package is not recommended as it may cause build issues.
 - Installing Bun via the snap package is not recommended as it may cause permission issues. This is a known [issue](https://github.com/shakeelansari63/snap-packages/issues/79). Use the official installation script instead.
 
+
+## Storybook
+
+Storybook runs per-package rather than at the monorepo root. Navigate to a component package and start its Storybook server to see the components in action.
+
+```bash
+cd packages/react/ds-global
+bun run storybook
+```
+
+Each component package has its own Storybook configuration with package-specific stories and documentation.
+
+Ports are pooled by tier rather than assigned one-per-package, since it's unlikely you'd run two packages from the same pool at once. If you do, Storybook autodetects the collision and picks the next free port.
+
+When adding a new Storybook-enabled package, assign it to the pool matching its tier below. Only reach for a new port if it genuinely doesn't fit an existing pool.
+
+| Pool | Port | Package | Path |
+|------|------|---------|------|
+| Storybook addons | 6005 | `@canonical/storybook-addon-msw` | `packages/storybook/addon-msw` |
+| Storybook addons | 6005 | `@canonical/storybook-addon-utils` | `packages/storybook/addon-utils` |
+| Global | 6006 | `@canonical/react-ds-global` | `packages/react/ds-global` |
+| Global | 6006 | `@canonical/svelte-ds-global` | `packages/svelte/ds-global` |
+| Form | 6007 | `@canonical/react-ds-global-form` | `packages/react/ds-global-form` |
+| App packages | 6008 | `@canonical/react-ds-app` | `packages/react/ds-app` |
+| App packages | 6008 | `@canonical/react-ds-app-anbox` | `packages/react/ds-app-anbox` |
+| App packages | 6008 | `@canonical/react-ds-app-landscape` | `packages/react/ds-app-landscape` |
+| App packages | 6008 | `@canonical/react-ds-app-launchpad` | `packages/react/ds-app-launchpad` |
+| App packages | 6008 | `@canonical/react-ds-app-lxd` | `packages/react/ds-app-lxd` |
+| App packages | 6008 | `@canonical/react-ds-app-portal` | `packages/react/ds-app-portal` |
+| App packages | 6008 | `@canonical/svelte-ds-app` | `packages/svelte/ds-app` |
+| App packages | 6008 | `@canonical/svelte-ds-app-launchpad` | `packages/svelte/ds-app-launchpad` |
+| App packages | 6008 | `@canonical/svelte-ds-app-wpe` | `packages/svelte/ds-app-wpe` |
+| Apps | 6009 | `@canonical/react-boilerplate-vite` | `apps/react/boilerplate-vite` |
+| Apps | 6009 | `@canonical/ds-demo-site` | `apps/react/demo` |
+| Apps | 6009 | `@canonical/react-tokens` | `packages/react/tokens` |
+| Apps | 6009 | `@canonical/lit-ds-prototype` | `packages/lit/ds-prototype` |
+| Hub | 6100 | `@canonical/storybook-hub` | `apps/react/storybook-hub` |
 
 ## Repository Structure
 
@@ -227,6 +257,7 @@ The following tables list all workspace packages with their location and purpose
 | Package | Path | Description |
 |---------|------|-------------|
 | `@canonical/svelte-ds-global` | `packages/svelte/ds-global` | Global components for Svelte 5 |
+| `@canonical/svelte-ds-app` | `packages/svelte/ds-app` | App components for Svelte 5 |
 | `@canonical/svelte-ds-app-launchpad` | `packages/svelte/ds-app-launchpad` | Launchpad-specific Svelte components |
 | `@canonical/svelte-ds-app-wpe` | `packages/svelte/ds-app-wpe` | WPE-specific Svelte components |
 | `@canonical/svelte-ssr-test` | `packages/svelte/ssr-test` | Test package for Svelte SSR testing |
