@@ -2,7 +2,7 @@
 
 For the team adopting pragma in an application that still runs Vanilla Framework.
 
-Three stylesheets, one dependency, no tooling. `layers.css` declares the layer order both systems share. `adapter.css` holds the boundary that keeps Vanilla out of pragma territory and the bridge that carries Vanilla's theme into pragma's, and it loads the other things a mixed page needs: two of pragma's three entries, `@canonical/styles/tokens.css` and `@canonical/styles/layout.css`, and `elements.css`, this package's copy of pragma's third entry, its element layers, confined to pragma territory. What you read in those three files is what the browser runs. The argument behind every rule below is in pragma's cascade explanation (`docs/explanations/CASCADE.md`, arriving with the styles release this package needs); the decision record it cites is pragma-adrs F (`F.VANILLA_COEXISTENCE`), by decision id.
+Three stylesheets, one dependency, no tooling. `layers.css` declares the layer order both systems share. `adapter.css` holds the boundary that keeps Vanilla out of pragma territory and the bridge that carries Vanilla's theme into pragma's, and it loads the other things a mixed page needs: two of pragma's three entries, `@canonical/styles/tokens.css` and `@canonical/styles/layout.css`, and `elements.css`, this package's copy of pragma's third entry, its element layers, confined to pragma territory. What you read in those three files is what the browser runs. The argument behind every rule below is in pragma's cascade explanation (`docs/explanations/STYLES_CASCADE.md`, arriving with the styles release this package needs); the decision record it cites is pragma-adrs F (`F.VANILLA_COEXISTENCE`), by decision id.
 
 ## The one rule that is not negotiable
 
