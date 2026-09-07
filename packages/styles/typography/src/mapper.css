@@ -19,7 +19,8 @@
  *   --line-height     → <length> snapped to the baseline grid
  *   --font-weight     → <number>
  *   --space-after     → <number> in baseline-height units
- *   --baseline-height → set at :root (default: 0.5rem)
+ *   --baseline-height → set at :root, in any length unit; optional, because
+ *                       this file declares the 0.25rem default itself
  *
  * Exact Canonical line-height dimensions take precedence. The round() path is
  * retained only as a compatibility fallback for design-tokens 0.8.1 and is
@@ -65,6 +66,25 @@
  * gap until the tokens package is fixed upstream.
  */
 @layer ds.tokens {
+  /* The default grid unit.
+   *
+   * Declared once, here, so the engines and the element rules can read
+   * --baseline-height bare rather than repeating a fallback at each of the
+   * twenty-six places they read it — where the value would drift the first time
+   * someone changed one of them.
+   *
+   * At zero weight, on purpose. `:where(:root)` has the specificity of nothing
+   * at all, so any real declaration of the property beats it whatever the order
+   * within this layer: @canonical/styles declares it at :root in spacing.css,
+   * one class's worth of weight, and an application or a component may declare
+   * it on any element, in rem or px, and be obeyed.
+   *
+   * A stylesheet that takes an engine without this file has no default and must
+   * declare the unit itself; see the engine headers. */
+  :where(:root) {
+    --baseline-height: 0.25rem;
+  }
+
   :root {
     /* ── Font family shims ────────────────────────────────────────── */
     --typography-font-family-default: var(--typography-fontFamily-default);
