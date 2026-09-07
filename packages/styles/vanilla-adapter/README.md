@@ -79,7 +79,9 @@ Numbered so a review can cite one. Each ends with the decision in pragma-adrs F 
 
 **Removal**
 
-19. When no Vanilla class remains, remove Vanilla in three moves. Delete the `@layer vanilla` block and the Vanilla dependencies. Swap this package for `@canonical/styles`: add `@canonical/styles` to your manifest, the two imports become one, `@import url("@canonical/styles");`, and this package leaves. Check again. Nothing on any root to clean up; decide whether `light` stays. You may also keep this package until it is convenient, with two things to know while it outlives Vanilla. The page gutter returns: the copy zeroes the body's margin only when the body itself is an island, so the body computes the browser's 8px margin and the browser's font unless it carries `ds` or your own `app` layer zeroes it. And the bridge still writes each outermost island's colour scheme: with no Vanilla theme in the page it writes pragma's default, `light dark`, so islands follow the operating system whatever `<html>` carries, and pragma's theme classes on a root stay ignored (rule 13). All of it leaves with the package. (VC.18)
+19. This package stays until Vanilla is gone, and the two leave in the same change. When no Vanilla class remains anywhere: delete the `@layer vanilla` block and the Vanilla dependency, drop this package, and swap its two imports for one, `@import url("@canonical/styles");`, with `@canonical/styles` moved into your own manifest — pragma's element layers then style the page, as they do on any pragma page. Check again. Nothing on any root to clean up; decide whether `light` stays. There is no intermediate state and nothing to remember afterwards. (VC.18, VC.34)
+
+A note on the arrangement rule 19 rules out, this package left loaded on a page with no Vanilla in it. Nothing breaks, and two things change, neither of them a guarantee this package makes: the body computes the browser's 8px margin and the browser's font, because the copy zeroes the body's margin only when the body itself is an island; and the bridge, finding no Vanilla theme to read, writes pragma's default `light dark` on every outermost island, so islands follow the operating system whatever `<html>` carries and pragma's theme classes on a root stay ignored (rule 13). Both are measured, and the fixtures record them, so that anyone who reaches that state by accident can recognise it. The way out of it is rule 19.
 
 ## How it works
 
@@ -291,7 +293,7 @@ Guaranteed, and checked by the computed-style fixtures that arrive with the seco
 - A pragma root inside a Vanilla dark context computes `color-scheme: dark` and its token-driven colours match pragma's dark page; inside a light or paper context, light. (`theme-bridge`, the four theme cases of VC.19 plus `.is-paper`.)
 - Vanilla territory is not changed by installing this package: every element outside `.ds`, including `html` and `body`, equals the Vanilla-only page. (`vanilla-territory-untouched`, at 1280 and at 1700 pixels.)
 - The order of `adapter.css` inside `pragma.css` does not matter. (`order-independence`.)
-- After Vanilla is removed, the page behaves as rule 19 says with the adapter kept and with it swapped for `@canonical/styles`. (`removal`.)
+- After the removal of rule 19 — Vanilla and this package in one change — the page renders as a pragma page: every root follows pragma's theme classes. The same fixtures record what the arrangement rule 19 rules out computes, this package loaded without Vanilla. (`removal`.)
 
 Not guaranteed, stated rather than hidden:
 
@@ -363,4 +365,4 @@ The two family names are still both declared. Follow rule 16. Vanilla's "Ubuntu 
 
 ## Removal
 
-Rule 19. The removal is complete when the `@layer vanilla` block is gone and the page renders identically with `@canonical/styles` in place of this package's two imports.
+Rule 19, in one change. The removal is complete when the `@layer vanilla` block is gone, this package is out of the manifest, and the page renders identically with `@canonical/styles` in place of this package's two imports.
