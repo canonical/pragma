@@ -16,7 +16,7 @@ import { dirname, resolve as resolvePath } from "node:path";
 const IMPORT = /@import\s+url\(\s*["']([^"']+)["']\s*\)\s*;/g;
 const COMMENT = /\/\*[\s\S]*?\*\//g;
 
-const packageEntry = (dir) => {
+const packageEntry = (dir: string): string => {
   const pkg = JSON.parse(
     readFileSync(resolvePath(dir, "package.json"), "utf8"),
   );
@@ -24,7 +24,7 @@ const packageEntry = (dir) => {
   return resolvePath(dir, typeof entry === "string" ? entry : entry.default);
 };
 
-const subpath = (dir, rest) => {
+const subpath = (dir: string, rest: string): string => {
   const pkg = JSON.parse(
     readFileSync(resolvePath(dir, "package.json"), "utf8"),
   );
@@ -32,7 +32,7 @@ const subpath = (dir, rest) => {
   return resolvePath(dir, typeof mapped === "string" ? mapped : rest);
 };
 
-const specifier = (spec, fromFile) => {
+const specifier = (spec: string, fromFile: string): string => {
   if (spec.startsWith(".") || spec.startsWith("/"))
     return resolvePath(dirname(fromFile), spec);
   const parts = spec.split("/");
@@ -59,17 +59,16 @@ const specifier = (spec, fromFile) => {
  * delivered twice. Nothing is de-duplicated, because de-duplicating here would
  * hide exactly the defect this is used to look for.
  */
-export const resolve = (entry) => {
-  /** @type {string[]} the files currently being inlined, innermost last */
-  const open = [];
-  const load = (file) => {
+export const resolve = (entry: string): string => {
+  const open: string[] = [];
+  const load = (file: string): string => {
     if (open.includes(file))
       throw new Error(`import cycle: ${[...open, file].join(" -> ")}`);
     open.push(file);
     // Comments go first, so an `@import` quoted in a header is not mistaken
     // for a real one.
     const text = readFileSync(file, "utf8").replace(COMMENT, "");
-    const inlined = text.replace(IMPORT, (_match, spec) =>
+    const inlined = text.replace(IMPORT, (_match, spec: string) =>
       load(specifier(spec, file)),
     );
     open.pop();
@@ -82,12 +81,10 @@ export const resolve = (entry) => {
  * Every file the entry's graph inlines, in the order a browser would reach
  * them, with repeats kept. A file that appears twice is delivered twice.
  */
-export const graph = (entry) => {
-  /** @type {string[]} */
-  const files = [];
-  /** @type {string[]} */
-  const open = [];
-  const load = (file) => {
+export const graph = (entry: string): string[] => {
+  const files: string[] = [];
+  const open: string[] = [];
+  const load = (file: string): void => {
     if (open.includes(file))
       throw new Error(`import cycle: ${[...open, file].join(" -> ")}`);
     open.push(file);
@@ -106,7 +103,7 @@ export const graph = (entry) => {
  * the buffer is a nested rule's prelude, not a declaration, and is discarded
  * along with the block it opens.
  */
-const withoutBlocks = (body) => {
+const withoutBlocks = (body: string): string => {
   let depth = 0;
   let pending = "";
   let out = "";
@@ -130,15 +127,15 @@ const withoutBlocks = (body) => {
   return out + pending;
 };
 
-/**
- * A style rule, as this file reports one.
- *
- * @typedef {object} Rule
- * @property {string} layer The cascade layer the rule sits in, dotted, or "" when it is in none.
- * @property {string} context The enclosing at-rules, if any: `@media (min-width: 768px)`, and so on.
- * @property {string} selector The rule's own selector, without that context.
- * @property {string[]} properties Property names, sorted, so two orderings of the same block compare equal.
- */
+export interface Rule {
+  /** The layer the rule sits in, dotted, or "" when it is in none. */
+  layer: string;
+  /** The enclosing at-rules, if any: `@media (min-width: 768px)`, and so on. */
+  context: string;
+  selector: string;
+  /** Property names, sorted, so two orderings of the same block compare equal. */
+  properties: string[];
+}
 
 /**
  * Every style rule in a resolved stylesheet, with its layer. At-rules that hold
@@ -146,11 +143,10 @@ const withoutBlocks = (body) => {
  * their prelude is folded into the selector so a rule inside a media query is
  * not confused with the same selector outside one.
  */
-export const inventory = (css) => {
-  /** @type {Rule[]} */
-  const rules = [];
+export const inventory = (css: string): Rule[] => {
+  const rules: Rule[] = [];
   const text = css.replace(COMMENT, "");
-  const walk = (body, layer, prefix) => {
+  const walk = (body: string, layer: string, prefix: string): void => {
     let depth = 0;
     let prelude = "";
     let start = 0;
@@ -218,11 +214,11 @@ export const inventory = (css) => {
 };
 
 /** The layers a stylesheet opens a block for, deduplicated and sorted. */
-export const layersOpened = (css) =>
+export const layersOpened = (css: string): string[] =>
   [...new Set(inventory(css).map((rule) => rule.layer))].filter(Boolean).sort();
 
 /** A stable, order-independent description of what a stylesheet delivers. */
-export const fingerprint = (css) =>
+export const fingerprint = (css: string): string[] =>
   inventory(css)
     .map(
       (rule) =>

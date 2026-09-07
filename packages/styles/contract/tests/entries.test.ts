@@ -12,7 +12,8 @@
  * builds rather than against the text a maintainer reads.
  */
 import { readFileSync } from "node:fs";
-import { basename, join } from "node:path";
+import { createRequire } from "node:module";
+import { basename, dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   fingerprint,
@@ -22,12 +23,28 @@ import {
   resolve,
 } from "./support/css.js";
 
-const ENTRIES = ["index.css", "tokens.css", "elements.css", "layout.css"];
+const ENTRIES = [
+  "index.css",
+  "tokens.css",
+  "elements.css",
+  "layout.css",
+] as const;
 
-const srcPath = (file) => join(import.meta.dirname, "..", "src", file);
+/**
+ * The subject lives in another package, so it is resolved through the workspace
+ * rather than by walking up from here: `@canonical/styles` exports its own
+ * manifest, and its stylesheets sit beside it in `src`. That keeps this file
+ * honest about what it is testing — the installed package, by its public name,
+ * not a path that happens to work from this directory.
+ */
+const stylesRoot = dirname(
+  createRequire(import.meta.url).resolve("@canonical/styles/package.json"),
+);
+
+const srcPath = (file: string): string => join(stylesRoot, "src", file);
 
 /** The names in a stylesheet's first `@layer` statement, in order. */
-const statement = (css) => {
+const statement = (css: string): string[] => {
   const match = css
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .match(/@layer\s+([^;{]+);/);
@@ -44,10 +61,8 @@ const statement = (css) => {
  * order statement and `@layer a { … }` is a block, they are spelled almost the
  * same, and only the first may be followed by `@import`. Reporting the rule
  * without it would let a block pass for a statement.
- *
- * @returns {{ rule: string, terminator: string }} the rule, and what ended it
  */
-const firstRule = (css) => {
+const firstRule = (css: string): { rule: string; terminator: string } => {
   const text = css.replace(/\/\*[\s\S]*?\*\//g, "");
   const end = text.search(/[;{]/);
   return {
@@ -57,7 +72,7 @@ const firstRule = (css) => {
 };
 
 /** Every specifier a stylesheet imports, before any of them is followed. */
-const imports = (css) =>
+const imports = (css: string): string[] =>
   Array.from(
     css
       .replace(/\/\*[\s\S]*?\*\//g, "")
@@ -73,7 +88,7 @@ const imports = (css) =>
  * everything and the design tokens use it to hang custom properties, which style
  * nothing on their own.
  */
-const hasTypeSelector = (selector) =>
+const hasTypeSelector = (selector: string): boolean =>
   selector
     .replace(/:(?:is|where|not|has|matches|any)\(/g, ",")
     .split(/[,()]/)
@@ -233,8 +248,7 @@ describe("layout.css", () => {
  */
 describe.each(ENTRIES)("the import graph of %s", (file) => {
   it("inlines each file exactly once", () => {
-    /** @type {Map<string, number>} */
-    const counted = new Map();
+    const counted = new Map<string, number>();
     for (const inlined of graph(srcPath(file)))
       counted.set(inlined, (counted.get(inlined) ?? 0) + 1);
     expect(

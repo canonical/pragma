@@ -1257,6 +1257,19 @@
         "vitest": "^4.0.18",
       },
     },
+    "packages/styles/contract": {
+      "name": "@canonical/styles-contract",
+      "version": "0.37.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.5.11",
+        "@canonical/biome-config": "^0.37.0",
+        "@canonical/styles": "^0.37.0",
+        "@canonical/typescript-config": "^0.37.0",
+        "@types/node": "^26.0.0",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
+      },
+    },
     "packages/styles/debug": {
       "name": "@canonical/styles-debug",
       "version": "0.37.0",
@@ -1281,7 +1294,6 @@
       "devDependencies": {
         "@biomejs/biome": "2.5.11",
         "@canonical/biome-config": "^0.37.0",
-        "vitest": "^4.0.18",
       },
       "peerDependencies": {
         "@canonical/ds-assets": ">=0.18.0",
@@ -1862,6 +1874,8 @@
     "@canonical/storybook-hub": ["@canonical/storybook-hub@workspace:apps/react/storybook-hub"],
 
     "@canonical/styles": ["@canonical/styles@workspace:packages/styles/main"],
+
+    "@canonical/styles-contract": ["@canonical/styles-contract@workspace:packages/styles/contract"],
 
     "@canonical/styles-debug": ["@canonical/styles-debug@workspace:packages/styles/debug"],
 
