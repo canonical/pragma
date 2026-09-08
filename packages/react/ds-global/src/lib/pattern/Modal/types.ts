@@ -1,38 +1,6 @@
-import type { DialogHTMLAttributes, ReactNode, Ref } from "react";
+import type { ComponentProps, ReactNode, Ref } from "react";
 
-/**
- * Props for the Modal pattern
- *
- * @implements dso:global.pattern.modal
- *
- * Anatomy (from DSL):
- * - layout.type: stack
- * - edges (composed by the consumer):
- *   - [0] backdrop (cardinality: 1) — the native `::backdrop`, no DOM node
- *   - [1] dialog container (cardinality: 1) — the `<dialog>` element itself
- *     - [0] modal-header  (cardinality: 0..1, slotName: header)
- *     - [1] modal-content (cardinality: 1,    slotName: default)
- *     - [2] modal-footer  (cardinality: 0..1, slotName: footer)
- *
- * `title` is omitted from the native attributes because the DOM `title`
- * attribute is a tooltip, while here it would name the modal — which the
- * composed `Modal.Header` does instead.
- *
- * `open` is omitted because a `<dialog>` carrying the `open` attribute is
- * *non-modal*: no top layer, no backdrop, no focus trap. The modal is only
- * ever opened through `showModal()`, so the open state lives in the DOM
- * element and not in a prop. Use `defaultOpen` to open it on mount and `ref`
- * to open or close it later.
- *
- * `onClose` is *not* omitted: the native `close` event is how a consumer hears
- * that the modal is gone, whichever way out the user took, and it replaces the
- * `onOpenChange` callback a controlled modal would need. It does not say *which*
- * way out that was — an action that needs to be told apart from a dismissal
- * should close the modal with `ref.current?.close(value)` and read
- * `event.currentTarget.returnValue`.
- */
-export interface ModalProps
-  extends Omit<DialogHTMLAttributes<HTMLDialogElement>, "open" | "title"> {
+type OwnProps = {
   /**
    * A ref to the underlying `<dialog>`, for the cases that need to drive the
    * modal from outside it: `ref.current?.showModal()` opens it and
@@ -67,7 +35,41 @@ export interface ModalProps
    * content carries the main information the modal conveys.
    */
   children: ReactNode;
-}
+};
+
+/**
+ * Props for the Modal pattern
+ *
+ * @implements dso:global.pattern.modal
+ *
+ * Anatomy (from DSL):
+ * - layout.type: stack
+ * - edges (composed by the consumer):
+ *   - [0] backdrop (cardinality: 1) — the native `::backdrop`, no DOM node
+ *   - [1] dialog container (cardinality: 1) — the `<dialog>` element itself
+ *     - [0] modal-header  (cardinality: 0..1, slotName: header)
+ *     - [1] modal-content (cardinality: 1,    slotName: default)
+ *     - [2] modal-footer  (cardinality: 0..1, slotName: footer)
+ *
+ * `title` is omitted from the native attributes because the DOM `title`
+ * attribute is a tooltip, while here it would name the modal — which the
+ * composed `Modal.Header` does instead.
+ *
+ * `open` is omitted because a `<dialog>` carrying the `open` attribute is
+ * *non-modal*: no top layer, no backdrop, no focus trap. The modal is only
+ * ever opened through `showModal()`, so the open state lives in the DOM
+ * element and not in a prop. Use `defaultOpen` to open it on mount and `ref`
+ * to open or close it later.
+ *
+ * `onClose` is *not* omitted: the native `close` event is how a consumer hears
+ * that the modal is gone, whichever way out the user took, and it replaces the
+ * `onOpenChange` callback a controlled modal would need. It does not say *which*
+ * way out that was — an action that needs to be told apart from a dismissal
+ * should close the modal with `ref.current?.close(value)` and read
+ * `event.currentTarget.returnValue`.
+ */
+export type ModalProps = OwnProps &
+  Omit<ComponentProps<"dialog">, keyof OwnProps | "title">;
 
 /**
  * The content of a {@link withModal} modal: plain JSX, or a function.
