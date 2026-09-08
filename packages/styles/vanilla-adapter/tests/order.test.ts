@@ -17,6 +17,8 @@ import {
   render,
   stylesCss,
   tokensCss,
+  VANILLA_VERSIONS,
+  vanillaImportantReach,
 } from "./support/pages.js";
 
 const MIXED_ORDER = [
@@ -53,17 +55,35 @@ const PRAGMA_ORDER = MIXED_ORDER.filter((name) => !ADAPTER_ONLY.includes(name));
 
 /** The layers elements.css carries, in pragma's order. */
 const ELEMENT_LAYERS = ["normalize", "ds.reset", "ds.typography"];
+
 /**
- * The second boundary: one important declaration per Vanilla rule that reaches
- * inside an island without a Vanilla class on the element. Vanilla ships
- * exactly five such rules, identically in 4.56 and 4.58, answered by four
- * counters because one covers both table-layout utilities. A sixth rule has a
- * class-free subject too, the universal reduced-motion one, and is left alone
- * because pragma honours reduced motion itself and the two agree.
+ * What the second boundary has to answer, derived from each compiled Vanilla
+ * build rather than transcribed: every important declaration whose subject
+ * compound carries no class. The universal reduced-motion rule is among them
+ * and is deliberately not answered — pragma honours the same preference by
+ * zeroing its duration tokens, and the two agree on the result.
+ *
+ * A Vanilla release that adds one fails this, which is the point: the counters
+ * are written by hand and nothing else would notice.
+ */
+const VANILLA_REACH_EXPECTED = [
+  "*",
+  ".p-content-card__author-and-date > :first-child",
+  ".u-table-layout--auto table",
+  ".u-table-layout--fixed table",
+  ".u-text-max-width ol",
+  ".u-text-max-width ul",
+  ".u-vertically-center > img",
+];
+
+/**
+ * The counters themselves, one per property, as adapter.css writes them. Four
+ * of them answer the five reaching rules above, because one covers both
+ * table-layout utilities.
  */
 const SECOND_BOUNDARY = [
   ":where(.u-text-max-width) :where(.ds, .ds *):is(ul, ol) max-width",
-  ":where(.u-table-layout--fixed, .u-table-layout--auto) :where(.ds, .ds *):is(table) table-layout",
+  ":where(.u-table-layout--fixed) :where(.ds, .ds *):is(table) table-layout",
   ":where(.p-content-card__author-and-date) > :where(.ds:first-child):not(h1, h2, h3, h4, h5, h6, p, .p, .code) margin-bottom",
   ":where(.u-vertically-center) > :where(.ds):is(img) align-self",
 ];
@@ -177,6 +197,16 @@ describe("the order contract", () => {
       expect(names.filter((name) => !isDeclared(name))).toEqual([]);
     }
   });
+
+  it.each(VANILLA_VERSIONS)(
+    "answers every Vanilla %s important rule that can reach inside an island, or names it as left alone",
+    (version) => {
+      // The counters are written by hand against Vanilla's build, so the build
+      // is what they have to be checked against. Transcribing the list into the
+      // test would only prove the test matches the adapter.
+      expect(vanillaImportantReach(version)).toEqual(VANILLA_REACH_EXPECTED);
+    },
+  );
 
   it("pragma's CSS carries no !important except the second boundary's four (the README's installation, step 7)", () => {
     // A page running pragma alone has none at all. On a mixed page the only

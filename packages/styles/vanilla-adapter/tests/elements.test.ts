@@ -48,6 +48,16 @@ const ELEMENT = /^(?:[a-z][a-z0-9]*|\[[^\]]+\])(?:::[\w-]+)?$/;
 /** The pseudo-element suffix of such a selector, if it has one. */
 const PSEUDO_SUFFIX = /(::[\w-]+)$/;
 
+/** A bare class, the one other shape the mapping knows how to confine. */
+const CLASS = /^\.[\w-]+$/;
+
+/**
+ * The answer for a selector list this table has no rule for. It is not the same
+ * as "leave it unchanged": an unrecognised shape needs someone to decide how it
+ * reaches an island root, and the pairing test reports it rather than guessing.
+ */
+const UNKNOWN = Symbol("no mapping for this selector shape");
+
 /** The outermost island root. */
 const ROOT = ":where(:scope:not(.ds *))";
 
@@ -288,7 +298,7 @@ const documentElement = (
  * The confined form of a source rule's outermost selector list, or null for a
  * rule the copy leaves out. This is the mapping table.
  */
-const confined = (rule: Rule): string[] | null => {
+const confined = (rule: Rule): string[] | null | typeof UNKNOWN => {
   const list = rule.path[0] ?? [];
   const only = list.length === 1 ? list[0] : undefined;
   // The document element becomes the outermost island root, and a `:not()`
@@ -322,27 +332,38 @@ const confined = (rule: Rule): string[] | null => {
   // element names in a list collapse into one `:is()` under a root-reaching
   // prelude; a pseudo-element suffix rides along on the outside, where it
   // belongs.
+  //
+  // Anything this table does not recognise is UNKNOWN rather than "leave it
+  // alone". A selector shape nobody has thought about — `a:hover`, `ul li`,
+  // `p:not(.x)`, `::selection` — needs a decision about how it reaches an
+  // island root, and passing it through unchanged makes that decision silently
+  // and usually wrongly. The pairing test turns an unknown into a failure
+  // naming the rule, so adding a shape to pragma's files is loud.
   const elements = list.filter((selector) => ELEMENT.test(selector));
-  const classes = list.filter((selector) => !ELEMENT.test(selector));
-  if (elements.length > 0) {
-    const suffix = PSEUDO_SUFFIX.exec(elements[0] ?? "")?.[1] ?? "";
-    const bare = elements.map((selector) =>
-      selector.replace(PSEUDO_SUFFIX, ""),
-    );
-    return [
-      `:where(:scope, :scope *):is(${bare.join(", ")})${suffix}`,
-      // A class an island root can carry (`.p` on a field error, `.code` on an
-      // inline code span, `.editorial` on a flipped region) keeps its twin.
-      ...classes.flatMap((selector) =>
-        /^\.[\w-]+$/.test(selector)
-          ? [selector, `:scope${selector}`]
-          : [selector],
-      ),
-    ];
-  }
-  return classes.flatMap((selector) =>
-    /^\.[\w-]+$/.test(selector) ? [selector, `:scope${selector}`] : [selector],
+  const classes = list.filter((selector) => CLASS.test(selector));
+  if (elements.length + classes.length !== list.length) return UNKNOWN;
+
+  // Only one pseudo-element suffix can ride on a folded `:is()`, so a list that
+  // mixes them, or mixes one with a bare element, has to be written as separate
+  // rules rather than folded. That is a decision too, not a default.
+  const suffixes = new Set(
+    elements.map((selector) => PSEUDO_SUFFIX.exec(selector)?.[1] ?? ""),
   );
+  if (suffixes.size > 1) return UNKNOWN;
+
+  // A class an island root can carry (`.p` on a field error, `.code` on an
+  // inline code span, `.editorial` on a flipped region) keeps its twin.
+  const twinned = classes.flatMap((selector) => [
+    selector,
+    `:scope${selector}`,
+  ]);
+  if (elements.length === 0) return twinned;
+  const suffix = [...suffixes][0] ?? "";
+  const bare = elements.map((selector) => selector.replace(PSEUDO_SUFFIX, ""));
+  return [
+    `:where(:scope, :scope *):is(${bare.join(", ")})${suffix}`,
+    ...twinned,
+  ];
 };
 
 /** Rules present in pragma's files that the copy leaves out, with the reason. */
@@ -378,11 +399,15 @@ const COPY_ADDS: ReadonlyArray<{
 const COPY_ONLY: ReadonlyArray<{
   layer: string;
   selector: string;
+  /** What the rule declares. Excepting a rule from the pairing must not except
+   * it from being read: without this its declarations are compared to nothing. */
+  declarations: string[];
   reason: string;
 }> = [
   {
     layer: "ds.reset",
     selector: ":where(:scope:not(.ds *)):is(small)",
+    declarations: ["font-size: 0.8rem"],
     reason:
       "`normalize` sizes a `<small>` at 80%, which resolves against its " +
       "parent. On an island root that parent is the host page, so the size " +
@@ -392,6 +417,7 @@ const COPY_ONLY: ReadonlyArray<{
   {
     layer: "ds.reset",
     selector: ":where(:scope:not(.ds *)):is(sub, sup)",
+    declarations: ["font-size: 0.75rem"],
     reason:
       "`normalize` sizes `<sub>` and `<sup>` at 75%, relative for the same " +
       "reason as `<small>` above.",
@@ -416,10 +442,14 @@ const excepted = (
 const key = (layer: string, conditions: string[], path: string[][]): string =>
   JSON.stringify([layer, conditions, path.map((list) => [...list].sort())]);
 
-/** The identity a source rule's counterpart must have in the copy, or null. */
-const counterpartKey = (rule: Rule): string | null => {
+/**
+ * The identity a source rule's counterpart must have in the copy: null when the
+ * copy leaves the rule out on purpose, and UNKNOWN when the mapping has no rule
+ * for the shape, which the caller reports rather than guessing at.
+ */
+const counterpartKey = (rule: Rule): string | null | typeof UNKNOWN => {
   const expected = excepted(SOURCE_ONLY, rule) ? null : confined(rule);
-  if (expected === null) return null;
+  if (expected === null || expected === UNKNOWN) return expected;
   return key(rule.layer, rule.conditions, [expected, ...rule.path.slice(1)]);
 };
 
@@ -595,6 +625,12 @@ describe("elements.css is pragma's element layers, confined", () => {
     const failures: string[] = [];
     for (const rule of sourceRules) {
       const id = counterpartKey(rule);
+      if (id === UNKNOWN) {
+        failures.push(
+          `${label(rule)}: no mapping for this selector shape. Decide how it reaches an island root, add it to confined(), and say so in DESIGN.md`,
+        );
+        continue;
+      }
       if (id === null) continue;
       const counterpart = queues.get(id)?.shift();
       if (!counterpart) {
@@ -636,7 +672,7 @@ describe("elements.css is pragma's element layers, confined", () => {
       const expected = sourceRules
         .filter((rule) => rule.layer === layer)
         .map(counterpartKey)
-        .filter((id): id is string => id !== null);
+        .filter((id): id is string => id !== null && id !== UNKNOWN);
       const actual = copy.rules
         .filter((rule) => rule.layer === layer && !excepted(COPY_ONLY, rule))
         .map((rule) => key(rule.layer, rule.conditions, rule.path));
@@ -653,10 +689,14 @@ describe("elements.css is pragma's element layers, confined", () => {
       ).toBe(true);
     }
     for (const entry of COPY_ONLY) {
+      const rules = copy.rules.filter((rule) => excepted([entry], rule));
       expect(
-        copy.rules.some((rule) => excepted([entry], rule)),
+        rules.length,
         `${entry.layer} ${entry.selector}: ${entry.reason}`,
-      ).toBe(true);
+      ).toBe(1);
+      expect(rules[0]?.declarations, entry.selector).toEqual(
+        entry.declarations,
+      );
     }
   });
 });

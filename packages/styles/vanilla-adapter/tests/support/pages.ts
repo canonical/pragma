@@ -488,6 +488,37 @@ export const importantDeclarations = (css: string): string[] => {
   return found;
 };
 
+/**
+ * The Vanilla rules whose important declarations can reach an element inside a
+ * pragma island: the ones whose subject compound — the last compound of the
+ * selector — carries no class, so the Vanilla class sits on an ancestor
+ * OUTSIDE the island, which is the arrangement the rules recommend.
+ *
+ * Derived from the compiled build rather than transcribed, so that a Vanilla
+ * release adding one is a test failure rather than a silent leak. Selectors
+ * only: the CSSOM expands a shorthand into its longhands, so counting
+ * properties would make the reduced-motion rule alone a dozen entries and say
+ * nothing more than its selector already does.
+ */
+export const vanillaImportantReach = (version: VanillaVersion): string[] => {
+  const subjectHasClass = (selector: string): boolean => {
+    const compounds = selector.trim().split(/\s+(?![^(]*\))/);
+    const subject = compounds[compounds.length - 1] ?? "";
+    // A class inside `:not(…)` or another functional pseudo-class does not make
+    // the subject itself carry one.
+    return subject.replace(/:[a-z-]+\([^)]*\)/g, "").includes(".");
+  };
+  const found = new Set<string>();
+  for (const entry of importantDeclarations(vanillaCss[version])) {
+    const selector = entry.slice(0, entry.lastIndexOf(" "));
+    for (const one of selector.split(/,\s*(?![^()]*\))/)) {
+      if (!one.trim() || subjectHasClass(one)) continue;
+      found.add(one.trim());
+    }
+  }
+  return [...found].sort();
+};
+
 export {
   adapterCss,
   elementsCss,

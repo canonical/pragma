@@ -158,10 +158,15 @@
     max-width: revert !important;
   }
 
-  /* .u-table-layout--fixed table, .u-table-layout--auto table
-     { table-layout: fixed | auto !important } */
-  :where(.u-table-layout--fixed, .u-table-layout--auto)
-  :where(.ds, .ds *):is(table) {
+  /* .u-table-layout--fixed table { table-layout: fixed !important }
+
+     Only the fixed utility. Its sibling, `.u-table-layout--auto`, sets the
+     browser's own default, so reverting lands on the value Vanilla already
+     forced and a table that asked for `fixed` cannot get it back — measured,
+     `auto` with a counter and `auto` without one, against the `fixed` a page of
+     pragma's own computes. A counter that changes nothing is worse than none,
+     because it reads as cover. Named in the README instead. */
+  :where(.u-table-layout--fixed) :where(.ds, .ds *):is(table) {
     /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
     table-layout: revert !important;
   }
