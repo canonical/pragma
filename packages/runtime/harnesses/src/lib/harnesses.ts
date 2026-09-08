@@ -366,6 +366,103 @@ const harnesses: readonly HarnessDefinition[] = [
     // (`.crush/crush.json`, `$XDG_DATA_HOME/crush/crush.json`) merges above
     // everything. Both state files are Crush's write targets, never ours.
   },
+  {
+    id: "oh-my-pi",
+    name: "Oh My Pi",
+    version: "*",
+    // Oh My Pi (github.com/can1357/oh-my-pi, binary `omp`) reads BOTH bands and
+    // the project file wins: "Project `.omp/mcp.json` precedes … the active
+    // profile's user `mcp.json`" (docs/mcp-config.md). A project-only row would
+    // be skipped by setup's DEFAULT global band entirely — the opencode/crush
+    // lesson — so: both.
+    scope: "both",
+    detect: [
+      // Oh My Pi's PROJECT directory, which holds the `.omp/mcp.json` this row
+      // writes. Project-relative, so it answers "this repo uses omp".
+      { type: "directory", path: ".omp" },
+      // The user config root, created on first run — the "omp is installed"
+      // signal that does not wait for a project config to exist.
+      // `PI_CONFIG_DIR` relocates this dirname under home, but the signal
+      // grammar has no env-prefix form (see `resolveFsPath`); a user who sets
+      // it is still found by the PATH probe below.
+      { type: "directory", path: "~/.omp" },
+      {
+        type: "process",
+        name: "omp",
+        // `omp` is NOT an unambiguous binary name, so a bare PATH hit is not
+        // enough — the same problem the OpenDesign row has with the Unix `od`,
+        // solved the same way. Oh My Posh abbreviates itself "omp" everywhere
+        // (its `_omp_*` shell functions, its `*.omp.json` themes) and users
+        // alias the name, so a false positive would write an MCP config into a
+        // PROMPT THEME ENGINE's account. Oh My Pi's `--version` prints
+        // "<bin>/<version>" — i.e. `omp/1.2.3` (packages/utils/src/cli.ts,
+        // `run()`); Oh My Posh prints a bare version number and fails this
+        // match.
+        verify: { args: ["--version"], match: /^omp\/\d/m },
+      },
+    ],
+    configPath: (root) => `${root}/.omp/mcp.json`,
+    /**
+     * The user band is the ACTIVE PROFILE's agent directory, not one fixed
+     * path: `~/.omp/agent/mcp.json` by default,
+     * `~/.omp/profiles/<name>/agent/mcp.json` under a named profile, and the
+     * `.omp` dirname itself moves with `PI_CONFIG_DIR` (oh-my-pi
+     * `packages/utils/src/dirs.ts` — `getConfigDirName`,
+     * `getProfileConfigRoot`, `getConfigAgentDirName`; docs/mcp-config.md
+     * names both file paths).
+     *
+     * The profile is read the way omp reads it: `OMP_PROFILE` first — winning
+     * even when explicitly EMPTY, which selects the default profile, which is
+     * what `??` gives — then the legacy `PI_PROFILE`.
+     *
+     * TWO WAYS A USER CAN LAND ON A PROFILE THIS ROW DOES NOT REACH, written
+     * down rather than left to be discovered:
+     *
+     * - `omp --profile <name>` on omp's own command line. That is a fact of an
+     *   invocation that has not happened yet, not of this environment, and no
+     *   function of `PlatformEnv` can see it. A user who selects a profile ONLY
+     *   by flag gets no pragma entry in that profile, and must re-run
+     *   `pragma setup mcp` with `OMP_PROFILE` set to reach it. Modelling
+     *   profiles properly means a per-profile band in `HarnessDefinition` — a
+     *   type change every other row would pay for, to serve one harness's flag.
+     * - `PI_CODING_AGENT_DIR`, which relocates the default profile's agent
+     *   directory to an arbitrary path omp resolves against ITS OWN cwd.
+     *   `PlatformEnv` carries no cwd, so a relative value would resolve
+     *   somewhere else entirely; a documented gap beats a guessed path.
+     *
+     * The skills half is unaffected by either: it is a directory link, not a
+     * config write, and both `.agents/skills` bands load by default (see
+     * `skillsPath`).
+     */
+    homeConfigPath: (p) => {
+      const profile = (p.env.OMP_PROFILE ?? p.env.PI_PROFILE)?.trim();
+      const root = `${userHome(p)}/${p.env.PI_CONFIG_DIR ?? ".omp"}`;
+      return profile
+        ? `${root}/profiles/${profile}/agent/mcp.json`
+        : `${root}/agent/mcp.json`;
+    },
+    configFormat: "json",
+    mcpKey: "mcpServers",
+    // No `mcpEntry` column: Oh My Pi's stdio entry is the plain
+    // `{command, args?, cwd?, env?}` shape under `mcpServers`, with `type`
+    // optional and defaulting to "stdio" (docs/mcp-config.md) — exactly what
+    // `defaultMcpEntry` emits. A bespoke serializer here would only be another
+    // thing to keep in sync.
+    //
+    // Oh My Pi reads `.agent/skills` AND `.agents/skills` through its `agents`
+    // provider, "the canonical OMP-native location" (docs/skills.md), at BOTH
+    // the user and project level (`enableAgentsUser`/`enableAgentsProject`, on
+    // by default). `.agents/skills` is the cross-client directory
+    // `setup skills` already links unconditionally, so this row adds the MCP
+    // half to a skills half that was already working.
+    //
+    // Its user-level skills directory is deliberately NOT claimed as a verified
+    // global skills location: `~/.omp/agent/managed-skills` is where omp's own
+    // auto-learn writes, and pragma never links into a directory the tool owns
+    // (the rule the Crush row keeps for Crush's state files). The cross-client
+    // `~/.agents/skills` link covers the global band without touching it.
+    skillsPath: (root) => `${root}/.agents/skills`,
+  },
 ];
 
 // Deliberately ABSENT from the registry (product calls, not oversights):
@@ -376,6 +473,11 @@ const harnesses: readonly HarnessDefinition[] = [
 //   here would write config pi itself never reads. pi IS served on the skills
 //   side without a row: it reads `.agents/skills`, the cross-client directory
 //   `setup skills` always links into.
+//   NOT the same tool as `oh-my-pi` above, despite the name and the shared
+//   `.agents/skills` sentence: Oh My Pi (github.com/can1357/oh-my-pi, binary
+//   `omp`) is a separate project that DOES ship a first-party MCP client, which
+//   is why it has a row and this one does not. Neither entry was written in
+//   ignorance of the other.
 //
 // - `vscodium` as an MCP CLIENT: VSCodium has no first-party MCP surface (no
 //   Copilot agent mode), so there is nothing to configure. As an extension

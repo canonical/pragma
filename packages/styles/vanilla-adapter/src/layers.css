@@ -1,0 +1,80 @@
+/* @canonical/styles-vanilla-adapter - Layer order for a mixed application
+ *
+ * This statement must be the FIRST rule of the FIRST stylesheet the browser sees;
+ * only @charset may precede it. Sass finds this file by its path inside the
+ * package and inlines it in place, which is what a Sass entry wants:
+ *
+ *   @import "@canonical/styles-vanilla-adapter/src/layers";
+ *   @use "@canonical/styles-vanilla-adapter/src/layers";
+ *
+ * From plain CSS or a bundler:
+ *
+ *   @import url("@canonical/styles-vanilla-adapter/layers.css");
+ *
+ * Listed lowest first, each position is an argument:
+ *   vanilla        Vanilla Framework and everything built on it, one territory
+ *   boundary       `all: revert` on pragma territory (adapter.css): Vanilla ends here
+ *   normalize      pragma's authored reset; on a mixed page the copy in this
+ *                  package's elements.css, confined to the islands
+ *   ds.tokens      primitive :root values, spacing, motion, overflow, naming shims
+ *   ds.reset       pragma's element baseline and its island-root declarations
+ *                  (font, colour, line-height, box-sizing); the confined copy
+ *   ds.typography  the typography element rules and the baseline engine; the
+ *                  confined copy
+ *   ds.modifiers   theme, scale, channels and their shims, density and context
+ *   ds.surfaces    .surface, .contrasted, .modal
+ *   ds.states      the universal derived-state rule, custom properties only
+ *   ds.adapter     the theme bridge (adapter.css). A sublayer of `ds` on
+ *                  purpose: sublayers sort inside their parent, and `ds` takes
+ *                  its place in the order at its first mention (`ds.tokens`),
+ *                  so a top-level layer written here would not sit here at all
+ *                  but above every `ds.*` sublayer, the component layers
+ *                  included, and a component's own `color-scheme` could never
+ *                  beat the bridge (measured: a modal's `dark` computed `light`)
+ *   ds.components  every pragma component stylesheet, in the layer of its tier.
+ *                  The five below follow the design system's tier tree, flat,
+ *                  lowest first, so that a higher tier's rule for a component
+ *                  beats a lower tier's by layer whatever order the page loads
+ *                  the sheets in:
+ *   ds.components.global         the global component packages
+ *   ds.components.sites          the sites tier
+ *   ds.components.documentation  the documentation tier
+ *   ds.components.stores         the stores tier
+ *   ds.components.apps           the applications tier
+ *                  A package below a tier declares its own layer, flat beside
+ *                  these (`@layer ds.components.apps-lxd;`), first in its own
+ *                  entry; by appearing later than this statement it sorts
+ *                  above the five, and still below `app`. Nothing is written
+ *                  directly into `ds.components`: a rule there would sit in its
+ *                  implicit final sublayer, above every tier
+ *   app            the application's own pragma-era CSS, whatever its context class
+ *
+ * `vanilla` is the lowest layer: in Vanilla territory nothing pragma ships
+ * competes with it, because a mixed page loads pragma's three element layers
+ * only as the confined copy in this package's elements.css, and pragma's other
+ * two entries (tokens.css, layout.css) are custom properties or component
+ * classes. Pragma itself confines nothing: its own elements.css styles the
+ * whole page, as a pragma-only page wants. `boundary` sits directly above
+ * `vanilla` so that inside pragma territory every Vanilla declaration is
+ * reverted before pragma's layers apply. Pragma's own statement, the same list
+ * without `vanilla`, `boundary`, `ds.adapter` and `app`, arrives later at the
+ * top of each of its entries and changes nothing: a later statement can add
+ * names but never reorder the ones already fixed, and it adds none.
+ */
+@layer vanilla,
+  boundary,
+  normalize,
+  ds.tokens,
+  ds.reset,
+  ds.typography,
+  ds.modifiers,
+  ds.surfaces,
+  ds.states,
+  ds.adapter,
+  ds.components,
+  ds.components.global,
+  ds.components.sites,
+  ds.components.documentation,
+  ds.components.stores,
+  ds.components.apps,
+  app;

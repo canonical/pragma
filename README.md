@@ -215,8 +215,11 @@ The `docs/` folder contains guides for working with the monorepo:
 | Guide | Description |
 |-------|-------------|
 | [Constitution](CONSTITUTION.md) | Design principles and decision rationale |
+| [Domains](docs/explanations/DOMAINS.md) | What each package folder is for, and why folder and npm name may differ |
 | [Component Folder Structure](docs/explanations/COMPONENT_FOLDER_STRUCTURE.md) | Standard component anatomy and conventions |
+| [The Cascade Contract](docs/explanations/STYLES_CASCADE.md) | Why the stylesheets are layered the way they are, and where a mixed page's confinement lives |
 | [Adding a Package](docs/how-to-guides/ADDING_A_PACKAGE.md) | How to create new packages in the monorepo |
+| [Migrating to the Layered Styles Release](docs/how-to-guides/MIGRATE_TO_LAYERED_STYLES.md) | Upgrading an application to the layered stylesheets: no markup change, one decision, one check |
 | [Versioning](docs/VERSIONING.md) | Commit message format and release process |
 | [CI/CD](docs/CI.md) | Continuous integration and deployment workflows |
 | [Code Ownership](docs/OWNERSHIP.md) | What does it mean to own a package |
@@ -288,12 +291,22 @@ The following tables list all workspace packages with their location and purpose
 | `@canonical/harnesses` | `packages/runtime/harnesses` | AI harness detection and MCP config read/write (Claude Code, Cursor, Windsurf, Cline, Roo Code) |
 | `@canonical/ds-utils` | `packages/runtime/ds-utils` | Framework-agnostic design system helpers: navigation trees, debounce, throttle, humanizeNumber, pluralize |
 
+### Prism
+
+The documentation-site layer. The dependency arrow points one way — see "The documentation site depends on the runtime, never the reverse" in [AGENTS.md](AGENTS.md).
+
+| Package | Path | Description |
+|---------|------|-------------|
+| `@canonical/prism-contract` | `packages/prism/contract` | The minimal GraphQL surface a documentation-site provider must offer, plus a subsumption check that a provider satisfies it |
+| `@canonical/prism-pragma-provider` | `packages/prism/pragma-provider` | **internal** — pragma's own provider: the repository's TTL corpus compiled into a conformant GraphQL schema |
+
 ### Core Infrastructure
 
 | Package | Path | Description |
 |---------|------|-------------|
 | `@canonical/ds-types` | `packages/ds-types` | TypeScript types for modifier families and component props |
 | `@canonical/ds-assets` | `packages/ds-assets` | Icons and shared visual assets |
+| `@canonical/ds-implementations` | `packages/semantics/ds-implementations` | The implementation graph as Turtle (RDF), generated from `@implements` annotations |
 | `@canonical/utils` | `packages/utils` | Utility functions: casing, invariant, indent, and join |
 
 ### Developer Tooling

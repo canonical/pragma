@@ -19,6 +19,7 @@
   "workspaces": [
     "configs/*",
     "packages/*",
+    "packages/prism/*",
     "packages/react/*",
     "packages/runtime/*",
     "packages/storybook/*",
@@ -27,6 +28,7 @@
     "packages/styles/*",
     "packages/svelte/*",
     "packages/lit/*",
+    "packages/semantics/*",
     "apps/*",
     "apps/react/*",
     "apps/lit/*"

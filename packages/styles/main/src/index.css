@@ -22,9 +22,9 @@
  * rather than top-level layers. The README's "Entry points" section says more,
  * and a test in this package holds both properties. The README's "Cascade
  * layers" section is the reference for what is layered where and what is
- * deliberately not; the reasoning behind the order will live in
- * docs/explanations/CASCADE.md, arriving with the cascade documentation change.
- * Until it does, the README is the whole of it.
+ * deliberately not; the reasoning behind the order — how a browser decides, why
+ * unlayered rules beat layered ones, and why a mixed page takes its element
+ * rules from the adapter — is in docs/explanations/STYLES_CASCADE.md.
  *
  * The order is declared in one place, `layers.css`, and this file imports it
  * first. That import is what fixes the order for a page loading this entry,
