@@ -42,7 +42,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { buildZodSchema } from "../kernel/project/mcp/registerVerb.js";
+import { toolInputShape } from "../kernel/project/mcp/registerVerb.js";
 import type { ParamSpec, VerbSpec } from "../kernel/spec/index.js";
 import { toolName } from "../kernel/spec/index.js";
 import { declaredStories } from "./distribution.js";
@@ -50,9 +50,6 @@ import { capabilities } from "./index.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
-
-/** Params the MCP layer injects on every tool — legal in a recovery's bag. */
-const INJECTED_PARAMS = new Set(["cwd", "detail", "confirm"]);
 
 /** Every authored (non-test, non-generated) source under the scanned trees. */
 function listSources(dir: string): string[] {
@@ -296,15 +293,26 @@ function callabilityFailure(
 ): string | undefined {
   const verb = exposedByTool.get(tool);
   if (!verb) return `names "${tool}", which is not an exposed MCP tool`;
+  // The shape the SERVER registers, not a reconstruction of it: declared params
+  // plus whichever injected ones this verb actually gets. Rebuilding it here
+  // would let the two drift, and the drift is silent — the sweep would accept a
+  // payload the SDK rejects with -32602, which is the one thing it exists to
+  // prevent. The injected keys are also CONDITIONAL (`confirm`/`cwd` only on a
+  // mutating verb, `detail` only with disclosure), so treating them as a fixed
+  // always-legal set would pass a recovery that names one on a verb that has it.
+  const shape = toolInputShape(verb);
   const declared = new Map(verb.params.map((param) => [param.name, param]));
   const bag: Record<string, unknown> = {};
   for (const [key, value] of params) {
-    if (INJECTED_PARAMS.has(key)) continue;
+    if (!(key in shape)) {
+      return `passes "${key}", which "${tool}" does not accept`;
+    }
     const spec = declared.get(key);
-    if (!spec) return `passes "${key}", which "${tool}" does not declare`;
-    bag[key] = value ?? placeholder(spec);
+    // A declared param gets a type-correct placeholder when the recovery gives
+    // no value; an injected one is validated as written.
+    bag[key] = value ?? (spec ? placeholder(spec) : value);
   }
-  const result = z.object(buildZodSchema(verb.params)).safeParse(bag);
+  const result = z.object(shape).safeParse(bag);
   if (!result.success) {
     return `params do not satisfy "${tool}": ${result.error.issues
       .map((issue) => `${issue.path.join(".")} ${issue.message}`)

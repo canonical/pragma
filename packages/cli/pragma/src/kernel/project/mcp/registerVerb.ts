@@ -293,18 +293,21 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
 }
 
 /**
- * Register one exposed verb as an MCP tool on the server.
+ * The COMPLETE tool-input shape the MCP server registers for a verb: its
+ * declared params plus the injected ones this layer adds.
  *
- * @param server - The MCP server to register onto.
- * @param verb - The verb to expose (caller ensures `mcp.expose === true`).
- * @param runtime - The runtime handed to the verb's `run`.
- * @note Impure — mutates the server's tool registry.
+ * Split out of {@link registerVerb} so the callability sweep validates the
+ * same shape the server does. Reconstructing it in a test means the two drift,
+ * and the drift is invisible: a payload the test accepts is not necessarily a
+ * payload the SDK accepts. Note the injected keys are CONDITIONAL — `detail`
+ * only for a verb with disclosure, `confirm` and `cwd` only for a mutating
+ * one — so "is this key legal here?" is a question about the verb, not a fixed
+ * list.
+ *
+ * @param verb - The verb whose tool input shape to build.
+ * @returns The zod raw shape registered as the tool's `inputSchema`.
  */
-export function registerVerb(
-  server: McpServer,
-  verb: VerbSpec,
-  runtime: PragmaRuntime,
-): void {
+export function toolInputShape(verb: VerbSpec): z.ZodRawShape {
   const shape = buildZodSchema(verb.params);
   // A verb with progressive disclosure gains a `detail` enum param derived from
   // its DisclosureSpec (Risk2 — NO new VerbSpec field). The handler seeds
@@ -333,6 +336,24 @@ export function registerVerb(
         "Absolute project directory to write into; defaults to the server's working directory.",
       );
   }
+
+  return shape;
+}
+
+/**
+ * Register one exposed verb as an MCP tool on the server.
+ *
+ * @param server - The MCP server to register onto.
+ * @param verb - The verb to expose (caller ensures `mcp.expose === true`).
+ * @param runtime - The runtime handed to the verb's `run`.
+ * @note Impure — mutates the server's tool registry.
+ */
+export function registerVerb(
+  server: McpServer,
+  verb: VerbSpec,
+  runtime: PragmaRuntime,
+): void {
+  const shape = toolInputShape(verb);
 
   const config: {
     description: string;

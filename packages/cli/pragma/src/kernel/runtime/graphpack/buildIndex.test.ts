@@ -8,6 +8,7 @@ import {
 import { entityTotal } from "../../completion/entitySource.js";
 import { VOCABULARY } from "../../vocabulary.js";
 import { buildIndex } from "./buildIndex.js";
+import { packIndexSchema } from "./schemas.js";
 import type { PackIndex } from "./types.js";
 
 type Store = import("@canonical/ke").Store;
@@ -176,4 +177,43 @@ describe("buildIndex — the declared alternative-name property", () => {
     // authored the property would.
     expect(index.entities.filter((entity) => entity.altNames)).toEqual([]);
   });
+});
+
+describe("packIndexSchema — the version-3 promise", () => {
+  const base = {
+    contentHash: "abc",
+    prefixes: {},
+    entities: [],
+    instanceCountByType: { "https://ds.canonical.com/Block": 3 },
+  };
+
+  it("rejects a version-3 index with no anonymous counts", () => {
+    // Not pedantry about a missing key. `runByName` reads the field through
+    // `?? {}`, so an index that CLAIMS v3 without carrying the counts parses,
+    // reports every anonymous class as zero, and looks exactly like the
+    // under-count v3 was introduced to fix.
+    const result = packIndexSchema.safeParse({ ...base, version: 3 });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a version-3 index that carries them", () => {
+    const result = packIndexSchema.safeParse({
+      ...base,
+      version: 3,
+      anonymousInstanceCountByType: {
+        "https://ds.canonical.com/Property": 330,
+      },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it.each([1, 2] as const)(
+    "still accepts a version-%s index without them",
+    (version) => {
+      // An existing on-disk cache predates the field; it is absent there
+      // truthfully, and rejecting it would invalidate every warm cache.
+      const result = packIndexSchema.safeParse({ ...base, version });
+      expect(result.success).toBe(true);
+    },
+  );
 });

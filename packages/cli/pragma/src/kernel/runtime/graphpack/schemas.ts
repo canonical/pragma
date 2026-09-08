@@ -39,16 +39,36 @@ export const packIndexEntitySchema: z.ZodType<PackIndexEntity> = z.object({
   description: z.string().nullable().optional(),
 });
 
-/** zod schema validating a persisted {@link PackIndex}. */
-export const packIndexSchema: z.ZodType<PackIndex> = z.object({
-  version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
-  contentHash: z.string(),
-  prefixes: z.record(z.string(), z.string()),
-  entities: z.array(packIndexEntitySchema),
-  instanceCountByType: z.record(z.string(), z.number()),
-  // v3 enrichment; a v2 index (an existing cache) simply lacks it.
-  anonymousInstanceCountByType: z.record(z.string(), z.number()).optional(),
-});
+/**
+ * zod schema validating a persisted {@link PackIndex}.
+ *
+ * The field is optional in the TYPE because a v1/v2 index legitimately lacks
+ * it, but a v3 index that lacks it is not a v3 index. Left merely optional,
+ * such a file parses, `?? {}` swallows the absence, and the anonymous counts
+ * silently read zero — the exact under-count version 3 exists to correct,
+ * returning as a passing parse. The refinement is what makes the version
+ * number a promise rather than a label.
+ */
+export const packIndexSchema: z.ZodType<PackIndex> = z
+  .object({
+    version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+    contentHash: z.string(),
+    prefixes: z.record(z.string(), z.string()),
+    entities: z.array(packIndexEntitySchema),
+    instanceCountByType: z.record(z.string(), z.number()),
+    // v3 enrichment; a v1/v2 index (an existing cache) simply lacks it.
+    anonymousInstanceCountByType: z.record(z.string(), z.number()).optional(),
+  })
+  .refine(
+    (index) =>
+      index.version < 3 || index.anonymousInstanceCountByType !== undefined,
+    {
+      message:
+        "a version-3 index must carry anonymousInstanceCountByType; " +
+        "without it the anonymous counts read zero and the version lies",
+      path: ["anonymousInstanceCountByType"],
+    },
+  );
 
 /** zod schema validating a persisted `manifest.json`. */
 export const manifestSchema: z.ZodType<Manifest> = z.object({
