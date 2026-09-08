@@ -1,7 +1,9 @@
 import { render, screen } from "@testing-library/react";
-import { createRef } from "react";
+import type { ReactElement } from "react";
+import { createRef, useEffect, useRef } from "react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import Component from "./Modal.js";
+import type { ModalProps } from "./types.js";
 
 /*
   jsdom 28 implements HTMLDialogElement but not the top layer: `showModal` and
@@ -39,26 +41,39 @@ beforeAll(() => {
   }
 });
 
+/**
+  Renders the modal in its open state, opened the way a consumer opens it: a
+  ref, and `showModal()` once on mount.
+*/
+const OpenModal = (props: Omit<ModalProps, "ref">): ReactElement => {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = ref.current;
+    if (dialog && !dialog.open) dialog.showModal();
+  }, []);
+  return <Component {...props} ref={ref} />;
+};
+
 describe("Modal pattern", () => {
   describe("rendering", () => {
     it("applies base classes", () => {
       render(
-        <Component defaultOpen>
+        <OpenModal>
           <Component.Content>Placeholder content</Component.Content>
-        </Component>,
+        </OpenModal>,
       );
       expect(screen.getByRole("dialog")).toHaveClass("ds", "modal");
     });
 
     it("renders the composed sections inside the dialog", () => {
       const { container } = render(
-        <Component defaultOpen>
+        <OpenModal>
           <Component.Header>Title</Component.Header>
           <Component.Content>Placeholder content</Component.Content>
           <Component.Footer>
             <button type="button">Confirm</button>
           </Component.Footer>
-        </Component>,
+        </OpenModal>,
       );
       expect(container.querySelector(".ds.modal-header")).toHaveTextContent(
         "Title",
@@ -73,9 +88,9 @@ describe("Modal pattern", () => {
 
     it("renders only the sections the consumer composes", () => {
       const { container } = render(
-        <Component defaultOpen>
+        <OpenModal>
           <Component.Content>Body</Component.Content>
-        </Component>,
+        </OpenModal>,
       );
       expect(container.querySelector(".ds.modal-header")).toBeNull();
       expect(container.querySelector(".ds.modal-footer")).toBeNull();
@@ -84,9 +99,9 @@ describe("Modal pattern", () => {
 
     it("passes the consumer className through", () => {
       render(
-        <Component defaultOpen className="custom">
+        <OpenModal className="custom">
           <Component.Content>Body</Component.Content>
-        </Component>,
+        </OpenModal>,
       );
       expect(screen.getByRole("dialog")).toHaveClass("custom");
     });
@@ -99,9 +114,9 @@ describe("Modal pattern", () => {
     it("calls a consumer onClick as well as closing on the backdrop", () => {
       const onClick = vi.fn();
       const { container } = render(
-        <Component defaultOpen closeOnBackdropClick onClick={onClick}>
+        <OpenModal closeOnBackdropClick onClick={onClick}>
           <Component.Content>Body</Component.Content>
-        </Component>,
+        </OpenModal>,
       );
 
       screen.getByRole("dialog").click();
@@ -114,9 +129,9 @@ describe("Modal pattern", () => {
   describe("accessible name", () => {
     it("names the dialog with a consumer aria-label when there is no header", () => {
       render(
-        <Component defaultOpen aria-label="Search syntax">
+        <OpenModal aria-label="Search syntax">
           <Component.Content>Body</Component.Content>
-        </Component>,
+        </OpenModal>,
       );
       expect(
         screen.getByRole("dialog", { name: "Search syntax" }),
@@ -130,10 +145,10 @@ describe("Modal pattern", () => {
     */
     it("drops the header title id when a consumer aria-label is given", () => {
       render(
-        <Component defaultOpen aria-label="Named by the consumer">
+        <OpenModal aria-label="Named by the consumer">
           <Component.Header>Title</Component.Header>
           <Component.Content>Body</Component.Content>
-        </Component>,
+        </OpenModal>,
       );
       const dialog = screen.getByRole("dialog");
       expect(dialog).not.toHaveAttribute("aria-labelledby");
@@ -144,10 +159,10 @@ describe("Modal pattern", () => {
       render(
         <>
           <h1 id="page-title">Named elsewhere</h1>
-          <Component defaultOpen aria-labelledby="page-title">
+          <OpenModal aria-labelledby="page-title">
             <Component.Header>Title</Component.Header>
             <Component.Content>Body</Component.Content>
-          </Component>
+          </OpenModal>
         </>,
       );
       expect(screen.getByRole("dialog")).toHaveAttribute(
@@ -167,67 +182,16 @@ describe("Modal pattern", () => {
       expect(container.querySelector("dialog")).not.toHaveAttribute("open");
     });
 
-    it("opens the native dialog on mount when defaultOpen is set", () => {
-      render(
-        <Component defaultOpen>
-          <Component.Content>Body</Component.Content>
-        </Component>,
-      );
-      expect(screen.getByRole("dialog")).toHaveAttribute("open");
-    });
-
-    /*
-      `defaultOpen` is the starting state, not a live one: the modal owns its
-      open state from mount onwards, so a render that flips the prop back must
-      not close a modal out from under the user.
-    */
-    it("ignores a later change to defaultOpen", () => {
-      const { container, rerender } = render(
-        <Component defaultOpen>
-          <Component.Content>Body</Component.Content>
-        </Component>,
-      );
-
-      rerender(
-        <Component defaultOpen={false}>
-          <Component.Content>Body</Component.Content>
-        </Component>,
-      );
-
-      expect(container.querySelector("dialog")).toHaveAttribute("open");
-    });
-
-    it("does not reopen a closed modal when the consumer re-renders", () => {
-      const ref = createRef<HTMLDialogElement>();
-      const { container, rerender } = render(
-        <Component ref={ref} defaultOpen>
-          <Component.Content>Body</Component.Content>
-        </Component>,
-      );
-
-      ref.current?.close();
-      // Two things have to hold for this: the mount effect keeps no reactive
-      // deps, and the `defaultOpen` latch is spent once it has been acted on.
-      // A fresh ref object re-runs the ref callback, which must not be a way
-      // back into either.
-      rerender(
-        <Component ref={createRef<HTMLDialogElement>()} defaultOpen>
-          <Component.Content>Body</Component.Content>
-        </Component>,
-      );
-
-      expect(container.querySelector("dialog")).not.toHaveAttribute("open");
-    });
-
     it("passes the native close event through to the consumer", () => {
       const onClose = vi.fn();
       const ref = createRef<HTMLDialogElement>();
       render(
-        <Component ref={ref} defaultOpen onClose={onClose}>
+        <Component ref={ref} onClose={onClose}>
           <Component.Content>Body</Component.Content>
         </Component>,
       );
 
+      ref.current?.showModal();
       ref.current?.close();
 
       expect(onClose).toHaveBeenCalledTimes(1);
@@ -244,7 +208,6 @@ describe("Modal pattern", () => {
       render(
         <Component
           ref={ref}
-          defaultOpen
           onClose={(event) =>
             returnValues.push(event.currentTarget.returnValue)
           }
@@ -253,6 +216,7 @@ describe("Modal pattern", () => {
         </Component>,
       );
 
+      ref.current?.showModal();
       ref.current?.close("confirm");
 
       expect(returnValues).toEqual(["confirm"]);
@@ -265,9 +229,9 @@ describe("Modal pattern", () => {
     */
     it("leaves the cancel event's default action intact", () => {
       render(
-        <Component defaultOpen>
+        <OpenModal>
           <Component.Content>Body</Component.Content>
-        </Component>,
+        </OpenModal>,
       );
 
       const cancel = new Event("cancel", { cancelable: true });
@@ -280,9 +244,9 @@ describe("Modal pattern", () => {
     it("passes the native cancel event through to the consumer", () => {
       const onCancel = vi.fn();
       render(
-        <Component defaultOpen onCancel={onCancel}>
+        <OpenModal onCancel={onCancel}>
           <Component.Content>Body</Component.Content>
-        </Component>,
+        </OpenModal>,
       );
 
       screen
@@ -320,10 +284,11 @@ describe("Modal pattern", () => {
     it("closes through the ref", () => {
       const ref = createRef<HTMLDialogElement>();
       const { container } = render(
-        <Component ref={ref} defaultOpen>
+        <Component ref={ref}>
           <Component.Content>Body</Component.Content>
         </Component>,
       );
+      ref.current?.showModal();
       expect(container.querySelector("dialog")).toHaveAttribute("open");
 
       ref.current?.close();
@@ -340,11 +305,12 @@ describe("Modal pattern", () => {
     it("reopens through the ref after a dismissal from the inside", () => {
       const ref = createRef<HTMLDialogElement>();
       const { container } = render(
-        <Component ref={ref} defaultOpen>
+        <Component ref={ref}>
           <Component.Header>Title</Component.Header>
           <Component.Content>Body</Component.Content>
         </Component>,
       );
+      ref.current?.showModal();
 
       screen.getByRole("button", { name: "Close" }).click();
       expect(container.querySelector("dialog")).not.toHaveAttribute("open");
@@ -352,16 +318,6 @@ describe("Modal pattern", () => {
       ref.current?.showModal();
 
       expect(container.querySelector("dialog")).toHaveAttribute("open");
-    });
-
-    it("opens on mount with defaultOpen even when a ref is supplied", () => {
-      const ref = createRef<HTMLDialogElement>();
-      render(
-        <Component ref={ref} defaultOpen>
-          <Component.Content>Body</Component.Content>
-        </Component>,
-      );
-      expect(ref.current).toHaveAttribute("open");
     });
 
     it("accepts a callback ref", () => {
@@ -401,32 +357,15 @@ describe("Modal pattern", () => {
       expect(cleanup).toHaveBeenCalledTimes(1);
       expect(detached).not.toHaveBeenCalled();
     });
-
-    it("does not throw when the consumer opened the dialog before mount effects", () => {
-      // A callback ref runs in the commit phase, before passive effects: a
-      // consumer opening the dialog there would make the defaultOpen effect's
-      // showModal() throw if it did not check first.
-      const { container } = render(
-        <Component
-          defaultOpen
-          ref={(node) => {
-            node?.showModal();
-          }}
-        >
-          <Component.Content>Body</Component.Content>
-        </Component>,
-      );
-      expect(container.querySelector("dialog")).toHaveAttribute("open");
-    });
   });
 
   describe("header", () => {
     it("names the dialog with the composed title", () => {
       render(
-        <Component defaultOpen>
+        <OpenModal>
           <Component.Header>Delete instance</Component.Header>
           <Component.Content>Body</Component.Content>
-        </Component>,
+        </OpenModal>,
       );
       expect(
         screen.getByRole("dialog", { name: "Delete instance" }),
@@ -435,20 +374,20 @@ describe("Modal pattern", () => {
 
     it("renders a close button by default", () => {
       render(
-        <Component defaultOpen>
+        <OpenModal>
           <Component.Header>Title</Component.Header>
           <Component.Content>Body</Component.Content>
-        </Component>,
+        </OpenModal>,
       );
       expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
     });
 
     it("closes the modal when the close button is pressed", () => {
       const { container } = render(
-        <Component defaultOpen>
+        <OpenModal>
           <Component.Header>Title</Component.Header>
           <Component.Content>Body</Component.Content>
-        </Component>,
+        </OpenModal>,
       );
       screen.getByRole("button", { name: "Close" }).click();
       expect(container.querySelector("dialog")).not.toHaveAttribute("open");
@@ -456,10 +395,10 @@ describe("Modal pattern", () => {
 
     it("renders no close button when not dismissible", () => {
       render(
-        <Component defaultOpen>
+        <OpenModal>
           <Component.Header dismissible={false}>Title</Component.Header>
           <Component.Content>Body</Component.Content>
-        </Component>,
+        </OpenModal>,
       );
       expect(
         screen.queryByRole("button", { name: "Close" }),
@@ -468,10 +407,10 @@ describe("Modal pattern", () => {
 
     it("uses a custom dismiss label", () => {
       render(
-        <Component defaultOpen>
+        <OpenModal>
           <Component.Header dismissLabel="Dismiss">Title</Component.Header>
           <Component.Content>Body</Component.Content>
-        </Component>,
+        </OpenModal>,
       );
       expect(
         screen.getByRole("button", { name: "Dismiss" }),
@@ -481,10 +420,10 @@ describe("Modal pattern", () => {
     it("prefers an explicit onDismiss over closing the modal", () => {
       const onDismiss = vi.fn();
       const { container } = render(
-        <Component defaultOpen>
+        <OpenModal>
           <Component.Header onDismiss={onDismiss}>Title</Component.Header>
           <Component.Content>Body</Component.Content>
-        </Component>,
+        </OpenModal>,
       );
       screen.getByRole("button", { name: "Close" }).click();
       expect(onDismiss).toHaveBeenCalled();
@@ -495,9 +434,9 @@ describe("Modal pattern", () => {
   describe("backdrop", () => {
     it("closes on a click that lands on the dialog itself", () => {
       const { container } = render(
-        <Component defaultOpen closeOnBackdropClick>
+        <OpenModal closeOnBackdropClick>
           <Component.Content>Body</Component.Content>
-        </Component>,
+        </OpenModal>,
       );
       screen.getByRole("dialog").click();
       expect(container.querySelector("dialog")).not.toHaveAttribute("open");
@@ -505,9 +444,9 @@ describe("Modal pattern", () => {
 
     it("ignores backdrop clicks by default", () => {
       const { container } = render(
-        <Component defaultOpen>
+        <OpenModal>
           <Component.Content>Body</Component.Content>
-        </Component>,
+        </OpenModal>,
       );
       screen.getByRole("dialog").click();
       expect(container.querySelector("dialog")).toHaveAttribute("open");
@@ -515,9 +454,9 @@ describe("Modal pattern", () => {
 
     it("ignores backdrop clicks when closeOnBackdropClick is false", () => {
       const { container } = render(
-        <Component defaultOpen closeOnBackdropClick={false}>
+        <OpenModal closeOnBackdropClick={false}>
           <Component.Content>Body</Component.Content>
-        </Component>,
+        </OpenModal>,
       );
       screen.getByRole("dialog").click();
       expect(container.querySelector("dialog")).toHaveAttribute("open");
@@ -525,9 +464,9 @@ describe("Modal pattern", () => {
 
     it("ignores clicks inside the content pane", () => {
       const { container } = render(
-        <Component defaultOpen closeOnBackdropClick>
+        <OpenModal closeOnBackdropClick>
           <Component.Content>Placeholder content</Component.Content>
-        </Component>,
+        </OpenModal>,
       );
       screen.getByText("Placeholder content").click();
       expect(container.querySelector("dialog")).toHaveAttribute("open");
