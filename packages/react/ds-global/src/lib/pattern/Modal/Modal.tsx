@@ -11,15 +11,14 @@ const componentCssClassName = "ds modal";
  * A modal is a focused container that sits on top of the main view, requiring
  * users to interact with it before returning to that view. Its purpose is to
  * capture the user's full attention for a specific, self-contained task while
- * keeping their workspace visible, though inactive, behind it.
+ * keeping their workspace visible, though inactive, behind it. The main use case
+ * is when a user is asked to confirm a decision he already took ( for instance to send
+ * a delete request)
  *
- * It renders a native `<dialog>` opened with `showModal()`, so the backdrop,
- * focus trap, page inertness and Escape handling come from the platform rather
- * than from JavaScript. `open` is controlled: dismissal — the close button,
- * Escape, or the backdrop — is reported through `onOpenChange`, and the modal
- * closes when the consumer sets `open` to `false`. Escape always closes the
- * modal: `onOpenChange` is where the consumer does pre-close work, not a
- * chance to refuse.
+  * There are 2 consumption patterns , `withModal` and `Modal`. `withModal` is meant for static content: its content is created once, when
+ * the HOC is called. If the modal must show data from the parent — for example
+ * a different `userId` depending on which user is selected — 
+ * use the controlled `Modal`. Otherwise, use `withModal`.
  *
  * The sections are composed by the consumer: render
  * `Modal.Header`, `Modal.Content` and `Modal.Footer` as children and choose

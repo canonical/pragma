@@ -38,9 +38,10 @@ import type {
  * );
  * ```
  *
- * If an action needs to do more than close — save data, open another modal,
- * close conditionally — don't use this HOC: keep the `open` state yourself
- * and compose the controlled `Modal` directly.
+  * `withModal` is meant for static content: its content is created once, when
+ * the HOC is called. If the modal must show data from the parent — for example
+ * a different `userId` depending on which user is selected — don't use this
+ * HOC; use the controlled `Modal` instead.
  *
  * A pure composition wrapper: it renders the wrapped component and the modal
  * as siblings, so it carries no root element of its own.
