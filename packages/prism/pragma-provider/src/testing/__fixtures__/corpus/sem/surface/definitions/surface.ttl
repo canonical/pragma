@@ -1,0 +1,13 @@
+# The SECOND root: the docsite's own demand model, from the semantics working
+# tree rather than the refs cache. Merging it must be purely additive — it
+# contributes `Job`, and takes nothing from the first root.
+
+@prefix sur: <sem://surface#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+sur:Job a owl:Class ;
+    rdfs:comment "A job the consumer is trying to get done." .
+
+sur:jobLabel a owl:DatatypeProperty ; rdfs:domain sur:Job ; rdfs:range xsd:string .

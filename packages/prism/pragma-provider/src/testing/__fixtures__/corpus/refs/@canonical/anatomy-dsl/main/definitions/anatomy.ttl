@@ -1,0 +1,21 @@
+# THE COLLISION, reproduced.
+#
+# `<http://anatomy-dsl.example.org/ontology#uri>` is byte-identical to the real
+# anatomy DSL's property and to the `ANATOMY_URI` constant. It is an ordinary
+# owl:DatatypeProperty that maps to the GraphQL field name `uri` — which the
+# converged base reserves as the injected primary key on every Node
+# implementer. Compiling this without CUSTOM_MAPPINGS is what
+# `createPragmaProvider.test.ts` measures.
+
+@prefix anatomy: <http://anatomy-dsl.example.org/ontology#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+anatomy:NamedNode a owl:Class ;
+    rdfs:comment "Design system entity instantiable by consumers." .
+
+anatomy:uri a owl:DatatypeProperty ;
+    rdfs:domain anatomy:NamedNode ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Unique identifier for a named node within the design system." .
