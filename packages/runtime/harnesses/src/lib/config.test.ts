@@ -331,6 +331,118 @@ describe("Crush config (crush.json)", () => {
   });
 });
 
+describe("Oh My Pi config (.omp/mcp.json)", () => {
+  const omp = findHarnessById("oh-my-pi") as (typeof harnesses)[number];
+
+  it("writes the plain stdio shape under `mcpServers` in the project band", () => {
+    // Oh My Pi's stdio entry is the canonical `{command, args, cwd, env}` form
+    // with `type` optional (defaulting to "stdio"), so the row declares no
+    // `mcpEntry` and the DEFAULT serializer must be what reaches the file.
+    const result = dryRunWith(
+      writeMcpConfig(omp, "/project", "pragma", {
+        command: "pragma",
+        args: ["mcp"],
+        cwd: "/project",
+      }),
+      buildMocks({
+        Exists: existsMock(() => false),
+        MakeDir: mkdirMock,
+        WriteFile: writeMock,
+      }),
+    );
+
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    expect(writeEffects.length).toBe(1);
+    expect(writeEffects[0].path).toBe("/project/.omp/mcp.json");
+
+    const written = JSON.parse(writeEffects[0].content);
+    expect(written.mcpServers.pragma).toEqual({
+      command: "pragma",
+      args: ["mcp"],
+      cwd: "/project",
+    });
+  });
+
+  it("merges into an existing `mcpServers` block, preserving disabledServers", () => {
+    // `disabledServers`/`enabledServers` are Oh My Pi's own top-level keys —
+    // a write that dropped them would silently re-enable a server the user
+    // turned off.
+    const existingConfig = JSON.stringify({
+      $schema: "https://omp.sh/schemas/mcp.json",
+      mcpServers: {
+        context7: { command: "context7-mcp" },
+      },
+      disabledServers: ["context7"],
+    });
+
+    const result = dryRunWith(
+      writeMcpConfig(omp, "/project", "pragma", {
+        command: "pragma",
+        args: ["mcp"],
+      }),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(existingConfig),
+        WriteFile: writeMock,
+      }),
+    );
+
+    const written = JSON.parse(
+      filterEffects(result.effects, "WriteFile")[0].content,
+    );
+    expect(written.mcpServers.context7).toEqual({ command: "context7-mcp" });
+    expect(written.mcpServers.pragma).toEqual({
+      command: "pragma",
+      args: ["mcp"],
+    });
+    expect(written.disabledServers).toEqual(["context7"]);
+  });
+
+  it("writes the global band into the ACTIVE profile's agent dir", () => {
+    // The default profile and a named one are different files. Writing the
+    // default path for a user running under `OMP_PROFILE` would install into a
+    // file omp never reads — the same class of bug as an OpenCode entry in the
+    // wrong band.
+    const base = dryRunWith(
+      writeMcpConfig(
+        omp,
+        "/project",
+        "pragma",
+        { command: "pragma" },
+        "global",
+        PLATFORM,
+      ),
+      buildMocks({
+        Exists: existsMock(() => false),
+        MakeDir: mkdirMock,
+        WriteFile: writeMock,
+      }),
+    );
+    expect(filterEffects(base.effects, "WriteFile")[0].path).toBe(
+      "/home/tester/.omp/agent/mcp.json",
+    );
+
+    const profiled = dryRunWith(
+      writeMcpConfig(
+        omp,
+        "/project",
+        "pragma",
+        { command: "pragma" },
+        "global",
+        { ...PLATFORM, env: { OMP_PROFILE: "work" } },
+      ),
+      buildMocks({
+        Exists: existsMock(() => false),
+        MakeDir: mkdirMock,
+        WriteFile: writeMock,
+      }),
+    );
+    expect(filterEffects(profiled.effects, "WriteFile")[0].path).toBe(
+      "/home/tester/.omp/profiles/work/agent/mcp.json",
+    );
+  });
+});
+
 describe("removeMcpConfig", () => {
   it("is a no-op when config file does not exist", () => {
     const result = dryRunWith(

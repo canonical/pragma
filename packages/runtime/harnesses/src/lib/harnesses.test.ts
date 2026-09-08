@@ -4,7 +4,7 @@ import { crushMcpEntry, opendesignMcpEntry } from "./mcpEntries.js";
 
 describe("harnesses registry", () => {
   it("contains all known harnesses", () => {
-    expect(harnesses).toHaveLength(13);
+    expect(harnesses).toHaveLength(14);
     const ids = harnesses.map((h) => h.id);
     expect(ids).toEqual([
       "claude-code",
@@ -20,6 +20,7 @@ describe("harnesses registry", () => {
       "vscode",
       "opendesign",
       "crush",
+      "oh-my-pi",
     ]);
   });
 
@@ -336,6 +337,103 @@ describe("harnesses registry", () => {
     expect(paths).toContain(".crush");
     expect(paths).not.toContain(".crush/crush.json");
     expect(paths.some((p) => p.includes(".local/share"))).toBe(false);
+  });
+
+  it("oh-my-pi is dual-scope: project .omp/mcp.json, user ~/.omp/agent/mcp.json", () => {
+    // Oh My Pi reads both bands and the PROJECT file wins over the user one
+    // (docs/mcp-config.md), so a project-only row would be skipped by setup's
+    // default global band — the opencode/crush hole.
+    const omp = harnesses.find((h) => h.id === "oh-my-pi");
+    expect(omp?.scope).toBe("both");
+    expect(omp?.configPath("/project")).toBe("/project/.omp/mcp.json");
+    expect(omp?.homeConfigPath?.(PLATFORM)).toBe(
+      "/home/tester/.omp/agent/mcp.json",
+    );
+    expect(omp?.mcpKey).toBe("mcpServers");
+    expect(omp?.configFormat).toBe("json");
+  });
+
+  it("oh-my-pi takes the DEFAULT entry shape — no bespoke serializer", () => {
+    // Its stdio entry is the plain `{command, args?, cwd?, env?}` form under
+    // `mcpServers`, with `type` optional and defaulting to "stdio". Declaring
+    // an `mcpEntry` here would be a second serializer to keep in sync with
+    // nothing to gain.
+    const omp = harnesses.find((h) => h.id === "oh-my-pi");
+    expect(omp?.mcpEntry).toBeUndefined();
+  });
+
+  it("oh-my-pi's user config follows the active profile and $PI_CONFIG_DIR", () => {
+    // omp resolves the user band to the ACTIVE PROFILE's agent dir:
+    // `~/.omp/profiles/<name>/agent/mcp.json`. `OMP_PROFILE` is canonical and
+    // `PI_PROFILE` the legacy fallback, consulted only when `OMP_PROFILE` is
+    // undefined — an explicitly EMPTY `OMP_PROFILE` selects the default
+    // profile and must NOT fall through to `PI_PROFILE`. Writing the default
+    // path for a profile user would install into a file omp never reads.
+    const omp = harnesses.find((h) => h.id === "oh-my-pi");
+    expect(
+      omp?.homeConfigPath?.({ ...PLATFORM, env: { OMP_PROFILE: "work" } }),
+    ).toBe("/home/tester/.omp/profiles/work/agent/mcp.json");
+    expect(
+      omp?.homeConfigPath?.({ ...PLATFORM, env: { PI_PROFILE: "legacy" } }),
+    ).toBe("/home/tester/.omp/profiles/legacy/agent/mcp.json");
+    expect(
+      omp?.homeConfigPath?.({
+        ...PLATFORM,
+        env: { OMP_PROFILE: "work", PI_PROFILE: "legacy" },
+      }),
+    ).toBe("/home/tester/.omp/profiles/work/agent/mcp.json");
+    // Explicitly empty: default profile, NOT the legacy value.
+    expect(
+      omp?.homeConfigPath?.({
+        ...PLATFORM,
+        env: { OMP_PROFILE: "", PI_PROFILE: "legacy" },
+      }),
+    ).toBe("/home/tester/.omp/agent/mcp.json");
+    // The config dirname itself is relocatable under home.
+    expect(
+      omp?.homeConfigPath?.({
+        ...PLATFORM,
+        env: { PI_CONFIG_DIR: ".omp-alt" },
+      }),
+    ).toBe("/home/tester/.omp-alt/agent/mcp.json");
+  });
+
+  it("oh-my-pi guards its `omp` PATH probe against Oh My Posh", () => {
+    // `omp` is not an unambiguous binary name: Oh My Posh abbreviates itself
+    // "omp" throughout, so a bare process signal is a coin flip. The row
+    // carries the same `verify` guard the OpenDesign row uses for the Unix
+    // `od` — Oh My Pi's `--version` prints `omp/<version>`, Oh My Posh prints
+    // a bare version number.
+    const omp = harnesses.find((h) => h.id === "oh-my-pi");
+    const verifies = (omp?.detect ?? []).flatMap((s) =>
+      s.type === "process" && s.name === "omp" && s.verify ? [s.verify] : [],
+    );
+    expect(verifies).toHaveLength(1);
+    const verify = verifies[0];
+    expect(verify?.args).toEqual(["--version"]);
+    expect(verify?.match.test("omp/1.4.0\n")).toBe(true);
+    // Oh My Posh's own `--version` output, and its binary name.
+    expect(verify?.match.test("19.5.2\n")).toBe(false);
+    expect(verify?.match.test("oh-my-posh 19.5.2\n")).toBe(false);
+  });
+
+  it("oh-my-pi is detectable from its project AND user directories", () => {
+    // A project-only signal cannot see an installed omp whose `.omp/` is
+    // gitignored or not yet created; the user config root is the
+    // "omp is installed" signal that does not wait for a project config.
+    const omp = harnesses.find((h) => h.id === "oh-my-pi");
+    expect(omp?.detect).toContainEqual({ type: "directory", path: ".omp" });
+    expect(omp?.detect).toContainEqual({ type: "directory", path: "~/.omp" });
+  });
+
+  it("oh-my-pi links the cross-client skills dir, never omp's own managed one", () => {
+    // `.agent[s]/skills` is omp's canonical native skills location, read at
+    // both bands; `.agents/skills` is the cross-client directory
+    // `setup skills` already links. `~/.omp/agent/managed-skills` is omp's own
+    // auto-learn write target and is never pragma's to fill.
+    const omp = harnesses.find((h) => h.id === "oh-my-pi");
+    expect(omp?.skillsPath("/project")).toBe("/project/.agents/skills");
+    expect(omp?.skillsPath("/home/tester")).not.toContain("managed-skills");
   });
 
   it("roo-code skillsPath", () => {

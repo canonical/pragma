@@ -437,3 +437,85 @@ describe("detectHarnesses — Crush signals", () => {
     expect(result.value).toEqual([]);
   });
 });
+
+/**
+ * Oh My Pi's signal set. The point of the block is the LAST case: `omp` is a
+ * name Oh My Posh also answers to, so the PATH probe must not detect a prompt
+ * theme engine as a coding agent.
+ */
+describe("detectHarnesses — Oh My Pi signals", () => {
+  const withPath = (path: string): PlatformEnv => ({
+    ...PLATFORM,
+    env: { ...PLATFORM.env, PATH: path },
+  });
+
+  /** Exists true for exactly one path; every other effect left unmocked. */
+  const only = (wanted: string): Map<string, (effect: Effect) => unknown> =>
+    new Map([
+      [
+        "Exists",
+        (effect: Effect): unknown =>
+          (effect as Effect & { _tag: "Exists"; path: string }).path === wanted,
+      ],
+    ]);
+
+  /** Exists true for one path, plus a stubbed `--version` stdout. */
+  const onlyWithVersion = (
+    wanted: string,
+    stdout: string,
+  ): Map<string, (effect: Effect) => unknown> =>
+    new Map<string, (effect: Effect) => unknown>([
+      [
+        "Exists",
+        (effect: Effect): unknown =>
+          (effect as Effect & { _tag: "Exists"; path: string }).path === wanted,
+      ],
+      ["Exec", () => ({ stdout, stderr: "", exitCode: 0 })],
+    ]);
+
+  it("detects Oh My Pi from the project .omp directory alone, at high confidence", () => {
+    const result = dryRunWith(
+      detectHarnesses("/project", PLATFORM),
+      only("/project/.omp"),
+    );
+
+    expect(result.value.map((d) => d.harness.id)).toEqual(["oh-my-pi"]);
+    expect(result.value[0]?.confidence).toBe("high");
+    expect(result.value[0]?.configPath).toBe("/project/.omp/mcp.json");
+  });
+
+  it("detects an installed Oh My Pi from ~/.omp before any project config exists", () => {
+    const result = dryRunWith(
+      detectHarnesses("/project", PLATFORM),
+      only("/home/tester/.omp"),
+    );
+
+    expect(result.value.map((d) => d.harness.id)).toEqual(["oh-my-pi"]);
+    expect(result.value[0]?.confidence).toBe("high");
+    expect(result.value[0]?.configExists).toBe(false);
+  });
+
+  it("detects `omp` on PATH when --version identifies Oh My Pi", () => {
+    const result = dryRunWith(
+      detectHarnesses("/project", withPath("/usr/bin:/bin:/usr/local/bin")),
+      onlyWithVersion("/usr/local/bin/omp", "omp/1.4.0\n"),
+    );
+
+    expect(result.value.map((d) => d.harness.id)).toEqual(["oh-my-pi"]);
+    // On PATH means "installed", not "this project uses it".
+    expect(result.value[0]?.confidence).toBe("medium");
+  });
+
+  it("does NOT detect Oh My Pi from an `omp` that is really Oh My Posh", () => {
+    // The false positive this guard exists for: Oh My Posh abbreviates itself
+    // "omp" and users alias the name, but its `--version` prints a bare
+    // version number. Without the `verify`, a prompt theme engine's account
+    // would be handed an MCP config file.
+    const result = dryRunWith(
+      detectHarnesses("/project", withPath("/usr/bin:/bin:/usr/local/bin")),
+      onlyWithVersion("/usr/local/bin/omp", "19.5.2\n"),
+    );
+
+    expect(result.value).toEqual([]);
+  });
+});
