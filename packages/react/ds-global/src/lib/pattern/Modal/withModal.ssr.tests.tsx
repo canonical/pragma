@@ -20,10 +20,10 @@ describe("withModal (SSR)", () => {
   it("renders to static HTML without throwing", () => {
     const TriggeredModal = withModal(
       Trigger,
-      <>
+      <Modal>
         <Modal.Header>Title</Modal.Header>
         <Modal.Content>Body</Modal.Content>
-      </>,
+      </Modal>,
     );
     expect(() =>
       renderToString(<TriggeredModal>Open</TriggeredModal>),
@@ -33,10 +33,10 @@ describe("withModal (SSR)", () => {
   it("emits the trigger and a closed dialog", () => {
     const TriggeredModal = withModal(
       Trigger,
-      <>
+      <Modal>
         <Modal.Header>Title</Modal.Header>
         <Modal.Content>Body</Modal.Content>
-      </>,
+      </Modal>,
     );
     const html = renderToString(<TriggeredModal>Open</TriggeredModal>);
 

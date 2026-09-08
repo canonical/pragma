@@ -18,6 +18,10 @@ const meta = {
           "",
           "`withModal` wraps a trigger with a modal: **click the trigger → the modal opens**.",
           "",
+          "**The second argument is a complete `<Modal>` element** — sections, props and all.",
+          "Everything `Modal` accepts lives on that element: `closeOnBackdropClick`, `aria-label`,",
+          "`className`. The one prop the HOC owns is the `ref` — the trigger opens the modal.",
+          "",
           "**The trigger must accept `onClick`.** The HOC composes its open handler onto the",
           "wrapped component itself so the component must forward",
           "`onClick` to the clickable element at its root. Any `onClick` the consumer passes",
@@ -35,10 +39,10 @@ const meta = {
           "that forwards `onClick` to its root element, so that is what you wrap in practice.",
           "",
           "**How it closes:** the header's X button and Escape always work. A footer button can",
-          "close it too — pass the content as a function to receive the `close` callback:",
-          "`withModal(Button, (close) => <Modal.Footer><Button onClick={close}>Done</Button></Modal.Footer>)`.",
+          "close it too — pass the modal as a function to receive the `close` callback:",
+          "`withModal(Button, (close) => <Modal><Modal.Footer><Button onClick={close}>Done</Button></Modal.Footer></Modal>)`.",
           "",
-          "**`withModal` is meant for static content:** its content is created once,",
+          "**`withModal` is meant for static content:** its modal is created once,",
           "when the HOC is called. If the modal must show data from the parent — for",
           "example a different `userName` depending on which user is selected — don't use",
           "this HOC; compose `Modal` directly and drive it through its `ref`.",
@@ -67,11 +71,12 @@ export default meta;
 export const Default: StoryFn = () => {
   const OpenButton = withModal(
     Button,
-    <Modal.Content>
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
-      tempor incididunt ut labore et dolore magna aliqua.
-    </Modal.Content>,
-    { "aria-label": "Example modal" },
+    <Modal aria-label="Example modal">
+      <Modal.Content>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
+        tempor incididunt ut labore et dolore magna aliqua.
+      </Modal.Content>
+    </Modal>,
   );
 
   return <OpenButton>Open modal</OpenButton>;
@@ -82,8 +87,9 @@ Default.parameters = {
     source: {
       code: `const OpenButton = withModal(
   Button,
-  <Modal.Content>...</Modal.Content>,
-  { "aria-label": "Example modal" },
+  <Modal aria-label="Example modal">
+    <Modal.Content>...</Modal.Content>
+  </Modal>,
 );
 
 <OpenButton>Open modal</OpenButton>`,
@@ -93,13 +99,13 @@ Default.parameters = {
 
 /**
  * A footer button can only do one thing here: close the modal. Pass the
- * content as a function to receive the `close` callback and wire it with
+ * modal as a function to receive the `close` callback and wire it with
  * `onClick={close}`. If a button needs to do more than close — submit a form,
  * open another modal — compose `Modal` directly and drive it through its `ref`.
  */
 export const FooterAction: StoryFn = () => {
   const AcknowledgeButton = withModal(Button, (close) => (
-    <>
+    <Modal>
       <Modal.Header>Maintenance scheduled</Modal.Header>
       <Modal.Content>
         The service will restart at 02:00 UTC to apply security updates.
@@ -109,7 +115,7 @@ export const FooterAction: StoryFn = () => {
           Got it
         </Button>
       </Modal.Footer>
-    </>
+    </Modal>
   ));
 
   return (
@@ -124,14 +130,14 @@ FooterAction.parameters = {
       code: `const AcknowledgeButton = withModal(
   Button,
   (close) => (
-    <>
+    <Modal>
       <Modal.Header>Maintenance scheduled</Modal.Header>
       <Modal.Content>...</Modal.Content>
       <Modal.Footer>
         {/* A footer button can only close the modal */}
         <Button importance="primary" onClick={close}>Got it</Button>
       </Modal.Footer>
-    </>
+    </Modal>
   ),
 );
 
@@ -141,19 +147,18 @@ FooterAction.parameters = {
 };
 
 /**
- * `closeOnBackdropClick` is forwarded to the underlying `Modal` through the
- * optional third argument, so clicking outside the panel also closes it.
+ * `closeOnBackdropClick` is just a prop on the modal element the consumer
+ * passes, so clicking outside the panel also closes it.
  */
 export const BackdropDismissible: StoryFn = () => {
   const InfoButton = withModal(
     Button,
-    <>
+    <Modal closeOnBackdropClick>
       <Modal.Header>Search syntax</Modal.Header>
       <Modal.Content>
         Combine terms with AND, OR and NOT. Quote a phrase to match it exactly.
       </Modal.Content>
-    </>,
-    { closeOnBackdropClick: true },
+    </Modal>,
   );
 
   return <InfoButton importance="secondary">Search syntax</InfoButton>;
@@ -163,11 +168,10 @@ BackdropDismissible.parameters = {
     source: {
       code: `const InfoButton = withModal(
   Button,
-  <>
+  <Modal closeOnBackdropClick>
     <Modal.Header>Search syntax</Modal.Header>
     <Modal.Content>...</Modal.Content>
-  </>,
-  { closeOnBackdropClick: true },
+  </Modal>,
 );
 
 <InfoButton importance="secondary">Search syntax</InfoButton>`,
@@ -178,8 +182,8 @@ BackdropDismissible.parameters = {
 /**
  * The trigger does not have to be a `Button` — any component that accepts
  * `onClick` and forwards it to the clickable element at its root works,
- * because the HOC composes its open handler onto the trigger itself. Here the
- * anchor is that root, so the modal opens when the link is clicked.
+ * because the HOC composes its open handler onto the trigger itself. Here a
+ * styled `<div>` is that root, so the modal opens when it is clicked.
  */
 export const CustomTrigger: StoryFn = () => {
   const Link = ({
@@ -187,21 +191,29 @@ export const CustomTrigger: StoryFn = () => {
     onClick,
   }: {
     children?: string;
-    onClick?: React.MouseEventHandler<HTMLAnchorElement>;
+    onClick?: React.MouseEventHandler<HTMLDivElement>;
   }) => (
-    // biome-ignore lint/a11y/useValidAnchor: demo trigger only
-    <a href="#" onClick={onClick}>
+    // biome-ignore lint/a11y/noStaticElementInteractions: demo trigger only
+    // biome-ignore lint/a11y/useKeyWithClickEvents: demo trigger only
+    <div
+      onClick={onClick}
+      style={{
+        cursor: "pointer",
+        display: "inline",
+        textDecoration: "underline",
+      }}
+    >
       {children}
-    </a>
+    </div>
   );
   const TermsLink = withModal(
     Link,
-    <>
+    <Modal>
       <Modal.Header>Terms</Modal.Header>
       <Modal.Content>
         These are the terms and conditions that apply to this service.
       </Modal.Content>
-    </>,
+    </Modal>,
   );
 
   return (
@@ -216,15 +228,19 @@ CustomTrigger.parameters = {
     source: {
       code: `const Link = ({ children, onClick }: {
   children?: string;
-  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
-}) => <a href="#" onClick={onClick}>{children}</a>;
+  onClick?: React.MouseEventHandler<HTMLDivElement>;
+}) => (
+  <div onClick={onClick} style={{ cursor: "pointer", display: "inline", textDecoration: "underline" }}>
+    {children}
+  </div>
+);
 
 const TermsLink = withModal(
   Link,
-  <>
+  <Modal>
     <Modal.Header>Terms</Modal.Header>
     <Modal.Content>...</Modal.Content>
-  </>,
+  </Modal>,
 );
 
 <p>
