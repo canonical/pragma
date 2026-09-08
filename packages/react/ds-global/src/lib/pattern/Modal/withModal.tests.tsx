@@ -4,7 +4,7 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import { Button } from "../../component/Button/index.js";
 import { withModal } from "./index.js";
 import Modal from "./Modal.js";
-import type { WithModalOptions } from "./types.js";
+import type { WithModalModal } from "./types.js";
 
 /*
   jsdom 28 implements HTMLDialogElement but not the top layer: `showModal` and
@@ -42,16 +42,16 @@ beforeAll(() => {
   }
 });
 
-const modalChildren = (
-  <>
+const modal = (
+  <Modal>
     <Modal.Header>Title</Modal.Header>
     <Modal.Content>Body</Modal.Content>
-  </>
+  </Modal>
 );
 
 describe("withModal", () => {
   it("renders the wrapped component with a closed dialog", () => {
-    const TriggeredModal = withModal(Button, modalChildren);
+    const TriggeredModal = withModal(Button, modal);
     const { container } = render(<TriggeredModal>Open</TriggeredModal>);
 
     expect(screen.getByRole("button", { name: "Open" })).toBeInTheDocument();
@@ -59,7 +59,7 @@ describe("withModal", () => {
   });
 
   it("opens the modal when the trigger is clicked", () => {
-    const TriggeredModal = withModal(Button, modalChildren);
+    const TriggeredModal = withModal(Button, modal);
     render(<TriggeredModal>Open</TriggeredModal>);
 
     fireEvent.click(screen.getByRole("button", { name: "Open" }));
@@ -69,7 +69,7 @@ describe("withModal", () => {
   });
 
   it("closes the modal through the header close button", () => {
-    const TriggeredModal = withModal(Button, modalChildren);
+    const TriggeredModal = withModal(Button, modal);
     const { container } = render(<TriggeredModal>Open</TriggeredModal>);
 
     fireEvent.click(screen.getByRole("button", { name: "Open" }));
@@ -80,7 +80,7 @@ describe("withModal", () => {
   });
 
   it("reopens the modal after it has been closed", () => {
-    const TriggeredModal = withModal(Button, modalChildren);
+    const TriggeredModal = withModal(Button, modal);
     const { container } = render(<TriggeredModal>Open</TriggeredModal>);
 
     fireEvent.click(screen.getByRole("button", { name: "Open" }));
@@ -97,7 +97,7 @@ describe("withModal", () => {
     performs no default action, so the assertion is that the event survives.
   */
   it("leaves the platform's cancel default action intact", () => {
-    const TriggeredModal = withModal(Button, modalChildren);
+    const TriggeredModal = withModal(Button, modal);
     const { container } = render(<TriggeredModal>Open</TriggeredModal>);
 
     fireEvent.click(screen.getByRole("button", { name: "Open" }));
@@ -108,13 +108,19 @@ describe("withModal", () => {
     expect(cancel.defaultPrevented).toBe(false);
   });
 
-  it("keeps the trigger wired when modalProps smuggle in a ref", () => {
-    // `WithModalOptions` omits it, but a consumer holding a `ModalProps`
-    // value is structurally assignable, and the HOC has to win at runtime.
+  it("keeps the trigger wired when the modal element carries its own ref", () => {
+    // The contract is that the HOC owns the ref, so one set on the element
+    // is replaced by the clone that injects the HOC's own.
     const strayRef = createRef<HTMLDialogElement>();
-    const TriggeredModal = withModal(Button, modalChildren, {
-      ref: strayRef,
-    } as WithModalOptions);
+    const TriggeredModal = withModal(
+      Button,
+      (
+        <Modal ref={strayRef}>
+          <Modal.Header>Title</Modal.Header>
+          <Modal.Content>Body</Modal.Content>
+        </Modal>
+      ) as WithModalModal,
+    );
     const { container } = render(<TriggeredModal>Open</TriggeredModal>);
 
     expect(container.querySelector("dialog")).not.toHaveAttribute("open");
@@ -125,7 +131,7 @@ describe("withModal", () => {
   });
 
   it("ignores a trigger click while the modal is already open", () => {
-    const TriggeredModal = withModal(Button, modalChildren);
+    const TriggeredModal = withModal(Button, modal);
     const { container } = render(<TriggeredModal>Open</TriggeredModal>);
     // showModal() throws on an already-open dialog, so a second click has to
     // stop at the trigger rather than reach the platform.
@@ -142,7 +148,7 @@ describe("withModal", () => {
 
   it("closes the modal through a footer action given the close callback", () => {
     const TriggeredModal = withModal(Button, (close) => (
-      <>
+      <Modal>
         <Modal.Header>Title</Modal.Header>
         <Modal.Content>Body</Modal.Content>
         <Modal.Footer>
@@ -150,7 +156,7 @@ describe("withModal", () => {
             Done
           </button>
         </Modal.Footer>
-      </>
+      </Modal>
     ));
     const { container } = render(<TriggeredModal>Open</TriggeredModal>);
 
@@ -162,7 +168,7 @@ describe("withModal", () => {
   });
 
   it("forwards props to the wrapped component", () => {
-    const TriggeredModal = withModal(Button, modalChildren);
+    const TriggeredModal = withModal(Button, modal);
     render(<TriggeredModal importance="secondary">Open</TriggeredModal>);
 
     expect(screen.getByRole("button", { name: "Open" })).toHaveClass(
@@ -170,11 +176,14 @@ describe("withModal", () => {
     );
   });
 
-  it("passes modal props through to the dialog", () => {
-    const TriggeredModal = withModal(Button, modalChildren, {
-      className: "custom-modal",
-      closeOnBackdropClick: true,
-    });
+  it("reads modal props from the modal element", () => {
+    const TriggeredModal = withModal(
+      Button,
+      <Modal className="custom-modal" closeOnBackdropClick>
+        <Modal.Header>Title</Modal.Header>
+        <Modal.Content>Body</Modal.Content>
+      </Modal>,
+    );
     const { container } = render(<TriggeredModal>Open</TriggeredModal>);
 
     fireEvent.click(screen.getByRole("button", { name: "Open" }));
@@ -187,7 +196,7 @@ describe("withModal", () => {
   });
 
   it("renders the trigger without a wrapper element", () => {
-    const TriggeredModal = withModal(Button, modalChildren);
+    const TriggeredModal = withModal(Button, modal);
     const { container } = render(<TriggeredModal>Open</TriggeredModal>);
 
     const trigger = screen.getByRole("button", { name: "Open" });
@@ -196,7 +205,7 @@ describe("withModal", () => {
   });
 
   it("runs the consumer's onClick before opening the modal", () => {
-    const TriggeredModal = withModal(Button, modalChildren);
+    const TriggeredModal = withModal(Button, modal);
     const onClick = vi.fn();
     const { container } = render(
       <TriggeredModal onClick={onClick}>Open</TriggeredModal>,
@@ -214,7 +223,7 @@ describe("withModal", () => {
   });
 
   it("sets the wrapped component's displayName", () => {
-    const TriggeredModal = withModal(Button, modalChildren);
+    const TriggeredModal = withModal(Button, modal);
     expect(TriggeredModal.displayName).toBe("withModal(Button)");
   });
 });

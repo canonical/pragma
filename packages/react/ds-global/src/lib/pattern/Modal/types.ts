@@ -1,4 +1,10 @@
-import type { ComponentProps, MouseEventHandler, ReactNode, Ref } from "react";
+import type {
+  ComponentProps,
+  MouseEventHandler,
+  ReactElement,
+  ReactNode,
+  Ref,
+} from "react";
 
 type OwnProps = {
   /**
@@ -80,21 +86,24 @@ export type WithModalTriggerProps = {
 };
 
 /**
- * The content of a {@link withModal} modal: plain JSX, or a function.
+ * The props {@link withModal} accepts on the modal element it is handed:
+ * everything `Modal` accepts except `ref`. The HOC owns the ref — the
+ * trigger it wraps is what opens the modal — so a `ref` set on the element
+ * is ignored, exactly like one smuggled through the old options bag.
+ */
+export type WithModalModalProps = Omit<ModalProps, "ref">;
+
+/**
+ * The modal of a {@link withModal}: a complete `<Modal>` element, or a
+ * function that receives the modal's `close` callback and returns one.
  *
- * The function form receives the modal's `close` callback — the only action
- * the HOC can hand to the content — so a footer button can close the modal:
- * `<Button onClick={close}>Got it</Button>`.
+ * The function form is how a footer button closes the modal:
+ * `(close) => <Modal><Modal.Footer><Button onClick={close}>Got it</Button></Modal.Footer></Modal>`.
  *
  * A footer action can only close. If it must do more — submit data, close
  * conditionally, open another modal — skip the HOC and compose `Modal`
  * directly, driving it through its `ref`.
  */
-export type WithModalChildren = ReactNode | ((close: () => void) => ReactNode);
-
-/**
- * The modal options for {@link withModal}: everything `Modal` accepts except
- * `ref` and `children`. The HOC owns the ref, because the trigger it wraps is
- * what opens the modal.
- */
-export type WithModalOptions = Omit<ModalProps, "ref" | "children">;
+export type WithModalModal =
+  | ReactElement<WithModalModalProps>
+  | ((close: () => void) => ReactElement<WithModalModalProps>);
