@@ -48,22 +48,40 @@ const ROOT_ELEMENTS = `
 <table><tbody><tr><th class="ds" id="root-th">x</th></tr></tbody></table>
 <button class="ds" id="root-button">x</button>
 <ul class="ds" id="root-ul"><li id="root-ul-item">x</li></ul>
-<ol class="ds" id="root-ol"><li id="root-ol-item">x</li></ol>`;
+<ol class="ds" id="root-ol"><li id="root-ol-item">x</li></ol>
+<i class="ds" id="root-i">x</i>
+<var class="ds" id="root-var">x</var>
+<dfn class="ds" id="root-dfn">x</dfn>
+<center class="ds" id="root-center">x</center>
+<table><caption class="ds" id="root-caption">x</caption><tbody><tr><td>x</td></tr></tbody></table>
+<select class="ds" id="root-select"><option>x</option></select>
+<textarea class="ds" id="root-textarea">x</textarea>
+<div class="ds" id="root-editable" contenteditable="true">x</div>
+<optgroup class="ds" id="root-optgroup" label="x"></optgroup>
+<input class="ds" type="search" id="root-search">`;
 
 /** The four Vanilla utilities whose important declarations reach inside an island. */
 const ESCAPES = `
 <div class="u-text-max-width">
-  <div class="ds card" id="esc-card"><ul id="esc-ul"><li>x</li></ul><ol id="esc-ol"><li>x</li></ol></div>
+  <div class="ds card"><ul id="esc-ul"><li>x</li></ul><ol id="esc-ol"><li>x</li></ol></div>
+  <ul class="ds" id="esc-root-ul"><li>x</li></ul>
 </div>
 <div class="u-table-layout--fixed">
   <div class="ds card"><table id="esc-table"><tbody><tr><td>x</td></tr></tbody></table></div>
+  <table class="ds" id="esc-root-table"><tbody><tr><td>x</td></tr></tbody></table>
 </div>
 <div class="u-table-layout--auto">
-  <div class="ds card"><table id="esc-table-auto"><tbody><tr><td>x</td></tr></tbody></table></div>
+  <div class="ds card"><table id="esc-table-auto" style="table-layout: fixed"><tbody><tr><td>x</td></tr></tbody></table></div>
 </div>
 <div class="p-content-card__author-and-date">
   <ul class="ds" id="esc-first-child"><li>x</li></ul>
   <div class="ds card" id="esc-later-child"></div>
+</div>
+<div class="p-content-card__author-and-date">
+  <p class="ds" id="esc-first-p">x</p>
+</div>
+<div class="p-content-card__author-and-date">
+  <h2 class="ds" id="esc-first-h2">x</h2>
 </div>
 <div class="u-vertically-center">
   <img class="ds" id="esc-img" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==">
@@ -104,6 +122,10 @@ const HOSTILE = `
   <code class="ds" id="trunc-code">x</code>
   <kbd class="ds" id="trunc-kbd">x</kbd>
 </div>
+<div dir="rtl" style="visibility: hidden; pointer-events: none; cursor: wait; word-spacing: 6px; text-shadow: 1px 1px red; text-underline-offset: 6px">
+  <div class="ds card" id="cross-host"></div>
+</div>
+<table class="p-table--mobile-card"><tbody><tr><td><div class="ds card" id="cross-break"></div></td></tr></tbody></table>
 <hr class="ds" id="host-hr">
 <form>
   <input type="submit" class="ds" id="host-submit" value="x">
@@ -200,6 +222,16 @@ describe.each(VANILLA_VERSIONS)(
           "root-ol",
           "root-ul-item",
           "root-ol-item",
+          "root-i",
+          "root-var",
+          "root-dfn",
+          "root-center",
+          "root-caption",
+          "root-select",
+          "root-textarea",
+          "root-editable",
+          "root-optgroup",
+          "root-search",
         ],
         [
           "font-family",
@@ -219,6 +251,10 @@ describe.each(VANILLA_VERSIONS)(
           "font-style",
           "text-align",
           "list-style-type",
+          "white-space-collapse",
+          "text-wrap-mode",
+          "appearance",
+          "outline-offset",
         ],
       );
     });
@@ -302,17 +338,44 @@ describe.each(VANILLA_VERSIONS)(
       // arrangement rule 2 recommends. Four counters answer them, one covering
       // both table-layout utilities. `all: revert` cannot touch an important
       // declaration: for important rules the layer order reverses.
-      await sameAsPragmaOnly(vanilla, ["esc-ul", "esc-ol"], ["max-width"]);
       await sameAsPragmaOnly(
         vanilla,
-        ["esc-table", "esc-table-auto"],
+        ["esc-ul", "esc-ol", "esc-root-ul"],
+        ["max-width"],
+      );
+      await sameAsPragmaOnly(
+        vanilla,
+        ["esc-table", "esc-root-table"],
         ["table-layout"],
       );
-      await sameAsPragmaOnly(vanilla, ["esc-first-child"], ["margin-bottom"]);
-      // The counter mirrors `:first-child`, so a later `.ds` child of the same
-      // container — which Vanilla never touches — keeps its own margin.
-      await sameAsPragmaOnly(vanilla, ["esc-later-child"], ["margin-bottom"]);
+      // A list root is the case the margin counter exists for: pragma leaves it
+      // at the browser's 16px and Vanilla forces it to 0. A paragraph or a
+      // heading in the same position is the case the counter must NOT touch,
+      // because pragma zeroes those itself and Vanilla's rule already agrees;
+      // reverting there would hand them the browser's `1em` instead. Measured
+      // before the exclusion: 14px on the paragraph, 19.92px on the heading.
+      await sameAsPragmaOnly(
+        vanilla,
+        ["esc-first-child", "esc-first-p", "esc-first-h2", "esc-later-child"],
+        ["margin-bottom"],
+      );
       await sameAsPragmaOnly(vanilla, ["esc-img"], ["align-self"]);
+    });
+
+    it("cannot answer the one Vanilla utility that forces the browser's own default", async () => {
+      // `.u-table-layout--auto` sets `table-layout: auto !important`, which is
+      // the browser's default. A counter can only revert, and reverting lands
+      // on that same value, so a table inside that utility cannot get back a
+      // `fixed` it asked for. Measured: `auto` either way, against the `fixed`
+      // a page of pragma's own computes. This is a leak the mechanism has no
+      // answer to, and the README says so rather than shipping a counter that
+      // reads as cover.
+      const [mixedDoc, pragmaDoc] = await Promise.all([
+        render(mixed(vanilla)),
+        render(pragmaOnly),
+      ]);
+      expect(computed(pragmaDoc, "esc-table-auto").tableLayout).toBe("fixed");
+      expect(computed(mixedDoc, "esc-table-auto").tableLayout).toBe("auto");
     });
 
     it("fires nowhere but the exact place Vanilla's own rule reaches", async () => {
@@ -345,6 +408,18 @@ describe.each(VANILLA_VERSIONS)(
       // A later child of the same container is not where it reaches. Without
       // `:first-child` in the counter this reads 0px.
       expect(computed(doc, "pcc-later").marginBottom).toBe("12px");
+    });
+
+    it("does not let a table header's own text transform reach an island inside it", async () => {
+      // `inh-th` is the only host here that sets `text-transform`, through
+      // Vanilla's table-header label, but it is out of the comparison below
+      // because its alignment differs by design. Without this case nothing
+      // would fail if the root stopped declaring `text-transform`.
+      await sameAsPragmaOnly(
+        vanilla,
+        ["inh-th"],
+        ["text-transform", "font-size", "letter-spacing"],
+      );
     });
 
     it("does not let a Vanilla ancestor push inherited properties into an island", async () => {
@@ -388,6 +463,41 @@ describe.each(VANILLA_VERSIONS)(
       );
     });
 
+    it("lets a host's own signals cross, and stops the typography that rides with them", async () => {
+      // Four inherited properties are deliberately left to cross, because a
+      // host setting them is telling the island something rather than styling
+      // it: a right-to-left page, a hidden container, an inert one, a busy one.
+      // Nothing else pins that decision, so this does.
+      const mixedDoc = await render(mixed(vanilla));
+      const crossing = computed(mixedDoc, "cross-host");
+      expect(crossing.direction).toBe("rtl");
+      expect(crossing.visibility).toBe("hidden");
+      expect(crossing.pointerEvents).toBe("none");
+      expect(crossing.cursor).toBe("wait");
+
+      // The typographic ones on the same host are stopped, and stopped for
+      // everyone: the root declares them, so a host page's own value does not
+      // reach the island either. Vanilla sets these only at values pragma
+      // already uses, or only under `a:hover`, so nothing about Vanilla could
+      // show the difference — what the declarations are worth is exactly this.
+      const pragmaDoc = await render(pragmaOnly);
+      for (const [property, blocked, inherited] of [
+        ["word-spacing", "0px", "6px"],
+        ["text-shadow", "none", "rgb(255, 0, 0) 1px 1px 0px"],
+        ["text-underline-offset", "auto", "6px"],
+      ] as const) {
+        expect(crossing.getPropertyValue(property), property).toBe(blocked);
+        expect(
+          computed(pragmaDoc, "cross-host").getPropertyValue(property),
+          property,
+        ).toBe(inherited);
+      }
+
+      // `word-break` is the one of the four with a Vanilla rule behind it, in
+      // the mobile-card table, so it is a straight comparison.
+      await sameAsPragmaOnly(vanilla, ["cross-break"], ["word-break"]);
+    });
+
     it("does not inherit a table cell's own alignment into an island, which pragma alone does", async () => {
       // The one deliberate difference in the set above, and the price of
       // declaring `text-align` at all. The user agent centres a `<th>`, and on a
@@ -401,6 +511,10 @@ describe.each(VANILLA_VERSIONS)(
       ]);
       expect(computed(pragmaDoc, "inh-th").textAlign).toBe("center");
       expect(computed(mixedDoc, "inh-th").textAlign).toBe("start");
+      // Its weight goes the same way and for the same reason: the browser bolds
+      // a header cell, and an island inside one takes pragma's own weight.
+      expect(computed(pragmaDoc, "inh-th").fontWeight).toBe("700");
+      expect(computed(mixedDoc, "inh-th").fontWeight).toBe("400");
       // The leak it buys off, measured on the same page.
       expect(computed(mixedDoc, "inh-center").textAlign).toBe("start");
     });

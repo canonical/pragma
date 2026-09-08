@@ -1,6 +1,6 @@
 # Measurements
 
-What the boundary costs, measured rather than assumed, so that the README's "What this package does not fix" section quotes numbers with their method. This table is the review measurement of 2026-09-04 against a five-rule stand-in for pragma's element layers; the re-run against the real `@canonical/styles` release, with this package's confined copy of its element layers and a nested DOM (.10), is pending that release and replaces this table when it lands. The harness is the review's scratch script, kept out of the tree on purpose: never turn these into a CI assertion, because timings are not deterministic across machines (pragma constitution XII).
+What the boundary costs, measured rather than assumed, so that `DESIGN.md` and the comments in `src/adapter.css` quote numbers with their method. This table is the review measurement of 2026-09-04 against a five-rule stand-in for pragma's element layers; the re-run against the real `@canonical/styles` release, with this package's confined copy of its element layers and a nested DOM , is pending that release and replaces this table when it lands. The harness is the review's scratch script, kept out of the tree on purpose: never turn these into a CI assertion, because timings are not deterministic across machines (pragma constitution XII).
 
 ## Method
 

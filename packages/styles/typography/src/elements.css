@@ -57,8 +57,9 @@
      copy lands this rule on an island root, which can be any element at all:
      without it a `<pre class="ds">` would take the base font rather than the
      monospace family `normalize` gives it, `ds.typography` sitting above
-     `normalize`. The reset in `@canonical/styles` carries the same list on the
-     same three properties, for the same reason. */
+     `normalize`. The reset in `@canonical/styles` carries the same list on
+     `font-family`, and lists of its own on the other properties an element
+     rule may also set, for the same reason. */
   body:where(:not(pre, code, kbd, samp)) {
     font-family: var(--typography-text-primary-font-family);
   }

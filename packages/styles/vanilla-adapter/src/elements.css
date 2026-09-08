@@ -254,12 +254,14 @@
       font-size: 1rem;
     }
 
-    /* The four properties the browser gives some elements an absolute value for,
+    /* Five declarations for the properties the browser gives some elements an
+       absolute value of its own,
        each excluded on those elements. Their lists come from the user agent's
        stylesheet rather than from `normalize`, which is why they are rules of
-       their own: the browser greys an `<hr>`, bolds a `<th>`, italicises `<em>`
-       and its family, and centres a `<th>`, a `<caption>` and a button's label,
-       the button-typed inputs included. On a document element every list is
+       their own: the browser greys an `<hr>` and gives a button its own label
+       colour, bolds a `<th>`, italicises `<em>` and its family, and centres a
+       `<th>`, a `<caption>` and a button's label, the button-typed inputs
+       included, which also keep their own text selection. On a document element every list is
        inert; on an island root, which can be any element, they are not. */
     :where(
         :scope:not(
@@ -311,14 +313,13 @@
       font-weight: bold;
     }
 
-    /* Three properties an element's own rule in `normalize` may also set, each on
+    /* Two properties an element's own rule in `normalize` may also set, each on
        a root that is not one of the elements whose rule sets it. `normalize` sits
        BELOW this layer, so without the lists a `<pre class="ds">` would take the
        baseline font rather than its own monospace, and a `<sub class="ds">` the
        baseline size rather than 75%. The lists differ because the element rules
-       differ: `pre`, `code`, `kbd` and `samp` set a family and a size, `small` a
-       size, `sub` and `sup` a size and a line height, and the form controls all
-       three. A control keeps the baseline family and size on purpose: `normalize`
+       differ: `pre`, `code`, `kbd` and `samp` set a family, `sub` and `sup` a line
+       height, and the form controls both. A control keeps the baseline family and size on purpose: `normalize`
        gives it `inherit` and `100%`, which on an island root would resolve against
        the host page rather than pragma.
 

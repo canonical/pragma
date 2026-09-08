@@ -39,7 +39,7 @@ type VanillaVersion = (typeof VANILLA_VERSIONS)[number];
 /**
  * Vanilla's compiled CSS inside its layer. Its `@charset` is dropped because a
  * charset rule is invalid inside a block. Its `@font-face` rules are dropped
- * because fonts are the consumer's under pragma's names (README rule 16), and
+ * because fonts are the consumer's under pragma's names (the README's step 6), and
  * because a remote font that arrives between two renders would make layout
  * comparisons order-dependent.
  */
@@ -68,7 +68,7 @@ export const PRAGMA_CSS = [stylesCss, COMPONENT_CSS].join("\n");
 
 /**
  * Pragma's CSS as a mixed page loads it: adapter.css, which brings tokens.css,
- * layout.css and this package's elements.css with it (README rule 4), then
+ * layout.css and this package's elements.css with it (the README's step 4), then
  * components.
  */
 export const MIXED_PRAGMA_CSS = [adapterResolved, COMPONENT_CSS].join("\n");
@@ -101,9 +101,9 @@ const hasMediaRule = (css: string, feature: string): boolean => {
 };
 
 /**
- * Whether pragma states its own reduced-motion rule (.11,
- * D14). Vanilla's `* { transition: none !important }` under that preference
- * wins inside pragma territory whatever the layers do, because an important
+ * Whether pragma states its own reduced-motion rule. Vanilla's universal
+ * `transition: none !important` under that preference wins inside pragma
+ * territory whatever the layers do, because an important
  * declaration in the lowest layer beats everything above it; the two pages
  * agree only once pragma disables its motion too.
  */
@@ -113,7 +113,7 @@ export const PRAGMA_HONOURS_REDUCED_MOTION = hasMediaRule(
 );
 
 export const MOTION_SKIP_REASON =
-  "needs pragma's own prefers-reduced-motion rule (.11, D14)";
+  "needs pragma's own prefers-reduced-motion rule";
 
 /** The pragma block: one of every element the two reported bugs touched. */
 export const PRAGMA_BLOCK = `
@@ -152,7 +152,7 @@ const NEGATIVE_BLOCK = `
 </form></div>`;
 
 /**
- * README rule 8: Vanilla containers whose rules target their direct children
+ * README rule 2: Vanilla containers whose rules target their direct children
  * (the inline form) or need a Vanilla class on the child (the grid row). A
  * pragma root placed there directly, or carrying the class, loses that
  * placement; a wrapper keeps it. The grid case uses a bare pragma root because
@@ -182,7 +182,7 @@ const THEME_BLOCK = `
 
 /**
  * A root that carries pragma's own theme class: overruled by the bridge while
- * adapter.css is loaded (README rule 13), in force once it is gone (rule 19).
+ * adapter.css is loaded, in force once it is gone (the README's Removal section).
  */
 const REMOVAL_BLOCK = `
 <div class="ds card dark" id="removal-dark"><p id="removal-dark-p">x</p></div>`;
@@ -276,7 +276,7 @@ export const vanillaPage = (vanilla: VanillaVersion): PageSpec => ({
 });
 
 /**
- * A page with no Vanilla in it. `styles` is the removal of README rule 19,
+ * A page with no Vanilla in it. `styles` is the removal the README describes,
  * where Vanilla and this package leave in the same change and pragma's own
  * stylesheet takes over. `adapter` is the arrangement that rule rules out,
  * this package still loaded with Vanilla gone: not supported, kept
@@ -486,6 +486,37 @@ export const importantDeclarations = (css: string): string[] => {
   };
   walk(parse(css).cssRules);
   return found;
+};
+
+/**
+ * The Vanilla rules whose important declarations can reach an element inside a
+ * pragma island: the ones whose subject compound — the last compound of the
+ * selector — carries no class, so the Vanilla class sits on an ancestor
+ * OUTSIDE the island, which is the arrangement the rules recommend.
+ *
+ * Derived from the compiled build rather than transcribed, so that a Vanilla
+ * release adding one is a test failure rather than a silent leak. Selectors
+ * only: the CSSOM expands a shorthand into its longhands, so counting
+ * properties would make the reduced-motion rule alone a dozen entries and say
+ * nothing more than its selector already does.
+ */
+export const vanillaImportantReach = (version: VanillaVersion): string[] => {
+  const subjectHasClass = (selector: string): boolean => {
+    const compounds = selector.trim().split(/\s+(?![^(]*\))/);
+    const subject = compounds[compounds.length - 1] ?? "";
+    // A class inside `:not(…)` or another functional pseudo-class does not make
+    // the subject itself carry one.
+    return subject.replace(/:[a-z-]+\([^)]*\)/g, "").includes(".");
+  };
+  const found = new Set<string>();
+  for (const entry of importantDeclarations(vanillaCss[version])) {
+    const selector = entry.slice(0, entry.lastIndexOf(" "));
+    for (const one of selector.split(/,\s*(?![^()]*\))/)) {
+      if (!one.trim() || subjectHasClass(one)) continue;
+      found.add(one.trim());
+    }
+  }
+  return [...found].sort();
 };
 
 export {
