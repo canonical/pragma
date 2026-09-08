@@ -79,7 +79,6 @@ describe("isUnreversibleExec", () => {
       _tag: "WriteFile",
       path: "a.ts",
       content: "",
-      overwrite: true,
     };
     expect(isUnreversibleExec(write)).toBe(false);
   });

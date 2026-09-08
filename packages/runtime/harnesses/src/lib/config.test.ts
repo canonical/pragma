@@ -609,8 +609,10 @@ describe("TOML config (Codex)", () => {
       }),
     );
 
-    expect(result.value.pragma).toBeDefined();
-    expect(result.value.pragma.command).toBe("pragma");
+    expect(result.value).toEqual({
+      figma: { url: "https://mcp.figma.com/mcp" },
+      pragma: { command: "pragma" },
+    });
   });
 
   it("writes mcp_servers entry as TOML table", () => {

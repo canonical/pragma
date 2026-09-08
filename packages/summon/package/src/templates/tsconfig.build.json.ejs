@@ -10,9 +10,14 @@
   },
 <% if (withReact) { -%>
   "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.tests.ts",
+    "src/**/*.tests.tsx"
+  ]
 <% } else { -%>
   "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.test.ts"]
+  "exclude": ["src/**/*.test.ts", "src/**/*.tests.ts"]
 <% } -%>
 }
