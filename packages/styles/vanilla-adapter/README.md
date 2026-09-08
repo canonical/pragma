@@ -16,11 +16,11 @@ The reasoning behind the design is in pragma's cascade explanation, `docs/explan
 
 ## Prerequisites
 
-You need `@canonical/styles` at the first release that ships its stylesheet as three entry points: `tokens.css`, `elements.css` and `layout.css`. That release is named in the changelog. Earlier releases will not work, because the imports in `adapter.css` do not resolve and there is nothing for the confined copy to be a copy of.
+You need `@canonical/styles` 0.40.0 or later, the release that ships its stylesheet as three entry points: `tokens.css`, `elements.css` and `layout.css`. Earlier releases will not work, because the imports in `adapter.css` do not resolve and there is nothing for the confined copy to be a copy of.
 
-The dependency is a normal one with a caret range, as in the component packages. The range pins the release the copy was taken from, and a test compares the copy against that release's source in this repository.
+The dependency is a normal one with a caret range, as in the component packages, and it pins the release the copy was taken from. A test compares the copy against that release's source in this repository, so the two cannot drift apart.
 
-This package is private until that release exists. It is published once the computed-style fixtures in `tests/` pass against it.
+This package is private until that release is out. It is published at the same time, once the computed-style fixtures in `tests/` pass against it.
 
 ## Installation
 
