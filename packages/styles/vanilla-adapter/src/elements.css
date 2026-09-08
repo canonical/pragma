@@ -108,7 +108,7 @@
        because the margin of an element a host page owns is not this package's
        call. Pragma's own file zeroes the body on every page, so the two differ
        only where this package is loaded without Vanilla, which it is not meant
-       to be (README, rule 19): there the body keeps the browser's 8px gutter
+       to be (the README's Removal section): there the body keeps the browser's 8px gutter
        unless it carries `ds` itself. */
     :where(:scope:is(body)) {
       margin: 0;

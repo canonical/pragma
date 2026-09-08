@@ -51,7 +51,7 @@ describe.each(VANILLA_VERSIONS)("theme-bridge (Vanilla %s)", (version) => {
   // The colour is the resolved value of `--color-text`, a `light-dark()` token
   // whose computed value is the same text under both schemes; only the colour
   // shows which side was taken. It follows the scheme because the island root
-  // declares `color: var(--color-text)` in the confined copy (VC.25).
+  // declares `color: var(--color-text)` in the confined copy.
   it("resolves token colours in every theme case as on the matching pragma page", async () => {
     const mixed = await render(mixedPage(version));
     const pages = {
@@ -95,7 +95,7 @@ describe.each(VANILLA_VERSIONS)("theme-bridge (Vanilla %s)", (version) => {
   });
 });
 
-describe("removal (README rule 19)", () => {
+describe("removal (the README's Removal section)", () => {
   it("removes Vanilla and this package in one change, and every root then follows pragma's theme classes", async () => {
     const page = await render(removalPage("styles"));
     expect(computed(page, page.documentElement).colorScheme).toBe("light");
@@ -107,7 +107,7 @@ describe("removal (README rule 19)", () => {
 
   it("computes `light dark` on every island in the unsupported arrangement, this package loaded with Vanilla gone", async () => {
     // Not a step of the migration: this package stays until Vanilla is gone
-    // and the two leave together (VC.34). Recorded because a page that reaches
+    // and the two leave together. Recorded because a page that reaches
     // it by accident looks like this. No Vanilla theme is left for the bridge
     // to read, so it writes pragma's default, `light dark`, on every outermost
     // island; the pin on <html> does not reach them, and a nested root

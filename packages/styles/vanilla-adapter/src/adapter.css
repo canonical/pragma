@@ -11,9 +11,9 @@
  *
  *   @import url("@canonical/styles-vanilla-adapter/adapter.css");
  *
- * Three imports, one boundary, one bridge, two layers, no tooling. What you read
- * here is what the browser runs (pragma constitution VI and XIII). The reasoning
- * is in pragma-adrs F, VC.24, VC.09 and VC.30.
+ * Three imports, one boundary, one bridge and two layers, with no tooling: what
+ * you read here is what the browser runs. The README explains why each piece is
+ * written the way it is.
  */
 
 /* Pragma's CSS for a mixed page. The imports have to come before any rule,
@@ -119,7 +119,7 @@
  * opened from. `:where()` keeps the rule at zero specificity, and the bridge
  * sits in `ds.adapter`, a sublayer of `ds` between `ds.states` and
  * `ds.components`: above `ds.modifiers`, so pragma's own theme classes on an
- * island root are overruled while this file is loaded (README, rule 13), and
+ * island root are overruled while this file is loaded (README, rule 7), and
  * below the component tiers, so a component that sets its own scheme still
  * wins. A sublayer on purpose: a top-level layer cannot sit between two
  * sublayers of `ds`, because sublayers sort inside their parent and `ds` takes
@@ -128,7 +128,7 @@
  * never runs while Vanilla is loaded, because Vanilla's own `:root, .is-light`
  * sets both toggles; it is what an island computes where this file is loaded
  * without Vanilla, which is not an arrangement this package supports — it stays
- * until Vanilla is gone and the two leave together (README, rule 19). */
+ * until Vanilla is gone and the two leave together (the README's Removal section). */
 @layer ds.adapter {
   :where(.ds:not(.ds *)) {
     color-scheme: var(--vf-theme-light, light) var(--vf-theme-dark, dark);

@@ -74,7 +74,7 @@ describe("the order contract", () => {
   });
 
   it("adapter.css opens with its three imports, then the boundary block and the bridge block, and Chromium keeps the boundary's list whole", () => {
-    // The imports are the first rules of the file (README rule 4): pragma's
+    // The imports are the first rules of the file (the README's installation, step 4): pragma's
     // tokens first, so that they arrive before the copy that reads them.
     const statements = uncommented(adapterCss)
       .split(";")
@@ -152,7 +152,7 @@ describe("the order contract", () => {
     }
   });
 
-  it("pragma's CSS carries no !important on either kind of page (README rule 17)", () => {
+  it("pragma's CSS carries no !important on either kind of page (the README's installation, step 7)", () => {
     // The CSSOM is the check; the text match is a second look at what a
     // browser might read differently, with the comments taken out, because
     // adapter.css's own comment names Vanilla's important declarations.
@@ -213,7 +213,7 @@ describe("the order contract", () => {
 
   it("a sub-tier layer declared later sorts above its tier and below `app` on a mixed page", async () => {
     // A package below a tier declares its own layer, flat beside the five,
-    // first in its own entry (README, VC.31). Appearing after the statement
+    // first in its own entry (README, ). Appearing after the statement
     // puts it above the five and still below `app`; the higher layer's rule
     // is written first each time so that source order cannot be the reason.
     const spec = mixedPage("4.58");

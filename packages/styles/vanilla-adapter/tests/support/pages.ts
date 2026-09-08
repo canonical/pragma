@@ -101,7 +101,7 @@ const hasMediaRule = (css: string, feature: string): boolean => {
 };
 
 /**
- * Whether pragma states its own reduced-motion rule (pragma-adrs F, VC.11,
+ * Whether pragma states its own reduced-motion rule (.11,
  * D14). Vanilla's `* { transition: none !important }` under that preference
  * wins inside pragma territory whatever the layers do, because an important
  * declaration in the lowest layer beats everything above it; the two pages
@@ -113,7 +113,7 @@ export const PRAGMA_HONOURS_REDUCED_MOTION = hasMediaRule(
 );
 
 export const MOTION_SKIP_REASON =
-  "needs pragma's own prefers-reduced-motion rule (pragma-adrs F, VC.11, D14)";
+  "needs pragma's own prefers-reduced-motion rule (.11, D14)";
 
 /** The pragma block: one of every element the two reported bugs touched. */
 export const PRAGMA_BLOCK = `
@@ -172,7 +172,7 @@ const PLACEMENT_BLOCK = `
 </div>
 <div class="p-card" id="place-pcard"><div class="ds card" id="place-pcard-wrapped"></div></div>`;
 
-/** The theme cases of VC.19 that markup alone can express, plus paper and a nested root. */
+/** The theme cases of  that markup alone can express, plus paper and a nested root. */
 const THEME_BLOCK = `
 <div class="is-dark"><div class="ds card" id="theme-dark"><p id="theme-dark-p">x</p>
   <div class="ds card" id="theme-dark-nested"><p id="theme-dark-nested-p">x</p></div></div></div>
@@ -242,7 +242,7 @@ export const vanillaPage = (vanilla: VanillaVersion): PageSpec => ({
  * A page with no Vanilla in it. `styles` is the removal of README rule 19,
  * where Vanilla and this package leave in the same change and pragma's own
  * stylesheet takes over. `adapter` is the arrangement that rule rules out,
- * this package still loaded with Vanilla gone: not supported (VC.34), kept
+ * this package still loaded with Vanilla gone: not supported, kept
  * here because what it computes is worth recording. Nothing on any root
  * changes between the two.
  */
@@ -359,7 +359,7 @@ const CELL_GEOMETRY = new Set(["ds-table", "ds-th", "ds-td", "ds-root"]);
 /**
  * The one difference the contract states inside pragma territory: Chromium
  * gives table cells their 1px default padding as a presentational hint, which
- * `revert` rolls back to 0px (VC.29, in the README's non-guarantees), and the
+ * `revert` rolls back to 0px (, in the README's non-guarantees), and the
  * geometry of the table and its container follows. Any other value on a cell's
  * padding is a leak.
  */

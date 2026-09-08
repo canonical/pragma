@@ -2,7 +2,6 @@
   "name": "@canonical/styles-vanilla-adapter",
   "description": "Cascade layer order, boundary and confined element styles for running pragma alongside Vanilla Framework.",
   "version": "0.37.0",
-  "private": true,
   "type": "module",
   "exports": {
     "./layers.css": "./src/layers.css",
