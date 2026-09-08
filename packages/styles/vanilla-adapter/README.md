@@ -9,7 +9,7 @@ The package ships three stylesheets and depends only on `@canonical/styles`. Non
 | File | What it does |
 | --- | --- |
 | `layers.css` | Declares the cascade layer order that both frameworks share. |
-| `adapter.css` | Keeps Vanilla out of pragma's components, carries Vanilla's theme into them, and loads what a mixed page needs from pragma. |
+| `adapter.css` | Keeps Vanilla out of pragma's components, carries Vanilla's light or dark mode into them, and loads what a mixed page needs from pragma. |
 | `elements.css` | Pragma's element styles, confined to pragma's components rather than applied to the whole page. |
 
 The reasoning behind the design is in pragma's cascade explanation, `docs/explanations/STYLES_CASCADE.md`.
@@ -20,7 +20,7 @@ You need `@canonical/styles` 0.40.0 or later, the release that ships its stylesh
 
 The dependency is a normal one with a caret range, as in the component packages, and it pins the release the copy was taken from. A test compares the copy against that release's source in this repository, so the two cannot drift apart.
 
-This package is private until that release is out. It is published at the same time, once the computed-style fixtures in `tests/` pass against it.
+This package is released alongside `@canonical/styles`, and its dependency range moves with it, so an install always pairs the confined copy with the release it was taken from.
 
 ## Installation
 
@@ -67,7 +67,11 @@ Create a second entry, conventionally `pragma.css`. It starts with `adapter.css`
 @import url("@canonical/react-ds-global-form/dist/esm/index.css");
 ```
 
-Resolve this entry with whatever already resolves package imports in your pipeline. The order of imports inside it does not matter, because the layers decide precedence, but none of it belongs inside the `vanilla` layer.
+Nothing here needs a `layer()` keyword or a wrapper of your own. Every stylesheet pragma ships already writes into its own layer: the design system's own rules into `normalize`, `ds.reset`, `ds.typography` and the rest, and each component package into the layer for its tier. Step 3 fixed the order of all of those names, so each sheet lands where it belongs as it loads.
+
+That is the difference from Vanilla, which knows nothing about layers and therefore has to be wrapped by hand in step 2.
+
+For the same reason, the order of imports inside this entry does not matter: the layers decide precedence, not the sequence. What does matter is that none of it goes inside the `vanilla` layer, which would put pragma's rules below the boundary that is supposed to keep Vanilla out of them. Resolve the entry with whatever already resolves package imports in your pipeline.
 
 The first import brings `@canonical/styles/tokens.css`, `@canonical/styles/layout.css` and this package's `elements.css` with it. Do not import `@canonical/styles` or its `elements.css` on a mixed page: those style the whole document, which is what a pragma-only page wants and what a mixed page has to avoid.
 
@@ -85,13 +89,50 @@ Use `app comfortable light` instead of `site comfortable light` in an applicatio
 
 Link order does not decide which framework wins, since the layers do that. What matters is that the order statement is the first rule the browser sees, which step 3 arranged.
 
+That is the whole setup. Writing pragma components into a page that Vanilla still owns is a separate matter, and [Territories](#territories) and [Rules](#rules) below cover it: where a `ds` root may go, what may not go inside one, and how light and dark reach a component.
+
 ### 6. Declare the fonts once, for both frameworks
 
-None of the three stylesheets in this package references a file, and neither do the two pragma entries they load: no font, no image and no icon, so nothing new is downloaded and no copying step is added to your build.
+No stylesheet in this package references a file, and neither do the two pragma entries they load: no font, no image and no icon. Nothing new is downloaded, and your build gains no copying step.
 
-Fonts are the exception, and you declare them yourself so that both frameworks share one set. Point Vanilla's `$font-base-family` and `$font-monospace` at pragma's stacks in your settings, before the Vanilla import. Write the `@font-face` rules in your own stylesheet, from the files in `@canonical/ds-assets`, and leave `@canonical/styles/fonts` out of `pragma.css`. That is what `@canonical/ds-assets` is for in step 1.
+Fonts are the exception, because both frameworks want one. Declare them yourself, once, and point Vanilla at the same names.
 
-Letting each framework declare its own family downloads the same typeface twice under two names, and leaves the two territories on slightly different metrics.
+In your Vanilla settings, before the Vanilla import:
+
+```scss
+$font-base-family: "Ubuntu Sans", "Ubuntu", "Cantarell", system-ui, -apple-system, "Segoe UI", sans-serif;
+$font-monospace: "Ubuntu Sans Mono", "Ubuntu Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+```
+
+In your own stylesheet, the faces themselves:
+
+```css
+@font-face {
+  font-family: "Ubuntu Sans";
+  src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSans[wdth,wght].woff2")
+    format("woff2-variations");
+  font-weight: 100 800;
+  font-stretch: 75% 100%;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ubuntu Sans";
+  src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSans-Italic[wdth,wght].woff2")
+    format("woff2-variations");
+  font-weight: 100 800;
+  font-stretch: 75% 100%;
+  font-style: italic;
+  font-display: swap;
+}
+```
+
+Adjust the two `url()` paths to however your build resolves package assets. There is no monospace face to declare: the files `@canonical/ds-assets` ships under that name are not fonts yet, so monospace text falls back to the stack above, which is where it would land anyway.
+
+Leave `@canonical/styles/fonts` out of `pragma.css`. Pragma's own font declarations name the same faces and the same files, so loading them as well would declare each face twice.
+
+Letting each framework declare its own family instead downloads the same typeface twice under two names, and leaves the two territories on slightly different metrics.
 
 ### 7. Check it
 
@@ -120,12 +161,12 @@ The rules are numbered so that a review can point at one.
 4. From day one, write `<html class="site comfortable light">` on a site, or `app comfortable light` in an application: one context, one density, and `light`. Nothing marks the page as mixed, because nothing needs to. Pragma's territory is the elements carrying `ds`, and `elements.css` confines pragma's element styles to them by itself. Do not put `ds` on `<html>` while Vanilla is in the page, because that makes the whole document a pragma island and the boundary then reverts every Vanilla rule in it.
 5. There is no flip from one framework to the other. A pragma page and a mixed page carry the same root classes, and only the stylesheet differs. A pragma page loads `@canonical/styles`, whose element layers style the whole document. A mixed page loads this package instead. The last state before Vanilla goes is simply a page with no Vanilla class left in it.
 
-**Theme**
+**Light and dark mode**
 
-6. While both frameworks are on the page, Vanilla's theme classes are the only source of theme. A dark page is `<body class="is-dark">`, a dark section is `.p-strip--dark` or `.p-strip.is-dark`, and a light island inside one is `.is-light` or `.is-paper`. Pragma components inside them inherit the right scheme through the bridge, and you add nothing to the markup for it.
-7. A `.dark` or `.light` class on a pragma root inside a Vanilla page has no effect, because the bridge wins for as long as `adapter.css` is loaded. If a region has no Vanilla theme context and needs one, declare `color-scheme` from your own `app` layer, which sits above every pragma layer including the bridge.
-8. The operating system's dark mode does not reach the page while both frameworks are on it. Once this package is gone, pragma owns theme: keep `light` or `dark` on `<html>` as a toggle, or remove the pin to follow the system.
-9. Leave `color-scheme` to the bridge. An unlayered `:root` rule that sets it beats every theme class and every layer.
+6. While both frameworks are on the page, Vanilla's mode classes decide light or dark, and nothing else does. A dark page is `<body class="is-dark">`, a dark section is `.p-strip--dark` or `.p-strip.is-dark`, and a light island inside one is `.is-light` or `.is-paper`. Pragma components inside them inherit the right mode through the bridge, and you add nothing to the markup for it.
+7. A `.dark` or `.light` class on a pragma root inside a Vanilla page has no effect, because the bridge wins for as long as `adapter.css` is loaded. If a region has no Vanilla mode class around it and needs a mode of its own, declare `color-scheme` from your `app` layer, which sits above every pragma layer including the bridge.
+8. The operating system's dark mode does not reach the page while both frameworks are on it. Once this package is gone, pragma decides the mode: keep `light` or `dark` on `<html>` as a toggle, or remove the pin to follow the system.
+9. Leave `color-scheme` to the bridge. An unlayered `:root` rule that sets it beats every mode class and every layer.
 
 **What not to reach for**
 
@@ -133,7 +174,7 @@ The rules are numbered so that a review can point at one.
 
 ## Design notes
 
-How the layers, the boundary, the theme bridge and the confined copy work, and why the selectors are written the way they are, is in [DESIGN.md](./DESIGN.md).
+How the layers, the boundary, the mode bridge and the confined copy work, and why the selectors are written the way they are, is in [DESIGN.md](./DESIGN.md).
 
 ## Browser support
 
@@ -212,10 +253,10 @@ Each line names the fixture that checks it. The fixtures live in `tests/`; the o
 - No Vanilla rule styles an element inside pragma's territory: every property there is either the browser's default or pragma's. (`territory-equals-pragma-only`, with explicit checks on `--vf-color-text-default`, the root line height, `box-sizing` and `color-scheme`)
 - A pragma element inside a Vanilla page computes the same styles as it would on a pragma-only page, for every property pragma declares or leaves to the browser, and a pragma root inherits pragma's baseline rather than the page's. (`territory-equals-pragma-only`, over the full property list)
 - Vanilla does not style the `.ds` root itself. (`root-not-styled`, including a `<button class="ds button">` against Vanilla's `button` rule)
-- A pragma root inside a Vanilla dark context computes `color-scheme: dark`, and its token-driven colours match pragma's dark page. Inside a light or paper context it computes light. (`theme-bridge`, covering the four theme cases and `.is-paper`)
+- A pragma root inside a Vanilla dark section computes `color-scheme: dark`, and its token-driven colours match pragma's dark page. Inside a light or paper section it computes light. (`theme-bridge`, covering the four theme cases and `.is-paper`)
 - Installing this package does not change Vanilla's territory: every element outside `.ds`, including `html` and `body`, matches the Vanilla-only page. (`vanilla-territory-untouched`, at 1280 and 1700 pixels)
 - Where `adapter.css` sits inside `pragma.css` does not matter. (`order-independence`)
-- After removal, the page renders as a pragma page and every root follows pragma's theme classes. (`removal`)
+- After removal, the page renders as a pragma page and every root follows pragma's own `light` and `dark` classes. (`removal`)
 
 ## Known limitations
 
@@ -252,7 +293,7 @@ The root is missing `light`. Pragma's root declares `color-scheme: light dark` a
 <a id="theme-bridge"></a>
 ### A pragma card inside a dark strip stays light
 
-Either the strip does not set Vanilla's theme properties, or the card is not an outermost pragma root. Dark contexts have to be Vanilla's, such as `is-dark` or `p-strip--dark`, since a `.dark` class on a pragma root is ignored by design. For a region with no Vanilla theme context, set `color-scheme` from your `app` layer.
+Either the strip does not set Vanilla's mode properties, or the card is not an outermost pragma root. Dark sections have to be Vanilla's, such as `is-dark` or `p-strip--dark`, since a `.dark` class on a pragma root is ignored by design. For a region with no Vanilla mode class around it, set `color-scheme` from your `app` layer.
 
 <a id="vanilla-inside"></a>
 ### Vanilla styling vanished inside a Modal, a Card, or another pragma container
@@ -291,4 +332,4 @@ Pragma's element layers then style the whole page, as they do on any pragma page
 
 The removal is complete when the `@layer vanilla` block is gone, this package is out of the manifest, and the page renders identically with `@canonical/styles` in place of this package's two imports.
 
-If you leave this package loaded on a page that no longer has Vanilla in it, nothing breaks, but two things change and neither is something this package promises. The body takes the browser's 8px margin and the browser's font, because the copy zeroes the body's margin only when the body itself is a pragma root. And the bridge, finding no Vanilla theme to read, writes `light dark` on every outermost root, so components follow the operating system whatever `<html>` says and a `.dark` class on a root is still ignored. Both are measured, and the fixtures record them so that anyone who reaches that state by accident can recognise it.
+If you leave this package loaded on a page that no longer has Vanilla in it, nothing breaks, but two things change and neither is something this package promises. The body takes the browser's 8px margin and the browser's font, because the copy zeroes the body's margin only when the body itself is a pragma root. And the bridge, finding no Vanilla mode to read, writes `light dark` on every outermost root, so components follow the operating system whatever `<html>` says and a `.dark` class on a root is still ignored. Both are measured, and the fixtures record them so that anyone who reaches that state by accident can recognise it.
