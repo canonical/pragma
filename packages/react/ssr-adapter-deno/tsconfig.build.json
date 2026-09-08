@@ -7,9 +7,5 @@
     "declarationMap": true,
     "sourceMap": true
   },
-  // Tests are excluded here and NOT in tsconfig.json: `check:ts` must keep them
-  // in its program (esbuild strips types without checking them, so an excluded
-  // test file is type-checked by nothing), while the emit must never carry them
-  // into dist/. Both spellings — this repo uses `*.test.ts` and `*.tests.ts`.
   "exclude": ["src/**/*.test.ts", "src/**/*.tests.ts"]
 }
