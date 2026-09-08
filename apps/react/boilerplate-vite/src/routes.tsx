@@ -1,4 +1,5 @@
 import { useTranslation } from "@canonical/i18n-react";
+import { Head } from "@canonical/react-head";
 import {
   type AnyRoute,
   group,
@@ -94,6 +95,7 @@ function NotFoundPage(): ReactElement {
 
   return (
     <section>
+      <Head title={t("notFound.heading")} />
       <h1>{t("notFound.heading")}</h1>
       <p>{t("notFound.body")}</p>
     </section>

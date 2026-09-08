@@ -41,14 +41,13 @@ const prompts: PromptDefinition[] = [
 function buildMainPage(domainName: string): string {
   const title = toTitleCase(domainName);
 
-  return `import { useHead } from "@canonical/react-head";
+  return `import { Head } from "@canonical/react-head";
 import type { ReactElement } from "react";
 
 export default function MainPage(): ReactElement {
-  useHead({ title: "${title}" });
-
   return (
     <section aria-labelledby="main-title">
+      <Head title="${title}" />
       <h1 id="main-title">${title}</h1>
       <p>This is the main page for the ${domainName} domain.</p>
     </section>
@@ -81,7 +80,7 @@ export const generator: GeneratorDefinition<DomainAnswers> = {
     description: "Create a domain folder with routes and a MainPage",
     version: packageVersion(),
     help: `Creates a domain directory under src/domains/ with:
-  - MainPage.tsx — example page component with useHead()
+  - MainPage.tsx — example page component with <Head>
   - routes.ts — route barrel exporting the domain's routes
 
 Add more routes with: summon route <domain>/<route-name>`,

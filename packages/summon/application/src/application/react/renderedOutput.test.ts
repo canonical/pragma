@@ -208,3 +208,97 @@ describe("the rendered application declares its context and density", () => {
     });
   }
 });
+
+/**
+ * One owner per document, asserted on the rendered text.
+ *
+ * `@canonical/react-head`'s `<Head>` renders `<title>`, `<meta>` and `<link>`
+ * as ordinary elements and lets React 19 hoist them into `<head>`, on the
+ * server as much as on the client. React emits every `<title>` it is given and
+ * HTML takes the *first* in tree order, so a second owner does not merge with
+ * the page's title — it beats it. Two owners could creep in without any syntax
+ * error: a `<Head>` added to an entry or a layout, or a `<title>` restored to
+ * the HTML shell that the server renderer re-emits ahead of the hoisted tags.
+ *
+ * So: pages own the title, entries own the template that composes it, and the
+ * shell owns a title only in the client-only arm, where React inserts the
+ * page's ahead of it.
+ */
+describe("the rendered application has one document-title owner", () => {
+  /** Occurrences of the `Head` element — `HeadProvider` deliberately excluded. */
+  const countHead = (source: string) =>
+    [...source.matchAll(/<Head[\s/>]/g)].length;
+
+  const render = (rel: string, combo: (typeof combos)[number]) =>
+    renderString(
+      readFileSync(path.join(templatesDir, rel), "utf8"),
+      varsFor(combo),
+    );
+
+  const pageTemplates = templates.filter((rel) =>
+    /^src\/domains\/.+Page\.tsx\.ejs$/.test(rel),
+  );
+
+  it("has page templates to check", () => {
+    expect(pageTemplates.length).toBeGreaterThan(0);
+  });
+
+  for (const combo of combos) {
+    it(`${label(combo)}: every page renders exactly one <Head>`, () => {
+      for (const rel of pageTemplates) {
+        expect(countHead(render(rel, combo)), `${rel}`).toBe(1);
+      }
+    });
+
+    it(`${label(combo)}: the route map owns one title, in its not-found page`, () => {
+      // `routes.tsx` holds the layout wrappers AND the not-found route's
+      // content, so it is the one file where a layout could quietly acquire a
+      // second owner. Counting is not enough — moving the `<Head>` up into
+      // `publicLayout` would keep the count at one — so the assertion also
+      // says where it may appear: only from the not-found route onwards.
+      const rendered = render("src/routes.tsx.ejs", combo);
+      const notFound = rendered.search(
+        /^(?:function NotFoundPage|const notFoundRoute)/m,
+      );
+
+      expect(notFound).toBeGreaterThan(-1);
+      expect(countHead(rendered.slice(0, notFound))).toBe(0);
+      expect(countHead(rendered)).toBe(1);
+    });
+
+    it(`${label(combo)}: the entries install the template and own no title`, () => {
+      const entries = combo.spa
+        ? ["src/client/entry.tsx.ejs"]
+        : ["src/client/entry.tsx.ejs", "src/server/entry.tsx.ejs"];
+
+      for (const rel of entries) {
+        const rendered = render(rel, combo);
+
+        expect(rendered, rel).toContain(
+          'import formatDocumentTitle from "../formatDocumentTitle.js";',
+        );
+        expect(rendered, rel).toContain(
+          "<HeadProvider titleTemplate={formatDocumentTitle}>",
+        );
+        expect(countHead(rendered), rel).toBe(0);
+      }
+    });
+
+    it(`${label(combo)}: the title template carries the application name`, () => {
+      expect(render("src/formatDocumentTitle.ts.ejs", combo)).toContain(
+        `\`\${pageTitle} — my-app\``,
+      );
+    });
+
+    it(`${label(combo)}: the HTML shell titles itself only without a server`, () => {
+      // Comments stripped first: both arms explain the rule in one, and the
+      // explanation names the very element being looked for.
+      const markup = render("index.html.ejs", combo).replace(
+        /<!--[\s\S]*?-->/g,
+        "",
+      );
+
+      expect(markup.includes("<title>")).toBe(combo.spa);
+    });
+  }
+});

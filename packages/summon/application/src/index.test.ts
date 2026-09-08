@@ -61,6 +61,7 @@ describe("application/react generator", () => {
     expect(filePaths).toContain("my-app/index.html");
     expect(filePaths).toContain("my-app/.gitignore");
     expect(filePaths).toContain("my-app/.browserslistrc");
+    expect(filePaths).toContain("my-app/src/formatDocumentTitle.ts");
     expect(filePaths).toContain("my-app/src/client/entry.tsx");
     expect(filePaths).toContain("my-app/src/server/entry.tsx");
     expect(filePaths).toContain("my-app/src/server/renderer.tsx");
@@ -608,6 +609,22 @@ describe("domain generator", () => {
     expect(paths).toContain("src/domains/billing/routes.ts");
   });
 
+  it("includes correct content in the main page component", () => {
+    const result = dryRun(
+      generators.domain.generate({ domainName: "billing" }),
+    );
+
+    const page = result.effects.find(
+      (e) =>
+        e._tag === "WriteFile" &&
+        (e as { path: string }).path === "src/domains/billing/MainPage.tsx",
+    ) as { content: string } | undefined;
+
+    expect(page).toBeDefined();
+    expect(page?.content).toContain("export default function MainPage()");
+    expect(page?.content).toContain('<Head title="Billing" />');
+  });
+
   it("creates a MakeDir effect for the domain directory", () => {
     const result = dryRun(
       generators.domain.generate({ domainName: "billing" }),
@@ -649,7 +666,7 @@ describe("route generator", () => {
 
     expect(page).toBeDefined();
     expect(page?.content).toContain("export default function SettingsPage()");
-    expect(page?.content).toContain('useHead({ title: "Settings" })');
+    expect(page?.content).toContain('<Head title="Settings" />');
   });
 
   it("wires the route via a reversible TransformFile (no TODO append)", () => {

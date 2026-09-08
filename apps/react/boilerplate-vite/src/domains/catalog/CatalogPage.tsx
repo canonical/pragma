@@ -1,5 +1,5 @@
 import { useTranslation } from "@canonical/i18n-react";
-import { useHead } from "@canonical/react-head";
+import { Head } from "@canonical/react-head";
 import { type ReactElement, Suspense } from "react";
 import { useRelayEnvironment } from "react-relay";
 import { createOperationDescriptor, getRequest } from "relay-runtime";
@@ -8,7 +8,6 @@ import ProductList, { PAGE_SIZE, productListQuery } from "./ProductList.js";
 
 export default function CatalogPage(): ReactElement {
   const { t } = useTranslation();
-  useHead({ title: t("catalog.title") });
 
   const environment = useRelayEnvironment();
   const canRenderQuery =
@@ -21,6 +20,7 @@ export default function CatalogPage(): ReactElement {
 
   return (
     <section aria-labelledby="catalog-title">
+      <Head title={t("catalog.title")} />
       <h1 id="catalog-title">{t("catalog.heading")}</h1>
       {/*
         Developer documentation rather than user-facing copy (file names,

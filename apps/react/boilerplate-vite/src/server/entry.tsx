@@ -17,6 +17,7 @@ import { Outlet, RouterProvider } from "@canonical/router-react";
 import { fetchQuery, RelayEnvironmentProvider } from "react-relay";
 import { catalogs, i18nConfig } from "#i18n/index.js";
 import { createEnvironment } from "#relay/environment.js";
+import formatDocumentTitle from "../formatDocumentTitle.js";
 import {
   appRoutes,
   getAuthRedirectForMatch,
@@ -285,7 +286,7 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
       <body>
         <div id="root">
           <I18nProvider config={i18nConfig} catalogs={catalogs} locale={locale}>
-            <HeadProvider>
+            <HeadProvider titleTemplate={formatDocumentTitle}>
               <RelayEnvironmentProvider environment={relayEnvironment}>
                 <RouterProvider router={router}>
                   <Outlet fallback={<p>Loading…</p>} />
