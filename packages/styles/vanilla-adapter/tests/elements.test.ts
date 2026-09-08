@@ -492,7 +492,7 @@ describe("elements.css is pragma's element layers, confined", () => {
   });
 
   it("reads pragma's rules in their plain form, not a scoped one", () => {
-    // The copy binds to pragma's plain stylesheet (VC.30): a scoped source
+    // The copy binds to pragma's plain stylesheet: a scoped source
     // would mean pragma confines its own layers again, and the mapping below
     // would no longer describe the copy.
     const scoped = sourceRules.filter((rule) => rule.scope !== null);

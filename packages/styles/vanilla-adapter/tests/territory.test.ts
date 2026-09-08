@@ -23,7 +23,7 @@ import {
  * label's margin and width, the table's layout, the cells' alignment, overflow
  * and padding, the link's underline, the rule's borders and background, the
  * list's margins and padding. With it, only the cells' padding, reverted to
- * the browser's 0px: the one difference VC.29 states, accepted by name.
+ * the browser's 0px: the one difference  states, accepted by name.
  */
 const LEAK_PROPERTIES = [
   "margin-top",
@@ -58,7 +58,7 @@ const LEAK_PROPERTIES = [
 /**
  * What a pragma root inherits from the page around it. The boundary cannot
  * revert inheritance; the island root declares these in the confined copy of
- * pragma's baseline (VC.25), and this list is the property set that
+ * pragma's baseline, and this list is the property set that
  * declaration must cover.
  */
 const ROOT_INHERITED = [

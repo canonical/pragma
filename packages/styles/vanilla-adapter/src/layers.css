@@ -11,7 +11,7 @@
  *
  *   @import url("@canonical/styles-vanilla-adapter/layers.css");
  *
- * Listed lowest first, each position is an argument (pragma-adrs F, VC.02):
+ * Listed lowest first, each position is an argument:
  *   vanilla        Vanilla Framework and everything built on it, one territory
  *   boundary       `all: revert` on pragma territory (adapter.css): Vanilla ends here
  *   normalize      pragma's authored reset; on a mixed page the copy in this
@@ -35,7 +35,7 @@
  *                  The five below follow the design system's tier tree, flat,
  *                  lowest first, so that a higher tier's rule for a component
  *                  beats a lower tier's by layer whatever order the page loads
- *                  the sheets in (pragma-adrs F, VC.31):
+ *                  the sheets in:
  *   ds.components.global         the global component packages
  *   ds.components.sites          the sites tier
  *   ds.components.documentation  the documentation tier

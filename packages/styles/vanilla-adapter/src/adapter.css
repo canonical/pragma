@@ -11,9 +11,9 @@
  *
  *   @import url("@canonical/styles-vanilla-adapter/adapter.css");
  *
- * Three imports, one boundary, one bridge, two layers, no tooling. What you read
- * here is what the browser runs (pragma constitution VI and XIII). The reasoning
- * is in pragma-adrs F, VC.24, VC.09 and VC.30.
+ * Three imports, one boundary, one bridge and two layers, with no tooling: what
+ * you read here is what the browser runs. The README explains why each piece is
+ * written the way it is.
  */
 
 /* Pragma's CSS for a mixed page. The imports have to come before any rule,
