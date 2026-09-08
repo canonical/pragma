@@ -1,8 +1,6 @@
 @import "./reset.css";
 @import "./font-faces.css";
 
-/* Layer: ds.components.apps-launchpad (@canonical/styles README, "Cascade layers"). */
-
 @layer ds.components.apps-launchpad {
   html {
     color: var(--lp-color-text-default);

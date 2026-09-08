@@ -1,5 +1,3 @@
-/* Layer: ds.components.apps-launchpad (@canonical/styles README, "Cascade layers"). */
-
 @layer ds.components.apps-launchpad {
   .dense {
     --lp-dimension-padding-block-context: var(

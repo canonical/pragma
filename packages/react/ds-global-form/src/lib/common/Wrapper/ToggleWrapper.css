@@ -1,5 +1,3 @@
-/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
-
 @layer ds.components.global {
   /* Toggle field layout, top to bottom: an optional heading, a control row where
    * the input sits inline with its label, then the description and any error. */
