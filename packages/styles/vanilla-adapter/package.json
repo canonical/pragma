@@ -1,0 +1,53 @@
+{
+  "name": "@canonical/styles-vanilla-adapter",
+  "description": "Cascade layer order, boundary and confined element styles for running pragma alongside Vanilla Framework.",
+  "version": "0.37.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./layers.css": "./src/layers.css",
+    "./adapter.css": "./src/adapter.css"
+  },
+  "files": [
+    "src"
+  ],
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/pragma"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/pragma/issues"
+  },
+  "homepage": "https://github.com/canonical/pragma#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit",
+    "check:webarchitect": "webarchitect assets",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:sources": "vitest run --project=sources"
+  },
+  "dependencies": {
+    "@canonical/styles": "^0.37.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.11",
+    "@canonical/biome-config": "^0.37.0",
+    "@canonical/typescript-config": "^0.37.0",
+    "@canonical/webarchitect": "^0.37.0",
+    "@types/node": "^26.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}
