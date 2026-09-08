@@ -4,6 +4,5 @@
     "baseUrl": "src",
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src/**/*.ts", "vite.config.ts", "vitest.config.ts"],
-  "exclude": ["src/**/*.test.ts"]
+  "include": ["src/**/*.ts", "vite.config.ts", "vitest.config.ts"]
 }

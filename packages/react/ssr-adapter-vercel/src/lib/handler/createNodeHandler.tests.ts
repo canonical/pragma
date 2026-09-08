@@ -240,7 +240,11 @@ describe("createNodeHandler", () => {
 
   it("forwards an AbortSignal to the renderer and the Request (M3)", async () => {
     let renderSignal: AbortSignal | undefined;
-    let requestSignal: AbortSignal | null = null;
+    // Deliberately uninitialised. Both signals are assigned inside the factory
+    // callback below, so any initialiser (`= null`, `= undefined`) would leave
+    // control-flow analysis narrowed to the initialiser's type at the
+    // assertions, and `?.aborted` would then be an access on `never`.
+    let requestSignal: AbortSignal | undefined;
     const factory = (request: Request) => {
       requestSignal = request.signal;
       return {
