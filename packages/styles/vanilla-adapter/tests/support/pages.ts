@@ -48,7 +48,7 @@ const vanillaLayer = (css: string): string =>
     .replace(/@charset\s+"[^"]*";/, "")
     .replace(/@font-face\s*\{[^}]*\}/g, "")}}`;
 
-const vanillaCss: Record<VanillaVersion, string> = {
+export const vanillaCss: Record<VanillaVersion, string> = {
   "4.56": vanillaLayer(vanilla456),
   "4.58": vanillaLayer(vanilla458),
 };
@@ -452,6 +452,7 @@ export const importantDeclarations = (css: string): string[] => {
 
 export {
   adapterCss,
+  adapterResolved,
   elementsCss,
   layersCss,
   layoutCss,
