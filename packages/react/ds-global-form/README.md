@@ -25,31 +25,15 @@ The package builds on top of `@canonical/react-ds-global`.
 
 ### How component CSS reaches the page
 
-This package puts CSS on the page two ways. `dist/esm/index.css` — the file the snippet above imports — is the package-level stylesheet: the `--form-*` token block, the field grid, the shared input chrome, and `density.css`, which sizes every control to the context and density cell on the root. Each component module then imports its own stylesheet (`import "./styles.css"`), so importing a component is what puts that component's CSS on the page; a bundler collects those imports into the application's CSS. Nothing here is injected at runtime, and a component you never import ships no CSS.
-
-The consequence is that the order a bundler happens to emit these sheets in is not something you can rely on, which is what the cascade layer below is for.
+This package puts CSS on the page two ways. `dist/esm/index.css` — the file the snippet above imports — is the package-level stylesheet: the `--form-*` token block, the field grid, the shared input chrome, and `density.css`, which sizes every control to the context and density cell on the root. Each component module then imports its own stylesheet (`import "./styles.css"`), so importing a component is what puts that component's CSS on the page; a component you never import ships no CSS.
 
 ### Every stylesheet is in `ds.components.global`
 
-Every stylesheet under `src/` — the package entry, `density.css`, the 29 component sheets and the density docs example, 32 in all — is wrapped in one cascade layer:
+Every stylesheet under `src/` is wrapped in the `ds.components.global` cascade layer, which holds the packages every application gets. It sits below the application tiers, so an application package that restyles one of these components wins by layer rather than by whichever bundle the loader emitted last. An application's own unlayered CSS beats every rule here whatever the selectors, which is the deliberate escape hatch.
 
-```css
-@layer ds.components.global {
-  .ds.field-label {
-    /* … */
-  }
-}
-```
+A new stylesheet opens with the same wrapper, with `@keyframes` and the package's own `:root` token defaults inside it and `@property` and `@font-face` registrations above it. An `@import` stays above the block too, and takes a `layer(ds.components.global)` keyword only when the sheet it names is not itself wrapped. `.storybook/styles.css` is the one exemption: it is the Storybook harness rather than part of the package, never published, and staying unlayered is what lets it override the preview.
 
-`@canonical/styles` declares the order of every layer in one statement, and `ds.components.global` sits near the top of it. Two things follow.
-
-`ds.components.app`, one layer higher, is the application tiers' — `@canonical/react-ds-app-lxd` and its siblings. None of them is wrapped yet (at the time of writing, no stylesheet under `packages/react/ds-app-*` carries a layer at all); wrapping them is being done package by package alongside this one. Today an app tier still beats this package for the opposite reason — it is unlayered, and unlayered beats layered. What the layer guarantees, once those packages land, is that an app tier's rule for a field or an input this package also styles wins by cascade layer rather than by whichever bundle the loader emitted last.
-
-The parent layer `ds.components` sits above both tiers, not between them: a rule written directly into it lands in that layer's implicit final sublayer, which outranks every named sublayer under it. So nothing pragma ships is written directly into `ds.components` — the layout presets in `src/index.css` used to be, in a lone `@layer ds.components` block, and they are in this package's own wrap now like everything else.
-
-An application's own **unlayered** CSS now beats every rule in this package, whatever the selectors on either side, because unlayered author rules outrank every layered one. That is CSS working as designed, and it is the deliberate escape hatch: an application that needs to override a form control writes a plain rule and it wins. An application that does *not* want to win by accident puts its CSS in `@layer app`.
-
-**Rule for contributors:** every stylesheet under `src/` opens with that wrapper. `@keyframes` and the package's own `:root` token defaults go inside it; `@property` and `@font-face` registrations stay above the block. That last one is a convention, not something the cascade forces: measured in Chromium 151, two registrations sharing a name are sorted exactly like style rules — the one in the higher layer wins whatever the source order, and an unlayered one beats a layered one — for `@property`, `@font-face` and `@keyframes` alike. Keeping registrations above the block is what makes them the document-wide authority they read as, and puts them where someone looking up what a name is registered as will find them. An `@import` stays above the block too — an import is only valid before other rules — and it takes a `layer(ds.components.global)` keyword *only* when the sheet it names is not itself wrapped; `src/index.css` imports `density.css` bare, because `density.css` declares the layer itself and the keyword would nest that declaration into `ds.components.global.ds.components.global`, a sublayer that loses to `index.css`'s own rules. Never reach for `!important` to win a fight — an important declaration inverts the layer order and cannot be arbitrated by layers at all. The `@canonical/styles` README's "Cascade layers" section is the reference for the full order and for what is deliberately left unlayered. The one exemption is `.storybook/styles.css`, which is deliberately outside `src/`: it is the Storybook harness rather than part of the package — never published (`files: ["dist"]`), there to pull this package's CSS into the preview page and add one `.rtl` utility — and staying unlayered is what lets it override the preview.
+The [`@canonical/styles` README](../../styles/main/README.md) has the full layer order, and [the cascade contract](../../../docs/explanations/STYLES_CASCADE.md) explains why it is shaped this way.
 
 ### Components own the box of the natives they render
 

@@ -36,47 +36,15 @@ Import the main styles in your project's layout file (e.g. `routes/+layout.svelt
 
 ## Styles
 
-### How component CSS reaches the page
+Each component module imports its own stylesheet (`import "./styles.css"`), so importing a component is what puts its CSS on the page. A component you never import ships no CSS.
 
-Each component module imports its own stylesheet (`import "./styles.css"`), so importing a component is what puts its CSS on the page. A bundler collects those imports into the application's CSS; nothing here is injected at runtime. The consequence is that a component you never import ships no CSS — and that the order a bundler happens to emit the sheets in is not something you can rely on, which is what the cascade layer below is for.
+Every stylesheet here is wrapped in the `ds.components.apps-launchpad` cascade layer, named for Launchpad's own sub-tier in the design system. It sits above `ds.components.global`, so where this package restyles a component a global package also styles, this package wins by layer rather than by whichever bundle the loader emitted last. The CSS entry, `src/lib/index.css`, opens with the statement that places the layer, and that statement has to stay its first rule.
 
-### Every component stylesheet is in `ds.components.apps-launchpad`
+Two things follow for anyone writing CSS here. A new stylesheet opens with the same `@layer ds.components.apps-launchpad { … }` wrapper, and a Svelte `<style>` block needs it too, since Svelte compiles those into document-level CSS. `@property` and `@font-face` registrations stay above the block, because no layer sorts a registration, and so does an `@import`, which is only valid before other rules.
 
-50 of the 53 stylesheets in this package — every component `styles.css`, plus the package's own reset, token shims, modifier families and element rules under `src/lib/styles/` — are wrapped in one cascade layer:
+An application's own unlayered CSS beats every rule in this package whatever the selectors on either side. That is the deliberate escape hatch; an application that does not want to win by accident puts its CSS in `@layer app`.
 
-```css
-@layer ds.components.apps-launchpad {
-  .ds.my-component {
-    /* … */
-  }
-}
-```
-
-`@canonical/styles` declares the order of every layer in one statement, and the component tiers in it follow the design system's tier tree, flat. `ds.components.global` holds the packages every application gets (`@canonical/svelte-ds-global` and `@canonical/react-ds-global`). `ds.components.apps` sits above it and holds the application tiers that have no sub-tier of their own.
-
-Launchpad has its own sub-tier in the design system, so this package writes into a layer of its own, `ds.components.apps-launchpad`, named for that tier. It sits inside `ds.components.apps` and so above `ds.components.global`: when this package restyles a component a global tier also styles, this package wins by cascade layer, not by which bundle the loader emitted last, which is what decided it before.
-
-A layer's position is fixed where its name first appears, and left to the component sheets that would be whichever one a bundler happened to emit first. So this package's CSS entry, `src/lib/index.css`, opens with the statement that places it:
-
-```css
-@layer ds.components.apps-launchpad;
-```
-
-That statement is the entry's first rule, and it has to stay there. A consumer who imports this package's CSS entry therefore gets the layer in the right place whatever else they load.
-
-It names the two tiers below this one, and that is a fallback rather than the general rule: this entry does not import `@canonical/styles`, so on a page built from this package alone there is no other statement to place them. A package whose entry does import it declares only its own layer, after that import — `@canonical/svelte-ds-app-wpe` is the example.
-
-An application's own **unlayered** CSS now beats every rule in this package, whatever the selectors on either side, because unlayered author rules outrank every layered one. That is CSS working as designed, and it is the deliberate escape hatch: an application that needs to override a component writes a plain rule and it wins. An application that does *not* want to win by accident puts its CSS in `@layer app`.
-
-**Rule for contributors:** every stylesheet in this package opens with that wrapper, bar the exceptions named below. `@keyframes` and a component's own `:root` token defaults go inside it; `@property` and `@font-face` registrations stay outside, above the block, because no layer sorts a registration. An `@import` stays above the block too — it is only valid before other rules — and takes no `layer()` keyword when the sheet it names carries its own layers, which is the case for every import in this package. Never reach for `!important` to win a fight — an important declaration inverts the layer order and cannot be arbitrated by layers at all. The `@canonical/styles` README's "Cascade layers" section is the reference for the full order and for what is deliberately left unlayered.
-
-A Svelte `<style>` block inside a `.svelte` file is compiled into document-level CSS — Svelte adds a hash class for scoping, but the rules land in the document cascade like any other sheet — so a `<style>` block that ships needs the same wrapper. No component in this package has one; the styles all live in `.css` files.
-
-This package's own sheets — the reset, the token shims, the modifier families and the element rules in `src/lib/styles/` — are in `ds.components.apps-launchpad` with the component sheets, because that is where they were in the cascade before: all of them were unlayered together, so their order among themselves is unchanged.
-
-Three sheets open no layer block, and each says why in a comment. `src/lib/index.css` and `src/lib/modifier-families/styles/index.css` hold nothing but `@import` rules — and, in the entry’s case, the layer statement above — because an `@import` may not appear inside a layer block; every sheet they name carries its own layers, so neither import takes a `layer()` keyword either. `src/lib/styles/font-faces.css` holds only `@font-face` registrations, which no layer sorts. `src/lib/styles/ds-shim.css` is **not** an exception — it carries the `ds.components.apps-launchpad` block like every other sheet; it merely also keeps a `ds.modifiers` block, for the design-tokens values it stands in for. That block is written first purely as ordering hygiene inside the file: `ds.modifiers` is already opened by `modifiers.theme.css`, which `ds-tokens.css` imports before `ds-shim.css` is reached, so first-appearance order is the same either way (measured: 0 of 26,685 properties differ hoisted against un-hoisted).
-
-Note that this package's CSS entry deliberately does not import `@canonical/styles` yet (see the TODO in `src/lib/index.css`), so an application that loads only this package gets no `@layer` order statement and its layer order is first-appearance order. `ds.modifiers` is shared: `ds-shim.css` writes into it, and so do seven `@canonical/design-tokens` dist sheets (`modifiers.theme`, `.typography`, `.criticality`, `.anticipation`, `.emphasis`, `.lifecycle`, `.release`). Nothing collides all the same — `modifiers.criticality.css` selects `.success`/`.error`/`.warning`/`.information` but declares neither of the two custom properties the shim declares, and `modifier-families/styles/severity.css:70` selects `.information` with `--lp-*` names that are disjoint from the shim's `--modifier-*` ones. That is why the fallback is safe today, and it is the reason the entry's TODO matters.
+The [`@canonical/styles` README](../../styles/main/README.md) has the full layer order, and [the cascade contract](../../../docs/explanations/STYLES_CASCADE.md) explains why it is shaped this way.
 
 ### Components own the box of the natives they render
 

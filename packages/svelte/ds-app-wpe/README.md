@@ -13,39 +13,15 @@ bun add @canonical/svelte-ds-app-wpe
 
 ## Styles
 
-### How component CSS reaches the page
+Each component module imports its own stylesheet (`import "./styles.css"`), so importing a component is what puts its CSS on the page. A component you never import ships no CSS.
 
-Each component module imports its own stylesheet (`import "./styles.css"`), so importing a component is what puts its CSS on the page. A bundler collects those imports into the application's CSS; nothing here is injected at runtime. The consequence is that a component you never import ships no CSS — and that the order a bundler happens to emit the sheets in is not something you can rely on, which is what the cascade layer below is for.
+Every stylesheet here is wrapped in the `ds.components.apps-workplaceengineering` cascade layer, named for this application's tier in the design system. It sits above `ds.components.global`, so where this package restyles a component a global package also styles, this package wins by layer rather than by whichever bundle the loader emitted last. The CSS entry, `src/lib/index.css`, declares this package's layer after its import of `@canonical/styles`, so the tiers below are already placed when this one lands.
 
-### Every component stylesheet is in `ds.components.apps-workplaceengineering`
+Two things follow for anyone writing CSS here. A new stylesheet opens with the same `@layer ds.components.apps-workplaceengineering { … }` wrapper, and a Svelte `<style>` block needs it too, since Svelte compiles those into document-level CSS. `@property` and `@font-face` registrations stay above the block, because no layer sorts a registration, and so does an `@import`, which is only valid before other rules.
 
-13 of the 15 stylesheets in this package — every component `styles.css` is wrapped in one cascade layer:
+An application's own unlayered CSS beats every rule in this package whatever the selectors on either side. That is the deliberate escape hatch; an application that does not want to win by accident puts its CSS in `@layer app`.
 
-```css
-@layer ds.components.apps-workplaceengineering {
-  .ds.my-component {
-    /* … */
-  }
-}
-```
-
-`@canonical/styles` declares the order of every layer in one statement, and the component tiers in it follow the design system's tier tree, flat. `ds.components.global` holds the packages every application gets (`@canonical/svelte-ds-global` and `@canonical/react-ds-global`), and `ds.components.apps` sits above it for the application tiers.
-
-Workplace Engineering is one of the applications the design system gives a sub-tier of its own, so this package writes into a layer named for that tier, `ds.components.apps-workplaceengineering`. That is not bookkeeping. Several components here implement a *global* block — the Card carries `@implements ds:global.component.card` — and the sub-tier layer is what lets this package's Card beat the global tier's by cascade layer, instead of by whichever bundle the loader emitted last, which is what decided it before.
-
-A layer is placed where its name first appears, so this package's CSS entry, `src/lib/index.css`, declares it:
-
-```css
-@layer ds.components.apps-workplaceengineering;
-```
-
-The statement sits *after* the entry's `@import`, not at the top of the file, and that order matters: the import pulls in `@canonical/styles`, whose own statement places `ds.components.global`. Declared first, this name would be fixed before that statement was read, and `ds.components.global` would be appended above it — measured in Chromium, the global tier then won three of the four bundle orders. After the import, the tiers below are already placed and this one lands above them.
-
-An application's own **unlayered** CSS now beats every rule in this package, whatever the selectors on either side, because unlayered author rules outrank every layered one. That is CSS working as designed, and it is the deliberate escape hatch: an application that needs to override a component writes a plain rule and it wins. An application that does *not* want to win by accident puts its CSS in `@layer app`.
-
-**Rule for contributors:** every stylesheet in this package opens with that wrapper, bar two. `src/lib/index.css` and `src/lib/styles/index.css` hold nothing but `@import` rules, and an `@import` may not appear inside a layer block; each sheet they name carries its own layers — `@canonical/styles` carries the order statement itself — so neither import takes a `layer()` keyword either. Both say so in a comment. `@keyframes` and a component's own `:root` token defaults go inside it; `@property` and `@font-face` registrations stay outside, above the block, because no layer sorts a registration. An `@import` stays above the block too — it is only valid before other rules — and takes no `layer()` keyword when the sheet it names carries its own layers, which is the case for every import in this package. Never reach for `!important` to win a fight — an important declaration inverts the layer order and cannot be arbitrated by layers at all. The `@canonical/styles` README's "Cascade layers" section is the reference for the full order and for what is deliberately left unlayered.
-
-A Svelte `<style>` block inside a `.svelte` file is compiled into document-level CSS — Svelte adds a hash class for scoping, but the rules land in the document cascade like any other sheet — so a `<style>` block that ships needs the same wrapper. No component in this package has one; the styles all live in `.css` files.
+The [`@canonical/styles` README](../../styles/main/README.md) has the full layer order, and [the cascade contract](../../../docs/explanations/STYLES_CASCADE.md) explains why it is shaped this way.
 
 ### Components own the box of the natives they render
 
