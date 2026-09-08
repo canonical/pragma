@@ -1,4 +1,32 @@
-import type { DialogHTMLAttributes, ReactNode, Ref } from "react";
+import type { ComponentProps, MouseEventHandler, ReactNode, Ref } from "react";
+
+type OwnProps = {
+  /**
+   * A ref to the underlying `<dialog>`, for the cases that need to drive the
+   * modal from outside it: `ref.current?.showModal()` opens it and
+   * `ref.current?.close()` closes it. Optional — a modal wired up with
+   * {@link withModal}, or one that only has to be dismissed from the inside,
+   * needs no ref at all.
+   *
+   * `showModal()` throws on a dialog that is already open. A trigger sitting
+   * on the page cannot be clicked while the modal holds it inert, so it needs
+   * no guard; anything that can fire twice — a keyboard shortcut, an effect —
+   * should check `ref.current.open` first.
+   */
+  ref?: Ref<HTMLDialogElement>;
+  /**
+   * Whether clicking the backdrop dismisses the modal. Defaults to `false`, so
+   * backdrop dismissal is opt-in: a stray click outside the dialog cannot
+   * discard the task it holds. Independent of the header's `dismissible`.
+   */
+  closeOnBackdropClick?: boolean;
+  /**
+   * The composed sections — `Modal.Header`, `Modal.Content` and
+   * `Modal.Footer`, in that order. The header and footer are optional; the
+   * content carries the main information the modal conveys.
+   */
+  children: ReactNode;
+};
 
 /**
  * Props for the Modal pattern
@@ -21,8 +49,7 @@ import type { DialogHTMLAttributes, ReactNode, Ref } from "react";
  * `open` is omitted because a `<dialog>` carrying the `open` attribute is
  * *non-modal*: no top layer, no backdrop, no focus trap. The modal is only
  * ever opened through `showModal()`, so the open state lives in the DOM
- * element and not in a prop. Use `defaultOpen` to open it on mount and `ref`
- * to open or close it later.
+ * element and not in a prop. Use the `ref` to open or close it.
  *
  * `onClose` is *not* omitted: the native `close` event is how a consumer hears
  * that the modal is gone, whichever way out the user took, and it replaces the
@@ -31,43 +58,26 @@ import type { DialogHTMLAttributes, ReactNode, Ref } from "react";
  * should close the modal with `ref.current?.close(value)` and read
  * `event.currentTarget.returnValue`.
  */
-export interface ModalProps
-  extends Omit<DialogHTMLAttributes<HTMLDialogElement>, "open" | "title"> {
-  /**
-   * A ref to the underlying `<dialog>`, for the cases that need to drive the
-   * modal from outside it: `ref.current?.showModal()` opens it and
-   * `ref.current?.close()` closes it. Optional — a modal wired up with
-   * {@link withModal}, or one that only has to be dismissed from the inside,
-   * needs no ref at all.
-   *
-   * `showModal()` throws on a dialog that is already open. A trigger sitting
-   * on the page cannot be clicked while the modal holds it inert, so it needs
-   * no guard; anything that can fire twice — a keyboard shortcut, an effect —
-   * should check `ref.current.open` first.
-   */
-  ref?: Ref<HTMLDialogElement>;
-  /**
-   * Whether the modal opens as soon as it mounts. Uncontrolled: this is the
-   * starting state, not a live one, and later changes are ignored — reopening
-   * a closed modal goes through `ref.current?.showModal()`. Defaults to
-   * `false`. Note the dialog still renders closed on the server, because
-   * `showModal()` is what makes a dialog modal and that only runs on the
-   * client.
-   */
-  defaultOpen?: boolean;
-  /**
-   * Whether clicking the backdrop dismisses the modal. Defaults to `false`, so
-   * backdrop dismissal is opt-in: a stray click outside the dialog cannot
-   * discard the task it holds. Independent of the header's `dismissible`.
-   */
-  closeOnBackdropClick?: boolean;
-  /**
-   * The composed sections — `Modal.Header`, `Modal.Content` and
-   * `Modal.Footer`, in that order. The header and footer are optional; the
-   * content carries the main information the modal conveys.
-   */
-  children: ReactNode;
-}
+export type ModalProps = OwnProps &
+  Omit<ComponentProps<"dialog">, keyof OwnProps | "title">;
+
+/**
+ * The one requirement {@link withModal} places on the component it wraps: it
+ * must accept an `onClick` handler. The HOC composes its open handler onto
+ * the trigger itself — no wrapper element — so a trigger that accepts
+ * `onClick` but never forwards it to a clickable element never opens its
+ * modal. An `onClick` the consumer passes still runs: the HOC calls it first,
+ * then opens the modal.
+ *
+ * The event is typed against plain `Element` so triggers rooted at any
+ * element — `<button>`, `<a>`, a clickable `<span>` — satisfy the constraint:
+ * React's event handlers are bivariant (the `bivarianceHack`), so a
+ * `MouseEventHandler<HTMLButtonElement>` prop fits where a
+ * `MouseEventHandler<Element>` is expected.
+ */
+export type WithModalTriggerProps = {
+  onClick?: MouseEventHandler<Element>;
+};
 
 /**
  * The content of a {@link withModal} modal: plain JSX, or a function.
@@ -84,11 +94,7 @@ export type WithModalChildren = ReactNode | ((close: () => void) => ReactNode);
 
 /**
  * The modal options for {@link withModal}: everything `Modal` accepts except
- * `ref`, `defaultOpen` and `children`. The HOC owns the ref, because the
- * trigger it wraps is what opens the modal, and a modal that starts open has
- * no use for a trigger.
+ * `ref` and `children`. The HOC owns the ref, because the trigger it wraps is
+ * what opens the modal.
  */
-export type WithModalOptions = Omit<
-  ModalProps,
-  "ref" | "defaultOpen" | "children"
->;
+export type WithModalOptions = Omit<ModalProps, "ref" | "children">;

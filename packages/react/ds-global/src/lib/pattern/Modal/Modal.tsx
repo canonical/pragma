@@ -1,6 +1,6 @@
 import type React from "react";
 import type { RefCallback } from "react";
-import { useCallback, useEffect, useId, useRef } from "react";
+import { useCallback, useId, useRef } from "react";
 import { Content, Footer, Header } from "./common/index.js";
 import ModalContext from "./common/ModalContext.js";
 import type { ModalProps } from "./types.js";
@@ -12,17 +12,24 @@ const componentCssClassName = "ds modal";
  * A modal is a focused container that sits on top of the main view, requiring
  * users to interact with it before returning to that view. Its purpose is to
  * capture the user's full attention for a specific, self-contained task while
- * keeping their workspace visible, though inactive, behind it.
+ * keeping their workspace visible, though inactive, behind it. The main use
+ * case is asking the user to confirm a decision they have already taken — for
+ * instance, sending a delete request.
  *
  * It renders a native `<dialog>` opened with `showModal()`, so the backdrop,
  * focus trap, page inertness and Escape handling come from the platform rather
  * than from JavaScript. The modal is self-contained: the open state lives in
  * the `<dialog>` element, not in a prop, so the header's close button and
  * Escape close it — and a backdrop click too, once `closeOnBackdropClick` opts
- * in — without the consumer wiring anything. `onClose` is the native way to
- * hear about it. External control is optional and goes through the `ref`:
- * `ref.current?.showModal()` opens the modal and `ref.current?.close()` closes
- * it. Pass `defaultOpen` to have it open on mount.
+ * in — without the consumer wiring anything. External control is optional and
+ * goes through the `ref`: `ref.current?.showModal()` opens the modal and
+ * `ref.current?.close()` closes it.
+ *
+ * There are two consumption patterns, `withModal` and `Modal`. `withModal` is
+ * meant for static content: its content is created once, when the HOC is
+ * called. If the modal must show data from the parent — for example a
+ * different `userName` depending on which user is selected — compose `Modal`
+ * directly and drive it through its `ref`. Otherwise, use `withModal`.
  *
  * The sections are composed by the consumer: render
  * `Modal.Header`, `Modal.Content` and `Modal.Footer` as children and choose
@@ -35,7 +42,6 @@ const componentCssClassName = "ds modal";
  */
 const Modal = ({
   ref,
-  defaultOpen = false,
   closeOnBackdropClick = false,
   children,
   className,
@@ -70,22 +76,6 @@ const Modal = ({
     [ref],
   );
   const titleId = useId();
-
-  // `defaultOpen` is uncontrolled, so only its mount value counts.
-  const opensOnMount = useRef(defaultOpen);
-
-  useEffect(() => {
-    if (!opensOnMount.current) return;
-    // One-shot: once the starting state has been acted on, no later run can
-    // reopen a modal the user has closed.
-    opensOnMount.current = false;
-    const dialog = dialogRef.current;
-    // showModal() is what puts the dialog in the top layer — the `open`
-    // attribute alone would render it inline and non-modal — and it throws if
-    // the dialog is open already, which a consumer's own ref may have done
-    // before this effect ran.
-    if (dialog && !dialog.open) dialog.showModal();
-  }, []);
 
   const requestClose = (): void => dialogRef.current?.close();
 

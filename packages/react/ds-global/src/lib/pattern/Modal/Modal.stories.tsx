@@ -9,14 +9,14 @@ import Modal from "./Modal.js";
 import type { ModalProps } from "./types.js";
 
 /**
- * Every preview pairs the modal with the trigger a real page would give it, so
- * dismissing the modal leaves something to click rather than an empty frame,
- * and hands `close` to the composed sections so the footer actions work.
+ * Every preview renders the modal open — a story is a picture of the pattern,
+ * not a demo of its trigger — and hands `close` to the composed sections so
+ * the footer actions work.
  *
- * The wiring is a ref, `showModal()` to open and `close()` to close. The
- * trigger needs no already-open guard, because an open modal makes the page
- * behind it inert and the button unclickable; something that can fire twice —
- * a shortcut, an effect — would check `ref.current.open` first.
+ * The callback ref opens the modal the moment it mounts, because a story is
+ * a static visual fixture with nothing to click. In an application the open
+ * comes from an event instead — `onClick={() => modalRef.current?.showModal()}`
+ * on the trigger that owns the modal.
  */
 const ModalPreview = ({
   children,
@@ -27,12 +27,15 @@ const ModalPreview = ({
   const modalRef = useRef<HTMLDialogElement>(null);
 
   return (
-    <>
-      <Button onClick={() => modalRef.current?.showModal()}>Open modal</Button>
-      <Modal {...modalProps} ref={modalRef}>
-        {children(() => modalRef.current?.close())}
-      </Modal>
-    </>
+    <Modal
+      {...modalProps}
+      ref={(dialog: HTMLDialogElement | null) => {
+        modalRef.current = dialog;
+        if (dialog && !dialog.open) dialog.showModal();
+      }}
+    >
+      {children(() => modalRef.current?.close())}
+    </Modal>
   );
 };
 
@@ -47,18 +50,31 @@ const meta = {
     docs: {
       description: {
         component: [
-          "The modal is **self-contained**: its open state lives in the native `<dialog>`, not in a",
-          "prop, so the header's close icon and Escape dismiss it with nothing wired up (and a",
-          "backdrop click too, where `closeOnBackdropClick` opts in). `onClose` is the native way to",
-          "hear that it happened.",
+          "A modal is a focused container that sits on top of the main view, requiring users to",
+          "interact with it before returning to that view. Use it for a specific, self-contained",
+          "task — most often to confirm a decision the user has already taken, like sending a",
+          "delete request.",
           "",
-          "**External control is optional and goes through the `ref`**, which is the `<dialog>` itself:",
-          "`ref.current?.showModal()` opens the modal and `ref.current?.close()` closes it. That is all",
-          "a trigger or a footer action needs. For the common case — one control opening one modal —",
+          "**The sections are composed by the consumer:** render `Modal.Header`, `Modal.Content`",
+          "and `Modal.Footer` as children and choose which ones to show. The header's title names",
+          "the dialog automatically; a modal composed without a header must carry its own",
+          "`aria-label`.",
+          "",
+          "**Opening and closing needs no wiring:** the header's close icon and Escape always",
+          "dismiss it, and a backdrop click too, where `closeOnBackdropClick` opts in. To open or",
+          "close it from your own code, use the `ref` — it is the `<dialog>` itself:",
+          "`ref.current?.showModal()` opens it, `ref.current?.close()` closes it. That is all a",
+          "trigger or a footer action needs. For the common case — one control opening one modal —",
           "`withModal` does the wiring for you.",
           "",
-          "Each story below opens with `defaultOpen` and keeps its trigger button behind the backdrop,",
-          "so the modal can be closed and reopened while you read.",
+          "**Two consumption patterns:** `withModal` is meant for static content — its content is created",
+          "once, when the HOC is called. If the modal must show data from the parent — for example a",
+          "different `userName` depending on which user is selected — compose `Modal` directly and drive it",
+          "through its `ref`. Otherwise, use `withModal`.",
+          "",
+          '`import { Modal } from "@canonical/react-ds-global";`',
+          "",
+          "@implements ds:global.pattern.modal",
         ].join("\n"),
       },
       story: {
@@ -72,15 +88,12 @@ const meta = {
       source: { type: "code", language: "tsx" },
     },
   },
-  // Every story renders the modal open with `defaultOpen`: a story is first a
-  // picture of the pattern. Its trigger is what makes the picture recoverable.
-  args: { defaultOpen: true, children: null },
+  // Every story renders the modal open: a story is first a picture of the
+  // pattern.
+  args: { children: null },
   argTypes: {
     // The stories compose their sections in a custom render, never from args.
     children: { control: false },
-    // `defaultOpen` is read once, on mount: a live control over it would do
-    // nothing, because the story re-renders rather than remounting.
-    defaultOpen: { control: false },
   },
 } satisfies Meta<typeof Modal>;
 
@@ -101,8 +114,12 @@ export const Default: Story = {
         code: `const modalRef = useRef<HTMLDialogElement>(null);
 const close = () => modalRef.current?.close();
 
-<Button onClick={() => modalRef.current?.showModal()}>Open modal</Button>
-<Modal ref={modalRef}>
+<Modal
+  ref={(dialog: HTMLDialogElement | null) => {
+    modalRef.current = dialog;
+    if (dialog && !dialog.open) dialog.showModal();
+  }}
+>
   <Modal.Header>Title</Modal.Header>
   <Modal.Content>
     lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
@@ -120,8 +137,8 @@ const close = () => modalRef.current?.close();
       },
     },
   },
-  render: ({ defaultOpen }) => (
-    <ModalPreview defaultOpen={defaultOpen}>
+  render: () => (
+    <ModalPreview>
       {(close) => (
         <>
           <Modal.Header>Title</Modal.Header>
@@ -158,8 +175,12 @@ export const DestructiveConfirmation: Story = {
         code: `const modalRef = useRef<HTMLDialogElement>(null);
 const close = () => modalRef.current?.close();
 
-<Button onClick={() => modalRef.current?.showModal()}>Open modal</Button>
-<Modal ref={modalRef}>
+<Modal
+  ref={(dialog: HTMLDialogElement | null) => {
+    modalRef.current = dialog;
+    if (dialog && !dialog.open) dialog.showModal();
+  }}
+>
   <Modal.Header>Delete instance</Modal.Header>
   <Modal.Content>
     Deleting this instance removes its volumes and snapshots. This cannot be
@@ -184,8 +205,8 @@ const close = () => modalRef.current?.close();
       },
     },
   },
-  render: ({ defaultOpen }) => (
-    <ModalPreview defaultOpen={defaultOpen}>
+  render: () => (
+    <ModalPreview>
       {(close) => (
         <>
           <Modal.Header>Delete instance</Modal.Header>
@@ -222,8 +243,12 @@ export const NotDismissible: Story = {
         code: `const modalRef = useRef<HTMLDialogElement>(null);
 const close = () => modalRef.current?.close();
 
-<Button onClick={() => modalRef.current?.showModal()}>Open modal</Button>
-<Modal ref={modalRef}>
+<Modal
+  ref={(dialog: HTMLDialogElement | null) => {
+    modalRef.current = dialog;
+    if (dialog && !dialog.open) dialog.showModal();
+  }}
+>
   <Modal.Header dismissible={false}>Unsaved changes</Modal.Header>
   <Modal.Content>
     You have unsaved changes that will be lost if you continue.
@@ -240,8 +265,8 @@ const close = () => modalRef.current?.close();
       },
     },
   },
-  render: ({ defaultOpen }) => (
-    <ModalPreview defaultOpen={defaultOpen}>
+  render: () => (
+    <ModalPreview>
       {(close) => (
         <>
           <Modal.Header dismissible={false}>Unsaved changes</Modal.Header>
@@ -275,10 +300,12 @@ export const WithoutActions: Story = {
   parameters: {
     docs: {
       source: {
-        code: `const modalRef = useRef<HTMLDialogElement>(null);
-
-<Button onClick={() => modalRef.current?.showModal()}>Open modal</Button>
-<Modal ref={modalRef} closeOnBackdropClick>
+        code: `<Modal
+  closeOnBackdropClick
+  ref={(dialog: HTMLDialogElement | null) => {
+    if (dialog && !dialog.open) dialog.showModal();
+  }}
+>
   <Modal.Header>Search syntax</Modal.Header>
   <Modal.Content>
     Combine terms with AND, OR and NOT. Quote a phrase to match it exactly.
@@ -287,8 +314,8 @@ export const WithoutActions: Story = {
       },
     },
   },
-  render: ({ defaultOpen }) => (
-    <ModalPreview defaultOpen={defaultOpen} closeOnBackdropClick>
+  render: () => (
+    <ModalPreview closeOnBackdropClick>
       {() => (
         <>
           <Modal.Header>Search syntax</Modal.Header>
@@ -317,8 +344,12 @@ export const RichContent: Story = {
         code: `const modalRef = useRef<HTMLDialogElement>(null);
 const close = () => modalRef.current?.close();
 
-<Button onClick={() => modalRef.current?.showModal()}>Open modal</Button>
-<Modal ref={modalRef}>
+<Modal
+  ref={(dialog: HTMLDialogElement | null) => {
+    modalRef.current = dialog;
+    if (dialog && !dialog.open) dialog.showModal();
+  }}
+>
   <Modal.Header>Connect to instance</Modal.Header>
   <Modal.Content>
     <div style={{ display: "grid", gap: "var(--dimension-200, 16px)", margin: 0 }}>
@@ -347,8 +378,8 @@ const close = () => modalRef.current?.close();
       },
     },
   },
-  render: ({ defaultOpen }) => (
-    <ModalPreview defaultOpen={defaultOpen}>
+  render: () => (
+    <ModalPreview>
       {(close) => (
         <>
           <Modal.Header>Connect to instance</Modal.Header>
@@ -407,8 +438,12 @@ export const LongContent: Story = {
       source: {
         code: `const modalRef = useRef<HTMLDialogElement>(null);
 
-<Button onClick={() => modalRef.current?.showModal()}>Open modal</Button>
-<Modal ref={modalRef}>
+<Modal
+  ref={(dialog: HTMLDialogElement | null) => {
+    modalRef.current = dialog;
+    if (dialog && !dialog.open) dialog.showModal();
+  }}
+>
   <Modal.Header>Terms</Modal.Header>
   <Modal.Content>
     {paragraphs.map((paragraph) => (
@@ -428,8 +463,8 @@ export const LongContent: Story = {
       },
     },
   },
-  render: ({ defaultOpen }) => (
-    <ModalPreview defaultOpen={defaultOpen}>
+  render: () => (
+    <ModalPreview>
       {(close) => (
         <>
           <Modal.Header>Terms</Modal.Header>
