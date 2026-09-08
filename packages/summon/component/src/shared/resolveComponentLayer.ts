@@ -1,47 +1,44 @@
 /**
- * Which cascade layer a generated component stylesheet is wrapped in.
+ * What the package being generated into says about its cascade layer.
  *
- * The tier tree and the name→layer mapping live in `@canonical/summon-core`,
- * because the package generator needs the same rule for the CSS entry it
- * scaffolds, and a tier tree written down twice is a tier tree that drifts.
- * This module is the component generator's side of it: finding the package
- * being generated into, which the mapping cannot do for itself.
+ * The answer belongs to that package, not to this generator: a design system's
+ * layer names and the file its order statement lives in are that design
+ * system's business. `@canonical/summon-core` reads the two strings out of a
+ * manifest; this module finds the manifest, which is the part that needs a
+ * filesystem.
  *
- * Owner ruling 2026-09-06 (VC.31).
+ * A package that says nothing gets stylesheets with no layer wrapper.
  */
 
 import { readFileSync } from "node:fs";
 import * as path from "node:path";
 import {
-  componentLayerFor,
-  GLOBAL_COMPONENT_LAYER,
+  layerSettingsFrom,
+  type ManifestWithLayer,
+  type SummonLayerSettings,
 } from "@canonical/summon-core";
 
-export { componentLayerFor, GLOBAL_COMPONENT_LAYER };
+export type { SummonLayerSettings };
+export { layerSettingsFrom };
 
 /**
- * The layer for the package the generator is writing into, which is the working
- * directory: a component path is relative to it.
+ * The layer settings of the package the generator is writing into, which is the
+ * working directory: a component path is relative to it.
  *
- * The manifest name decides. A manifest that is missing or unreadable is not a
- * failure — the directory's own name is then read as the package name, which is
- * what a package scaffolded moments earlier needs, and what the repository's
- * `packages/<framework>/<name>` layout makes true.
+ * A manifest that is missing or unreadable is not a failure; it means the
+ * package has said nothing, and the stylesheet is generated unwrapped.
  *
  * @note Impure — reads the filesystem.
  */
 export default function resolveComponentLayer(
   cwd: string = process.cwd(),
-): string {
+): SummonLayerSettings {
   try {
-    const name = (
-      JSON.parse(readFileSync(path.join(cwd, "package.json"), "utf-8")) as {
-        name?: string;
-      }
-    ).name;
-    if (name) return componentLayerFor(name);
+    const manifest = JSON.parse(
+      readFileSync(path.join(cwd, "package.json"), "utf-8"),
+    ) as ManifestWithLayer;
+    return layerSettingsFrom(manifest);
   } catch {
-    // No readable manifest here — fall through to the directory.
+    return layerSettingsFrom(undefined);
   }
-  return componentLayerFor(path.basename(cwd));
 }

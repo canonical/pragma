@@ -93,5 +93,8 @@
     "tags": [
       "playwright"
     ]
+  },
+  "summon": {
+    "componentLayer": "ds.components.apps"
   }
 }

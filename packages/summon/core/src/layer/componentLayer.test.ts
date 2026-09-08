@@ -1,112 +1,43 @@
 import { describe, expect, it } from "vitest";
-import {
-  COMPONENT_TIER_LAYERS,
-  componentLayerFor,
-  GLOBAL_COMPONENT_LAYER,
-  isSubTierLayer,
-} from "./componentLayer.js";
+import { layerSettingsFrom } from "./componentLayer.js";
 
-describe("componentLayerFor", () => {
-  it("names the five tiers pragma's order statement names", () => {
-    expect(COMPONENT_TIER_LAYERS).toEqual([
-      "ds.components.global",
-      "ds.components.sites",
-      "ds.components.documentation",
-      "ds.components.stores",
-      "ds.components.apps",
-    ]);
+describe("layerSettingsFrom", () => {
+  it("reads what the package says about its layer", () => {
+    // The generator copies these two strings and holds no opinion about them:
+    // the names below are one design system's, and any other house's would do.
+    expect(
+      layerSettingsFrom({
+        summon: {
+          componentLayer: "ds.components.apps-lxd",
+          layerOrderFrom: "@canonical/styles/layers.css",
+        },
+      }),
+    ).toEqual({
+      componentLayer: "ds.components.apps-lxd",
+      layerOrderFrom: "@canonical/styles/layers.css",
+    });
   });
 
-  it("puts the global tier and its slices in ds.components.global", () => {
-    // `global` has no sub-tiers: a suffix is another slice of the same tier.
-    expect(componentLayerFor("@canonical/react-ds-global")).toBe(
-      "ds.components.global",
-    );
-    expect(componentLayerFor("@canonical/react-ds-global-form")).toBe(
-      "ds.components.global",
-    );
-    expect(componentLayerFor("@canonical/svelte-ds-global")).toBe(
-      "ds.components.global",
-    );
+  it("returns nothing when a package says nothing", () => {
+    // No default: there is no layer name that is right for every house, and a
+    // package outside any layered system wants its stylesheets left alone.
+    expect(layerSettingsFrom({})).toEqual({
+      componentLayer: undefined,
+      layerOrderFrom: undefined,
+    });
+    expect(layerSettingsFrom(undefined)).toEqual({
+      componentLayer: undefined,
+      layerOrderFrom: undefined,
+    });
   });
 
-  it("puts a tier package in its own second-level layer", () => {
-    expect(componentLayerFor("@canonical/react-ds-app")).toBe(
-      "ds.components.apps",
-    );
-    expect(componentLayerFor("@canonical/svelte-ds-app")).toBe(
-      "ds.components.apps",
-    );
-    expect(componentLayerFor("@canonical/react-ds-site")).toBe(
-      "ds.components.sites",
-    );
-    expect(componentLayerFor("@canonical/react-ds-sites")).toBe(
-      "ds.components.sites",
-    );
-    expect(componentLayerFor("@canonical/react-ds-docs")).toBe(
-      "ds.components.documentation",
-    );
-    expect(componentLayerFor("@canonical/react-ds-documentation")).toBe(
-      "ds.components.documentation",
-    );
-    expect(componentLayerFor("@canonical/react-ds-store")).toBe(
-      "ds.components.stores",
-    );
-    expect(componentLayerFor("@canonical/react-ds-stores")).toBe(
-      "ds.components.stores",
-    );
-  });
-
-  it("puts a sub-tier package in a layer named after the product", () => {
-    expect(componentLayerFor("@canonical/react-ds-app-lxd")).toBe(
-      "ds.components.apps-lxd",
-    );
-    // The layer is named for the tier in the design system's tree, and the
-    // package for the team that says it out loud. Where the two differ, the
-    // tier wins: this package implements the Workplace Engineering tier.
-    expect(componentLayerFor("@canonical/svelte-ds-app-wpe")).toBe(
-      "ds.components.apps-workplaceengineering",
-    );
-    expect(componentLayerFor("@canonical/react-ds-site-ubuntu")).toBe(
-      "ds.components.sites-ubuntu",
-    );
-    expect(componentLayerFor("@canonical/react-ds-docs-lxd")).toBe(
-      "ds.components.documentation-lxd",
-    );
-    expect(componentLayerFor("@canonical/react-ds-store-snap")).toBe(
-      "ds.components.stores-snap",
-    );
-    // A two-word product keeps its hyphens; the tier stem is what is stripped.
-    expect(componentLayerFor("@canonical/react-ds-app-anbox-cloud")).toBe(
-      "ds.components.apps-anbox-cloud",
-    );
-  });
-
-  it("falls back to global for a name with no tier in it", () => {
-    expect(componentLayerFor("@canonical/react-hooks")).toBe(
-      GLOBAL_COMPONENT_LAYER,
-    );
-    expect(componentLayerFor("@canonical/ds-assets")).toBe(
-      GLOBAL_COMPONENT_LAYER,
-    );
-    expect(componentLayerFor(undefined)).toBe(GLOBAL_COMPONENT_LAYER);
-    expect(componentLayerFor("")).toBe(GLOBAL_COMPONENT_LAYER);
-  });
-
-  it("does not read a tier stem out of the middle of a longer word", () => {
-    // `ds-approvals` starts like `ds-app` but is not the apps tier.
-    expect(componentLayerFor("@canonical/react-ds-approvals")).toBe(
-      GLOBAL_COMPONENT_LAYER,
-    );
-  });
-});
-
-describe("isSubTierLayer", () => {
-  it("is false for the five named tiers and true for a product layer", () => {
-    for (const layer of COMPONENT_TIER_LAYERS) {
-      expect(isSubTierLayer(layer)).toBe(false);
-    }
-    expect(isSubTierLayer("ds.components.apps-lxd")).toBe(true);
-    expect(isSubTierLayer("ds.components.sites-ubuntu")).toBe(true);
+  it("takes the layer without the order file, and the other way round", () => {
+    expect(layerSettingsFrom({ summon: { componentLayer: "app" } })).toEqual({
+      componentLayer: "app",
+      layerOrderFrom: undefined,
+    });
+    expect(
+      layerSettingsFrom({ summon: { layerOrderFrom: "./order.css" } }),
+    ).toEqual({ componentLayer: undefined, layerOrderFrom: "./order.css" });
   });
 });
