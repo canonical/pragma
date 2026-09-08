@@ -292,44 +292,6 @@ const close = () => modalRef.current?.close();
 };
 
 /**
- * Supplementary context with nothing to decide, so the footer is simply not
- * composed. The dismiss icon, Escape and — because this one opts in — a
- * backdrop click are the ways out.
- */
-export const WithoutActions: Story = {
-  parameters: {
-    docs: {
-      source: {
-        code: `<Modal
-  closeOnBackdropClick
-  ref={(dialog: HTMLDialogElement | null) => {
-    if (dialog && !dialog.open) dialog.showModal();
-  }}
->
-  <Modal.Header>Search syntax</Modal.Header>
-  <Modal.Content>
-    Combine terms with AND, OR and NOT. Quote a phrase to match it exactly.
-  </Modal.Content>
-</Modal>`,
-      },
-    },
-  },
-  render: () => (
-    <ModalPreview closeOnBackdropClick>
-      {() => (
-        <>
-          <Modal.Header>Search syntax</Modal.Header>
-          <Modal.Content>
-            Combine terms with AND, OR and NOT. Quote a phrase to match it
-            exactly.
-          </Modal.Content>
-        </>
-      )}
-    </ModalPreview>
-  ),
-};
-
-/**
  * Content is an open slot, not a text field: it takes arbitrary React, so
  * other components compose inside it. Here a paragraph, a KeyboardKey
  * shortcut hint, an InlineCode command and a row of Chips share one modal.
