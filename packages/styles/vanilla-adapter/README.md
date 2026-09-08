@@ -93,9 +93,9 @@ That is the whole setup. Writing pragma components into a page that Vanilla stil
 
 ### 6. Declare the fonts once, for both frameworks
 
-No stylesheet in this package references a file, and neither do the two pragma entries they load: no font, no image and no icon. Nothing new is downloaded, and your build gains no copying step.
+Both frameworks want a font, and neither ships one. Vanilla names a family and expects the page to declare it; pragma does the same. Declare the faces once, in your own stylesheet, and point both frameworks at those names.
 
-Fonts are the exception, because both frameworks want one. Declare them yourself, once, and point Vanilla at the same names.
+Nothing else here loads a file: no stylesheet in this package, and neither of the two pragma entries they load, references a font, an image or an icon.
 
 In your Vanilla settings, before the Vanilla import:
 
@@ -128,11 +128,9 @@ In your own stylesheet, the faces themselves:
 }
 ```
 
-Adjust the two `url()` paths to however your build resolves package assets. There is no monospace face to declare: the files `@canonical/ds-assets` ships under that name are not fonts yet, so monospace text falls back to the stack above, which is where it would land anyway.
+Three things to know about those blocks. Adjust the two `url()` paths to however your build resolves package assets. There is no monospace face to declare, because the files `@canonical/ds-assets` ships under that name are not fonts yet, so monospace text falls back to the stack above, which is where it would land anyway. And leave `@canonical/styles/fonts` out of `pragma.css`: it declares these same two faces from these same files, so loading it as well declares each face twice.
 
-Leave `@canonical/styles/fonts` out of `pragma.css`. Pragma's own font declarations name the same faces and the same files, so loading them as well would declare each face twice.
-
-Letting each framework declare its own family instead downloads the same typeface twice under two names, and leaves the two territories on slightly different metrics.
+The alternative, letting each framework name its own family, downloads the same typeface twice and leaves the two territories on slightly different metrics.
 
 ### 7. Check it
 
@@ -178,12 +176,14 @@ How the layers, the boundary, the mode bridge and the confined copy work, and wh
 
 ## Browser support
 
-| Feature | What it binds | Chrome | Safari | Firefox |
-| --- | --- | --- | --- | --- |
-| `@layer` | every page that loads this package: the order statement | 99 | 15.4 | 97 |
-| `revert` | every mixed page: the boundary | 84 | 9.1 | 67 |
-| `:where()`, `:is()` | every mixed page: the boundary and the bridge | 88 | 14 | 78 |
-| `@scope` | mixed pages only: `elements.css` | 118 | 17.4 | 146 |
+| Feature | What it binds | Chrome | Safari | Firefox | Users |
+| --- | --- | --- | --- | --- | --- |
+| `@layer` | every page that loads this package: the order statement | 99 | 15.4 | 97 | 96.6% |
+| `revert` | every mixed page: the boundary | 84 | 9.1 | 67 | 97.0% |
+| `:where()`, `:is()` | every mixed page: the boundary and the bridge | 88 | 14 | 78 | 97.3% |
+| `@scope` | mixed pages only: `elements.css` | 118 | 17.4 | 146 | 88.6% |
+
+The last column is the share of tracked global browser use that supports the feature, from caniuse-lite 1.0.30001780 in September 2026. Run `bunx browserslist --coverage "supports css-cascade-scope"` to check any of them yourself.
 
 A browser below the `@scope` floor drops each confined block whole, so pragma's components render with the browser's own defaults for the three element layers while the boundary still holds. A pragma-only page is not affected, because `@canonical/styles` writes no `@scope`. Pragma's own floor, from `light-dark()`, `mod()` and the `cap` unit, is documented in that package's README and applies to both kinds of page.
 
@@ -199,14 +199,14 @@ A browser below the `@scope` floor drops each confined block whole, so pragma's 
 @use "pkg:@canonical/styles-vanilla-adapter/layers.css";
 
 /* 2. Vanilla and everything built on it: one layer, one territory.
-      Your settings file points $font-base-family and $font-monospace
-      at pragma's stacks — see step 6 of the installation. */
+      global-settings sets $font-base-family and $font-monospace to
+      pragma's stacks, and fonts declares the two faces (step 6). */
 @import "global-settings";
 @layer vanilla {
   @import "vanilla-framework";   /* inside the block: Vanilla emits a rule at import time */
   @import "cookie-policy";       /* inlined third-party CSS moves inside the layer */
   @include vanilla;
-  @import "fonts";               /* your @font-face, under pragma's names */
+  @import "fonts";               /* the two @font-face rules from step 6 */
   @include site-patterns;        /* local patterns, as today */
   /* … overrides, as today … */
 }
@@ -225,7 +225,7 @@ Write `<html class="site comfortable light">` in the template, and link `styles.
 
 ```css
 @import url("@canonical/styles-vanilla-adapter/layers.css");
-@import url("./fonts.css");                        /* your @font-face under pragma's names */
+@import url("./fonts.css");                        /* the two @font-face rules from step 6 */
 @import url("./vanilla.css") layer(vanilla);       /* Vanilla compiled to a file */
 @import url("@canonical/styles-vanilla-adapter/adapter.css");
 @import url("@canonical/react-ds-global-form/dist/esm/index.css");
@@ -240,10 +240,13 @@ Bundlers emit CSS in the order their module graph reaches it, not in the order y
 
 ```html
 <link rel="stylesheet" href="vendor/layers.css">
+<link rel="stylesheet" href="fonts.css">               <!-- the two @font-face rules from step 6 -->
 <link rel="stylesheet" href="vendor/vanilla.css">      <!-- wrapped in @layer vanilla { … } -->
 <link rel="stylesheet" href="vendor/pragma.css">       <!-- adapter.css with its imports resolved into one file, then the component sheets -->
 <link rel="stylesheet" href="style.css">               <!-- your CSS, inside @layer vanilla or @layer app -->
 ```
+
+With no Sass to set them, Vanilla's family variables are compiled into `vendor/vanilla.css` already, so build that file with pragma's stacks or restate the two families in `style.css`.
 
 ## Guarantees
 
