@@ -25,7 +25,7 @@
     /* Keyboard focus ring (Button precedent) — the semantic focus-ring colour,
        with a currentColor backstop should the theme layer not be loaded. */
     --contextual-menu-item-focus-ring-color: var(
-      --color-focusRing,
+      --color-focus-ring,
       currentColor
     );
     --contextual-menu-item-focus-ring-width: var(

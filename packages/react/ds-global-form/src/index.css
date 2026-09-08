@@ -153,7 +153,7 @@
 
     /* ── State colors ───────────────────────────────────────────────── */
 
-    --form-input-border-color-focus: var(--color-focusRing);
+    --form-input-border-color-focus: var(--color-focus-ring);
     --form-input-border-color-error: var(--color-border-error);
     --form-input-background-disabled: var(--color-foreground-input-disabled);
     --form-input-color-disabled: var(--disabled--color-text);
@@ -164,8 +164,8 @@
 
     /* ── Focus ring ─────────────────────────────────────────────────── */
 
-    --form-focus-ring-color: var(--color-focusRing);
-    --form-focus-ring-color-error: var(--color-focusRing-error);
+    --form-focus-ring-color: var(--color-focus-ring);
+    --form-focus-ring-color-error: var(--color-focus-ring-error);
     /* --form-focus-ring-width:  … ; */ /* focus ring thickness (default: 1px via box-shadow) */
     /* --form-focus-ring-offset: … ; */ /* focus ring offset from border */
   }

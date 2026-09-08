@@ -147,7 +147,7 @@ The package.json file defines the package identity, exports, scripts, and depend
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "build:all": "tsc -p tsconfig.build.json",
-    "check": "bun run check:biome && bun run check:webarchitect",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:webarchitect": "webarchitect library",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
@@ -188,10 +188,14 @@ Create `tsconfig.json`:
     "baseUrl": "src",
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src/**/*.ts", "vite.config.ts", "vitest.config.ts"],
-  "exclude": ["src/**/*.test.ts"]
+  "include": ["src/**/*.ts", "vite.config.ts", "vitest.config.ts"]
 }
 ```
+
+Note there is deliberately no `exclude` here. The base config is what `check:ts`
+(`tsc --noEmit`) reads, and test files must stay in its program — Vitest
+transpiles with esbuild, which strips types without checking them, so a test file
+excluded here is type-checked by nothing at all.
 
 Create `tsconfig.build.json`:
 
@@ -208,11 +212,16 @@ Create `tsconfig.build.json`:
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.tests.ts", "vite.config.ts", "vitest.config.ts"]
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.tests.ts",
+    "vite.config.ts",
+    "vitest.config.ts"
+  ]
 }
 ```
 
-The base config extends the shared `@canonical/typescript-config` package, which defines strict type checking rules and module resolution settings. The build config adds output paths and excludes test files from compilation.
+The base config extends the shared `@canonical/typescript-config` package, which defines strict type checking rules and module resolution settings. The build config adds output paths and is the **only** place test files are excluded — they are excluded from *compilation*, so they never reach `dist/`, while remaining type-checked by `check:ts`. Keep both the singular and plural test patterns: the repo uses both namings.
 
 For React packages, extend `@canonical/typescript-config-react` instead of `@canonical/typescript-config`. The React config includes JSX settings and React-specific type definitions.
 

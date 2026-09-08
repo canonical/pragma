@@ -50,7 +50,7 @@ The channel variable names follow a consistent pattern: `--modifier-color-{rest}
 | `--color-foreground-primary` | `--modifier-color-foreground-primary` |
 | `--color-foreground-ghost` | `--modifier-color-foreground-ghost` |
 | `--color-foreground-input` | `--modifier-color-foreground-input` |
-| `--color-focusRing` | `--modifier-color-focusRing` |
+| `--color-focus-ring` | `--modifier-color-focus-ring` |
 
 ### 3. Add surface fallbacks (if applicable)
 
@@ -178,11 +178,11 @@ If a component is inside both `.error` and an inner `.success`, the inner modifi
 
 ### Focus ring doesn't change
 
-Use `--modifier-color-focusRing` for the focus ring color:
+Use `--modifier-color-focus-ring` for the focus ring color:
 
 ```css
 .ds.input:focus-visible {
-  outline-color: var(--modifier-color-focusRing, var(--color-focusRing));
+  outline-color: var(--modifier-color-focus-ring, var(--color-focus-ring));
 }
 ```
 

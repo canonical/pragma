@@ -17,7 +17,7 @@
     /* 5bU = 40px tab height on the 8px baseline grid. */
     --tabs-tab-min-block-size: calc(var(--baseline-height) * 5);
     --tabs-tab-focus-ring-width: var(--dimension-strokeThickness-large, 2px);
-    --tabs-tab-focus-ring-color: var(--color-focusRing);
+    --tabs-tab-focus-ring-color: var(--color-focus-ring);
   }
 
   .ds.tabs-item {

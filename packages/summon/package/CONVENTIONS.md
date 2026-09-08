@@ -54,7 +54,7 @@
 |----|------|------|
 | P3.1 | `tsconfig.json` extends monorepo root or a shared config variant | `extends` field present |
 | P3.2 | `tsconfig.build.json` outputs to `dist/esm/` (JS) and `dist/types/` (declarations) | outDir = `dist/esm`, declarationDir = `dist/types` |
-| P3.3 | Test files (`*.test.ts`) are excluded from both tsconfigs | `exclude` includes test pattern |
+| P3.3 | Test files (`*.test.ts`) are excluded from `tsconfig.build.json` only, so `check:ts` still type-checks them | `tsconfig.build.json` `exclude` includes test pattern; `tsconfig.json` excludes no test pattern |
 | P3.4 | React packages have additional `tsconfig.json` with JSX support | jsx field set for React pkgs |
 | P3.5 | `biome.json` extends `@canonical/biome-config` (npm package, not relative path) | extends = `@canonical/biome-config` |
 | P3.6 | Biome scope includes `["src", "*.json"]` | scope covers src + json |

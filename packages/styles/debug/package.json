@@ -41,7 +41,7 @@
     "check:webarchitect": "webarchitect assets"
   },
   "peerDependencies": {
-    "@canonical/design-tokens": "0.8.1"
+    "@canonical/design-tokens": "0.10.0"
   },
   "peerDependenciesMeta": {
     "@canonical/design-tokens": {
