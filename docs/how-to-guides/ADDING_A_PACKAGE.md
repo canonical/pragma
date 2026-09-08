@@ -147,7 +147,7 @@ The package.json file defines the package identity, exports, scripts, and depend
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "build:all": "tsc -p tsconfig.build.json",
-    "check": "bun run check:biome && bun run check:webarchitect",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:webarchitect": "webarchitect library",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
