@@ -146,17 +146,19 @@
   }
 
   /* Correct the odd font size a browser gives the generic monospace family.
-     The family is named twice on purpose: Blink scales the keyword font size
-     when the computed family is the bare `monospace` keyword, and a list of
-     two defeats that. `font-size: 1em` then resolves against the parent. */
+     Blink scales the keyword size when the computed family is the bare
+     `monospace` keyword, and a list of two defeats that; `font-size: 1em` then
+     resolves against the parent. The list is `ui-monospace, monospace` rather
+     than `monospace` twice because a minifier collapses a repeated name and
+     brings the bug back: Lightning CSS turns `monospace, monospace` into
+     `monospace`, and the measured size goes from 16px to 13px. Two different
+     names it leaves alone, and `ui-monospace` falls through to `monospace`
+     wherever it is not supported. */
   pre,
   code,
   kbd,
   samp {
-    /* biome-ignore lint/suspicious/noDuplicateFontNames: the repetition is the
-       fix — Blink scales the keyword font size only when the computed family
-       is the bare `monospace` keyword, and a list of two is not that. */
-    font-family: monospace, monospace;
+    font-family: ui-monospace, monospace;
     font-size: 1em;
   }
 
