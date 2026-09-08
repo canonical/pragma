@@ -12,8 +12,14 @@
  *   @import url("@canonical/styles-vanilla-adapter/layers.css");
  *
  * Listed lowest first, each position is an argument:
+ *   vanilla.escapes  the six Vanilla `!important` declarations that reach inside
+ *                  an island (adapter.css). Important rules reverse the layer
+ *                  order, so the counter to one has to sit BELOW it; a sublayer
+ *                  of `vanilla` does, and sorts before the rules a consumer
+ *                  writes directly into `vanilla` whatever order they arrive in
  *   vanilla        Vanilla Framework and everything built on it, one territory
- *   boundary       `all: revert` on pragma territory (adapter.css): Vanilla ends here
+ *   boundary       `all: revert` on pragma territory (adapter.css): Vanilla ends
+ *                  here, for every declaration that is not important
  *   normalize      pragma's authored reset; on a mixed page the copy in this
  *                  package's elements.css, confined to the islands
  *   ds.tokens      primitive :root values, spacing, motion, overflow, naming shims
@@ -61,7 +67,8 @@
  * top of each of its entries and changes nothing: a later statement can add
  * names but never reorder the ones already fixed, and it adds none.
  */
-@layer vanilla,
+@layer vanilla.escapes,
+  vanilla,
   boundary,
   normalize,
   ds.tokens,

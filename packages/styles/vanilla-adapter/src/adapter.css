@@ -16,11 +16,28 @@
  * written the way it is.
  */
 
+/* The order statement, first, before anything opens a layer.
+ *
+ * It is imported here as well as linked by the page, because the two ways this
+ * file is loaded need different things. A page that links layers.css itself, as
+ * the README's step 1 asks, reads a second identical statement here and nothing
+ * happens: a statement can add names, never reorder the ones already fixed. A
+ * page that imports only this file gets the statement from here, which is the
+ * whole point — without it the first `ds.*` name any sheet mentions places `ds`
+ * at the bottom of the order, below `boundary`, and the boundary's `all: revert`
+ * erases pragma instead of Vanilla. That failure is total and silent, so this
+ * import is not a convenience.
+ *
+ * It does not make the page safe on its own. If a component stylesheet, or one
+ * of pragma's own entries, reaches the browser before this file, `ds` is already
+ * placed and no later statement can move it. layers.css has to be the first CSS
+ * the browser sees. The README says so, and `order.test.ts` measures both sides. */
+@import url("./layers.css");
+
 /* Pragma's CSS for a mixed page. The imports have to come before any rule,
- * which is why they sit above the layer blocks; the order statement in
- * layers.css, loaded before this file, has already fixed every layer they open,
- * and each of pragma's entries repeats pragma's own statement, which adds
- * nothing to it. */
+ * which is why they sit above the layer blocks; the statement above has already
+ * fixed every layer they open, and each of pragma's entries repeats pragma's own
+ * statement, which adds nothing to it. */
 @import url("@canonical/styles/tokens.css");
 @import url("@canonical/styles/layout.css");
 @import url("./elements.css");
@@ -59,10 +76,11 @@
  *
  * `:where()` keeps the element selectors at zero specificity, so any rule an
  * application places in the same layer beats them; the pseudo-element selectors
- * carry a pseudo-element's own (0,0,1). Vanilla's `!important` declarations still
- * win here, as they would anywhere; the only one that can match without a Vanilla
- * class present is `* { animation: none !important; transition: none !important }`
- * under reduced motion, which pragma will honour itself. Measured in Chromium 151,
+ * carry a pseudo-element's own (0,0,1). Vanilla's `!important` declarations are
+ * not reverted here and cannot be: for important rules the layer order reverses,
+ * so a declaration in `vanilla` outranks one in every layer above it. Six of them
+ * reach inside an island, and the second boundary below handles those.
+ * Measured in Chromium 151,
  * the rule adds nothing measurable to style recalculation, and a Vanilla theme
  * toggle is 42 to 46 percent cheaper with it, because the territory no longer
  * re-resolves Vanilla's variables. */
@@ -100,6 +118,75 @@
 
   :where(.ds, .ds *)::-moz-focus-outer {
     all: revert;
+  }
+}
+
+/* ── The second boundary: Vanilla's important declarations ─────────────────
+ * `all: revert` above cannot touch an important declaration. For important
+ * rules the cascade reverses the layer order, so an important declaration in
+ * the FIRST layer wins and one in `boundary` loses to one in `vanilla`
+ * (measured in Chromium: a list under `.u-text-max-width` kept Vanilla's
+ * `max-width: 40em` with an important revert in `boundary`). The counter has to
+ * sit below Vanilla, and a sublayer of `vanilla` is where it belongs: a rule
+ * written directly into a layer lands in that layer's implicit final sublayer,
+ * which sorts after every named sublayer, so `vanilla.escapes` beats the
+ * consumer's `@layer vanilla { … }` block whichever order the two arrive in
+ * (measured both ways).
+ *
+ * Six rules need it. They are every important declaration Vanilla ships whose
+ * subject compound carries no class, so an element inside an island matches
+ * without breaking rule 2 — the Vanilla class is on an ancestor OUTSIDE the
+ * island, which is the arrangement rule 2 recommends. Enumerated from the
+ * compiled build; the set is byte-identical in 4.56 and 4.58. The seventh,
+ * `* { animation: none !important; transition: none !important }` under reduced
+ * motion, is left alone: pragma honours reduced motion itself by zeroing its
+ * duration tokens, and the two agree.
+ *
+ * Each selector mirrors Vanilla's own and adds the island requirement, so the
+ * revert fires only where the leak is. The cost, stated in the README: inside
+ * one of these four Vanilla utilities, an important revert also outranks
+ * pragma's own declaration of that one property. A pragma list inside
+ * `.u-text-max-width` gets the browser's `max-width` rather than pragma's.
+ * Outside them nothing changes. Narrowing further is not possible — excluding
+ * pragma's own elements hands them back to Vanilla, which is the worse half. */
+@layer vanilla.escapes {
+  /* .u-text-max-width ul, .u-text-max-width ol { max-width: 40em !important } */
+  :where(.u-text-max-width) :where(.ds, .ds *):is(ul, ol) {
+    /* biome-ignore lint/complexity/noImportantStyles: the rule this answers is
+     important itself, and for important declarations the layer order reverses,
+     so nothing but another important declaration from a lower layer can reach
+     it. See this block's comment. */
+    max-width: revert !important;
+  }
+
+  /* .u-table-layout--fixed table, .u-table-layout--auto table
+     { table-layout: fixed | auto !important } */
+  :where(.u-table-layout--fixed, .u-table-layout--auto)
+  :where(.ds, .ds *):is(table) {
+    /* biome-ignore lint/complexity/noImportantStyles: the rule this answers is
+     important itself, and for important declarations the layer order reverses,
+     so nothing but another important declaration from a lower layer can reach
+     it. See this block's comment. */
+    table-layout: revert !important;
+  }
+
+  /* .p-content-card__author-and-date > :first-child
+     { margin-bottom: 0 !important } — the island root can be that first child */
+  :where(.p-content-card__author-and-date) > :where(.ds) {
+    /* biome-ignore lint/complexity/noImportantStyles: the rule this answers is
+     important itself, and for important declarations the layer order reverses,
+     so nothing but another important declaration from a lower layer can reach
+     it. See this block's comment. */
+    margin-bottom: revert !important;
+  }
+
+  /* .u-vertically-center > img { align-self: center !important } */
+  :where(.u-vertically-center) > :where(.ds):is(img) {
+    /* biome-ignore lint/complexity/noImportantStyles: the rule this answers is
+     important itself, and for important declarations the layer order reverses,
+     so nothing but another important declaration from a lower layer can reach
+     it. See this block's comment. */
+    align-self: revert !important;
   }
 }
 
