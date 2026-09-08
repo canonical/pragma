@@ -41,18 +41,12 @@ const PRAGMA_ORDER =
 /** The scope prelude every confined block uses. */
 const SCOPE = "(.ds)";
 
-/** A selector that is a control, or a control type, in pragma's reset. */
-const CONTROLS = new Set([
-  "button",
-  "input",
-  "optgroup",
-  "select",
-  "textarea",
-  '[type="button"]',
-  '[type="reset"]',
-  '[type="submit"]',
-  '[type="search"]',
-]);
+/** A selector that picks elements by name or by attribute, with an optional
+ * pseudo-element suffix: the shape that has to reach an island root. */
+const ELEMENT = /^(?:[a-z][a-z0-9]*|\[[^\]]+\])(?:::[\w-]+)?$/;
+
+/** The pseudo-element suffix of such a selector, if it has one. */
+const PSEUDO_SUFFIX = /(::[\w-]+)$/;
 
 /** The outermost island root. */
 const ROOT = ":where(:scope:not(.ds *))";
@@ -305,16 +299,40 @@ const confined = (rule: Rule): string[] | null => {
   // call; anything else the body declares is the island root's.
   if (only === "body")
     return declares(rule, "margin") ? [":where(:scope:is(body))"] : [ROOT];
+  // `body:not(…)`: the typography base font, whose exclusion list rides across
+  // for the same reason the reset's does — see that file's comment.
+  const bodyExcluded =
+    only === undefined ? null : /^body:not\((.+)\)$/.exec(only);
+  if (bodyExcluded) return [`:where(:scope:not(.ds *, ${bodyExcluded[1]}))`];
   // The universal box-sizing rule sits outside the scope block, the long way.
   if (list.every((selector) => UNIVERSAL.has(selector)))
     return UNIVERSAL_CONFINED;
-  // A list of controls reaches a control that is itself the island.
-  if (list.every((selector) => CONTROLS.has(selector)))
-    return [`:where(:scope, :scope *):is(${list.join(", ")})`];
-  // Everything else is itself, and a class an island root can carry (`.p` on a
-  // field error, `.code` on an inline code span, `.editorial` on a flipped
-  // region) gets its `:scope.x` twin.
-  return list.flatMap((selector) =>
+  // Every rule that selects by element name reaches an element that is itself
+  // the island root. A relative selector inside `@scope` never matches its own
+  // scoping root, so `pre { … }` alone would leave `<pre class="ds">` with the
+  // root baseline and the browser's defaults and nothing from pragma. The
+  // element names in a list collapse into one `:is()` under a root-reaching
+  // prelude; a pseudo-element suffix rides along on the outside, where it
+  // belongs.
+  const elements = list.filter((selector) => ELEMENT.test(selector));
+  const classes = list.filter((selector) => !ELEMENT.test(selector));
+  if (elements.length > 0) {
+    const suffix = PSEUDO_SUFFIX.exec(elements[0] ?? "")?.[1] ?? "";
+    const bare = elements.map((selector) =>
+      selector.replace(PSEUDO_SUFFIX, ""),
+    );
+    return [
+      `:where(:scope, :scope *):is(${bare.join(", ")})${suffix}`,
+      // A class an island root can carry (`.p` on a field error, `.code` on an
+      // inline code span, `.editorial` on a flipped region) keeps its twin.
+      ...classes.flatMap((selector) =>
+        /^\.[\w-]+$/.test(selector)
+          ? [selector, `:scope${selector}`]
+          : [selector],
+      ),
+    ];
+  }
+  return classes.flatMap((selector) =>
     /^\.[\w-]+$/.test(selector) ? [selector, `:scope${selector}`] : [selector],
   );
 };
@@ -331,7 +349,22 @@ const COPY_ONLY: ReadonlyArray<{
   layer: string;
   selector: string;
   reason: string;
-}> = [];
+}> = [
+  {
+    layer: "ds.reset",
+    selector:
+      ":where(:scope:not(.ds *, pre, code, kbd, samp, small, sub, sup))",
+    reason:
+      "A root font size, which pragma's own reset deliberately does not " +
+      "declare: the document element has nothing above it to inherit from, " +
+      "and a size declared there would override the reader's own. An island " +
+      "root does have an ancestor, and on a mixed page that ancestor can be a " +
+      "Vanilla heading that sizes its text. `1rem` still follows the reader's " +
+      "root size, and still lets Vanilla's own root scaling above 1681px " +
+      "reach the island. The exclusion list is the one the sibling rules " +
+      "carry: `normalize` sizes these elements itself.",
+  },
+];
 
 /** Whether an exception entry names a rule. */
 const excepted = (

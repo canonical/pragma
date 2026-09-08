@@ -125,42 +125,42 @@
     }
 
     /* Correct the odd font size a browser gives the generic monospace family.
-       The family is named twice on purpose; pragma's file says why. */
-    pre,
-    code,
-    kbd,
-    samp {
-      /* biome-ignore lint/suspicious/noDuplicateFontNames: the repetition is the
-         fix — Blink scales the keyword font size only when the computed family
-         is the bare `monospace` keyword, and a list of two is not that. */
-      font-family: monospace, monospace;
+       Blink scales the keyword size when the computed family is the bare
+       `monospace` keyword, and a list of two defeats that; `font-size: 1em` then
+       resolves against the parent. The list is `ui-monospace, monospace` rather
+       than `monospace` twice because a minifier collapses a repeated name and
+       brings the bug back: Lightning CSS turns `monospace, monospace` into
+       `monospace`, and the measured size goes from 16px to 13px. Two different
+       names it leaves alone, and `ui-monospace` falls through to `monospace`
+       wherever it is not supported. */
+    :where(:scope, :scope *):is(pre, code, kbd, samp) {
+      font-family: ui-monospace, monospace;
       font-size: 1em;
     }
 
     /* Keep sub and sup from affecting the line box, and so the baseline grid. */
-    sub,
-    sup {
+    :where(:scope, :scope *):is(sub, sup) {
       font-size: 75%;
       line-height: 0;
       position: relative;
       vertical-align: baseline;
     }
 
-    sub {
+    :where(:scope, :scope *):is(sub) {
       bottom: -0.25em;
     }
 
-    sup {
+    :where(:scope, :scope *):is(sup) {
       top: -0.5em;
     }
 
     /* Add the correct font size. */
-    small {
+    :where(:scope, :scope *):is(small) {
       font-size: 80%;
     }
 
     /* Add the correct vertical alignment. */
-    progress {
+    :where(:scope, :scope *):is(progress) {
       vertical-align: baseline;
     }
 
@@ -182,13 +182,13 @@
       outline-offset: -2px;
     }
 
-    [type="search"]::-webkit-search-decoration {
+    :where(:scope, :scope *):is([type="search"])::-webkit-search-decoration {
       -webkit-appearance: none;
     }
 
     /* Correct the text wrapping, the colour inheritance and the padding on a
        field group's caption. */
-    legend {
+    :where(:scope, :scope *):is(legend) {
       box-sizing: border-box;
       color: inherit;
       display: table;
@@ -210,18 +210,88 @@
     /* The OUTERMOST island root, and only that one: a nested component root
        must inherit its container's font and colour, not restate the baseline. */
     :where(:scope:not(.ds *)) {
-      /* The same token the typography element rules read for the base font,
-         so the root and the elements inside it cannot disagree. */
-      font-family: var(--typography-text-primary-font-family);
       /* A `light-dark()` token, resolved against the root's own colour scheme,
          which the theme bridge in adapter.css sets. */
       color: var(--color-text);
-      line-height: normal;
       font-weight: normal;
       /* The style longhand, not the `text-wrap` shorthand: the shorthand would
          also reset `text-wrap-mode` and let a `<select>`'s options wrap. */
       text-wrap-style: auto;
       -webkit-font-smoothing: auto;
+
+      /* Inherited properties a host page can push across the boundary.
+         `revert` cannot undo inheritance — rolling a property back to the user
+         agent leaves an inherited one at its parent's value — so the root has
+         to declare. These are the typographic inherited properties Vanilla sets
+         anywhere in its build, enumerated from the compiled stylesheet, at the
+         values a page running pragma alone computes.
+
+         `font-size: 1rem` is the one declaration this copy has that pragma's
+         own reset does not, and the divergence is in that file's comment too.
+         On the document root there is nothing above to inherit from and a
+         declared size would override the reader's; an island root has a Vanilla
+         ancestor. `1rem` still follows the reader's root size, and still lets
+         Vanilla's own root scaling above 1681px reach the island, which is what
+         makes the island scale with the page around it. What it stops is an
+         ancestor like `.p-heading--4` sizing the island's text.
+
+         Four inherited properties are deliberately NOT declared, because a host
+         setting them is communicating something the island should obey rather
+         than styling it: `direction` (a page may be right-to-left), `visibility`
+         (a hidden container must stay hidden), `pointer-events` (an inert
+         container must stay inert) and `cursor` (a busy container).
+         `color-scheme` belongs to the theme bridge. `list-style-type` needs
+         nothing here: on a root that is itself a list the boundary's
+         `all: revert` gives the user agent's own value, and every list inside
+         gets the same treatment. */
+      font-style: normal;
+      font-variant-caps: normal;
+      font-variant-numeric: normal;
+      letter-spacing: normal;
+      word-spacing: normal;
+      text-align: start;
+      text-indent: 0;
+      text-transform: none;
+      text-shadow: none;
+      text-underline-offset: auto;
+      hyphens: manual;
+      tab-size: 8;
+      word-break: normal;
+      border-collapse: separate;
+      caption-side: top;
+      user-select: auto;
+    }
+
+    /* Three properties an element's own rule in `normalize` may also set, each on
+       a root that is not one of the elements whose rule sets it. `normalize` sits
+       BELOW this layer, so without the lists a `<pre class="ds">` would take the
+       baseline font rather than its own monospace, and a `<sub class="ds">` the
+       baseline size rather than 75%. The lists differ because the element rules
+       differ: `pre`, `code`, `kbd` and `samp` set a family and a size, `small` a
+       size, `sub` and `sup` a size and a line height, and the form controls all
+       three. A control keeps the baseline family and size on purpose: `normalize`
+       gives it `inherit` and `100%`, which on an island root would resolve against
+       the host page rather than pragma.
+
+       On a document element every list is inert, because a document element is
+       never a `<pre>` or a `<sub>`. They earn their keep in the embedded copy,
+       where the same rules land on an island root, which can be any element at
+       all. The `white-space` rule below carries a list of its own for the same
+       reason. */
+    :where(:scope:not(.ds *, pre, code, kbd, samp)) {
+      /* The same token the typography element rules read for the base font, so
+         the root and the elements inside it cannot disagree. */
+      font-family: var(--typography-text-primary-font-family);
+    }
+
+    :where(
+        :scope:not(.ds *, sub, sup, button, input, optgroup, select, textarea)
+      ) {
+      line-height: normal;
+    }
+
+    :where(:scope:not(.ds *, pre, code, kbd, samp, small, sub, sup)) {
+      font-size: 1rem;
     }
 
     /* How text wraps, which `text-wrap-style` does not cover: `white-space` is
@@ -270,14 +340,17 @@
 @layer ds.typography {
   @scope (.ds) {
     /* Base font, on the outermost island root: the same token, in the same
-       shape, as the root rule in ds.reset above, so the two cannot disagree. */
-    :where(:scope:not(.ds *)) {
+       shape, as the root rule in ds.reset above, so the two cannot disagree.
+       The exclusion list is that rule's, for the same reason: `normalize` sits
+       below this layer, so a `<pre class="ds">` would otherwise take the base
+       font rather than its own monospace. */
+    :where(:scope:not(.ds *, pre, code, kbd, samp)) {
       font-family: var(--typography-text-primary-font-family);
     }
 
     /* ── Headings ── */
 
-    h1 {
+    :where(:scope, :scope *):is(h1) {
       --font-size: var(--typography-heading-1-font-size);
       --font-weight: var(--typography-heading-1-font-weight);
       --line-height: var(
@@ -298,7 +371,7 @@
       padding-inline: var(--heading-padding-inline, 0);
     }
 
-    h2 {
+    :where(:scope, :scope *):is(h2) {
       --font-size: var(--typography-heading-2-font-size);
       --font-weight: var(--typography-heading-2-font-weight);
       --line-height: var(
@@ -319,7 +392,7 @@
       padding-inline: var(--heading-padding-inline, 0);
     }
 
-    h3 {
+    :where(:scope, :scope *):is(h3) {
       --font-size: var(--typography-heading-3-font-size);
       --font-weight: var(--typography-heading-3-font-weight);
       --line-height: var(
@@ -340,7 +413,7 @@
       padding-inline: var(--heading-padding-inline, 0);
     }
 
-    h4 {
+    :where(:scope, :scope *):is(h4) {
       --font-size: var(--typography-heading-4-font-size);
       --font-weight: var(--typography-heading-4-font-weight);
       --line-height: var(
@@ -361,7 +434,7 @@
       padding-inline: var(--heading-padding-inline, 0);
     }
 
-    h5 {
+    :where(:scope, :scope *):is(h5) {
       --font-size: var(--typography-heading-5-font-size);
       --font-weight: var(--typography-heading-5-font-weight);
       --line-height: var(
@@ -387,7 +460,7 @@
       padding-inline: var(--heading-padding-inline, 0);
     }
 
-    h6 {
+    :where(:scope, :scope *):is(h6) {
       --font-size: var(--typography-heading-6-font-size);
       --font-weight: var(--typography-heading-6-font-weight);
       --line-height: var(
@@ -412,7 +485,7 @@
 
     /* `:scope.p` is the same rule for an island root that carries the class
        itself: a Field error is `<p class="ds field-error p">`. */
-    p,
+    :where(:scope, :scope *):is(p),
     .p,
     :scope.p {
       --font-size: var(--typography-text-primary-font-size);
@@ -482,13 +555,7 @@
     /* ── The cap-unit engine ── */
 
     /* Reset */
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6,
-    p,
+    :where(:scope, :scope *):is(h1, h2, h3, h4, h5, h6, p),
     .p,
     .code,
     :scope.p,
@@ -498,13 +565,7 @@
 
     /* Baseline alignment: each text element's total height snaps to a multiple
        of --baseline-height, through padding nudges inside the element's box. */
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6,
-    p,
+    :where(:scope, :scope *):is(h1, h2, h3, h4, h5, h6, p),
     .p,
     .code,
     :scope.p,
@@ -526,13 +587,7 @@
 
     /* Block-level baseline nudges only: bare inline `.code` is excluded so it
        does not double-pad inside a paragraph. */
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6,
-    p,
+    :where(:scope, :scope *):is(h1, h2, h3, h4, h5, h6, p),
     .p,
     :scope.p {
       /* Nudges as padding — inside the box for flex/grid compatibility */

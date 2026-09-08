@@ -50,8 +50,16 @@
  */
 
 @layer ds.typography {
-  /* Base font — inherited by all elements unless overridden */
-  body {
+  /* Base font — inherited by all elements unless overridden.
+
+     The exclusion list is inert here, because a `<body>` is never a `<pre>`.
+     It earns its keep in `@canonical/styles-vanilla-adapter`, whose confined
+     copy lands this rule on an island root, which can be any element at all:
+     without it a `<pre class="ds">` would take the base font rather than the
+     monospace family `normalize` gives it, `ds.typography` sitting above
+     `normalize`. The reset in `@canonical/styles` carries the same list on the
+     same three properties, for the same reason. */
+  body:not(pre, code, kbd, samp) {
     font-family: var(--typography-text-primary-font-family);
   }
 
