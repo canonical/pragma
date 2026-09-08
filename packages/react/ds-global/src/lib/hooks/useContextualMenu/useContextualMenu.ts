@@ -16,15 +16,23 @@ import type {
 
 /**
  * Prepare a menu entry for the navigation tree. A separator becomes a
- * disabled, label-less node: `disabled` is what makes the shared navigation
+ * PRESENTATIONAL, label-less node, which is what makes the shared navigation
  * machinery (arrow keys, Home/End, type-ahead, roving focus) skip it with no
- * separator awareness of its own. Its `key` is the identity the tree's index
- * requires, and the type already guarantees it. Items recurse into their
- * submenu entries.
+ * separator awareness of its own.
+ *
+ * Not `disabled`. A disabled entry is a menu item the user may not choose
+ * right now, and a renderer is entitled to draw it greyed and announce it
+ * `aria-disabled`; a separator is not an item at all. Marking it disabled
+ * made one flag mean two things depending on the node you read it from, and
+ * left `disabled` unable to answer "may the user choose this?" on its own.
+ *
+ * The word "separator" stops here: the core learns only that the node is
+ * presentational. Its `key` is the identity the tree's index requires, and
+ * the type already guarantees it. Items recurse into their submenu entries.
  */
 const prepareEntry = (entry: MenuEntry): MenuEntry => {
   if (isMenuSeparator(entry)) {
-    return { ...entry, disabled: true };
+    return { ...entry, presentational: true };
   }
   if (!entry.items?.length) return entry;
   return {
@@ -40,7 +48,7 @@ const prepareEntry = (entry: MenuEntry): MenuEntry => {
  * Positioning, open state, outside-click and Escape dismissal come from
  * {@link useDisclosure} in `click` mode. Roving focus, type-ahead, and ARIA
  * wiring come from `useNavigationTree`, unmodified: separators enter the tree
- * as disabled, label-less nodes, which the tree already skips.
+ * as presentational, label-less nodes, which the tree already skips.
  *
  * @param root The menu tree (menu -> entries; an item's `items` is its submenu).
  * @param wrap Whether arrow keys wrap at the first/last item.
@@ -68,8 +76,8 @@ const useContextualMenu = ({
     getToggleProps: getDisclosureToggleProps,
   } = useDisclosure({ ...props, mode: "click" });
 
-  // Separators become disabled nodes BEFORE the tree annotates the root, so
-  // useNavigationTree runs unmodified.
+  // Separators become presentational nodes BEFORE the tree annotates the root,
+  // so useNavigationTree runs unmodified.
   const preparedRoot = useMemo(() => prepareEntry(root) as MenuItem, [root]);
 
   const nav = useNavigationTree<MenuEntry>({
@@ -81,8 +89,9 @@ const useContextualMenu = ({
 
   // The disclosure owns the open state (it drives positioning and dismissal);
   // mirror it into the navigation tree so roving focus follows open/close. The
-  // reducer's OPEN highlights the first enabled child — a real menuitem, since
-  // the root's children are the items themselves (separators are disabled).
+  // reducer's OPEN highlights the first interactive child — a real menuitem,
+  // since the root's children are the items themselves (separators are
+  // presentational, and the tree passes over them).
   useEffect(() => {
     if (isOpen) {
       nav.openMenu();

@@ -36,8 +36,8 @@ export type MenuItem = _DistributiveOmit<Item, "items"> & {
 
 /**
  * A non-interactive divider between menu entries, rendered as a horizontal
- * rule. It is fed to the navigation tree as a disabled, label-less node, so
- * the shared navigation machinery (arrow keys, Home/End, type-ahead, roving
+ * rule. It is fed to the navigation tree as a PRESENTATIONAL, label-less node,
+ * so the shared navigation machinery (arrow keys, Home/End, type-ahead, roving
  * focus) skips it without any separator awareness of its own.
  */
 export interface MenuSeparator {
@@ -50,11 +50,15 @@ export interface MenuSeparator {
    */
   key: string;
   /**
-   * Set by {@link useContextualMenu} before the tree is annotated — disabled
-   * is what makes the navigation machinery skip the separator. Consumers
-   * never set it.
+   * Set by {@link useContextualMenu} before the tree is annotated — being
+   * presentational is what makes the navigation machinery skip the separator.
+   * Consumers never set it.
+   *
+   * Deliberately not `disabled`: that would claim this is a menu item the
+   * user may not choose, and a renderer would be entitled to announce it
+   * `aria-disabled`. A separator is not an item.
    */
-  disabled?: true;
+  presentational?: true;
 }
 
 /**

@@ -83,18 +83,34 @@ describe("useContextualMenu", () => {
     expect(result.current.highlightedItems.at(-2)?.key).toBe("menu");
   });
 
-  it("feeds separators to the tree as disabled nodes", () => {
-    // The tree machinery skips DISABLED nodes — that, plus the key every
+  it("feeds separators to the tree as presentational nodes", () => {
+    // The tree machinery skips PRESENTATIONAL nodes — that, plus the key every
     // navigation item carries, is the entire separator contract. The
     // discriminant survives annotation for the render layer.
     const { result } = renderHook(() => useContextualMenu({ root: menu }));
 
     const separator = result.current.index["before-b1"];
     expect(separator).toBeDefined();
-    expect(separator?.disabled).toBe(true);
+    expect(separator?.presentational).toBe(true);
     expect(separator && "type" in separator ? separator.type : undefined).toBe(
       "separator",
     );
+  });
+
+  it("does not mark a separator disabled", () => {
+    // The regression this guards: a separator used to be fed in as
+    // `disabled: true` purely to make the tree skip it. `disabled` means the
+    // user may not choose an item that IS one, and a renderer may draw it
+    // greyed and announce it `aria-disabled` on that basis. A separator must
+    // not answer yes to that question.
+    const { result } = renderHook(() => useContextualMenu({ root: menu }));
+
+    const separator = result.current.index["before-b1"];
+    expect(separator).toBeDefined();
+    // Not merely unset: `MenuSeparator` has no `disabled` field, so the old
+    // overload is now unrepresentable and reintroducing it fails to compile.
+    // This asserts the runtime object agrees with the type.
+    expect(separator && "disabled" in separator).toBe(false);
   });
 
   it("passes positioning props through to useWindowFitment", () => {
@@ -107,7 +123,7 @@ describe("useContextualMenu", () => {
   });
 
   it("skips a separator on ArrowDown through the composed hook", () => {
-    // The separator sits between "a2" and "b1"; the tree's disabled-skipping
+    // The separator sits between "a2" and "b1"; the tree's interactive-only
     // sibling walk must step straight over it, with no separator logic here.
     const { result } = renderHook(() => useContextualMenu({ root: menu }));
 
