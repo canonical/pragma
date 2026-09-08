@@ -598,22 +598,16 @@ export const ICON_METADATA: Readonly<Record<IconName, IconMetadata>> = {
     description: "Controllers that manage a cloud environment.",
   },
   copy: {
-    tags: [
-      "document",
-      "file",
-      "duplicate",
-      "add",
-      "new",
-      "plus",
-      "create",
-      "clone",
-      "clipboard",
-    ],
+    tags: ["document", "file", "duplicate", "clone", "pages", "clipboard"],
     categories: ["action"],
   },
   cursor: {
     tags: ["mouse", "arrow", "pointer", "click", "select", "interface", "ui"],
     categories: ["object"],
+  },
+  cut: {
+    tags: ["scissors", "snip", "trim", "clipboard", "move", "remove"],
+    categories: ["action"],
   },
   "dark-theme": {
     tags: [
@@ -1321,6 +1315,10 @@ export const ICON_METADATA: Readonly<Record<IconName, IconMetadata>> = {
       "script",
       "open",
     ],
+    categories: ["action"],
+  },
+  paste: {
+    tags: ["clipboard", "insert", "place", "duplicate", "document", "file"],
     categories: ["action"],
   },
   pause: {
