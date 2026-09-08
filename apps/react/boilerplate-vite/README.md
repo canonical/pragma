@@ -35,6 +35,14 @@ suffix selects the **SSR runtime**, and the `dev` / `preview` prefix selects the
 **mode**. Reach for `dev:*` while building — it is the fast inner loop — and for
 `preview:*` when verifying that the production bundle behaves before a deploy.
 
+One asymmetry to expect in the **SPA** cells: this app is the server-rendered
+reference, so its `index.html` carries no `<title>` — a shell title would be
+emitted ahead of the page's in the SSR cells and beat it (see
+`@canonical/react-head`'s one-owner rule). The SPA cells serve that shell
+directly, so the tab is untitled for the moment before React renders the page's
+own title. A scaffolded client-only app does not have this: `summon` gives the
+`--rendering spa` arm a shell title, because it has no server to compete with.
+
 ### Why two modes exist
 
 The modes are deliberately different because development and production have

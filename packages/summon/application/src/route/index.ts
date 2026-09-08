@@ -43,14 +43,13 @@ function buildPage(routeName: string): string {
   const title = toTitleCase(routeName);
   const slugId = toCamelCase(routeName);
 
-  return `import { useHead } from "@canonical/react-head";
+  return `import { Head } from "@canonical/react-head";
 import type { ReactElement } from "react";
 
 export default function ${pageName}(): ReactElement {
-  useHead({ title: "${title}" });
-
   return (
     <section aria-labelledby="${slugId}-title">
+      <Head title="${title}" />
       <h1 id="${slugId}-title">${title}</h1>
     </section>
   );

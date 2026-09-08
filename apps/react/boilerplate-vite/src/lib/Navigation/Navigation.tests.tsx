@@ -1,5 +1,4 @@
 import { I18nProvider } from "@canonical/i18n-react";
-import { HeadProvider } from "@canonical/react-head";
 import { createHashAdapter, createRouter, route } from "@canonical/router-core";
 import { RouterProvider } from "@canonical/router-react";
 import { fireEvent, render, screen } from "@testing-library/react";
@@ -42,11 +41,9 @@ function renderShell() {
 
   return render(
     <I18nProvider config={i18nConfig} catalogs={catalogs}>
-      <HeadProvider>
-        <RouterProvider router={router}>
-          <Navigation />
-        </RouterProvider>
-      </HeadProvider>
+      <RouterProvider router={router}>
+        <Navigation />
+      </RouterProvider>
     </I18nProvider>,
   );
 }

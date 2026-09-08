@@ -12,7 +12,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="A React application built with the Canonical design system, router, and SSR packages." />
     <link rel="icon" type="image/png" sizes="32x32" href="https://assets.ubuntu.com/v1/be7e4cc6-COF-favicon-32x32.png">
-    <title>Pragma Boilerplate</title>
+    <!-- No <title> here. The route page owns it, through <Head> from
+         @canonical/react-head, and React hoists that <title> into this head.
+         The server renderer re-emits this shell's head tags ahead of the
+         hoisted ones, and HTML takes the FIRST <title> in tree order — so a
+         <title> on this line would beat every page's. -->
   </head>
   <body>
     <div id="root"></div>

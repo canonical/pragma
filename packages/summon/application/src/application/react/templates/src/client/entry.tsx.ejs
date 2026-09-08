@@ -45,6 +45,7 @@ import { catalogs, i18nConfig } from "#i18n/index.js";
 <% if (relay) { -%>
 import { getBrowserEnvironment } from "#relay/environment.js";
 <% } -%>
+import formatDocumentTitle from "../formatDocumentTitle.js";
 <%# Same story: the SPA arm never pulls the two SSR payload symbols, so the three -%>
 <%# base names fit on one line and the formatter requires them there. -%>
 <% if (spa) { -%>
@@ -167,7 +168,7 @@ hydrateRoot(
     catalogs={catalogs}
     locale={resolveInitialLocale()}
   >
-    <HeadProvider>
+    <HeadProvider titleTemplate={formatDocumentTitle}>
       <RelayEnvironmentProvider environment={relayEnvironment}>
         <RouterProvider router={router}>
           <Outlet fallback={<p>Loading…</p>} />
@@ -176,7 +177,7 @@ hydrateRoot(
     </HeadProvider>
   </I18nProvider>,
 <% } else if (relay) { -%>
-  <HeadProvider>
+  <HeadProvider titleTemplate={formatDocumentTitle}>
     <RelayEnvironmentProvider environment={relayEnvironment}>
       <RouterProvider router={router}>
         <Outlet fallback={<p>Loading…</p>} />
@@ -189,14 +190,14 @@ hydrateRoot(
     catalogs={catalogs}
     locale={resolveInitialLocale()}
   >
-    <HeadProvider>
+    <HeadProvider titleTemplate={formatDocumentTitle}>
       <RouterProvider router={router}>
         <Outlet fallback={<p>Loading…</p>} />
       </RouterProvider>
     </HeadProvider>
   </I18nProvider>,
 <% } else { -%>
-  <HeadProvider>
+  <HeadProvider titleTemplate={formatDocumentTitle}>
     <RouterProvider router={router}>
       <Outlet fallback={<p>Loading…</p>} />
     </RouterProvider>

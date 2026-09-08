@@ -163,7 +163,7 @@ Produces:
 
 ```
 src/domains/billing/
-├── MainPage.tsx    # Page component with useHead()
+├── MainPage.tsx    # Page component rendering <Head>
 └── routes.ts       # Route barrel with example route entry
 ```
 
@@ -263,6 +263,7 @@ src/
 │   ├── schema.ts           # Executable mock schema (graphql-js)
 │   └── __generated__/      # Committed relay-compiler artifacts
 ├── styles/                 # CSS
+├── formatDocumentTitle.ts  # Appends the app name to every page's title
 └── routes.tsx              # Root route map, middleware, type registration
 ```
 
@@ -292,7 +293,8 @@ export default routes;
 ```
 
 - `content` receives the component directly (not a wrapper function)
-- Pages use `useHead()` from `@canonical/react-head` for title and meta
+- Pages render `<Head>` from `@canonical/react-head` for title and meta — one
+  owner per document, so a layout or an entry never renders it
 - No `fetch()` / `warm()` unless needed for cache warming
 - No `.error` — use React error boundaries
 - Route files are `.ts` (no JSX in route definitions)
