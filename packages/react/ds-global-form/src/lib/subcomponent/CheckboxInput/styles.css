@@ -112,8 +112,8 @@
 
     &:focus-visible {
       outline: none;
-      border-color: var(--color-focusRing);
-      box-shadow: 0 0 0 1px var(--color-focusRing);
+      border-color: var(--color-focus-ring);
+      box-shadow: 0 0 0 1px var(--color-focus-ring);
     }
 
     &:disabled {

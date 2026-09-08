@@ -58,11 +58,11 @@
       outline: none;
 
       &::-webkit-slider-thumb {
-        box-shadow: 0 0 0 2px var(--color-focusRing);
+        box-shadow: 0 0 0 2px var(--color-focus-ring);
       }
 
       &::-moz-range-thumb {
-        box-shadow: 0 0 0 2px var(--color-focusRing);
+        box-shadow: 0 0 0 2px var(--color-focus-ring);
       }
     }
 

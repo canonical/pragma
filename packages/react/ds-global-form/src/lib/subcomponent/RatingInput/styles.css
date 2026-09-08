@@ -137,7 +137,7 @@
   /* Keyboard focus ring on the star whose radio is focused. */
   .ds.form-rating > .star:has(> .star-input:focus-visible) {
     outline: var(--focus-outline-width, 2px) solid
-      var(--color-focusRing, currentColor);
+      var(--color-focus-ring, currentColor);
     outline-offset: 2px;
     border-radius: var(--dimension-radius-small, 2px);
   }
