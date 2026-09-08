@@ -4,7 +4,7 @@
     flex-flow: row wrap;
     align-items: center;
     justify-content: space-between;
-    gap: var(--lp-dimension-spacing-inline-xxs);
+    gap: var(--dimension-050);
   }
 
   &:not([aria-sort]),
