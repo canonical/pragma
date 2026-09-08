@@ -95,7 +95,7 @@ describe.each(VANILLA_VERSIONS)("theme-bridge (Vanilla %s)", (version) => {
   });
 });
 
-describe("removal (README rule 19)", () => {
+describe("removal (the README's Removal section)", () => {
   it("removes Vanilla and this package in one change, and every root then follows pragma's theme classes", async () => {
     const page = await render(removalPage("styles"));
     expect(computed(page, page.documentElement).colorScheme).toBe("light");

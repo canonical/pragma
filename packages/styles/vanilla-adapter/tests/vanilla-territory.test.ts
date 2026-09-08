@@ -12,7 +12,7 @@ import {
 } from "./support/pages.js";
 
 /**
- * The document is pinned `light` from day one (README rule 10), and the Vanilla-
+ * The document is pinned `light` from day one (README rule 4), and the Vanilla-
  * only page, the site before pragma, carries no pin: `color-scheme` differs by
  * design on every element. The pin itself is asserted in theme.test.ts.
  */

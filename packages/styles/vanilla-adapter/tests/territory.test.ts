@@ -131,7 +131,7 @@ describe.each(VANILLA_VERSIONS)(
       expect(computed(control, "place-direct").marginRight).toBe("24px");
       expect(computed(mixed, "place-wrapped").marginRight).toBe("0px");
       // A grid row places a child by its column class; on a pragma root the
-      // class is reverted with the rest, which is why rule 8 says to wrap.
+      // class is reverted with the rest, which is why rule 2 says to wrap.
       expect(computed(mixed, "place-col").gridColumnEnd).toBe("span 6");
       expect(computed(mixed, "place-col-direct").gridColumnEnd).toBe("auto");
       expect(computed(control, "place-col-direct").gridColumnEnd).toBe(
