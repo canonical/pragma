@@ -2,7 +2,9 @@
 
 Runs pragma's components inside an application that is still built with Vanilla Framework. The two frameworks style the same page without reaching into each other, so you can migrate a page at a time instead of all at once.
 
-The package ships three stylesheets and depends only on `@canonical/styles`. There is no build step and no tooling to add.
+Your existing stylesheet stays. Everything Vanilla moves inside one cascade layer, the order statement from this package goes above it, and pragma's CSS is loaded from a second entry after it. No selector of yours changes, and nothing is rewritten by a build step.
+
+The package ships three stylesheets and depends only on `@canonical/styles`. None of them references a font, an image or an icon, so nothing new is downloaded or copied at build time.
 
 | File | What it does |
 | --- | --- |
@@ -30,17 +32,36 @@ bun add @canonical/styles-vanilla-adapter @canonical/ds-assets
 
 ## Usage
 
-Add two imports, and nothing to any element that a pragma-only page would not also carry:
+Your existing stylesheet stays where it is and keeps doing what it does. You change two things about it: everything Vanilla goes inside one `@layer vanilla { … }` block, and the order statement from this package goes above that block, as the first rule of the first stylesheet the browser reads. Nothing else about your styles moves, and no selector changes.
 
-```css
-/* the first rule of the first stylesheet */
-@import url("@canonical/styles-vanilla-adapter/layers.css");
+Pragma's CSS then goes in a second entry, conventionally `pragma.css`, which the page loads after your existing stylesheet. That entry starts with `adapter.css` and continues with the component packages you use.
 
-/* in the pragma entry, before the component stylesheets */
-@import url("@canonical/styles-vanilla-adapter/adapter.css");
+```scss
+/* styles.scss — your existing stylesheet, with two changes */
+@import "@canonical/styles-vanilla-adapter/src/layers";   /* first rule in the file */
+
+@layer vanilla {
+  @import "vanilla-framework";   /* everything you already had, unchanged, inside the block */
+  @include vanilla;
+  /* your patterns and overrides, as today */
+}
 ```
 
-The second import brings `@canonical/styles/tokens.css`, `@canonical/styles/layout.css` and this package's `elements.css` with it. Do not import `@canonical/styles` or its `elements.css` on a mixed page: those style the whole document, which is what a pragma-only page wants and what a mixed page must avoid.
+```css
+/* pragma.css — a second entry, loaded after styles.css */
+@import url("@canonical/styles-vanilla-adapter/adapter.css");
+@import url("@canonical/react-ds-global-form/dist/esm/index.css");
+```
+
+Link them in that order, `styles.css` then `pragma.css`. Link order does not decide which framework wins, because the layers do that, but the order statement has to be the first rule the browser sees.
+
+That second import brings `@canonical/styles/tokens.css`, `@canonical/styles/layout.css` and this package's `elements.css` with it. Do not import `@canonical/styles` or its `elements.css` on a mixed page: those style the whole document, which is what a pragma-only page wants and what a mixed page must avoid.
+
+### Fonts and other assets
+
+None of the three stylesheets in this package references a file. Neither do the two pragma entries they load: no font, no image, no icon, so adding them downloads no assets and needs no copying step in your build.
+
+Fonts are the one thing you declare yourself, and you do it once for both frameworks. Point Vanilla's `$font-base-family` and `$font-monospace` at pragma's stacks in your settings, write the `@font-face` rules in your own stylesheet from the files in `@canonical/ds-assets`, and leave `@canonical/styles/fonts` out of `pragma.css`. That is why `@canonical/ds-assets` is in the install line above, and rule 16 covers it. Doing it the other way, letting each framework declare its own family, downloads the same typeface twice under two names.
 
 ## Territories
 
