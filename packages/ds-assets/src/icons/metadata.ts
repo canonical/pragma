@@ -615,6 +615,10 @@ export const ICON_METADATA: Readonly<Record<IconName, IconMetadata>> = {
     tags: ["mouse", "arrow", "pointer", "click", "select", "interface", "ui"],
     categories: ["object"],
   },
+  cut: {
+    tags: ["scissors", "snip", "trim", "clipboard", "move", "remove"],
+    categories: ["action"],
+  },
   "dark-theme": {
     tags: [
       "dark",
@@ -1321,6 +1325,10 @@ export const ICON_METADATA: Readonly<Record<IconName, IconMetadata>> = {
       "script",
       "open",
     ],
+    categories: ["action"],
+  },
+  paste: {
+    tags: ["clipboard", "insert", "place", "duplicate", "document", "file"],
     categories: ["action"],
   },
   pause: {
