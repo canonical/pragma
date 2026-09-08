@@ -25,9 +25,6 @@
 
 @layer ds.reset {
   :where(html) {
-    /* A `light-dark()` token, resolved against the root's own colour scheme
-       (see the theme modifiers), so this one declaration is correct in both. */
-    color: var(--color-text);
     /* The style longhand, not the `text-wrap` shorthand: the shorthand also
        resets `text-wrap-mode`, which would overwrite the browser's own
        `white-space: pre` on a `<select>` and let a long option wrap. How text
@@ -69,17 +66,24 @@
     word-break: normal;
     border-collapse: separate;
     caption-side: top;
-    user-select: auto;
   }
 
-  /* Three more, each excluded on the elements whose own value the browser
-     already gets right. Their lists come from the user agent's stylesheet
-     rather than from `normalize`, which is why they are rules of their own:
-     the browser bolds `b`, `strong` and a `th`, italicises `em` and its
-     family, and centres a `th`, a `caption` and a button's label. On a
-     document element every list is inert; on an island root, which can be any
-     element, they are not. */
-  :where(html:not(b, strong, th)) {
+  /* The four properties the browser gives some elements an absolute value for,
+     each excluded on those elements. Their lists come from the user agent's
+     stylesheet rather than from `normalize`, which is why they are rules of
+     their own: the browser greys an `<hr>`, bolds a `<th>`, italicises `<em>`
+     and its family, and centres a `<th>`, a `<caption>` and a button's label,
+     the button-typed inputs included. On a document element every list is
+     inert; on an island root, which can be any element, they are not. */
+  :where(
+    html:not(hr, button, [type="button"], [type="submit"], [type="reset"])
+  ) {
+    /* A `light-dark()` token, resolved against the root's own colour scheme
+       (see the theme modifiers), so this one declaration is correct in both. */
+    color: var(--color-text);
+  }
+
+  :where(html:not(b, strong, optgroup, th)) {
     font-weight: normal;
   }
 
@@ -87,8 +91,30 @@
     font-style: normal;
   }
 
-  :where(html:not(th, caption, button, center)) {
+  :where(
+    html:not(
+      th,
+      caption,
+      button,
+      center,
+      [type="button"],
+      [type="submit"],
+      [type="reset"]
+    )
+  ) {
     text-align: start;
+    user-select: auto;
+  }
+
+  /* Where the browser's own value is RELATIVE, excluding the element is not
+     enough: `b` and `strong` are `bolder` and `small` is `80%`, both resolved
+     against the parent, which on a mixed page is the host's. So those roots are
+     given the absolute value the browser would have computed for them on a page
+     of pragma's own, rather than left to the host. Measured: a `<b class="ds">`
+     inside a Vanilla `.p-heading--4` computed weight 400 against pragma's 700,
+     and inside `.p-muted-heading` 900. */
+  :where(html):is(b, strong, optgroup) {
+    font-weight: bold;
   }
 
   /* Three properties an element's own rule in `normalize` may also set, each on
@@ -129,7 +155,18 @@
      copy, where this rule lands on a region root that may itself be one of
      them, and they are kept identical so the two cannot drift. A short, fixed
      list from HTML, not an inventory of another framework's rules. */
-  :where(html:not(pre, textarea, select, code, kbd, samp, [contenteditable])) {
+  :where(
+    html:not(
+      pre,
+      textarea,
+      select,
+      [type="button"],
+      [type="submit"],
+      [type="reset"],
+      [type="file"],
+      [contenteditable]
+    )
+  ) {
     white-space: normal;
   }
 

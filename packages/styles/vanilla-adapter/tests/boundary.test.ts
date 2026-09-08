@@ -83,7 +83,34 @@ const INHERITANCE = `
 <nav class="p-breadcrumbs"><ol class="p-breadcrumbs__items"><li class="p-breadcrumbs__item">a</li><li class="p-breadcrumbs__item"><div class="ds card" id="inh-crumb"></div></li></ol></nav>
 <ul class="p-list"><li class="ds" id="inh-marker">x</li></ul>`;
 
-const BODY = ROOT_ELEMENTS + ESCAPES + INHERITANCE;
+/**
+ * Island roots inside a host that sizes, wraps or weights its own text. This is
+ * where a relative value bites: excluding an element from a root declaration
+ * hands it back to `normalize`, whose sizes are `1em`, `80%` and `75%` — all of
+ * them resolved against the host rather than the island.
+ */
+const HOSTILE = `
+<div class="p-heading--4">
+  <pre class="ds" id="host-pre">x</pre>
+  <small class="ds" id="host-small">x</small>
+  <sub class="ds" id="host-sub">x</sub>
+  <b class="ds" id="host-b">x</b>
+  <strong class="ds" id="host-strong">x</strong>
+</div>
+<div class="p-muted-heading">
+  <b class="ds" id="muted-b">x</b>
+</div>
+<div class="u-truncate">
+  <code class="ds" id="trunc-code">x</code>
+  <kbd class="ds" id="trunc-kbd">x</kbd>
+</div>
+<hr class="ds" id="host-hr">
+<form>
+  <input type="submit" class="ds" id="host-submit" value="x">
+  <input type="file" class="ds" id="host-file">
+</form>`;
+
+const BODY = ROOT_ELEMENTS + ESCAPES + INHERITANCE + HOSTILE;
 const ROOT = "app comfortable light";
 
 /** One island, for the pages that are about the order rather than the markup. */
@@ -192,6 +219,43 @@ describe.each(VANILLA_VERSIONS)(
           "font-style",
           "text-align",
           "list-style-type",
+        ],
+      );
+    });
+
+    it("holds an island root's own value against a host that sizes or weights its text", async () => {
+      // The hard half of the root declarations. Where the browser's value for
+      // an element is RELATIVE — `1em` on a `<pre>`, `80%` on a `<small>`,
+      // `bolder` on a `<b>` — excluding that element from a root declaration
+      // hands it to the host, which is what the declaration existed to stop.
+      // Measured before the fix, inside a Vanilla heading whose text is 24px: a
+      // `<pre class="ds">` computed 24px against pragma's 16px, a `<small>`
+      // 19.2px against 12.8px, and a `<b>` weight 400 against 700.
+      await sameAsPragmaOnly(
+        vanilla,
+        [
+          "host-pre",
+          "host-small",
+          "host-sub",
+          "host-b",
+          "host-strong",
+          "muted-b",
+          "trunc-code",
+          "trunc-kbd",
+          "host-hr",
+          "host-submit",
+          "host-file",
+        ],
+        [
+          "font-size",
+          "font-weight",
+          "font-style",
+          "text-align",
+          "white-space-collapse",
+          "text-wrap-mode",
+          "user-select",
+          "color",
+          "border-top-color",
         ],
       );
     });

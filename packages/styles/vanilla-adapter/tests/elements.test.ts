@@ -272,7 +272,12 @@ const opensElementLayer = (walked: Walked): boolean =>
  */
 const documentElement = (
   selector: string,
-): { excluded: string | undefined } | undefined => {
+): { excluded?: string; only?: string } | undefined => {
+  // `:where(html):is(b, strong)` — the document element narrowed to the
+  // elements whose own value the browser gives relative to their parent, so the
+  // root has to state the absolute one rather than exclude them.
+  const narrowed = /^:where\((?:html|:root)\):is\((.+)\)$/.exec(selector);
+  if (narrowed) return { only: narrowed[1] };
   const match =
     /^:where\((?:html|:root)(?::not\((.+)\))?\)$/.exec(selector) ??
     /^(?:html|:root)(?::not\((.+)\))?$/.exec(selector);
@@ -290,10 +295,12 @@ const confined = (rule: Rule): string[] | null => {
   // list it carries stays: on the page it is inert, on an island root it keeps
   // a control or a preformatted block that is itself the root at its default.
   const root = only === undefined ? undefined : documentElement(only);
-  if (root)
+  if (root) {
+    if (root.only) return [`${ROOT}:is(${root.only})`];
     return [
       root.excluded ? `:where(:scope:not(.ds *, ${root.excluded}))` : ROOT,
     ];
+  }
   // The body: its margin is zeroed only when the body itself is the island,
   // because the margin of an element a host page owns is not this package's
   // call; anything else the body declares is the island root's.
@@ -345,6 +352,28 @@ const SOURCE_ONLY: ReadonlyArray<{
   reason: string;
 }> = [];
 
+/**
+ * Declarations the copy adds to a rule it otherwise shares with pragma, with
+ * the reason. Every other declaration of that rule must still match exactly.
+ */
+const COPY_ADDS: ReadonlyArray<{
+  layer: string;
+  selector: string;
+  declaration: string;
+  reason: string;
+}> = [
+  {
+    layer: "ds.reset",
+    selector: ":where(html)",
+    declaration: "font-size: 1rem",
+    reason:
+      "The document element has nothing above it to inherit a size from, and " +
+      "a size declared there would override the reader's own, which is why " +
+      "pragma leaves it out. An island root does have an ancestor, and on a " +
+      "mixed page that ancestor can be a Vanilla heading that sizes its text.",
+  },
+];
+
 /** Rules present in the copy that pragma's files do not have, with the reason. */
 const COPY_ONLY: ReadonlyArray<{
   layer: string;
@@ -353,17 +382,19 @@ const COPY_ONLY: ReadonlyArray<{
 }> = [
   {
     layer: "ds.reset",
-    selector:
-      ":where(:scope:not(.ds *, pre, code, kbd, samp, small, sub, sup))",
+    selector: ":where(:scope:not(.ds *)):is(small)",
     reason:
-      "A root font size, which pragma's own reset deliberately does not " +
-      "declare: the document element has nothing above it to inherit from, " +
-      "and a size declared there would override the reader's own. An island " +
-      "root does have an ancestor, and on a mixed page that ancestor can be a " +
-      "Vanilla heading that sizes its text. `1rem` still follows the reader's " +
-      "root size, and still lets Vanilla's own root scaling above 1681px " +
-      "reach the island. The exclusion list is the one the sibling rules " +
-      "carry: `normalize` sizes these elements itself.",
+      "`normalize` sizes a `<small>` at 80%, which resolves against its " +
+      "parent. On an island root that parent is the host page, so the size " +
+      "pin above would be undone by the very thing it exists to stop. The " +
+      "same proportion of the root is what a pragma-only page computes.",
+  },
+  {
+    layer: "ds.reset",
+    selector: ":where(:scope:not(.ds *)):is(sub, sup)",
+    reason:
+      "`normalize` sizes `<sub>` and `<sup>` at 75%, relative for the same " +
+      "reason as `<small>` above.",
   },
 ];
 
@@ -570,10 +601,22 @@ describe("elements.css is pragma's element layers, confined", () => {
         failures.push(`${label(rule)}: no counterpart at ${id}`);
         continue;
       }
+      const added = COPY_ADDS.filter(
+        (entry) =>
+          entry.layer === rule.layer &&
+          entry.selector === (rule.path[0] ?? []).join(", "),
+      ).map((entry) => entry.declaration);
+      const withoutAdded = counterpart.declarations.filter(
+        (declaration) => !added.includes(declaration),
+      );
       if (
-        JSON.stringify(counterpart.declarations) !==
-        JSON.stringify(rule.declarations)
+        withoutAdded.length !==
+        counterpart.declarations.length - added.length
       )
+        failures.push(
+          `${label(rule)}: an exception in COPY_ADDS names a declaration the copy does not have`,
+        );
+      if (JSON.stringify(withoutAdded) !== JSON.stringify(rule.declarations))
         failures.push(
           `${label(rule)}: declarations differ\n  pragma: ${rule.declarations.join("; ")}\n  copy:   ${counterpart.declarations.join("; ")}`,
         );

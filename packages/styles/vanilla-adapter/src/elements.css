@@ -204,9 +204,6 @@
     /* The OUTERMOST island root, and only that one: a nested component root
        must inherit its container's font and colour, not restate the baseline. */
     :where(:scope:not(.ds *)) {
-      /* A `light-dark()` token, resolved against the root's own colour scheme,
-         which the theme bridge in adapter.css sets. */
-      color: var(--color-text);
       /* The style longhand, not the `text-wrap` shorthand: the shorthand would
          also reset `text-wrap-mode` and let a `<select>`'s options wrap. */
       text-wrap-style: auto;
@@ -251,17 +248,35 @@
       word-break: normal;
       border-collapse: separate;
       caption-side: top;
-      user-select: auto;
+
+      /* The size pin. See the note above on why this copy declares it and
+         pragma's own reset does not. */
+      font-size: 1rem;
     }
 
-    /* Three more, each excluded on the elements whose own value the browser
-       already gets right. Their lists come from the user agent's stylesheet
-       rather than from `normalize`, which is why they are rules of their own:
-       the browser bolds `b`, `strong` and a `th`, italicises `em` and its
-       family, and centres a `th`, a `caption` and a button's label. On a
-       document element every list is inert; on an island root, which can be
-       any element, they are not. */
-    :where(:scope:not(.ds *, b, strong, th)) {
+    /* The four properties the browser gives some elements an absolute value for,
+       each excluded on those elements. Their lists come from the user agent's
+       stylesheet rather than from `normalize`, which is why they are rules of
+       their own: the browser greys an `<hr>`, bolds a `<th>`, italicises `<em>`
+       and its family, and centres a `<th>`, a `<caption>` and a button's label,
+       the button-typed inputs included. On a document element every list is
+       inert; on an island root, which can be any element, they are not. */
+    :where(
+        :scope:not(
+          .ds *,
+          hr,
+          button,
+          [type="button"],
+          [type="submit"],
+          [type="reset"]
+        )
+      ) {
+      /* A `light-dark()` token, resolved against the root's own colour scheme
+         (see the theme modifiers), so this one declaration is correct in both. */
+      color: var(--color-text);
+    }
+
+    :where(:scope:not(.ds *, b, strong, optgroup, th)) {
       font-weight: normal;
     }
 
@@ -269,8 +284,31 @@
       font-style: normal;
     }
 
-    :where(:scope:not(.ds *, th, caption, button, center)) {
+    :where(
+        :scope:not(
+          .ds *,
+          th,
+          caption,
+          button,
+          center,
+          [type="button"],
+          [type="submit"],
+          [type="reset"]
+        )
+      ) {
       text-align: start;
+      user-select: auto;
+    }
+
+    /* Where the browser's own value is RELATIVE, excluding the element is not
+       enough: `b` and `strong` are `bolder` and `small` is `80%`, both resolved
+       against the parent, which on a mixed page is the host's. So those roots are
+       given the absolute value the browser would have computed for them on a page
+       of pragma's own, rather than left to the host. Measured: a `<b class="ds">`
+       inside a Vanilla `.p-heading--4` computed weight 400 against pragma's 700,
+       and inside `.p-muted-heading` 900. */
+    :where(:scope:not(.ds *)):is(b, strong, optgroup) {
+      font-weight: bold;
     }
 
     /* Three properties an element's own rule in `normalize` may also set, each on
@@ -301,8 +339,26 @@
       line-height: normal;
     }
 
-    :where(:scope:not(.ds *, pre, code, kbd, samp, small, sub, sup)) {
-      font-size: 1rem;
+    /* The size pin, on every island root. It carries no exclusion list, and
+       that is the point: the sizes `normalize` gives these elements are
+       RELATIVE — `1em` on a `<pre>`, `80%` on a `<small>`, `75%` on a `<sub>` —
+       so they resolve against the host, which is the very thing the pin exists
+       to stop. Measured with an island root inside a Vanilla `.p-heading--4`,
+       whose text is 24px: excluded, a `<pre class="ds">` computed 24px against
+       the 16px a page of pragma's own gives it, and a `<small class="ds">`
+       19.2px against 12.8px.
+
+       So the three that are genuinely smaller than their surroundings are given
+       the same proportion of the root instead, which is what they compute to on
+       a pragma-only page. `<pre>` and its family need nothing: their smaller
+       size on a bare page is Blink shrinking the `monospace` keyword, and the
+       two-name family list above already defeats that. */
+    :where(:scope:not(.ds *)):is(small) {
+      font-size: 0.8rem;
+    }
+
+    :where(:scope:not(.ds *)):is(sub, sup) {
+      font-size: 0.75rem;
     }
 
     /* How text wraps, which `text-wrap-style` does not cover: `white-space` is
@@ -316,9 +372,10 @@
           pre,
           textarea,
           select,
-          code,
-          kbd,
-          samp,
+          [type="button"],
+          [type="submit"],
+          [type="reset"],
+          [type="file"],
           [contenteditable]
         )
       ) {
