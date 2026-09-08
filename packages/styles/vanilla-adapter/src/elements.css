@@ -125,14 +125,8 @@
     }
 
     /* Correct the odd font size a browser gives the generic monospace family.
-       Blink scales the keyword size when the computed family is the bare
-       `monospace` keyword, and a list of two defeats that; `font-size: 1em` then
-       resolves against the parent. The list is `ui-monospace, monospace` rather
-       than `monospace` twice because a minifier collapses a repeated name and
-       brings the bug back: Lightning CSS turns `monospace, monospace` into
-       `monospace`, and the measured size goes from 16px to 13px. Two different
-       names it leaves alone, and `ui-monospace` falls through to `monospace`
-       wherever it is not supported. */
+       The family is named twice on purpose, and with two different names rather
+       than one repeated; pragma's file says why. */
     :where(:scope, :scope *):is(pre, code, kbd, samp) {
       font-family: ui-monospace, monospace;
       font-size: 1em;
@@ -213,7 +207,6 @@
       /* A `light-dark()` token, resolved against the root's own colour scheme,
          which the theme bridge in adapter.css sets. */
       color: var(--color-text);
-      font-weight: normal;
       /* The style longhand, not the `text-wrap` shorthand: the shorthand would
          also reset `text-wrap-mode` and let a `<select>`'s options wrap. */
       text-wrap-style: auto;
@@ -240,16 +233,15 @@
          than styling it: `direction` (a page may be right-to-left), `visibility`
          (a hidden container must stay hidden), `pointer-events` (an inert
          container must stay inert) and `cursor` (a busy container).
-         `color-scheme` belongs to the theme bridge. `list-style-type` needs
-         nothing here: on a root that is itself a list the boundary's
-         `all: revert` gives the user agent's own value, and every list inside
-         gets the same treatment. */
-      font-style: normal;
+         `color-scheme` belongs to the theme bridge. `list-style-type` is left to cross for a
+         reason of its own: an island root that is a list item belongs to the
+         host's list, and a marker is the list's business, not the item's. There
+         is no constant that is right both inside a host `<ol>` and inside a
+         Vanilla `.p-list`. It is named in the README. */
       font-variant-caps: normal;
       font-variant-numeric: normal;
       letter-spacing: normal;
       word-spacing: normal;
-      text-align: start;
       text-indent: 0;
       text-transform: none;
       text-shadow: none;
@@ -260,6 +252,25 @@
       border-collapse: separate;
       caption-side: top;
       user-select: auto;
+    }
+
+    /* Three more, each excluded on the elements whose own value the browser
+       already gets right. Their lists come from the user agent's stylesheet
+       rather than from `normalize`, which is why they are rules of their own:
+       the browser bolds `b`, `strong` and a `th`, italicises `em` and its
+       family, and centres a `th`, a `caption` and a button's label. On a
+       document element every list is inert; on an island root, which can be
+       any element, they are not. */
+    :where(:scope:not(.ds *, b, strong, th)) {
+      font-weight: normal;
+    }
+
+    :where(:scope:not(.ds *, i, cite, em, var, address, dfn)) {
+      font-style: normal;
+    }
+
+    :where(:scope:not(.ds *, th, caption, button, center)) {
+      text-align: start;
     }
 
     /* Three properties an element's own rule in `normalize` may also set, each on

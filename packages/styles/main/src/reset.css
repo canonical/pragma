@@ -9,11 +9,13 @@
  * The property set is not a matter of taste. It is the set an embedded copy of
  * this stylesheet has to declare for a region to render as the design system's
  * own inside a page that also runs another CSS framework, and it is fixed by
- * the computed-style fixtures in `@canonical/styles-vanilla-adapter`: font
- * family, font size, font weight, line height, colour, box sizing, font
- * smoothing, and both text-wrap longhands. `font-size` is deliberately not
- * declared — the page follows the reader's own root font size, which is what a
- * rem-based scale is for.
+ * the computed-style fixtures in `@canonical/styles-vanilla-adapter`. The rules
+ * below are that list, and the comments on them say what each group is for; the
+ * set grows when a fixture finds a property a host page can push across the
+ * boundary. `font-size` is deliberately not declared here — the page follows the
+ * reader's own root font size, which is what a rem-based scale is for — and it
+ * is the one property the embedded copy adds, because an island root, unlike a
+ * document element, has an ancestor that can size its text.
  *
  * `:where()` appears where a zero specificity matters: these are defaults.
  * Layers sort before specificity, so any layer above `ds.reset` beats these
@@ -26,7 +28,6 @@
     /* A `light-dark()` token, resolved against the root's own colour scheme
        (see the theme modifiers), so this one declaration is correct in both. */
     color: var(--color-text);
-    font-weight: normal;
     /* The style longhand, not the `text-wrap` shorthand: the shorthand also
        resets `text-wrap-mode`, which would overwrite the browser's own
        `white-space: pre` on a `<select>` and let a long option wrap. How text
@@ -55,12 +56,10 @@
        belongs to the theme bridge. `list-style-type` needs nothing here: on a
        root that is itself a list the boundary's `all: revert` gives the user
        agent's own value, and every list inside gets the same treatment. */
-    font-style: normal;
     font-variant-caps: normal;
     font-variant-numeric: normal;
     letter-spacing: normal;
     word-spacing: normal;
-    text-align: start;
     text-indent: 0;
     text-transform: none;
     text-shadow: none;
@@ -71,6 +70,25 @@
     border-collapse: separate;
     caption-side: top;
     user-select: auto;
+  }
+
+  /* Three more, each excluded on the elements whose own value the browser
+     already gets right. Their lists come from the user agent's stylesheet
+     rather than from `normalize`, which is why they are rules of their own:
+     the browser bolds `b`, `strong` and a `th`, italicises `em` and its
+     family, and centres a `th`, a `caption` and a button's label. On a
+     document element every list is inert; on an island root, which can be any
+     element, they are not. */
+  :where(html:not(b, strong, th)) {
+    font-weight: normal;
+  }
+
+  :where(html:not(i, cite, em, var, address, dfn)) {
+    font-style: normal;
+  }
+
+  :where(html:not(th, caption, button, center)) {
+    text-align: start;
   }
 
   /* Three properties an element's own rule in `normalize` may also set, each on

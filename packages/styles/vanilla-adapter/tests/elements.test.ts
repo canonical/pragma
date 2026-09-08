@@ -299,10 +299,11 @@ const confined = (rule: Rule): string[] | null => {
   // call; anything else the body declares is the island root's.
   if (only === "body")
     return declares(rule, "margin") ? [":where(:scope:is(body))"] : [ROOT];
-  // `body:not(…)`: the typography base font, whose exclusion list rides across
-  // for the same reason the reset's does — see that file's comment.
+  // `body:where(:not(…))`: the typography base font, whose exclusion list rides
+  // across for the same reason the reset's does. The `:where()` keeps the rule
+  // at a bare `body`'s weight, which a `:not()` alone would raise.
   const bodyExcluded =
-    only === undefined ? null : /^body:not\((.+)\)$/.exec(only);
+    only === undefined ? null : /^body:where\(:not\((.+)\)\)$/.exec(only);
   if (bodyExcluded) return [`:where(:scope:not(.ds *, ${bodyExcluded[1]}))`];
   // The universal box-sizing rule sits outside the scope block, the long way.
   if (list.every((selector) => UNIVERSAL.has(selector)))

@@ -48,7 +48,7 @@ const ADAPTER_ONLY = [
   "app",
 ];
 
-/** Pragma's own order: the mixed order minus the adapter's four layers. */
+/** Pragma's own order: the mixed order minus the adapter's five layers. */
 const PRAGMA_ORDER = MIXED_ORDER.filter((name) => !ADAPTER_ONLY.includes(name));
 
 /** The layers elements.css carries, in pragma's order. */
@@ -56,14 +56,15 @@ const ELEMENT_LAYERS = ["normalize", "ds.reset", "ds.typography"];
 /**
  * The second boundary: one important declaration per Vanilla rule that reaches
  * inside an island without a Vanilla class on the element. Vanilla ships
- * exactly these, identically in 4.56 and 4.58; the seventh, the universal
- * reduced-motion rule, is left alone because pragma honours reduced motion
- * itself and the two agree.
+ * exactly five such rules, identically in 4.56 and 4.58, answered by four
+ * counters because one covers both table-layout utilities. A sixth rule has a
+ * class-free subject too, the universal reduced-motion one, and is left alone
+ * because pragma honours reduced motion itself and the two agree.
  */
 const SECOND_BOUNDARY = [
   ":where(.u-text-max-width) :where(.ds, .ds *):is(ul, ol) max-width",
   ":where(.u-table-layout--fixed, .u-table-layout--auto) :where(.ds, .ds *):is(table) table-layout",
-  ":where(.p-content-card__author-and-date) > :where(.ds) margin-bottom",
+  ":where(.p-content-card__author-and-date) > :where(.ds:first-child):not(h1, h2, h3, h4, h5, h6, p, .p, .code) margin-bottom",
   ":where(.u-vertically-center) > :where(.ds):is(img) align-self",
 ];
 

@@ -423,9 +423,9 @@ framework's important rules get *stronger* when it is layered lowest, and the on
 to be answered rather than out-ranked — and that `revert` rolls back presentational attributes as
 well as author rules, since the cascade places those between the reader's origin and the author's,
 so an image sized by `width` and `height` attributes inside a pragma island measures its intrinsic
-size instead. Both are stated as non-guarantees where they belong. The adapter package,
+size instead. Both are stated where they belong, under "What this package does not fix". The adapter package,
 `@canonical/styles-vanilla-adapter`, is the reference for all of it — its README carries the
-numbered rules, the recipes, the non-guarantees and symptom-first troubleshooting — and it arrives
+numbered rules, the recipes, what the package does not fix, and symptom-first troubleshooting — and it arrives
 with the coexistence release rather than with this one.
 
 ## Where each kind of statement lives

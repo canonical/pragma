@@ -12,11 +12,16 @@
  *   @import url("@canonical/styles-vanilla-adapter/layers.css");
  *
  * Listed lowest first, each position is an argument:
- *   vanilla.escapes  the six Vanilla `!important` declarations that reach inside
- *                  an island (adapter.css). Important rules reverse the layer
- *                  order, so the counter to one has to sit BELOW it; a sublayer
- *                  of `vanilla` does, and sorts before the rules a consumer
- *                  writes directly into `vanilla` whatever order they arrive in
+ *   vanilla.escapes
+ *                  the answers to the five Vanilla `!important` rules that reach
+ *                  inside an island (adapter.css). Important rules reverse the
+ *                  layer order, so the counter to one has to sit BELOW it; a
+ *                  sublayer of `vanilla` does, and sorts before the rules a
+ *                  consumer writes directly into `vanilla` whatever order they
+ *                  arrive in. A consumer who opens a NAMED sublayer of their
+ *                  own, in a sheet the browser reads before this statement,
+ *                  would place it first and win; that is the same failure as
+ *                  the statement arriving late, and the same rule answers it
  *   vanilla        Vanilla Framework and everything built on it, one territory
  *   boundary       `all: revert` on pragma territory (adapter.css): Vanilla ends
  *                  here, for every declaration that is not important
@@ -55,7 +60,8 @@
  *                  implicit final sublayer, above every tier
  *   app            the application's own pragma-era CSS, whatever its context class
  *
- * `vanilla` is the lowest layer: in Vanilla territory nothing pragma ships
+ * `vanilla` is the lowest layer a consumer writes into: in Vanilla territory
+ * nothing pragma ships
  * competes with it, because a mixed page loads pragma's three element layers
  * only as the confined copy in this package's elements.css, and pragma's other
  * two entries (tokens.css, layout.css) are custom properties or component
@@ -63,7 +69,8 @@
  * whole page, as a pragma-only page wants. `boundary` sits directly above
  * `vanilla` so that inside pragma territory every Vanilla declaration is
  * reverted before pragma's layers apply. Pragma's own statement, the same list
- * without `vanilla`, `boundary`, `ds.adapter` and `app`, arrives later at the
+ * without `vanilla.escapes`, `vanilla`, `boundary`, `ds.adapter` and `app`,
+ * arrives later at the
  * top of each of its entries and changes nothing: a later statement can add
  * names but never reorder the ones already fixed, and it adds none.
  */

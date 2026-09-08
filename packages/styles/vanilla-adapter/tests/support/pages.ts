@@ -48,7 +48,7 @@ const vanillaLayer = (css: string): string =>
     .replace(/@charset\s+"[^"]*";/, "")
     .replace(/@font-face\s*\{[^}]*\}/g, "")}}`;
 
-export const vanillaCss: Record<VanillaVersion, string> = {
+const vanillaCss: Record<VanillaVersion, string> = {
   "4.56": vanillaLayer(vanilla456),
   "4.58": vanillaLayer(vanilla458),
 };
@@ -196,6 +196,14 @@ export interface PageSpec {
 }
 
 /**
+ * A stylesheet without its leading `@layer …;` order statement. The bundler
+ * inlines adapter.css's own import of layers.css, so removing the statement is
+ * how a page can be rendered as if that import were not there.
+ */
+const withoutStatement = (css: string): string =>
+  css.replace(/@layer[^{;]*;/, "");
+
+/**
  * The mixed page: layers, Vanilla in its layer, then pragma's CSS as a mixed
  * page loads it. `adapter` places adapter.css before or after the component
  * sheets, or leaves it out: then the page still loads tokens.css, layout.css
@@ -204,31 +212,60 @@ export interface PageSpec {
  */
 export const mixedPage = (
   vanilla: VanillaVersion,
-  options: { root?: string; adapter?: "before" | "after" | "none" } = {},
+  options: {
+    root?: string;
+    adapter?: "before" | "after" | "none";
+    /** Markup in place of the standard blocks, for a case about the cascade
+     * rather than about the components. */
+    body?: string;
+    /** Sheets ahead of the order statement, for the negative case: a layer is
+     * placed the first time its name is seen, so a sheet that opens a `ds`
+     * layer here puts every pragma layer below the boundary. */
+    before?: string[];
+    /**
+     * Where the order statement comes from. `linked` is the README's step 3, a
+     * page that links layers.css itself. `self` leaves that out, so the only
+     * statement is the one adapter.css imports — which is the single-import
+     * path a consumer can take. `none` strips that one too, which is what the
+     * adapter would ship if the import were removed.
+     */
+    statement?: "linked" | "self" | "none";
+  } = {},
 ): PageSpec => {
   const adapter = options.adapter ?? "after";
-  const styles = [layersCss, vanillaCss[vanilla]];
+  const statement = options.statement ?? "linked";
+  const adapterCssText =
+    statement === "none" ? withoutStatement(adapterResolved) : adapterResolved;
+  const styles = [
+    ...(options.before ?? []),
+    ...(statement === "linked" ? [layersCss] : []),
+    vanillaCss[vanilla],
+  ];
   if (adapter === "none")
     styles.push(tokensCss, layoutCss, elementsCss, COMPONENT_CSS);
-  else if (adapter === "before") styles.push(adapterResolved, COMPONENT_CSS);
-  else styles.push(COMPONENT_CSS, adapterResolved);
+  else if (adapter === "before") styles.push(adapterCssText, COMPONENT_CSS);
+  else styles.push(COMPONENT_CSS, adapterCssText);
   return {
     root: options.root ?? "app comfortable light",
     styles,
     body:
+      options.body ??
       PRAGMA_BLOCK +
-      VANILLA_BLOCK +
-      NEGATIVE_BLOCK +
-      PLACEMENT_BLOCK +
-      THEME_BLOCK,
+        VANILLA_BLOCK +
+        NEGATIVE_BLOCK +
+        PLACEMENT_BLOCK +
+        THEME_BLOCK,
   };
 };
 
 /** The pragma-only page: pragma's own stylesheet, the same root classes as the mixed page. */
-export const pragmaPage = (theme: "light" | "dark" = "light"): PageSpec => ({
+export const pragmaPage = (
+  theme: "light" | "dark" = "light",
+  body: string = PRAGMA_BLOCK,
+): PageSpec => ({
   root: `app comfortable ${theme}`,
   styles: [PRAGMA_CSS],
-  body: PRAGMA_BLOCK,
+  body,
 });
 
 /** The Vanilla-only page: Vanilla alone, in its layer, as the site was before pragma. */
@@ -359,7 +396,8 @@ const CELL_GEOMETRY = new Set(["ds-table", "ds-th", "ds-td", "ds-root"]);
 /**
  * The one difference the contract states inside pragma territory: Chromium
  * gives table cells their 1px default padding as a presentational hint, which
- * `revert` rolls back to 0px (, in the README's non-guarantees), and the
+ * `revert` rolls back to 0px (in the README's "What this package does not
+ * fix"), and the
  * geometry of the table and its container follows. Any other value on a cell's
  * padding is a leak.
  */
@@ -452,7 +490,6 @@ export const importantDeclarations = (css: string): string[] => {
 
 export {
   adapterCss,
-  adapterResolved,
   elementsCss,
   layersCss,
   layoutCss,

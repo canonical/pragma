@@ -11,7 +11,7 @@
  *
  *   @import url("@canonical/styles-vanilla-adapter/adapter.css");
  *
- * Three imports, one boundary, one bridge and two layers, with no tooling: what
+ * Four imports, two boundaries, one bridge and three layers, with no tooling: what
  * you read here is what the browser runs. The README explains why each piece is
  * written the way it is.
  */
@@ -31,7 +31,8 @@
  * It does not make the page safe on its own. If a component stylesheet, or one
  * of pragma's own entries, reaches the browser before this file, `ds` is already
  * placed and no later statement can move it. layers.css has to be the first CSS
- * the browser sees. The README says so, and `order.test.ts` measures both sides. */
+ * the browser sees. Installation step 3 in the README says so, and
+ * `boundary.test.ts` measures the collapse both ways. */
 @import url("./layers.css");
 
 /* Pragma's CSS for a mixed page. The imports have to come before any rule,
@@ -78,12 +79,11 @@
  * application places in the same layer beats them; the pseudo-element selectors
  * carry a pseudo-element's own (0,0,1). Vanilla's `!important` declarations are
  * not reverted here and cannot be: for important rules the layer order reverses,
- * so a declaration in `vanilla` outranks one in every layer above it. Six of them
- * reach inside an island, and the second boundary below handles those.
- * Measured in Chromium 151,
- * the rule adds nothing measurable to style recalculation, and a Vanilla theme
- * toggle is 42 to 46 percent cheaper with it, because the territory no longer
- * re-resolves Vanilla's variables. */
+ * so a declaration in `vanilla` outranks one in every layer above it. Five of
+ * them reach inside an island, and the second boundary below handles those.
+ * Measured in Chromium 151, the rule adds nothing measurable to style
+ * recalculation, and a Vanilla theme toggle is 42 to 46 percent cheaper with it,
+ * because the territory no longer re-resolves Vanilla's variables. */
 @layer boundary {
   :where(.ds, .ds *):where(:not(svg, svg *), svg a),
   :where(.ds, .ds *):where(:not(svg, svg *), svg a)::before,
@@ -133,18 +133,20 @@
  * consumer's `@layer vanilla { … }` block whichever order the two arrive in
  * (measured both ways).
  *
- * Six rules need it. They are every important declaration Vanilla ships whose
- * subject compound carries no class, so an element inside an island matches
- * without breaking rule 2 — the Vanilla class is on an ancestor OUTSIDE the
- * island, which is the arrangement rule 2 recommends. Enumerated from the
- * compiled build; the set is byte-identical in 4.56 and 4.58. The seventh,
+ * Five Vanilla rules need it, answered by four counters because one covers both
+ * table-layout utilities. Enumerated from both compiled builds, where they are
+ * byte-identical: six rules carry an important declaration whose subject
+ * compound has no class, so an element inside an island matches without
+ * breaking rule 2 — the Vanilla class sits on an ancestor OUTSIDE the island,
+ * which is the arrangement rule 2 recommends. The sixth of those,
  * `* { animation: none !important; transition: none !important }` under reduced
  * motion, is left alone: pragma honours reduced motion itself by zeroing its
  * duration tokens, and the two agree.
  *
- * Each selector mirrors Vanilla's own and adds the island requirement, so the
- * revert fires only where the leak is. The cost, stated in the README: inside
- * one of these four Vanilla utilities, an important revert also outranks
+ * Each selector mirrors Vanilla's own, `:first-child` included, and adds the
+ * island requirement, so the revert fires only where the leak is. The cost,
+ * stated in the README: inside one of these Vanilla patterns, an important
+ * revert also outranks
  * pragma's own declaration of that one property. A pragma list inside
  * `.u-text-max-width` gets the browser's `max-width` rather than pragma's.
  * Outside them nothing changes. Narrowing further is not possible — excluding
@@ -152,10 +154,7 @@
 @layer vanilla.escapes {
   /* .u-text-max-width ul, .u-text-max-width ol { max-width: 40em !important } */
   :where(.u-text-max-width) :where(.ds, .ds *):is(ul, ol) {
-    /* biome-ignore lint/complexity/noImportantStyles: the rule this answers is
-     important itself, and for important declarations the layer order reverses,
-     so nothing but another important declaration from a lower layer can reach
-     it. See this block's comment. */
+    /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
     max-width: revert !important;
   }
 
@@ -163,29 +162,32 @@
      { table-layout: fixed | auto !important } */
   :where(.u-table-layout--fixed, .u-table-layout--auto)
   :where(.ds, .ds *):is(table) {
-    /* biome-ignore lint/complexity/noImportantStyles: the rule this answers is
-     important itself, and for important declarations the layer order reverses,
-     so nothing but another important declaration from a lower layer can reach
-     it. See this block's comment. */
+    /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
     table-layout: revert !important;
   }
 
   /* .p-content-card__author-and-date > :first-child
-     { margin-bottom: 0 !important } — the island root can be that first child */
-  :where(.p-content-card__author-and-date) > :where(.ds) {
-    /* biome-ignore lint/complexity/noImportantStyles: the rule this answers is
-     important itself, and for important declarations the layer order reverses,
-     so nothing but another important declaration from a lower layer can reach
-     it. See this block's comment. */
+     { margin-bottom: 0 !important } — the island root can be that first child.
+
+     Two narrowings, both measured. `:first-child` is part of the mirror, not
+     decoration: without it a second `.ds` child of the same container, which
+     Vanilla never touches, loses its own margin to this revert. And the
+     elements pragma gives a bottom margin of its own are excluded, because for
+     them Vanilla's `margin-bottom: 0` already agrees with pragma and reverting
+     replaces that agreement with the user agent's `1em` — measured, a
+     `<p class="ds">` in this position took 14px against pragma's 0px, and an
+     `<h2 class="ds">` 19.92px. What is left is the case the counter is for:
+     a `<ul class="ds">` or `<ol class="ds">` root, which pragma leaves at the
+     browser's 16px and Vanilla forces to 0. */
+  :where(.p-content-card__author-and-date)
+  > :where(.ds:first-child):not(h1, h2, h3, h4, h5, h6, p, .p, .code) {
+    /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
     margin-bottom: revert !important;
   }
 
   /* .u-vertically-center > img { align-self: center !important } */
   :where(.u-vertically-center) > :where(.ds):is(img) {
-    /* biome-ignore lint/complexity/noImportantStyles: the rule this answers is
-     important itself, and for important declarations the layer order reverses,
-     so nothing but another important declaration from a lower layer can reach
-     it. See this block's comment. */
+    /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
     align-self: revert !important;
   }
 }

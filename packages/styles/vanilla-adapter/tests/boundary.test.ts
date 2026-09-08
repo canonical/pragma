@@ -16,14 +16,12 @@
 
 import { describe, expect, it } from "vitest";
 import {
-  adapterResolved,
   COMPONENT_CSS,
   computed,
-  layersCss,
-  PRAGMA_CSS,
+  mixedPage,
+  pragmaPage,
   render,
   VANILLA_VERSIONS,
-  vanillaCss,
 } from "./support/pages.js";
 
 /** An element that is itself an island root, one per element rule the copy carries. */
@@ -43,7 +41,14 @@ const ROOT_ELEMENTS = `
 <sub class="ds" id="root-sub">x</sub>
 <sup class="ds" id="root-sup">x</sup>
 <progress class="ds" id="root-progress" value="0.5"></progress>
-<fieldset><legend class="ds" id="root-legend">x</legend></fieldset>`;
+<fieldset><legend class="ds" id="root-legend">x</legend></fieldset>
+<em class="ds" id="root-em">x</em>
+<cite class="ds" id="root-cite">x</cite>
+<address class="ds" id="root-address">x</address>
+<table><tbody><tr><th class="ds" id="root-th">x</th></tr></tbody></table>
+<button class="ds" id="root-button">x</button>
+<ul class="ds" id="root-ul"><li id="root-ul-item">x</li></ul>
+<ol class="ds" id="root-ol"><li id="root-ol-item">x</li></ol>`;
 
 /** The four Vanilla utilities whose important declarations reach inside an island. */
 const ESCAPES = `
@@ -53,8 +58,12 @@ const ESCAPES = `
 <div class="u-table-layout--fixed">
   <div class="ds card"><table id="esc-table"><tbody><tr><td>x</td></tr></tbody></table></div>
 </div>
+<div class="u-table-layout--auto">
+  <div class="ds card"><table id="esc-table-auto"><tbody><tr><td>x</td></tr></tbody></table></div>
+</div>
 <div class="p-content-card__author-and-date">
   <ul class="ds" id="esc-first-child"><li>x</li></ul>
+  <div class="ds card" id="esc-later-child"></div>
 </div>
 <div class="u-vertically-center">
   <img class="ds" id="esc-img" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==">
@@ -69,7 +78,10 @@ const INHERITANCE = `
 <div class="u-align--center"><div class="ds card" id="inh-center"></div></div>
 <ul class="p-list--divided"><li><div class="ds card" id="inh-list"></div></li></ul>
 <div class="p-chip"><div class="ds card" id="inh-chip"></div></div>
-<table><tbody><tr><td><div class="ds card" id="inh-cell"></div></td></tr></tbody></table>`;
+<table><tbody><tr><td><div class="ds card" id="inh-cell"></div></td></tr></tbody></table>
+<pre><div class="ds card" id="inh-pre"></div></pre>
+<nav class="p-breadcrumbs"><ol class="p-breadcrumbs__items"><li class="p-breadcrumbs__item">a</li><li class="p-breadcrumbs__item"><div class="ds card" id="inh-crumb"></div></li></ol></nav>
+<ul class="p-list"><li class="ds" id="inh-marker">x</li></ul>`;
 
 const BODY = ROOT_ELEMENTS + ESCAPES + INHERITANCE;
 const ROOT = "app comfortable light";
@@ -77,15 +89,12 @@ const ROOT = "app comfortable light";
 /** One island, for the pages that are about the order rather than the markup. */
 const COLLAPSE_BODY = `<div class="ds card" id="card"><p class="ds" id="text">x</p></div>`;
 
-/** The mixed page, with the statement first as the README's step 1 requires. */
-const mixed = (vanilla: (typeof VANILLA_VERSIONS)[number]) => ({
-  root: ROOT,
-  styles: [layersCss, vanillaCss[vanilla], COMPONENT_CSS, adapterResolved],
-  body: BODY,
-});
+/** The mixed page, with the statement first as the README's step 3 requires. */
+const mixed = (vanilla: (typeof VANILLA_VERSIONS)[number]) =>
+  mixedPage(vanilla, { root: ROOT, body: BODY });
 
 /** The same page with no Vanilla on it: what every comparison is measured against. */
-const pragmaOnly = { root: ROOT, styles: [PRAGMA_CSS], body: BODY };
+const pragmaOnly = pragmaPage("light", BODY);
 
 /**
  * The properties each case is about. Read as a set rather than one at a time,
@@ -132,6 +141,11 @@ describe.each(VANILLA_VERSIONS)(
       // written relative to it leaves `<pre class="ds">` with the root baseline
       // and the browser's defaults. Every element rule in the copy carries a
       // root-reaching twin; this is what the twins are for.
+      //
+      // The last seven roots are the other half of the problem: elements whose
+      // own value comes from the user agent rather than from `normalize`, which
+      // the root baseline would otherwise flatten. An `<em>` is italic, a `<th>`
+      // and a button's label are centred, and a list has a marker.
       await sameAsPragmaOnly(
         vanilla,
         [
@@ -151,6 +165,14 @@ describe.each(VANILLA_VERSIONS)(
           "root-sup",
           "root-progress",
           "root-legend",
+          "root-em",
+          "root-cite",
+          "root-address",
+          "root-button",
+          "root-ul",
+          "root-ol",
+          "root-ul-item",
+          "root-ol-item",
         ],
         [
           "font-family",
@@ -167,36 +189,98 @@ describe.each(VANILLA_VERSIONS)(
           "box-sizing",
           "top",
           "bottom",
+          "font-style",
+          "text-align",
+          "list-style-type",
         ],
       );
     });
 
+    it("styles a table header that is an island root, bar the padding the browser hints", async () => {
+      // A `<th class="ds">` is the one root element with a difference left, and
+      // it is the documented one: `revert` rolls back presentational hints as
+      // well as declarations, and Chromium's 1px default cell padding is a hint.
+      // Everything else about it matches, the boldness the browser gives a
+      // header cell included, which is why `th` is excluded from the root
+      // baseline's `font-weight`.
+      const [mixedDoc, pragmaDoc] = await Promise.all([
+        render(mixed(vanilla)),
+        render(pragmaOnly),
+      ]);
+      for (const property of ["font-weight", "text-align", "font-family"])
+        expect(
+          computed(mixedDoc, "root-th").getPropertyValue(property),
+          property,
+        ).toBe(computed(pragmaDoc, "root-th").getPropertyValue(property));
+      expect(computed(pragmaDoc, "root-th").paddingTop).toBe("1px");
+      expect(computed(mixedDoc, "root-th").paddingTop).toBe("0px");
+    });
+
+    it("lets a list keep its host's markers, which is the list's business", async () => {
+      // `list-style-type` is left to cross. An island root that is a list item
+      // belongs to the host's list, and no constant is right both inside a host
+      // `<ol>`, where the marker is `decimal`, and inside a Vanilla `.p-list`,
+      // where the list has asked for none. Named in the README.
+      const [mixedDoc, pragmaDoc] = await Promise.all([
+        render(mixed(vanilla)),
+        render(pragmaOnly),
+      ]);
+      for (const id of ["inh-marker", "inh-crumb", "inh-list"])
+        expect(computed(mixedDoc, id).listStyleType, id).toBe("none");
+      expect(computed(pragmaDoc, "inh-marker").listStyleType).toBe("disc");
+      expect(computed(pragmaDoc, "inh-crumb").listStyleType).toBe("decimal");
+    });
+
     it("answers the Vanilla !important declarations that reach inside an island", async () => {
-      // These are the six rules in Vanilla's build whose subject compound carries
-      // no class, so the Vanilla class sits on an ancestor OUTSIDE the island —
-      // the arrangement rule 2 recommends. `all: revert` cannot touch them: for
-      // important rules the layer order reverses.
+      // Five rules in Vanilla's build carry an important declaration that can
+      // reach an element inside an island, because their subject compound has no
+      // class and the Vanilla class sits on an ancestor OUTSIDE the island — the
+      // arrangement rule 2 recommends. Four counters answer them, one covering
+      // both table-layout utilities. `all: revert` cannot touch an important
+      // declaration: for important rules the layer order reverses.
       await sameAsPragmaOnly(vanilla, ["esc-ul", "esc-ol"], ["max-width"]);
-      await sameAsPragmaOnly(vanilla, ["esc-table"], ["table-layout"]);
+      await sameAsPragmaOnly(
+        vanilla,
+        ["esc-table", "esc-table-auto"],
+        ["table-layout"],
+      );
       await sameAsPragmaOnly(vanilla, ["esc-first-child"], ["margin-bottom"]);
+      // The counter mirrors `:first-child`, so a later `.ds` child of the same
+      // container — which Vanilla never touches — keeps its own margin.
+      await sameAsPragmaOnly(vanilla, ["esc-later-child"], ["margin-bottom"]);
       await sameAsPragmaOnly(vanilla, ["esc-img"], ["align-self"]);
     });
 
-    it("keeps the second boundary off elements no Vanilla utility reaches", async () => {
-      // The cost of answering an important declaration in kind is that the answer
-      // is important too, so inside one of these four utilities it also outranks
-      // pragma's own value for that one property. It must not fire anywhere else.
-      const doc = await render({
-        root: ROOT,
-        styles: [
-          layersCss,
-          vanillaCss[vanilla],
-          COMPONENT_CSS,
-          adapterResolved,
-        ],
-        body: `<div class="ds card"><ul id="free" style="max-width: 20em"><li>x</li></ul></div>`,
-      });
+    it("fires nowhere but the exact place Vanilla's own rule reaches", async () => {
+      // The cost of answering an important declaration in kind is that the
+      // answer is important too: wherever it fires it also outranks the page's
+      // own value for that property. So each counter has to mirror Vanilla's
+      // selector exactly, `:first-child` included. An inline style is the probe,
+      // because an important declaration beats one and a correctly scoped
+      // counter leaves it alone — and because no component in this fixture set
+      // declares a margin or a max width of its own, so the comparison against
+      // the pragma-only page cannot see an over-reach here.
+      const doc = await render(
+        mixedPage(vanilla, {
+          root: ROOT,
+          body: `
+          <div class="ds card">
+            <ul id="free" style="max-width: 20em"><li>x</li></ul>
+          </div>
+          <div class="p-content-card__author-and-date">
+            <ul class="ds" id="pcc-first"><li>x</li></ul>
+            <div class="ds card" id="pcc-later" style="margin-bottom: 12px"></div>
+          </div>`,
+        }),
+      );
+      // Outside every Vanilla utility: untouched.
       expect(computed(doc, "free").maxWidth).toBe("320px");
+      // The first child is where Vanilla's rule reaches, so the counter fires
+      // and the page's own value goes with it. That is the documented cost.
+      expect(computed(doc, "pcc-first").marginBottom).toBe("16px");
+      // A later child of the same container is not where it reaches. Without
+      // `:first-child` in the counter this reads 0px.
+      expect(computed(doc, "pcc-later").marginBottom).toBe("12px");
     });
 
     it("does not let a Vanilla ancestor push inherited properties into an island", async () => {
@@ -213,6 +297,9 @@ describe.each(VANILLA_VERSIONS)(
           "inh-list",
           "inh-chip",
           "inh-cell",
+          "inh-pre",
+          "inh-crumb",
+          "inh-marker",
         ],
         [
           "font-size",
@@ -231,6 +318,8 @@ describe.each(VANILLA_VERSIONS)(
           "border-collapse",
           "caption-side",
           "user-select",
+          "text-underline-offset",
+          "font-style",
         ],
       );
     });
@@ -241,7 +330,7 @@ describe.each(VANILLA_VERSIONS)(
       // page running pragma alone an island inside one inherits that; here the
       // root declares `start`, because the same property is how Vanilla's
       // `u-align--*` family would otherwise reach in and nothing can tell the two
-      // apart. Named in the README's limitations.
+      // apart. Named in the README's "What this package does not fix".
       const [mixedDoc, pragmaDoc] = await Promise.all([
         render(mixed(vanilla)),
         render(pragmaOnly),
@@ -253,31 +342,21 @@ describe.each(VANILLA_VERSIONS)(
     });
 
     it("collapses when the order statement arrives after a sheet that opens a pragma layer", async () => {
-      // The negative case, and the reason the README's step 1 is a requirement
+      // The negative case, and the reason the README's step 3 is a requirement
       // rather than advice. A layer takes its place at the first mention of its
       // name; `ds` mentioned before the statement is placed at the bottom of the
       // order, below `boundary`, and the boundary's `all: revert` then erases
       // pragma instead of Vanilla. Nothing warns.
-      const late = await render({
-        root: ROOT,
-        styles: [
-          COMPONENT_CSS,
-          layersCss,
-          vanillaCss[vanilla],
-          adapterResolved,
-        ],
-        body: COLLAPSE_BODY,
-      });
-      const first = await render({
-        root: ROOT,
-        styles: [
-          layersCss,
-          vanillaCss[vanilla],
-          COMPONENT_CSS,
-          adapterResolved,
-        ],
-        body: COLLAPSE_BODY,
-      });
+      const late = await render(
+        mixedPage(vanilla, {
+          root: ROOT,
+          body: COLLAPSE_BODY,
+          before: [COMPONENT_CSS],
+        }),
+      );
+      const first = await render(
+        mixedPage(vanilla, { root: ROOT, body: COLLAPSE_BODY }),
+      );
       // Statement first: pragma's typography reaches the island.
       expect(computed(first, "text").fontSize).toBe("14px");
       expect(computed(first, "text").marginTop).toBe("0px");
@@ -287,6 +366,38 @@ describe.each(VANILLA_VERSIONS)(
       expect(computed(late, "text").fontSize).toBe("16px");
       expect(computed(late, "text").marginTop).toBe("16px");
       expect(computed(late, "card").borderTopWidth).toBe("0px");
+    });
+
+    it("carries its own order statement, so importing adapter.css alone is enough", async () => {
+      // adapter.css imports layers.css as its first rule. A page that links
+      // layers.css itself reads a second identical statement and nothing
+      // happens; a page that imports only adapter.css gets the order from here,
+      // and without it the first `ds` name any sheet mentions would place `ds`
+      // below `boundary`. Neither arrangement above can see that, because both
+      // link the statement, so this case renders without it.
+      const carried = await render(
+        mixedPage(vanilla, {
+          root: ROOT,
+          body: COLLAPSE_BODY,
+          adapter: "before",
+          statement: "self",
+        }),
+      );
+      expect(computed(carried, "text").fontSize).toBe("14px");
+      expect(computed(carried, "card").borderTopWidth).toBe("1px");
+
+      // The same page with that statement taken out: the component sheet then
+      // places `ds`, and the island collapses.
+      const missing = await render(
+        mixedPage(vanilla, {
+          root: ROOT,
+          body: COLLAPSE_BODY,
+          adapter: "before",
+          statement: "none",
+        }),
+      );
+      expect(computed(missing, "text").fontSize).toBe("16px");
+      expect(computed(missing, "card").borderTopWidth).toBe("0px");
     });
   },
 );

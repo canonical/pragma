@@ -59,7 +59,7 @@
      monospace family `normalize` gives it, `ds.typography` sitting above
      `normalize`. The reset in `@canonical/styles` carries the same list on the
      same three properties, for the same reason. */
-  body:not(pre, code, kbd, samp) {
+  body:where(:not(pre, code, kbd, samp)) {
     font-family: var(--typography-text-primary-font-family);
   }
 
