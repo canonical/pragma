@@ -48,7 +48,16 @@ const ROOT_ELEMENTS = `
 <table><tbody><tr><th class="ds" id="root-th">x</th></tr></tbody></table>
 <button class="ds" id="root-button">x</button>
 <ul class="ds" id="root-ul"><li id="root-ul-item">x</li></ul>
-<ol class="ds" id="root-ol"><li id="root-ol-item">x</li></ol>`;
+<ol class="ds" id="root-ol"><li id="root-ol-item">x</li></ol>
+<i class="ds" id="root-i">x</i>
+<var class="ds" id="root-var">x</var>
+<dfn class="ds" id="root-dfn">x</dfn>
+<center class="ds" id="root-center">x</center>
+<table><caption class="ds" id="root-caption">x</caption><tbody><tr><td>x</td></tr></tbody></table>
+<select class="ds" id="root-select"><option>x</option></select>
+<textarea class="ds" id="root-textarea">x</textarea>
+<div class="ds" id="root-editable" contenteditable="true">x</div>
+<optgroup class="ds" id="root-optgroup" label="x"></optgroup>`;
 
 /** The four Vanilla utilities whose important declarations reach inside an island. */
 const ESCAPES = `
@@ -64,6 +73,12 @@ const ESCAPES = `
 <div class="p-content-card__author-and-date">
   <ul class="ds" id="esc-first-child"><li>x</li></ul>
   <div class="ds card" id="esc-later-child"></div>
+</div>
+<div class="p-content-card__author-and-date">
+  <p class="ds" id="esc-first-p">x</p>
+</div>
+<div class="p-content-card__author-and-date">
+  <h2 class="ds" id="esc-first-h2">x</h2>
 </div>
 <div class="u-vertically-center">
   <img class="ds" id="esc-img" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==">
@@ -200,6 +215,15 @@ describe.each(VANILLA_VERSIONS)(
           "root-ol",
           "root-ul-item",
           "root-ol-item",
+          "root-i",
+          "root-var",
+          "root-dfn",
+          "root-center",
+          "root-caption",
+          "root-select",
+          "root-textarea",
+          "root-editable",
+          "root-optgroup",
         ],
         [
           "font-family",
@@ -219,6 +243,8 @@ describe.each(VANILLA_VERSIONS)(
           "font-style",
           "text-align",
           "list-style-type",
+          "white-space-collapse",
+          "text-wrap-mode",
         ],
       );
     });
@@ -308,10 +334,17 @@ describe.each(VANILLA_VERSIONS)(
         ["esc-table", "esc-table-auto"],
         ["table-layout"],
       );
-      await sameAsPragmaOnly(vanilla, ["esc-first-child"], ["margin-bottom"]);
-      // The counter mirrors `:first-child`, so a later `.ds` child of the same
-      // container — which Vanilla never touches — keeps its own margin.
-      await sameAsPragmaOnly(vanilla, ["esc-later-child"], ["margin-bottom"]);
+      // A list root is the case the margin counter exists for: pragma leaves it
+      // at the browser's 16px and Vanilla forces it to 0. A paragraph or a
+      // heading in the same position is the case the counter must NOT touch,
+      // because pragma zeroes those itself and Vanilla's rule already agrees;
+      // reverting there would hand them the browser's `1em` instead. Measured
+      // before the exclusion: 14px on the paragraph, 19.92px on the heading.
+      await sameAsPragmaOnly(
+        vanilla,
+        ["esc-first-child", "esc-first-p", "esc-first-h2", "esc-later-child"],
+        ["margin-bottom"],
+      );
       await sameAsPragmaOnly(vanilla, ["esc-img"], ["align-self"]);
     });
 
@@ -345,6 +378,18 @@ describe.each(VANILLA_VERSIONS)(
       // A later child of the same container is not where it reaches. Without
       // `:first-child` in the counter this reads 0px.
       expect(computed(doc, "pcc-later").marginBottom).toBe("12px");
+    });
+
+    it("does not let a table header's own text transform reach an island inside it", async () => {
+      // `inh-th` is the only host here that sets `text-transform`, through
+      // Vanilla's table-header label, but it is out of the comparison below
+      // because its alignment differs by design. Without this case nothing
+      // would fail if the root stopped declaring `text-transform`.
+      await sameAsPragmaOnly(
+        vanilla,
+        ["inh-th"],
+        ["text-transform", "font-size", "letter-spacing"],
+      );
     });
 
     it("does not let a Vanilla ancestor push inherited properties into an island", async () => {
@@ -401,6 +446,10 @@ describe.each(VANILLA_VERSIONS)(
       ]);
       expect(computed(pragmaDoc, "inh-th").textAlign).toBe("center");
       expect(computed(mixedDoc, "inh-th").textAlign).toBe("start");
+      // Its weight goes the same way and for the same reason: the browser bolds
+      // a header cell, and an island inside one takes pragma's own weight.
+      expect(computed(pragmaDoc, "inh-th").fontWeight).toBe("700");
+      expect(computed(mixedDoc, "inh-th").fontWeight).toBe("400");
       // The leak it buys off, measured on the same page.
       expect(computed(mixedDoc, "inh-center").textAlign).toBe("start");
     });

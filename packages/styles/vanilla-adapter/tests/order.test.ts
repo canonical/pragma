@@ -197,7 +197,7 @@ describe("the order contract", () => {
     ).toBe(SECOND_BOUNDARY.length);
   });
 
-  it("@canonical/styles and each of its entries open with pragma's own statement, the mixed order minus the adapter's four", () => {
+  it("@canonical/styles and each of its entries open with pragma's own statement, the mixed order minus the adapter's five", () => {
     // The mixed page sees the adapter's statement first and pragma's later, at
     // the top of each entry. A later statement can add layers but never
     // reorder the ones already fixed; this one adds none and lists them in the
@@ -248,7 +248,7 @@ describe("the order contract", () => {
 
   it("a sub-tier layer declared later sorts above its tier and below `app` on a mixed page", async () => {
     // A package below a tier declares its own layer, flat beside the five,
-    // first in its own entry (README, ). Appearing after the statement
+    // first in its own entry (the README's installation, step 7). Appearing after the statement
     // puts it above the five and still below `app`; the higher layer's rule
     // is written first each time so that source order cannot be the reason.
     const spec = mixedPage("4.58");

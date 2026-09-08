@@ -208,7 +208,7 @@
  * opened from. `:where()` keeps the rule at zero specificity, and the bridge
  * sits in `ds.adapter`, a sublayer of `ds` between `ds.states` and
  * `ds.components`: above `ds.modifiers`, so pragma's own theme classes on an
- * island root are overruled while this file is loaded (README, rule 7), and
+ * island root are overruled while this file is loaded (the README's rule 7), and
  * below the component tiers, so a component that sets its own scheme still
  * wins. A sublayer on purpose: a top-level layer cannot sit between two
  * sublayers of `ds`, because sublayers sort inside their parent and `ds` takes

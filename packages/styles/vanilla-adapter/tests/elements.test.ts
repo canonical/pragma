@@ -733,6 +733,26 @@ describe("@canonical/styles exposes what a mixed page needs", () => {
     expect(leaks).toEqual([]);
   });
 
+  it("names two different monospace families, so a minifier cannot collapse the list", () => {
+    // A browser gives the bare `monospace` keyword a smaller size, and a list
+    // of two defeats that. The list has to be two DIFFERENT names: a minifier
+    // collapses a repeated one and the bug returns — Lightning CSS turns
+    // `monospace, monospace` into `monospace`, measured at 13px against 16px.
+    // Nothing in these fixtures minifies, so the rule needs saying here.
+    const families = [
+      read("../../main/src/normalize.css"),
+      read("../src/elements.css"),
+    ]
+      .flatMap((css) => css.match(/font-family:[^;]*monospace[^;]*;/g) ?? [])
+      .map((line) => line.replace(/^font-family:\s*|;$/g, "").trim());
+    expect(families.length).toBeGreaterThan(0);
+    for (const family of families) {
+      const names = family.split(",").map((name) => name.trim());
+      expect(names.length, family).toBeGreaterThan(1);
+      expect(new Set(names).size, family).toBe(names.length);
+    }
+  });
+
   it("tokens.css carries the typographic scale the copy reads", () => {
     // The element rules read the `--typography-*` values; the scale is tokens
     // and acts wherever it is written, so the copy carries none of it.
