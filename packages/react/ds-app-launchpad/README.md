@@ -26,7 +26,7 @@ or, from a stylesheet:
 @import url("@canonical/styles");
 ```
 
-Then mark your root — `<html class="ds app comfortable">` — as the [`@canonical/styles` README](../../styles/main/README.md) describes. That one import is also what puts this package's stylesheets in a defined order against the rest of the design system's: see [Every component stylesheet is in `ds.components.apps-launchpad`](#every-component-stylesheet-is-in-dscomponentsapps-launchpad) below.
+Then mark your root — `<html class="ds app comfortable">` — as the [`@canonical/styles` README](../../styles/main/README.md) describes. That one import is also what puts this package's stylesheets in a defined order against the rest of the design system's: see [Styling](#styling) below.
 
 ## Usage
 
@@ -55,7 +55,6 @@ A new stylesheet opens with the same `@layer ds.components.apps-launchpad { … 
 One stylesheet here is a vendor theme rather than component styles: `GitDiffViewer/common/CodeDiffViewer/HighlighTheme.css` colours highlight.js's own `.hljs` classes, which no component in this package writes. It belongs in this layer, because it is shipped and imported by the two components that use it and anything else would let it outrank them; but its selectors carry no `.ds` compound, so they match those classes anywhere on a consumer's page. Scoping them to the components that load them is carried to the component-hygiene change.
 
 The [`@canonical/styles` README](../../styles/main/README.md) has the full layer order, and [the cascade contract](../../../docs/explanations/STYLES_CASCADE.md) explains why it is shaped this way.
-
 
 ## Storybook
 
