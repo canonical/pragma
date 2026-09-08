@@ -1,14 +1,16 @@
-.ds.spinner {
-  transform-origin: center center;
-  animation: loading-spinner var(--ds-transition-duration-sleepy) infinite
-    linear;
-}
-
-@keyframes loading-spinner {
-  from {
-    transform: rotate(0deg);
+@layer ds.components.apps-launchpad {
+  .ds.spinner {
+    transform-origin: center center;
+    animation: loading-spinner var(--ds-transition-duration-sleepy) infinite
+      linear;
   }
-  to {
-    transform: rotate(360deg);
+
+  @keyframes loading-spinner {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 }

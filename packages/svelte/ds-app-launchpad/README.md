@@ -34,6 +34,22 @@ Import the main styles in your project's layout file (e.g. `routes/+layout.svelt
 <Chip lead="Hello" value="world!" />
 ```
 
+## Styles
+
+Each component module imports its own stylesheet (`import "./styles.css"`), so importing a component is what puts its CSS on the page. A component you never import ships no CSS.
+
+Every stylesheet here is wrapped in the `ds.components.apps-launchpad` cascade layer, named for Launchpad's own sub-tier in the design system. It sits above `ds.components.global`, so where this package restyles a component a global package also styles, this package wins by layer rather than by whichever bundle the loader emitted last. The CSS entry, `src/lib/index.css`, opens with the statement that places the layer, and that statement has to stay its first rule.
+
+Two things follow for anyone writing CSS here. A new stylesheet opens with the same `@layer ds.components.apps-launchpad { … }` wrapper, and a Svelte `<style>` block needs it too, since Svelte compiles those into document-level CSS. `@property` and `@font-face` registrations stay above the block, because no layer sorts a registration, and so does an `@import`, which is only valid before other rules.
+
+An application's own unlayered CSS beats every rule in this package whatever the selectors on either side. That is the deliberate escape hatch; an application that does not want to win by accident puts its CSS in `@layer app`.
+
+The [`@canonical/styles` README](../../styles/main/README.md) has the full layer order, and [the cascade contract](../../../docs/explanations/STYLES_CASCADE.md) explains why it is shaped this way.
+
+### Components own the box of the natives they render
+
+A component that renders a native element — a `<button>`, an `<input>`, a `<label>` — is responsible for that element's box: its margin, its width, its `min-width`, its `box-sizing`. Anything a component leaves undeclared is filled in by whatever else the host page loads, and on a page that also runs another framework that is a visible bug rather than a default.
+
 ## Dependency notes
 
 This section documents non-trivial runtime dependencies in this package.

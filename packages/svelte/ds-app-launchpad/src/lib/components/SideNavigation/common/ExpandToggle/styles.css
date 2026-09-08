@@ -1,14 +1,16 @@
-.ds.side-navigation-expand-toggle.button-primitive {
-  display: grid;
-  place-items: center;
-  box-sizing: content-box;
-  &[aria-expanded="true"] .expand-icon {
-    transform: rotate(180deg);
-  }
-  &[aria-expanded="false"] {
-    min-height: 1lh;
-    --dimension-padding-block-button: var(
-      --dimension-padding-block-side-navigation-item
-    );
+@layer ds.components.apps-launchpad {
+  .ds.side-navigation-expand-toggle.button-primitive {
+    display: grid;
+    place-items: center;
+    box-sizing: content-box;
+    &[aria-expanded="true"] .expand-icon {
+      transform: rotate(180deg);
+    }
+    &[aria-expanded="false"] {
+      min-height: 1lh;
+      --dimension-padding-block-button: var(
+        --dimension-padding-block-side-navigation-item
+      );
+    }
   }
 }

@@ -1,12 +1,14 @@
-.ds.dialog-content-header {
-  display: flex;
-  align-items: start;
-  text-wrap: balance;
+@layer ds.components.apps-launchpad {
+  .ds.dialog-content-header {
+    display: flex;
+    align-items: start;
+    text-wrap: balance;
 
-  font: var(--ds-typography-heading-4);
-  color: var(--color-text);
+    font: var(--ds-typography-heading-4);
+    color: var(--color-text);
 
-  > .ds.dialog-content-close-button {
-    margin-inline-start: auto;
+    > .ds.dialog-content-close-button {
+      margin-inline-start: auto;
+    }
   }
 }

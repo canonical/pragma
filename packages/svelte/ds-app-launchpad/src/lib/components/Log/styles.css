@@ -1,18 +1,20 @@
-.ds.log {
-  display: block;
-  contain: inline-size layout paint;
-  overflow: auto;
+@layer ds.components.apps-launchpad {
+  .ds.log {
+    display: block;
+    contain: inline-size layout paint;
+    overflow: auto;
 
-  --log-padding-inline: var(--dimension-200);
+    --log-padding-inline: var(--dimension-200);
 
-  background-color: var(--color-foreground-input);
-  padding-inline-end: var(--log-padding-inline);
-  padding-block-end: var(--dimension-400);
+    background-color: var(--color-foreground-input);
+    padding-inline-end: var(--log-padding-inline);
+    padding-block-end: var(--dimension-400);
 
-  tbody {
-    display: grid;
-    min-width: fit-content;
-    grid-template-columns: [line-number-start] auto [line-number-end
-        timestamp-start] max-content [timestamp-end content-start] 1fr [content-end];
+    tbody {
+      display: grid;
+      min-width: fit-content;
+      grid-template-columns: [line-number-start] auto [line-number-end
+          timestamp-start] max-content [timestamp-end content-start] 1fr [content-end];
+    }
   }
 }

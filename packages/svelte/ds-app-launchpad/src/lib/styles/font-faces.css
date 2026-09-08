@@ -1,3 +1,6 @@
+/* No layer block here: this sheet holds only `@font-face` registrations, and a
+ * registration is not a style rule, so no layer sorts it. */
+
 /* TODO: Explore the idea of putting that in the tokens as well */
 @font-face {
   font-family: "Ubuntu Sans";

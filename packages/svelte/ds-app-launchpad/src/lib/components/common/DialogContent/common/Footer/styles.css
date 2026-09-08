@@ -1,8 +1,10 @@
-.ds.dialog-content-footer {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  flex-wrap: wrap;
+@layer ds.components.apps-launchpad {
+  .ds.dialog-content-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
 
-  gap: var(--dimension-200);
+    gap: var(--dimension-200);
+  }
 }

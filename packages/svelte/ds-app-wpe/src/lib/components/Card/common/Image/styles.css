@@ -1,5 +1,7 @@
-.ds.card-image {
-  display: block;
-  height: auto;
-  width: 100%;
+@layer ds.components.apps-workplaceengineering {
+  .ds.card-image {
+    display: block;
+    height: auto;
+    width: 100%;
+  }
 }

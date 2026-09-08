@@ -59,7 +59,7 @@ import "@canonical/styles";
 
 ### How component CSS reaches the page
 
-Each component module imports its own stylesheet (`import "./styles.css"`), so importing a component is what puts its CSS on the page. A bundler collects those imports into the application's CSS; nothing here is injected at runtime, and there is no stylesheet to link by hand. The consequence is that a component you never import ships no CSS — and that the order a bundler happens to emit the sheets in is not something you can rely on, which is what the cascade layer below is for.
+Each component module imports its own stylesheet (`import "./styles.css"`), so importing a component is what puts its CSS on the page. A component you never import ships no CSS.
 
 That is what the aggregate below is for. It carries no layer of its own, and its imports are bare: every sheet it imports already opens its own block, so importing one with `layer(…)` would nest it a level deeper instead of placing it.
 
@@ -115,15 +115,13 @@ Every component `styles.css` in this package is wrapped in one cascade layer:
 }
 ```
 
-`@canonical/styles` declares the order of every layer in one statement, and `ds.components.global` sits near the top of it. Two things follow.
+`ds.components.global` holds the packages every application gets. It sits below the application tiers, so an application package that restyles one of these components wins by layer rather than by whichever bundle the loader emitted last.
 
-Above it are the other component tiers, which follow the design system's own tier tree, flat: `ds.components.sites`, `ds.components.documentation`, `ds.components.stores` and `ds.components.apps`, and above each of those a sub-tier layer for one product's own components — `ds.components.apps-lxd`, which that package declares itself, first rule in its CSS entry, because the styles package's order statement cannot know a product's name. Flat rather than nested: a nested `ds.components.apps.lxd` would sort *inside* `ds.components.apps` and so lose to every rule written directly there, the opposite of what a product tier needs.
+An application's own unlayered CSS beats every rule in this package whatever the selectors on either side. That is the deliberate escape hatch; an application that does not want to win by accident puts its CSS in `@layer app`.
 
-None of those packages is wrapped yet — at the time of writing no stylesheet under `packages/react/ds-app*` or `packages/svelte/ds-app*` carries a layer at all — and wrapping them is being done package by package alongside this one. So today a product tier still beats this package for the opposite reason: it is unlayered, and unlayered beats layered. What the layers guarantee, once those packages land, is that a product tier's rule for a component this package also styles wins by cascade layer rather than by whichever bundle the loader emitted last.
+Two things follow for anyone writing CSS here. A new stylesheet opens with the same wrapper, with `@keyframes` and the component's own `:root` token defaults inside it and `@property` and `@font-face` registrations above it. And a sheet this package ships is imported bare, never with `layer(ds.components.global)`, because it already opens its own block and the keyword would nest it one level deeper, where it loses to this layer's own rules at any specificity.
 
-An application's own **unlayered** CSS now beats every rule in this package, whatever the selectors on either side, because unlayered author rules outrank every layered one. That is CSS working as designed, and it is the deliberate escape hatch: an application that needs to override a component writes a plain rule and it wins. An application that does *not* want to win by accident puts its CSS in `@layer app`.
-
-**Rule for contributors:** every component `styles.css` in this package opens with that wrapper. `@keyframes` and the component's own `:root` token defaults go inside it; `@property` and `@font-face` registrations stay outside, above the block. That is a convention, not something the cascade forces: a layer does sort a registration — a higher layer's `@property` or `@keyframes` beats a lower layer's in either source order, and an unlayered one beats both (measured in Chromium 151). Keeping the registrations above the block is what makes them read as what they are, declarations the whole document shares, and puts them where a reader goes to look them up. `@keyframes` going inside the block is the opposite choice, and deliberate: it lets an application tier replace an animation by layer. A sheet this package ships is imported **bare**, never with `layer(ds.components.global)`: it already opens its own block, and the keyword would nest it one level deeper, at `ds.components.global.ds.components.global` — a sublayer that loses to this layer's own rules at any specificity (measured in Chromium 151). `layer(…)` on an import is for a sheet that carries no layer of its own. Never reach for `!important` to win a fight — an important declaration inverts the layer order and cannot be arbitrated by layers at all. The package ships exactly one, `component/Tooltip/styles.css:16`, which strips the margin off whatever a tooltip is attached to; it is a known defect and the component-hygiene change removes it. The `@canonical/styles` README's "Cascade layers" section is the reference for the full order and for what is deliberately left unlayered.
+The [`@canonical/styles` README](../../styles/main/README.md) has the full layer order, and [the cascade contract](../../../docs/explanations/STYLES_CASCADE.md) explains why it is shaped this way.
 
 ### Components own the box of the natives they render
 

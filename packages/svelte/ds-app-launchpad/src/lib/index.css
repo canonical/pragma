@@ -1,4 +1,27 @@
 /* TODO: when the only import here is @canonical/styles delete this file. The consumer should import @canonical/styles directly. */
+
+/* This package is the Launchpad app sub-tier, so it writes into its own layer
+ * rather than the shared `ds.components.apps`. The statement below is the first
+ * rule of this package's CSS entry, which is what fixes the layer's position: a
+ * layer is placed where its name first appears, and left to the component
+ * sheets that would be whichever one a bundler emitted first.
+ *
+ * It names the two tiers below this one as well, and not only for tidiness.
+ * This entry does not import @canonical/styles (see the TODO above), so on a
+ * page built from this package alone there is no other order statement. Naming
+ * only this layer would leave `ds.components.global` to first appearance, and a
+ * global-tier sheet emitted after this entry would then be appended above it —
+ * measured in Chromium: the global `.ds.announcement` beat the Launchpad one.
+ * Naming the three in order fixes them whichever sheet arrives first, and a
+ * consumer who does import @canonical/styles is unaffected, because a statement
+ * can add names but never reorder ones already placed.
+ *
+ * `@layer` and `@import` are the only rules allowed before other rules, and a
+ * statement may precede an import, so the imports below still resolve first. */
+@layer ds.components.global, ds.components.apps, ds.components.apps-launchpad;
+
+/* No layer block here: each sheet this file imports carries its own layers, and
+ * an `@import` may not appear inside a layer block. */
 @import "./styles/ds-tokens.css";
 @import "./styles/ds-shim.css";
 @import "./styles/index.css";

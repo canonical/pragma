@@ -1,48 +1,52 @@
-.ds.navigation-item.button-primitive {
-  display: grid;
-  position: relative;
-  grid-column: 1 / -1;
-  border: none;
+@layer ds.components.apps-launchpad {
+  .ds.navigation-item.button-primitive {
+    display: grid;
+    position: relative;
+    grid-column: 1 / -1;
+    border: none;
 
-  --dimension-padding-inline-button: 0;
-  --dimension-padding-block-button: var(--dimension-050);
-  --dimension-padding-inline-start-button-label: var(--dimension-100);
-  --color-background-button-selected: var(
-    --color-foreground-navigation-primary-active
-  );
-  --dimension-width-button-selected-indicator: var(
-    --dimension-stroke-thickness-large
-  );
-  --color-background-button-selected-indicator: var(--color-border-highlighted);
+    --dimension-padding-inline-button: 0;
+    --dimension-padding-block-button: var(--dimension-050);
+    --dimension-padding-inline-start-button-label: var(--dimension-100);
+    --color-background-button-selected: var(
+      --color-foreground-navigation-primary-active
+    );
+    --dimension-width-button-selected-indicator: var(
+      --dimension-stroke-thickness-large
+    );
+    --color-background-button-selected-indicator: var(
+      --color-border-highlighted
+    );
 
-  grid-template-columns: subgrid;
+    grid-template-columns: subgrid;
 
-  > .icon {
-    grid-column: logo;
-    place-self: center;
-  }
+    > .icon {
+      grid-column: logo;
+      place-self: center;
+    }
 
-  > .label {
-    grid-column: expanded-start / content-end;
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding-inline-start: var(--dimension-padding-inline-start-button-label);
-  }
+    > .label {
+      grid-column: expanded-start / content-end;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-inline-start: var(--dimension-padding-inline-start-button-label);
+    }
 
-  &.selected {
-    --color-background-button: var(--color-background-button-selected);
-    --color-background-button-hover: var(--color-background-button-selected);
-    --color-background-button-active: var(--color-background-button-selected);
+    &.selected {
+      --color-background-button: var(--color-background-button-selected);
+      --color-background-button-hover: var(--color-background-button-selected);
+      --color-background-button-active: var(--color-background-button-selected);
 
-    &::before {
-      content: "";
-      position: absolute;
-      height: 100%;
-      width: var(--dimension-width-button-selected-indicator);
-      inset-inline-start: 0;
-      background-color: var(--color-background-button-selected-indicator);
+      &::before {
+        content: "";
+        position: absolute;
+        height: 100%;
+        width: var(--dimension-width-button-selected-indicator);
+        inset-inline-start: 0;
+        background-color: var(--color-background-button-selected-indicator);
+      }
     }
   }
 }
