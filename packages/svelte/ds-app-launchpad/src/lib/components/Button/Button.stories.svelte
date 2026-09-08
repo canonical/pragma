@@ -41,7 +41,7 @@
   };
 </script>
 
-{#snippet variantMatrix(props: { disabled?: boolean; loading?: boolean })}
+{#snippet variantMatrix(props: ButtonProps)}
   <div class="matrix">
     <span></span>
     <span></span>
