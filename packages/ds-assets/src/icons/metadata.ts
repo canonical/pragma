@@ -598,17 +598,7 @@ export const ICON_METADATA: Readonly<Record<IconName, IconMetadata>> = {
     description: "Controllers that manage a cloud environment.",
   },
   copy: {
-    tags: [
-      "document",
-      "file",
-      "duplicate",
-      "add",
-      "new",
-      "plus",
-      "create",
-      "clone",
-      "clipboard",
-    ],
+    tags: ["document", "file", "duplicate", "clone", "pages", "clipboard"],
     categories: ["action"],
   },
   cursor: {
