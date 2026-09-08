@@ -138,11 +138,11 @@
       );
     }
 
-    /* Keyboard focus ring — driven by the modifier focusRing channel so it
+    /* Keyboard focus ring — driven by the modifier focus-ring channel so it
        recolours per anticipation; falls back to the base focus ring token. */
     &:focus-visible {
       outline: var(--focus-outline-width, 2px) solid
-        var(--modifier-color-focusRing, var(--color-focusRing, currentColor));
+        var(--modifier-color-focus-ring, var(--color-focus-ring, currentColor));
       outline-offset: var(--focus-outline-offset, 2px);
     }
 
