@@ -11,7 +11,7 @@ type OwnProps = {
 /**
  * Props for the Modal.Content subcomponent
  *
- * @implements dso:global.subcomponent.modal-content
+ * @implements ds:global.subcomponent.modal-content
  *
  * Anatomy (from DSL):
  * - layout.overflow: scroll

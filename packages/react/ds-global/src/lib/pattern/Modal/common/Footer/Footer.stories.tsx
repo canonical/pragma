@@ -5,14 +5,6 @@ import Footer from "./Footer.js";
 const meta = {
   title: "patterns/Modal/Footer",
   component: Footer,
-  parameters: {
-    docs: {
-      description: {
-        component:
-          "`Modal.Footer` holds the modal's actions; the affirmative action is last and its anticipation matches the consequence. Implements `ds:global.subcomponent.modal-footer`.",
-      },
-    },
-  },
   argTypes: {
     children: {
       control: false,

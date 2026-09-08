@@ -1,6 +1,6 @@
 /**
  * Modal.Header styles
- * @implements dso:global.subcomponent.modal-header
+ * @implements ds:global.subcomponent.modal-header
  *
  * DSL anatomy mapping:
  * - layout.type: flow, layout.direction: horizontal -> display: flex; flex-direction: row

@@ -37,7 +37,7 @@ type OwnProps = {
 /**
  * Props for the Modal pattern
  *
- * @implements dso:global.pattern.modal
+ * @implements ds:global.pattern.modal
  *
  * Anatomy (from DSL):
  * - layout.type: stack

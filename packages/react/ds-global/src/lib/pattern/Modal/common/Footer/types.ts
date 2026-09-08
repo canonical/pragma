@@ -12,7 +12,7 @@ type OwnProps = {
 /**
  * Props for the Modal.Footer subcomponent
  *
- * @implements dso:global.subcomponent.modal-footer
+ * @implements ds:global.subcomponent.modal-footer
  *
  * Anatomy (from DSL):
  * - layout.type: flow

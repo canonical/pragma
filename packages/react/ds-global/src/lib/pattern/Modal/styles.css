@@ -1,6 +1,6 @@
 /**
  * Modal styles
- * @implements dso:global.pattern.modal
+ * @implements ds:global.pattern.modal
  *
  * DSL anatomy mapping:
  * - edges[0] backdrop -> ::backdrop (painted by the native top layer, no DOM node)

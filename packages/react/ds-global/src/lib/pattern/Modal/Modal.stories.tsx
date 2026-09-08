@@ -48,35 +48,6 @@ const meta = {
   // contained instead of stacking over the docs page.
   parameters: {
     docs: {
-      description: {
-        component: [
-          "A modal is a focused container that sits on top of the main view, requiring users to",
-          "interact with it before returning to that view. Use it for a specific, self-contained",
-          "task — most often to confirm a decision the user has already taken, like sending a",
-          "delete request.",
-          "",
-          "**The sections are composed by the consumer:** render `Modal.Header`, `Modal.Content`",
-          "and `Modal.Footer` as children and choose which ones to show. The header's title names",
-          "the dialog automatically; a modal composed without a header must carry its own",
-          "`aria-label`.",
-          "",
-          "**Opening and closing needs no wiring:** the header's close icon and Escape always",
-          "dismiss it, and a backdrop click too, where `closeOnBackdropClick` opts in. To open or",
-          "close it from your own code, use the `ref` — it is the `<dialog>` itself:",
-          "`ref.current?.showModal()` opens it, `ref.current?.close()` closes it. That is all a",
-          "trigger or a footer action needs. For the common case — one control opening one modal —",
-          "`withModal` does the wiring for you.",
-          "",
-          "**Two consumption patterns:** `withModal` is meant for static content — its content is created",
-          "once, when the HOC is called. If the modal must show data from the parent — for example a",
-          "different `userName` depending on which user is selected — compose `Modal` directly and drive it",
-          "through its `ref`. Otherwise, use `withModal`.",
-          "",
-          '`import { Modal } from "@canonical/react-ds-global";`',
-          "",
-          "@implements ds:global.pattern.modal",
-        ].join("\n"),
-      },
       story: {
         inline: false,
         iframeHeight: "480px",

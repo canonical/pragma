@@ -5,14 +5,6 @@ import Header from "./Header.js";
 const meta = {
   title: "patterns/Modal/Header",
   component: Header,
-  parameters: {
-    docs: {
-      description: {
-        component:
-          "`Modal.Header` carries the modal title and the optional dismiss control. Implements `ds:global.subcomponent.modal-header`.",
-      },
-    },
-  },
   argTypes: {
     children: {
       control: { type: "text" },

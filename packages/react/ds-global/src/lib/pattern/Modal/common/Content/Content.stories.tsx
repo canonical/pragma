@@ -4,14 +4,6 @@ import Content from "./Content.js";
 const meta = {
   title: "patterns/Modal/Content",
   component: Content,
-  parameters: {
-    docs: {
-      description: {
-        component:
-          "`Modal.Content` is the open slot holding the modal's main information; it is the only part that scrolls. Implements `ds:global.subcomponent.modal-content`.",
-      },
-    },
-  },
   argTypes: {
     children: {
       control: { type: "text" },

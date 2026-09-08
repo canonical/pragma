@@ -29,7 +29,7 @@ type OwnProps = {
 /**
  * Props for the Modal.Header subcomponent
  *
- * @implements dso:global.subcomponent.modal-header
+ * @implements ds:global.subcomponent.modal-header
  *
  * Anatomy (from DSL):
  * - layout.type: flow

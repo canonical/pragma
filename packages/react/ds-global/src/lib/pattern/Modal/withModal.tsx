@@ -65,6 +65,8 @@ import type {
  * A pure composition wrapper: it renders the wrapped component and the modal
  * as siblings, so it carries no root element of its own.
  *
+ * `import { withModal } from "@canonical/react-ds-global";`
+ *
  * @param Component The trigger component to wrap (e.g. `Button`). It must accept `onClick` and forward it to its root element; clicking it opens the modal.
  * @param modal The modal the trigger opens: a complete `<Modal>` element, or a function that receives `close` and returns one.
  */

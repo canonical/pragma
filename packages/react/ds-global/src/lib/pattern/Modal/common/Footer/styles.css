@@ -1,6 +1,6 @@
 /**
  * Modal.Footer styles
- * @implements dso:global.subcomponent.modal-footer
+ * @implements ds:global.subcomponent.modal-footer
  *
  * DSL anatomy mapping:
  * - layout.type: flow, layout.direction: horizontal -> display: flex; flex-direction: row
