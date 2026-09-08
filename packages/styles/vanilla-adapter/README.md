@@ -42,6 +42,8 @@ The Vanilla import goes inside the block rather than above it, because Vanilla e
 
 The order statement has to be the first rule the browser reads, before any rule it orders. Only `@charset` may come before it.
 
+This is the one step with no safety net. A layer takes its place the first time the browser sees its name, and no later statement can move it, so a stylesheet that opens a `ds` layer before this one is read puts every pragma layer below the boundary — and the boundary then reverts pragma instead of Vanilla. Every component renders as bare markup, with nothing in the console. "What this package does not fix" has the detail; step 7 is how you check.
+
 ```scss
 /* styles.scss — your existing stylesheet, with two changes */
 @use "pkg:@canonical/styles-vanilla-adapter/layers.css";
@@ -95,7 +97,7 @@ That is the whole setup. Writing pragma components into a page that Vanilla stil
 
 Both frameworks want a font, and neither ships one. Vanilla names a family and expects the page to declare it; pragma does the same. Declare the faces once, in your own stylesheet, and point both frameworks at those names.
 
-Nothing else here loads a file: no stylesheet in this package, and neither of the two pragma entries they load, references a font, an image or an icon.
+No stylesheet in this package fetches anything. One thing pragma's `tokens.css` brings does name a file: the criticality modifiers declare `--modifier-icon` as a `url("/icons/…")`, an absolute path. Nothing is fetched unless a component reads that token, and no component in the design system does today, but if you write a rule that does, serve those icons from your own root or override the token.
 
 In your Vanilla settings, before the Vanilla import:
 
@@ -134,7 +136,7 @@ The alternative, letting each framework name its own family, downloads the same 
 
 ### 7. Check it
 
-Four things tell you the page is set up correctly: every rule in your built CSS sits in a declared layer, no `!important` appears outside `vanilla`, the root carries its classes, and no Vanilla class appears under any `.ds`. Then run your own visual checks.
+Five things tell you the page is set up correctly. The order statement is the first rule in your built CSS, before anything that mentions a `ds` layer. Every rule sits in a declared layer. The only `!important` declarations outside `vanilla` are the four this package writes into `vanilla.escapes`, which answer Vanilla's own. The root carries its classes. And no Vanilla class appears under any `.ds`. Then run your own visual checks: if the first of the five is wrong, the page will look like unstyled markup rather than subtly off.
 
 If something looks wrong, [Troubleshooting](#troubleshooting) starts from the symptom.
 
@@ -168,7 +170,7 @@ The rules are numbered so that a review can point at one.
 
 **What not to reach for**
 
-10. Four things this arrangement does not need, each of them a sign that something else is wrong. An `!important` to win an argument, which takes the decision away from the layers. A hand-written reset against Vanilla, when the boundary already does that and the real problem is in the territories. A wrapper or an island that lets Vanilla back inside `.ds`. A build step or a transform to make the two frameworks fit, which usually means something is on the wrong side of a boundary.
+10. Four things this arrangement does not need, each of them a sign that something else is wrong. An `!important` to win an argument, which takes the decision away from the layers. This package writes four, and they are the exception that shows the rule: an important declaration can only be answered by another one from a lower layer, which is why they exist and why they name single properties rather than `all`. A hand-written reset against Vanilla, when the boundary already does that and the real problem is in the territories. A wrapper or an island that lets Vanilla back inside `.ds`. A build step or a transform to make the two frameworks fit, which usually means something is on the wrong side of a boundary.
 
 ## Design notes
 
@@ -250,24 +252,41 @@ With no Sass to set them, Vanilla's family variables are compiled into `vendor/v
 
 ## Guarantees
 
-Each line names the fixture that checks it. The fixtures live in `tests/`; the one that compares the confined copy against pragma's stylesheets runs without a browser.
+Each line names the fixture that checks it, in `tests/`. The one that compares the confined copy against pragma's stylesheets runs without a browser; the rest render two pages and compare what the browser computes, so a value that is wrong on both pages fails rather than passes.
 
-- The confined copy is pragma's element layers, rule for rule and declaration for declaration, under the selector mapping in [DESIGN.md](./DESIGN.md). (`elements`)
-- No Vanilla rule styles an element inside pragma's territory: every property there is either the browser's default or pragma's. (`territory-equals-pragma-only`, with explicit checks on `--vf-color-text-default`, the root line height, `box-sizing` and `color-scheme`)
-- A pragma element inside a Vanilla page computes the same styles as it would on a pragma-only page, for every property pragma declares or leaves to the browser, and a pragma root inherits pragma's baseline rather than the page's. (`territory-equals-pragma-only`, over the full property list)
-- Vanilla does not style the `.ds` root itself. (`root-not-styled`, including a `<button class="ds button">` against Vanilla's `button` rule)
-- A pragma root inside a Vanilla dark section computes `color-scheme: dark`, and its token-driven colours match pragma's dark page. Inside a light or paper section it computes light. (`theme-bridge`, covering the four theme cases and `.is-paper`)
-- Installing this package does not change Vanilla's territory: every element outside `.ds`, including `html` and `body`, matches the Vanilla-only page. (`vanilla-territory-untouched`, at 1280 and 1700 pixels)
-- Where `adapter.css` sits inside `pragma.css` does not matter. (`order-independence`)
-- After removal, the page renders as a pragma page and every root follows pragma's own `light` and `dark` classes. (`removal`)
+- The confined copy is pragma's element layers, rule for rule and declaration for declaration, under the selector mapping in [DESIGN.md](./DESIGN.md). One rule exists only in the copy, and it names its reason. (`tests/elements.test.ts`)
+- No Vanilla rule styles an element inside pragma's territory for any declaration that is not `!important`. Every such property is either the browser's default or pragma's. (`tests/territory.test.ts`, over the full property list, and `tests/vanilla-territory.test.ts:37` for the explicit checks on `--vf-color-text-default`, the root line height and `box-sizing`)
+- The six Vanilla `!important` declarations that can reach inside an island are answered in kind, from a layer below Vanilla. (`tests/boundary.test.ts`)
+- An element that is itself an island root is styled as it would be on a pragma-only page, whatever element it is. (`tests/boundary.test.ts`, over sixteen of them)
+- A Vanilla ancestor does not push its inherited properties into an island, with one deliberate exception named below. (`tests/boundary.test.ts`)
+- A pragma element inside a Vanilla page computes the same styles as it would on a pragma-only page, for every property pragma declares or leaves to the browser. (`tests/territory.test.ts`)
+- Vanilla does not style the `.ds` root itself. (`tests/territory.test.ts:123` for placement inside Vanilla containers, `tests/vanilla-territory.test.ts` for the full-longhand comparison)
+- A pragma root inside a Vanilla dark section computes `color-scheme: dark`, and its token-driven colours match pragma's dark page. Inside a light or paper section it computes light. (`tests/theme.test.ts`, covering the four theme cases and `.is-paper`)
+- Installing this package does not change Vanilla's territory, with one exception named below: every element outside `.ds`, including `html` and `body`, matches the Vanilla-only page. (`tests/vanilla-territory.test.ts`, at 1280 and 1700 pixels)
+- Where `adapter.css` sits inside your pragma entry does not matter. Where `layers.css` sits does. (`tests/order.test.ts`, and the negative case in `tests/boundary.test.ts`)
+- After removal, the page renders as a pragma page and every root follows pragma's own `light` and `dark` classes. (`tests/theme.test.ts`)
 
-## Known limitations
+## What this package does not fix
 
-- Vanilla's `!important` declarations still apply inside pragma's territory wherever their selectors match. The only one that can match without a Vanilla class present is `* { animation: none !important; transition: none !important }` under reduced motion, and pragma honours that preference itself by zeroing its motion tokens, so the two pages agree wherever a component reads them.
-- A control that is itself an outermost pragma root and has no component stylesheet, such as a bare `<button class="ds">`, computes `line-height: normal` where a pragma-only page gives it normalize's `1.15`. On a pragma root the baseline lands on the control itself and beats the control rule; on a page, `html` and `button` are different elements. Every pragma component declares its own line height, so this only affects a bare control.
-- Vanilla's root font-size scaling above 1681 pixels reaches pragma's territory through `rem`, and pragma scales with it coherently.
-- `revert` also rolls back presentational attributes. Inline SVG is excluded from the boundary for that reason, and an `<img width height>` inside pragma's territory loses the size those attributes gave it, so size replaced elements in CSS as pragma's own components do. Chromium's 1px default table-cell padding is the same kind of hint and reverts to zero.
-- `direction` and `unicode-bidi` are outside `all`, so Vanilla's `code, pre { direction: ltr }` still applies inside pragma's territory. It is harmless.
+Each of these is a real difference between a mixed page and a pragma-only page. They are listed because they are the ones you can meet, not because they are rare enough to skip. Where there is something to do about one, it says so.
+
+**The order statement has to be first, and nothing warns you if it is not.** A cascade layer takes its place in the order the first time a browser sees its name, and a later statement can add names but never move one. So if any stylesheet that mentions a `ds` layer reaches the browser before `layers.css` — a component package, or one of pragma's own entries — then `ds` is placed at the bottom of the order, below `boundary`, and the boundary's `all: revert` runs over pragma's own rules instead of Vanilla's. Every pragma component then renders as bare markup. There is no console warning and no partial failure; it is all or nothing. Installation step 1 is the whole defence, `adapter.css` imports the statement itself so that the single-import path cannot go wrong, and step 7 is how you check. Measured in `tests/boundary.test.ts`, both ways.
+
+**Five pragma class names are not prefixed, and they match host markup.** `tokens.css` and `layout.css` are pragma's own entries and this package loads them whole, so their rules apply to any element on the page, not only inside an island. The names are `grid`, `subgrid`, `responsive`, `intrinsic` and `content-flow` from the layout presets, and `light` and `dark` from the theme modifiers. They sit in `ds.components.global` and `ds.modifiers`, both above `vanilla`, so where a host element already carries one of these names pragma wins. `grid` is the one worth checking for. Rename yours, or drop `layout.css` from your entry if you do not use the presets; the collision is pragma's to fix upstream, not something this package can confine without shipping a second copy.
+
+**An island root does not inherit a table cell's text alignment.** The browser centres a `<th>`, and on a pragma-only page an island inside one inherits that. Here the island root declares `text-align: start`, because the same property is how Vanilla's `u-align--*` family would otherwise reach in, and nothing in CSS can tell a browser default from a framework's rule. The trade buys off the larger leak. Set the alignment on the island yourself where you want it.
+
+**Vanilla has dark surfaces the bridge cannot see.** The bridge reads the two custom properties Vanilla's own themes set, which covers `.is-light`, `.is-dark`, `.is-paper`, the four themed strips, tooltips and the branded chip. A surface that is dark without setting them is invisible to it: `.p-strip--suru` paints white text on an orange gradient, and the status-label and `.p-label` families paint white on a coloured fill. A pragma component inside one of those computes `light` and renders dark text on a dark ground. Put `is-dark` on the container, or on the island itself.
+
+**Vanilla's root font-size scaling above 1681 pixels reaches the island.** Pragma scales with it coherently, so this is a difference from a pragma-only page rather than a defect. It is deliberate: an island that did not scale with the page around it would look wrong.
+
+**`revert` rolls back presentational attributes.** Inline SVG is excluded from the boundary for that reason. An `<img width height>` inside pragma's territory loses the size those attributes gave it, so size replaced elements in CSS as pragma's own components do. Chromium's 1px default table-cell padding is the same kind of hint and reverts to zero.
+
+**`direction` and `unicode-bidi` are outside `all`.** Vanilla's `code, pre { direction: ltr }` still applies inside pragma's territory. It is harmless, and a right-to-left page needs its `direction` to cross the boundary anyway, which is why the island root does not declare it either. `visibility`, `pointer-events` and `cursor` are left to cross for the same reason: a host that hides, disables or marks a container busy is telling the island something, not styling it.
+
+**Do not minify this package's CSS with Lightning CSS.** It collapses a repeated font-family name, and pragma's monospace rule uses `ui-monospace, monospace` precisely because a browser gives the bare `monospace` keyword a smaller size. esbuild leaves it alone, and so does Lightning CSS on that list; the older `monospace, monospace` spelling is the one it broke, measured at 13px against 16px.
+
+**Under reduced motion, `transition-property` computes `none` inside the island.** Vanilla sets it with `!important` and it is left alone, because pragma honours the same preference by zeroing its motion tokens. The two agree on the result; only the property they get there with differs.
 
 ## Troubleshooting
 

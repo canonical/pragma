@@ -6,10 +6,11 @@ How this package works inside, and why the CSS is written the way it is. For ins
 
 Three facts about the cascade carry the design. An unlayered rule beats every layered rule. A higher layer wins whatever the selectors on either side say. And `revert` rolls a property back to the browser's own default, ignoring every author rule below the one that says it.
 
-`layers.css` puts `vanilla` at the bottom and a `boundary` layer directly above it:
+`layers.css` puts `vanilla` near the bottom and a `boundary` layer directly above it, with one sublayer of `vanilla` below everything:
 
 ```css
-@layer vanilla,
+@layer vanilla.escapes,
+  vanilla,
   boundary,
   normalize,
   ds.tokens,
@@ -30,13 +31,13 @@ Three facts about the cascade carry the design. An unlayered rule beats every la
 
 The five component layers follow the design system's tier tree, lowest first: `global`, `sites`, `documentation`, `stores`, `apps`. Naming them here means a higher tier's rule for a component beats a lower tier's by layer, whatever order your entry happens to load the component stylesheets in. A package below one of those tiers declares a layer of its own, such as `ds.components.apps-lxd`, after importing the order from `@canonical/styles/layers.css`. Because that name appears later than the statement, it sorts above the five and still below `app`. On a mixed page the extra import changes nothing, since the statement here has already fixed those names. No rule is written directly into `ds.components`, because a rule there would land in that layer's implicit final sublayer and outrank every tier.
 
-The mode bridge writes into `ds.adapter`, which is a sublayer of `ds` rather than a top-level layer, and that matters. Sublayers sort inside their parent, and `ds` takes its place in the order where it is first mentioned, at `ds.tokens`. A top-level layer written between `ds.states` and `ds.components` would therefore not sit between them at all: it would sit above every pragma layer, component tiers included, and a component that sets its own `color-scheme` could never beat the bridge. We measured that: a modal asking for `dark` computed `light`. As a sublayer it sits above the mode modifiers and below the components, which is where the mode rules in the README and a component's own `color-scheme` both need it. The fixtures check all 136 pairs of the seventeen names by computed style rather than by reading the list, and check that a later sub-tier layer sorts where it should.
+The mode bridge writes into `ds.adapter`, which is a sublayer of `ds` rather than a top-level layer, and that matters. Sublayers sort inside their parent, and `ds` takes its place in the order where it is first mentioned, at `ds.tokens`. A top-level layer written between `ds.states` and `ds.components` would therefore not sit between them at all: it would sit above every pragma layer, component tiers included, and a component that sets its own `color-scheme` could never beat the bridge. We measured that: a modal asking for `dark` computed `light`. As a sublayer it sits above the mode modifiers and below the components, which is where the mode rules in the README and a component's own `color-scheme` both need it. The fixtures check all 153 pairs of the eighteen names by computed style rather than by reading the list, and check that a later sub-tier layer sorts where it should.
 
 Pragma's own statement, the same list without `vanilla`, `boundary`, `ds.adapter` and `app`, arrives later through the entries this package imports. It changes nothing, because a later statement can add names but never reorder the ones already fixed, and it adds none.
 
 `app` is the name of your own layer whatever context class the page carries. A site with `class="site …"` still writes `@layer app`.
 
-`adapter.css` starts with the three imports and then fills the boundary with a single declaration. Inside pragma's territory every property Vanilla set is reverted to the browser default, and pragma's layers, all of them higher, apply on top exactly as they would on a pragma-only page:
+`adapter.css` starts with the order statement and its three imports, then fills the boundary with a single declaration. Inside pragma's territory every property Vanilla set is reverted to the browser default, and pragma's layers, all of them higher, apply on top exactly as they would on a pragma-only page:
 
 ```css
 @import url("@canonical/styles/tokens.css");
@@ -54,6 +55,16 @@ Pragma's own statement, the same list without `vanilla`, `boundary`, `ds.adapter
   }
 }
 ```
+
+### The second boundary, and why it is below Vanilla
+
+`all: revert` cannot touch an `!important` declaration. For important rules the cascade reverses the layer order: the declaration in the *first* layer wins, and an unlayered important loses to every layered one. So an important revert written into `boundary` loses to Vanilla's own, which we measured — a list under `.u-text-max-width` kept its `max-width: 40em`.
+
+The counter has to sit below Vanilla, and a sublayer of `vanilla` is where it belongs. A rule written directly into a layer lands in that layer's implicit final sublayer, which sorts after every named sublayer, so `vanilla.escapes` beats the consumer's own `@layer vanilla { … }` block whichever order the two sheets arrive in. We measured both orders.
+
+Six Vanilla rules need it: every important declaration in the compiled build whose subject compound carries no class, so an element inside an island matches it while the Vanilla class sits on an ancestor outside — the arrangement the rules recommend. The set is identical in 4.56 and 4.58. Each counter mirrors Vanilla's own selector and adds the island requirement, so it fires only where the leak is.
+
+It is not free. Inside those four Vanilla utilities the important revert also outranks pragma's own declaration of that one property: a pragma list inside `.u-text-max-width` gets the browser's `max-width` rather than pragma's. Narrowing further is not possible — excluding pragma's own elements hands them straight back to Vanilla, which is the worse half of the trade. The README names the cost.
 
 Pseudo-elements are separate boxes with their own cascade and cannot be named inside `:where()`, so each one that Vanilla styles without a class needs its own selector. The Gecko ones sit in rules of their own, because a selector list naming a `-moz-` pseudo-element is dropped whole by other engines. Inline SVG is excluded from the boundary because `revert` also rolls back presentational attributes, which SVG draws with; the one Vanilla rule that would otherwise reach in, its bare `a` colour, is handled by keeping SVG anchors inside the boundary.
 
