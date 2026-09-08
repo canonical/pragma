@@ -1,30 +1,24 @@
 # @canonical/styles-vanilla-adapter
 
-For the team adopting pragma in an application that still runs Vanilla Framework.
+Runs pragma's components inside an application that is still built with Vanilla Framework. The two frameworks style the same page without reaching into each other, so you can migrate a page at a time instead of all at once.
 
-Three stylesheets, one dependency, no tooling.
+The package ships three stylesheets and depends only on `@canonical/styles`. There is no build step and no tooling to add.
 
-`layers.css` declares the layer order the two systems share.
+| File | What it does |
+| --- | --- |
+| `layers.css` | Declares the cascade layer order that both frameworks share. |
+| `adapter.css` | Keeps Vanilla out of pragma's components, carries Vanilla's theme into them, and loads what a mixed page needs from pragma. |
+| `elements.css` | Pragma's element styles, confined to pragma's components rather than applied to the whole page. |
 
-`adapter.css` holds two things: the boundary, which keeps Vanilla out of pragma territory, and the bridge, which carries Vanilla's theme into pragma's. It also loads what a mixed page needs from pragma: `tokens.css` and `layout.css` from `@canonical/styles`, and `elements.css` from here.
-
-`elements.css` is this package's copy of pragma's third entry, its element layers, confined to pragma territory.
-
-What you read in those three files is what the browser runs. The reasoning behind the rules below lives in pragma's cascade explanation, `docs/explanations/STYLES_CASCADE.md`; the decisions they cite are in pragma-adrs F, `F.VANILLA_COEXISTENCE`.
-
-## The rule everything else follows from
-
-**Pragma territory holds no Vanilla.** An element with the class `ds`, and everything inside it, belongs to pragma: no `p-*`, `u-*`, `l-*` or `is-*` class at any depth, no legacy component, no wrapper that lets Vanilla back in.
-
-Markup that breaks this renders without Vanilla's styles, taking the browser's defaults and pragma's element baseline instead, which is the boundary doing its job. If you meet it, migrate that content first, or leave its container Vanilla until you can. (VC.03)
+The reasoning behind the design is in pragma's cascade explanation, `docs/explanations/STYLES_CASCADE.md`. The decisions the rules below cite are in the decision record, `F.VANILLA_COEXISTENCE`.
 
 ## Prerequisites
 
-This package needs `@canonical/styles` at the first release that ships its stylesheet as three entries: `tokens.css`, `elements.css` and `layout.css`, each opening with pragma's order statement. Its changelog names that release. On an older one the imports in `adapter.css` do not resolve, and there is nothing for the copy here to be a copy of.
+You need `@canonical/styles` at the first release that ships its stylesheet as three entry points: `tokens.css`, `elements.css` and `layout.css`. That release is named in the changelog. Earlier releases will not work, because the imports in `adapter.css` do not resolve and there is nothing for the confined copy to be a copy of.
 
-The dependency is a regular one with a caret range, as in the component packages. The range pins the release the copy was taken from, and a test holds the copy to that release's source in this repository.
+The dependency is a normal one with a caret range, as in the component packages. The range pins the release the copy was taken from, and a test compares the copy against that release's source in this repository.
 
-Until that release exists this package stays private. The computed-style fixtures that check its guarantees are in `tests/`, and it is published once they pass against it.
+This package is private until that release exists. It is published once the computed-style fixtures in `tests/` pass against it.
 
 ## Installation
 
@@ -32,9 +26,11 @@ Until that release exists this package stays private. The computed-style fixture
 bun add @canonical/styles-vanilla-adapter @canonical/ds-assets
 ```
 
-`@canonical/styles` arrives with this package, at the release the copy was taken from. A mixed page does not import it directly; `adapter.css` does that. It joins your own manifest when this package leaves (rule 19).
+`@canonical/styles` comes along as a dependency of this package, at the release the copy was taken from. A mixed page does not import it directly, because `adapter.css` does that for you. It moves into your own manifest when this package leaves, which is covered under [Removal](#removal).
 
-Then two imports, and nothing on any root beyond what a pragma page already carries:
+## Usage
+
+Add two imports, and nothing to any element that a pragma-only page would not also carry:
 
 ```css
 /* the first rule of the first stylesheet */
@@ -44,60 +40,60 @@ Then two imports, and nothing on any root beyond what a pragma page already carr
 @import url("@canonical/styles-vanilla-adapter/adapter.css");
 ```
 
-The second import brings `@canonical/styles/tokens.css`, `@canonical/styles/layout.css` and this package's `elements.css` with it. A mixed page leaves `@canonical/styles` and its `elements.css` alone: those style the whole page, which is right for a pragma-only page and wrong here.
+The second import brings `@canonical/styles/tokens.css`, `@canonical/styles/layout.css` and this package's `elements.css` with it. Do not import `@canonical/styles` or its `elements.css` on a mixed page: those style the whole document, which is what a pragma-only page wants and what a mixed page must avoid.
 
-## The rules
+## Territories
 
-Numbered so a review can cite one. Each ends with the decision in pragma-adrs F behind it.
+An element with the class `ds`, and everything inside it, belongs to pragma. Vanilla classes do not go there: no `p-*`, `u-*`, `l-*` or `is-*` class at any depth, no legacy component, and no wrapper that lets Vanilla back in.
+
+If you do put Vanilla markup inside a pragma component, it renders without Vanilla's styles, taking the browser's defaults and pragma's element baseline instead. That is the boundary working as intended rather than a bug. Migrate the content first, or leave its container Vanilla until you can. (VC.03)
+
+## Rules for a mixed page
+
+The rules are numbered so that a review can point at one, and each cites the decision behind it.
 
 **Imports**
 
-1. The first rule of the first stylesheet is the order statement in `layers.css`. From Sass, import it by its extensionless path so Sass inlines it in place: `@import "@canonical/styles-vanilla-adapter/src/layers";` or `@use "@canonical/styles-vanilla-adapter/src/layers";`. Nothing precedes it except `@charset`. (VC.02)
-2. Vanilla Framework and everything built on it go inside one `@layer vanilla { … }` block: the `@import "vanilla-framework"` line itself, the site's own patterns, its overrides, and the third-party CSS it inlines. The import goes inside because Vanilla emits one rule at import time (`hr.is-fixed-width`); nested, it lands in the layer. No Vanilla-era rule stays outside it. (VC.01)
-3. In a Sass entry, use extensionless imports rather than a `.css`-suffixed or `url()` one. Sass does not inline those: at top level it hoists them above the statement, and inside a block it emits an invalid nested `@import`. (VC.27)
-4. Pragma's CSS is a second entry, `pragma.css`: `adapter.css`, then the component packages' stylesheets. `adapter.css` loads `@canonical/styles/tokens.css`, `@canonical/styles/layout.css` and this package's `elements.css` itself, so a mixed page does not import `@canonical/styles` itself. Resolve the entry with whatever your pipeline already resolves package imports with. The order inside it does not matter, because precedence comes from the layers, but none of it goes inside the `vanilla` layer. (VC.27, VC.30)
-5. Link `styles.css` (the Vanilla layer), then `pragma.css`, then any React-island CSS. Link order does not decide precedence either; the layers do. What matters is that the statement is the first rule the browser sees. (VC.02)
-6. If you purge CSS, leave `pragma.css` out of it: its classes are not in your templates until the components render. (VC.26)
+1. The order statement in `layers.css` is the first rule of the first stylesheet. From Sass, import it by its path inside the package so that Sass inlines it in place: `@import "@canonical/styles-vanilla-adapter/src/layers";` or `@use "@canonical/styles-vanilla-adapter/src/layers";`. Only `@charset` may come before it. (VC.02)
+2. Vanilla Framework and everything built on it go inside one `@layer vanilla { … }` block: the `@import "vanilla-framework"` line itself, the site's own patterns, its overrides, and any third-party CSS it inlines. The import goes inside the block because Vanilla emits a rule at import time (`hr.is-fixed-width`), which then lands in the layer. No Vanilla-era rule stays outside it. (VC.01)
+3. In a Sass entry, use extensionless imports rather than a `.css`-suffixed or `url()` one. Sass does not inline those: at the top level it hoists them above the statement, and inside a block it emits an invalid nested `@import`. (VC.27)
+4. Pragma's CSS goes in a second entry, conventionally `pragma.css`: `adapter.css` first, then the component packages' stylesheets. Since `adapter.css` loads pragma's other entry points itself, a mixed page never imports `@canonical/styles` directly. Resolve the entry with whatever already resolves package imports in your pipeline. The order inside the entry does not matter, because the layers decide precedence, but none of it belongs inside the `vanilla` layer. (VC.27, VC.30)
+5. Link `styles.css`, then `pragma.css`, then any React island CSS. Link order does not decide precedence either. What matters is that the order statement is the first rule the browser sees. (VC.02)
+6. If you purge unused CSS, leave `pragma.css` out of it. Its classes are not in your templates until the components render. (VC.26)
 
 **Territories**
 
-7. The rule above, restated: no Vanilla inside `.ds`. (VC.03)
-8. One owner per element: no Vanilla class on a `.ds` root, and no `ds` on Vanilla markup. Wrap instead: `<div class="col-6"><div class="ds card">…`. The wrapper is not optional inside a Vanilla container whose rules target its direct children (`.row`, `.p-form--inline`, `.p-equal-height-row`, `.p-divider`, `.p-navigation__dropdown`, …): a `.ds` root placed there loses its grid placement. (VC.03)
-9. Swap inside-out: controls first, then groups, then containers, then page shells. A container changes once nothing Vanilla remains inside it, and a region takes `ds` once it is clear of Vanilla. (VC.04)
+7. No Vanilla class goes inside `.ds`, as described above. (VC.03)
+8. Every element has one owner. Do not put a Vanilla class on a `.ds` root, and do not put `ds` on Vanilla markup. Wrap instead: `<div class="col-6"><div class="ds card">…`. The wrapper is necessary inside any Vanilla container whose rules target its direct children, such as `.row`, `.p-form--inline`, `.p-equal-height-row`, `.p-divider` or `.p-navigation__dropdown`, because a `.ds` root placed there loses its grid placement. (VC.03)
+9. Swap components inside-out: controls first, then groups, then containers, then page shells. Change a container once nothing Vanilla remains inside it, and give a region `ds` once it is clear of Vanilla. (VC.04)
 
-**Root declaration**
+**The root element**
 
-10. From day one: `<html class="site comfortable light">` on a site, `app comfortable light` on an application. One context, one density, and `light`. Nothing marks the page as mixed, because nothing needs to: pragma territory is the islands, the elements carrying `ds`, and `elements.css` confines pragma's element styles to them by itself. Leave `ds` off `<html>` while Vanilla is in the page — it would make the whole document an island, and the boundary would revert every Vanilla rule in it. (VC.09, VC.30)
-11. There is no flip: a pragma page and a mixed page carry the same root classes, and only the stylesheet differs. A pragma page loads `@canonical/styles`, whose element layers style the whole page. A mixed page loads this package instead, which loads pragma's `tokens.css` and `layout.css` and its own confined copy of the third entry, the element layers. The last state before Vanilla is removed is simply a page with no Vanilla class left in it. (VC.03, VC.30)
+10. From day one, write `<html class="site comfortable light">` on a site, or `app comfortable light` in an application: one context, one density, and `light`. Nothing marks the page as mixed, because nothing needs to. Pragma's territory is the elements carrying `ds`, and `elements.css` confines pragma's element styles to them by itself. Do not put `ds` on `<html>` while Vanilla is in the page, because that makes the whole document a pragma island and the boundary then reverts every Vanilla rule in it. (VC.09, VC.30)
+11. There is no flip from one framework to the other. A pragma page and a mixed page carry the same root classes, and only the stylesheet differs. A pragma page loads `@canonical/styles`, whose element layers style the whole document. A mixed page loads this package instead. The last state before Vanilla goes is simply a page with no Vanilla class left in it. (VC.03, VC.30)
 
 **Theme**
 
-12. While both systems are on the page, theme has one source: Vanilla's theme classes. A dark page is `<body class="is-dark">`, a dark section is `.p-strip--dark` or `.p-strip.is-dark`, a light island inside is `.is-light` or `.is-paper`. Pragma components inside inherit the right scheme through the bridge; nothing pragma-specific is added to the markup. (VC.19)
-13. A `.dark` or `.light` class on a pragma root inside a Vanilla page has no effect: the bridge wins, by design, for as long as `adapter.css` is loaded. The escape hatch for a region with no Vanilla theme context is a `color-scheme` declaration from your own `app` layer, which sits above every `ds.*` layer, the bridge's `ds.adapter` included. (VC.19)
-14. The operating system's dark mode does not reach the page while both systems are on it. Once this package is gone, pragma owns theme: keep `light` or `dark` on `<html>` as a toggle, or remove the pin to follow the system. (VC.19)
-15. Leave `color-scheme` to the bridge. An unlayered `:root` rule setting it beats every theme class and every layer. (VC.19)
+12. While both frameworks are on the page, Vanilla's theme classes are the only source of theme. A dark page is `<body class="is-dark">`, a dark section is `.p-strip--dark` or `.p-strip.is-dark`, and a light island inside one is `.is-light` or `.is-paper`. Pragma components inside them inherit the right scheme through the bridge, and you add nothing to the markup for it. (VC.19)
+13. A `.dark` or `.light` class on a pragma root inside a Vanilla page has no effect, because the bridge wins for as long as `adapter.css` is loaded. If a region has no Vanilla theme context and needs one, declare `color-scheme` from your own `app` layer, which sits above every pragma layer including the bridge. (VC.19)
+14. The operating system's dark mode does not reach the page while both frameworks are on it. Once this package is gone, pragma owns theme: keep `light` or `dark` on `<html>` as a toggle, or remove the pin to follow the system. (VC.19)
+15. Leave `color-scheme` to the bridge. An unlayered `:root` rule that sets it beats every theme class and every layer. (VC.19)
 
 **Fonts**
 
-16. One family name, one declaration, one download. Set Vanilla's `$font-base-family` and `$font-monospace` to pragma's stacks (`"Ubuntu Sans", …` and `"Ubuntu Sans Mono", …`) in your settings, before the Vanilla import. Declare the `@font-face` rules yourself, under pragma's names, from the files in `@canonical/ds-assets/fonts/ubuntu-sans/`, and omit `@canonical/styles/fonts` from `pragma.css`. (VC.22)
+16. Declare one family name, from one set of files, downloaded once. Point Vanilla's `$font-base-family` and `$font-monospace` at pragma's stacks (`"Ubuntu Sans", …` and `"Ubuntu Sans Mono", …`) in your settings, before the Vanilla import. Declare the `@font-face` rules yourself under pragma's names, from the files in `@canonical/ds-assets/fonts/ubuntu-sans/`, and leave `@canonical/styles/fonts` out of `pragma.css`. (VC.22)
 
-**Verification**
+**Checking your work**
 
-17. Four things say it is done: every rule in your built CSS sits in a declared layer, no `!important` outside `vanilla`, the root carries its classes, and no Vanilla class appears under any `.ds`. Then your own visual checks. (VC.17)
+17. Four things tell you the page is set up correctly: every rule in your built CSS sits in a declared layer, no `!important` appears outside `vanilla`, the root carries its classes, and no Vanilla class appears under any `.ds`. Then run your own visual checks. (VC.17)
 
 **What not to reach for**
 
-18. Four things this arrangement does not need, and each is a sign that something else is wrong. An `!important` to win an argument: the layers decide, and an important declaration takes the decision away from them. A hand-written reset against Vanilla: the boundary already does that, so look at the territory instead. A wrapper or an island that lets Vanilla back inside `.ds`. A build step or a transform to make the two systems fit: if one seems necessary, something is on the wrong side of a boundary. (VC.03, VC.11, VC.24)
-
-**Removal**
-
-19. This package stays until Vanilla is gone, and the two leave together. When no Vanilla class remains anywhere, one change does it: delete the `@layer vanilla` block and the Vanilla dependency, drop this package, move `@canonical/styles` into your own manifest, and swap the two imports for one, `@import url("@canonical/styles");`. Pragma's element layers then style the page as they do on any pragma page. Run your checks again, and decide whether `light` stays on the root. There is no state in between, and nothing to remember afterwards. (VC.18, VC.34)
-
-A note on the arrangement rule 19 sets aside: this package left loaded on a page with no Vanilla in it. Nothing breaks. Two things change, and neither is a guarantee this package makes: the body computes the browser's 8px margin and the browser's font, because the copy zeroes the body's margin only when the body itself is an island; and the bridge, finding no Vanilla theme to read, writes pragma's default `light dark` on every outermost island, so islands follow the operating system whatever `<html>` carries and pragma's theme classes on a root stay ignored (rule 13). Both are measured, and the fixtures record them, so that anyone who reaches that state by accident can recognise it. The way out of it is rule 19.
+18. Four things this arrangement does not need, each of them a sign that something else is wrong. An `!important` to win an argument, which takes the decision away from the layers. A hand-written reset against Vanilla, when the boundary already does that and the real problem is in the territories. A wrapper or an island that lets Vanilla back inside `.ds`. A build step or a transform to make the two frameworks fit, which usually means something is on the wrong side of a boundary. (VC.03, VC.11, VC.24)
 
 ## How it works
 
-Three facts about the cascade carry the design, and pragma's cascade explanation spells them out: an unlayered rule beats every layered rule, a higher layer wins whatever the specificity, and `revert` rolls a property back to the browser's own default, ignoring every author rule below the one that says it.
+Three facts about the cascade carry the design. An unlayered rule beats every layered rule. A higher layer wins whatever the selectors on either side say. And `revert` rolls a property back to the browser's own default, ignoring every author rule below the one that says it.
 
 `layers.css` puts `vanilla` at the bottom and a `boundary` layer directly above it:
 
@@ -121,13 +117,15 @@ Three facts about the cascade carry the design, and pragma's cascade explanation
   app;
 ```
 
-The five component layers follow the design system's tier tree, flat, lowest first: `global`, `sites`, `documentation`, `stores`, `apps`. They are named in the statement so that a higher tier's rule for a component beats a lower tier's by layer whatever order your entry loads the component stylesheets in; a sublayer left to first appearance would make that order matter again. A package below a tier declares its own layer, flat beside these, first in its own entry (`@layer ds.components.apps-lxd;`, after pragma's own statement, which it imports from `@canonical/styles/layers.css`): by appearing later than the statement it sorts above the five, and still below `app`. On a mixed page that import changes nothing, because the statement here has already fixed those names. Nothing is written directly into `ds.components`, because a rule there would sit in its implicit final sublayer, above every tier. (VC.31)
+The five component layers follow the design system's tier tree, lowest first: `global`, `sites`, `documentation`, `stores`, `apps`. Naming them here means a higher tier's rule for a component beats a lower tier's by layer, whatever order your entry happens to load the component stylesheets in. A package below one of those tiers declares a layer of its own, such as `ds.components.apps-lxd`, after importing the order from `@canonical/styles/layers.css`. Because that name appears later than the statement, it sorts above the five and still below `app`. On a mixed page the extra import changes nothing, since the statement here has already fixed those names. No rule is written directly into `ds.components`, because a rule there would land in that layer's implicit final sublayer and outrank every tier. (VC.31)
 
-The bridge's layer, `ds.adapter`, is a sublayer of `ds` on purpose. Sublayers sort inside their parent, and `ds` takes its place in the order at its first mention (`ds.tokens`), so a top-level layer written between `ds.states` and `ds.components` would not sit there at all: it would sit above every `ds.*` sublayer, the component tiers included, and a component that sets its own `color-scheme` could never beat the bridge (measured: a modal's `dark` computed `light`). As a sublayer between `ds.states` and `ds.components` the bridge is above the theme modifiers and below the components, which is where rule 13 and a component's own scheme both need it. The fixtures check all 136 pairs of the seventeen names by computed style, not by the list, and that a later sub-tier layer sorts where it should. Pragma's own statement, the same list without `vanilla`, `boundary`, `ds.adapter` and `app`, arrives later at the top of each of its entries and changes nothing: a later statement can add names but never reorder the ones already fixed, and it adds none.
+The bridge writes into `ds.adapter`, which is a sublayer of `ds` rather than a top-level layer, and that matters. Sublayers sort inside their parent, and `ds` takes its place in the order where it is first mentioned, at `ds.tokens`. A top-level layer written between `ds.states` and `ds.components` would therefore not sit between them at all: it would sit above every pragma layer, component tiers included, and a component that sets its own `color-scheme` could never beat the bridge. We measured that: a modal asking for `dark` computed `light`. As a sublayer it sits above the theme modifiers and below the components, which is where rule 13 and a component's own scheme both need it. The fixtures check all 136 pairs of the seventeen names by computed style rather than by reading the list, and check that a later sub-tier layer sorts where it should.
 
-`app` is the name of your own layer whatever your context class is; a site with `class="site …"` still writes `@layer app`.
+Pragma's own statement, the same list without `vanilla`, `boundary`, `ds.adapter` and `app`, arrives later through the entries this package imports. It changes nothing, because a later statement can add names but never reorder the ones already fixed, and it adds none.
 
-`adapter.css` opens with the three imports, then fills the boundary with one declaration, so that inside pragma territory every property Vanilla set is reverted to the browser default and pragma's layers, all higher, apply on top exactly as on a pragma-only page:
+`app` is the name of your own layer whatever context class the page carries. A site with `class="site …"` still writes `@layer app`.
+
+`adapter.css` starts with the three imports and then fills the boundary with a single declaration. Inside pragma's territory every property Vanilla set is reverted to the browser default, and pragma's layers, all of them higher, apply on top exactly as they would on a pragma-only page:
 
 ```css
 @import url("@canonical/styles/tokens.css");
@@ -146,9 +144,9 @@ The bridge's layer, `ds.adapter`, is a sublayer of `ds` on purpose. Sublayers so
 }
 ```
 
-Pseudo-elements are separate boxes with their own cascade and cannot be named inside `:where()`, so every one Vanilla styles without a class has its own selector; the Gecko ones sit in rules of their own because a list naming a `-moz-` pseudo-element is dropped whole by other engines. SVG content is excluded because `revert` also rolls back presentational attributes, which inline SVG draws with; the one Vanilla rule that would reach in, its bare `a` colour, is kept out by leaving SVG anchors inside the boundary.
+Pseudo-elements are separate boxes with their own cascade and cannot be named inside `:where()`, so each one that Vanilla styles without a class needs its own selector. The Gecko ones sit in rules of their own, because a selector list naming a `-moz-` pseudo-element is dropped whole by other engines. Inline SVG is excluded from the boundary because `revert` also rolls back presentational attributes, which SVG draws with; the one Vanilla rule that would otherwise reach in, its bare `a` colour, is handled by keeping SVG anchors inside the boundary.
 
-Its other layer, `ds.adapter`, holds the theme bridge. Pragma keys every colour on `color-scheme`; Vanilla keys theme on two inherited toggle properties that its `.is-light`, `.is-paper`, `.is-dark` and themed strips all set. At each outermost island root the nearest Vanilla theme ancestor decides, by inheritance:
+The bridge lives in the same file. Pragma keys every colour on `color-scheme`, while Vanilla keys theme on two inherited custom properties that its `.is-light`, `.is-paper`, `.is-dark` and themed strips all set. At each outermost pragma root, the nearest Vanilla theme ancestor decides, through inheritance:
 
 ```css
 @layer ds.adapter {
@@ -158,85 +156,95 @@ Its other layer, `ds.adapter`, holds the theme bridge. Pragma keys every colour 
 }
 ```
 
-Under a light or paper ancestor that computes to `light`, under a dark ancestor to `dark`, and where no Vanilla theme exists to `light dark`, pragma's own default.
+Under a light or paper ancestor that computes to `light`, under a dark ancestor to `dark`, and where no Vanilla theme exists at all to `light dark`, which is pragma's own default.
 
-`elements.css` is the third piece, and the next section is about it.
+## The confined copy, and the test that keeps it honest
 
-## The confined copy and its test
+Pragma's stylesheet is an ordinary one, and it ships as three entry points. `tokens.css` holds the values, `layout.css` the layout presets, and `elements.css` the three element layers: `normalize` (pragma's reset), `ds.reset` (the page's baseline of font, colour, line height, weight, text wrapping and box sizing) and `ds.typography` (the typography package's element rules and its baseline engine). Those style the whole document, which is right on a pragma-only page.
 
-Pragma's own stylesheet is plain, and it ships as three entries: `tokens.css` (`ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states`), `layout.css` (the grid presets) and `elements.css`, the three element layers, `normalize` (its reset), `ds.reset` (the page's baseline: font, colour, line height, weight, text wrapping, box sizing) and `ds.typography` (the typography package's element rules and its baseline engine). Those style the whole page, and on a pragma-only page that is right. On a mixed page the same rules must reach only the islands, so this package's `elements.css` carries a copy of them, rule for rule and declaration for declaration, wrapped in `@scope (.ds)` and re-addressed to an island root. The two files share a name because they are the same thing: pragma's `elements.css` is the three layers addressed to the page, this package's is the three layers addressed to an island. `adapter.css` loads pragma's other two entries and this copy.
+A mixed page needs the same rules to reach only pragma's components. That is what this package's `elements.css` is: the same rules, declaration for declaration, wrapped in `@scope (.ds)` and re-addressed to a component root. The two files share a name because they are the same thing seen from two sides, one addressed to the page and one to an island, and `adapter.css` loads this one alongside pragma's other two entries.
 
-The copy differs from the original only in its selectors, by a short mapping:
+The copy differs from the original only in its selectors:
 
-- the document element, `html` or `:where(html)`, becomes the outermost island root, `:where(:scope:not(.ds *))`, and keeps any `:not()` list it carried;
-- `body { margin: 0 }` becomes `:where(:scope:is(body))`: the body's margin is zeroed only when the body itself is the island, because the margin of an element a host page owns is not this package's call; anything else the body declares (the base font from the typography element rules) lands on the island root;
-- a list of controls, `button, input, optgroup, select, textarea` and the button and search types, becomes `:where(:scope, :scope *):is(…)`, so that a control that is itself an island is reached;
-- the universal box-sizing rule, `*, ::before, ::after`, is written outside the scope block as `:where(.ds, .ds *)` and its two pseudo-elements, for a measured reason: it is the only rule with universal reach, and inside a scope block it cost about 135 ms of a 200 ms style-recalculation regression on a 10,000-element page;
-- a class an island root can carry (`.p` on a field error, `.code` on an inline code span, `.editorial` on a flipped region) is written twice, bare and `:scope.p`;
-- everything else is itself.
+- The document element, `html` or `:where(html)`, becomes the outermost pragma root, `:where(:scope:not(.ds *))`, keeping any `:not()` list it carried.
+- `body { margin: 0 }` becomes `:where(:scope:is(body))`. The body's margin is zeroed only when the body itself is a pragma root, because the margin of an element the host page owns is not this package's decision. Anything else the body declares, such as the base font from the typography rules, lands on the pragma root.
+- A list of controls, `button, input, optgroup, select, textarea` and the button and search types, becomes `:where(:scope, :scope *):is(…)`, so that a control which is itself a pragma root is reached.
+- The universal box-sizing rule, `*, ::before, ::after`, is written outside the scope block as `:where(.ds, .ds *)` and its two pseudo-elements. That one is measured: it is the only rule with universal reach, and inside a scope block it cost about 135 ms of a 200 ms style-recalculation regression on a page of 10,000 elements.
+- A class that a pragma root can carry, such as `.p` on a field error, `.code` on an inline code span or `.editorial` on a flipped region, is written twice, once bare and once as `:scope.p`.
+- Everything else is unchanged.
 
-What is not copied is in `tokens.css`: the naming shims, the typographic scale, and the baseline grid unit, which the typography package declares once at zero weight so that the element rules and the engine can read it bare. Those are custom properties on the page's root, and an island inherits them, so nothing else travels. The copy carries the engine pragma's `elements.css` names, the cap-unit one; a page that links another engine on its own links it unconfined.
+What is not copied lives in `tokens.css`: the naming shims, the typographic scale, and the baseline grid unit, which the typography package declares once at zero weight so the element rules and the engine can read it plainly. Those are custom properties on the page's root, and a pragma component inherits them, so nothing else needs to travel. The copy carries the engine that pragma's `elements.css` names, the cap-unit one; if a page links a different engine itself, that engine is not confined.
 
-The copy is kept honest by `tests/elements.test.ts`, which runs under `bun run test` and needs no browser.
+`tests/elements.test.ts` keeps the copy honest. It runs under `bun run test` and needs no browser.
 
-It reads two things and compares them. On pragma's side, everything `packages/styles/main/src/elements.css` composes, followed through its imports: `normalize.css`, `reset.css`, the typography package's `elements.css`, and the engine that entry names, `baseline-cap.css` today. On this side, `elements.css`.
+It reads two things and compares them. On pragma's side it takes everything `packages/styles/main/src/elements.css` composes, following its imports through `normalize.css`, `reset.css`, the typography package's `elements.css` and the engine that entry names. On this side it takes `elements.css`.
 
-Then it strips the comments, walks the rules of both, and asks four questions. Are the layer names and their order the same? Does every rule on pragma's side have exactly one counterpart here? Does that counterpart carry the same declarations, in the same order, in the same place within its layer, under the same `@media` or `@supports` condition? And is its selector the mapping above, applied to the original?
+It then strips the comments, walks the rules of both, and asks four questions. Are the layer names and their order the same? Does every rule on pragma's side have exactly one counterpart here? Does that counterpart carry the same declarations, in the same order, in the same position within its layer, under the same `@media` or `@supports` condition? And is its selector the mapping above, applied to the original?
 
-It checks the other side of the split too: that every entry opens with pragma's thirteen-name statement, that `tokens.css` and `layout.css` bring no element rule with them, and that `tokens.css` carries the scale.
+It also checks the other side of the split: that every entry point opens with pragma's thirteen-name statement, that `tokens.css` and `layout.css` bring no element rule with them, and that `tokens.css` carries the typographic scale.
 
-When pragma changes one of those files, the test fails and names the rule. Bring the copy up to date, apply the mapping, run it again. Where a rule exists on one side only, the test lists it with its reason, and fails if the reason goes stale.
+When pragma changes one of those files the test fails and names the rule that moved. Bring the copy up to date, apply the mapping, and run it again. Where a rule exists on one side only, the test lists it with the reason, and fails if that reason goes stale.
 
-## The `.ds` pattern in plain words
+## Why the CSS is written this way
 
-Two pieces of CSS carry the copy, and both are worth knowing rather than copying.
+Two pieces of CSS carry the copy, and both are worth understanding rather than copying.
 
-`:where()` keeps whatever is inside it at zero specificity. That is why the copy's root rule weighs what pragma's `:where(html)` rule weighed, and why the whole reset loses to any single class in any layer above it: these are defaults, and a component or a modifier overrides one without escalating.
+`:where()` keeps whatever is inside it at zero specificity. That is why the copy's root rule weighs what pragma's `:where(html)` rule weighed, and why the whole reset loses to any single class in any layer above it. These are defaults, and a component or a modifier should be able to override one without escalating.
 
-`:scope` inside a `@scope` block means the scoping root, the element that matched the prelude. It is the only way a rule in the block reaches that element, because a selector written in the block is relative to the root and looks below it:
+`:scope` inside a `@scope` block means the scoping root, the element that matched the prelude. It is the only way a rule inside the block can reach that element, because a selector written there is relative to the root and looks below it:
 
 ```css
 @scope (.ds) {
-  p { … }       /* a paragraph inside an island, not the island itself */
-  :scope { … }  /* the island root */
+  p { … }       /* a paragraph inside a pragma component, not the component itself */
+  :scope { … }  /* the component root */
 }
 ```
 
-A `<p class="ds field-error p">` nested inside any island is matched by the plain `p` rule through the island around it; only one that is itself the outermost island is not, because no block contains it, and `:scope.p` is for that one.
+A `<p class="ds field-error p">` nested inside another pragma component is matched by the plain `p` rule through the component around it. Only one that is itself the outermost root is not, because no block contains it, and `:scope.p` exists for that case.
 
-**One class, two jobs.** `ds` sits on every pragma component root, `<button class="ds button">`, and the component's rules are written `.ds.button`. The first job is a namespace: pragma's rules cannot match a host element that happens to carry `button`, every component rule starts at the same weight (namespace plus component class), and the shape is the Semantic UI one (`ui button`). The namespace on the root is also what makes the direct-child combinator usable at scale: a component's parts are addressed one level down from its root, `.ds.button > .icon`, `.ds.card > .card-header`, so a component nested inside another never receives the outer component's part rules, and a sheet grows with the number of parts, not with the depth of nesting. It is the shape the component sheets are written in, and inside a `@scope` block a relative selector may start with `>` for the same reason, though the confined copy does not need it. A prefix scheme (`ds-button > .icon`) gets the same from the prefix. The second job is the territory marker: the same class is what this package selects on, `@scope (.ds)` in `elements.css` and `:where(.ds, .ds *)` in `adapter.css` and the box-sizing rule. A prefix scheme would give no way to say "any pragma element", which is why the compound is load-bearing for coexistence.
+### One class, two jobs
 
-**Weight is intended where it is.** In the namespace job the class weighs one class, and component sheets are untouched by this package: `.ds.button` stays two classes, no `:where()`, no `@scope`, and between layers the layer decides before specificity is read. In the territory job the class weighs nothing on purpose: the element layers in the copy are defaults that must lose to everything, and inside those layers source order arbitrates. The copy's rules are at or just below the weight of pragma's originals: `:where(:scope:not(.ds *))` is zero where `html` was one element, and `:where(:scope, :scope *):is(button)` is one element, as `button` was. The known cost of the compound is that a component rule that must beat its own base rule does it by order or a third class, never by an ancestor prefix.
+`ds` sits on every pragma component root, as in `<button class="ds button">`, and the component's rules are written `.ds.button`.
 
-**The four patterns in `elements.css`.**
+Its first job is to be a namespace. Pragma's rules cannot match a host element that happens to carry `button`, every component rule starts at the same weight, and the shape is the one Semantic UI used (`ui button`). The namespace also makes the direct-child combinator usable at scale: a component's parts are addressed one level down from its root, as in `.ds.button > .icon` or `.ds.card > .card-header`, so a component nested inside another never picks up the outer component's part rules, and a stylesheet grows with the number of parts rather than with the depth of nesting. A prefix scheme such as `ds-button > .icon` would give the same.
 
-`:where(:scope:not(.ds *))` is the outermost island only, because every component is a scoping root and a bare `:scope` would put the baseline on all of them:
+Its second job is to mark pragma's territory, and that is the one a prefix could not do. The same class is what this package selects on, in `@scope (.ds)` in `elements.css` and in `:where(.ds, .ds *)` in `adapter.css` and the box-sizing rule. There is no way to say "any pragma element" with a prefix scheme, which is why the compound class is load-bearing here.
+
+The weight of that class is deliberate in both jobs. As a namespace it weighs one class, and this package does not touch the component stylesheets: `.ds.button` stays at two classes, with no `:where()` and no `@scope`, and between layers the layer decides before specificity is read. As a territory marker it weighs nothing, because the element layers in the copy are defaults that must lose to everything, and inside those layers source order decides. The copy's rules land at or just below the weight of pragma's originals: `:where(:scope:not(.ds *))` is zero where `html` was one element, and `:where(:scope, :scope *):is(button)` is one element, as `button` was. The known cost of the compound is that a component rule which must beat its own base rule does so by order or by a third class, never by an ancestor prefix.
+
+### The four patterns in `elements.css`
+
+`:where(:scope:not(.ds *))` addresses the outermost pragma root only. Every component is a scoping root, so a bare `:scope` would put the baseline on all of them:
 
 ```css
 :where(:scope:not(.ds *)) { font-family: var(--typography-text-primary-font-family); }
 ```
 
-`:where(:scope, :scope *):is(button, input, …)` reaches a control that can itself be an island, which a scoped selector alone never matches:
+`:where(:scope, :scope *):is(button, input, …)` reaches a control that is itself a pragma root, which a scoped selector alone never matches:
 
 ```css
 :where(:scope, :scope *):is(button, input, optgroup, select, textarea) { margin: 0; }
 ```
 
-The universal box-sizing rule sits outside the block as `:where(.ds, .ds *)`, for the measured recalculation cost above:
+The universal box-sizing rule sits outside the block, for the recalculation cost described above:
 
 ```css
 :where(.ds, .ds *), :where(.ds, .ds *)::before, :where(.ds, .ds *)::after { box-sizing: border-box; }
 ```
 
-`.p, :scope.p` is an engine class on a root, for the same reason as the control rule:
+And `.p, :scope.p` covers an engine class on a root, for the same reason as the control rule:
 
 ```css
 p, .p, :scope.p { margin-block: 0; }
 ```
 
-**Why `@scope` rather than a class prefix on every selector.** The rule bodies and the element selectors stay byte-identical to pragma's source, so the copy is one wrapper per layer plus the four patterns, and the binding test's mapping stays small; there is one thing to forget per file instead of one per rule; the root has a name; and no weight is added without wrapping. The costs, stated plainly: the browser floor (Chrome 118, Safari 17.4, Firefox 146), below which a browser drops the whole block; the rule that a root is not inside itself, which forces the patterns above; and the universal-rule cost, which is why one rule sits outside. The choice is this package's alone: the copy can switch to the `:where(.ds)` prefix form, with the mapping table, without touching pragma.
+### Why `@scope` rather than a prefix on every selector
 
-## Browser floor
+The rule bodies and the element selectors stay identical to pragma's source, so the copy is one wrapper per layer plus the four patterns above, and the mapping the test applies stays small. There is one thing to forget per file rather than one per rule, the root has a name, and no weight is added without wrapping.
+
+The costs are worth stating. There is a browser floor of Chrome 118, Safari 17.4 and Firefox 146, below which a browser drops the whole block. A scoping root is not inside its own block, which is what forces the patterns above. And a universal selector inside a block is expensive, which is why one rule sits outside. The choice belongs to this package alone: the copy could switch to the `:where(.ds)` prefix form, with its mapping, without touching pragma.
+
+## Browser support
 
 | Feature | What it binds | Chrome | Safari | Firefox |
 | --- | --- | --- | --- | --- |
@@ -245,7 +253,7 @@ p, .p, :scope.p { margin-block: 0; }
 | `:where()`, `:is()` | every mixed page: the boundary and the bridge | 88 | 14 | 78 |
 | `@scope` | mixed pages only: `elements.css` | 118 | 17.4 | 146 |
 
-A browser below the `@scope` floor drops each confined block whole, so islands render with the browser's own defaults for the three element layers while the boundary still holds. A pragma-only page is not bound by it: `@canonical/styles` writes no `@scope`. Pragma's own floor (`light-dark()`, `mod()`, the `cap` unit) is in that package's README and binds both kinds of page.
+A browser below the `@scope` floor drops each confined block whole, so pragma's components render with the browser's own defaults for the three element layers while the boundary still holds. A pragma-only page is not affected, because `@canonical/styles` writes no `@scope`. Pragma's own floor, from `light-dark()`, `mod()` and the `cap` unit, is documented in that package's README and applies to both kinds of page.
 
 ## Recipes
 
@@ -254,7 +262,7 @@ A browser below the `@scope` floor drops each confined block whole, so islands r
 `static/sass/styles.scss`:
 
 ```scss
-/* 1. The order contract. Extensionless: Sass inlines it in place. */
+/* 1. The order contract. Extensionless, so Sass inlines it in place. */
 @import "@canonical/styles-vanilla-adapter/src/layers";
 
 /* 2. Vanilla and everything built on it: one layer, one territory.
@@ -262,7 +270,7 @@ A browser below the `@scope` floor drops each confined block whole, so islands r
       at pragma's stacks (rule 16). */
 @import "global-settings";
 @layer vanilla {
-  @import "vanilla-framework";   /* inside the block: Vanilla emits one rule at import time */
+  @import "vanilla-framework";   /* inside the block: Vanilla emits a rule at import time */
   @import "cookie-policy";       /* inlined third-party CSS moves inside the layer */
   @include vanilla;
   @import "fonts";               /* your @font-face, under pragma's names */
@@ -271,16 +279,16 @@ A browser below the `@scope` floor drops each confined block whole, so islands r
 }
 ```
 
-`pragma.css`, a second entry resolved by your existing import resolver, never purged:
+`pragma.css`, a second entry resolved by your existing import resolver and never purged:
 
 ```css
 @import url("@canonical/styles-vanilla-adapter/adapter.css");
 @import url("@canonical/react-ds-global-form/dist/esm/index.css");
 ```
 
-Template: `<html class="site comfortable light">`; link `styles.css`, then `pragma.css`.
+Write `<html class="site comfortable light">` in the template, and link `styles.css` before `pragma.css`.
 
-### A bundler application (Vite, esbuild)
+### An application built with a bundler
 
 ```css
 @import url("@canonical/styles-vanilla-adapter/layers.css");
@@ -291,98 +299,104 @@ Template: `<html class="site comfortable light">`; link `styles.css`, then `prag
 @layer app { /* your pragma-era CSS */ }
 ```
 
-`<html class="app comfortable light">`.
+Write `<html class="app comfortable light">`.
 
-### A build-free page
+Bundlers emit CSS in the order their module graph reaches it, not in the order your entry lists things, so make sure the design system's CSS is reached before any component package's. A component module imported earlier can otherwise drag its package's stylesheet ahead of the order statement.
+
+### A page with no build step
 
 ```html
 <link rel="stylesheet" href="vendor/layers.css">
 <link rel="stylesheet" href="vendor/vanilla.css">      <!-- wrapped in @layer vanilla { … } -->
-<link rel="stylesheet" href="vendor/pragma.css">       <!-- adapter.css with its imports resolved to one file, then the component sheets -->
+<link rel="stylesheet" href="vendor/pragma.css">       <!-- adapter.css with its imports resolved into one file, then the component sheets -->
 <link rel="stylesheet" href="style.css">               <!-- your CSS, inside @layer vanilla or @layer app -->
 ```
 
-## What this package guarantees, and what it does not
+## What this package guarantees
 
-Guaranteed, and checked by the computed-style fixtures that arrive with the second pull request (F-11), plus the binding test that ships with this one; each line names its check:
+Each line names the fixture that checks it. The fixtures live in `tests/`, and the binding test runs without a browser.
 
-- The confined copy is pragma's element layers, rule for rule and declaration for declaration, under the mapping above. (`elements`, without a browser.)
-- No Vanilla rule styles an element inside pragma territory: every property there is the browser default or pragma's. (`territory-equals-pragma-only`, with the explicit checks on `--vf-color-text-default`, root line-height, `box-sizing` and `color-scheme`.)
-- A pragma element inside a Vanilla page computes the same styles as on a pragma-only page, for every property pragma declares or leaves to the browser, and an island root inherits pragma's baseline, not the page's. (`territory-equals-pragma-only`, over the full property list.)
-- The `.ds` root itself is not styled by Vanilla. (`root-not-styled`, including a `<button class="ds button">` against Vanilla's `button` rule.)
-- A pragma root inside a Vanilla dark context computes `color-scheme: dark` and its token-driven colours match pragma's dark page; inside a light or paper context, light. (`theme-bridge`, the four theme cases of VC.19 plus `.is-paper`.)
-- Vanilla territory is not changed by installing this package: every element outside `.ds`, including `html` and `body`, equals the Vanilla-only page. (`vanilla-territory-untouched`, at 1280 and at 1700 pixels.)
-- The order of `adapter.css` inside `pragma.css` does not matter. (`order-independence`.)
-- After the removal of rule 19 — Vanilla and this package in one change — the page renders as a pragma page: every root follows pragma's theme classes. The same fixtures record what the arrangement rule 19 rules out computes, this package loaded without Vanilla. (`removal`.)
+- The confined copy is pragma's element layers, rule for rule and declaration for declaration, under the mapping described above. (`elements`)
+- No Vanilla rule styles an element inside pragma's territory: every property there is either the browser's default or pragma's. (`territory-equals-pragma-only`, with explicit checks on `--vf-color-text-default`, the root line height, `box-sizing` and `color-scheme`)
+- A pragma element inside a Vanilla page computes the same styles as it would on a pragma-only page, for every property pragma declares or leaves to the browser, and a pragma root inherits pragma's baseline rather than the page's. (`territory-equals-pragma-only`, over the full property list)
+- Vanilla does not style the `.ds` root itself. (`root-not-styled`, including a `<button class="ds button">` against Vanilla's `button` rule)
+- A pragma root inside a Vanilla dark context computes `color-scheme: dark`, and its token-driven colours match pragma's dark page. Inside a light or paper context it computes light. (`theme-bridge`, covering the four theme cases and `.is-paper`)
+- Installing this package does not change Vanilla's territory: every element outside `.ds`, including `html` and `body`, matches the Vanilla-only page. (`vanilla-territory-untouched`, at 1280 and 1700 pixels)
+- Where `adapter.css` sits inside `pragma.css` does not matter. (`order-independence`)
+- After removal, the page renders as a pragma page and every root follows pragma's theme classes. (`removal`)
 
-Not guaranteed, stated rather than hidden:
+## What it does not guarantee
 
-- Vanilla's `!important` declarations still apply inside pragma territory where their selectors match. The only one that can match without a Vanilla class present is `* { animation: none !important; transition: none !important }` under reduced motion, and pragma honours that preference itself: its motion tokens go to zero, so the two pages agree wherever a component reads them.
-- A control that is itself an outermost island and has no component sheet, a bare `<button class="ds">`, computes `line-height: normal`, the island root's baseline, where the pragma-only page gives it normalize's `1.15`: on an island the root baseline (`ds.reset`) lands on the control itself and beats the control rule (`normalize`), on a page `html` and `button` are different elements. Every pragma component declares its own line-height, so every island kind with its component sheet measures identical on both pages; this bites only a bare control island.
-- Vanilla's root font-size scaling above 1681 pixels reaches pragma territory through `rem`; pragma scales with it coherently.
-- `revert` also rolls back presentational attributes. Inline SVG is excluded from the boundary for that reason, and an `<img width height>` inside pragma territory loses the size its attributes gave it: size replaced elements in CSS, as pragma's components do. Chromium's 1px default table-cell padding is the same kind of hint and reverts to 0px.
-- `direction` and `unicode-bidi` are outside `all`, so Vanilla's `code, pre { direction: ltr }` still applies inside pragma territory. It is harmless.
-- The theme bridge reads the DOM's ancestors, so a surface portalled to `<body>` (a tooltip, a menu) takes the body's theme, not the strip it was opened from.
-- Vanilla's own native form controls inside a dark strip stay light, as they do today.
-- `.is-paper` renders pragma light, because Vanilla treats paper as light.
-- Pragma's hover and active deltas follow the root theme until pragma keys them on the inherited scheme.
-- Below the `@scope` floor the islands lose pragma's element layers, not the boundary.
-- Style recalculation inside pragma territory on a mixed page costs more than on a pragma-only page, because Vanilla's selectors are still matched against every element there. The boundary rule itself adds nothing measurable: in Chromium 151 with 10,000 to 30,000 elements it is within run-to-run noise against the same page without it, and a Vanilla theme toggle is about forty percent cheaper with it. Numbers and method are in the measurements file that arrives with the fixtures. Measure on your largest page before you worry about it.
+- Vanilla's `!important` declarations still apply inside pragma's territory wherever their selectors match. The only one that can match without a Vanilla class present is `* { animation: none !important; transition: none !important }` under reduced motion, and pragma honours that preference itself by zeroing its motion tokens, so the two pages agree wherever a component reads them.
+- A control that is itself an outermost pragma root and has no component stylesheet, such as a bare `<button class="ds">`, computes `line-height: normal` where a pragma-only page gives it normalize's `1.15`. On a pragma root the baseline lands on the control itself and beats the control rule; on a page, `html` and `button` are different elements. Every pragma component declares its own line height, so this only affects a bare control.
+- Vanilla's root font-size scaling above 1681 pixels reaches pragma's territory through `rem`, and pragma scales with it coherently.
+- `revert` also rolls back presentational attributes. Inline SVG is excluded from the boundary for that reason, and an `<img width height>` inside pragma's territory loses the size those attributes gave it, so size replaced elements in CSS as pragma's own components do. Chromium's 1px default table-cell padding is the same kind of hint and reverts to zero.
+- `direction` and `unicode-bidi` are outside `all`, so Vanilla's `code, pre { direction: ltr }` still applies inside pragma's territory. It is harmless.
 
 ## Troubleshooting
 
-Symptoms first. Each anchor is stable.
+Each heading describes a symptom. The anchors are stable, so you can link to one from a review.
 
 <a id="leak"></a>
 ### An input inside a pragma component has a bottom margin, is full width, or has a chevron
 
-Vanilla is reaching into pragma territory. Check, in order: the order statement is the first rule of the first stylesheet; Vanilla's rules are inside `@layer vanilla`; `adapter.css` is loaded and its `boundary` block is present; the element is under a `.ds` root.
+Vanilla is reaching into pragma's territory. Check, in order: the order statement is the first rule of the first stylesheet, Vanilla's rules are inside `@layer vanilla`, `adapter.css` is loaded and its `boundary` block is present, and the element is under a `.ds` root.
 
 <a id="leak-typography"></a>
 ### A heading inside a pragma card is italic, or a paragraph has Vanilla's spacing
 
-Same cause as above. If the boundary is present and the leak persists, the rule is unlayered: an unlayered rule beats every layer. Find it in your own overrides and move it inside `@layer vanilla`.
+Same cause as above. If the boundary is present and the leak persists, the rule is unlayered, and an unlayered rule beats every layer. Find it in your own overrides and move it inside `@layer vanilla`.
 
 <a id="pragma-everywhere"></a>
 ### Vanilla's headings, paragraphs or the page font took pragma's type
 
-`@canonical/styles` is loaded on the mixed page. Its element layers style the whole page, and they sit above `vanilla`. Load `adapter.css` instead: it brings `tokens.css`, `layout.css` and the confined copy, and nothing else of pragma's reaches a bare element.
+`@canonical/styles` is loaded on the mixed page. Its element layers style the whole document and sit above `vanilla`. Load `adapter.css` instead: it brings `tokens.css`, `layout.css` and the confined copy, and nothing else of pragma's reaches a bare element.
 
 <a id="theme-flip"></a>
 ### Pragma components went dark on a light page, or native controls turned dark
 
-The root is missing `light`: pragma's root declares `color-scheme: light dark` and follows the operating system unless pinned. Add `light` to `<html>`.
+The root is missing `light`. Pragma's root declares `color-scheme: light dark` and follows the operating system unless it is pinned. Add `light` to `<html>`.
 
 <a id="theme-bridge"></a>
 ### A pragma card inside a dark strip stays light
 
-The strip does not set Vanilla's theme toggles, or the card is not an outermost island root. Dark contexts must be Vanilla's (`is-dark`, `p-strip--dark`); a `.dark` class on the pragma root is ignored by design. For a region with no Vanilla theme context, set `color-scheme` from your `app` layer.
+Either the strip does not set Vanilla's theme properties, or the card is not an outermost pragma root. Dark contexts have to be Vanilla's, such as `is-dark` or `p-strip--dark`, since a `.dark` class on a pragma root is ignored by design. For a region with no Vanilla theme context, set `color-scheme` from your `app` layer.
 
 <a id="vanilla-inside"></a>
 ### Vanilla styling vanished inside a Modal, a Card, or another pragma container
 
-That is the boundary doing its job. Vanilla content inside pragma territory is unsupported. Migrate the content first, or keep the container Vanilla until you can.
+That is the boundary doing its job. Vanilla content inside pragma's territory is not supported. Migrate the content first, or keep the container Vanilla until you can.
 
 <a id="child-container"></a>
 ### A pragma component in a `.row` or an inline form lost its column or its inline placement
 
-Vanilla lays out its containers' direct children with `> *` rules, and the boundary reverts them on a `.ds` root. Wrap the component in a plain element.
+Vanilla lays out its containers' direct children with `> *` rules, and the boundary reverts those on a `.ds` root. Wrap the component in a plain element.
 
 <a id="root-flip"></a>
 ### Everything Vanilla went missing across the whole page
 
-`<html>` carries `ds`. That makes the whole document an island, and the boundary reverts every Vanilla rule in it. Remove it: the document is never an island while Vanilla is in the page (rule 10).
+`<html>` carries `ds`, which makes the whole document a pragma island, and the boundary then reverts every Vanilla rule in it. Remove it: the document is never an island while Vanilla is in the page (rule 10).
 
 <a id="islands-plain"></a>
-### Islands render in the browser's font, with no baseline and no pragma typography
+### Pragma components render in the browser's font, with no baseline and no typography
 
-The confined copy is not applying. Either the browser is below the `@scope` floor, where each block is dropped whole, or `elements.css` did not load: `adapter.css` imports it by relative path, so a pipeline that copies `adapter.css` on its own leaves it behind. Resolve the imports into one file, or keep the package's files together.
+The confined copy is not applying. Either the browser is below the `@scope` floor, where each block is dropped whole, or `elements.css` did not load. `adapter.css` imports it by relative path, so a pipeline that copies `adapter.css` on its own leaves it behind. Resolve the imports into one file, or keep the package's files together.
 
 <a id="fonts"></a>
 ### Two font downloads, or a half-pixel baseline difference between pragma and Vanilla text
 
-The two family names are still both declared. Follow rule 16. Vanilla's "Ubuntu variable" and pragma's "Ubuntu Sans" are the same typeface from two sources, so declaring one name from one set of files changes nothing visible except that both territories now share one set of metrics.
+Both family names are still declared. Follow rule 16. Vanilla's "Ubuntu variable" and pragma's "Ubuntu Sans" are the same typeface from two sources, so declaring one name from one set of files changes nothing visible, except that both territories now share one set of metrics.
 
 ## Removal
 
-Rule 19, in one change. The removal is complete when the `@layer vanilla` block is gone, this package is out of the manifest, and the page renders identically with `@canonical/styles` in place of this package's two imports.
+This package stays until Vanilla is gone, and the two leave together. When no Vanilla class remains anywhere, one change does it: delete the `@layer vanilla` block and the Vanilla dependency, drop this package, move `@canonical/styles` into your own manifest, and replace the two imports with one:
+
+```css
+@import url("@canonical/styles");
+```
+
+Pragma's element layers then style the whole page, as they do on any pragma page. Run your checks again and decide whether `light` stays on the root. There is no intermediate state, and nothing to remember afterwards. (VC.18, VC.34)
+
+The removal is complete when the `@layer vanilla` block is gone, this package is out of the manifest, and the page renders identically with `@canonical/styles` in place of this package's two imports.
+
+If you leave this package loaded on a page that no longer has Vanilla in it, nothing breaks, but two things change and neither is something this package promises. The body takes the browser's 8px margin and the browser's font, because the copy zeroes the body's margin only when the body itself is a pragma root. And the bridge, finding no Vanilla theme to read, writes `light dark` on every outermost root, so components follow the operating system whatever `<html>` says and a `.dark` class on a root is still ignored. Both are measured, and the fixtures record them so that anyone who reaches that state by accident can recognise it.
