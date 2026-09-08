@@ -218,7 +218,7 @@
 
     & .name {
       margin: 0;
-      font-family: monospace;
+      font-family: ui-monospace, monospace;
       font-size: 0.9375rem;
       font-weight: 600;
     }

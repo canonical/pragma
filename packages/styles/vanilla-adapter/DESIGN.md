@@ -6,10 +6,11 @@ How this package works inside, and why the CSS is written the way it is. For ins
 
 Three facts about the cascade carry the design. An unlayered rule beats every layered rule. A higher layer wins whatever the selectors on either side say. And `revert` rolls a property back to the browser's own default, ignoring every author rule below the one that says it.
 
-`layers.css` puts `vanilla` at the bottom and a `boundary` layer directly above it:
+`layers.css` puts `vanilla` near the bottom and a `boundary` layer directly above it, with one sublayer of `vanilla` below everything:
 
 ```css
-@layer vanilla,
+@layer vanilla.escapes,
+  vanilla,
   boundary,
   normalize,
   ds.tokens,
@@ -30,13 +31,13 @@ Three facts about the cascade carry the design. An unlayered rule beats every la
 
 The five component layers follow the design system's tier tree, lowest first: `global`, `sites`, `documentation`, `stores`, `apps`. Naming them here means a higher tier's rule for a component beats a lower tier's by layer, whatever order your entry happens to load the component stylesheets in. A package below one of those tiers declares a layer of its own, such as `ds.components.apps-lxd`, after importing the order from `@canonical/styles/layers.css`. Because that name appears later than the statement, it sorts above the five and still below `app`. On a mixed page the extra import changes nothing, since the statement here has already fixed those names. No rule is written directly into `ds.components`, because a rule there would land in that layer's implicit final sublayer and outrank every tier.
 
-The mode bridge writes into `ds.adapter`, which is a sublayer of `ds` rather than a top-level layer, and that matters. Sublayers sort inside their parent, and `ds` takes its place in the order where it is first mentioned, at `ds.tokens`. A top-level layer written between `ds.states` and `ds.components` would therefore not sit between them at all: it would sit above every pragma layer, component tiers included, and a component that sets its own `color-scheme` could never beat the bridge. We measured that: a modal asking for `dark` computed `light`. As a sublayer it sits above the mode modifiers and below the components, which is where the mode rules in the README and a component's own `color-scheme` both need it. The fixtures check all 136 pairs of the seventeen names by computed style rather than by reading the list, and check that a later sub-tier layer sorts where it should.
+The mode bridge writes into `ds.adapter`, which is a sublayer of `ds` rather than a top-level layer, and that matters. Sublayers sort inside their parent, and `ds` takes its place in the order where it is first mentioned, at `ds.tokens`. A top-level layer written between `ds.states` and `ds.components` would therefore not sit between them at all: it would sit above every pragma layer, component tiers included, and a component that sets its own `color-scheme` could never beat the bridge. We measured that: a modal asking for `dark` computed `light`. As a sublayer it sits above the mode modifiers and below the components, which is where the mode rules in the README and a component's own `color-scheme` both need it. The fixtures check all 153 pairs of the eighteen names by computed style rather than by reading the list, and check that a later sub-tier layer sorts where it should.
 
 Pragma's own statement, the same list without `vanilla`, `boundary`, `ds.adapter` and `app`, arrives later through the entries this package imports. It changes nothing, because a later statement can add names but never reorder the ones already fixed, and it adds none.
 
 `app` is the name of your own layer whatever context class the page carries. A site with `class="site …"` still writes `@layer app`.
 
-`adapter.css` starts with the three imports and then fills the boundary with a single declaration. Inside pragma's territory every property Vanilla set is reverted to the browser default, and pragma's layers, all of them higher, apply on top exactly as they would on a pragma-only page:
+`adapter.css` starts with the order statement and its three imports, then fills the boundary with a single declaration. Inside pragma's territory every property Vanilla set is reverted to the browser default, and pragma's layers, all of them higher, apply on top exactly as they would on a pragma-only page:
 
 ```css
 @import url("@canonical/styles/tokens.css");
@@ -54,6 +55,16 @@ Pragma's own statement, the same list without `vanilla`, `boundary`, `ds.adapter
   }
 }
 ```
+
+### The second boundary, and why it is below Vanilla
+
+`all: revert` cannot touch an `!important` declaration. For important rules the cascade reverses the layer order: the declaration in the *first* layer wins, and an unlayered important loses to every layered one. So an important revert written into `boundary` loses to Vanilla's own, which we measured — a list under `.u-text-max-width` kept its `max-width: 40em`.
+
+The counter has to sit below Vanilla, and a sublayer of `vanilla` is where it belongs. A rule written directly into a layer lands in that layer's implicit final sublayer, which sorts after every named sublayer, so `vanilla.escapes` beats the consumer's own `@layer vanilla { … }` block whichever order the two sheets arrive in. We measured both orders.
+
+Five Vanilla rules need it, answered by four counters because one covers both table-layout utilities. Six rules in the compiled build carry an important declaration whose subject compound has no class, so an element inside an island matches while the Vanilla class sits on an ancestor outside — the arrangement the rules recommend; the sixth is the universal reduced-motion rule, left alone. The set is identical in 4.56 and 4.58. Each counter mirrors Vanilla's own selector, `:first-child` included, and adds the island requirement, so it fires only where the leak is.
+
+It is not free. Inside those Vanilla patterns the important revert also outranks pragma's own declaration of that one property: a pragma list inside `.u-text-max-width` gets the browser's `max-width` rather than pragma's. Narrowing further is not possible — excluding pragma's own elements hands them straight back to Vanilla, which is the worse half of the trade. The README names the cost.
 
 Pseudo-elements are separate boxes with their own cascade and cannot be named inside `:where()`, so each one that Vanilla styles without a class needs its own selector. The Gecko ones sit in rules of their own, because a selector list naming a `-moz-` pseudo-element is dropped whole by other engines. Inline SVG is excluded from the boundary because `revert` also rolls back presentational attributes, which SVG draws with; the one Vanilla rule that would otherwise reach in, its bare `a` colour, is handled by keeping SVG anchors inside the boundary.
 
@@ -75,13 +86,15 @@ Pragma's stylesheet is an ordinary one, and it ships as three entry points. `tok
 
 A mixed page needs the same rules to reach only pragma's components. That is what this package's `elements.css` is: the same rules, declaration for declaration, wrapped in `@scope (.ds)` and re-addressed to a component root. The two files share a name because they are the same thing seen from two sides, one addressed to the page and one to an island, and `adapter.css` loads this one alongside pragma's other two entries.
 
-The copy differs from the original only in its selectors:
+The copy differs from the original in its selectors, and in one rule the original does not have:
 
 - The document element, `html` or `:where(html)`, becomes the outermost pragma root, `:where(:scope:not(.ds *))`, keeping any `:not()` list it carried.
 - `body { margin: 0 }` becomes `:where(:scope:is(body))`. The body's margin is zeroed only when the body itself is a pragma root, because the margin of an element the host page owns is not this package's decision. Anything else the body declares, such as the base font from the typography rules, lands on the pragma root.
-- A list of controls, `button, input, optgroup, select, textarea` and the button and search types, becomes `:where(:scope, :scope *):is(…)`, so that a control which is itself a pragma root is reached.
-- The universal box-sizing rule, `*, ::before, ::after`, is written outside the scope block as `:where(.ds, .ds *)` and its two pseudo-elements. That one is measured: it is the only rule with universal reach, and inside a scope block it cost about 135 ms of a 200 ms style-recalculation regression on a page of 10,000 elements.
+- Any selector that names elements becomes `:where(:scope, :scope *):is(…)`, so that an element which is itself a pragma root is reached. A relative selector inside `@scope` never matches its own scoping root, so without this a `<pre class="ds">` would take the root baseline and the browser's defaults and nothing from pragma's element rules. About twenty rules take this form, and `tests/elements.test.ts` derives it rather than listing it.
+- The universal box-sizing rule, `*, ::before, ::after`, is written outside the scope block as `:where(.ds, .ds *)` and its two pseudo-elements. That one is measured: it is the only rule with universal reach, and inside a scope block it cost about 135 ms of a 200 ms style-recalculation regression on a page of 10,000 elements. [MEASUREMENTS.md](./MEASUREMENTS.md) has the method.
 - A class that a pragma root can carry, such as `.p` on a field error, `.code` on an inline code span or `.editorial` on a flipped region, is written twice, once bare and once as `:scope.p`.
+- A `:not()` list on a root rule rides across unchanged, from `:where(html:not(…))` or `body:not(…)` to `:where(:scope:not(.ds *, …))`. Those lists are inert on a document element, which is never a `<pre>`, and load-bearing here, where the same rule lands on an island root that can be any element.
+- One rule exists only in the copy: `font-size: 1rem` on an island root. A document element has nothing above it to inherit a size from and a size declared there would override the reader's own, which is why pragma's reset leaves it out; an island root has a Vanilla ancestor that can size its text. `tests/elements.test.ts` names it in `COPY_ONLY` with that reason, so the exception has to be stated to pass.
 - Everything else is unchanged.
 
 What is not copied lives in `tokens.css`: the naming shims, the typographic scale, and the baseline grid unit, which the typography package declares once at zero weight so the element rules and the engine can read it plainly. Those are custom properties on the page's root, and a pragma component inherits them, so nothing else needs to travel. The copy carries the engine that pragma's `elements.css` names, the cap-unit one; if a page links a different engine itself, that engine is not confined.
@@ -128,7 +141,13 @@ The weight of that class is deliberate in both jobs. As a namespace it weighs on
 `:where(:scope:not(.ds *))` addresses the outermost pragma root only. Every component is a scoping root, so a bare `:scope` would put the baseline on all of them:
 
 ```css
-:where(:scope:not(.ds *)) { font-family: var(--typography-text-primary-font-family); }
+:where(:scope:not(.ds *)) { letter-spacing: normal; }
+```
+
+Five of the root's declarations carry an exclusion list on top of that, because the value they set is one the browser already gets right on some elements and an island root can be any element. `font-family`, `line-height` and `font-size` exclude the elements `normalize` sizes itself; `font-weight`, `font-style` and `text-align` exclude the ones the browser bolds, italicises or centres. On a document element, which is never a `<pre>` or a `<th>`, every one of those lists is inert, which is why they live in pragma's own files and ride across mechanically:
+
+```css
+:where(:scope:not(.ds *, i, cite, em, var, address, dfn)) { font-style: normal; }
 ```
 
 `:where(:scope, :scope *):is(button, input, …)` reaches a control that is itself a pragma root, which a scoped selector alone never matches:

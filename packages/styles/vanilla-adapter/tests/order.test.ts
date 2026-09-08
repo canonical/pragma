@@ -20,6 +20,7 @@ import {
 } from "./support/pages.js";
 
 const MIXED_ORDER = [
+  "vanilla.escapes",
   "vanilla",
   "boundary",
   "normalize",
@@ -39,13 +40,33 @@ const MIXED_ORDER = [
   "app",
 ];
 
-const ADAPTER_ONLY = ["vanilla", "boundary", "ds.adapter", "app"];
+const ADAPTER_ONLY = [
+  "vanilla.escapes",
+  "vanilla",
+  "boundary",
+  "ds.adapter",
+  "app",
+];
 
-/** Pragma's own order: the mixed order minus the adapter's four layers. */
+/** Pragma's own order: the mixed order minus the adapter's five layers. */
 const PRAGMA_ORDER = MIXED_ORDER.filter((name) => !ADAPTER_ONLY.includes(name));
 
 /** The layers elements.css carries, in pragma's order. */
 const ELEMENT_LAYERS = ["normalize", "ds.reset", "ds.typography"];
+/**
+ * The second boundary: one important declaration per Vanilla rule that reaches
+ * inside an island without a Vanilla class on the element. Vanilla ships
+ * exactly five such rules, identically in 4.56 and 4.58, answered by four
+ * counters because one covers both table-layout utilities. A sixth rule has a
+ * class-free subject too, the universal reduced-motion one, and is left alone
+ * because pragma honours reduced motion itself and the two agree.
+ */
+const SECOND_BOUNDARY = [
+  ":where(.u-text-max-width) :where(.ds, .ds *):is(ul, ol) max-width",
+  ":where(.u-table-layout--fixed, .u-table-layout--auto) :where(.ds, .ds *):is(table) table-layout",
+  ":where(.p-content-card__author-and-date) > :where(.ds:first-child):not(h1, h2, h3, h4, h5, h6, p, .p, .code) margin-bottom",
+  ":where(.u-vertically-center) > :where(.ds):is(img) align-self",
+];
 
 /** Whether a layer name is one of the declared ones or a sublayer of one. */
 const isDeclared = (name: string): boolean =>
@@ -66,21 +87,25 @@ const withoutImports = (css: string): string =>
   css.replace(/^\s*@import[^;]*;/gm, "");
 
 describe("the order contract", () => {
-  it("layers.css is a single statement naming the seventeen layers in order", () => {
+  it("layers.css is a single statement naming the eighteen layers in order", () => {
     const sheet = parse(layersCss);
     expect(sheet.cssRules.length).toBe(1);
     expect(sheet.cssRules[0]).toBeInstanceOf(CSSLayerStatementRule);
     expect(layerNames(layersCss)).toEqual(MIXED_ORDER);
   });
 
-  it("adapter.css opens with its three imports, then the boundary block and the bridge block, and Chromium keeps the boundary's list whole", () => {
-    // The imports are the first rules of the file (the README's installation, step 4): pragma's
-    // tokens first, so that they arrive before the copy that reads them.
+  it("adapter.css opens with the order statement and its three imports, then the boundary blocks and the bridge block, and Chromium keeps the boundary's list whole", () => {
+    // The imports are the first rules of the file (the README's installation,
+    // step 4). layers.css first, because a page that imports only this file has
+    // no other statement and the first `ds.*` name any sheet mentions would
+    // otherwise place `ds` below `boundary`; then pragma's tokens, so that they
+    // arrive before the copy that reads them.
     const statements = uncommented(adapterCss)
       .split(";")
       .map((line) => line.trim())
       .filter(Boolean);
-    expect(statements.slice(0, 3)).toEqual([
+    expect(statements.slice(0, 4)).toEqual([
+      '@import url("./layers.css")',
       '@import url("@canonical/styles/tokens.css")',
       '@import url("@canonical/styles/layout.css")',
       '@import url("./elements.css")',
@@ -92,9 +117,10 @@ describe("the order contract", () => {
     );
     expect(blocks.map((block) => block.name)).toEqual([
       "boundary",
+      "vanilla.escapes",
       "ds.adapter",
     ]);
-    const [boundary, bridge] = blocks;
+    const [boundary, , bridge] = blocks;
     // Chromium drops the Gecko-only rules one by one, as designed, and must
     // never drop the list that names the WebKit parts and the placeholder.
     const list = boundary?.cssRules[0];
@@ -152,14 +178,23 @@ describe("the order contract", () => {
     }
   });
 
-  it("pragma's CSS carries no !important on either kind of page (the README's installation, step 7)", () => {
-    // The CSSOM is the check; the text match is a second look at what a
-    // browser might read differently, with the comments taken out, because
-    // adapter.css's own comment names Vanilla's important declarations.
-    for (const css of [PRAGMA_CSS, MIXED_PRAGMA_CSS]) {
-      expect(importantDeclarations(css)).toEqual([]);
-      expect(uncommented(css).match(/!\s*important/gi) ?? []).toEqual([]);
-    }
+  it("pragma's CSS carries no !important except the second boundary's four (the README's installation, step 7)", () => {
+    // A page running pragma alone has none at all. On a mixed page the only
+    // important declarations are the second boundary's, and they are important
+    // because nothing else can be: for important rules the layer order
+    // reverses, so a Vanilla declaration that escapes into an island can only
+    // be answered from below Vanilla, in kind. Each one names a property, never
+    // `all`, and each fires only under the Vanilla utility that leaks it.
+    expect(importantDeclarations(PRAGMA_CSS)).toEqual([]);
+    expect(uncommented(PRAGMA_CSS).match(/!\s*important/gi) ?? []).toEqual([]);
+
+    expect(importantDeclarations(MIXED_PRAGMA_CSS)).toEqual(SECOND_BOUNDARY);
+    // The text match is a second look at what a browser might read
+    // differently, with the comments taken out, because adapter.css's own
+    // comments quote Vanilla's important declarations.
+    expect(
+      (uncommented(MIXED_PRAGMA_CSS).match(/!\s*important/gi) ?? []).length,
+    ).toBe(SECOND_BOUNDARY.length);
   });
 
   it("@canonical/styles and each of its entries open with pragma's own statement, the mixed order minus the adapter's four", () => {
@@ -178,7 +213,7 @@ describe("the order contract", () => {
     );
   });
 
-  it("sorts all 136 pairs of the seventeen names as written, by computed style", async () => {
+  it("sorts all 153 pairs of the eighteen names as written, by computed style", async () => {
     // The name list alone cannot show this: a top-level layer written between
     // two sublayers of `ds` sorts above all of `ds`, which is how a top-level
     // `adapter` sat above the component tiers until it became `ds.adapter`.
@@ -197,7 +232,7 @@ describe("the order contract", () => {
         css += `@layer ${MIXED_ORDER[j]} { #${id} { color: rgb(2, 2, 2) } } @layer ${MIXED_ORDER[i]} { #${id} { color: rgb(1, 1, 1) } }\n`;
         body += `<i id="${id}"></i>`;
       }
-    expect(pairs.length).toBe(136);
+    expect(pairs.length).toBe(153);
     const doc = await render({ root: "", styles: [layersCss, css], body });
     const parentWins = (i: number, j: number): boolean =>
       MIXED_ORDER[j]?.startsWith(`${MIXED_ORDER[i]}.`) ?? false;

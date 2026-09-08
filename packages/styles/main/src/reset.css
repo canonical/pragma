@@ -9,11 +9,13 @@
  * The property set is not a matter of taste. It is the set an embedded copy of
  * this stylesheet has to declare for a region to render as the design system's
  * own inside a page that also runs another CSS framework, and it is fixed by
- * the computed-style fixtures in `@canonical/styles-vanilla-adapter`: font
- * family, font size, font weight, line height, colour, box sizing, font
- * smoothing, and both text-wrap longhands. `font-size` is deliberately not
- * declared — the page follows the reader's own root font size, which is what a
- * rem-based scale is for.
+ * the computed-style fixtures in `@canonical/styles-vanilla-adapter`. The rules
+ * below are that list, and the comments on them say what each group is for; the
+ * set grows when a fixture finds a property a host page can push across the
+ * boundary. `font-size` is deliberately not declared here — the page follows the
+ * reader's own root font size, which is what a rem-based scale is for — and it
+ * is the one property the embedded copy adds, because an island root, unlike a
+ * document element, has an ancestor that can size its text.
  *
  * `:where()` appears where a zero specificity matters: these are defaults.
  * Layers sort before specificity, so any layer above `ds.reset` beats these
@@ -23,14 +25,6 @@
 
 @layer ds.reset {
   :where(html) {
-    /* The same token the typography mapper reads for the base font, so the
-       root and the elements inside it cannot disagree. */
-    font-family: var(--typography-text-primary-font-family);
-    /* A `light-dark()` token, resolved against the root's own colour scheme
-       (see the theme modifiers), so this one declaration is correct in both. */
-    color: var(--color-text);
-    line-height: normal;
-    font-weight: normal;
     /* The style longhand, not the `text-wrap` shorthand: the shorthand also
        resets `text-wrap-mode`, which would overwrite the browser's own
        `white-space: pre` on a `<select>` and let a long option wrap. How text
@@ -38,6 +32,115 @@
        part of what they mean. */
     text-wrap-style: auto;
     -webkit-font-smoothing: auto;
+
+    /* Inherited properties a host page can push across the boundary.
+       `revert` cannot undo inheritance — rolling a property back to the user
+       agent leaves an inherited one at its parent's value — so the root has to
+       declare. These are the typographic inherited properties Vanilla sets
+       anywhere in its build, enumerated from the compiled stylesheet, at the
+       values a page running pragma alone computes.
+
+       `font-size` is not among them here, and it is the one place the embedded
+       copy declares more than this file does: on the document root there is
+       nothing above to inherit from, and declaring a size would override the
+       reader's own. An island root does have an ancestor, so the copy pins it.
+
+       Four inherited properties are deliberately NOT declared, because a host
+       setting them is communicating something the island should obey rather
+       than styling it: `direction` (a page may be right-to-left), `visibility`
+       (a hidden container must stay hidden), `pointer-events` (an inert
+       container must stay inert) and `cursor` (a busy container). `color-scheme`
+       belongs to the theme bridge. `list-style-type` needs nothing here: on a
+       root that is itself a list the boundary's `all: revert` gives the user
+       agent's own value, and every list inside gets the same treatment. */
+    font-variant-caps: normal;
+    font-variant-numeric: normal;
+    letter-spacing: normal;
+    word-spacing: normal;
+    text-indent: 0;
+    text-transform: none;
+    text-shadow: none;
+    text-underline-offset: auto;
+    hyphens: manual;
+    tab-size: 8;
+    word-break: normal;
+    border-collapse: separate;
+    caption-side: top;
+  }
+
+  /* The four properties the browser gives some elements an absolute value for,
+     each excluded on those elements. Their lists come from the user agent's
+     stylesheet rather than from `normalize`, which is why they are rules of
+     their own: the browser greys an `<hr>`, bolds a `<th>`, italicises `<em>`
+     and its family, and centres a `<th>`, a `<caption>` and a button's label,
+     the button-typed inputs included. On a document element every list is
+     inert; on an island root, which can be any element, they are not. */
+  :where(
+    html:not(hr, button, [type="button"], [type="submit"], [type="reset"])
+  ) {
+    /* A `light-dark()` token, resolved against the root's own colour scheme
+       (see the theme modifiers), so this one declaration is correct in both. */
+    color: var(--color-text);
+  }
+
+  :where(html:not(b, strong, optgroup, th)) {
+    font-weight: normal;
+  }
+
+  :where(html:not(i, cite, em, var, address, dfn)) {
+    font-style: normal;
+  }
+
+  :where(
+    html:not(
+      th,
+      caption,
+      button,
+      center,
+      [type="button"],
+      [type="submit"],
+      [type="reset"]
+    )
+  ) {
+    text-align: start;
+    user-select: auto;
+  }
+
+  /* Where the browser's own value is RELATIVE, excluding the element is not
+     enough: `b` and `strong` are `bolder` and `small` is `80%`, both resolved
+     against the parent, which on a mixed page is the host's. So those roots are
+     given the absolute value the browser would have computed for them on a page
+     of pragma's own, rather than left to the host. Measured: a `<b class="ds">`
+     inside a Vanilla `.p-heading--4` computed weight 400 against pragma's 700,
+     and inside `.p-muted-heading` 900. */
+  :where(html):is(b, strong, optgroup) {
+    font-weight: bold;
+  }
+
+  /* Three properties an element's own rule in `normalize` may also set, each on
+     a root that is not one of the elements whose rule sets it. `normalize` sits
+     BELOW this layer, so without the lists a `<pre class="ds">` would take the
+     baseline font rather than its own monospace, and a `<sub class="ds">` the
+     baseline size rather than 75%. The lists differ because the element rules
+     differ: `pre`, `code`, `kbd` and `samp` set a family and a size, `small` a
+     size, `sub` and `sup` a size and a line height, and the form controls all
+     three. A control keeps the baseline family and size on purpose: `normalize`
+     gives it `inherit` and `100%`, which on an island root would resolve against
+     the host page rather than pragma.
+
+     On a document element every list is inert, because a document element is
+     never a `<pre>` or a `<sub>`. They earn their keep in the embedded copy,
+     where the same rules land on an island root, which can be any element at
+     all. The `white-space` rule below carries a list of its own for the same
+     reason. */
+  :where(html:not(pre, code, kbd, samp)) {
+    /* The same token the typography element rules read for the base font, so
+       the root and the elements inside it cannot disagree. */
+    font-family: var(--typography-text-primary-font-family);
+  }
+
+  :where(html:not(sub, sup, button, input, optgroup, select, textarea)) {
+    line-height: normal;
   }
 
   /* Whether text wraps, which `text-wrap-style` above does not cover:
@@ -52,7 +155,18 @@
      copy, where this rule lands on a region root that may itself be one of
      them, and they are kept identical so the two cannot drift. A short, fixed
      list from HTML, not an inventory of another framework's rules. */
-  :where(html:not(pre, textarea, select, code, kbd, samp, [contenteditable])) {
+  :where(
+    html:not(
+      pre,
+      textarea,
+      select,
+      [type="button"],
+      [type="submit"],
+      [type="reset"],
+      [type="file"],
+      [contenteditable]
+    )
+  ) {
     white-space: normal;
   }
 

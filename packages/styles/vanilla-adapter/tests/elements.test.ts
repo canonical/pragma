@@ -41,18 +41,12 @@ const PRAGMA_ORDER =
 /** The scope prelude every confined block uses. */
 const SCOPE = "(.ds)";
 
-/** A selector that is a control, or a control type, in pragma's reset. */
-const CONTROLS = new Set([
-  "button",
-  "input",
-  "optgroup",
-  "select",
-  "textarea",
-  '[type="button"]',
-  '[type="reset"]',
-  '[type="submit"]',
-  '[type="search"]',
-]);
+/** A selector that picks elements by name or by attribute, with an optional
+ * pseudo-element suffix: the shape that has to reach an island root. */
+const ELEMENT = /^(?:[a-z][a-z0-9]*|\[[^\]]+\])(?:::[\w-]+)?$/;
+
+/** The pseudo-element suffix of such a selector, if it has one. */
+const PSEUDO_SUFFIX = /(::[\w-]+)$/;
 
 /** The outermost island root. */
 const ROOT = ":where(:scope:not(.ds *))";
@@ -278,7 +272,12 @@ const opensElementLayer = (walked: Walked): boolean =>
  */
 const documentElement = (
   selector: string,
-): { excluded: string | undefined } | undefined => {
+): { excluded?: string; only?: string } | undefined => {
+  // `:where(html):is(b, strong)` — the document element narrowed to the
+  // elements whose own value the browser gives relative to their parent, so the
+  // root has to state the absolute one rather than exclude them.
+  const narrowed = /^:where\((?:html|:root)\):is\((.+)\)$/.exec(selector);
+  if (narrowed) return { only: narrowed[1] };
   const match =
     /^:where\((?:html|:root)(?::not\((.+)\))?\)$/.exec(selector) ??
     /^(?:html|:root)(?::not\((.+)\))?$/.exec(selector);
@@ -296,25 +295,52 @@ const confined = (rule: Rule): string[] | null => {
   // list it carries stays: on the page it is inert, on an island root it keeps
   // a control or a preformatted block that is itself the root at its default.
   const root = only === undefined ? undefined : documentElement(only);
-  if (root)
+  if (root) {
+    if (root.only) return [`${ROOT}:is(${root.only})`];
     return [
       root.excluded ? `:where(:scope:not(.ds *, ${root.excluded}))` : ROOT,
     ];
+  }
   // The body: its margin is zeroed only when the body itself is the island,
   // because the margin of an element a host page owns is not this package's
   // call; anything else the body declares is the island root's.
   if (only === "body")
     return declares(rule, "margin") ? [":where(:scope:is(body))"] : [ROOT];
+  // `body:where(:not(…))`: the typography base font, whose exclusion list rides
+  // across for the same reason the reset's does. The `:where()` keeps the rule
+  // at a bare `body`'s weight, which a `:not()` alone would raise.
+  const bodyExcluded =
+    only === undefined ? null : /^body:where\(:not\((.+)\)\)$/.exec(only);
+  if (bodyExcluded) return [`:where(:scope:not(.ds *, ${bodyExcluded[1]}))`];
   // The universal box-sizing rule sits outside the scope block, the long way.
   if (list.every((selector) => UNIVERSAL.has(selector)))
     return UNIVERSAL_CONFINED;
-  // A list of controls reaches a control that is itself the island.
-  if (list.every((selector) => CONTROLS.has(selector)))
-    return [`:where(:scope, :scope *):is(${list.join(", ")})`];
-  // Everything else is itself, and a class an island root can carry (`.p` on a
-  // field error, `.code` on an inline code span, `.editorial` on a flipped
-  // region) gets its `:scope.x` twin.
-  return list.flatMap((selector) =>
+  // Every rule that selects by element name reaches an element that is itself
+  // the island root. A relative selector inside `@scope` never matches its own
+  // scoping root, so `pre { … }` alone would leave `<pre class="ds">` with the
+  // root baseline and the browser's defaults and nothing from pragma. The
+  // element names in a list collapse into one `:is()` under a root-reaching
+  // prelude; a pseudo-element suffix rides along on the outside, where it
+  // belongs.
+  const elements = list.filter((selector) => ELEMENT.test(selector));
+  const classes = list.filter((selector) => !ELEMENT.test(selector));
+  if (elements.length > 0) {
+    const suffix = PSEUDO_SUFFIX.exec(elements[0] ?? "")?.[1] ?? "";
+    const bare = elements.map((selector) =>
+      selector.replace(PSEUDO_SUFFIX, ""),
+    );
+    return [
+      `:where(:scope, :scope *):is(${bare.join(", ")})${suffix}`,
+      // A class an island root can carry (`.p` on a field error, `.code` on an
+      // inline code span, `.editorial` on a flipped region) keeps its twin.
+      ...classes.flatMap((selector) =>
+        /^\.[\w-]+$/.test(selector)
+          ? [selector, `:scope${selector}`]
+          : [selector],
+      ),
+    ];
+  }
+  return classes.flatMap((selector) =>
     /^\.[\w-]+$/.test(selector) ? [selector, `:scope${selector}`] : [selector],
   );
 };
@@ -326,12 +352,51 @@ const SOURCE_ONLY: ReadonlyArray<{
   reason: string;
 }> = [];
 
+/**
+ * Declarations the copy adds to a rule it otherwise shares with pragma, with
+ * the reason. Every other declaration of that rule must still match exactly.
+ */
+const COPY_ADDS: ReadonlyArray<{
+  layer: string;
+  selector: string;
+  declaration: string;
+  reason: string;
+}> = [
+  {
+    layer: "ds.reset",
+    selector: ":where(html)",
+    declaration: "font-size: 1rem",
+    reason:
+      "The document element has nothing above it to inherit a size from, and " +
+      "a size declared there would override the reader's own, which is why " +
+      "pragma leaves it out. An island root does have an ancestor, and on a " +
+      "mixed page that ancestor can be a Vanilla heading that sizes its text.",
+  },
+];
+
 /** Rules present in the copy that pragma's files do not have, with the reason. */
 const COPY_ONLY: ReadonlyArray<{
   layer: string;
   selector: string;
   reason: string;
-}> = [];
+}> = [
+  {
+    layer: "ds.reset",
+    selector: ":where(:scope:not(.ds *)):is(small)",
+    reason:
+      "`normalize` sizes a `<small>` at 80%, which resolves against its " +
+      "parent. On an island root that parent is the host page, so the size " +
+      "pin above would be undone by the very thing it exists to stop. The " +
+      "same proportion of the root is what a pragma-only page computes.",
+  },
+  {
+    layer: "ds.reset",
+    selector: ":where(:scope:not(.ds *)):is(sub, sup)",
+    reason:
+      "`normalize` sizes `<sub>` and `<sup>` at 75%, relative for the same " +
+      "reason as `<small>` above.",
+  },
+];
 
 /** Whether an exception entry names a rule. */
 const excepted = (
@@ -536,10 +601,22 @@ describe("elements.css is pragma's element layers, confined", () => {
         failures.push(`${label(rule)}: no counterpart at ${id}`);
         continue;
       }
+      const added = COPY_ADDS.filter(
+        (entry) =>
+          entry.layer === rule.layer &&
+          entry.selector === (rule.path[0] ?? []).join(", "),
+      ).map((entry) => entry.declaration);
+      const withoutAdded = counterpart.declarations.filter(
+        (declaration) => !added.includes(declaration),
+      );
       if (
-        JSON.stringify(counterpart.declarations) !==
-        JSON.stringify(rule.declarations)
+        withoutAdded.length !==
+        counterpart.declarations.length - added.length
       )
+        failures.push(
+          `${label(rule)}: an exception in COPY_ADDS names a declaration the copy does not have`,
+        );
+      if (JSON.stringify(withoutAdded) !== JSON.stringify(rule.declarations))
         failures.push(
           `${label(rule)}: declarations differ\n  pragma: ${rule.declarations.join("; ")}\n  copy:   ${counterpart.declarations.join("; ")}`,
         );

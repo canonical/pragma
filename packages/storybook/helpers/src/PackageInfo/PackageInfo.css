@@ -10,7 +10,7 @@
 
     & .version {
       margin-left: 0.75rem;
-      font-family: monospace;
+      font-family: ui-monospace, monospace;
       font-size: 0.75em;
       font-weight: 400;
       opacity: 0.6;
