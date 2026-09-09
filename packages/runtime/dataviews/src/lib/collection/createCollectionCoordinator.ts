@@ -85,9 +85,11 @@ export type CollectionCoordinator = {
   readonly refresh: () => string | null;
   /**
    * Adopt an externally authoritative slice and window together, as on
-   * back/forward navigation or a restored view. Supersedes any pending
-   * request, discards stale input sessions above this layer, and returns a
-   * request identity when the adopted state differs from the current one.
+   * back/forward navigation or a restored view. Invalid windows throw, the
+   * same rejections the addressed command layer applies. Supersedes any
+   * pending request, discards stale input sessions above this layer, and
+   * returns a request identity when the adopted state differs from the
+   * current one.
    */
   readonly adopt: (slice: Slice, window: ResultWindow) => string | null;
   /**
@@ -162,8 +164,15 @@ const copySlice = (slice: Slice): Slice =>
     group: slice.group,
   });
 
-const copyWindow = (window: ResultWindow): ResultWindow =>
-  Object.freeze({ page: window.page, size: window.size });
+const copyWindow = (window: ResultWindow): ResultWindow => {
+  if (!Number.isInteger(window.page) || window.page < 1) {
+    throw new Error("page must be a positive integer");
+  }
+  if (!Number.isInteger(window.size) || window.size < 1) {
+    throw new Error("size must be a positive integer");
+  }
+  return Object.freeze({ page: window.page, size: window.size });
+};
 
 /**
  * Create the collection coordinator: one owner of query/window coherence
@@ -177,10 +186,9 @@ export default function createCollectionCoordinator(
 ): CollectionCoordinator {
   const seedSlice =
     config.slice === undefined ? emptySlice : copySlice(config.slice);
-  const seedWindow = Object.freeze({
-    page: config.window?.page ?? defaultWindow.page,
-    size: config.window?.size ?? defaultWindow.size,
-  });
+  const seedWindow = copyWindow(
+    config.window === undefined ? defaultWindow : config.window,
+  );
 
   let scope = createIdentity();
   // Instance-unique request ids: a completion routed to the wrong
