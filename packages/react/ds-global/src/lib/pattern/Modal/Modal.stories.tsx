@@ -204,10 +204,10 @@ const close = () => modalRef.current?.close();
 };
 
 /**
- * No dismiss icon and backdrop clicks are ignored, so the visible way out is
+ * Undismissible and backdrop clicks are ignored, so the visible way out is
  * an action — Escape still closes the modal, as it always does.
  */
-export const NotDismissible: Story = {
+export const Undismissible: Story = {
   parameters: {
     docs: {
       source: {
@@ -220,7 +220,7 @@ const close = () => modalRef.current?.close();
     if (dialog && !dialog.open) dialog.showModal();
   }}
 >
-  <Modal.Header dismissible={false}>Unsaved changes</Modal.Header>
+  <Modal.Header undismissible>Unsaved changes</Modal.Header>
   <Modal.Content>
     You have unsaved changes that will be lost if you continue.
   </Modal.Content>
@@ -240,7 +240,7 @@ const close = () => modalRef.current?.close();
     <ModalPreview>
       {(close) => (
         <>
-          <Modal.Header dismissible={false}>Unsaved changes</Modal.Header>
+          <Modal.Header undismissible>Unsaved changes</Modal.Header>
           <Modal.Content>
             You have unsaved changes that will be lost if you continue.
           </Modal.Content>

@@ -19,7 +19,7 @@ const componentCssClassName = "ds modal-header";
 const Header = ({
   children,
   titleId,
-  dismissible = true,
+  undismissible = false,
   dismissLabel = "Close",
   onDismiss,
   className,
@@ -32,12 +32,10 @@ const Header = ({
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       {...props}
     >
-      {/* DSL edges[0]: title (cardinality: 1) */}
       <span className="title" id={titleId ?? modal.titleId}>
         {children}
       </span>
-      {/* DSL edges[1]: close button (cardinality: 0..1) */}
-      {dismissible && (
+      {!undismissible && (
         <Button
           className="close"
           importance="tertiary"

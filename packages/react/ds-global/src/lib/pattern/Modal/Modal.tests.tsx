@@ -393,10 +393,10 @@ describe("Modal pattern", () => {
       expect(container.querySelector("dialog")).not.toHaveAttribute("open");
     });
 
-    it("renders no close button when not dismissible", () => {
+    it("renders no close button when undismissible", () => {
       render(
         <OpenModal>
-          <Component.Header dismissible={false}>Title</Component.Header>
+          <Component.Header undismissible>Title</Component.Header>
           <Component.Content>Body</Component.Content>
         </OpenModal>,
       );

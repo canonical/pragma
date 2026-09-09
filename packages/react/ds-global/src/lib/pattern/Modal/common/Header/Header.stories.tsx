@@ -10,9 +10,9 @@ const meta = {
       control: { type: "text" },
       description: "The modal title.",
     },
-    dismissible: {
+    undismissible: {
       control: { type: "boolean" },
-      description: "Whether to render the close button.",
+      description: "Hides the close button.",
     },
     dismissLabel: {
       control: { type: "text" },
@@ -50,12 +50,11 @@ export const Default: Story = {
 };
 
 /**
- * Without the dismiss control, so the visible way out is an action in the
- * footer.
+ * Undismissible, so the visible way out is an action in the footer.
  */
-export const NotDismissible: Story = {
+export const Undismissible: Story = {
   args: {
     children: "Unsaved changes",
-    dismissible: false,
+    undismissible: true,
   },
 };

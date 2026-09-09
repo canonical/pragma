@@ -22,7 +22,6 @@ const Footer = ({
     className={[componentCssClassName, className].filter(Boolean).join(" ")}
     {...props}
   >
-    {/* DSL edges[0]: button (cardinality: 0..*) */}
     {children}
   </footer>
 );

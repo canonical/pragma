@@ -23,7 +23,7 @@ type OwnProps = {
   /**
    * Whether clicking the backdrop dismisses the modal. Defaults to `false`, so
    * backdrop dismissal is opt-in: a stray click outside the dialog cannot
-   * discard the task it holds. Independent of the header's `dismissible`.
+   * discard the task it holds. Independent of the header's `undismissible`.
    */
   closeOnBackdropClick?: boolean;
   /**

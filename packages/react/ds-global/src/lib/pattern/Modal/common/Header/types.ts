@@ -13,15 +13,15 @@ type OwnProps = {
    */
   titleId?: string;
   /**
-   * Whether to render the close button, letting the user leave without making a
-   * decision. Maps to DSL edges[1]: close button (cardinality: 0..1)
+   * Hides the close button, so the visible way out is an action in the footer.
+   * Maps to DSL edges[1]: close button (cardinality: 0..1)
    */
-  dismissible?: boolean;
+  undismissible?: boolean;
   /** Accessible name for the close button. */
   dismissLabel?: string;
   /**
-   * Called when the close button is pressed. Defaults to the dismissal reported
-   * through the Modal's `onOpenChange`; set it only to override that.
+   * Called when the close button is pressed. Defaults to closing the dialog
+   * through the Modal's context; set it only to override that.
    */
   onDismiss?: () => void;
 };

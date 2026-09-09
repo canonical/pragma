@@ -111,7 +111,6 @@ const Modal = ({
       }}
       {...props}
     >
-      {/* DSL edges composed by the consumer: Header (0..1), Content (1), Footer (0..1) */}
       <ModalContext.Provider value={{ titleId, onDismiss: requestClose }}>
         {children}
       </ModalContext.Provider>

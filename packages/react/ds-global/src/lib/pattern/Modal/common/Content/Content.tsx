@@ -21,7 +21,6 @@ const Content = ({
     className={[componentCssClassName, className].filter(Boolean).join(" ")}
     {...props}
   >
-    {/* DSL edges[0]: content (cardinality: 1) */}
     {children}
   </div>
 );
