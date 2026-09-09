@@ -101,16 +101,29 @@ export type WithModalTriggerProps = {
 export type WithModalModalProps = Omit<ModalProps, "ref">;
 
 /**
- * The modal of a {@link withModal}: a complete `<Modal>` element, or a
- * function that receives the modal's `close` callback and returns one.
+ * What {@link withModal} hands a {@link WithModalRender} function: a props
+ * object
+ */
+export type WithModalRenderProps = {
+  /** Closes the modal. What a footer button wires its `onClick` to. */
+  close: () => void;
+};
+
+/**
+ * The function form of a {@link withModal} modal: a render contract. The HOC
+ * calls it during render with a {@link WithModalRenderProps} object, and it
+ * returns the complete `<Modal>` element.
  *
- * The function form is how a footer button closes the modal:
- * `(close) => <Modal><Modal.Footer><Button onClick={close}>Got it</Button></Modal.Footer></Modal>`.
+ * The second argument of {@link withModal} is always this render contract, so
+ * every modal the HOC opens is shaped alike — destructure what you need:
+ * `() => <Modal>…</Modal>` when nothing uses the callback, or
+ * `({ close }) => <Modal><Modal.Footer><Button onClick={close}>Got it</Button></Modal.Footer></Modal>`
+ * when a footer button closes the modal.
  *
  * A footer action can only close. If it must do more — submit data, close
  * conditionally, open another modal — skip the HOC and compose `Modal`
  * directly, driving it through its `ref`.
  */
-export type WithModalModal =
-  | ReactElement<WithModalModalProps>
-  | ((close: () => void) => ReactElement<WithModalModalProps>);
+export type WithModalRender = (
+  props: WithModalRenderProps,
+) => ReactElement<WithModalModalProps>;

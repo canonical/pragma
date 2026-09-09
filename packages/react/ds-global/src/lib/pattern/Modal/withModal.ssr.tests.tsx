@@ -18,26 +18,24 @@ const Trigger = ({
 
 describe("withModal (SSR)", () => {
   it("renders to static HTML without throwing", () => {
-    const TriggeredModal = withModal(
-      Trigger,
+    const TriggeredModal = withModal(Trigger, () => (
       <Modal>
         <Modal.Header>Title</Modal.Header>
         <Modal.Content>Body</Modal.Content>
-      </Modal>,
-    );
+      </Modal>
+    ));
     expect(() =>
       renderToString(<TriggeredModal>Open</TriggeredModal>),
     ).not.toThrow();
   });
 
   it("emits the trigger and a closed dialog", () => {
-    const TriggeredModal = withModal(
-      Trigger,
+    const TriggeredModal = withModal(Trigger, () => (
       <Modal>
         <Modal.Header>Title</Modal.Header>
         <Modal.Content>Body</Modal.Content>
-      </Modal>,
-    );
+      </Modal>
+    ));
     const html = renderToString(<TriggeredModal>Open</TriggeredModal>);
 
     expect(html).toContain("Open");

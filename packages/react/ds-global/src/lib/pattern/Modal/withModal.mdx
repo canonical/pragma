@@ -1,0 +1,151 @@
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as Stories from "./withModal.stories";
+
+<Meta of={Stories} />
+
+# withModal
+
+`withModal` is a higher-order component: give it a trigger component and a function that returns a `<Modal>`, and it returns a new component that opens that modal when the trigger is clicked. It owns the wiring — the trigger's `onClick` opens the dialog, the header's X and Escape close it — and hands the modal's `close` to your function so a footer button can close it too.
+
+```tsx
+import {
+  withModal,
+  Modal,
+  Button,
+  type WithModalRender,
+} from "@canonical/react-ds-global";
+
+const maintenanceModal: WithModalRender = ({ close }) => (
+  <Modal>
+    <Modal.Header>Maintenance scheduled</Modal.Header>
+    <Modal.Content>The service will restart at 02:00 UTC.</Modal.Content>
+    <Modal.Footer>
+      <Button importance="primary" onClick={close}>
+        Got it
+      </Button>
+    </Modal.Footer>
+  </Modal>
+);
+
+const MaintenanceButton = withModal(Button, maintenanceModal);
+
+function Toolbar() {
+  return (
+    <MaintenanceButton importance="secondary">
+      Maintenance notice
+    </MaintenanceButton>
+  );
+}
+```
+
+<Canvas of={Stories.Default} />
+
+## Define it at module scope
+
+`withModal` returns a new component. Call it at module scope — not inside a render body — so its identity is stable across renders:
+
+```tsx
+// Good — built once, stable identity across renders.
+const Saved = withModal(Button, savedModal);
+
+function Bar() {
+  return <Saved>Save</Saved>;
+}
+```
+
+```tsx
+// Avoid — a new component type every render remounts the subtree,
+// and an open modal would close on every parent re-render.
+function Bar() {
+  const Saved = withModal(Button, savedModal); // don't
+  return <Saved>Save</Saved>;
+}
+```
+
+That is also why the content is static: the function you hand over runs on every render of the trigger, but defined at module scope it can only see module-level values. If the modal must show data from the parent — a different `userName` depending on which user is selected — skip this HOC: compose [`Modal`](?path=/docs/patterns-modal--docs) directly and drive it through its `ref`.
+
+## Signature
+
+```tsx
+function withModal<TProps extends WithModalTriggerProps>(
+  Component: ComponentType<TProps>,
+  modal: WithModalRender,
+): FC<TProps>;
+```
+
+<table>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Component</code></td>
+      <td><code>ComponentType&lt;TProps&gt;</code></td>
+      <td>The component the user clicks. It must accept <code>onClick</code> and forward it to the element at its root — that is where the HOC hooks the modal open, with nothing wrapped around it. Your own <code>onClick</code> still runs, first, and then the modal opens.</td>
+    </tr>
+    <tr>
+      <td><code>modal</code></td>
+      <td><code>WithModalRender</code></td>
+      <td>
+        A function that returns the modal. The HOC calls it on every render of
+        the trigger.
+        <ul>
+          <li>
+            A footer button needs to close the modal → take <code>&#123; close &#125;</code> and wire it: <code>onClick=&#123;close&#125;</code>.
+          </li>
+          <li>
+            Nothing needs the close → write <code>() =&gt; …</code>.
+          </li>
+        </ul>
+
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+The returned component's `displayName` is `` `withModal(${Component.displayName || Component.name || "Component"})` `` — so `withModal(Button, …)` appears in React DevTools as **`withModal(Button)`**.
+
+## How it closes
+
+The header's X button and Escape always work. Add `closeOnBackdropClick` to the returned modal element and a backdrop click works too. **Footer buttons can only close the modal** — that is the one and only action this HOC provides, through the `close` it hands your function. If an action needs to do more — save data, open another modal, close conditionally — compose `Modal` directly and drive it through its `ref`.
+
+<Canvas of={Stories.BackdropDismissible} />
+
+## The trigger does not have to be a Button
+
+Any component that accepts `onClick` and forwards it to the clickable element at its root works, because the HOC hooks the open handler onto the trigger itself. Here a styled `<div>` is that root, so the modal opens when it is clicked:
+
+<Canvas of={Stories.CustomTrigger} />
+
+## When to reach for it
+
+There are two ways to use the modal pattern, and they differ by what the modal must show:
+
+<table>
+  <thead>
+    <tr>
+      <th>You have…</th>
+      <th>Use</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Static content, same every time</td>
+      <td><code>withModal</code> — trigger + modal in one component</td>
+    </tr>
+    <tr>
+      <td>Content from parent state, or actions beyond closing</td>
+      <td>Modal composed directly, driven through its <code>ref</code></td>
+    </tr>
+  </tbody>
+</table>
+
+## Accessibility
+
+A modal composed without a header has no title to name the dialog, so it must carry its own `aria-label`. With a header, the title names the dialog automatically through `aria-labelledby`.
+
+<Canvas of={Stories.WithoutHeader} />

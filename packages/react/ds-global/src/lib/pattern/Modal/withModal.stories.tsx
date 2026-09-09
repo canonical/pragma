@@ -3,6 +3,7 @@ import type React from "react";
 import { Button } from "../../component/Button/index.js";
 import { withModal } from "./index.js";
 import Modal from "./Provider.js";
+import type { WithModalRender } from "./types.js";
 
 const meta = {
   title: "patterns/Modal/withModal",
@@ -25,6 +26,7 @@ const meta = {
   },
 } satisfies Meta;
 
+/* The docs page for these stories lives in withModal.mdx. */
 export default meta;
 
 /*
@@ -34,41 +36,7 @@ export default meta;
  * Defined once, they are also the shape consumers should copy.
  */
 
-const exampleModal = (
-  <Modal aria-label="Example modal">
-    <Modal.Content>
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
-      tempor incididunt ut labore et dolore magna aliqua.
-    </Modal.Content>
-  </Modal>
-);
-
-const OpenButton = withModal(Button, exampleModal);
-
-/**
- * The simplest form: click the button, the modal opens. Close it with Escape.
- * One content section, no header, no footer — nothing to decide. A modal
- * without a header carries its own `aria-label`.
- */
-export const Default: StoryFn = () => <OpenButton>Open modal</OpenButton>;
-Default.storyName = "Default";
-Default.parameters = {
-  docs: {
-    source: {
-      code: `const exampleModal = (
-  <Modal aria-label="Example modal">
-    <Modal.Content>...</Modal.Content>
-  </Modal>
-);
-
-const OpenButton = withModal(Button, exampleModal);
-
-<OpenButton>Open modal</OpenButton>`,
-    },
-  },
-};
-
-const maintenanceModal = (close: () => void) => (
+const maintenanceModal: WithModalRender = ({ close }) => (
   <Modal>
     <Modal.Header>Maintenance scheduled</Modal.Header>
     <Modal.Content>
@@ -85,20 +53,22 @@ const maintenanceModal = (close: () => void) => (
 const AcknowledgeButton = withModal(Button, maintenanceModal);
 
 /**
- * A footer button can only do one thing here: close the modal. Pass the
- * modal as a function to receive the `close` callback and wire it with
- * `onClick={close}`. If a button needs to do more than close — submit a form,
- * open another modal — compose `Modal` directly and drive it through its `ref`.
+ * The canonical form: click the button, the modal opens; a footer button can
+ * only do one thing here — close the modal. The factory receives `{ close }`;
+ * wire it with `onClick={close}`. If a button needs to do more than close —
+ * submit a form, open another modal — compose `Modal` directly and drive it
+ * through its `ref`.
  */
-export const FooterAction: StoryFn = () => (
+export const Default: StoryFn = () => (
   <AcknowledgeButton importance="secondary">
     Maintenance notice
   </AcknowledgeButton>
 );
-FooterAction.parameters = {
+Default.storyName = "Default";
+Default.parameters = {
   docs: {
     source: {
-      code: `const maintenanceModal = (close) => (
+      code: `const maintenanceModal: WithModalRender = ({ close }) => (
   <Modal>
     <Modal.Header>Maintenance scheduled</Modal.Header>
     <Modal.Content>...</Modal.Content>
@@ -116,7 +86,7 @@ const AcknowledgeButton = withModal(Button, maintenanceModal);
   },
 };
 
-const searchSyntaxModal = (
+const searchSyntaxModal: WithModalRender = () => (
   <Modal closeOnBackdropClick>
     <Modal.Header>Search syntax</Modal.Header>
     <Modal.Content>
@@ -128,8 +98,8 @@ const searchSyntaxModal = (
 const InfoButton = withModal(Button, searchSyntaxModal);
 
 /**
- * `closeOnBackdropClick` is just a prop on the modal element the consumer
- * passes, so clicking outside the panel also closes it.
+ * `closeOnBackdropClick` is just a prop on the modal element the function
+ * returns, so clicking outside the panel also closes it.
  */
 export const BackdropDismissible: StoryFn = () => (
   <InfoButton importance="secondary">Search syntax</InfoButton>
@@ -137,7 +107,7 @@ export const BackdropDismissible: StoryFn = () => (
 BackdropDismissible.parameters = {
   docs: {
     source: {
-      code: `const searchSyntaxModal = (
+      code: `const searchSyntaxModal: WithModalRender = () => (
   <Modal closeOnBackdropClick>
     <Modal.Header>Search syntax</Modal.Header>
     <Modal.Content> Combine terms with AND, OR and NOT. Quote a phrase to match it exactly. </Modal.Content>
@@ -172,7 +142,7 @@ const Link = ({
   </div>
 );
 
-const termsModal = (
+const termsModal: WithModalRender = () => (
   <Modal>
     <Modal.Header>Terms</Modal.Header>
     <Modal.Content>
@@ -206,7 +176,7 @@ CustomTrigger.parameters = {
   </div>
 );
 
-const termsModal = (
+const termsModal: WithModalRender = () => (
   <Modal>
     <Modal.Header>Terms</Modal.Header>
     <Modal.Content>...</Modal.Content>
@@ -218,6 +188,41 @@ const TermsLink = withModal(Link, termsModal);
 <p>
   By continuing you agree to the <TermsLink>terms and conditions</TermsLink>.
 </p>`,
+    },
+  },
+};
+
+const exampleModal: WithModalRender = () => (
+  <Modal aria-label="Example modal">
+    <Modal.Content>
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
+      tempor incididunt ut labore et dolore magna aliqua.
+    </Modal.Content>
+  </Modal>
+);
+
+const OpenButton = withModal(Button, exampleModal);
+
+/**
+ * This story exists solely to show one rule: a modal composed without a
+ * header has no title to name it, so it must carry its own `aria-label`.
+ * Close it with Escape or the header-less content alone — nothing else to
+ * decide, and the factory takes no arguments.
+ */
+export const WithoutHeader: StoryFn = () => <OpenButton>Open modal</OpenButton>;
+WithoutHeader.storyName = "Without a header";
+WithoutHeader.parameters = {
+  docs: {
+    source: {
+      code: `const exampleModal: WithModalRender = () => (
+  <Modal aria-label="Example modal">
+    <Modal.Content>...</Modal.Content>
+  </Modal>
+);
+
+const OpenButton = withModal(Button, exampleModal);
+
+<OpenButton>Open modal</OpenButton>`,
     },
   },
 };

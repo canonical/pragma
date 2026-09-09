@@ -2,7 +2,7 @@ import type { ComponentType, FC, ReactElement } from "react";
 import { cloneElement, useRef } from "react";
 import type {
   ModalProps,
-  WithModalModal,
+  WithModalRender,
   WithModalTriggerProps,
 } from "./types.js";
 
@@ -14,34 +14,36 @@ import type {
  * trigger itself, with no wrapper element in between. An `onClick` the
  * consumer passes keeps working: it runs first, then the modal opens.
  *
- * The second argument is a complete `<Modal>` element — sections, props and
- * all:
+ * The second argument is a function: the HOC calls it with a props object
+ * carrying `close`, and it returns a complete `<Modal>` element — sections,
+ * props and all:
  *
  * ```tsx
  * const OpenButton = withModal(
  *   Button,
- *   <Modal>
- *     <Modal.Content>Hello</Modal.Content>
- *   </Modal>,
+ *   () => (
+ *     <Modal>
+ *       <Modal.Content>Hello</Modal.Content>
+ *     </Modal>
+ *   ),
  * );
  * <OpenButton>Open</OpenButton>;
  * ```
  *
- * Everything `Modal` accepts lives on that element — `closeOnBackdropClick`,
- * `aria-label`, `className` — so the consumer sees the real modal, not an
- * options bag. The one prop the HOC owns is the `ref`: the trigger opens the
- * modal and `close` reads the same handle, so the HOC injects its own ref
- * into the element.
+ * Everything `Modal` accepts lives on the element the function returns —
+ * `closeOnBackdropClick`, `aria-label`, `className` — so the consumer sees the
+ * real modal, not an options bag. The one prop the HOC owns is the `ref`: the
+ * trigger opens the modal and `close` reads the same handle, so the HOC
+ * injects its own ref into the returned element.
  *
  * **How it closes:** the header's X button and Escape always work. Add
  * `closeOnBackdropClick` to the modal element and a backdrop click works too.
  *
  * **Footer buttons can only close the modal.** That is the one and only
- * action this HOC provides. To wire one up, pass the modal as a function —
- * it receives a `close` callback:
+ * action this HOC provides — wire one to the `close` the function receives:
  *
  * ```tsx
- * const confirmationModal = (close) => (
+ * const confirmationModal: WithModalRender = ({ close }) => (
  *   <Modal>
  *     <Modal.Footer>
  *       <Button onClick={close}>Got it</Button>
@@ -56,10 +58,13 @@ import type {
  * close conditionally — don't use this HOC: compose `Modal` directly and drive
  * it through its `ref`.
  *
- * `withModal` is meant for static content: its modal is created once, when
- * the HOC is called. If the modal must show data from the parent — for example
- * a different `userId` depending on which user is selected — don't use this
- * HOC either; compose `Modal` directly and drive it through its `ref`.
+ * `withModal` is meant for static content and belongs at module scope, called
+ * once. The function it is handed is invoked on every render of the trigger,
+ * but at module scope it can only see module-level values, so what it returns
+ * is the same on every render. If the modal must show data from the parent —
+ * for example a different `userId` depending on which user is selected —
+ * don't call this HOC inside the component; compose `Modal` directly and
+ * drive it through its `ref`.
  *
  * A pure composition wrapper: it renders the wrapped component and the modal
  * as siblings, so it carries no root element of its own.
@@ -67,11 +72,11 @@ import type {
  * `import { withModal } from "@canonical/react-ds-global";`
  *
  * @param Component The trigger component to wrap (e.g. `Button`). It must accept `onClick` and forward it to its root element; clicking it opens the modal.
- * @param modal The modal the trigger opens: a complete `<Modal>` element, or a function that receives `close` and returns one.
+ * @param modal A {@link WithModalRender} function: it receives `{ close }` and returns the complete `<Modal>` element the trigger opens.
  */
 const withModal = <TProps extends WithModalTriggerProps>(
   Component: ComponentType<TProps>,
-  modal: WithModalModal,
+  modal: WithModalRender,
 ): FC<TProps> => {
   const WrappedComponent = (props: TProps): ReactElement => {
     // The modal owns its open state, so the HOC only needs a handle on the
@@ -86,14 +91,12 @@ const withModal = <TProps extends WithModalTriggerProps>(
     };
     const close = (): void => dialogRef.current?.close();
 
-    // Elements are immutable, so the HOC cannot attach its ref to the one it
-    // was handed — it clones it, injecting the ref it owns. A `ref` the
+    // Elements are immutable, so the HOC cannot attach its ref to the one the
+    // function returns — it clones it, injecting the ref it owns. A `ref` the
     // consumer set on the element is replaced: the contract is that the HOC
     // owns the ref, because the trigger is what opens the modal.
     const modalElement = cloneElement(
-      (typeof modal === "function"
-        ? modal(close)
-        : modal) as ReactElement<ModalProps>,
+      modal({ close }) as ReactElement<ModalProps>,
       { ref: dialogRef },
     );
 

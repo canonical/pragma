@@ -4,7 +4,7 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import { Button } from "../../component/Button/index.js";
 import { withModal } from "./index.js";
 import Modal from "./Provider.js";
-import type { WithModalModal } from "./types.js";
+import type { WithModalRender } from "./types.js";
 
 /*
   jsdom 28 implements HTMLDialogElement but not the top layer: `showModal` and
@@ -42,7 +42,7 @@ beforeAll(() => {
   }
 });
 
-const modal = (
+const modal: WithModalRender = () => (
   <Modal>
     <Modal.Header>Title</Modal.Header>
     <Modal.Content>Body</Modal.Content>
@@ -108,19 +108,16 @@ describe("withModal", () => {
     expect(cancel.defaultPrevented).toBe(false);
   });
 
-  it("keeps the trigger wired when the modal element carries its own ref", () => {
-    // The contract is that the HOC owns the ref, so one set on the element
-    // is replaced by the clone that injects the HOC's own.
+  it("keeps the trigger wired when the returned modal element carries its own ref", () => {
+    // The contract is that the HOC owns the ref, so one set on the returned
+    // element is replaced by the clone that injects the HOC's own.
     const strayRef = createRef<HTMLDialogElement>();
-    const TriggeredModal = withModal(
-      Button,
-      (
-        <Modal ref={strayRef}>
-          <Modal.Header>Title</Modal.Header>
-          <Modal.Content>Body</Modal.Content>
-        </Modal>
-      ) as WithModalModal,
-    );
+    const TriggeredModal = withModal(Button, () => (
+      <Modal ref={strayRef}>
+        <Modal.Header>Title</Modal.Header>
+        <Modal.Content>Body</Modal.Content>
+      </Modal>
+    ));
     const { container } = render(<TriggeredModal>Open</TriggeredModal>);
 
     expect(container.querySelector("dialog")).not.toHaveAttribute("open");
@@ -147,7 +144,7 @@ describe("withModal", () => {
   });
 
   it("closes the modal through a footer action given the close callback", () => {
-    const TriggeredModal = withModal(Button, (close) => (
+    const TriggeredModal = withModal(Button, ({ close }) => (
       <Modal>
         <Modal.Header>Title</Modal.Header>
         <Modal.Content>Body</Modal.Content>
@@ -176,14 +173,13 @@ describe("withModal", () => {
     );
   });
 
-  it("reads modal props from the modal element", () => {
-    const TriggeredModal = withModal(
-      Button,
+  it("reads modal props from the returned modal element", () => {
+    const TriggeredModal = withModal(Button, () => (
       <Modal className="custom-modal" closeOnBackdropClick>
         <Modal.Header>Title</Modal.Header>
         <Modal.Content>Body</Modal.Content>
-      </Modal>,
-    );
+      </Modal>
+    ));
     const { container } = render(<TriggeredModal>Open</TriggeredModal>);
 
     fireEvent.click(screen.getByRole("button", { name: "Open" }));

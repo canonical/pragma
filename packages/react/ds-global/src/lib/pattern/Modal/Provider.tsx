@@ -27,10 +27,12 @@ const componentCssClassName = "ds modal";
  * `ref.current?.close()` closes it.
  *
  * There are two consumption patterns, `withModal` and `Modal`. `withModal` is
- * meant for static content: its content is created once, when the HOC is
- * called. If the modal must show data from the parent — for example a
- * different `userName` depending on which user is selected — compose `Modal`
- * directly and drive it through its `ref`. Otherwise, use `withModal`.
+ * meant for static content: the call belongs at module scope, where the
+ * function it is handed can only see module-level values, so the modal it
+ * returns is the same on every render. If the modal must show data from the
+ * parent — for example a different `userName` depending on which user is
+ * selected — compose `Modal` directly and drive it through its `ref`.
+ * Otherwise, use `withModal`.
  *
  * The sections are composed by the consumer: render
  * `Modal.Header`, `Modal.Content` and `Modal.Footer` as children and choose
