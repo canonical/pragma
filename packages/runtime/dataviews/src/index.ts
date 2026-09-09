@@ -1,8 +1,10 @@
 /**
- * @canonical/dataviews-core — collection-views core for Canonical apps.
- * Current surface: runtime identity tokens for scope boundaries; query
- * grammar, lifecycle transitions, projections, and shared geometry land
- * as they are implemented.
+ * @canonical/dataviews-core — collection-views core for Canonical apps:
+ * runtime identity tokens, the bounded query grammar with addressed
+ * commands, field interaction, operation and save-race records, and the
+ * collection coordinator owning query/window coherence and the request
+ * lifecycle. React/Svelte bindings, URL transport and adapters are wired
+ * above this layer.
  *
  * @packageDocumentation
  */
