@@ -147,7 +147,7 @@ describe.each(VANILLA_VERSIONS)(
       expect(computed(mixed, "neg-label").display).toBe("inline");
     });
 
-    it("makes the whole document pragma territory if `ds` is put on the root, which rule 10 forbids while Vanilla is in the page", async () => {
+    it("makes the whole document pragma territory if `ds` is put on the root, which rule 4 forbids while Vanilla is in the page", async () => {
       // Pragma territory is wherever `ds` is, and nothing else: the boundary
       // follows the class, so a root that carries it reverts every Vanilla rule.
       const flipped = await render(
