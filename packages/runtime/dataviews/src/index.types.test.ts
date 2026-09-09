@@ -28,12 +28,15 @@ import type {
   FieldValidation,
   FlagField,
   Identity,
+  Location,
+  LocationConfig,
   NumberField,
   Operation,
   OperationConfig,
   OperationFailure,
   OperationOutcome,
   OperationState,
+  PlatformLocation,
   Predicate,
   PredicateOperand,
   PredicateOperator,
@@ -92,6 +95,9 @@ type EveryPublicType = [
   PredicateOperand,
   PredicateOperator,
   ProviderFieldHandle<unknown>,
+  Location,
+  LocationConfig,
+  PlatformLocation,
   ProviderFields<readonly SchemaFieldDefinition[]>,
   QueryCommand,
   QueryCommandResult,
@@ -116,7 +122,7 @@ type EveryPublicType = [
 describe("public surface types", () => {
   it("re-exports the full type surface from the barrel", () => {
     expectTypeOf<EveryPublicType>().not.toBeAny();
-    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<49>();
+    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<52>();
   });
 
   it("exports the identity functions with the declared shapes", () => {
