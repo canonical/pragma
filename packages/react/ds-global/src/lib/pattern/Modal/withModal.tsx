@@ -41,16 +41,15 @@ import type {
  * it receives a `close` callback:
  *
  * ```tsx
- * const OpenButton = withModal(
- *   Button,
- *   (close) => (
- *     <Modal>
- *       <Modal.Footer>
- *         <Button onClick={close}>Got it</Button>
- *       </Modal.Footer>
- *     </Modal>
- *   ),
+ * const confirmationModal = (close) => (
+ *   <Modal>
+ *     <Modal.Footer>
+ *       <Button onClick={close}>Got it</Button>
+ *     </Modal.Footer>
+ *   </Modal>
  * );
+ *
+ * const OpenButton = withModal(Button, confirmationModal);
  * ```
  *
  * If an action needs to do more than close — save data, open another modal,

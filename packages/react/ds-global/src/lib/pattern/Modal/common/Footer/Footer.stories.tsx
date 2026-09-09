@@ -39,18 +39,3 @@ export const Default: Story = {
     </Footer>
   ),
 };
-
-/**
- * A destructive confirmation: the affirmative action carries the destructive
- * anticipation.
- */
-export const Destructive: Story = {
-  render: () => (
-    <Footer>
-      <Button importance="secondary">First action</Button>
-      <Button importance="primary" anticipation="destructive">
-        Second action
-      </Button>
-    </Footer>
-  ),
-};

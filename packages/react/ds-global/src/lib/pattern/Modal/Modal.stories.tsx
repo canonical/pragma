@@ -1,43 +1,19 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { ReactElement, ReactNode } from "react";
 import { useRef } from "react";
 import { Button } from "../../component/Button/index.js";
 import { Chip } from "../../component/Chip/index.js";
 import { InlineCode } from "../../component/InlineCode/index.js";
 import { KeyboardKey } from "../../component/KeyboardKey/index.js";
 import Modal from "./Provider.js";
-import type { ModalProps } from "./types.js";
 
-/**
- * Every preview renders the modal open — a story is a picture of the pattern,
- * not a demo of its trigger — and hands `close` to the composed sections so
- * the footer actions work.
- *
- * The callback ref opens the modal the moment it mounts, because a story is
- * a static visual fixture with nothing to click. In an application the open
- * comes from an event instead — `onClick={() => modalRef.current?.showModal()}`
- * on the trigger that owns the modal.
+/*
+ * Every story is the consumer pattern verbatim — a ref that drives the modal,
+ * sections composed as children — with one story-ism: the callback ref opens
+ * the modal the moment it mounts, because a story is a static visual fixture
+ * with nothing to click. In an application the open comes from an event
+ * instead — `onClick={() => modalRef.current?.showModal()}` on the trigger
+ * that owns the modal.
  */
-const ModalPreview = ({
-  children,
-  ...modalProps
-}: Omit<ModalProps, "children" | "ref"> & {
-  children: (close: () => void) => ReactNode;
-}): ReactElement => {
-  const modalRef = useRef<HTMLDialogElement>(null);
-
-  return (
-    <Modal
-      {...modalProps}
-      ref={(dialog: HTMLDialogElement | null) => {
-        modalRef.current = dialog;
-        if (dialog && !dialog.open) dialog.showModal();
-      }}
-    >
-      {children(() => modalRef.current?.close())}
-    </Modal>
-  );
-};
 
 const meta = {
   title: "patterns/Modal",
@@ -78,6 +54,38 @@ type Story = StoryObj<typeof meta>;
  * anticipation, which is where the green fill comes from. Both actions close
  * the modal: closing is what an action does once its own work is done.
  */
+const DefaultStory = () => {
+  const modalRef = useRef<HTMLDialogElement>(null);
+  const close = () => modalRef.current?.close();
+
+  return (
+    <Modal
+      ref={(dialog: HTMLDialogElement | null) => {
+        modalRef.current = dialog;
+        if (dialog && !dialog.open) dialog.showModal();
+      }}
+    >
+      <Modal.Header>Title</Modal.Header>
+      <Modal.Content>
+        lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
+        tempor incididunt ut labore et dolore magna aliqua.
+      </Modal.Content>
+      <Modal.Footer>
+        <Button importance="secondary" onClick={close}>
+          Cancel
+        </Button>
+        <Button
+          importance="primary"
+          anticipation="constructive"
+          onClick={close}
+        >
+          Confirm
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+};
+
 export const Default: Story = {
   parameters: {
     docs: {
@@ -108,37 +116,41 @@ const close = () => modalRef.current?.close();
       },
     },
   },
-  render: () => (
-    <ModalPreview>
-      {(close) => (
-        <>
-          <Modal.Header>Title</Modal.Header>
-          <Modal.Content>
-            lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
-            eiusmod tempor incididunt ut labore et dolore magna aliqua.
-          </Modal.Content>
-          <Modal.Footer>
-            <Button importance="secondary" onClick={close}>
-              Cancel
-            </Button>
-            <Button
-              importance="primary"
-              anticipation="constructive"
-              onClick={close}
-            >
-              Confirm
-            </Button>
-          </Modal.Footer>
-        </>
-      )}
-    </ModalPreview>
-  ),
+  render: () => <DefaultStory />,
 };
 
 /**
  * A destructive confirmation. The consequence is spelled out in the content
  * and the affirmative action carries the matching anticipation modifier.
  */
+const DestructiveConfirmationStory = () => {
+  const modalRef = useRef<HTMLDialogElement>(null);
+  const close = () => modalRef.current?.close();
+
+  return (
+    <Modal
+      ref={(dialog: HTMLDialogElement | null) => {
+        modalRef.current = dialog;
+        if (dialog && !dialog.open) dialog.showModal();
+      }}
+    >
+      <Modal.Header>Delete instance</Modal.Header>
+      <Modal.Content>
+        Deleting this instance removes its volumes and snapshots. This cannot be
+        undone.
+      </Modal.Content>
+      <Modal.Footer>
+        <Button importance="secondary" onClick={close}>
+          Cancel
+        </Button>
+        <Button importance="primary" anticipation="destructive" onClick={close}>
+          Delete
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+};
+
 export const DestructiveConfirmation: Story = {
   parameters: {
     docs: {
@@ -176,37 +188,40 @@ const close = () => modalRef.current?.close();
       },
     },
   },
-  render: () => (
-    <ModalPreview>
-      {(close) => (
-        <>
-          <Modal.Header>Delete instance</Modal.Header>
-          <Modal.Content>
-            Deleting this instance removes its volumes and snapshots. This
-            cannot be undone.
-          </Modal.Content>
-          <Modal.Footer>
-            <Button importance="secondary" onClick={close}>
-              Cancel
-            </Button>
-            <Button
-              importance="primary"
-              anticipation="destructive"
-              onClick={close}
-            >
-              Delete
-            </Button>
-          </Modal.Footer>
-        </>
-      )}
-    </ModalPreview>
-  ),
+  render: () => <DestructiveConfirmationStory />,
 };
 
 /**
  * Undismissible and backdrop clicks are ignored, so the visible way out is
  * an action — Escape still closes the modal, as it always does.
  */
+const UndismissibleStory = () => {
+  const modalRef = useRef<HTMLDialogElement>(null);
+  const close = () => modalRef.current?.close();
+
+  return (
+    <Modal
+      ref={(dialog: HTMLDialogElement | null) => {
+        modalRef.current = dialog;
+        if (dialog && !dialog.open) dialog.showModal();
+      }}
+    >
+      <Modal.Header undismissible>Unsaved changes</Modal.Header>
+      <Modal.Content>
+        You have unsaved changes that will be lost if you continue.
+      </Modal.Content>
+      <Modal.Footer>
+        <Button importance="secondary" onClick={close}>
+          Keep editing
+        </Button>
+        <Button importance="primary" anticipation="destructive" onClick={close}>
+          Discard
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+};
+
 export const Undismissible: Story = {
   parameters: {
     docs: {
@@ -236,30 +251,7 @@ const close = () => modalRef.current?.close();
       },
     },
   },
-  render: () => (
-    <ModalPreview>
-      {(close) => (
-        <>
-          <Modal.Header undismissible>Unsaved changes</Modal.Header>
-          <Modal.Content>
-            You have unsaved changes that will be lost if you continue.
-          </Modal.Content>
-          <Modal.Footer>
-            <Button importance="secondary" onClick={close}>
-              Keep editing
-            </Button>
-            <Button
-              importance="primary"
-              anticipation="destructive"
-              onClick={close}
-            >
-              Discard
-            </Button>
-          </Modal.Footer>
-        </>
-      )}
-    </ModalPreview>
-  ),
+  render: () => <UndismissibleStory />,
 };
 
 /**
@@ -270,6 +262,61 @@ const close = () => modalRef.current?.close();
  * the spacing rather than leaving the browser defaults to stack on top of
  * the content padding.
  */
+const RichContentStory = () => {
+  const modalRef = useRef<HTMLDialogElement>(null);
+  const close = () => modalRef.current?.close();
+
+  return (
+    <Modal
+      ref={(dialog: HTMLDialogElement | null) => {
+        modalRef.current = dialog;
+        if (dialog && !dialog.open) dialog.showModal();
+      }}
+    >
+      <Modal.Header>Connect to instance</Modal.Header>
+      <Modal.Content>
+        <div
+          style={{
+            display: "grid",
+            gap: "var(--dimension-200, 16px)",
+            margin: 0,
+          }}
+        >
+          <p style={{ margin: 0 }}>
+            The instance accepts SSH on its public address. Press{" "}
+            <KeyboardKey keyValue="cmd" /> <KeyboardKey keyValue="c" /> to copy
+            the command below.
+          </p>
+          <InlineCode>ssh ubuntu@10.0.1.42 -i ~/.ssh/id_ed25519</InlineCode>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "var(--dimension-100, 8px)",
+            }}
+          >
+            <Chip lead="Status" value="Running" criticality="success" />
+            <Chip lead="Image" value="ubuntu:24.04" />
+            <Chip lead="Agent" value="beta" release="beta" />
+          </div>
+        </div>
+      </Modal.Content>
+      <Modal.Footer>
+        <Button importance="secondary" onClick={close}>
+          Cancel
+        </Button>
+        <Button
+          importance="primary"
+          anticipation="constructive"
+          onClick={close}
+        >
+          Connect
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+};
+
 export const RichContent: Story = {
   parameters: {
     docs: {
@@ -311,60 +358,46 @@ const close = () => modalRef.current?.close();
       },
     },
   },
-  render: () => (
-    <ModalPreview>
-      {(close) => (
-        <>
-          <Modal.Header>Connect to instance</Modal.Header>
-          <Modal.Content>
-            <div
-              style={{
-                display: "grid",
-                gap: "var(--dimension-200, 16px)",
-                margin: 0,
-              }}
-            >
-              <p style={{ margin: 0 }}>
-                The instance accepts SSH on its public address. Press{" "}
-                <KeyboardKey keyValue="cmd" /> <KeyboardKey keyValue="c" /> to
-                copy the command below.
-              </p>
-              <InlineCode>ssh ubuntu@10.0.1.42 -i ~/.ssh/id_ed25519</InlineCode>
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "var(--dimension-100, 8px)",
-                }}
-              >
-                <Chip lead="Status" value="Running" criticality="success" />
-                <Chip lead="Image" value="ubuntu:24.04" />
-                <Chip lead="Agent" value="beta" release="beta" />
-              </div>
-            </div>
-          </Modal.Content>
-          <Modal.Footer>
-            <Button importance="secondary" onClick={close}>
-              Cancel
-            </Button>
-            <Button
-              importance="primary"
-              anticipation="constructive"
-              onClick={close}
-            >
-              Connect
-            </Button>
-          </Modal.Footer>
-        </>
-      )}
-    </ModalPreview>
-  ),
+  render: () => <RichContentStory />,
 };
 
 /**
  * Only the content pane scrolls: the header and footer stay in place, and the
  * dialog never grows past --modal-max-block-size.
  */
+const LongContentStory = () => {
+  const modalRef = useRef<HTMLDialogElement>(null);
+
+  return (
+    <Modal
+      ref={(dialog: HTMLDialogElement | null) => {
+        modalRef.current = dialog;
+        if (dialog && !dialog.open) dialog.showModal();
+      }}
+    >
+      <Modal.Header>Terms</Modal.Header>
+      <Modal.Content>
+        {Array.from(
+          { length: 30 },
+          (_, index) =>
+            `Paragraph ${index + 1} of scrolling placeholder content.`,
+        ).map((paragraph) => (
+          <p key={paragraph}>{paragraph}</p>
+        ))}
+      </Modal.Content>
+      <Modal.Footer>
+        <Button
+          importance="primary"
+          anticipation="constructive"
+          onClick={() => modalRef.current?.close()}
+        >
+          Accept
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+};
+
 export const LongContent: Story = {
   parameters: {
     docs: {
@@ -396,31 +429,5 @@ export const LongContent: Story = {
       },
     },
   },
-  render: () => (
-    <ModalPreview>
-      {(close) => (
-        <>
-          <Modal.Header>Terms</Modal.Header>
-          <Modal.Content>
-            {Array.from(
-              { length: 30 },
-              (_, index) =>
-                `Paragraph ${index + 1} of scrolling placeholder content.`,
-            ).map((paragraph) => (
-              <p key={paragraph}>{paragraph}</p>
-            ))}
-          </Modal.Content>
-          <Modal.Footer>
-            <Button
-              importance="primary"
-              anticipation="constructive"
-              onClick={close}
-            >
-              Accept
-            </Button>
-          </Modal.Footer>
-        </>
-      )}
-    </ModalPreview>
-  ),
+  render: () => <LongContentStory />,
 };

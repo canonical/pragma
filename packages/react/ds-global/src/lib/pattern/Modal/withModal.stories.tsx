@@ -27,39 +27,62 @@ const meta = {
 
 export default meta;
 
+/*
+ * The modal definitions and their wrapped triggers live at module scope, not
+ * in the story bodies: a `withModal` call produces a component type, and a
+ * new type per render would remount the story every time it re-renders.
+ * Defined once, they are also the shape consumers should copy.
+ */
+
+const exampleModal = (
+  <Modal aria-label="Example modal">
+    <Modal.Content>
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
+      tempor incididunt ut labore et dolore magna aliqua.
+    </Modal.Content>
+  </Modal>
+);
+
+const OpenButton = withModal(Button, exampleModal);
+
 /**
  * The simplest form: click the button, the modal opens. Close it with Escape.
  * One content section, no header, no footer — nothing to decide. A modal
  * without a header carries its own `aria-label`.
  */
-export const Default: StoryFn = () => {
-  const OpenButton = withModal(
-    Button,
-    <Modal aria-label="Example modal">
-      <Modal.Content>
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
-        tempor incididunt ut labore et dolore magna aliqua.
-      </Modal.Content>
-    </Modal>,
-  );
-
-  return <OpenButton>Open modal</OpenButton>;
-};
+export const Default: StoryFn = () => <OpenButton>Open modal</OpenButton>;
 Default.storyName = "Default";
 Default.parameters = {
   docs: {
     source: {
-      code: `const OpenButton = withModal(
-  Button,
+      code: `const exampleModal = (
   <Modal aria-label="Example modal">
     <Modal.Content>...</Modal.Content>
-  </Modal>,
+  </Modal>
 );
+
+const OpenButton = withModal(Button, exampleModal);
 
 <OpenButton>Open modal</OpenButton>`,
     },
   },
 };
+
+const maintenanceModal = (close: () => void) => (
+  <Modal>
+    <Modal.Header>Maintenance scheduled</Modal.Header>
+    <Modal.Content>
+      The service will restart at 02:00 UTC to apply security updates.
+    </Modal.Content>
+    <Modal.Footer>
+      <Button importance="primary" onClick={close}>
+        Got it
+      </Button>
+    </Modal.Footer>
+  </Modal>
+);
+
+const AcknowledgeButton = withModal(Button, maintenanceModal);
 
 /**
  * A footer button can only do one thing here: close the modal. Pass the
@@ -67,81 +90,98 @@ Default.parameters = {
  * `onClick={close}`. If a button needs to do more than close — submit a form,
  * open another modal — compose `Modal` directly and drive it through its `ref`.
  */
-export const FooterAction: StoryFn = () => {
-  const AcknowledgeButton = withModal(Button, (close) => (
-    <Modal>
-      <Modal.Header>Maintenance scheduled</Modal.Header>
-      <Modal.Content>
-        The service will restart at 02:00 UTC to apply security updates.
-      </Modal.Content>
-      <Modal.Footer>
-        <Button importance="primary" onClick={close}>
-          Got it
-        </Button>
-      </Modal.Footer>
-    </Modal>
-  ));
-
-  return (
-    <AcknowledgeButton importance="secondary">
-      Maintenance notice
-    </AcknowledgeButton>
-  );
-};
+export const FooterAction: StoryFn = () => (
+  <AcknowledgeButton importance="secondary">
+    Maintenance notice
+  </AcknowledgeButton>
+);
 FooterAction.parameters = {
   docs: {
     source: {
-      code: `const AcknowledgeButton = withModal(
-  Button,
-  (close) => (
-    <Modal>
-      <Modal.Header>Maintenance scheduled</Modal.Header>
-      <Modal.Content>...</Modal.Content>
-      <Modal.Footer>
-        {/* A footer button can only close the modal */}
-        <Button importance="primary" onClick={close}>Got it</Button>
-      </Modal.Footer>
-    </Modal>
-  ),
+      code: `const maintenanceModal = (close) => (
+  <Modal>
+    <Modal.Header>Maintenance scheduled</Modal.Header>
+    <Modal.Content>...</Modal.Content>
+    <Modal.Footer>
+      {/* A footer button can only close the modal */}
+      <Button importance="primary" onClick={close}>Got it</Button>
+    </Modal.Footer>
+  </Modal>
 );
+
+const AcknowledgeButton = withModal(Button, maintenanceModal);
 
 <AcknowledgeButton importance="secondary">Maintenance notice</AcknowledgeButton>`,
     },
   },
 };
 
+const searchSyntaxModal = (
+  <Modal closeOnBackdropClick>
+    <Modal.Header>Search syntax</Modal.Header>
+    <Modal.Content>
+      Combine terms with AND, OR and NOT. Quote a phrase to match it exactly.
+    </Modal.Content>
+  </Modal>
+);
+
+const InfoButton = withModal(Button, searchSyntaxModal);
+
 /**
  * `closeOnBackdropClick` is just a prop on the modal element the consumer
  * passes, so clicking outside the panel also closes it.
  */
-export const BackdropDismissible: StoryFn = () => {
-  const InfoButton = withModal(
-    Button,
-    <Modal closeOnBackdropClick>
-      <Modal.Header>Search syntax</Modal.Header>
-      <Modal.Content>
-        Combine terms with AND, OR and NOT. Quote a phrase to match it exactly.
-      </Modal.Content>
-    </Modal>,
-  );
-
-  return <InfoButton importance="secondary">Search syntax</InfoButton>;
-};
+export const BackdropDismissible: StoryFn = () => (
+  <InfoButton importance="secondary">Search syntax</InfoButton>
+);
 BackdropDismissible.parameters = {
   docs: {
     source: {
-      code: `const InfoButton = withModal(
-  Button,
+      code: `const searchSyntaxModal = (
   <Modal closeOnBackdropClick>
     <Modal.Header>Search syntax</Modal.Header>
-    <Modal.Content>...</Modal.Content>
-  </Modal>,
+    <Modal.Content> Combine terms with AND, OR and NOT. Quote a phrase to match it exactly. </Modal.Content>
+  </Modal>
 );
+
+const InfoButton = withModal(Button, searchSyntaxModal);
 
 <InfoButton importance="secondary">Search syntax</InfoButton>`,
     },
   },
 };
+
+const Link = ({
+  children,
+  onClick,
+}: {
+  children?: string;
+  onClick?: React.MouseEventHandler<HTMLDivElement>;
+}) => (
+  // biome-ignore lint/a11y/noStaticElementInteractions: demo trigger only
+  // biome-ignore lint/a11y/useKeyWithClickEvents: demo trigger only
+  <div
+    onClick={onClick}
+    style={{
+      cursor: "pointer",
+      display: "inline",
+      textDecoration: "underline",
+    }}
+  >
+    {children}
+  </div>
+);
+
+const termsModal = (
+  <Modal>
+    <Modal.Header>Terms</Modal.Header>
+    <Modal.Content>
+      These are the terms and conditions that apply to this service.
+    </Modal.Content>
+  </Modal>
+);
+
+const TermsLink = withModal(Link, termsModal);
 
 /**
  * The trigger does not have to be a `Button` — any component that accepts
@@ -149,44 +189,11 @@ BackdropDismissible.parameters = {
  * because the HOC composes its open handler onto the trigger itself. Here a
  * styled `<div>` is that root, so the modal opens when it is clicked.
  */
-export const CustomTrigger: StoryFn = () => {
-  const Link = ({
-    children,
-    onClick,
-  }: {
-    children?: string;
-    onClick?: React.MouseEventHandler<HTMLDivElement>;
-  }) => (
-    // biome-ignore lint/a11y/noStaticElementInteractions: demo trigger only
-    // biome-ignore lint/a11y/useKeyWithClickEvents: demo trigger only
-    <div
-      onClick={onClick}
-      style={{
-        cursor: "pointer",
-        display: "inline",
-        textDecoration: "underline",
-      }}
-    >
-      {children}
-    </div>
-  );
-  const TermsLink = withModal(
-    Link,
-    <Modal>
-      <Modal.Header>Terms</Modal.Header>
-      <Modal.Content>
-        These are the terms and conditions that apply to this service.
-      </Modal.Content>
-    </Modal>,
-  );
-
-  return (
-    <p>
-      By continuing you agree to the <TermsLink>terms and conditions</TermsLink>
-      .
-    </p>
-  );
-};
+export const CustomTrigger: StoryFn = () => (
+  <p>
+    By continuing you agree to the <TermsLink>terms and conditions</TermsLink>.
+  </p>
+);
 CustomTrigger.parameters = {
   docs: {
     source: {
@@ -199,13 +206,14 @@ CustomTrigger.parameters = {
   </div>
 );
 
-const TermsLink = withModal(
-  Link,
+const termsModal = (
   <Modal>
     <Modal.Header>Terms</Modal.Header>
     <Modal.Content>...</Modal.Content>
-  </Modal>,
+  </Modal>
 );
+
+const TermsLink = withModal(Link, termsModal);
 
 <p>
   By continuing you agree to the <TermsLink>terms and conditions</TermsLink>.
