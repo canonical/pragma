@@ -2,19 +2,16 @@
   import { ArchiveIcon } from "@canonical/svelte-icons";
   import { defineMeta } from "@storybook/addon-svelte-csf";
   import { fn } from "storybook/test";
-  import type { ModifierFamilyValues } from "../../modifier-families/index.js";
   import { MODIFIER_FAMILIES } from "../../modifier-families/index.js";
   import Button from "./Button.svelte";
-
-  type ButtonVariant = {
-    importance?: ModifierFamilyValues["importance"];
-    anticipation?: ModifierFamilyValues["anticipation"];
-    emphasis?: Extract<ModifierFamilyValues["emphasis"], "branded">;
-  };
+  import type { ButtonProps } from "./types.js";
 
   type MatrixColumn = {
     label: string;
-    variant: ButtonVariant;
+    variant: {
+      anticipation?: ButtonProps["anticipation"];
+      emphasis?: ButtonProps["emphasis"];
+    };
   };
 
   const MATRIX_COLUMNS: MatrixColumn[] = [
@@ -25,6 +22,12 @@
     })),
     { label: "branded", variant: { emphasis: "branded" } },
   ];
+
+  const MATRIX_ARG_TYPES = {
+    importance: { control: false },
+    anticipation: { control: false },
+    emphasis: { control: false },
+  } as const;
 
   const { Story } = defineMeta({
     title: "Components/Button",
@@ -41,25 +44,6 @@
   };
 </script>
 
-{#snippet variantMatrix(props: ButtonProps)}
-  <div class="matrix">
-    <span></span>
-    <span></span>
-    <span class="matrix-family matrix-family-anticipation">anticipation</span>
-    <span class="matrix-family">emphasis</span>
-    <span class="matrix-family">importance</span>
-    {#each MATRIX_COLUMNS as column (column.label)}
-      <span class="matrix-label">{column.label}</span>
-    {/each}
-    {#each MODIFIER_FAMILIES.importance as importance (importance)}
-      <span class="matrix-label">{importance}</span>
-      {#each MATRIX_COLUMNS as column (column.label)}
-        <Button {importance} {...column.variant} {...props}>Button</Button>
-      {/each}
-    {/each}
-  </div>
-{/snippet}
-
 <Story
   name="Default"
   args={{
@@ -71,7 +55,7 @@
   {/snippet}
 </Story>
 
-<Story name="Importance">
+<Story name="Importance" argTypes={{ importance: { control: false } }}>
   {#snippet template(args)}
     <div class="row">
       {#each MODIFIER_FAMILIES.importance as importance (importance)}
@@ -83,7 +67,7 @@
   {/snippet}
 </Story>
 
-<Story name="Anticipation">
+<Story name="Anticipation" argTypes={{ anticipation: { control: false } }}>
   {#snippet template(args)}
     <div class="row">
       {#each MODIFIER_FAMILIES.anticipation as anticipation (anticipation)}
@@ -95,19 +79,24 @@
   {/snippet}
 </Story>
 
-<Story name="Emphasis">
+<Story name="Emphasis" args={{ emphasis: "branded" }}>
   {#snippet template(args)}
-    <Button {...args} emphasis="branded" onclick={fn()}>branded</Button>
+    <Button {...args} onclick={fn()}>branded</Button>
   {/snippet}
 </Story>
 
-<Story name="Matrix">
-  {#snippet template()}
-    {@render variantMatrix({})}
+<Story
+  name="Matrix"
+  tags={["!autodocs"]}
+  argTypes={MATRIX_ARG_TYPES}
+  args={{ disabled: false, loading: false }}
+>
+  {#snippet template(args)}
+    {@render variantMatrix(args)}
   {/snippet}
 </Story>
 
-<Story name="Density">
+<Story name="Density" argTypes={{ density: { control: false } }}>
   {#snippet template(args)}
     <div class="row">
       {#each MODIFIER_FAMILIES.density as density (density)}
@@ -157,7 +146,7 @@
   {/snippet}
 </Story>
 
-<Story name="Loading">
+<Story name="Loading" argTypes={{ loading: { control: false } }}>
   {#snippet template(args)}
     <div class="row">
       <Button {...args} {loading} onclick={toggleLoading}>Click to load</Button>
@@ -179,23 +168,6 @@
   Disabled button
 </Story>
 
-<Story name="Disabled matrix">
-  {#snippet template()}
-    {@render variantMatrix({ disabled: true })}
-  {/snippet}
-</Story>
-
-<Story name="Loading matrix">
-  {#snippet template()}
-    {@render variantMatrix({ loading: true })}
-    <div class="row loading-disabled">
-      <Button importance="primary" anticipation="destructive" loading disabled>
-        loading + disabled
-      </Button>
-    </div>
-  {/snippet}
-</Story>
-
 <Story
   name="As link"
   args={{
@@ -205,30 +177,58 @@
   Link button
 </Story>
 
+{#snippet variantMatrix(props: ButtonProps)}
+  <table class="matrix" aria-label="Button modifier combinations">
+    <colgroup span="2"></colgroup>
+    <colgroup span={MODIFIER_FAMILIES.anticipation.length}></colgroup>
+    <colgroup></colgroup>
+    <thead>
+      <tr>
+        <th scope="col" rowspan="2" style="vertical-align:bottom">importance</th>
+        <th scope="col" rowspan="2" style="vertical-align:top">default</th>
+        <th scope="colgroup" colspan={MODIFIER_FAMILIES.anticipation.length}>
+          anticipation
+        </th>
+        <th scope="colgroup">emphasis</th>
+      </tr>
+      <tr>
+        {#each MATRIX_COLUMNS.slice(1) as column (column.label)}
+          <th scope="col">{column.label}</th>
+        {/each}
+      </tr>
+    </thead>
+    <tbody>
+      {#each MODIFIER_FAMILIES.importance as importance (importance)}
+        <tr>
+          <th scope="row">{importance}</th>
+          {#each MATRIX_COLUMNS as column (column.label)}
+            <td>
+              <Button
+                {...props}
+                {importance}
+                anticipation={column.variant.anticipation}
+                emphasis={column.variant.emphasis}
+              >
+                Button
+              </Button>
+            </td>
+          {/each}
+        </tr>
+      {/each}
+    </tbody>
+  </table>
+{/snippet}
+
 <style>
   .matrix {
-    display: grid;
-    grid-template-columns: repeat(6, max-content);
-    gap: var(--dimension-150);
-    align-items: center;
-    justify-items: start;
+    border-collapse: separate;
+    border-spacing: var(--dimension-150);
+    text-align: start;
   }
 
-  .matrix-family {
+  .matrix th {
     font: var(--ds-typography-text-secondary);
     color: var(--color-text-muted);
-  }
-
-  .matrix-family-anticipation {
-    grid-column: span 3;
-  }
-
-  .matrix-label {
-    font: var(--ds-typography-text-secondary);
-    color: var(--color-text-muted);
-  }
-
-  .loading-disabled {
-    margin-block-start: var(--dimension-150);
+    text-align: start;
   }
 </style>
