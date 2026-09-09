@@ -10,14 +10,17 @@ describe("public surface", () => {
       "createCollectionCoordinator",
       "createDataViewsProvider",
       "createFieldInteraction",
+      "createGridInteraction",
       "createIdentity",
       "createMemoryLocation",
       "createOperation",
       "createPlatformLocation",
+      "createPresentation",
       "createSaveSession",
       "createSchema",
       "createSelection",
       "isIdentity",
+      "resolveColumns",
       "sliceEquals",
     ]);
   });
