@@ -94,7 +94,7 @@ The contract's transforms are acceptable because they are total, deterministic, 
 
 Magic is what lies outside the contract. A construct is magic when:
 
-- it requires a tool, plugin, or transform the contract does not include---an addition the framework does not need, as CSS-in-JS or a preprocessor is to React;
+- it requires a tool, plugin, or transform the contract does not include---an addition the framework does not need, such as a bundler plugin that resolves import aliases or discovers and injects a stylesheet by filename;
 - its behaviour depends on file placement, file naming, or configuration the contract does not define and document;
 - it is heuristic, so that identical source can behave differently by inference;
 - it defers a transform to runtime, so that its output never exists as an inspectable artifact.
@@ -109,7 +109,7 @@ The cost is verbosity. Explicit code requires more characters, more files, and m
 
 Conventions exist to make codebases predictable. When every component follows the same structure, understanding one teaches you how to navigate all of them. When every package exposes the same scripts, a CI pipeline that works for one works for all. Predictability reduces the cognitive overhead of moving between parts of the system and lowers the barrier for new contributors.
 
-The danger arises when conventions are enforced by tooling outside the tier's execution contract rather than followed as documented patterns. Framework-style conventions---where placing a file in a specific directory automatically registers it as a route, or naming a function according to a pattern gives it lifecycle behaviour---belong to the contract when the tier's chosen framework defines and documents them; enforced by anything else, they couple the code to machinery the contract never named. When such a convention breaks, the developer has no source to read and no documented contract to consult, only the internals of a tool the tier never chose.
+The danger arises when conventions are enforced through runtime magic rather than documented patterns. Framework-style conventions---where placing a file in a specific directory automatically registers it as a route, or naming a function according to a pattern gives it lifecycle behaviour---feel productive but create invisible coupling between code and framework internals. When these conventions break, the developer has no source to read, only framework documentation to consult.
 
 The system uses conventions extensively, but they are explicit: humans follow them because the patterns are documented and the structure is visible, not because a framework scans directories or infers intent from filenames. Generators scaffold new components following these conventions, but the generated code is ordinary code with no privileged relationship to the generator. Any generated file can be modified without consequence, and components can be created manually without using the generator at all.
 
