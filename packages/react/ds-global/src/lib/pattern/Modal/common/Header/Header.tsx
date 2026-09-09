@@ -14,6 +14,11 @@ const componentCssClassName = "ds modal-header";
  * title id (which names the dialog) and the dismiss wiring come from the Modal
  * context, so a composed header needs no props of its own.
  *
+ * The title is not a heading element: headings structure the page's document
+ * outline, and a modal opens from anywhere in it, so no heading level would be
+ * right everywhere. The title names the dialog through `aria-labelledby`
+ * instead, which is what a screen reader announces when the modal opens.
+ *
  * @implements ds:global.subcomponent.modal-header
  */
 const Header = ({

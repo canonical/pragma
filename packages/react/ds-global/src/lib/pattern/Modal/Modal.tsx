@@ -34,7 +34,10 @@ const componentCssClassName = "ds modal";
  * The sections are composed by the consumer: render
  * `Modal.Header`, `Modal.Content` and `Modal.Footer` as children and choose
  * which ones to show. The header's title names the dialog automatically; a
- * modal composed without a header must carry its own `aria-label`.
+ * modal composed without a header must carry its own `aria-label`. Note the
+ * title is not a heading element: a modal is a layer on top of the page, not
+ * part of its document outline, so the title names the dialog through
+ * `aria-labelledby` instead of occupying a heading level.
  *
  * `import { Modal } from "@canonical/react-ds-global";`
  *

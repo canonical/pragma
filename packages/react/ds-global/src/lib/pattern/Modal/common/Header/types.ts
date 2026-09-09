@@ -3,6 +3,11 @@ import type { ComponentProps, ReactNode } from "react";
 type OwnProps = {
   /**
    * The modal title. It tells the user what triggered the modal.
+   *
+   * The title is deliberately not a heading element: the modal is a layer on
+   * top of the page, not part of its document outline, so it names the dialog
+   * through `aria-labelledby` instead.
+   *
    * Maps to DSL edges[0]: title (cardinality: 1)
    */
   children?: ReactNode;
