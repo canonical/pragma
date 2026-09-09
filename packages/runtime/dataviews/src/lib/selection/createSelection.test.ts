@@ -86,6 +86,19 @@ describe("createSelection", () => {
     expect(Object.isFrozen(selection.state)).toBe(true);
   });
 
+  it("bumps the revision only on accepted mutations", () => {
+    const selection = createSelection(["a"]);
+    expect(selection.state.revision).toBe(0);
+    selection.add(["a"]); // no membership change
+    expect(selection.state.revision).toBe(0);
+    selection.add(["b"]);
+    expect(selection.state.revision).toBe(1);
+    selection.remove(["z"]); // absent identity: no change
+    expect(selection.state.revision).toBe(1);
+    selection.toggle("b"); // removal is a change
+    expect(selection.state.revision).toBe(2);
+  });
+
   it("supports unsubscribe", () => {
     const selection = createSelection();
     let notifications = 0;

@@ -5,6 +5,7 @@ export * from "./field/index.js";
 export { default as isIdentity } from "./isIdentity.js";
 export * from "./observable/index.js";
 export * from "./operation/index.js";
+export * from "./provider/index.js";
 export * from "./query/index.js";
 export * from "./schema/index.js";
 export * from "./selection/index.js";

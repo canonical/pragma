@@ -62,3 +62,8 @@ export type AppliedOf<TField extends SchemaFieldDefinition> = TField extends {
 export type SchemaFields<TFields extends readonly SchemaFieldDefinition[]> = {
   readonly [TDefinition in TFields[number] as TDefinition["field"]]: AppliedOf<TDefinition>;
 };
+
+/** A value that may be absent: the explicit none/value split. */
+export type EmptyOr<T> =
+  | { readonly kind: "empty" }
+  | { readonly kind: "value"; readonly value: T };

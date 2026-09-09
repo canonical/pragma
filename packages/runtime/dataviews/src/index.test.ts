@@ -8,6 +8,7 @@ describe("public surface", () => {
       "canonicalSlice",
       "createChannel",
       "createCollectionCoordinator",
+      "createDataViewsProvider",
       "createFieldInteraction",
       "createIdentity",
       "createOperation",
