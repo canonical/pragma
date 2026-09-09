@@ -33,7 +33,7 @@
     <div
       style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start;"
     >
-      {#each ["dense", "medium"] as const as density (density)}
+      {#each ["comfortable", "dense"] as const as density (density)}
         <NumberInput {density} placeholder={density} {...args} />
       {/each}
     </div>
