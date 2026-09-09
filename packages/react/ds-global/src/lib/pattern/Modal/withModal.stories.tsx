@@ -2,7 +2,7 @@ import type { Meta, StoryFn } from "@storybook/react-vite";
 import type React from "react";
 import { Button } from "../../component/Button/index.js";
 import { withModal } from "./index.js";
-import Modal from "./Modal.js";
+import Modal from "./Provider.js";
 
 const meta = {
   title: "patterns/Modal/withModal",

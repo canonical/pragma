@@ -3,7 +3,7 @@ import { createRef } from "react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { Button } from "../../component/Button/index.js";
 import { withModal } from "./index.js";
-import Modal from "./Modal.js";
+import Modal from "./Provider.js";
 import type { WithModalModal } from "./types.js";
 
 /*

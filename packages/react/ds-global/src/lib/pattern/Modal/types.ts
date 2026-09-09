@@ -68,6 +68,22 @@ export type ModalProps = OwnProps &
   Omit<ComponentProps<"dialog">, keyof OwnProps | "title">;
 
 /**
+ * The shared modal API threaded to the composed subcomponents through the
+ * Modal context: the id the dialog's `aria-labelledby` points at (set on the
+ * Header's title, which is what gives the dialog its accessible name), and
+ * the dismissal that closes the dialog (what the Header's close button calls).
+ */
+export interface ModalContextValue {
+  /**
+   * The id the dialog's `aria-labelledby` points at. The Header sets it on the
+   * title, which is what gives the dialog its accessible name.
+   */
+  titleId: string;
+  /** Closes the dialog. What the Header's close button calls. */
+  onDismiss: () => void;
+}
+
+/**
  * The one requirement {@link withModal} places on the component it wraps: it
  * must accept an `onClick` handler. The HOC composes its open handler onto
  * the trigger itself — no wrapper element — so a trigger that accepts

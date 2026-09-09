@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { createRef, useEffect, useRef } from "react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import Component from "./Modal.js";
+import Component from "./Provider.js";
 import type { ModalProps } from "./types.js";
 
 /*

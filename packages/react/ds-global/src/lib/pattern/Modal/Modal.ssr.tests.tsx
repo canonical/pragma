@@ -1,6 +1,6 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import Component from "./Modal.js";
+import Component from "./Provider.js";
 
 describe("Modal SSR", () => {
   it("doesn't throw", () => {

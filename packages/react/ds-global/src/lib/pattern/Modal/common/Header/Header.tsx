@@ -1,6 +1,6 @@
 import type React from "react";
 import { Button } from "../../../../component/Button/index.js";
-import { useModalContext } from "../ModalContext.js";
+import { useModalContext } from "../../hooks/useModalContext.js";
 import type { HeaderProps } from "./types.js";
 import "./styles.css";
 

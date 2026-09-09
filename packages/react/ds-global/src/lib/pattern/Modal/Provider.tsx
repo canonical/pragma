@@ -1,8 +1,9 @@
 import type React from "react";
 import type { RefCallback } from "react";
-import { useCallback, useId, useRef } from "react";
+import { useCallback, useRef } from "react";
+import Context from "./Context.js";
 import { Content, Footer, Header } from "./common/index.js";
-import ModalContext from "./common/ModalContext.js";
+import useModalState from "./hooks/useModalState.js";
 import type { ModalProps } from "./types.js";
 import "./styles.css";
 
@@ -43,7 +44,7 @@ const componentCssClassName = "ds modal";
  *
  * @implements ds:global.pattern.modal
  */
-const Modal = ({
+const Provider = ({
   ref,
   closeOnBackdropClick = false,
   children,
@@ -78,9 +79,9 @@ const Modal = ({
     },
     [ref],
   );
-  const titleId = useId();
-
-  const requestClose = (): void => dialogRef.current?.close();
+  // The id that names the dialog and the dismissal the header's close button
+  // calls — the provider state, centralised in its own hook.
+  const { titleId, onDismiss } = useModalState(dialogRef);
 
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: the click handler only identifies clicks landing on the backdrop, which has no keyboard equivalent; keyboard dismissal is Escape, handled natively by the dialog's cancel event
@@ -109,20 +110,20 @@ const Modal = ({
       onClick={(event) => {
         onClick?.(event);
         if (closeOnBackdropClick && event.target === event.currentTarget) {
-          requestClose();
+          onDismiss();
         }
       }}
       {...props}
     >
-      <ModalContext.Provider value={{ titleId, onDismiss: requestClose }}>
+      <Context.Provider value={{ titleId, onDismiss }}>
         {children}
-      </ModalContext.Provider>
+      </Context.Provider>
     </dialog>
   );
 };
 
-Modal.Content = Content;
-Modal.Footer = Footer;
-Modal.Header = Header;
+Provider.Content = Content;
+Provider.Footer = Footer;
+Provider.Header = Header;
 
-export default Modal;
+export default Provider;

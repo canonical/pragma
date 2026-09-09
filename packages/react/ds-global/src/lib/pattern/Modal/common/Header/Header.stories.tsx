@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import ModalContext from "../ModalContext.js";
+import ModalContext from "../../Context.js";
 import Header from "./Header.js";
 
 const meta = {

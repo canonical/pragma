@@ -2,7 +2,7 @@ import type { MouseEventHandler } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { withModal } from "./index.js";
-import Modal from "./Modal.js";
+import Modal from "./Provider.js";
 
 const Trigger = ({
   children,

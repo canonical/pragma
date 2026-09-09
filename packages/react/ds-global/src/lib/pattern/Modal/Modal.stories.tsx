@@ -5,7 +5,7 @@ import { Button } from "../../component/Button/index.js";
 import { Chip } from "../../component/Chip/index.js";
 import { InlineCode } from "../../component/InlineCode/index.js";
 import { KeyboardKey } from "../../component/KeyboardKey/index.js";
-import Modal from "./Modal.js";
+import Modal from "./Provider.js";
 import type { ModalProps } from "./types.js";
 
 /**
