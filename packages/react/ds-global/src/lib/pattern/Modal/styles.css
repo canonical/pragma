@@ -72,14 +72,20 @@
 
     /*
       Read the surface channels on the element itself. The token layer defines a
-      `.modal` surface (identical to top-level `.surface`), so the dialog paints at
-      base surface depth even when opened from a nested `.surface` — which is the
-      DSL's `color/surface/overlay`. The global tokens are the fallback for when
-      @canonical/styles is absent and the surface channels are undeclared, matching
-      how every other component in this package reads a surface.
+      `.modal` surface (identical to top-level `.surface`), matched by this
+      component's own `ds modal` className, so the dialog paints at base surface
+      depth even when opened from a nested `.surface` — which is the DSL's
+      `color/surface/overlay`.
+
+      The background channel is always emitted on the `.modal` surface, so it is
+      read bare. The text channel is different: the surface family emits
+      `--surface-color-text` only on polarity-inverting (contrasted) surfaces —
+      a same-polarity surface like `.modal` deliberately emits none, and the
+      documented consumption is `var(--surface-color-text, var(--color-text))`,
+      which falls through to the ambient page text.
     */
     color: var(--surface-color-text, var(--color-text));
-    background-color: var(--surface-color-background, var(--color-background));
+    background-color: var(--surface-color-background);
 
     /*
       The user-agent stylesheet gives <dialog> `border: solid` (medium width, ~3px)

@@ -1,5 +1,5 @@
 import type React from "react";
-import type { RefCallback } from "react";
+import type { MouseEventHandler, RefCallback } from "react";
 import { useCallback, useRef } from "react";
 import Context from "./Context.js";
 import { Content, Footer, Header } from "./common/index.js";
@@ -83,6 +83,20 @@ const Provider = ({
   // calls — the provider state, centralised in its own hook.
   const { titleId, onDismiss } = useModalState(dialogRef);
 
+  // A click landing on the <dialog> itself is a backdrop click: the box has
+  // no padding of its own, so every inner pixel belongs to a child. The
+  // consumer's own handler is called first and composed with, not replaced
+  // — a spread would silently drop backdrop dismissal.
+  const handleClick = useCallback<MouseEventHandler<HTMLDialogElement>>(
+    (event) => {
+      onClick?.(event);
+      if (closeOnBackdropClick && event.target === event.currentTarget) {
+        onDismiss();
+      }
+    },
+    [onClick, closeOnBackdropClick, onDismiss],
+  );
+
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: the click handler only identifies clicks landing on the backdrop, which has no keyboard equivalent; keyboard dismissal is Escape, handled natively by the dialog's cancel event
     <dialog
@@ -102,17 +116,7 @@ const Provider = ({
       // cancelable, so a repeated press closes the modal over that handler's
       // head. Escape is a way out the consumer can delay, not deny; `onClose`
       // is where to hear that it happened.
-      //
-      // A click landing on the <dialog> itself is a backdrop click: the box has
-      // no padding of its own, so every inner pixel belongs to a child. The
-      // consumer's own handler is called first and composed with, not replaced
-      // — a spread would silently drop backdrop dismissal.
-      onClick={(event) => {
-        onClick?.(event);
-        if (closeOnBackdropClick && event.target === event.currentTarget) {
-          onDismiss();
-        }
-      }}
+      onClick={handleClick}
       {...props}
     >
       <Context.Provider value={{ titleId, onDismiss }}>
