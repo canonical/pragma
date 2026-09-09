@@ -35,17 +35,6 @@ type OwnProps = {
  * Props for the Modal.Header subcomponent
  *
  * @implements ds:global.subcomponent.modal-header
- *
- * Anatomy (from DSL):
- * - layout.type: flow
- * - layout.direction: horizontal
- * - layout.align: center
- * - layout.justify: space-between
- * - spacing.internal: spacing/medium
- * - appearance.border.bottom: border/style/divider
- * - edges:
- *   - [0] title (cardinality: 1, slotName: default)
- *   - [1] close button (cardinality: 0..1)
  */
 export type HeaderProps = OwnProps &
   Omit<ComponentProps<"header">, keyof OwnProps>;

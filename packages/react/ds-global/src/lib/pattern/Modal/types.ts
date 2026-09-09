@@ -39,15 +39,6 @@ type OwnProps = {
  *
  * @implements ds:global.pattern.modal
  *
- * Anatomy (from DSL):
- * - layout.type: stack
- * - edges (composed by the consumer):
- *   - [0] backdrop (cardinality: 1) — the native `::backdrop`, no DOM node
- *   - [1] dialog container (cardinality: 1) — the `<dialog>` element itself
- *     - [0] modal-header  (cardinality: 0..1, slotName: header)
- *     - [1] modal-content (cardinality: 1,    slotName: default)
- *     - [2] modal-footer  (cardinality: 0..1, slotName: footer)
- *
  * `title` is omitted from the native attributes because the DOM `title`
  * attribute is a tooltip, while here it would name the modal — which the
  * composed `Modal.Header` does instead.

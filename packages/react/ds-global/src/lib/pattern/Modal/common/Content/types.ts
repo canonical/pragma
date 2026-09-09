@@ -12,13 +12,6 @@ type OwnProps = {
  * Props for the Modal.Content subcomponent
  *
  * @implements ds:global.subcomponent.modal-content
- *
- * Anatomy (from DSL):
- * - layout.overflow: scroll
- * - layout.flex: 1
- * - spacing.internal: spacing/large
- * - edges:
- *   - [0] content (cardinality: 1, slotName: default)
  */
 export type ContentProps = OwnProps &
   Omit<ComponentProps<"div">, keyof OwnProps>;
