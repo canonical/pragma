@@ -17,7 +17,7 @@ export type { LinkComponentProps };
 /**
  * A single navigable, non-expandable row — the leaf of the content tree.
  * Renders as a link (via `LinkComponent`) when `url` is set, otherwise a
- * plain non-navigable label (SPEC.md §4.3). The content tree accepts links
+ * plain non-navigable label (the 24.04 spec §4.3). The content tree accepts links
  * and plain labels only — interactive buttons are Footer-only (a
  * `LeafFooterItem` with `control: "button"`), so a leaf carries no `onClick`
  * or toggle state of its own.
@@ -41,10 +41,10 @@ export interface LeafNavItem {
 
 /**
  * A collapsible row that discloses its own children instead of navigating.
- * Cannot have a `url` (SPEC.md §4.3: "Expandable navigation items cannot
+ * Cannot have a `url` (the 24.04 spec §4.3: "Expandable navigation items cannot
  * link to a page") and its children are always `LeafNavItem` — depth is
  * exactly one level: a child of an expandable item cannot itself expand
- * (SPEC.md §4.3, "Navigation items can only contain themselves as
+ * (the 24.04 spec §4.3, "Navigation items can only contain themselves as
  * children... if a navigation item is already a child it can not contain
  * children itself"). No `slot` either — the end slot is always the
  * disclosure caret for an expandable row; there is nowhere for a badge to
@@ -64,7 +64,7 @@ export type NavItem = LeafNavItem | ExpandableNavItem;
 /**
  * A named collection of `NavItem` entries, with an optional header
  * (`SideNavigation.GroupHeader`). This is the shape of each of `root`'s (or
- * a `NavGroup`'s siblings') direct children — SPEC.md §4.3: "`root.items`
+ * a `NavGroup`'s siblings') direct children — the 24.04 spec §4.3: "`root.items`
  * are groups... each group's `items` are the actual navigation entries."
  */
 export interface NavGroup {

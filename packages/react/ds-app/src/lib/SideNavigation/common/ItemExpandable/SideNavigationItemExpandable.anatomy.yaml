@@ -3,7 +3,7 @@
 # (always-leaf) children instead of navigating. Native <details>/<summary>;
 # no role/aria-expanded authored (cs:ui_blocks.nojs.disclosure) — the element
 # supplies the disclosure semantics itself. Cannot link (no url) and cannot
-# nest further (children are SideNavigation.Item only) — SPEC.md §4.3.
+# nest further (children are SideNavigation.Item only) — the 24.04 spec §4.3.
 node:
   uri: apps.subcomponent.side-navigation-item-expandable
   styles:

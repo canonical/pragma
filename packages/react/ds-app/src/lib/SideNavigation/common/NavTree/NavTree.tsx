@@ -79,7 +79,7 @@ const renderEntry = (
  *     same renderEntry).
  *
  * The hook is generic over `_AnyNavNode` (the union of every field any tier
- * can carry — SPEC.md §4.3), so `icon`/`slot`/`items` all
+ * can carry — the 24.04 spec §4.3), so `icon`/`slot`/`items` all
  * survive typed onto the annotated nodes regardless of which tier they
  * came from. `currentUrl` seeds initial selection and re-syncs it on
  * navigation (the hook's `initialUrl` is mount-only), so the active item —

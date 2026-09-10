@@ -135,13 +135,13 @@ export const CertificateUser: Story = {
 };
 
 /**
- * Below Vanilla's small breakpoint (SPEC.md §7): the collapse toggle
+ * Below Vanilla's small breakpoint (the 24.04 spec §7): the collapse toggle
  * becomes a "Menu"/"Close menu" text button; the header stays in its
  * normal row layout (not the desktop centred-column collapsed state); and
  * the body goes fullscreen when open rather than a 240px rail. A fixed
  * narrow wrapper stands in for an actual small-viewport preview. The
  * mobile drill-down for expandable/secondary-opening items (chevron-right,
- * back button) is out of scope — SPEC.md §10.18.
+ * back button) is out of scope — the 24.04 spec §10.18.
  */
 export const Mobile: Story = {
   args: {

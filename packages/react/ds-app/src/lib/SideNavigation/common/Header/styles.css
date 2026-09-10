@@ -45,12 +45,12 @@
       margin-inline: calc(var(--dimension-025) * -1);
     }
 
-    /* Collapsed (SPEC.md §1.2): a centred column — logo on top, the collapse
+    /* Collapsed (the 24.04 spec §1.2): a centred column — logo on top, the collapse
      toggle relocates below it rather than beside it. DOM order already
      places the toggle last, so switching the axis alone moves it there; no
      title has room, so it's dropped entirely rather than left to overflow
      a rail this narrow. No stated transition for this rearrangement
-     (SPEC.md §10.4), so no `transition` property here. */
+     (the 24.04 spec §10.4), so no `transition` property here. */
     &[data-expanded="false"] {
       flex-direction: column;
       align-items: flex-start;
@@ -61,7 +61,7 @@
       }
     }
 
-    /* Responsive (SPEC.md §7): "On mobile the header is always shown" in its
+    /* Responsive (the 24.04 spec §7): "On mobile the header is always shown" in its
      normal row layout — collapsed there means "menu closed", not "narrow
      icon rail", so the centred-column rearrangement above doesn't apply. */
     @media (width < 620px) {

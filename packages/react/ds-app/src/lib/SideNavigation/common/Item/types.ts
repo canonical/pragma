@@ -13,7 +13,7 @@ import type { LeafNavItem, LinkComponentProps } from "../../types.js";
  * string prop — the data-driven path (`NavTree`, from a `root` tree, whose
  * authored `LeafNavItem.label` stays a plain string) passes its `label` in
  * as `children` rather than as a same-named prop. Always a leaf: an entry
- * with children is a SideNavigation.ItemExpandable instead (SPEC.md §4.3) —
+ * with children is a SideNavigation.ItemExpandable instead (the 24.04 spec §4.3) —
  * Item never shows a disclosure caret.
  */
 type OwnProps = Omit<LeafNavItem, "label" | "key"> & {

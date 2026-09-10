@@ -39,7 +39,7 @@ describe("CollapseToggle", () => {
     expect(element.className).toContain("custom-class");
   });
 
-  it("wires a tooltip naming the action for each state (SPEC.md §5, §9.4)", () => {
+  it("wires a tooltip naming the action for each state (the 24.04 spec §5, §9.4)", () => {
     const { rerender } = render(<CollapseToggle expanded />);
     expect(screen.getByRole("tooltip", { hidden: true })).toHaveTextContent(
       "Collapse",

@@ -2,13 +2,13 @@ import type { ExpandableNavItem } from "./types.js";
 
 /**
  * Builds the content's one mandatory item: a collapsible "Help" item
- * containing at least one external link to legal information (SPEC.md §1.1:
+ * containing at least one external link to legal information (the 24.04 spec §1.1:
  * "The navigation content has one mandatory item, a collapsible navigation
  * item titled 'Help' which at the very least must include an external link
  * to our legal information").
  *
  * A thin data-construction helper, not a component — the mandatory item is
- * an ordinary `ExpandableNavItem` (SPEC.md §4.3); this just removes the
+ * an ordinary `ExpandableNavItem` (the 24.04 spec §4.3); this just removes the
  * chance of authoring it slightly wrong (missing icon, wrong field names)
  * every time a consumer wires it into their `root`.
  *

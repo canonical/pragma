@@ -1,7 +1,7 @@
 import type { ContextualMenuProps } from "@canonical/react-ds-global";
 import type { ComponentProps, ReactNode } from "react";
 
-/** A single entry in the context switcher's list — user-generated (SPEC.md §4.5). */
+/** A single entry in the context switcher's list — user-generated (the 24.04 spec §4.5). */
 export interface ContextSwitcherItem {
   /** Stable identity for the context (list key and selection matching). */
   key: string;
@@ -18,7 +18,7 @@ export interface ContextSwitcherItem {
   url?: string;
   /** Optional supporting text shown under the name in the list. */
   description?: string;
-  /** Optional badge for dynamic/actionable information (SPEC.md §4.3, Context switcher item). */
+  /** Optional badge for dynamic/actionable information (the 24.04 spec §4.3, Context switcher item). */
   badge?: ReactNode;
 }
 
@@ -56,7 +56,7 @@ type OwnProps = Pick<
  * Renders via `ContextualMenu` — a real `<button>` trigger with
  * `aria-haspopup="menu"`/`aria-expanded`, and a `role="menu"` popup with
  * full roving-focus keyboard navigation (arrow keys, Home/End, type-ahead)
- * — a "select"-like widget, not a bare disclosure (SPEC.md §9.21). Extends
+ * — a "select"-like widget, not a bare disclosure (the 24.04 spec §9.21). Extends
  * `<div>` (`ContextualMenu`'s own root), not `<details>` — this stopped
  * being a `Popover` in that pass. `onSelect` is a native `<div>` text-
  * selection event unrelated to this component's own item-selection

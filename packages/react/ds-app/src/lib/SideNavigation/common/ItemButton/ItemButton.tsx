@@ -30,7 +30,7 @@ const ItemButton = ({
       <span className="start">
         {icon ? <Icon width={16} height={16} icon={icon} /> : null}
       </span>
-      {/* `title` — native tooltip fallback for truncated text; SPEC.md §10.17. */}
+      {/* `title` — native tooltip fallback for truncated text; the 24.04 spec §10.17. */}
       <span
         className="label"
         title={typeof children === "string" ? children : undefined}

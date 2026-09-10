@@ -4,6 +4,12 @@
 > pairings from the original draft are retained below; the previously
 > deferred Properties, State & Keyboard, and Accessibility sections are now
 > specified.
+>
+> **Citation convention.** References in this folder to `SPEC.md §N` mean
+> this document's own sections (§1–§5). References to "the 24.04 spec
+> §N.M" use the upstream design spec's section numbering, which this
+> document does not mirror — those numbers are stable there and are kept
+> so a claim can be traced to its source.
 
 ---
 
@@ -22,10 +28,15 @@
 The `SideNavigation` is a full-height container that partitions its vertical space among three subcomponents. Header and Footer are optional; Content is required and grows to fill the remaining space.
 
 The component's root element is a plain `<div>` layout container — it is
-**not** a landmark. The component's single navigation landmark is
+**not** a landmark. The component's single *navigation* landmark is
 Content's `<nav>`. The header's branding and the footer's actions are
 deliberately kept outside it, so assistive technology announces exactly one
-navigation region.
+navigation region. The regions themselves are semantic elements — Header
+renders `<header>` and Footer renders `<footer>`, so the component as a
+whole additionally exposes a `banner` and a `contentinfo` landmark; an
+application with its own top-level header or footer will have two of
+each, which is the accepted trade-off for region-level semantics inside
+the rail.
 
 ```
 ┌─────────────────────────────────────────┐ ─┐
@@ -103,17 +114,17 @@ them by hand.
 
 | Component                    | URI                                              | File |
 |------------------------------|--------------------------------------------------|------|
-| `SideNavigation`             | `global.component.side-navigation`               | [SideNavigation.anatomy.yaml](./SideNavigation.anatomy.yaml) |
-| `SideNavigation.Header`      | `global.subcomponent.side-navigation-header`     | [SideNavigationHeader.anatomy.yaml](./common/Header/SideNavigationHeader.anatomy.yaml) |
-| `SideNavigation.Content`     | `global.subcomponent.side-navigation-content`    | [SideNavigationContent.anatomy.yaml](./common/Content/SideNavigationContent.anatomy.yaml) |
-| `SideNavigation.Footer`      | `global.subcomponent.side-navigation-footer`     | [SideNavigationFooter.anatomy.yaml](./common/Footer/SideNavigationFooter.anatomy.yaml) |
-| `SideNavigation.CollapseToggle` | `global.subcomponent.side-navigation-collapse-toggle` | [SideNavigationCollapseToggle.anatomy.yaml](./common/CollapseToggle/SideNavigationCollapseToggle.anatomy.yaml) |
-| `SideNavigation.ContextSwitcher` | `global.subcomponent.side-navigation-context-switcher` | [SideNavigationContextSwitcher.anatomy.yaml](./common/ContextSwitcher/SideNavigationContextSwitcher.anatomy.yaml) |
-| `SideNavigation.Group`       | `global.subcomponent.side-navigation-group`      | [SideNavigationGroup.anatomy.yaml](./common/Group/SideNavigationGroup.anatomy.yaml) |
-| `SideNavigation.GroupHeader` | `global.subcomponent.side-navigation-group-header` | [SideNavigationGroupHeader.anatomy.yaml](./common/GroupHeader/SideNavigationGroupHeader.anatomy.yaml) |
-| `SideNavigation.Item`        | `global.subcomponent.side-navigation-item`       | [SideNavigationItem.anatomy.yaml](./common/Item/SideNavigationItem.anatomy.yaml) |
-| `SideNavigation.ItemButton`  | `global.subcomponent.side-navigation-item-button` | [SideNavigationItemButton.anatomy.yaml](./common/ItemButton/SideNavigationItemButton.anatomy.yaml) |
-| `SideNavigation.ItemExpandable` | `global.subcomponent.side-navigation-item-expandable` | [SideNavigationItemExpandable.anatomy.yaml](./common/ItemExpandable/SideNavigationItemExpandable.anatomy.yaml) |
+| `SideNavigation`             | `apps.pattern.side-navigation`               | [SideNavigation.anatomy.yaml](./SideNavigation.anatomy.yaml) |
+| `SideNavigation.Header`      | `apps.subcomponent.side-navigation-header`     | [SideNavigationHeader.anatomy.yaml](./common/Header/SideNavigationHeader.anatomy.yaml) |
+| `SideNavigation.Content`     | `apps.subcomponent.side-navigation-content`    | [SideNavigationContent.anatomy.yaml](./common/Content/SideNavigationContent.anatomy.yaml) |
+| `SideNavigation.Footer`      | `apps.subcomponent.side-navigation-footer`     | [SideNavigationFooter.anatomy.yaml](./common/Footer/SideNavigationFooter.anatomy.yaml) |
+| `SideNavigation.CollapseToggle` | `apps.subcomponent.side-navigation-collapse-toggle` | [SideNavigationCollapseToggle.anatomy.yaml](./common/CollapseToggle/SideNavigationCollapseToggle.anatomy.yaml) |
+| `SideNavigation.ContextSwitcher` | `apps.subcomponent.side-navigation-context-switcher` | [SideNavigationContextSwitcher.anatomy.yaml](./common/ContextSwitcher/SideNavigationContextSwitcher.anatomy.yaml) |
+| `SideNavigation.Group`       | `apps.subcomponent.side-navigation-group`      | [SideNavigationGroup.anatomy.yaml](./common/Group/SideNavigationGroup.anatomy.yaml) |
+| `SideNavigation.GroupHeader` | `apps.subcomponent.side-navigation-group-header` | [SideNavigationGroupHeader.anatomy.yaml](./common/GroupHeader/SideNavigationGroupHeader.anatomy.yaml) |
+| `SideNavigation.Item`        | `apps.subcomponent.side-navigation-item`       | [SideNavigationItem.anatomy.yaml](./common/Item/SideNavigationItem.anatomy.yaml) |
+| `SideNavigation.ItemButton`  | `apps.subcomponent.side-navigation-item-button` | [SideNavigationItemButton.anatomy.yaml](./common/ItemButton/SideNavigationItemButton.anatomy.yaml) |
+| `SideNavigation.ItemExpandable` | `apps.subcomponent.side-navigation-item-expandable` | [SideNavigationItemExpandable.anatomy.yaml](./common/ItemExpandable/SideNavigationItemExpandable.anatomy.yaml) |
 
 `GroupHeader` is a semantic divider — it carries no tooltip and has no
 standalone interactive story; its rendering is covered by the grouped
@@ -146,7 +157,7 @@ stories.
 |---------------------------|--------|-----------------------------------------------------------------------------------------|
 | `layout.flex`             | `1`    | Grows to fill space between header and footer                                            |
 | `layout.overflow`         | `auto` | Scrolls independently when content overflows                                             |
-| prop: `root`              | `Item` | WD405 root item — its `items[]` children are rendered as the nav item list               |
+| prop: `root`              | `NavRoot` | Root whose direct children (groups) are rendered as the content entries  |
 | nav item list             | `0..*` items | Root node itself is not rendered; only its direct children are                     |
 
 **Footer**
@@ -154,7 +165,7 @@ stories.
 | Property | Value | Notes |
 |----------|-------|-------|
 | cardinality | `0..1` | Optional |
-| prop: `root` | `Item` | WD405 root item — same contract as Content; root not rendered, only its children |
+| prop: `root` | `FooterRoot` | The footer's own flat data surface (leaves + depth-1 expandables); root not rendered, only its items |
 
 ---
 
@@ -357,10 +368,20 @@ router so active state tracks navigation.
 
 ### Responsive behaviour
 
-Below the small breakpoint (767px) the rail stops being a rail: expanded, it
-takes over the full screen as a fixed overlay until dismissed; collapsed,
-the header shows and the body is hidden. Drill-down navigation for
-expandable items (chevron + back button) is out of scope.
+Below Vanilla's small breakpoint (`$breakpoint-small`, **620px** — the
+24.04 spec's "small breakpoint of Vanilla", not the 767px an earlier
+draft assumed) the rail stops being a rail: expanded, it takes over the
+full screen as a fixed overlay until dismissed; collapsed, the header
+shows and the body is hidden. Drill-down navigation for expandable items
+(chevron + back button) is out of scope.
+
+Because the expanded state is a fullscreen takeover on a small viewport,
+`defaultExpanded` left unset does not keep the desktop default there: the
+component collapses the rail after mount on a small viewport (a
+`matchMedia` seed). An explicit `defaultExpanded` always wins, on every
+viewport. The seed runs post-mount on purpose — the server cannot know
+the viewport, so SSR and hydration stay pure; the cost is one frame of
+the expanded rail on a phone before the flip.
 
 ---
 

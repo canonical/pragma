@@ -85,7 +85,7 @@ export const maasContentRoot: NavRoot = {
       ],
     },
     // The mandatory collapsible "Help" item, with an external link to legal
-    // information (SPEC.md §1.1) — an unlabelled trailing group, the common
+    // information (the 24.04 spec §1.1) — an unlabelled trailing group, the common
     // placement for it.
     { key: "help-group", items: [createHelpItem("/legal")] },
   ],
@@ -185,7 +185,7 @@ export const lxdContentRoot: NavRoot = {
       ],
     },
     // The mandatory collapsible "Help" item, with an external link to legal
-    // information (SPEC.md §1.1) — an unlabelled trailing group.
+    // information (the 24.04 spec §1.1) — an unlabelled trailing group.
     {
       key: "help-group",
       items: [createHelpItem("/legal")],
@@ -303,7 +303,7 @@ export const contextSwitcherFooterRoot: FooterRoot = {
   ],
 };
 
-// --- Context fixtures (SPEC.md §4.5) --------------------------------------
+// --- Context fixtures (the 24.04 spec §4.5) --------------------------------------
 
 /**
  * LXD's project switcher — the spec's own example. url-bearing contexts:

@@ -72,12 +72,12 @@ const CreateContextContent = ({
 
 /**
  * SideNavigation.ContextSwitcher — a dropdown for products that divide into
- * different contexts, projects, users, or similar (SPEC.md §4.3, §4.5).
+ * different contexts, projects, users, or similar (the 24.04 spec §4.3, §4.5).
  * Renders via `ContextualMenu` — a real `<button>` trigger
  * (`aria-haspopup="menu"`/`aria-expanded`) and a `role="menu"` popup with
  * full roving-focus keyboard navigation (arrow keys, Home/End, type-ahead) —
  * a "select"-like widget, not a bare `<details>`/`<summary>` disclosure with
- * a plain list of buttons (SPEC.md §9.21; this used to render via `Popover`,
+ * a plain list of buttons (the 24.04 spec §9.21; this used to render via `Popover`,
  * which is exactly that). `title`, when given, renders via
  * `SideNavigation.GroupHeader` immediately above the dropdown field — a
  * real sibling in the Fragment this returns, not part of `ContextualMenu`
@@ -85,7 +85,7 @@ const CreateContextContent = ({
  * there (node `657:39353`).
  *
  * Not currently part of the `NavRoot`/`NavGroup` content-tree data model —
- * SPEC.md §4.5's "content-defined position" is realised by composing this
+ * the 24.04 spec §4.5's "content-defined position" is realised by composing this
  * component directly where the consumer wants it (e.g. via
  * `SideNavigation.Content`'s `children` fallback), not by a `root.items`
  * entry kind. See SPEC.md's known issues for the rationale.

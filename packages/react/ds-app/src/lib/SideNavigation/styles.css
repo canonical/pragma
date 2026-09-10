@@ -8,7 +8,7 @@
 
     /* Not stated by the spec. Derived: logo width + one spacing unit
      (--dimension-200, 1rem) on each side, with the logo horizontally
-     centred — see SPEC.md §9.2. */
+     centred — see the 24.04 spec §9.2. */
     --sidenav-rail-inline-size-collapsed: calc(
       var(--sidenav-logo-inline-size) +
       2 *
@@ -17,8 +17,8 @@
 
     /* ── Logo ───────────────────────────────────────────────────────── */
     /* Deliberate deviation: the 24.04 spec states 2.25rem; this ships
-     2.5rem (§9.3's own 1:2 aspect ratio kept, both sides scaled). Width
-     follows the same ratio: 1.25rem. */
+     2.5rem (the 24.04 spec §9.3's own 1:2 aspect ratio kept, both sides
+     scaled). Width follows the same ratio: 1.25rem. */
     --sidenav-logo-block-size: 2.5rem;
     --sidenav-logo-inline-size: 1.25rem;
 
@@ -88,16 +88,16 @@
      specifically at the Header/Content and Content/Footer seams. */
     --overflow-gradient-height: 1.75rem;
 
-    /* Collapsed (SPEC.md §1.2, §7): the rail narrows to fit just the logo,
+    /* Collapsed (the 24.04 spec §1.2, §7): the rail narrows to fit just the logo,
       and no navigation items show at all — a deliberate scope cut. The
       footer stays visible (icon-only) — only Content is hidden. The width
       change animates over --motion-duration-medium — a deliberate
-      deviation from the 24.04 spec's statement that the rail transition
-      is NOT animated (§10.4): the resize reads as motion rather than a
-      jump, and it already honours reduced motion (the motion tokens are
-      zeroed under prefers-reduced-motion by @canonical/styles/motion.css).
-      Both the physical and logical properties transition, for engines
-      that implement only one of them. */
+      deviation from the 24.04 spec's statement (the 24.04 spec §10.4)
+      that the rail transition is NOT animated: the resize reads as motion
+      rather than a jump, and it already honours reduced motion (the motion
+      tokens are zeroed under prefers-reduced-motion by
+      @canonical/styles/motion.css). Both the physical and logical
+      properties transition, for engines that implement only one of them. */
 
     transition:
       width var(--motion-duration-medium) ease-in-out,
@@ -152,7 +152,7 @@
 
       /* Footer stays visible, icon-only — spec: "the collapsed state footer
        items show their labels in tooltips when hovered after 800ms delay."
-       The tooltip itself is a documented follow-up (SPEC.md §10.14); this is
+       The tooltip itself is a documented follow-up (the 24.04 spec §10.14); this is
        the icon-only layout half. */
       & > .ds.footer {
         .label,
@@ -254,14 +254,14 @@
       }
     }
 
-    /* Responsive (SPEC.md §7): below Vanilla's "small" breakpoint ($breakpoint-
+    /* Responsive (the 24.04 spec §7): below Vanilla's "small" breakpoint ($breakpoint-
      small, 620px), the rail stops being a rail — the header is always shown;
      the body (Content AND Footer, unlike the desktop collapsed state which
      keeps the footer visible) is hidden until Menu is activated, then takes
      over the full screen. Same `data-expanded` attribute as desktop; only
      what they mean visually changes here. Drill-down navigation for
      expandable/secondary-opening items (chevron-right + a back button) is
-     out of scope — SPEC.md §10.18. */
+     out of scope — the 24.04 spec §10.18. */
     @media (width < 620px) {
       inline-size: 100%;
       flex-shrink: 1;

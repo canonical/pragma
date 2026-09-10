@@ -22,7 +22,7 @@ describe("GroupHeader", () => {
     expect(screen.getByTestId("header")).toBeInTheDocument();
   });
 
-  it("sets title as a native tooltip fallback for truncation when children is text (SPEC.md §10.17)", () => {
+  it("sets title as a native tooltip fallback for truncation when children is text (the 24.04 spec §10.17)", () => {
     render(<GroupHeader>Hardware</GroupHeader>);
     expect(screen.getByText("Hardware")).toHaveAttribute("title", "Hardware");
   });

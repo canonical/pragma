@@ -18,7 +18,7 @@
     cursor: pointer;
 
     /* Spec: "the background colour of the collapse/expand button changes" on
-     hover; no stated transition on that change (SPEC.md §10.4), so no
+     hover; no stated transition on that change (the 24.04 spec §10.4), so no
      `transition` property here — the swap is instant. */
     &:hover {
       background: var(--sidenav-row-background-hover);
@@ -35,7 +35,7 @@
       display: none;
     }
 
-    /* Vanilla's "small" breakpoint (SPEC.md §7: "on all breakpoints above the
+    /* Vanilla's "small" breakpoint (the 24.04 spec §7: "on all breakpoints above the
      small breakpoint of Vanilla" / "at breakpoints below small" —
      $breakpoint-small, 620px). */
     @media (width < 620px) {

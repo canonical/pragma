@@ -8,7 +8,7 @@ const componentCssClassName = "ds side-navigation-item-expandable";
 
 /**
  * SideNavigation.ItemExpandable — a collapsible row that discloses its own
- * (always-leaf) children instead of navigating (SPEC.md §4.3). Native
+ * (always-leaf) children instead of navigating (the 24.04 spec §4.3). Native
  * `<details>`/`<summary>` — no `role`/`aria-expanded` authored, per
  * `cs:ui_blocks.nojs.disclosure`; the element supplies the disclosure
  * semantics itself, correctly, without scripting. `heading` (the summary's
@@ -19,7 +19,7 @@ const componentCssClassName = "ds side-navigation-item-expandable";
  * rail-collapse state, not Accordion.Item's externally-controlled circuit:
  * each instance is independent (no accordion/single-open behaviour) and
  * NavTree supplies `defaultExpanded` from the tree's own state (whether
- * this node's branch is the selected one — SPEC.md §5). That seed is live:
+ * this node's branch is the selected one — the 24.04 spec §5). That seed is live:
  * when it turns `true` on navigation (a route corresponding to a nested
  * sub-item), the disclosure re-opens — one-way, so a manual collapse stays
  * collapsed and the disclosure never auto-closes.
@@ -118,7 +118,7 @@ const ItemExpandable = ({
           <span className="start">
             {icon ? <Icon width={16} height={16} icon={icon} /> : null}
           </span>
-          {/* `title` — native tooltip fallback for truncated text; SPEC.md §10.17. */}
+          {/* `title` — native tooltip fallback for truncated text; the 24.04 spec §10.17. */}
           <span
             className="label"
             title={typeof heading === "string" ? heading : undefined}

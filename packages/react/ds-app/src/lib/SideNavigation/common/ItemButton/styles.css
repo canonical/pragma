@@ -62,7 +62,7 @@
       color: var(--color-icon-disabled);
     }
 
-    /* Spec: item labels are single-line and truncate (§7 text overflow). */
+    /* Spec: item labels are single-line and truncate (the 24.04 spec §7). */
     & .label {
       min-width: 0;
       overflow: hidden;

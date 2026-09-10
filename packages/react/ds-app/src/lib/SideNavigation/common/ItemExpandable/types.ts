@@ -15,7 +15,7 @@ type OwnProps = {
   /**
    * Initial open/closed state when uncontrolled. Defaults to `false`. Seed
    * this from whether the active item is among this item's children
-   * (SPEC.md §5) so the ancestor chain of the current page starts expanded.
+   * (the 24.04 spec §5) so the ancestor chain of the current page starts expanded.
    */
   defaultExpanded?: boolean;
   /**
@@ -23,7 +23,7 @@ type OwnProps = {
    * among the `children`) collapses it. Footer behaviour: choosing a footer
    * row is done with it, like a menu choice dismissing its menu. The
    * content tree does not opt in — its branch stays open so the active row
-   * remains visible (SPEC.md §5). Defaults to `false`.
+   * remains visible (the 24.04 spec §5). Defaults to `false`.
    */
   collapseOnChildClick?: boolean;
   /** The disclosed children — typically a list of SideNavigation.Item. */

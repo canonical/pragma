@@ -77,7 +77,7 @@ describe("Item", () => {
     expect(el?.className).toContain("custom-class");
   });
 
-  it("sets title on the label as a native tooltip fallback for truncation (SPEC.md §10.17)", () => {
+  it("sets title on the label as a native tooltip fallback for truncation (the 24.04 spec §10.17)", () => {
     render(<Item url="/machines">Machines</Item>);
     expect(screen.getByText("Machines")).toHaveAttribute("title", "Machines");
   });

@@ -4,8 +4,8 @@
 # (the root itself is a non-rendered container) as content entries — each entry
 # is a group (optional header + its navigation items). Data-only: the context
 # switcher is NOT a content entry — it is the shell's own region between Header
-# and Content, outside this landmark (SPEC.md §1, §4.5).
-# See SPEC.md §4.3 for the full content vocabulary.
+# and Content, outside this landmark (SPEC.md §1 and the 24.04 spec §4.5).
+# See the 24.04 spec §4.3 for the full content vocabulary.
 #
 # The shell grows past the viewport (min-height), so the page scrolls rather than
 # this region: overflow is vertical-only as a safety valve, never horizontal.
@@ -27,7 +27,7 @@ node:
             # A group: optional header, plus its navigation items. One of the
             # groups MUST be the mandatory collapsible "Help" item (an
             # ItemExpandable containing at least one external link) — see
-            # SPEC.md §1.1.
+            # the 24.04 spec §1.1.
             - node:
                 uri: apps.subcomponent.side-navigation-group
                 edges:
