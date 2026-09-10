@@ -22,10 +22,7 @@
     --modal-footer-color-border: var(--color-border-muted);
     --modal-footer-border-width: var(--dimension-stroke-thickness-medium);
     --modal-footer-padding-block: var(--dimension-200);
-    --modal-footer-padding-inline: var(
-      --modal-padding-inline,
-      var(--dimension-300)
-    );
+    --modal-footer-padding-inline: var(--modal-padding-inline);
     --modal-footer-gap: var(--dimension-100);
   }
 

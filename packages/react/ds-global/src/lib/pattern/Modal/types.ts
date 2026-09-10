@@ -13,7 +13,7 @@ type OwnProps = {
    * `ref.current?.showModal()`, with `ref.current?.close()` closing it. The prop
    * is required because the modal is only ever opened through `showModal()`, so
    * a modal with no ref is a modal that can never open — every modal needs a ref:
-   * withModal hands its factory the ref to attach and a 
+   * withModal hands its factory the ref to attach and a
    * directly-composed modal driven by a trigger takes a stored ref. Requiring the prop turns
    * the withModal factory's duty — attaching the ref it receives —
    * into a compile error instead of a silent nothing.

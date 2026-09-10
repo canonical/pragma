@@ -22,10 +22,7 @@
     --modal-header-color-border: var(--color-border-muted);
     --modal-header-border-width: var(--dimension-stroke-thickness-medium);
     --modal-header-padding-block: var(--dimension-200);
-    --modal-header-padding-inline: var(
-      --modal-padding-inline,
-      var(--dimension-300)
-    );
+    --modal-header-padding-inline: var(--modal-padding-inline);
     --modal-header-gap: var(--dimension-200);
     --modal-header-font-size: var(--typography-text-primary-font-size);
     --modal-header-font-weight: var(--typography-weight-semiBold);

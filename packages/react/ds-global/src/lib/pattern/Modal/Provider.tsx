@@ -27,6 +27,10 @@ const componentCssClassName = "ds modal";
  * `ref.current?.showModal()` opens the modal and `ref.current?.close()`
  * closes it.
  *
+ * A native dialog opened with `showModal()` renders in the browser's top
+ * layer, so even under an ancestor with `overflow: hidden` the modal is not
+ * clipped.
+ *
  * There are two consumption patterns, `withModal` and `Modal`. `withModal` is
  * meant for static content: the call belongs at module scope, where the
  * function it is handed can only see module-level values, so the modal it

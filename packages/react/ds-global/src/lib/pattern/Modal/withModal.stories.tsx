@@ -36,7 +36,7 @@ export default meta;
  * Defined once, they are also the shape consumers should copy.
  */
 
-const maintenanceModal: WithModalRender = ({ close, ref }) => (
+const MaintenanceModal: WithModalRender = ({ close, ref }) => (
   <Component ref={ref}>
     <Component.Header>Maintenance scheduled</Component.Header>
     <Component.Content>
@@ -50,7 +50,7 @@ const maintenanceModal: WithModalRender = ({ close, ref }) => (
   </Component>
 );
 
-const AcknowledgeButton = withModal(Button, maintenanceModal);
+const AcknowledgeButton = withModal(Button, MaintenanceModal);
 
 /**
  * The canonical form: click the button, the modal opens; a footer button can
@@ -69,7 +69,7 @@ Default.storyName = "Default";
 Default.parameters = {
   docs: {
     source: {
-      code: `const maintenanceModal: WithModalRender = ({ close, ref }) => (
+      code: `const MaintenanceModal: WithModalRender = ({ close, ref }) => (
   <Modal ref={ref}>
     <Modal.Header>Maintenance scheduled</Modal.Header>
     <Modal.Content>...</Modal.Content>
@@ -80,14 +80,14 @@ Default.parameters = {
   </Modal>
 );
 
-const AcknowledgeButton = withModal(Button, maintenanceModal);
+const AcknowledgeButton = withModal(Button, MaintenanceModal);
 
 <AcknowledgeButton importance="secondary">Maintenance notice</AcknowledgeButton>`,
     },
   },
 };
 
-const searchSyntaxModal: WithModalRender = ({ ref }) => (
+const SearchSyntaxModal: WithModalRender = ({ ref }) => (
   <Component ref={ref} closeOnBackdropClick>
     <Component.Header>Search syntax</Component.Header>
     <Component.Content>
@@ -96,7 +96,7 @@ const searchSyntaxModal: WithModalRender = ({ ref }) => (
   </Component>
 );
 
-const InfoButton = withModal(Button, searchSyntaxModal);
+const InfoButton = withModal(Button, SearchSyntaxModal);
 
 /**
  * `closeOnBackdropClick` is just a prop on the modal element the function
@@ -108,14 +108,14 @@ export const BackdropDismissible: StoryFn = () => (
 BackdropDismissible.parameters = {
   docs: {
     source: {
-      code: `const searchSyntaxModal: WithModalRender = ({ ref }) => (
+      code: `const SearchSyntaxModal: WithModalRender = ({ ref }) => (
   <Modal ref={ref} closeOnBackdropClick>
     <Modal.Header>Search syntax</Modal.Header>
     <Modal.Content> Combine terms with AND, OR and NOT. Quote a phrase to match it exactly. </Modal.Content>
   </Modal>
 );
 
-const InfoButton = withModal(Button, searchSyntaxModal);
+const InfoButton = withModal(Button, SearchSyntaxModal);
 
 <InfoButton importance="secondary">Search syntax</InfoButton>`,
     },
@@ -143,7 +143,7 @@ const Link = ({
   </div>
 );
 
-const termsModal: WithModalRender = ({ ref }) => (
+const TermsModal: WithModalRender = ({ ref }) => (
   <Component ref={ref}>
     <Component.Header>Terms</Component.Header>
     <Component.Content>
@@ -152,7 +152,7 @@ const termsModal: WithModalRender = ({ ref }) => (
   </Component>
 );
 
-const TermsLink = withModal(Link, termsModal);
+const TermsLink = withModal(Link, TermsModal);
 
 /**
  * The trigger does not have to be a `Button` — any component that accepts
@@ -177,14 +177,14 @@ CustomTrigger.parameters = {
   </div>
 );
 
-const termsModal: WithModalRender = ({ ref }) => (
+const TermsModal: WithModalRender = ({ ref }) => (
   <Modal ref={ref}>
     <Modal.Header>Terms</Modal.Header>
     <Modal.Content>...</Modal.Content>
   </Modal>
 );
 
-const TermsLink = withModal(Link, termsModal);
+const TermsLink = withModal(Link, TermsModal);
 
 <p>
   By continuing you agree to the <TermsLink>terms and conditions</TermsLink>.
@@ -193,7 +193,7 @@ const TermsLink = withModal(Link, termsModal);
   },
 };
 
-const exampleModal: WithModalRender = ({ ref }) => (
+const ExampleModal: WithModalRender = ({ ref }) => (
   <Component ref={ref} aria-label="Example modal">
     <Component.Content>
       Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
@@ -202,7 +202,7 @@ const exampleModal: WithModalRender = ({ ref }) => (
   </Component>
 );
 
-const OpenButton = withModal(Button, exampleModal);
+const OpenButton = withModal(Button, ExampleModal);
 
 /**
  * This story exists solely to show one rule: a modal composed without a
@@ -215,13 +215,13 @@ WithoutHeader.storyName = "Without a header";
 WithoutHeader.parameters = {
   docs: {
     source: {
-      code: `const exampleModal: WithModalRender = ({ ref }) => (
+      code: `const ExampleModal: WithModalRender = ({ ref }) => (
   <Modal ref={ref} aria-label="Example modal">
     <Modal.Content>...</Modal.Content>
   </Modal>
 );
 
-const OpenButton = withModal(Button, exampleModal);
+const OpenButton = withModal(Button, ExampleModal);
 
 <OpenButton>Open modal</OpenButton>`,
     },

@@ -37,7 +37,8 @@
     /*
       One inline padding shared by the header, content and footer, so the title,
       the horizontal rules, the content and the actions all align on the same two
-      edges — as in the design. The parts read it with their own fallback.
+      edges — as in the design. The parts read it directly: the sections are only
+      ever composed inside this modal, which is where the token is defined.
     */
     --modal-padding-inline: var(--dimension-300);
 

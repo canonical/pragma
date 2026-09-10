@@ -1,4 +1,7 @@
 import type { Meta, StoryFn } from "@storybook/react-vite";
+// The stand-in below is a div, not a real <Modal>, so it does not pull the
+// modal's own styles — import them here to define the shared tokens.
+import "../../styles.css";
 import Component from "./Content.js";
 
 const meta = {
