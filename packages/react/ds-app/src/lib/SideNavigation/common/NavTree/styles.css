@@ -4,7 +4,10 @@
  * own flex/scroll layout applies directly to the rendered Group
  * children. Group/GroupHeader/Item/ItemExpandable each own their
  * own styles.
- */
-.ds.nav-tree {
-  display: contents;
+  *
+ * Layer: ds.components.apps (@canonical/styles README, "Cascade layers"). */
+@layer ds.components.apps {
+  .ds.nav-tree {
+    display: contents;
+  }
 }

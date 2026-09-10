@@ -9,37 +9,40 @@
  * margin-box) sums back to a bU multiple, so the overflow is purely visual and
  * doesn't push the header off-grid. The circle-of-friends mark is a baseline-
  * unit square, offset from the top by a baseline-unit margin.
- */
-.ds.canonical-logo {
-  /* Mark geometry in baseline units (bU = --space-baseline). */
-  --mark-size: 4; /* mark side, in bU */
-  --mark-margin-top: 5; /* gap above the mark, in bU */
+  *
+ * Layer: ds.components.apps (@canonical/styles README, "Cascade layers"). */
+@layer ds.components.apps {
+  .ds.canonical-logo {
+    /* Mark geometry in baseline units (bU = --space-baseline). */
+    --mark-size: 4; /* mark side, in bU */
+    --mark-margin-top: 5; /* gap above the mark, in bU */
 
-  /* Rectangle height = bU multiples + a small overflow past the baseline. */
-  --logo-height: 4; /* base height, in bU */
-  --logo-overflow: 0.25rem; /* extra so the orange overshoots the grid line */
+    /* Rectangle height = bU multiples + a small overflow past the baseline. */
+    --logo-height: 4; /* base height, in bU */
+    --logo-overflow: 0.25rem; /* extra so the orange overshoots the grid line */
 
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  /* Sidenav geometry tokens are owned by SideNavigation/styles.css; the
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    /* Sidenav geometry tokens are owned by SideNavigation/styles.css; the
      fallbacks keep the standalone logo story sized when they aren't loaded.
      2.5rem tall × 1.25rem wide (1:2 ratio) — a deliberate deviation from
      the 24.04 spec's 2.25rem; see SideNavigation/styles.css. */
-  block-size: var(--sidenav-logo-block-size, 2.5rem);
-  inline-size: var(--sidenav-logo-inline-size, 1.25rem);
-  /* Cancel the overshoot so the margin-box lands back on the grid: the rectangle
+    block-size: var(--sidenav-logo-block-size, 2.5rem);
+    inline-size: var(--sidenav-logo-inline-size, 1.25rem);
+    /* Cancel the overshoot so the margin-box lands back on the grid: the rectangle
      (logo-height bU + overflow) plus this margin sums to (logo-height + 1) bU. */
-  margin-block-end: calc(var(--space-baseline) - var(--logo-overflow));
-  padding: 0;
-  background: var(--color-background-logo);
+    margin-block-end: calc(var(--space-baseline) - var(--logo-overflow));
+    padding: 0;
+    background: var(--color-background-logo);
 
-  & > .mark {
-    display: block;
-    /* Square sized in bU multiples so it lands on the grid. */
-    inline-size: calc(var(--space-baseline) * var(--mark-size));
-    block-size: calc(var(--space-baseline) * var(--mark-size));
-    /* Top offset in bU multiples. */
-    margin-block-start: calc(var(--space-baseline) * var(--mark-margin-top));
+    & > .mark {
+      display: block;
+      /* Square sized in bU multiples so it lands on the grid. */
+      inline-size: calc(var(--space-baseline) * var(--mark-size));
+      block-size: calc(var(--space-baseline) * var(--mark-size));
+      /* Top offset in bU multiples. */
+      margin-block-start: calc(var(--space-baseline) * var(--mark-margin-top));
+    }
   }
 }
