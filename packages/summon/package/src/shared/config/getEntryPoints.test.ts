@@ -18,6 +18,20 @@ describe("getEntryPoints", () => {
     expect(entry.needsBuild).toBe(true);
   });
 
+  it("returns the flat dist/ paths svelte-package writes", () => {
+    const entry = getEntryPoints("library", "svelte");
+    expect(entry.module).toBe("dist/index.js");
+    expect(entry.types).toBe("dist/index.d.ts");
+    expect(entry.files).toContain("dist");
+    expect(entry.needsBuild).toBe(true);
+  });
+
+  it("keeps the tsc layout for a react library", () => {
+    const entry = getEntryPoints("library", "react");
+    expect(entry.module).toBe("dist/esm/index.js");
+    expect(entry.types).toBe("dist/types/index.d.ts");
+  });
+
   it("returns src/index.css for css packages", () => {
     const entry = getEntryPoints("css");
     expect(entry.module).toBe("src/index.css");

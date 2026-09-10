@@ -1,0 +1,15 @@
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  test: {
+<% if (framework === 'react') { -%>
+    // React components render into a DOM; jsdom supplies one without pulling
+    // a browser download into `bun install`. JSX is transformed straight from
+    // tsconfig's `jsx: "react-jsx"`, so no Vite React plugin is needed here.
+    environment: "jsdom",
+    include: ["src/**/*.test.{ts,tsx}"],
+<% } else { -%>
+    include: ["src/**/*.test.ts"],
+<% } -%>
+  },
+});

@@ -231,10 +231,24 @@ export const CREATE_SURFACE: Readonly<Record<string, SurfaceCommand>> = {
         "group": "Package"
       },
       {
-        "name": "withReact",
-        "type": "confirm",
-        "message": "Include React dependencies?",
-        "default": false,
+        "name": "framework",
+        "type": "select",
+        "message": "UI framework (library packages only):",
+        "default": "none",
+        "choices": [
+          {
+            "label": "none - plain TypeScript library",
+            "value": "none"
+          },
+          {
+            "label": "react - React component library",
+            "value": "react"
+          },
+          {
+            "label": "svelte - Svelte component library (@sveltejs/package)",
+            "value": "svelte"
+          }
+        ],
         "group": "Options"
       },
       {
@@ -393,10 +407,10 @@ export const CREATE_CLI_SYNTAX: Readonly<
       "takesValue": true,
       "kebabName": "description"
     },
-    "withReact": {
-      "flag": "--with-react",
-      "takesValue": false,
-      "kebabName": "with-react"
+    "framework": {
+      "flag": "--framework",
+      "takesValue": true,
+      "kebabName": "framework"
     },
     "withStorybook": {
       "flag": "--with-storybook",

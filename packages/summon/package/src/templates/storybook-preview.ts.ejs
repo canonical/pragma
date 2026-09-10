@@ -4,6 +4,7 @@
 // the layer order a browser applies is the one it reads first.
 import "../src/index.css";
 <% } -%>
+import previewConfig from "@canonical/storybook-config/preview";
 import "@canonical/styles-debug/baseline-grid";
 import type { Preview } from "@storybook/react-vite";
 
@@ -21,11 +22,30 @@ if (typeof document !== "undefined") {
   document.documentElement.classList.add("app", "comfortable");
 }
 
-const preview: Preview = {
+const preview = {
+  ...previewConfig,
+  // Storybook statically parses `preview.ts` for `storySort` and requires the
+  // order to be an inline literal — an imported const is rejected — and it
+  // does not reliably merge `tags`/`parameters` spread from an imported
+  // preview. So both are declared inline here rather than inherited from
+  // `@canonical/storybook-config`.
+  // https://github.com/storybookjs/storybook/issues/31842
   tags: ["autodocs"],
   parameters: {
-    docs: {
-      codePanel: true,
+    ...previewConfig.parameters,
+    options: {
+      storySort: {
+        order: [
+          "Documentation",
+          "subcomponents",
+          "components",
+          "groups",
+          "patterns",
+          "common",
+          "utils",
+          "_work_in_progress",
+        ],
+      },
     },
   },
 };

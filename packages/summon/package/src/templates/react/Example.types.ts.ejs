@@ -1,0 +1,11 @@
+import type { ComponentProps } from "react";
+
+/**
+ * Props for `Example` — every attribute a native `<p>` accepts.
+ *
+ * Tag-indexed `ComponentProps` rather than `ComponentPropsWithoutRef`: this
+ * repo peers React 19, where `ref` is an ordinary prop and belongs in the
+ * public surface. Add design-system props as an `OwnProps` intersection when
+ * the component grows any — see the component generator's template.
+ */
+export type ExampleProps = ComponentProps<"p">;

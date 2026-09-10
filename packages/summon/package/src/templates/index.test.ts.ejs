@@ -1,0 +1,8 @@
+import { describe, expect, it } from "vitest";
+import { PACKAGE_NAME } from "./index.js";
+
+describe("<%= shortName %>", () => {
+  it("names itself", () => {
+    expect(PACKAGE_NAME).toBe("<%= name %>");
+  });
+});

@@ -1,9 +1,18 @@
-import type { PackageType } from "../types.js";
+import type { Framework, PackageType } from "../types.js";
 
 /**
- * Get package entry points based on type.
+ * Get package entry points based on type and framework.
+ *
+ * A Svelte library is the one variant whose layout is not ours to choose:
+ * `svelte-package` writes a flat `dist/` holding the compiled components and
+ * their declarations side by side, so `dist/index.js` / `dist/index.d.ts`
+ * replace the `dist/esm` + `dist/types` split a `tsc` build produces. The
+ * `package-svelte` webarchitect ruleset pins exactly that.
  */
-export default function getEntryPoints(type: PackageType): {
+export default function getEntryPoints(
+  type: PackageType,
+  framework: Framework = "none",
+): {
   module: string;
   types: string | null;
   files: string[];
@@ -23,6 +32,14 @@ export default function getEntryPoints(type: PackageType): {
       types: null,
       files: ["src"],
       needsBuild: false,
+    };
+  }
+  if (framework === "svelte") {
+    return {
+      module: "dist/index.js",
+      types: "dist/index.d.ts",
+      files: ["dist"],
+      needsBuild: true,
     };
   }
   // library
