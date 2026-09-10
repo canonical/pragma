@@ -294,9 +294,9 @@ export const contextSwitcherFooterRoot: FooterRoot = {
       label: "Theme",
       icon: "dark-theme",
       items: [
-        { label: "Light", icon: "light-theme" },
-        { label: "Dark", icon: "dark-theme" },
-        { label: "System", icon: "system-theme" },
+        { label: "Light", icon: "light-theme", control: "button" },
+        { label: "Dark", icon: "dark-theme", control: "button" },
+        { label: "System", icon: "system-theme", control: "button" },
       ],
     },
     { label: "Log out", icon: "log-out", control: "button" },

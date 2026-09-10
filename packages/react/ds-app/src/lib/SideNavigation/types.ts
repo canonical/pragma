@@ -4,12 +4,7 @@ import type { IconName } from "@canonical/ds-assets";
 // Breadcrumbs, and Tabs use one interface. Re-exported so this module's existing
 // import sites (Content/Footer/NavTree/Item, the story harness) resolve it here.
 import type { LinkComponentProps } from "@canonical/react-ds-global";
-import type {
-  ComponentProps,
-  ComponentType,
-  ReactElement,
-  ReactNode,
-} from "react";
+import type { ComponentProps, ComponentType, ReactNode } from "react";
 import type { ContextSwitcherProps } from "./common/ContextSwitcher/types.js";
 
 export type { LinkComponentProps };
@@ -246,11 +241,3 @@ type OwnProps = {
  */
 export type SideNavigationProps = OwnProps &
   Omit<ComponentProps<"div">, keyof OwnProps>;
-
-/**
- * SideNavigation component type. No subcomponents are attached — all are
- * private and render only from data.
- */
-export type SideNavigationComponent = (
-  props: SideNavigationProps,
-) => ReactElement;

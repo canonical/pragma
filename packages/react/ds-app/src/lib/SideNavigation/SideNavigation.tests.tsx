@@ -280,9 +280,10 @@ describe("SideNavigation", () => {
   });
 
   it("hides the ContextSwitcher region when collapsed", () => {
-    // CSS hides the region when collapsed; this asserts the DOM contract
-    // the CSS keys on — the region carries data-expanded so the stylesheet
-    // can select it.
+    // CSS hides the region when collapsed via the ROOT's data-expanded (the
+    // region carries no state of its own); this asserts the DOM contract
+    // the collapsed stylesheet keys on — the region is a direct child of a
+    // data-expanded="false" root, and the root alone flips.
     const { container } = render(
       <SideNavigation
         root={root}
@@ -293,9 +294,12 @@ describe("SideNavigation", () => {
         }}
       />,
     );
+    const rootEl = container.firstElementChild as HTMLElement;
+    expect(rootEl.dataset.expanded).toBe("false");
     const region = container.querySelector(
       ".ds.side-navigation-context-switcher-region",
     );
-    expect(region).toHaveAttribute("data-expanded", "false");
+    expect(region).not.toHaveAttribute("data-expanded");
+    expect(region?.parentElement).toBe(rootEl);
   });
 });
