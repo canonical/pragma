@@ -11,7 +11,7 @@
     /* The row: link or label. [icon] [label] [end], 0.5rem gap, 0.5rem inset —
      shares --sidenav-inset-inline/--sidenav-icon-gap with the header so the
      leading icon lines up with the logo above it. Fixed row height
-     (`--dimension-400`, 2rem) — see SPEC.md §9.7 for why this reverses the
+     (`--dimension-400`, 2rem) — see the 24.04 spec §9.7 for why this reverses the
      "intrinsic, padding-driven height" this file previously read. */
     & > .row {
       display: grid;
@@ -29,7 +29,7 @@
 
     /* Spec: "On-Hover the background colour of the navigation item changes" —
      background only; text/icon colour stays constant across states
-     (SPEC.md §3 ADR-T03/T04). Disabled items never hover/press. */
+     (SPEC.md §2, ADR-T03/T04). Disabled items never hover/press. */
     &:not([data-disabled]) > .row {
       cursor: pointer;
 
@@ -77,7 +77,7 @@
     }
 
     /* Label → middle (1fr) column. */
-    /* Spec: item labels are single-line and truncate (§7 text overflow). */
+    /* Spec: item labels are single-line and truncate (the 24.04 spec §7). */
     & .label {
       min-width: 0;
       overflow: hidden;

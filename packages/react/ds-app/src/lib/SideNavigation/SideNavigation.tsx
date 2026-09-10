@@ -18,10 +18,12 @@ const componentCssClassName = "ds side-navigation";
  * navigation, so it sits outside the landmark in a plain `<div>` between
  * Header and Content; hidden when collapsed, where labels are unviable),
  * Content (the main `<nav>` landmark) and Footer (user profile, settings
- * and non-navigational actions). The root element is a plain `<div>` — the
- * only landmark is the Content `<nav>`, so screen readers announce exactly
- * one navigation region. `aria-label` is forwarded to that `<nav>` and
- * defaults to `"Main navigation"`.
+ * and non-navigational actions). The root element is a plain `<div>` and
+ * the component's single *navigation* landmark is Content's `<nav>`, so
+ * screen readers announce exactly one navigation region; the regions
+ * themselves are `<header>`/`<footer>` elements, which additionally
+ * expose banner/contentinfo landmarks. `aria-label` is forwarded to the
+ * `<nav>` and defaults to `"Main navigation"`.
  *
  * A visually hidden "Skip to main content" link is the first element in the
  * component's DOM order, so keyboard users can bypass the navigation block;
@@ -76,8 +78,8 @@ const SideNavigation = ({
     setExpanded((current) => !current);
   }, []);
 
-  // Ctrl+B rail-collapse shortcut — on unless `keyboardShortcut` opts out.
-  // See common/hooks/useCollapseShortcut.
+  // Ctrl+B rail-collapse shortcut (the 24.04 spec §10.1) — on unless
+  // `keyboardShortcut` opts out. See common/hooks/useCollapseShortcut.
   useCollapseShortcut({ enabled: keyboardShortcut, onTrigger: handleToggle });
 
   // --- Controlled circuit (not official yet) -------------------------------

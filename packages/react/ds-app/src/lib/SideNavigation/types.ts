@@ -17,7 +17,7 @@ export type { LinkComponentProps };
  * Renders as a link (via `LinkComponent`) when `url` is set, otherwise a
  * plain non-navigable label. The content tree carries links and labels
  * only — interactive rows are Footer-only, so a leaf has no `onClick`
- * (SPEC.md §4.3).
+ * (the 24.04 spec §4.3).
  */
 export interface LeafNavItem {
   /** Unique identifier when no `url` is present (e.g. a non-navigable label). */
@@ -38,9 +38,9 @@ export interface LeafNavItem {
 
 /**
  * A collapsible row that discloses its own children instead of navigating.
- * Cannot have a `url` (SPEC.md §4.3) and depth is exactly one level —
- * children are always `LeafNavItem` and cannot themselves expand. No `slot`
- * either: the end slot is always the disclosure caret.
+ * Cannot have a `url` (the 24.04 spec §4.3) and depth is exactly one
+ * level — children are always `LeafNavItem` and cannot themselves expand.
+ * No `slot` either: the end slot is always the disclosure caret.
  */
 export type ExpandableNavItem = Omit<LeafNavItem, "url" | "slot"> & {
   /** Children revealed on expand. Always leaves — see the depth-1 note above. */
@@ -56,7 +56,7 @@ export type NavItem = LeafNavItem | ExpandableNavItem;
 /**
  * A named collection of `NavItem` entries with an optional header
  * (`SideNavigation.GroupHeader`) — the shape of `root`'s direct children
- * (SPEC.md §4.3).
+ * (the 24.04 spec §4.3).
  */
 export interface NavGroup {
   /**

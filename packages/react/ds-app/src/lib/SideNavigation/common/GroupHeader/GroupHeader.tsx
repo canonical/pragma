@@ -18,9 +18,9 @@ const GroupHeader = ({
 }: GroupHeaderProps): React.ReactElement => (
   <span
     className={[componentCssClassName, className].filter(Boolean).join(" ")}
-    // `title` — native tooltip fallback for a truncated header; SPEC.md
-    // §10.17. Only meaningful when the header is plain text (the common
-    // case — Group always passes its string `label` here).
+    // `title` — native tooltip fallback for a truncated header;
+    // the 24.04 spec §10.17. Only meaningful when the header is plain text
+    // (the common case — Group always passes its string `label` here).
     title={typeof children === "string" ? children : undefined}
     {...props}
   >

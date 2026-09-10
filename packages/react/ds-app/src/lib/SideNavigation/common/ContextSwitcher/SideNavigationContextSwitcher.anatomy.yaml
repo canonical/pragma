@@ -1,6 +1,6 @@
 ---
 # SideNavigation.ContextSwitcher — a dropdown for products that divide into
-# different contexts, projects, users, or similar (SPEC.md §4.3, §4.5). Built
+# different contexts, projects, users, or similar (the 24.04 spec §4.3, §4.5). Built
 # on the global Popover pattern (native <details>/<summary>).
 node:
   uri: apps.subcomponent.side-navigation-context-switcher

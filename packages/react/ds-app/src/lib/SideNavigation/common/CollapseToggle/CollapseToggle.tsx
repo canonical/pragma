@@ -21,10 +21,10 @@ const CollapseToggleButton = ({
       {...props}
       type="button"
     >
-      {/* Desktop: an icon (SPEC.md §5, §9). Below the small breakpoint
-          (<620px — SPEC.md §7), a text label reading "Menu"/"Close menu"
-          replaces it — CSS-toggled siblings (see styles.css), no
-          media-query read in JS, so it stays SSR-identical. */}
+      {/* Desktop: an icon (the 24.04 spec §5, §9). Below the small
+          breakpoint (<620px — the 24.04 spec §7), a text label reading
+          "Menu"/"Close menu" replaces it — CSS-toggled siblings (see
+          styles.css), no media-query read in JS, so it stays SSR-identical. */}
       <Icon
         icon={expanded ? "collapse-side-nav" : "expand-side-nav"}
         className="desktop-only"
@@ -39,7 +39,7 @@ const CollapseToggleButton = ({
  * the navigation rail. Carries the disclosure ARIA contract: `aria-expanded`
  * reflects the current state and `aria-controls` should point at the id of the
  * navigation region it toggles. Hovering for 1s shows a tooltip naming the
- * action ("Collapse"/"Expand" — SPEC.md §5, §9.4); the `<button>`'s own
+ * action ("Collapse"/"Expand" — the 24.04 spec §5, §9.4); the `<button>`'s own
  * `aria-label` carries the fuller "Collapse/Expand navigation" text.
  *
  * Rendered through `TooltipEngine` (not `withTooltip`) so the tooltip's

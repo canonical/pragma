@@ -10,7 +10,7 @@ const componentCssClassName = "ds side-navigation-header";
 /**
  * SideNavigation.Header — top region holding the brand (the `brand` node, at the
  * start) and the collapse toggle (at the end). The toggle is omitted when no
- * `onToggle` handler is provided. Collapsed (SPEC.md §1.2): the layout
+ * `onToggle` handler is provided. Collapsed (the 24.04 spec §1.2): the layout
  * switches to a centred column — the toggle relocates below the logo rather
  * than beside it — driven by `data-expanded` on the root.
  *

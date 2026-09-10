@@ -1,7 +1,7 @@
 ---
 # SideNavigation.GroupHeader — the optional label above a Group's entries.
 # Aligns with item LABELS (past the leading-icon column), not the group's own
-# left edge — SPEC.md §2.
+# left edge — the 24.04 spec §2.
 node:
   uri: apps.subcomponent.side-navigation-group-header
   styles:

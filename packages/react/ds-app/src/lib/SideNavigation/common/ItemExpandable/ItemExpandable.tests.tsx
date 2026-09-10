@@ -168,7 +168,7 @@ describe("ItemExpandable", () => {
     expect(el?.className).toContain("custom-class");
   });
 
-  it("gates the caret's rotation transition behind prefers-reduced-motion (SPEC.md §6)", () => {
+  it("gates the caret's rotation transition behind prefers-reduced-motion (the 24.04 spec §6)", () => {
     // jsdom doesn't apply this package's CSS (confirmed in PR3/PR6 — nested
     // `&` rules and @media blocks aren't evaluated against computed styles
     // here), so this asserts the guard exists in the stylesheet source

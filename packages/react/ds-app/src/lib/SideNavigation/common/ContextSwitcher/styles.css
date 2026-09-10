@@ -112,7 +112,7 @@
         align-self: flex-end;
       }
 
-      /* The current context — bold, not a colour change (SPEC.md §3
+      /* The current context — bold, not a colour change (the 24.04 spec §3
        ADR-T03/T04: state changes background only elsewhere in this file;
        kept consistent here since no Figma evidence says otherwise for
        this specific row). */

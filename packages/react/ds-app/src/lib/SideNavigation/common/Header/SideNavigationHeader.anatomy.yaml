@@ -1,7 +1,7 @@
 ---
 # SideNavigation.Header — top region. Expanded: brand (logo) at the start,
-# collapse toggle at the end, 1rem apart (SPEC.md §2). Collapsed: brand
-# centred, collapse toggle relocated below it (SPEC.md §1.2) — a state-based
+# collapse toggle at the end, 1rem apart (the 24.04 spec §2). Collapsed: brand
+# centred, collapse toggle relocated below it (the 24.04 spec §1.2) — a state-based
 # repositioning the anatomy DSL does not currently express per-state; the
 # `layout.justify: space-between` below models the expanded arrangement only.
 node:
@@ -12,7 +12,7 @@ node:
     layout.align: center
     layout.justify: space-between
     size.width: fill
-    # Resolved: SPEC.md §2 states exact values (0.5rem top inset, 1rem
+    # Resolved: the 24.04 spec §2 states exact values (0.5rem top inset, 1rem
     # logo↔toggle gap) rather than a single internal-padding token.
     spacing.internal: dimension/100
   edges:
@@ -23,7 +23,7 @@ node:
           layout.direction: row
           layout.align: center
           layout.flex: 1
-          # SPEC.md §9.3 — height 2.5rem, width 1.25rem (1:2 aspect ratio;
+          # the 24.04 spec §9.3 — height 2.5rem, width 1.25rem (1:2 aspect ratio;
           # deliberate deviation from the 24.04 spec's stated 2.25rem —
           # see styles.css). New provisional tokens; no existing token
           # names a logo size.

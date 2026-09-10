@@ -68,10 +68,11 @@ const renderEntry = (
  * `items`, whose always-leaf children render through the same
  * `renderEntry`). Active/expanded state derives from `useNavigationTree`,
  * generic over `_AnyNavNode` so every field stays typed on annotated nodes
- * regardless of tier (SPEC.md §4.3). `currentUrl` seeds initial selection
- * and re-syncs it on navigation (the hook's `initialUrl` is mount-only),
- * keeping the active item — and its `ItemExpandable` ancestors' open state
- * (`inSelectedBranch`) — in sync with the consumer's router.
+ * regardless of tier (the 24.04 spec §4.3). `currentUrl` seeds initial
+ * selection and re-syncs it on navigation (the hook's `initialUrl` is
+ * mount-only), keeping the active item — and its `ItemExpandable`
+ * ancestors' open state (`inSelectedBranch`) — in sync with the consumer's
+ * router.
  */
 const NavTree = ({
   root,

@@ -36,7 +36,7 @@ describe("createHelpItem", () => {
     expect(item.items[1]).toMatchObject({ label: "Documentation" });
   });
 
-  it("never has a url of its own — expandable items cannot link (SPEC.md §4.3)", () => {
+  it("never has a url of its own — expandable items cannot link (the 24.04 spec §4.3)", () => {
     const item = createHelpItem("https://ubuntu.com/legal");
     expect(item).not.toHaveProperty("url");
   });

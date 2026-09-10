@@ -244,7 +244,7 @@ describe("SideNavigation", () => {
     expect(el.dataset.expanded).toBe("false");
   });
 
-  it("orders focusable elements logo → collapse toggle → content → footer (SPEC.md §6)", () => {
+  it("orders focusable elements logo → collapse toggle → content → footer (SPEC.md §5)", () => {
     const { container } = render(
       <SideNavigation
         root={root}

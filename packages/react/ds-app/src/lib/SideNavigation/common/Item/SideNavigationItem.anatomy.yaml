@@ -1,6 +1,6 @@
 ---
 # SideNavigation.Item — a single, flat, LEAF navigation row rendered from a
-# LeafNavItem (SPEC.md §4.3). A leaf with `url` renders as a link (via
+# LeafNavItem (the 24.04 spec §4.3). A leaf with `url` renders as a link (via
 # LinkComponent); a key-only leaf renders as a non-navigable label. The row
 # is NOT recursive and NEVER expandable — an item with `items` (children) is
 # an ExpandableNavItem and renders as SideNavigation.ItemExpandable instead
@@ -19,7 +19,7 @@ node:
     # shared SideNavigation row grid — [start] [label] [end] — so the leading
     # icon aligns with the header logo.
     - node:
-        # Base + hover/active/disabled per SPEC.md §3 ADR-T01/T03/T04. The DSL
+        # Base + hover/active/disabled per SPEC.md §2 (ADR-T01/T03/T04). The DSL
         # limitation still applies — `appearance.background` expresses one
         # value, but the row needs distinct base/hover/active/disabled; the
         # implementation composes the `--color-foreground-navigation-primary`

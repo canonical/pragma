@@ -9,7 +9,7 @@ const componentCssClassName = "ds side-navigation-item";
  * SideNavigation.Item — the default renderer for a single navigation item.
  *
  * A flat leaf row, NOT recursive — an entry with children is a
- * SideNavigation.ItemExpandable instead (SPEC.md §4.3). The row is
+ * SideNavigation.ItemExpandable instead (the 24.04 spec §4.3). The row is
  * `[icon] [content] [end]` over a shared grid template (so the icon aligns
  * with the header logo). An item with a `url` renders as a link via
  * `LinkComponent` (default `"a"`); otherwise a non-navigable label. The end
@@ -40,8 +40,9 @@ const Item = ({
         {icon ? <Icon width={16} height={16} icon={icon} /> : null}
       </span>
       {/* `title` — native-tooltip fallback for the spec's truncated-label
-          tooltip (§7), not the custom 800ms-delay one (SPEC.md §10.17).
-          Only meaningful when `children` is plain text. */}
+          tooltip (the 24.04 spec §7), not the custom 800ms-delay one
+          (the 24.04 spec §10.17). Only meaningful when `children` is
+          plain text. */}
       <span
         className="label"
         title={typeof children === "string" ? children : undefined}
