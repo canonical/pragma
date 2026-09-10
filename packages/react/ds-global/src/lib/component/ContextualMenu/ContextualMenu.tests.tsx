@@ -50,6 +50,16 @@ describe("ContextualMenu", () => {
     expect(screen.getAllByRole("menuitem", { hidden: true })).toHaveLength(3);
   });
 
+  it("applies surfaceClassName to the portaled menu surface, not the trigger's own wrapper", () => {
+    renderMenu({ surfaceClassName: "custom-surface" });
+    expect(screen.getByRole("menu", { hidden: true })).toHaveClass(
+      "custom-surface",
+    );
+    expect(
+      screen.getByRole("button", { name: "Actions" }).closest(".ds"),
+    ).not.toHaveClass("custom-surface");
+  });
+
   it("calls onSelect and closes when an item is activated", () => {
     const onSelect = vi.fn();
     renderMenu({ onSelect });
