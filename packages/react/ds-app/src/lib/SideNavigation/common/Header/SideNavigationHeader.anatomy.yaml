@@ -23,9 +23,10 @@ node:
           layout.direction: row
           layout.align: center
           layout.flex: 1
-          # SPEC.md §9.3 — height 2.25rem (spec-stated), width 1.125rem
-          # (derived, 1:2 aspect ratio). New provisional tokens; no existing
-          # token names a logo size.
+          # SPEC.md §9.3 — height 2.5rem, width 1.25rem (1:2 aspect ratio;
+          # deliberate deviation from the 24.04 spec's stated 2.25rem —
+          # see styles.css). New provisional tokens; no existing token
+          # names a logo size.
           size.height: dimension/logo-block-size
           size.width: dimension/logo-inline-size
       relation:

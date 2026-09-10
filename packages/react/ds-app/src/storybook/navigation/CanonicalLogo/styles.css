@@ -23,9 +23,10 @@
   align-items: flex-start;
   justify-content: center;
   /* Sidenav geometry tokens are owned by SideNavigation/styles.css; the
-     fallbacks keep the standalone logo story sized when they aren't loaded. */
-  block-size: var(--sidenav-logo-block-size, 2.5rem); /* 2.25rem, spec-stated */
-  /* 1.125rem, derived — SPEC.md §9.3 */
+     fallbacks keep the standalone logo story sized when they aren't loaded.
+     2.5rem tall × 1.25rem wide (1:2 ratio) — a deliberate deviation from
+     the 24.04 spec's 2.25rem; see SideNavigation/styles.css. */
+  block-size: var(--sidenav-logo-block-size, 2.5rem);
   inline-size: var(--sidenav-logo-inline-size, 1.25rem);
   /* Cancel the overshoot so the margin-box lands back on the grid: the rectangle
      (logo-height bU + overflow) plus this margin sums to (logo-height + 1) bU. */

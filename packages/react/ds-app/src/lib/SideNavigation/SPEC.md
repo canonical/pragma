@@ -305,6 +305,16 @@ deliberate scope cut — icons are not guaranteed on every item, and
 icon-only buttons are poor UX). The footer stays visible, degraded to
 **icon-only** (labels and trailing slots hidden).
 
+**The collapse animates.** The width change transitions over
+`--motion-duration-medium` (0.25s, `ease-in-out`) — a deliberate deviation
+from the 24.04 spec, which states the rail transition is not animated.
+The resize reads as motion rather than a jump, and it honours reduced
+motion for free: the motion tokens are zeroed under
+`prefers-reduced-motion: reduce` by `@canonical/styles`, so the
+transition collapses to an instant swap there. (The caret's rotation and
+the hover background swap are separate: the caret animates per the spec,
+the hover swap is instant.)
+
 **Popovers in the collapsed rail.** Any `ItemExpandable` that renders in
 the collapsed rail — a footer expandable today (`footerRoot` rows);
 Content's, if it ever shows collapsed — degrades its sub-items into a

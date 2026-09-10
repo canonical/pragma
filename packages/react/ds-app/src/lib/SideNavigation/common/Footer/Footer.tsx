@@ -27,17 +27,16 @@ const renderFooterItem = (
   item: LeafFooterItem,
   currentUrl: string | undefined,
   LinkComponent: FooterProps["LinkComponent"],
-  index: number,
 ): React.ReactElement => {
-  // `label` is required on LeafFooterItem; the index fallback only guards
-  // duplicate labels colliding as React keys within one list.
-  const rowKey = `${index}:${item.label}`;
-
+  // `label` is the row's identity (required on LeafFooterItem), so it is
+  // the element key — reordering the authored list preserves each row's
+  // state. The corollary: two same-labelled rows in one footer collide;
+  // that's ambiguous UI and left to the consumer to avoid.
   if (item.control !== "button" && item.url) {
     const active = item.url === currentUrl;
     return (
       <Item
-        key={rowKey}
+        key={item.label}
         url={item.url}
         icon={item.icon}
         slot={item.slot}
@@ -52,7 +51,7 @@ const renderFooterItem = (
   if (item.control === "button" || item.onClick) {
     return (
       <ItemButton
-        key={rowKey}
+        key={item.label}
         icon={item.icon}
         slot={item.slot}
         onClick={item.onClick}
@@ -63,7 +62,7 @@ const renderFooterItem = (
   }
 
   return (
-    <Item key={rowKey} icon={item.icon} slot={item.slot}>
+    <Item key={item.label} icon={item.icon} slot={item.slot}>
       {item.label}
     </Item>
   );
@@ -96,10 +95,10 @@ const Footer = ({
     >
       {list.length > 0 ? (
         <ul className="list">
-          {list.map((entry: FooterItem, index: number) =>
+          {list.map((entry: FooterItem) =>
             "items" in entry && entry.items.length > 0 ? (
               <ItemExpandable
-                key={`${index}:${entry.label}`}
+                key={entry.label}
                 heading={entry.label}
                 icon={entry.icon}
                 collapseOnChildClick
@@ -115,17 +114,12 @@ const Footer = ({
                     child.url !== undefined && child.url === currentUrl,
                 )}
               >
-                {entry.items.map((child, childIndex) =>
-                  renderFooterItem(
-                    child,
-                    currentUrl,
-                    LinkComponent,
-                    childIndex,
-                  ),
+                {entry.items.map((child) =>
+                  renderFooterItem(child, currentUrl, LinkComponent),
                 )}
               </ItemExpandable>
             ) : (
-              renderFooterItem(entry, currentUrl, LinkComponent, index)
+              renderFooterItem(entry, currentUrl, LinkComponent)
             ),
           )}
         </ul>
