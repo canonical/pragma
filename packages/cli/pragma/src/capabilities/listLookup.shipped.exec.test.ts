@@ -63,18 +63,25 @@ const NOUNS: readonly string[] = [...declaredStories]
   .map(([noun]) => noun);
 
 /**
- * Nouns whose shipped corpus is empty TODAY (`ds:Token` has no instances in
- * the current packs) — a data-content gap this suite does not own.
+ * Nouns whose shipped corpus is empty TODAY — a data-content gap this suite
+ * does not own.
  *
- * The allowlist EXPIRES BY CONSTRUCTION: an entry here is asserted to have
- * ZERO rows, so the moment upstream ships instances the entry goes red and
- * must be deleted. A list that merely skipped the non-empty assertion would
- * be a permanent blind spot — `token` gains data, nobody removes the entry,
- * a later regression back to zero rows stays vacuously green — which is
- * exactly the hidden-empty case this guard exists to prevent, sitting inside
- * the guard itself.
+ * EMPTY, and that is the allowlist working as designed rather than a list
+ * nobody maintains. `token` was its only entry, because the noun addressed
+ * `ds:Token` — a class no shipped graph asserted. Repointed at the token
+ * SYMBOLS, and with the token-ontology pack now publishing the name literal
+ * both halves of the grammar key on, the noun answers 745 rows and the entry
+ * had to go: an entry here is ASSERTED to have zero rows, so it goes red the
+ * moment the corpus arrives.
+ *
+ * The allowlist EXPIRES BY CONSTRUCTION, which is why it is kept rather than
+ * deleted. A list that merely skipped the non-empty assertion would be a
+ * permanent blind spot — a noun gains data, nobody removes the entry, a later
+ * regression back to zero rows stays vacuously green — which is exactly the
+ * hidden-empty case this guard exists to prevent, sitting inside the guard
+ * itself.
  */
-const EMPTY_CORPUS_TODAY: readonly string[] = ["token"];
+const EMPTY_CORPUS_TODAY: readonly string[] = [];
 
 /** The verb `<noun> <verb>` from a compiled module, or throw naming the gap. */
 function verbOf(

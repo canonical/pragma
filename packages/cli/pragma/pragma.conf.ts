@@ -442,26 +442,19 @@ const designSystemStories: readonly PackDefinition[] = [
         {
           param: "channelOf",
           variable: "channelOf",
-          // The dimension is "which SYMBOL", so the roster is the symbols —
+          // The dimension is "which SYMBOL", so the roster is EVERY symbol —
           // not the far smaller set that happens to have a channel today.
           // Asking for a symbol nothing provisions is the documented calm empty
           // list, which is the whole reason a vocabulary is read from the graph
           // rather than from the rows a page returned.
           //
-          // The COALESCE is what keeps this roster answerable BEFORE the pack
-          // ships labels, and it is not a second naming rule: upstream mints a
-          // symbol's `rdfs:label` FROM its dotted IRI local name, and
-          // `token.parity.test.ts` pins that the two agree for every symbol in
-          // the graph. The label wins where it exists, so the day upstream
-          // spells one differently this roster follows it rather than the IRI.
-          // Note the derivation KEEPS the dots — it is not the kernel's
-          // `nameFallback`, which publishes them as slashes.
+          // Keyed on `rdfs:label`, the same term the column binds and the same
+          // term the lookup resolves by. All three move together or not at all.
           vocabulary: {
             query: [
               "SELECT DISTINCT ?channelOf WHERE {",
-              "  ?symbol a dt:TokenSymbol .",
-              "  OPTIONAL { ?symbol rdfs:label ?label }",
-              '  BIND(COALESCE(?label, REPLACE(STR(?symbol), "^.*[/#]", "")) AS ?channelOf)',
+              "  ?symbol a dt:TokenSymbol ;",
+              "          rdfs:label ?channelOf .",
               "}",
             ].join("\n"),
           },
@@ -533,9 +526,8 @@ const designSystemStories: readonly PackDefinition[] = [
             vocabulary: {
               query: [
                 "SELECT DISTINCT ?symbol WHERE {",
-                "  ?s a dt:TokenSymbol .",
-                "  OPTIONAL { ?s rdfs:label ?label }",
-                '  BIND(COALESCE(?label, REPLACE(STR(?s), "^.*[/#]", "")) AS ?symbol)',
+                "  ?s a dt:TokenSymbol ;",
+                "     rdfs:label ?symbol .",
                 "}",
               ].join("\n"),
             },
@@ -618,22 +610,61 @@ const designSystemStories: readonly PackDefinition[] = [
             vocabulary: {
               query: [
                 "SELECT DISTINCT ?symbol WHERE {",
-                "  ?s a dt:TokenSymbol .",
-                "  OPTIONAL { ?s rdfs:label ?label }",
-                '  BIND(COALESCE(?label, REPLACE(STR(?s), "^.*[/#]", "")) AS ?symbol)',
+                "  ?s a dt:TokenSymbol ;",
+                "     rdfs:label ?symbol .",
                 "}",
               ].join("\n"),
             },
             description: "Filter to one symbol.",
           },
+          {
+            param: "key",
+            variable: "key",
+            // The style-key REGISTRY, which the anatomy pack publishes as 111
+            // `anatomy:StyleKey` individuals. Their identity is the IRI and
+            // they carry no key literal, so the admissible spelling is the
+            // IRI's local name with the class prefix its minting adds dropped:
+            // `anatomy:key.appearance.background` is the key
+            // `appearance.background`, which is how the vocabulary's own
+            // examples write it.
+            //
+            // Read from the REGISTRY rather than from the records, and that is
+            // the point: no block has a binding record yet, so a roster read
+            // from records would be empty and would refuse every key a caller
+            // could legitimately ask about. The registry is the graph's
+            // statement of what a key may be; the records are the population.
+            vocabulary: {
+              query: [
+                "SELECT DISTINCT ?key WHERE {",
+                "  ?styleKey a anatomy:StyleKey .",
+                '  BIND(REPLACE(REPLACE(STR(?styleKey), "^.*[/#]", ""), "^key[.]", "") AS ?key)',
+                "}",
+              ].join("\n"),
+            },
+            description:
+              "Filter to one style key (e.g. appearance.background).",
+          },
+          {
+            param: "state",
+            variable: "state",
+            // The closed interaction-state vocabulary, read from the shape that
+            // closes it rather than transcribed here: the anatomy pack's shapes
+            // constrain `anatomy:styleState` with an `sh:in` list, so the five
+            // admissible states are a query over that list. Hard-coding them
+            // would be the "don't hard-code the slugs" defect with an extra
+            // step — the graph already says it.
+            vocabulary: {
+              query: [
+                "SELECT DISTINCT ?state WHERE {",
+                "  ?shape sh:path anatomy:styleState ;",
+                "         sh:in/rdf:rest*/rdf:first ?state .",
+                "}",
+              ].join("\n"),
+            },
+            description:
+              "Filter to one interaction state (hover, focus, active, selected, disabled).",
+          },
         ],
-        // NO `--key` / `--state` yet, and the omission is the ruling rather
-        // than an oversight: their vocabulary is the style-key REGISTRY, which
-        // `anatomy:styleKey` and `anatomy:styleState` carry zero instances of
-        // today. A filter whose roster is empty can only refuse every value a
-        // caller offers, naming none — so the two arrive with the registry that
-        // gives them something to admit. The columns ship now; the narrowings
-        // wait.
         search: {
           variables: ["block", "symbol", "key", "state", "node"],
           description: "Search block, symbol, key, state, node.",
@@ -827,15 +858,13 @@ const designSystemStories: readonly PackDefinition[] = [
         {
           param: "symbol",
           variable: "symbol",
-          // The symbol roster, read the same way `token list`'s does — see the
-          // note on `token list`'s `channelOf` filter for why the label wins
-          // over the IRI derivation and why the derivation is there at all.
+          // The symbol roster, read the same way `token list`'s `channelOf`
+          // filter reads it: every symbol, keyed on `rdfs:label`.
           vocabulary: {
             query: [
               "SELECT DISTINCT ?symbol WHERE {",
-              "  ?s a dt:TokenSymbol .",
-              "  OPTIONAL { ?s rdfs:label ?label }",
-              '  BIND(COALESCE(?label, REPLACE(STR(?s), "^.*[/#]", "")) AS ?symbol)',
+              "  ?s a dt:TokenSymbol ;",
+              "     rdfs:label ?symbol .",
               "}",
             ].join("\n"),
           },
@@ -931,16 +960,16 @@ const designSystemStories: readonly PackDefinition[] = [
           {
             param: "variable",
             variable: "variable",
-            // The variable roster, read the way the column publishes it: the
-            // label, else the IRI's local name with the leading `--` stripped
-            // — the same stripping upstream applies when it mints the label,
-            // pinned by `variable.parity.test.ts`.
+            // The variable roster, keyed on the same `rdfs:label` the column
+            // binds and the lookup resolves by — the CSS name with its leading
+            // `--` already stripped, which is the only form typable as a
+            // positional. `variable.parity.test.ts` pins that the stripping is
+            // injective and collides with no symbol name.
             vocabulary: {
               query: [
                 "SELECT DISTINCT ?variable WHERE {",
-                "  ?v a dt:Variable .",
-                "  OPTIONAL { ?v rdfs:label ?label }",
-                '  BIND(COALESCE(?label, REPLACE(REPLACE(STR(?v), "^.*[/#]", ""), "^--", "")) AS ?variable)',
+                "  ?v a dt:Variable ;",
+                "     rdfs:label ?variable .",
                 "}",
               ].join("\n"),
             },
@@ -952,9 +981,8 @@ const designSystemStories: readonly PackDefinition[] = [
             vocabulary: {
               query: [
                 "SELECT DISTINCT ?symbol WHERE {",
-                "  ?s a dt:TokenSymbol .",
-                "  OPTIONAL { ?s rdfs:label ?label }",
-                '  BIND(COALESCE(?label, REPLACE(STR(?s), "^.*[/#]", "")) AS ?symbol)',
+                "  ?s a dt:TokenSymbol ;",
+                "     rdfs:label ?symbol .",
                 "}",
               ].join("\n"),
             },
