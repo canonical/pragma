@@ -2,6 +2,7 @@ export * from "./collection/index.js";
 export type { Identity } from "./createIdentity.js";
 export { default as createIdentity } from "./createIdentity.js";
 export * from "./field/index.js";
+export * from "./geometry/index.js";
 export { default as isIdentity } from "./isIdentity.js";
 export * from "./location/index.js";
 export * from "./observable/index.js";
