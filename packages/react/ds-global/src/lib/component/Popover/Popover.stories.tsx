@@ -1,4 +1,5 @@
 import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
+import { useState } from "react";
 import Component from "./Popover.js";
 
 /**
@@ -28,7 +29,7 @@ const stage: Decorator = (Story) => (
 );
 
 const meta = {
-  title: "_work_in_progress/component/Popover",
+  title: "components/Popover",
   component: Component,
   decorators: [stage],
   parameters: {
@@ -46,6 +47,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     trigger: "What's this?",
+    label: "About Ubuntu Pro",
     children:
       "Ubuntu Pro gives you security patching for the full open-source stack across your estate.",
   },
@@ -55,19 +57,98 @@ export const Default: Story = {
   },
 };
 
-/**
- * A filter popover, as a Landscape or MAAS listing view might use — the trigger
- * summarises the current state and opens the controls.
- */
-export const Filter: Story = {
-  args: {
-    trigger: "Filter: 3 active",
-    children:
-      "Status, tags, and availability zone filters would appear here, above an Apply button.",
-  },
-  parameters: {
-    chromatic: { disableSnapshot: true },
-  },
+const statuses = ["Running", "Stopped", "Error"];
+
+const SearchableValuesExample = () => {
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState("Running");
+  return (
+    <Component trigger={`Status: ${selected}`} label="Filter by status">
+      <input
+        type="search"
+        aria-label="Search statuses"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+      />
+      <fieldset>
+        <legend>Status</legend>
+        {statuses
+          .filter((status) =>
+            status.toLowerCase().includes(search.toLowerCase()),
+          )
+          .map((status) => (
+            <label key={status} style={{ display: "block" }}>
+              <input
+                type="radio"
+                name="status"
+                checked={selected === status}
+                onChange={() => setSelected(status)}
+              />
+              {status}
+            </label>
+          ))}
+      </fieldset>
+    </Component>
+  );
+};
+
+/** A search field filters selectable values inside a non-modal dialog. */
+export const SearchableValues: Story = {
+  args: { trigger: "Status", children: null },
+  render: () => <SearchableValuesExample />,
+};
+
+const tags = ["web", "database", "production", "staging"];
+
+const CheckboxFilterExample = () => {
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<string[]>(["web"]);
+  const visible = tags.filter((tag) => tag.includes(search.toLowerCase()));
+  return (
+    <Component
+      trigger={`Tags (${selected.length})`}
+      triggerProps={{ importance: "secondary", icon: "filter" }}
+      label="Filter by tags"
+    >
+      <input
+        type="search"
+        aria-label="Search tags"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+      />
+      <fieldset>
+        <legend>Tags</legend>
+        {visible.map((tag) => (
+          <label key={tag} style={{ display: "block" }}>
+            <input
+              type="checkbox"
+              checked={selected.includes(tag)}
+              onChange={() =>
+                setSelected((current) =>
+                  current.includes(tag)
+                    ? current.filter((value) => value !== tag)
+                    : [...current, tag],
+                )
+              }
+            />
+            {tag}
+          </label>
+        ))}
+      </fieldset>
+      <button type="button" onClick={() => setSelected(visible)}>
+        Select all
+      </button>
+      <button type="button" onClick={() => setSelected([])}>
+        Clear
+      </button>
+    </Component>
+  );
+};
+
+/** A styled trigger opens search, checkboxes, and actions. */
+export const CheckboxFilter: Story = {
+  args: { trigger: "Tags", children: null },
+  render: () => <CheckboxFilterExample />,
 };
 
 /**
@@ -77,6 +158,7 @@ export const Filter: Story = {
 export const Open: Story = {
   args: {
     trigger: "Release notes",
+    label: "Release notes",
     open: true,
     children: "Ubuntu 24.04.2 LTS is now available.",
   },

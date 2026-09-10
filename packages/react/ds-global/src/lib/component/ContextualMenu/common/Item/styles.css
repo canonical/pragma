@@ -81,6 +81,20 @@
       flex: 1 1 auto;
     }
 
+    > .icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      inline-size: var(--dimension-200, 16px);
+      block-size: var(--dimension-300, 24px);
+
+      > svg {
+        inline-size: var(--dimension-200, 16px);
+        block-size: var(--dimension-200, 16px);
+      }
+    }
+
     /* The slot (badge / keyboard shortcut) sits right-aligned. */
     > .slot {
       flex: 0 0 auto;

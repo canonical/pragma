@@ -69,8 +69,8 @@ const meta = {
     },
   },
   argTypes: {
-    // The `openByDefault` decorator drives the open state, so panel controls
-    // for it would only ever be overridden by it.
+    // The `openByDefault` decorator drives the open state, so controls for it
+    // would only ever be overridden by it.
     open: { control: false },
     onOpenChange: { control: false },
   },
@@ -201,6 +201,90 @@ export const CustomItems_NotCoreApi: Story = {
           </span>
         ),
       },
+    ],
+  },
+};
+
+const StatusDialog = ({ close }: { close: () => void }) => {
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<string[]>(["Running"]);
+  const options = ["Running", "Stopped", "Error"].filter((status) =>
+    status.toLowerCase().includes(search.toLowerCase()),
+  );
+  return (
+    <div style={{ display: "grid", gap: "0.5rem" }}>
+      <input
+        type="search"
+        aria-label="Search statuses"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+      />
+      <fieldset>
+        <legend>Status</legend>
+        {options.map((status) => (
+          <label key={status} style={{ display: "block" }}>
+            <input
+              type="checkbox"
+              checked={selected.includes(status)}
+              onChange={() =>
+                setSelected((current) =>
+                  current.includes(status)
+                    ? current.filter((value) => value !== status)
+                    : [...current, status],
+                )
+              }
+            />
+            {status}
+          </label>
+        ))}
+      </fieldset>
+      <button type="button" onClick={close}>
+        Apply
+      </button>
+    </div>
+  );
+};
+
+/**
+ * An aggregate Filters menu launches a separate non-modal dialog anchored to
+ * each category item. The search and checkboxes are not children of role=menu.
+ * Escape first closes the dialog and returns to Status; a second closes Filters.
+ */
+export const MenuItemDialog: Story = {
+  args: {
+    children: "Filters",
+    triggerProps: { icon: "filter", importance: "secondary" },
+    items: [
+      {
+        key: "status",
+        label: "Status",
+        dialog: {
+          label: "Filter by status",
+          render: ({ close }) => <StatusDialog close={close} />,
+        },
+      },
+      {
+        key: "date",
+        label: "Date",
+        dialog: {
+          label: "Filter by date",
+          render: ({ close }) => (
+            <div style={{ display: "grid", gap: "0.5rem" }}>
+              <label>
+                From <input type="date" />
+              </label>
+              <label>
+                To <input type="date" />
+              </label>
+              <button type="button" onClick={close}>
+                Apply
+              </button>
+            </div>
+          ),
+        },
+      },
+      { type: "separator", key: "before-refresh" },
+      { key: "refresh", label: "Refresh" },
     ],
   },
 };

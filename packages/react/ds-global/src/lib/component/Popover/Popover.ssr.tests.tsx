@@ -18,6 +18,25 @@ describe("Popover SSR", () => {
     // The overlay renders closed on the server; the native <details> toggle is
     // the no-JS baseline, and the hook takes over only after hydration.
     expect(html).not.toContain("<details open");
-    expect(html).toContain('aria-hidden="true"');
+    // Do not leave aria-hidden/inert on server HTML: without JavaScript the
+    // native details toggle must expose the dialog when opened.
+    expect(html).not.toContain('aria-hidden="true"');
+    expect(html).toContain('role="dialog"');
+    expect(html).toContain("aria-labelledby=");
+  });
+
+  it("renders a styled trigger as a button, not inside summary", () => {
+    const html = renderToString(
+      <Popover
+        trigger="Filter"
+        triggerProps={{ importance: "secondary" }}
+        label="Filters"
+      >
+        Search
+      </Popover>,
+    );
+    expect(html).toContain('aria-haspopup="dialog"');
+    expect(html).toContain('aria-label="Filters"');
+    expect(html).not.toContain("<summary");
   });
 });
