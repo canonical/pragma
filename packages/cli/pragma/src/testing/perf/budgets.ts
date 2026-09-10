@@ -19,83 +19,159 @@
  * p95, and it lands TIGHTER than 2× its median); its arithmetic is written out
  * in full in BUDGETS.md, as are the measurements and environment for all of
  * them.
+ *
+ * A CEILING IS ALSO RELATIVE TO WHAT THE SURFACE HAS GROWN INTO. Re-derived
+ * again 2026-09-10, because three of the five had drifted red for two causes,
+ * both of them real work rather than noise: the eagerly-imported capability
+ * barrel grew 37.6 → 68.0 ms as the surface reached 22 capability modules and
+ * 42 MCP tools, and the embedded pack grew 8 479 → 49 630 triples. Every
+ * constant below names its cause, because a raised ceiling with no cause is
+ * just a lower standard. The two in-process ceilings were re-measured and
+ * DELIBERATELY LEFT ALONE — they have three orders of magnitude of headroom.
+ *
+ * THIS PASS IS NOT RUN BY CI — owner ruling 2026-08-30, restated 2026-09-10.
+ * Nothing reaches it indirectly either: `test` does not chain it, no Nx target
+ * or workflow names it, and the repo has no git hooks. See
+ * `vitest.perf.config.ts`, `docs/CI.md` and BUDGETS.md.
  */
 
 /**
- * `pragma --help` ceiling (ms). Designed 50; the rule is 2× the measured median.
+ * `pragma --help` ceiling (ms). Designed 50 — **not met, and recorded as such**
+ * for the same reason as {@link BUDGET_COMPLETE_MS}: node's own start is most
+ * of that number before pragma runs a line. The rule is 2× the measured median.
  *
- * Down from the provisional 220, which covered the create surface's eager
- * registration imports on the capabilities barrel. Those are gone — the
- * registered flag spellings are baked into `createSurface.generated.ts` at
- * build time, the mount's adapter loads behind `CliProjection.prepare()`, and
- * the bare-help path no longer loads Commander at all — and the lazy-graph
- * guard in `lazy.test.ts` pins all three so the cost cannot creep back
- * silently.
+ * Up from 130, re-derived 2026-09-10. 130 *was* the rule's own number, back
+ * when this path's work was 35.3 ms net of process start; it is not any more.
+ * The eagerly-imported capability barrel (`capabilities/index`) now costs
+ * **68.0 ms** to import where the recovery A/B measured 37.6 — the surface
+ * grew to 22 capability modules and 42 MCP tools, and each one puts its spec +
+ * formatter modules on this path. `lazy.test.ts` is green, so this is SURFACE
+ * GROWTH and not a lazy-boundary leak: summon-core's projection, its Commander
+ * adapter, `commander`, zod and oxigraph are all still absent from the
+ * fast-path graph. The barrel import is now essentially the whole of the cost
+ * (68.0 of 69.1 ms), which is where any future cut has to come from.
  *
- * MEASURED, paired: the pre-refactor tree and this one were each built and
- * spawned alternately, 40 kept samples per cell, so drift on a shared box hits
- * both arms. Median 74.6 → 64.7 ms; net of each arm's own `--version` control,
- * the work this path does went 49.3 → 35.3 ms (−28%). 2 × 64.7 = 129.5, so
- * 130 is the rule's own number rather than a number the rule tolerates. It is
- * also where this path sat before the regression. BUDGETS.md carries the full
- * table, the reference-box projection, and why this is the floor.
+ * MEASURED (2026-09-10; five load-gated repetitions × 40 kept samples,
+ * interleaved with an in-run `--version` control of 34.8 ms): median
+ * **103.3 ms**, p95 134.0 ms, work **69.1 ms** net of the control.
+ * `2 × 103.3 = 206.6`, so **210**. The reference-box projection cross-checks
+ * LOOSER, not tighter — `45.5 + 69.1 = 114.6` median → 2× = 229 — so 210 is
+ * the tight side of the rule, exactly as 130 was.
+ *
+ * What this can and cannot separate: at 210 against a 103 ms median it catches
+ * a doubling of the path and no longer catches the ~30 ms the barrel just
+ * gained. It is asserted on median AND raw p95 over 12 kept samples, where a
+ * nearest-rank p95 is effectively the maximum — the worst of 12 protocol
+ * replays here was 200.2 ms, so it holds but without much room. BUDGETS.md
+ * carries the table, the environment, and that flake characterisation.
  */
-export const BUDGET_HELP_MS = 130;
+export const BUDGET_HELP_MS = 210;
 
 /**
  * `pragma __complete …` ceiling (ms). Designed 50 — **not met, and recorded as
  * such**: the shipped entry cannot reach it, because node's own start is most
  * of that number before pragma runs a line.
  *
- * Down from the provisional 220 for the same reason as {@link BUDGET_HELP_MS}:
- * the eager create-surface imports both fast paths paid for are deferred, and
- * completion additionally sheds Commander — nothing on the `__complete`
- * closure imports it any more.
+ * Up from 150, re-derived 2026-09-10, and for the same single cause as
+ * {@link BUDGET_HELP_MS} — completion pays for the same grown capability
+ * barrel. It still sheds Commander (nothing on the `__complete` closure
+ * imports it), and it still costs ~12 ms more than `--help` because it walks
+ * the grammar and, in the name-source case, the skills directory.
  *
- * MEASURED in the same paired run: median 79.1 → 69.2 ms for the noun case and
- * 74.2 → 69.3 ms for the name-source case; net of the control, 53.7 → 39.7 ms
- * and 48.9 → 39.8 ms.
+ * MEASURED in the same runs, on the SLOWER of the two cases
+ * (`__complete skill lookup do`): median **115.7 ms**, 10%-trimmed mean
+ * 118.6 ms, p95 145.0 ms, work 81.4 ms net of the control. The noun case
+ * (`__complete config`) is median 116.4 / trimmed mean 118.5 ms — the two are
+ * now within a millisecond of each other. `2 × 115.7 = 231.4`, so **240**;
+ * 2× the trimmed mean gives 237.2, the same 240. The reference-box projection
+ * again cross-checks looser (`45.5 + 81.4 = 126.9` → 2× = 254), so 240 is the
+ * tight side of the rule.
  *
- * 2× the slower median is 138.5, BELOW this 150 — and it stays 150 anyway,
- * because a ceiling is relative to the box as well as the artifact. This box's
- * cold start is 25–30 ms against the reference box's 45.5; projecting the
- * measured work onto the reference box gives a ~85 ms median, whose 2× is
- * ~170. CI has already run this path at a ~100 ms trimmed mean. Cutting to 140
- * on a local median would be deriving a ceiling on hardware the suite does not
- * run on. Completion is typed interactively, so this stays the budget most
- * worth defending — see BUDGETS.md for the arithmetic.
+ * The ceiling is enforced on the trimmed mean, with p95 kept as a SOFT signal
+ * at 1.5× — the statistic change made in the p95-stabilization work, which is
+ * unaffected by this re-derivation. Worst trimmed mean across 8 protocol
+ * replays here: 136.7 ms, so 240 is not a marginal ceiling.
+ *
+ * Completion is typed interactively, so this stays the budget most worth
+ * defending, and it has now lost 90 ms of standard across two re-derivations
+ * with nothing bought back. See BUDGETS.md.
  */
-export const BUDGET_COMPLETE_MS = 150;
+export const BUDGET_COMPLETE_MS = 240;
 
-/** Warm project-config (`pragma.config.ts`) load ceiling (ms). Cache hit is sub-ms. */
+/**
+ * Warm project-config (`pragma.config.ts`) load ceiling (ms). Cache hit is
+ * sub-ms.
+ *
+ * RE-MEASURED 2026-09-10 and deliberately UNCHANGED: 40 warm
+ * `evaluateProjectConfig` calls after priming the content-hash cache give a
+ * median of **0.011 ms** and a p95 of 0.034 ms — roughly 900× of headroom. The
+ * 2×-median rule would put this at 0.02 ms, which would assert nothing but
+ * scheduler jitter. 10 ms is a gross-regression guard (a cache that stopped
+ * hitting, an import that stopped being cached) and that is all it is for.
+ */
 export const BUDGET_PROJECT_CONFIG_MS = 10;
 
 /**
  * Warm store-backed verb ceiling (ms) — a store boot from the cached n-quads
  * dump plus a query, through the shipped entry.
  *
- * Re-derived when the embed became the distribution's real 8 479-triple graph
- * instead of a 23-triple sample. Netted against a `--version` control from the
- * SAME binary in the SAME run (this box's process start swings 60–287 ms with
- * page-cache state alone), the real pack's store work is 2.83× the sample's —
- * the median of five repetitions across two protocols. Projected onto the
- * reference box, whose own toy store work is 147 − 45.5 = 101.5 ms: 45.5 +
- * 101.5 × 2.83 ≈ 333 ms median, and 333 × (176/147) ≈ 398 ms p95 using the
- * reference box's own dispersion for this command. `ceil(398 × 1.25 / 50) × 50`
- * = 500 — which is 1.6× the projected median, i.e. tighter than the
- * 2×-of-median rule the ceilings above use. Every input, every step, and the
- * raw measurements are in BUDGETS.md; the designed `<300ms` target stays in the
- * surface covenant, exactly as the 50 ms `help` target survived its 130 ms
- * ceiling.
+ * Up from 500, re-derived 2026-09-10. The cause is the pack, not the code: the
+ * embed went from the 8 479-triple graph the 500 was derived against to
+ * **49 630 triples / 4 167 entities** (5.85× the triples). Boot still loads
+ * the n-quads dump rather than parsing TTL and still rebuilds the schema from
+ * the extraction artifact rather than running a live 7-pass compile, which is
+ * why the cost grew 1.75× and not 5.85×.
+ *
+ * The arithmetic, on the same route that produced 500, with one new input —
+ * the within-box growth multiplier. This box's netted real store work was
+ * +285.4 ms against the 8 479-triple pack (five repetitions, recorded in
+ * BUDGETS.md) and is +499.9 ms against this one (four load-gated repetitions
+ * × 40 kept samples, 2026-09-10), so:
+ *
+ * ```
+ * within-box growth multiplier  = 499.9 / 285.4                = 1.752
+ * reference store work (old pack) = 101.5 × 2.83               = 287.2 ms
+ * reference store work (new pack) = 287.2 × 1.752              = 503.2 ms
+ * projected reference median      = 45.5 + 503.2               = 548.7 ms
+ * reference p95/median, this command = 176 / 147               = 1.197
+ * projected p95                   = 548.7 × 1.197              = 656.9 ms
+ * ceiling = ceil(656.9 × 1.25 / 50) × 50                       = 850 ms
+ * ```
+ *
+ * The local-only route agrees to within 6%: this box's own measured p95 is
+ * 608.9 ms and `ceil(608.9 × 1.25 / 50) × 50` = 800. The reference-box number
+ * is taken, because that is the route the standing ceiling came from.
+ *
+ * 850 is still **1.55×** the projected median, i.e. tighter than the
+ * 2×-of-median rule the fast paths use. But it is now **2.83×** the designed
+ * `<300ms` target, where 500 was 1.67× — and that gap is the honest headline:
+ * the designed target was set against a 23-triple sample and then held against
+ * 8 479, and a 49 630-triple pack whose store work alone is ~500 ms cannot
+ * reach 300 ms at all. `warmStoreVerb: "<300ms"` stays in the surface covenant
+ * as the aspiration, and it is now an aspiration that needs a different boot
+ * strategy rather than a tuning pass. Every input and every step is in
+ * BUDGETS.md.
+ *
+ * What this can and cannot separate: asserted on median AND p95 over 9 kept
+ * samples, where a nearest-rank p95 IS the maximum — kept deliberately,
+ * because this excess is real work rather than contention noise, and hiding
+ * real cost behind a robust statistic would make the budget lie.
  */
-export const BUDGET_WARM_STORE_MS = 500;
+export const BUDGET_WARM_STORE_MS = 850;
 
 /**
  * Warm in-process MCP tool-call ceiling (ms) — PR7 graduates this from seeded to
  * ENFORCED. Measured over a warm, storeless tool (`capabilities`): pure envelope
  * + dispatch, no store boot, no network, so it isolates the per-call overhead of
- * the grown 38-tool catalog. Measured p95 is ~0.4 ms here (huge headroom), so
- * 100 ms guards against a gross regression without flaking. `info` is
- * deliberately NOT used — its network update-check makes it ~55 ms (see BUDGETS.md).
+ * the grown tool catalog. `info` is deliberately NOT used — its network
+ * update-check makes it ~55 ms (see BUDGETS.md).
+ *
+ * RE-MEASURED 2026-09-10 and deliberately UNCHANGED. The catalog has grown
+ * 38 → 42 tools and the warm call grew with it — p95 **0.732 ms**, trimmed
+ * mean 0.530 ms over 40 calls, against ~0.4 ms p95 at 38 tools — but that is
+ * still ~137× of headroom under 100 ms. This is a gross-regression guard (a
+ * per-call store boot, a network read, a catalog rebuilt per call), and 100 ms
+ * is what lets it be one without flaking. Enforced on the trimmed mean with
+ * p95 as a second check (both ≤ 100).
  */
 export const BUDGET_MCP_P95_WARM_MS = 100;

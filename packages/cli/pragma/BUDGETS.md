@@ -7,7 +7,10 @@ hesitation. These budgets are enforced by the protected perf tests
 ceilings in `src/testing/perf/budgets.ts`. Node's own startup is INSIDE every
 sample, because the user pays it.
 
-> **They do not gate pull requests — owner ruling, 2026-08-30.** `test` no longer
+> **They do not gate pull requests — owner ruling, 2026-08-30, restated
+> 2026-09-10.** The restatement, the re-verification that nothing reaches the
+> pass indirectly, and the three ceilings that moved with it are in
+> "Re-derived 2026-09-10" at the end of this file. `test` no longer
 > chains `test:perf`, and that chain was the only path by which
 > `nx affected -t test` reached this suite. The tests and every ceiling are
 > unchanged, and still enforced for anyone who runs `bun run test:perf`.
@@ -460,3 +463,318 @@ is therefore the best available direct measure of that cost, and it is inside
 the noise band. Independent replications on this box (250-round `--version`-only
 interleave; 120-round three-case) put it at +0.07 to +0.5 ms. If a true control
 is ever wanted here, it has to be a process outside the module graph.
+
+## Re-derived 2026-09-10 — three ceilings moved, two left, one timeout raised
+
+Three of the five ceilings had drifted red on `origin/main` (`075bdbab7`), and
+for two causes that are both real work rather than measurement noise: the
+eagerly-imported capability barrel grew as the surface grew, and the embedded
+pack grew from 8 479 to 49 630 triples. This section re-derives all five by the
+rules the sections above establish. It does not revise any measurement above —
+those are the record of the boxes and artifacts they were taken on.
+
+**Why this pass is manual.** It is not run by CI, by owner ruling 2026-08-30,
+restated 2026-09-10: a wall-clock spawn measurement cannot be made to mean
+anything on a shared runner, so the budgets are enforced by whoever runs
+`bun run test:perf` on a quiet machine, and a regression can reach `main`
+unobserved in between. Verified again here that nothing reaches the pass
+indirectly — see "Durability of the ruling" at the end of this section.
+
+### Environment
+
+| | |
+|---|---|
+| OS / CPU | Linux 6.18.44 x86_64 · Intel Core Ultra 7 165U (14 threads) · 62 GB RAM |
+| Runtime | `node` v24.18.1 (the runtime the entry ships for), `bun` 1.4.0, `vitest` 4.1.2 |
+| Artifact | `dist/src/bin.js` — the `tsc` emit from `bun run build`, spawned as `node dist/src/bin.js`, exactly as `budgets.test.ts` does |
+| Embedded pack | 49 630 triples / 4 167 entities (`contentHash 83746a38…`, generated 2026-09-08) |
+| Surface | 22 capability modules (16 authored + 6 declared stories) · 42 MCP tools |
+
+This is the same physical box as the "paired A/B" and "embedded pack becomes
+the real graph" sections above, which is what licenses the within-box
+comparisons below. It is **not** the day-1 reference box: its cold process
+start is *faster* (`--version` median 34.8 ms here against the reference box's
+45.5 ms), so where a reference-box projection is quoted it is a projection, not
+an observation.
+
+### Method, and the load gate that makes it honest
+
+Protocol as prescribed above: interleaved round-robin over the cells, rotating
+the start index each round so drift lands on every cell equally, 45 rounds with
+5 discarded as warmups → **40 kept samples per cell**, fresh `XDG_*` dirs per
+cell, and a `pragma --version` **control measured in the same run** so every
+figure can be quoted net of process start.
+
+The fast-path cells and the store cell were measured in **separate runs**.
+Interleaving them is not free: with `__store-probe` in the rotation the
+fast-path cells came out ~15 ms slower (help work 82.8 ms against 69.1 ms),
+because a 500 ms store boot between two 100 ms spawns churns the page cache.
+That is a measurement artifact, not a cost the user pays, so the cells that
+share a statistic share a run.
+
+**A repetition was accepted only if its own `--version` control had a median
+at or below 40 ms.** This box's quiet band is a control median of 33–39 ms
+(sample minimum ~26 ms); when other work is running it goes to 60–110 ms, and
+the netted *work* figures then inflate superlinearly — help work ranged 66 ms
+to 233 ms across repetitions, tracking nothing but the control. Netting alone
+does not rescue a contended run, because a longer piece of work is more exposed
+to contention (the same point the "multiplier, not the increment" argument
+makes above). So contended repetitions are **discarded, not averaged in**:
+
+| cells | repetitions run | accepted (control ≤ 40 ms) | rejected controls |
+|---|---|---|---|
+| fast paths | 9 | 5 | 40.8 · 42.4 · 60.5 · 110.0 ms |
+| `__store-probe` | 7 | 4 | 44.5 · 60.2 · 71.4 ms |
+
+Every figure below is the **median across accepted repetitions** of that
+repetition's own statistic.
+
+### Measured
+
+| Cell | n | median | p95 | 10%-trimmed mean | work (net of control) |
+|---|---|---|---|---|---|
+| `pragma --version` (control) | 5 × 40 | **34.8 ms** | 43.3 ms | 35.9 ms | — |
+| `pragma --help` | 5 × 40 | **103.3 ms** | 134.0 ms | 107.7 ms | 69.1 ms |
+| `pragma __complete config` | 5 × 40 | 116.4 ms | 141.2 ms | 118.5 ms | 81.7 ms |
+| `pragma __complete skill lookup do` | 5 × 40 | **115.7 ms** | 145.0 ms | 118.6 ms | 81.4 ms |
+| `pragma __store-probe` | 4 × 40 | **536.0 ms** | 608.9 ms | 536.2 ms | 499.9 ms |
+| project config load (warm, in-process) | 40 | **0.011 ms** | 0.034 ms | 0.013 ms | — |
+| MCP `capabilities` (warm, in-process) | 40 | 0.506 ms | **0.732 ms** | 0.530 ms | — |
+
+The two in-process cells were measured against the same `dist/` under `node`,
+priming the cache / making one warm-up call first, exactly as
+`budgets.test.ts` does.
+
+### Where the fast paths' cost went
+
+Almost all of it is one import. Timing a single dynamic `import()` of the
+built modules and nothing else — 25 spawns per module, 5 discarded, three
+repetitions:
+
+| Module | import median | recorded in the A/B above |
+|---|---|---|
+| `capabilities/index.js` (the barrel) | **68.0 ms** | 37.6 ms |
+| `constants.js` | 5.0 ms | — |
+
+68.0 ms of import against 69.1 ms of measured `--help` work: the barrel **is**
+the fast path now. It has gained **+30.4 ms (1.81×)** since the recovery A/B,
+and the surface is where it went — 22 capability modules and 42 MCP tools, each
+contributing its spec and formatter modules to a barrel that is imported
+eagerly. Timed individually the heaviest are `prompt` (38.1 ms) and `graph`
+(36.1 ms), but no single module dominates; the cost is the count.
+
+**This is surface growth, not a lazy-boundary leak.**
+`src/capabilities/lazy.test.ts` is green (9/9): nothing on the static graph from
+`buildProgram` or `capabilities/index` value-imports
+`@canonical/summon-core/projection`, its Commander adapter, `commander`, a zod
+schema module, or a `collect*` run body. The deferral work recorded above still
+holds; there is simply more behind it. A future cut has to come from making the
+barrel itself lazy — registering capabilities from baked data the way
+`CREATE_CLI_SYNTAX` already does for flag spellings — and not from another
+round of moving run bodies.
+
+### Where the store verb's cost went
+
+The pack. `BUDGET_WARM_STORE_MS = 500` was derived against an 8 479-triple
+embed; the distribution now embeds **49 630 triples / 4 167 entities**, 5.85×
+the triples. Measured store work on this box went **+285.4 ms → +499.9 ms**,
+a factor of **1.752** — sublinear in triple count, because boot loads the
+n-quads dump rather than parsing TTL and rebuilds the schema from the
+extraction artifact rather than running a live 7-pass compile. That design is
+what keeps a 5.85× pack to a 1.75× cost, and it is worth saying that it worked.
+
+### The arithmetic
+
+**`BUDGET_HELP_MS`: 130 → 210.** Rule: 2× the measured median.
+
+```
+measured median (5 accepted reps × 40)   = 103.3 ms
+rule                = 2 × 103.3          = 206.6 ms
+ceiling             = ceil(206.6 / 10) × 10   = 210 ms
+```
+
+Cross-checked against the reference box, holding the measured work constant:
+`45.5 + 69.1 = 114.6` ms median → 2× = **229 ms**. The projection is *looser*
+than the local rule, so 210 is the tight side of the rule — the same
+relationship 130 had to its own projection (~162 ms) when it was set.
+
+**`BUDGET_COMPLETE_MS`: 150 → 240.** Rule: 2× the measured median of the
+slower of the two cases, which is the name-source case.
+
+```
+measured median, __complete skill lookup do  = 115.7 ms
+rule                = 2 × 115.7              = 231.4 ms
+ceiling             = ceil(231.4 / 10) × 10   = 240 ms
+sanity: 2 × trimmed mean = 2 × 118.6 = 237.2  → the same 240
+```
+
+Cross-check on the reference box: `45.5 + 81.4 = 126.9` ms → 2× = **254 ms**,
+again looser. The noun case is now within a millisecond of the name-source case
+(116.4 vs 115.7 median), where it used to be the faster of the two; the
+filesystem walk is no longer what distinguishes them, the shared barrel is.
+
+**`BUDGET_WARM_STORE_MS`: 500 → 850.** Rule: `ceil(projected p95 × 1.25 / 50) × 50`,
+the route that produced 500, with one new input — the within-box growth
+multiplier, both of whose terms were measured on this box under the same netted
+protocol.
+
+```
+within-box growth multiplier  = 499.9 / 285.4                  = 1.752
+reference store work, old pack = 101.5 × 2.83                   = 287.2 ms
+reference store work, new pack = 287.2 × 1.752                  = 503.2 ms
+projected reference median     = 45.5 + 503.2                   = 548.7 ms
+reference p95/median, this command = 176 / 147                  = 1.197
+projected p95                  = 548.7 × 1.197                  = 656.9 ms
+ceiling                        = ceil(656.9 × 1.25 / 50) × 50   = 850 ms
+```
+
+The local-only route agrees to within 6%: this box's own measured p95 is
+608.9 ms, and `ceil(608.9 × 1.25 / 50) × 50` = **800**. The reference-box
+number is taken because that is the route the standing ceiling came from, and
+because a ceiling derived only on the box in front of you is a ceiling that
+moves with the box.
+
+850 remains **1.55×** the projected median, still tighter than the 2×-of-median
+rule the fast paths use. It is **2.83×** the designed `<300ms` target, where
+500 was 1.67×, and that ratio is the honest headline of this whole
+re-derivation: the `<300ms` target was set against a 23-triple sample, held
+against 8 479, and cannot be reached at all by a 49 630-triple pack whose store
+work alone is ~500 ms. `warmStoreVerb: "<300ms"` stays in the surface covenant
+as the aspiration — but it is now an aspiration that needs a different boot
+strategy (a lazily-materialised or partitioned store), not a tuning pass.
+
+### Deliberately not moved
+
+**`BUDGET_PROJECT_CONFIG_MS` stays 10 ms.** Warm median 0.011 ms, p95 0.034 ms
+— about 900× of headroom. The 2×-median rule would give 0.02 ms, which would
+assert nothing but scheduler jitter. 10 ms is a gross-regression guard (a cache
+that stopped hitting) and that is the whole of its job.
+
+**`BUDGET_MCP_P95_WARM_MS` stays 100 ms.** The warm call did grow with the
+catalog — p95 0.732 ms and trimmed mean 0.530 ms over 42 tools, against
+p95 ≈ 0.4 ms at 38 — but that is still ~137× of headroom. Worth noting as a
+trend (the catalog's per-call overhead is not free) and not worth a tighter
+number, for the same reason: a ceiling near a sub-millisecond median would
+measure the scheduler.
+
+### Summary
+
+| Constant | Designed | Median | p95 | Old ceiling | New ceiling | Rule applied |
+|---|---|---|---|---|---|---|
+| `BUDGET_HELP_MS` | 50 (unmet) | 103.3 ms | 134.0 ms | 130 | **210** | 2× median = 206.6 |
+| `BUDGET_COMPLETE_MS` | 50 (unmet) | 115.7 ms | 145.0 ms | 150 | **240** | 2× median = 231.4 |
+| `BUDGET_PROJECT_CONFIG_MS` | 10 warm | 0.011 ms | 0.034 ms | 10 | **10** | left — 900× headroom |
+| `BUDGET_WARM_STORE_MS` | 300 (unmet) | 536.0 ms | 608.9 ms | 500 | **850** | ceil(projected p95 × 1.25 / 50) × 50 |
+| `BUDGET_MCP_P95_WARM_MS` | 100 | 0.506 ms | 0.732 ms | 100 | **100** | left — 137× headroom |
+
+The designed 50 ms fast-path target and the designed 300 ms store target both
+stay recorded as **designed and unmet**. Neither was moved.
+
+### What was red on `main` before this change
+
+Measured against `origin/main` `075bdbab7` with the ceilings it shipped:
+
+| Case | Statistic asserted | Observed | Ceiling then |
+|---|---|---|---|
+| `warm store-backed verb` | median | 550.5 · 573.6 · 568.1 ms (three retries, all red) | 500 |
+| `pragma --help` | p95 | 131.0 · 132.8 · 134.0 · 134.1 · 140.2 ms (every accepted repetition) | 130 |
+
+`--help` is red on **p95 only** — its median, 103.3 ms, was still inside the
+130 ms ceiling. That is worth stating precisely, because it means the ceiling
+had already stopped being 2× a median and become roughly 1.25× one.
+`__complete` was not red (its trimmed mean sat at ~119 ms against 150), so its
+ceiling is raised here for consistency of derivation rather than to clear a
+failure — the same rule, the same measurement, the same cause.
+
+### How marginal the new ceilings are
+
+The 40-sample figures above characterise the box; they are not the statistic
+the tests assert. Replaying each case under **its own test's protocol** (`help`
+15 runs/3 warmups → 12 kept; `__complete` 30/5 → 25 kept; `__store-probe`
+12/3 → 9 kept, so its p95 is the maximum), repeatedly:
+
+| Case | trials | median of medians | median p95 | worst asserted statistic | new ceiling |
+|---|---|---|---|---|---|
+| `--help` | 12 | 115.0 ms | 142.1 ms | p95 200.2 ms | 210 |
+| `__complete skill lookup do` | 8 | 129.7 ms | 147.0 ms | trimmed mean 136.7 ms | 240 |
+| `__store-probe` | 15 | 576.2 ms | 667.7 ms | p95 807.5 ms quiet · 1556.5 ms contended | 850 |
+
+Two honest caveats fall out of that table.
+
+1. **`--help` has the least room of the three.** It is the only case still
+   asserted on a *raw* nearest-rank p95 at the bare ceiling, over 12 kept
+   samples — where p95 is effectively the maximum. 200.2 of 210 was the worst
+   of 12 replays. The available fix is the one `__complete` already got
+   (enforce the trimmed mean, keep p95 as a soft check with headroom); it is
+   **recorded here as an option, not taken**, because changing the statistic is
+   a different decision from re-deriving the number, and this pass did the
+   latter.
+2. **A contended box will still go red**, and should. The `__store-probe`
+   trial at p95 1556.5 ms was measured while other work was running; `retry: 2`
+   gives three attempts, which is enough for a quiet box and deliberately not
+   enough for a busy one. Check the control before believing a red run.
+
+### The other time limit: vitest's per-test timeout
+
+Raising `BUDGET_WARM_STORE_MS` did not make the pass green. It made the store
+case fail on **vitest's 5 s per-test timeout** instead, with the budget
+assertion passing underneath — precisely the outcome the 2026-08-30 banner
+above records from the last attempt ("raising one of them moved the failure
+from the budget to vitest's per-test timeout rather than clearing it").
+
+The timeout had been too small all along, and was invisible because of the
+order failures are reported in. Every spawn case is a **synchronous** test body
+(`spawnSync` in a loop), so vitest cannot interrupt it; the body runs to
+completion and whichever failure is noticed first is the one reported. While a
+ceiling was red the `AssertionError` won that race, and the timeout never
+surfaced. It was there in the numbers, though: the store case's own reported
+duration on `origin/main` was 20 878 ms across three retries — ~6.9 s per
+attempt against a 5 000 ms limit.
+
+A budget case must fail on its **budget**, never on the clock: a red ceiling
+tells you what regressed, a red clock tells you nothing. So `testTimeout` is
+derived from the ceilings rather than picked, from the case that binds:
+
+```
+__store-probe   12 runs × 850 ms  = 10 200 ms    ← binding
+__complete      30 runs × 240 ms  =  7 200 ms    (two cases)
+--help          15 runs × 210 ms  =  3 150 ms
+testTimeout = 2 × 10 200 ≈ 20 000 ms
+```
+
+The 2× is not headroom for slowness. It means every spawn in a run could land
+at twice its ceiling and the ASSERTION would still be the thing that reports.
+Whole-file runtime when healthy is ~17 s of tests, so this does not lengthen a
+good run; it only changes what a bad one says. Set in `vitest.perf.config.ts`,
+where the derivation is repeated next to the number.
+
+**Verified green three times running** with the new ceilings and the new
+timeout: 22/22 passed, 18.7 s / 19.5 s / 19.9 s, on a box whose control sat in
+the quiet band. On `origin/main` the same command failed 21/22 with all three
+store retries red.
+
+### Durability of the ruling
+
+Re-verified 2026-09-10, mechanically, that nothing reaches this pass:
+
+- no file under `.github/` mentions `test:perf`, `vitest.perf.config`, or
+  `perf` (the single `grep` hit is an unrelated comment in
+  `actions/lerna-version/version.sh`);
+- the package's `test` script is `check:packs:test && test:vitest`, and
+  `vitest.config.ts` excludes `src/testing/perf/**`;
+- `nx.json` declares no perf target, and its `test` default only
+  `dependsOn: ["^build"]`;
+- the repo has no `lefthook`, `husky`, or `.git/hooks` configuration;
+- no script in the root or package `package.json` chains it.
+
+The ruling is now restated where someone about to undo it will read it:
+`vitest.perf.config.ts`'s header, `docs/CI.md` ("What CI deliberately does not
+run"), and `AGENTS.md`'s "CI workflows are global" section. No test asserts the
+*contents* of a workflow file, and none was added — this repo does not do that
+anywhere, and a test that pins CI's shape from inside one package would be the
+package-scoped CI concern `AGENTS.md` forbids.
+
+Open question (1) from the 2026-08-30 banner — where the pass should run
+instead — is **still open**, and this re-derivation makes it more pressing
+rather than less: two of the three ceilings moved because real cost had
+accumulated unobserved between one manual run and the next.
