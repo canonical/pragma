@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import SideNavigation from "./SideNavigation.js";
 import type { FooterRoot, NavRoot } from "./types.js";
 
@@ -181,6 +181,44 @@ describe("SideNavigation", () => {
     const el = container.firstElementChild as HTMLElement;
     fireEvent.keyDown(window, { key: "b", ctrlKey: true });
     expect(el.dataset.expanded).toBe("true");
+  });
+
+  it("collapses after mount on a small viewport when defaultExpanded is left unset", async () => {
+    // The expanded state renders as a fullscreen overlay below the small
+    // breakpoint, so the unset default (true, desktop) must not ship as a
+    // first-paint takeover on a phone. Post-mount, SSR-pure (SPEC.md §4).
+    const matchMediaSpy = vi
+      .spyOn(window, "matchMedia")
+      .mockReturnValue({ matches: true } as MediaQueryList);
+    const { container } = render(<SideNavigation root={root} />);
+    await waitFor(() =>
+      expect(
+        (container.firstElementChild as HTMLElement).dataset.expanded,
+      ).toBe("false"),
+    );
+    matchMediaSpy.mockRestore();
+  });
+
+  it("keeps an explicit defaultExpanded on every viewport", async () => {
+    const matchMediaSpy = vi
+      .spyOn(window, "matchMedia")
+      .mockReturnValue({ matches: true } as MediaQueryList);
+    const { container } = render(
+      <SideNavigation root={root} defaultExpanded />,
+    );
+    await waitFor(() =>
+      expect(
+        (container.firstElementChild as HTMLElement).dataset.expanded,
+      ).toBe("true"),
+    );
+    matchMediaSpy.mockRestore();
+  });
+
+  it("stays expanded on a wide viewport when defaultExpanded is left unset", () => {
+    const { container } = render(<SideNavigation root={root} />);
+    expect((container.firstElementChild as HTMLElement).dataset.expanded).toBe(
+      "true",
+    );
   });
 
   it("responds to the collapse shortcut when keyboardShortcut is enabled", () => {

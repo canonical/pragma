@@ -1,5 +1,5 @@
 import type React from "react";
-import { useCallback, useId, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { useCollapseShortcut } from "./common/hooks/useCollapseShortcut/index.js";
 import { Content, ContextSwitcher, Footer, Header } from "./common/index.js";
 import type { SideNavigationProps } from "./types.js";
@@ -50,7 +50,7 @@ const SideNavigation = ({
   skipTo = "#main-content",
   // Controlled circuit — not official yet.
   // expanded: expandedProp,
-  defaultExpanded = true,
+  defaultExpanded: defaultExpandedProp,
   // onExpandedChange,
   keyboardShortcut = false,
   "aria-label": ariaLabel,
@@ -58,7 +58,19 @@ const SideNavigation = ({
 }: SideNavigationProps): React.ReactElement => {
   const contentId = useId();
 
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  const [expanded, setExpanded] = useState(defaultExpandedProp ?? true);
+
+  // Mobile seed (SPEC.md §4 responsive): below the small breakpoint, the
+  // expanded state renders as a fullscreen fixed overlay — a takeover, not a
+  // rail — so with `defaultExpanded` left unset (desktop default `true`), a
+  // small viewport collapses the rail after mount instead. An explicit
+  // `defaultExpanded` always wins, on every viewport. Post-mount on purpose:
+  // the server cannot know the viewport, so SSR/hydration stay pure — the
+  // cost is one frame of the expanded rail on a phone before the flip.
+  useEffect(() => {
+    if (defaultExpandedProp !== undefined) return;
+    if (window.matchMedia("(width < 620px)").matches) setExpanded(false);
+  }, [defaultExpandedProp]);
 
   const handleToggle = useCallback(() => {
     setExpanded((current) => !current);
