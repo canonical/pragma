@@ -29,7 +29,7 @@
  *
  * Two of those anchors exist to pin an ABSENCE, and are load-bearing for the
  * "declared, not inferred" halves of the read grammar:
- * - `ds:token.legacy.borderRadius` — a `ds:Token` with no `ds:tokenId`, which
+ * - `dt:legacy.borderRadius` — a `dt:TokenSymbol` with no `rdfs:label`, which
  *   `token list` therefore never publishes and `token lookup`/`token sample`
  *   must never reach (`PackLookup.nameFallback` is declared by `standard`
  *   alone).
@@ -42,6 +42,9 @@ import { BLOCK_PREFIXES, BLOCK_TTL } from "../blockGraph.js";
 
 /** Extra `ds:` individuals: a tier-chain + a beta-only block, tokens, tiers. */
 const DS_EXTRA_TTL = `
+@prefix dt: <https://dt.canonical.com/> .
+@prefix w3c-tokens: <https://dt.canonical.com/w3c-tokens/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 # ---- Tiers beyond the global BLOCK_TTL already declares ----
 ds:apps a ds:Tier ; ds:name "apps" .
 ds:apps_lxd a ds:Tier ; ds:name "apps/lxd" .
@@ -66,37 +69,57 @@ ds:betaWidget a ds:Component ;
   ds:summary "An experimental widget gated to the prerelease channel." .
 
 # ---- Tokens ----
-ds:Token a owl:Class .
-ds:TokenType a owl:Class .
-ds:tokenId a owl:DatatypeProperty ; rdfs:domain ds:Token ; rdfs:range xsd:string .
-ds:tokenType a owl:ObjectProperty ; rdfs:domain ds:Token ; rdfs:range ds:TokenType .
-ds:valueLight a owl:DatatypeProperty ; rdfs:domain ds:Token ; rdfs:range xsd:string .
-ds:valueDark a owl:DatatypeProperty ; rdfs:domain ds:Token ; rdfs:range xsd:string .
+# The token STRATA, not the retired ds:Token class: the story addresses
+# dt:TokenSymbol, keyed on the rdfs:label the token-ontology pack publishes,
+# with type and description hanging on the DEFINITIONS behind each symbol
+# rather than on the symbol itself.
+dt:TokenSymbol a owl:Class .
+w3c-tokens:Token a owl:Class .
+w3c-tokens:TokenType a owl:Class .
+dt:symbol a owl:ObjectProperty ; rdfs:range dt:TokenSymbol .
+dt:tokenType a owl:ObjectProperty ; rdfs:range w3c-tokens:TokenType .
+dt:channelOf a owl:ObjectProperty ; rdfs:range dt:TokenSymbol .
+dt:covers a owl:ObjectProperty ; rdfs:range dt:TokenSymbol .
+dt:forSymbol a owl:ObjectProperty ; rdfs:range dt:TokenSymbol .
+dt:resolvesTo a owl:DatatypeProperty ; rdfs:range xsd:string .
+dt:resolutionChain a owl:ObjectProperty .
+dt:derivedFrom a owl:ObjectProperty ; rdfs:range dt:TokenSymbol .
+dt:coordinate a owl:ObjectProperty .
+w3c-tokens:description a owl:DatatypeProperty ; rdfs:range xsd:string .
+w3c-tokens:inFile a owl:ObjectProperty .
+w3c-tokens:path a owl:DatatypeProperty ; rdfs:range xsd:string .
 
-ds:type.color a ds:TokenType ; rdfs:label "color" .
-ds:type.spacing a ds:TokenType ; rdfs:label "spacing" .
+w3c-tokens:color a w3c-tokens:TokenType ; rdfs:label "color" .
+w3c-tokens:dimension a w3c-tokens:TokenType ; rdfs:label "dimension" .
 
-ds:token.color.primary a ds:Token ;
-  ds:tokenId "color.primary" ;
-  ds:tokenType ds:type.color ;
-  ds:valueLight "#0066CC" ;
-  ds:valueDark "#4D94FF" .
-ds:token.spacing.medium a ds:Token ;
-  ds:tokenId "spacing.medium" ;
-  ds:tokenType ds:type.spacing ;
-  ds:valueLight "16px" ;
-  ds:valueDark "16px" .
+dt:color.primary a dt:TokenSymbol ; rdfs:label "color.primary" .
+dt:spacing.medium a dt:TokenSymbol ; rdfs:label "spacing.medium" .
 
-# A ds:Token carrying NO ds:tokenId — the entity "token list" does not publish,
-# because its query REQUIRES the id. It is here to pin what a lookup may NOT
-# reach: "token lookup" addresses by ds:tokenId, and a story whose list requires
-# its "by" property must not become addressable (or sampleable) under a name
-# derived from its IRI. See PackLookup.nameFallback, declared by the "standard"
-# story alone — the one story whose list DOES publish such a name.
-ds:token.legacy.borderRadius a ds:Token ;
-  ds:tokenType ds:type.spacing ;
-  ds:valueLight "4px" ;
-  ds:valueDark "4px" .
+<https://dt.canonical.com/file/light.json#color.primary> a w3c-tokens:Token ;
+  dt:symbol dt:color.primary ;
+  dt:tokenType w3c-tokens:color ;
+  w3c-tokens:inFile <https://dt.canonical.com/file/light.json> ;
+  w3c-tokens:description "The primary brand colour." .
+<https://dt.canonical.com/file/light.json#spacing.medium> a w3c-tokens:Token ;
+  dt:symbol dt:spacing.medium ;
+  dt:tokenType w3c-tokens:dimension ;
+  w3c-tokens:inFile <https://dt.canonical.com/file/light.json> ;
+  w3c-tokens:description "A medium spacing step." .
+<https://dt.canonical.com/file/light.json> w3c-tokens:path "light.json" .
+
+[] a dt:ResolvedValue ; dt:forSymbol dt:color.primary ;
+  dt:resolvesTo "#0066CC" ;
+  dt:resolutionChain ( <https://dt.canonical.com/file/light.json#color.primary> ) .
+
+# A dt:TokenSymbol carrying NO rdfs:label — the entity "token list" does not
+# publish, because its query REQUIRES the literal. It is here to pin what a
+# lookup may NOT reach: "token lookup" addresses by rdfs:label, and a story
+# whose list requires its "by" property must not become addressable (or
+# sampleable) under a name derived from its IRI. See PackLookup.nameFallback,
+# declared by the "standard" story alone — the one story whose list DOES
+# publish such a name. The token noun deliberately declares none, because the
+# kernel's derivation would publish these dots as slashes.
+dt:legacy.borderRadius a dt:TokenSymbol .
 `;
 
 /**
@@ -336,6 +359,9 @@ ds:implementation.svelte-ds-global.button a ds:ImplementationObject ;
 /** The prefixes the canonical store is built and queried with. */
 export const CANONICAL_PREFIXES: Readonly<Record<string, string>> = {
   ...BLOCK_PREFIXES,
+  dt: "https://dt.canonical.com/",
+  "w3c-tokens": "https://dt.canonical.com/w3c-tokens/",
+  rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
   cs: "http://pragma.canonical.com/codestandards#",
   skos: "http://www.w3.org/2004/02/skos/core#",
 };

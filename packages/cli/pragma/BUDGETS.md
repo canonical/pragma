@@ -412,7 +412,7 @@ enforced. They are split by MEASUREMENT TYPE:
 | Budget         | Measured (full catalog)      | Ceiling      | Pass                 |
 | -------------- | ---------------------------- | ------------ | -------------------- |
 | `mcpP95Warm`   | p95 ≈ 0.4 ms (in-process)    | 100 ms       | serial perf (`test:perf`) |
-| `condensedSDL` | 2767 tokens (38 tools)       | 8000 tokens  | eval/coverage        |
+| `condensedSDL` | 2767 tokens (38 tools) — STALE, see the 2026-09-10 re-measurement at the end of this file | 8000 tokens  | eval/coverage        |
 
 Confirmed by the spike:
 
@@ -895,3 +895,50 @@ read with nothing; the storeless fast paths (`--help`, `__complete`,
 module — `paging.ts` carries the default and no hash, and the cursor codec that
 does hash is reached only from a run body. `bun run test:perf` stays green at
 its existing ceilings.
+
+---
+
+## 2026-09-10 — the tool catalogue at 49 tools, and the ceiling now binds
+
+Adding the token-graph nouns took the catalogue from 43 to **49 tools**, and the
+`condensedSDL` figure recorded above is badly stale. Re-measured the same way
+the assertion measures it (name + description + `inputSchema` per tool, joined,
+at ~4 chars/token, over the live in-process MCP catalogue):
+
+| When              | Tools | Chars  | ≈ Tokens | % of the 8000 ceiling |
+| ----------------- | ----- | ------ | -------- | --------------------- |
+| PR7 record        | 38    | 11 068 | 2 767    | 35%                   |
+| Before this work  | 43    | 21 733 | 5 434    | **68%**               |
+| After this work   | 49    | 29 277 | 7 320    | **91%**               |
+
+Three things to take from it.
+
+**The catalogue was already the binding constraint before this work.** The 35%
+figure invited "there is room for about fifteen more tools"; the real headroom
+at 43 tools was about four. The 2 767-token record was taken when descriptions
+were terse and has not been re-taken through five subsequent surfaces.
+
+**Input schemas outweigh descriptions**, 17 029 characters against 11 316 across
+the whole catalogue. A filter is therefore not free even when its description is
+one short sentence: it adds a property, a type and a doc string to the schema.
+`variable list`, at eight flags, is the single largest entry in the catalogue at
+1 119 characters.
+
+**Every description added by this work was cut back once against this
+measurement**, twice for the fattest two, which recovered about 370 tokens. What
+is left is load-bearing: that a variable is addressed without its leading
+dashes, that only materialised positions appear in `token values`, that 236
+variables stand for no symbol. Removing those sentences would buy single-digit
+percentages and cost the misuse they prevent.
+
+**The next few tools breach the ceiling**, and the fix is not a bigger number
+without a decision behind it. The honest options are to trim the pre-existing
+43 (where the `create` family and `setup` are the four fattest entries), to
+raise the ceiling against a measurement of what a real client actually spends,
+or to stop adding tools. That is an owner call, not a budget edit, so this
+record states the position rather than moving the constant.
+
+The measurement is a pure character count, so it stays where it is — a
+deterministic assertion in the eval harness rather than the serial perf pass.
+No latency constant moves: declaring stories remains measurably free, and this
+work adds no module to any fast path.
