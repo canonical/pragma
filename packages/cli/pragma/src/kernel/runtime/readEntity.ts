@@ -82,8 +82,13 @@ type Term = import("@canonical/ke").Term;
  * Membership edges behave identically — this graph's `ds:tier` fans in 141 deep
  * — and a rule keyed on `rdf:type` would have left a `detailed` read of one tier
  * at 20.9 KB while congratulating itself on having fixed classes.
+ *
+ * EXPORTED because it has a second consumer: `graph connect` decides which
+ * edges it may WALK by the same rule this reader decides what to list. One
+ * constant with two consumers, never two constants that agree today — a copied
+ * `20` would let the traversal drift from the doctrine it claims to obey.
  */
-const ROSTER_THRESHOLD = 20;
+export const ROSTER_THRESHOLD = 20;
 
 /** How many subjects each level lists for a genuine ANSWER (fan-in ≤ threshold). */
 const ANSWER_CAP: Readonly<Record<DetailLevel, number>> = {
@@ -254,16 +259,26 @@ export interface InspectResult {
  * word twice. A graph whose labels are real prose (a concept at `ds:concept.pd`
  * named "Progressive disclosure") still keeps them, so this thins noise without
  * deciding that labels are worthless.
+ *
+ * Exported beside {@link nameIndex}: the two are ONE rule for naming a
+ * neighbour, and a consumer that took the map without the filter would print
+ * exactly the noise this function exists to drop.
  */
-function isInformativeName(name: string, short: string): boolean {
+export function isInformativeName(name: string, short: string): boolean {
   const normalize = (value: string): string =>
     value.replace(/[\s._:-]/g, "").toLowerCase();
   const local = short.split(/[:.]/).pop() ?? short;
   return normalize(name) !== normalize(local);
 }
 
-/** Index lookup for a neighbour's human name (`label`, else the first alt name). */
-function nameIndex(index: PackIndex): ReadonlyMap<string, string> {
+/**
+ * Index lookup for a neighbour's human name (`label`, else the first alt name).
+ *
+ * EXPORTED for the same reason as {@link ROSTER_THRESHOLD}: `graph connect`
+ * names the nodes on a path, and it must name them the way this reader does or
+ * the same neighbour reads differently depending on which verb showed it.
+ */
+export function nameIndex(index: PackIndex): ReadonlyMap<string, string> {
   const names = new Map<string, string>();
   for (const entity of index.entities) {
     if (!entity.uri) continue;

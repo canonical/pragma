@@ -1,0 +1,372 @@
+/**
+ * The relation graph: which edges `graph connect` may walk, and the rosters it
+ * may not.
+ *
+ * ## What a relation is
+ *
+ * The kernel's entity reader already draws this distinction, and defends it in
+ * its own source (`readEntity.ts:37-50`): a RELATION "fans in narrowly and
+ * every subject is part of the answer", a ROSTER "fans in without bound because
+ * it grows with the data rather than the model" and "is already answered by
+ * `pragma/instanceCount` and by the noun's list verb". Then the sentence that
+ * makes it reusable here: "The two are told apart by FAN-IN, not by predicate
+ * name, so the kernel names no vocabulary."
+ *
+ * This module applies that same rule to TRAVERSAL. An edge `(s, p, o)` is
+ * walkable only if neither of its groups is a roster:
+ *
+ * - at most {@link ROSTER_THRESHOLD} subjects share its `(p, o)` pair, and
+ * - at most that many objects share its `(s, p)` pair.
+ *
+ * The threshold is IMPORTED, never restated — one constant with two consumers,
+ * so the traversal cannot drift from the doctrine it claims to obey.
+ *
+ * ## Why not a list of predicates
+ *
+ * Because the rule is per edge, per node and per direction, and a list cannot
+ * be. On the pack this CLI ships, twelve predicates carry both kinds of edge:
+ * `ds:tier` fans in 218-deep for the global tier and 1-to-a-handful for a small
+ * one, so the same predicate is a roster at one node and a real relation at
+ * another. A list would also be an editorial judgement about five vocabularies
+ * frozen into this file, stale the day a pack ships a predicate nobody listed.
+ * Nothing in this module names a predicate, and nothing may start to: the rule
+ * has to hold for a graph whose rosters hang off terms this code never saw.
+ *
+ * Nor can the distinction be read off the ontology. It is not asserted there:
+ * 72 predicates are declared `owl:ObjectProperty` and every one of the eleven
+ * classifiers is among them. The fan-in rule is a measurement standing in for a
+ * statement the graph does not make — which is exactly why it is computed here,
+ * fresh, from whatever is loaded, rather than written down anywhere.
+ *
+ * ## What the scan covers, and what it costs
+ *
+ * ONE scan of every triple with a non-literal object. Both group tables are
+ * counted over that same edge set, because a literal object is not an edge and
+ * cannot be walked — counting attributes into a fan-in would refuse edges on
+ * the strength of triples no traversal could ever use. The counts must be taken
+ * over the whole edge set before any edge is admitted, so the two tests cannot
+ * be applied in sequence: dropping a hub edge first would shrink the group its
+ * sibling is measured against and quietly admit an edge the rule refuses.
+ *
+ * The index is built ONCE per store session and memoised on it, and nothing
+ * here is written into the pack (`C.05` forbids a pre-joined view artifact, and
+ * prescribes exactly this: a thin loader that joins at runtime, because "the
+ * join is milliseconds at this scale — code, not data"). It is reached only
+ * through the connect verb's dynamically-imported run body, behind
+ * `needsStore`, so a process that never asks a connect question never loads
+ * this module, let alone runs the scan.
+ */
+
+import { compactUri } from "../../kernel/render/index.js";
+import {
+  isInformativeName,
+  nameIndex,
+  ROSTER_THRESHOLD,
+} from "../../kernel/runtime/readEntity.js";
+import type { QueryFacade, StoreSession } from "../../kernel/runtime/types.js";
+import type { ConnectTerm, SharedRoster } from "./connect.types.js";
+
+/** Every triple whose object is a node rather than an attribute — one scan. */
+const EDGE_SCAN = "SELECT ?s ?p ?o WHERE { ?s ?p ?o . FILTER(!isLiteral(?o)) }";
+
+/**
+ * Field separator for composite map keys.
+ *
+ * A NUL, written as an ESCAPE so this file stays text: a literal NUL byte in
+ * the source makes git classify the module as binary, and a reviewer then gets
+ * no diff at all. It is the one character that cannot appear in an IRI or in a
+ * blank-node label, so a composite key is unambiguous.
+ */
+const SEP = "\u0000";
+
+/** One walkable edge, as seen from one of its two ends. */
+export interface RelationEdge {
+  /** The node at the other end. */
+  readonly to: string;
+  readonly predicate: string;
+  /** True when the asserted triple is `(this node, predicate, to)`. */
+  readonly forward: boolean;
+}
+
+/** A roster group a node belongs to, decoded from its key. */
+interface RosterGroup {
+  readonly side: "subjects" | "objects";
+  readonly predicate: string;
+  readonly node: string;
+  readonly members: number;
+}
+
+/** The relation graph of one store session. */
+export interface RelationIndex {
+  /** Walkable edges by node, both directions. */
+  readonly adjacency: ReadonlyMap<string, readonly RelationEdge[]>;
+  /** Roster-group keys by node — the memberships an edge was refused for. */
+  readonly rosters: ReadonlyMap<string, readonly string[]>;
+  /** Every roster group, by key. */
+  readonly groups: ReadonlyMap<string, RosterGroup>;
+  /** Distinct triples the scan returned (edges, before the rule). */
+  readonly scannedEdges: number;
+  /** Edges the rule admitted. */
+  readonly relationEdges: number;
+  /** Nodes carrying at least one admitted edge. */
+  readonly relationNodes: number;
+  /** Milliseconds the scan took, and milliseconds the build took. */
+  readonly scanMs: number;
+  readonly buildMs: number;
+  /** Short form + human name for any node the index has seen. */
+  term(value: string, blank?: boolean): ConnectTerm;
+}
+
+/**
+ * The memo. Keyed on the session OBJECT, so it lives exactly as long as the
+ * session does: the lazy store hands out one immutable session per boot and
+ * `invalidate()` replaces it, which means a rebuilt store gets a rebuilt index
+ * with no invalidation hook of its own to forget to call. A WeakMap rather than
+ * a field on the session, because the index is this capability's concern and
+ * the kernel should not carry a structure only one verb reads.
+ */
+const memo = new WeakMap<StoreSession, Promise<RelationIndex>>();
+
+/** What the index build needs: the session, and a way to query it. */
+export interface IndexContext {
+  readonly session: StoreSession;
+  readonly sparql: QueryFacade["sparql"];
+}
+
+/**
+ * The relation index for a session, built on first use and reused after.
+ *
+ * @param ctx - The booted session and its query facade.
+ * @returns The session's relation index.
+ * @note Impure — scans the store on the first call for a given session.
+ */
+export function relationIndex(ctx: IndexContext): Promise<RelationIndex> {
+  const cached = memo.get(ctx.session);
+  if (cached) return cached;
+  // Memoise the PROMISE, not the result, so two concurrent questions on one
+  // session share a single scan instead of racing two.
+  const building = buildRelationIndex(ctx).catch((error: unknown) => {
+    memo.delete(ctx.session);
+    throw error;
+  });
+  memo.set(ctx.session, building);
+  return building;
+}
+
+/** One scanned triple, with its two ends flagged. */
+interface ScannedEdge {
+  readonly s: string;
+  readonly p: string;
+  readonly o: string;
+  readonly sBlank: boolean;
+  readonly oBlank: boolean;
+}
+
+/** Read every edge out of the store, deduplicated. */
+async function scanEdges(ctx: IndexContext): Promise<ScannedEdge[]> {
+  const result = await ctx.sparql(EDGE_SCAN);
+  if (result.type !== "select") return [];
+  const edges: ScannedEdge[] = [];
+  // Deduplicate by triple: ke queries with `use_default_graph_as_union` and
+  // oxigraph does not deduplicate across that union, so one triple asserted in
+  // two named graphs arrives twice. Left in, it would inflate every fan-in
+  // count it touches AND return the same path twice.
+  const seen = new Set<string>();
+  for (const binding of result.termBindings) {
+    const s = binding.s;
+    const p = binding.p;
+    const o = binding.o;
+    if (!s || !p || !o) continue;
+    const key = `${s.value}${SEP}${p.value}${SEP}${o.value}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    edges.push({
+      s: s.value,
+      p: p.value,
+      o: o.value,
+      sBlank: s.termType === "BlankNode",
+      oBlank: o.termType === "BlankNode",
+    });
+  }
+  return edges;
+}
+
+/**
+ * Build the relation index: one scan, two group tables, then the rule.
+ *
+ * @param ctx - The booted session and its query facade.
+ * @returns The relation index, with the cost of producing it recorded.
+ * @note Impure — queries the store.
+ */
+async function buildRelationIndex(ctx: IndexContext): Promise<RelationIndex> {
+  const scanStart = performance.now();
+  const edges = await scanEdges(ctx);
+  const scanMs = performance.now() - scanStart;
+
+  const buildStart = performance.now();
+  // Both tables over the SAME edge set, before anything is admitted.
+  const bySubjectSide = new Map<string, number>();
+  const byObjectSide = new Map<string, number>();
+  for (const edge of edges) {
+    const inbound = `${edge.p}${SEP}${edge.o}`;
+    const outbound = `${edge.s}${SEP}${edge.p}`;
+    bySubjectSide.set(inbound, (bySubjectSide.get(inbound) ?? 0) + 1);
+    byObjectSide.set(outbound, (byObjectSide.get(outbound) ?? 0) + 1);
+  }
+
+  const adjacency = new Map<string, RelationEdge[]>();
+  const rosters = new Map<string, string[]>();
+  const groups = new Map<string, RosterGroup>();
+  const blanks = new Set<string>();
+  let relationEdges = 0;
+
+  const link = (from: string, edge: RelationEdge): void => {
+    const list = adjacency.get(from);
+    if (list) list.push(edge);
+    else adjacency.set(from, [edge]);
+  };
+  const enrol = (node: string, key: string, group: RosterGroup): void => {
+    if (!groups.has(key)) groups.set(key, group);
+    const list = rosters.get(node);
+    if (list) {
+      if (!list.includes(key)) list.push(key);
+    } else rosters.set(node, [key]);
+  };
+
+  for (const edge of edges) {
+    if (edge.sBlank) blanks.add(edge.s);
+    if (edge.oBlank) blanks.add(edge.o);
+    const inboundKey = `${edge.p}${SEP}${edge.o}`;
+    const outboundKey = `${edge.s}${SEP}${edge.p}`;
+    const subjectsSharing = bySubjectSide.get(inboundKey) ?? 0;
+    const objectsSharing = byObjectSide.get(outboundKey) ?? 0;
+    const inboundRoster = subjectsSharing > ROSTER_THRESHOLD;
+    const outboundRoster = objectsSharing > ROSTER_THRESHOLD;
+
+    if (!inboundRoster && !outboundRoster) {
+      relationEdges++;
+      link(edge.s, { to: edge.o, predicate: edge.p, forward: true });
+      link(edge.o, { to: edge.s, predicate: edge.p, forward: false });
+      continue;
+    }
+    // A refused edge still says something true: it records the node's
+    // MEMBERSHIP of the group that refused it, which is the whole content of a
+    // negative answer about two things that share only a classification.
+    if (inboundRoster) {
+      enrol(edge.s, `subjects${SEP}${inboundKey}`, {
+        side: "subjects",
+        predicate: edge.p,
+        node: edge.o,
+        members: subjectsSharing,
+      });
+    }
+    if (outboundRoster) {
+      enrol(edge.o, `objects${SEP}${outboundKey}`, {
+        side: "objects",
+        predicate: edge.p,
+        node: edge.s,
+        members: objectsSharing,
+      });
+    }
+  }
+
+  const names = nameIndex(ctx.session.index);
+  const prefixes = ctx.session.prefixes;
+  const term = (value: string, blank?: boolean): ConnectTerm => {
+    if (blank ?? blanks.has(value)) {
+      return { value, addressable: false };
+    }
+    const prefixed = compactUri(value, prefixes);
+    const name = names.get(value);
+    return {
+      value,
+      // `compactUri` returns its input when no namespace matches, so an
+      // unmatched IRI carries no `prefixed` echoing `value`.
+      ...(prefixed === value ? {} : { prefixed }),
+      ...(name && isInformativeName(name, prefixed) ? { title: name } : {}),
+    };
+  };
+
+  return {
+    adjacency,
+    rosters,
+    groups,
+    scannedEdges: edges.length,
+    relationEdges,
+    relationNodes: adjacency.size,
+    scanMs,
+    buildMs: performance.now() - buildStart,
+    term,
+  };
+}
+
+/**
+ * The roster groups two nodes both belong to, ordered deterministically.
+ *
+ * Scoped to one hop in each direction, which is what makes it cost nothing —
+ * and what it cannot see: two blocks whose shared library is attributed to
+ * their implementation objects rather than to themselves share that roster one
+ * step removed, and this will not report it.
+ *
+ * @param index - The session's relation index.
+ * @param a - One node's IRI or blank label.
+ * @param b - The other node's IRI or blank label.
+ * @returns The shared roster groups, largest first then by predicate.
+ */
+export function sharedRosters(
+  index: RelationIndex,
+  a: string,
+  b: string,
+): SharedRoster[] {
+  const mine = index.rosters.get(a) ?? [];
+  const theirs = new Set(index.rosters.get(b) ?? []);
+  const shared: SharedRoster[] = [];
+  for (const key of mine) {
+    if (!theirs.has(key)) continue;
+    const group = index.groups.get(key);
+    if (!group) continue;
+    shared.push({
+      side: group.side,
+      predicate: index.term(group.predicate),
+      node: index.term(group.node),
+      members: group.members,
+    });
+  }
+  return sortRosters(shared);
+}
+
+/**
+ * The roster groups one node belongs to — what classifies an entity that
+ * carries no relation at all.
+ *
+ * @param index - The session's relation index.
+ * @param node - The node's IRI or blank label.
+ * @returns The node's roster groups, largest first then by predicate.
+ */
+export function rosterMemberships(
+  index: RelationIndex,
+  node: string,
+): SharedRoster[] {
+  const groups: SharedRoster[] = [];
+  for (const key of index.rosters.get(node) ?? []) {
+    const group = index.groups.get(key);
+    if (!group) continue;
+    groups.push({
+      side: group.side,
+      predicate: index.term(group.predicate),
+      node: index.term(group.node),
+      members: group.members,
+    });
+  }
+  return sortRosters(groups);
+}
+
+/** Order rosters by size then by name, so two runs agree. */
+function sortRosters(groups: SharedRoster[]): SharedRoster[] {
+  return groups.sort(
+    (x, y) =>
+      y.members - x.members ||
+      x.predicate.value.localeCompare(y.predicate.value) ||
+      x.node.value.localeCompare(y.node.value),
+  );
+}

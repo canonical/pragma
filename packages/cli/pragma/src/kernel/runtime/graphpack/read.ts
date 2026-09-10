@@ -39,7 +39,8 @@ function packUnavailable(reason: string): PragmaError {
  * Read a pack directory into a bootable store session.
  *
  * @param dir - The pack directory (must hold a complete pack).
- * @returns The store session: store, schema, context factory, prefixes, index.
+ * @returns The store session: store, schema, context factory, prefixes, index,
+ *   and the pack's own manifest (its provenance, carried rather than re-read).
  * @throws PragmaError STORE_UNAVAILABLE when the pack is incomplete.
  * @note Impure — creates a store from the cached n-quads dump.
  */
@@ -109,5 +110,6 @@ export async function readPack(dir: string): Promise<StoreSession> {
     createContext: compiled.createContext,
     prefixes: manifest.prefixes,
     index,
+    manifest,
   };
 }

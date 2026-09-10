@@ -54,6 +54,19 @@ export interface StoreSession {
   readonly prefixes: Readonly<Record<string, string>>;
   /** The storeless entity index shipped with the pack. */
   readonly index: import("./graphpack/types.js").PackIndex;
+  /**
+   * The provenance of the pack this session was booted from — the parsed
+   * `manifest.json` the boot ALREADY read to get {@link prefixes}.
+   *
+   * Carried rather than re-read because an answer that depends on WHICH packs
+   * were searched has to be able to say so from the session it was answered
+   * from. `graph connect`'s most common answer is "these two are not
+   * connected", and a missing pack makes the honest and the dishonest form of
+   * that answer byte-identical — so the answer names `sourceRef`, and it must
+   * be the loaded session's, not one re-resolved from config a caller could
+   * have changed since.
+   */
+  readonly manifest: import("./graphpack/types.js").Manifest;
 }
 
 /**

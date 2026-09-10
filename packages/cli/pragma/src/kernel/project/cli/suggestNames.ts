@@ -42,8 +42,22 @@ export function suggestNames(
       continue;
     }
 
-    const distance = damerauLevenshtein(queryLower, candidateLower);
     const maxLen = Math.max(queryLower.length, candidateLower.length);
+    // Skip on LENGTH before building a matrix. An edit distance is at least the
+    // difference in length, so a candidate whose length alone already exceeds
+    // the threshold cannot pass it — and the full Damerau-Levenshtein for it
+    // costs an O(n·m) matrix allocation. This changes no result, only the cost
+    // of reaching it: ranking one mistyped name against the shipped pack's
+    // 4,380 entities took 1.2 SECONDS, which is a long time to wait to be told
+    // about a typo.
+    if (
+      Math.abs(queryLower.length - candidateLower.length) >
+      threshold * maxLen
+    ) {
+      continue;
+    }
+
+    const distance = damerauLevenshtein(queryLower, candidateLower);
     const normalized = maxLen === 0 ? 0 : distance / maxLen;
 
     if (normalized <= threshold) {

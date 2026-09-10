@@ -133,8 +133,18 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       { v: "list", mcp: "skill_list" },
       { v: "lookup", args: ["<name>"], mcp: "skill_lookup" },
     ]);
-    // graph adds the SPARQL escape hatch (`query`) in PR6, alongside `inspect`.
+    // graph carries the three store-wide reads: one entity's neighbourhood
+    // (`inspect`), the SPARQL escape hatch (`query`, PR6), and the relation
+    // paths between two entities (`connect`) — a verb rather than a declared
+    // story because the pack grammar can mint only ONE required positional.
     expect(emitted.nouns.graph?.verbs).toEqual([
+      {
+        v: "connect",
+        args: ["<a>", "<b>"],
+        flags: ["--hops", "--paths"],
+        needsStore: true,
+        mcp: "graph_connect",
+      },
       {
         v: "inspect",
         args: ["<uri>"],
@@ -338,14 +348,14 @@ describe("surface COMPLETE — emitted == covenant (PROTECTED)", () => {
   // The CLOSING direction: assertConforms already proves emitted ⊆ covenant;
   // this proves covenant ⊆ emitted, so together the tool sets are EQUAL — the
   // surface-complete milestone. After PR7, every covenant tool is realized.
-  it("emits every covenant tool (all 42) — set equality with the covenant", () => {
+  it("emits every covenant tool (all 43) — set equality with the covenant", () => {
     const emittedTools = new Set(emitted.mcpSurface.tools);
     const missing = golden.mcpSurface.tools.filter((t) => !emittedTools.has(t));
     expect(missing).toEqual([]);
     expect([...emitted.mcpSurface.tools].sort()).toEqual(
       [...golden.mcpSurface.tools].sort(),
     );
-    expect(emitted.mcpSurface.tools).toHaveLength(42);
+    expect(emitted.mcpSurface.tools).toHaveLength(43);
   });
 
   // The covenant edit: the non-tool MCP surface is frozen too.

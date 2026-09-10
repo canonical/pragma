@@ -403,6 +403,40 @@ pragma doctor --format json  # machine-readable checks
 
 ## graph
 
+### pragma graph connect
+
+Show the shortest relation paths between two entities.
+
+Finds every shortest path of RELATION edges between two entities, and says which kind of nothing it found when there is no path. An edge counts as a relation only where it does not fan out into a roster — membership of a class, a tier or a family is answered by that noun's list verb, not by a path — so most pairs are correctly reported as unconnected. Address each endpoint by prefixed name (ds:global.component.button) or absolute IRI. Every answer states the hop limit, the fan-in threshold, and the packs searched.
+
+```
+pragma graph connect <a> <b> [options]
+```
+
+**Arguments**
+
+| Argument | Required | Description |
+| --- | --- | --- |
+| `<a>` | yes | The first endpoint — a prefixed name or absolute IRI. |
+| `<b>` | yes | The second endpoint — a prefixed name or absolute IRI. |
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--hops` | `<number>` | Largest path length to return (default 4, ceiling 6). (default: 4) |
+| `--paths` | `<number>` | Most shortest paths to show (default 10); the answer always reports the true total. (default: 10) |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `graph_connect` tool.
+
+**Examples**
+
+```bash
+pragma graph connect ds:global.component.button dt:color.text  # a block and a token symbol
+pragma graph connect ds:global.component.button ds:apps.pattern.data_table --format json  # an honest unlinked answer, with the policy it was found under
+```
+
 ### pragma graph inspect
 
 Show every triple where a URI is the subject, grouped by predicate.
