@@ -377,9 +377,21 @@ describe("token values — chain AND derivation on the same surface (PROTECTED)"
     expect(defaultRow?.position).toBeUndefined();
   });
 
-  it("concatenates the WHOLE resolution chain, in list order", async () => {
+  it("concatenates the WHOLE resolution chain, as a set", async () => {
+    // Every link, which is the point — the lookup's expand shows the head
+    // alone, and this verb is where the whole walk is readable.
+    //
+    // As a SET, not a sequence, and asserted that way after pinning one
+    // spelling of it flaked: `GROUP_CONCAT` has no defined order in SPARQL and
+    // takes no `ORDER BY`, so a two-link chain may serialise either way round.
+    // Pinning the order would be pinning the engine's evaluation, and the
+    // story's own note now says the cell answers WHICH definitions a value
+    // passed through rather than in what order.
     const darkRow = (await rows("values")).at(1);
-    expect(darkRow?.chain).toBe("dark.json#color.text light.json#color.border");
+    expect(darkRow?.chain?.split(" ").sort()).toEqual([
+      "dark.json#color.text",
+      "light.json#color.border",
+    ]);
   });
 
   it("a derived value carries its derivation by NAME and no value cell", async () => {

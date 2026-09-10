@@ -519,6 +519,16 @@ const designSystemStories: readonly PackDefinition[] = [
         // definition IRIs, so it needs `/rdf:rest*/rdf:first` and an aggregate
         // to become one cell. The chain items are trimmed to the path inside
         // the token files, which is the form the resolution chain is quoted in.
+        //
+        // The cell is a SET, and its order is NOT the list's. `GROUP_CONCAT`
+        // has no defined order in SPARQL and takes no `ORDER BY`, so the links
+        // of a multi-link chain may come back either way round — which a test
+        // pinning one spelling of a two-link chain found by flaking. Reading
+        // the cell as "which definitions this value passed through" is
+        // therefore right and reading it as "in what order" is not. The
+        // ORDERED anchor a caller usually wants is the chain's HEAD, the
+        // definition the value was authored in, and that is what the lookup's
+        // `values` expand projects with `rdf:first`.
         query: [
           "SELECT ?symbol ?position ?value ?derivedFrom",
           '       (GROUP_CONCAT(DISTINCT ?chainItem; SEPARATOR=" ") AS ?chain)',
