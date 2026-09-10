@@ -13,6 +13,17 @@ const machinesSchema = () =>
 
 const provider = () => createDataViewsProvider({ schema: machinesSchema() });
 
+/** Refresh and return the request id, failing loudly rather than casting. */
+const refreshRequest = (p: {
+  readonly refresh: () => string | null;
+}): string => {
+  const requestId = p.refresh();
+  if (requestId === null) {
+    throw new Error("expected a refresh request");
+  }
+  return requestId;
+};
+
 describe("createDataViewsProvider", () => {
   it("assembles scope identity, schema, selection and field handles", () => {
     const p = provider();
@@ -247,6 +258,93 @@ describe("createDataViewsProvider", () => {
         { page: 1, size: 50 },
       ),
     ).toBeNull();
+  });
+
+  it("publishes the shared row model when a request succeeds", () => {
+    const p = provider();
+    const requestId = refreshRequest(p);
+    p.complete(requestId, {
+      status: "success",
+      rows: [{ id: "m-1" }, { id: "m-2" }],
+      count: 2,
+    });
+    expect(p.rows.get().ids).toEqual(["m-1", "m-2"]);
+    expect(p.rows.get().byId("m-2")).toEqual({ id: "m-2" });
+  });
+
+  it("carries row entries across a republication of the same records", () => {
+    const p = provider();
+    const rows = [{ id: "m-1" }];
+    p.complete(refreshRequest(p), { status: "success", rows, count: 1 });
+    const first = p.rows.get();
+    p.complete(refreshRequest(p), {
+      status: "success",
+      rows: [...rows],
+      count: 1,
+    });
+    expect(p.rows.get()).toBe(first);
+  });
+
+  it("rejects the whole completion when a record has no usable identity", () => {
+    const p = provider();
+    const requestId = refreshRequest(p);
+    expect(() =>
+      p.complete(requestId, {
+        status: "success",
+        rows: [{ name: "unidentified" }],
+        count: 1,
+      }),
+    ).toThrow("row record has no non-empty string id");
+    expect(p.rows.get().ids).toEqual([]);
+    expect(p.result.get().result.status).toBe("refreshing");
+  });
+
+  it("identifies records through a declared identifier", () => {
+    const p = createDataViewsProvider<
+      ReturnType<typeof machinesSchema>["fields"],
+      { readonly uuid: string }
+    >({
+      schema: machinesSchema(),
+      identify: (row) => row.uuid,
+    });
+    p.complete(refreshRequest(p), {
+      status: "success",
+      rows: [{ uuid: "a" }],
+      count: 1,
+    });
+    expect(p.rows.get().ids).toEqual(["a"]);
+  });
+
+  it("retains the row model when a request fails", () => {
+    const p = provider();
+    p.complete(refreshRequest(p), {
+      status: "success",
+      rows: [{ id: "m-1" }],
+      count: 1,
+    });
+    const retained = p.rows.get();
+    p.complete(refreshRequest(p), { status: "failure", reason: "offline" });
+    expect(p.rows.get()).toBe(retained);
+    expect(p.result.get().result.lastError).toBe("offline");
+  });
+
+  it("discards the row model of a superseded request", () => {
+    const p = provider();
+    const stale = refreshRequest(p);
+    p.setSearch("failed");
+    p.complete(stale, { status: "success", rows: [{ id: "m-1" }], count: 1 });
+    expect(p.rows.get().ids).toEqual([]);
+  });
+
+  it("empties the row model when the scope rotates", () => {
+    const p = provider();
+    p.complete(refreshRequest(p), {
+      status: "success",
+      rows: [{ id: "m-1" }],
+      count: 1,
+    });
+    p.rotateScope();
+    expect(p.rows.get().ids).toEqual([]);
   });
 
   it("adopts an identical state without notifying", () => {

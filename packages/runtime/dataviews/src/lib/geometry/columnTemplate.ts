@@ -1,0 +1,51 @@
+import type { ColumnToSize, ResolvedColumn } from "./types.js";
+
+/** A live resize preview substituted into the published track list. */
+export type ColumnPreview = {
+  readonly id: string;
+  readonly width: number;
+};
+
+/** The declarative track of one column, used before any width is measured. */
+const declaredTrack = (column: ColumnToSize): string => {
+  const { sizing } = column;
+  if (sizing.kind === "fixed") {
+    return `${sizing.px}px`;
+  }
+  if (sizing.maxPx !== undefined) {
+    return `minmax(${sizing.minPx}px, ${sizing.maxPx}px)`;
+  }
+  return `minmax(${sizing.minPx}px, ${sizing.weight}fr)`;
+};
+
+/**
+ * Build the shared `grid-template-columns` track list for one table: the one
+ * geometry publication every row consumes, rather than a width written onto
+ * every cell.
+ *
+ * With nothing measured the tracks are declarative, so the baseline is
+ * aligned and readable before the solver can run and server output is
+ * deterministic. Once the container is measured the caller passes the
+ * solver's resolved vector — the one it already holds, so the solve is not
+ * repeated here — which is what capping and resizing need. A live preview
+ * replaces its own column's track in either mode; the authoritative
+ * presentation is untouched until the resize commits.
+ */
+export default function columnTemplate(
+  columns: readonly ColumnToSize[],
+  resolved: readonly ResolvedColumn[] | null,
+  preview?: ColumnPreview,
+): string {
+  if (columns.length === 0) {
+    return "none";
+  }
+  const trackOf = (id: string, track: string): string =>
+    preview !== undefined && preview.id === id ? `${preview.width}px` : track;
+  return resolved === null
+    ? columns
+        .map((column) => trackOf(column.id, declaredTrack(column)))
+        .join(" ")
+    : resolved
+        .map((column) => trackOf(column.id, `${column.width}px`))
+        .join(" ");
+}

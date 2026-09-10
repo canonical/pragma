@@ -34,8 +34,14 @@ export type GridInteraction = {
   readonly commit: () => void;
   /** Cancel: the authoritative presentation is untouched, so nothing restores. */
   readonly cancel: () => void;
-  /** Detach the presentation subscription permanently. */
-  readonly dispose: () => void;
+  /**
+   * Begin watching the presentation for the conflicting external changes
+   * that invalidate a live preview; the return value detaches. Construction
+   * subscribes to nothing, so an interaction whose caller never attaches it
+   * holds no subscription to leak, and re-attaching is an ordinary second
+   * call.
+   */
+  readonly observe: () => () => void;
 };
 
 /**
@@ -75,7 +81,7 @@ export default function createGridInteraction(
   // A conflicting same-column update invalidates the live preview; an
   // unrelated column's update does not. Our own commit ends the interaction
   // before writing, so any change observed while resizing is external.
-  const unsubscribePresentation = presentation.subscribe(() => {
+  const onPresentationChange = (): void => {
     if (state.status === "resizing" && resizingBaseline !== null) {
       const current = presentation.effective(state.columnId);
       if (!sizingEquals(current, resizingBaseline)) {
@@ -83,7 +89,7 @@ export default function createGridInteraction(
         publish({ status: "idle" });
       }
     }
-  });
+  };
 
   return {
     get state(): GridInteractionState {
@@ -136,10 +142,8 @@ export default function createGridInteraction(
       resizingBaseline = null;
       publish({ status: "idle" });
     },
-    dispose(): void {
-      unsubscribePresentation();
-      listeners.clear();
-      resizingBaseline = null;
+    observe(): () => void {
+      return presentation.subscribe(onPresentationChange);
     },
   };
 }

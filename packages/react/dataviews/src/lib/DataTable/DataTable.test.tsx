@@ -1,0 +1,934 @@
+/**
+ * The renderer's contract: div rows sharing one published track list, roles
+ * that carry the relationships the elements do not, keyed observation so an
+ * unrelated change does no work, and one scope per row rather than one per
+ * cell. Each case is mutation-tested against that contract.
+ */
+import type {
+  DataViewsProvider,
+  Presentation,
+} from "@canonical/dataviews-core";
+import {
+  createDataViewsProvider,
+  createPresentation,
+  createSchema,
+} from "@canonical/dataviews-core";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import type { ReactElement } from "react";
+import { createRef, StrictMode, useState } from "react";
+import { describe, expect, it, vi } from "vitest";
+import useDataViewsCell from "../DataViews/hooks/useDataViewsCell.js";
+import useDataViewsValue from "../DataViews/hooks/useDataViewsValue.js";
+import DataTable from "./DataTable.js";
+import type { DataTableCellProps, DataTableColumn } from "./types.js";
+
+const schema = createSchema([
+  { field: "status", kind: "choices", options: ["failed", "running"] },
+]);
+
+type Fields = typeof schema.fields;
+type Machine = {
+  readonly id: string;
+  readonly name: string;
+  readonly status: string;
+  readonly cores: number;
+};
+
+const machine = (id: string, name: string, status = "running"): Machine => ({
+  id,
+  name,
+  status,
+  cores: 4,
+});
+
+const columns: readonly DataTableColumn[] = [
+  { id: "name", header: "Name", sortable: true },
+  { id: "status", header: "Status" },
+];
+
+const makeProvider = (): DataViewsProvider<Fields, Machine> =>
+  createDataViewsProvider<Fields, Machine>({ schema });
+
+/** Refresh and return the request id, failing loudly rather than casting. */
+const refreshRequest = (
+  provider:
+    | DataViewsProvider<Fields, Machine>
+    | DataViewsProvider<Fields, Record<string, unknown>>,
+): string => {
+  const requestId = provider.refresh();
+  if (requestId === null) {
+    throw new Error("expected a refresh request");
+  }
+  return requestId;
+};
+
+const load = (
+  provider: DataViewsProvider<Fields, Machine>,
+  rows: readonly Machine[],
+): void => {
+  const requestId = refreshRequest(provider);
+  act(() => {
+    provider.complete(requestId, {
+      status: "success",
+      rows,
+      count: rows.length,
+    });
+  });
+};
+
+const loadedTable = (
+  rows: readonly Machine[] = [machine("m-1", "alpha"), machine("m-2", "beta")],
+  extra: Partial<Parameters<typeof DataTable<Fields, Machine>>[0]> = {},
+) => {
+  const provider = makeProvider();
+  const view = render(
+    <DataTable
+      provider={provider}
+      columns={columns}
+      label="Machines"
+      {...extra}
+    />,
+  );
+  load(provider, rows);
+  return { provider, view };
+};
+
+describe("DataTable", () => {
+  it("refuses a value that is not a provider", () => {
+    const notAProvider = {} as DataViewsProvider<Fields, Machine>;
+    expect(() =>
+      render(
+        <DataTable
+          provider={notAProvider}
+          columns={columns}
+          label="Machines"
+        />,
+      ),
+    ).toThrow(
+      "DataTable requires a provider created by createDataViewsProvider",
+    );
+  });
+
+  it("renders the table relationships as roles over div geometry", () => {
+    loadedTable();
+    const table = screen.getByRole("table", { name: "Machines" });
+    expect(table.tagName).toBe("DIV");
+    expect(within(table).getAllByRole("rowgroup")).toHaveLength(2);
+    expect(
+      screen.getAllByRole("columnheader").map((c) => c.textContent),
+    ).toEqual(["Name", "Status"]);
+    expect(screen.getAllByRole("row")).toHaveLength(3);
+    expect(
+      within(screen.getAllByRole("row")[1])
+        .getAllByRole("cell")
+        .map((cell) => cell.textContent),
+    ).toEqual(["alpha", "running"]);
+  });
+
+  it("publishes one track list on the container and shares it with every row", () => {
+    loadedTable();
+    const table = screen.getByRole("table", { name: "Machines" });
+    expect(table.style.getPropertyValue("--data-table-columns")).not.toBe("");
+    for (const row of screen.getAllByRole("row")) {
+      expect(row.style.gridTemplateColumns).toBe("var(--data-table-columns)");
+    }
+  });
+
+  it("merges the caller's class name and inline style onto the root", () => {
+    loadedTable([machine("m-1", "alpha")], {
+      className: "host",
+      style: { opacity: 0.5 },
+      id: "machines",
+    });
+    const table = screen.getByRole("table", { name: "Machines" });
+    expect(table.className).toBe("ds data-table host");
+    expect(table.style.opacity).toBe("0.5");
+    expect(table.id).toBe("machines");
+  });
+
+  it("hands the root to a caller's callback ref without losing its own", () => {
+    const provider = makeProvider();
+    const seen: (HTMLDivElement | null)[] = [];
+    const { unmount } = render(
+      <DataTable
+        provider={provider}
+        columns={columns}
+        label="Machines"
+        ref={(node) => {
+          seen.push(node);
+        }}
+      />,
+    );
+    const table = screen.getByRole("table", { name: "Machines" });
+    expect(seen).toEqual([table]);
+    // The table still measured its own container: its geometry ref survived.
+    expect(table.style.getPropertyValue("--data-table-columns")).not.toBe("");
+    unmount();
+    expect(seen).toEqual([table, null]);
+  });
+
+  it("honours the cleanup a React 19 callback ref returns", () => {
+    const provider = makeProvider();
+    const seen: (HTMLDivElement | null)[] = [];
+    let cleanups = 0;
+    const { unmount } = render(
+      <DataTable
+        provider={provider}
+        columns={columns}
+        label="Machines"
+        ref={(node) => {
+          seen.push(node);
+          return () => {
+            cleanups += 1;
+          };
+        }}
+      />,
+    );
+    const table = screen.getByRole("table", { name: "Machines" });
+    expect(seen).toEqual([table]);
+    unmount();
+    // The cleanup ran, and it replaced the null call rather than joining it.
+    expect(cleanups).toBe(1);
+    expect(seen).toEqual([table]);
+  });
+
+  it("keeps one attachment across renders that rebuild the caller's ref", () => {
+    const provider = makeProvider();
+    const attachments: (HTMLDivElement | null)[] = [];
+    const Host = (): ReactElement => {
+      const [tick, setTick] = useState(0);
+      return (
+        <>
+          <button type="button" onClick={() => setTick(tick + 1)}>
+            rerender
+          </button>
+          <DataTable
+            provider={provider}
+            columns={columns}
+            label="Machines"
+            // Rebuilt on every render: the table must not detach and
+            // re-measure its container because of it.
+            ref={(node) => {
+              attachments.push(node);
+            }}
+          />
+        </>
+      );
+    };
+    render(<Host />);
+    expect(attachments).toHaveLength(1);
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "rerender" }));
+    });
+    expect(attachments).toHaveLength(1);
+  });
+
+  it("fills and clears a caller's ref object", () => {
+    const provider = makeProvider();
+    const ref = createRef<HTMLDivElement>();
+    const { unmount } = render(
+      <DataTable
+        provider={provider}
+        columns={columns}
+        label="Machines"
+        ref={ref}
+      />,
+    );
+    expect(ref.current).toBe(screen.getByRole("table", { name: "Machines" }));
+    unmount();
+    expect(ref.current).toBeNull();
+  });
+
+  it("renders primitive values as text and leaves other values to a renderer", () => {
+    const provider = makeProvider();
+    render(
+      <DataTable
+        provider={provider}
+        columns={[
+          { id: "name", header: "Name" },
+          { id: "cores", header: "Cores" },
+          { id: "status", header: "Status" },
+        ]}
+        label="Machines"
+      />,
+    );
+    load(provider, [
+      {
+        id: "m-1",
+        name: "alpha",
+        cores: 4,
+        status: "running",
+      } as Machine,
+      {
+        id: "m-2",
+        name: "beta",
+        cores: 8,
+        status: "running",
+      } as Machine,
+    ]);
+    const cells = within(screen.getAllByRole("row")[1]).getAllByRole("cell");
+    expect(cells.map((cell) => cell.textContent)).toEqual([
+      "alpha",
+      "4",
+      "running",
+    ]);
+  });
+
+  it("renders booleans, bigints and unrenderable values by their own rules", () => {
+    const provider = createDataViewsProvider<Fields, Record<string, unknown>>({
+      schema,
+    });
+    render(
+      <DataTable
+        provider={provider}
+        columns={[
+          { id: "flag", header: "Flag" },
+          { id: "big", header: "Big" },
+          { id: "shape", header: "Shape" },
+          { id: "missing", header: "Missing" },
+        ]}
+        label="Machines"
+      />,
+    );
+    const requestId = refreshRequest(provider);
+    act(() => {
+      provider.complete(requestId, {
+        status: "success",
+        rows: [{ id: "m-1", flag: false, big: 9007199254740993n, shape: {} }],
+        count: 1,
+      });
+    });
+    expect(
+      within(screen.getAllByRole("row")[1])
+        .getAllByRole("cell")
+        .map((cell) => cell.textContent),
+    ).toEqual(["false", "9007199254740993", "", ""]);
+  });
+
+  it("reads the record field a column names instead of its own id", () => {
+    const provider = makeProvider();
+    render(
+      <DataTable
+        provider={provider}
+        columns={[{ id: "machine-name", header: "Name", field: "name" }]}
+        label="Machines"
+      />,
+    );
+    load(provider, [machine("m-1", "alpha")]);
+    expect(screen.getAllByRole("cell")[0].textContent).toBe("alpha");
+  });
+
+  it("renders a column's own content inside that cell's scope", () => {
+    const Badge = ({ value, rowId, columnId }: DataTableCellProps) => {
+      const cell = useDataViewsCell(provider);
+      const record = useDataViewsValue(cell.row) as Machine;
+      return (
+        <span data-testid={`${rowId}-${columnId}`}>
+          {String(value)} of {record.name}
+        </span>
+      );
+    };
+    const provider = makeProvider();
+    render(
+      <DataTable
+        provider={provider}
+        columns={[{ id: "status", header: "Status", cell: Badge }]}
+        label="Machines"
+      />,
+    );
+    load(provider, [machine("m-1", "alpha", "failed")]);
+    expect(screen.getByTestId("m-1-status").textContent).toBe(
+      "failed of alpha",
+    );
+  });
+
+  it("cycles one column's ordering and describes it with aria-sort", async () => {
+    const { provider } = loadedTable();
+    const [sortable, plain] = screen.getAllByRole("columnheader");
+    expect(sortable).toHaveAttribute("aria-sort", "none");
+    expect(plain).not.toHaveAttribute("aria-sort");
+
+    const button = within(sortable).getByRole("button", { name: "Name" });
+    fireEvent.click(button);
+    expect(provider.result.get().slice.sort).toEqual([
+      { field: "name", direction: "asc" },
+    ]);
+    expect(screen.getAllByRole("columnheader")[0]).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
+
+    fireEvent.click(button);
+    expect(screen.getAllByRole("columnheader")[0]).toHaveAttribute(
+      "aria-sort",
+      "descending",
+    );
+
+    fireEvent.click(button);
+    expect(provider.result.get().slice.sort).toEqual([]);
+    expect(screen.getAllByRole("columnheader")[0]).toHaveAttribute(
+      "aria-sort",
+      "none",
+    );
+  });
+
+  it("shows the four no-rows outcomes and lets the caller replace them", () => {
+    const provider = makeProvider();
+    const { rerender } = render(
+      <DataTable provider={provider} columns={columns} label="Machines" />,
+    );
+    expect(screen.getByRole("row", { name: "Loading…" })).toBeInTheDocument();
+    load(provider, []);
+    expect(screen.getByText("There is nothing here yet.")).toBeInTheDocument();
+    act(() => {
+      provider.setSearch("alpha");
+    });
+    expect(screen.getByText("No rows match this query.")).toBeInTheDocument();
+
+    rerender(
+      <DataTable
+        provider={provider}
+        columns={columns}
+        label="Machines"
+        renderStatus={(status) => <em>nothing: {status.kind}</em>}
+      />,
+    );
+    expect(screen.getByText("nothing: no-results")).toBeInTheDocument();
+  });
+
+  it("offers a real checkbox per row, named after the record", () => {
+    const { provider } = loadedTable(
+      [machine("m-1", "alpha"), machine("m-2", "beta")],
+      { selectable: true, rowLabel: (row) => row.name },
+    );
+    const checkbox = screen.getByRole("checkbox", { name: "Select alpha" });
+    expect(screen.getAllByRole("row")[1]).toHaveAttribute(
+      "aria-selected",
+      "false",
+    );
+    fireEvent.click(checkbox);
+    expect([...provider.selection.state.ids]).toEqual(["m-1"]);
+    expect(screen.getAllByRole("row")[1]).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(screen.getAllByRole("row")[1].className).toBe(
+      "ds data-table-row selected",
+    );
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select alpha" }));
+    expect(provider.selection.state.ids.size).toBe(0);
+  });
+
+  it("names a row by its identity when no label is supplied", () => {
+    loadedTable([machine("m-1", "alpha")], { selectable: true });
+    expect(
+      screen.getByRole("checkbox", { name: "Select m-1" }),
+    ).toBeInTheDocument();
+  });
+
+  it("omits aria-selected where selection is not offered", () => {
+    loadedTable([machine("m-1", "alpha")]);
+    expect(screen.getAllByRole("row")[1]).not.toHaveAttribute("aria-selected");
+  });
+
+  it("selects and clears exactly the displayed rows from the header", () => {
+    const { provider } = loadedTable(
+      [machine("m-1", "alpha"), machine("m-2", "beta")],
+      { selectable: true },
+    );
+    act(() => {
+      provider.selection.add(["elsewhere"]);
+    });
+    const selectAll = screen.getByRole("checkbox", {
+      name: "Select all displayed rows",
+    }) as HTMLInputElement;
+    expect(selectAll.checked).toBe(false);
+    expect(selectAll.indeterminate).toBe(false);
+
+    fireEvent.click(selectAll);
+    expect([...provider.selection.state.ids].sort()).toEqual([
+      "elsewhere",
+      "m-1",
+      "m-2",
+    ]);
+    expect(
+      (
+        screen.getByRole("checkbox", {
+          name: "Select all displayed rows",
+        }) as HTMLInputElement
+      ).checked,
+    ).toBe(true);
+
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Select all displayed rows" }),
+    );
+    expect([...provider.selection.state.ids]).toEqual(["elsewhere"]);
+  });
+
+  it("shows a partial selection of the displayed rows as mixed", () => {
+    const { provider } = loadedTable(
+      [machine("m-1", "alpha"), machine("m-2", "beta")],
+      { selectable: true },
+    );
+    act(() => {
+      provider.selection.add(["m-1"]);
+    });
+    const selectAll = screen.getByRole("checkbox", {
+      name: "Select all displayed rows",
+    }) as HTMLInputElement;
+    expect(selectAll.checked).toBe(false);
+    expect(selectAll.indeterminate).toBe(true);
+  });
+
+  it("offers select-all against an empty displayed set without claiming it is checked", () => {
+    loadedTable([], { selectable: true });
+    const selectAll = screen.getByRole("checkbox", {
+      name: "Select all displayed rows",
+    }) as HTMLInputElement;
+    expect(selectAll.checked).toBe(false);
+    expect(selectAll.indeterminate).toBe(false);
+  });
+
+  it("notifies only the row whose selection membership moved", () => {
+    const renders: string[] = [];
+    const Probe = ({ rowId }: DataTableCellProps) => {
+      // Reads the row's membership, so this probe is notified exactly when
+      // that row's selection channel publishes.
+      useDataViewsValue(useDataViewsCell(provider).selected);
+      renders.push(rowId);
+      return null;
+    };
+    const provider = makeProvider();
+    render(
+      <DataTable
+        provider={provider}
+        columns={[{ id: "name", header: "Name", cell: Probe }]}
+        label="Machines"
+        selectable
+      />,
+    );
+    load(provider, [machine("m-1", "alpha"), machine("m-2", "beta")]);
+    renders.length = 0;
+    act(() => {
+      provider.selection.toggle("m-2");
+    });
+    expect(renders).toEqual(["m-2"]);
+  });
+
+  it("notifies only the cells whose field values changed", () => {
+    const renders: string[] = [];
+    const Probe = ({ rowId, columnId }: DataTableCellProps) => {
+      renders.push(`${rowId}/${columnId}`);
+      return null;
+    };
+    const provider = makeProvider();
+    render(
+      <DataTable
+        provider={provider}
+        columns={[
+          { id: "name", header: "Name", cell: Probe },
+          { id: "status", header: "Status", cell: Probe },
+        ]}
+        label="Machines"
+      />,
+    );
+    load(provider, [machine("m-1", "alpha"), machine("m-2", "beta")]);
+    renders.length = 0;
+    load(provider, [machine("m-1", "alpha", "failed"), machine("m-2", "beta")]);
+    expect(renders).toEqual(["m-1/status"]);
+  });
+
+  it("mints one scope per row, shared by its cells and stable across renders", () => {
+    const seen: { rowId: string; row: unknown; provider: unknown }[] = [];
+    const Probe = () => {
+      const cell = useDataViewsCell(provider);
+      seen.push({
+        rowId: cell.rowId,
+        row: cell.row,
+        provider: provider.identity,
+      });
+      return null;
+    };
+    const provider = makeProvider();
+    const Host = (): ReactElement => {
+      const [tick, setTick] = useState(0);
+      return (
+        <>
+          <button type="button" onClick={() => setTick(tick + 1)}>
+            rerender
+          </button>
+          <DataTable
+            provider={provider}
+            // Rebuilt on every render: content, not array identity, keys the
+            // registry, so nothing may be re-minted.
+            columns={[
+              { id: "name", header: "Name", cell: Probe },
+              { id: "status", header: "Status", cell: Probe },
+            ]}
+            label="Machines"
+          />
+        </>
+      );
+    };
+    render(<Host />);
+    load(provider, [machine("m-1", "alpha"), machine("m-2", "beta")]);
+    const firstRow = seen.filter((entry) => entry.rowId === "m-1");
+    expect(firstRow).toHaveLength(2);
+    expect(firstRow[0].row).toBe(firstRow[1].row);
+    expect(firstRow[0].row).not.toBe(
+      seen.find((entry) => entry.rowId === "m-2")?.row,
+    );
+
+    seen.length = 0;
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "rerender" }));
+    });
+    // The rebuilt array says the same thing, so nothing below the header
+    // re-rendered at all.
+    expect(seen).toEqual([]);
+
+    // And nothing was re-minted: the next record change reaches the same
+    // scope the first render handed out.
+    load(provider, [machine("m-1", "alpha", "failed"), machine("m-2", "beta")]);
+    expect(seen.filter((entry) => entry.rowId === "m-1")[0].row).toBe(
+      firstRow[0].row,
+    );
+    expect(new Set(seen.map((entry) => entry.provider)).size).toBe(1);
+  });
+
+  it("rebuilds its model when a column genuinely changes", () => {
+    const provider = makeProvider();
+    const { rerender } = render(
+      <DataTable provider={provider} columns={columns} label="Machines" />,
+    );
+    load(provider, [machine("m-1", "alpha")]);
+    expect(
+      screen.getAllByRole("columnheader").map((header) => header.textContent),
+    ).toEqual(["Name", "Status"]);
+    rerender(
+      <DataTable
+        provider={provider}
+        columns={[...columns, { id: "cores", header: "Cores" }]}
+        label="Machines"
+      />,
+    );
+    expect(
+      screen.getAllByRole("columnheader").map((header) => header.textContent),
+    ).toEqual(["Name", "Status", "Cores"]);
+    expect(
+      within(screen.getAllByRole("row")[1])
+        .getAllByRole("cell")
+        .map((cell) => cell.textContent),
+    ).toEqual(["alpha", "running", "4"]);
+  });
+
+  it("stops observing the collection when the table unmounts", () => {
+    const renders: string[] = [];
+    const Probe = ({ rowId }: DataTableCellProps) => {
+      renders.push(rowId);
+      return null;
+    };
+    const provider = makeProvider();
+    const { unmount } = render(
+      <DataTable
+        provider={provider}
+        columns={[{ id: "name", header: "Name", cell: Probe }]}
+        label="Machines"
+      />,
+    );
+    load(provider, [machine("m-1", "alpha")]);
+    unmount();
+    renders.length = 0;
+    load(provider, [machine("m-1", "alpha", "failed")]);
+    act(() => {
+      provider.selection.toggle("m-1");
+    });
+    expect(renders).toEqual([]);
+  });
+
+  it("shares user arrangement between two tables on one presentation", () => {
+    const provider = makeProvider();
+    const presentation: Presentation = createPresentation([
+      { id: "name", sizing: { kind: "flex", weight: 1, minPx: 96 } },
+      { id: "status", sizing: { kind: "flex", weight: 1, minPx: 96 } },
+    ]);
+    render(
+      <>
+        <DataTable
+          provider={provider}
+          columns={columns}
+          label="Machines"
+          presentation={presentation}
+        />
+        <DataTable
+          provider={provider}
+          columns={columns}
+          label="Machines elsewhere"
+          presentation={presentation}
+        />
+      </>,
+    );
+    act(() => {
+      presentation.setOverride("name", { kind: "fixed", px: 200 });
+    });
+    for (const name of ["Machines", "Machines elsewhere"]) {
+      expect(
+        screen
+          .getByRole("table", { name })
+          .style.getPropertyValue("--data-table-columns"),
+        // jsdom reports a zero-width container, so the solver publishes each
+        // column's own reservation; the declarative form is the server path.
+      ).toBe("200px 96px");
+    }
+  });
+
+  it("refuses a presentation that does not declare a rendered column", () => {
+    const provider = makeProvider();
+    const presentation = createPresentation([
+      { id: "name", sizing: { kind: "fixed", px: 100 } },
+    ]);
+    expect(() =>
+      render(
+        <DataTable
+          provider={provider}
+          columns={columns}
+          label="Machines"
+          presentation={presentation}
+        />,
+      ),
+    ).toThrow('unknown column id "status"');
+  });
+
+  it("resolves pixel tracks once the container reports a width", () => {
+    const notified: ResizeObserverCallback[] = [];
+    let disconnected = 0;
+    class StubObserver {
+      constructor(callback: ResizeObserverCallback) {
+        notified.push(callback);
+      }
+      observe(): void {}
+      unobserve(): void {}
+      disconnect(): void {
+        disconnected += 1;
+      }
+    }
+    vi.stubGlobal("ResizeObserver", StubObserver);
+    try {
+      const provider = makeProvider();
+      const { unmount } = render(
+        <DataTable
+          provider={provider}
+          columns={[
+            { id: "name", header: "Name", sizing: { kind: "fixed", px: 100 } },
+            {
+              id: "status",
+              header: "Status",
+              sizing: { kind: "flex", weight: 1, minPx: 50 },
+            },
+          ]}
+          label="Machines"
+        />,
+      );
+      if (notified.length === 0) {
+        throw new Error("expected the table to observe its container");
+      }
+      const observer = notified[0];
+      act(() => {
+        observer(
+          [{ contentRect: { width: 400 } }] as unknown as ResizeObserverEntry[],
+          {} as ResizeObserver,
+        );
+      });
+      expect(
+        screen
+          .getByRole("table", { name: "Machines" })
+          .style.getPropertyValue("--data-table-columns"),
+      ).toBe("100px 300px");
+      unmount();
+      expect(disconnected).toBe(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("resizes a column from its header, publishing new tracks", () => {
+    const provider = makeProvider();
+    render(
+      <DataTable
+        provider={provider}
+        columns={[
+          {
+            id: "name",
+            header: "Name",
+            resizable: true,
+            sizing: { kind: "flex", weight: 1, minPx: 50 },
+          },
+        ]}
+        label="Machines"
+      />,
+    );
+    load(provider, [machine("m-1", "alpha")]);
+    const handle = screen.getByRole("separator");
+    expect(handle).toHaveAccessibleName("Name");
+    fireEvent.keyDown(handle, { key: "ArrowRight" });
+    expect(
+      screen
+        .getByRole("table", { name: "Machines" })
+        .style.getPropertyValue("--data-table-columns"),
+    ).toBe("66px");
+  });
+
+  it("shows a live drag in the published tracks without committing it", () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    try {
+      const provider = makeProvider();
+      const presentation = createPresentation([
+        { id: "name", sizing: { kind: "flex", weight: 1, minPx: 50 } },
+      ]);
+      render(
+        <DataTable
+          provider={provider}
+          columns={[{ id: "name", header: "Name", resizable: true }]}
+          label="Machines"
+          presentation={presentation}
+        />,
+      );
+      load(provider, [machine("m-1", "alpha")]);
+      fireEvent.pointerDown(screen.getByRole("separator"), { clientX: 0 });
+      fireEvent.pointerMove(window, { clientX: 180 });
+      act(() => {
+        for (const frame of frames.splice(0)) {
+          frame(0);
+        }
+      });
+      expect(
+        screen
+          .getByRole("table", { name: "Machines" })
+          .style.getPropertyValue("--data-table-columns"),
+        // The column reserved 50px against a zero-width container, and the
+        // pointer travelled 180 from there.
+      ).toBe("230px");
+      // The authority is untouched until the pointer is released.
+      expect(presentation.state.overrides.name).toBeUndefined();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("is safe under StrictMode double-mount without orphaned subscriptions", () => {
+    const provider = makeProvider();
+    let rowSubscriptions = 0;
+    const observed: DataViewsProvider<Fields, Machine> = {
+      ...provider,
+      rows: {
+        get: provider.rows.get,
+        set: provider.rows.set,
+        subscribe: (listener) => {
+          rowSubscriptions += 1;
+          const unsubscribe = provider.rows.subscribe(listener);
+          return () => {
+            rowSubscriptions -= 1;
+            unsubscribe();
+          };
+        },
+      },
+    };
+    const declared = createPresentation([
+      { id: "name", sizing: { kind: "flex", weight: 1, minPx: 96 } },
+      { id: "status", sizing: { kind: "flex", weight: 1, minPx: 96 } },
+    ]);
+    let presentationSubscriptions = 0;
+    const presentation: Presentation = {
+      get state() {
+        return declared.state;
+      },
+      subscribe: (listener) => {
+        presentationSubscriptions += 1;
+        const unsubscribe = declared.subscribe(listener);
+        return () => {
+          presentationSubscriptions -= 1;
+          unsubscribe();
+        };
+      },
+      effective: declared.effective,
+      setOverride: declared.setOverride,
+      resetOverride: declared.resetOverride,
+      reset: declared.reset,
+      toColumns: declared.toColumns,
+    };
+    const { unmount } = render(
+      <StrictMode>
+        <DataTable
+          provider={observed}
+          columns={columns}
+          label="Machines"
+          presentation={presentation}
+        />
+      </StrictMode>,
+    );
+    load(observed, [machine("m-1", "alpha")]);
+    // The rows still arrive: the double-invoked mount left one live
+    // registry, not a disposed one.
+    expect(screen.getAllByRole("cell").map((cell) => cell.textContent)).toEqual(
+      ["alpha", "running"],
+    );
+    unmount();
+    expect(rowSubscriptions).toBe(0);
+    expect(presentationSubscriptions).toBe(0);
+  });
+
+  it("renders no row and no cell again for a live resize preview", () => {
+    const renders: string[] = [];
+    const Probe = ({ rowId, columnId }: DataTableCellProps) => {
+      renders.push(`${rowId}/${columnId}`);
+      return null;
+    };
+    const provider = makeProvider();
+    render(
+      <DataTable
+        provider={provider}
+        columns={[
+          {
+            id: "name",
+            header: "Name",
+            cell: Probe,
+            resizable: true,
+            sizing: { kind: "flex", weight: 1, minPx: 50 },
+          },
+          { id: "status", header: "Status", cell: Probe },
+        ]}
+        label="Machines"
+      />,
+    );
+    load(provider, [machine("m-1", "alpha"), machine("m-2", "beta")]);
+    renders.length = 0;
+    fireEvent.keyDown(screen.getByRole("separator"), { key: "ArrowRight" });
+    // The geometry moved — one publication on the container — and not one
+    // of the four cells rendered again for it.
+    expect(
+      screen
+        .getByRole("table", { name: "Machines" })
+        .style.getPropertyValue("--data-table-columns"),
+    ).toBe("66px 96px");
+    expect(renders).toEqual([]);
+  });
+
+  it("marks the table busy while a request is in flight", () => {
+    const { provider } = loadedTable();
+    expect(screen.getByRole("table", { name: "Machines" })).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
+    act(() => {
+      provider.refresh();
+    });
+    expect(screen.getByRole("table", { name: "Machines" })).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+  });
+});

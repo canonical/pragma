@@ -18,6 +18,8 @@ import type {
   Slice,
   SortTerm,
 } from "../query/types.js";
+import createRowModel from "../rows/createRowModel.js";
+import type { RowIdentifier, RowModel, RowRecord } from "../rows/types.js";
 import type { Schema } from "../schema/createSchema.js";
 import type { EmptyOr, SchemaFieldDefinition } from "../schema/types.js";
 import createSelection from "../selection/createSelection.js";
@@ -81,10 +83,16 @@ const emptyOrEqual = <T>(a: EmptyOr<T>, b: EmptyOr<T>): boolean => {
 /** Configuration of one DataViews provider. */
 export type DataViewsProviderConfig<
   TFields extends readonly SchemaFieldDefinition[],
+  TRow extends object = RowRecord,
 > = {
   readonly schema: Schema<TFields>;
   readonly slice?: Slice;
   readonly window?: ResultWindow;
+  /**
+   * Reads one record's stable identity. Defaults to the record's own `id`,
+   * which must then be a non-empty string.
+   */
+  readonly identify?: RowIdentifier<TRow>;
 };
 
 /** One field record with its address, for re-syncing after external changes. */
@@ -104,17 +112,23 @@ type AddressedRecord = {
  */
 export default function createDataViewsProvider<
   TFields extends readonly SchemaFieldDefinition[],
->(config: DataViewsProviderConfig<TFields>): DataViewsProvider<TFields> {
-  const { schema } = config;
+  TRow extends object = RowRecord,
+>(
+  config: DataViewsProviderConfig<TFields, TRow>,
+): DataViewsProvider<TFields, TRow> {
+  const { schema, identify } = config;
   const identity = createIdentity();
-  const coordinator = createCollectionCoordinator({
+  const coordinator = createCollectionCoordinator<TRow>({
     slice: config.slice,
     window: config.window,
   });
   const selection = createSelection();
-  const result = createChannel<CollectionCoordinatorState>(coordinator.state, {
-    equals: (a, b) => a === b,
-  });
+  const result = createChannel<CollectionCoordinatorState<TRow>>(
+    coordinator.state,
+    { equals: (a, b) => a === b },
+  );
+  const emptyRows = createRowModel<TRow>([], identify);
+  const rows = createChannel<RowModel<TRow>>(emptyRows);
 
   const publishResult = (): void => {
     result.set(coordinator.state);
@@ -233,6 +247,7 @@ export default function createDataViewsProvider<
     identity,
     schema,
     result,
+    rows,
     selection,
     fields: fields as DataViewsProvider<TFields>["fields"],
     navigateWindow(page?: number, size?: number): void {
@@ -260,9 +275,19 @@ export default function createDataViewsProvider<
       }
       return requestId;
     },
-    complete(requestId: string, completion: CompletionResult): boolean {
+    complete(requestId: string, completion: CompletionResult<TRow>): boolean {
+      // The model is built before the coordinator publishes, so a record
+      // with an ambiguous identity rejects the whole completion instead of
+      // leaving displayed rows the table cannot key.
+      const model =
+        completion.status === "success"
+          ? createRowModel(completion.rows, identify, rows.get())
+          : null;
       const published = coordinator.complete(requestId, completion);
       if (published) {
+        if (model !== null) {
+          rows.set(model);
+        }
         publishResult();
       }
       return published;
@@ -276,6 +301,7 @@ export default function createDataViewsProvider<
     },
     rotateScope(): void {
       coordinator.rotateScope();
+      rows.set(emptyRows);
       selection.clear();
       syncFields();
       publishResult();

@@ -1,5 +1,6 @@
 import type {
   DataViewsProvider,
+  RowRecord,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
 import { isIdentity } from "@canonical/dataviews-core";
@@ -16,7 +17,8 @@ import type { UseDataViewsCellResult } from "./types.js";
  */
 export default function useDataViewsCell<
   TFields extends readonly SchemaFieldDefinition[],
->(provider: DataViewsProvider<TFields>): UseDataViewsCellResult {
+  TRow extends object = RowRecord,
+>(provider: DataViewsProvider<TFields, TRow>): UseDataViewsCellResult {
   if (!isIdentity(provider?.identity)) {
     throw new Error(
       "useDataViewsCell requires a provider created by createDataViewsProvider",

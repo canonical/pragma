@@ -21,9 +21,7 @@ const installCell = (
   provider: DataViewsProvider<ReturnType<typeof machinesSchema>["fields"]>,
   overrides: Partial<CellScopeValue> = {},
 ): CellScopeValue => ({
-  // The renderer installs scope values across the wide context boundary; the
-  // hook's identity witness narrows them back at runtime.
-  provider: provider as unknown as CellScopeValue["provider"],
+  provider,
   rowId: "machine-1",
   columnId: "status",
   row: createChannel<unknown>({ id: "machine-1", status: "failed" }),
