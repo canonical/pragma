@@ -750,7 +750,7 @@ const designSystemStories: readonly PackDefinition[] = [
         ],
         search: {
           variables: ["block", "symbol", "key", "state", "node"],
-          description: "Search block, symbol, key.",
+          description: "Search block, symbol, key, state and node.",
         },
         // Deliberately `sources update`: unlike `standard list`, this story's
         // data does NOT ride the embedded snapshot — the binding records are

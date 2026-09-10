@@ -1164,7 +1164,7 @@ pragma token consumers [options]
 | `--variable` | `<string>` | A CSS variable name for the consumed symbol — the other spelling of the symbol parameter. A channel variable and its semantic sibling differ. |
 | `--key` | `<string>` | Filter to one style key. |
 | `--state` | `<string>` | Filter to one interaction state. |
-| `--search` | `<string>` | Search block, symbol, key. |
+| `--search` | `<string>` | Search block, symbol, key, state and node. |
 | `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 

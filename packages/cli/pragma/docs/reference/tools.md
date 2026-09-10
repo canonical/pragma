@@ -524,7 +524,7 @@ Read-only.
 | `variable` | string | no | A CSS variable name for the consumed symbol — the other spelling of the symbol parameter. A channel variable and its semantic sibling differ. |
 | `key` | string | no | Filter to one style key. |
 | `state` | string | no | Filter to one interaction state. |
-| `search` | string | no | Search block, symbol, key. |
+| `search` | string | no | Search block, symbol, key, state and node. |
 | `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 

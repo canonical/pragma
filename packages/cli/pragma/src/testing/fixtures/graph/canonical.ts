@@ -44,6 +44,7 @@ import { BLOCK_PREFIXES, BLOCK_TTL } from "../blockGraph.js";
 const DS_EXTRA_TTL = `
 @prefix dt: <https://dt.canonical.com/> .
 @prefix w3c-tokens: <https://dt.canonical.com/w3c-tokens/> .
+@prefix dt-web: <https://dt.canonical.com/platform/web/> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 # ---- Tiers beyond the global BLOCK_TTL already declares ----
 ds:apps a ds:Tier ; ds:name "apps" .
@@ -110,6 +111,68 @@ dt:spacing.medium a dt:TokenSymbol ; rdfs:label "spacing.medium" .
 [] a dt:ResolvedValue ; dt:forSymbol dt:color.primary ;
   dt:resolvesTo "#0066CC" ;
   dt:resolutionChain ( <https://dt.canonical.com/file/light.json#color.primary> ) .
+
+# ---- Platform variables ----
+# The second stratum-shaped noun needs a population here for the same reason the
+# symbols do: the cross-noun sweeps derive their cases from the declared stories,
+# so a noun with no rows in this graph makes every filter's roster empty and
+# every refusal unable to name what it would accept.
+dt:Variable a owl:Class .
+dt:Declaration a owl:Class .
+dt:Condition a owl:Class .
+dt:Coordinate a owl:Class .
+dt:Tier a owl:Class .
+dt:Visibility a owl:Class .
+dt:ofSymbol a owl:ObjectProperty ; rdfs:range dt:TokenSymbol .
+dt:tier a owl:ObjectProperty ; rdfs:range dt:Tier .
+dt:visibility a owl:ObjectProperty ; rdfs:range dt:Visibility .
+dt:declaredAt a owl:ObjectProperty ; rdfs:range dt:Declaration .
+dt:under a owl:ObjectProperty ; rdfs:range dt:Condition .
+dt:emits a owl:DatatypeProperty ; rdfs:range xsd:string .
+dt:at a owl:DatatypeProperty ; rdfs:range xsd:string .
+dt:alsoAt a owl:ObjectProperty ; rdfs:range dt:Coordinate .
+dt:derives a owl:ObjectProperty .
+dt:references a owl:ObjectProperty .
+dt:selectsCoordinate a owl:ObjectProperty ; rdfs:range dt:Coordinate .
+dt-web:selector a owl:DatatypeProperty ; rdfs:range xsd:string .
+dt-web:inAtRule a owl:ObjectProperty .
+
+dt:tier.semantic a dt:Tier .
+dt:tier.primitive a dt:Tier .
+dt:visibility.public a dt:Visibility .
+dt:visibility.internal a dt:Visibility .
+dt:coordinate.mode.dark a dt:Coordinate .
+
+<https://dt.canonical.com/s4/web/cond/root> a dt:Condition ;
+  dt-web:selector ":root" ;
+  dt-web:inAtRule ( "@layer ds.tokens" ) .
+
+# Published WITHOUT its leading dashes, which is the only form typable as a
+# positional argument.
+<https://dt.canonical.com/s4/web/--color-primary> a dt:Variable ;
+  rdfs:label "color-primary" ;
+  dt:ofSymbol dt:color.primary ;
+  dt:tier dt:tier.semantic ;
+  dt:visibility dt:visibility.public ;
+  dt:declaredAt [
+    a dt:Declaration ;
+    dt:under <https://dt.canonical.com/s4/web/cond/root> ;
+    dt:emits "#0066CC" ;
+    dt:at "tokens.css:4" ;
+    dt:alsoAt dt:coordinate.mode.dark
+  ] .
+# Stands for NO symbol — the population the token noun cannot reach.
+<https://dt.canonical.com/s4/web/--legacy-radius> a dt:Variable ;
+  rdfs:label "legacy-radius" ;
+  dt:tier dt:tier.primitive ;
+  dt:visibility dt:visibility.internal ;
+  dt:declaredAt [
+    a dt:Declaration ;
+    dt:under <https://dt.canonical.com/s4/web/cond/root> ;
+    dt:emits "var(--color-primary)" ;
+    dt:at "tokens.css:9" ;
+    dt:references ( <https://dt.canonical.com/s4/web/--color-primary> )
+  ] .
 
 # A dt:TokenSymbol carrying NO rdfs:label — the entity "token list" does not
 # publish, because its query REQUIRES the literal. It is here to pin what a
@@ -361,6 +424,7 @@ export const CANONICAL_PREFIXES: Readonly<Record<string, string>> = {
   ...BLOCK_PREFIXES,
   dt: "https://dt.canonical.com/",
   "w3c-tokens": "https://dt.canonical.com/w3c-tokens/",
+  "dt-web": "https://dt.canonical.com/platform/web/",
   rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
   cs: "http://pragma.canonical.com/codestandards#",
   skos: "http://www.w3.org/2004/02/skos/core#",
