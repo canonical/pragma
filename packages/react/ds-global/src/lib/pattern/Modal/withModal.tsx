@@ -1,4 +1,4 @@
-import type { ComponentType, FC, ReactElement } from "react";
+import type { ComponentType, ReactElement } from "react";
 import { cloneElement, useRef } from "react";
 import type {
   ModalProps,
@@ -77,7 +77,7 @@ import type {
 const withModal = <TProps extends WithModalTriggerProps>(
   Component: ComponentType<TProps>,
   modal: WithModalRender,
-): FC<TProps> => {
+): ComponentType<TProps> => {
   const WrappedComponent = (props: TProps): ReactElement => {
     // The modal owns its open state, so the HOC only needs a handle on the
     // dialog to open it from the trigger and to hand `close` to the content.
