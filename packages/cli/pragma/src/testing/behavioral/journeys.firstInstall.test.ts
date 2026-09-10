@@ -72,10 +72,14 @@ function unbuiltProjectCwd(): string {
 }
 
 /** Run a read verb at a cwd and return the parsed `data` payload. */
-async function readData(verb: VerbSpec, cwd: string): Promise<unknown> {
+async function readData(
+  verb: VerbSpec,
+  cwd: string,
+  params: Record<string, unknown> = {},
+): Promise<unknown> {
   const outcome = await executeVerb(
     verb,
-    {},
+    params,
     NO_MUTATION,
     bootRuntime(JSON_FLAGS, cwd),
   );
@@ -124,9 +128,24 @@ describe("first install — empty results are honest, not papered over", () => {
       verbOf(tokenModule, "token list"),
       emptyCwd(),
     )) as { name: string }[];
-    // Membership, never a count: the symbol population moves whenever the
-    // upstream token ontology does, but a token graph with no `color.text` is
-    // a change a human should be made to look at.
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) expect(row.name).toBeTruthy();
+  });
+
+  it("and a named symbol is reachable, whichever page it sorts onto", async () => {
+    // Membership, never a count — but membership asserted through a FILTER
+    // rather than through the unfiltered page, because this is the first
+    // population large enough for the page to matter: 436 symbols sort before
+    // `color.text`, so it is not on the first page of 300 and an unfiltered
+    // `toContain` would be testing the alphabet. A filter compiles INTO the
+    // query, so it answers from the whole population regardless of paging,
+    // which is exactly the property that makes it the right instrument here.
+    const rows = (await readData(
+      verbOf(tokenModule, "token list"),
+      emptyCwd(),
+      { search: "color.text" },
+    )) as { name: string }[];
+    // A token graph with no `color.text` is a change a human should look at.
     expect(rows.map((row) => row.name)).toContain("color.text");
   });
 

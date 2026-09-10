@@ -36,6 +36,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { compileStoryModule } from "../kernel/packs/compile.js";
+import { DEFAULT_LIST_LIMIT, MAX_LIST_WINDOW } from "../kernel/packs/paging.js";
 import { listEntityNames } from "../kernel/packs/resolveEntity.js";
 import {
   distributionSource,
@@ -94,16 +95,49 @@ function verbOf(
   return found;
 }
 
-/** Run `<noun> list` and return the names it publishes, verbatim, deduped. */
+/**
+ * Run `<noun> list` and return every name it publishes, verbatim, deduped.
+ *
+ * WALKS THE PAGES, and it has to. This file's promise is the round trip over the
+ * WHOLE corpus rather than a sample, and that used to come free: every declared
+ * population fitted inside one default page, so one call was the corpus. Three
+ * populations now exceed it — the token symbols, the platform variables and the
+ * chain — so reading one page would quietly turn this suite into a test of the
+ * first 300 names in alphabetical order, which is the sampling it exists to
+ * refuse.
+ *
+ * The walk is bounded by the kernel's own row ceiling for the same reason the
+ * budget sweep's is: a list needing more pages than that is a cursor defect, not
+ * a large corpus, and an unbounded `while` over a broken cursor would hang the
+ * suite instead of failing it.
+ */
 async function publishedNames(
   rt: PragmaRuntime,
   module: CapabilityModule,
   noun: string,
 ): Promise<string[]> {
-  const { rows } = (await verbOf(module, noun, "list").run({}, rt)) as PackPage;
-  return [
-    ...new Set(rows.map((row) => row.name ?? "").filter((name) => name !== "")),
-  ];
+  const verb = verbOf(module, noun, "list");
+  const names = new Set<string>();
+  let after: string | undefined;
+  let pages = 0;
+  do {
+    const page = (await verb.run(
+      after === undefined ? {} : { after },
+      rt,
+    )) as PackPage;
+    for (const row of page.rows) {
+      const name = row.name ?? "";
+      if (name !== "") names.add(name);
+    }
+    after = page.nextAfter;
+    pages += 1;
+    if (pages > MAX_LIST_WINDOW / DEFAULT_LIST_LIMIT) {
+      throw new Error(
+        `${noun} list did not terminate after ${pages} pages — the cursor is not advancing`,
+      );
+    }
+  } while (after !== undefined);
+  return [...names];
 }
 
 /**
