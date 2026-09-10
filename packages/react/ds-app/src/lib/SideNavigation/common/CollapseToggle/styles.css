@@ -35,8 +35,9 @@
   }
 
   /* Vanilla's "small" breakpoint (SPEC.md §7: "on all breakpoints above the
-     small breakpoint of Vanilla" / "at breakpoints below small"). */
-  @media (max-width: 767px) {
+     small breakpoint of Vanilla" / "at breakpoints below small" —
+     $breakpoint-small, 620px). */
+  @media (width < 620px) {
     .desktop-only {
       display: none;
     }

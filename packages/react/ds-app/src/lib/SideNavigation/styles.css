@@ -232,13 +232,14 @@
     }
   }
 
-  /* Responsive (SPEC.md §7): below Vanilla's "small" breakpoint the rail
-     stops being a rail — the header is always shown; the body (Content AND
-     Footer, unlike the desktop collapsed state which keeps the footer) is
-     hidden until Menu is activated, then takes over the full screen. Same
-     `data-expanded` attribute as desktop. Drill-down navigation is out of
-     scope — SPEC.md §10.18. */
-  @media (max-width: 767px) {
+  /* Responsive (SPEC.md §7): below Vanilla's "small" breakpoint
+     ($breakpoint-small, 620px) the rail stops being a rail — the header is
+     always shown; the body (Content AND Footer, unlike the desktop
+     collapsed state which keeps the footer) is hidden until Menu is
+     activated, then takes over the full screen. Same `data-expanded`
+     attribute as desktop. Drill-down navigation is out of scope —
+     SPEC.md §10.18. */
+  @media (width < 620px) {
     inline-size: 100%;
     flex-shrink: 1;
     block-size: auto;
