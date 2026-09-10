@@ -1,12 +1,15 @@
 import { withBaseLayer } from "@canonical/storybook-addon-utils";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
+import { withSideNavShell } from "../../../../storybook/navigation/story-utils.js";
 import CollapseToggle from "./CollapseToggle.js";
 
 const meta: Meta<typeof CollapseToggle> = {
   title: "Components/SideNavigation/CollapseToggle",
   component: CollapseToggle,
-  decorators: [withBaseLayer],
+  // withSideNavShell mounts the SideNavigation root context so the shared
+  // --sidenav-* custom properties resolve in isolation.
+  decorators: [withBaseLayer, withSideNavShell],
   args: { onClick: fn() },
 };
 

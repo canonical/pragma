@@ -7,6 +7,12 @@ import {
 import type { Decorator } from "@storybook/react-vite";
 import type { ReactNode } from "react";
 import type { LinkComponentProps } from "../../lib/SideNavigation/types.js";
+// The SideNavigation architecture tokens (--sidenav-*) used to ship globally
+// via @canonical/styles/navigation.css; they now live on SideNavigation's own
+// stylesheet. Import it here so standalone subcomponent stories (Header,
+// Footer, Item, CanonicalLogo, …) resolve them without mounting the whole
+// component.
+import "../../lib/SideNavigation/styles.css";
 
 /**
  * Shared Storybook helpers for SideNavigation stories — the brand asset, the
@@ -86,7 +92,7 @@ export const withNavigationRouterProps: Decorator = (Story, context) => {
 
 /**
  * Wraps a subcomponent story in the SideNavigation root context
- * (`.ds.side-navigation`) so the shared row-grid custom property and the
+ * (`.ds.side-navigation`) so the shared row-inset custom properties and the
  * navigation surface tokens resolve — without it, Content/Footer/Header/Item
  * render unstyled in isolation (they consume CSS defined on the root).
  */
@@ -97,32 +103,45 @@ export const withSideNavShell: Decorator = (Story) => (
 );
 
 /**
- * Imposes a page-like grid so the nav is shown in a realistic context: the nav
- * sits in the start column (responsive — full width under ~300px, fixed 300px
- * above) with a placeholder main-content column filling the rest.
+ * Imposes a page-like grid so the nav is shown in a realistic context: the
+ * nav sits in the start column (240px, matching the rail's own spec-mandated
+ * width — SideNavigation sets its own `inline-size` regardless of the column,
+ * but a matching column avoids a dead gap next to it) with a placeholder
+ * main-content column filling the rest.
  */
 export const withNavLayout: Decorator = (Story) => (
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "300px auto",
-      // The single row must be a DEFINITE height (not the default content-sized
-      // `auto`), otherwise the row grows to fit the nav and the nav's
-      // max-height:100% resolves against that grown height — no cap, no scroll.
-      // Pinning the row to the viewport bounds both cells so the nav (Content)
-      // and the main canvas each scroll internally.
-      gridTemplateRows: "100dvh",
-    }}
-  >
-    <Story />
-    {/* The main canvas is its own scroll container so its content scrolls
-        independently of the navigation, demonstrating the app-shell layout. */}
-    {/* Inline padding only (side gutters); no block padding so the canvas
-        content starts flush with the top and stays on the baseline grid. */}
-    <main style={{ minHeight: 0, overflow: "auto", paddingInline: "1rem" }}>
-      <Lorem paragraphs={8} />
-    </main>
-  </div>
+  <>
+    <style>{`
+      .app-shell-layout {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: 100dvh;
+        gap: 1rem;
+      }
+
+      /* Switch to vertical stack on screens 768px or smaller */
+      @media (max-width: 768px) {
+        .app-shell-layout {
+          grid-template-columns: 1fr;
+          /* Assumes Story (nav) is on top, and main canvas is on bottom. 
+             Swap to "1fr auto" if the nav should sit at the bottom of the screen. */
+          grid-template-rows: auto 1fr; 
+          height: 100dvh;
+        }
+      }
+    `}</style>
+
+    <div className="app-shell-layout">
+      <Story />
+      {/* The main canvas is its own scroll container so its content scrolls
+          independently of the navigation, demonstrating the app-shell layout. */}
+      {/* Inline padding only (side gutters); no block padding so the canvas
+          content starts flush with the top and stays on the baseline grid. */}
+      <main style={{ minHeight: 0, overflow: "auto", paddingInline: "1rem" }}>
+        <Lorem paragraphs={8} />
+      </main>
+    </div>
+  </>
 );
 
 /**
@@ -141,7 +160,7 @@ export const MockBadge = ({ children }: { children: ReactNode }): ReactNode => (
       borderRadius: "0.625rem",
       fontSize: "0.75rem",
       lineHeight: 1.4,
-      background: "rgb(0 0 0 / 0.25)",
+      background: "var(--color-icon-warning-disabled)",
     }}
   >
     {children}
