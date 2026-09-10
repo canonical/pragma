@@ -828,11 +828,19 @@ harnesses, and the budget is derived from the largest of them.
 
 `1.6 × 78,129 = 125,006`, rounded down to `125,000`. Same shape of derivation as
 the resource listing's own ceiling, which went 60,000 → 100,000 against a
-measured 65,119 (1.54×) on 2026-09-01. Headroom of 60 per cent leaves room for
-ordinary upstream growth in the code-standards pack without a red bar on a pack
-bump, and the suite additionally asserts the largest measured answer stays
-**above** a quarter of the ceiling, so a budget that has stopped bounding
-anything cannot sit there quietly.
+measured 65,119 (1.54×) on 2026-09-01.
+
+**The headroom the suite ENFORCES is 28 per cent, not 60.** The ceiling sits
+1.6× above the largest measured answer, but the not-slack half of the assertion
+is `expect(largest).toBeLessThan(LIST_PAYLOAD_BUDGET_BYTES * 0.8)` — it turns
+red at 100,000 bytes, which is 1.28× the measured 78,129. So the effective gate
+is tighter than the documented ceiling, and this document used to advertise the
+looser number: 60 per cent was the distance to a bar nothing checks, 28 per cent
+is the distance to the bar that goes red. It is still room for ordinary upstream
+growth in the code-standards pack without a red bar on a pack bump. The same
+assertion's other half holds the largest measured answer **above** a quarter of
+the ceiling, so a budget that has stopped bounding anything cannot sit there
+quietly either.
 
 When it is next reached, the fix is not a bigger number — a ceiling raised on
 demand is a formality. It is either a narrower default page for the story that

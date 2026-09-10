@@ -164,6 +164,12 @@ describe("list response budget, shipped pack (PROTECTED)", () => {
     // A ceiling that no longer bounds anything catches nothing, and one sitting
     // on the measurement flakes. Both halves are asserted so a future edit to
     // the constant has to face them.
+    //
+    // The effective headroom is the 0.8 factor, not the 1.6 the ceiling was
+    // derived from: the largest answer may grow by 28 per cent before this
+    // turns red, and BUDGETS.md says 28 per cent for that reason. The two
+    // numbers answer different questions — 1.6 is how the ceiling was chosen,
+    // 0.8 is what the suite enforces — and the tighter one is the gate.
     const measured = await Promise.all(
       BODIES.map((body) => payloadBytes(body, {})),
     );
