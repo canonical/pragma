@@ -13,7 +13,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { compilePack } from "../kernel/packs/compile.js";
 import type { LookupOutput } from "../kernel/packs/resolveEntity.js";
 import { parsePackDefinition } from "../kernel/packs/schema.js";
-import type { PackRow } from "../kernel/packs/types.js";
+import type { PackPage } from "../kernel/packs/types.js";
 import { distributionSource } from "../kernel/packs/types.js";
 import { verbKey } from "../kernel/packs/uniqueness.js";
 import { DEFAULT_PREFIX_MAP } from "../kernel/render/prefixes.js";
@@ -122,7 +122,7 @@ describe("standard story definition (PROTECTED)", () => {
 
 describe("standard list parity", () => {
   it("lists every standard with the uniform row shape", async () => {
-    const rows = (await verb("list").run({}, rt)) as PackRow[];
+    const rows = ((await verb("list").run({}, rt)) as PackPage).rows;
     expect(rows.map((r) => r.name)).toEqual([
       "code/function/purity",
       "react/component/props",
@@ -135,25 +135,26 @@ describe("standard list parity", () => {
   });
 
   it("filters by category and searches, conjunctively", async () => {
-    const react = (await verb("list").run(
-      { category: "react" },
-      rt,
-    )) as PackRow[];
+    const react = (
+      (await verb("list").run({ category: "react" }, rt)) as PackPage
+    ).rows;
     expect(react.map((r) => r.name).sort()).toEqual([
       "react/component/props",
       "react/component/structure",
     ]);
-    const searched = (await verb("list").run(
-      { category: "react", search: "structure" },
-      rt,
-    )) as PackRow[];
+    const searched = (
+      (await verb("list").run(
+        { category: "react", search: "structure" },
+        rt,
+      )) as PackPage
+    ).rows;
     expect(searched.map((r) => r.name)).toEqual(["react/component/structure"]);
   });
 });
 
 describe("standard categories parity", () => {
   it("lists categories with their standard counts", async () => {
-    const rows = (await verb("categories").run({}, rt)) as PackRow[];
+    const rows = ((await verb("categories").run({}, rt)) as PackPage).rows;
     const counts = new Map(rows.map((r) => [r.name, Number(r.count)]));
     expect(counts.get("react")).toBe(2);
     expect(counts.get("code")).toBe(1);

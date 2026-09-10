@@ -14,7 +14,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { compilePack } from "../kernel/packs/compile.js";
 import type { LookupOutput } from "../kernel/packs/resolveEntity.js";
-import type { PackRow } from "../kernel/packs/types.js";
+import type { PackPage } from "../kernel/packs/types.js";
 import { verbKey } from "../kernel/packs/uniqueness.js";
 import { DEFAULT_PREFIX_MAP } from "../kernel/render/prefixes.js";
 import type { PragmaRuntime } from "../kernel/runtime/types.js";
@@ -80,7 +80,7 @@ function blockNames(entity: Record<string, unknown>): string[] {
 
 describe("tier list parity", () => {
   it("lists every tier, name-ordered, with the uniform row shape", async () => {
-    const rows = (await verb("list").run({}, rt)) as PackRow[];
+    const rows = ((await verb("list").run({}, rt)) as PackPage).rows;
     expect(rows.map((r) => r.name)).toEqual(["apps", "apps/lxd", "global"]);
     for (const row of rows) {
       expect(row.uri).toBeTruthy();

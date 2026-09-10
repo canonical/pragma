@@ -13,8 +13,15 @@ List all design system blocks.
 List all design system blocks with their type, tier, and modifier families. Use when browsing which blocks exist. Example: block_list {}.
 
 ```
-pragma block list
+pragma block list [options]
 ```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--limit` | `<number>` | Maximum rows to return (default 500); pass a larger number for more. |
+| `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
 - MCP: exposed as the `block_list` tool.
@@ -132,6 +139,8 @@ pragma concept list [options]
 | --- | --- | --- |
 | `--type` | `<string>` | Filter by concept type (e.g. Explanation, How-to guide). |
 | `--search` | `<string>` | Search in name and summary. |
+| `--limit` | `<number>` | Maximum rows to return (default 500); pass a larger number for more. |
+| `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
 - MCP: exposed as the `concept_list` tool.
@@ -498,8 +507,15 @@ List the implementation libraries.
 List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements. Example: implementation_libraries {}.
 
 ```
-pragma implementation libraries
+pragma implementation libraries [options]
 ```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--limit` | `<number>` | Maximum rows to return (default 500); pass a larger number for more. |
+| `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
 - MCP: exposed as the `implementation_libraries` tool.
@@ -528,6 +544,8 @@ pragma implementation list [options]
 | `--platform` | `<string>` | Filter by platform (e.g. react, svelte, typescript). |
 | `--library` | `<string>` | Filter by implementation library name. |
 | `--search` | `<string>` | Search in block and library name. |
+| `--limit` | `<number>` | Maximum rows to return (default 500); pass a larger number for more. |
+| `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
 - MCP: exposed as the `implementation_list` tool.
@@ -583,8 +601,15 @@ List all modifier families.
 List all modifier families with their values. Use when browsing which modifier families exist and the values each allows. Example: modifier_list {}.
 
 ```
-pragma modifier list
+pragma modifier list [options]
 ```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--limit` | `<number>` | Maximum rows to return (default 500); pass a larger number for more. |
+| `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
 - MCP: exposed as the `modifier_list` tool.
@@ -965,8 +990,15 @@ List all standard categories with counts (a parent counts its whole branch).
 List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering. Example: standard_categories {}.
 
 ```
-pragma standard categories
+pragma standard categories [options]
 ```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--limit` | `<number>` | Maximum rows to return (default 500); pass a larger number for more. |
+| `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
 - MCP: exposed as the `standard_categories` tool.
@@ -994,6 +1026,8 @@ pragma standard list [options]
 | --- | --- | --- |
 | `--category` | `<string>` | Filter by category slug. A parent category answers for its whole branch. |
 | `--search` | `<string>` | Search in name and description. |
+| `--limit` | `<number>` | Maximum rows to return (default 500); pass a larger number for more. |
+| `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
 - MCP: exposed as the `standard_list` tool.
@@ -1065,8 +1099,15 @@ List all tiers in the design system ontology.
 List all tiers in the design-system ontology. Use when understanding the tier hierarchy before setting a tier filter. Example: tier_list {}.
 
 ```
-pragma tier list
+pragma tier list [options]
 ```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--limit` | `<number>` | Maximum rows to return (default 500); pass a larger number for more. |
+| `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
 - MCP: exposed as the `tier_list` tool.
@@ -1112,8 +1153,15 @@ List all design tokens.
 List all design tokens with their type. Use when browsing which tokens exist under the active scope. Example: token_list {}.
 
 ```
-pragma token list
+pragma token list [options]
 ```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--limit` | `<number>` | Maximum rows to return (default 500); pass a larger number for more. |
+| `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
 - MCP: exposed as the `token_list` tool.

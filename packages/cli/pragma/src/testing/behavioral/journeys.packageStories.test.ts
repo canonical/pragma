@@ -22,6 +22,7 @@ import { runChecks } from "../../capabilities/doctor/runChecks.js";
 import { capabilities } from "../../capabilities/index.js";
 import { buildUpdateTask } from "../../capabilities/sources/runUpdate.js";
 import { loadEffectiveModules } from "../../kernel/packs/collect.js";
+import type { PackPage } from "../../kernel/packs/types.js";
 import { packDir, readActivePack } from "../../kernel/runtime/paths.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import {
@@ -103,7 +104,7 @@ describe("a package-declared noun answers reads (in-process)", () => {
     const list = recipe?.verbs.find(
       (verb) => verb.path.join(" ") === "recipe list",
     ) as VerbSpec;
-    const rows = (await list.run({}, graph.runtime)) as { name: string }[];
+    const { rows } = (await list.run({}, graph.runtime)) as PackPage;
     expect(rows.map((row) => row.name)).toEqual(["Soup", "Stew"]);
   });
 

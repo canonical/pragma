@@ -26,7 +26,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { LookupOutput } from "../kernel/packs/resolveEntity.js";
-import type { PackRow } from "../kernel/packs/types.js";
+import type { PackPage } from "../kernel/packs/types.js";
 import { verbKey } from "../kernel/packs/uniqueness.js";
 import type { PragmaRuntime } from "../kernel/runtime/types.js";
 import type { VerbSpec } from "../kernel/spec/types.js";
@@ -72,7 +72,7 @@ describe("block list parity — the declared, unfiltered list", () => {
     // hand-written query inner-joined `?c ds:tier ?t` in its default view and
     // surfaced it only under `--all-tiers`; the declared query's OPTIONAL join
     // means there is no view it can fall out of.
-    const rows = (await verb("list").run({}, rt)) as PackRow[];
+    const rows = ((await verb("list").run({}, rt)) as PackPage).rows;
     expect(rows.map((row) => row.name)).toEqual([
       "Button",
       "Button Icon",
@@ -81,7 +81,7 @@ describe("block list parity — the declared, unfiltered list", () => {
   });
 
   it("derives the summary row shape in SPARQL, matching the old hand-built row", async () => {
-    const rows = (await verb("list").run({}, rt)) as PackRow[];
+    const rows = ((await verb("list").run({}, rt)) as PackPage).rows;
     const byName = new Map(rows.map((row) => [row.name, row]));
     const button = byName.get("Button");
     // `type`: the LOWERCASED local name of the matched class — the BIND that
@@ -99,7 +99,7 @@ describe("block list parity — the declared, unfiltered list", () => {
   });
 
   it("an untiered block simply carries no tier — it is not dropped or blanked", async () => {
-    const rows = (await verb("list").run({}, rt)) as PackRow[];
+    const rows = ((await verb("list").run({}, rt)) as PackPage).rows;
     const icon = rows.find((row) => row.name === "Button Icon");
     expect(icon).toBeDefined();
     expect(icon?.tier).toBeUndefined();
@@ -120,8 +120,8 @@ describe("block list parity — the declared, unfiltered list", () => {
         },
       }),
     } as PragmaRuntime;
-    const scopedRows = (await verb("list").run({}, scoped)) as PackRow[];
-    const plainRows = (await verb("list").run({}, rt)) as PackRow[];
+    const scopedRows = ((await verb("list").run({}, scoped)) as PackPage).rows;
+    const plainRows = ((await verb("list").run({}, rt)) as PackPage).rows;
     expect(scopedRows).toEqual(plainRows);
   });
 
@@ -139,12 +139,12 @@ ds:Component a owl:Class .
       prefixes: BLOCK_PREFIXES,
     });
     try {
-      const rows = (await verb("list").run({}, emptyRt)) as PackRow[];
-      expect(rows).toEqual([]);
+      const page = (await verb("list").run({}, emptyRt)) as PackPage;
+      expect(page.rows).toEqual([]);
       // The same semantics, on the empty-state seam: the calm message + its
       // runnable hint now reach the user via stderr (`notice`), keeping
       // plain stdout pure data.
-      const notice = verb("list").output.formatters.notice?.(rows);
+      const notice = verb("list").output.formatters.notice?.(page);
       expect(notice).toContain("No blocks in the store.");
       expect(notice).toContain("pragma sources update");
     } finally {

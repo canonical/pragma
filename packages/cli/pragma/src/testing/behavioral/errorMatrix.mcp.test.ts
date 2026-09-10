@@ -25,6 +25,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { capabilities } from "../../capabilities/index.js";
+import { RESERVED_STORY_PARAMS } from "../../kernel/packs/types.js";
 import {
   ALL_VISIBLE_CONFIG,
   CANONICAL_TTL,
@@ -37,16 +38,25 @@ import { projectMcp } from "../helpers/projectMcp.js";
 import { listVerbs, lookupVerbs } from "./liveReadSurface.js";
 
 /**
- * List verbs with a STRING or ENUM (narrowable, non-boolean) flag — e.g.
- * `standard_list --category`. Boolean flags are excluded: they reject a string
- * value at the schema layer rather than narrowing to an empty result. (`block
- * list --all-tiers` used to be the example; it retired with the hand-written
- * filtering in L-OPEN-9.)
+ * List verbs with a STRING or ENUM (narrowable, non-boolean) flag the STORY
+ * itself declares — e.g. `standard_list --category`. Boolean flags are
+ * excluded: they reject a string value at the schema layer rather than
+ * narrowing to an empty result. (`block list --all-tiers` used to be the
+ * example; it retired with the hand-written filtering in L-OPEN-9.)
+ *
+ * The kernel's own params are excluded by name, from the grammar's own list.
+ * Without that, every list verb qualified the day the kernel gave them all an
+ * `--after` cursor, and four unfiltered nouns were swept for a narrowing
+ * behaviour they do not have — the assertions failed on a param that is not a
+ * filter at all.
  */
 const filteredListVerbs = listVerbs
   .map((v) => {
     const flag = v.spec.params.find(
-      (p) => !p.positional && (p.kind === "string" || p.kind === "enum"),
+      (p) =>
+        !p.positional &&
+        (p.kind === "string" || p.kind === "enum") &&
+        !RESERVED_STORY_PARAMS.includes(p.name),
     );
     return flag
       ? { noun: v.noun, tool: v.tool as string, param: flag.name }

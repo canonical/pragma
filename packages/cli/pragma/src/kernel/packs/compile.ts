@@ -25,6 +25,7 @@ import type {
   ParamSpec,
   VerbSpec,
 } from "../spec/types.js";
+import { DEFAULT_LIST_LIMIT } from "./paging.js";
 import {
   listFormatters,
   lookupFormatters,
@@ -42,7 +43,7 @@ import type {
   PackFilter,
   PackList,
   PackLookup,
-  PackRow,
+  PackPage,
   PackSearch,
   StorySource,
 } from "./types.js";
@@ -207,9 +208,10 @@ function compileListVerb(shape: PackList, meta: ListVerbMeta): VerbSpec {
   const params = [
     ...projectFilters(shape.filters),
     ...projectSearch(shape.search),
+    ...PAGE_PARAMS,
   ];
   const filterExample = shape.filters?.find((f) => f.values !== undefined);
-  const verb: VerbSpec<Record<string, unknown>, PackRow[]> = {
+  const verb: VerbSpec<Record<string, unknown>, PackPage> = {
     path: [meta.noun, meta.verb],
     summary: meta.summary,
     ...(meta.doc ? { doc: meta.doc } : {}),
@@ -354,6 +356,30 @@ function disclosureSpec(disclosure: PackLookup["disclosure"]): DisclosureSpec {
     default: disclosure?.default ?? levels[0] ?? "summary",
   };
 }
+
+/**
+ * The page parameters EVERY list-shaped verb carries — `list` and every extra
+ * verb alike.
+ *
+ * Not declared per story, and not declarable: a page is a property of a
+ * list-shaped read, so a story that forgot to declare one would be the one
+ * answer an agent could not bound. The default is named in the help text
+ * because a cap a caller cannot see is exactly the hidden behaviour
+ * CONSTITUTION §VI rules out — the number a caller gets when they pass nothing
+ * has to be readable in `--help`.
+ */
+const PAGE_PARAMS: readonly ParamSpec[] = [
+  {
+    kind: "number",
+    name: "limit",
+    doc: `Maximum rows to return (default ${DEFAULT_LIST_LIMIT}); pass a larger number for more.`,
+  },
+  {
+    kind: "string",
+    name: "after",
+    doc: "Continue from a previous page: the cursor that page reported.",
+  },
+];
 
 /** Project declared filters onto verb params (enum for a value set, else string). */
 function projectFilters(

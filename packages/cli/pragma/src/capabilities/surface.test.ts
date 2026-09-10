@@ -90,10 +90,13 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       "sample",
     ]);
     // block list is the story's compiled, unfiltered list (L-OPEN-9): no
-    // flags — the `--all-tiers` escape died with the hand-written filtering.
+    // filter flags — the `--all-tiers` escape died with the hand-written
+    // filtering. The two it does carry are the KERNEL's page, which every
+    // list-shaped verb gets whether its story declares anything or not.
     expect(emitted.nouns.block?.verbs).toEqual([
       {
         v: "list",
+        flags: ["--limit", "--after"],
         needsStore: true,
         mcp: "block_list",
       },
