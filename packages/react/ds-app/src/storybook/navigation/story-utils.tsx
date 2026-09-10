@@ -104,28 +104,29 @@ export const withSideNavShell: Decorator = (Story) => (
 
 /**
  * Imposes a page-like grid so the nav is shown in a realistic context: the
- * nav sits in the start column (240px, matching the rail's own spec-mandated
- * width — SideNavigation sets its own `inline-size` regardless of the column,
- * but a matching column avoids a dead gap next to it) with a placeholder
- * main-content column filling the rest.
+ * nav sits in the start column (`auto`, so the column follows the rail's
+ * own spec-mandated 240px `inline-size` — a matching column avoids a dead
+ * gap next to it) with a placeholder main-content column filling the rest.
+ * The breakpoint matches the component's own mobile breakpoint (Vanilla's
+ * $breakpoint-small, 620px) so the grid stacks exactly when the rail stops
+ * being a rail.
  */
 export const withNavLayout: Decorator = (Story) => (
   <>
     <style>{`
       .app-shell-layout {
         display: grid;
-        grid-template-columns: 1fr auto;
+        grid-template-columns: auto 1fr;
         grid-template-rows: 100dvh;
         gap: 1rem;
       }
 
-      /* Switch to vertical stack on screens 768px or smaller */
-      @media (max-width: 768px) {
+      /* Switch to vertical stack below the nav's own small breakpoint:
+         Story (nav) on top, main canvas below, both within the viewport. */
+      @media (width < 620px) {
         .app-shell-layout {
           grid-template-columns: 1fr;
-          /* Assumes Story (nav) is on top, and main canvas is on bottom. 
-             Swap to "1fr auto" if the nav should sit at the bottom of the screen. */
-          grid-template-rows: auto 1fr; 
+          grid-template-rows: auto 1fr;
           height: 100dvh;
         }
       }
