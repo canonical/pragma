@@ -360,7 +360,7 @@ const designSystemStories: readonly PackDefinition[] = [
     noun: "token",
     description: "List the design-token symbols.",
     toolDescription:
-      'List the design-token SYMBOLS — the logical token names (`color.text`), one row each, with the type and description every definition of that symbol agrees on, and the symbol a channel provisions. Not the platform variables: those are `variable_list`. Filter by type or by which symbol a channel is a channel of. Example: token_list { type: "color" }.',
+      'List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description every definition of that symbol agrees on, and the symbol a channel provisions. Platform names like `--color-text` are variable_list. Example: token_list { type: "color" }.',
     list: {
       // Type and description are DEFINITION-level facts, and 393 of the 745
       // symbols have more than one definition (`color.text` has 20). The
@@ -437,8 +437,7 @@ const designSystemStories: readonly PackDefinition[] = [
               "}",
             ].join("\n"),
           },
-          description:
-            "Filter by the type every definition of the symbol agrees on.",
+          description: "Filter by the agreed type.",
         },
         {
           param: "channelOf",
@@ -466,8 +465,7 @@ const designSystemStories: readonly PackDefinition[] = [
               "}",
             ].join("\n"),
           },
-          description:
-            "Filter to the channels that provision one symbol (e.g. color.text).",
+          description: "Filter to the channels of one symbol.",
         },
       ],
       search: {
@@ -486,7 +484,7 @@ const designSystemStories: readonly PackDefinition[] = [
         description:
           "List the value each symbol resolves to at each position, with its chain or its derivation.",
         toolDescription:
-          'List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either the resolution chain that produced it or the symbol it is derived from. The rows are the positions the graph CHOSE to materialise, not the permutation space: a position with no row falls through to the base symbol\'s value, which is why `color.text` has no row on the modal surface. A derived row (a channel routing) carries a derivation and NO value cell, by construction. Example: token_values { symbol: "color.text" }.',
+          'List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell. Example: token_values { symbol: "color.text" }.',
         // The resolved-value shape admits exactly one of a chain or a
         // derivation, so BOTH are selected wherever a value is projected. A
         // surface that selected only the chain would show a blank row for every
@@ -541,7 +539,7 @@ const designSystemStories: readonly PackDefinition[] = [
                 "}",
               ].join("\n"),
             },
-            description: "Filter to one symbol's resolved values.",
+            description: "Filter to one symbol.",
           },
           {
             param: "position",
@@ -559,13 +557,12 @@ const designSystemStories: readonly PackDefinition[] = [
                 "}",
               ].join("\n"),
             },
-            description:
-              "Filter to one position in the coordinate space (e.g. mode.dark).",
+            description: "Filter to one position (e.g. mode.dark).",
           },
         ],
         search: {
           variables: ["symbol", "value", "derivedFrom"],
-          description: "Search in symbol, value and derivation.",
+          description: "Search symbol, value, derivation.",
         },
         emptyRecovery: {
           message:
@@ -578,7 +575,7 @@ const designSystemStories: readonly PackDefinition[] = [
         description:
           "List which blocks consume which token symbol, at which style key, state and rank.",
         toolDescription:
-          'List the token BINDINGS the design system records — which block consumes which symbol, at which style key, interaction state and rank, and through which anatomy node. ALL of it is identity: two bindings differing only in state or rank are two different facts, so every column is published. Answers empty until the design-system packs record their bindings. Example: token_consumers { symbol: "color.text" }.',
+          'List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and anatomy node. Every column is identity: two bindings differing only in state or rank are different facts. Answers empty until the design-system packs record bindings. Example: token_consumers { symbol: "color.text" }.',
         // Seven identity columns, and not one of them is decoration: a binding
         // is identified by the whole tuple, so dropping `rank` or `node` would
         // publish rows a caller cannot tell apart — which is worse than a wide
@@ -627,7 +624,7 @@ const designSystemStories: readonly PackDefinition[] = [
                 "}",
               ].join("\n"),
             },
-            description: "Filter to the blocks consuming one symbol.",
+            description: "Filter to one symbol.",
           },
         ],
         // NO `--key` / `--state` yet, and the omission is the ruling rather
@@ -639,7 +636,7 @@ const designSystemStories: readonly PackDefinition[] = [
         // wait.
         search: {
           variables: ["block", "symbol", "key", "state", "node"],
-          description: "Search in block, symbol, style key, state and node.",
+          description: "Search block, symbol, key, state, node.",
         },
         // Deliberately `sources update`: unlike `standard list`, this story's
         // data does NOT ride the embedded snapshot — the binding records are
@@ -663,7 +660,7 @@ const designSystemStories: readonly PackDefinition[] = [
       description:
         "Look up one or more token symbols by dotted name, IRI, or glob.",
       toolDescription:
-        'Get one design-token symbol in full: the symbol it provisions if it is a channel, every definition behind it (with that definition\'s own type and description), the modifier families whose contracts may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name (`dt:color.text`), by absolute IRI, or by a glob. Example: token_lookup { name: ["color.text"] }.',
+        'Get one design-token symbol in full: every definition behind it with that definition\'s own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob. Example: token_lookup { name: ["color.text"] }.',
       fields: [
         // Single-valued: a channel provisions exactly one symbol.
         {
@@ -737,7 +734,7 @@ const designSystemStories: readonly PackDefinition[] = [
       sample: {
         fixedCount: true,
         toolDescription:
-          "Return randomly selected complete design-token symbols — their definitions, coverage and resolved values — as exemplars. Use BEFORE writing queries to see actual data shapes. Example: token_sample {}.",
+          "Return random complete design-token symbols — definitions, coverage and resolved values — as exemplars. Use BEFORE writing queries to see real data shapes. Example: token_sample {}.",
       },
     },
   },
@@ -765,7 +762,7 @@ const designSystemStories: readonly PackDefinition[] = [
     description:
       "List the platform variables the design tokens are emitted as.",
     toolDescription:
-      'List the platform VARIABLES — the names a stylesheet actually declares (`--color-text`), one row each, with the symbol each stands for, its tier and its visibility, and the coordinates it is selected at. 236 of them stand for no symbol at all, which is why they are not reachable through token_list. Address one by its name WITHOUT the leading dashes (`color-text`). Example: variable_list { symbol: "color.text" }.',
+      'List the platform VARIABLES a stylesheet declares (`--color-text`), with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`). Example: variable_list { symbol: "color.text" }.',
     list: {
       query: [
         "SELECT ?uri ?name ?platform ?symbol ?tier ?visibility",
@@ -825,7 +822,7 @@ const designSystemStories: readonly PackDefinition[] = [
               "}",
             ].join("\n"),
           },
-          description: "Filter by the platform the variable is emitted for.",
+          description: "Filter by platform.",
         },
         {
           param: "symbol",
@@ -842,7 +839,7 @@ const designSystemStories: readonly PackDefinition[] = [
               "}",
             ].join("\n"),
           },
-          description: "Filter to the variables standing for one symbol.",
+          description: "Filter to one symbol.",
         },
         {
           param: "tier",
@@ -887,13 +884,12 @@ const designSystemStories: readonly PackDefinition[] = [
               "}",
             ].join("\n"),
           },
-          description:
-            "Filter to the variables selected at one coordinate (e.g. criticality.success).",
+          description: "Filter to one coordinate (e.g. criticality.success).",
         },
       ],
       search: {
         variables: ["name", "symbol"],
-        description: "Search in variable name and symbol.",
+        description: "Search name and symbol.",
       },
       emptyRecovery: {
         message:
@@ -907,7 +903,7 @@ const designSystemStories: readonly PackDefinition[] = [
         description:
           "List the walk from a variable to every symbol it reaches, through every variable in between.",
         toolDescription:
-          'List the resolution WALK: every (variable, symbol) pair a variable reaches by following what its declarations reference, transitively. This is the join an editor needs to answer "what does this variable finally mean" — `--disabled--color-text` reaches 34 pairs, because the closure runs over every declaration of every hop rather than one condition\'s. Narrow it with `variable` or `symbol`. Example: variable_chain { variable: "disabled--color-text" }.',
+          'List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: "disabled--color-text" }.',
         // ONE property path carries the whole walk, which is why this is a
         // query and not a traversal in code. `dt:references` is an rdf:List of
         // the variables a declaration's value reads, so each hop is
@@ -948,7 +944,7 @@ const designSystemStories: readonly PackDefinition[] = [
                 "}",
               ].join("\n"),
             },
-            description: "Filter to the walk from one variable.",
+            description: "Filter to one variable.",
           },
           {
             param: "symbol",
@@ -962,7 +958,7 @@ const designSystemStories: readonly PackDefinition[] = [
                 "}",
               ].join("\n"),
             },
-            description: "Filter to the walks that reach one symbol.",
+            description: "Filter to one symbol.",
           },
         ],
         emptyRecovery: {
@@ -983,7 +979,7 @@ const designSystemStories: readonly PackDefinition[] = [
       description:
         "Look up one or more platform variables by name (without the leading dashes), IRI, or glob.",
       toolDescription:
-        'Get one platform variable in full: the symbol it stands for, its tier and visibility, and EVERY place it is declared — the selector and at-rule stack it sits under, the value it emits, the source location, the coordinate it also applies at, and the derivation that computed it. Address it by the name variable_list publishes, which is the CSS name without its leading dashes (`color-text`, not `--color-text`). Asking for `typography-weight-semiBold` and `typography-weight-semi-bold` returns one row each: the ontology holds both spellings of the same symbol, and they carry distinct labels. Example: variable_lookup { name: ["color-text"] }.',
+        'Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the value it emits, the source location, the coordinate it also applies at, and the derivation that computed it. Address it by the CSS name WITHOUT its leading dashes (`color-text`). Two spellings of one symbol carry distinct labels, so each answers on its own. Example: variable_lookup { name: ["color-text"] }.',
       fields: [
         { name: "symbol", property: "dt:ofSymbol/rdfs:label", label: "Symbol" },
         { name: "tier", property: "dt:tier", label: "Tier" },
@@ -1022,7 +1018,7 @@ const designSystemStories: readonly PackDefinition[] = [
       sample: {
         fixedCount: true,
         toolDescription:
-          "Return randomly selected complete platform variables — their symbol, tier, visibility and every declaration — as exemplars. Use BEFORE writing queries to see actual data shapes. Example: variable_sample {}.",
+          "Return random complete platform variables — symbol, tier, visibility and every declaration — as exemplars. Use BEFORE writing queries to see real data shapes. Example: variable_sample {}.",
       },
     },
   },
