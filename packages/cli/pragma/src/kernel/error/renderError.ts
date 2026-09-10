@@ -10,6 +10,7 @@
 import type { OutputFormat } from "../../constants.js";
 import type { PragmaError } from "./PragmaError.js";
 import { serializeError } from "./serialize.js";
+import { formatValidOptions } from "./validOptions.js";
 
 /**
  * Render a {@link PragmaError} as human-readable plain text for the terminal.
@@ -35,7 +36,7 @@ function renderErrorPlain(error: PragmaError): string {
   }
 
   if (error.validOptions && error.validOptions.length > 0) {
-    lines.push("", `Valid options: ${error.validOptions.join(", ")}`);
+    lines.push("", formatValidOptions(error.validOptions));
   }
 
   if (error.recovery) {
@@ -73,7 +74,7 @@ function renderErrorLlm(error: PragmaError): string {
   }
 
   if (error.validOptions && error.validOptions.length > 0) {
-    lines.push(`Valid options: ${error.validOptions.join(", ")}`);
+    lines.push(formatValidOptions(error.validOptions));
   }
 
   if (error.recovery) {
