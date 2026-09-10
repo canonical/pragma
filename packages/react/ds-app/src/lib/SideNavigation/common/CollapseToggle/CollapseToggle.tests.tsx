@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import CollapseToggle from "./CollapseToggle.js";
 
@@ -46,6 +46,30 @@ describe("CollapseToggle", () => {
     );
 
     rerender(<CollapseToggle expanded={false} />);
+    expect(screen.getByRole("tooltip", { hidden: true })).toHaveTextContent(
+      "Expand",
+    );
+  });
+
+  it("keeps the same button mounted across state changes, retaining focus", () => {
+    // The tooltip's message follows the expanded state, so an earlier pass
+    // picked between two withTooltip-wrapped component types — remounting
+    // the button on every toggle and dropping keyboard focus to <body>.
+    // TooltipEngine keeps one stable element; this pins that contract.
+    const onToggle = vi.fn();
+    const { rerender } = render(
+      <CollapseToggle expanded onToggle={onToggle} />,
+    );
+    const button = screen.getByRole("button");
+    button.focus();
+    expect(document.activeElement).toBe(button);
+
+    fireEvent.click(button);
+    rerender(<CollapseToggle expanded={false} onToggle={onToggle} />);
+
+    const buttonAfter = screen.getByRole("button");
+    expect(buttonAfter).toBe(button);
+    expect(document.activeElement).toBe(buttonAfter);
     expect(screen.getByRole("tooltip", { hidden: true })).toHaveTextContent(
       "Expand",
     );
