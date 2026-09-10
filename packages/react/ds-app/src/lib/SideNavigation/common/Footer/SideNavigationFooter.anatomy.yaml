@@ -1,7 +1,10 @@
 ---
-# SideNavigation.Footer — optional region pinned to the bottom, typically holding
-# account-level or global actions. Same root-item contract as Content; when the
-# nav is collapsed only the item icons remain visible.
+# SideNavigation.Footer — optional region pinned to the bottom, reserved for
+# user-related content. Its `footerItems` are free-form — label (required),
+# optional icon/url/control/slot — with no closed vocabulary and no default
+# labels or icons; a certificate-user application composes the `certificate`
+# icon and omits the logout item itself. A free-form `$custom`/root-item
+# escape hatch is retained for footers that need a whole WD405 tree.
 node:
   uri: apps.subcomponent.side-navigation-footer
   styles:
@@ -10,20 +13,19 @@ node:
     size.width: fill
   edges:
     - node:
-        role: nav item list
-        styles:
-          layout.type: stack
-          layout.direction: column
-          size.width: fill
-        edges:
-          - switch:
-              "on": override
-              cases:
-                - uri: apps.subcomponent.side-navigation-item
-                - uri: $custom
-            relation:
-              cardinality: "0..*"
-              slotName: default
-      relation:
-        cardinality: "1"
-        slotName: default
+        role: footer item
+        # Navigable items (url set, control not "button") render as links;
+        # everything else renders as ItemButton.
+        switch:
+          "on": control
+          cases:
+            - role: link
+              styles:
+                interaction.cursor: pointer
+            - role: button
+              styles:
+                interaction.cursor: pointer
+            - uri: $custom
+        relation:
+          cardinality: "0..*"
+          slotName: default
