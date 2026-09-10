@@ -64,7 +64,7 @@ function Bar() {
 }
 ```
 
-That is also why the content is static: the function you hand over runs on every render of the trigger, but defined at module scope it can only see module-level values. If the modal must show data from the parent — a different `userName` depending on which user is selected — skip this HOC: compose [`Modal`](?path=/docs/patterns-modal--docs) directly and drive it through its `ref`.
+`withModal` is meant for static content: the call belongs at module scope, where the function it is handed can only see module-level values, so the modal it returns is the same on every render. If the modal must show data from the parent — for example a different `userName` depending on which user is selected — compose [`Modal`](?path=/docs/patterns-modal--docs) directly and drive it through its `ref`.
 
 ## Signature
 

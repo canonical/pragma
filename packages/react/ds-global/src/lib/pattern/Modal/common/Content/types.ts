@@ -3,7 +3,6 @@ import type { ComponentProps, ReactNode } from "react";
 type OwnProps = {
   /**
    * The main information the modal conveys — an open slot.
-   * Maps to DSL edges[0]: content (cardinality: 1)
    */
   children?: ReactNode;
 };

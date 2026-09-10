@@ -8,18 +8,15 @@ type OwnProps = {
    * top of the page, not part of its document outline, so it names the dialog
    * through `aria-labelledby` instead.
    *
-   * Maps to DSL edges[0]: title (cardinality: 1)
    */
   children?: ReactNode;
   /**
    * `id` set on the title element so the dialog can point its
    * `aria-labelledby` at it. Defaults to the id supplied by the Modal context;
-   * you rarely set this yourself.
    */
   titleId?: string;
   /**
    * Hides the close button, so the visible way out is an action in the footer.
-   * Maps to DSL edges[1]: close button (cardinality: 0..1)
    */
   undismissible?: boolean;
   /** Accessible name for the close button. */

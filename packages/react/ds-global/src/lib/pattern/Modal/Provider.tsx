@@ -34,9 +34,10 @@ const componentCssClassName = "ds modal";
  * parent — for example a different `userName` depending on which user is
  * selected — compose `Modal` directly and drive it through its `ref`.
  * Otherwise, use `withModal`.
- * 
- * The header's title names the dialog automatically; a
- * modal composed without a header must carry its own `aria-label` (view relative story in withModal)
+ *
+ * The header's title names the dialog automatically; a modal composed without
+ * a header must carry its own `aria-label` (see the accessibility story in
+ * `withModal`).
  *
  * The sections are composed by the consumer: render
  * `Modal.Header`, `Modal.Content` and `Modal.Footer` as children and choose
@@ -110,7 +111,7 @@ const Provider = ({
         // `aria-labelledby` beats `aria-label` in the accessible-name
         // computation, so pointing at the title unconditionally would silence
         // the `aria-label` a header-less modal must carry — when the consumer
-        // names the modal, the title id steps aside. 
+        // names the modal, the title id steps aside.
         aria-label={ariaLabel}
         aria-labelledby={ariaLabel ? undefined : titleId}
         // Escape is not handled here: its `cancel` event closes the dialog as its

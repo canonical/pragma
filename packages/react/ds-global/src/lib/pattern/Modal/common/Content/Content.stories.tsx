@@ -3,6 +3,7 @@ import Component from "./Content.js";
 
 const meta = {
   title: "patterns/Modal/Content",
+  component: Component,
   decorators: [
     // A plain div standing in for the dialog the content composes into.
     (Story) => (
@@ -21,7 +22,7 @@ const meta = {
       source: { type: "code", language: "tsx" },
     },
   },
-} satisfies Meta;
+} satisfies Meta<typeof Component>;
 
 export default meta;
 

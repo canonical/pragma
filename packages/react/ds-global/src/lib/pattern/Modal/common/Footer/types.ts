@@ -4,7 +4,6 @@ type OwnProps = {
   /**
    * The actions that capture the user's decision — normally Buttons, with the
    * affirmative one last.
-   * Maps to DSL edges[0]: button (cardinality: 0..*)
    */
   children?: ReactNode;
 };

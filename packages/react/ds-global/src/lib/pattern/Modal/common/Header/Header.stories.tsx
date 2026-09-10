@@ -4,6 +4,7 @@ import Component from "./Header.js";
 
 const meta = {
   title: "patterns/Modal/Header",
+  component: Component,
   decorators: [
     (Story) => (
       <ModalContext.Provider
@@ -27,7 +28,7 @@ const meta = {
       source: { type: "code", language: "tsx" },
     },
   },
-} satisfies Meta;
+} satisfies Meta<typeof Component>;
 
 export default meta;
 
@@ -43,16 +44,3 @@ Default.parameters = {
   },
 };
 
-/**
- * Undismissible, so the visible way out is an action in the footer.
- */
-export const Undismissible: StoryFn = () => (
-  <Component undismissible>Unsaved changes</Component>
-);
-Undismissible.parameters = {
-  docs: {
-    source: {
-      code: `<Modal.Header undismissible>Unsaved changes</Modal.Header>`,
-    },
-  },
-};

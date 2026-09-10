@@ -12,11 +12,10 @@ type OwnProps = {
    * The handle on the underlying `<dialog>`, and the only way the modal opens:
    * `ref.current?.showModal()`, with `ref.current?.close()` closing it. The prop
    * is required because the modal is only ever opened through `showModal()`, so
-   * a modal with no ref is a modal that can never open — every modal gets a ref
-   * one way or another: {@link withModal} hands its factory the ref to attach, a
-   * directly-composed modal driven by a trigger takes a stored ref, and an
-   * open-on-mount modal takes an inline callback ref. Requiring the prop turns
-   * the {@link withModal} factory's one duty — attaching the ref it receives —
+   * a modal with no ref is a modal that can never open — every modal needs a ref:
+   * withModal hands its factory the ref to attach and a 
+   * directly-composed modal driven by a trigger takes a stored ref. Requiring the prop turns
+   * the withModal factory's duty — attaching the ref it receives —
    * into a compile error instead of a silent nothing.
    *
    * `showModal()` throws on a dialog that is already open. A trigger sitting
@@ -27,8 +26,7 @@ type OwnProps = {
   ref: RefCallback<HTMLDialogElement> | RefObject<HTMLDialogElement | null>;
   /**
    * Whether clicking the backdrop dismisses the modal. Defaults to `false`, so
-   * backdrop dismissal is opt-in: a stray click outside the dialog cannot
-   * discard the task it holds. Independent of the header's `undismissible`.
+   * backdrop dismissal is opt-in. Independent of the header's `undismissible`.
    */
   closeOnBackdropClick?: boolean;
   /**
