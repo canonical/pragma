@@ -113,9 +113,30 @@ describe("first install — an empty cwd answers real reads offline", () => {
 });
 
 describe("first install — empty results are honest, not papered over", () => {
-  it("token list exits calmly with no rows (the graph carries no ds:Token)", async () => {
+  // `token list` used to be this describe's first case, asserting no rows
+  // "because the graph carries no ds:Token". That is no longer true and the
+  // change is the point: the noun addressed a class no shipped graph asserted,
+  // it now addresses the token symbols, and the embedded pack carries them with
+  // the name literal the story keys on — so a first install ANSWERS. The case
+  // moved rather than being deleted, and it moved in both directions.
+  it("token list resolves the token symbols, offline, on a first install", async () => {
+    const rows = (await readData(
+      verbOf(tokenModule, "token list"),
+      emptyCwd(),
+    )) as { name: string }[];
+    // Membership, never a count: the symbol population moves whenever the
+    // upstream token ontology does, but a token graph with no `color.text` is
+    // a change a human should be made to look at.
+    expect(rows.map((row) => row.name)).toContain("color.text");
+  });
+
+  it("token consumers exits calmly with no rows, and says why", async () => {
+    // The honest emptiness this describe exists for now lives here: the
+    // symbols ship with the pack, the BINDINGS between blocks and symbols do
+    // not, so this verb answers nothing on a first install and reports a cause
+    // rather than an error.
     expect(
-      await readData(verbOf(tokenModule, "token list"), emptyCwd()),
+      await readData(verbOf(tokenModule, "token consumers"), emptyCwd()),
     ).toEqual([]);
   });
 

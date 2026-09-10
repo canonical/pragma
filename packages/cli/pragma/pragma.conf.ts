@@ -322,6 +322,37 @@ const designSystemStories: readonly PackDefinition[] = [
             { name: "uri", property: "ds:name", graphqlField: "uri" },
           ],
         },
+        // A `tokens` expand belongs here — which symbols this block consumes,
+        // at which style key and rank, the mirror of `token consumers` — and it
+        // is DELIBERATELY ABSENT rather than forgotten. There is no path from a
+        // block to a consumed symbol that the shipped ontology defines, by
+        // either candidate route, and `block.shipped.exec.test.ts` holds every
+        // term this story names to being DEFINED for exactly the reason a
+        // silently unrenderable expand is a bug rather than a gap.
+        //
+        // Measured against the shipped pack:
+        //
+        //   ds:hasTokenBinding, ds:consumesSymbol, ds:rank, ds:viaBlock,
+        //   ds:node — none is declared a property. The record they hang off is
+        //   the design system's to mint (the anatomy vocabulary's own note
+        //   calls it "design-system's ds:TokenBinding record"), and it has not
+        //   landed.
+        //
+        //   The anatomy route is complete in itself and unreachable from here:
+        //   `anatomy:Specification → rootNode → Node → hasStyle → Style →
+        //   consumes` is all defined, but NO property anywhere ranges over
+        //   `anatomy:Specification`, so nothing joins a block to its anatomy
+        //   graph — a block carries its anatomy as the `ds:anatomyDsl` STRING
+        //   read above, not as nodes. Of the anatomy classes only
+        //   `anatomy:StyleKey` has instances (111, the registry).
+        //
+        // When either edge is defined, the declaration is one entry: relation
+        // `ds:hasTokenBinding`, selecting `ds:consumesSymbol`,
+        // `anatomy:styleKey`, `anatomy:styleState`, `ds:rank`, `ds:viaBlock`
+        // and `ds:node` — all seven, because a binding is identified by the
+        // whole tuple. `token consumers` already answers the same question from
+        // the symbol's end and needs no code change when the records arrive;
+        // this expand needs the terms to exist first.
       ],
       disclosure: {
         levels: ["summary", "standard", "detailed"],
@@ -360,7 +391,7 @@ const designSystemStories: readonly PackDefinition[] = [
     noun: "token",
     description: "List the design-token symbols.",
     toolDescription:
-      'List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description every definition of that symbol agrees on, and the symbol a channel provisions. Platform names like `--color-text` are variable_list. Example: token_list { type: "color" }.',
+      'List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description every definition of that symbol agrees on, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: "color" }.',
     list: {
       // Type and description are DEFINITION-level facts, and 393 of the 745
       // symbols have more than one definition (`color.text` has 20). The
@@ -669,7 +700,7 @@ const designSystemStories: readonly PackDefinition[] = [
             // reason the recovery below names, not evidence that nothing
             // consumes it.
             description:
-              "A CSS variable name for the consumed symbol — the other spelling of --symbol. A channel variable and its semantic sibling differ.",
+              "A CSS variable name for the consumed symbol — the other spelling of the symbol parameter. A channel variable and its semantic sibling differ.",
           },
           {
             param: "key",
@@ -845,7 +876,7 @@ const designSystemStories: readonly PackDefinition[] = [
     description:
       "List the platform variables the design tokens are emitted as.",
     toolDescription:
-      'List the platform VARIABLES a stylesheet declares (`--color-text`), with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`). Example: variable_list { symbol: "color.text" }.',
+      'List the platform VARIABLES a stylesheet declares as CSS custom properties, with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`). Example: variable_list { symbol: "color.text" }.',
     list: {
       query: [
         "SELECT ?uri ?name ?platform ?symbol ?tier ?visibility",
@@ -984,7 +1015,7 @@ const designSystemStories: readonly PackDefinition[] = [
         description:
           "List the walk from a variable to every symbol it reaches, through every variable in between.",
         toolDescription:
-          'List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: "disabled--color-text" }.',
+          'List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: "modifier-color-text" }.',
         // ONE property path carries the whole walk, which is why this is a
         // query and not a traversal in code. `dt:references` is an rdf:List of
         // the variables a declaration's value reads, so each hop is

@@ -20,7 +20,7 @@ pragma block list [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -139,7 +139,7 @@ pragma concept list [options]
 | --- | --- | --- |
 | `--type` | `<string>` | Filter by concept type (e.g. Explanation, How-to guide). |
 | `--search` | `<string>` | Search in name and summary. |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -514,7 +514,7 @@ pragma implementation libraries [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -544,7 +544,7 @@ pragma implementation list [options]
 | `--platform` | `<string>` | Filter by platform (e.g. react, svelte, typescript). |
 | `--library` | `<string>` | Filter by implementation library name. |
 | `--search` | `<string>` | Search in block and library name. |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -608,7 +608,7 @@ pragma modifier list [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -997,7 +997,7 @@ pragma standard categories [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -1026,7 +1026,7 @@ pragma standard list [options]
 | --- | --- | --- |
 | `--category` | `<string>` | Filter by category slug. A parent category answers for its whole branch. |
 | `--search` | `<string>` | Search in name and description. |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -1106,7 +1106,7 @@ pragma tier list [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -1161,11 +1161,11 @@ pragma token consumers [options]
 | Flag | Value | Description |
 | --- | --- | --- |
 | `--symbol` | `<string>` | Filter to one symbol. |
-| `--variable` | `<string>` | A CSS variable name for the consumed symbol — the other spelling of --symbol. A channel variable and its semantic sibling differ. |
+| `--variable` | `<string>` | A CSS variable name for the consumed symbol — the other spelling of the symbol parameter. A channel variable and its semantic sibling differ. |
 | `--key` | `<string>` | Filter to one style key. |
 | `--state` | `<string>` | Filter to one interaction state. |
 | `--search` | `<string>` | Search block, symbol, key. |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -1182,7 +1182,7 @@ pragma token consumers --format llm
 
 List the design-token symbols.
 
-List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description every definition of that symbol agrees on, and the symbol a channel provisions. Platform names like `--color-text` are variable_list. Example: token_list { type: "color" }.
+List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description every definition of that symbol agrees on, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: "color" }.
 
 ```
 pragma token list [options]
@@ -1195,7 +1195,7 @@ pragma token list [options]
 | `--type` | `<string>` | Filter by the agreed type. |
 | `--channel-of` | `<string>` | Filter to one symbol's channels. |
 | `--search` | `<string>` | Search name and description. |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -1269,7 +1269,7 @@ pragma token values [options]
 | `--symbol` | `<string>` | Filter to one symbol. |
 | `--position` | `<string>` | Filter to one position. |
 | `--search` | `<string>` | Search symbol, value, derivation. |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -1311,7 +1311,7 @@ pragma upgrade --dry-run  # show the delta and the command
 
 List the walk from a variable to every symbol it reaches, through every variable in between.
 
-List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: "disabled--color-text" }.
+List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: "modifier-color-text" }.
 
 ```
 pragma variable chain [options]
@@ -1323,7 +1323,7 @@ pragma variable chain [options]
 | --- | --- | --- |
 | `--variable` | `<string>` | Filter to one variable. |
 | `--symbol` | `<string>` | Filter to one symbol. |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -1340,7 +1340,7 @@ pragma variable chain --format llm
 
 List the platform variables the design tokens are emitted as.
 
-List the platform VARIABLES a stylesheet declares (`--color-text`), with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`). Example: variable_list { symbol: "color.text" }.
+List the platform VARIABLES a stylesheet declares as CSS custom properties, with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`). Example: variable_list { symbol: "color.text" }.
 
 ```
 pragma variable list [options]
@@ -1356,7 +1356,7 @@ pragma variable list [options]
 | `--visibility` | `<string>` | Filter by visibility. |
 | `--coordinate` | `<string>` | Filter to one coordinate. |
 | `--search` | `<string>` | Search name and symbol. |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).

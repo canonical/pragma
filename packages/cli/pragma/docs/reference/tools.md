@@ -14,7 +14,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### block_lookup
@@ -72,7 +72,7 @@ Read-only.
 | --- | --- | --- | --- |
 | `type` | string | no | Filter by concept type (e.g. Explanation, How-to guide). |
 | `search` | string | no | Search in name and summary. |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### concept_lookup
@@ -258,7 +258,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### implementation_list
@@ -274,7 +274,7 @@ Read-only.
 | `platform` | string | no | Filter by platform (e.g. react, svelte, typescript). |
 | `library` | string | no | Filter by implementation library name. |
 | `search` | string | no | Search in block and library name. |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### info
@@ -297,7 +297,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### modifier_lookup
@@ -442,7 +442,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### standard_list
@@ -457,7 +457,7 @@ Read-only.
 | --- | --- | --- | --- |
 | `category` | string | no | Filter by category slug. A parent category answers for its whole branch. |
 | `search` | string | no | Search in name and description. |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### standard_lookup
@@ -495,7 +495,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### tier_lookup
@@ -521,16 +521,16 @@ Read-only.
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `symbol` | string | no | Filter to one symbol. |
-| `variable` | string | no | A CSS variable name for the consumed symbol — the other spelling of --symbol. A channel variable and its semantic sibling differ. |
+| `variable` | string | no | A CSS variable name for the consumed symbol — the other spelling of the symbol parameter. A channel variable and its semantic sibling differ. |
 | `key` | string | no | Filter to one style key. |
 | `state` | string | no | Filter to one interaction state. |
 | `search` | string | no | Search block, symbol, key. |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### token_list
 
-List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description every definition of that symbol agrees on, and the symbol a channel provisions. Platform names like `--color-text` are variable_list. Example: token_list { type: "color" }.
+List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description every definition of that symbol agrees on, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: "color" }.
 
 Read-only.
 
@@ -541,7 +541,7 @@ Read-only.
 | `type` | string | no | Filter by the agreed type. |
 | `channelOf` | string | no | Filter to one symbol's channels. |
 | `search` | string | no | Search name and description. |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### token_lookup
@@ -579,7 +579,7 @@ Read-only.
 | `symbol` | string | no | Filter to one symbol. |
 | `position` | string | no | Filter to one position. |
 | `search` | string | no | Search symbol, value, derivation. |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### upgrade
@@ -597,7 +597,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### variable_chain
 
-List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: "disabled--color-text" }.
+List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: "modifier-color-text" }.
 
 Read-only.
 
@@ -607,12 +607,12 @@ Read-only.
 | --- | --- | --- | --- |
 | `variable` | string | no | Filter to one variable. |
 | `symbol` | string | no | Filter to one symbol. |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### variable_list
 
-List the platform VARIABLES a stylesheet declares (`--color-text`), with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`). Example: variable_list { symbol: "color.text" }.
+List the platform VARIABLES a stylesheet declares as CSS custom properties, with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`). Example: variable_list { symbol: "color.text" }.
 
 Read-only.
 
@@ -626,7 +626,7 @@ Read-only.
 | `visibility` | string | no | Filter by visibility. |
 | `coordinate` | string | no | Filter to one coordinate. |
 | `search` | string | no | Search name and symbol. |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### variable_lookup
