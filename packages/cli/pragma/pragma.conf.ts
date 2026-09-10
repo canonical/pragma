@@ -458,12 +458,12 @@ const designSystemStories: readonly PackDefinition[] = [
               "}",
             ].join("\n"),
           },
-          description: "Filter to the channels of one symbol.",
+          description: "Filter to one symbol's channels.",
         },
       ],
       search: {
         variables: ["name", "description"],
-        description: "Search in name and description.",
+        description: "Search name and description.",
       },
       emptyRecovery: {
         message:
@@ -549,7 +549,7 @@ const designSystemStories: readonly PackDefinition[] = [
                 "}",
               ].join("\n"),
             },
-            description: "Filter to one position (e.g. mode.dark).",
+            description: "Filter to one position.",
           },
         ],
         search: {
@@ -567,7 +567,7 @@ const designSystemStories: readonly PackDefinition[] = [
         description:
           "List which blocks consume which token symbol, at which style key, state and rank.",
         toolDescription:
-          'List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and anatomy node. Every column is identity: two bindings differing only in state or rank are different facts. Answers empty until the design-system packs record bindings. Example: token_consumers { symbol: "color.text" }.',
+          'List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { variable: "color-text" }.',
         // Seven identity columns, and not one of them is decoration: a binding
         // is identified by the whole tuple, so dropping `rank` or `node` would
         // publish rows a caller cannot tell apart — which is worse than a wide
@@ -580,6 +580,7 @@ const designSystemStories: readonly PackDefinition[] = [
         // below rather than failing. It starts answering with no code change.
         query: [
           "SELECT ?block ?symbol ?key ?state ?rank ?node ?uri",
+          '       (GROUP_CONCAT(DISTINCT ?variableName; SEPARATOR=" ") AS ?variable)',
           "WHERE {",
           "  ?blockUri ds:hasTokenBinding ?uri .",
           "  ?uri ds:consumesSymbol ?symbolUri .",
@@ -590,13 +591,26 @@ const designSystemStories: readonly PackDefinition[] = [
           "  OPTIONAL { ?uri ds:node ?node }",
           "  OPTIONAL { ?uri ds:viaBlock ?viaUri . OPTIONAL { ?viaUri ds:name ?viaName } }",
           "  OPTIONAL { ?blockUri ds:name ?blockName }",
+          // Every platform spelling of the consumed symbol, as a SET rather
+          // than a join that multiplies the row: 204 symbols carry both a
+          // kebab and a camelCase variable, and binding one row per variable
+          // would publish each binding twice under names a caller cannot tell
+          // apart. Aggregated, both spellings land in one cell and `--variable`
+          // set-matches either — which is also why the two spellings of one
+          // symbol return the SAME set rather than partitioning it.
+          "  OPTIONAL {",
+          "    ?variableUri dt:ofSymbol ?symbolUri ;",
+          "                 rdfs:label ?variableName .",
+          "  }",
           '  BIND(COALESCE(?viaName, ?blockName, REPLACE(STR(?blockUri), "^.*[/#]", "")) AS ?block)',
           "}",
+          "GROUP BY ?block ?symbol ?key ?state ?rank ?node ?uri",
           "ORDER BY ?block ?symbol ?key ?state ?rank ?node",
         ].join("\n"),
         columns: [
           { field: "block", label: "Block" },
           { field: "symbol", label: "Symbol" },
+          { field: "variable", label: "Variables" },
           { field: "key", label: "Style key" },
           { field: "state", label: "State" },
           { field: "rank", label: "Rank" },
@@ -616,6 +630,46 @@ const designSystemStories: readonly PackDefinition[] = [
               ].join("\n"),
             },
             description: "Filter to one symbol.",
+          },
+          {
+            param: "variable",
+            variable: "variable",
+            // The SAME constraint as `--symbol`, named by the other spelling.
+            // A web implementer holds a CSS custom-property name, not a dotted
+            // symbol, so answering "what breaks if I change --color-text" used
+            // to take two calls and a spelling the caller did not start with.
+            // The join is in the query instead.
+            //
+            // `set`, because the cell is every platform spelling of the
+            // consumed symbol and one row legitimately belongs to all of them.
+            match: "set",
+            // The variable labels, the same source `variable lookup` resolves
+            // against — so a name that works there works here.
+            vocabulary: {
+              query: [
+                "SELECT DISTINCT ?variable WHERE {",
+                "  ?v a dt:Variable ;",
+                "     rdfs:label ?variable .",
+                "}",
+              ].join("\n"),
+            },
+            // Two things a caller will otherwise assume, both wrong.
+            //
+            // A CHANNEL variable and its semantic sibling are DIFFERENT
+            // constraints: `--variable modifier-color-text` finds the blocks
+            // that bind the channel, `--variable color-text` those that bind
+            // the symbol, and neither includes the other. Whether a block's
+            // resolution eventually reaches the other through a fallback is a
+            // question about the consumed list, not about this single-symbol
+            // join, and blurring them here would answer a question nobody
+            // asked with rows nobody can check.
+            //
+            // And a variable standing for NO symbol has no answer down this
+            // path at all — 236 of them do — which is an empty answer for a
+            // reason the recovery below names, not evidence that nothing
+            // consumes it.
+            description:
+              "A CSS variable name for the consumed symbol — the other spelling of --symbol. A channel variable and its semantic sibling differ.",
           },
           {
             param: "key",
@@ -641,8 +695,7 @@ const designSystemStories: readonly PackDefinition[] = [
                 "}",
               ].join("\n"),
             },
-            description:
-              "Filter to one style key (e.g. appearance.background).",
+            description: "Filter to one style key.",
           },
           {
             param: "state",
@@ -661,13 +714,12 @@ const designSystemStories: readonly PackDefinition[] = [
                 "}",
               ].join("\n"),
             },
-            description:
-              "Filter to one interaction state (hover, focus, active, selected, disabled).",
+            description: "Filter to one interaction state.",
           },
         ],
         search: {
           variables: ["block", "symbol", "key", "state", "node"],
-          description: "Search block, symbol, key, state, node.",
+          description: "Search block, symbol, key.",
         },
         // Deliberately `sources update`: unlike `standard list`, this story's
         // data does NOT ride the embedded snapshot — the binding records are
@@ -675,7 +727,7 @@ const designSystemStories: readonly PackDefinition[] = [
         // a store that predates them.
         emptyRecovery: {
           message:
-            "No token bindings in the store. The design-system packs record which block consumes which symbol; a store built before they did carries none.",
+            "No token bindings in the store. Either the design-system packs have not recorded which block consumes which symbol yet — a store built before they did carries none — or, if you filtered by a CSS variable, that variable stands for no symbol at all (236 of them do not) and has no consumer down this path: ask `variable chain` what it finally reaches instead.",
           cli: "sources update",
         },
       },
@@ -881,7 +933,7 @@ const designSystemStories: readonly PackDefinition[] = [
               "}",
             ].join("\n"),
           },
-          description: "Filter by tier (primitive, semantic, derived).",
+          description: "Filter by tier.",
         },
         {
           param: "visibility",
@@ -894,7 +946,7 @@ const designSystemStories: readonly PackDefinition[] = [
               "}",
             ].join("\n"),
           },
-          description: "Filter by visibility (public, internal).",
+          description: "Filter by visibility.",
         },
         {
           param: "coordinate",
@@ -913,7 +965,7 @@ const designSystemStories: readonly PackDefinition[] = [
               "}",
             ].join("\n"),
           },
-          description: "Filter to one coordinate (e.g. criticality.success).",
+          description: "Filter to one coordinate.",
         },
       ],
       search: {
@@ -1007,7 +1059,7 @@ const designSystemStories: readonly PackDefinition[] = [
       description:
         "Look up one or more platform variables by name (without the leading dashes), IRI, or glob.",
       toolDescription:
-        'Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the value it emits, the source location, the coordinate it also applies at, and the derivation that computed it. Address it by the CSS name WITHOUT its leading dashes (`color-text`). Two spellings of one symbol carry distinct labels, so each answers on its own. Example: variable_lookup { name: ["color-text"] }.',
+        'Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the emitted value, the source location, the coordinate it also applies at, and the derivation. Address it by the CSS name WITHOUT its leading dashes (`color-text`). Example: variable_lookup { name: ["color-text"] }.',
       fields: [
         { name: "symbol", property: "dt:ofSymbol/rdfs:label", label: "Symbol" },
         { name: "tier", property: "dt:tier", label: "Tier" },

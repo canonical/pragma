@@ -1150,7 +1150,7 @@ pragma tier lookup <name>
 
 List which blocks consume which token symbol, at which style key, state and rank.
 
-List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and anatomy node. Every column is identity: two bindings differing only in state or rank are different facts. Answers empty until the design-system packs record bindings. Example: token_consumers { symbol: "color.text" }.
+List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { variable: "color-text" }.
 
 ```
 pragma token consumers [options]
@@ -1161,7 +1161,10 @@ pragma token consumers [options]
 | Flag | Value | Description |
 | --- | --- | --- |
 | `--symbol` | `<string>` | Filter to one symbol. |
-| `--search` | `<string>` | Search block, symbol, key, state, node. |
+| `--variable` | `<string>` | A CSS variable name for the consumed symbol — the other spelling of --symbol. A channel variable and its semantic sibling differ. |
+| `--key` | `<string>` | Filter to one style key. |
+| `--state` | `<string>` | Filter to one interaction state. |
+| `--search` | `<string>` | Search block, symbol, key. |
 | `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
@@ -1190,8 +1193,8 @@ pragma token list [options]
 | Flag | Value | Description |
 | --- | --- | --- |
 | `--type` | `<string>` | Filter by the agreed type. |
-| `--channel-of` | `<string>` | Filter to the channels of one symbol. |
-| `--search` | `<string>` | Search in name and description. |
+| `--channel-of` | `<string>` | Filter to one symbol's channels. |
+| `--search` | `<string>` | Search name and description. |
 | `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
@@ -1264,7 +1267,7 @@ pragma token values [options]
 | Flag | Value | Description |
 | --- | --- | --- |
 | `--symbol` | `<string>` | Filter to one symbol. |
-| `--position` | `<string>` | Filter to one position (e.g. mode.dark). |
+| `--position` | `<string>` | Filter to one position. |
 | `--search` | `<string>` | Search symbol, value, derivation. |
 | `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
@@ -1349,9 +1352,9 @@ pragma variable list [options]
 | --- | --- | --- |
 | `--platform` | `<string>` | Filter by platform. |
 | `--symbol` | `<string>` | Filter to one symbol. |
-| `--tier` | `<string>` | Filter by tier (primitive, semantic, derived). |
-| `--visibility` | `<string>` | Filter by visibility (public, internal). |
-| `--coordinate` | `<string>` | Filter to one coordinate (e.g. criticality.success). |
+| `--tier` | `<string>` | Filter by tier. |
+| `--visibility` | `<string>` | Filter by visibility. |
+| `--coordinate` | `<string>` | Filter to one coordinate. |
 | `--search` | `<string>` | Search name and symbol. |
 | `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
@@ -1370,7 +1373,7 @@ pragma variable list --format llm
 
 Look up one or more platform variables by name (without the leading dashes), IRI, or glob.
 
-Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the value it emits, the source location, the coordinate it also applies at, and the derivation that computed it. Address it by the CSS name WITHOUT its leading dashes (`color-text`). Two spellings of one symbol carry distinct labels, so each answers on its own. Example: variable_lookup { name: ["color-text"] }.
+Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the emitted value, the source location, the coordinate it also applies at, and the derivation. Address it by the CSS name WITHOUT its leading dashes (`color-text`). Example: variable_lookup { name: ["color-text"] }.
 
 ```
 pragma variable lookup <name...>

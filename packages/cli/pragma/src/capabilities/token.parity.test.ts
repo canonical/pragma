@@ -105,6 +105,14 @@ w3c-tokens:path a owl:DatatypeProperty ; rdfs:range xsd:string .
 ds:name a owl:DatatypeProperty ; rdfs:range xsd:string .
 anatomy:styleKey a owl:DatatypeProperty ; rdfs:range xsd:string .
 anatomy:styleState a owl:DatatypeProperty ; rdfs:range xsd:string .
+ds:hasTokenBinding a owl:ObjectProperty .
+ds:consumesSymbol a owl:ObjectProperty ; rdfs:range dt:TokenSymbol .
+ds:rank a owl:DatatypeProperty ; rdfs:range xsd:integer .
+ds:node a owl:DatatypeProperty ; rdfs:range xsd:string .
+ds:viaBlock a owl:ObjectProperty .
+dt:ofSymbol a owl:ObjectProperty ; rdfs:range dt:TokenSymbol .
+dt:Variable a owl:Class .
+ds:Component a owl:Class .
 
 # The two token types, each carrying the label the story displays and filters on.
 w3c-tokens:color a w3c-tokens:TokenType ; rdfs:label "color" .
@@ -164,6 +172,35 @@ dt:modifier.color.text a dt:TokenSymbol ;
 ds:global.modifier_family.criticality a ds:ModifierFamily ;
     ds:name "Criticality" ;
     dt:covers dt:color.text .
+
+# — The bindings, and the CSS names that spell the symbol they consume ——————
+# TWO spellings of color.text, so '--variable' has to collapse them: both
+# resolve through dt:ofSymbol to one symbol, so both must answer the same set.
+<${DT}s4/web/--color-text> a dt:Variable ;
+    rdfs:label "color-text" ;
+    dt:ofSymbol dt:color.text .
+<${DT}s4/web/--color-text-legacy> a dt:Variable ;
+    rdfs:label "color-text-legacy" ;
+    dt:ofSymbol dt:color.text .
+# And one standing for NO symbol, which therefore has no answer down the
+# consumer path at all — an empty answer for a reason, not evidence that
+# nothing consumes it.
+<${DT}s4/web/--button-color-background> a dt:Variable ;
+    rdfs:label "button-color-background" .
+
+ds:button a ds:Component ; ds:name "Button" ;
+    ds:hasTokenBinding <${DT}binding/button-bg> , <${DT}binding/button-bg-hover> .
+<${DT}binding/button-bg>
+    ds:consumesSymbol dt:color.text ;
+    anatomy:styleKey "appearance.background" ;
+    ds:rank "1" ;
+    ds:node ".root" .
+<${DT}binding/button-bg-hover>
+    ds:consumesSymbol dt:color.text ;
+    anatomy:styleKey "appearance.background" ;
+    anatomy:styleState "hover" ;
+    ds:rank "2" ;
+    ds:node ".root" .
 
 # — The coordinates ————————————————————————————————————————————————————————
 dt:coordinate.mode.dark a dt:Coordinate .
@@ -373,32 +410,113 @@ describe("token values — chain AND derivation on the same surface (PROTECTED)"
   });
 });
 
-describe("token consumers — honest emptiness until the records land (PROTECTED)", () => {
-  it("answers an empty page with its own recovery, not an error", async () => {
-    const answered = await page("consumers");
+describe("token consumers — the binding tuple, either spelling (PROTECTED)", () => {
+  it("publishes one row per binding, with every identity column", async () => {
+    // The fixture records two bindings that differ ONLY in state and rank, and
+    // both are published: they are two different facts, so a narrower row
+    // would publish rows a caller cannot tell apart and a deduplicating
+    // consumer would silently lose one.
+    const answered = await rows("consumers");
+    expect(answered).toHaveLength(2);
+    expect(answered.map((row) => [row.key, row.state ?? "", row.rank])).toEqual(
+      [
+        ["appearance.background", "", "1"],
+        ["appearance.background", "hover", "2"],
+      ],
+    );
+    for (const row of answered) {
+      expect(row.block).toBe("Button");
+      expect(row.symbol).toBe("color.text");
+      expect(row.node).toBe(".root");
+      expect(row.uri).toBeTruthy();
+    }
+  });
+
+  it("carries EVERY spelling of the consumed symbol in one cell", async () => {
+    // A set, not a join that multiplies: two variables stand for this symbol,
+    // so binding one row per variable would have published each binding twice.
+    const answered = await rows("consumers");
+    for (const row of answered) {
+      expect(row.variable?.split(" ").sort()).toEqual([
+        "color-text",
+        "color-text-legacy",
+      ]);
+    }
+  });
+
+  it("--variable and --symbol answer the SAME set, by either name", async () => {
+    // The whole point of the filter: a web implementer holds a CSS name, not a
+    // dotted symbol, and should not have to translate it first.
+    const bySymbol = await rows("consumers", { symbol: "color.text" });
+    const byVariable = await rows("consumers", { variable: "color-text" });
+    expect(byVariable).toEqual(bySymbol);
+    expect(byVariable).toHaveLength(2);
+  });
+
+  it("both spellings of one symbol collapse to the same answer", async () => {
+    // Both resolve through the same edge to one symbol, so neither partitions
+    // the set. If they ever diverged, half the consumers of a symbol would be
+    // invisible from one of its two names.
+    expect(await rows("consumers", { variable: "color-text-legacy" })).toEqual(
+      await rows("consumers", { variable: "color-text" }),
+    );
+  });
+
+  it("--symbol and --variable together INTERSECT, like any two filters", async () => {
+    // They are two spellings of one constraint, and the kernel's meaning for
+    // two filters is conjunction — so naming the same thing twice narrows to
+    // itself, and naming two different things narrows to nothing. Documented
+    // rather than refused: a per-story mutual exclusion is not something the
+    // grammar can express, and inventing one here would be a rule no other
+    // story follows.
+    expect(
+      await rows("consumers", { symbol: "color.text", variable: "color-text" }),
+    ).toHaveLength(2);
+    expect(
+      await rows("consumers", {
+        symbol: "color.border",
+        variable: "color-text",
+      }),
+    ).toEqual([]);
+  });
+
+  it("a variable standing for NO symbol answers empty, and says why", async () => {
+    // Admitted, because it is a real variable — 236 of them stand for no
+    // symbol. What it is not is evidence that nothing consumes it, and the
+    // recovery says so and names where to go instead.
+    const answered = await page("consumers", {
+      variable: "button-color-background",
+    });
     expect(answered.rows).toEqual([]);
     const notice = verb("consumers").output.formatters.notice?.(
       answered as never,
     );
-    expect(notice).toContain("No token bindings in the store.");
-    expect(notice).toContain("sources update");
+    expect(notice).toContain("stands for no symbol");
+    expect(notice).toContain("variable chain");
   });
 
-  it("admits a style key from the REGISTRY while no record carries one", async () => {
-    // The roster is what a key MAY be, not what some record happens to hold —
-    // read from the registry, so it is non-empty before any binding exists.
-    const answered = await page("consumers", { key: "appearance.background" });
-    expect(answered.rows).toEqual([]);
+  it("--key and --state narrow to one tuple each", async () => {
+    expect(
+      await rows("consumers", { key: "appearance.background" }),
+    ).toHaveLength(2);
+    const hover = await rows("consumers", { state: "hover" });
+    expect(hover).toHaveLength(1);
+    expect(hover[0]?.rank).toBe("2");
   });
 
-  it("admits a state from the shape that closes the vocabulary", async () => {
-    expect((await page("consumers", { state: "hover" })).rows).toEqual([]);
+  it("refuses a state the closing shape does not admit", async () => {
     await expect(page("consumers", { state: "pressed" })).rejects.toMatchObject(
       {
         code: "INVALID_INPUT",
         validOptions: ["active", "disabled", "focus", "hover", "selected"],
       },
     );
+  });
+
+  it("refuses a variable name the graph does not carry", async () => {
+    await expect(
+      page("consumers", { variable: "not-a-variable" }),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
   });
 });
 

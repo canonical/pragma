@@ -79,7 +79,15 @@
         },
         {
           "v": "consumers",
-          "flags": ["--symbol", "--search", "--limit", "--after"],
+          "flags": [
+            "--symbol",
+            "--variable",
+            "--key",
+            "--state",
+            "--search",
+            "--limit",
+            "--after"
+          ],
           "needsStore": true,
           "mcp": "token_consumers"
         },

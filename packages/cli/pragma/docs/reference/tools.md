@@ -512,7 +512,7 @@ Read-only.
 
 ### token_consumers
 
-List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and anatomy node. Every column is identity: two bindings differing only in state or rank are different facts. Answers empty until the design-system packs record bindings. Example: token_consumers { symbol: "color.text" }.
+List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { variable: "color-text" }.
 
 Read-only.
 
@@ -521,7 +521,10 @@ Read-only.
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `symbol` | string | no | Filter to one symbol. |
-| `search` | string | no | Search block, symbol, key, state, node. |
+| `variable` | string | no | A CSS variable name for the consumed symbol — the other spelling of --symbol. A channel variable and its semantic sibling differ. |
+| `key` | string | no | Filter to one style key. |
+| `state` | string | no | Filter to one interaction state. |
+| `search` | string | no | Search block, symbol, key. |
 | `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
@@ -536,8 +539,8 @@ Read-only.
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `type` | string | no | Filter by the agreed type. |
-| `channelOf` | string | no | Filter to the channels of one symbol. |
-| `search` | string | no | Search in name and description. |
+| `channelOf` | string | no | Filter to one symbol's channels. |
+| `search` | string | no | Search name and description. |
 | `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
@@ -574,7 +577,7 @@ Read-only.
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `symbol` | string | no | Filter to one symbol. |
-| `position` | string | no | Filter to one position (e.g. mode.dark). |
+| `position` | string | no | Filter to one position. |
 | `search` | string | no | Search symbol, value, derivation. |
 | `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
@@ -619,16 +622,16 @@ Read-only.
 | --- | --- | --- | --- |
 | `platform` | string | no | Filter by platform. |
 | `symbol` | string | no | Filter to one symbol. |
-| `tier` | string | no | Filter by tier (primitive, semantic, derived). |
-| `visibility` | string | no | Filter by visibility (public, internal). |
-| `coordinate` | string | no | Filter to one coordinate (e.g. criticality.success). |
+| `tier` | string | no | Filter by tier. |
+| `visibility` | string | no | Filter by visibility. |
+| `coordinate` | string | no | Filter to one coordinate. |
 | `search` | string | no | Search name and symbol. |
 | `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### variable_lookup
 
-Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the value it emits, the source location, the coordinate it also applies at, and the derivation that computed it. Address it by the CSS name WITHOUT its leading dashes (`color-text`). Two spellings of one symbol carry distinct labels, so each answers on its own. Example: variable_lookup { name: ["color-text"] }.
+Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the emitted value, the source location, the coordinate it also applies at, and the derivation. Address it by the CSS name WITHOUT its leading dashes (`color-text`). Example: variable_lookup { name: ["color-text"] }.
 
 Read-only.
 
