@@ -2,7 +2,7 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { FooterRoot, LeafFooterItem } from "../../types.js";
+import type { FooterRoot } from "../../types.js";
 import Footer from "./Footer.js";
 
 describe("Footer", () => {
@@ -169,6 +169,30 @@ describe("Footer", () => {
       ).toHaveAttribute("data-active", "true");
     });
 
+    it("does not seed an expandable open when its label-only children match an unset currentUrl", () => {
+      // `undefined === undefined` must not read as "this child is the
+      // current location": an expandable of label-only children stays
+      // closed when currentUrl isn't wired.
+      const { container } = render(
+        <Footer
+          root={{
+            key: "footer",
+            items: [
+              {
+                label: "Theme",
+                items: [
+                  { label: "Light", icon: "light-theme" },
+                  { label: "Dark", icon: "dark-theme" },
+                ],
+              },
+            ],
+          }}
+        />,
+      );
+      const details = container.querySelector("details") as HTMLDetailsElement;
+      expect(details).not.toHaveAttribute("open");
+    });
+
     it("collapses the expandable when a leaf child row is activated", () => {
       const { container } = render(
         <Footer
@@ -225,9 +249,45 @@ describe("Footer", () => {
       expect(details).not.toHaveAttribute("open");
     });
 
+    it("renders label-only rows as plain labels, not inert buttons", () => {
+      // A label-only leaf (e.g. a logged-in username) is not an action —
+      // rendering it as a <button> announces an action that does nothing.
+      render(
+        <Footer
+          root={{
+            key: "footer",
+            items: [{ label: "Ada Lovelace", icon: "user" }],
+          }}
+        />,
+      );
+      expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
+      expect(screen.queryByRole("button")).not.toBeInTheDocument();
+      expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    });
+
     it("renders expandable children as plain (non-navigable) rows", () => {
-      const child: LeafFooterItem = { label: "System" };
-      expect(child.url).toBeUndefined();
+      render(
+        <Footer
+          root={{
+            key: "footer",
+            items: [
+              {
+                label: "Theme",
+                items: [{ label: "System" }],
+              },
+            ],
+          }}
+        />,
+      );
+      // Label-only children of an expandable are plain labels too — the
+      // disclosure's toggle is the summary, not these rows.
+      expect(screen.getByText("System")).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "System" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("link", { name: "System" }),
+      ).not.toBeInTheDocument();
     });
   });
 });
