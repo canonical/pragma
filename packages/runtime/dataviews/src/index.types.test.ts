@@ -9,6 +9,8 @@
 import { describe, expectTypeOf, it } from "vitest";
 import type {
   AppliedOf,
+  ArraySource,
+  ArraySourceConfig,
   Channel,
   ChannelConfig,
   ChoicesField,
@@ -24,10 +26,12 @@ import type {
   DateField,
   DispatchResult,
   EmptyOr,
+  ExecuteSliceOptions,
   FieldFeedback,
   FieldInteraction,
   FieldInteractionConfig,
   FieldInteractionState,
+  FieldReader,
   FieldValidation,
   FixedSizing,
   FlagField,
@@ -38,6 +42,7 @@ import type {
   Location,
   LocationConfig,
   NumberField,
+  ObservedQuery,
   Operation,
   OperationConfig,
   OperationFailure,
@@ -53,6 +58,10 @@ import type {
   ProviderFields,
   QueryCommand,
   QueryCommandResult,
+  QueryObservation,
+  QueryObserver,
+  QueryObserverFactory,
+  QuerySourceConfig,
   ReadonlyChannel,
   ResolvedColumn,
   ResultProvenance,
@@ -78,6 +87,18 @@ import type {
   Slice,
   SortDirection,
   SortTerm,
+  SourceActionRequest,
+  SourceActionRunner,
+  SourceAdapter,
+  SourceBinding,
+  SourceBindingConfig,
+  SourceCapabilities,
+  SourceHost,
+  SourcePage,
+  SourceRefusal,
+  SourceRefusalPart,
+  SourceRequest,
+  SourceSupport,
 } from "./index.js";
 import * as dataviews from "./index.js";
 
@@ -153,12 +174,33 @@ type EveryPublicType = [
   Slice,
   SortDirection,
   SortTerm,
+  ArraySource,
+  ArraySourceConfig,
+  ExecuteSliceOptions,
+  FieldReader,
+  ObservedQuery<SourcePage>,
+  QueryObservation<SourcePage>,
+  QueryObserver<SourcePage>,
+  QueryObserverFactory<SourcePage>,
+  QuerySourceConfig,
+  SourceActionRequest,
+  SourceActionRunner,
+  SourceAdapter,
+  SourceBinding,
+  SourceBindingConfig,
+  SourceCapabilities,
+  SourceHost,
+  SourcePage,
+  SourceRefusal,
+  SourceRefusalPart,
+  SourceRequest,
+  SourceSupport,
 ];
 
 describe("public surface types", () => {
   it("re-exports the full type surface from the barrel", () => {
     expectTypeOf<EveryPublicType>().not.toBeAny();
-    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<70>();
+    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<91>();
   });
 
   it("exports the identity functions with the declared shapes", () => {
@@ -225,5 +267,28 @@ describe("public surface types", () => {
     >();
     expectTypeOf<Machines["cpu"]>().toEqualTypeOf<number>();
     expectTypeOf<Machines["owner"]>().toEqualTypeOf<boolean>();
+  });
+
+  it("accepts the provider as a source host without a cast", () => {
+    expectTypeOf<DataViewsProvider>().toMatchTypeOf<SourceHost>();
+  });
+
+  it("discriminates source support and refusals by status and part", () => {
+    expectTypeOf<SourceSupport["status"]>().toEqualTypeOf<
+      "supported" | "unsupported"
+    >();
+    expectTypeOf<SourceRefusalPart>().toEqualTypeOf<
+      "filter" | "search" | "sort" | "group"
+    >();
+    expectTypeOf<SourceCapabilities["count"]>().toEqualTypeOf<
+      "filtered" | "none"
+    >();
+  });
+
+  it("keeps the local-array source's write path on its own handle", () => {
+    expectTypeOf<ArraySource>().toMatchTypeOf<SourceAdapter>();
+    expectTypeOf<ArraySource["setRows"]>().parameters.toEqualTypeOf<
+      [readonly RowRecord[]]
+    >();
   });
 });

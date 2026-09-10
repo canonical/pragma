@@ -4,11 +4,13 @@
  * commands and window projection, field interaction, operation and
  * save-race records, the collection coordinator owning query/window
  * coherence and the request lifecycle, the Location port and its adapters,
- * and the schema/observation layer — field definitions with inferred types
- * and enforced semantics, observation channels and explicit-ID selection.
- * React/Svelte bindings are wired above this layer; nothing here touches
- * the DOM, a data source, or a router directly (the platform Location
- * adapter composes a structural host surface).
+ * the schema/observation layer — field definitions with inferred types
+ * and enforced semantics, observation channels and explicit-ID selection —
+ * and the source adapter contract with its local-array and
+ * observable-query-client adapters. React/Svelte bindings are wired above
+ * this layer; nothing here touches the DOM, a data source, a query library
+ * or a router directly (the platform Location adapter and the query source
+ * compose structural host surfaces instead).
  *
  * @packageDocumentation
  */

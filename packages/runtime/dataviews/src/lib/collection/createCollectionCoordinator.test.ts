@@ -700,4 +700,57 @@ describe("createCollectionCoordinator", () => {
     });
     expect(coordinator.state.result.status).toBe("ready");
   });
+  it("names the one request awaiting completion, and only while it waits", () => {
+    const coordinator = createCollectionCoordinator();
+    expect(coordinator.state.pendingRequestId).toBeNull();
+
+    const requestId = coordinator.refresh();
+    expect(coordinator.state.pendingRequestId).toBe(requestId);
+    if (requestId === null) {
+      throw new Error("expected a refresh request");
+    }
+
+    coordinator.complete(requestId, { status: "success", rows: [], count: 0 });
+    expect(coordinator.state.pendingRequestId).toBeNull();
+  });
+
+  it("names the superseding request, never the one it replaced", () => {
+    const coordinator = createCollectionCoordinator();
+    const first = coordinator.refresh();
+    const second = coordinator.dispatch({
+      kind: "navigateWindow",
+      page: 2,
+    }).requestId;
+    expect(second).not.toBe(first);
+    expect(coordinator.state.pendingRequestId).toBe(second);
+  });
+
+  it("names the adopted request and forgets it on scope rotation", () => {
+    const coordinator = createCollectionCoordinator();
+    const adopted = coordinator.adopt(
+      { filter: [], search: "web", sort: [], group: null },
+      { page: 1, size: 50 },
+    );
+    expect(coordinator.state.pendingRequestId).toBe(adopted);
+    coordinator.rotateScope();
+    expect(coordinator.state.pendingRequestId).toBeNull();
+  });
+
+  it("reports no pending request once disposed", () => {
+    const coordinator = createCollectionCoordinator();
+    coordinator.refresh();
+    coordinator.dispose();
+    expect(coordinator.state.pendingRequestId).toBeNull();
+  });
+
+  it("keeps naming the pending request through a failed completion", () => {
+    const coordinator = createCollectionCoordinator();
+    const requestId = coordinator.refresh();
+    if (requestId === null) {
+      throw new Error("expected a refresh request");
+    }
+    coordinator.complete(requestId, { status: "failure", reason: "503" });
+    expect(coordinator.state.pendingRequestId).toBeNull();
+    expect(coordinator.state.result.lastError).toBe("503");
+  });
 });
