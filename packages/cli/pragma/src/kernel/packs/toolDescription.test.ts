@@ -36,6 +36,13 @@ const verb = (
   return found;
 };
 
+// The fragments below track the stories' CURRENT prose. They are quoted by
+// FRAGMENT and not by exact string on purpose — tool descriptions are
+// explicitly not frozen, and what this file pins is the WIRING: that a
+// definition-level description reaches the list tool, a lookup-level one
+// reaches the lookup tool, an extra verb's reaches its own, and that the MCP
+// call example never leaks into CLI help. When a story's prose is rewritten
+// these move with it; when a description stops REACHING its tool, they fail.
 describe("pack toolDescription wiring (PROTECTED)", () => {
   it("routes the lookup-level toolDescription to MCP, whole (with the call example)", async () => {
     const mcp = await projectMcp([tokenModule]);
@@ -43,11 +50,9 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
       (t) => t.name === "token_lookup",
     )?.description;
     await mcp.cleanup();
-    expect(desc).toContain(
-      "Get type and theme values for one or more design tokens by name.",
-    );
+    expect(desc).toContain("Get one design-token symbol in full");
     // The authored MCP tool-call example survives on the MCP surface.
-    expect(desc).toContain('Example: token_lookup { name: ["color.primary"] }');
+    expect(desc).toContain('Example: token_lookup { name: ["color.text"] }');
   });
 
   it("routes the definition-level toolDescription to the MCP list tool", async () => {
@@ -58,8 +63,8 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
     await mcp.cleanup();
     // The rich description reaches MCP (was previously dropped — only `summary`
     // reached the tool), including the authored call example.
-    expect(desc).toContain("List all design tokens with their type.");
-    expect(desc).toContain("Example: token_list {}");
+    expect(desc).toContain("List the design-token SYMBOLS");
+    expect(desc).toContain('Example: token_list { type: "color" }');
   });
 
   it("routes an extra-verb toolDescription to its MCP tool", async () => {
@@ -77,15 +82,13 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
 
   it("CLI --help shows the rich prose but NEVER the MCP tool-call syntax", () => {
     const lookupHelp = formatVerbHelp("pragma", verb(tokenModule, "lookup"));
-    expect(lookupHelp).toContain(
-      "Get type and theme values for one or more design tokens by name.",
-    );
+    expect(lookupHelp).toContain("Get one design-token symbol in full");
     // No-leaks: the `token_lookup {…}` MCP call shape must not reach CLI help.
     expect(lookupHelp).not.toContain("token_lookup {");
     expect(lookupHelp).not.toContain("Example:");
 
     const listHelp = formatVerbHelp("pragma", verb(tokenModule, "list"));
-    expect(listHelp).toContain("List all design tokens with their type.");
+    expect(listHelp).toContain("List the design-token SYMBOLS");
     expect(listHelp).not.toContain("token_list {");
   });
 });
