@@ -10,7 +10,9 @@ const componentCssClassName = "ds side-navigation-header";
 /**
  * SideNavigation.Header — top region holding the brand (the `brand` node, at the
  * start) and the collapse toggle (at the end). The toggle is omitted when no
- * `onToggle` handler is provided.
+ * `onToggle` handler is provided. Collapsed (SPEC.md §1.2): the layout
+ * switches to a centred column — the toggle relocates below the logo rather
+ * than beside it — driven by `data-expanded` on the root.
  *
  * @implements ds:apps.subcomponent.side-navigation-header
  */
@@ -26,14 +28,18 @@ const Header = ({
   return (
     <header
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      data-expanded={expanded}
       {...props}
     >
-      <div className="brand">{brand}</div>
-      {/* Optional, consumer-supplied; the grid's middle column is simply empty
-          when no application name is given. */}
-      {applicationName != null && (
-        <span className="title p">{applicationName}</span>
-      )}
+      <div className="brand-container">
+        <div className="brand">{brand}</div>
+        {/* Optional, consumer-supplied; the grid's middle column is simply empty
+        when no application name is given. Hidden entirely when collapsed —
+        there's no room, and the spec's collapsed header has no title. */}
+        {applicationName != null && (
+          <h1 className="title">{applicationName}</h1>
+        )}
+      </div>
       {onToggle && (
         <CollapseToggle
           expanded={expanded}

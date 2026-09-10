@@ -1,6 +1,9 @@
 ---
-# SideNavigation.Header — top region holding the brand (logo/wordmark) at the
-# start and the collapse toggle at the end. Horizontal row, space-between.
+# SideNavigation.Header — top region. Expanded: brand (logo) at the start,
+# collapse toggle at the end, 1rem apart (SPEC.md §2). Collapsed: brand
+# centred, collapse toggle relocated below it (SPEC.md §1.2) — a state-based
+# repositioning the anatomy DSL does not currently express per-state; the
+# `layout.justify: space-between` below models the expanded arrangement only.
 node:
   uri: apps.subcomponent.side-navigation-header
   styles:
@@ -9,7 +12,9 @@ node:
     layout.align: center
     layout.justify: space-between
     size.width: fill
-    spacing.internal: spacing/side-navigation/header?
+    # Resolved: SPEC.md §2 states exact values (0.5rem top inset, 1rem
+    # logo↔toggle gap) rather than a single internal-padding token.
+    spacing.internal: dimension/100
   edges:
     - node:
         role: brand
@@ -18,11 +23,16 @@ node:
           layout.direction: row
           layout.align: center
           layout.flex: 1
+          # SPEC.md §9.3 — height 2.25rem (spec-stated), width 1.125rem
+          # (derived, 1:2 aspect ratio). New provisional tokens; no existing
+          # token names a logo size.
+          size.height: dimension/logo-block-size
+          size.width: dimension/logo-inline-size
       relation:
         cardinality: "0..1"
         slotName: brand
     - node:
         uri: apps.subcomponent.side-navigation-collapse-toggle
       relation:
-        cardinality: "0..1"
+        cardinality: "1"
         slotName: collapse

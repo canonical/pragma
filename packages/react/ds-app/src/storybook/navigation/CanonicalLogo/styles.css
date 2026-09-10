@@ -12,8 +12,8 @@
  */
 .ds.canonical-logo {
   /* Mark geometry in baseline units (bU = --space-baseline). */
-  --mark-size: 2; /* mark side, in bU */
-  --mark-margin-top: 1; /* gap above the mark, in bU */
+  --mark-size: 4; /* mark side, in bU */
+  --mark-margin-top: 5; /* gap above the mark, in bU */
 
   /* Rectangle height = bU multiples + a small overflow past the baseline. */
   --logo-height: 4; /* base height, in bU */
@@ -22,12 +22,11 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  inline-size: var(--sidenav-start, 1.5rem);
-  block-size: calc(
-    var(--space-baseline) *
-    var(--logo-height) +
-    var(--logo-overflow)
-  );
+  /* Sidenav geometry tokens are owned by SideNavigation/styles.css; the
+     fallbacks keep the standalone logo story sized when they aren't loaded. */
+  block-size: var(--sidenav-logo-block-size, 2.5rem); /* 2.25rem, spec-stated */
+  /* 1.125rem, derived — SPEC.md §9.3 */
+  inline-size: var(--sidenav-logo-inline-size, 1.25rem);
   /* Cancel the overshoot so the margin-box lands back on the grid: the rectangle
      (logo-height bU + overflow) plus this margin sums to (logo-height + 1) bU. */
   margin-block-end: calc(var(--space-baseline) - var(--logo-overflow));
