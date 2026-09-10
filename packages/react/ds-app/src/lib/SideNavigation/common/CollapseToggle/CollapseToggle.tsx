@@ -1,4 +1,4 @@
-import { Icon, withTooltip } from "@canonical/react-ds-global";
+import { Icon, TooltipEngine } from "@canonical/react-ds-global";
 import type React from "react";
 import type { CollapseToggleProps } from "./types.js";
 import "./styles.css";
@@ -22,7 +22,7 @@ const CollapseToggleButton = ({
       type="button"
     >
       {/* Desktop: an icon (SPEC.md §5, §9). Below the small breakpoint
-          (<768px — SPEC.md §7), a text label reading "Menu"/"Close menu"
+          (<620px — SPEC.md §7), a text label reading "Menu"/"Close menu"
           replaces it — CSS-toggled siblings (see styles.css), no
           media-query read in JS, so it stays SSR-identical. */}
       <Icon
@@ -34,22 +34,6 @@ const CollapseToggleButton = ({
   );
 };
 
-// Spec: hovering the collapse button for 1s shows a tooltip reading
-// "Collapse"/"Expand" by state. withTooltip's Message is fixed at wrap
-// time, so two stable wrapped components are built once at module level
-// (inside the render, recreating the component type would remount it,
-// losing focus/hover state) and CollapseToggle picks between them.
-const CollapseToggleWithCollapseTooltip = withTooltip(
-  CollapseToggleButton,
-  "Collapse",
-  { activateDelay: 1000 },
-);
-const CollapseToggleWithExpandTooltip = withTooltip(
-  CollapseToggleButton,
-  "Expand",
-  { activateDelay: 1000 },
-);
-
 /**
  * SideNavigation.CollapseToggle — icon-only button that expands or collapses
  * the navigation rail. Carries the disclosure ARIA contract: `aria-expanded`
@@ -58,14 +42,23 @@ const CollapseToggleWithExpandTooltip = withTooltip(
  * action ("Collapse"/"Expand" — SPEC.md §5, §9.4); the `<button>`'s own
  * `aria-label` carries the fuller "Collapse/Expand navigation" text.
  *
+ * Rendered through `TooltipEngine` (not `withTooltip`) so the tooltip's
+ * message follows the `expanded` prop as a live prop: one stable element
+ * type across state changes, so the button — and with it keyboard focus
+ * and hover state — survives every toggle instead of remounting.
+ *
  * @implements ds:apps.subcomponent.side-navigation-collapse-toggle
  */
-const CollapseToggle = (props: CollapseToggleProps): React.ReactElement => {
-  const Wrapped =
-    (props.expanded ?? true)
-      ? CollapseToggleWithCollapseTooltip
-      : CollapseToggleWithExpandTooltip;
-  return <Wrapped {...props} />;
-};
+const CollapseToggle = ({
+  expanded = true,
+  ...props
+}: CollapseToggleProps): React.ReactElement => (
+  <TooltipEngine
+    Message={expanded ? "Collapse" : "Expand"}
+    activateDelay={1000}
+  >
+    <CollapseToggleButton expanded={expanded} {...props} />
+  </TooltipEngine>
+);
 
 export default CollapseToggle;

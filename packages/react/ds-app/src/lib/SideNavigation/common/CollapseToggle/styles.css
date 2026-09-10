@@ -5,9 +5,10 @@
   align-items: center;
   justify-content: center;
   /* Icon-only control: square hit target roughly matching the leading icon
-     column, no explicit gap/label. */
-  inline-size: var(--dimension-250); /* 1.25rem */
-  block-size: var(--dimension-250);
+     column, no explicit gap/label. 24px (WCAG 2.5.8 target-size minimum),
+     not the 20px icon column it visually matches. */
+  inline-size: var(--dimension-300); /* 1.5rem */
+  block-size: var(--dimension-300);
   padding: 0;
   border: none;
   border-radius: var(--dimension-radius-small);
