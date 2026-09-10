@@ -1,6 +1,7 @@
 import createIdentity, { type Identity } from "../createIdentity.js";
 import applyQueryCommand from "../query/applyQueryCommand.js";
 import canonicalSlice from "../query/canonicalSlice.js";
+import DEFAULT_RESULT_WINDOW from "../query/defaultWindow.js";
 import type {
   QueryCommand,
   QueryCommandResult,
@@ -126,8 +127,6 @@ const emptySlice: Slice = Object.freeze({
   group: null,
 });
 
-const defaultWindow: ResultWindow = { page: 1, size: 50 };
-
 /** Monotonic instance key: exact cross-instance distinctness, no
  * environment requirements. */
 let coordinatorInstances = 0;
@@ -197,7 +196,7 @@ export default function createCollectionCoordinator<
   const seedSlice =
     config.slice === undefined ? emptySlice : copySlice(config.slice);
   const seedWindow = copyWindow(
-    config.window === undefined ? defaultWindow : config.window,
+    config.window === undefined ? DEFAULT_RESULT_WINDOW : config.window,
   );
 
   let scope = createIdentity();

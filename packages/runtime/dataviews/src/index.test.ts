@@ -14,6 +14,7 @@ describe("public surface", () => {
       "createFieldInteraction",
       "createGridInteraction",
       "createIdentity",
+      "createLocationBinding",
       "createMemoryLocation",
       "createOperation",
       "createPlatformLocation",
@@ -25,6 +26,8 @@ describe("public surface", () => {
       "createSchema",
       "createSelection",
       "createSourceBinding",
+      "decodeQuery",
+      "encodeQuery",
       "executeSlice",
       "isIdentity",
       "resolveColumns",
@@ -69,5 +72,42 @@ describe("public surface", () => {
     expect(dataviews.executeSlice([{ id: "a" }], emptySlice)).toEqual([
       { id: "a" },
     ]);
+  });
+
+  it("wires the wire grammar and the location loop through the barrel", () => {
+    const schema = dataviews.createSchema([
+      { field: "status", kind: "choices", options: ["failed"] },
+    ]);
+    const provider = dataviews.createDataViewsProvider({ schema });
+    const location = dataviews.createMemoryLocation({
+      href: "/machines?status=failed",
+    });
+    const binding = dataviews.createLocationBinding({
+      host: provider,
+      location,
+    });
+    const release = binding.observe();
+    expect(provider.result.get().slice.filter).toEqual([
+      { field: "status", operator: "eq", operands: ["failed"] },
+    ]);
+    expect(location.read().toString()).toBe("status=failed&page=1&size=50");
+    expect(binding.issues.get()).toEqual([]);
+    release();
+
+    expect(
+      dataviews
+        .encodeQuery({
+          schema,
+          slice: provider.result.get().slice,
+          window: { page: 2, size: 10 },
+        })
+        .toString(),
+    ).toBe("status=failed&page=2&size=10");
+    expect(
+      dataviews.decodeQuery({
+        schema,
+        params: new URLSearchParams("status=failed&page=3"),
+      }).window,
+    ).toEqual({ page: 3, size: 50 });
   });
 });

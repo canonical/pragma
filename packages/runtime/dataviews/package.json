@@ -1,6 +1,6 @@
 {
   "name": "@canonical/dataviews-core",
-  "description": "Framework-agnostic collection-views core for Canonical apps: query grammar, schema-enforced field validation, observation channels, selection and window projection, lifecycle transition records, the request-lifecycle coordinator, the provider assembling them, the Location port for URL-backed query authority, and the source adapter contract with its local-array and observable-query-client adapters",
+  "description": "Framework-agnostic collection-views core for Canonical apps: query grammar, schema-enforced field validation, observation channels, selection and window projection, lifecycle transition records, the request-lifecycle coordinator, the provider assembling them, the Location port with the flat URL query grammar and the authority loop that keeps them in step, and the source adapter contract with its local-array and observable-query-client adapters",
   "version": "0.37.0",
   "type": "module",
   "module": "dist/esm/index.js",

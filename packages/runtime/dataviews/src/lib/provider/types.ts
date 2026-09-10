@@ -20,6 +20,7 @@ import type {
   SchemaFieldDefinition,
 } from "../schema/types.js";
 import type { Selection } from "../selection/createSelection.js";
+import type { SourceCapabilities } from "../source/types.js";
 
 /** One field handle of a provider: observation plus bounded edits. */
 export type ProviderFieldHandle<TApplied> = {
@@ -60,6 +61,11 @@ export type DataViewsProvider<
   /** The provider's referential scope identity. */
   readonly identity: Identity;
   readonly schema: Schema<TFields>;
+  /**
+   * What the collection's source declares it can execute, or null when the
+   * provider was not told. Connected parts offer only what is declared.
+   */
+  readonly capabilities: SourceCapabilities | null;
   /** The coordinator's snapshot channel (result, query and window). */
   readonly result: Channel<CollectionCoordinatorState<TRow>>;
   /**

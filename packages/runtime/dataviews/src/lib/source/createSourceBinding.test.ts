@@ -112,6 +112,7 @@ const structuralHost = () => {
     }
   };
   const host: SourceHost = {
+    capabilities: null,
     result: counting,
     selection: createSelection(),
     refresh() {
@@ -141,6 +142,52 @@ const structuralHost = () => {
 };
 
 describe("createSourceBinding", () => {
+  it("binds a host told its adapter's own declaration, however spelled", () => {
+    const adapter = manual({
+      ...permissive,
+      // A field declared with no operator list is a field not declared.
+      filter: { ...permissive.filter, owner: undefined },
+      search: ["name", "owner"],
+      sort: ["cpu", "status"],
+      group: ["status", "cpu"],
+    }).adapter;
+    const told = createDataViewsProvider({
+      schema,
+      capabilities: {
+        ...permissive,
+        // Every list is a set: order and repetition say nothing.
+        filter: { cpu: ["lte", "gte", "gte"], status: ["eq"], zone: [] },
+        search: ["owner", "name", "name"],
+        sort: ["status", "cpu", "cpu"],
+        group: ["cpu", "status", "status"],
+      },
+    });
+    expect(() => createSourceBinding({ host: told, adapter })).not.toThrow();
+  });
+
+  it.each([
+    ["operator set (narrower)", { filter: { status: ["eq"], cpu: ["gte"] } }],
+    [
+      "operator set (substituted)",
+      { filter: { status: ["eq"], cpu: ["gte", "eq"] } },
+    ],
+    ["search field", { search: ["name", "owner"] }],
+    ["sortable field", { sort: ["cpu", "status"] }],
+    ["sort-term limit", { sortTerms: 3 }],
+    ["groupable field", { group: ["status"] }],
+    ["count", { count: "none" }],
+  ] as const)("refuses a host told a different %s", (_part, difference) => {
+    const told = createDataViewsProvider({
+      schema,
+      capabilities: { ...permissive, ...difference },
+    });
+    expect(() =>
+      createSourceBinding({ host: told, adapter: manual().adapter }),
+    ).toThrow(
+      "the host was told different capabilities from those its source adapter declares",
+    );
+  });
+
   it("re-exposes what the source declares", () => {
     const binding = createSourceBinding({
       host: provider(),
