@@ -33,6 +33,7 @@ import {
 } from "../../kernel/runtime/paths.js";
 import {
   detectPrefixClashes,
+  harvestPrefixes,
   resolvePackageJson,
 } from "../../kernel/runtime/refs/resolve.js";
 import { createLazyStore } from "../../kernel/runtime/store.js";
@@ -331,6 +332,60 @@ describe("sources update — conflicting @prefix detection (A5)", () => {
       "https://a.test/#",
       "https://b.test/#",
     ]);
+  });
+
+  it("ignores a prefix declaration inside a string literal", () => {
+    // The code-standards pack ships guidance ABOUT Turtle: its `cs:code`
+    // examples contain declarations, including a deliberately discouraged one.
+    // Scanning raw text reported a clash on every single update for a file that
+    // asserts no triple in that namespace at all.
+    const clashes = detectPrefixClashes([
+      { content: "@prefix ex: <https://a.test/#> .\nex:One a ex:T ." },
+      {
+        content: [
+          "@prefix cs: <https://cs.test/#> .",
+          'cs:rule cs:code """',
+          "# Bad: do not do this",
+          "@prefix ex: <https://wrong.test/data/> .",
+          '""" .',
+        ].join("\n"),
+      },
+    ]);
+
+    expect(clashes).toEqual([]);
+  });
+
+  it("does not let a literal rebind a real prefix in the harvested map", () => {
+    // Worse than a spurious warning: last-wins meant a code sample could
+    // overwrite a real namespace, so every entity of the losing package
+    // compacted to the wrong prefix.
+    const prefixes = harvestPrefixes([
+      { content: "@prefix ex: <https://a.test/#> .\nex:One a ex:T ." },
+      {
+        content: [
+          'cs:rule cs:code """',
+          "@prefix ex: <https://wrong.test/data/> .",
+          '""" .',
+        ].join("\n"),
+      },
+    ]);
+
+    expect(prefixes.ex).toBe("https://a.test/#");
+  });
+
+  it("still reads declarations that follow a literal in the same file", () => {
+    // Masking must not swallow the rest of the file.
+    const prefixes = harvestPrefixes([
+      {
+        content: [
+          'cs:rule cs:code """@prefix ignored: <https://no.test/> .""" .',
+          "@prefix real: <https://yes.test/#> .",
+        ].join("\n"),
+      },
+    ]);
+
+    expect(prefixes.real).toBe("https://yes.test/#");
+    expect(prefixes.ignored).toBeUndefined();
   });
 
   it("does NOT flag harmless same-label/same-IRI redeclarations", () => {

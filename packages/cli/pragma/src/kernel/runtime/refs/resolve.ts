@@ -185,6 +185,35 @@ function readStorySources(
 const PREFIX_DECL = /(?:^|\s)@?prefix\s+([^\s:]+):\s*<([^>]*)>/gi;
 
 /**
+ * Blank out every Turtle string literal, so a prefix scan reads declarations
+ * and not prose.
+ *
+ * A long literal can legally contain the text `@prefix ex: <iri> .`, and one
+ * genuinely does: the code-standards pack ships guidance ABOUT Turtle, whose
+ * `cs:code` examples include a deliberately discouraged declaration. Scanning
+ * raw text saw it as real, which made `sources update` report a `ds:` clash on
+ * every run for a file that asserts no `ds:` triple at all — and worse, let a
+ * code sample win the last-wins race in {@link harvestPrefixes} and rebind a
+ * real prefix.
+ *
+ * Long forms are blanked before short ones, so the `"""` delimiters are not
+ * mistaken for an empty `""` followed by prose. Newlines inside a literal are
+ * preserved so a later `^`-anchored match still sees the true line structure.
+ *
+ * @param content - Turtle source text.
+ * @returns The same text with literal contents replaced by blanks.
+ */
+function blankLiterals(content: string): string {
+  const keepNewlines = (text: string): string =>
+    text.replace(/[^\n]/g, " ");
+  return content
+    .replace(/"""[\s\S]*?"""/g, keepNewlines)
+    .replace(/'''[\s\S]*?'''/g, keepNewlines)
+    .replace(/"(?:[^"\\\n]|\\.)*"/g, keepNewlines)
+    .replace(/'(?:[^'\\\n]|\\.)*'/g, keepNewlines);
+}
+
+/**
  * Harvest a package's own `@prefix` / `PREFIX` declarations from its TTL text.
  *
  * ke's `createStore` does NOT fold parsed-Turtle prefixes into `store.prefixes`
@@ -201,7 +230,7 @@ export function harvestPrefixes(
 ): Record<string, string> {
   const prefixes: Record<string, string> = {};
   for (const { content } of sources) {
-    for (const match of content.matchAll(PREFIX_DECL)) {
+    for (const match of blankLiterals(content).matchAll(PREFIX_DECL)) {
       const [, label, iri] = match;
       if (label !== undefined && iri !== undefined) prefixes[label] = iri;
     }
@@ -234,7 +263,7 @@ export function detectPrefixClashes(
 ): PrefixClash[] {
   const byLabel = new Map<string, string[]>();
   for (const { content } of sources) {
-    for (const match of content.matchAll(PREFIX_DECL)) {
+    for (const match of blankLiterals(content).matchAll(PREFIX_DECL)) {
       const [, label, iri] = match;
       if (label === undefined || iri === undefined) continue;
       const iris = byLabel.get(label) ?? [];
