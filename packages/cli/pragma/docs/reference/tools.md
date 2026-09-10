@@ -203,6 +203,21 @@ Read-only.
 
 _No input parameters._
 
+### graph_connect
+
+Finds every shortest path of RELATION edges between two entities, and says which kind of nothing it found when there is no path. An edge counts as a relation only where it does not fan out into a roster — membership of a class, a tier or a family is answered by that noun's list verb, not by a path — so most pairs are correctly reported as unconnected. Address each endpoint by prefixed name (ds:global.component.button) or absolute IRI. Every answer states the hop limit, the fan-in threshold, and the packs searched.
+
+Read-only.
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `a` | string | yes | The first endpoint — a prefixed name or absolute IRI. |
+| `b` | string | yes | The second endpoint — a prefixed name or absolute IRI. |
+| `hops` | number | no | Largest path length to return (default 4, ceiling 6). (default: 4) |
+| `paths` | number | no | Most shortest paths to show (default 10); the answer always reports the true total. (default: 10) |
+
 ### graph_inspect
 
 Inspect one entity: all predicate/object pairs asserted on the subject. Address it by prefixed name (ds:global.component.button) or absolute IRI.

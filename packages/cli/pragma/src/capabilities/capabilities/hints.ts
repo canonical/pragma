@@ -71,6 +71,11 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     use_when:
       "Checking the active configuration (tier, channel, detail) and which layer set each field",
   },
+  graph_connect: {
+    category: "read",
+    use_when:
+      "Deciding whether two entities are related at all — the shortest relation paths between them, or which kind of nothing there is",
+  },
   graph_inspect: {
     category: "read",
     use_when:

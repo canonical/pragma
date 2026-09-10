@@ -1,10 +1,12 @@
 /**
- * The `graph` capability module — `inspect` (single-entity read) plus `query`
- * (the raw SPARQL escape hatch, PR6). The covenant blesses both.
+ * The `graph` capability module — `inspect` (single-entity read), `query` (the
+ * raw SPARQL escape hatch, PR6) and `connect` (relation paths between two
+ * entities). The covenant blesses all three.
  */
 
 import type { CapabilityModule } from "../../kernel/spec/index.js";
 import { resourceProvider } from "../resources/index.js";
+import { graphConnectVerb } from "./connect.verb.js";
 import { graphInspectVerb } from "./inspect.verb.js";
 import { graphQueryVerb } from "./query.verb.js";
 
@@ -16,6 +18,6 @@ import { graphQueryVerb } from "./query.verb.js";
  */
 export const graphModule: CapabilityModule = {
   name: "graph",
-  verbs: [graphInspectVerb, graphQueryVerb],
+  verbs: [graphConnectVerb, graphInspectVerb, graphQueryVerb],
   mcpResources: resourceProvider,
 };
