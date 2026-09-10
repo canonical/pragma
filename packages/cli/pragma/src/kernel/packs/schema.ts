@@ -37,7 +37,26 @@ import {
 const NOUN_PATTERN = /^[a-z][a-z0-9-]*$/;
 /** Message for {@link NOUN_PATTERN} — third-party authors never see the regex. */
 const NOUN_MESSAGE = 'must be lowercase kebab-case, e.g. "design-token"';
-const FILTER_PARAM_PATTERN = /^[a-z][a-z0-9]*$/;
+/**
+ * A filter's parameter name: lowercase-initial, then letters and digits.
+ *
+ * camelCase is admitted because the PROJECTOR already relies on it —
+ * `emitSurface`'s `emitVerb` writes a flag as `--${kebabCase(param)}`, so a
+ * param named `channelOf` was always going to become `--channel-of`, and only
+ * this gate refused to let anyone declare it. A story wanting a two-word
+ * dimension had no spelling at all: `channel-of` fails the pattern too, and
+ * `channelof` projects to the unreadable `--channelof`.
+ *
+ * This is a WIDENING of what an author may declare, matched to what the
+ * projector already emits, and it closes a tier split rather than opening one:
+ * the distribution's own stories are compiled statically and never revalidated
+ * (see `storyRules.ts`), so `pragma.conf.ts` could already declare a param this
+ * schema would have refused from a package. The same rule now reaches both.
+ *
+ * Still lowercase-INITIAL: a leading capital would kebab to a leading dash and
+ * Commander would read the flag as empty.
+ */
+const FILTER_PARAM_PATTERN = /^[a-z][a-zA-Z0-9]*$/;
 const FIELD_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const GRAPHQL_NAME_PATTERN = /^[_A-Za-z][_0-9A-Za-z]*$/;
 /**
