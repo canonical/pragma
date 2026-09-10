@@ -38,7 +38,7 @@ function Toolbar() {
 }
 ```
 
-> **The ref must always be attached.** Every factory must set the `ref` it receives on the `<Modal>` it returns — `<Modal ref={ref}>`. The trigger opens the dialog through that ref. Forget it and the trigger opens nothing.
+> **The ref must always be attached.** Every factory must set the `ref` it receives on the `<Modal>` it returns — `<Modal ref={ref}>`. The trigger opens the dialog through that ref. `Modal` requires its `ref`, so a factory that forgets it fails to compile.
 
 <Canvas of={Stories.Default} />
 
@@ -97,7 +97,7 @@ function withModal<TProps extends WithModalTriggerProps>(
         the trigger, with a props object — <code>&#123; close, ref &#125;</code>.
         <ul>
           <li>
-            <strong>Always attach the ref:</strong> <code>&lt;Modal ref=&#123;ref&#125;&gt;</code> — the trigger opens the dialog through it. Forgotten, the trigger opens nothing, silently.
+            <strong>Always attach the ref:</strong> <code>&lt;Modal ref=&#123;ref&#125;&gt;</code> — the trigger opens the dialog through it. <code>Modal</code> requires its <code>ref</code>, so forgetting it fails to compile.
           </li>
           <li>
             A footer button needs to close the modal → also take <code>&#123; close &#125;</code> and wire it: <code>onClick=&#123;close&#125;</code>.

@@ -107,20 +107,20 @@ describe("withModal", () => {
     expect(cancel.defaultPrevented).toBe(false);
   });
 
-  it("leaves the modal closed when the factory forgets the ref — the documented pitfall", () => {
-    // The factory must attach the ref it receives. TypeScript cannot enforce
-    // that `ref={ref}`, so this test pins the failure mode: the trigger opens
-    // nothing, silently.
-    const TriggeredModal = withModal(Button, () => (
+  it("makes a factory that forgets the ref a compile error — the documented pitfall", () => {
+    // The pitfall used to fail silently: a factory that forgot `ref={ref}`
+    // compiled, and the trigger opened nothing. `Modal` now requires its
+    // `ref`, so the same omission is caught at compile time — the
+    // `@ts-expect-error` below is the assertion: an unused directive would
+    // fail the type check, which is what pins this.
+    const forgetsRef: WithModalRender = () => (
+      // @ts-expect-error - a factory must attach the ref it receives: `<Modal ref={ref}>`
       <Modal>
         <Modal.Header>Title</Modal.Header>
         <Modal.Content>Body</Modal.Content>
       </Modal>
-    ));
-    const { container } = render(<TriggeredModal>Open</TriggeredModal>);
-
-    fireEvent.click(screen.getByRole("button", { name: "Open" }));
-    expect(container.querySelector("dialog")).not.toHaveAttribute("open");
+    );
+    expect(forgetsRef).toBeTypeOf("function");
   });
 
   it("ignores a trigger click while the modal is already open", () => {

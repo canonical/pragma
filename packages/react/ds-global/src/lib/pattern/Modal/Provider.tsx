@@ -22,9 +22,10 @@ const componentCssClassName = "ds modal";
  * than from JavaScript. The modal is self-contained: the open state lives in
  * the `<dialog>` element, not in a prop, so the header's close button and
  * Escape close it — and a backdrop click too, once `closeOnBackdropClick` opts
- * in — without the consumer wiring anything. External control is optional and
- * goes through the `ref`: `ref.current?.showModal()` opens the modal and
- * `ref.current?.close()` closes it.
+ * in — without the consumer wiring anything. Opening always goes through the
+ * `ref` — which is required, since `showModal()` is the only way in:
+ * `ref.current?.showModal()` opens the modal and `ref.current?.close()`
+ * closes it.
  *
  * There are two consumption patterns, `withModal` and `Modal`. `withModal` is
  * meant for static content: the call belongs at module scope, where the
@@ -58,14 +59,15 @@ const Provider = ({
 }: ModalProps): React.ReactElement => {
   const dialogRef = useRef<HTMLDialogElement>(null);
   // The dialog is always attached to the component's own ref, because closing
-  // from the inside needs the node whether or not the consumer asked for it. A
-  // consumer ref is merged in rather than substituted, which keeps this ref
-  // stable across renders and lets the prop take a callback ref too.
+  // from the inside needs the node. The consumer's ref — required, since
+  // opening goes through it — is merged in rather than substituted, which
+  // keeps this ref stable across renders and lets the prop take a callback
+  // ref too.
   const attachDialog = useCallback<RefCallback<HTMLDialogElement>>(
     (node) => {
       dialogRef.current = node;
       if (typeof ref !== "function") {
-        if (ref) ref.current = node;
+        ref.current = node;
         return;
       }
       // A React 19 callback ref may return a cleanup function, and React then

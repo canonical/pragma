@@ -3,24 +3,28 @@ import type {
   MouseEventHandler,
   ReactElement,
   ReactNode,
-  Ref,
+  RefCallback,
   RefObject,
 } from "react";
 
 type OwnProps = {
   /**
-   * A ref to the underlying `<dialog>`, for the cases that need to drive the
-   * modal from outside it: `ref.current?.showModal()` opens it and
-   * `ref.current?.close()` closes it. Optional — a modal wired up with
-   * {@link withModal}, or one that only has to be dismissed from the inside,
-   * needs no ref at all.
+   * The handle on the underlying `<dialog>`, and the only way the modal opens:
+   * `ref.current?.showModal()`, with `ref.current?.close()` closing it. The prop
+   * is required because the modal is only ever opened through `showModal()`, so
+   * a modal with no ref is a modal that can never open — every modal gets a ref
+   * one way or another: {@link withModal} hands its factory the ref to attach, a
+   * directly-composed modal driven by a trigger takes a stored ref, and an
+   * open-on-mount modal takes an inline callback ref. Requiring the prop turns
+   * the {@link withModal} factory's one duty — attaching the ref it receives —
+   * into a compile error instead of a silent nothing.
    *
    * `showModal()` throws on a dialog that is already open. A trigger sitting
    * on the page cannot be clicked while the modal holds it inert, so it needs
    * no guard; anything that can fire twice — a keyboard shortcut, an effect —
    * should check `ref.current.open` first.
    */
-  ref?: Ref<HTMLDialogElement>;
+  ref: RefCallback<HTMLDialogElement> | RefObject<HTMLDialogElement | null>;
   /**
    * Whether clicking the backdrop dismisses the modal. Defaults to `false`, so
    * backdrop dismissal is opt-in: a stray click outside the dialog cannot
@@ -95,8 +99,8 @@ export type WithModalTriggerProps = {
 
 /**
  * The props the modal element returned by a {@link WithModalRender} carries:
- * everything `Modal` accepts, `ref` included — the factory sets that ref on
- * the `<Modal>` so the trigger can open it.
+ * everything `Modal` accepts — including the required `ref`, which the factory
+ * sets on the `<Modal>` so the trigger can open it.
  */
 export type WithModalModalProps = ModalProps;
 
@@ -109,9 +113,8 @@ export type WithModalRenderProps = {
   close: () => void;
   /**
    * The handle on the `<dialog>` the trigger opens. The factory MUST set it
-   * on the `<Modal>` it returns — `<Modal ref={ref}>` — otherwise the trigger
-   * opens nothing, silently. TypeScript cannot detect a forgotten `ref={ref}`,
-   * so this sentence is the warning.
+   * on the `<Modal>` it returns — `<Modal ref={ref}>`. `Modal` requires its
+   * `ref`, so a factory that forgets it fails to compile.
    */
   ref: RefObject<HTMLDialogElement | null>;
 };
@@ -122,8 +125,8 @@ export type WithModalRenderProps = {
  * ref }` — and it returns the complete `<Modal>` element.
  *
  * **Every factory must attach the `ref` it receives to the `<Modal>` it
- * returns.** The trigger opens the dialog through that ref; forget it and the
- * trigger opens nothing, silently — TypeScript cannot catch it:
+ * returns.** The trigger opens the dialog through that ref. `Modal` requires
+ * its `ref`, so a factory that forgets it fails to compile:
  *
  * `({ ref }) => <Modal ref={ref}>…</Modal>`
  *

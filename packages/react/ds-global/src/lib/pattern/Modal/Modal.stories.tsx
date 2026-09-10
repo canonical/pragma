@@ -37,10 +37,17 @@ const meta = {
   },
   // Every story renders the modal open: a story is first a picture of the
   // pattern.
-  args: { children: null },
+  args: {
+    children: null,
+    // The stories open the modal through a ref of their own in their custom
+    // renders; this one only satisfies the required prop for Storybook's
+    // typing and is never used.
+    ref: () => {},
+  },
   argTypes: {
     // The stories compose their sections in a custom render, never from args.
     children: { control: false },
+    ref: { control: false },
   },
 } satisfies Meta<typeof Modal>;
 

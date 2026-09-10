@@ -1,3 +1,4 @@
+import { createRef } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import Component from "./Provider.js";
@@ -6,7 +7,7 @@ describe("Modal SSR", () => {
   it("doesn't throw", () => {
     expect(() =>
       renderToString(
-        <Component>
+        <Component ref={createRef<HTMLDialogElement>()}>
           <Component.Content>Placeholder content</Component.Content>
         </Component>,
       ),
@@ -15,7 +16,7 @@ describe("Modal SSR", () => {
 
   it("renders the dialog and its composed parts", () => {
     const html = renderToString(
-      <Component>
+      <Component ref={createRef<HTMLDialogElement>()}>
         <Component.Header>Title</Component.Header>
         <Component.Content>Placeholder content</Component.Content>
         <Component.Footer>
@@ -34,7 +35,7 @@ describe("Modal SSR", () => {
     // client: a server-rendered `open` attribute would paint a non-modal
     // dialog with no backdrop and no focus trap.
     const html = renderToString(
-      <Component>
+      <Component ref={createRef<HTMLDialogElement>()}>
         <Component.Content>Placeholder content</Component.Content>
       </Component>,
     );

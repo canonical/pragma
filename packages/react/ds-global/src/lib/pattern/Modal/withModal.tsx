@@ -30,8 +30,8 @@ import type { WithModalRender, WithModalTriggerProps } from "./types.js";
  * `closeOnBackdropClick`, `aria-label`, `className` — so the consumer sees the
  * real modal, not an options bag. **One duty comes with that freedom: the
  * factory must attach the `ref` it receives to the `<Modal>`** (`<Modal
- * ref={ref}>`). The trigger opens the dialog through that ref — forget it and
- * the trigger opens nothing, silently, and TypeScript cannot catch it.
+ * ref={ref}>`). The trigger opens the dialog through that ref — and `Modal`
+ * requires its `ref`, so a factory that forgets it fails to compile.
  *
  * **How it closes:** the header's X button and Escape always work. Add
  * `closeOnBackdropClick` to the modal element and a backdrop click works too.
@@ -89,9 +89,8 @@ const withModal = <TProps extends WithModalTriggerProps>(
     const close = (): void => dialogRef.current?.close();
 
     // The contract: the HOC hands the factory its own ref, and the factory
-    // sets it on the `<Modal>` it returns. TypeScript cannot enforce that
-    // `ref={ref}` — a factory that forgets it leaves the trigger opening
-    // nothing, silently.
+    // sets it on the `<Modal>` it returns. `Modal` requires its `ref`, so a
+    // factory that forgets `ref={ref}` fails to compile.
     const modalElement = modal({ close, ref: dialogRef });
 
     return (

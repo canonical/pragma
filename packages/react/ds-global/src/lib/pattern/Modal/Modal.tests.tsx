@@ -175,7 +175,7 @@ describe("Modal pattern", () => {
   describe("open state", () => {
     it("stays closed by default", () => {
       const { container } = render(
-        <Component>
+        <Component ref={createRef<HTMLDialogElement>()}>
           <Component.Content>Body</Component.Content>
         </Component>,
       );
