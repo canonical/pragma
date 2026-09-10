@@ -110,9 +110,9 @@ ds:implementation.react-ds-global.global.group.keyboard_keys a ds:Implementation
     ds:versionedLink "https://github.com/canonical/pragma/blob/v0.37.0/packages/react/ds-global/src/lib/group/KeyboardKeys/KeyboardKeys.tsx".
 ds:implementation.react-ds-global.global.pattern.modal a ds:ImplementationObject;
     ds:implementsBlock ds:global.pattern.modal;
-    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/pattern/Modal/Modal.tsx";
+    ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/pattern/Modal/Provider.tsx";
     ds:importStatement "import { Modal } from \"@canonical/react-ds-global\";";
-    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.37.0/packages/react/ds-global/src/lib/pattern/Modal/Modal.tsx".
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.37.0/packages/react/ds-global/src/lib/pattern/Modal/Provider.tsx".
 ds:implementation.react-ds-global.global.pattern.skip_link a ds:ImplementationObject;
     ds:implementsBlock ds:global.pattern.skip_link;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/_work_in_progress/SkipLink/SkipLink.tsx";

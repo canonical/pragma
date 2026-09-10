@@ -72,10 +72,10 @@ const DefaultStory = () => {
         if (dialog && !dialog.open) dialog.showModal();
       }}
     >
-      <Component.Header>Title</Component.Header>
+      <Component.Header>Ubuntu Pro</Component.Header>
       <Component.Content>
-        lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
-        tempor incididunt ut labore et dolore magna aliqua.
+        Your Ubuntu Pro subscription covers security and compliance for the full
+        stack. Renew to keep continuous CVE management and 24/7 support.
       </Component.Content>
       <Component.Footer>
         <Button importance="secondary" onClick={close}>
@@ -106,10 +106,10 @@ const close = () => modalRef.current?.close();
     if (dialog && !dialog.open) dialog.showModal();
   }}
 >
-  <Modal.Header>Title</Modal.Header>
+  <Modal.Header>Ubuntu Pro</Modal.Header>
   <Modal.Content>
-    lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
-    tempor incididunt ut labore et dolore magna aliqua.
+    Your Ubuntu Pro subscription covers security and compliance for the
+    full stack. Renew to keep continuous CVE management and 24/7 support.
   </Modal.Content>
   <Modal.Footer>
     <Button importance="secondary" onClick={close}>
@@ -372,6 +372,21 @@ const close = () => modalRef.current?.close();
  * Only the content pane scrolls: the header and footer stay in place, and the
  * dialog never grows past --modal-max-block-size.
  */
+const storyOfUbuntu = [
+  "Ubuntu is an ancient African word meaning 'humanity to others'. It is often described as reminding us that 'I am what I am because of who we all are'. We bring the spirit of Ubuntu to the world of computers and software.",
+  "Linux was already established in 2004, but it was fragmented into proprietary and unsupported community editions, and free software was not a part of everyday life for most computer users. That's when Mark Shuttleworth gathered a small team of Debian developers who together founded Canonical and set out to create an easy-to-use Linux desktop called Ubuntu.",
+  "The mission for Ubuntu is both social and economic. First, we deliver the world's free software, freely, to everybody on the same terms. Whether you are a student or a global bank, you can download and use Ubuntu free of charge.",
+  "Ubuntu was the first operating system to commit to scheduled releases on a predictable cadence, every six months, starting in October 2004. In 2006 we decided that every fourth release, made every two years, would receive long-term support for large-scale deployments. This is the origin of the term LTS for stable, maintained releases.",
+  "The commercial and community teams collaborate to produce a single, high-quality release, which receives ongoing maintenance for a defined period. Both the release and ongoing updates for core packages are freely available to all users.",
+  "Canonical is the publisher of Ubuntu. Members of the Canonical team lead aspects of Ubuntu such as the kernel, default desktop, foundations, security, OpenStack, and Kubernetes.",
+  "However, the governance of Ubuntu is somewhat independent of Canonical, with volunteer leaders from around the world taking responsibility for many critical elements of the project.",
+  "It remains a key tenet of the Ubuntu Project that Ubuntu is a shared work between Canonical, other companies, and the thousands of volunteers who bring their expertise to bear on making it a world-class platform for anyone to use.",
+  "The first official Ubuntu release — Version 4.10, codenamed the 'Warty Warthog' — was launched in October 2004, and sparked dramatic global interest as thousands of free software enthusiasts and experts joined the Ubuntu community.",
+  "Ubuntu today has many flavors and dozens of specialized derivatives. There are also special editions for servers, OpenStack clouds, and connected devices. All editions share common infrastructure and software, making Ubuntu a unique single platform that scales from consumer electronics to the desktop and up into the cloud for enterprise computing.",
+  "Ubuntu Desktop is by far the world's most widely used Linux workstation platform, powering the work of engineers across the globe. Ubuntu Core sets the standard for tiny, transactional operating systems for highly secure connected devices.",
+  "We hope Ubuntu will bring something wonderful to your computing — and we hope that you'll join us in helping to shape and build the future of free software together.",
+];
+
 const LongContentStory = () => {
   const modalRef = useRef<HTMLDialogElement>(null);
 
@@ -382,14 +397,10 @@ const LongContentStory = () => {
         if (dialog && !dialog.open) dialog.showModal();
       }}
     >
-      <Component.Header>Terms</Component.Header>
+      <Component.Header>The story of Ubuntu</Component.Header>
       <Component.Content>
-        {Array.from(
-          { length: 30 },
-          (_, index) =>
-            `Paragraph ${index + 1} of scrolling placeholder content.`,
-        ).map((paragraph) => (
-          <p key={paragraph}>{paragraph}</p>
+        {storyOfUbuntu.map((paragraph) => (
+          <p key={paragraph.slice(0, 32)}>{paragraph}</p>
         ))}
       </Component.Content>
       <Component.Footer>
@@ -398,7 +409,7 @@ const LongContentStory = () => {
           anticipation="constructive"
           onClick={() => modalRef.current?.close()}
         >
-          Accept
+          Close
         </Button>
       </Component.Footer>
     </Component>
@@ -417,7 +428,7 @@ export const LongContent: Story = {
     if (dialog && !dialog.open) dialog.showModal();
   }}
 >
-  <Modal.Header>Terms</Modal.Header>
+  <Modal.Header>The story of Ubuntu</Modal.Header>
   <Modal.Content>
     {paragraphs.map((paragraph) => (
       <p key={paragraph}>{paragraph}</p>
@@ -429,7 +440,7 @@ export const LongContent: Story = {
       anticipation="constructive"
       onClick={() => modalRef.current?.close()}
     >
-      Accept
+      Close
     </Button>
   </Modal.Footer>
 </Modal>`,

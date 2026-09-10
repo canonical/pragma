@@ -87,37 +87,44 @@ const AcknowledgeButton = withModal(Button, MaintenanceModal);
   },
 };
 
-const SearchSyntaxModal: WithModalRender = ({ ref }) => (
+const MaasModal: WithModalRender = ({ ref }) => (
   <Component ref={ref} closeOnBackdropClick>
-    <Component.Header>Search syntax</Component.Header>
+    <Component.Header>MAAS</Component.Header>
     <Component.Content>
-      Combine terms with AND, OR and NOT. Quote a phrase to match it exactly.
+      MAAS is an open source platform that provides a centralized environment
+      for managing and provisioning physical servers as if they were cloud
+      resources. By turning complex tasks into automated workflows, MAAS helps
+      teams move faster and focus on innovation instead of infrastructure.
     </Component.Content>
   </Component>
 );
 
-const InfoButton = withModal(Button, SearchSyntaxModal);
+const InfoButton = withModal(Button, MaasModal);
 
 /**
  * `closeOnBackdropClick` is just a prop on the modal element the function
  * returns, so clicking outside the panel also closes it.
  */
 export const BackdropDismissible: StoryFn = () => (
-  <InfoButton importance="secondary">Search syntax</InfoButton>
+  <InfoButton importance="secondary">MAAS</InfoButton>
 );
 BackdropDismissible.parameters = {
   docs: {
     source: {
-      code: `const SearchSyntaxModal: WithModalRender = ({ ref }) => (
+      code: `const MaasModal: WithModalRender = ({ ref }) => (
   <Modal ref={ref} closeOnBackdropClick>
-    <Modal.Header>Search syntax</Modal.Header>
-    <Modal.Content> Combine terms with AND, OR and NOT. Quote a phrase to match it exactly. </Modal.Content>
+    <Modal.Header>MAAS</Modal.Header>
+    <Modal.Content>
+      MAAS is an open source platform that provides a centralized environment
+      for managing and provisioning physical servers as if they were cloud
+      resources.
+    </Modal.Content>
   </Modal>
 );
 
-const InfoButton = withModal(Button, SearchSyntaxModal);
+const InfoButton = withModal(Button, MaasModal);
 
-<InfoButton importance="secondary">Search syntax</InfoButton>`,
+<InfoButton importance="secondary">MAAS</InfoButton>`,
     },
   },
 };
@@ -143,16 +150,20 @@ const Link = ({
   </div>
 );
 
-const TermsModal: WithModalRender = ({ ref }) => (
+const JujuModal: WithModalRender = ({ ref }) => (
   <Component ref={ref}>
-    <Component.Header>Terms</Component.Header>
+    <Component.Header>Juju</Component.Header>
     <Component.Content>
-      These are the terms and conditions that apply to this service.
+      Juju is an open source orchestration engine for software operators that
+      enables the deployment, integration and lifecycle management of
+      applications at any scale, on any infrastructure using charms. A charm is
+      an operator — business logic encapsulated in reusable software packages
+      that automate every aspect of an application's life.
     </Component.Content>
   </Component>
 );
 
-const TermsLink = withModal(Link, TermsModal);
+const JujuLink = withModal(Link, JujuModal);
 
 /**
  * The trigger does not have to be a `Button` — any component that accepts
@@ -162,7 +173,8 @@ const TermsLink = withModal(Link, TermsModal);
  */
 export const CustomTrigger: StoryFn = () => (
   <p>
-    By continuing you agree to the <TermsLink>terms and conditions</TermsLink>.
+    Automate deployment, integration and lifecycle management on any
+    infrastructure — see how <JujuLink>Juju</JujuLink> does it.
   </p>
 );
 CustomTrigger.parameters = {
@@ -177,28 +189,35 @@ CustomTrigger.parameters = {
   </div>
 );
 
-const TermsModal: WithModalRender = ({ ref }) => (
+const JujuModal: WithModalRender = ({ ref }) => (
   <Modal ref={ref}>
-    <Modal.Header>Terms</Modal.Header>
+    <Modal.Header>Juju</Modal.Header>
     <Modal.Content>...</Modal.Content>
   </Modal>
 );
 
-const TermsLink = withModal(Link, TermsModal);
+const JujuLink = withModal(Link, JujuModal);
 
 <p>
-  By continuing you agree to the <TermsLink>terms and conditions</TermsLink>.
+  Automate deployment, integration and lifecycle management on any
+  infrastructure — see how <JujuLink>Juju</JujuLink> does it.
 </p>`,
     },
   },
 };
 
-const ExampleModal: WithModalRender = ({ ref }) => (
-  <Component ref={ref} aria-label="Example modal">
+const ExampleModal: WithModalRender = ({ close, ref }) => (
+  <Component ref={ref} aria-label="Ubuntu mission">
     <Component.Content>
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
-      tempor incididunt ut labore et dolore magna aliqua.
+      We deliver the world's free software, freely, to everybody on the same
+      terms. Whether you are a student or a global bank, you can download and
+      use Ubuntu free of charge.
     </Component.Content>
+    <Component.Footer>
+      <Button importance="primary" onClick={close}>
+        Got it
+      </Button>
+    </Component.Footer>
   </Component>
 );
 
@@ -207,17 +226,25 @@ const OpenButton = withModal(Button, ExampleModal);
 /**
  * This story exists solely to show one rule: a modal composed without a
  * header has no title to name it, so it must carry its own `aria-label`.
- * Close it with Escape or the header-less content alone — nothing else to
- * decide.
+ * Without a header there is also no close button, so the footer's action is
+ * the visible way out.
  */
 export const WithoutHeader: StoryFn = () => <OpenButton>Open modal</OpenButton>;
 WithoutHeader.storyName = "Without a header";
 WithoutHeader.parameters = {
   docs: {
     source: {
-      code: `const ExampleModal: WithModalRender = ({ ref }) => (
-  <Modal ref={ref} aria-label="Example modal">
-    <Modal.Content>...</Modal.Content>
+      code: `const ExampleModal: WithModalRender = ({ close, ref }) => (
+  <Modal ref={ref} aria-label="Ubuntu mission">
+    <Modal.Content>
+      We deliver the world's free software, freely, to everybody on the same
+      terms. Whether you are a student or a global bank, you can
+      download and use Ubuntu free of charge.
+    </Modal.Content>
+    <Modal.Footer>
+      {/* With no header there is no close button — the footer is the way out */}
+      <Button importance="primary" onClick={close}>Got it</Button>
+    </Modal.Footer>
   </Modal>
 );
 

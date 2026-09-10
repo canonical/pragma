@@ -34,16 +34,22 @@ export default meta;
  */
 export const Default: StoryFn = () => (
   <Component>
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
-    tempor incididunt ut labore et dolore magna aliqua.
+    Ubuntu today has many flavors and dozens of specialized derivatives. There
+    are also special editions for servers, OpenStack clouds, and connected
+    devices. All editions share common infrastructure and software, making
+    Ubuntu a unique single platform that scales from consumer electronics to the
+    desktop and up into the cloud for enterprise computing.
   </Component>
 );
 Default.parameters = {
   docs: {
     source: {
       code: `<Modal.Content>
-  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
-  tempor incididunt ut labore et dolore magna aliqua.
+  Ubuntu today has many flavors and dozens of specialized derivatives. There
+  are also special editions for servers, OpenStack clouds, and connected
+  devices. All editions share common infrastructure and software, making
+  Ubuntu a unique single platform that scales from consumer electronics to
+  the desktop and up into the cloud for enterprise computing.
 </Modal.Content>`,
     },
   },
