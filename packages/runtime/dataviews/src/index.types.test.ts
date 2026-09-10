@@ -24,8 +24,11 @@ import type {
   DataViewsProvider,
   DataViewsProviderConfig,
   DateField,
+  DecodedQuery,
+  DecodeQueryConfig,
   DispatchResult,
   EmptyOr,
+  EncodeQueryConfig,
   ExecuteSliceOptions,
   FieldFeedback,
   FieldInteraction,
@@ -40,7 +43,10 @@ import type {
   GridInteractionState,
   Identity,
   Location,
+  LocationBinding,
+  LocationBindingConfig,
   LocationConfig,
+  LocationHost,
   NumberField,
   ObservedQuery,
   Operation,
@@ -58,6 +64,7 @@ import type {
   ProviderFields,
   QueryCommand,
   QueryCommandResult,
+  QueryIssue,
   QueryObservation,
   QueryObserver,
   QueryObserverFactory,
@@ -118,8 +125,11 @@ type EveryPublicType = [
   DataViewsProvider,
   DataViewsProviderConfig<readonly SchemaFieldDefinition[]>,
   DateField,
+  DecodedQuery,
+  DecodeQueryConfig,
   DispatchResult,
   EmptyOr<unknown>,
+  EncodeQueryConfig,
   FieldFeedback,
   FieldInteraction,
   FieldInteractionConfig,
@@ -132,7 +142,10 @@ type EveryPublicType = [
   GridInteractionState,
   Identity,
   Location,
+  LocationBinding,
+  LocationBindingConfig,
   LocationConfig,
+  LocationHost,
   NumberField,
   Operation,
   OperationConfig,
@@ -149,6 +162,7 @@ type EveryPublicType = [
   ProviderFields<readonly SchemaFieldDefinition[]>,
   QueryCommand,
   QueryCommandResult,
+  QueryIssue,
   ReadonlyChannel<unknown>,
   ResolvedColumn,
   ResultProvenance,
@@ -200,7 +214,7 @@ type EveryPublicType = [
 describe("public surface types", () => {
   it("re-exports the full type surface from the barrel", () => {
     expectTypeOf<EveryPublicType>().not.toBeAny();
-    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<91>();
+    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<98>();
   });
 
   it("exports the identity functions with the declared shapes", () => {
@@ -216,8 +230,8 @@ describe("public surface types", () => {
   });
 
   it("keeps Identity opaque to structural construction", () => {
-    expectTypeOf<Record<string, never>>().not.toMatchTypeOf<Identity>();
-    expectTypeOf<object>().not.toMatchTypeOf<Identity>();
+    expectTypeOf<Record<string, never>>().not.toExtend<Identity>();
+    expectTypeOf<object>().not.toExtend<Identity>();
   });
 
   it("re-exports the query grammar types from the barrel", () => {
@@ -270,7 +284,62 @@ describe("public surface types", () => {
   });
 
   it("accepts the provider as a source host without a cast", () => {
-    expectTypeOf<DataViewsProvider>().toMatchTypeOf<SourceHost>();
+    expectTypeOf<DataViewsProvider>().toExtend<SourceHost>();
+  });
+
+  it("carries the source's declaration, or null, on every host", () => {
+    // Required everywhere a host is: an optional one would be undefined
+    // too, and a host could drop the declaration without a word.
+    expectTypeOf<
+      DataViewsProvider["capabilities"]
+    >().toEqualTypeOf<SourceCapabilities | null>();
+    expectTypeOf<
+      SourceHost["capabilities"]
+    >().toEqualTypeOf<SourceCapabilities | null>();
+    expectTypeOf<
+      LocationHost["capabilities"]
+    >().toEqualTypeOf<SourceCapabilities | null>();
+  });
+
+  it("takes a declaration in, and hands the adapter's back, by shape", () => {
+    // Given once, to the provider; absent means not told, so the key is
+    // optional and not nullable.
+    type ProviderConfig = DataViewsProviderConfig<
+      readonly SchemaFieldDefinition[]
+    >;
+    expectTypeOf<ProviderConfig["capabilities"]>().toEqualTypeOf<
+      SourceCapabilities | undefined
+    >();
+    expectTypeOf<
+      Omit<ProviderConfig, "capabilities">
+    >().toExtend<ProviderConfig>();
+    // A decode outside any host may pass nothing, or null.
+    expectTypeOf<DecodeQueryConfig["capabilities"]>().toEqualTypeOf<
+      SourceCapabilities | null | undefined
+    >();
+    expectTypeOf<
+      Omit<DecodeQueryConfig, "capabilities">
+    >().toExtend<DecodeQueryConfig>();
+    // The binding hands back the adapter's own declaration, always present.
+    expectTypeOf<
+      SourceBinding["capabilities"]
+    >().toEqualTypeOf<SourceCapabilities>();
+  });
+
+  it("accepts the provider as a location host without a cast", () => {
+    expectTypeOf<DataViewsProvider>().toExtend<LocationHost>();
+    // Including a provider built for a real record type: the host reads the
+    // snapshot channel and never publishes on it, so its record type is the
+    // widest one rather than an invariant pin on the default.
+    expectTypeOf<
+      DataViewsProvider<
+        readonly SchemaFieldDefinition[],
+        { readonly id: string }
+      >
+    >().toExtend<LocationHost>();
+    expectTypeOf<Parameters<LocationHost["adopt"]>>().toEqualTypeOf<
+      [Slice, ResultWindow]
+    >();
   });
 
   it("discriminates source support and refusals by status and part", () => {
@@ -286,7 +355,7 @@ describe("public surface types", () => {
   });
 
   it("keeps the local-array source's write path on its own handle", () => {
-    expectTypeOf<ArraySource>().toMatchTypeOf<SourceAdapter>();
+    expectTypeOf<ArraySource>().toExtend<SourceAdapter>();
     expectTypeOf<ArraySource["setRows"]>().parameters.toEqualTypeOf<
       [readonly RowRecord[]]
     >();

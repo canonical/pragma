@@ -4,6 +4,7 @@ import type {
   PredicateOperand,
   PredicateOperator,
 } from "../query/types.js";
+import { wireNameRejection } from "../wire/wireGrammar.js";
 import type { SchemaFieldDefinition } from "./types.js";
 
 /** A schema-enforced predicate, or the reason it is not valid. */
@@ -187,6 +188,12 @@ export default function createSchema<
     }
     if (byName.has(definition.field)) {
       throw new Error(`duplicate schema field "${definition.field}"`);
+    }
+    // A field is addressed on the wire by its own name, so a name the flat
+    // grammar cannot spell is rejected here rather than at the first URL.
+    const unspellable = wireNameRejection(definition.field);
+    if (unspellable !== null) {
+      throw new Error(`schema ${unspellable}`);
     }
     if (definition.kind === "number") {
       const { min, max } = definition;

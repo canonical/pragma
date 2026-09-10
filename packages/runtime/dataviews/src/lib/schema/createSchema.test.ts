@@ -31,6 +31,21 @@ describe("createSchema", () => {
     ).toThrow("duplicate");
   });
 
+  it("rejects a field name the flat query grammar cannot spell", () => {
+    // A field is addressed on the wire by its own name, so a name carrying
+    // the operator delimiter or colliding with a reserved parameter is
+    // rejected here rather than at the first URL that cannot be read back.
+    expect(() =>
+      createSchema([{ field: "updated__at", kind: "flag" }]),
+    ).toThrow('schema field name "updated__at" must not contain "__"');
+    expect(() => createSchema([{ field: "sort", kind: "flag" }])).toThrow(
+      'field name "sort" is a reserved query parameter',
+    );
+    expect(() => createSchema([{ field: "page", kind: "flag" }])).toThrow(
+      "reserved query parameter",
+    );
+  });
+
   it("rejects choices fields without options, non-finite options or colliding options", () => {
     expect(() =>
       createSchema([{ field: "status", kind: "choices", options: [] }]),

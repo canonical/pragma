@@ -23,6 +23,8 @@ import type { RowIdentifier, RowModel, RowRecord } from "../rows/types.js";
 import type { Schema } from "../schema/createSchema.js";
 import type { EmptyOr, SchemaFieldDefinition } from "../schema/types.js";
 import createSelection from "../selection/createSelection.js";
+import copyCapabilities from "../source/copyCapabilities.js";
+import type { SourceCapabilities } from "../source/types.js";
 import type { DataViewsProvider, ProviderFieldHandle } from "./types.js";
 
 /** The legal operators of a field kind, in display order. */
@@ -93,6 +95,12 @@ export type DataViewsProviderConfig<
    * which must then be a non-empty string.
    */
   readonly identify?: RowIdentifier<TRow>;
+  /**
+   * What the source bound to this provider declares it can execute — the
+   * adapter's own `capabilities`. Connected parts offer only what is
+   * declared, and a location clause outside it is refused.
+   */
+  readonly capabilities?: SourceCapabilities;
 };
 
 /** One field record with its address, for re-syncing after external changes. */
@@ -246,6 +254,10 @@ export default function createDataViewsProvider<
   return {
     identity,
     schema,
+    capabilities:
+      config.capabilities === undefined
+        ? null
+        : copyCapabilities(config.capabilities),
     result,
     rows,
     selection,

@@ -360,4 +360,24 @@ describe("createDataViewsProvider", () => {
     expect(adopted).toBeNull();
     expect(notifications).toBe(0);
   });
+
+  it("carries the source's declaration as a frozen copy, or null", () => {
+    expect(provider().capabilities).toBeNull();
+    const declared = {
+      filter: { status: ["eq" as const] },
+      search: [],
+      sort: ["cpu"],
+      sortTerms: 1,
+      group: [],
+      count: "filtered" as const,
+    };
+    const p = createDataViewsProvider({
+      schema: machinesSchema(),
+      capabilities: declared,
+    });
+    expect(p.capabilities).toEqual(declared);
+    expect(p.capabilities).not.toBe(declared);
+    expect(Object.isFrozen(p.capabilities)).toBe(true);
+    expect(Object.isFrozen(p.capabilities?.filter.status)).toBe(true);
+  });
 });

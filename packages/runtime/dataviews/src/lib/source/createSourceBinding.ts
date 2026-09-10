@@ -20,6 +20,11 @@ import type {
  * host.
  */
 export type SourceHost = {
+  /**
+   * What the host's source declares it can execute, or null when the host
+   * was not told. Non-null, it must be the adapter's own declaration.
+   */
+  readonly capabilities: SourceCapabilities | null;
   /** The coordinator snapshot channel: query, window and pending request. */
   readonly result: Channel<CollectionCoordinatorState>;
   readonly selection: Selection;
@@ -39,13 +44,15 @@ export type SourceBindingConfig = {
 
 /** Handle of one source binding. */
 export type SourceBinding = {
-  /** What the bound source declares it can execute. */
+  /**
+   * What the bound source declares it can execute. Connected parts read the
+   * host's copy instead; this is for code holding the binding.
+   */
   readonly capabilities: SourceCapabilities;
   /**
-   * Whether the source can execute a query, with structured refusals. The
-   * UI reads this to offer only supported controls and to say why the rest
-   * are unavailable; the refusals a request is rejected with reach the
-   * result state only as their joined text.
+   * Whether the source can execute a query in hand, with structured
+   * refusals. The refusals a request is rejected with reach the result
+   * state only as their joined text.
    */
   readonly supports: (slice: Slice) => SourceSupport;
   /**
@@ -63,6 +70,29 @@ export type SourceBinding = {
   /** Detach: releases the live request and stops observing the host. */
   readonly dispose: () => void;
 };
+
+/** A list as a set: deduplicated, then sorted. */
+const sortedUnique = (list: readonly string[]): string[] =>
+  [...new Set(list)].sort();
+
+/**
+ * One declaration as a comparable string. Every list in it is a set, so
+ * order never matters, and a field declared with no operators is a field
+ * not declared.
+ */
+const declarationOf = (capabilities: SourceCapabilities): string =>
+  JSON.stringify([
+    sortedUnique(
+      Object.entries(capabilities.filter).flatMap(([field, operators]) =>
+        (operators ?? []).map((operator) => JSON.stringify([field, operator])),
+      ),
+    ),
+    sortedUnique(capabilities.search),
+    sortedUnique(capabilities.sort),
+    capabilities.sortTerms,
+    sortedUnique(capabilities.group),
+    capabilities.count,
+  ]);
 
 /** One live execution: the request it runs and how to release it. Its own
  * object identity distinguishes it from every superseding execution. */
@@ -87,6 +117,16 @@ export default function createSourceBinding(
 ): SourceBinding {
   const { host, adapter } = config;
   const { capabilities } = adapter;
+  // The host offers controls from its own copy; one that says something
+  // else would offer what this source refuses.
+  if (
+    host.capabilities !== null &&
+    declarationOf(host.capabilities) !== declarationOf(capabilities)
+  ) {
+    throw new Error(
+      "the host was told different capabilities from those its source adapter declares",
+    );
+  }
 
   let execution: Execution | null = null;
   let scope = host.result.get().scope;
