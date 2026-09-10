@@ -1,11 +1,10 @@
 {
-  "name": "@canonical/dataviews-core",
-  "description": "Framework-agnostic collection-views core for Canonical apps: query grammar, schema-enforced field validation, observation channels, selection and window projection, lifecycle transition records, the request-lifecycle coordinator, and the provider assembling them",
+  "name": "@canonical/dataviews-react",
+  "description": "React bindings for @canonical/dataviews-core: the DataViews root, provider context, and the four scoped observation hooks",
   "version": "0.37.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
-  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
@@ -40,17 +39,32 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "test": "bun run test:vitest",
-    "test:vitest": "vitest run --coverage",
-    "test:vitest:watch": "vitest"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@canonical/dataviews-core": "^0.37.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.12",
     "@canonical/biome-config": "^0.37.0",
+    "@canonical/typescript-config": "^0.37.0",
+    "@canonical/typescript-config-react": "^0.37.0",
+    "@canonical/vitest-config-react": "^0.37.0",
     "@canonical/webarchitect": "^0.37.0",
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^26.0.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.0",
     "@vitest/coverage-v8": "^4.0.18",
+    "jsdom": "^28.1.0",
     "typescript": "^5.9.3",
+    "vite": "^8.0.1",
     "vitest": "^4.0.18"
   }
 }

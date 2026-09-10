@@ -16,8 +16,11 @@ import type {
   CollectionCoordinatorConfig,
   CollectionCoordinatorState,
   CompletionResult,
+  DataViewsProvider,
+  DataViewsProviderConfig,
   DateField,
   DispatchResult,
+  EmptyOr,
   FieldFeedback,
   FieldInteraction,
   FieldInteractionConfig,
@@ -34,6 +37,8 @@ import type {
   Predicate,
   PredicateOperand,
   PredicateOperator,
+  ProviderFieldHandle,
+  ProviderFields,
   QueryCommand,
   QueryCommandResult,
   ResultProvenance,
@@ -63,11 +68,14 @@ type EveryPublicType = [
   ChoicesField,
   CollectionCoordinator,
   CollectionCoordinatorConfig,
+  DataViewsProvider,
+  DataViewsProviderConfig<readonly SchemaFieldDefinition[]>,
   CollectionCoordinatorState,
   CompletionResult,
   DateField,
   DispatchResult,
   FieldFeedback,
+  EmptyOr<unknown>,
   FieldInteraction,
   FieldInteractionConfig,
   FieldInteractionState,
@@ -83,6 +91,8 @@ type EveryPublicType = [
   Predicate,
   PredicateOperand,
   PredicateOperator,
+  ProviderFieldHandle<unknown>,
+  ProviderFields<readonly SchemaFieldDefinition[]>,
   QueryCommand,
   QueryCommandResult,
   ResultProvenance,
@@ -106,7 +116,7 @@ type EveryPublicType = [
 describe("public surface types", () => {
   it("re-exports the full type surface from the barrel", () => {
     expectTypeOf<EveryPublicType>().not.toBeAny();
-    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<44>();
+    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<49>();
   });
 
   it("exports the identity functions with the declared shapes", () => {

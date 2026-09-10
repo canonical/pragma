@@ -7,6 +7,8 @@ export type SelectionState = {
    * The set is shared by reference between publishes; treat it as
    * read-only, like every snapshot value this package hands out. */
   readonly ids: ReadonlySet<string>;
+  /** Bumped on every accepted membership mutation; the selection's version. */
+  readonly revision: number;
 };
 
 /** Handle of one selection record. */
@@ -47,14 +49,15 @@ export default function createSelection(
   initial: readonly string[] = [],
 ): Selection {
   const channel = createChannel<SelectionState>(
-    Object.freeze({ ids: new Set(initial) }),
-    {
-      equals: (a, b) => setsEqual(a.ids, b.ids),
-    },
+    Object.freeze({ ids: new Set(initial), revision: 0 }),
   );
 
-  const publish = (ids: ReadonlySet<string>): void => {
-    channel.set(Object.freeze({ ids }));
+  const publish = (ids: Set<string>): void => {
+    const current = channel.get();
+    if (setsEqual(current.ids, ids)) {
+      return;
+    }
+    channel.set(Object.freeze({ ids, revision: current.revision + 1 }));
   };
 
   return {
