@@ -1,8 +1,15 @@
 ---
-# SideNavigation — apps-tier navigation pattern.
-# Full-height vertical shell partitioning its space among Header (optional),
-# Content (required, grows), and Footer (optional). Data-driven: Content and
-# Footer each render a WD405 Item tree supplied via their `root` prop.
+# SideNavigation — apps-tier navigation pattern. The single navigation
+# landmark is the Content <nav>; the root is a plain layout container.
+# Full-height vertical shell partitioning its space among
+# Header (required), Content (required, grows), and Footer (optional).
+# Data-driven: Content and Footer each render a WD405 Item tree.
+#
+# The collapsed state hides the Content edge; footer items degrade to
+# icon-only and any rendered ItemExpandable discloses its sub-items into a
+# floating popover on the inline-end — a runtime/CSS concern the anatomy DSL
+# does not currently express (no per-state edge visibility); left as a
+# structural note rather than encoded here.
 node:
   uri: apps.pattern.side-navigation
   styles:
@@ -17,8 +24,13 @@ node:
     - node:
         uri: apps.subcomponent.side-navigation-header
       relation:
-        cardinality: "0..1"
+        cardinality: "1"
         slotName: header
+    - node:
+        uri: apps.subcomponent.side-navigation-context-switcher
+      relation:
+        cardinality: "0..1"
+        slotName: context-switcher
     - node:
         uri: apps.subcomponent.side-navigation-content
       relation:
