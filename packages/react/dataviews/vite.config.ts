@@ -16,7 +16,9 @@ export default defineConfig({
   test: reactTestConfig({
     glob: "test",
     ssr: true,
-    coverage: true,
+    // Story fixtures and stories are exercised by Storybook, not by the
+    // unit suite; the ratchet measures the library the package ships.
+    coverage: { exclude: ["src/storybook/**", "**/*.stories.{ts,tsx}"] },
     plugins,
     setupFiles: ["./vitest.setup.ts"],
   }),

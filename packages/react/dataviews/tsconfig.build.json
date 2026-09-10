@@ -18,6 +18,7 @@
     "src/**/*.ssr.test.ts",
     "src/**/*.ssr.test.tsx",
     "src/storybook",
+    ".storybook",
     "vite.config.ts",
     "vitest.setup.ts"
   ]
