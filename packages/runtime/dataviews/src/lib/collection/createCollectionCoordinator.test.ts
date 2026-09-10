@@ -538,6 +538,22 @@ describe("createCollectionCoordinator", () => {
     expect(coordinator.state.result.rows).toBeNull();
   });
 
+  it("rejects invalid seed and adopted windows at intake", () => {
+    expect(() =>
+      createCollectionCoordinator({ window: { page: 0, size: 25 } }),
+    ).toThrow("page must be a positive integer");
+    expect(() =>
+      createCollectionCoordinator({ window: { page: 2, size: 0 } }),
+    ).toThrow("size must be a positive integer");
+    const coordinator = createCollectionCoordinator();
+    expect(() => coordinator.adopt(slice(), { page: -1, size: 25 })).toThrow(
+      "page must be a positive integer",
+    );
+    expect(() => coordinator.adopt(slice(), { page: 1, size: 1.5 })).toThrow(
+      "size must be a positive integer",
+    );
+  });
+
   it("keeps the configured seed immune to caller mutations", () => {
     const seed = slice({
       filter: [statusPredicate("failed")],

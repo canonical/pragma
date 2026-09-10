@@ -40,6 +40,8 @@ const predicateRejection = (predicate: Predicate): string | null => {
       return predicate.operands.length === 0
         ? null
         : "isSet predicate takes no operands";
+    default:
+      return `unknown predicate operator ${String(predicate.operator)}`;
   }
 };
 

@@ -1,6 +1,6 @@
 {
   "name": "@canonical/dataviews-core",
-  "description": "Framework-agnostic collection-views core for Canonical apps: query grammar, lifecycle transition records, and the request-lifecycle coordinator",
+  "description": "Framework-agnostic collection-views core for Canonical apps: query grammar, schema-enforced field validation, observation channels, selection and window projection, lifecycle transition records, and the request-lifecycle coordinator",
   "version": "0.37.0",
   "type": "module",
   "module": "dist/esm/index.js",

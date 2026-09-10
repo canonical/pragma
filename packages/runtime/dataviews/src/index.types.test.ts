@@ -8,17 +8,24 @@
 
 import { describe, expectTypeOf, it } from "vitest";
 import type {
+  AppliedOf,
+  Channel,
+  ChannelConfig,
+  ChoicesField,
   CollectionCoordinator,
   CollectionCoordinatorConfig,
   CollectionCoordinatorState,
   CompletionResult,
+  DateField,
   DispatchResult,
   FieldFeedback,
   FieldInteraction,
   FieldInteractionConfig,
   FieldInteractionState,
   FieldValidation,
+  FlagField,
   Identity,
+  NumberField,
   Operation,
   OperationConfig,
   OperationFailure,
@@ -36,6 +43,12 @@ import type {
   SaveSession,
   SaveSessionConfig,
   SaveSessionState,
+  Schema,
+  SchemaFieldDefinition,
+  SchemaFields,
+  SchemaPredicateResult,
+  Selection,
+  SelectionState,
   Slice,
   SortDirection,
   SortTerm,
@@ -44,17 +57,24 @@ import * as dataviews from "./index.js";
 
 /** Every type the package root re-exports, as one enumerable tuple. */
 type EveryPublicType = [
+  AppliedOf<FlagField>,
+  Channel<unknown>,
+  ChannelConfig<unknown>,
+  ChoicesField,
   CollectionCoordinator,
   CollectionCoordinatorConfig,
   CollectionCoordinatorState,
   CompletionResult,
+  DateField,
   DispatchResult,
   FieldFeedback,
   FieldInteraction,
   FieldInteractionConfig,
   FieldInteractionState,
   FieldValidation,
+  FlagField,
   Identity,
+  NumberField,
   Operation,
   OperationConfig,
   OperationFailure,
@@ -72,6 +92,12 @@ type EveryPublicType = [
   SaveSession<unknown>,
   SaveSessionConfig<unknown>,
   SaveSessionState<unknown>,
+  Schema<readonly SchemaFieldDefinition[]>,
+  SchemaFieldDefinition,
+  SchemaFields<readonly SchemaFieldDefinition[]>,
+  SchemaPredicateResult,
+  Selection,
+  SelectionState,
   Slice,
   SortDirection,
   SortTerm,
@@ -80,7 +106,7 @@ type EveryPublicType = [
 describe("public surface types", () => {
   it("re-exports the full type surface from the barrel", () => {
     expectTypeOf<EveryPublicType>().not.toBeAny();
-    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<31>();
+    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<44>();
   });
 
   it("exports the identity functions with the declared shapes", () => {
@@ -133,5 +159,19 @@ describe("public surface types", () => {
       "success" | "failure"
     >();
     expectTypeOf<ResultWindow["page"]>().toEqualTypeOf<number>();
+  });
+
+  it("infers applied types from one schema construction", () => {
+    const machines = dataviews.createSchema([
+      { field: "status", kind: "choices", options: ["failed", "cancelled"] },
+      { field: "cpu", kind: "number" },
+      { field: "owner", kind: "flag" },
+    ]);
+    type Machines = SchemaFields<typeof machines.fields>;
+    expectTypeOf<Machines["status"]>().toEqualTypeOf<
+      ReadonlySet<"failed" | "cancelled">
+    >();
+    expectTypeOf<Machines["cpu"]>().toEqualTypeOf<number>();
+    expectTypeOf<Machines["owner"]>().toEqualTypeOf<boolean>();
   });
 });

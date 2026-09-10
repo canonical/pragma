@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import applyQueryCommand from "./applyQueryCommand.js";
-import type { ResultWindow, Slice } from "./types.js";
+import type { Predicate, ResultWindow, Slice } from "./types.js";
 
 const slice = (overrides: Partial<Slice> = {}): Slice => ({
   filter: [],
@@ -316,6 +316,18 @@ describe("applyQueryCommand", () => {
       operator: "eq",
     });
     expect(removal.status).toBe("accepted");
+  });
+
+  it("rejects a predicate with an unknown operator without losing the reason", () => {
+    const forged = {
+      kind: "replacePredicate",
+      predicate: { field: "status", operator: "contains", operands: ["x"] },
+    } as unknown as { kind: "replacePredicate"; predicate: Predicate };
+    const result = applyQueryCommand(slice(), window(), forged);
+    if (result.status !== "rejected") {
+      throw new Error("expected rejection");
+    }
+    expect(result.reason).toBe("unknown predicate operator contains");
   });
 
   it("keeps state unchanged on rejection", () => {
