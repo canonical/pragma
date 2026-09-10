@@ -15,9 +15,9 @@
   );
 
   /* ── Logo ───────────────────────────────────────────────────────── */
-  /* Height stated directly by the spec (2.25rem). Width is NOT stated; per
-     an explicit 1:2 (width:height) aspect ratio, width = height ÷ 2 — see
-     SPEC.md §9.3. */
+  /* Deliberate deviation: the 24.04 spec states 2.25rem; this ships
+     2.5rem (§9.3's own 1:2 aspect ratio kept, both sides scaled). Width
+     follows the same ratio: 1.25rem. */
   --sidenav-logo-block-size: 2.5rem;
   --sidenav-logo-inline-size: 1.25rem;
 
@@ -48,6 +48,12 @@
   --sidenav-row-background-disabled: var(
     --color-foreground-navigation-primary-disabled
   );
+
+  /* ── Collapsed-rail popover ──────────────────────────────────────── */
+  /* No design token names an elevated-popover shadow; component-scoped
+     (overridable by any ancestor) rather than a phantom reference to a
+     `--box-shadow-high` token that does not exist. */
+  --sidenav-popover-shadow: 0 0.25rem 0.5rem rgb(0 0 0 / 20%);
 }
 
 .ds.side-navigation {
@@ -57,9 +63,11 @@
   background: var(--color-foreground-navigation-primary);
   display: flex;
   flex-direction: column;
-  /* Gap between Header / Content / Footer. Spec: "1rem below the logo and
-     above the first footer item" — a flex gap applies the same value between
-     every adjacent child, matching both seams with one declaration. */
+  /* Gap between Header / Content / Footer. Deliberate deviation: the
+     24.04 spec's "1rem below the logo and above the first footer item"
+     reads as two different seams; a single flex gap applies one value
+     between every adjacent child, and this ships 0.5rem so the rail reads
+     tight. */
   gap: var(--dimension-100); /* 0.5rem */
 
   inline-size: var(--sidenav-rail-inline-size);
@@ -78,9 +86,13 @@
 
   /* Collapsed (SPEC.md §1.2, §7): the rail narrows to fit just the logo,
       and no navigation items show — a deliberate scope cut. The footer
-      stays visible (icon-only); only Content is hidden. No stated
-      transition for the change (SPEC.md §10.4), but the width animates via
-      the transition above. */
+      stays visible (icon-only); only Content is hidden. The width change
+      animates over --motion-duration-medium — a deliberate deviation from
+      the 24.04 spec's "not animated" (§10.4): the resize reads as motion,
+      and it honours reduced motion (the motion tokens are zeroed under
+      prefers-reduced-motion by @canonical/styles/motion.css). Both the
+      physical and logical properties transition, for engines that
+      implement only one of them. */
 
   transition:
     width var(--motion-duration-medium) ease-in-out,
@@ -169,8 +181,8 @@
         background: var(--color-background-default, #fff);
         border: var(--dimension-stroke-thickness-medium) solid
           var(--color-border-muted);
-        border-radius: var(--border-radius-default, 0.125rem);
-        box-shadow: var(--box-shadow-high, 0 0.25rem 0.5rem rgb(0 0 0 / 20%));
+        border-radius: var(--dimension-radius-small);
+        box-shadow: var(--sidenav-popover-shadow);
       }
 
       .details[open] .children {

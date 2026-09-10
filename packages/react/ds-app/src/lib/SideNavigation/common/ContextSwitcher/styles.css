@@ -2,7 +2,10 @@
 
 .ds.side-navigation-context-switcher {
   display: block;
-  height: var(--dimension-450);
+  /* 2rem — matches the row height family (Item/ItemButton). (A previous
+     pass referenced `--dimension-450`, which is not a token in the set, so
+     the height never applied.) */
+  height: var(--dimension-400);
 
   /* Trigger (ContextualMenu's own real <button class="trigger">) — the
      dropdown field: current context name + chevron, on the shared row
