@@ -11,10 +11,13 @@
     "types": ["node", "react", "react-dom"]
   },
   "exclude": [
+    "src/**/*.stories.ts",
+    "src/**/*.stories.tsx",
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "src/**/*.ssr.test.ts",
     "src/**/*.ssr.test.tsx",
+    "src/storybook",
     "vite.config.ts",
     "vitest.setup.ts"
   ]

@@ -21,7 +21,19 @@ Under active development; the public surface grows change by change. The current
 - **`useDataViewsCell(provider)`** — the current cell's scope (row id, column id, read-only row/fields/selected channels), installed by the table renderer; throws outside a rendered cell or on a witness mismatch.
 - **`DataTable`** — the row renderer: div rows over ARIA table roles, one shared column track list, sorting, selection and resizing. It takes its provider explicitly, so it behaves the same standalone and inside a `DataViews` root.
 
-The remaining connected parts (Filters, Views, Summary, Actions, Pagination), the stylesheet and Storybook land in later changes. Until the stylesheet lands, `tableStyles.ts` carries the table's static grid layout as frozen inline styles — a placeholder for `styles.css`, not a pattern to copy.
+The remaining connected parts (Filters, Views, Summary, Actions, Pagination) land in later changes.
+
+## Styles
+
+`DataTable` imports its own stylesheet, so a page that renders one has the rules it needs. A page that would rather have every rule present from the first paint — before the JavaScript of a lazily loaded route arrives — links the package's entry stylesheet instead:
+
+```css
+@import url("@canonical/dataviews-react/index.css");
+```
+
+The table assumes the `.app` typography scope: render it inside an element carrying the `.app` class, where the design system's primary text takes its application sizes. It takes its type from that scope rather than pinning a line height of its own.
+
+The sheet is in the `ds.components.global` cascade layer and reads its colours, spacing, borders and type from `@canonical/design-tokens`. The one thing it cannot carry is the column track list: the solver derives that per render from the measured container, and the table publishes it on itself as `--data-table-columns`, which every row consumes. That property is the table's own channel, not a customisation hook: the table writes it after any `style` it is given.
 
 ## DataTable recipes
 

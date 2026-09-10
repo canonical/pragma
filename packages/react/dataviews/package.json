@@ -5,11 +5,14 @@
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
+  "style": "dist/esm/lib/index.css",
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js"
-    }
+    },
+    "./index.css": "./dist/esm/lib/index.css",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist"
@@ -31,8 +34,11 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "build:all": "bun run build",
+    "build": "bun run build:package",
+    "build:all": "bun run build:package",
+    "build:package": "bun run build:package:tsc && bun run build:package:copycss",
+    "build:package:copycss": "copyfiles -u 1 'src/lib/{,**/}*.css' dist/esm",
+    "build:package:tsc": "tsc -p tsconfig.build.json",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:webarchitect": "webarchitect library",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
@@ -51,6 +57,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.12",
     "@canonical/biome-config": "^0.37.0",
+    "@canonical/design-tokens": "0.10.0",
     "@canonical/typescript-config": "^0.37.0",
     "@canonical/typescript-config-react": "^0.37.0",
     "@canonical/vitest-config-react": "^0.37.0",
@@ -62,6 +69,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.0",
     "@vitest/coverage-v8": "^4.0.18",
+    "copyfiles": "^2.4.1",
     "jsdom": "^28.1.0",
     "typescript": "^5.9.3",
     "vite": "^8.0.1",
