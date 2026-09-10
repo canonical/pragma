@@ -8,47 +8,47 @@ const componentCssClassName = "ds side-navigation-item";
 /**
  * SideNavigation.Item — the default renderer for a single navigation item.
  *
- * A flat leaf row, NOT recursive: traversal lives in NavTree's two loops. The
- * row is `[icon] [label] [end]` over a shared grid template (so the icon aligns
+ * A flat leaf row, NOT recursive — an entry with children is a
+ * SideNavigation.ItemExpandable instead (SPEC.md §4.3). The row is
+ * `[icon] [content] [end]` over a shared grid template (so the icon aligns
  * with the header logo). An item with a `url` renders as a link via
- * `LinkComponent` (default `"a"`); otherwise a non-navigable label.
- *
- * End slot is derived, not authored:
- * - has subitems → a disclosure caret (static affordance in PR1; expand/collapse
- *   behaviour is deferred);
- * - leaf → the optional `slot` (a badge, count, …), or nothing.
+ * `LinkComponent` (default `"a"`); otherwise a non-navigable label. The end
+ * slot is the optional `slot` (a badge, count, …), or nothing. Content is
+ * composed via `children`, matching `Button`'s own convention — pass
+ * anything, not only text.
  *
  * @implements ds:apps.subcomponent.side-navigation-item
  */
 const Item = ({
   url,
-  label,
+  children,
   icon,
   slot,
   disabled = false,
   active = false,
   LinkComponent = "a",
-  // NavItem fields not spread to the DOM.
-  key: _key,
-  items,
   className,
   ...props
 }: ItemProps): React.ReactElement => {
   const Link = LinkComponent;
-  const hasSubitems = (items?.length ?? 0) > 0;
 
   const content = (
     <>
-      {/* Start cell is always rendered (empty when no icon) so the label stays
-          in the middle column — labels align whether or not a row has an icon. */}
-      <span className="start p">{icon ? <Icon icon={icon} /> : null}</span>
-      <span className="label p">{label}</span>
-      {/* End slot: caret for groups (static in PR1), else the leaf slot. */}
-      {hasSubitems ? (
-        <Icon icon="chevron-down" className="end caret" />
-      ) : slot ? (
-        <span className="end slot">{slot}</span>
-      ) : null}
+      {/* Start cell is always rendered (empty when no icon) so content
+          stays in the middle column — labels align with or without icons. */}
+      <span className="start">
+        {icon ? <Icon width={16} height={16} icon={icon} /> : null}
+      </span>
+      {/* `title` — native-tooltip fallback for the spec's truncated-label
+          tooltip (§7), not the custom 800ms-delay one (SPEC.md §10.17).
+          Only meaningful when `children` is plain text. */}
+      <span
+        className="label"
+        title={typeof children === "string" ? children : undefined}
+      >
+        {children}
+      </span>
+      {slot ? <span className="end slot">{slot}</span> : null}
     </>
   );
 

@@ -22,9 +22,28 @@ const meta: Meta<typeof Footer> = {
 export default meta;
 type Story = StoryObj<typeof Footer>;
 
-/** Renders the footer navigation from a WD405 root. */
+/** Renders the footer navigation from a WD405 root (the free-form escape hatch). */
 export const Default: Story = {
   args: {
     root: maasFooterRoot,
+  },
+};
+
+/** Free-form footer rows via the footer root: user link, unread badge, action button. */
+export const Items: Story = {
+  args: {
+    root: {
+      key: "footer",
+      items: [
+        { label: "Ada Lovelace", icon: "user", url: "/account" },
+        {
+          label: "Notifications",
+          icon: "notifications",
+          url: "/notifications",
+          slot: <span>3</span>,
+        },
+        { label: "Log out", icon: "log-out", control: "button" },
+      ],
+    },
   },
 };
