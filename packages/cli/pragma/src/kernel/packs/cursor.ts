@@ -22,10 +22,18 @@
  * The encoding is opaque on purpose: a caller who cannot read it cannot come to
  * depend on it, so the day a story needs a keyset cursor the cursor's contents
  * change and its contract does not.
+ *
+ * The fingerprint does not cover the OFFSET, and cannot: a cursor is a token
+ * this build issued, not a signed one, so its `o` is editable by anyone who
+ * base64-decodes it. That is why the offset is BOUNDED here as well as parsed
+ * here — an `o` of 2^53 is a legal JSON integer that the store answers with a
+ * raw parse error, so {@link ./paging.MAX_LIST_WINDOW} is checked before the
+ * number can reach a query.
  */
 
 import { createHash } from "node:crypto";
 import { PragmaError } from "../error/index.js";
+import { MAX_LIST_WINDOW } from "./paging.js";
 
 /** The cursor encoding's own version, so a future keyset form is tellable apart. */
 const CURSOR_VERSION = 1;
@@ -97,7 +105,15 @@ export function readCursor(provided: unknown, fingerprint: string): number {
   return decoded.o;
 }
 
-/** The cursor payload, or `undefined` for anything that is not one. */
+/**
+ * The cursor payload, or `undefined` for anything that is not one.
+ *
+ * The offset is checked against {@link MAX_LIST_WINDOW} here rather than at the
+ * store: an unbounded `o` is emitted straight into the generated query's
+ * `OFFSET`, where a number the engine cannot express comes back as a parse
+ * error dressed as an internal one. Refused here, a hand-edited offset is the
+ * same calm INVALID_INPUT as every other malformed cursor.
+ */
 function decodeCursor(
   provided: unknown,
 ): { readonly o: number; readonly q: string } | undefined {
@@ -111,9 +127,9 @@ function decodeCursor(
   if (typeof parsed !== "object" || parsed === null) return undefined;
   const payload = parsed as Record<string, unknown>;
   if (payload.v !== CURSOR_VERSION) return undefined;
-  if (!Number.isInteger(payload.o) || (payload.o as number) < 0) {
-    return undefined;
-  }
+  if (!Number.isInteger(payload.o)) return undefined;
+  const offset = payload.o as number;
+  if (offset < 0 || offset > MAX_LIST_WINDOW) return undefined;
   if (typeof payload.q !== "string") return undefined;
-  return { o: payload.o as number, q: payload.q };
+  return { o: offset, q: payload.q };
 }

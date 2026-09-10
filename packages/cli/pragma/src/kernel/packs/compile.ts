@@ -26,7 +26,7 @@ import type {
   ParamSpec,
   VerbSpec,
 } from "../spec/types.js";
-import { DEFAULT_LIST_LIMIT } from "./paging.js";
+import { DEFAULT_LIST_LIMIT, MAX_LIST_WINDOW } from "./paging.js";
 import {
   listFormatters,
   lookupFormatters,
@@ -391,7 +391,7 @@ const PAGE_PARAMS: readonly ParamSpec[] = [
   {
     kind: "number",
     name: "limit",
-    doc: `Maximum rows to return (default ${DEFAULT_LIST_LIMIT}); pass a larger number for more.`,
+    doc: `Maximum rows to return, 1 to ${MAX_LIST_WINDOW} (default ${DEFAULT_LIST_LIMIT}).`,
   },
   {
     kind: "string",

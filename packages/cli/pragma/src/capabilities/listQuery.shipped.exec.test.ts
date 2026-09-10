@@ -29,6 +29,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { compileStoryModule } from "../kernel/packs/compile.js";
+import { MAX_LIST_WINDOW } from "../kernel/packs/paging.js";
 import {
   distributionSource,
   type PackFilter,
@@ -107,9 +108,10 @@ const page = (body: Body, params: Record<string, unknown> = {}) =>
 
 /** Every row of a body, in one call — the population the oracles read. */
 async function population(body: Body): Promise<readonly PackRow[]> {
-  // A limit above every declared story's row count, so this is the whole
-  // answer rather than a page of it.
-  return (await page(body, { limit: 100_000 })).rows;
+  // The kernel ceiling, which is far above every declared story's row count —
+  // so this is the whole answer rather than a page of it, asked for the way a
+  // caller who wants everything has to ask.
+  return (await page(body, { limit: MAX_LIST_WINDOW })).rows;
 }
 
 /** The values a value-free filter's declared vocabulary admits. */
@@ -229,7 +231,7 @@ describe("the compiled query agrees with the retired row predicate (PROTECTED)",
         for (const value of admissible) {
           const answered = await page(body, {
             [filter.param]: value,
-            limit: 100_000,
+            limit: MAX_LIST_WINDOW,
           });
           expect(JSON.stringify(answered.rows)).toBe(
             JSON.stringify(rowPredicate(whole, filter, value)),
@@ -247,7 +249,10 @@ describe("the compiled query agrees with the retired row predicate (PROTECTED)",
       if (!search) return;
       const whole = await population(body);
       for (const term of ["a", "Button", "TEST"]) {
-        const answered = await page(body, { search: term, limit: 100_000 });
+        const answered = await page(body, {
+          search: term,
+          limit: MAX_LIST_WINDOW,
+        });
         expect(JSON.stringify(answered.rows)).toBe(
           JSON.stringify(searchPredicate(whole, search.variables, term)),
         );
@@ -264,7 +269,7 @@ describe("the compiled query agrees with the retired row predicate (PROTECTED)",
     if (!filter) throw new Error("no category filter");
     const answered = await page(body, {
       [filter.param]: ["testing", "react"],
-      limit: 100_000,
+      limit: MAX_LIST_WINDOW,
     });
     const union = whole.filter(
       (row) =>
@@ -291,7 +296,7 @@ describe("the compiled query agrees with the retired row predicate (PROTECTED)",
     const answered = await page(body, {
       [first.param]: a,
       [second.param]: b,
-      limit: 100_000,
+      limit: MAX_LIST_WINDOW,
     });
     expect(JSON.stringify(answered.rows)).toBe(
       JSON.stringify(rowPredicate(rowPredicate(whole, first, a), second, b)),

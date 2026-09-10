@@ -32,7 +32,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { compileStoryModule } from "../kernel/packs/compile.js";
-import { DEFAULT_LIST_LIMIT } from "../kernel/packs/paging.js";
+import { DEFAULT_LIST_LIMIT, MAX_LIST_WINDOW } from "../kernel/packs/paging.js";
 import { distributionSource, type PackList } from "../kernel/packs/types.js";
 import { verbKey } from "../kernel/packs/uniqueness.js";
 import { bootRuntime } from "../kernel/runtime/boot.js";
@@ -154,7 +154,7 @@ describe("list response budget, shipped pack (PROTECTED)", () => {
       // — which is exactly why the pair's arrival truncated no answer. The day
       // a story outgrows the page they diverge, and this is the assertion that
       // says so rather than the one above.
-      const { bytes } = await payloadBytes(body, { limit: 100_000 });
+      const { bytes } = await payloadBytes(body, { limit: MAX_LIST_WINDOW });
       expect(bytes).toBeLessThanOrEqual(LIST_PAYLOAD_BUDGET_BYTES);
     },
     60_000,
@@ -171,4 +171,16 @@ describe("list response budget, shipped pack (PROTECTED)", () => {
     expect(largest).toBeGreaterThan(LIST_PAYLOAD_BUDGET_BYTES / 4);
     expect(largest).toBeLessThan(LIST_PAYLOAD_BUDGET_BYTES * 0.8);
   }, 60_000);
+
+  it("the kernel's row ceiling cannot ask for an answer above the budget", () => {
+    // The arithmetic that makes `MAX_LIST_WINDOW` a derived number rather than
+    // a taste: the narrowest row a story can serialise is `{}` and its
+    // separating comma, three bytes, so a limit above BUDGET/3 could not
+    // produce a legal answer whatever the story's columns are — and a limit
+    // that cannot produce a legal answer is not a legal limit. Asserted here
+    // because the ceiling lives in `paging.ts`, which cannot import a test.
+    expect(MAX_LIST_WINDOW * 3).toBeLessThanOrEqual(LIST_PAYLOAD_BUDGET_BYTES);
+    // And it is not so tight that it refuses a caller who wants everything.
+    expect(MAX_LIST_WINDOW).toBeGreaterThan(DEFAULT_LIST_LIMIT);
+  });
 });

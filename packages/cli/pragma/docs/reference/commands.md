@@ -20,7 +20,7 @@ pragma block list [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--limit` | `<number>` | Maximum rows to return (default 500); pass a larger number for more. |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -139,7 +139,7 @@ pragma concept list [options]
 | --- | --- | --- |
 | `--type` | `<string>` | Filter by concept type (e.g. Explanation, How-to guide). |
 | `--search` | `<string>` | Search in name and summary. |
-| `--limit` | `<number>` | Maximum rows to return (default 500); pass a larger number for more. |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -514,7 +514,7 @@ pragma implementation libraries [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--limit` | `<number>` | Maximum rows to return (default 500); pass a larger number for more. |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -544,7 +544,7 @@ pragma implementation list [options]
 | `--platform` | `<string>` | Filter by platform (e.g. react, svelte, typescript). |
 | `--library` | `<string>` | Filter by implementation library name. |
 | `--search` | `<string>` | Search in block and library name. |
-| `--limit` | `<number>` | Maximum rows to return (default 500); pass a larger number for more. |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -608,7 +608,7 @@ pragma modifier list [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--limit` | `<number>` | Maximum rows to return (default 500); pass a larger number for more. |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -997,7 +997,7 @@ pragma standard categories [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--limit` | `<number>` | Maximum rows to return (default 500); pass a larger number for more. |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -1026,7 +1026,7 @@ pragma standard list [options]
 | --- | --- | --- |
 | `--category` | `<string>` | Filter by category slug. A parent category answers for its whole branch. |
 | `--search` | `<string>` | Search in name and description. |
-| `--limit` | `<number>` | Maximum rows to return (default 500); pass a larger number for more. |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -1106,7 +1106,7 @@ pragma tier list [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--limit` | `<number>` | Maximum rows to return (default 500); pass a larger number for more. |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -1160,7 +1160,7 @@ pragma token list [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--limit` | `<number>` | Maximum rows to return (default 500); pass a larger number for more. |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).

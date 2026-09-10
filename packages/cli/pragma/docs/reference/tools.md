@@ -14,7 +14,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `limit` | number | no | Maximum rows to return (default 500); pass a larger number for more. |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### block_lookup
@@ -72,7 +72,7 @@ Read-only.
 | --- | --- | --- | --- |
 | `type` | string | no | Filter by concept type (e.g. Explanation, How-to guide). |
 | `search` | string | no | Search in name and summary. |
-| `limit` | number | no | Maximum rows to return (default 500); pass a larger number for more. |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### concept_lookup
@@ -258,7 +258,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `limit` | number | no | Maximum rows to return (default 500); pass a larger number for more. |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### implementation_list
@@ -274,7 +274,7 @@ Read-only.
 | `platform` | string | no | Filter by platform (e.g. react, svelte, typescript). |
 | `library` | string | no | Filter by implementation library name. |
 | `search` | string | no | Search in block and library name. |
-| `limit` | number | no | Maximum rows to return (default 500); pass a larger number for more. |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### info
@@ -297,7 +297,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `limit` | number | no | Maximum rows to return (default 500); pass a larger number for more. |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### modifier_lookup
@@ -442,7 +442,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `limit` | number | no | Maximum rows to return (default 500); pass a larger number for more. |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### standard_list
@@ -457,7 +457,7 @@ Read-only.
 | --- | --- | --- | --- |
 | `category` | string | no | Filter by category slug. A parent category answers for its whole branch. |
 | `search` | string | no | Search in name and description. |
-| `limit` | number | no | Maximum rows to return (default 500); pass a larger number for more. |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### standard_lookup
@@ -495,7 +495,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `limit` | number | no | Maximum rows to return (default 500); pass a larger number for more. |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### tier_lookup
@@ -520,7 +520,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `limit` | number | no | Maximum rows to return (default 500); pass a larger number for more. |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### token_lookup

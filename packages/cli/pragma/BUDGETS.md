@@ -841,6 +841,35 @@ story needs one, and inventing the knob before there is a second answer is how
 a grammar grows a field nobody can justify) or narrower columns, which trades an
 honest surface for an arithmetic one and is the worse of the two.
 
+### The row ceiling this budget implies
+
+`MAX_LIST_WINDOW = 40_000`, in `src/kernel/packs/paging.ts`, is derived from this
+number rather than from the store. Both halves of a page's window — the
+`--limit` a caller passes and the offset a cursor carries — are emitted into the
+generated query's own `LIMIT`/`OFFSET`, which the engine requires to fit a
+32-bit integer while `Number.isInteger` admits anything up to 2^53. Unbounded,
+`--limit 9007199254740991` reached the store and came back as a raw parse error
+wrapped in `INTERNAL_ERROR` and "report this issue", which is the wrong answer
+to a legitimate question asked too big.
+
+The ceiling comes from the budget because the budget is a fact about the ANSWER,
+where the engine's range is a fact about the pinned store. The narrowest row a
+story can serialise is `{}` and its separating comma — three bytes — so an
+answer of more than `125,000 / 3 = 41,666` rows cannot be inside the budget
+whatever a story's columns are, and a limit that cannot produce a legal answer is
+not a legal limit. Rounded down to 40,000: still 158× the largest population the
+distribution ships (252) and 80× the default page. `listBudget.shipped.exec.test.ts`
+asserts `MAX_LIST_WINDOW * 3 <= LIST_PAYLOAD_BUDGET_BYTES`, so the two numbers
+cannot drift apart in silence.
+
+The cursor's offset takes the same ceiling for a reason of its own. An offset is
+a count of rows already answered, and a walk past 40,000 of them is walking a
+population two orders of magnitude larger than any single legal answer — the
+point at which the cursor to spend is a keyset cursor, which is what the
+encoding's `v` field exists to allow. Until such a story exists, an offset that
+large is a hand-edited token (the fingerprint covers the query and the arguments,
+not the offset), and one typed `INVALID_INPUT` is the honest answer to both.
+
 ### Why it is not in the perf pass
 
 `src/testing/perf/**` is not run by CI (owner ruling 2026-08-30), and a budget

@@ -14,7 +14,7 @@ import { PragmaError } from "../error/index.js";
 import type { PragmaRuntime } from "../runtime/types.js";
 import { compileListable, compilePack, compileStoryModule } from "./compile.js";
 import { encodeCursor, pageFingerprint } from "./cursor.js";
-import { DEFAULT_LIST_LIMIT } from "./paging.js";
+import { DEFAULT_LIST_LIMIT, MAX_LIST_WINDOW } from "./paging.js";
 import type { LookupOutput } from "./resolveEntity.js";
 import { parsePackDefinition } from "./schema.js";
 import type { PackDefinition, PackPage, PackRow } from "./types.js";
@@ -437,7 +437,50 @@ describe("pack compiler — SPARQL fetch path (PROTECTED)", () => {
   it("refuses a limit that is not a whole number of rows", async () => {
     await expect(
       recoveryOf(() => run<PackPage>("list", { limit: 0 })),
-    ).resolves.toMatch(/1 or more/);
+    ).resolves.toMatch(new RegExp(`1 to ${MAX_LIST_WINDOW}`));
+  });
+
+  it("refuses a limit above the ceiling, naming it", async () => {
+    // `--limit 9007199254740991` is the natural "give me everything" an agent
+    // writes, and it used to reach the store's own `LIMIT` — which must fit a
+    // 32-bit integer — and come back as a parse error dressed as
+    // INTERNAL_ERROR with "report this issue". A typed refusal that says what
+    // it would accept is the answer to a legitimate question asked too big.
+    for (const limit of [MAX_LIST_WINDOW + 1, 2 ** 32 - 1, 1e21, 2 ** 53 - 1]) {
+      await expect(
+        recoveryOf(() => run<PackPage>("list", { limit })),
+      ).resolves.toMatch(new RegExp(`1 to ${MAX_LIST_WINDOW}`));
+    }
+    // The ceiling itself is admitted: a refusal one row early would be a
+    // different bug.
+    await expect(
+      run<PackPage>("list", { limit: MAX_LIST_WINDOW }),
+    ).resolves.toBeDefined();
+  });
+
+  it("refuses a cursor whose offset is above the ceiling", async () => {
+    // The fingerprint covers the query and the arguments, not the offset — so
+    // a real cursor with only `o` edited is fingerprint-valid, and that is the
+    // path by which an unbounded offset reached the query's own `OFFSET`.
+    const fingerprint = pageFingerprint([
+      WIDGET_PACK.list?.query ?? "",
+      "[]",
+      "null",
+    ]);
+    await expect(
+      recoveryOf(() =>
+        run<PackPage>("list", {
+          limit: 1,
+          after: encodeCursor(2 ** 53 - 1, fingerprint),
+        }),
+      ),
+    ).resolves.toMatch(/cursor from a previous page/);
+    // An offset the kernel can serve is still served, empty page and all.
+    const edge = await run<PackPage>("list", {
+      limit: 1,
+      after: encodeCursor(MAX_LIST_WINDOW, fingerprint),
+    });
+    expect(edge.rows).toEqual([]);
   });
 
   it("looks up an entity by name with its fields and expands (detailed)", async () => {
