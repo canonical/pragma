@@ -1,5 +1,6 @@
 import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
-import { useEffect } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
+import { Badge } from "../Badge/index.js";
 import Component from "./ContextualMenu.js";
 import type { MenuEntry } from "./types.js";
 
@@ -164,6 +165,167 @@ export const CustomItems_NotCoreApi: Story = {
         ),
       },
     ],
+  },
+};
+
+const TAG_OPTIONS = [
+  "web",
+  "database",
+  "cache",
+  "production",
+  "staging",
+  "gpu",
+] as const;
+
+const filterSearchStyle: CSSProperties = {
+  inlineSize: "100%",
+  boxSizing: "border-box",
+  paddingBlock: "var(--dimension-100, 8px)",
+  paddingInline: "var(--dimension-150, 12px)",
+  border:
+    "var(--dimension-stroke-thickness-medium, 1px) solid var(--color-border, currentColor)",
+  borderRadius: "var(--border-radius, 4px)",
+  background: "var(--color-background, transparent)",
+  color: "inherit",
+  font: "inherit",
+};
+
+const filterPanelStyle: CSSProperties = {
+  display: "grid",
+  gap: "var(--dimension-100, 8px)",
+};
+
+const filterListStyle: CSSProperties = {
+  listStyle: "none",
+  margin: 0,
+  padding: 0,
+};
+
+const filterRowStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: "var(--dimension-100, 8px)",
+  paddingBlock: "var(--dimension-50, 4px)",
+};
+
+const filterFooterStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: "var(--dimension-100, 8px)",
+  borderBlockStart:
+    "var(--dimension-stroke-thickness-medium, 1px) solid var(--color-border-muted, currentColor)",
+  paddingBlockStart: "var(--dimension-100, 8px)",
+};
+
+const filterTextActionStyle: CSSProperties = {
+  appearance: "none",
+  margin: 0,
+  padding: 0,
+  border: 0,
+  background: "none",
+  color: "inherit",
+  font: "inherit",
+  textDecoration: "underline",
+  cursor: "pointer",
+};
+
+/**
+ * A table column filter: search plus a checkbox list. Those controls need
+ * native Tab and text selection, which a selectable `menuitem` cannot host.
+ * `displayItemsType: "panel"` keeps that surface inside the menu; Escape still
+ * closes.
+ */
+export const StyledTriggerWithInteractivePanel: Story = {
+  args: {
+    trigger: "Tags",
+    items: [],
+  },
+  render: () => {
+    const [search, setSearch] = useState("");
+    const [selected, setSelected] = useState<string[]>(["web", "production"]);
+    const visibleTags = TAG_OPTIONS.filter((tag) =>
+      tag.includes(search.trim()),
+    );
+
+    const toggleTag = (tag: string) => {
+      setSelected((current) =>
+        current.includes(tag)
+          ? current.filter((value) => value !== tag)
+          : [...current, tag],
+      );
+    };
+
+    return (
+      <Component
+        trigger={
+          <>
+            Tags
+            {selected.length > 0 ? (
+              <Badge
+                value={selected.length}
+                style={{ marginInlineStart: "var(--dimension-50, 4px)" }}
+              />
+            ) : null}
+          </>
+        }
+        triggerProps={{
+          icon: "filter",
+          importance: "secondary",
+        }}
+        label="Tags"
+        highlightFirstItem={false}
+        maxWidth="18rem"
+        items={[
+          {
+            key: "tags",
+            label: "Tags",
+            displayItemsType: "panel",
+            Component: () => (
+              <div style={filterPanelStyle}>
+                <input
+                  type="search"
+                  aria-label="Search tags"
+                  placeholder="Search"
+                  value={search}
+                  style={filterSearchStyle}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+                <ul style={filterListStyle}>
+                  {visibleTags.map((tag) => (
+                    <li key={tag}>
+                      <label style={filterRowStyle}>
+                        <input
+                          type="checkbox"
+                          checked={selected.includes(tag)}
+                          onChange={() => toggleTag(tag)}
+                        />
+                        {tag}
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+                <div style={filterFooterStyle}>
+                  <button
+                    type="button"
+                    style={filterTextActionStyle}
+                    onClick={() => setSelected([...visibleTags])}
+                  >
+                    Select all
+                  </button>
+                  <button
+                    type="button"
+                    style={filterTextActionStyle}
+                    onClick={() => setSelected([])}
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+            ),
+          },
+        ]}
+      />
+    );
   },
 };
 

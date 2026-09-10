@@ -4,6 +4,8 @@ import type React from "react";
 import { type ReactElement, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  getHighlightedMenuEntry,
+  getMenuEntryFocusTarget,
   isMenuSeparator,
   MENU_PLACEMENT,
   useIsMounted,
@@ -54,8 +56,15 @@ const SubMenu = ({ item }: { item: _Item<MenuEntry> }): ReactElement => {
  * alignment as space runs out.
  */
 const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
-  const { getItemProps, getMenuProps, getNodeStatus, onSelectItem, isOpen } =
-    useMenuContext();
+  const {
+    getItemProps,
+    getMenuProps,
+    getNodeStatus,
+    highlightItem,
+    onSelectItem,
+    isOpen,
+    ownerId,
+  } = useMenuContext();
 
   // `_Item<MenuItem>` re-types annotated children with the single member, but
   // a submenu's children genuinely include separators at runtime (the hook's
@@ -69,6 +78,8 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
   // (which moves the highlight back onto the parent) would leave the submenu open.
   const keyboardOpen = status.inHighlightedBranch && !status.highlighted;
   const [hovered, setHovered] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [, refreshFitmentRefs] = useState(0);
   // Gate on the ROOT open state: `hovered` is local, so a mouse-selected
   // nested leaf (which closes the root disclosure) would otherwise leave the
   // still-hovered submenu surface mounted and visible on its own.
@@ -77,17 +88,70 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
   // `typeof window` is already truthy on the first client render.
   const mounted = useIsMounted();
 
+  // The popup mounts conditionally when `open` becomes true. Refresh once after
+  // that commit so useWindowFitment sees popupRef.current and starts observing
+  // the surface; otherwise no state change follows the ref assignment and the
+  // submenu remains hidden at its fallback position.
+  useEffect(() => {
+    if (open) refreshFitmentRefs((version) => version + 1);
+  }, [open]);
+
   // The pointer never "leaves" a surface that is hidden under it, so clear
   // the hover state when the menu closes — otherwise the submenu would pop
   // straight open the next time the menu opens.
   useEffect(() => {
-    if (!isOpen) setHovered(false);
+    if (!isOpen) {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+      setHovered(false);
+    }
   }, [isOpen]);
+
+  useEffect(
+    () => () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    },
+    [],
+  );
+
+  const keepOpen = () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = null;
+    setHovered(true);
+  };
+
+  const scheduleClose = () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
+      setHovered(false);
+      closeTimerRef.current = null;
+    }, 120);
+  };
+
+  const openFirstChild = () => {
+    const firstChild = children.find(
+      (child) => !isMenuSeparator(child) && !child.disabled,
+    );
+    if (firstChild && !isMenuSeparator(firstChild)) highlightItem(firstChild);
+  };
 
   // MENU_PLACEMENT is a stable module constant and logical, so the hook mirrors
   // it in RTL from this item's own writing direction — no per-submenu dir read.
   const { targetRef, popupRef, popupPositionStyle, bestPosition } =
-    useWindowFitment({ preferredDirections: MENU_PLACEMENT, autoFit: true });
+    useWindowFitment({
+      preferredDirections: MENU_PLACEMENT,
+      autoFit: true,
+      isOpen: open,
+    });
+  const positioned = !!bestPosition;
+  const keyboardWasOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (keyboardWasOpenRef.current && !keyboardOpen && isOpen) {
+      targetRef.current?.focus();
+    }
+    keyboardWasOpenRef.current = keyboardOpen;
+  }, [isOpen, keyboardOpen, targetRef]);
 
   // A stable, instance-unique id for the submenu surface so the parent item
   // can reference the popup it controls (item keys are only unique within one
@@ -123,18 +187,17 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
   // @note Impure — moves DOM focus.
   const surfaceRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (!open || !keyboardOpen || typeof window === "undefined") return;
+    if (!open || !keyboardOpen || !positioned || typeof window === "undefined")
+      return;
     const surface = surfaceRef.current;
     if (!surface) return;
     const id = requestAnimationFrame(() =>
       requestAnimationFrame(() => {
-        surface
-          .querySelector<HTMLElement>('[role="menuitem"][tabindex="0"]')
-          ?.focus();
+        getMenuEntryFocusTarget(getHighlightedMenuEntry(surface))?.focus();
       }),
     );
     return () => cancelAnimationFrame(id);
-  }, [open, keyboardOpen]);
+  }, [open, keyboardOpen, positioned]);
 
   const menuProps = getMenuProps({
     label: item.label,
@@ -147,6 +210,7 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
   // `popupRef` stays null and `useWindowFitment` measures nothing — no
   // ResizeObserver, no reposition, and crucially no measure→reposition→measure
   // feedback across a tree of always-mounted hidden popups (which froze the UI).
+  const { ref: menuPropsRef, ...restMenuProps } = menuProps;
   const submenuSurface = open ? (
     <div
       className={[
@@ -158,22 +222,25 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
       ]
         .filter(Boolean)
         .join(" ")}
+      {...restMenuProps}
       id={submenuId}
-      aria-hidden={false}
+      data-contextual-menu-owner={ownerId}
       // Reveal visually only once positioned. The submenu mounts on open but
       // `bestPosition` resolves a frame later; without this gate it paints for a
       // frame at the fallback top:0/left:0 before snapping to the anchor.
-      data-positioned={bestPosition ? "true" : undefined}
+      data-positioned={positioned ? "true" : undefined}
       style={popupPositionStyle}
-      {...menuProps}
-      // After the spread so this composing callback wins over menuProps.ref
-      // (later JSX props override earlier ones): it captures the surface for
-      // the keyboard-open focus effect AND forwards to the tree's ref.
+      aria-hidden={false}
+      onPointerEnter={keepOpen}
+      onPointerLeave={scheduleClose}
+      // After the spread so this composing callback wins over menuProps.ref:
+      // it captures the surface for the keyboard-open focus effect AND
+      // forwards to the tree's ref.
       ref={(el) => {
         surfaceRef.current = el;
-        if (typeof menuProps.ref === "function") menuProps.ref(el);
-        else if (menuProps.ref)
-          (menuProps.ref as React.RefObject<HTMLElement | null>).current = el;
+        if (typeof menuPropsRef === "function") menuPropsRef(el);
+        else if (menuPropsRef)
+          (menuPropsRef as React.RefObject<HTMLElement | null>).current = el;
       }}
     >
       {children.map((child) => (
@@ -186,13 +253,14 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
   return (
     <div
       className="submenu-anchor"
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => setHovered(false)}
+      onPointerEnter={keepOpen}
+      onPointerLeave={scheduleClose}
     >
       <Item
         item={item}
         itemProps={itemProps}
         onSelect={() => onSelectItem(item)}
+        onOpenSubmenu={openFirstChild}
       />
       {submenuSurface && mounted
         ? createPortal(submenuSurface, document.body)

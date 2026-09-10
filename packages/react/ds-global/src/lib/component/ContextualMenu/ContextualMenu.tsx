@@ -1,19 +1,35 @@
 import type { _Item } from "@canonical/ds-types";
 import { getItemId } from "@canonical/ds-utils";
 import type React from "react";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   MENU_ROOT_PLACEMENT,
   useContextualMenu,
   useIsMounted,
 } from "../../hooks/index.js";
+import { Button } from "../Button/index.js";
 import MenuContext from "./common/MenuContext.js";
 import SubMenu from "./common/SubMenu/index.js";
 import type { ContextualMenuProps, MenuItem } from "./types.js";
 import "./styles.css";
 
 const componentCssClassName = "ds contextual-menu";
+
+const setRef = <T,>(ref: React.Ref<T> | undefined, value: T | null) => {
+  if (typeof ref === "function") ref(value);
+  else if (ref) ref.current = value;
+};
+
+const composeHandlers =
+  <TEvent extends React.SyntheticEvent>(
+    consumerHandler: ((event: TEvent) => void) | undefined,
+    internalHandler: ((event: TEvent) => void) | undefined,
+  ) =>
+  (event: TEvent) => {
+    consumerHandler?.(event);
+    if (!event.defaultPrevented) internalHandler?.(event);
+  };
 
 /**
  * A contextual menu presents a flat list of actions — optionally partitioned
@@ -26,6 +42,7 @@ const componentCssClassName = "ds contextual-menu";
  */
 const ContextualMenu = ({
   trigger,
+  triggerProps: buttonTriggerProps,
   items,
   label,
   className,
@@ -35,6 +52,9 @@ const ContextualMenu = ({
   maxWidth,
   autoFit,
   wrap,
+  highlightFirstItem,
+  closeOnEscape,
+  closeOnOutsideClick,
   onSelect,
   open,
   onOpenChange,
@@ -63,6 +83,9 @@ const ContextualMenu = ({
     // Menus conventionally wrap: ArrowDown on the last item loops to the
     // first (APG menu pattern). Opt out with `wrap={false}`.
     wrap: wrap ?? true,
+    highlightFirstItem,
+    closeOnEscape,
+    closeOnOutsideClick,
     onShow: () => onOpenChange?.(true),
     onHide: () => onOpenChange?.(false),
   });
@@ -83,8 +106,7 @@ const ContextualMenu = ({
     getItemProps,
   } = menu;
 
-  const triggerProps = getTriggerProps();
-  const annotatedEntries = annotatedRoot.items ?? [];
+  const menuEntries = annotatedRoot.items ?? [];
 
   // The shared menu API threaded to every (nested) level. One state, one
   // highlight path, one keyboard handler — submenus are render-only. Memoised so
@@ -102,9 +124,11 @@ const ContextualMenu = ({
       // would close the root surface while the hovered submenu stayed up.
       isOpen,
       onSelectItem: (item: _Item<MenuItem>) => {
+        item.onSelect?.(item);
         onSelect?.(item);
         close();
       },
+      ownerId: popupId,
     }),
     [
       getItemProps,
@@ -114,6 +138,7 @@ const ContextualMenu = ({
       close,
       isOpen,
       onSelect,
+      popupId,
     ],
   );
 
@@ -125,13 +150,22 @@ const ContextualMenu = ({
   // getMenuProps returns a generic prop bag from the headless navigation hook
   // (loose event-handler and ref types); it is spread onto the menu container.
   const menuProps = getMenuProps({
-    label,
+    label: label || undefined,
     labelledBy: label ? undefined : triggerId,
     // Compose the positioning ref with the menu's keyboard ref.
     ref: popupRef,
   }) as React.HTMLAttributes<HTMLDivElement> & {
     ref?: React.Ref<HTMLDivElement>;
   };
+
+  const { ref: menuPropsRef, ...restMenuProps } = menuProps;
+  const composedMenuRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      popupRef.current = node;
+      setRef(menuPropsRef, node);
+    },
+    [popupRef, menuPropsRef],
+  );
 
   const menuElement = (
     <div
@@ -147,17 +181,84 @@ const ContextualMenu = ({
       ]
         .filter(Boolean)
         .join(" ")}
+      {...restMenuProps}
       id={popupId}
+      data-contextual-menu-owner={popupId}
       aria-hidden={!isOpen}
       style={popupPositionStyle}
-      {...menuProps}
+      ref={composedMenuRef}
     >
-      {annotatedEntries.map((entry) => (
+      {menuEntries.map((entry) => (
         // SubMenu renders a separator as a divider, a submenu parent as the
         // item plus its nested popup (recursively), and a leaf as a plain item.
         <SubMenu key={getItemId(entry)} item={entry} />
       ))}
     </div>
+  );
+
+  const disclosureTriggerProps =
+    getTriggerProps() as React.ComponentProps<"button">;
+  const {
+    className: buttonTriggerClassName,
+    ref: buttonTriggerRef,
+    onClick: buttonTriggerOnClick,
+    onKeyDown: buttonTriggerOnKeyDown,
+    onFocus: buttonTriggerOnFocus,
+    onBlur: buttonTriggerOnBlur,
+    ...restButtonTriggerProps
+  } = buttonTriggerProps ?? {};
+  const {
+    ref: disclosureTriggerRef,
+    onClick: disclosureTriggerOnClick,
+    onKeyDown: disclosureTriggerOnKeyDown,
+    onFocus: disclosureTriggerOnFocus,
+    onBlur: disclosureTriggerOnBlur,
+    ...restDisclosureTriggerProps
+  } = disclosureTriggerProps;
+  const composedTriggerRef = useCallback(
+    (node: HTMLButtonElement | null) => {
+      targetRef.current = node;
+      setRef(
+        disclosureTriggerRef as React.Ref<HTMLButtonElement> | undefined,
+        node,
+      );
+      setRef(buttonTriggerRef, node);
+    },
+    [targetRef, disclosureTriggerRef, buttonTriggerRef],
+  );
+
+  const triggerElement = buttonTriggerProps ? (
+    <Button
+      {...restButtonTriggerProps}
+      {...restDisclosureTriggerProps}
+      type={restButtonTriggerProps.type ?? "button"}
+      id={triggerId}
+      className={["trigger", buttonTriggerClassName].filter(Boolean).join(" ")}
+      ref={composedTriggerRef}
+      onClick={composeHandlers(buttonTriggerOnClick, disclosureTriggerOnClick)}
+      onKeyDown={composeHandlers(
+        buttonTriggerOnKeyDown,
+        disclosureTriggerOnKeyDown,
+      )}
+      onFocus={composeHandlers(buttonTriggerOnFocus, disclosureTriggerOnFocus)}
+      onBlur={composeHandlers(buttonTriggerOnBlur, disclosureTriggerOnBlur)}
+    >
+      {trigger}
+    </Button>
+  ) : (
+    <button
+      type="button"
+      id={triggerId}
+      className="trigger"
+      {...restDisclosureTriggerProps}
+      ref={composedTriggerRef}
+      onClick={disclosureTriggerOnClick}
+      onKeyDown={disclosureTriggerOnKeyDown}
+      onFocus={disclosureTriggerOnFocus}
+      onBlur={disclosureTriggerOnBlur}
+    >
+      {trigger}
+    </button>
   );
 
   return (
@@ -173,15 +274,7 @@ const ContextualMenu = ({
             a no-op — focus would silently fall to <body> (WCAG 2.4.3). The
             fitment hook types its anchor as a div; the button anchors the same
             rect, so cast (Popover precedent). */}
-        <button
-          type="button"
-          id={triggerId}
-          className="trigger"
-          ref={targetRef as React.Ref<HTMLButtonElement>}
-          {...triggerProps}
-        >
-          {trigger}
-        </button>
+        {triggerElement}
         {mounted ? createPortal(menuElement, document.body) : menuElement}
       </div>
     </MenuContext.Provider>
