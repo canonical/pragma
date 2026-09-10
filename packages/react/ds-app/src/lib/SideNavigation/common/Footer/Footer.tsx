@@ -11,46 +11,61 @@ const componentCssClassName = "ds footer";
 /**
  * Renders one footer leaf row. The Footer is where a navigation row may be
  * a button — the content tree accepts links and plain labels only, while
- * the footer's `LeafFooterItem` keeps the `"button"` row. A navigable item
- * (`url` set, `control` not `"button"`) is dispatched to `Item` (a link,
- * through `LinkComponent`, marked active when it is the current location);
- * anything else renders as `ItemButton`. Explicit `control` always wins
- * over the `url`-presence inference, so an action item can carry a `url`
- * yet still render as a button. A toggle-style footer row has no dedicated
- * switch — a consumer composes one from `ItemButton` plus a `slot` (e.g. a
- * state badge) instead.
+ * the footer's `LeafFooterItem` keeps the `"button"` row. Three-way
+ * dispatch: a navigable item (`url` set, `control` not `"button"`) renders
+ * as `Item` (a link, through `LinkComponent`, marked active when it is the
+ * current location); an action item (`control: "button"`, or `onClick`
+ * with no `url`) renders as `ItemButton`; anything else — a label-only row
+ * like a logged-in username — renders as `Item`'s plain label row, NOT an
+ * inert `<button>` announced as an action that does nothing. Explicit
+ * `control` always wins over the `url`-presence inference, so an action
+ * item can carry a `url` yet still render as a button. A toggle-style
+ * footer row has no dedicated switch — a consumer composes one from
+ * `ItemButton` plus a `slot` (e.g. a state badge) instead.
  */
 const renderFooterItem = (
   item: LeafFooterItem,
   currentUrl: string | undefined,
   LinkComponent: FooterProps["LinkComponent"],
+  index: number,
 ): React.ReactElement => {
-  const row = item.url !== undefined && item.url === currentUrl;
+  // `label` is required on LeafFooterItem; the index fallback only guards
+  // duplicate labels colliding as React keys within one list.
+  const rowKey = `${index}:${item.label}`;
 
   if (item.control !== "button" && item.url) {
+    const active = item.url === currentUrl;
     return (
       <Item
-        key={item.label}
+        key={rowKey}
         url={item.url}
         icon={item.icon}
         slot={item.slot}
         LinkComponent={LinkComponent}
-        active={row}
+        active={active}
       >
         {item.label}
       </Item>
     );
   }
 
+  if (item.control === "button" || item.onClick) {
+    return (
+      <ItemButton
+        key={rowKey}
+        icon={item.icon}
+        slot={item.slot}
+        onClick={item.onClick}
+      >
+        {item.label}
+      </ItemButton>
+    );
+  }
+
   return (
-    <ItemButton
-      key={item.label}
-      icon={item.icon}
-      slot={item.slot}
-      onClick={item.onClick}
-    >
+    <Item key={rowKey} icon={item.icon} slot={item.slot}>
       {item.label}
-    </ItemButton>
+    </Item>
   );
 };
 
@@ -81,26 +96,36 @@ const Footer = ({
     >
       {list.length > 0 ? (
         <ul className="list">
-          {list.map((entry: FooterItem) =>
+          {list.map((entry: FooterItem, index: number) =>
             "items" in entry && entry.items.length > 0 ? (
               <ItemExpandable
-                key={entry.label}
+                key={`${index}:${entry.label}`}
                 heading={entry.label}
                 icon={entry.icon}
                 collapseOnChildClick
                 // Seed from whether a child row is the current location —
                 // the disclosure's own one-way sync re-opens it on
-                // navigation, exactly as the content tree does.
+                // navigation, exactly as the content tree does. The
+                // `url !== undefined` guard matters: without it, a
+                // label-only child (no `url`) matches an unset `currentUrl`
+                // (`undefined === undefined`) and the disclosure seeds open
+                // whenever `currentUrl` isn't wired.
                 defaultExpanded={entry.items.some(
-                  (child) => child.url === currentUrl,
+                  (child) =>
+                    child.url !== undefined && child.url === currentUrl,
                 )}
               >
-                {entry.items.map((child) =>
-                  renderFooterItem(child, currentUrl, LinkComponent),
+                {entry.items.map((child, childIndex) =>
+                  renderFooterItem(
+                    child,
+                    currentUrl,
+                    LinkComponent,
+                    childIndex,
+                  ),
                 )}
               </ItemExpandable>
             ) : (
-              renderFooterItem(entry, currentUrl, LinkComponent)
+              renderFooterItem(entry, currentUrl, LinkComponent, index)
             ),
           )}
         </ul>

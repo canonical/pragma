@@ -244,7 +244,7 @@ split mirrors the content tree's (`LeafNavItem`/`ExpandableNavItem`/`NavItem`):
 `FooterItem` is the union of a leaf row and a depth-1 expandable; every
 footer row flows through the single `footerRoot` surface.
 
-**`LeafFooterItem`** (leaf — link or action):
+**`LeafFooterItem`** (leaf — link, action, or plain label):
 
 | Field | Type | Notes |
 |-------|------|-------|
@@ -252,8 +252,14 @@ footer row flows through the single `footerRoot` surface.
 | `icon` | `IconName` | Leading icon (start slot), by ds-assets icon name. |
 | `url` | `string` | Navigable footer items render as links (active when the row is the current location). |
 | `control` | `"link" \| "button"` | Defaults to `"link"` when `url` is set, `"button"` otherwise. |
-| `onClick` | `() => void` | For `control: "button"`. |
+| `onClick` | `() => void` | For action rows. |
 | `slot` | `ReactNode` | Trailing content (e.g. unread-count badge). |
+
+Three-way dispatch: a `url` (with `control` not `"button"`) renders as a
+link; an action (`control: "button"`, or `onClick` with no `url`) renders
+as a button; anything else — a label-only row like a logged-in username —
+renders as a plain non-navigable label, never as an inert `<button>`
+announced as an action that does nothing.
 
 **`ExpandableFooterItem`** (disclosure — mirrors `ExpandableNavItem`): no
 `url`/`control`/`onClick` (an expandable row is neither a page nor an
@@ -261,7 +267,8 @@ action) and no `slot` (the end slot is the disclosure caret). Carries
 `label`, optional `icon`, and required `items: LeafFooterItem[]` — depth 1,
 children are always leaves. A leaf child matching `currentUrl` is marked
 active and its parent opens (seeded; re-opened on navigation by the
-disclosure's one-way sync).
+disclosure's one-way sync). Label-only children never match an unset
+`currentUrl` — only a `url`-bearing child can seed its parent open.
 
 ### `ContextSwitcherItem`
 
