@@ -36,8 +36,8 @@ export default meta;
  * Defined once, they are also the shape consumers should copy.
  */
 
-const maintenanceModal: WithModalRender = ({ close }) => (
-  <Modal>
+const maintenanceModal: WithModalRender = ({ close, ref }) => (
+  <Modal ref={ref}>
     <Modal.Header>Maintenance scheduled</Modal.Header>
     <Modal.Content>
       The service will restart at 02:00 UTC to apply security updates.
@@ -54,10 +54,11 @@ const AcknowledgeButton = withModal(Button, maintenanceModal);
 
 /**
  * The canonical form: click the button, the modal opens; a footer button can
- * only do one thing here — close the modal. The factory receives `{ close }`;
- * wire it with `onClick={close}`. If a button needs to do more than close —
- * submit a form, open another modal — compose `Modal` directly and drive it
- * through its `ref`.
+ * only do one thing here — close the modal. The factory receives `{ close,
+ * ref }`: wire `close` with `onClick={close}`, and attach `ref` to the
+ * `<Modal>` so the trigger can open it. If a button needs to do more than
+ * close — submit a form, open another modal — compose `Modal` directly and
+ * drive it through its `ref`.
  */
 export const Default: StoryFn = () => (
   <AcknowledgeButton importance="secondary">
@@ -68,8 +69,8 @@ Default.storyName = "Default";
 Default.parameters = {
   docs: {
     source: {
-      code: `const maintenanceModal: WithModalRender = ({ close }) => (
-  <Modal>
+      code: `const maintenanceModal: WithModalRender = ({ close, ref }) => (
+  <Modal ref={ref}>
     <Modal.Header>Maintenance scheduled</Modal.Header>
     <Modal.Content>...</Modal.Content>
     <Modal.Footer>
@@ -86,8 +87,8 @@ const AcknowledgeButton = withModal(Button, maintenanceModal);
   },
 };
 
-const searchSyntaxModal: WithModalRender = () => (
-  <Modal closeOnBackdropClick>
+const searchSyntaxModal: WithModalRender = ({ ref }) => (
+  <Modal ref={ref} closeOnBackdropClick>
     <Modal.Header>Search syntax</Modal.Header>
     <Modal.Content>
       Combine terms with AND, OR and NOT. Quote a phrase to match it exactly.
@@ -107,8 +108,8 @@ export const BackdropDismissible: StoryFn = () => (
 BackdropDismissible.parameters = {
   docs: {
     source: {
-      code: `const searchSyntaxModal: WithModalRender = () => (
-  <Modal closeOnBackdropClick>
+      code: `const searchSyntaxModal: WithModalRender = ({ ref }) => (
+  <Modal ref={ref} closeOnBackdropClick>
     <Modal.Header>Search syntax</Modal.Header>
     <Modal.Content> Combine terms with AND, OR and NOT. Quote a phrase to match it exactly. </Modal.Content>
   </Modal>
@@ -142,8 +143,8 @@ const Link = ({
   </div>
 );
 
-const termsModal: WithModalRender = () => (
-  <Modal>
+const termsModal: WithModalRender = ({ ref }) => (
+  <Modal ref={ref}>
     <Modal.Header>Terms</Modal.Header>
     <Modal.Content>
       These are the terms and conditions that apply to this service.
@@ -176,8 +177,8 @@ CustomTrigger.parameters = {
   </div>
 );
 
-const termsModal: WithModalRender = () => (
-  <Modal>
+const termsModal: WithModalRender = ({ ref }) => (
+  <Modal ref={ref}>
     <Modal.Header>Terms</Modal.Header>
     <Modal.Content>...</Modal.Content>
   </Modal>
@@ -192,8 +193,8 @@ const TermsLink = withModal(Link, termsModal);
   },
 };
 
-const exampleModal: WithModalRender = () => (
-  <Modal aria-label="Example modal">
+const exampleModal: WithModalRender = ({ ref }) => (
+  <Modal ref={ref} aria-label="Example modal">
     <Modal.Content>
       Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
       tempor incididunt ut labore et dolore magna aliqua.
@@ -207,15 +208,15 @@ const OpenButton = withModal(Button, exampleModal);
  * This story exists solely to show one rule: a modal composed without a
  * header has no title to name it, so it must carry its own `aria-label`.
  * Close it with Escape or the header-less content alone — nothing else to
- * decide, and the factory takes no arguments.
+ * decide.
  */
 export const WithoutHeader: StoryFn = () => <OpenButton>Open modal</OpenButton>;
 WithoutHeader.storyName = "Without a header";
 WithoutHeader.parameters = {
   docs: {
     source: {
-      code: `const exampleModal: WithModalRender = () => (
-  <Modal aria-label="Example modal">
+      code: `const exampleModal: WithModalRender = ({ ref }) => (
+  <Modal ref={ref} aria-label="Example modal">
     <Modal.Content>...</Modal.Content>
   </Modal>
 );

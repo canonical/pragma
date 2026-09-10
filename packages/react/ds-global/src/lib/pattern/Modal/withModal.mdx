@@ -5,7 +5,7 @@ import * as Stories from "./withModal.stories";
 
 # withModal
 
-`withModal` is a higher-order component: give it a trigger component and a function that returns a `<Modal>`, and it returns a new component that opens that modal when the trigger is clicked. It owns the wiring — the trigger's `onClick` opens the dialog, the header's X and Escape close it — and hands the modal's `close` to your function so a footer button can close it too.
+`withModal` is a higher-order component: give it a trigger component and a function that returns a `<Modal>`, and it returns a new component that opens that modal when the trigger is clicked. It owns the wiring — the trigger's `onClick` opens the dialog, the header's X and Escape close it — and hands your function `close` (so a footer button can close the modal) and `ref` (so the trigger can open it).
 
 ```tsx
 import {
@@ -15,8 +15,8 @@ import {
   type WithModalRender,
 } from "@canonical/react-ds-global";
 
-const maintenanceModal: WithModalRender = ({ close }) => (
-  <Modal>
+const maintenanceModal: WithModalRender = ({ close, ref }) => (
+  <Modal ref={ref}>
     <Modal.Header>Maintenance scheduled</Modal.Header>
     <Modal.Content>The service will restart at 02:00 UTC.</Modal.Content>
     <Modal.Footer>
@@ -37,6 +37,8 @@ function Toolbar() {
   );
 }
 ```
+
+> **The ref must always be attached.** Every factory must set the `ref` it receives on the `<Modal>` it returns — `<Modal ref={ref}>`. The trigger opens the dialog through that ref. Forget it and the trigger opens nothing.
 
 <Canvas of={Stories.Default} />
 
@@ -92,16 +94,15 @@ function withModal<TProps extends WithModalTriggerProps>(
       <td><code>WithModalRender</code></td>
       <td>
         A function that returns the modal. The HOC calls it on every render of
-        the trigger.
+        the trigger, with a props object — <code>&#123; close, ref &#125;</code>.
         <ul>
           <li>
-            A footer button needs to close the modal → take <code>&#123; close &#125;</code> and wire it: <code>onClick=&#123;close&#125;</code>.
+            <strong>Always attach the ref:</strong> <code>&lt;Modal ref=&#123;ref&#125;&gt;</code> — the trigger opens the dialog through it. Forgotten, the trigger opens nothing, silently.
           </li>
           <li>
-            Nothing needs the close → write <code>() =&gt; …</code>.
+            A footer button needs to close the modal → also take <code>&#123; close &#125;</code> and wire it: <code>onClick=&#123;close&#125;</code>.
           </li>
         </ul>
-
       </td>
     </tr>
   </tbody>

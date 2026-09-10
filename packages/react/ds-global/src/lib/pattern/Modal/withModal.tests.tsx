@@ -1,5 +1,4 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { createRef } from "react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { Button } from "../../component/Button/index.js";
 import { withModal } from "./index.js";
@@ -42,8 +41,8 @@ beforeAll(() => {
   }
 });
 
-const modal: WithModalRender = () => (
-  <Modal>
+const modal: WithModalRender = ({ ref }) => (
+  <Modal ref={ref}>
     <Modal.Header>Title</Modal.Header>
     <Modal.Content>Body</Modal.Content>
   </Modal>
@@ -108,23 +107,20 @@ describe("withModal", () => {
     expect(cancel.defaultPrevented).toBe(false);
   });
 
-  it("keeps the trigger wired when the returned modal element carries its own ref", () => {
-    // The contract is that the HOC owns the ref, so one set on the returned
-    // element is replaced by the clone that injects the HOC's own.
-    const strayRef = createRef<HTMLDialogElement>();
+  it("leaves the modal closed when the factory forgets the ref — the documented pitfall", () => {
+    // The factory must attach the ref it receives. TypeScript cannot enforce
+    // that `ref={ref}`, so this test pins the failure mode: the trigger opens
+    // nothing, silently.
     const TriggeredModal = withModal(Button, () => (
-      <Modal ref={strayRef}>
+      <Modal>
         <Modal.Header>Title</Modal.Header>
         <Modal.Content>Body</Modal.Content>
       </Modal>
     ));
     const { container } = render(<TriggeredModal>Open</TriggeredModal>);
 
-    expect(container.querySelector("dialog")).not.toHaveAttribute("open");
-    expect(strayRef.current).toBeNull();
-
     fireEvent.click(screen.getByRole("button", { name: "Open" }));
-    expect(container.querySelector("dialog")).toHaveAttribute("open");
+    expect(container.querySelector("dialog")).not.toHaveAttribute("open");
   });
 
   it("ignores a trigger click while the modal is already open", () => {
@@ -144,8 +140,8 @@ describe("withModal", () => {
   });
 
   it("closes the modal through a footer action given the close callback", () => {
-    const TriggeredModal = withModal(Button, ({ close }) => (
-      <Modal>
+    const TriggeredModal = withModal(Button, ({ close, ref }) => (
+      <Modal ref={ref}>
         <Modal.Header>Title</Modal.Header>
         <Modal.Content>Body</Modal.Content>
         <Modal.Footer>
@@ -174,8 +170,8 @@ describe("withModal", () => {
   });
 
   it("reads modal props from the returned modal element", () => {
-    const TriggeredModal = withModal(Button, () => (
-      <Modal className="custom-modal" closeOnBackdropClick>
+    const TriggeredModal = withModal(Button, ({ ref }) => (
+      <Modal ref={ref} className="custom-modal" closeOnBackdropClick>
         <Modal.Header>Title</Modal.Header>
         <Modal.Content>Body</Modal.Content>
       </Modal>

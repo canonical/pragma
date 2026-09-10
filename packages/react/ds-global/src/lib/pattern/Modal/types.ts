@@ -4,6 +4,7 @@ import type {
   ReactElement,
   ReactNode,
   Ref,
+  RefObject,
 } from "react";
 
 type OwnProps = {
@@ -93,32 +94,42 @@ export type WithModalTriggerProps = {
 };
 
 /**
- * The props {@link withModal} accepts on the modal element it is handed:
- * everything `Modal` accepts except `ref`. The HOC owns the ref — the
- * trigger it wraps is what opens the modal — so a `ref` set on the element
- * is ignored, exactly like one smuggled through the old options bag.
+ * The props the modal element returned by a {@link WithModalRender} carries:
+ * everything `Modal` accepts, `ref` included — the factory sets that ref on
+ * the `<Modal>` so the trigger can open it.
  */
-export type WithModalModalProps = Omit<ModalProps, "ref">;
+export type WithModalModalProps = ModalProps;
 
 /**
  * What {@link withModal} hands a {@link WithModalRender} function: a props
- * object
+ * object.
  */
 export type WithModalRenderProps = {
   /** Closes the modal. What a footer button wires its `onClick` to. */
   close: () => void;
+  /**
+   * The handle on the `<dialog>` the trigger opens. The factory MUST set it
+   * on the `<Modal>` it returns — `<Modal ref={ref}>` — otherwise the trigger
+   * opens nothing, silently. TypeScript cannot detect a forgotten `ref={ref}`,
+   * so this sentence is the warning.
+   */
+  ref: RefObject<HTMLDialogElement | null>;
 };
 
 /**
- * The function form of a {@link withModal} modal: a render contract. The HOC
- * calls it during render with a {@link WithModalRenderProps} object, and it
- * returns the complete `<Modal>` element.
+ * The second argument of {@link withModal}: a render contract. The HOC calls
+ * it during render with a {@link WithModalRenderProps} object — `{ close,
+ * ref }` — and it returns the complete `<Modal>` element.
  *
- * The second argument of {@link withModal} is always this render contract, so
- * every modal the HOC opens is shaped alike — destructure what you need:
- * `() => <Modal>…</Modal>` when nothing uses the callback, or
- * `({ close }) => <Modal><Modal.Footer><Button onClick={close}>Got it</Button></Modal.Footer></Modal>`
- * when a footer button closes the modal.
+ * **Every factory must attach the `ref` it receives to the `<Modal>` it
+ * returns.** The trigger opens the dialog through that ref; forget it and the
+ * trigger opens nothing, silently — TypeScript cannot catch it:
+ *
+ * `({ ref }) => <Modal ref={ref}>…</Modal>`
+ *
+ * or, with a footer button that closes the modal:
+ *
+ * `({ close, ref }) => <Modal ref={ref}><Modal.Footer><Button onClick={close}>Got it</Button></Modal.Footer></Modal>`
  *
  * A footer action can only close. If it must do more — submit data, close
  * conditionally, open another modal — skip the HOC and compose `Modal`

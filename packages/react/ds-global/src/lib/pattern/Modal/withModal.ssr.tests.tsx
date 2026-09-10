@@ -18,8 +18,8 @@ const Trigger = ({
 
 describe("withModal (SSR)", () => {
   it("renders to static HTML without throwing", () => {
-    const TriggeredModal = withModal(Trigger, () => (
-      <Modal>
+    const TriggeredModal = withModal(Trigger, ({ ref }) => (
+      <Modal ref={ref}>
         <Modal.Header>Title</Modal.Header>
         <Modal.Content>Body</Modal.Content>
       </Modal>
@@ -30,8 +30,8 @@ describe("withModal (SSR)", () => {
   });
 
   it("emits the trigger and a closed dialog", () => {
-    const TriggeredModal = withModal(Trigger, () => (
-      <Modal>
+    const TriggeredModal = withModal(Trigger, ({ ref }) => (
+      <Modal ref={ref}>
         <Modal.Header>Title</Modal.Header>
         <Modal.Content>Body</Modal.Content>
       </Modal>
