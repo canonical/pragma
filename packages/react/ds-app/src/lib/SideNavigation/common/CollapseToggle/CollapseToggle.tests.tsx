@@ -38,4 +38,16 @@ describe("CollapseToggle", () => {
     expect(element.className).toContain("ds collapse-toggle");
     expect(element.className).toContain("custom-class");
   });
+
+  it("wires a tooltip naming the action for each state (SPEC.md §5, §9.4)", () => {
+    const { rerender } = render(<CollapseToggle expanded />);
+    expect(screen.getByRole("tooltip", { hidden: true })).toHaveTextContent(
+      "Collapse",
+    );
+
+    rerender(<CollapseToggle expanded={false} />);
+    expect(screen.getByRole("tooltip", { hidden: true })).toHaveTextContent(
+      "Expand",
+    );
+  });
 });
