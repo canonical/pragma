@@ -204,8 +204,7 @@ const PREFIX_DECL = /(?:^|\s)@?prefix\s+([^\s:]+):\s*<([^>]*)>/gi;
  * @returns The same text with literal contents replaced by blanks.
  */
 function blankLiterals(content: string): string {
-  const keepNewlines = (text: string): string =>
-    text.replace(/[^\n]/g, " ");
+  const keepNewlines = (text: string): string => text.replace(/[^\n]/g, " ");
   return content
     .replace(/"""[\s\S]*?"""/g, keepNewlines)
     .replace(/'''[\s\S]*?'''/g, keepNewlines)
