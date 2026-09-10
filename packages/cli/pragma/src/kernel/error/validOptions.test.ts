@@ -44,7 +44,10 @@ describe("formatValidOptions", () => {
   it("carries the caller's own prefix", () => {
     // The recovery line and the options line describe the same vocabulary, so
     // they must agree on length as well as on content.
-    const line = formatValidOptions(options(1156), "Values allowed for --variable");
+    const line = formatValidOptions(
+      options(1156),
+      "Values allowed for --variable",
+    );
 
     expect(line.startsWith("Values allowed for --variable (1156)")).toBe(true);
     expect(line.length).toBeLessThan(2000);
