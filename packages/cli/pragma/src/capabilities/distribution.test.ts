@@ -14,6 +14,7 @@
 import { describe, expect, it } from "vitest";
 import { compilePack } from "../kernel/packs/compile.js";
 import { parsePackDefinition } from "../kernel/packs/schema.js";
+import { storyIssues } from "../kernel/packs/storyRules.js";
 import { DEFAULT_PREFIX_MAP } from "../kernel/render/prefixes.js";
 import type { VerbSpec } from "../kernel/spec/types.js";
 import { VOCABULARY } from "../kernel/vocabulary.js";
@@ -60,6 +61,55 @@ describe("the distribution's declared stories (PROTECTED)", () => {
       ).toEqual(story);
     },
   );
+
+  it('every declared filter names "values" or a "vocabulary"', () => {
+    // The rule the round-trip above already enforces, said OUT LOUD. It was
+    // only implied there — a story satisfies the whole grammar or it does not,
+    // and a reader looking for this particular property found no assertion
+    // claiming it. It is the property that separates a refusal (INVALID_INPUT
+    // naming the admissible values) from a calm empty page, so it is worth a
+    // test that fails with the rule's own name on it.
+    const filters = [...declaredStories].flatMap(([noun, story]) => [
+      ...(story.list?.filters ?? []).map(
+        (filter) => [`${noun} list --${filter.param}`, filter] as const,
+      ),
+      ...(story.verbs ?? []).flatMap((verb) =>
+        (verb.filters ?? []).map(
+          (filter) =>
+            [`${noun} ${verb.verb} --${filter.param}`, filter] as const,
+        ),
+      ),
+    ]);
+    // A guard, not a no-op: an empty derivation would make this vacuous.
+    expect(filters.map(([label]) => label).sort()).toEqual([
+      "concept list --type",
+      "implementation list --library",
+      "implementation list --platform",
+      "standard list --category",
+    ]);
+    for (const [label, filter] of filters) {
+      expect(
+        filter.values !== undefined || filter.vocabulary !== undefined,
+        `${label} declares neither "values" nor a "vocabulary"`,
+      ).toBe(true);
+      // And never both — a declared set IS the vocabulary.
+      expect(
+        filter.values !== undefined && filter.vocabulary !== undefined,
+        `${label} declares both`,
+      ).toBe(false);
+    }
+  });
+
+  it("every declared story satisfies the compilability rules", () => {
+    // These rules are checked in `compileStoryModule`, which is what makes them
+    // reach the distribution's own stories rather than only the ones zod sees.
+    // Asserted here as a property of the CONFIG so a violation is a red test
+    // and not an import-time throw in every command.
+    for (const [noun, story] of declaredStories) {
+      const issues = storyIssues(story);
+      expect(issues, `${noun} has compilability issues`).toEqual([]);
+    }
+  });
 
   it("every declared noun reaches the registry as an overridable module", () => {
     for (const noun of declaredStories.keys()) {

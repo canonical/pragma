@@ -2,16 +2,19 @@
  * The shared run bodies a compiled pack verb closes over.
  *
  * Each factory returns a `VerbSpec.run` closure. Reads are plain async: the list
- * body runs the pack's SELECT then applies post-query filters/search; the lookup
- * body resolves names → IRIs and fetches per the declared source, gated by the
- * resolved disclosure level; the sample body draws N random entities at the
- * highest level. All store access is through the runtime facade (lazy), so these
- * factories carry no heavy static import.
+ * body admits the caller's filter values against the graph's vocabulary, then
+ * runs ONE generated SELECT that carries the filters, the search and the page's
+ * bounds; the lookup body resolves names → IRIs and fetches per the declared
+ * source, gated by the resolved disclosure level; the sample body draws N random
+ * entities at the highest level. All store access is through the runtime facade
+ * (lazy), so these factories carry no heavy static import.
  */
 
 import { cliRecovery, PragmaError } from "../error/index.js";
 import type { PragmaRuntime } from "../runtime/index.js";
+import { encodeCursor, pageFingerprint, readCursor } from "./cursor.js";
 import { resolvePackDetail } from "./disclosure.js";
+import { readLimit } from "./paging.js";
 import type { SampleOutput } from "./renderPack.js";
 import {
   type LookupOutput,
@@ -19,17 +22,18 @@ import {
   resolveLookup,
 } from "./resolveEntity.js";
 import { parseSampleCount, pickRandom } from "./sample.js";
+import { buildListQuery } from "./sparql/buildListQuery.js";
 import {
-  applyPackFilters,
   type FilterVocabularies,
-} from "./sparql/applyFilters.js";
-import { applyPackSearch } from "./sparql/applySearch.js";
+  resolveFilterPredicates,
+} from "./sparql/filterValues.js";
 import { runSelect } from "./sparql/runSelect.js";
+import { readSearchTerm } from "./sparql/searchTerm.js";
 import type {
   PackFilter,
   PackList,
   PackLookup,
-  PackRow,
+  PackPage,
   StorySource,
 } from "./types.js";
 
@@ -60,29 +64,66 @@ export interface ListRunMeta {
 /**
  * Build the run body for a list-shaped verb (`list` or an extra verb).
  *
- * Zero rows is a plain empty list — a SUCCESS, not an error. It returns `[]`
- * (JSON stays `[]`, exit 0); the formatter turns the emptiness into a non-blank
- * message (a pack's `emptyRecovery` becomes that message's hint). Routing zero
- * results through EMPTY_RESULTS would map to exit 1 and break the uniform
- * `ok:true` list contract, so the run body never throws on emptiness.
+ * Zero rows is a plain empty list — a SUCCESS, not an error. It returns an
+ * empty page (JSON stays `[]`, exit 0); the formatter turns the emptiness into
+ * a non-blank message (a pack's `emptyRecovery` becomes that message's hint).
+ * Routing zero results through EMPTY_RESULTS would map to exit 1 and break the
+ * uniform `ok:true` list contract, so the run body never throws on emptiness.
+ * An empty PAGE is the same calm answer: a caller who walked past the last row
+ * asked a legitimate question and got a legitimate nothing.
+ *
+ * `limit + 1` rows are asked for and at most `limit` returned. That extra row
+ * is the whole "are there more" answer — a `COUNT` over the filtered
+ * population would be a second full evaluation of the same query to learn one
+ * boolean.
  */
 export function makeListRun(
   shape: PackList,
   meta: ListRunMeta,
-): (params: Record<string, unknown>, rt: PragmaRuntime) => Promise<PackRow[]> {
+): (params: Record<string, unknown>, rt: PragmaRuntime) => Promise<PackPage> {
   return async (params, rt) => {
-    const rows = await runSelect(rt, shape.query, meta.source);
     const vocabularies = await readFilterVocabularies(
       rt,
       shape.filters,
       params,
       meta.source,
     );
-    return applyPackSearch(
-      applyPackFilters(rows, shape.filters, params, vocabularies),
-      shape.search,
+    const predicates = resolveFilterPredicates(
+      shape.filters,
       params,
+      vocabularies,
+      meta.source.label,
     );
+    const search = readSearchTerm(shape.search, params);
+    const limit = readLimit(params.limit);
+    // The cursor is spendable only on the read that issued it, and the read IS
+    // the author query plus the admitted arguments — so the fingerprint is
+    // taken over exactly those.
+    const fingerprint = pageFingerprint([
+      shape.query,
+      JSON.stringify(predicates),
+      JSON.stringify(search ?? null),
+    ]);
+    const offset = readCursor(params.after, fingerprint);
+    const rows = await runSelect(
+      rt,
+      buildListQuery({
+        query: shape.query,
+        predicates,
+        ...(search ? { search } : {}),
+        window: { limit: limit + 1, offset },
+        label: meta.source.label,
+      }),
+      meta.source,
+    );
+    const hasMore = rows.length > limit;
+    return {
+      rows: hasMore ? rows.slice(0, limit) : rows,
+      ...(hasMore
+        ? { nextAfter: encodeCursor(offset + limit, fingerprint) }
+        : {}),
+      limit,
+    };
   };
 }
 

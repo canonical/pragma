@@ -19,6 +19,42 @@
  * of the canonical set.
  */
 
+/**
+ * The parameter names the KERNEL puts on a compiled verb, which a story's own
+ * filter may therefore not claim.
+ *
+ * `search` is a story's declared free-text flag; `detail` the disclosure
+ * selector; `name` and `count` a lookup's and a sample's positionals; `limit`
+ * and `after` the page every list-shaped verb carries. A filter claiming one
+ * would collide with a flag the CLI has already registered — a Commander
+ * failure outside every error envelope the CLI owns. Declared here, in the
+ * zod-free grammar, so the validator that refuses them and any reader that
+ * needs to tell a story's OWN params from the kernel's read one list.
+ */
+export const RESERVED_STORY_PARAMS: readonly string[] = [
+  "search",
+  "detail",
+  "name",
+  "count",
+  "limit",
+  "after",
+];
+
+/**
+ * The SPARQL VARIABLE prefix the kernel reserves, which a story's own query may
+ * therefore not use.
+ *
+ * The generated filter and search clauses bind a caller's values to variables
+ * under this prefix (`?__pragmaFilter0`, `?__pragmaSearch`). A story query using
+ * it would have its own variable shadowed, and the symptom would be a filter
+ * matching nothing with nothing raised anywhere. Beside the reserved PARAMS for
+ * the same reason: the grammar that refuses it and the builder that mints it
+ * must read one name, and this file is the zod-free place both can reach — the
+ * builder lives behind the dynamically imported run bodies, so nothing on the
+ * `--help` fast path may import it.
+ */
+export const RESERVED_VARIABLE_PREFIX = "__pragma";
+
 /** A list column: a SELECT variable to display. */
 export interface PackColumn {
   /** SELECT variable name (without `?`). */
@@ -136,8 +172,12 @@ export interface PackDisclosure {
 
 /**
  * A declarative list filter: a CLI/MCP parameter constraining one SELECT
- * variable. Filters are row predicates applied AFTER the author query runs — the
- * query text is never modified, so filter input cannot inject SPARQL.
+ * variable. Filters compile INTO the generated query, as predicates over the
+ * author query read as a sub-select — the author's text is never modified, and
+ * a caller's value is bound through a `VALUES` block rather than spliced into
+ * query text, so filter input still cannot inject SPARQL. Compiling them in is
+ * what puts filtering on the right side of a page: a predicate over returned
+ * rows would decide over whatever the page happened to contain.
  */
 export interface PackFilter {
   /** Parameter name — a single lowercase word (`--param` / MCP key). */
@@ -161,11 +201,16 @@ export interface PackFilter {
    * the hierarchy, also a `testing` standard, and a filter that compared only
    * the leaf answered `--category testing` with 1 of 8 — a silently wrong
    * answer, exit 0.
+   *
+   * A `"set"` cell is computed by the author's own `GROUP BY`, so its predicate
+   * can only run AFTER aggregation. That is why a filtered list wraps the
+   * author query in a sub-select rather than appending to it, and why a
+   * filterable story must project its variables by name.
    */
   readonly match?: "exact" | "set";
   /**
-   * Where the dimension's VOCABULARY lives in the graph, for a filter with no
-   * declared {@link values}.
+   * Where the dimension's VOCABULARY lives in the graph. REQUIRED for a filter
+   * with no declared {@link values} — a filter declaring neither is refused.
    *
    * A value-free filter rejects a value the data does not carry. The question is
    * what "the data" means. The rows a list just returned are the wrong answer:
@@ -180,9 +225,13 @@ export interface PackFilter {
    * this honours is "the graph is the vocabulary, don't hard-code the slugs" —
    * rows were never the graph, just the part of it that answered.
    *
-   * Without it a value-free filter falls back to the observed rows, which is the
-   * only evidence available; that is a NARROWER vocabulary than the truth, and a
-   * story whose dimension has an authoritative source should declare it.
+   * A value-free filter USED to fall back to the observed rows — knowingly
+   * narrower than the truth, but the only evidence available. Now that a list
+   * answers with a PAGE that fallback is not merely narrow, it is wrong: a real
+   * value outside the window would be refused as a bad argument, with a
+   * truncated list of alternatives. So the fallback is gone and the declaration
+   * takes its place — a filter names `values` or a vocabulary, and one that
+   * names neither is refused where it is declared.
    */
   readonly vocabulary?: PackFilterVocabulary;
   /** Help text (defaults to a generated description). */
@@ -202,8 +251,9 @@ export interface PackFilterVocabulary {
 
 /**
  * Free-text search over list rows: a `--search` string keeping a row when ANY
- * named SELECT variable contains the term (case-insensitive substring). Applied
- * after the author query, so input never touches the query text.
+ * named SELECT variable contains the term (case-insensitive substring).
+ * Compiled into the generated query alongside the filters, with the term bound
+ * through a `VALUES` block rather than spliced into query text.
  */
 export interface PackSearch {
   /** SELECT variables searched (without `?`). */
@@ -425,6 +475,31 @@ export interface PackLookup {
 
 /** A pack list row / flat lookup base: variable name → string value. */
 export type PackRow = Record<string, string>;
+
+/**
+ * What a list-shaped verb answers with: one page of rows, and whether more
+ * follow.
+ *
+ * The ROWS are still the payload — `formatters.json` projects this to
+ * {@link rows} alone, so `--format json` and the MCP tool result stay the bare
+ * array they always were and nothing downstream had to learn a new shape. The
+ * page's own facts ride the `notice` seam into the envelope's `meta`, the same
+ * channel a calm empty result already uses. That is deliberate: a caller
+ * reading the data reads data, and a caller who needs to know there is more is
+ * told in the one place this surface already puts things the data cannot say
+ * about itself.
+ */
+export interface PackPage {
+  /** This page's rows, in the story's own order. */
+  readonly rows: readonly PackRow[];
+  /**
+   * The cursor that asks for the rows after this page, absent when this page is
+   * the last. Its presence IS the "more rows exist" answer.
+   */
+  readonly nextAfter?: string;
+  /** The limit this page was cut to, for the notice that reports it. */
+  readonly limit: number;
+}
 
 /**
  * A child record under an expand. Scalar values come from child fields; a nested

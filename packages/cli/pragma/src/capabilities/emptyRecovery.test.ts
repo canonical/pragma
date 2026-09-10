@@ -15,6 +15,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { compilePack } from "../kernel/packs/compile.js";
+import { DEFAULT_LIST_LIMIT } from "../kernel/packs/paging.js";
 import type { PackDefinition } from "../kernel/packs/types.js";
 import { distributionSource } from "../kernel/packs/types.js";
 import { verbKey } from "../kernel/packs/uniqueness.js";
@@ -102,7 +103,10 @@ describe("pack list empty-state (U5, PROTECTED)", () => {
   it.each(PACK_LISTS)(
     "$pack.noun list on an empty store returns [] — never throws",
     async ({ pack }) => {
-      await expect(listVerb(pack).run({}, rt)).resolves.toEqual([]);
+      await expect(listVerb(pack).run({}, rt)).resolves.toEqual({
+        rows: [],
+        limit: DEFAULT_LIST_LIMIT,
+      });
     },
   );
 
@@ -112,13 +116,14 @@ describe("pack list empty-state (U5, PROTECTED)", () => {
       const { formatters } = listVerb(pack).output;
       // The message + runnable hint live on the empty-state seam — the
       // dispatcher routes them to stderr, keeping plain stdout pure data.
-      const notice = formatters.notice?.([]);
+      const empty = { rows: [], limit: DEFAULT_LIST_LIMIT };
+      const notice = formatters.notice?.(empty);
       expect(notice).toContain(`No ${pack.noun} entries found.`);
       expect(notice).toMatch(hint);
       // JSON is the uniform empty array — unchanged by the message.
-      expect(formatters.json([])).toBe("[]");
+      expect(formatters.json(empty)).toBe("[]");
       // The llm view stays non-blank too (the `(0)` heading plus the message).
-      expect(formatters.llm([]).trim().length).toBeGreaterThan(0);
+      expect(formatters.llm(empty).trim().length).toBeGreaterThan(0);
     },
   );
 

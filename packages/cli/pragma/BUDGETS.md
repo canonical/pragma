@@ -778,3 +778,120 @@ Open question (1) from the 2026-08-30 banner — where the pass should run
 instead — is **still open**, and this re-derivation makes it more pressing
 rather than less: two of the three ceilings moved because real cost had
 accumulated unobserved between one manual run and the next.
+## 2026-09-10 — the first response-size budget for a list-shaped answer
+
+`LIST_PAYLOAD_BUDGET_BYTES = 125_000`, enforced in
+`src/capabilities/listBudget.shipped.exec.test.ts`.
+
+Until this, no list carried a size budget. The five constants above are all
+latency, not one of the enforced cases runs a story's list query, and the only
+size ceiling in the package covered the MCP resource listing rather than a verb
+— so a story's payload could grow without limit and nothing turned red. A list
+is also the payload an agent pays for twice, once in transfer and once in the
+context window it can no longer spend on the task.
+
+**Measured, on this box, over the pack the distribution ships** (embedded pack
+manifest as committed; every list-shaped body the configuration declares, run
+through its compiled verb and measured where the payload is built — the `json`
+formatter's output, re-serialised the way both machine surfaces send it, so the
+figure is what crosses the wire and not what the indented formatter string
+weighs):
+
+| Body                       | rows at the default limit | bytes | rows unpaginated | bytes  |
+| -------------------------- | ------------------------- | ----- | ---------------- | ------ |
+| `block list`               | 252                       | 32,956 | 252             | 32,956 |
+| `token list`               | 0                         | 2      | 0               | 2      |
+| `modifier list`            | 11                        | 1,392  | 11              | 1,392  |
+| `tier list`                | 15                        | 1,051  | 15              | 1,051  |
+| `concept list`             | 4                         | 1,340  | 4               | 1,340  |
+| `standard list`            | 147                       | 78,129 | 147             | 78,129 |
+| `standard categories`      | 21                        | 689    | 21              | 689    |
+| `implementation list`      | 90                        | 27,850 | 90              | 27,850 |
+| `implementation libraries` | 4                         | 711    | 4               | 711    |
+
+The two columns are the same number for every body, and that is the point: the
+kernel's default page is **500 rows**, above every declared story's population,
+so the arrival of `--limit`/`--after` truncates nothing. The day a story
+outgrows one page the columns diverge, and the suite asserts both.
+
+**The two maxima are the ones expected, and one of them reproduces exactly.**
+The most ROWS is `block list` at 252 for 32,956 bytes — the same 252 / 32,986
+recorded elsewhere, the 30-byte difference being the `{"ok":true,"data":…}`
+envelope those figures included. The most BYTES is `standard list` at 78,129
+over 147 rows, whose rows are fat rather than many; the same body measured
+through the built CLI's `--format json` in the same session read 77,966 bytes
+for the same 147 rows, and an earlier record 78,159. All three agree to 0.2 per
+cent, which is the honest precision of "how big is this answer" across three
+harnesses, and the budget is derived from the largest of them.
+
+### Deriving 125,000
+
+`1.6 × 78,129 = 125,006`, rounded down to `125,000`. Same shape of derivation as
+the resource listing's own ceiling, which went 60,000 → 100,000 against a
+measured 65,119 (1.54×) on 2026-09-01.
+
+**The headroom the suite ENFORCES is 28 per cent, not 60.** The ceiling sits
+1.6× above the largest measured answer, but the not-slack half of the assertion
+is `expect(largest).toBeLessThan(LIST_PAYLOAD_BUDGET_BYTES * 0.8)` — it turns
+red at 100,000 bytes, which is 1.28× the measured 78,129. So the effective gate
+is tighter than the documented ceiling, and this document used to advertise the
+looser number: 60 per cent was the distance to a bar nothing checks, 28 per cent
+is the distance to the bar that goes red. It is still room for ordinary upstream
+growth in the code-standards pack without a red bar on a pack bump. The same
+assertion's other half holds the largest measured answer **above** a quarter of
+the ceiling, so a budget that has stopped bounding anything cannot sit there
+quietly either.
+
+When it is next reached, the fix is not a bigger number — a ceiling raised on
+demand is a formality. It is either a narrower default page for the story that
+blew it (the kernel has no per-story page size today, deliberately: no declared
+story needs one, and inventing the knob before there is a second answer is how
+a grammar grows a field nobody can justify) or narrower columns, which trades an
+honest surface for an arithmetic one and is the worse of the two.
+
+### The row ceiling this budget implies
+
+`MAX_LIST_WINDOW = 40_000`, in `src/kernel/packs/paging.ts`, is derived from this
+number rather than from the store. Both halves of a page's window — the
+`--limit` a caller passes and the offset a cursor carries — are emitted into the
+generated query's own `LIMIT`/`OFFSET`, which the engine requires to fit a
+32-bit integer while `Number.isInteger` admits anything up to 2^53. Unbounded,
+`--limit 9007199254740991` reached the store and came back as a raw parse error
+wrapped in `INTERNAL_ERROR` and "report this issue", which is the wrong answer
+to a legitimate question asked too big.
+
+The ceiling comes from the budget because the budget is a fact about the ANSWER,
+where the engine's range is a fact about the pinned store. The narrowest row a
+story can serialise is `{}` and its separating comma — three bytes — so an
+answer of more than `125,000 / 3 = 41,666` rows cannot be inside the budget
+whatever a story's columns are, and a limit that cannot produce a legal answer is
+not a legal limit. Rounded down to 40,000: still 158× the largest population the
+distribution ships (252) and 80× the default page. `listBudget.shipped.exec.test.ts`
+asserts `MAX_LIST_WINDOW * 3 <= LIST_PAYLOAD_BUDGET_BYTES`, so the two numbers
+cannot drift apart in silence.
+
+The cursor's offset takes the same ceiling for a reason of its own. An offset is
+a count of rows already answered, and a walk past 40,000 of them is walking a
+population two orders of magnitude larger than any single legal answer — the
+point at which the cursor to spend is a keyset cursor, which is what the
+encoding's `v` field exists to allow. Until such a story exists, an offset that
+large is a hand-edited token (the fingerprint covers the query and the arguments,
+not the offset), and one typed `INVALID_INPUT` is the honest answer to both.
+
+### Why it is not in the perf pass
+
+`src/testing/perf/**` is not run by CI (owner ruling 2026-08-30), and a budget
+nothing runs is not a gate. This one is a property of the payload rather than of
+wall-clock time, so it needs neither the serial pass nor the spawned binary: it
+lives in the ordinary suite, where the payload is built, exactly as the resource
+listing's ceiling does.
+
+### No latency constant moves
+
+Compiling a story's filters into its query replaces one full-population read
+plus a row scan with one narrowed read, and pagination replaces the tail of that
+read with nothing; the storeless fast paths (`--help`, `__complete`,
+`--version`) gain two `ParamSpec` literals per list-shaped verb and no new
+module — `paging.ts` carries the default and no hash, and the cursor codec that
+does hash is reached only from a run body. `bun run test:perf` stays green at
+its existing ceilings.

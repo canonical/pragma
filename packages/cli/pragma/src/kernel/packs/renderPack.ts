@@ -32,6 +32,7 @@ import type {
   PackEntity,
   PackList,
   PackLookup,
+  PackPage,
   PackRow,
 } from "./types.js";
 
@@ -57,11 +58,23 @@ export interface RenderMeta {
  */
 const DEFAULT_EMPTY_HINT = `Either nothing matched — try a wider filter — or the store has nothing in it yet: build it with \`${BIN_NAME} sources update\`.`;
 
-/** Build the list formatters for a list-shaped verb (list or an extra verb). */
+/**
+ * Build the list formatters for a list-shaped verb (list or an extra verb).
+ *
+ * Every mode renders the page's ROWS, so the three output contracts are exactly
+ * what they were before a list carried a page: `plain` a table, `llm` its
+ * frozen condensed form, `json` the bare array. What the page adds rides the
+ * `notice` seam — the channel that already exists for what the data cannot say
+ * about itself, and which both machine surfaces project into `meta.notice`.
+ *
+ * A page that is the whole answer says nothing, which is why declaring the
+ * default page size above every story's population left every existing answer
+ * untouched, notice included.
+ */
 export function listFormatters(
   shape: PackList,
   meta: RenderMeta,
-): Formatters<PackRow[]> {
+): Formatters<PackPage> {
   const columns: ColumnDef<PackRow>[] = shape.columns.map((column) => ({
     key: column.field,
     label: column.label ?? column.field,
@@ -84,14 +97,34 @@ export function listFormatters(
     emptyHint,
   };
   return {
-    plain: (rows, context) => renderListPlain(rows, options, context),
-    llm: (rows) => renderListLlm(rows, options),
-    json: (rows) => JSON.stringify(rows, null, 2),
+    plain: (page, context) => renderListPlain(page.rows, options, context),
+    llm: (page) => renderListLlm(page.rows, options),
+    json: (page) => JSON.stringify(page.rows, null, 2),
     // Zero rows: the dispatcher routes this to stderr (exit 0) so the plain
     // stdout stream stays pure data; llm/json keep their own empty shapes.
-    notice: (rows) =>
-      rows.length === 0 ? renderListEmptyNotice(options) : undefined,
+    notice: (page) =>
+      page.rows.length === 0
+        ? renderListEmptyNotice(options)
+        : pageNotice(page, meta),
   };
+}
+
+/**
+ * What a truncated page says for itself: that it is one, and the exact argument
+ * that fetches the next.
+ *
+ * The cursor is printed rather than described. An opaque token a caller has to
+ * be told how to obtain is a token they will guess at, and the two surfaces
+ * that carry this are read by agents — so the sentence contains the flag, the
+ * value, and the tool parameter, ready to copy.
+ */
+function pageNotice(page: PackPage, meta: RenderMeta): string | undefined {
+  if (page.nextAfter === undefined) return undefined;
+  return (
+    `Showing ${page.rows.length} ${meta.noun} entries, and more exist. ` +
+    `For the next page pass \`--after ${page.nextAfter}\` ` +
+    `(\`after\` over MCP), or raise \`--limit\` (currently ${page.limit}).`
+  );
 }
 
 /** Build the shared per-entity render options for a lookup (reused by sample). */

@@ -15,6 +15,7 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
+import { PragmaError } from "../error/index.js";
 import { compactUri, DEFAULT_PREFIX_MAP } from "../render/index.js";
 import type { PragmaRuntime } from "../runtime/index.js";
 import { asVerb } from "../spec/asVerb.js";
@@ -25,6 +26,7 @@ import type {
   ParamSpec,
   VerbSpec,
 } from "../spec/types.js";
+import { DEFAULT_LIST_LIMIT, MAX_LIST_WINDOW } from "./paging.js";
 import {
   listFormatters,
   lookupFormatters,
@@ -37,12 +39,13 @@ import {
   MIN_SAMPLE_COUNT,
   sampleDefaultCount,
 } from "./sample.js";
+import { storyIssues } from "./storyRules.js";
 import type {
   PackDefinition,
   PackFilter,
   PackList,
   PackLookup,
-  PackRow,
+  PackPage,
   PackSearch,
   StorySource,
 } from "./types.js";
@@ -171,16 +174,33 @@ export function compileListable(
  * through here alike, so a module-level projection derived from the story
  * (today: {@link compileListable}) cannot reach one tier and miss the other.
  *
+ * That door is also where the COMPILABILITY rules are checked
+ * ({@link ./storyRules.storyIssues}), for the same reason. The zod grammar runs
+ * for config- and package-declared stories only, so a rule stated only there
+ * was a declaration-time refusal for a third-party author and a first-call
+ * CONFIG_ERROR for the distribution's own stories. The rules are pure string
+ * work over text the story already carries, which is what makes them affordable
+ * on this path; a story that passed zod has passed them already, so the throw
+ * below is reachable only for a story that never saw zod.
+ *
  * @param definition - A validated pack definition.
  * @param source - Where the definition came from, for diagnostics.
  * @param prefixes - The merged prefix map used for display compaction.
  * @returns The module: the compiled verbs plus the story's module-level data.
+ * @throws PragmaError CONFIG_ERROR when the definition cannot be compiled,
+ *   naming the field and the rule.
  */
 export function compileStoryModule(
   definition: PackDefinition,
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
 ): CapabilityModule {
+  const issue = storyIssues(definition)[0];
+  if (issue) {
+    throw PragmaError.configError(
+      `Invalid story in ${source.label} at ${issue.path.join(".")}: ${issue.message}`,
+    );
+  }
   const listable = compileListable(definition);
   return {
     name: definition.noun,
@@ -207,9 +227,10 @@ function compileListVerb(shape: PackList, meta: ListVerbMeta): VerbSpec {
   const params = [
     ...projectFilters(shape.filters),
     ...projectSearch(shape.search),
+    ...PAGE_PARAMS,
   ];
   const filterExample = shape.filters?.find((f) => f.values !== undefined);
-  const verb: VerbSpec<Record<string, unknown>, PackRow[]> = {
+  const verb: VerbSpec<Record<string, unknown>, PackPage> = {
     path: [meta.noun, meta.verb],
     summary: meta.summary,
     ...(meta.doc ? { doc: meta.doc } : {}),
@@ -354,6 +375,30 @@ function disclosureSpec(disclosure: PackLookup["disclosure"]): DisclosureSpec {
     default: disclosure?.default ?? levels[0] ?? "summary",
   };
 }
+
+/**
+ * The page parameters EVERY list-shaped verb carries — `list` and every extra
+ * verb alike.
+ *
+ * Not declared per story, and not declarable: a page is a property of a
+ * list-shaped read, so a story that forgot to declare one would be the one
+ * answer an agent could not bound. The default is named in the help text
+ * because a cap a caller cannot see is exactly the hidden behaviour
+ * CONSTITUTION §VI rules out — the number a caller gets when they pass nothing
+ * has to be readable in `--help`.
+ */
+const PAGE_PARAMS: readonly ParamSpec[] = [
+  {
+    kind: "number",
+    name: "limit",
+    doc: `Maximum rows to return, 1 to ${MAX_LIST_WINDOW} (default ${DEFAULT_LIST_LIMIT}).`,
+  },
+  {
+    kind: "string",
+    name: "after",
+    doc: "Continue from a previous page: the cursor that page reported.",
+  },
+];
 
 /** Project declared filters onto verb params (enum for a value set, else string). */
 function projectFilters(

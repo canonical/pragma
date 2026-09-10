@@ -14,12 +14,25 @@
  * statically by `capabilities/distribution.ts` and never revalidated at dispatch
  * (`collect.projectStoryTiers`'s default-origin carve-out); this runs for config-
  * and package-declared stories, and in `distribution.test.ts`'s round-trip.
+ *
+ * That carve-out is exactly why the rest of the compilability rules are NOT
+ * here. A rule stated only in this file reaches a third-party author at
+ * declaration and the distribution's own stories not at all — they meet it as a
+ * first-call CONFIG_ERROR. Those rules live in {@link ./storyRules}, which
+ * `compileStoryModule` runs for every tier, and {@link refineListShape} reports
+ * them as zod issues so a config author still reads them here, in the same
+ * words and at the same paths.
  */
 
 import { z } from "zod";
 import { DETAIL_LEVELS, RECOVERY_CLI_PREFIX } from "../../constants.js";
 import { PragmaError } from "../error/index.js";
-import type { PackDefinition } from "./types.js";
+import { listShapeIssues } from "./storyRules.js";
+import {
+  type PackDefinition,
+  type PackList,
+  RESERVED_STORY_PARAMS,
+} from "./types.js";
 
 const NOUN_PATTERN = /^[a-z][a-z0-9-]*$/;
 /** Message for {@link NOUN_PATTERN} — third-party authors never see the regex. */
@@ -38,14 +51,22 @@ const GRAPHQL_NAME_PATTERN = /^[_A-Za-z][_0-9A-Za-z]*$/;
 const TERM_PATTERN =
   /^(?:[A-Za-z][A-Za-z0-9+.-]*:\/\/[^<>"\s]+|\^?[A-Za-z][\w-]*:[^/<>"\s]+(?:\/\^?[A-Za-z][\w-]*:[^/<>"\s]+)*)$/;
 
-/** Params a filter/verb may not claim (they are the shared read vocabulary). */
-const RESERVED_PARAMS = new Set(["search", "detail", "name", "count"]);
+/** Params a filter/verb may not claim — the kernel's own, from the grammar. */
+const RESERVED_PARAMS = new Set(RESERVED_STORY_PARAMS);
 
 /**
  * Whether an author-supplied query is a SELECT (optionally preceded by its own
  * PREFIX lines). Every author query a story declares runs through `runSelect`,
  * which reads `result.bindings` — so a non-SELECT is a shape mismatch caught
  * here rather than downstream.
+ *
+ * Used for a `vocabulary.query` only, which is run exactly as the author wrote
+ * it. A `list.query` gets the real reader instead ({@link ./storyRules}, via
+ * `sparql/authorQuery.ts`), because this pattern is NARROWER than what a page
+ * can now serve: it admits `PREFIX` lines but not a leading comment, not
+ * `BASE`, and not a lower-case `prefix` — all of which the lift handles. A
+ * grammar that refuses the shape the kernel supports is the same defect as one
+ * that admits the shape it cannot, read from the other side.
  */
 function isSelectQuery(query: string): boolean {
   return /^\s*(?:PREFIX\s+[^\n]*\n\s*)*SELECT\s/i.test(query);
@@ -89,6 +110,12 @@ const filterSchema = z
   .refine((f) => !f.vocabulary || isSelectQuery(f.vocabulary.query), {
     message: '"vocabulary.query" must be a SPARQL SELECT query',
   });
+// A filter must also say WHAT it admits, one way or the other — it used to be
+// able to say neither and fall back to the values the returned ROWS carried,
+// which a page makes actively wrong. That rule is a compilability rule rather
+// than a shape rule, so it is checked in `storyRules.ts` (which the
+// distribution's own stories reach too) and reported from `refineListShape`
+// below at the same `…filters.N` path it always used.
 
 const searchSchema = z
   .object({
@@ -286,17 +313,17 @@ const definitionSchema = z
         message: 'a pack must declare at least one of "list" or "lookup".',
       });
     }
-    if (def.list && !isSelectQuery(def.list.query)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: '"list.query" must be a SPARQL SELECT query.',
-        path: ["list", "query"],
-      });
-    }
+    // "must be a SELECT" for a `list.query` is `refineListShape`'s to say, and
+    // it says it from the reader that actually splits the query — which admits
+    // the prologue shapes this file's own pattern does not.
     refineVerbNames(def, ctx);
-    if (def.list) refineFilterParams(def.list.filters, ["list"], ctx);
+    if (def.list) {
+      refineFilterParams(def.list.filters, ["list"], ctx);
+      refineListShape(def.list, ["list"], ctx);
+    }
     for (const [index, verb] of (def.verbs ?? []).entries()) {
       refineFilterParams(verb.filters, ["verbs", index], ctx);
+      refineListShape(verb, ["verbs", index], ctx);
     }
     if (def.lookup) refineLookup(def.lookup, ctx);
   });
@@ -357,6 +384,38 @@ function refineFilterParams(
       });
     }
     seen.add(filter.param);
+  }
+}
+
+/**
+ * The COMPILABILITY rules for one list-shaped body, reported as zod issues.
+ *
+ * The rules themselves live in {@link ./storyRules}, deliberately outside this
+ * module: zod runs only for config- and package-declared stories, and a rule
+ * whose violation is a CONFIG_ERROR has to reach the distribution's own stories
+ * too — which it does by being checked in `compileStoryModule`, the door every
+ * tier comes through. Stated in two places it would be two rules; delegated, a
+ * third-party author and the distribution read the same sentence.
+ *
+ * What they cover: a query a page cannot wrap (its own prologue is lifted, but
+ * a `FROM` clause and an unreadable projection cannot be), a filter or search
+ * over a variable the query does not project, a filtered query shadowing the
+ * generated variable prefix, and a filter that declares neither `values` nor a
+ * `vocabulary`. None of them could be checked while filters were predicates
+ * over returned rows: a variable that was not there simply matched nothing,
+ * silently, with exit 0.
+ */
+function refineListShape(
+  shape: PackList,
+  path: readonly (string | number)[],
+  ctx: z.RefinementCtx,
+): void {
+  for (const issue of listShapeIssues(shape, path)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: issue.message,
+      path: [...issue.path],
+    });
   }
 }
 

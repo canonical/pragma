@@ -33,6 +33,14 @@
  * Nothing reaches it indirectly either: `test` does not chain it, no Nx target
  * or workflow names it, and the repo has no git hooks. See
  * `vitest.perf.config.ts`, `docs/CI.md` and BUDGETS.md.
+ *
+ * EVERY CEILING HERE IS LATENCY. The one SIZE budget the package enforces on a
+ * verb — a list-shaped answer's payload — deliberately does not live here: it
+ * is a property of the payload rather than of wall-clock time, so it needs
+ * neither the serial pass nor the spawned binary, — and a budget nothing
+ * runs is not a gate. It sits where the payload is built, in
+ * `capabilities/listBudget.shipped.exec.test.ts`, as the MCP resource
+ * listing's own ceiling does in `capabilities/resources/resources.test.ts`.
  */
 
 /**

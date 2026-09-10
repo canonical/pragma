@@ -40,6 +40,7 @@ import { listEntityNames } from "../kernel/packs/resolveEntity.js";
 import {
   distributionSource,
   type PackDefinition,
+  type PackPage,
 } from "../kernel/packs/types.js";
 import { verbKey } from "../kernel/packs/uniqueness.js";
 import { bootRuntime } from "../kernel/runtime/boot.js";
@@ -92,10 +93,7 @@ async function publishedNames(
   module: CapabilityModule,
   noun: string,
 ): Promise<string[]> {
-  const rows = (await verbOf(module, noun, "list").run({}, rt)) as Record<
-    string,
-    string
-  >[];
+  const { rows } = (await verbOf(module, noun, "list").run({}, rt)) as PackPage;
   return [
     ...new Set(rows.map((row) => row.name ?? "").filter((name) => name !== "")),
   ];

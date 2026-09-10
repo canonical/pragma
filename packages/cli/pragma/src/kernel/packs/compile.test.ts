@@ -10,11 +10,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { RECOVERY_CLI_PREFIX } from "../../constants.js";
 import { buildFixtureRuntime } from "../../testing/helpers/packRuntime.js";
+import { PragmaError } from "../error/index.js";
 import type { PragmaRuntime } from "../runtime/types.js";
 import { compileListable, compilePack, compileStoryModule } from "./compile.js";
+import { encodeCursor, pageFingerprint } from "./cursor.js";
+import { DEFAULT_LIST_LIMIT, MAX_LIST_WINDOW } from "./paging.js";
 import type { LookupOutput } from "./resolveEntity.js";
 import { parsePackDefinition } from "./schema.js";
-import type { PackDefinition, PackRow } from "./types.js";
+import type { PackDefinition, PackPage, PackRow } from "./types.js";
 import { distributionSource } from "./types.js";
 import { assertUniqueVerbs, verbKey } from "./uniqueness.js";
 
@@ -135,7 +138,14 @@ describe("pack compiler — round-trip + shape (PROTECTED, storeless)", () => {
       distributionSource("bundled:widget"),
       PREFIXES,
     );
-    expect(list?.params.map((p) => p.name)).toEqual(["kind", "search"]);
+    // The page pair is the KERNEL's, on every list-shaped verb whether the
+    // story mentions it or not — see compile.ts#PAGE_PARAMS.
+    expect(list?.params.map((p) => p.name)).toEqual([
+      "kind",
+      "search",
+      "limit",
+      "after",
+    ]);
     const kind = list?.params.find((p) => p.name === "kind");
     expect(kind?.kind).toBe("enum");
     expect(list?.capability.needsStore).toBe(true);
@@ -248,8 +258,8 @@ describe("the grammar rejects what the compiler cannot build (PROTECTED)", () =>
 
   it("rejects a filter param declared twice, on list or on an extra verb", () => {
     const twice = [
-      { param: "kind", variable: "uri" },
-      { param: "kind", variable: "uri" },
+      { param: "kind", variable: "uri", values: ["a"] },
+      { param: "kind", variable: "uri", values: ["a"] },
     ];
     expect(
       parse({ noun: "widget", list: { ...listShape, filters: twice } }),
@@ -270,8 +280,8 @@ describe("the grammar rejects what the compiler cannot build (PROTECTED)", () =>
         list: {
           ...listShape,
           filters: [
-            { param: "kind", variable: "uri" },
-            { param: "tier", variable: "uri" },
+            { param: "kind", variable: "uri", values: ["a"] },
+            { param: "tier", variable: "uri", values: ["b"] },
           ],
         },
         verbs: [{ ...listShape, verb: "categories" }],
@@ -291,7 +301,12 @@ describe("the grammar rejects what the compiler cannot build (PROTECTED)", () =>
       "widget sample",
     ]);
     expect(() => assertUniqueVerbs(verbs)).not.toThrow();
-    expect(verbs.at(0)?.params.map((p) => p.name)).toEqual(["kind", "tier"]);
+    expect(verbs.at(0)?.params.map((p) => p.name)).toEqual([
+      "kind",
+      "tier",
+      "limit",
+      "after",
+    ]);
   });
 
   it("names the shape a noun must have, not the regex", () => {
@@ -331,6 +346,24 @@ describe("pack compiler — SPARQL fetch path (PROTECTED)", () => {
     (await rt.store.get()).store.dispose();
   });
 
+  /**
+   * The INVALID_INPUT recovery a call raises, which is where a pack error puts
+   * the sentence a caller acts on — the factory's own message is the uniform
+   * `Invalid <field> "<value>".`
+   */
+  const recoveryOf = async (call: () => Promise<unknown>): Promise<string> => {
+    try {
+      await call();
+    } catch (error) {
+      if (error instanceof PragmaError) {
+        expect(error.code).toBe("INVALID_INPUT");
+        return error.recovery?.message ?? "";
+      }
+      throw error;
+    }
+    throw new Error("expected the call to be refused");
+  };
+
   const run = <R>(verbLabel: string, params: Record<string, unknown>) => {
     const verb = compilePack(
       WIDGET_PACK,
@@ -342,19 +375,112 @@ describe("pack compiler — SPARQL fetch path (PROTECTED)", () => {
   };
 
   it("lists rows in the uniform pack shape", async () => {
-    const rows = await run<PackRow[]>("list", {});
-    expect(rows.map((r) => r.name)).toEqual(["Button", "Label"]);
-    expect(rows[0]?.uri).toBe("https://example.org/widgets#button");
+    const page = await run<PackPage>("list", {});
+    expect(page.rows.map((r) => r.name)).toEqual(["Button", "Label"]);
+    expect(page.rows[0]?.uri).toBe("https://example.org/widgets#button");
+    // The whole population fits the default page, so nothing is withheld and
+    // there is no cursor to spend.
+    expect(page.nextAfter).toBeUndefined();
+    expect(page.limit).toBe(DEFAULT_LIST_LIMIT);
   });
 
-  it("filters by an enum value (post-query row predicate)", async () => {
-    const rows = await run<PackRow[]>("list", { kind: "input" });
-    expect(rows.map((r) => r.name)).toEqual(["Button"]);
+  it("filters by an enum value, compiled into the query", async () => {
+    const page = await run<PackPage>("list", { kind: "input" });
+    expect(page.rows.map((r) => r.name)).toEqual(["Button"]);
   });
 
   it("searches case-insensitively", async () => {
-    const rows = await run<PackRow[]>("list", { search: "lab" });
-    expect(rows.map((r) => r.name)).toEqual(["Label"]);
+    const page = await run<PackPage>("list", { search: "lab" });
+    expect(page.rows.map((r) => r.name)).toEqual(["Label"]);
+  });
+
+  it("pages inside the query: a page, its successor, and their union", async () => {
+    const whole = await run<PackPage>("list", {});
+    const first = await run<PackPage>("list", { limit: 1 });
+    expect(first.rows).toEqual([whole.rows[0]]);
+    expect(first.nextAfter).toBeTypeOf("string");
+    const second = await run<PackPage>("list", {
+      limit: 1,
+      after: first.nextAfter,
+    });
+    expect(second.rows).toEqual([whole.rows[1]]);
+    // The last page reports no successor, and one past it is a calm empty page
+    // rather than an error.
+    expect(second.nextAfter).toBeUndefined();
+    const past = await run<PackPage>("list", {
+      limit: 1,
+      after: encodeCursor(
+        9,
+        pageFingerprint([WIDGET_PACK.list?.query ?? "", "[]", "null"]),
+      ),
+    });
+    expect(past.rows).toEqual([]);
+  });
+
+  it("refuses a cursor issued for a different read", async () => {
+    const filtered = await run<PackPage>("list", { limit: 1, kind: "input" });
+    const unfiltered = await run<PackPage>("list", { limit: 1 });
+    // Spending the unfiltered read's cursor on the filtered one would answer a
+    // page of the wrong question, with nothing in the payload to show it.
+    await expect(
+      recoveryOf(() =>
+        run<PackPage>("list", {
+          limit: 1,
+          kind: "input",
+          after: unfiltered.nextAfter,
+        }),
+      ),
+    ).resolves.toMatch(/issued for a different read/);
+    expect(filtered.nextAfter).toBeUndefined();
+  });
+
+  it("refuses a limit that is not a whole number of rows", async () => {
+    await expect(
+      recoveryOf(() => run<PackPage>("list", { limit: 0 })),
+    ).resolves.toMatch(new RegExp(`1 to ${MAX_LIST_WINDOW}`));
+  });
+
+  it("refuses a limit above the ceiling, naming it", async () => {
+    // `--limit 9007199254740991` is the natural "give me everything" an agent
+    // writes, and it used to reach the store's own `LIMIT` — which must fit a
+    // 32-bit integer — and come back as a parse error dressed as
+    // INTERNAL_ERROR with "report this issue". A typed refusal that says what
+    // it would accept is the answer to a legitimate question asked too big.
+    for (const limit of [MAX_LIST_WINDOW + 1, 2 ** 32 - 1, 1e21, 2 ** 53 - 1]) {
+      await expect(
+        recoveryOf(() => run<PackPage>("list", { limit })),
+      ).resolves.toMatch(new RegExp(`1 to ${MAX_LIST_WINDOW}`));
+    }
+    // The ceiling itself is admitted: a refusal one row early would be a
+    // different bug.
+    await expect(
+      run<PackPage>("list", { limit: MAX_LIST_WINDOW }),
+    ).resolves.toBeDefined();
+  });
+
+  it("refuses a cursor whose offset is above the ceiling", async () => {
+    // The fingerprint covers the query and the arguments, not the offset — so
+    // a real cursor with only `o` edited is fingerprint-valid, and that is the
+    // path by which an unbounded offset reached the query's own `OFFSET`.
+    const fingerprint = pageFingerprint([
+      WIDGET_PACK.list?.query ?? "",
+      "[]",
+      "null",
+    ]);
+    await expect(
+      recoveryOf(() =>
+        run<PackPage>("list", {
+          limit: 1,
+          after: encodeCursor(2 ** 53 - 1, fingerprint),
+        }),
+      ),
+    ).resolves.toMatch(/cursor from a previous page/);
+    // An offset the kernel can serve is still served, empty page and all.
+    const edge = await run<PackPage>("list", {
+      limit: 1,
+      after: encodeCursor(MAX_LIST_WINDOW, fingerprint),
+    });
+    expect(edge.rows).toEqual([]);
   });
 
   it("looks up an entity by name with its fields and expands (detailed)", async () => {

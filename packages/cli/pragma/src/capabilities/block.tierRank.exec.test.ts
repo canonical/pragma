@@ -27,6 +27,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import type { PackPage } from "../kernel/packs/types.js";
 import { verbKey } from "../kernel/packs/uniqueness.js";
 import { bootRuntime } from "../kernel/runtime/boot.js";
 import type { PragmaRuntime } from "../kernel/runtime/types.js";
@@ -236,7 +237,7 @@ describe("a shared block name reaches every block that carries it (PROTECTED)", 
 describe("`block list` orders its ties totally (PROTECTED)", () => {
   /** The entity IRIs of one `block list` run, in the order it printed them. */
   async function listOrder(): Promise<string[]> {
-    const data = (await listVerb.run({}, rt)) as { uri?: string }[];
+    const data = ((await listVerb.run({}, rt)) as PackPage).rows;
     return data.map((row) => String(row.uri));
   }
 
