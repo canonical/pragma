@@ -1,24 +1,9 @@
-import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryFn } from "@storybook/react-vite";
 import ModalContext from "../../Context.js";
-import Header from "./Header.js";
+import Component from "./Header.js";
 
 const meta = {
   title: "patterns/Modal/Header",
-  component: Header,
-  argTypes: {
-    children: {
-      control: { type: "text" },
-      description: "The modal title.",
-    },
-    undismissible: {
-      control: { type: "boolean" },
-      description: "Hides the close button.",
-    },
-    dismissLabel: {
-      control: { type: "text" },
-      description: "Accessible name for the close button.",
-    },
-  },
   decorators: [
     (Story) => (
       <ModalContext.Provider
@@ -35,26 +20,39 @@ const meta = {
       </ModalContext.Provider>
     ),
   ],
-} satisfies Meta<typeof Header>;
+  parameters: {
+    docs: {
+      // The consumer composes the sections on a `Modal`, so serve the
+      // consumer-facing snippet explicitly instead of the story's own source.
+      source: { type: "code", language: "tsx" },
+    },
+  },
+} satisfies Meta;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
 
 /**
  * Default header: the title and the dismiss control.
  */
-export const Default: Story = {
-  args: {
-    children: "Modal title",
+export const Default: StoryFn = () => <Component>Modal title</Component>;
+Default.parameters = {
+  docs: {
+    source: {
+      code: `<Modal.Header>Modal title</Modal.Header>`,
+    },
   },
 };
 
 /**
  * Undismissible, so the visible way out is an action in the footer.
  */
-export const Undismissible: Story = {
-  args: {
-    children: "Unsaved changes",
-    undismissible: true,
+export const Undismissible: StoryFn = () => (
+  <Component undismissible>Unsaved changes</Component>
+);
+Undismissible.parameters = {
+  docs: {
+    source: {
+      code: `<Modal.Header undismissible>Unsaved changes</Modal.Header>`,
+    },
   },
 };

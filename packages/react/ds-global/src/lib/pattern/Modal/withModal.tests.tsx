@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { Button } from "../../component/Button/index.js";
 import { withModal } from "./index.js";
-import Modal from "./Provider.js";
+import Component from "./Provider.js";
 import type { WithModalRender } from "./types.js";
 
 /*
@@ -42,10 +42,10 @@ beforeAll(() => {
 });
 
 const modal: WithModalRender = ({ ref }) => (
-  <Modal ref={ref}>
-    <Modal.Header>Title</Modal.Header>
-    <Modal.Content>Body</Modal.Content>
-  </Modal>
+  <Component ref={ref}>
+    <Component.Header>Title</Component.Header>
+    <Component.Content>Body</Component.Content>
+  </Component>
 );
 
 describe("withModal", () => {
@@ -115,10 +115,10 @@ describe("withModal", () => {
     // fail the type check, which is what pins this.
     const forgetsRef: WithModalRender = () => (
       // @ts-expect-error - a factory must attach the ref it receives: `<Modal ref={ref}>`
-      <Modal>
-        <Modal.Header>Title</Modal.Header>
-        <Modal.Content>Body</Modal.Content>
-      </Modal>
+      <Component>
+        <Component.Header>Title</Component.Header>
+        <Component.Content>Body</Component.Content>
+      </Component>
     );
     expect(forgetsRef).toBeTypeOf("function");
   });
@@ -141,15 +141,15 @@ describe("withModal", () => {
 
   it("closes the modal through a footer action given the close callback", () => {
     const TriggeredModal = withModal(Button, ({ close, ref }) => (
-      <Modal ref={ref}>
-        <Modal.Header>Title</Modal.Header>
-        <Modal.Content>Body</Modal.Content>
-        <Modal.Footer>
+      <Component ref={ref}>
+        <Component.Header>Title</Component.Header>
+        <Component.Content>Body</Component.Content>
+        <Component.Footer>
           <button type="button" onClick={close}>
             Done
           </button>
-        </Modal.Footer>
-      </Modal>
+        </Component.Footer>
+      </Component>
     ));
     const { container } = render(<TriggeredModal>Open</TriggeredModal>);
 
@@ -171,10 +171,10 @@ describe("withModal", () => {
 
   it("reads modal props from the returned modal element", () => {
     const TriggeredModal = withModal(Button, ({ ref }) => (
-      <Modal ref={ref} className="custom-modal" closeOnBackdropClick>
-        <Modal.Header>Title</Modal.Header>
-        <Modal.Content>Body</Modal.Content>
-      </Modal>
+      <Component ref={ref} className="custom-modal" closeOnBackdropClick>
+        <Component.Header>Title</Component.Header>
+        <Component.Content>Body</Component.Content>
+      </Component>
     ));
     const { container } = render(<TriggeredModal>Open</TriggeredModal>);
 

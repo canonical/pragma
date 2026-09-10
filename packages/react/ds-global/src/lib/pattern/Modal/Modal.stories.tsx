@@ -4,7 +4,7 @@ import { Button } from "../../component/Button/index.js";
 import { Chip } from "../../component/Chip/index.js";
 import { InlineCode } from "../../component/InlineCode/index.js";
 import { KeyboardKey } from "../../component/KeyboardKey/index.js";
-import Modal from "./Provider.js";
+import Component from "./Provider.js";
 
 /*
  * Every story is the consumer pattern verbatim — a ref that drives the modal,
@@ -17,7 +17,7 @@ import Modal from "./Provider.js";
 
 const meta = {
   title: "patterns/Modal",
-  component: Modal,
+  component: Component,
   // Docs previews render in an iframe: showModal() puts the dialog in the
   // page's top layer, which escapes every container — inside an iframe the
   // top layer is the preview window itself, so each story's open modal stays
@@ -49,7 +49,7 @@ const meta = {
     children: { control: false },
     ref: { control: false },
   },
-} satisfies Meta<typeof Modal>;
+} satisfies Meta<typeof Component>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -66,18 +66,18 @@ const DefaultStory = () => {
   const close = () => modalRef.current?.close();
 
   return (
-    <Modal
+    <Component
       ref={(dialog: HTMLDialogElement | null) => {
         modalRef.current = dialog;
         if (dialog && !dialog.open) dialog.showModal();
       }}
     >
-      <Modal.Header>Title</Modal.Header>
-      <Modal.Content>
+      <Component.Header>Title</Component.Header>
+      <Component.Content>
         lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
         tempor incididunt ut labore et dolore magna aliqua.
-      </Modal.Content>
-      <Modal.Footer>
+      </Component.Content>
+      <Component.Footer>
         <Button importance="secondary" onClick={close}>
           Cancel
         </Button>
@@ -88,8 +88,8 @@ const DefaultStory = () => {
         >
           Confirm
         </Button>
-      </Modal.Footer>
-    </Modal>
+      </Component.Footer>
+    </Component>
   );
 };
 
@@ -135,26 +135,26 @@ const DestructiveConfirmationStory = () => {
   const close = () => modalRef.current?.close();
 
   return (
-    <Modal
+    <Component
       ref={(dialog: HTMLDialogElement | null) => {
         modalRef.current = dialog;
         if (dialog && !dialog.open) dialog.showModal();
       }}
     >
-      <Modal.Header>Delete instance</Modal.Header>
-      <Modal.Content>
+      <Component.Header>Delete instance</Component.Header>
+      <Component.Content>
         Deleting this instance removes its volumes and snapshots. This cannot be
         undone.
-      </Modal.Content>
-      <Modal.Footer>
+      </Component.Content>
+      <Component.Footer>
         <Button importance="secondary" onClick={close}>
           Cancel
         </Button>
         <Button importance="primary" anticipation="destructive" onClick={close}>
           Delete
         </Button>
-      </Modal.Footer>
-    </Modal>
+      </Component.Footer>
+    </Component>
   );
 };
 
@@ -207,25 +207,25 @@ const UndismissibleStory = () => {
   const close = () => modalRef.current?.close();
 
   return (
-    <Modal
+    <Component
       ref={(dialog: HTMLDialogElement | null) => {
         modalRef.current = dialog;
         if (dialog && !dialog.open) dialog.showModal();
       }}
     >
-      <Modal.Header undismissible>Unsaved changes</Modal.Header>
-      <Modal.Content>
-        You have unsaved changes that will be lost if you continue.
-      </Modal.Content>
-      <Modal.Footer>
+      <Component.Header undismissible>Unsaved changes</Component.Header>
+      <Component.Content>
+        You have unsaved changes, which will be lost if you continue.
+      </Component.Content>
+      <Component.Footer>
         <Button importance="secondary" onClick={close}>
           Keep editing
         </Button>
         <Button importance="primary" anticipation="destructive" onClick={close}>
           Discard
         </Button>
-      </Modal.Footer>
-    </Modal>
+      </Component.Footer>
+    </Component>
   );
 };
 
@@ -244,7 +244,7 @@ const close = () => modalRef.current?.close();
 >
   <Modal.Header undismissible>Unsaved changes</Modal.Header>
   <Modal.Content>
-    You have unsaved changes that will be lost if you continue.
+    You have unsaved changes, which will be lost if you continue.
   </Modal.Content>
   <Modal.Footer>
     <Button importance="secondary" onClick={close}>
@@ -274,14 +274,14 @@ const RichContentStory = () => {
   const close = () => modalRef.current?.close();
 
   return (
-    <Modal
+    <Component
       ref={(dialog: HTMLDialogElement | null) => {
         modalRef.current = dialog;
         if (dialog && !dialog.open) dialog.showModal();
       }}
     >
-      <Modal.Header>Connect to instance</Modal.Header>
-      <Modal.Content>
+      <Component.Header>Connect to instance</Component.Header>
+      <Component.Content>
         <div
           style={{
             display: "grid",
@@ -307,8 +307,8 @@ const RichContentStory = () => {
             <Chip lead="Agent" value="beta" release="beta" />
           </div>
         </div>
-      </Modal.Content>
-      <Modal.Footer>
+      </Component.Content>
+      <Component.Footer>
         <Button importance="secondary" onClick={close}>
           Cancel
         </Button>
@@ -319,8 +319,8 @@ const RichContentStory = () => {
         >
           Connect
         </Button>
-      </Modal.Footer>
-    </Modal>
+      </Component.Footer>
+    </Component>
   );
 };
 
@@ -376,14 +376,14 @@ const LongContentStory = () => {
   const modalRef = useRef<HTMLDialogElement>(null);
 
   return (
-    <Modal
+    <Component
       ref={(dialog: HTMLDialogElement | null) => {
         modalRef.current = dialog;
         if (dialog && !dialog.open) dialog.showModal();
       }}
     >
-      <Modal.Header>Terms</Modal.Header>
-      <Modal.Content>
+      <Component.Header>Terms</Component.Header>
+      <Component.Content>
         {Array.from(
           { length: 30 },
           (_, index) =>
@@ -391,8 +391,8 @@ const LongContentStory = () => {
         ).map((paragraph) => (
           <p key={paragraph}>{paragraph}</p>
         ))}
-      </Modal.Content>
-      <Modal.Footer>
+      </Component.Content>
+      <Component.Footer>
         <Button
           importance="primary"
           anticipation="constructive"
@@ -400,8 +400,8 @@ const LongContentStory = () => {
         >
           Accept
         </Button>
-      </Modal.Footer>
-    </Modal>
+      </Component.Footer>
+    </Component>
   );
 };
 

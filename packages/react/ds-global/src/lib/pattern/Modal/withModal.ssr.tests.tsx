@@ -2,7 +2,7 @@ import type { MouseEventHandler } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { withModal } from "./index.js";
-import Modal from "./Provider.js";
+import Component from "./Provider.js";
 
 const Trigger = ({
   children,
@@ -19,10 +19,10 @@ const Trigger = ({
 describe("withModal (SSR)", () => {
   it("renders to static HTML without throwing", () => {
     const TriggeredModal = withModal(Trigger, ({ ref }) => (
-      <Modal ref={ref}>
-        <Modal.Header>Title</Modal.Header>
-        <Modal.Content>Body</Modal.Content>
-      </Modal>
+      <Component ref={ref}>
+        <Component.Header>Title</Component.Header>
+        <Component.Content>Body</Component.Content>
+      </Component>
     ));
     expect(() =>
       renderToString(<TriggeredModal>Open</TriggeredModal>),
@@ -31,10 +31,10 @@ describe("withModal (SSR)", () => {
 
   it("emits the trigger and a closed dialog", () => {
     const TriggeredModal = withModal(Trigger, ({ ref }) => (
-      <Modal ref={ref}>
-        <Modal.Header>Title</Modal.Header>
-        <Modal.Content>Body</Modal.Content>
-      </Modal>
+      <Component ref={ref}>
+        <Component.Header>Title</Component.Header>
+        <Component.Content>Body</Component.Content>
+      </Component>
     ));
     const html = renderToString(<TriggeredModal>Open</TriggeredModal>);
 

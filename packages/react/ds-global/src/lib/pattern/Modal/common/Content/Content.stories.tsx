@@ -1,16 +1,10 @@
-import type { Meta, StoryObj } from "@storybook/react-vite";
-import Content from "./Content.js";
+import type { Meta, StoryFn } from "@storybook/react-vite";
+import Component from "./Content.js";
 
 const meta = {
   title: "patterns/Modal/Content",
-  component: Content,
-  argTypes: {
-    children: {
-      control: { type: "text" },
-      description: "The main information the modal conveys — an open slot.",
-    },
-  },
   decorators: [
+    // A plain div standing in for the dialog the content composes into.
     (Story) => (
       <div
         className="ds modal"
@@ -20,17 +14,33 @@ const meta = {
       </div>
     ),
   ],
-} satisfies Meta<typeof Content>;
+  parameters: {
+    docs: {
+      // The consumer composes the sections on a `Modal`, so serve the
+      // consumer-facing snippet explicitly instead of the story's own source.
+      source: { type: "code", language: "tsx" },
+    },
+  },
+} satisfies Meta;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
 
 /**
  * Default content with text.
  */
-export const Default: Story = {
-  args: {
-    children:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+export const Default: StoryFn = () => (
+  <Component>
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
+    tempor incididunt ut labore et dolore magna aliqua.
+  </Component>
+);
+Default.parameters = {
+  docs: {
+    source: {
+      code: `<Modal.Content>
+  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
+  tempor incididunt ut labore et dolore magna aliqua.
+</Modal.Content>`,
+    },
   },
 };

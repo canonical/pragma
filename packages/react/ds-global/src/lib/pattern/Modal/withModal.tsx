@@ -111,7 +111,7 @@ const withModal = <TProps extends WithModalTriggerProps>(
 
   // Set the displayName for easier debugging
   WrappedComponent.displayName = `withModal(${
-    Component.displayName || Component.name || "Component"
+    Component.displayName || Component.name || "AnonymousComponent"
   })`;
 
   return WrappedComponent;

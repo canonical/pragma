@@ -1,17 +1,11 @@
-import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryFn } from "@storybook/react-vite";
 import { Button } from "../../../../component/Button/index.js";
-import Footer from "./Footer.js";
+import Component from "./Footer.js";
 
 const meta = {
   title: "patterns/Modal/Footer",
-  component: Footer,
-  argTypes: {
-    children: {
-      control: false,
-      description: "The actions that capture the user's decision.",
-    },
-  },
   decorators: [
+    // A plain div standing in for the dialog the footer composes into.
     (Story) => (
       <div
         className="ds modal"
@@ -21,21 +15,37 @@ const meta = {
       </div>
     ),
   ],
-} satisfies Meta<typeof Footer>;
+  parameters: {
+    docs: {
+      // The consumer composes the sections on a `Modal`, so serve the
+      // consumer-facing snippet explicitly instead of the story's own source.
+      source: { type: "code", language: "tsx" },
+    },
+  },
+} satisfies Meta;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
 
 /**
  * Default footer with a secondary and an affirmative action.
  */
-export const Default: Story = {
-  render: () => (
-    <Footer>
-      <Button importance="secondary">First action</Button>
-      <Button importance="primary" anticipation="constructive">
-        Second action
-      </Button>
-    </Footer>
-  ),
+export const Default: StoryFn = () => (
+  <Component>
+    <Button importance="secondary">First action</Button>
+    <Button importance="primary" anticipation="constructive">
+      Second action
+    </Button>
+  </Component>
+);
+Default.parameters = {
+  docs: {
+    source: {
+      code: `<Modal.Footer>
+  <Button importance="secondary">First action</Button>
+  <Button importance="primary" anticipation="constructive">
+    Second action
+  </Button>
+</Modal.Footer>`,
+    },
+  },
 };

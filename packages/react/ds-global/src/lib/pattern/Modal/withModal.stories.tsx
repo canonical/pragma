@@ -2,7 +2,7 @@ import type { Meta, StoryFn } from "@storybook/react-vite";
 import type React from "react";
 import { Button } from "../../component/Button/index.js";
 import { withModal } from "./index.js";
-import Modal from "./Provider.js";
+import Component from "./Provider.js";
 import type { WithModalRender } from "./types.js";
 
 const meta = {
@@ -37,17 +37,17 @@ export default meta;
  */
 
 const maintenanceModal: WithModalRender = ({ close, ref }) => (
-  <Modal ref={ref}>
-    <Modal.Header>Maintenance scheduled</Modal.Header>
-    <Modal.Content>
+  <Component ref={ref}>
+    <Component.Header>Maintenance scheduled</Component.Header>
+    <Component.Content>
       The service will restart at 02:00 UTC to apply security updates.
-    </Modal.Content>
-    <Modal.Footer>
+    </Component.Content>
+    <Component.Footer>
       <Button importance="primary" onClick={close}>
         Got it
       </Button>
-    </Modal.Footer>
-  </Modal>
+    </Component.Footer>
+  </Component>
 );
 
 const AcknowledgeButton = withModal(Button, maintenanceModal);
@@ -88,12 +88,12 @@ const AcknowledgeButton = withModal(Button, maintenanceModal);
 };
 
 const searchSyntaxModal: WithModalRender = ({ ref }) => (
-  <Modal ref={ref} closeOnBackdropClick>
-    <Modal.Header>Search syntax</Modal.Header>
-    <Modal.Content>
+  <Component ref={ref} closeOnBackdropClick>
+    <Component.Header>Search syntax</Component.Header>
+    <Component.Content>
       Combine terms with AND, OR and NOT. Quote a phrase to match it exactly.
-    </Modal.Content>
-  </Modal>
+    </Component.Content>
+  </Component>
 );
 
 const InfoButton = withModal(Button, searchSyntaxModal);
@@ -144,12 +144,12 @@ const Link = ({
 );
 
 const termsModal: WithModalRender = ({ ref }) => (
-  <Modal ref={ref}>
-    <Modal.Header>Terms</Modal.Header>
-    <Modal.Content>
+  <Component ref={ref}>
+    <Component.Header>Terms</Component.Header>
+    <Component.Content>
       These are the terms and conditions that apply to this service.
-    </Modal.Content>
-  </Modal>
+    </Component.Content>
+  </Component>
 );
 
 const TermsLink = withModal(Link, termsModal);
@@ -194,12 +194,12 @@ const TermsLink = withModal(Link, termsModal);
 };
 
 const exampleModal: WithModalRender = ({ ref }) => (
-  <Modal ref={ref} aria-label="Example modal">
-    <Modal.Content>
+  <Component ref={ref} aria-label="Example modal">
+    <Component.Content>
       Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
       tempor incididunt ut labore et dolore magna aliqua.
-    </Modal.Content>
-  </Modal>
+    </Component.Content>
+  </Component>
 );
 
 const OpenButton = withModal(Button, exampleModal);

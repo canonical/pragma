@@ -102,31 +102,31 @@ const Provider = ({
   );
 
   return (
-    // biome-ignore lint/a11y/useKeyWithClickEvents: the click handler only identifies clicks landing on the backdrop, which has no keyboard equivalent; keyboard dismissal is Escape, handled natively by the dialog's cancel event
-    <dialog
-      ref={attachDialog}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
-      // The composed Header sets this id on its title, which names the dialog.
-      // A name the consumer gave wins, and it has to be chosen here rather than
-      // left to the spread: `aria-labelledby` beats `aria-label` in the
-      // accessible-name computation, so pointing at the title unconditionally
-      // would silence the `aria-label` a header-less modal must carry.
-      aria-label={ariaLabel}
-      aria-labelledby={ariaLabelledby ?? (ariaLabel ? undefined : titleId)}
-      // Escape is not handled here: its `cancel` event closes the dialog as its
-      // own default action, which is what the platform's close watchers are
-      // for. A consumer that must intervene can pass `onCancel` through
-      // `props` and call `preventDefault()` — but only the FIRST Escape is
-      // cancelable, so a repeated press closes the modal over that handler's
-      // head. Escape is a way out the consumer can delay, not deny; `onClose`
-      // is where to hear that it happened.
-      onClick={handleClick}
-      {...props}
-    >
-      <Context.Provider value={{ titleId, onDismiss }}>
+    <Context.Provider value={{ titleId, onDismiss }}>
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: the click handler only identifies clicks landing on the backdrop, which has no keyboard equivalent; keyboard dismissal is Escape, handled natively by the dialog's cancel event */}
+      <dialog
+        ref={attachDialog}
+        className={[componentCssClassName, className].filter(Boolean).join(" ")}
+        // The composed Header sets this id on its title, which names the dialog.
+        // A name the consumer gave wins, and it has to be chosen here rather than
+        // left to the spread: `aria-labelledby` beats `aria-label` in the
+        // accessible-name computation, so pointing at the title unconditionally
+        // would silence the `aria-label` a header-less modal must carry.
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledby ?? (ariaLabel ? undefined : titleId)}
+        // Escape is not handled here: its `cancel` event closes the dialog as its
+        // own default action, which is what the platform's close watchers are
+        // for. A consumer that must intervene can pass `onCancel` through
+        // `props` and call `preventDefault()` — but only the FIRST Escape is
+        // cancelable, so a repeated press closes the modal over that handler's
+        // head. Escape is a way out the consumer can delay, not deny; `onClose`
+        // is where to hear that it happened.
+        onClick={handleClick}
+        {...props}
+      >
         {children}
-      </Context.Provider>
-    </dialog>
+      </dialog>
+    </Context.Provider>
   );
 };
 

@@ -44,7 +44,7 @@ type OwnProps = {
  *
  * @implements ds:global.pattern.modal
  *
- * `title` is omitted from the native attributes because the DOM `title`
+ * `title` is omitted from the native attributes of the dialog because the DOM `title`
  * attribute is a tooltip, while here it would name the modal — which the
  * composed `Modal.Header` does instead.
  *
@@ -61,7 +61,7 @@ type OwnProps = {
  * `event.currentTarget.returnValue`.
  */
 export type ModalProps = OwnProps &
-  Omit<ComponentProps<"dialog">, keyof OwnProps | "title">;
+  Omit<ComponentProps<"dialog">, keyof OwnProps | "title" | "open">;
 
 /**
  * The shared modal API threaded to the composed subcomponents through the
