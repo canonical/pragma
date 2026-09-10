@@ -1,6 +1,6 @@
 {
   "name": "@canonical/dataviews-core",
-  "description": "Framework-agnostic collection-views core for Canonical apps: query grammar, schema-enforced field validation, observation channels, selection and window projection, lifecycle transition records, the request-lifecycle coordinator, the provider assembling them, and the Location port for URL-backed query authority",
+  "description": "Framework-agnostic collection-views core for Canonical apps: query grammar, schema-enforced field validation, observation channels, selection and window projection, lifecycle transition records, the request-lifecycle coordinator, the provider assembling them, the Location port for URL-backed query authority, and the source adapter contract with its local-array and observable-query-client adapters",
   "version": "0.37.0",
   "type": "module",
   "module": "dist/esm/index.js",
@@ -49,6 +49,7 @@
     "@canonical/biome-config": "^0.37.0",
     "@canonical/router-core": "^0.37.0",
     "@canonical/webarchitect": "^0.37.0",
+    "@tanstack/query-core": "5.102.8",
     "@types/node": "^26.0.0",
     "@vitest/coverage-v8": "^4.0.18",
     "typescript": "^5.9.3",

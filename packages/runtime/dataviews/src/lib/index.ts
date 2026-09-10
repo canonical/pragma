@@ -12,3 +12,4 @@ export * from "./query/index.js";
 export * from "./rows/index.js";
 export * from "./schema/index.js";
 export * from "./selection/index.js";
+export * from "./source/index.js";

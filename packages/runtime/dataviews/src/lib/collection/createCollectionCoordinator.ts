@@ -67,6 +67,12 @@ export type CollectionCoordinatorState<TRow extends object = RowRecord> = {
   readonly result: ResultState<TRow>;
   /** True when displayed rows were produced by the current query and window. */
   readonly resultsMatchCurrentQuery: boolean;
+  /**
+   * The one request identity awaiting completion, or null when none is
+   * outstanding. A source executes exactly this request: every other
+   * completion is dropped by the identity guard.
+   */
+  readonly pendingRequestId: string | null;
   readonly disposed: boolean;
 };
 
@@ -217,6 +223,7 @@ export default function createCollectionCoordinator<
       resultsMatchCurrentQuery:
         result.provenance !== null &&
         publishedFingerprint === currentFingerprint,
+      pendingRequestId: lastRequestId,
       disposed,
     });
   }
@@ -330,6 +337,9 @@ export default function createCollectionCoordinator<
     },
     dispose(): void {
       disposed = true;
+      // A disposed coordinator ignores every completion, so it never
+      // reports a request as still awaiting one.
+      lastRequestId = null;
       snapshot = buildSnapshot();
     },
   };

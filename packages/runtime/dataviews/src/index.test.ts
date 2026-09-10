@@ -7,6 +7,7 @@ describe("public surface", () => {
       "applyWindow",
       "canonicalSlice",
       "columnTemplate",
+      "createArraySource",
       "createChannel",
       "createCollectionCoordinator",
       "createDataViewsProvider",
@@ -17,15 +18,19 @@ describe("public surface", () => {
       "createOperation",
       "createPlatformLocation",
       "createPresentation",
+      "createQuerySource",
       "createRowModel",
       "createRowScopes",
       "createSaveSession",
       "createSchema",
       "createSelection",
+      "createSourceBinding",
+      "executeSlice",
       "isIdentity",
       "resolveColumns",
       "sizingEquals",
       "sliceEquals",
+      "supportsSlice",
     ]);
   });
 
@@ -53,5 +58,16 @@ describe("public surface", () => {
         { kind: "fixed", px: 8 },
       ),
     ).toBe(true);
+    const emptySlice = { filter: [], search: null, sort: [], group: null };
+    const source = dataviews.createArraySource({
+      rows: [{ id: "a" }],
+      fields: ["id"],
+    });
+    expect(dataviews.supportsSlice(source.capabilities, emptySlice)).toEqual({
+      status: "supported",
+    });
+    expect(dataviews.executeSlice([{ id: "a" }], emptySlice)).toEqual([
+      { id: "a" },
+    ]);
   });
 });
