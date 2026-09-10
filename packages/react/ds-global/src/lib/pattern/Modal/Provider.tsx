@@ -34,14 +34,14 @@ const componentCssClassName = "ds modal";
  * parent — for example a different `userName` depending on which user is
  * selected — compose `Modal` directly and drive it through its `ref`.
  * Otherwise, use `withModal`.
+ * 
+ * The header's title names the dialog automatically; a
+ * modal composed without a header must carry its own `aria-label` (view relative story in withModal)
  *
  * The sections are composed by the consumer: render
  * `Modal.Header`, `Modal.Content` and `Modal.Footer` as children and choose
- * which ones to show. The header's title names the dialog automatically; a
- * modal composed without a header must carry its own `aria-label`. Note the
- * title is not a heading element: a modal is a layer on top of the page, not
- * part of its document outline, so the title names the dialog through
- * `aria-labelledby` instead of occupying a heading level.
+ * which ones to show. Note the title is not a heading element: a modal is a
+ * layer on top of the page, not part of its document outline.
  *
  * `import { Modal } from "@canonical/react-ds-global";`
  *
@@ -54,7 +54,6 @@ const Provider = ({
   className,
   onClick,
   "aria-label": ariaLabel,
-  "aria-labelledby": ariaLabelledby,
   ...props
 }: ModalProps): React.ReactElement => {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -108,12 +107,12 @@ const Provider = ({
         ref={attachDialog}
         className={[componentCssClassName, className].filter(Boolean).join(" ")}
         // The composed Header sets this id on its title, which names the dialog.
-        // A name the consumer gave wins, and it has to be chosen here rather than
-        // left to the spread: `aria-labelledby` beats `aria-label` in the
-        // accessible-name computation, so pointing at the title unconditionally
-        // would silence the `aria-label` a header-less modal must carry.
+        // `aria-labelledby` beats `aria-label` in the accessible-name
+        // computation, so pointing at the title unconditionally would silence
+        // the `aria-label` a header-less modal must carry — when the consumer
+        // names the modal, the title id steps aside. 
         aria-label={ariaLabel}
-        aria-labelledby={ariaLabelledby ?? (ariaLabel ? undefined : titleId)}
+        aria-labelledby={ariaLabel ? undefined : titleId}
         // Escape is not handled here: its `cancel` event closes the dialog as its
         // own default action, which is what the platform's close watchers are
         // for. A consumer that must intervene can pass `onCancel` through
