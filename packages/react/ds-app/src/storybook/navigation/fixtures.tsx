@@ -286,9 +286,9 @@ export const contextSwitcherFooterRoot: FooterRoot = {
       label: "Theme",
       icon: "dark-theme",
       items: [
-        { label: "Light", icon: "light-theme" },
-        { label: "Dark", icon: "dark-theme" },
-        { label: "System", icon: "system-theme" },
+        { label: "Light", icon: "light-theme", control: "button" },
+        { label: "Dark", icon: "dark-theme", control: "button" },
+        { label: "System", icon: "system-theme", control: "button" },
       ],
     },
     { label: "Log out", icon: "log-out", control: "button" },
@@ -317,7 +317,7 @@ export const lxdProjectContexts: ContextSwitcherItem[] = [
     name: "staging",
     url: "/ui/project/staging/instances",
     description: "Pre-production environment",
-    badge: 2,
+    badge: badge(12),
   },
   {
     key: "sandbox",

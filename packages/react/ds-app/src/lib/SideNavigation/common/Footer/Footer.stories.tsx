@@ -1,5 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { maasFooterRoot } from "../../../../storybook/navigation/fixtures.js";
+import {
+  contextSwitcherFooterRoot,
+  maasFooterRoot,
+} from "../../../../storybook/navigation/fixtures.js";
 import {
   navDecorators,
   withNavigationRouterProps,
@@ -29,21 +32,9 @@ export const Default: Story = {
   },
 };
 
-/** Free-form footer rows via the footer root: user link, unread badge, action button. */
+/** Free-form footer rows via the footer root: user link, expandable theme switcher, action button. */
 export const Items: Story = {
   args: {
-    root: {
-      key: "footer",
-      items: [
-        { label: "Ada Lovelace", icon: "user", url: "/account" },
-        {
-          label: "Notifications",
-          icon: "notifications",
-          url: "/notifications",
-          slot: <span>3</span>,
-        },
-        { label: "Log out", icon: "log-out", control: "button" },
-      ],
-    },
+    root: contextSwitcherFooterRoot,
   },
 };
