@@ -53,6 +53,12 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     // is inert data (pinned below).
     expect(has(graph, "info/collectInfo.ts")).toBe(false);
     expect(has(graph, "config/collectConfigShow.ts")).toBe(false);
+    // `graph connect`'s traversal AND the relation index it walks. The index is
+    // one scan of every edge in the store — a measured ~460 ms on the shipped
+    // pack — so a process that never asks a connect question must not even load
+    // the module that could build it, let alone build it.
+    expect(has(graph, "graph/runConnect.ts")).toBe(false);
+    expect(has(graph, "graph/relationIndex.ts")).toBe(false);
     expect(has(graph, "kernel/config/readConfig.ts")).toBe(false);
     expect(has(graph, "kernel/config/defaults.ts")).toBe(false);
     expect(has(graph, "kernel/config/schema.ts")).toBe(false);
