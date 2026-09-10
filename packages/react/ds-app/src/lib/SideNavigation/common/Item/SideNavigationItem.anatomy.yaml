@@ -1,9 +1,13 @@
 ---
-# SideNavigation.Item — a single, flat navigation row rendered from a NavItem.
-# A leaf item (has `url`) renders as a link; a key-only item renders as a
-# non-navigable label. The row is NOT recursive — tree traversal lives in
-# NavTree (level-1 groups → level-2 items). Identity follows getItemId: `url`
-# when present, otherwise `key`.
+# SideNavigation.Item — a single, flat, LEAF navigation row rendered from a
+# LeafNavItem (SPEC.md §4.3). A leaf with `url` renders as a link (via
+# LinkComponent); a key-only leaf renders as a non-navigable label. The row
+# is NOT recursive and NEVER expandable — an item with `items` (children) is
+# an ExpandableNavItem and renders as SideNavigation.ItemExpandable instead
+# (a separate subcomponent, disclosure via native <details>/<summary>).
+# Interactive action rows are not part of the content vocabulary — they are
+# Footer-only (SideNavigation.ItemButton, SPEC.md §1). Identity follows
+# getItemId: `url` when present, otherwise `key`.
 node:
   uri: apps.subcomponent.side-navigation-item
   styles:
@@ -15,12 +19,11 @@ node:
     # shared SideNavigation row grid — [start] [label] [end] — so the leading
     # icon aligns with the header logo.
     - node:
-        # NOTE: colour/visual state (base/hover/active backgrounds, text/icon
-        # colour) is intentionally NOT wired in PR1 (structure only). It lands in
-        # PR2 via token pairings; the tokens below record the intended target.
-        # The DSL limitation still applies — `appearance.background` expresses one
-        # value, but the row needs distinct base/hover/active; recorded here as
-        # base only until the Anatomy DSL accepts per-state token values.
+        # Base + hover/active/disabled per SPEC.md §3 ADR-T01/T03/T04. The DSL
+        # limitation still applies — `appearance.background` expresses one
+        # value, but the row needs distinct base/hover/active/disabled; the
+        # implementation composes the `--color-foreground-navigation-primary`
+        # state suffixes directly in CSS rather than through per-state DSL edges.
         role: row
         styles:
           layout.type: flow
@@ -49,16 +52,10 @@ node:
             relation:
               cardinality: "1"
               slotName: label
-          # End slot — derived from the item's internal kind: an item with
-          # subitems shows a disclosure caret (static in PR1; toggle behaviour
-          # deferred); a leaf shows its optional `slot` (e.g. a badge) or nothing.
-          - switch:
-              "on": internal
-              cases:
-                - node:
-                    role: caret
-                - node:
-                    role: slot
+          # End slot — the leaf's optional `slot` (e.g. a badge), or nothing.
+          # No caret here: disclosure affordance belongs to ItemExpandable.
+          - node:
+              role: slot
             relation:
               cardinality: "0..1"
               slotName: end
