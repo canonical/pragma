@@ -12,23 +12,53 @@
  * exists, every declared filter starts deciding over a truncated population.
  * Pagination is that cap, so the two move together and they move inward.
  *
- * THE AUTHOR QUERY IS STILL NEVER MODIFIED. Two shapes, and the choice is
- * visible in the generated text:
+ * ONE SHAPE, ALWAYS. The author query becomes a sub-select inside a wrapping
+ * SELECT that carries the predicates and the page bounds — whether or not there
+ * is anything to filter. It has to be a wrap rather than an appended `HAVING`
+ * when there IS something: a `match: "set"` filter reads a cell the author's own
+ * `GROUP BY` computed (`standard list`'s `GROUP_CONCAT`), so the predicate can
+ * only run after aggregation, and the cap only after the predicate.
  *
- * - Nothing to filter: the author query plus a `LIMIT`/`OFFSET` solution
- *   modifier. SPARQL applies those after the author's own `ORDER BY`, so a page
- *   is a page of the order the author asked for, and the query the store runs
- *   is character-for-character the one it ran before plus that modifier.
- * - Something to filter: the author query becomes a sub-select inside a
- *   wrapping SELECT that carries the predicates and the page bounds. It has to
- *   be a wrap rather than an appended `HAVING`: a `match: "set"` filter reads a
- *   cell the author's own `GROUP BY` computed (`standard list`'s
- *   `GROUP_CONCAT`), so the predicate can only run after aggregation, and the
- *   cap can only run after the predicate.
+ * It is a wrap when there is NOTHING to filter, too, and that is a correction.
+ * Appending `LIMIT n` to the author's own text is a syntax error for every
+ * story whose text already ends in a solution modifier or a trailing `VALUES`
+ * block — `LIMIT` after `LIMIT`, after `OFFSET`, after `VALUES` — and because
+ * the page has a DEFAULT, that error fired on every call rather than only on
+ * paged ones. The shortcut existed to keep the store running, character for
+ * character, the query it ran before. Measured over all nine shipped bodies
+ * (median of 15 warm store queries per body, both texts, 2026-09-10) the wrap
+ * ran between 2.7 ms FASTER and 0.5 ms slower, deltas straddling zero and the
+ * one clear win being `block list`, the 252-row body; every body's rows came
+ * back byte-identical through the wrap, key order included. So the shortcut
+ * bought nothing measurable and cost a whole class of author query. Keeping it
+ * would have meant a guard recognising every trailing-modifier shape the
+ * grammar admits — more parsing than the wrap itself needs, to reach the
+ * answer the wrap already gives.
+ *
+ * THE AUTHOR'S TEXT IS SPLIT, NEVER EDITED. Two parts of a query cannot live
+ * inside a group graph pattern, and {@link ./authorQuery.readAuthorQuery} is
+ * what tells them apart:
+ *
+ * - The PROLOGUE (`PREFIX`, `BASE`) is lifted to the wrapper's own prologue, in
+ *   the author's order. That is a split at the `SELECT` keyword, not a rewrite:
+ *   the body is a suffix of the author's text, byte for byte. A COLLIDING
+ *   prefix resolves the way it always did — the store prepends the pack's own
+ *   prefix map ahead of whatever it is handed, the author's declaration is
+ *   emitted after it, and SPARQL's last declaration wins, so an author who
+ *   redeclares `ds:` shadows the pack's `ds:` exactly as they did before any
+ *   wrap existed (verified both shapes against the pinned oxigraph). The
+ *   wrapper declares nothing and names no prefixed term, so it brings no
+ *   prefix of its own for an author to collide with.
+ * - A DATASET clause (`FROM`, `FROM NAMED`) is refused, at declaration and
+ *   again here. It sits in the MIDDLE of the author's text rather than at its
+ *   front, so lifting it would mean cutting a span out — an edit, not a split.
  *
  * The wrapper projects the author's own variables, in the author's own order
- * ({@link ./projection.readProjection}) — `SELECT *` would hand back
- * alphabetised binding keys and change every JSON answer's shape.
+ * ({@link ./authorQuery}) — `SELECT *` in the wrapper would hand back
+ * alphabetised binding keys and change every JSON answer's shape. An author who
+ * wrote `SELECT *` themselves gets `SELECT *`, which is the same alphabetisation
+ * twice and so preserves their key order; a FILTERABLE story that writes it is
+ * refused, because a projection of `*` names nothing to constrain.
  *
  * USER INPUT IS BOUND, NOT SPLICED. Every value a caller supplies reaches the
  * query as a row of a `VALUES` block — the closest thing the store's text-only
@@ -49,17 +79,9 @@
  */
 
 import { PragmaError } from "../../error/index.js";
+import { RESERVED_VARIABLE_PREFIX } from "../types.js";
+import { readAuthorQuery } from "./authorQuery.js";
 import { escapeSparqlString } from "./escape.js";
-import { readProjection } from "./projection.js";
-
-/**
- * The variable prefix the generated predicates bind a caller's values to.
- *
- * A story whose own query already uses the prefix is refused rather than
- * silently shadowed — the failure would be a filter that matches nothing, with
- * nothing raised anywhere.
- */
-const BOUND_PREFIX = "__pragma";
 
 /** One declared filter, with the values a caller actually supplied. */
 export interface ListPredicate {
@@ -92,7 +114,7 @@ export interface ListWindow {
 
 /** Everything the generated list query is composed from. */
 export interface ListQueryInput {
-  /** The author's SPARQL SELECT, used verbatim. */
+  /** The author's SPARQL SELECT, used verbatim (split, never edited). */
   readonly query: string;
   /** The declared filters a caller supplied values for. */
   readonly predicates: readonly ListPredicate[];
@@ -110,36 +132,49 @@ export interface ListQueryInput {
  * @param input - The author query, the supplied filters/search, and the page.
  * @returns SPARQL SELECT text composed only from author terms, escaped values
  *   and the page's own integers.
- * @throws PragmaError CONFIG_ERROR when a filterable story's projection cannot
- *   be read, or when its query already uses the generated variable prefix.
+ * @throws PragmaError CONFIG_ERROR when the author query cannot be wrapped in a
+ *   page, when a filterable story's projection cannot be reproduced, or when
+ *   its query already uses the generated variable prefix. Each names what it
+ *   found: the same refusal for three different reasons would send an author to
+ *   the wrong part of their own file.
  */
 export function buildListQuery(input: ListQueryInput): string {
   const { query, predicates, search, window, label } = input;
   const clauses = [
     ...predicates.map((predicate, index) =>
-      filterClause(predicate, `${BOUND_PREFIX}Filter${index}`),
+      filterClause(predicate, `${RESERVED_VARIABLE_PREFIX}Filter${index}`),
     ),
-    ...(search ? [searchClause(search, `${BOUND_PREFIX}Search`)] : []),
+    ...(search
+      ? [searchClause(search, `${RESERVED_VARIABLE_PREFIX}Search`)]
+      : []),
   ];
-  if (clauses.length === 0) return `${query}\n${modifier(window)}`;
-  if (query.includes(BOUND_PREFIX)) {
+  if (clauses.length > 0 && query.includes(RESERVED_VARIABLE_PREFIX)) {
     throw PragmaError.configError(
-      `Story query in ${label} uses the reserved variable prefix "?${BOUND_PREFIX}", ` +
+      `Story query in ${label} uses the reserved variable prefix "?${RESERVED_VARIABLE_PREFIX}", ` +
         "which the generated filter clauses bind a caller's values to. Rename it.",
     );
   }
-  const projection = readProjection(query);
-  if (!projection) {
+  const read = readAuthorQuery(query);
+  if (!read.ok) {
     throw PragmaError.configError(
-      `Story query in ${label} declares filters, so its SELECT must project its ` +
-        "variables by name — a page has to project the same names in the same order.",
+      `Story query in ${label} cannot be paged: ${read.reason}. Every list ` +
+        "answer is one page, and a page is a wrapping SELECT over the story's own query.",
+    );
+  }
+  const { prologue, projection, body } = read.query;
+  if (clauses.length > 0 && projection === undefined) {
+    throw PragmaError.configError(
+      `Story query in ${label} declares filters or a search, so its SELECT must ` +
+        "project its variables by name — the page projects the same names in the " +
+        "same order, which `SELECT *` cannot promise.",
     );
   }
   return [
-    `SELECT ${projection.map((variable) => `?${variable}`).join(" ")}`,
+    ...(prologue === "" ? [] : [prologue]),
+    `SELECT ${projection ? projection.map((variable) => `?${variable}`).join(" ") : "*"}`,
     "WHERE {",
     "  {",
-    query,
+    body,
     "  }",
     ...clauses.map((clause) => `  ${clause}`),
     "}",
@@ -181,6 +216,24 @@ function filterClause(predicate: ListPredicate, bound: string): string {
  * keeps it a WHOLE-member comparison, so `testing` does not match
  * `testing-unit`; collapsing runs of whitespace first reproduces the row
  * predicate's own `\s+` split, whatever separator the author's aggregate used.
+ *
+ * TWO WAYS IT IS WIDER THAN THE SPLIT IT REPLACED, both out of reach of every
+ * vocabulary the distribution declares and both worth knowing before a
+ * vocabulary is widened:
+ *
+ * - A value that CONTAINS whitespace matches a contiguous RUN of members: cell
+ *   `"foo bar baz"`, value `"bar baz"` answers true here where
+ *   `split(/\s+/).includes(value)` answered false. Unreachable today because no
+ *   admissible value carries whitespace (all 21 `cs:slug` values are clean), and
+ *   reachable the moment a filter declares `values: ["a b"]` or a graph
+ *   vocabulary grows a multi-word term.
+ * - An EMPTY value matches an EMPTY cell, because `CONTAINS(" ", " ")` is true.
+ *   The row predicate answered false on an empty cell, and the `exact` branch
+ *   above still does via its explicit `STR(?c) != ""` guard, which this branch
+ *   has no equivalent of. Unreachable today because `readFilterVocabularies`
+ *   drops empty strings from a vocabulary and `rejectUnknownValue` then refuses
+ *   `""` as unadmitted — i.e. it is the ADMISSION step that closes this, not the
+ *   predicate.
  */
 function setMembership(cell: string, bound: string): string {
   const members = `CONCAT(" ", REPLACE(LCASE(STR(${cell})), "\\\\s+", " "), " ")`;

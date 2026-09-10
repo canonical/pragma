@@ -40,6 +40,21 @@ export const RESERVED_STORY_PARAMS: readonly string[] = [
   "after",
 ];
 
+/**
+ * The SPARQL VARIABLE prefix the kernel reserves, which a story's own query may
+ * therefore not use.
+ *
+ * The generated filter and search clauses bind a caller's values to variables
+ * under this prefix (`?__pragmaFilter0`, `?__pragmaSearch`). A story query using
+ * it would have its own variable shadowed, and the symptom would be a filter
+ * matching nothing with nothing raised anywhere. Beside the reserved PARAMS for
+ * the same reason: the grammar that refuses it and the builder that mints it
+ * must read one name, and this file is the zod-free place both can reach — the
+ * builder lives behind the dynamically imported run bodies, so nothing on the
+ * `--help` fast path may import it.
+ */
+export const RESERVED_VARIABLE_PREFIX = "__pragma";
+
 /** A list column: a SELECT variable to display. */
 export interface PackColumn {
   /** SELECT variable name (without `?`). */

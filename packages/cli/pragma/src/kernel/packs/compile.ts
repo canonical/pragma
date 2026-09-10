@@ -15,6 +15,7 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
+import { PragmaError } from "../error/index.js";
 import { compactUri, DEFAULT_PREFIX_MAP } from "../render/index.js";
 import type { PragmaRuntime } from "../runtime/index.js";
 import { asVerb } from "../spec/asVerb.js";
@@ -38,6 +39,7 @@ import {
   MIN_SAMPLE_COUNT,
   sampleDefaultCount,
 } from "./sample.js";
+import { storyIssues } from "./storyRules.js";
 import type {
   PackDefinition,
   PackFilter,
@@ -172,16 +174,33 @@ export function compileListable(
  * through here alike, so a module-level projection derived from the story
  * (today: {@link compileListable}) cannot reach one tier and miss the other.
  *
+ * That door is also where the COMPILABILITY rules are checked
+ * ({@link ./storyRules.storyIssues}), for the same reason. The zod grammar runs
+ * for config- and package-declared stories only, so a rule stated only there
+ * was a declaration-time refusal for a third-party author and a first-call
+ * CONFIG_ERROR for the distribution's own stories. The rules are pure string
+ * work over text the story already carries, which is what makes them affordable
+ * on this path; a story that passed zod has passed them already, so the throw
+ * below is reachable only for a story that never saw zod.
+ *
  * @param definition - A validated pack definition.
  * @param source - Where the definition came from, for diagnostics.
  * @param prefixes - The merged prefix map used for display compaction.
  * @returns The module: the compiled verbs plus the story's module-level data.
+ * @throws PragmaError CONFIG_ERROR when the definition cannot be compiled,
+ *   naming the field and the rule.
  */
 export function compileStoryModule(
   definition: PackDefinition,
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
 ): CapabilityModule {
+  const issue = storyIssues(definition)[0];
+  if (issue) {
+    throw PragmaError.configError(
+      `Invalid story in ${source.label} at ${issue.path.join(".")}: ${issue.message}`,
+    );
+  }
   const listable = compileListable(definition);
   return {
     name: definition.noun,

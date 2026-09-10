@@ -14,13 +14,25 @@
  * statically by `capabilities/distribution.ts` and never revalidated at dispatch
  * (`collect.projectStoryTiers`'s default-origin carve-out); this runs for config-
  * and package-declared stories, and in `distribution.test.ts`'s round-trip.
+ *
+ * That carve-out is exactly why the rest of the compilability rules are NOT
+ * here. A rule stated only in this file reaches a third-party author at
+ * declaration and the distribution's own stories not at all — they meet it as a
+ * first-call CONFIG_ERROR. Those rules live in {@link ./storyRules}, which
+ * `compileStoryModule` runs for every tier, and {@link refineListShape} reports
+ * them as zod issues so a config author still reads them here, in the same
+ * words and at the same paths.
  */
 
 import { z } from "zod";
 import { DETAIL_LEVELS, RECOVERY_CLI_PREFIX } from "../../constants.js";
 import { PragmaError } from "../error/index.js";
-import { readProjection } from "./sparql/projection.js";
-import { type PackDefinition, RESERVED_STORY_PARAMS } from "./types.js";
+import { listShapeIssues } from "./storyRules.js";
+import {
+  type PackDefinition,
+  type PackList,
+  RESERVED_STORY_PARAMS,
+} from "./types.js";
 
 const NOUN_PATTERN = /^[a-z][a-z0-9-]*$/;
 /** Message for {@link NOUN_PATTERN} — third-party authors never see the regex. */
@@ -47,6 +59,14 @@ const RESERVED_PARAMS = new Set(RESERVED_STORY_PARAMS);
  * PREFIX lines). Every author query a story declares runs through `runSelect`,
  * which reads `result.bindings` — so a non-SELECT is a shape mismatch caught
  * here rather than downstream.
+ *
+ * Used for a `vocabulary.query` only, which is run exactly as the author wrote
+ * it. A `list.query` gets the real reader instead ({@link ./storyRules}, via
+ * `sparql/authorQuery.ts`), because this pattern is NARROWER than what a page
+ * can now serve: it admits `PREFIX` lines but not a leading comment, not
+ * `BASE`, and not a lower-case `prefix` — all of which the lift handles. A
+ * grammar that refuses the shape the kernel supports is the same defect as one
+ * that admits the shape it cannot, read from the other side.
  */
 function isSelectQuery(query: string): boolean {
   return /^\s*(?:PREFIX\s+[^\n]*\n\s*)*SELECT\s/i.test(query);
@@ -89,17 +109,13 @@ const filterSchema = z
   })
   .refine((f) => !f.vocabulary || isSelectQuery(f.vocabulary.query), {
     message: '"vocabulary.query" must be a SPARQL SELECT query',
-  })
-  // A filter must say what it admits, one way or the other. It used to be able
-  // to say neither and fall back to the values the returned ROWS carried —
-  // knowingly narrower than the truth, but the only evidence available. A list
-  // answers with a PAGE now, and that fallback would refuse a real value merely
-  // for sorting outside the window, offering a truncated list of alternatives
-  // as the correction. Refused here instead, where the author can read why.
-  .refine((f) => f.values !== undefined || f.vocabulary !== undefined, {
-    message:
-      'a filter must declare "values" or a "vocabulary" query — a value-free filter with neither has nothing to check a caller\'s value against',
   });
+// A filter must also say WHAT it admits, one way or the other — it used to be
+// able to say neither and fall back to the values the returned ROWS carried,
+// which a page makes actively wrong. That rule is a compilability rule rather
+// than a shape rule, so it is checked in `storyRules.ts` (which the
+// distribution's own stories reach too) and reported from `refineListShape`
+// below at the same `…filters.N` path it always used.
 
 const searchSchema = z
   .object({
@@ -297,21 +313,17 @@ const definitionSchema = z
         message: 'a pack must declare at least one of "list" or "lookup".',
       });
     }
-    if (def.list && !isSelectQuery(def.list.query)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: '"list.query" must be a SPARQL SELECT query.',
-        path: ["list", "query"],
-      });
-    }
+    // "must be a SELECT" for a `list.query` is `refineListShape`'s to say, and
+    // it says it from the reader that actually splits the query — which admits
+    // the prologue shapes this file's own pattern does not.
     refineVerbNames(def, ctx);
     if (def.list) {
       refineFilterParams(def.list.filters, ["list"], ctx);
-      refineListProjection(def.list, ["list"], ctx);
+      refineListShape(def.list, ["list"], ctx);
     }
     for (const [index, verb] of (def.verbs ?? []).entries()) {
       refineFilterParams(verb.filters, ["verbs", index], ctx);
-      refineListProjection(verb, ["verbs", index], ctx);
+      refineListShape(verb, ["verbs", index], ctx);
     }
     if (def.lookup) refineLookup(def.lookup, ctx);
   });
@@ -376,49 +388,34 @@ function refineFilterParams(
 }
 
 /**
- * A filterable or searchable list must PROJECT the variables it constrains, by
- * name.
+ * The COMPILABILITY rules for one list-shaped body, reported as zod issues.
  *
- * Both halves are load-bearing now that the constraints compile into the query.
- * A wrapping select has to reproduce the author's own projection to keep a row's
- * shape — `SELECT *` in the wrapper hands back alphabetised binding keys, so
- * every JSON answer would change shape — and it can only constrain a variable
- * the sub-select actually projects. Neither could be checked while filters were
- * predicates over returned rows: a variable that was not there simply matched
- * nothing, silently, with exit 0. It is checked here, once, where the author is.
+ * The rules themselves live in {@link ./storyRules}, deliberately outside this
+ * module: zod runs only for config- and package-declared stories, and a rule
+ * whose violation is a CONFIG_ERROR has to reach the distribution's own stories
+ * too — which it does by being checked in `compileStoryModule`, the door every
+ * tier comes through. Stated in two places it would be two rules; delegated, a
+ * third-party author and the distribution read the same sentence.
+ *
+ * What they cover: a query a page cannot wrap (its own prologue is lifted, but
+ * a `FROM` clause and an unreadable projection cannot be), a filter or search
+ * over a variable the query does not project, a filtered query shadowing the
+ * generated variable prefix, and a filter that declares neither `values` nor a
+ * `vocabulary`. None of them could be checked while filters were predicates
+ * over returned rows: a variable that was not there simply matched nothing,
+ * silently, with exit 0.
  */
-function refineListProjection(
-  shape: {
-    readonly query: string;
-    readonly filters?: readonly { readonly variable: string }[];
-    readonly search?: { readonly variables: readonly string[] };
-  },
+function refineListShape(
+  shape: PackList,
   path: readonly (string | number)[],
   ctx: z.RefinementCtx,
 ): void {
-  const constrained = [
-    ...(shape.filters ?? []).map((filter) => filter.variable),
-    ...(shape.search?.variables ?? []),
-  ];
-  if (constrained.length === 0) return;
-  const projection = readProjection(shape.query);
-  if (!projection) {
+  for (const issue of listShapeIssues(shape, path)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message:
-        "a list declaring filters or a search must project its SELECT variables by name — the page projects the same names in the same order, which `SELECT *` cannot promise.",
-      path: [...path, "query"],
+      message: issue.message,
+      path: [...issue.path],
     });
-    return;
-  }
-  for (const variable of constrained) {
-    if (!projection.includes(variable)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `"${variable}" is filtered or searched but not projected by the query (it selects ${projection.join(", ")}).`,
-        path: [...path, "query"],
-      });
-    }
   }
 }
 
