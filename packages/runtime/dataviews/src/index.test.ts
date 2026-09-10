@@ -6,6 +6,7 @@ describe("public surface", () => {
     expect(Object.keys(dataviews).sort()).toEqual([
       "applyWindow",
       "canonicalSlice",
+      "columnTemplate",
       "createChannel",
       "createCollectionCoordinator",
       "createDataViewsProvider",
@@ -16,11 +17,14 @@ describe("public surface", () => {
       "createOperation",
       "createPlatformLocation",
       "createPresentation",
+      "createRowModel",
+      "createRowScopes",
       "createSaveSession",
       "createSchema",
       "createSelection",
       "isIdentity",
       "resolveColumns",
+      "sizingEquals",
       "sliceEquals",
     ]);
   });
@@ -36,5 +40,18 @@ describe("public surface", () => {
     expect(dataviews.createChannel(0).get()).toBe(0);
     expect(dataviews.createSelection().state.ids.size).toBe(0);
     expect(dataviews.applyWindow(["a"], { page: 1, size: 10 })).toEqual(["a"]);
+    expect(dataviews.createRowModel([{ id: "a" }]).ids).toEqual(["a"]);
+    expect(
+      dataviews.columnTemplate(
+        [{ id: "a", sizing: { kind: "fixed", px: 8 } }],
+        null,
+      ),
+    ).toBe("8px");
+    expect(
+      dataviews.sizingEquals(
+        { kind: "fixed", px: 8 },
+        { kind: "fixed", px: 8 },
+      ),
+    ).toBe(true);
   });
 });

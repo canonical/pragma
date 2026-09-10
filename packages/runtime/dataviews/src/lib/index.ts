@@ -9,5 +9,6 @@ export * from "./observable/index.js";
 export * from "./operation/index.js";
 export * from "./provider/index.js";
 export * from "./query/index.js";
+export * from "./rows/index.js";
 export * from "./schema/index.js";
 export * from "./selection/index.js";

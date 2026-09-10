@@ -1,0 +1,67 @@
+import type { ReactElement, ReactNode } from "react";
+import { memo, useMemo } from "react";
+import type { CellScopeValue } from "../../../DataViews/CellScopeContext.js";
+import CellScopeContext from "../../../DataViews/CellScopeContext.js";
+import useDataViewsValue from "../../../DataViews/hooks/useDataViewsValue.js";
+import type { CellProps } from "./types.js";
+
+const componentCssClassName = "ds data-table-cell";
+
+/** Primitive values render as text; anything else needs the column's `cell`. */
+const defaultContent = (value: unknown): ReactNode => {
+  switch (typeof value) {
+    case "string":
+      return value;
+    case "number":
+    case "bigint":
+    case "boolean":
+      return String(value);
+    default:
+      return null;
+  }
+};
+
+function Cell<TRow extends object>({
+  provider,
+  scope,
+  column,
+  field,
+}: CellProps<TRow>): ReactElement {
+  const channel = scope.fields[field];
+  const value = useDataViewsValue(channel);
+  const cellScope = useMemo<CellScopeValue>(
+    () => ({
+      provider,
+      rowId: scope.id,
+      columnId: column.id,
+      row: scope.row,
+      fields: scope.fields,
+      selected: scope.selected,
+    }),
+    [provider, scope, column.id],
+  );
+  const Content = column.cell;
+  return (
+    <CellScopeContext.Provider value={cellScope}>
+      {/* biome-ignore lint/a11y/useSemanticElements: <td> is only valid inside a <table>, and this grid is deliberately not one */}
+      <div role="cell" className={componentCssClassName}>
+        {Content === undefined ? (
+          defaultContent(value)
+        ) : (
+          <Content value={value} rowId={scope.id} columnId={column.id} />
+        )}
+      </div>
+    </CellScopeContext.Provider>
+  );
+}
+
+/**
+ * One data cell. It subscribes to its own field's channel, so a record
+ * update re-renders only the cells whose values actually changed, and it
+ * installs the cell scope its column's own renderer reads.
+ *
+ * Memoised: without it the claim above would hold for the channel and be
+ * undone by the row, which would re-render every cell it has whenever it
+ * rendered at all.
+ */
+export default memo(Cell) as typeof Cell;

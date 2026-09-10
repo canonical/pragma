@@ -12,6 +12,7 @@ import type {
   Slice,
   SortTerm,
 } from "../query/types.js";
+import type { RowModel, RowRecord } from "../rows/types.js";
 import type { Schema } from "../schema/createSchema.js";
 import type {
   AppliedOf,
@@ -54,12 +55,19 @@ export type ProviderFields<TFields extends readonly SchemaFieldDefinition[]> = {
 export type DataViewsProvider<
   TFields extends
     readonly SchemaFieldDefinition[] = readonly SchemaFieldDefinition[],
+  TRow extends object = RowRecord,
 > = {
   /** The provider's referential scope identity. */
   readonly identity: Identity;
   readonly schema: Schema<TFields>;
   /** The coordinator's snapshot channel (result, query and window). */
-  readonly result: Channel<CollectionCoordinatorState>;
+  readonly result: Channel<CollectionCoordinatorState<TRow>>;
+  /**
+   * The displayed rows as one shared model: stable identities in result
+   * order. Every root and every table on this provider reads the same model,
+   * so no cell owns a duplicate record.
+   */
+  readonly rows: Channel<RowModel<TRow>>;
   readonly selection: Selection;
   readonly fields: ProviderFields<TFields>;
   /** Bounded commands, not raw dispatch: */
@@ -70,7 +78,10 @@ export type DataViewsProvider<
   /** Adopt externally authoritative query/window state (back/forward). */
   readonly adopt: (slice: Slice, window: ResultWindow) => string | null;
   /** Adapter-facing request completion. */
-  readonly complete: (requestId: string, result: CompletionResult) => boolean;
+  readonly complete: (
+    requestId: string,
+    result: CompletionResult<TRow>,
+  ) => boolean;
   /** Invoke an operation with immutable captured targets. */
   readonly invokeAction: (
     targets: readonly string[],

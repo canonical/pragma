@@ -11,7 +11,8 @@ const columns = (): readonly ColumnToSize[] => [
 const harness = (declared: readonly ColumnToSize[] = columns()) => {
   const presentation = createPresentation(declared);
   const interaction = createGridInteraction(presentation);
-  return { presentation, interaction };
+  const detach = interaction.observe();
+  return { presentation, interaction, detach };
 };
 
 describe("createGridInteraction", () => {
@@ -186,13 +187,23 @@ describe("createGridInteraction", () => {
     expect(notifications).toBe(1);
   });
 
-  it("stops listening after dispose", () => {
-    const { presentation, interaction } = harness();
-    interaction.dispose();
+  it("stops watching the presentation once the observation detaches", () => {
+    const { presentation, interaction, detach } = harness();
+    detach();
     interaction.startResize("name", 500, 100);
     expect(interaction.state.status).toBe("resizing");
     presentation.setOverride("name", { kind: "fixed", px: 260 });
-    // No invalidation after dispose: the preview stays.
+    // Nothing is watching: the preview stays.
+    expect(interaction.state.status).toBe("resizing");
+  });
+
+  it("watches nothing until it is asked to", () => {
+    const presentation = createPresentation(columns());
+    const interaction = createGridInteraction(presentation);
+    interaction.startResize("name", 500, 100);
+    presentation.setOverride("name", { kind: "fixed", px: 260 });
+    // An unattached interaction — a discarded render's, or a server
+    // render's — never subscribed, so nothing invalidates and nothing leaks.
     expect(interaction.state.status).toBe("resizing");
   });
 

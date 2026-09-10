@@ -7,6 +7,7 @@ import type {
   ResultWindow,
   Slice,
 } from "../query/types.js";
+import type { RowRecord } from "../rows/types.js";
 
 /** Display status of the result projection. */
 export type ResultStatus =
@@ -29,19 +30,19 @@ export type ResultProvenance = {
  * Immutable result state. `lastError` records a failed request truthfully;
  * retained rows stay displayed when one exists.
  */
-export type ResultState = {
+export type ResultState<TRow extends object = RowRecord> = {
   readonly status: ResultStatus;
-  readonly rows: readonly unknown[] | null;
+  readonly rows: readonly TRow[] | null;
   readonly count: number | null;
   readonly provenance: ResultProvenance | null;
   readonly lastError: string | null;
 };
 
 /** Completion payload of one request. */
-export type CompletionResult =
+export type CompletionResult<TRow extends object = RowRecord> =
   | {
       readonly status: "success";
-      readonly rows: readonly unknown[];
+      readonly rows: readonly TRow[];
       readonly count: number | null;
     }
   | { readonly status: "failure"; readonly reason: string };
@@ -59,19 +60,19 @@ export type DispatchResult = QueryCommandResult & {
 };
 
 /** Immutable coordinator snapshot; referentially stable between mutations. */
-export type CollectionCoordinatorState = {
+export type CollectionCoordinatorState<TRow extends object = RowRecord> = {
   readonly scope: Identity;
   readonly slice: Slice;
   readonly window: ResultWindow;
-  readonly result: ResultState;
+  readonly result: ResultState<TRow>;
   /** True when displayed rows were produced by the current query and window. */
   readonly resultsMatchCurrentQuery: boolean;
   readonly disposed: boolean;
 };
 
 /** Handle owning query/window coherence and the request lifecycle. */
-export type CollectionCoordinator = {
-  readonly state: CollectionCoordinatorState;
+export type CollectionCoordinator<TRow extends object = RowRecord> = {
+  readonly state: CollectionCoordinatorState<TRow>;
   /**
    * Apply one addressed command coherently. An accepted change that moves
    * the query or window issues a new request identity and retains previous
@@ -98,7 +99,10 @@ export type CollectionCoordinator = {
    * coordinator are ignored; a success publishes rows, provenance and count
    * together; a failure retains rows with the error recorded.
    */
-  readonly complete: (requestId: string, result: CompletionResult) => boolean;
+  readonly complete: (
+    requestId: string,
+    result: CompletionResult<TRow>,
+  ) => boolean;
   /**
    * Rotate to a fresh scope: query, window and result reset to the
    * configured seed and pending requests die. Completions from the old
@@ -122,7 +126,7 @@ const defaultWindow: ResultWindow = { page: 1, size: 50 };
  * environment requirements. */
 let coordinatorInstances = 0;
 
-const idleResult: ResultState = Object.freeze({
+const idleResult: ResultState<never> = Object.freeze({
   status: "idle",
   rows: null,
   count: null,
@@ -181,9 +185,9 @@ const copyWindow = (window: ResultWindow): ResultWindow => {
  * authority for the applied query (for example the browser URL) and the
  * execution of requests are wired above this layer.
  */
-export default function createCollectionCoordinator(
-  config: CollectionCoordinatorConfig = {},
-): CollectionCoordinator {
+export default function createCollectionCoordinator<
+  TRow extends object = RowRecord,
+>(config: CollectionCoordinatorConfig = {}): CollectionCoordinator<TRow> {
   const seedSlice =
     config.slice === undefined ? emptySlice : copySlice(config.slice);
   const seedWindow = copyWindow(
@@ -201,10 +205,10 @@ export default function createCollectionCoordinator(
   let slice: Slice = seedSlice;
   let window: ResultWindow = seedWindow;
   let currentFingerprint = fingerprintOf(slice, window);
-  let result: ResultState = idleResult;
+  let result: ResultState<TRow> = idleResult;
   let disposed = false;
 
-  function buildSnapshot(): CollectionCoordinatorState {
+  function buildSnapshot(): CollectionCoordinatorState<TRow> {
     return Object.freeze({
       scope,
       slice,
@@ -219,7 +223,7 @@ export default function createCollectionCoordinator(
 
   let snapshot = buildSnapshot();
 
-  const publish = (next: ResultState): void => {
+  const publish = (next: ResultState<TRow>): void => {
     result = next;
     snapshot = buildSnapshot();
   };
@@ -238,7 +242,7 @@ export default function createCollectionCoordinator(
   };
 
   return {
-    get state(): CollectionCoordinatorState {
+    get state(): CollectionCoordinatorState<TRow> {
       return snapshot;
     },
     dispatch(command: QueryCommand): DispatchResult {
@@ -285,7 +289,7 @@ export default function createCollectionCoordinator(
       currentFingerprint = nextFingerprint;
       return beginRequest(false);
     },
-    complete(requestId: string, completion: CompletionResult): boolean {
+    complete(requestId: string, completion: CompletionResult<TRow>): boolean {
       if (disposed || lastRequestId === null || requestId !== lastRequestId) {
         // Obsolete request, rotated scope, repeated delivery, idle
         // coordinator, or no request at all: never publish stale results.

@@ -5,6 +5,7 @@ import type {
   Slice,
   SortTerm,
 } from "../query/types.js";
+import type { CollectionCoordinator } from "./createCollectionCoordinator.js";
 import createCollectionCoordinator from "./createCollectionCoordinator.js";
 
 const slice = (overrides: Partial<Slice> = {}): Slice => ({
@@ -25,10 +26,8 @@ const statusPredicate = (...operands: string[]): Slice["filter"][number] => ({
 
 /** Dispatch a query change and return its request id, failing loudly. */
 const dispatchRequest = (
-  coordinator: ReturnType<typeof createCollectionCoordinator>,
-  command: Parameters<
-    ReturnType<typeof createCollectionCoordinator>["dispatch"]
-  >[0],
+  coordinator: CollectionCoordinator,
+  command: Parameters<CollectionCoordinator["dispatch"]>[0],
 ): string => {
   const result = coordinator.dispatch(command);
   if (result.status !== "accepted" || result.requestId === null) {

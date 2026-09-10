@@ -1,7 +1,7 @@
 /**
  * @canonical/dataviews-react — React bindings for collection views: the
- * DataViews root, provider context and the four scoped observation hooks,
- * built on @canonical/dataviews-core.
+ * DataViews root, provider context, the four scoped observation hooks and
+ * the DataTable renderer, built on @canonical/dataviews-core.
  *
  * @packageDocumentation
  */
