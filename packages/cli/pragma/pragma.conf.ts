@@ -742,6 +742,291 @@ const designSystemStories: readonly PackDefinition[] = [
     },
   },
 
+  // The platform VARIABLES — S4, the stylesheet's own names for the values.
+  //
+  // A SECOND noun rather than a flag on `token`, and one measurement settles
+  // it: 236 of the 1,156 variables stand for NO symbol at all — legacy twins
+  // the ontology itself names, plus the computed states and resets.
+  // `--disabled--color-text` and `--modifier-color-text` are nobody's symbol, so
+  // a surface keyed on symbols cannot address them. The cut is by STRATUM ROLE,
+  // not by platform: the platform is read out of the IRI base as an ordinary
+  // filter, so a second platform's catalogue arrives as one more value of
+  // `--platform` and not as a noun of its own.
+  //
+  // The published name is the label with its leading `--` STRIPPED, and that is
+  // what makes the noun usable at all: `--color-text` cannot be typed as a
+  // positional argument — the parser answers `unknown option '--color-text'`
+  // and a glob is no escape. Upstream publishes the stripped form as
+  // `rdfs:label`, and the stripping is measurably safe: over the 1,156
+  // variables it produces 1,156 distinct names and collides with no symbol
+  // name. `variable.parity.test.ts` pins both halves.
+  {
+    noun: "variable",
+    description:
+      "List the platform variables the design tokens are emitted as.",
+    toolDescription:
+      'List the platform VARIABLES — the names a stylesheet actually declares (`--color-text`), one row each, with the symbol each stands for, its tier and its visibility, and the coordinates it is selected at. 236 of them stand for no symbol at all, which is why they are not reachable through token_list. Address one by its name WITHOUT the leading dashes (`color-text`). Example: variable_list { symbol: "color.text" }.',
+    list: {
+      query: [
+        "SELECT ?uri ?name ?platform ?symbol ?tier ?visibility",
+        '       (GROUP_CONCAT(DISTINCT ?coordinateName; SEPARATOR=" ") AS ?coordinate)',
+        "WHERE {",
+        "  ?uri a dt:Variable ;",
+        "       rdfs:label ?name .",
+        "  OPTIONAL { ?uri dt:ofSymbol/rdfs:label ?symbol }",
+        "  OPTIONAL { ?uri dt:tier ?tierUri }",
+        "  OPTIONAL { ?uri dt:visibility ?visibilityUri }",
+        // A variable is selected at a coordinate two ways, and both count: the
+        // CONDITION its declaration sits under selects one
+        // (`.success` → `criticality.success`), and a declaration may assert a
+        // second directly (`dt:alsoAt`, which is `mode.dark` for all 261 of
+        // them). 305 of the 1,156 variables reach at least one coordinate.
+        "  OPTIONAL {",
+        "    { ?uri dt:declaredAt/dt:under/dt:selectsCoordinate ?coordinateUri }",
+        "    UNION",
+        "    { ?uri dt:declaredAt/dt:alsoAt ?coordinateUri }",
+        '    BIND(REPLACE(REPLACE(STR(?coordinateUri), "^.*[/#]", ""), "^coordinate[.]", "") AS ?coordinateName)',
+        "  }",
+        // The platform, read out of the IRI base rather than asserted: every
+        // variable is minted under `…/s4/<platform>/`. STRAFTER/STRBEFORE
+        // rather than a regex so a variable whose IRI carries no such segment
+        // answers an EMPTY cell instead of its own full IRI, which is what a
+        // failed REPLACE returns.
+        '  BIND(STRBEFORE(STRAFTER(STR(?uri), "/s4/"), "/") AS ?platform)',
+        '  BIND(REPLACE(REPLACE(STR(?tierUri), "^.*[/#]", ""), "^tier[.]", "") AS ?tier)',
+        '  BIND(REPLACE(REPLACE(STR(?visibilityUri), "^.*[/#]", ""), "^visibility[.]", "") AS ?visibility)',
+        "}",
+        "GROUP BY ?uri ?name ?platform ?symbol ?tier ?visibility",
+        "ORDER BY ?name",
+      ].join("\n"),
+      columns: [
+        { field: "name", label: "Name" },
+        { field: "symbol", label: "Symbol" },
+        { field: "tier", label: "Tier" },
+        { field: "visibility", label: "Visibility" },
+        { field: "platform", label: "Platform" },
+        { field: "coordinate", label: "Coordinates" },
+        { field: "uri", label: "IRI" },
+      ],
+      filters: [
+        {
+          param: "platform",
+          variable: "platform",
+          // The vocabulary is a query over the IRI base, exactly as the column
+          // is — the platform is not asserted anywhere, so the file identity
+          // in the IRI is the only thing that states it. One value today
+          // (`web`); a second platform's catalogue adds itself here with no
+          // edit.
+          vocabulary: {
+            query: [
+              "SELECT DISTINCT ?platform WHERE {",
+              "  ?v a dt:Variable .",
+              '  BIND(STRBEFORE(STRAFTER(STR(?v), "/s4/"), "/") AS ?platform)',
+              "}",
+            ].join("\n"),
+          },
+          description: "Filter by the platform the variable is emitted for.",
+        },
+        {
+          param: "symbol",
+          variable: "symbol",
+          // The symbol roster, read the same way `token list`'s does — see the
+          // note on `token list`'s `channelOf` filter for why the label wins
+          // over the IRI derivation and why the derivation is there at all.
+          vocabulary: {
+            query: [
+              "SELECT DISTINCT ?symbol WHERE {",
+              "  ?s a dt:TokenSymbol .",
+              "  OPTIONAL { ?s rdfs:label ?label }",
+              '  BIND(COALESCE(?label, REPLACE(STR(?s), "^.*[/#]", "")) AS ?symbol)',
+              "}",
+            ].join("\n"),
+          },
+          description: "Filter to the variables standing for one symbol.",
+        },
+        {
+          param: "tier",
+          variable: "tier",
+          vocabulary: {
+            query: [
+              "SELECT DISTINCT ?tier WHERE {",
+              "  ?t a dt:Tier .",
+              '  BIND(REPLACE(REPLACE(STR(?t), "^.*[/#]", ""), "^tier[.]", "") AS ?tier)',
+              "}",
+            ].join("\n"),
+          },
+          description: "Filter by tier (primitive, semantic, derived).",
+        },
+        {
+          param: "visibility",
+          variable: "visibility",
+          vocabulary: {
+            query: [
+              "SELECT DISTINCT ?visibility WHERE {",
+              "  ?v a dt:Visibility .",
+              '  BIND(REPLACE(REPLACE(STR(?v), "^.*[/#]", ""), "^visibility[.]", "") AS ?visibility)',
+              "}",
+            ].join("\n"),
+          },
+          description: "Filter by visibility (public, internal).",
+        },
+        {
+          param: "coordinate",
+          variable: "coordinate",
+          // `set`, and it has to be: `--modifier-color-text` is selected at 17
+          // coordinates at once, so its cell is the whole set its declarations
+          // reach and a filter comparing the whole cell would answer for none
+          // of them. The cell is a `GROUP_CONCAT`, so this predicate can only
+          // run after aggregation — which is why the page wraps the query.
+          match: "set",
+          vocabulary: {
+            query: [
+              "SELECT DISTINCT ?coordinate WHERE {",
+              "  ?c a dt:Coordinate .",
+              '  BIND(REPLACE(REPLACE(STR(?c), "^.*[/#]", ""), "^coordinate[.]", "") AS ?coordinate)',
+              "}",
+            ].join("\n"),
+          },
+          description:
+            "Filter to the variables selected at one coordinate (e.g. criticality.success).",
+        },
+      ],
+      search: {
+        variables: ["name", "symbol"],
+        description: "Search in variable name and symbol.",
+      },
+      emptyRecovery: {
+        message:
+          "No platform variables in the store. The @canonical/token-ontology pack provides them, and a variable is only addressable once that pack publishes its name literals.",
+        cli: "sources update",
+      },
+    },
+    verbs: [
+      {
+        verb: "chain",
+        description:
+          "List the walk from a variable to every symbol it reaches, through every variable in between.",
+        toolDescription:
+          'List the resolution WALK: every (variable, symbol) pair a variable reaches by following what its declarations reference, transitively. This is the join an editor needs to answer "what does this variable finally mean" — `--disabled--color-text` reaches 34 pairs, because the closure runs over every declaration of every hop rather than one condition\'s. Narrow it with `variable` or `symbol`. Example: variable_chain { variable: "disabled--color-text" }.',
+        // ONE property path carries the whole walk, which is why this is a
+        // query and not a traversal in code. `dt:references` is an rdf:List of
+        // the variables a declaration's value reads, so each hop is
+        // `dt:declaredAt/dt:references/rdf:rest*/rdf:first`, and the `+` makes
+        // the whole thing transitive. The terminal is a variable that stands
+        // for a symbol, which is what `dt:ofSymbol` reads.
+        query: [
+          "SELECT ?variable ?reaches ?symbol",
+          "WHERE {",
+          "  ?uri a dt:Variable ;",
+          "       rdfs:label ?variable .",
+          "  ?uri (dt:declaredAt/dt:references/rdf:rest*/rdf:first)+ ?reachedUri .",
+          "  ?reachedUri dt:ofSymbol ?symbolUri ;",
+          "              rdfs:label ?reaches .",
+          "  ?symbolUri rdfs:label ?symbol .",
+          "}",
+          "ORDER BY ?variable ?reaches ?symbol",
+        ].join("\n"),
+        columns: [
+          { field: "variable", label: "Variable" },
+          { field: "reaches", label: "Reaches" },
+          { field: "symbol", label: "Symbol" },
+        ],
+        filters: [
+          {
+            param: "variable",
+            variable: "variable",
+            // The variable roster, read the way the column publishes it: the
+            // label, else the IRI's local name with the leading `--` stripped
+            // — the same stripping upstream applies when it mints the label,
+            // pinned by `variable.parity.test.ts`.
+            vocabulary: {
+              query: [
+                "SELECT DISTINCT ?variable WHERE {",
+                "  ?v a dt:Variable .",
+                "  OPTIONAL { ?v rdfs:label ?label }",
+                '  BIND(COALESCE(?label, REPLACE(REPLACE(STR(?v), "^.*[/#]", ""), "^--", "")) AS ?variable)',
+                "}",
+              ].join("\n"),
+            },
+            description: "Filter to the walk from one variable.",
+          },
+          {
+            param: "symbol",
+            variable: "symbol",
+            vocabulary: {
+              query: [
+                "SELECT DISTINCT ?symbol WHERE {",
+                "  ?s a dt:TokenSymbol .",
+                "  OPTIONAL { ?s rdfs:label ?label }",
+                '  BIND(COALESCE(?label, REPLACE(STR(?s), "^.*[/#]", "")) AS ?symbol)',
+                "}",
+              ].join("\n"),
+            },
+            description: "Filter to the walks that reach one symbol.",
+          },
+        ],
+        emptyRecovery: {
+          message:
+            "No resolution walk in the store. The @canonical/token-ontology pack provides the declarations the walk follows, and the walk is only addressable by name once that pack publishes its name literals.",
+          cli: "sources update",
+        },
+      },
+    ],
+    lookup: {
+      source: "sparql",
+      // `rdfs:label`, matching the `name` the list publishes, and with NO
+      // `nameFallback` for the same reason `token` has none: the kernel's IRI
+      // derivation would publish `--color-text` with its dashes intact and its
+      // dots as slashes, and a `--`-prefixed positional cannot be typed at all.
+      by: "rdfs:label",
+      type: "dt:Variable",
+      description:
+        "Look up one or more platform variables by name (without the leading dashes), IRI, or glob.",
+      toolDescription:
+        'Get one platform variable in full: the symbol it stands for, its tier and visibility, and EVERY place it is declared — the selector and at-rule stack it sits under, the value it emits, the source location, the coordinate it also applies at, and the derivation that computed it. Address it by the name variable_list publishes, which is the CSS name without its leading dashes (`color-text`, not `--color-text`). Asking for `typography-weight-semiBold` and `typography-weight-semi-bold` returns one row each: the ontology holds both spellings of the same symbol, and they carry distinct labels. Example: variable_lookup { name: ["color-text"] }.',
+      fields: [
+        { name: "symbol", property: "dt:ofSymbol/rdfs:label", label: "Symbol" },
+        { name: "tier", property: "dt:tier", label: "Tier" },
+        { name: "visibility", property: "dt:visibility", label: "Visibility" },
+      ],
+      expand: [
+        {
+          name: "declarations",
+          heading: "Declarations",
+          kind: "table",
+          relation: "dt:declaredAt",
+          // 927 variables are declared once; the rest up to 17 times, which is
+          // why this is an expand and not a set of fields.
+          select: [
+            { name: "under", property: "dt:under" },
+            { name: "selector", property: "dt:under/dt-web:selector" },
+            // The at-rule STACK, not one at-rule: `dt-web:inAtRule` is an
+            // rdf:List, so the walk is `/rdf:rest*/rdf:first`. One condition of
+            // the 31 nests two levels deep and so contributes two rows for one
+            // declaration — that is the stack, read outermost-in, rather than a
+            // duplicate.
+            {
+              name: "inAtRule",
+              property: "dt:under/dt-web:inAtRule/rdf:rest*/rdf:first",
+            },
+            { name: "emits", property: "dt:emits" },
+            // `dt:at` is the SOURCE LOCATION (`modifiers.theme.css:322`), not a
+            // coordinate; `dt:alsoAt` is the coordinate. The two read alike and
+            // mean different things, which is why both are labelled.
+            { name: "at", property: "dt:at", label: "source" },
+            { name: "alsoAt", property: "dt:alsoAt", label: "alsoAt" },
+            { name: "derives", property: "dt:derives" },
+          ],
+        },
+      ],
+      sample: {
+        fixedCount: true,
+        toolDescription:
+          "Return randomly selected complete platform variables — their symbol, tier, visibility and every declaration — as exemplars. Use BEFORE writing queries to see actual data shapes. Example: variable_sample {}.",
+      },
+    },
+  },
+
   // Modifier families. `modifier list` is SPARQL (an alternation path collects
   // values asserted in either direction); `modifier lookup` is GRAPHQL, where
   // the compiled `ModifierFamily.modifiers` field is the declared-inverse union
