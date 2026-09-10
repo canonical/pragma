@@ -203,6 +203,12 @@ precedent.
   does not, however important that package is.
 - **If you believe you need a workflow change, say why in the PR body** and
   expect it to be challenged.
+- **One target is deliberately off CI and must stay off it:** the `pragma`
+  CLI's perf-budget pass (`packages/cli/pragma`, `bun run test:perf`). Owner
+  ruling 2026-08-30, restated 2026-09-10 — a wall-clock spawn measurement
+  cannot mean anything on a shared runner. Nothing reaches it today: not
+  `test`, not an Nx target, not a hook. Putting it back on any CI target
+  reverses a ruling; see `docs/CI.md` and `packages/cli/pragma/BUDGETS.md`.
 ### React component props — extend the root element's native props
 
 A React component's props type **must extend the native props of the element it

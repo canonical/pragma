@@ -127,6 +127,23 @@ Chromatic workflows use a shared template (`.github/workflows/chromatic._templat
 
 On pull requests, Chromatic requires manual approval for visual changes. On pushes to main, changes are automatically accepted as new baselines. This allows reviewing visual changes during PR review while keeping baselines current after merge.
 
+## What CI deliberately does not run
+
+### The `pragma` perf budgets
+
+`packages/cli/pragma` has a serial performance-budget pass (`bun run test:perf`, `vitest.perf.config.ts`) that spawns the shipped CLI entry and times it against the ceilings in `src/testing/perf/budgets.ts`. **It is not part of CI, by owner ruling of 2026-08-30, restated 2026-09-10, and it must not be added back.**
+
+The reason is not that the budgets do not matter. It is that a wall-clock spawn measurement cannot be made to mean anything on a shared runner: the same ceilings measured green on the reference machine and red on GitHub-hosted runners, and raising one of them moved the failure from the budget to Vitest's per-test timeout rather than clearing it. A gate that fails for the runner's reasons teaches contributors to re-run it, which is worse than no gate.
+
+So the pass is manual. Nothing invokes it automatically — not `pr.yml`, not `push.yml`, not `tag.yml`, no Nx target, no git hook, and not the package's own `test` script (which is why `nx affected -t test` no longer reaches it). Anyone can run it, and it stays enforced when they do.
+
+Two consequences are worth naming rather than discovering:
+
+- **A performance regression can reach `main` unobserved.** That is the accepted cost of the ruling. Where the pass should run instead — a scheduled job, a release gate, or a maintainer's run before a release — is an open question, recorded in `packages/cli/pragma/BUDGETS.md`.
+- **It needs a quiet machine.** Spawn latency inflates 2–3× under other load, so a red run on a busy box is usually measuring the box. `BUDGETS.md` documents the `--version` control that tells the two apart.
+
+If you believe this pass belongs in a workflow, you are reversing an owner ruling: say so explicitly in the PR body, per `AGENTS.md` ("CI workflows are global — do not add checks for one package").
+
 ## How to Release
 
 Releases require write access to the repository and must run from the main branch.

@@ -77,7 +77,9 @@ describe("perf budgets (PROTECTED)", () => {
     // so it flaked red under whole-suite CPU contention on slower-than-reference
     // hardware even though the median sat comfortably under budget (see
     // BUDGETS.md). p95 is kept as a SOFT signal against gross regressions, with
-    // headroom rather than at the bare ceiling. The 100 ms ceiling is unchanged.
+    // headroom rather than at the bare ceiling. That statistic change left the
+    // ceiling of the day (100 ms) untouched; BUDGET_COMPLETE_MS has been
+    // re-derived twice since, most recently to 240 on 2026-09-10.
     expect(result.trimmedMeanMs).toBeLessThanOrEqual(BUDGET_COMPLETE_MS);
     expect(result.p95Ms).toBeLessThanOrEqual(BUDGET_COMPLETE_MS * 1.5);
   });
