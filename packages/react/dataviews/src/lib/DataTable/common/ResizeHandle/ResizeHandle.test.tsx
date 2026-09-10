@@ -33,7 +33,11 @@ const releasePointer = (type: "pointerUp" | "pointerCancel"): void => {
   fireEvent[type](window);
 };
 
-const mount = (): {
+const mount = ({
+  width = 100,
+}: {
+  readonly width?: number;
+} = {}): {
   presentation: Presentation;
   interaction: GridInteraction;
   handle: HTMLElement;
@@ -48,7 +52,9 @@ const mount = (): {
       <ResizeHandle
         interaction={interaction}
         columnId="name"
-        width={100}
+        width={width}
+        min={50}
+        max={300}
         labelledBy="name-label"
       />
     </>,
@@ -204,6 +210,8 @@ describe("ResizeHandle", () => {
         interaction={interaction}
         columnId="name"
         width={100}
+        min={50}
+        max={Number.POSITIVE_INFINITY}
         labelledBy="name-label"
       />,
     );
@@ -212,5 +220,72 @@ describe("ResizeHandle", () => {
     movePointer(400);
     flushFrames();
     expect(presentation.state.overrides.name).toBeUndefined();
+  });
+
+  it("reports the bounds it holds the column to", () => {
+    const { handle } = mount();
+    expect(handle).toHaveAttribute("aria-valuemin", "50");
+    expect(handle).toHaveAttribute("aria-valuemax", "300");
+    // Without a maximum ARIA would imply 100, so the width is also spoken.
+    expect(handle).toHaveAttribute("aria-valuetext", "100 pixels");
+  });
+
+  it("holds a later resize to the declared bounds, not to the override", () => {
+    const { presentation, handle } = mount();
+    fireEvent.keyDown(handle, { key: "ArrowRight" });
+    // The first resize committed a fixed override, which carries no bounds
+    // of its own: the declared ones must still hold every later drag.
+    expect(presentation.effective("name")).toEqual({ kind: "fixed", px: 116 });
+    fireEvent.pointerDown(handle, { clientX: 100 });
+    movePointer(1000);
+    flushFrames();
+    releasePointer("pointerUp");
+    expect(presentation.effective("name")).toEqual({ kind: "fixed", px: 300 });
+    fireEvent.pointerDown(handle, { clientX: 100 });
+    movePointer(-1000);
+    flushFrames();
+    releasePointer("pointerUp");
+    expect(presentation.effective("name")).toEqual({ kind: "fixed", px: 50 });
+  });
+
+  it("steps no further than a bound, after an override too", () => {
+    const { presentation, handle } = mount({ width: 290 });
+    fireEvent.keyDown(handle, { key: "ArrowLeft" });
+    // The column now carries a fixed override with no bounds of its own.
+    expect(presentation.effective("name")).toEqual({ kind: "fixed", px: 274 });
+    fireEvent.keyDown(handle, { key: "ArrowRight" });
+    expect(presentation.effective("name")).toEqual({ kind: "fixed", px: 300 });
+  });
+
+  it("commits nothing at a bound, and still owns the key", () => {
+    const { presentation, handle } = mount({ width: 300 });
+    expect(fireEvent.keyDown(handle, { key: "ArrowRight" })).toBe(false);
+    expect(presentation.state.overrides.name).toBeUndefined();
+  });
+
+  it("reveals nothing outside a table, through a drag and after it", () => {
+    const presentation = createPresentation([
+      { id: "name", sizing: { kind: "flex", weight: 1, minPx: 50 } },
+    ]);
+    const interaction = createGridInteraction(presentation);
+    const view = (width: number) => (
+      <ResizeHandle
+        interaction={interaction}
+        columnId="name"
+        width={width}
+        min={50}
+        max={Number.POSITIVE_INFINITY}
+        labelledBy="name-label"
+      />
+    );
+    const { rerender } = render(view(100));
+    const handle = screen.getByRole("separator");
+    expect(handle).not.toHaveAttribute("aria-valuemax");
+    fireEvent.pointerDown(handle, { clientX: 100 });
+    rerender(view(120));
+    releasePointer("pointerUp");
+    rerender(view(140));
+    rerender(view(160));
+    expect(interaction.state.status).toBe("idle");
   });
 });

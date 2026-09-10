@@ -34,6 +34,8 @@ export default function HeaderCell({
   sort,
   setSort,
   interaction,
+  resizable,
+  bounds,
   width,
   labelId,
 }: HeaderCellProps): ReactElement {
@@ -69,11 +71,12 @@ export default function HeaderCell({
           {column.header}
         </span>
       )}
-      {column.resizable === true ? (
+      {resizable ? (
         <ResizeHandle
           interaction={interaction}
           columnId={column.id}
           width={width}
+          {...bounds}
           labelledBy={labelId}
         />
       ) : null}

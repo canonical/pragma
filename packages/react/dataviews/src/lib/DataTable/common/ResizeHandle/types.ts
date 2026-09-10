@@ -12,6 +12,10 @@ export type ResizeHandleProps = {
   readonly columnId: string;
   /** The column's currently resolved width, captured when a resize begins. */
   readonly width: number;
+  /** The narrowest width a resize may leave, from the column's declared sizing. */
+  readonly min: number;
+  /** The widest width a resize may leave; infinite when the column has no maximum. */
+  readonly max: number;
   /** The id of the element naming this column. */
   readonly labelledBy: string;
 };

@@ -25,6 +25,19 @@ export const sizingOf = (column: DataTableColumn): ColumnSizing =>
   column.sizing ?? defaultSizing;
 
 /**
+ * The widths a resize may leave a column at, from its declared sizing —
+ * never from a user override, so a column resized once is held to the same
+ * bounds the next time. A flexible column is held to its minimum and
+ * maximum; a fixed one may go anywhere from zero.
+ */
+export const boundsOf = (
+  sizing: ColumnSizing,
+): { readonly min: number; readonly max: number } =>
+  sizing.kind === "flex"
+    ? { min: sizing.minPx, max: sizing.maxPx ?? Number.POSITIVE_INFINITY }
+    : { min: 0, max: Number.POSITIVE_INFINITY };
+
+/**
  * The column facts everything below the rendered tree is derived from: the
  * presentation's declared tracks, the observed field names, the solved
  * geometry and one row scope per identity.

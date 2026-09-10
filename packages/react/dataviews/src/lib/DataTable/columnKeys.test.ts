@@ -7,6 +7,7 @@
 import type { ColumnToSize } from "@canonical/dataviews-core";
 import { describe, expect, it } from "vitest";
 import {
+  boundsOf,
   sameColumnModel,
   sameColumns,
   sameTracks,
@@ -23,6 +24,33 @@ describe("sizingOf", () => {
     expect(sizingOf({ ...name, sizing: { kind: "fixed", px: 40 } })).toEqual({
       kind: "fixed",
       px: 40,
+    });
+  });
+});
+
+describe("boundsOf", () => {
+  it("holds a flexible column to its declared minimum and maximum", () => {
+    expect(
+      boundsOf({ kind: "flex", weight: 1, minPx: 120, maxPx: 240 }),
+    ).toEqual({ min: 120, max: 240 });
+  });
+
+  it("leaves a flexible column without a maximum unbounded above", () => {
+    expect(boundsOf({ kind: "flex", weight: 1, minPx: 120 })).toEqual({
+      min: 120,
+      max: Number.POSITIVE_INFINITY,
+    });
+    // The default sizing is flexible too, with its 96px minimum.
+    expect(boundsOf(sizingOf(name))).toEqual({
+      min: 96,
+      max: Number.POSITIVE_INFINITY,
+    });
+  });
+
+  it("lets a fixed column go anywhere from zero", () => {
+    expect(boundsOf({ kind: "fixed", px: 80 })).toEqual({
+      min: 0,
+      max: Number.POSITIVE_INFINITY,
     });
   });
 });
