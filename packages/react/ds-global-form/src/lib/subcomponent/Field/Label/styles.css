@@ -14,7 +14,7 @@
      * and the gap after it are themeable; the gap stands in for the requested
      * non-breaking space and, being a margin, never wraps away from the label.
      * Inherits the label colour by default (overridable via the variable). */
-    &[data-required]::before {
+    &[data-required]::after {
       content: var(--form-required-marker, "*");
       margin-inline-end: var(--form-required-marker-gap, 0.25ch);
       color: var(--form-required-marker-color, var(--form-label-color));

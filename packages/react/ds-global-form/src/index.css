@@ -132,7 +132,7 @@
     --form-label-color: var(--color-text);
     /* --form-label-padding-block:  … ; */ /* block padding for label  */
     /* --form-label-padding-inline: … ; */ /* inline padding for label */
-    /* Required marker (shown before the label of required fields in the default
+    /* Required marker (shown after the label of required fields in the default
      * "required" indicator mode): */
     /* --form-required-marker:       "*";                    */ /* marker glyph    */
     /* --form-required-marker-gap:   0.25ch;                 */ /* gap after marker*/
@@ -344,7 +344,7 @@
      * `--form-label-color` by default, so it must be overridden here). The
      * "(optional)" hint keeps its muted colour — it is subordinate, not an error
      * signal — via its own explicit `color` in the Label styles. */
-    &[data-required]::before {
+    &[data-required]::after {
       color: var(--form-error-color);
     }
   }
