@@ -1,8 +1,9 @@
 /**
- * The four no-rows outcomes must stay distinct: a collection that failed to
- * load is not an empty one, and a query that matched nothing is not a
- * collection with nothing in it. Each case is driven through a real provider
- * rather than a hand-built snapshot.
+ * The table's statuses must stay distinct: a collection that failed to load
+ * is not an empty one, a query that matched nothing is not a collection with
+ * nothing in it, and rows an earlier query produced are not an answer to the
+ * current one. Each case is driven through a real provider rather than a
+ * hand-built snapshot.
  */
 import {
   createDataViewsProvider,
@@ -24,6 +25,15 @@ const refreshRequest = (provider: Provider): string => {
   const requestId = provider.refresh();
   if (requestId === null) {
     throw new Error("expected a refresh request");
+  }
+  return requestId;
+};
+
+/** The request a query edit issued, failing loudly rather than casting. */
+const pendingRequest = (provider: Provider): string => {
+  const requestId = provider.result.get().pendingRequestId;
+  if (requestId === null) {
+    throw new Error("expected a pending request");
   }
   return requestId;
 };
@@ -82,6 +92,42 @@ describe("tableStatus", () => {
       kind: "error",
       reason: "offline",
     });
+  });
+
+  it("reports rows an earlier query produced as stale, with the reason", () => {
+    const provider = loaded([{ id: "m-1" }]);
+    provider.setSearch("machine");
+    provider.complete(pendingRequest(provider), {
+      status: "failure",
+      reason: "search is unavailable",
+    });
+    expect(tableStatus(provider.result.get())).toEqual({
+      kind: "stale",
+      reason: "search is unavailable",
+    });
+  });
+
+  it("reports a failed query with no earlier rows to keep as an error", () => {
+    const provider = loaded([]);
+    provider.setSearch("machine");
+    provider.complete(pendingRequest(provider), {
+      status: "failure",
+      reason: "search is unavailable",
+    });
+    expect(provider.result.get().result.status).toBe("stale");
+    expect(tableStatus(provider.result.get())).toEqual({
+      kind: "error",
+      reason: "search is unavailable",
+    });
+  });
+
+  it("reports nothing for rows kept through a failed refresh of the same query", () => {
+    const provider = loaded([{ id: "m-1" }]);
+    provider.complete(refreshRequest(provider), {
+      status: "failure",
+      reason: "offline",
+    });
+    expect(tableStatus(provider.result.get())).toBeNull();
   });
 
   it("reports nothing at all while rows are displayed", () => {

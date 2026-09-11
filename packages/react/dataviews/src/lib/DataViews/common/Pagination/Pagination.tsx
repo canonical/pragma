@@ -14,9 +14,10 @@ const DEFAULT_SIZES: readonly number[] = [10, 25, 50, 100];
  * The destinations are the ones the collection can actually reach. A source
  * that publishes a filtered total gets a last page and a "page n of m"; one
  * that publishes no count gets a Next offered only while the current page is
- * full, and no invented last page. While a replacement request is in flight
- * the previous query's total is not this query's, so no total is claimed and
- * Next waits for the results it would be paging past.
+ * full, and no invented last page. While a replacement request is in flight,
+ * or after it failed and left an earlier query's rows in view, that query's
+ * total is not this one's, so no total is claimed and Next waits for results
+ * that answer the current query.
  */
 export default function Pagination({
   label = "Pagination",

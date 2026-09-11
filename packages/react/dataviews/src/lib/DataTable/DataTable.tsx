@@ -93,6 +93,16 @@ export default function DataTable<
       "DataTable requires a provider created by createDataViewsProvider",
     );
   }
+  // Sorting is offered from the same declaration Filters reads, so a
+  // provider not given one cannot offer it.
+  const declared = provider.capabilities;
+  if (declared === null && columns.some((column) => column.sortable === true)) {
+    throw new Error(
+      "DataTable requires a provider given the source's capabilities to offer a sortable column; pass them to createDataViewsProvider",
+    );
+  }
+  const sortableFields =
+    declared === null || declared.sortTerms === 0 ? [] : declared.sort;
   const baseId = useId();
 
   // Both derivations are keyed on content, not on array identity: a caller
@@ -207,6 +217,10 @@ export default function DataTable<
               key={column.id}
               column={column}
               field={fields[position]}
+              sortable={
+                column.sortable === true &&
+                sortableFields.includes(fields[position])
+              }
               sort={result.slice.sort.find(
                 (term) => term.field === fields[position],
               )}

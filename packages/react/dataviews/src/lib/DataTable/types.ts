@@ -37,7 +37,12 @@ export type DataTableColumn = {
   readonly cell?: ComponentType<DataTableCellProps>;
   /** Declared sizing. Defaults to a flexible column with a 96px minimum. */
   readonly sizing?: ColumnSizing;
-  /** Offer sorting on this column's field. */
+  /**
+   * Offer sorting on this column's field. Honoured only when the provider's
+   * capabilities declare the field sortable and allow at least one sort
+   * term, so the table never offers an ordering the source would refuse. On
+   * a provider created without capabilities, a sortable column throws.
+   */
   readonly sortable?: boolean;
   /**
    * Offer resizing of this column from its trailing edge, by pointer or
@@ -54,14 +59,17 @@ export type DataTableColumn = {
 };
 
 /**
- * Why the table is showing no rows. The four cases stay distinct: an
- * unfiltered collection with nothing in it is not a query that matched
- * nothing, and neither is an error. `loading` covers a collection nothing
- * displayable has arrived for yet, requested or not.
+ * What the table says in place of its rows, or beside them. The four no-rows
+ * cases stay distinct: an unfiltered collection with nothing in it is not a
+ * query that matched nothing, and neither is an error. `loading` covers a
+ * collection nothing displayable has arrived for yet, requested or not.
+ * `stale` is shown above rows kept from an earlier query, because the
+ * current one failed for `reason`.
  */
 export type DataTableStatus =
   | { readonly kind: "loading" }
   | { readonly kind: "error"; readonly reason: string }
+  | { readonly kind: "stale"; readonly reason: string }
   | { readonly kind: "no-data" }
   | { readonly kind: "no-results" };
 
@@ -90,9 +98,10 @@ type OwnProps<
    */
   readonly rowLabel?: (row: TRow, rowId: string) => string;
   /**
-   * Replaces the default text shown when there are no rows to render. Held
-   * the same way as `rowLabel`: the latest one is always called, and its
-   * identity alone never re-renders the body.
+   * Replaces the default text of a status: no rows to render, or rows that
+   * no longer answer the current query. Held the same way as `rowLabel`:
+   * the latest one is always called, and its identity alone never
+   * re-renders the body.
    */
   readonly renderStatus?: (status: DataTableStatus) => ReactNode;
 };

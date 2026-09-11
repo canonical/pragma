@@ -9,7 +9,7 @@ import * as Stories from "./DataTable.stories";
 
 ## A table over a provider
 
-Build the provider once and keep it for the table's lifetime. The binding is different: it subscribes to the provider, so it belongs in an effect that disposes it — a render React throws away must never leave a subscription behind. Ask for the first page only while nothing has been asked yet: StrictMode runs the effect twice in development, and the second run finds the first page already requested. From then on every sort, search or page change issues its own request. The source declares every field it can filter and sort, which here matches what the schema lets a filter edit.
+Build the provider once and keep it for the table's lifetime. The binding is different: it subscribes to the provider, so it belongs in an effect that disposes it — a render React throws away must never leave a subscription behind. Ask for the first page only while nothing has been asked yet: StrictMode runs the effect twice in development, and the second run finds the first page already requested. From then on every sort, search or page change issues its own request. The source declares every field it can filter and sort, and the provider is told that declaration through `capabilities`, so the table and the filters offer only what the source can run.
 
 ```tsx
 import {
@@ -28,22 +28,22 @@ const columns: readonly DataTableColumn[] = [
 ];
 
 export function Machines() {
+  const [source] = useState(() =>
+    createArraySource({ rows: machines, fields: ["name", "status", "cores"] }),
+  );
   const [provider] = useState(() =>
-    createDataViewsProvider({ schema: machineSchema }),
+    createDataViewsProvider({
+      schema: machineSchema,
+      capabilities: source.capabilities,
+    }),
   );
   useEffect(() => {
-    const binding = createSourceBinding({
-      host: provider,
-      adapter: createArraySource({
-        rows: machines,
-        fields: ["name", "status", "cores"],
-      }),
-    });
+    const binding = createSourceBinding({ host: provider, adapter: source });
     if (provider.result.get().result.status === "idle") {
       provider.refresh();
     }
     return binding.dispose;
-  }, [provider]);
+  }, [provider, source]);
   return <DataTable provider={provider} columns={columns} label="Machines" />;
 }
 ```
@@ -59,9 +59,12 @@ A column is `fixed` — it keeps exactly its width — or `flex`: it takes at le
 ```tsx
 import { createDataViewsProvider } from "@canonical/dataviews-core";
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
-import { machineSchema } from "./machines.js";
+import { machineSchema, source } from "./machines.js";
 
-const provider = createDataViewsProvider({ schema: machineSchema });
+const provider = createDataViewsProvider({
+  schema: machineSchema,
+  capabilities: source.capabilities,
+});
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host", sizing: { kind: "flex", weight: 2, minPx: 160 } },
@@ -78,14 +81,17 @@ const columns: readonly DataTableColumn[] = [
 
 ## Sorting
 
-Mark a column `sortable` only when its source declares that field sortable. A source refuses a query carrying a sort term it never declared, so a heading offering that sort would be a control that does nothing. The heading cycles ascending, descending, then back to the source's own order, and reports it through `aria-sort`.
+Mark a column `sortable` only when its source declares that field sortable, and pass the source's declaration to the provider as `capabilities`: the table reads it, and a sortable column on a provider created without it throws. A source refuses a query carrying a sort term it never declared, so a heading offering that sort would be a control that does nothing. The heading cycles ascending, descending, then back to the source's own order, and reports it through `aria-sort`.
 
 ```tsx
 import { createDataViewsProvider } from "@canonical/dataviews-core";
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
-import { machineSchema } from "./machines.js";
+import { machineSchema, source } from "./machines.js";
 
-const provider = createDataViewsProvider({ schema: machineSchema });
+const provider = createDataViewsProvider({
+  schema: machineSchema,
+  capabilities: source.capabilities,
+});
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host", sortable: true },
@@ -107,9 +113,12 @@ const columns: readonly DataTableColumn[] = [
 ```tsx
 import { createDataViewsProvider } from "@canonical/dataviews-core";
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
-import { machineSchema } from "./machines.js";
+import { machineSchema, source } from "./machines.js";
 
-const provider = createDataViewsProvider({ schema: machineSchema });
+const provider = createDataViewsProvider({
+  schema: machineSchema,
+  capabilities: source.capabilities,
+});
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host" },
@@ -137,9 +146,12 @@ The last column never gets a control, even when it is declared `resizable`: its 
 ```tsx
 import { createDataViewsProvider } from "@canonical/dataviews-core";
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
-import { machineSchema } from "./machines.js";
+import { machineSchema, source } from "./machines.js";
 
-const provider = createDataViewsProvider({ schema: machineSchema });
+const provider = createDataViewsProvider({
+  schema: machineSchema,
+  capabilities: source.capabilities,
+});
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host", resizable: true, sizing: { kind: "flex", weight: 1, minPx: 120, maxPx: 320 } },
@@ -170,7 +182,10 @@ import {
 } from "@canonical/dataviews-react";
 import { type Machine, machineSchema } from "./machines.js";
 
-const provider = createDataViewsProvider({ schema: machineSchema });
+const provider = createDataViewsProvider({
+  schema: machineSchema,
+  capabilities: source.capabilities,
+});
 
 function HostCell({ value }: DataTableCellProps) {
   const { row, selected } = useDataViewsCell(provider);
@@ -218,9 +233,12 @@ import {
   type DataTableColumn,
   type DataTableStatus,
 } from "@canonical/dataviews-react";
-import { machineSchema } from "./machines.js";
+import { machineSchema, source } from "./machines.js";
 
-const provider = createDataViewsProvider({ schema: machineSchema });
+const provider = createDataViewsProvider({
+  schema: machineSchema,
+  capabilities: source.capabilities,
+});
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host" },

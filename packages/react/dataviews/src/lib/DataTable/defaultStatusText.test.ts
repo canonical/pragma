@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import defaultStatusText from "./defaultStatusText.js";
 
 describe("defaultStatusText", () => {
-  it("gives each no-rows outcome its own words", () => {
+  it("gives each status its own words", () => {
     expect(defaultStatusText({ kind: "loading" })).toBe("Loading…");
     expect(defaultStatusText({ kind: "error", reason: "offline" })).toBe(
       "offline",
+    );
+    expect(defaultStatusText({ kind: "stale", reason: "offline" })).toBe(
+      "These rows do not match the current query: offline",
     );
     expect(defaultStatusText({ kind: "no-results" })).toBe(
       "No rows match this query.",

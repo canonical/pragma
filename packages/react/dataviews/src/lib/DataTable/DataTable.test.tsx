@@ -7,6 +7,7 @@
 import type {
   DataViewsProvider,
   Presentation,
+  SourceCapabilities,
 } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
@@ -46,8 +47,18 @@ const columns: readonly DataTableColumn[] = [
   { id: "status", header: "Status" },
 ];
 
+/** What the fixture source declares: it can order by `name` alone. */
+const capabilities: SourceCapabilities = {
+  filter: { status: ["eq"] },
+  search: ["name"],
+  sort: ["name"],
+  sortTerms: 1,
+  group: [],
+  count: "filtered",
+};
+
 const makeProvider = (): DataViewsProvider<Fields, Machine> =>
-  createDataViewsProvider<Fields, Machine>({ schema });
+  createDataViewsProvider<Fields, Machine>({ schema, capabilities });
 
 /** Refresh and return the request id, failing loudly rather than casting. */
 const refreshRequest = (
@@ -58,6 +69,17 @@ const refreshRequest = (
   const requestId = provider.refresh();
   if (requestId === null) {
     throw new Error("expected a refresh request");
+  }
+  return requestId;
+};
+
+/** The request a query edit issued, failing loudly rather than casting. */
+const pendingRequest = (
+  provider: DataViewsProvider<Fields, Machine>,
+): string => {
+  const requestId = provider.result.get().pendingRequestId;
+  if (requestId === null) {
+    throw new Error("expected a pending request");
   }
   return requestId;
 };
@@ -380,12 +402,14 @@ describe("DataTable", () => {
     );
   });
 
-  it("shows the four no-rows outcomes and lets the caller replace them", () => {
+  it("shows the loading, no-data and no-results outcomes and lets the caller replace them", () => {
     const provider = makeProvider();
     const { rerender } = render(
       <DataTable provider={provider} columns={columns} label="Machines" />,
     );
     expect(screen.getByRole("row", { name: "Loading…" })).toBeInTheDocument();
+    // The loading row is not a status message (role="status").
+    expect(screen.queryByRole("status")).toBeNull();
     load(provider, []);
     expect(screen.getByText("There is nothing here yet.")).toBeInTheDocument();
     act(() => {
@@ -1169,6 +1193,184 @@ describe("DataTable", () => {
     expect(handle).toHaveAttribute("aria-valuenow", "50");
     fireEvent.keyDown(handle, { key: "ArrowLeft" });
     expect(presentation.state.overrides.name).toBeUndefined();
+  });
+
+  it("offers sorting only on a field its source declares sortable", () => {
+    loadedTable(undefined, {
+      columns: [
+        { id: "name", header: "Name", sortable: true },
+        { id: "status", header: "Status", sortable: true },
+      ],
+    });
+    const [name, status] = screen.getAllByRole("columnheader");
+    expect(within(name).getByRole("button", { name: "Name" })).toBeVisible();
+    expect(name).toHaveAttribute("aria-sort", "none");
+    expect(within(status).queryByRole("button")).toBeNull();
+    expect(status).not.toHaveAttribute("aria-sort");
+  });
+
+  it("offers no sorting on a source that can order nothing", () => {
+    const provider = createDataViewsProvider<Fields, Machine>({
+      schema,
+      capabilities: { ...capabilities, sortTerms: 0 },
+    });
+    render(
+      <DataTable provider={provider} columns={columns} label="Machines" />,
+    );
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.getAllByRole("columnheader")[0]).not.toHaveAttribute(
+      "aria-sort",
+    );
+  });
+
+  it("refuses a sortable column on a provider not told what its source can sort", () => {
+    const provider = createDataViewsProvider<Fields, Machine>({ schema });
+    expect(() =>
+      render(
+        <DataTable provider={provider} columns={columns} label="Machines" />,
+      ),
+    ).toThrow(
+      "DataTable requires a provider given the source's capabilities to offer a sortable column; pass them to createDataViewsProvider",
+    );
+    render(
+      <DataTable
+        provider={provider}
+        columns={[{ id: "name", header: "Name" }]}
+        label="Machines"
+      />,
+    );
+    expect(screen.getByRole("columnheader")).not.toHaveAttribute("aria-sort");
+  });
+
+  it("keeps an earlier query's rows in view, says they are stale and why, and leaves focus alone", () => {
+    const { provider } = loadedTable();
+    const button = screen.getByRole("button", { name: "Name" });
+    button.focus();
+    fireEvent.click(button);
+    const request = pendingRequest(provider);
+    act(() => {
+      provider.complete(request, {
+        status: "failure",
+        reason: "the inventory is unreachable",
+      });
+    });
+    const table = screen.getByRole("table", { name: "Machines" });
+    expect(table).toHaveAttribute("aria-busy", "false");
+    expect(within(table).getByRole("status")).toHaveTextContent(
+      "These rows do not match the current query: the inventory is unreachable",
+    );
+    // The status row leads, and the retained rows follow it unblanked.
+    const body = within(table).getAllByRole("rowgroup")[1];
+    const [status, ...rows] = within(body).getAllByRole("row");
+    expect(status).toHaveClass("status");
+    expect(rows.map((row) => row.textContent)).toEqual([
+      "alpharunning",
+      "betarunning",
+    ]);
+    expect(document.activeElement).toBe(button);
+    // The query is shown as asked, with the refused ordering still applied.
+    expect(screen.getAllByRole("columnheader")[0]).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
+  });
+
+  it("keeps one stale status element across re-renders", () => {
+    const provider = makeProvider();
+    const { rerender } = render(
+      <DataTable provider={provider} columns={columns} label="Machines" />,
+    );
+    load(provider, [machine("m-1", "alpha")]);
+    act(() => {
+      provider.setSearch("beta");
+    });
+    const request = pendingRequest(provider);
+    act(() => {
+      provider.complete(request, { status: "failure", reason: "offline" });
+    });
+    const statusMessage = screen.getByRole("status");
+    rerender(
+      <DataTable provider={provider} columns={[...columns]} label="Machines" />,
+    );
+    act(() => {
+      provider.selection.add(["m-1"]);
+    });
+    expect(screen.getByRole("status")).toBe(statusMessage);
+    expect(statusMessage).toHaveTextContent(
+      "These rows do not match the current query: offline",
+    );
+  });
+
+  it("returns to a coherent table once the stale query is replaced", () => {
+    const { provider } = loadedTable();
+    act(() => {
+      provider.setSearch("beta");
+    });
+    const failed = pendingRequest(provider);
+    act(() => {
+      provider.complete(failed, { status: "failure", reason: "offline" });
+    });
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    act(() => {
+      provider.setSearch("");
+    });
+    const recovered = pendingRequest(provider);
+    act(() => {
+      provider.complete(recovered, {
+        status: "success",
+        rows: [machine("m-2", "beta")],
+        count: 1,
+      });
+    });
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(provider.result.get().result.status).toBe("ready");
+    expect(screen.getAllByRole("row")).toHaveLength(2);
+  });
+
+  it("hands a stale status to the caller's renderStatus", () => {
+    const { provider } = loadedTable(undefined, {
+      renderStatus: (status) =>
+        status.kind === "stale"
+          ? `Out of date (${status.reason})`
+          : status.kind,
+    });
+    act(() => {
+      provider.setSearch("beta");
+    });
+    act(() => {
+      provider.complete(pendingRequest(provider), {
+        status: "failure",
+        reason: "offline",
+      });
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      /^Out of date \(offline\)$/,
+    );
+  });
+
+  it("shows the new reason when a later query fails differently", () => {
+    const { provider } = loadedTable();
+    act(() => {
+      provider.setSearch("beta");
+    });
+    act(() => {
+      provider.complete(pendingRequest(provider), {
+        status: "failure",
+        reason: "offline",
+      });
+    });
+    // One batch, as a synchronous source delivers it: the pending state in
+    // between never renders.
+    act(() => {
+      provider.setSearch("gamma");
+      provider.complete(pendingRequest(provider), {
+        status: "failure",
+        reason: "timed out",
+      });
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "These rows do not match the current query: timed out",
+    );
   });
 
   it("marks the table busy while a request is in flight", () => {

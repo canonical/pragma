@@ -63,7 +63,8 @@ export type DataViewsProvider<
   readonly schema: Schema<TFields>;
   /**
    * What the collection's source declares it can execute, or null when the
-   * provider was not told. Connected parts offer only what is declared.
+   * provider was not told. Connected parts, and DataTable's sortable
+   * columns, offer only what is declared.
    */
   readonly capabilities: SourceCapabilities | null;
   /** The coordinator's snapshot channel (result, query and window). */

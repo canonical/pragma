@@ -8,7 +8,10 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { CompletionResult } from "@canonical/dataviews-core";
+import type {
+  CompletionResult,
+  SourceCapabilities,
+} from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
@@ -37,6 +40,16 @@ type Machine = {
   readonly status: string;
 };
 
+/** What the fixture source declares: it can order by `name`, which the table sorts. */
+const capabilities: SourceCapabilities = {
+  filter: { status: ["eq"] },
+  search: [],
+  sort: ["name"],
+  sortTerms: 1,
+  group: [],
+  count: "filtered",
+};
+
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Name", sortable: true, resizable: true },
   { id: "status", header: "Status" },
@@ -46,6 +59,7 @@ const columns: readonly DataTableColumn[] = [
 const settled = (result: CompletionResult<Machine>): HTMLElement => {
   const provider = createDataViewsProvider<typeof schema.fields, Machine>({
     schema,
+    capabilities,
   });
   const { container } = render(
     <DataTable

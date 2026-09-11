@@ -182,7 +182,7 @@ const searchForNothing = (provider: MachineProvider): void => {
 
 const consumerImports = `import { createDataViewsProvider } from "@canonical/dataviews-core";
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
-import { machineSchema } from "./machines.js";`;
+import { machineSchema, source } from "./machines.js";`;
 
 /**
  * A story's consumer code, as its "Show code" panel shows it: the provider,
@@ -200,7 +200,7 @@ const consumer = (
         options.imports === undefined
           ? consumerImports
           : `${consumerImports}\n${options.imports}`,
-        `const provider = ${options.provider ?? "createDataViewsProvider({ schema: machineSchema })"};`,
+        `const provider = ${options.provider ?? "createDataViewsProvider({ schema: machineSchema, capabilities: source.capabilities })"};`,
         body,
       ].join("\n\n"),
     },
