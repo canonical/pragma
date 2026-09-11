@@ -13,4 +13,5 @@ export * from "./rows/index.js";
 export * from "./schema/index.js";
 export * from "./selection/index.js";
 export * from "./source/index.js";
+export type { ProviderViews, ViewsState } from "./views/types.js";
 export * from "./wire/index.js";

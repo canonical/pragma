@@ -21,6 +21,7 @@ import type {
 } from "../schema/types.js";
 import type { Selection } from "../selection/createSelection.js";
 import type { SourceCapabilities } from "../source/types.js";
+import type { ProviderViews } from "../views/types.js";
 
 /** One field handle of a provider: observation plus bounded edits. */
 export type ProviderFieldHandle<TApplied> = {
@@ -76,6 +77,12 @@ export type DataViewsProvider<
    */
   readonly rows: Channel<RowModel<TRow>>;
   readonly selection: Selection;
+  /**
+   * The collection's saved views over the store the provider was given, or
+   * null when it was given none: no store means no views, never views kept
+   * in memory and lost on reload.
+   */
+  readonly views: ProviderViews | null;
   readonly fields: ProviderFields<TFields>;
   /** Bounded commands, not raw dispatch: */
   readonly navigateWindow: (page?: number, size?: number) => void;

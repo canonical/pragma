@@ -5,6 +5,9 @@
  * the IndexedDB store is the local-first one shipped here.
  */
 
+import type { ReadonlyChannel } from "../observable/createChannel.js";
+import type { QueryIssue } from "../wire/types.js";
+
 /** A JSON value. */
 export type JsonValue =
   | string
@@ -166,9 +169,140 @@ export type ViewStore = {
   ) => Promise<PreferenceResult>;
   /**
    * Hear that the store changed, here or in another tab; read again to see
-   * how. The storage stays the authority.
+   * how. The storage stays the authority. A write's own notice comes before
+   * the write resolves, and a read begun after a write was called sees it.
    */
   readonly subscribe: (listener: () => void) => () => void;
   /** Detach: close the storage, drop listeners; later calls reject. */
   readonly dispose: () => void;
+};
+
+/** A saved-view operation a collection runs. */
+export type ViewAction = "open" | "save" | "saveAs" | "rename" | "remove";
+
+/**
+ * How a saved-view operation ended. `invalid` is a name refused before
+ * anything is written; `refused` a view whose query the collection cannot
+ * read whole, so opening it would quietly widen the query; `failed` a
+ * store that rejected, with nothing claimed saved.
+ */
+export type ViewOutcome =
+  | { readonly status: "opened" | "saved"; readonly view: SavedView }
+  | { readonly status: "removed" }
+  | { readonly status: "invalid"; readonly reason: string }
+  | {
+      readonly status: "refused";
+      readonly view: SavedView;
+      readonly issues: readonly QueryIssue[];
+    }
+  | { readonly status: "conflict"; readonly view: SavedView }
+  | { readonly status: "missing" }
+  | { readonly status: "unreadable"; readonly reason: string }
+  | { readonly status: "failed"; readonly reason: string };
+
+/** An outcome an operation settles to: never a refused name. */
+export type SettledOutcome = Exclude<
+  ViewOutcome,
+  { readonly status: "invalid" }
+>;
+
+/**
+ * The latest saved-view operation: in flight, or settled with its outcome. A
+ * refused name is never one: the caller shows it where the name was given.
+ */
+export type ViewOperation =
+  | { readonly action: ViewAction; readonly status: "pending" }
+  | {
+      readonly action: ViewAction;
+      readonly status: "settled";
+      readonly outcome: SettledOutcome;
+    };
+
+/** A collection's saved views, as its controls show them. */
+export type ViewsState = {
+  /**
+   * Whether the store's views are known. `idle` until something observes
+   * them — so always on a server, which never runs the effect that does —
+   * then `loading`, then `listed` or `unavailable` with the store's reason.
+   */
+  readonly listing:
+    | { readonly status: "idle" | "loading" | "listed" }
+    | { readonly status: "unavailable"; readonly reason: string };
+  /** The readable views, by name. */
+  readonly views: readonly SavedView[];
+  readonly unreadable: readonly UnreadableView[];
+  /** The view the user opened, or null. Deleting it keeps the query. */
+  readonly current: SavedView | null;
+  /**
+   * Whether the live query differs from the open view's. Derived, never
+   * stored; the window, the selection and the presentation never count.
+   */
+  readonly modified: boolean;
+  /**
+   * The latest operation, or null before the first and after a reset while
+   * none is running.
+   */
+  readonly operation: ViewOperation | null;
+  /**
+   * The presentation in force: the viewer's default arrangement, under the
+   * open view's saved presentation, under the viewer's own changes to that
+   * view. A renderer's declared defaults fill every key left out.
+   */
+  readonly presentation: ViewPresentation;
+  /** Why presentation changes are not being read or saved, or null. */
+  readonly presentationFailure: string | null;
+};
+
+/**
+ * A collection's saved views over the store its provider was given: which
+ * one is open, whether the query has moved from it, and the operations on
+ * it. Operations run one at a time, in call order. A store that rejects
+ * settles as `failed`; a state listener that throws rejects that operation
+ * alone. An operation still in flight when the scope rotates answers its
+ * caller and changes nothing.
+ */
+export type ProviderViews = {
+  readonly state: ReadonlyChannel<ViewsState>;
+  /**
+   * Read the store and hear its changes until the release is called. Nothing
+   * reads the store before, so a server render stays `idle`; a React host
+   * observes from an effect.
+   */
+  readonly observe: () => () => void;
+  /**
+   * Read the views and preferences again, and write again the preferences
+   * whose write failed.
+   */
+  readonly reload: () => void;
+  /**
+   * Apply a view's query on the first page and make it the open view. A
+   * query the collection cannot read whole is refused, and the live query is
+   * kept.
+   */
+  readonly open: (id: string) => Promise<ViewOutcome>;
+  /** Apply the open view's query again, on the first page. */
+  readonly reset: () => void;
+  /**
+   * Save the live query into the open view, provided the view is unchanged
+   * since it was read. After a conflict the stored view is the open one, so
+   * saving again overwrites it.
+   */
+  readonly save: () => Promise<ViewOutcome>;
+  /**
+   * Save the live query and presentation as a new view, and open it. A
+   * creation whose outcome never arrived is retried under the same id. A
+   * name that is empty, already another view's, or not checkable because the
+   * views are not listed, is refused as `invalid` before anything is written.
+   */
+  readonly saveAs: (name: string) => Promise<ViewOutcome>;
+  /** Rename the open view, refusing a name as `saveAs` does. */
+  readonly rename: (name: string) => Promise<ViewOutcome>;
+  /** Delete the open view. The live query stays. */
+  readonly remove: () => Promise<ViewOutcome>;
+  /**
+   * Change the presentation: the open view's own, or the default
+   * arrangement when none is open. Applied at once and saved behind; a save
+   * that fails is reported on `presentationFailure`, never undone.
+   */
+  readonly arrange: (patch: PresentationPatch) => void;
 };
