@@ -105,16 +105,30 @@
    * so `.editorial` composes with density with no specificity war. `:is()` (not
    * `:where()`) still gives the control seat the specificity to beat a control's own
    * centring (e.g. the Button's `align-items: center`). */
-  /* Body font tier for the field label/description/error, which lost `.p`. Scoped
-     to just these (NOT the headings, which keep their own tier). */
+  /* Body font tier for the field label/description/error plus the toggle control
+     row (its own line metrics must match the label's so the control row centres
+     exactly), which lost `.p`. Scoped to just these (NOT the headings, which
+     keep their own tier). */
   :is(.comfortable, .dense, .app, .site, .docs)
-  :is(.ds.field-label, .ds.field-description, .ds.field-error) {
+  :is(
+    .ds.field-label,
+    .ds.field-description,
+    .ds.field-error,
+    .ds.field-toggle,
+    .ds.option
+  ) {
     font-size: var(--typography-text-primary-font-size);
     font-family: var(--typography-text-primary-font-family);
   }
 
   :is(.comfortable, .dense, .app, .site, .docs)
-    :is(.ds.field-label, .ds.field-description, .ds.field-error) {
+    :is(
+      .ds.field-label,
+      .ds.field-description,
+      .ds.field-error,
+      .ds.field-toggle,
+      .ds.option
+    ) {
     line-height: 1;
     /* Baseline within a line-height:1 box (font-relative cap approximation). */
     --natural-baseline: calc((1em + 1cap) / 2);
