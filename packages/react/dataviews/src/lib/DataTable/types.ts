@@ -39,7 +39,17 @@ export type DataTableColumn = {
   readonly sizing?: ColumnSizing;
   /** Offer sorting on this column's field. */
   readonly sortable?: boolean;
-  /** Offer resizing of this column. */
+  /**
+   * Offer resizing of this column from its trailing edge, by pointer or
+   * keyboard, held to the declared bounds of its sizing every time.
+   *
+   * The last column never offers it, whatever this says: its trailing edge is
+   * the table's own edge, with nothing beyond it to resize against. It takes
+   * whatever width the columns before it leave — past its own `maxPx` or
+   * fixed width when there is room to spare — so it grows and shrinks as they
+   * are resized, and keeps its resolved width once they no longer fit and the
+   * table scrolls.
+   */
   readonly resizable?: boolean;
 };
 

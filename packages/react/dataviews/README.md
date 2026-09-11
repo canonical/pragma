@@ -95,10 +95,16 @@ const columns = [
 ```
 
 Fixed columns keep their width, flexible ones compress within their bounds,
-and the table scrolls horizontally once the remainder no longer fits. Resizing
-works from the pointer and from the keyboard — arrow keys step the edge,
-Escape abandons a drag — and a user-fixed width is never quietly shrunk to
-suit the viewport. Pass a shared `presentation` to give two tables on one
+and the table scrolls horizontally once the remainder no longer fits. The last
+column takes whatever width the others leave, past its own maximum when there
+is room to spare. Resizing works from the pointer
+and from the keyboard — arrow keys step the edge, Escape abandons a drag — and
+a user-fixed width is never quietly shrunk to suit the viewport. Every resize
+is held to the column's declared `minPx` and `maxPx`, however often it has
+been resized, and a column widened past the container scrolls the table to
+keep its edge in view. The last column has no resize control, even when it is
+declared `resizable`: its trailing edge is the table's own edge, with nothing
+beyond it to resize against. Pass a shared `presentation` to give two tables on one
 provider the same user arrangement.
 
 ### Empty, loading and failed

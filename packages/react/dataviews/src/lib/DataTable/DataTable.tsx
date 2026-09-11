@@ -11,7 +11,12 @@ import {
 import type { CSSProperties, ReactElement, Ref } from "react";
 import { useCallback, useEffect, useId, useMemo, useRef } from "react";
 import useDataViewsValue from "../DataViews/hooks/useDataViewsValue.js";
-import { sameColumnModel, sameColumns, sizingOf } from "./columnKeys.js";
+import {
+  boundsOf,
+  sameColumnModel,
+  sameColumns,
+  sizingOf,
+} from "./columnKeys.js";
 import { HeaderCell, SelectAllCell, TableBody } from "./common/index.js";
 import defaultStatusText from "./defaultStatusText.js";
 import {
@@ -63,9 +68,9 @@ const selectionSizing: ColumnSizing = { kind: "fixed", px: 40 };
  *
  * Its rows are divs consuming one shared track list, published once on the
  * container as a custom property. Fixed columns keep their declared width,
- * flexible ones compress within their bounds, and the container scrolls when
- * the remainder no longer fits — there is no automatic hiding, pairing or
- * renderer switching.
+ * flexible ones compress within their bounds, the last column takes whatever
+ * width the others leave, and the container scrolls when the remainder no
+ * longer fits — there is no automatic hiding, pairing or renderer switching.
  */
 export default function DataTable<
   TFields extends readonly SchemaFieldDefinition[],
@@ -207,6 +212,10 @@ export default function DataTable<
               )}
               setSort={provider.setSort}
               interaction={interaction}
+              resizable={
+                column.resizable === true && position < rendered.length - 1
+              }
+              bounds={boundsOf(activePresentation.state.declared[column.id])}
               width={geometry.widths[position + selectionOffset]}
               labelId={`${baseId}-${column.id}`}
             />

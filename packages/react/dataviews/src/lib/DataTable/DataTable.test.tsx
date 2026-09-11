@@ -771,6 +771,7 @@ describe("DataTable", () => {
             resizable: true,
             sizing: { kind: "flex", weight: 1, minPx: 50 },
           },
+          { id: "status", header: "Status" },
         ]}
         label="Machines"
       />,
@@ -783,7 +784,7 @@ describe("DataTable", () => {
       screen
         .getByRole("table", { name: "Machines" })
         .style.getPropertyValue("--data-table-columns"),
-    ).toBe("66px");
+    ).toBe("66px 96px");
   });
 
   it("shows a live drag in the published tracks without committing it", () => {
@@ -796,11 +797,15 @@ describe("DataTable", () => {
       const provider = makeProvider();
       const presentation = createPresentation([
         { id: "name", sizing: { kind: "flex", weight: 1, minPx: 50 } },
+        { id: "status", sizing: { kind: "flex", weight: 1, minPx: 96 } },
       ]);
       render(
         <DataTable
           provider={provider}
-          columns={[{ id: "name", header: "Name", resizable: true }]}
+          columns={[
+            { id: "name", header: "Name", resizable: true },
+            { id: "status", header: "Status" },
+          ]}
           label="Machines"
           presentation={presentation}
         />,
@@ -819,7 +824,7 @@ describe("DataTable", () => {
           .style.getPropertyValue("--data-table-columns"),
         // The column reserved 50px against a zero-width container, and the
         // pointer travelled 180 from there.
-      ).toBe("230px");
+      ).toBe("230px 96px");
       // The authority is untouched until the pointer is released.
       expect(presentation.state.overrides.name).toBeUndefined();
     } finally {
@@ -923,6 +928,247 @@ describe("DataTable", () => {
         .style.getPropertyValue("--data-table-columns"),
     ).toBe("66px 96px");
     expect(renders).toEqual([]);
+  });
+
+  it("offers no resize control on the table's trailing edge", () => {
+    const provider = makeProvider();
+    const { rerender } = render(
+      <DataTable
+        provider={provider}
+        columns={[
+          { id: "name", header: "Name", resizable: true },
+          { id: "status", header: "Status", resizable: true },
+        ]}
+        label="Machines"
+      />,
+    );
+    load(provider, [machine("m-1", "alpha")]);
+    // Status declares itself resizable, but no column follows it to trade
+    // width with, so neither a pointer nor a key can reach its edge.
+    expect(screen.getAllByRole("separator")).toHaveLength(1);
+    expect(screen.getByRole("separator")).toHaveAccessibleName("Name");
+    rerender(
+      <DataTable
+        provider={provider}
+        columns={[{ id: "name", header: "Name", resizable: true }]}
+        label="Machines"
+      />,
+    );
+    expect(screen.queryByRole("separator")).toBeNull();
+  });
+
+  it("gives the last column whatever width the others leave, live", () => {
+    const notified: ResizeObserverCallback[] = [];
+    class StubObserver {
+      constructor(callback: ResizeObserverCallback) {
+        notified.push(callback);
+      }
+      observe(): void {}
+      unobserve(): void {}
+      disconnect(): void {}
+    }
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal("ResizeObserver", StubObserver);
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    try {
+      const provider = makeProvider();
+      render(
+        <DataTable
+          provider={provider}
+          columns={[
+            {
+              id: "name",
+              header: "Name",
+              resizable: true,
+              sizing: { kind: "fixed", px: 100 },
+            },
+            {
+              id: "status",
+              header: "Status",
+              sizing: { kind: "fixed", px: 100 },
+            },
+          ]}
+          label="Machines"
+        />,
+      );
+      const measure = (width: number): void => {
+        act(() => {
+          for (const observer of notified) {
+            observer(
+              [{ contentRect: { width } }] as unknown as ResizeObserverEntry[],
+              {} as ResizeObserver,
+            );
+          }
+        });
+      };
+      const tracks = (): string =>
+        screen
+          .getByRole("table", { name: "Machines" })
+          .style.getPropertyValue("--data-table-columns");
+      measure(400);
+      expect(tracks()).toBe("100px 300px");
+      fireEvent.pointerDown(screen.getByRole("separator"), { clientX: 0 });
+      fireEvent.pointerMove(window, { clientX: 50 });
+      act(() => {
+        for (const frame of frames.splice(0)) {
+          frame(0);
+        }
+      });
+      // The last column follows the edge being dragged, before any commit.
+      expect(tracks()).toBe("150px 250px");
+      fireEvent.pointerUp(window);
+      expect(tracks()).toBe("150px 250px");
+      // Once the columns no longer fit, nothing is stretched: the table
+      // scrolls instead.
+      measure(200);
+      expect(tracks()).toBe("150px 100px");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("holds every resize to the column's declared bounds", () => {
+    const provider = makeProvider();
+    render(
+      <DataTable
+        provider={provider}
+        columns={[
+          {
+            id: "name",
+            header: "Name",
+            resizable: true,
+            sizing: { kind: "flex", weight: 1, minPx: 50, maxPx: 80 },
+          },
+          { id: "status", header: "Status" },
+        ]}
+        label="Machines"
+      />,
+    );
+    load(provider, [machine("m-1", "alpha")]);
+    const handle = screen.getByRole("separator");
+    const tracks = (): string =>
+      screen
+        .getByRole("table", { name: "Machines" })
+        .style.getPropertyValue("--data-table-columns");
+    expect(handle).toHaveAttribute("aria-valuemax", "80");
+    fireEvent.keyDown(handle, { key: "ArrowRight" });
+    expect(tracks()).toBe("66px 96px");
+    // The first step committed a fixed override; the declared maximum still
+    // stops the second step, and the third moves nothing.
+    fireEvent.keyDown(handle, { key: "ArrowRight" });
+    expect(tracks()).toBe("80px 96px");
+    fireEvent.keyDown(handle, { key: "ArrowRight" });
+    expect(tracks()).toBe("80px 96px");
+  });
+
+  it("scrolls the table to keep a moved edge in view", () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    try {
+      const provider = makeProvider();
+      render(
+        <DataTable
+          provider={provider}
+          columns={[
+            {
+              id: "name",
+              header: "Name",
+              resizable: true,
+              sizing: { kind: "fixed", px: 100 },
+            },
+            { id: "status", header: "Status" },
+          ]}
+          label="Machines"
+        />,
+      );
+      load(provider, [machine("m-1", "alpha")]);
+      const table = screen.getByRole("table", { name: "Machines" });
+      const handle = screen.getByRole("separator");
+      const box = (left: number, width: number) =>
+        ({
+          left,
+          right: left + width,
+          top: 0,
+          bottom: 40,
+          width,
+          height: 40,
+          x: left,
+          y: 0,
+        }) as DOMRect;
+      // The table's visible width runs from 10 to 130.
+      let scrolled = 0;
+      Object.defineProperty(table, "clientWidth", { value: 120 });
+      Object.defineProperty(table, "scrollLeft", {
+        get: () => scrolled,
+        set: (next: number) => {
+          scrolled = next;
+        },
+      });
+      table.getBoundingClientRect = () => box(10, 122);
+      const place = (left: number): void => {
+        handle.getBoundingClientRect = () => box(left, 16);
+      };
+      place(150);
+      fireEvent.keyDown(handle, { key: "ArrowRight" });
+      expect(scrolled).toBe(36);
+      place(-6);
+      fireEvent.keyDown(handle, { key: "ArrowLeft" });
+      expect(scrolled).toBe(20);
+      place(40);
+      fireEvent.keyDown(handle, { key: "ArrowRight" });
+      expect(scrolled).toBe(20);
+      // A drag reveals the edge on every render it causes: the capture, each
+      // published frame, and the commit.
+      place(200);
+      fireEvent.pointerDown(handle, { clientX: 0 });
+      expect(scrolled).toBe(106);
+      place(230);
+      fireEvent.pointerMove(window, { clientX: 40 });
+      act(() => {
+        for (const frame of frames.splice(0)) {
+          frame(0);
+        }
+      });
+      expect(scrolled).toBe(222);
+      fireEvent.pointerUp(window);
+      expect(scrolled).toBe(338);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("holds a resize to the presentation's declared bounds, not the column's", () => {
+    const provider = makeProvider();
+    const presentation = createPresentation([
+      { id: "name", sizing: { kind: "flex", weight: 1, minPx: 50 } },
+      { id: "status", sizing: { kind: "flex", weight: 1, minPx: 96 } },
+    ]);
+    render(
+      <DataTable
+        provider={provider}
+        columns={[
+          { id: "name", header: "Name", resizable: true },
+          { id: "status", header: "Status" },
+        ]}
+        label="Machines"
+        presentation={presentation}
+      />,
+    );
+    load(provider, [machine("m-1", "alpha")]);
+    const handle = screen.getByRole("separator");
+    // The column declares nothing, so on its own it would default to a 96px
+    // minimum; the shared presentation, which the widths are solved from,
+    // declares 50. The column sits at 50, and a step left moves nothing.
+    expect(handle).toHaveAttribute("aria-valuemin", "50");
+    expect(handle).toHaveAttribute("aria-valuenow", "50");
+    fireEvent.keyDown(handle, { key: "ArrowLeft" });
+    expect(presentation.state.overrides.name).toBeUndefined();
   });
 
   it("marks the table busy while a request is in flight", () => {

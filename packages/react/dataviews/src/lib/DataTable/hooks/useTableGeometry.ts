@@ -2,6 +2,7 @@ import type {
   ColumnToSize,
   GridInteraction,
   Presentation,
+  ResolvedColumn,
 } from "@canonical/dataviews-core";
 import { columnTemplate, resolveColumns } from "@canonical/dataviews-core";
 import { useCallback, useMemo, useState } from "react";
@@ -9,6 +10,28 @@ import useDataViewsState from "../../DataViews/hooks/useDataViewsState.js";
 import { sameTracks } from "../columnKeys.js";
 import type { TableGeometry } from "./types.js";
 import useStableValue from "./useStableValue.js";
+
+/**
+ * Give the last column whatever width the others leave, even past its own
+ * maximum: its trailing edge is the table's own edge, so it is never resized
+ * on its own and grows and shrinks as the columns before it are. Nothing
+ * changes once the columns no longer fit, or before the container is
+ * measured.
+ */
+const fillLast = (
+  columns: readonly ResolvedColumn[],
+  available: number | null,
+): readonly ResolvedColumn[] => {
+  const last = columns.at(-1);
+  if (available === null || last === undefined) {
+    return columns;
+  }
+  const spare =
+    available - columns.reduce((total, column) => total + column.width, 0);
+  return spare > 0
+    ? [...columns.slice(0, -1), { id: last.id, width: last.width + spare }]
+    : columns;
+};
 
 /**
  * Resolve one mounted table's geometry.
@@ -66,10 +89,8 @@ export default function useTableGeometry(
     () => resolveColumns(tracks, width ?? 0),
     [tracks, width],
   );
-  const widths = useMemo(
-    () => resolved.map((column) => column.width),
-    [resolved],
-  );
+  const filled = useMemo(() => fillLast(resolved, width), [resolved, width]);
+  const widths = useMemo(() => filled.map((column) => column.width), [filled]);
 
   const preview =
     interactionState.status === "resizing"
@@ -81,9 +102,25 @@ export default function useTableGeometry(
   // solved vector is handed over rather than re-solved: before the
   // container is measured the tracks are declarative, and after it they are
   // the widths just resolved.
+  // A live preview is substituted before the last column is filled, so the
+  // last column follows the edge being dragged rather than waiting for the
+  // commit.
+  const live =
+    width === null
+      ? null
+      : preview === undefined
+        ? filled
+        : fillLast(
+            resolved.map((column) =>
+              column.id === preview.id
+                ? { id: column.id, width: preview.width }
+                : column,
+            ),
+            width,
+          );
   return {
     attach,
-    template: columnTemplate(tracks, width === null ? null : resolved, preview),
+    template: columnTemplate(tracks, live),
     widths,
   };
 }
