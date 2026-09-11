@@ -41,9 +41,12 @@
 
   /* Rows take their width from the track list, not from the scroll
      container, so a hovered or selected fill covers every column of a table
-     that is wider than its viewport. */
+     that is wider than its viewport. The min-content width of a track list
+     is its minimums added up, and every minimum is a length, so this reads
+     no cell: a max-content width would size every cell of every row on
+     each layout, and paint the table too wide before the solver ran. */
   .ds.data-table-row-group {
-    min-inline-size: max-content;
+    min-inline-size: min-content;
   }
 
   .ds.data-table-row-group.header {

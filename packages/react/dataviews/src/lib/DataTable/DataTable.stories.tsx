@@ -10,7 +10,9 @@ import type {
 import {
   createEmptySource,
   createFailingSource,
+  createMachineSource,
   createPendingSource,
+  manyMachines,
 } from "../../storybook/machines/fixtures.js";
 import type {
   MachineProvider,
@@ -24,6 +26,7 @@ import {
 } from "../../storybook/machines/story-utils.js";
 import useDataViewsCell from "../DataViews/hooks/useDataViewsCell.js";
 import useDataViewsValue from "../DataViews/hooks/useDataViewsValue.js";
+import { virtualRows } from "../virtualization/index.js";
 import Component from "./DataTable.js";
 import type {
   DataTableCellProps,
@@ -46,6 +49,7 @@ const meta = {
     presentation: { control: false },
     rowLabel: { control: false },
     renderStatus: { control: false },
+    windowing: { control: false },
   },
 } satisfies Meta<typeof Component>;
 
@@ -992,4 +996,215 @@ export const LongValues: Story = {
       sizing: { kind: "flex", weight: 1, minPx: 160 },
     },
   ]),
+};
+
+/** 24px: a dense row, the border beneath it included. */
+const windowing = virtualRows({ estimatedRowHeight: 24 });
+
+/** Ten thousand machines, all in one window. */
+const tenThousand = {
+  source: () => createMachineSource(manyMachines(10_000)),
+  window: { page: 1, size: 10_000 },
+} as const;
+
+/** A windowed story's render: its args, windowed, over ten thousand machines. */
+const renderWindowed =
+  (columns: readonly DataTableColumn[]): NonNullable<Story["render"]> =>
+  (args) => (
+    <MachinesTable
+      {...args}
+      columns={columns}
+      windowing={windowing}
+      options={tenThousand}
+    />
+  );
+
+/** A windowed story's consumer code: the table, windowed, in a capped frame. */
+const windowedConsumer = (columns: string): NonNullable<Story["parameters"]> =>
+  consumer(
+    `const windowing = virtualRows({ estimatedRowHeight: 24 });
+
+${columns}
+
+<DataTable
+  provider={provider}
+  columns={columns}
+  label="Machines"
+  selectable
+  rowLabel={(row) => String(row.name)}
+  windowing={windowing}
+  style={{ maxBlockSize: "24rem" }}
+/>;`,
+    {
+      imports: `import { virtualRows } from "@canonical/dataviews-react/virtualization";`,
+      provider: `createDataViewsProvider({
+  schema: machineSchema,
+  capabilities: source.capabilities,
+  // Ten thousand machines, all in one window.
+  window: { page: 1, size: 10_000 },
+})`,
+    },
+  );
+
+/** The logical positions of the rows mounted right now. */
+const mountedPositions = (table: HTMLElement): number[] =>
+  [...table.querySelectorAll('[role="row"]')].map((row) =>
+    Number(row.getAttribute("aria-rowindex")),
+  );
+
+/**
+ * Windowed: ten thousand machines in one window, and only the rows near the
+ * viewport are mounted — a few dozen at a time, however far the table is
+ * scrolled. The table is its own scroll viewport, here capped at 24rem, with
+ * the header held above its rows.
+ *
+ * Every row still counts. The table reports ten thousand and one rows, the
+ * header's included, and each mounted row its position among them, so a
+ * screen reader never takes the last mounted row for the last row. Sorting,
+ * selection and the header's select-all act on every row of the result
+ * window, mounted or not.
+ */
+export const Windowed: Story = {
+  parameters: windowedConsumer(`const columns: readonly DataTableColumn[] = [
+  { id: "name", header: "Host", sortable: true },
+  { id: "status", header: "Status", sortable: true },
+  { id: "region", header: "Region" },
+  { id: "cores", header: "Cores", sortable: true },
+  { id: "owner", header: "Owner" },
+];`),
+  args: { selectable: true, style: { maxBlockSize: "24rem" } },
+  render: renderWindowed(sortableColumns),
+  play: async ({ canvas }) => {
+    const table = canvas.getByRole("table");
+    await waitFor(() =>
+      expect(table).toHaveAttribute("aria-rowcount", "10001"),
+    );
+    await expect(mountedPositions(table).length).toBeLessThan(40);
+    table.scrollTop = table.scrollHeight;
+    const last = await canvas.findByText("node-09999.example.com");
+    await expect(last.closest('[role="row"]')).toHaveAttribute(
+      "aria-rowindex",
+      "10001",
+    );
+    await expect(mountedPositions(table).length).toBeLessThan(40);
+  },
+};
+
+/** A note that wraps onto as many lines as it needs. */
+function WrappingNote({ value }: DataTableCellProps): ReactElement {
+  return <span style={{ whiteSpace: "normal" }}>{String(value)}</span>;
+}
+
+/**
+ * Rows of different heights: each note wraps onto as many lines as it
+ * needs, so a row runs from one line to three. The estimate only places a
+ * row until it is mounted; then it is measured, and the space of the rows
+ * around it follows. When a row above the viewport turns out taller than
+ * its estimate, the view stays on the rows being read rather than jumping.
+ */
+export const WindowedVariableHeights: Story = {
+  parameters:
+    windowedConsumer(`function WrappingNote({ value }: DataTableCellProps) {
+  return <span style={{ whiteSpace: "normal" }}>{String(value)}</span>;
+}
+
+const columns: readonly DataTableColumn[] = [
+  { id: "name", header: "Host", sizing: { kind: "fixed", px: 224 } },
+  { id: "status", header: "Status", sizing: { kind: "fixed", px: 96 } },
+  {
+    id: "note",
+    header: "Note",
+    cell: WrappingNote,
+    sizing: { kind: "flex", weight: 1, minPx: 160 },
+  },
+];`),
+  args: { selectable: true, style: { maxBlockSize: "24rem" } },
+  decorators: [withFrame("40rem")],
+  render: renderWindowed([
+    { id: "name", header: "Host", sizing: { kind: "fixed", px: 224 } },
+    { id: "status", header: "Status", sizing: { kind: "fixed", px: 96 } },
+    {
+      id: "note",
+      header: "Note",
+      cell: WrappingNote,
+      sizing: { kind: "flex", weight: 1, minPx: 160 },
+    },
+  ]),
+  play: async ({ canvas }) => {
+    const table = canvas.getByRole("table");
+    await canvas.findByText("node-00000.example.com");
+    table.scrollTop = table.scrollHeight / 2;
+    await waitFor(() =>
+      expect(Math.min(...mountedPositions(table).slice(1))).toBeGreaterThan(
+        1000,
+      ),
+    );
+    const header = table.querySelector(".ds.data-table-row-group.header");
+    const rows = () => [
+      ...table.querySelectorAll(".ds.data-table-row-group.body > [role=row]"),
+    ];
+    const frames = async (): Promise<void> => {
+      for (let frame = 0; frame < 2; frame += 1) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+    };
+    await frames();
+    const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
+    const [first] = rows().filter(
+      (row) => row.getBoundingClientRect().bottom > headerBottom,
+    );
+    const top = first.getBoundingClientRect().top;
+    // Settled, and measured: the row being read holds still.
+    await frames();
+    await expect(first.getBoundingClientRect().top).toBe(top);
+    // The mounted rows cover the viewport, with no blank band at either end.
+    const mounted = rows();
+    await expect(mounted[0].getBoundingClientRect().top).toBeLessThanOrEqual(
+      headerBottom,
+    );
+    await expect(
+      mounted[mounted.length - 1].getBoundingClientRect().bottom,
+    ).toBeGreaterThanOrEqual(table.getBoundingClientRect().bottom - 1);
+    await expect(
+      new Set(
+        mounted.map((row) => Math.round(row.getBoundingClientRect().height)),
+      ).size,
+    ).toBeGreaterThan(1);
+  },
+};
+
+/**
+ * Keeps focus: the first machine's checkbox has focus, and the table is
+ * scrolled thousands of rows past it. Its row stays mounted, with a
+ * neighbour on each side, so focus is never dropped and Tab or Shift+Tab
+ * from it still reaches the rows beside it. Once focus leaves the table,
+ * the row is let go.
+ */
+export const WindowedKeepsFocus: Story = {
+  parameters: windowedConsumer(`const columns: readonly DataTableColumn[] = [
+  { id: "name", header: "Host" },
+  { id: "status", header: "Status" },
+  { id: "region", header: "Region" },
+  { id: "cores", header: "Cores" },
+  { id: "owner", header: "Owner" },
+];`),
+  args: { selectable: true, style: { maxBlockSize: "24rem" } },
+  render: renderWindowed(plainColumns),
+  play: async ({ canvas }) => {
+    const checkbox = await canvas.findByRole("checkbox", {
+      name: "Select node-00000.example.com",
+    });
+    checkbox.focus();
+    const table = canvas.getByRole("table");
+    table.scrollTop = table.scrollHeight / 2;
+    await waitFor(() =>
+      expect(Math.max(...mountedPositions(table))).toBeGreaterThan(4000),
+    );
+    await expect(checkbox).toBeInTheDocument();
+    await expect(checkbox).toHaveFocus();
+    await expect(checkbox.closest('[role="row"]')).toHaveAttribute(
+      "aria-rowindex",
+      "2",
+    );
+  },
 };

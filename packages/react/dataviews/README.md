@@ -62,3 +62,4 @@ The recipes, with consumer code and the live stories beside them, are the Storyb
 - **Resizing and its limits** — held to the declared bounds; no control on the last column; one shared `presentation` gives two tables on a provider the same arrangement.
 - **A cell that reads its own scope** — a renderer reading its row's channels.
 - **The outcomes** — loading, failed, empty, no match, and retained rows that no longer answer the current query (`stale`), with `renderStatus`.
+- **Mounting only the rows in view** — `windowing={virtualRows({ estimatedRowHeight })}`, from `@canonical/dataviews-react/virtualization`, for a result window of thousands of rows: the table becomes its own scroll viewport and every row still counts.

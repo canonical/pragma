@@ -30,3 +30,18 @@ export default function tableStatus(
   const filtered = state.slice.filter.length > 0 || state.slice.search !== null;
   return { kind: filtered ? "no-results" : "no-data" };
 }
+
+/** A status's reason, where its kind has one. */
+const reasonOf = (status: DataTableStatus): string | undefined =>
+  "reason" in status ? status.reason : undefined;
+
+/** Two statuses say the same thing: the same kind, for the same reason. */
+export const sameStatus = (
+  a: DataTableStatus | null,
+  b: DataTableStatus | null,
+): boolean =>
+  a === b ||
+  (a !== null &&
+    b !== null &&
+    a.kind === b.kind &&
+    reasonOf(a) === reasonOf(b));

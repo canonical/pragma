@@ -16,6 +16,7 @@ import type {
   DataTableColumn,
   DataTableProps,
   DataTableStatus,
+  DataTableWindowing,
   DataViewsProps,
   FiltersProps,
   PaginationBarProps,
@@ -25,6 +26,8 @@ import type {
   UseDataViewsResult,
   ViewsProps,
 } from "./index.js";
+import type { VirtualRowsOptions } from "./lib/virtualization/index.js";
+import { virtualRows } from "./lib/virtualization/index.js";
 
 type Fields = readonly SchemaFieldDefinition[];
 
@@ -36,6 +39,7 @@ type EveryPublicType = [
   DataTableColumn,
   DataTableProps<Fields, RowRecord>,
   DataTableStatus,
+  DataTableWindowing,
   DataViewsProps<Fields>,
   FiltersProps,
   PaginationBarProps<Fields>,
@@ -49,7 +53,28 @@ type EveryPublicType = [
 describe("public surface types", () => {
   it("re-exports the full type surface from the barrel", () => {
     expectTypeOf<EveryPublicType>().not.toBeAny();
-    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<14>();
+    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<15>();
+  });
+});
+
+describe("the windowing prop", () => {
+  it("takes the descriptor virtualRows makes, and only that", () => {
+    expectTypeOf(
+      virtualRows({ estimatedRowHeight: 40 }),
+    ).toEqualTypeOf<DataTableWindowing>();
+    expectTypeOf<
+      DataTableProps<Fields, RowRecord>["windowing"]
+    >().toEqualTypeOf<DataTableWindowing | undefined>();
+    // What a descriptor carries is keyed by a symbol no entry point
+    // exports, so a descriptor has nothing to read and cannot be written
+    // by hand.
+    expectTypeOf<DataTableWindowing>().not.toHaveProperty("estimatedRowHeight");
+    expectTypeOf<{
+      readonly estimatedRowHeight: number;
+    }>().not.toExtend<DataTableWindowing>();
+    expectTypeOf<VirtualRowsOptions>().toEqualTypeOf<{
+      readonly estimatedRowHeight: number;
+    }>();
   });
 });
 

@@ -1,6 +1,6 @@
 {
   "name": "@canonical/dataviews-react",
-  "description": "React bindings for @canonical/dataviews-core: the DataViews root with its connected Filters, Actions, Pagination and Views parts, provider context, the four scoped observation hooks, the DataTable renderer and the PaginationBar",
+  "description": "React bindings for @canonical/dataviews-core: the DataViews root with its connected Filters, Actions, Pagination and Views parts, provider context, the four scoped observation hooks, the DataTable renderer with its explicitly imported row windowing, and the PaginationBar",
   "version": "0.37.0",
   "type": "module",
   "module": "dist/esm/index.js",
@@ -10,6 +10,10 @@
     ".": {
       "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js"
+    },
+    "./virtualization": {
+      "types": "./dist/types/lib/virtualization/index.d.ts",
+      "import": "./dist/esm/lib/virtualization/index.js"
     },
     "./index.css": "./dist/esm/lib/index.css",
     "./package.json": "./package.json"

@@ -5,6 +5,7 @@ import type {
 import {
   createGridInteraction,
   createPresentation,
+  displayEntries,
   isIdentity,
 } from "@canonical/dataviews-core";
 import type { CSSProperties, ReactElement, Ref } from "react";
@@ -16,6 +17,7 @@ import {
   sameColumns,
   sizingOf,
 } from "./columnKeys.js";
+import type { TableBodyProps } from "./common/index.js";
 import { HeaderCell, SelectAllCell, TableBody } from "./common/index.js";
 import defaultStatusText from "./defaultStatusText.js";
 import {
@@ -25,8 +27,9 @@ import {
   useStableValue,
   useTableGeometry,
 } from "./hooks/index.js";
-import tableStatus from "./tableStatus.js";
-import type { DataTableProps } from "./types.js";
+import tableStatus, { sameStatus } from "./tableStatus.js";
+import type { DataTableProps, DataTableWindowing } from "./types.js";
+import windowed from "./windowed.js";
 import "./styles.css";
 
 /**
@@ -38,6 +41,21 @@ const componentCssClassName = "ds data-table dense";
 
 /** A record answers to its own identity until the caller names it better. */
 const defaultRowLabel = (_row: object, rowId: string): string => rowId;
+
+/**
+ * The body a windowing descriptor carries, given the table's body props and
+ * its published tracks, which re-wrap cells when they change.
+ */
+const windowedRows = <TRow extends object>(
+  windowing: DataTableWindowing,
+  props: TableBodyProps<TRow>,
+  tracks: string | undefined,
+): ReactElement => {
+  const { body: Body, estimatedRowHeight } = windowing[windowed];
+  return (
+    <Body {...props} estimatedRowHeight={estimatedRowHeight} tracks={tracks} />
+  );
+};
 
 /**
  * Hand the container to the caller's ref, in whichever form it arrives, and
@@ -75,6 +93,9 @@ const applyRef = (
  * The selection column is not among them: its width is the stylesheet's,
  * and the columns share what it leaves.
  *
+ * Given `windowing`, it mounts only the rows near its viewport and reports
+ * every row's logical position; without it, every row is rendered.
+ *
  * @implements ds:apps.pattern.data_table
  */
 export default function DataTable<
@@ -88,6 +109,7 @@ export default function DataTable<
   selectable = false,
   rowLabel = defaultRowLabel,
   renderStatus = defaultStatusText,
+  windowing,
   className,
   style,
   ref,
@@ -150,7 +172,20 @@ export default function DataTable<
   const geometry = useTableGeometry(activePresentation, interaction, columnIds);
   const scopes = useRowScopes(provider, fields);
   const result = useDataViewsValue(provider.result);
-  const status = tableStatus(result);
+  // Held at one reference while it says the same thing, so the entries are
+  // derived again only when a row identity or the status changes.
+  const status = useStableValue(tableStatus(result), sameStatus);
+  const ids = useDataViewsValue(scopes.ids);
+  // The status row first, then the rows: kept beside a stale status,
+  // replaced by any other.
+  const entries = useMemo(
+    () =>
+      displayEntries({
+        rowIds: status === null || status.kind === "stale" ? ids : [],
+        status,
+      }),
+    [ids, status],
+  );
   const busy =
     result.result.status === "pending" || result.result.status === "refreshing";
 
@@ -188,6 +223,19 @@ export default function DataTable<
   const nameRow = useStableCallback(rowLabel);
   const showStatus = useStableCallback(renderStatus);
 
+  const body: TableBodyProps<TRow> = {
+    provider,
+    scopes,
+    entries,
+    columns: rendered,
+    fields,
+    selectable,
+    rowLabel: nameRow,
+    // While a status shows, the caller's own function, so a new one is
+    // shown at once; otherwise the held one, which re-renders nothing.
+    renderStatus: status === null ? showStatus : renderStatus,
+  };
+
   const geometryStyle = {
     ...style,
     "--data-table-columns": geometry.template,
@@ -203,12 +251,19 @@ export default function DataTable<
       role="table"
       aria-label={label}
       aria-busy={busy}
+      // Every logical row, the header's included, so a row a windowed
+      // table has not mounted is still counted.
+      aria-rowcount={windowing === undefined ? undefined : entries.length + 1}
     >
       {/* biome-ignore lint/a11y/useSemanticElements: <thead> is only valid inside a <table>, and this grid is deliberately not one */}
       <div role="rowgroup" className="ds data-table-row-group header">
         {/* biome-ignore lint/a11y/useSemanticElements: <tr> is only valid inside a <table>, and this grid is deliberately not one */}
         {/* biome-ignore lint/a11y/useFocusableInteractive: the row is structure, not a widget — the focusable controls live in its cells */}
-        <div role="row" className="ds data-table-row">
+        <div
+          role="row"
+          className="ds data-table-row"
+          aria-rowindex={windowing === undefined ? undefined : 1}
+        >
           {selectable ? (
             <SelectAllCell
               selection={provider.selection}
@@ -240,16 +295,11 @@ export default function DataTable<
           ))}
         </div>
       </div>
-      <TableBody
-        provider={provider}
-        scopes={scopes}
-        columns={rendered}
-        fields={fields}
-        selectable={selectable}
-        rowLabel={nameRow}
-        status={status}
-        renderStatus={showStatus}
-      />
+      {windowing === undefined ? (
+        <TableBody {...body} />
+      ) : (
+        windowedRows(windowing, body, geometry.template)
+      )}
     </div>
   );
 }
