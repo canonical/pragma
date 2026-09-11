@@ -37,6 +37,9 @@ export function runField(
       recovery: cliRecovery(
         `config unset ${spec.field}`,
         "Clear the field with the unset command.",
+        // The agent's half of the same instruction — the tool's `key` is the
+        // field this run body already holds.
+        { tool: "config_unset", params: { key: spec.field } },
       ),
     });
   }

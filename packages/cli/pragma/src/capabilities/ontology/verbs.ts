@@ -170,11 +170,21 @@ async function runByName(
   const wantProperties =
     params.properties === true || focus !== undefined || level !== "summary";
 
-  let classes = await queryClasses(
-    rt,
-    namespace,
-    session.index.instanceCountByType,
-  );
+  // The class list is the GRAPH-TRUTH surface, so a class's count is named +
+  // anonymous instances: the shipped pack models every `ds:Property` /
+  // `ds:ChangeLogEntry` individual as a blank node, and the named-only count
+  // reported those 330/42 instances as 0 (A11). The two records stay separate
+  // in the index (named keeps its browse-promise meaning); summing here is
+  // this display's choice.
+  const totalCounts: Record<string, number> = {
+    ...session.index.instanceCountByType,
+  };
+  for (const [uri, count] of Object.entries(
+    session.index.anonymousInstanceCountByType ?? {},
+  )) {
+    totalCounts[uri] = (totalCounts[uri] ?? 0) + count;
+  }
+  let classes = await queryClasses(rt, namespace, totalCounts);
   let properties = wantProperties ? await queryProperties(rt, namespace) : [];
 
   if (focus !== undefined) {
