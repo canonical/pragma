@@ -17,10 +17,13 @@
  *   unpaginated read returns, in exactly that order, with exactly those keys.
  *   This is what makes the page a page OF the answer, and it is the assertion
  *   that would catch a store whose sub-select ordering is not stable.
- * - THE QUERY AGREES WITH THE ROW PREDICATE. Every admissible value of every
- *   declared filter, and a search term, answered by the compiled query, equals
- *   what the retired row predicate would have answered over the whole
- *   population — computed here, independently, as the oracle.
+ * - THE QUERY AGREES WITH THE ROW PREDICATE. Every declared filter's admissible
+ *   values, and a search term, answered by the compiled query, equal what the
+ *   retired row predicate would have answered over the whole population —
+ *   computed here, independently, as the oracle. Exhaustively for a
+ *   choice-sized vocabulary; at a deterministic spread for a catalogue-sized
+ *   one, because the sweep costs a query per value and two of these
+ *   vocabularies are catalogues of 745 and 1,156. See {@link sweep}.
  * - A REFUSAL IS STILL A REFUSAL. A value the graph's vocabulary does not admit
  *   is INVALID_INPUT naming the admissible values.
  * - AN EMPTY ANSWER IS STILL CALM. A value the vocabulary admits that no row
@@ -28,6 +31,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { MAX_LISTED_OPTIONS } from "../kernel/error/validOptions.js";
 import { compileStoryModule } from "../kernel/packs/compile.js";
 import { MAX_LIST_WINDOW } from "../kernel/packs/paging.js";
 import {
@@ -128,6 +132,38 @@ async function vocabulary(filter: PackFilter): Promise<readonly string[]> {
 }
 
 /**
+ * The values this suite actually sweeps for one filter.
+ *
+ * The promise is per-value, so a sweep costs one query per admissible value.
+ * Every filter that predates the token graph had a vocabulary of at most 36 —
+ * a set of choices — and exhausting it cost seconds. Two of the token graph's
+ * filters have vocabularies that are catalogues instead: 745 symbols and 1,156
+ * variables, measured at 1.25s and 0.36s per filtered query. Exhausting those
+ * two took 22 minutes between them, and the suite could not finish at all.
+ *
+ * So a choice-sized vocabulary is still swept exhaustively, and a
+ * catalogue-sized one is swept at a deterministic spread of that same size —
+ * first, last, and evenly spaced between — which stays reproducible across
+ * runs and still exercises every shape of value the filter admits. The
+ * boundary is {@link MAX_LISTED_OPTIONS}, the constant that also decides when
+ * an error stops naming values and starts counting them, because it is the
+ * same distinction: a choice is read, a catalogue is listed.
+ *
+ * @param admissible - Every value the filter's declared vocabulary admits.
+ * @returns The values to sweep, in the vocabulary's own order.
+ */
+function sweep(admissible: readonly string[]): readonly string[] {
+  if (admissible.length <= MAX_LISTED_OPTIONS) return admissible;
+  const step = (admissible.length - 1) / (MAX_LISTED_OPTIONS - 1);
+  const picked: string[] = [];
+  for (let index = 0; index < MAX_LISTED_OPTIONS; index += 1) {
+    const value = admissible[Math.round(index * step)];
+    if (value !== undefined) picked.push(value);
+  }
+  return [...new Set(picked)];
+}
+
+/**
  * The RETIRED row predicate, reimplemented here as the oracle the compiled
  * query is held to: whole-cell equality for `exact`, membership of a
  * whitespace-separated set for `set`, case-insensitive either way, and a cell
@@ -218,6 +254,11 @@ describe("the compiled query agrees with the retired row predicate (PROTECTED)",
       "concept list",
       "implementation list",
       "standard list",
+      "token consumers",
+      "token list",
+      "token values",
+      "variable chain",
+      "variable list",
     ]);
   });
 
@@ -228,7 +269,7 @@ describe("the compiled query agrees with the retired row predicate (PROTECTED)",
       for (const filter of body.shape.filters ?? []) {
         const admissible = await vocabulary(filter);
         expect(admissible.length).toBeGreaterThan(0);
-        for (const value of admissible) {
+        for (const value of sweep(admissible)) {
           const answered = await page(body, {
             [filter.param]: value,
             limit: MAX_LIST_WINDOW,
@@ -332,7 +373,7 @@ describe("a refusal and a calm empty answer stay distinguishable (PROTECTED)", (
     for (const body of NARROWABLE) {
       const whole = await population(body);
       for (const filter of body.shape.filters ?? []) {
-        for (const value of await vocabulary(filter)) {
+        for (const value of sweep(await vocabulary(filter))) {
           if (rowPredicate(whole, filter, value).length === 0) {
             unpopulated.push({ body, param: filter.param, value });
           }

@@ -159,7 +159,11 @@ describe("first install — empty results are honest, not papered over", () => {
     // the pack, the BINDINGS between blocks and symbols do not, so this verb
     // answers nothing on a first install rather than erroring.
     expect(await read(verbOf(tokenModule, "token consumers"))).toEqual([]);
-  });
+    // An explicit budget, because this case boots the embedded pack and that
+    // pack grew to 53,467 triples when the token graph joined it. The default
+    // five seconds was enough for the old snapshot and is not for this one,
+    // which is a fact about the store's size rather than about this assertion.
+  }, 60_000);
 
   it("prompt list exits calmly with no prompts (the graph carries no ds:Prompt)", async () => {
     expect(await readData(promptListVerb as VerbSpec, emptyCwd())).toEqual({
