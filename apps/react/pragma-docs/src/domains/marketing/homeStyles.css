@@ -1,0 +1,147 @@
+/*
+ * The Home lobby — editorial bands stacked vertically, on the SUBGRID chain
+ * (owner ruling: strict, no exceptions). `layout.lobby` is a vertical stack,
+ * but under the one-grid model even a stack is a `grid-template-columns:
+ * subgrid` child that inherits the shell's intrinsic columns — so the lobby
+ * reads against the same ruler as every other lens rather than floating in a
+ * lone measure. It has no secondary nav or aside; instead its bands claim
+ * column SPANS: the reading bands take a measured subset (prose at the full
+ * intrinsic width would be unreadable), the door grid takes the whole set.
+ *
+ * Zero conditional at-rules (the frame suite's census allows exactly one in
+ * the app — the sanctioned AX.1 rail collapse). The door grid and exemplar
+ * strip reflow on their own — `auto-fill`/`flex-wrap` do the work. Logical
+ * properties throughout; DS tokens with fallbacks.
+ */
+
+.ds.lobby {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  /* Row gap only — the column gutters come from the inherited grid (the
+   * shell runs zero column gap; bands set their own inline rhythm). */
+  row-gap: var(--space-500, 2.5rem);
+  align-content: start;
+}
+
+/* THE BAND SPANS. Every direct child of the lobby is a band that claims a
+ * span of the inherited columns. Reading bands (hero, examples, doors
+ * intro) take a MEASURED subset — the westmost ~7 columns — so prose keeps a
+ * readable measure aligned to the ruler rather than running the full canvas
+ * width. The default for any band is that measured span; the door grid opts
+ * into the full width below. */
+.ds.lobby > * {
+  grid-column: 1 / span 7;
+  min-inline-size: 0;
+}
+
+/* ── hero ─────────────────────────────────────────────────────────── */
+
+.ds.lobby .lobby-hero {
+  display: grid;
+  gap: var(--space-200, 1rem);
+  /* Measured prose: the hero is read, not scanned. */
+  max-inline-size: 68ch;
+}
+
+/* Present for assistive tech and the frame suite's labelledby key
+ * (`lobby-title`), absent from the layout — the mode strip's breadcrumb
+ * trail carries the visible "Home" title now, so this canvas copy was
+ * redundant. The shared visually-hidden idiom. */
+.ds.lobby .lobby-hero h1 {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.ds.lobby .lobby-hero p {
+  margin: 0;
+}
+
+.ds.lobby .lobby-lead {
+  font-size: var(--font-size-300, 1.125rem);
+  line-height: var(--line-height-300, 1.6);
+}
+
+/* ── examples strip ───────────────────────────────────────────────── */
+
+.ds.lobby .lobby-examples {
+  display: grid;
+  gap: var(--space-200, 1rem);
+}
+
+.ds.lobby .lobby-examples h2,
+.ds.lobby .lobby-doors h2 {
+  margin: 0;
+}
+
+.ds.lobby .lobby-examples p {
+  margin: 0;
+  max-inline-size: 68ch;
+  color: var(--color-text-muted, #666);
+}
+
+.ds.lobby .lobby-exemplars {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-100, 0.5rem) var(--space-300, 1.5rem);
+}
+
+/* ── doors ────────────────────────────────────────────────────────── */
+
+/* The doors band spans the FULL inherited width (overriding the measured
+ * default) and is itself a subgrid, so its heading and its card list both
+ * ride the intrinsic columns. */
+.ds.lobby > .lobby-doors {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  row-gap: var(--space-200, 1rem);
+}
+.ds.lobby > .lobby-doors > * {
+  grid-column: 1 / -1;
+}
+
+/* The door cards are a SUBGRID of the lobby's columns (strict model): each
+ * door claims a span of the intrinsic columns, so the cards align to the
+ * same ruler as the rest of the app instead of an independent auto-fill.
+ * `grid-auto-flow: dense` fills rows left to right; each li spans 3 columns,
+ * so the row holds as many doors as the live column count allows (4 at 12
+ * cols, ~5 at 16) with no media query. */
+.ds.lobby .lobby-door-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  row-gap: var(--space-300, 1.5rem);
+}
+
+.ds.lobby .lobby-door-list > li {
+  grid-column: span 3;
+}
+
+.ds.lobby .lobby-door-list > li {
+  display: grid;
+  gap: var(--space-100, 0.5rem);
+  align-content: start;
+}
+
+.ds.lobby .lobby-door-list > li > a {
+  font-size: var(--font-size-200, 1.0625rem);
+  font-weight: var(--font-weight-bold, 600);
+}
+
+.ds.lobby .lobby-door-list p {
+  margin: 0;
+  color: var(--color-text-muted, #666);
+}
