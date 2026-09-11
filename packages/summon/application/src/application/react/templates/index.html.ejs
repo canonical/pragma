@@ -16,7 +16,19 @@
     <meta name="description" content="<%= name %> — a React application built with the Canonical design system, router, and SSR packages." />
 <% } -%>
     <link rel="icon" type="image/png" sizes="32x32" href="https://assets.ubuntu.com/v1/be7e4cc6-COF-favicon-32x32.png">
+<% if (spa) { -%>
+    <!-- The client-only build serves this file as the document, so it carries a
+         title for the moment before React renders. The route page still owns
+         the real one: it renders <Head> from @canonical/react-head, and React
+         inserts that <title> ahead of this one in the head. -->
     <title><%= name %></title>
+<% } else { -%>
+    <!-- No <title> here. The route page owns it, through <Head> from
+         @canonical/react-head, and React hoists that <title> into this head.
+         The server renderer re-emits this shell's head tags ahead of the
+         hoisted ones, and HTML takes the FIRST <title> in tree order — so a
+         <title> on this line would beat every page's. -->
+<% } -%>
   </head>
   <body>
     <div id="root"></div>

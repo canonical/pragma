@@ -3,7 +3,7 @@ import { useTranslation } from "@canonical/i18n-react";
 <% } -%>
 import { Button } from "@canonical/react-ds-global";
 import { Field, Form } from "@canonical/react-ds-global-form";
-import { useHead } from "@canonical/react-head";
+import { Head } from "@canonical/react-head";
 import type { ReactElement } from "react";
 
 function handleSubmit(data: Record<string, unknown>) {
@@ -13,16 +13,15 @@ function handleSubmit(data: Record<string, unknown>) {
 export default function ContactPage(): ReactElement {
 <% if (intl) { -%>
   const { t } = useTranslation();
-  useHead({ title: t("contact.title") });
-<% } else { -%>
-  useHead({ title: "Contact" });
-<% } -%>
 
+<% } -%>
   return (
     <section aria-labelledby="contact-title">
 <% if (intl) { -%>
+      <Head title={t("contact.title")} />
       <h1 id="contact-title">{t("contact.heading")}</h1>
 <% } else { -%>
+      <Head title="Contact" />
       <h1 id="contact-title">Contact</h1>
 <% } -%>
       <Form onSubmit={handleSubmit}>

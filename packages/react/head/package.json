@@ -1,6 +1,6 @@
 {
   "name": "@canonical/react-head",
-  "description": "Declarative head management for React with SSR collection",
+  "description": "Declarative head management for React that renders head tags on the server and the client",
   "version": "0.37.0",
   "type": "module",
   "module": "dist/esm/index.js",

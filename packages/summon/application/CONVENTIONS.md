@@ -32,6 +32,7 @@
 | A1.4 | Shared components live in `src/lib/` | `src/lib/` dir exists |
 | A1.5 | Styles live in `src/styles/` | `src/styles/index.css` exists |
 | A1.6 | Root route map lives at `src/routes.tsx` | `src/routes.tsx` exists |
+| A1.7 | `src/formatDocumentTitle.ts` holds the document title template | file present |
 
 ### Application Layout
 
@@ -58,6 +59,7 @@ src/
 ├── styles/                     # A1.5  CSS
 │   ├── index.css
 │   └── app.css
+├── formatDocumentTitle.ts      # A1.7  Document title template
 └── routes.tsx                  # A1.6  Root route map
 ```
 
@@ -92,7 +94,7 @@ src/domains/billing/
 | A3.1 | Page components use `Page` suffix | name matches `*Page` |
 | A3.2 | Page components are PascalCase | name matches `/^[A-Z][a-zA-Z0-9]*Page$/` |
 | A3.3 | Page components are default exports | `export default function` present |
-| A3.4 | Page components call `useHead()` | `useHead` import and call present |
+| A3.4 | Page components render `<Head>` | `Head` import and element present |
 | A3.5 | Page components return `ReactElement` | return type annotated |
 | A3.6 | Pages receive `params` and/or `search` from the router, not `data` | no `data` prop |
 | A3.7 | Each page lives in its own file | one component per file |
@@ -100,14 +102,13 @@ src/domains/billing/
 ### Page Pattern
 
 ```tsx
-import { useHead } from "@canonical/react-head";
+import { Head } from "@canonical/react-head";
 import type { ReactElement } from "react";
 
 export default function InvoicesPage(): ReactElement {
-  useHead({ title: "Invoices — Billing" });
-
   return (
     <section aria-labelledby="invoices-title">
+      <Head title="Invoices" />
       <h1 id="invoices-title">Invoices</h1>
     </section>
   );
@@ -120,10 +121,9 @@ export default function InvoicesPage(): ReactElement {
 export default function GuidePage({
   params,
 }: { params: { slug: string } }): ReactElement {
-  useHead({ title: `${params.slug} — Guides` }, [params.slug]);
-
   return (
     <section aria-labelledby="guide-title">
+      <Head title={params.slug} />
       <h1 id="guide-title">{params.slug}</h1>
     </section>
   );
@@ -230,11 +230,14 @@ rather than `hydrateRoot`.
 
 | ID | Rule | Gate |
 |----|------|------|
-| A8.1 | Head management uses `@canonical/react-head` | `useHead` import present |
-| A8.2 | `useHead()` called in every page component | call present per page |
-| A8.3 | Dynamic titles use deps array | `useHead({...}, [deps])` pattern |
-| A8.4 | `HeadProvider` wraps the app in every emitted entry — client, and server unless `--rendering spa` | provider present |
-| A8.5 | Head is separate from the router — no router dependency | no router imports in head |
+| A8.1 | Head management uses `@canonical/react-head` | `Head` import present |
+| A8.2 | `<Head>` rendered by every page component | element present per page |
+| A8.3 | One owner per document: only a route's content renders `<Head>`, never a layout or an entry | no `<Head>` outside route content |
+| A8.4 | `HeadProvider titleTemplate={formatDocumentTitle}` wraps the app in every emitted entry — client, and server unless `--rendering spa` | provider present |
+| A8.5 | The application name lives in `src/formatDocumentTitle.ts`, not in page titles | pages pass a bare title |
+| A8.6 | The HTML shell carries no `<title>` unless `--rendering spa` | `index.html` yields to the page |
+| A8.7 | The shell owns only tags no page declares — the server emits its head tags first, so a page's copy of one would lose | no overlap between `index.html` and `<Head>` |
+| A8.8 | Head is separate from the router — no router dependency | no router imports in head |
 
 ---
 
@@ -321,13 +324,14 @@ Use this as a pass/fail gate for new domains and pages:
 [ ] A2.2  Domain name is lowercase or kebab-case
 [ ] A2.3  Domain has routes.ts barrel
 [ ] A3.1  Page components use Page suffix
-[ ] A3.4  Page components call useHead()
+[ ] A3.4  Page components render <Head>
 [ ] A3.7  One page per file
 [ ] A4.2  Content receives component directly
 [ ] A4.3  Route files are .ts not .tsx
 [ ] A4.5  No data threading through warm
 [ ] A4.6  No .error on routes
-[ ] A8.2  useHead() in every page
+[ ] A8.2  <Head> in every page
+[ ] A8.3  No <Head> in a layout or an entry
 [ ] A10.1 Routes registered via declare module
 [ ] A10.3 No as casts
 ```
