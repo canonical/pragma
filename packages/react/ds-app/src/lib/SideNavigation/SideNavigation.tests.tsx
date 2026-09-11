@@ -1,5 +1,11 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import SideNavigation from "./SideNavigation.js";
 import type { FooterRoot, NavRoot } from "./types.js";
 
@@ -176,11 +182,57 @@ describe("SideNavigation", () => {
   //   expect(onExpandedChange).toHaveBeenCalledWith(false);
   // });
 
-  it("does not respond to the collapse shortcut by default (reserved)", () => {
+  it("collapses via the Ctrl+B shortcut by default, and keyboardShortcut: false opts out", () => {
     const { container } = render(<SideNavigation root={root} />);
     const el = container.firstElementChild as HTMLElement;
     fireEvent.keyDown(window, { key: "b", ctrlKey: true });
-    expect(el.dataset.expanded).toBe("true");
+    expect(el.dataset.expanded).toBe("false");
+    cleanup();
+
+    const { container: optedOut } = render(
+      <SideNavigation root={root} keyboardShortcut={false} />,
+    );
+    const elOptedOut = optedOut.firstElementChild as HTMLElement;
+    fireEvent.keyDown(window, { key: "b", ctrlKey: true });
+    expect(elOptedOut.dataset.expanded).toBe("true");
+  });
+
+  it("collapses after mount on a small viewport when defaultExpanded is left unset", async () => {
+    // The expanded state renders as a fullscreen overlay below the small
+    // breakpoint, so the unset default (true, desktop) must not ship as a
+    // first-paint takeover on a phone. Post-mount, SSR-pure (SPEC.md §4).
+    const matchMediaSpy = vi
+      .spyOn(window, "matchMedia")
+      .mockReturnValue({ matches: true } as MediaQueryList);
+    const { container } = render(<SideNavigation root={root} />);
+    await waitFor(() =>
+      expect(
+        (container.firstElementChild as HTMLElement).dataset.expanded,
+      ).toBe("false"),
+    );
+    matchMediaSpy.mockRestore();
+  });
+
+  it("keeps an explicit defaultExpanded on every viewport", async () => {
+    const matchMediaSpy = vi
+      .spyOn(window, "matchMedia")
+      .mockReturnValue({ matches: true } as MediaQueryList);
+    const { container } = render(
+      <SideNavigation root={root} defaultExpanded />,
+    );
+    await waitFor(() =>
+      expect(
+        (container.firstElementChild as HTMLElement).dataset.expanded,
+      ).toBe("true"),
+    );
+    matchMediaSpy.mockRestore();
+  });
+
+  it("stays expanded on a wide viewport when defaultExpanded is left unset", () => {
+    const { container } = render(<SideNavigation root={root} />);
+    expect((container.firstElementChild as HTMLElement).dataset.expanded).toBe(
+      "true",
+    );
   });
 
   it("responds to the collapse shortcut when keyboardShortcut is enabled", () => {
@@ -192,7 +244,7 @@ describe("SideNavigation", () => {
     expect(el.dataset.expanded).toBe("false");
   });
 
-  it("orders focusable elements logo → collapse toggle → content → footer (SPEC.md §6)", () => {
+  it("orders focusable elements logo → collapse toggle → content → footer (SPEC.md §5)", () => {
     const { container } = render(
       <SideNavigation
         root={root}
@@ -242,9 +294,10 @@ describe("SideNavigation", () => {
   });
 
   it("hides the ContextSwitcher region when collapsed", () => {
-    // CSS hides the region when collapsed; this asserts the DOM contract
-    // the CSS keys on — the region carries data-expanded so the stylesheet
-    // can select it.
+    // CSS hides the region when collapsed via the ROOT's data-expanded (the
+    // region carries no state of its own); this asserts the DOM contract
+    // the collapsed stylesheet keys on — the region is a direct child of a
+    // data-expanded="false" root, and the root alone flips.
     const { container } = render(
       <SideNavigation
         root={root}
@@ -255,9 +308,12 @@ describe("SideNavigation", () => {
         }}
       />,
     );
+    const rootEl = container.firstElementChild as HTMLElement;
+    expect(rootEl.dataset.expanded).toBe("false");
     const region = container.querySelector(
       ".ds.side-navigation-context-switcher-region",
     );
-    expect(region).toHaveAttribute("data-expanded", "false");
+    expect(region).not.toHaveAttribute("data-expanded");
+    expect(region?.parentElement).toBe(rootEl);
   });
 });
