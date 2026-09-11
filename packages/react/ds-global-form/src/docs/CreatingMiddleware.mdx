@@ -399,14 +399,14 @@ When a field needs several middleware, pass them as an array. The composition or
   inputType="combobox"
   label="Product"
   middleware={[
-    withAnalytics("product-search"),   // Outermost — sees all props
-    addRESTOptions("/api/products"),    // Middle — injects options
-    withDebouncedValidation("/api/v"), // Innermost — closest to input
+    withAnalytics("product-search"),   // Outermost — sees only the Wrapper's props
+    addRESTOptions("/api/products"),   // Middle — injects options, visible to everything below it
+    withDebouncedValidation("/api/v"), // Innermost — sees options; its props reach the input
   ]}
 />
 ```
 
-Each middleware receives the component returned by the next one. This means outer middleware can observe props set by inner middleware, but not vice versa.
+Each middleware receives the component returned by the next one and renders it. Props flow downward through the chain: an inner middleware receives everything an outer middleware injected, but an outer middleware never sees what an inner one adds. When two middleware inject the same prop, the innermost one — the last in the array — wins, because its props are the last written before they reach `bindField`.
 
 ## Type safety
 
