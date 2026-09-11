@@ -16,6 +16,7 @@
 #                                         DOM `ds data-table-body-cell selection`
 #   status row      DOM `ds data-table-row status`
 #   status cell     DOM `ds data-table-body-cell status <kind>`
+#   gap             DOM `ds data-table-gap`, hidden from assistive technology
 # The selection and status cells share the body cell's class for its shared
 # box, but they are role nodes here, not BodyCells: the table's `selectable`
 # prop and its outcome choose them, never a column.
@@ -42,6 +43,18 @@
 #                       (1.3.1, 1.4.1, 4.1.3). The cell is `role=cell`, not a
 #                       live region; only the stale message is `role=status`.
 #   settings cell       "ContextualMenu trigger/items", when the part ships
+#   windowed body       "DataTable windowed rows" (1.3.1, 2.1.1, 2.4.3,
+#                       4.1.2): the root reports `aria-rowcount` and every
+#                       mounted row its `aria-rowindex` in logical order, the
+#                       header row being 1, so a gap is never read as the
+#                       table's end; the row holding focus stays mounted.
+#
+# Windowed: a table given `windowing` mounts only the entries near its
+# viewport. The body row group takes the `windowed` class and holds gaps
+# in place of the entries it does not mount: before the first run of
+# mounted entries, between runs, and after the last. The root becomes the
+# scroll viewport the range is measured against. None of this changes a
+# table without `windowing`.
 #
 # Deviations the DSL cannot express, recorded here:
 #   - The surface background channel: `appearance.background` is read through
@@ -72,6 +85,16 @@
 #     the DSL's token-path grammar (`[a-z0-9-]+`) cannot spell.
 #   - The header row group's stacking above the scrolled body uses z-index 1;
 #     the package has no stacking token.
+#   - A gap's height is the range's per-render publication, the height of
+#     the entries it stands for, written on the gap itself: geometry no
+#     stylesheet can know, as `--data-table-columns` is.
+#   - The windowed root is positioned (`layout.position: relative`), so the
+#     body's offset is measured from it, and it opts out of the browser's
+#     scroll anchoring (`overflow-anchor: none`): the range anchors the
+#     scroll itself, and two corrections would move it twice. By default it
+#     is no taller than the viewport (`100svh`), so the range stays bounded
+#     wherever it sits; a caller's own maximum wins. `windowed` is a class,
+#     not a registry state, and the DSL has no key for scroll anchoring.
 #
 # Seams, inert until their parts ship:
 #   - The trailing actions track: an actions column is a body cell taking the
@@ -83,6 +106,11 @@
 #   - The per-cell loading skeleton is not specified: one status row covers
 #     the four no-rows outcomes and the first load, and a refresh keeps the
 #     retained rows visible while the table reports busy.
+#   - Group header rows: an entry of its own kind among the body's entries,
+#     spanning every track at a height of its own, which a windowed body
+#     mounts and measures as it does a row. A sticky group header stacks
+#     under the header row group, whose height it would read from
+#     `--data-table-header-height`.
 node:
   uri: apps.pattern.data_table
   styles:
@@ -192,5 +220,10 @@ node:
                     cardinality: "1"
             relation:
               cardinality: "0..1"
+          # Windowed only: the space of the entries not mounted.
+          - node:
+              role: gap
+            relation:
+              cardinality: "0..*"
       relation:
         cardinality: "1"
