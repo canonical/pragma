@@ -45,6 +45,14 @@ type OwnProps = Pick<
   open?: boolean;
   /** Called when the open state changes. */
   onOpenChange?: (open: boolean) => void;
+  /**
+   * Class name applied to the menu's portaled popup surface. The surface
+   * portals to `document.body`, so it is not a DOM descendant of the root —
+   * `className` cannot reach it (custom-property inheritance follows the
+   * rendered DOM tree, and the portal breaks that ancestry). The one hook
+   * for theming the surface itself, not just the trigger.
+   */
+  surfaceClassName?: string;
 };
 
 export type ContextualMenuProps = OwnProps &
