@@ -327,25 +327,39 @@ const designSystemStories: readonly PackDefinition[] = [
     },
   },
 
-  // Design tokens: SPARQL-sourced on both verbs. There is no `ds:Token` GraphQL
-  // type to project against when the graph ships no tokens, and the lookup reads
-  // a property path (`ds:tokenType/rdfs:label`) only SPARQL can express. The
-  // `emptyRecovery` install hint is the story users see on an empty store. The
-  // noun is now purely declarative: `token add-config` wrote a starter file, and
-  // L-OPEN-9 removed it rather than growing the read grammar a mutation verb.
+  // Design tokens: SPARQL-sourced on both verbs, and read from the `dt:`
+  // semantic model rather than `ds:Token`.
+  //
+  // The `ds:` half never arrived: no pack ships a single `ds:Token` or
+  // `ds:tokenId`, so both verbs answered empty and every caller met the
+  // `emptyRecovery` hint instead of a token. `@canonical/token-ontology`
+  // does ship them — 707 `dt:TokenSymbol` and 1,059 `dt:ResolvedValue` — so
+  // the verbs point at the population that exists.
+  //
+  // A symbol carries no name property; the name IS the IRI's local part, so
+  // `lookup` derives it (`nameFallback`) and `list` publishes the SAME derived
+  // form, which is the pairing that option documents as its precondition.
+  // `by` stays `rdfs:label` as an OPTIONAL label ahead of the derived name.
+  //
+  // Dots become slashes in that derivation, so a token is addressed
+  // `color/background`, not `color.background`. That is the existing
+  // convention (`cs:react.component.props` → `react/component/props`), not a
+  // new one — but it is the rough edge of reading a population that was never
+  // given a name property.
   {
     noun: "token",
     description: "List all design tokens.",
     toolDescription:
-      "List all design tokens with their type. Use when browsing which tokens exist under the active scope. Example: token_list {}.",
+      "List all design tokens with their default resolved value. Use when browsing which tokens exist. Names use slashes: color/background. Example: token_list {}.",
     list: {
       query: [
-        "SELECT ?uri ?name ?category WHERE {",
-        "  ?uri a ds:Token ;",
-        "       ds:tokenId ?name .",
+        "SELECT ?uri ?name ?value WHERE {",
+        "  ?uri a dt:TokenSymbol .",
+        '  BIND(REPLACE(REPLACE(STR(?uri), "^.*[#/]", ""), "\\\\.", "/") AS ?name)',
         "  OPTIONAL {",
-        "    ?uri ds:tokenType ?type .",
-        "    ?type rdfs:label ?category .",
+        "    ?resolved dt:forSymbol ?uri ;",
+        "              dt:resolvesTo ?value .",
+        "    FILTER NOT EXISTS { ?resolved dt:coordinate ?any }",
         "  }",
         "}",
         "ORDER BY ?name",
@@ -353,7 +367,7 @@ const designSystemStories: readonly PackDefinition[] = [
       columns: [
         { field: "uri", label: "IRI" },
         { field: "name", label: "Name" },
-        { field: "category", label: "Type" },
+        { field: "value", label: "Value" },
       ],
       emptyRecovery: {
         message:
@@ -363,23 +377,36 @@ const designSystemStories: readonly PackDefinition[] = [
     },
     lookup: {
       source: "sparql",
-      by: "ds:tokenId",
-      type: "ds:Token",
+      by: "rdfs:label",
+      nameFallback: "iri",
+      type: "dt:TokenSymbol",
       toolDescription:
-        'Get type and theme values for one or more design tokens by name. Use when resolving specific tokens\' light/dark values. Example: token_lookup { name: ["color.primary"] }.',
-      fields: [
+        'Get the resolved values of one or more design tokens by name. Names use slashes. Example: token_lookup { name: ["color/background"] }.',
+      // A scalar value field is deliberately ABSENT. A plain property path
+      // reaches whichever position it meets first, which is not necessarily
+      // the default one — a headline reading "Resolved value" would be right
+      // by accident. The expand states the position it belongs to.
+      //
+      // One row per POSITION, not one value per token. A symbol resolves once
+      // per coordinate it is covered at, and a bare row (no coordinate) is the
+      // all-defaults position — so a token with a dark value reports two rows
+      // rather than silently reporting whichever the field path reached first.
+      expand: [
         {
-          name: "category",
-          property: "ds:tokenType/rdfs:label",
-          label: "Type",
+          name: "positions",
+          heading: "Resolved positions",
+          kind: "table",
+          relation: "^dt:forSymbol",
+          select: [
+            { name: "coordinate", property: "dt:coordinate" },
+            { name: "value", property: "dt:resolvesTo" },
+          ],
         },
-        { name: "valueLight", property: "ds:valueLight", label: "Light value" },
-        { name: "valueDark", property: "ds:valueDark", label: "Dark value" },
       ],
       sample: {
         fixedCount: true,
         toolDescription:
-          "Return randomly selected complete design tokens (with theme values) as exemplars. Use BEFORE writing queries to see actual data shapes. Example: token_sample {}.",
+          "Return randomly selected complete design tokens as exemplars. Use BEFORE writing queries to see actual data shapes. Example: token_sample {}.",
       },
     },
   },

@@ -52,6 +52,7 @@ export const BLOCK_TTL = `
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dt: <https://dt.canonical.com/> .
 
 # ---- Ontology (TBox) ----
 ds:UIBlock a owl:Class .
