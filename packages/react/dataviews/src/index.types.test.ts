@@ -23,6 +23,7 @@ import type {
   UseDataViewsCellResult,
   UseDataViewsFieldResult,
   UseDataViewsResult,
+  ViewsProps,
 } from "./index.js";
 
 type Fields = readonly SchemaFieldDefinition[];
@@ -42,12 +43,13 @@ type EveryPublicType = [
   UseDataViewsCellResult,
   UseDataViewsFieldResult<unknown>,
   UseDataViewsResult<Fields>,
+  ViewsProps,
 ];
 
 describe("public surface types", () => {
   it("re-exports the full type surface from the barrel", () => {
     expectTypeOf<EveryPublicType>().not.toBeAny();
-    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<13>();
+    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<14>();
   });
 });
 

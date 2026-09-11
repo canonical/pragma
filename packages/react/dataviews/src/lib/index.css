@@ -18,4 +18,5 @@
 
 @import url("./DataTable/styles.css");
 @import url("./DataViews/common/Actions/styles.css");
+@import url("./DataViews/common/Views/styles.css");
 @import url("./PaginationBar/styles.css");
