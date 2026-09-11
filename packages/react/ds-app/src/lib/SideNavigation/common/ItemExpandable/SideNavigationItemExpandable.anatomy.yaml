@@ -1,0 +1,55 @@
+---
+# SideNavigation.ItemExpandable — a collapsible row that discloses its own
+# (always-leaf) children instead of navigating. Native <details>/<summary>;
+# no role/aria-expanded authored (cs:ui_blocks.nojs.disclosure) — the element
+# supplies the disclosure semantics itself. Cannot link (no url) and cannot
+# nest further (children are SideNavigation.Item only) — the 24.04 spec §4.3.
+node:
+  uri: apps.subcomponent.side-navigation-item-expandable
+  styles:
+    layout.type: stack
+    layout.direction: column
+    size.width: fill
+  edges:
+    - node:
+        role: row
+        styles:
+          layout.type: flow
+          layout.direction: row
+          layout.align: center
+          interaction.cursor: pointer
+          spacing.padding.vertical: dimension/100
+          spacing.gap: dimension/100
+          appearance.background: color/foreground/navigation/primary
+          typography.text: typography/text/primary
+          typography.color: color/text
+        edges:
+          - node:
+              role: icon
+              styles:
+                appearance.color: color/icon
+            relation:
+              cardinality: "0..1"
+              slotName: icon
+          - node:
+              role: label
+              styles:
+                layout.flex: 1
+            relation:
+              cardinality: "1"
+              slotName: label
+          - node:
+              role: caret
+              styles:
+                appearance.color: color/icon
+            relation:
+              cardinality: "1"
+              slotName: end
+      relation:
+        cardinality: "1"
+        slotName: default
+    - node:
+        uri: apps.subcomponent.side-navigation-item
+      relation:
+        cardinality: "0..*"
+        slotName: children
