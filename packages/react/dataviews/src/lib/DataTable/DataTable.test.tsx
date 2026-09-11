@@ -479,6 +479,14 @@ describe("DataTable", () => {
     expect(screen.getAllByRole("row")[1]).not.toHaveAttribute("aria-selected");
   });
 
+  it("leaves row counts and positions to a windowed table", () => {
+    loadedTable([machine("m-1", "alpha")]);
+    expect(screen.getByRole("table")).not.toHaveAttribute("aria-rowcount");
+    for (const row of screen.getAllByRole("row")) {
+      expect(row).not.toHaveAttribute("aria-rowindex");
+    }
+  });
+
   it("selects and clears exactly the displayed rows from the header", () => {
     const { provider } = loadedTable(
       [machine("m-1", "alpha"), machine("m-2", "beta")],

@@ -271,3 +271,50 @@ const statusText = (status: DataTableStatus): string => {
 <Canvas of={Stories.Failed} sourceState="none" />
 
 <Canvas of={Stories.NoMatch} sourceState="none" />
+
+## Mounting only the rows in view
+
+A table renders every row of its result window, which is the right default: a page of fifty is small, and every row is in the page for the browser's own search and for a reader without JavaScript. When a result window holds thousands of rows, give the table `windowing`, and it mounts only the rows near its viewport. `virtualRows` comes from its own entry point, `@canonical/dataviews-react/virtualization`, so an application that never imports it never ships it.
+
+```tsx
+import { createDataViewsProvider } from "@canonical/dataviews-core";
+import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
+import { virtualRows } from "@canonical/dataviews-react/virtualization";
+import { machineSchema, source } from "./machines.js";
+
+const provider = createDataViewsProvider({
+  schema: machineSchema,
+  capabilities: source.capabilities,
+  window: { page: 1, size: 10_000 },
+});
+
+// One descriptor serves any number of tables: each keeps its own
+// viewport, measurements and focus.
+const windowing = virtualRows({ estimatedRowHeight: 24 });
+
+const columns: readonly DataTableColumn[] = [
+  { id: "name", header: "Host", sortable: true },
+  { id: "status", header: "Status", sortable: true },
+  { id: "owner", header: "Owner" },
+];
+
+<DataTable
+  provider={provider}
+  columns={columns}
+  label="Machines"
+  windowing={windowing}
+  style={{ maxBlockSize: "24rem" }}
+/>;
+```
+
+- **Give the table its height.** The table becomes its own scroll viewport, with the header held above its rows. It is no taller than the screen unless its style says otherwise; a table as tall as its content would mount every row.
+- **The estimate is only an estimate.** `estimatedRowHeight` places a row until it is mounted, and then the row is measured. Rows may differ in height: a cell that wraps grows its row, and the rows around it make room. When a row above the viewport turns out taller than estimated, the view stays on the rows being read.
+- **Every row still counts.** The table reports how many rows it has and each mounted row its position among them, so assistive technology knows there is more above and below. Selection, the header's select-all and sorting act on every row of the result window, mounted or not.
+- **Focus stays put.** The row holding focus stays mounted however far the table scrolls, with a neighbour on each side, and is let go when focus leaves the table.
+- **What it does not do.** Rows that are not mounted are not in the page, so the browser's own search does not find them. On the server, and without JavaScript, the table renders its whole result window, and paging is what keeps that bounded: keep real page links for readers without JavaScript. Hydrating that markup costs what hydrating a table without `windowing` costs, before the table narrows to the rows in view.
+
+<Canvas of={Stories.Windowed} sourceState="none" />
+
+<Canvas of={Stories.WindowedVariableHeights} sourceState="none" />
+
+<Canvas of={Stories.WindowedKeepsFocus} sourceState="none" />

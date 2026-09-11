@@ -14,6 +14,8 @@ function Row<TRow extends object>({
   fields,
   selectable,
   rowLabel,
+  position,
+  ref,
 }: RowProps<TRow>): ReactElement {
   const selected = useDataViewsValue(scope.selected);
   return (
@@ -22,11 +24,13 @@ function Row<TRow extends object>({
     // biome-ignore lint/a11y/useSemanticElements: <tr> is only valid inside a <table>, and this grid is deliberately not one
     // biome-ignore lint/a11y/useFocusableInteractive: the row is structure, not a widget — the focusable controls live in its cells
     <div
+      ref={ref}
       role="row"
       className={[componentCssClassName, selected && "selected"]
         .filter(Boolean)
         .join(" ")}
       aria-selected={selectable ? selected : undefined}
+      aria-rowindex={position}
     >
       {selectable ? (
         <SelectionCell

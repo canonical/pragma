@@ -10,7 +10,7 @@ import {
   createSchema,
 } from "@canonical/dataviews-core";
 import { describe, expect, it } from "vitest";
-import tableStatus from "./tableStatus.js";
+import tableStatus, { sameStatus } from "./tableStatus.js";
 
 const schema = createSchema([
   { field: "status", kind: "choices", options: ["failed", "running"] },
@@ -132,5 +132,28 @@ describe("tableStatus", () => {
 
   it("reports nothing at all while rows are displayed", () => {
     expect(tableStatus(loaded([{ id: "m-1" }]).result.get())).toBeNull();
+  });
+});
+
+describe("sameStatus", () => {
+  it("holds two statuses alike when they say the same thing", () => {
+    expect(sameStatus(null, null)).toBe(true);
+    expect(
+      sameStatus(
+        { kind: "stale", reason: "unreachable" },
+        { kind: "stale", reason: "unreachable" },
+      ),
+    ).toBe(true);
+  });
+
+  it("tells apart a different kind, a different reason and no status", () => {
+    expect(sameStatus({ kind: "loading" }, { kind: "no-data" })).toBe(false);
+    expect(
+      sameStatus(
+        { kind: "error", reason: "unreachable" },
+        { kind: "error", reason: "timed out" },
+      ),
+    ).toBe(false);
+    expect(sameStatus({ kind: "loading" }, null)).toBe(false);
   });
 });

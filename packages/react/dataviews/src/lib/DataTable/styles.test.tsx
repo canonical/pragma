@@ -2,8 +2,9 @@
  * The stylesheet's contract with the markup. jsdom applies no CSS, so what is
  * pinned is what a stylesheet change can break with every render still
  * green: each class the sheet styles is one the table renders, nothing below
- * the table carries a style of its own, and the declarations whose loss no
- * render would show are still declared.
+ * the table carries a style of its own but a windowed table's gaps, which
+ * carry their height alone, and the declarations whose loss no render would
+ * show are still declared.
  *
  * The anatomy beside the code states the DOM each part renders; the same
  * renders pin that it still does. This reads the anatomy's notes, not its
@@ -23,6 +24,7 @@ import {
 } from "@canonical/dataviews-core";
 import { act, cleanup, render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import virtualRows from "../virtualization/virtualRows.js";
 import DataTable from "./DataTable.js";
 import type { DataTableColumn } from "./types.js";
 
@@ -137,6 +139,35 @@ const loaded = (): HTMLElement =>
 const failed = (): HTMLElement =>
   settled({ status: "failure", reason: "unreachable" });
 
+/** A windowed table over more rows than it mounts, so it holds a gap. */
+const windowedTable = (): HTMLElement => {
+  const provider = createDataViewsProvider<typeof schema.fields, Machine>({
+    schema,
+    capabilities,
+  });
+  const { container } = render(
+    <DataTable
+      provider={provider}
+      columns={columns}
+      label="Machines"
+      windowing={virtualRows({ estimatedRowHeight: 32 })}
+    />,
+  );
+  const requestId = provider.refresh();
+  if (requestId === null) {
+    throw new Error("expected a refresh request");
+  }
+  const rows = Array.from({ length: 20 }, (_, position) => ({
+    id: `m-${position}`,
+    name: `host-${position}`,
+    status: "running",
+  }));
+  act(() => {
+    provider.complete(requestId, { status: "success", rows, count: 20 });
+  });
+  return container;
+};
+
 const classesOf = (container: HTMLElement): Set<string> =>
   new Set(
     [...container.querySelectorAll("[class]")].flatMap((element) => [
@@ -188,11 +219,23 @@ describe("DataTable stylesheet", () => {
 
   it("leaves every width to the stylesheet and the one published track list", () => {
     // The container's own publication is pinned in DataTable.test.tsx; no
-    // element inside it may carry a style of its own.
-    for (const mount of [loaded, failed]) {
+    // element inside it may carry a style of its own but a windowed table's
+    // gaps, each the height of the rows it stands for and nothing else.
+    for (const mount of [loaded, failed, windowedTable]) {
       const table = mount().querySelector('[role="table"]');
       expect(table).not.toBeNull();
-      expect(table?.querySelectorAll("[style]")).toHaveLength(0);
+      if (mount === windowedTable) {
+        expect(table?.querySelector(".ds.data-table-gap")).not.toBeNull();
+      }
+      for (const styled of table?.querySelectorAll<HTMLElement>("[style]") ??
+        []) {
+        expect(styled).toHaveClass("data-table-gap");
+        expect(
+          Array.from({ length: styled.style.length }, (_, position) =>
+            styled.style.item(position),
+          ),
+        ).toEqual(["block-size"]);
+      }
       cleanup();
     }
   });
@@ -336,7 +379,7 @@ describe("DataTable anatomy", () => {
       ),
     );
     expect(stated.size).toBeGreaterThan(0);
-    for (const mount of [loaded, failed]) {
+    for (const mount of [loaded, failed, windowedTable]) {
       const container = mount();
       for (const selector of [...stated]) {
         if (container.querySelector(selector) !== null) {

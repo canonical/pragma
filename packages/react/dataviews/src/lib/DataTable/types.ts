@@ -5,6 +5,7 @@ import type {
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
 import type { ComponentProps, ComponentType, ReactNode } from "react";
+import type { Windowed, default as windowed } from "./windowed.js";
 
 /** The props one column's cell renderer receives. */
 export type DataTableCellProps = {
@@ -73,6 +74,17 @@ export type DataTableStatus =
   | { readonly kind: "no-data" }
   | { readonly kind: "no-results" };
 
+/**
+ * A table that mounts only the rows near its viewport. Made by
+ * `virtualRows`, from `@canonical/dataviews-react/virtualization`: the one
+ * entry point that loads the implementation, so a table that never imports
+ * it never ships it.
+ */
+export type DataTableWindowing = {
+  /** The implementation, private to the package: nothing to read here. */
+  readonly [windowed]: Windowed;
+};
+
 type OwnProps<
   TFields extends readonly SchemaFieldDefinition[],
   TRow extends object,
@@ -106,6 +118,13 @@ type OwnProps<
    * re-renders the body.
    */
   readonly renderStatus?: (status: DataTableStatus) => ReactNode;
+  /**
+   * Mount only the rows near the viewport, from `virtualRows`. The table
+   * becomes its own scroll viewport, no taller than the screen unless its
+   * style says otherwise, and reports each row's logical position so that
+   * a row not mounted is still counted. Omitted, every row is rendered.
+   */
+  readonly windowing?: DataTableWindowing;
 };
 
 /**

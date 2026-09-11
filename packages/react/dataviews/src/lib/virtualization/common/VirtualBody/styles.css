@@ -1,0 +1,28 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /**
+   * VirtualBody styles
+   *
+   * The specification is `DataTable.anatomy.yaml`: every value below is one
+   * it binds, and what it could not bind is recorded there, never hardcoded
+   * here. A windowed body mounts the entries near the viewport and holds a
+   * gap, sized inline, for the rest. The body imports these rules itself,
+   * so an application that never windows a table loads them only if it
+   * links `index.css`.
+   */
+  .ds.data-table:has(> .ds.data-table-row-group.body.windowed) {
+    /* The body's offset, which places the viewport among the entries, is
+       measured from the root. */
+    position: relative;
+    /* The range keeps the entry at the viewport's start in place when a
+       row above it is measured; the browser's own anchoring would correct
+       the same shift a second time. */
+    overflow-anchor: none;
+    /* The table is its own scroll viewport, and a viewport as tall as its
+       content would mount every row: by default it is no taller than the
+       screen, measured with the browser's bars shown so the cap holds
+       still while the page scrolls. A caller's own maximum wins. */
+    max-block-size: 100svh;
+  }
+}

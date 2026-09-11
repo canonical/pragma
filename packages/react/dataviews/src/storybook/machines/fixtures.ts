@@ -161,6 +161,17 @@ const sortableFields = ["name", "status", "region", "cores", "owner"] as const;
 /** A field the source can order by — the only kind a story may sort. */
 export type SortableField = (typeof sortableFields)[number];
 
+/**
+ * `count` machines for the windowed stories, made from the twelve above in
+ * turn — their statuses, regions, owners and notes — each host numbered.
+ */
+export const manyMachines = (count: number): readonly RowRecord[] =>
+  Array.from({ length: count }, (_, position) => ({
+    ...machines[position % machines.length],
+    id: `n-${position}`,
+    name: `node-${String(position).padStart(5, "0")}.example.com`,
+  }));
+
 /** A local-array source over the machines, or over a caller's own rows. */
 export const createMachineSource = (
   rows: readonly RowRecord[] = machines,
