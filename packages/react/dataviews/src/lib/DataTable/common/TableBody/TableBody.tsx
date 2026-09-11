@@ -27,7 +27,7 @@ function TableBody<TRow extends object>({
           {/* biome-ignore lint/a11y/useSemanticElements: <td> is only valid inside a <table>, and this grid is deliberately not one */}
           <div
             role="cell"
-            className={`ds data-table-cell status ${status.kind}`}
+            className={`ds data-table-body-cell status ${status.kind}`}
           >
             {status.kind === "stale" ? (
               // A polite status message: the rows did not move, so nothing

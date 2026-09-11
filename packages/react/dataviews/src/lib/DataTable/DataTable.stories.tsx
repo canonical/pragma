@@ -217,7 +217,7 @@ const press = async (
   await userEvent.keyboard(`{${key}>${times}/}`);
 };
 
-/** A heading's rendered width, in whole pixels. */
+/** An element's rendered width, in whole pixels. */
 const widthOf = (element: HTMLElement): number =>
   Math.round(element.getBoundingClientRect().width);
 
@@ -287,6 +287,13 @@ provider.setSort([{ field: "status", direction: "asc" }]);
         canvas.getByRole("columnheader", { name: "Status" }),
       ).toHaveAttribute("aria-sort", "ascending"),
     );
+    // The chevron repeats the order for the eye; unsorted headings show none.
+    await expect(
+      canvas.getByRole("columnheader", { name: "Status" }).querySelector("use"),
+    ).toHaveAttribute("href", expect.stringMatching(/#chevron-up$/));
+    await expect(
+      canvas.getByRole("columnheader", { name: "Host" }).querySelector("svg"),
+    ).toBeNull();
     await waitFor(() =>
       expect(canvas.getAllByRole("cell")[0]).toHaveTextContent(
         "birch.example.com",
@@ -319,6 +326,9 @@ provider.setSort([{ field: "cores", direction: "desc" }]);
         canvas.getByRole("columnheader", { name: "Cores" }),
       ).toHaveAttribute("aria-sort", "descending"),
     );
+    await expect(
+      canvas.getByRole("columnheader", { name: "Cores" }).querySelector("use"),
+    ).toHaveAttribute("href", expect.stringMatching(/#chevron-down$/));
     await waitFor(() =>
       expect(canvas.getAllByRole("cell")[0]).toHaveTextContent(
         "ironwood.example.com",
@@ -328,11 +338,12 @@ provider.setSort([{ field: "cores", direction: "desc" }]);
 };
 
 /**
- * Selectable: a leading column of real checkboxes backed by the provider's
- * selection. Each checkbox is named after its record (`Select
- * alder.example.com`) rather than its position, and each row reports
- * `aria-selected` from the same channel its checkbox reads, so the two
- * cannot disagree. A selected row keeps a tinted fill.
+ * Selectable: a leading 32px column of the design system's checkboxes,
+ * backed by the provider's selection. The column's width is the stylesheet's,
+ * and the data columns share what it leaves. Each checkbox is named after its
+ * record (`Select alder.example.com`) rather than its position, and each row
+ * reports `aria-selected` from the same channel its checkbox reads, so the
+ * two cannot disagree. A selected row takes the information tint.
  */
 export const Selectable: Story = {
   parameters: consumer(`const columns: readonly DataTableColumn[] = [
@@ -352,6 +363,21 @@ export const Selectable: Story = {
 />;`),
   args: { selectable: true },
   render: renderMachines(plainColumns),
+  play: async ({ canvas }) => {
+    await canvas.findByRole("checkbox", { name: "Select all displayed rows" });
+    // The select-all header leads the row: the stylesheet's track, from the
+    // design's 32px dimension token.
+    const [selection, ...columns] = canvas.getAllByRole("columnheader");
+    await expect(widthOf(selection)).toBe(32);
+    // The data columns share exactly what that track leaves.
+    const shared = columns.reduce(
+      (total, column) => total + column.getBoundingClientRect().width,
+      0,
+    );
+    await expect(
+      Math.abs(32 + shared - canvas.getByRole("table").clientWidth),
+    ).toBeLessThanOrEqual(1);
+  },
 };
 
 /**

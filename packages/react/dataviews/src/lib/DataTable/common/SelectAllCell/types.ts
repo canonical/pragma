@@ -15,4 +15,9 @@ export type SelectAllCellProps = {
    * table rendering no selection column must not re-render for it.
    */
   readonly ids: ReadonlyChannel<readonly string[]>;
+  /**
+   * Attaches this cell to the table's geometry. The stylesheet sizes the
+   * selection track, and the columns share whatever width it leaves.
+   */
+  readonly reserve: (cell: HTMLDivElement) => () => void;
 };

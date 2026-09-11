@@ -1,4 +1,4 @@
-export * from "./Cell/index.js";
+export * from "./BodyCell/index.js";
 export * from "./HeaderCell/index.js";
 export * from "./ResizeHandle/index.js";
 export * from "./Row/index.js";

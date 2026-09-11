@@ -34,6 +34,28 @@ const fillLast = (
 };
 
 /**
+ * Call `onResize` with each resize of one element. Returns the disconnect,
+ * or nothing where there is no observer.
+ */
+const observeResize = (
+  element: HTMLElement,
+  onResize: (entry: ResizeObserverEntry) => void,
+): (() => void) | undefined => {
+  if (typeof ResizeObserver === "undefined") {
+    return undefined;
+  }
+  const observer = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      onResize(entry);
+    }
+  });
+  observer.observe(element);
+  return () => {
+    observer.disconnect();
+  };
+};
+
+/**
  * Resolve one mounted table's geometry.
  *
  * Widths are published once, as the container's track list, rather than
@@ -43,6 +65,10 @@ const fillLast = (
  * and resizing need. The authoritative presentation is untouched while a
  * resize previews: the preview only replaces its own column's track.
  *
+ * The columns are resolved against the container's content width less the
+ * selection track, whose width is the stylesheet's: it is read back from the
+ * cell that track sizes, observed for as long as that cell is there.
+ *
  * Two tables sharing one presentation therefore share user arrangement while
  * resolving their own widths against their own container.
  */
@@ -51,7 +77,8 @@ export default function useTableGeometry(
   interaction: GridInteraction,
   columnIds: readonly string[],
 ): TableGeometry {
-  const [width, setWidth] = useState<number | null>(null);
+  const [container, setContainer] = useState<number | null>(null);
+  const [reserved, setReserved] = useState(0);
   // Subscribed for the re-render, not for the snapshot: the tracks below
   // are read through the record itself, so its unknown-id guard is the one
   // answer to a column the presentation never declared.
@@ -60,22 +87,33 @@ export default function useTableGeometry(
 
   const attach = useCallback(
     (node: HTMLDivElement): (() => void) | undefined => {
-      setWidth(node.getBoundingClientRect().width);
-      if (typeof ResizeObserver === "undefined") {
-        return undefined;
-      }
-      const observer = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          setWidth(entry.contentRect.width);
-        }
+      // Inside the border, which is no room for a column. The observer's
+      // first report, which follows at once, is the exact content width.
+      setContainer(node.clientWidth);
+      return observeResize(node, (entry) => {
+        setContainer(entry.contentRect.width);
       });
-      observer.observe(node);
-      return () => {
-        observer.disconnect();
-      };
     },
     [],
   );
+
+  // Observed on its own: the track is sized in rem, so a root font-size
+  // change moves it with no change to the container. Read as its layout
+  // width every time — never its bounding box, which an ancestor's
+  // transform would scale.
+  const reserve = useCallback((cell: HTMLDivElement): (() => void) => {
+    const measure = (): void => {
+      setReserved(cell.offsetWidth);
+    };
+    measure();
+    const disconnect = observeResize(cell, measure);
+    return () => {
+      disconnect?.();
+      setReserved(0);
+    };
+  }, []);
+
+  const width = container === null ? null : Math.max(0, container - reserved);
 
   const tracks = useStableValue<readonly ColumnToSize[]>(
     columnIds.map((id) => ({ id, sizing: presentation.effective(id) })),
@@ -120,7 +158,10 @@ export default function useTableGeometry(
           );
   return {
     attach,
-    template: columnTemplate(tracks, live),
+    reserve,
+    // No columns, no tracks: nothing is published, and a selectable table's
+    // template keeps its selection track alone rather than turning invalid.
+    template: tracks.length === 0 ? undefined : columnTemplate(tracks, live),
     widths,
   };
 }

@@ -1,5 +1,4 @@
 import type {
-  ColumnSizing,
   ColumnToSize,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
@@ -29,10 +28,12 @@ import tableStatus from "./tableStatus.js";
 import type { DataTableProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds data-table";
-
-/** The identity of the selection column, reserved from the caller's ids. */
-const SELECTION_COLUMN_ID = "ds-selection";
+/**
+ * `dense` is the design system's own density class: it sets the channel the
+ * stylesheet reads for row height and cell padding, so the table is dense
+ * wherever it sits.
+ */
+const componentCssClassName = "ds data-table dense";
 
 /** A record answers to its own identity until the caller names it better. */
 const defaultRowLabel = (_row: object, rowId: string): string => rowId;
@@ -56,7 +57,6 @@ const applyRef = (
   }
   return undefined;
 };
-const selectionSizing: ColumnSizing = { kind: "fixed", px: 40 };
 
 /**
  * DataTable renders the rows of one collection.
@@ -71,6 +71,10 @@ const selectionSizing: ColumnSizing = { kind: "fixed", px: 40 };
  * flexible ones compress within their bounds, the last column takes whatever
  * width the others leave, and the container scrolls when the remainder no
  * longer fits — there is no automatic hiding, pairing or renderer switching.
+ * The selection column is not among them: its width is the stylesheet's,
+ * and the columns share what it leaves.
+ *
+ * @implements ds:apps.pattern.data_table
  */
 export default function DataTable<
   TFields extends readonly SchemaFieldDefinition[],
@@ -118,13 +122,8 @@ export default function DataTable<
     [model],
   );
   const declaredTracks = useMemo<readonly ColumnToSize[]>(
-    () => [
-      ...(selectable
-        ? [{ id: SELECTION_COLUMN_ID, sizing: selectionSizing }]
-        : []),
-      ...model.map((column) => ({ id: column.id, sizing: sizingOf(column) })),
-    ],
-    [model, selectable],
+    () => model.map((column) => ({ id: column.id, sizing: sizingOf(column) })),
+    [model],
   );
   const columnIds = useMemo(
     () => declaredTracks.map((track) => track.id),
@@ -187,7 +186,6 @@ export default function DataTable<
   const nameRow = useStableCallback(rowLabel);
   const showStatus = useStableCallback(renderStatus);
 
-  const selectionOffset = selectable ? 1 : 0;
   const geometryStyle = {
     ...style,
     "--data-table-columns": geometry.template,
@@ -210,7 +208,11 @@ export default function DataTable<
         {/* biome-ignore lint/a11y/useFocusableInteractive: the row is structure, not a widget — the focusable controls live in its cells */}
         <div role="row" className="ds data-table-row">
           {selectable ? (
-            <SelectAllCell selection={provider.selection} ids={scopes.ids} />
+            <SelectAllCell
+              selection={provider.selection}
+              ids={scopes.ids}
+              reserve={geometry.reserve}
+            />
           ) : null}
           {rendered.map((column, position) => (
             <HeaderCell
@@ -230,7 +232,7 @@ export default function DataTable<
                 column.resizable === true && position < rendered.length - 1
               }
               bounds={boundsOf(activePresentation.state.declared[column.id])}
-              width={geometry.widths[position + selectionOffset]}
+              width={geometry.widths[position]}
               labelId={`${baseId}-${column.id}`}
             />
           ))}

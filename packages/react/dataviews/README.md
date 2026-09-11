@@ -99,9 +99,9 @@ beside the controls. The parts read the provider either way.
 @import url("@canonical/dataviews-react/index.css");
 ```
 
-The table assumes the `.app` typography scope: render it inside an element carrying the `.app` class, where the design system's primary text takes its application sizes. It takes its type from that scope rather than pinning a line height of its own.
+The table assumes the `.app` context of `@canonical/styles`, which the page loads: render it inside an element carrying the `.app` class, where the design system's primary text takes its application sizes. It is dense wherever it sits — its root carries the design system's `.dense` class — and its rows and cells take their height and padding from the density channel that class sets; it defines no density rule of its own. Its sort chevrons and checkbox marks are `@canonical/ds-assets` icons, served at `/icons` like every other design-system icon.
 
-The sheet is in the `ds.components.global` cascade layer and reads its colours, spacing, borders and type from `@canonical/design-tokens`. The one thing it cannot carry is the column track list: the solver derives that per render from the measured container, and the table publishes it on itself as `--data-table-columns`, which every row consumes. That property is the table's own channel, not a customisation hook: the table writes it after any `style` it is given.
+The sheet is in the `ds.components.global` cascade layer and reads its colours, spacing, borders and type from `@canonical/design-tokens`. The one thing it cannot carry is the column track list: the solver derives that per render from the measured container, and the table publishes the data columns' tracks on itself as `--data-table-columns` (nothing at all when it has no columns), which every row consumes after the selection column's own track. That property is the table's own channel, not a customisation hook: the table writes it after any `style` it is given.
 
 ## DataTable recipes
 
@@ -110,7 +110,7 @@ The recipes, with consumer code and the live stories beside them, are the Storyb
 - **A table over a provider** — build the provider once and bind the source in an effect.
 - **Columns and sizing** — fixed and flexible widths, bounds, and the last column taking the rest.
 - **Sorting** — offer a sort only on a field the source declares: `sortable` takes effect only where the provider's `capabilities` declare the field sortable, so pass the source's capabilities to `createDataViewsProvider`.
-- **Selection** — real checkboxes named by `rowLabel`; select-all acts on the displayed rows.
+- **Selection** — the design system's checkboxes in a 32px column, named by `rowLabel`; select-all acts on the displayed rows.
 - **Resizing and its limits** — held to the declared bounds; no control on the last column; one shared `presentation` gives two tables on a provider the same arrangement.
 - **A cell that reads its own scope** — a renderer reading its row's channels.
 - **The outcomes** — loading, failed, empty, no match, and retained rows that no longer answer the current query (`stale`), with `renderStatus`.

@@ -1,10 +1,11 @@
+import { CheckboxInput } from "@canonical/react-ds-global-form";
 import type { ReactElement } from "react";
 import { useMemo } from "react";
 import useDataViewsState from "../../../DataViews/hooks/useDataViewsState.js";
 import useDataViewsValue from "../../../DataViews/hooks/useDataViewsValue.js";
 import type { SelectAllCellProps } from "./types.js";
 
-const componentCssClassName = "ds data-table-column-header selection";
+const componentCssClassName = "ds data-table-header-cell selection";
 
 /**
  * The select-all checkbox. Its scope is the displayed rows, which its name
@@ -14,6 +15,7 @@ const componentCssClassName = "ds data-table-column-header selection";
 export default function SelectAllCell({
   selection,
   ids: displayed,
+  reserve,
 }: SelectAllCellProps): ReactElement {
   const state = useDataViewsState(selection);
   const ids = useDataViewsValue(displayed);
@@ -34,9 +36,8 @@ export default function SelectAllCell({
   return (
     // biome-ignore lint/a11y/useSemanticElements: <th> is only valid inside a <table>, and this grid is deliberately not one
     // biome-ignore lint/a11y/useFocusableInteractive: the header is structure, not a widget — its checkbox carries the focus
-    <div role="columnheader" className={componentCssClassName}>
-      <input
-        type="checkbox"
+    <div role="columnheader" className={componentCssClassName} ref={reserve}>
+      <CheckboxInput
         checked={all}
         aria-label="Select all displayed rows"
         ref={(node) => {

@@ -3,9 +3,9 @@ import { memo, useMemo } from "react";
 import type { CellScopeValue } from "../../../DataViews/CellScopeContext.js";
 import CellScopeContext from "../../../DataViews/CellScopeContext.js";
 import useDataViewsValue from "../../../DataViews/hooks/useDataViewsValue.js";
-import type { CellProps } from "./types.js";
+import type { BodyCellProps } from "./types.js";
 
-const componentCssClassName = "ds data-table-cell";
+const componentCssClassName = "ds data-table-body-cell";
 
 /** Primitive values render as text; anything else needs the column's `cell`. */
 const defaultContent = (value: unknown): ReactNode => {
@@ -21,12 +21,12 @@ const defaultContent = (value: unknown): ReactNode => {
   }
 };
 
-function Cell<TRow extends object>({
+function BodyCell<TRow extends object>({
   provider,
   scope,
   column,
   field,
-}: CellProps<TRow>): ReactElement {
+}: BodyCellProps<TRow>): ReactElement {
   const channel = scope.fields[field];
   const value = useDataViewsValue(channel);
   const cellScope = useMemo<CellScopeValue>(
@@ -56,12 +56,14 @@ function Cell<TRow extends object>({
 }
 
 /**
- * One data cell. It subscribes to its own field's channel, so a record
+ * One body cell. It subscribes to its own field's channel, so a record
  * update re-renders only the cells whose values actually changed, and it
  * installs the cell scope its column's own renderer reads.
  *
  * Memoised: without it the claim above would hold for the channel and be
  * undone by the row, which would re-render every cell it has whenever it
  * rendered at all.
+ *
+ * @implements ds:apps.subcomponent.data_table-body_cell
  */
-export default memo(Cell) as typeof Cell;
+export default memo(BodyCell) as typeof BodyCell;

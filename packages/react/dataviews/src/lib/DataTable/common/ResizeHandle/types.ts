@@ -1,7 +1,7 @@
 import type { GridInteraction } from "@canonical/dataviews-core";
 
 /**
- * Props of one column's resize control.
+ * Props of one column's resize handle.
  *
  * Exempt from the native-prop extension convention: an internal renderer
  * deriving its root from the interaction model and the column's resolved
