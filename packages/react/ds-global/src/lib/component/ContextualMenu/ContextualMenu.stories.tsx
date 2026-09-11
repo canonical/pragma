@@ -36,6 +36,16 @@ const meta = {
   parameters: {
     // Centre the trigger in the story canvas so the (portalled) menu is framed.
     layout: "centered",
+    // Docs previews render in an iframe: the open menu is portalled and
+    // `position: fixed`, so it escapes every container — inside an iframe the
+    // preview window is its own viewport and the menu stays contained in its
+    // story.
+    docs: {
+      story: {
+        inline: false,
+        iframeHeight: "480px",
+      },
+    },
   },
 } satisfies Meta<typeof Component>;
 
