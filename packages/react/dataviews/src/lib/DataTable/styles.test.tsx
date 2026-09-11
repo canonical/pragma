@@ -197,6 +197,13 @@ describe("DataTable stylesheet", () => {
     }
   });
 
+  it("sizes row groups by their tracks' minimums, never by their cells", () => {
+    expect(rule(/\.ds\.data-table-row-group/)).toMatch(
+      /min-inline-size:\s*min-content;/,
+    );
+    expect(sheet).not.toMatch(/max-content/);
+  });
+
   it("writes no length or colour of its own", () => {
     // Every value is a token, a channel or a structural keyword: a missing
     // token is recorded in the anatomy, never written here as a number.
