@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createPortal } from "react-dom";
 import { describe, expect, it, vi } from "vitest";
 import type { WithTooltipOptions } from "./index.js";
-import { withTooltip } from "./index.js";
+import { TooltipEngine, withTooltip } from "./index.js";
 
 vi.mock("react-dom", () => ({
   createPortal: vi.fn((children) => children),
@@ -105,5 +105,51 @@ describe("withTooltip", () => {
   it("sets the wrapped component's displayName", () => {
     const Tooltipped = withTooltip(Trigger, Message);
     expect(Tooltipped.displayName).toBe("withTooltip(Trigger)");
+  });
+});
+
+describe("TooltipEngine", () => {
+  const Target = ({ state }: { state: string }) => (
+    <button type="button">{`Target (${state})`}</button>
+  );
+
+  it("renders the message as a live prop — reactive to rerender", async () => {
+    const { rerender } = render(
+      <TooltipEngine Message="Collapse">
+        <Target state="expanded" />
+      </TooltipEngine>,
+    );
+    fireEvent.pointerEnter(screen.getByRole("button"));
+    expect(await screen.findByText("Collapse")).toBeInTheDocument();
+
+    rerender(
+      <TooltipEngine Message="Expand">
+        <Target state="collapsed" />
+      </TooltipEngine>,
+    );
+    fireEvent.pointerEnter(screen.getByRole("button"));
+    expect(await screen.findByText("Expand")).toBeInTheDocument();
+  });
+
+  it("keeps the same target element identity across rerenders", () => {
+    const { rerender } = render(
+      <TooltipEngine Message="Collapse">
+        <Target state="expanded" />
+      </TooltipEngine>,
+    );
+    const targetBefore = document.querySelector(
+      ".ds.tooltip-area > .target",
+    ) as HTMLElement;
+    rerender(
+      <TooltipEngine Message="Expand">
+        <Target state="collapsed" />
+      </TooltipEngine>,
+    );
+    const targetAfter = document.querySelector(
+      ".ds.tooltip-area > .target",
+    ) as HTMLElement;
+    // One stable element across prop changes — switching between two
+    // withTooltip-wrapped types would remount the target.
+    expect(targetAfter).toBe(targetBefore);
   });
 });
