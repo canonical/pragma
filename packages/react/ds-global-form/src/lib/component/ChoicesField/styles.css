@@ -32,13 +32,35 @@
     & > .ds.option {
       direction: inherit;
       display: flex;
-      align-items: baseline;
+      align-items: center;
       gap: var(--space-100);
       cursor: pointer;
 
+      label {
+        padding: 0;
+      }
+
+      /* RadioInput/CheckboxInput carry their own padding margins
+       * (--form-input-padding-inline); options align to the group edge. */
+      & > input {
+        margin-inline: 0;
+      }
+
       &.disabled {
         cursor: not-allowed;
-        opacity: 0.5;
+
+        /* A disabled option reads as unavailable: the label text takes the
+           disabled text token (color.text.disabled), matching the input's
+           own disabled chrome instead of dimming the whole row with opacity. */
+        & label {
+          color: var(--form-label-color-disabled, var(--color-text-disabled));
+          &[data-required]::after {
+            color: var(
+              --form-required-marker-color-disabled,
+              var(--form-label-color-disabled, var(--color-text-disabled))
+            );
+          }
+        }
       }
 
       & > input[type="radio"] {
@@ -65,15 +87,15 @@
           );
           background: radial-gradient(
             var(
-                --surface-color-foreground-radio-selected,
-                var(--color-foreground-radio-selected)
-              )
-              40%,
-            var(
                 --surface-color-foreground-radio-unselected,
                 var(--color-foreground-radio-unselected)
               )
-              41%
+              30%,
+            var(
+                --surface-color-foreground-radio-selected,
+                var(--color-foreground-radio-selected)
+              )
+              31%
           );
         }
 
@@ -86,12 +108,12 @@
         &:checked:hover:not(:disabled) {
           border-color: var(--hover--color-foreground-radio-selected);
           background: radial-gradient(
-            var(--hover--color-foreground-radio-selected) 40%,
             var(
                 --surface-color-foreground-radio-unselected,
                 var(--color-foreground-radio-unselected)
               )
-              41%
+              30%,
+            var(--hover--color-foreground-radio-selected) 31%
           );
         }
 
@@ -134,10 +156,10 @@
           inset: 0;
           mask-repeat: no-repeat;
           mask-position: center;
-          mask-size: 75%;
+          mask-size: 100%;
           -webkit-mask-repeat: no-repeat;
           -webkit-mask-position: center;
-          -webkit-mask-size: 75%;
+          -webkit-mask-size: 100%;
         }
 
         &:checked {
