@@ -14,8 +14,11 @@ node:
   edges:
     - node:
         role: footer item
-        # Navigable items (url set, control not "button") render as links;
-        # everything else renders as ItemButton.
+        # Three-way dispatch: a navigable item (url set, control not
+        # "button") renders as a link; an action item (control: "button", or
+        # onClick with no url) renders as ItemButton; anything else is a
+        # label-only row (e.g. a logged-in username) rendered as Item's
+        # plain label — never an inert <button>.
         switch:
           "on": control
           cases:
@@ -25,6 +28,7 @@ node:
             - role: button
               styles:
                 interaction.cursor: pointer
+            - role: label
             - uri: $custom
         relation:
           cardinality: "0..*"
