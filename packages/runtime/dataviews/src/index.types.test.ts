@@ -27,6 +27,9 @@ import type {
   DecodedQuery,
   DecodeQueryConfig,
   DispatchResult,
+  DisplayEntriesConfig,
+  DisplayEntry,
+  DisplayEntryKind,
   EmptyOr,
   EncodeQueryConfig,
   ExecuteSliceOptions,
@@ -134,6 +137,12 @@ import type {
   ViewStore,
   ViewUpdateResult,
 } from "./lib/views/index.js";
+import type {
+  MountedRange,
+  MountedRun,
+  VirtualRange,
+  VirtualRangeConfig,
+} from "./lib/virtualization/index.js";
 
 /** Every type the saved-view entry point exports, as one enumerable tuple. */
 type EveryViewsType = [
@@ -175,6 +184,9 @@ type EveryPublicType = [
   DateField,
   DecodedQuery,
   DecodeQueryConfig,
+  DisplayEntriesConfig<unknown>,
+  DisplayEntry,
+  DisplayEntryKind,
   DispatchResult,
   EmptyOr<unknown>,
   EncodeQueryConfig,
@@ -268,7 +280,7 @@ type EveryPublicType = [
 describe("public surface types", () => {
   it("re-exports the full type surface from the barrel", () => {
     expectTypeOf<EveryPublicType>().not.toBeAny();
-    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<104>();
+    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<107>();
   });
 
   it("exports the saved-view types from their own entry point", () => {
@@ -277,6 +289,33 @@ describe("public surface types", () => {
     expectTypeOf<
       ViewStore["create"]
     >().returns.resolves.toEqualTypeOf<ViewCreateResult>();
+  });
+
+  it("exports the virtual range types from their own entry point", () => {
+    expectTypeOf<
+      [MountedRange, MountedRun, VirtualRange, VirtualRangeConfig]
+    >().not.toBeAny();
+    expectTypeOf<MountedRange["runs"]>().toEqualTypeOf<readonly MountedRun[]>();
+    expectTypeOf<VirtualRange["measure"]>().returns.toEqualTypeOf<number>();
+  });
+
+  it("keeps display entries open to new kinds, heights and positions", () => {
+    // A kind joins the union, and the range then needs its estimate.
+    expectTypeOf<DisplayEntryKind>().toEqualTypeOf<"record" | "status">();
+    expectTypeOf<VirtualRangeConfig["estimates"]>().toEqualTypeOf<
+      Readonly<Record<DisplayEntryKind, number>>
+    >();
+    // Every kind carries its own logical position and owning group.
+    expectTypeOf<DisplayEntry>()
+      .toHaveProperty("index")
+      .toEqualTypeOf<number>();
+    expectTypeOf<DisplayEntry>()
+      .toHaveProperty("parent")
+      .toEqualTypeOf<string | null>();
+    // A status entry carries whatever status its renderer defines.
+    expectTypeOf<
+      Extract<DisplayEntry<"stale">, { readonly kind: "status" }>["status"]
+    >().toEqualTypeOf<"stale">();
   });
 
   it("exports the identity functions with the declared shapes", () => {

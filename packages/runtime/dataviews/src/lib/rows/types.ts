@@ -34,6 +34,57 @@ export type RowModel<TRow extends object> = {
   readonly byId: (id: string) => TRow | undefined;
 };
 
+/** What every display entry carries, whatever its kind. */
+type DisplayEntryBase = {
+  /**
+   * Unique across kinds and stable across rebuilds. Rendered rows,
+   * measurements and retained focus are keyed by it, never by position, so
+   * removing one entry moves nothing that belongs to another.
+   */
+  readonly id: string;
+  /**
+   * The entry's logical row position, as `aria-rowindex` reports it: the
+   * header row is 1 and the entries follow in display order. Worked out
+   * once, here, so every binding reports the same position. Forward seam:
+   * the rows of a collapsed group are not displayed, so they take none.
+   */
+  readonly index: number;
+  /**
+   * The entry id of the group the entry belongs to, or null at the top
+   * level. Forward seam: every entry is top-level until grouping lands, and
+   * an entry's owning group is read from here, never recomputed.
+   */
+  readonly parent: string | null;
+};
+
+/**
+ * One entry of a table body, in display order: a record's row, or a status
+ * row carrying a status of the renderer's own shape.
+ *
+ * Forward seam: a group's header row joins this union as `"group"`, with
+ * its group path and nesting level, spanning every track at a height of
+ * its own.
+ */
+export type DisplayEntry<TStatus = unknown> =
+  | (DisplayEntryBase & {
+      readonly kind: "record";
+      /** The identity of the row the entry displays. */
+      readonly rowId: string;
+    })
+  | (DisplayEntryBase & {
+      readonly kind: "status";
+      /**
+       * Why there are no rows, or why the rows after it are an earlier
+       * query's. Forward seam: the table's own status is the only one
+       * today; a group still loading is another entry of this kind, whose
+       * parent is that group.
+       */
+      readonly status: TStatus;
+    });
+
+/** The kinds of display entry. */
+export type DisplayEntryKind = DisplayEntry["kind"];
+
 /**
  * One row's observation scope. Minted once per row identity and shared by
  * every cell of that row: field channels notify only the cells whose value

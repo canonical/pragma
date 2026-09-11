@@ -59,3 +59,13 @@ The scope — database, collection and partition — is fixed at construction; s
 - **Across tabs** — `subscribe` hears this tab's writes and, through a `BroadcastChannel` where the platform has one, other tabs'; it says only that something changed, and IndexedDB stays the authority to read again.
 
 A REST-backed store is the application's own: it implements the same `ViewStore` contract, the revision preconditions and per-key patches included, and no REST adapter ships here.
+
+## Windowed tables
+
+A table that mounts only the rows near its viewport decides which through `createVirtualRange`, imported from its own entry point, so an application that never windows a table bundles none of it:
+
+```ts
+import { createVirtualRange } from "@canonical/dataviews-core/virtualization";
+```
+
+The range works over `displayEntries`, from the package root: the entries a table body displays, in order — its status row, then a row per record — each with an id unique across kinds and its logical row position, the header row being 1. It is arithmetic over estimated and measured entry sizes, keyed by entry id: a binding reports the viewport and the measurements, and scrolls by the corrections the range returns. React applications use `virtualRows` from `@canonical/dataviews-react/virtualization` rather than the range itself.

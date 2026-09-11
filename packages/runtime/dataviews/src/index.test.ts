@@ -28,6 +28,7 @@ describe("public surface", () => {
       "createSelection",
       "createSourceBinding",
       "decodeQuery",
+      "displayEntries",
       "encodeQuery",
       "executeSlice",
       "isIdentity",
@@ -110,6 +111,20 @@ describe("public surface", () => {
         params: new URLSearchParams("status=failed&page=3"),
       }).window,
     ).toEqual({ page: 3, size: 50 });
+  });
+
+  it("keeps the virtual range out of the root, behind its own entry point", async () => {
+    expect(dataviews).not.toHaveProperty("createVirtualRange");
+    const virtualization = await import("./lib/virtualization/index.js");
+    expect(Object.keys(virtualization)).toEqual(["createVirtualRange"]);
+    const { readFileSync } = await import("node:fs");
+    const manifest = JSON.parse(
+      readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+    );
+    expect(manifest.exports["./virtualization"]).toEqual({
+      types: "./dist/types/lib/virtualization/index.d.ts",
+      import: "./dist/esm/lib/virtualization/index.js",
+    });
   });
 
   it("keeps saved-view storage out of the root, behind its own entry point", async () => {
