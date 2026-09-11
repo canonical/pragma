@@ -47,7 +47,10 @@ describe("DataTable SSR", () => {
         ]}
       />,
     );
-    expect(html).toContain("--data-table-columns:40px minmax(120px, 2fr) 80px");
+    // The data columns only: the selection track is the stylesheet's, and
+    // `dense` is what sets the density channel.
+    expect(html).toContain("--data-table-columns:minmax(120px, 2fr) 80px");
+    expect(html).toContain('class="ds data-table dense"');
     expect(html).toContain('role="table"');
     expect(html).toContain('aria-label="Machines"');
     expect(html).toContain('role="separator"');

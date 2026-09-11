@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 import { useEffect, useLayoutEffect, useRef } from "react";
 import type { ResizeHandleProps } from "./types.js";
 
-const componentCssClassName = "ds data-table-resize";
+const componentCssClassName = "ds data-table-resize-handle";
 
 /** How far one keyboard step moves a column edge. */
 const KEYBOARD_STEP = 16;
@@ -29,7 +29,7 @@ const reveal = (control: HTMLElement): void => {
 };
 
 /**
- * One column's resize control.
+ * One column's resize handle.
  *
  * Pointer dragging and the keyboard drive the same commands and the same
  * clamping, so resizing never requires a drag: arrow keys step the edge and
@@ -141,7 +141,7 @@ export default function ResizeHandle({
 
   return (
     // A separator with a value is the resizer's role; it takes its name from
-    // the column header it sits in rather than repeating the column's name.
+    // the header cell it sits in rather than repeating the column's name.
     // biome-ignore lint/a11y/useSemanticElements: <hr>, the semantic separator, cannot carry the resizer's focus, keyboard handlers or aria-valuenow
     <div
       role="separator"

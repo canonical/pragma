@@ -1,9 +1,17 @@
 import type { SortTerm } from "@canonical/dataviews-core";
+import type { IconProps } from "@canonical/react-ds-global";
+import { Icon } from "@canonical/react-ds-global";
 import type { ReactElement } from "react";
 import { ResizeHandle } from "../ResizeHandle/index.js";
 import type { HeaderCellProps } from "./types.js";
 
-const componentCssClassName = "ds data-table-column-header";
+const componentCssClassName = "ds data-table-header-cell";
+
+/** The applied ordering's icon. A column at rest shows none. */
+const sortIcon: Readonly<Record<SortTerm["direction"], IconProps["icon"]>> = {
+  asc: "chevron-up",
+  desc: "chevron-down",
+};
 
 /**
  * The next ordering for one column: unsorted becomes ascending, ascending
@@ -24,9 +32,12 @@ const nextSort = (
 };
 
 /**
- * One column header. `aria-sort` describes the applied ordering, so it is
+ * One header cell. `aria-sort` describes the applied ordering, so it is
  * absent on a column that does not offer sorting rather than claiming
- * "none" about an ordering it cannot change.
+ * "none" about an ordering it cannot change. The chevron beside the label
+ * repeats it for the eye and is hidden from assistive technology.
+ *
+ * @implements ds:apps.subcomponent.data_table-header_cell
  */
 export default function HeaderCell({
   column,
@@ -49,7 +60,7 @@ export default function HeaderCell({
         : "descending";
   return (
     // biome-ignore lint/a11y/useSemanticElements: <th> is only valid inside a <table>, and this grid is deliberately not one
-    // biome-ignore lint/a11y/useFocusableInteractive: the header is structure, not a widget — its sort button and resize control carry the focus
+    // biome-ignore lint/a11y/useFocusableInteractive: the header is structure, not a widget — its sort button and resize handle carry the focus
     <div
       role="columnheader"
       className={componentCssClassName}
@@ -65,6 +76,7 @@ export default function HeaderCell({
           }}
         >
           <span className="label">{column.header}</span>
+          {sort === undefined ? null : <Icon icon={sortIcon[sort.direction]} />}
         </button>
       ) : (
         <span id={labelId} className="label">

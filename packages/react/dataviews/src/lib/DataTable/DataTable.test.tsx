@@ -171,7 +171,7 @@ describe("DataTable", () => {
       id: "machines",
     });
     const table = screen.getByRole("table", { name: "Machines" });
-    expect(table.className).toBe("ds data-table host");
+    expect(table.className).toBe("ds data-table dense host");
     expect(table.style.opacity).toBe("0.5");
     expect(table.id).toBe("machines");
   });
@@ -377,6 +377,11 @@ describe("DataTable", () => {
     const [sortable, plain] = screen.getAllByRole("columnheader");
     expect(sortable).toHaveAttribute("aria-sort", "none");
     expect(plain).not.toHaveAttribute("aria-sort");
+    // The chevron repeats the order for the eye, hidden from assistive
+    // technology; a column at rest shows none.
+    const glyph = () =>
+      screen.getAllByRole("columnheader")[0].querySelector("svg");
+    expect(glyph()).toBeNull();
 
     const button = within(sortable).getByRole("button", { name: "Name" });
     fireEvent.click(button);
@@ -387,11 +392,21 @@ describe("DataTable", () => {
       "aria-sort",
       "ascending",
     );
+    expect(glyph()).toHaveAttribute("aria-hidden", "true");
+    expect(glyph()?.querySelector("use")).toHaveAttribute(
+      "href",
+      expect.stringMatching(/#chevron-up$/),
+    );
+    expect(button).toHaveAccessibleName("Name");
 
     fireEvent.click(button);
     expect(screen.getAllByRole("columnheader")[0]).toHaveAttribute(
       "aria-sort",
       "descending",
+    );
+    expect(glyph()?.querySelector("use")).toHaveAttribute(
+      "href",
+      expect.stringMatching(/#chevron-down$/),
     );
 
     fireEvent.click(button);
@@ -400,6 +415,7 @@ describe("DataTable", () => {
       "aria-sort",
       "none",
     );
+    expect(glyph()).toBeNull();
   });
 
   it("shows the loading, no-data and no-results outcomes and lets the caller replace them", () => {
@@ -731,6 +747,110 @@ describe("DataTable", () => {
     ).toThrow('unknown column id "status"');
   });
 
+  it("leaves the selection track to the stylesheet, and its width to no column", () => {
+    // Each observation keeps the element it watches, so the container and
+    // the selection cell are reported separately.
+    const observed: {
+      readonly target: Element;
+      readonly callback: ResizeObserverCallback;
+    }[] = [];
+    class StubObserver {
+      readonly #callback: ResizeObserverCallback;
+      constructor(callback: ResizeObserverCallback) {
+        this.#callback = callback;
+      }
+      observe(target: Element): void {
+        observed.push({ target, callback: this.#callback });
+      }
+      unobserve(): void {}
+      disconnect(): void {}
+    }
+    vi.stubGlobal("ResizeObserver", StubObserver);
+    const report = (
+      matches: (target: Element) => boolean,
+      width: number,
+    ): void => {
+      act(() => {
+        for (const { target, callback } of observed) {
+          if (matches(target)) {
+            callback(
+              [{ contentRect: { width } }] as unknown as ResizeObserverEntry[],
+              {} as ResizeObserver,
+            );
+          }
+        }
+      });
+    };
+    // jsdom lays nothing out: the selection cell reads the width the
+    // stylesheet would give its track, and every other element none.
+    let selectionWidth = 32;
+    const measured = vi
+      .spyOn(HTMLElement.prototype, "offsetWidth", "get")
+      .mockImplementation(function (this: HTMLElement) {
+        return this.matches(".selection") ? selectionWidth : 0;
+      });
+    try {
+      const provider = makeProvider();
+      const view = (selectable: boolean) => (
+        <DataTable
+          provider={provider}
+          columns={[
+            { id: "name", header: "Name", sizing: { kind: "fixed", px: 100 } },
+            {
+              id: "status",
+              header: "Status",
+              sizing: { kind: "flex", weight: 1, minPx: 50 },
+            },
+          ]}
+          label="Machines"
+          selectable={selectable}
+        />
+      );
+      const { rerender } = render(view(true));
+      const table = screen.getByRole("table", { name: "Machines" });
+      report((target) => target === table, 400);
+      // No track for the selection column in the published list: the
+      // columns share what its 32px leave of the 400.
+      expect(table.style.getPropertyValue("--data-table-columns")).toBe(
+        "100px 268px",
+      );
+      // The track is sized in rem: a root font-size change moves it with
+      // no change to the container, and the columns follow.
+      // The report only says the cell resized: its width is read again from
+      // the cell's layout, never taken from the entry.
+      selectionWidth = 40;
+      report((target) => target.matches(".selection"), 0);
+      expect(table.style.getPropertyValue("--data-table-columns")).toBe(
+        "100px 260px",
+      );
+      rerender(view(false));
+      expect(table.style.getPropertyValue("--data-table-columns")).toBe(
+        "100px 300px",
+      );
+    } finally {
+      measured.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("publishes no track list for a table with no columns", () => {
+    // `none` would invalidate the stylesheet's selectable template; with
+    // nothing published, the selection track stands alone.
+    render(
+      <DataTable
+        provider={makeProvider()}
+        columns={[]}
+        label="Machines"
+        selectable
+      />,
+    );
+    expect(
+      screen
+        .getByRole("table", { name: "Machines" })
+        .style.getPropertyValue("--data-table-columns"),
+    ).toBe("");
+  });
+
   it("resolves pixel tracks once the container reports a width", () => {
     const notified: ResizeObserverCallback[] = [];
     let disconnected = 0;
@@ -897,25 +1017,49 @@ describe("DataTable", () => {
       reset: declared.reset,
       toColumns: declared.toColumns,
     };
-    const { unmount } = render(
-      <StrictMode>
-        <DataTable
-          provider={observed}
-          columns={columns}
-          label="Machines"
-          presentation={presentation}
-        />
-      </StrictMode>,
-    );
-    load(observed, [machine("m-1", "alpha")]);
-    // The rows still arrive: the double-invoked mount left one live
-    // registry, not a disposed one.
-    expect(screen.getAllByRole("cell").map((cell) => cell.textContent)).toEqual(
-      ["alpha", "running"],
-    );
-    unmount();
-    expect(rowSubscriptions).toBe(0);
-    expect(presentationSubscriptions).toBe(0);
+    // Elements under observation, across every observer the table creates:
+    // its container's and its selection cell's.
+    let observing = 0;
+    class CountingObserver {
+      #live = 0;
+      observe(): void {
+        this.#live += 1;
+        observing += 1;
+      }
+      unobserve(): void {}
+      disconnect(): void {
+        observing -= this.#live;
+        this.#live = 0;
+      }
+    }
+    vi.stubGlobal("ResizeObserver", CountingObserver);
+    try {
+      const { unmount } = render(
+        <StrictMode>
+          <DataTable
+            provider={observed}
+            columns={columns}
+            label="Machines"
+            presentation={presentation}
+            selectable
+          />
+        </StrictMode>,
+      );
+      load(observed, [machine("m-1", "alpha")]);
+      // The rows still arrive: the double-invoked mount left one live
+      // registry, not a disposed one.
+      expect(
+        screen.getAllByRole("cell").map((cell) => cell.textContent),
+      ).toEqual(["", "alpha", "running"]);
+      // The rehearsal's observers were released; one per element remains.
+      expect(observing).toBe(2);
+      unmount();
+      expect(rowSubscriptions).toBe(0);
+      expect(presentationSubscriptions).toBe(0);
+      expect(observing).toBe(0);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("renders no row and no cell again for a live resize preview", () => {

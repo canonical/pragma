@@ -7,6 +7,8 @@ import * as Stories from "./DataTable.stories";
 
 `DataTable` renders the rows of one collection and nothing else: it does not fetch, own the URL or decide where views persist. A provider owns the collection's query, result and selection; a source binding feeds it; the table reads it. Each recipe below is the smallest complete code for one job, followed by the live story that shows it.
 
+The table is dense wherever it sits: its root carries the design system's `.dense` class, and its rows and cells take their height and padding from the density channel of `@canonical/styles`, so load that stylesheet on the page. Its sort chevrons and checkbox marks are `@canonical/ds-assets` icons, which the page serves at `/icons`, as for every other design-system icon.
+
 ## A table over a provider
 
 Build the provider once and keep it for the table's lifetime. The binding is different: it subscribes to the provider, so it belongs in an effect that disposes it — a render React throws away must never leave a subscription behind. Ask for the first page only while nothing has been asked yet: StrictMode runs the effect twice in development, and the second run finds the first page already requested. From then on every sort, search or page change issues its own request. The source declares every field it can filter and sort, and the provider is told that declaration through `capabilities`, so the table and the filters offer only what the source can run.
@@ -81,7 +83,7 @@ const columns: readonly DataTableColumn[] = [
 
 ## Sorting
 
-Mark a column `sortable` only when its source declares that field sortable, and pass the source's declaration to the provider as `capabilities`: the table reads it, and a sortable column on a provider created without it throws. A source refuses a query carrying a sort term it never declared, so a heading offering that sort would be a control that does nothing. The heading cycles ascending, descending, then back to the source's own order, and reports it through `aria-sort`.
+Mark a column `sortable` only when its source declares that field sortable, and pass the source's declaration to the provider as `capabilities`: the table reads it, and a sortable column on a provider created without it throws. A source refuses a query carrying a sort term it never declared, so a heading offering that sort would be a control that does nothing. The heading cycles ascending, descending, then back to the source's own order, and reports it through `aria-sort`. An ordered heading shows a chevron — up for ascending, down for descending — and an unordered one shows none; the chevron repeats the order for the eye, and `aria-sort` is what carries it to assistive technology.
 
 ```tsx
 import { createDataViewsProvider } from "@canonical/dataviews-core";
@@ -108,7 +110,7 @@ const columns: readonly DataTableColumn[] = [
 
 ## Selection
 
-`selectable` adds a leading column of real checkboxes backed by the provider's selection. Name each record with `rowLabel`, so a checkbox says which machine it selects rather than which position it holds. The header checkbox acts on the rows the reader can see, and leaves a selection made on another page alone.
+`selectable` adds a leading 32px column of the design system's `CheckboxInput`, backed by the provider's selection; the column's width is the stylesheet's, and the data columns share what it leaves. Name each record with `rowLabel`, so a checkbox says which machine it selects rather than which position it holds. The header checkbox acts on the rows the reader can see, and leaves a selection made on another page alone.
 
 ```tsx
 import { createDataViewsProvider } from "@canonical/dataviews-core";

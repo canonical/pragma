@@ -4,16 +4,22 @@
   /**
    * DataTable styles
    *
-   * The table is a stack of div rows, each a CSS grid consuming one shared
-   * track list the container publishes as `--data-table-columns`. That one
-   * custom property is the whole of the geometry this component writes
-   * inline: the solver derives it per render from the measured container,
-   * which no stylesheet can know. Everything else about the layout is here.
+   * The specification is the anatomy beside the code: `DataTable.anatomy.yaml`
+   * and the files beside HeaderCell and BodyCell. Every value below is one it
+   * binds; what it could not bind is recorded there, never hardcoded here.
    *
-   * Every colour, space, border and type value below is read from
-   * @canonical/design-tokens; the component mints no name of its own for any
-   * of them. Line height comes from the `.app` typography scope the table
-   * assumes.
+   * The table is a stack of div rows, each a CSS grid. The solver publishes
+   * the data columns' tracks on the container as `--data-table-columns`: that
+   * one custom property is the whole of the geometry this component writes
+   * inline, derived per render from the measured container, which no
+   * stylesheet can know. Everything else about the layout is here, the
+   * selection column included.
+   *
+   * Colour, border, type and spacing come from @canonical/design-tokens. Row
+   * height and cell padding come from the density channel of
+   * @canonical/styles: the root carries the design system's `.dense`, so the
+   * table is dense wherever it sits, and it defines no density rule of its
+   * own.
    */
   .ds.data-table {
     /* The columns are authoritative: when their total no longer fits, the
@@ -26,7 +32,9 @@
     font-family: var(--typography-text-primary-font-family);
     font-size: var(--typography-text-primary-font-size);
     font-weight: var(--typography-text-primary-font-weight);
-    background-color: var(--color-background);
+    /* The surface it sits on, so a table inside a layered surface steps its
+       background with it. */
+    background-color: var(--surface-color-background, var(--color-background));
     border: var(--dimension-stroke-thickness-medium) solid
       var(--color-border-muted);
   }
@@ -51,9 +59,22 @@
 
   .ds.data-table-row {
     display: grid;
-    /* The one geometry publication: written on the container, read here. */
-    grid-template-columns: var(--data-table-columns);
+    /* The one geometry publication, written on the container and read here.
+       The line after the data columns is named for the actions column a
+       later part places there; nothing follows it yet. */
+    grid-template-columns: var(--data-table-columns,) [actions];
     align-items: center;
+    /* A minimum, not a height: a cell taller than the density line — a
+       second line of text, once cells offer one — grows its row rather than
+       clipping. */
+    min-block-size: var(--density-line-height-effective);
+  }
+
+  /* The status row holds one cell for the whole table: a block, so its
+     message spans the table whatever tracks the rows have — even a
+     selectable table with no columns, whose rows have one 32px track. */
+  .ds.data-table-row.status {
+    display: block;
   }
 
   .ds.data-table-row-group.body > .ds.data-table-row {
@@ -80,31 +101,44 @@
     }
   }
 
-  .ds.data-table-cell,
-  .ds.data-table-column-header {
+  /* The selection column is this stylesheet's own track, ahead of the solved
+     ones, in a table whose header holds the select-all cell. The table reads
+     its width back from the cell it sizes, and the solver shares what is
+     left among the data columns. */
+  .ds.data-table:has(
+      > .ds.data-table-row-group.header
+        > .ds.data-table-row
+        > .ds.data-table-header-cell.selection
+    )
+    > .ds.data-table-row-group
+    > .ds.data-table-row {
+    grid-template-columns: var(--dimension-400) var(--data-table-columns,) [actions];
+  }
+
+  .ds.data-table-body-cell,
+  .ds.data-table-header-cell {
     /* A grid item's automatic minimum size is its content, which would let
        one long value widen the track the solver just sized. Zero here. */
     min-inline-size: 0;
-    padding-block: var(--dimension-100);
-    padding-inline: var(--dimension-100);
+    padding-inline: var(--density-padding-inline);
   }
 
-  .ds.data-table-cell {
-    /* A value too long for its column ellipsizes rather than wrapping the
-       row out of the shared track list — clipped without the cell becoming
-       a scroll container. A cell renderer that wants other behaviour
-       overrides these on its own content. */
+  .ds.data-table-body-cell {
+    /* One line: a value too long for its column ellipsizes rather than
+       wrapping the row out of the shared track list — clipped without the
+       cell becoming a scroll container. A cell renderer that wants other
+       behaviour overrides these on its own content. */
     overflow: clip;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .ds.data-table-resize {
-    /* Pushed to the trailing edge of the heading and stretched to the
-       height of its content box. */
+  .ds.data-table-resize-handle {
+    /* Pushed to the trailing edge of the header cell and stretched to its
+       height: the whole strip is the pointer target. */
     flex: none;
     align-self: stretch;
-    width: var(--dimension-200);
+    inline-size: var(--dimension-200);
     margin-inline-start: auto;
     position: relative;
     cursor: col-resize;
@@ -114,18 +148,15 @@
     touch-action: none;
     user-select: none;
 
-    /* The strip itself shows nothing; this draws the boundary line centred
-       in it. */
+    /* The mark the strip shows: the design's hairline, as wide as the large
+       stroke and as tall as a line of text, centred in the target. */
     &::after {
       content: "";
       position: absolute;
-      inset-block: 0;
-      inset-inline-start: calc(
-        50% -
-        var(--dimension-stroke-thickness-medium) /
-        2
-      );
-      width: var(--dimension-stroke-thickness-medium);
+      inset: 0;
+      margin: auto;
+      inline-size: var(--dimension-stroke-thickness-large);
+      block-size: var(--dimension-250);
       background-color: var(--color-border-muted);
     }
 
@@ -141,33 +172,37 @@
     }
   }
 
-  .ds.data-table-column-header {
+  .ds.data-table-header-cell {
     display: flex;
     align-items: center;
+    /* The row's full height, so the resize target at its edge is too. */
+    align-self: stretch;
     gap: var(--dimension-050);
     font-weight: var(--typography-text-primary-bold-font-weight);
-    /* A heading never clips: its label and sort control clip themselves,
-       and the resize control at its edge must stay reachable however narrow
+    /* A header cell never clips: its label and sort control clip themselves,
+       and the resize handle at its edge must stay reachable however narrow
        the column gets. */
     overflow: visible;
 
-    /* The resize control carries the trailing inset itself, so a heading
+    /* The resize handle carries the trailing inset itself, so a header cell
        that has one does not pay for that padding twice. */
-    &:has(> .ds.data-table-resize) {
+    &:has(> .ds.data-table-resize-handle) {
       padding-inline-end: 0;
     }
 
-    /* The heading's text ellipsizes. In a sortable heading it sits inside
-       the sort control, which shrinks with it, so the indicator stays in
-       view when the text does not fit. */
-    & .label {
+    /* The header cell's own text ellipsizes — never a caller's content inside
+       it. In a sortable header cell it sits inside the sort control, which
+       shrinks with it, so the indicator stays in view when the text does
+       not fit. */
+    & > .sort > .label,
+    & > .label {
       min-inline-size: 0;
       overflow: clip;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    /* The sort control is the heading's text: it inherits the type rather
+    /* The sort control is the header cell's text: it inherits the type rather
        than looking like a button that happens to sit in a table. */
     & > .sort {
       display: flex;
@@ -183,48 +218,26 @@
       border: none;
       cursor: pointer;
 
-      /* Inset in full: the heading clips anything drawn outside it. */
+      /* Inset in full: the header cell clips anything drawn outside it. */
       &:focus-visible {
         outline: var(--dimension-stroke-thickness-large) solid
           var(--color-focus-ring, currentColor);
         outline-offset: calc(-1 * var(--dimension-stroke-thickness-large));
       }
 
-      /* A triangle drawn from borders rather than a glyph, so the indicator
-         never depends on a font carrying one. It is present but invisible
-         on an unsorted column, so applying a sort moves no heading. */
-      &::after {
-        content: "";
+      /* The applied ordering's chevron, which never shrinks as the label
+         does. An unsorted column shows none. */
+      & > .ds.icon {
         flex: none;
-        width: 0;
-        height: 0;
-        border-inline: var(--dimension-050) solid transparent;
-        border-block-end: var(--dimension-050) solid currentColor;
-        opacity: 0;
       }
-
-      /* Hovering a sortable heading says the sort is available, without
-         claiming an ordering the column does not have. */
-      &:hover::after {
-        opacity: 0.5;
-      }
-    }
-
-    &[aria-sort="ascending"] > .sort::after,
-    &[aria-sort="descending"] > .sort::after {
-      opacity: 1;
-    }
-
-    &[aria-sort="descending"] > .sort::after {
-      transform: rotate(180deg);
     }
   }
 
   /* The selection column, in the header and in every row: one checkbox,
-     centred in its fixed track. Overflow is visible so a focus ring on the
+     centred in its track. Overflow is visible so a focus ring on the
      checkbox is not clipped by the cell that holds it. */
-  .ds.data-table-cell.selection,
-  .ds.data-table-column-header.selection {
+  .ds.data-table-body-cell.selection,
+  .ds.data-table-header-cell.selection {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -234,7 +247,7 @@
 
   /* The one no-rows outcome: a single cell spanning every track, saying
      which of the four it is. */
-  .ds.data-table-cell.status {
+  .ds.data-table-body-cell.status {
     grid-column: 1 / -1;
     padding-block: var(--dimension-300);
     color: var(--color-text-muted);

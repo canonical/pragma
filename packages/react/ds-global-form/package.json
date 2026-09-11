@@ -2,6 +2,10 @@
   "name": "@canonical/react-ds-global-form",
   "version": "0.37.0",
   "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "main": "dist/esm/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
   "style": "dist/esm/index.css",

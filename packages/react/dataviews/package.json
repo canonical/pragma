@@ -53,6 +53,9 @@
   },
   "dependencies": {
     "@canonical/dataviews-core": "^0.37.0",
+    "@canonical/react-ds-global": "^0.37.0",
+    "@canonical/react-ds-global-form": "^0.37.0",
+    "@canonical/styles": "^0.37.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
@@ -61,7 +64,6 @@
     "@canonical/biome-config": "^0.37.0",
     "@canonical/design-tokens": "0.10.0",
     "@canonical/storybook-config": "^0.37.0",
-    "@canonical/styles": "^0.37.0",
     "@canonical/typescript-config": "^0.37.0",
     "@canonical/typescript-config-react": "^0.37.0",
     "@canonical/vitest-config-react": "^0.37.0",
