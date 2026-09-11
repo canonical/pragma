@@ -1,0 +1,119 @@
+---
+# DataTable.ActionBar — what can be done with the current selection: how much
+# is selected, the actions that apply to it, and the way to clear it.
+#
+# Anatomy DSL 0.3.0. No validator runs on this file yet: it is checked in
+# review against the DSL's JSON schema. Pinned props on a named node
+# (`props:`) are 0.3.0's; older schemas refuse them. The root carries the
+# design-system graph's IRI. It is rendered by the connected part
+# `DataViews.Actions`, which keeps the composition's name; the graph's block
+# is the design of that part's default UI.
+#
+# Names — one per part, the same in the design, the DOM and here:
+#   action bar           design "Action bar"   graph "DataTable.ActionBar"
+#                                              DOM `ds data-table-action-bar contrasted`
+#   selection indicator  design "Selection menu"   DOM `.indicator`
+#   actions              design "Actions slot"     the part's children
+#   deselect             design "Action bar icon button"   DOM `.deselect`
+#
+# Tokens are `/`-paths over `@canonical/design-tokens` 0.10.0 ids. The
+# indicator's inset reads the `@canonical/styles` density channel
+# (`density/padding-inline`, `--density-padding-inline`), and the deselect's
+# square the density line (`density/line-height-effective`); the DSL cannot
+# name a channel, so the path does and this note records it.
+#
+# The deselect button and the actions a caller places are the design system's
+# Button. The Button reads `color/text` for its label rather than the surface
+# text channel, so on this surface the bar sets the Button's own text channel
+# (`--button-color-text`) to `--surface-color-text`. A tertiary Button's ghost
+# fill already reads the surface channel. A destructive action (the design's
+# red Delete) is the Button's `destructive` anticipation, whose ghost fill and
+# text do not read the surface channel: on this surface it paints the light
+# theme's destructive ghost fill and `color/text/destructive`, where the design
+# draws the dark theme's #f53e45 text on the bar itself. Recorded against the
+# Button, not restyled here.
+#
+# The deselect button is icon-only, and an icon-only Button collapses to its
+# icon, because the Button seats its height on a label. The bar holds it to a
+# square of the density line with its icon centred, and sets its trailing
+# padding to `dimension/100` through the Button's own padding channel, as the
+# pagination bar does its buttons. The design draws a 24×24 icon button in a
+# 36×36 frame.
+#
+# Deviations the DSL cannot express, recorded here:
+#   - The contrasted surface: the root carries `.contrasted`, from the
+#     `ds.surfaces` layer of `@canonical/styles`, and the bar reads the surface
+#     channel it sets — `--surface-color-background` and `--surface-color-text`,
+#     falling back to `color/background` and `color/text`. In the light theme
+#     they resolve to `color/background/contrasted` and
+#     `color/text/contrasted`. The design binds the dark theme's values
+#     instead (`color/foreground/ghost/layer2` #131313, `color/text` #ffffff),
+#     the same polarity. The bar has no token of its own.
+#   - The bar is absent while nothing is selected; conditional display is
+#     deferred in the DSL. The design has it overlay the footer; placing it
+#     is the composition's, not the part's.
+#   - The design's selection indicator is a menu opening the persistent
+#     selection panel ("Current selection menu", hidden). The panel is a
+#     follow-up part, and a portal, which the DSL defers. Until it ships the
+#     indicator is the count; a caller may replace it.
+#   - The design's actions are ghost text buttons, the last with an icon; the
+#     graph allows at most seven. The part renders what it is given.
+#
+# States:
+#   - The indicator's count changes with the selection's size.
+#   - The deselect button's hover, active and focus states are the Button's
+#     own.
+#
+# Accessibility (DataViews component coverage):
+#   action bar, actions  "Actions/confirmation/outcome" (2.1.1, 2.4.3, 3.3.4,
+#                        4.1.2-4.1.3). The bar is a named group. Each action
+#                        reads the selection when activated, so its targets
+#                        are the ones selected at that moment. When the bar
+#                        leaves with the focus inside it, the focus returns to
+#                        the control it entered the bar from.
+#   selection indicator  "Summary" (1.3.1, 4.1.3): a polite status counting
+#                        the whole selection, across pages, not the rows on
+#                        screen. It mounts with the bar, so its first count is
+#                        not announced; the checkbox that made it announces its
+#                        own state.
+#   deselect             "Row/select-all checkboxes" (4.1.2): named with the
+#                        count it clears ("Deselect 5 items").
+node:
+  uri: apps.subcomponent.data_table-action_bar
+  styles:
+    layout.type: stack
+    layout.direction: row
+    layout.align: center
+    typography.color: color/text
+    typography.family: typography/text/primary/font-family
+    typography.size: typography/text/primary/font-size
+    typography.weight: typography/text/primary/font-weight
+    appearance.background: color/background
+  edges:
+    # The count by default; a caller's own indicator replaces it.
+    - switch:
+        "on": override
+        cases:
+          - node:
+              role: selection indicator
+              styles:
+                spacing.internal.inline: density/padding-inline
+          - uri: $custom
+      relation:
+        cardinality: "1"
+        slotName: indicator
+    - uri: global.component.button
+      relation:
+        cardinality: "0..*"
+        slotName: default
+    - node:
+        uri: global.component.button
+        props:
+          importance: tertiary
+          icon: close
+        styles:
+          size.min.width: density/line-height-effective
+          size.min.height: density/line-height-effective
+      relation:
+        cardinality: "1"
+        slotName: deselect
