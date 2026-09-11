@@ -3,10 +3,15 @@
  *
  * <%= description || 'TODO: Add description' %>
  */
-<% if (declaresComponentLayer) { %>
-/* This package is a sub-tier of the design system's component tiers, so it
- * declares its own layer: the styles package's order statement names the five
- * second-level tiers, and cannot know a product's name. First rule in the
- * entry, so the layer is placed before any sheet writes into it. */
-@layer <%= componentLayer %>;
+<% if (componentLayer) { %><% if (layerOrderFrom) { %>
+/* The layer order first, then this package's layer. A layer takes its place
+ * the moment a browser first meets its name, so a name met before the order is
+ * read is placed below the layers that order declares. Which file a bundler
+ * emits first is not something this package can control from inside itself;
+ * reading the order here settles it. Reading it twice costs nothing: an order
+ * statement can add names, never reorder the ones already fixed. */
+@import url("<%= layerOrderFrom %>");
+<% } else { %>
+/* This package's layer, declared before any sheet writes into it. */
+<% } %>@layer <%= componentLayer %>;
 <% } %>

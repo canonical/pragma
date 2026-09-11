@@ -19,6 +19,12 @@ export interface PackageAnswers {
   withPrTemplate: boolean;
   /** Run package manager install after creation */
   runInstall: boolean;
+  /** The cascade layer this package's stylesheets are wrapped in, if it has one.
+   * The generator copies the name and holds no opinion about it. */
+  componentLayer?: string;
+  /** A stylesheet declaring the layer order, imported before the layer is
+   * declared, so the name is placed after the ones that file fixes. */
+  layerOrderFrom?: string;
 }
 
 export interface MonorepoInfo {
@@ -27,10 +33,10 @@ export interface MonorepoInfo {
 }
 
 export interface TemplateContext {
-  /** The cascade layer this package's component stylesheets sit in */
-  componentLayer: string;
-  /** Whether this package must declare that layer itself (a sub-tier package) */
-  declaresComponentLayer: boolean;
+  /** The cascade layer this package's stylesheets sit in, if it stated one */
+  componentLayer?: string;
+  /** The stylesheet whose order statement the entry reads first, if it stated one */
+  layerOrderFrom?: string;
   /** Package short name (without scope) */
   shortName: string;
   /** Full package name (as entered, e.g., @canonical/my-package) */

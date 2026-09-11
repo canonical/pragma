@@ -11,9 +11,10 @@ import type { BaseComponentAnswers, TemplateContext } from "./types.js";
  * generators that do not offer SSR tests (lit) can pass their honest answer
  * shape; the context defaults it to false.
  *
- * `componentLayer` is not an answer: an author cannot be expected to know
- * which cascade layer the package they are scaffolding into belongs to, and a
- * wrong one is silent. It is read from the target package instead.
+ * `componentLayer` is not an answer: the package being generated into states
+ * the layer its stylesheets belong in, and an author cannot be expected to
+ * repeat it correctly at every prompt. Where the package states none, the
+ * stylesheet is generated without a layer wrapper.
  *
  * @note Impure — resolveComponentLayer reads the working directory.
  */
@@ -28,6 +29,6 @@ export default function createTemplateContext(
     withStyles: answers.withStyles,
     withStories: answers.withStories,
     withSsrTests: answers.withSsrTests ?? false,
-    componentLayer: resolveComponentLayer(),
+    componentLayer: resolveComponentLayer().componentLayer,
   };
 }

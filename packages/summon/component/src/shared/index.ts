@@ -9,9 +9,9 @@ export * from "./file-operations/index.js";
 export { PACKAGE_NAME } from "./packageName.js";
 export { packageVersion } from "./packageVersion.js";
 export {
-  componentLayerFor,
   default as resolveComponentLayer,
-  GLOBAL_COMPONENT_LAYER,
+  layerSettingsFrom,
+  type SummonLayerSettings,
 } from "./resolveComponentLayer.js";
 export { default as sharedPrompts } from "./sharedPrompts.js";
 export * from "./string-helpers/index.js";

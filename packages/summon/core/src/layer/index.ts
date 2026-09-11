@@ -1,6 +1,5 @@
 export {
-  COMPONENT_TIER_LAYERS,
-  componentLayerFor,
-  GLOBAL_COMPONENT_LAYER,
-  isSubTierLayer,
+  layerSettingsFrom,
+  type ManifestWithLayer,
+  type SummonLayerSettings,
 } from "./componentLayer.js";
