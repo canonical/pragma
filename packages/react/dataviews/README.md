@@ -37,86 +37,12 @@ The sheet is in the `ds.components.global` cascade layer and reads its colours, 
 
 ## DataTable recipes
 
-### A table over a provider
+The recipes, with consumer code and the live stories beside them, are the Storybook page **_work_in_progress / DataTable / Recipes** — under **DataViews** in the Storybook hub — source in [`src/lib/DataTable/DataTable.mdx`](src/lib/DataTable/DataTable.mdx):
 
-```tsx
-const columns = [
-  { id: "name", header: "Name", sortable: true },
-  { id: "status", header: "Status" },
-];
-
-<DataTable provider={provider} columns={columns} label="Machines" />;
-```
-
-Every column shows the record field named by its id. `field` names a different
-one. Primitive values render as text; anything else needs a renderer.
-
-### One column with its own content
-
-```tsx
-const Status = ({ value }: DataTableCellProps) => (
-  <Chip criticality={value === "failed" ? "error" : "success"} value={String(value)} />
-);
-
-const columns = [
-  { id: "name", header: "Name" },
-  { id: "status", header: "Status", cell: Status },
-];
-```
-
-The renderer runs inside its cell's scope, so it may call `useDataViewsCell`
-for the row's channels — the whole record, another field, or the row's
-selection — without the table handing every cell a copy of the record.
-
-### Selection
-
-```tsx
-<DataTable
-  provider={provider}
-  columns={columns}
-  label="Machines"
-  selectable
-  rowLabel={(row) => row.name}
-/>
-```
-
-Real checkboxes, backed by the provider's selection. The header control acts
-on the displayed rows and leaves a selection made elsewhere alone; `rowLabel`
-names each record so its checkbox says which row it is.
-
-### Sizing and resizing
-
-```tsx
-const columns = [
-  { id: "select", header: "", sizing: { kind: "fixed", px: 40 } },
-  { id: "name", header: "Name", sizing: { kind: "flex", weight: 2, minPx: 160 }, resizable: true },
-  { id: "status", header: "Status", sizing: { kind: "flex", weight: 1, minPx: 96, maxPx: 240 } },
-];
-```
-
-Fixed columns keep their width, flexible ones compress within their bounds,
-and the table scrolls horizontally once the remainder no longer fits. The last
-column takes whatever width the others leave, past its own maximum when there
-is room to spare. Resizing works from the pointer
-and from the keyboard — arrow keys step the edge, Escape abandons a drag — and
-a user-fixed width is never quietly shrunk to suit the viewport. Every resize
-is held to the column's declared `minPx` and `maxPx`, however often it has
-been resized, and a column widened past the container scrolls the table to
-keep its edge in view. The last column has no resize control, even when it is
-declared `resizable`: its trailing edge is the table's own edge, with nothing
-beyond it to resize against. Pass a shared `presentation` to give two tables on one
-provider the same user arrangement.
-
-### Empty, loading and failed
-
-```tsx
-<DataTable
-  provider={provider}
-  columns={columns}
-  label="Machines"
-  renderStatus={(status) => <EmptyState kind={status.kind} />}
-/>
-```
-
-The four outcomes stay distinct: nothing displayable yet, a failed read, an
-unfiltered collection with nothing in it, and a query that matched nothing.
+- **A table over a provider** — build the provider once and bind the source in an effect.
+- **Columns and sizing** — fixed and flexible widths, bounds, and the last column taking the rest.
+- **Sorting** — offer a sort only on a field the source declares.
+- **Selection** — real checkboxes named by `rowLabel`; select-all acts on the displayed rows.
+- **Resizing and its limits** — held to the declared bounds; no control on the last column; one shared `presentation` gives two tables on a provider the same arrangement.
+- **A cell that reads its own scope** — a renderer reading its row's channels.
+- **The four outcomes** — loading, failed, empty and no match, and `renderStatus`.
