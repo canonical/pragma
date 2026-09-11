@@ -1,22 +1,24 @@
-import type { NavItem } from "../../lib/SideNavigation/types.js";
+import type { ContextSwitcherItem } from "../../lib/SideNavigation/common/ContextSwitcher/types.js";
+import { createHelpItem } from "../../lib/SideNavigation/helpItem.js";
+import type {
+  FooterRoot,
+  LeafNavItem,
+  NavRoot,
+} from "../../lib/SideNavigation/types.js";
 import { MockBadge } from "./story-utils.js";
 
 /**
- * Story fixtures for SideNavigation. Story-only (this folder is excluded from
- * the package build); tests define their own minimal fixtures inline.
+ * Story fixtures for SideNavigation. Story-only (this folder is excluded
+ * from the package build); tests define their own minimal fixtures inline.
  *
- * Each fixture is a root `NavItem`: the root node itself is not rendered. Its
- * direct children are **level-1 groups** (a label renders as a group header;
- * no label → no header). Group children (level 2) are the navigable leaves
- * (`url`) — these may carry a leading `icon` and, for leaves, a trailing `slot`
- * (e.g. a badge).
- *
- * The MAAS and LXD trees mirror the real left-hand navigation of those
- * Canonical apps, to give stories a realistic information architecture.
+ * Each fixture is a `NavRoot` (the root node itself is not rendered): its
+ * direct children are groups, and a group's children are the navigable
+ * leaves, which may carry a leading `icon` and trailing `slot`. The MAAS
+ * and LXD trees mirror those apps' real left-hand navigation.
  */
 
 /** A count badge used in fixtures via a leaf's `slot`. */
-const badge = (value: number | string): NavItem["slot"] => (
+const badge = (value: number | string): LeafNavItem["slot"] => (
   <MockBadge>{value}</MockBadge>
 );
 
@@ -25,9 +27,8 @@ const badge = (value: number | string): NavItem["slot"] => (
 // serves these under a base prefix (e.g. /MAAS/r/...).
 
 /** MAAS main navigation — grouped hardware/KVM/organisation/config/networking. */
-export const maasContentRoot: NavItem = {
+export const maasContentRoot: NavRoot = {
   key: "maas-content-root",
-  label: "MAAS navigation",
   items: [
     {
       key: "hardware",
@@ -79,22 +80,24 @@ export const maasContentRoot: NavItem = {
         },
       ],
     },
+    // The mandatory collapsible "Help" item, with an external link to legal
+    // information (the 24.04 spec §1.1) — an unlabelled trailing group, the common
+    // placement for it.
+    { key: "help-group", items: [createHelpItem("/legal")] },
   ],
 };
 
-/** MAAS footer — admin settings and the logged-in user. */
-export const maasFooterRoot: NavItem = {
+/**
+ * MAAS footer — admin settings and the logged-in user. Flat
+ * `FooterRoot`: the "Log out" row demonstrates the Footer-only button
+ * vocabulary flowing through data (`control`/`onClick`).
+ */
+export const maasFooterRoot: FooterRoot = {
   key: "maas-footer-root",
-  label: "MAAS account",
   items: [
-    {
-      key: "maas-account-group",
-      items: [
-        { url: "/settings", label: "Settings", icon: "settings" },
-        { url: "/account/prefs", label: "Ada Lovelace", icon: "user" },
-        { key: "logout", label: "Log out" },
-      ],
-    },
+    { url: "/settings", label: "Settings", icon: "settings" },
+    { url: "/account/prefs", label: "Ada Lovelace", icon: "user" },
+    { label: "Log out", icon: "log-out", control: "button" },
   ],
 };
 
@@ -102,9 +105,8 @@ export const maasFooterRoot: NavItem = {
 // Mirrors lxd-ui's project-scoped sidebar (default project).
 
 /** LXD main navigation — project-scoped, default project. */
-export const lxdContentRoot: NavItem = {
+export const lxdContentRoot: NavRoot = {
   key: "lxd-content-root",
-  label: "LXD navigation",
   items: [
     {
       key: "lxd-primary",
@@ -178,29 +180,151 @@ export const lxdContentRoot: NavItem = {
         { url: "/ui/settings", label: "Settings", icon: "settings" },
       ],
     },
+    // The mandatory collapsible "Help" item, with an external link to legal
+    // information (the 24.04 spec §1.1) — an unlabelled trailing group.
+    {
+      key: "help-group",
+      items: [createHelpItem("/legal")],
+    },
   ],
 };
 
-/** LXD footer — user, docs, and external links. */
-export const lxdFooterRoot: NavItem = {
+/** LXD footer — user label, docs link, and action buttons. */
+export const lxdFooterRoot: FooterRoot = {
   key: "lxd-footer-root",
-  label: "LXD links",
+  items: [
+    { label: "admin", icon: "user" },
+    {
+      url: "https://documentation.ubuntu.com/lxd/",
+      label: "Documentation",
+      icon: "book",
+    },
+    { label: "Report a bug", icon: "bug", control: "button" },
+    { label: "Log out", icon: "log-out", control: "button" },
+  ],
+};
+
+// --- Context switcher (the "with ContextSwitcher" story) ------------------
+
+/**
+ * A content root exercising every content-row shape neither MAAS nor LXD's
+ * fixtures carry: a plain-label row (non-navigable), an `ItemExpandable`
+ * whose children are url links (external documentation), and a second whose
+ * children are plain labels (a non-navigable theme picker) — both
+ * disclosure flavors side by side.
+ */
+export const contextSwitcherContentRoot: NavRoot = {
+  key: "context-switcher-content-root",
   items: [
     {
-      key: "lxd-links-group",
+      key: "workspace",
+      label: "Workspace",
       items: [
-        { key: "lxd-user", label: "admin", icon: "user" },
+        { url: "/overview", label: "Overview", icon: "status" },
+        { url: "/maintenance", label: "Maintenance window", icon: "warning" },
+      ],
+    },
+    {
+      key: "resources",
+      label: "Documentation",
+      items: [
         {
-          url: "https://documentation.ubuntu.com/lxd/",
+          url: "/documentation",
           label: "Documentation",
           icon: "book",
         },
-        { key: "report-bug", label: "Report a bug", icon: "bug" },
-        { key: "lxd-logout", label: "Log out" },
+        {
+          url: "/server/docs",
+          label: "Server guide",
+          icon: "profiles",
+        },
+        {
+          url: "/community",
+          label: "Community",
+          icon: "comments",
+        },
+      ],
+    },
+    {
+      key: "legal",
+      label: "Legal",
+      items: [
+        {
+          key: "policies",
+          label: "Policies",
+          icon: "clipboard-list",
+          items: [
+            { url: "/legal/privacy", label: "Privacy Policy", icon: "locked" },
+            { url: "/legal/terms", label: "Terms of Service", icon: "file" },
+            {
+              url: "/legal/cookie",
+              label: "Cookie Policy",
+              icon: "information",
+            },
+          ],
+        },
       ],
     },
   ],
 };
+
+// --- Context switcher (the "with ContextSwitcher" story) ------------------
+// Exercises the footer's full row vocabulary through `footerRoot` data:
+// plain links, depth-1 `ExpandableFooterItem` disclosures, and the
+// Footer-only button rows (`control: "button"`).
+
+/**
+ * A footer exercising every footer-row shape: a plain link, a depth-1
+ * `ExpandableFooterItem` (plain-label "theme" options — no pages of their
+ * own), and the Footer-only button row (`control: "button"`).
+ */
+export const contextSwitcherFooterRoot: FooterRoot = {
+  key: "context-switcher-footer-root",
+  items: [
+    { url: "/account", label: "Ada Lovelace", icon: "user" },
+    {
+      label: "Theme",
+      icon: "dark-theme",
+      items: [
+        { label: "Light", icon: "light-theme", control: "button" },
+        { label: "Dark", icon: "dark-theme", control: "button" },
+        { label: "System", icon: "system-theme", control: "button" },
+      ],
+    },
+    { label: "Log out", icon: "log-out", control: "button" },
+  ],
+};
+
+// --- Context fixtures (the 24.04 spec §4.5) --------------------------------------
+
+/**
+ * LXD's project switcher — the spec's own example. url-bearing contexts:
+ * selecting one fires `onContextChange` with the `url` aboard, and the
+ * consumer routes with their own router wrapper (that callback is the
+ * custom router adapter — the menu's APG constraint means every row is a
+ * `<div role="menuitem">`, so there is no render target for a
+ * `LinkComponent` inside the popup).
+ */
+export const lxdProjectContexts: ContextSwitcherItem[] = [
+  {
+    key: "default",
+    name: "default",
+    url: "/ui/project/default/instances",
+    description: "The default project",
+  },
+  {
+    key: "staging",
+    name: "staging",
+    url: "/ui/project/staging/instances",
+    description: "Pre-production environment",
+    badge: badge(12),
+  },
+  {
+    key: "sandbox",
+    name: "sandbox",
+    url: "/ui/project/sandbox/instances",
+  },
+];
 
 // --- Generic fixtures (edge cases) ---------------------------------------
 
@@ -208,7 +332,7 @@ export const lxdFooterRoot: NavItem = {
  * Minimal fixture — a single unlabelled level-1 group of leaves (no header).
  * Visually flat; useful for base rendering without group headers.
  */
-export const flatRoot: NavItem = {
+export const flatRoot: NavRoot = {
   key: "flat-root",
   items: [
     {
@@ -223,7 +347,7 @@ export const flatRoot: NavItem = {
 };
 
 /** Fixture exercising a disabled leaf. */
-export const withDisabledRoot: NavItem = {
+export const withDisabledRoot: NavRoot = {
   key: "disabled-root",
   items: [
     {
@@ -243,7 +367,7 @@ export const withDisabledRoot: NavItem = {
 };
 
 /** Empty fixture — root with no children. Useful for empty-state rendering. */
-export const emptyRoot: NavItem = {
+export const emptyRoot: NavRoot = {
   key: "empty-root",
   items: [],
 };

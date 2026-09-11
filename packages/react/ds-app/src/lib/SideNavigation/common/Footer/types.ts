@@ -1,16 +1,13 @@
-import type { Item as NavItem } from "@canonical/ds-types";
-import type { ComponentProps, ComponentType, ReactNode } from "react";
-import type { LinkComponentProps } from "../../types.js";
+import type { ComponentProps, ComponentType } from "react";
+import type { FooterRoot, LinkComponentProps } from "../../types.js";
 
 type OwnProps = {
-  /** Root item whose direct children are rendered as the footer nav list. */
-  root?: NavItem;
+  /** The footer's items — the footer's only data surface. See FooterRoot. */
+  root?: FooterRoot;
   /** Component used to render navigable items. Defaults to `"a"`. */
   LinkComponent?: ComponentType<LinkComponentProps> | "a";
-  /** Live current location; resolves and keeps the active item in sync. */
+  /** Live current location; resolves the active row and seeds expandables. */
   currentUrl?: string;
-  /** Fallback content when no `root` is provided. */
-  children?: ReactNode;
 };
 
 export type FooterProps = OwnProps &
