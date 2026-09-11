@@ -8,6 +8,12 @@ import {
   createDataViewsProvider,
   createSourceBinding,
 } from "@canonical/dataviews-core";
+import type {
+  IndexedDBFactory,
+  ViewDraft,
+  ViewStore,
+} from "@canonical/dataviews-core/views";
+import { createIndexedDBViewStore } from "@canonical/dataviews-core/views";
 import type { Decorator } from "@storybook/react-vite";
 import { useEffect, useState } from "react";
 import type { MachineFields } from "./fixtures.js";
@@ -34,6 +40,8 @@ export type MachineProviderOptions = {
   readonly window?: ResultWindow;
   /** Commands issued once the source is bound: a sort, a search, a selection. */
   readonly prepare?: (provider: MachineProvider) => void;
+  /** Where the collection's saved views live; none by default. */
+  readonly views?: ViewStore;
 };
 
 /**
@@ -49,6 +57,7 @@ export function useMachineProvider({
   source = createMachineSource,
   window: resultWindow,
   prepare,
+  views,
 }: MachineProviderOptions = {}): MachineProvider {
   const [adapter] = useState(source);
   const [provider] = useState(() =>
@@ -57,6 +66,7 @@ export function useMachineProvider({
       window: resultWindow,
       // The table offers a sort only where the source declares one.
       capabilities: adapter.capabilities,
+      views,
     }),
   );
   const [setUp] = useState(() => prepare);
@@ -107,3 +117,56 @@ export const withScrollingFrame =
 /** Names a record for its selection checkbox: by host, else by identity. */
 export const hostName = (row: RowRecord, rowId: string): string =>
   typeof row.name === "string" ? row.name : rowId;
+
+/** A story's saved-view store, and a way to open another tab over it. */
+export type StoryViewStore = {
+  readonly store: ViewStore;
+  readonly openAnotherTab: () => ViewStore;
+};
+
+/** How one story's saved-view store is set up. Read once, when it mounts. */
+export type StoryViewStoreOptions = {
+  /** The views the store holds when the story opens. */
+  readonly seed?: readonly ViewDraft[];
+  /** The browser's IndexedDB by default; a stand-in shows refused storage. */
+  readonly indexedDB?: IndexedDBFactory;
+};
+
+/**
+ * A saved-view store of the story's own: the browser's IndexedDB, in a
+ * database no other story or visit shares, seeded once and deleted when the
+ * story unmounts. An application declares one store for its lifetime instead,
+ * as the consumer code shows.
+ */
+export function useStoryViewStore({
+  seed = [],
+  indexedDB = globalThis.indexedDB,
+}: StoryViewStoreOptions = {}): StoryViewStore {
+  const [database] = useState(
+    () => `dataviews-story-views-${Math.random().toString(36).slice(2)}`,
+  );
+  const [setUp] = useState(() => {
+    const scope = {
+      indexedDB,
+      database,
+      collection: "machines",
+      partition: null,
+    };
+    return {
+      store: createIndexedDBViewStore(scope),
+      openAnotherTab: () => createIndexedDBViewStore(scope),
+      seed,
+    };
+  });
+  useEffect(() => {
+    for (const draft of setUp.seed) {
+      // Storage the browser refuses is the control's to report.
+      setUp.store.create(draft).catch(() => {});
+    }
+    // The store closes its connection when the database is deleted.
+    return () => {
+      globalThis.indexedDB?.deleteDatabase(database);
+    };
+  }, [setUp, database]);
+  return setUp;
+}

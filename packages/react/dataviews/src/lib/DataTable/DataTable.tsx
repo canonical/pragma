@@ -19,6 +19,7 @@ import {
 import { HeaderCell, SelectAllCell, TableBody } from "./common/index.js";
 import defaultStatusText from "./defaultStatusText.js";
 import {
+  usePreferredWidths,
   useRowScopes,
   useStableCallback,
   useStableValue,
@@ -144,6 +145,7 @@ export default function DataTable<
   // concurrent render can be thrown away — and a subscription taken at
   // construction would outlive the interaction nothing else holds.
   useEffect(() => interaction.observe(), [interaction]);
+  usePreferredWidths(activePresentation, provider.views);
 
   const geometry = useTableGeometry(activePresentation, interaction, columnIds);
   const scopes = useRowScopes(provider, fields);

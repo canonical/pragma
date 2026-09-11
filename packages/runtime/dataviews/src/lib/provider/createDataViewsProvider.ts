@@ -25,6 +25,8 @@ import type { EmptyOr, SchemaFieldDefinition } from "../schema/types.js";
 import createSelection from "../selection/createSelection.js";
 import copyCapabilities from "../source/copyCapabilities.js";
 import type { SourceCapabilities } from "../source/types.js";
+import createProviderViews from "../views/createProviderViews.js";
+import type { ViewStore } from "../views/types.js";
 import type { DataViewsProvider, ProviderFieldHandle } from "./types.js";
 
 /** The legal operators of a field kind, in display order. */
@@ -102,6 +104,12 @@ export type DataViewsProviderConfig<
    * is refused.
    */
   readonly capabilities?: SourceCapabilities;
+  /**
+   * Where the collection's saved views and presentation preferences live —
+   * `createIndexedDBViewStore` from `@canonical/dataviews-core/views`, or a
+   * store of the application's own. Left out, the collection has no views.
+   */
+  readonly views?: ViewStore;
 };
 
 /** One field record with its address, for re-syncing after external changes. */
@@ -247,7 +255,31 @@ export default function createDataViewsProvider<
     }
   };
 
+  const capabilities =
+    config.capabilities === undefined
+      ? null
+      : copyCapabilities(config.capabilities);
+
+  const adopt = (slice: Slice, window: ResultWindow): string | null => {
+    const requestId = coordinator.adopt(slice, window);
+    // External authority wins: sync every field's applied mirror.
+    syncFields();
+    if (requestId !== null) {
+      publishResult();
+    }
+    return requestId;
+  };
+
+  const views =
+    config.views === undefined
+      ? null
+      : createProviderViews({
+          host: { schema, capabilities, result, adopt },
+          store: config.views,
+        });
+
   const dispose = (): void => {
+    views?.dispose();
     coordinator.dispose();
     publishResult();
   };
@@ -255,13 +287,11 @@ export default function createDataViewsProvider<
   return {
     identity,
     schema,
-    capabilities:
-      config.capabilities === undefined
-        ? null
-        : copyCapabilities(config.capabilities),
+    capabilities,
     result,
     rows,
     selection,
+    views,
     fields: fields as DataViewsProvider<TFields>["fields"],
     navigateWindow(page?: number, size?: number): void {
       dispatchCommand({ kind: "navigateWindow", page, size });
@@ -279,15 +309,7 @@ export default function createDataViewsProvider<
       }
       return requestId;
     },
-    adopt(slice: Slice, window: ResultWindow): string | null {
-      const requestId = coordinator.adopt(slice, window);
-      // External authority wins: sync every field's applied mirror.
-      syncFields();
-      if (requestId !== null) {
-        publishResult();
-      }
-      return requestId;
-    },
+    adopt,
     complete(requestId: string, completion: CompletionResult<TRow>): boolean {
       // Only the pending request can publish: nothing is built for another,
       // such as a source's later delivery of a request already settled.
@@ -321,6 +343,7 @@ export default function createDataViewsProvider<
       coordinator.rotateScope();
       rows.set(emptyRows);
       selection.clear();
+      views?.forget();
       syncFields();
       publishResult();
     },

@@ -2,6 +2,7 @@ import type { FieldFeedback } from "@canonical/dataviews-core";
 import type { ReactElement } from "react";
 import { useId } from "react";
 import useDataViewsField from "../../../../hooks/useDataViewsField.js";
+import sentenceOf from "../../../../sentenceOf.js";
 import type { BoundFilterProps } from "./types.js";
 
 const componentCssClassName = "ds data-views-filters-bound";
@@ -9,10 +10,6 @@ const componentCssClassName = "ds data-views-filters-bound";
 const BOUND_WORDING = { gte: "from", lte: "to" } as const;
 
 const STILL_APPLIES = "The previous restriction still applies.";
-
-/** A schema reason as the start of a sentence. */
-const sentenceOf = (reason: string): string =>
-  `${reason.charAt(0).toUpperCase()}${reason.slice(1)}.`;
 
 /**
  * What to say beside the input, or null when there is nothing to say.

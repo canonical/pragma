@@ -1,0 +1,175 @@
+---
+# DataViews.Views — the collection's saved views: which view is open, whether
+# the query has moved away from it, and the way to switch, save, save as,
+# rename and delete.
+#
+# Anatomy DSL 0.3.0. No validator runs on this file yet: it is checked in
+# review against the DSL's JSON schema. The design system's graph names no
+# block for saved views and the design draws none, so the root is a role node
+# rather than an IRI; a graph block is asked of the design owners. The
+# controls are the design system's own Button, SelectInput and TextInput.
+#
+# Names — one per part, the same in the DOM and here; the design has none yet:
+#   views control     DOM `ds data-views-views`
+#   view picker       DOM `.picker`
+#   modified mark     DOM `.modified`
+#   label             DOM `.label` (the view picker's and the name form's)
+#   commands          DOM `.commands`
+#   name form         DOM `ds data-views-views-name-form`
+#   name error        DOM `.error`
+#   delete confirm    DOM `ds data-views-views-confirm`
+#   question          DOM `.message`
+#   operation status  DOM `.status`
+#   notices           DOM `.notices`
+#   no-script notice  DOM `.unavailable`
+#
+# Tokens are `/`-paths over `@canonical/design-tokens` 0.10.0 ids. The select
+# and the name input are themed through the form layer's own channels, as the
+# pagination bar themes its selects, never restyled:
+#   --form-input-height          density/line-height-effective
+#   --form-input-padding-block   dimension/050
+#   --form-input-padding-inline  dimension/100
+# The chrome comes from the `@canonical/react-ds-global-form` stylesheet,
+# which the page loads.
+#
+# Deviations the DSL cannot express, recorded here:
+#   - Conditional display is deferred in the DSL. The modified mark shows only
+#     while the live query differs from the open view's. The name form and the
+#     delete confirmation replace nothing: each shows beneath the commands
+#     while it is open, and at most one is open.
+#   - Without JavaScript the part renders only the no-script notice, inside a
+#     `noscript`: views live in the browser's storage, which a server cannot
+#     read. Links to a full query still work, since the query is in the URL.
+#   - The design draws no views control. The part is composed from existing
+#     components and waits on a design (recorded for the design owners).
+#
+# States:
+#   - listing: loading, listed, unavailable (with a way to try again).
+#   - open view: none, open, open and modified.
+#   - operation: pending (every command but Try again disabled), settled saved,
+#     opened or removed (shown while the query is unmodified), conflict (with
+#     its
+#     recovery: overwrite, save as a new view, discard the changes), missing,
+#     unreadable, refused, failed.
+#   - name form: valid, invalid (the error beside the input).
+#
+# Accessibility (DataViews component coverage, "Views/save/rename/delete":
+# 2.1.1, 2.4.6, 3.3.1, 3.3.4, 4.1.2-4.1.3):
+#   views control     A named group ("Saved views").
+#   view picker       A labelled native select ("View") whose value is the
+#                     open view; the modified mark describes it. Choosing a
+#                     view opens it.
+#   commands          Native buttons named for what they do; "…" marks the ones
+#                     that ask for more before acting. Disabled while an
+#                     operation is pending, Try again aside, or while they have
+#                     nothing to act on.
+#   name form         A labelled input ("Name"). An empty or duplicate name is
+#                     refused before anything is written, and the error is
+#                     tied to the input (aria-invalid, aria-describedby).
+#                     Escape cancels; the focus returns to the command that
+#                     opened the form.
+#   delete confirm    Deleting asks first, naming the view; the focus starts on
+#                     Cancel. Escape cancels.
+#   operation status  A polite status: what is in flight, then what happened —
+#                     a conflict or a failure is never reported as saved.
+#   notices           A polite status: views unavailable, records that cannot
+#                     be read, presentation not being saved.
+node:
+  role: views control
+  styles:
+    layout.type: stack
+    layout.direction: row
+    layout.align: center
+    spacing.gap: dimension/100
+    typography.color: color/text
+    typography.family: typography/text/primary/font-family
+    typography.size: typography/text/primary/font-size
+    typography.weight: typography/text/primary/font-weight
+  edges:
+    - node:
+        role: view picker
+        styles:
+          layout.type: stack
+          layout.direction: row
+          layout.align: center
+          spacing.gap: dimension/050
+        edges:
+          - uri: global.subcomponent.select_input
+            relation:
+              cardinality: "1"
+          - node:
+              role: modified mark
+              styles:
+                typography.color: color/text/muted
+            relation:
+              cardinality: "0..1"
+      relation:
+        cardinality: "1"
+        slotName: picker
+    - node:
+        role: commands
+        styles:
+          layout.type: stack
+          layout.direction: row
+          layout.align: center
+          spacing.gap: dimension/050
+        edges:
+          # Save, Reset, Save as…, Rename…, Delete…, and Try again while the
+          # views are unavailable or column widths are not being saved. After a
+          # conflict on save, Save reads
+          # "Overwrite" and Reset "Discard changes": the stored view is open.
+          - uri: global.component.button
+            relation:
+              cardinality: "5..6"
+      relation:
+        cardinality: "1"
+        slotName: commands
+    - switch:
+        "on": internal
+        cases:
+          - node:
+              role: name form
+              styles:
+                layout.type: stack
+                layout.direction: row
+                layout.align: center
+                spacing.gap: dimension/050
+              edges:
+                - uri: global.subcomponent.text_input
+                  relation:
+                    cardinality: "1"
+                - node:
+                    role: name error
+                    styles:
+                      typography.color: color/text/error
+                  relation:
+                    cardinality: "0..1"
+                - uri: global.component.button
+                  relation:
+                    cardinality: "2"
+          - node:
+              role: delete confirm
+              styles:
+                layout.type: stack
+                layout.direction: row
+                layout.align: center
+                spacing.gap: dimension/050
+              edges:
+                - uri: global.component.button
+                  relation:
+                    cardinality: "2"
+      relation:
+        cardinality: "0..1"
+        slotName: panel
+    - node:
+        role: operation status
+      relation:
+        cardinality: "1"
+        slotName: status
+    - node:
+        role: notices
+        styles:
+          typography.color: color/text/muted
+      relation:
+        cardinality: "1"
+        slotName: notices

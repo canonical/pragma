@@ -1,6 +1,6 @@
 # @canonical/dataviews-react
 
-React bindings for Canonical collection views, built on `@canonical/dataviews-core`: the `DataViews` root with its connected `Filters`, `Actions` and `Pagination` parts, the provider context, the four scoped observation hooks, the `DataTable` renderer and the `PaginationBar`.
+React bindings for Canonical collection views, built on `@canonical/dataviews-core`: the `DataViews` root with its connected `Filters`, `Actions`, `Pagination` and `Views` parts, the provider context, the four scoped observation hooks, the `DataTable` renderer and the `PaginationBar`.
 
 > **Stability: pre-1.0 / experimental.** The API is still consolidating and breaking changes may land between minor versions. Every breaking change ships with a conventional-commit subject and a CHANGELOG entry — those are the migration record. Pin a minor version if you need stability today.
 
@@ -22,10 +22,11 @@ Under active development; the public surface grows change by change. The current
 - **`DataViews.Filters`** — the connected query-editing part. Which fields it offers and which operators each accepts come from the provider — its schema, and the capabilities its source declares — so it never offers a restriction the source would refuse, takes no query props, and has no draft query to keep in step with the applied one. Throws when the provider was created without the source's capabilities.
 - **`DataViews.Pagination`** — the connected window navigation: the `PaginationBar`, bound to the enclosing root's provider.
 - **`DataViews.Actions`** — the connected action bar: the selection's count, the actions a caller places, and a button that clears the selection, on the design system's contrasted surface. It reads the root's selection, takes no copy of it, and is absent while nothing is selected.
+- **`DataViews.Views`** — the connected saved views: which view is open, whether the query has moved from it, and switching, saving, saving as, renaming and deleting, over the store the provider was given. Throws when the provider has no store; without JavaScript it says only that views are unavailable.
 - **`PaginationBar`** — the bar beneath a collection's rows: the page size, a summary of the items on screen out of the filtered total, a page select and first, previous, next and last buttons. It takes its provider explicitly, as `DataTable` does, so a standalone table gets the same footer as a composed one. Its destinations are the ones the collection can actually reach: a source that publishes a filtered total gets a page total and a last page, a source that publishes no count gets a Next offered only while the page is full, and a pending or failed replacement claims no total at all.
 - **`DataTable`** — the row renderer: div rows over ARIA table roles, one shared column track list, sorting, selection and resizing. It takes its provider explicitly, so it behaves the same standalone and inside a `DataViews` root. A column's `sortable` is honoured only on a field the provider's source declares sortable — the same declaration `DataViews.Filters` reads — so the table never offers an ordering the source would refuse; a sortable column on a provider created without the source's capabilities throws.
 
-The remaining connected parts (Views, Summary) land in later changes. The pagination bar already carries the result summary and the action bar the selection count, so `Summary` is designed not to repeat either.
+The remaining connected part, Summary, lands in a later change. The pagination bar already carries the result summary and the action bar the selection count, so `Summary` is designed not to repeat either.
 
 ## Composition recipes
 

@@ -86,7 +86,9 @@ type OwnProps<
   /**
    * The presentation record holding declared sizing and user overrides.
    * Supply one to share user arrangement between two tables on the same
-   * provider; omitted, the table keeps its own for its lifetime.
+   * provider; omitted, the table keeps its own. On a provider with views,
+   * the widths follow the collection's presentation and a resize is saved
+   * to it; without views they last for the record's lifetime.
    */
   readonly presentation?: Presentation;
   /** Render a leading selection column backed by the provider's selection. */

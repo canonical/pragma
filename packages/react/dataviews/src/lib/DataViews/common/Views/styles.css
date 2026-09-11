@@ -1,0 +1,57 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /**
+   * Views styles
+   *
+   * The specification is the anatomy beside the code, `Views.anatomy.yaml`.
+   * Every value below is one it binds; what it could not bind is recorded
+   * there, never hardcoded here.
+   *
+   * The select and the name input are the design system's own, themed
+   * through the form layer's channels. The one override is their width: in a
+   * row of controls each takes its content's.
+   */
+  .ds.data-views-views {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--dimension-100);
+    color: var(--color-text);
+    font-family: var(--typography-text-primary-font-family);
+    font-size: var(--typography-text-primary-font-size);
+    font-weight: var(--typography-text-primary-font-weight);
+    --form-input-height: var(--density-line-height-effective);
+    --form-input-padding-block: var(--dimension-050);
+    --form-input-padding-inline: var(--dimension-100);
+
+    & :where(p) {
+      margin: 0;
+    }
+
+    & > .picker,
+    & > .commands,
+    & > .ds.data-views-views-name-form,
+    & > .ds.data-views-views-confirm {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--dimension-050);
+    }
+
+    /* The input chrome fills its container; in a row it takes its content. */
+    & > .picker > .ds.input.select,
+    & > .ds.data-views-views-name-form > .ds.input.text {
+      inline-size: auto;
+    }
+
+    & > .picker > .modified,
+    & > .notices {
+      color: var(--color-text-muted);
+    }
+
+    & > .ds.data-views-views-name-form > .error {
+      color: var(--color-text-error);
+    }
+  }
+}
