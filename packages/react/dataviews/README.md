@@ -1,6 +1,6 @@
 # @canonical/dataviews-react
 
-React bindings for Canonical collection views, built on `@canonical/dataviews-core`: the `DataViews` root, the provider context, the four scoped observation hooks, and the `DataTable` renderer.
+React bindings for Canonical collection views, built on `@canonical/dataviews-core`: the `DataViews` root with its connected `Filters` and `Pagination` parts, the provider context, the four scoped observation hooks, and the `DataTable` renderer.
 
 > **Stability: pre-1.0 / experimental.** The API is still consolidating and breaking changes may land between minor versions. Every breaking change ships with a conventional-commit subject and a CHANGELOG entry — those are the migration record. Pin a minor version if you need stability today.
 
@@ -19,9 +19,76 @@ Under active development; the public surface grows change by change. The current
 - **`useDataViewsValue(handle)`** — observe one channel; re-render only when it publishes.
 - **`useDataViewsField(handle)`** — a field's input buffer, applied semantic value and feedback, with `edit`/`set`/`clear` routed through the provider.
 - **`useDataViewsCell(provider)`** — the current cell's scope (row id, column id, read-only row/fields/selected channels), installed by the table renderer; throws outside a rendered cell or on a witness mismatch.
+- **`DataViews.Filters`** — the connected query-editing part. Which fields it offers and which operators each accepts come from the provider — its schema, and the capabilities its source declares — so it never offers a restriction the source would refuse, takes no query props, and has no draft query to keep in step with the applied one. Throws when the provider was created without the source's capabilities.
+- **`DataViews.Pagination`** — the connected window navigation. Its destinations are the ones the collection can actually reach: a source that publishes a filtered total gets numbered pages and a last one, a source that publishes no count gets a Next offered only while the page is full, and a pending replacement claims no total at all.
 - **`DataTable`** — the row renderer: div rows over ARIA table roles, one shared column track list, sorting, selection and resizing. It takes its provider explicitly, so it behaves the same standalone and inside a `DataViews` root.
 
-The remaining connected parts (Filters, Views, Summary, Actions, Pagination) land in later changes.
+The remaining connected parts (Views, Summary, Actions) land in later changes.
+
+## Composition recipes
+
+### The connected parts
+
+```tsx
+const machinesProvider = createDataViewsProvider({
+  schema,
+  // What the source can execute: Filters offers nothing beyond it, and the
+  // binding refuses a provider told anything else.
+  capabilities: source.capabilities,
+});
+createSourceBinding({ host: machinesProvider, adapter: source });
+
+<DataViews provider={machinesProvider}>
+  <DataViews.Filters labels={{ status: "Status", cpu: "Cores" }} />
+
+  <DataTable provider={machinesProvider} columns={columns} label="Machines" />
+
+  <div className="collection-footer">
+    <DataViews.Pagination label="Machines pagination" />
+  </div>
+</DataViews>
+```
+
+Both parts read the enclosing root: they take presentation choices — a name,
+visible field labels, the page sizes to offer — and never a second copy of
+the query, the window or the selection the provider already owns. Ordinary
+wrappers and custom children sit between them; moving pagination means moving
+an element, not asking for a slot.
+
+### Keeping the query in the URL
+
+```tsx
+function MachinesUrlQuery({ platform }: { platform: PlatformLocation }) {
+  // Building the binding subscribes to nothing; observing does, so it
+  // happens in an effect and a discarded render leaves nothing behind.
+  const binding = useMemo(
+    () =>
+      createLocationBinding({
+        host: machinesProvider,
+        location: createPlatformLocation(platform),
+      }),
+    [platform],
+  );
+  useEffect(() => binding.observe(), [binding]);
+  const issues = useDataViewsValue(binding.issues);
+  return issues.length === 0 ? null : (
+    <ul className="query-issues">
+      {issues.map((issue, index) => (
+        // One parameter can be refused for several reasons.
+        <li key={`${index}:${issue.parameter}`}>{issue.reason}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+`createSourceBinding`, `createLocationBinding` and `createPlatformLocation`
+come from `@canonical/dataviews-core`. Every edit the filters make writes the
+canonical query to the location, and back, forward or a pasted URL is adopted
+by the provider — one authority, no mirroring effect. A link carrying a clause
+the grammar, the schema or the source refuses is not adopted: it stays in the
+URL and its reasons are published on `binding.issues`, for the host to show
+beside the controls. The parts read the provider either way.
 
 ## Styles
 
