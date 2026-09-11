@@ -8,6 +8,8 @@ import { describe, expect, it, vi } from "vitest";
 import createDataViewsProvider from "../provider/createDataViewsProvider.js";
 import type { ResultWindow, Slice } from "../query/types.js";
 import createSchema from "../schema/createSchema.js";
+import createArraySource from "../source/createArraySource.js";
+import createSourceBinding from "../source/createSourceBinding.js";
 import type { SourceCapabilities } from "../source/types.js";
 import type { LocationHost } from "./createLocationBinding.js";
 import createLocationBinding from "./createLocationBinding.js";
@@ -64,6 +66,15 @@ const recording = (href: string) => {
   };
   return { memory, location, writes };
 };
+
+/** Two failed machines and three ready ones, for a source to execute over. */
+const fleet = [
+  { id: "m1", status: "failed", cpu: 4 },
+  { id: "m2", status: "ready", cpu: 2 },
+  { id: "m3", status: "ready", cpu: 8 },
+  { id: "m4", status: "failed", cpu: 1 },
+  { id: "m5", status: "ready", cpu: 16 },
+];
 
 const machinesProvider = (slice?: Slice, window?: ResultWindow) =>
   createDataViewsProvider({ schema: machines(), slice, window });
@@ -463,6 +474,62 @@ describe("createLocationBinding", () => {
       "status=ready&cpu__gte=4&sort=cpu__asc",
     );
     release();
+  });
+
+  it("refuses a sort its source cannot execute arriving in the location, and answers the rest", () => {
+    const source = createArraySource({ rows: fleet, fields: ["status"] });
+    const provider = createDataViewsProvider({
+      schema: machines(),
+      capabilities: source.capabilities,
+    });
+    const binding = createSourceBinding({ host: provider, adapter: source });
+    const location = createMemoryLocation({
+      href: "/machines?status=failed&sort=cpu__asc",
+    });
+    const loop = createLocationBinding({ host: provider, location });
+    const release = loop.observe();
+    expect(loop.issues.get()).toEqual([
+      { parameter: "sort", reason: 'field "cpu" cannot be sorted' },
+    ]);
+    const state = provider.result.get();
+    expect(state.slice.sort).toEqual([]);
+    expect(state.result.status).toBe("ready");
+    expect(state.resultsMatchCurrentQuery).toBe(true);
+    expect(state.result.rows).toHaveLength(2);
+    // The refused parameter stands, so the refusal survives a reload.
+    expect(location.read().toString()).toBe("status=failed&sort=cpu__asc");
+    release();
+    binding.dispose();
+  });
+
+  it("shows rows a refused location sort could not replace as stale, and recovers on the way back", () => {
+    const source = createArraySource({ rows: fleet, fields: ["status"] });
+    // Not told the source's capabilities, so the location's sort is adopted
+    // and it is the source that refuses it.
+    const provider = machinesProvider();
+    const binding = createSourceBinding({ host: provider, adapter: source });
+    const location = createMemoryLocation({ href: "/machines?status=failed" });
+    const release = createLocationBinding({
+      host: provider,
+      location,
+    }).observe();
+    expect(provider.result.get().result.status).toBe("ready");
+
+    location.write(new URLSearchParams("status=ready&sort=cpu__asc"));
+    const refused = provider.result.get();
+    expect(refused.slice.sort).toEqual([{ field: "cpu", direction: "asc" }]);
+    expect(refused.result.status).toBe("stale");
+    expect(refused.resultsMatchCurrentQuery).toBe(false);
+    expect(refused.result.rows).toHaveLength(2);
+    expect(refused.result.lastError).toBe('field "cpu" cannot be sorted');
+
+    location.write(new URLSearchParams("status=ready"));
+    const recovered = provider.result.get();
+    expect(recovered.result.status).toBe("ready");
+    expect(recovered.resultsMatchCurrentQuery).toBe(true);
+    expect(recovered.result.rows).toHaveLength(3);
+    release();
+    binding.dispose();
   });
 
   it("retries a write the location threw on at the next publication", () => {

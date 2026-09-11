@@ -82,7 +82,7 @@ describe("createCollectionCoordinator", () => {
     expect(coordinator.state.resultsMatchCurrentQuery).toBe(false);
   });
 
-  it("marks retained rows stale after a window-only change", () => {
+  it("keeps retained rows unmatched after a window-only change", () => {
     const coordinator = createCollectionCoordinator();
     const request = dispatchRequest(coordinator, {
       kind: "replacePredicate",
@@ -134,7 +134,7 @@ describe("createCollectionCoordinator", () => {
     expect(coordinator.state.result.rows).toEqual([{ id: "fresh" }]);
   });
 
-  it("ignores stale failure completions", () => {
+  it("ignores failure completions for superseded requests", () => {
     const coordinator = createCollectionCoordinator();
     const first = dispatchRequest(coordinator, {
       kind: "replaceSearch",
@@ -298,10 +298,52 @@ describe("createCollectionCoordinator", () => {
     const result = coordinator.state.result;
     // The retained rows belong to the old query; the failure is recorded and
     // the rows are never described as results of the current query.
-    expect(result.status).toBe("ready");
+    expect(result.status).toBe("stale");
     expect(result.rows).toEqual([{ id: "machine-1" }]);
     expect(result.lastError).toBe("offline");
     expect(coordinator.state.resultsMatchCurrentQuery).toBe(false);
+  });
+
+  it("marks an earlier query's empty result stale when the current one fails", () => {
+    const coordinator = createCollectionCoordinator();
+    coordinator.complete(
+      dispatchRequest(coordinator, { kind: "replaceSearch", search: "yak" }),
+      { status: "success", rows: [], count: 0 },
+    );
+    coordinator.complete(
+      dispatchRequest(coordinator, { kind: "replaceSearch", search: "zebu" }),
+      { status: "failure", reason: "offline" },
+    );
+    expect(coordinator.state.result.status).toBe("stale");
+    expect(coordinator.state.result.rows).toEqual([]);
+    expect(coordinator.state.result.lastError).toBe("offline");
+  });
+
+  it("stays stale until the current query succeeds, then reports ready", () => {
+    const coordinator = createCollectionCoordinator();
+    coordinator.complete(
+      dispatchRequest(coordinator, { kind: "replaceSearch", search: "yak" }),
+      { status: "success", rows: [{ id: "machine-1" }], count: 1 },
+    );
+    coordinator.complete(
+      dispatchRequest(coordinator, { kind: "replaceSearch", search: "zebu" }),
+      { status: "failure", reason: "offline" },
+    );
+    const retry = coordinator.refresh();
+    if (retry === null) {
+      throw new Error("expected a refresh request");
+    }
+    coordinator.complete(retry, { status: "failure", reason: "still offline" });
+    expect(coordinator.state.result.status).toBe("stale");
+    expect(coordinator.state.result.lastError).toBe("still offline");
+
+    coordinator.complete(
+      dispatchRequest(coordinator, { kind: "replaceSearch", search: "gnu" }),
+      { status: "success", rows: [{ id: "machine-2" }], count: 1 },
+    );
+    expect(coordinator.state.result.status).toBe("ready");
+    expect(coordinator.state.result.lastError).toBeNull();
+    expect(coordinator.state.resultsMatchCurrentQuery).toBe(true);
   });
 
   it("issues no request for a semantically unchanged edit", () => {

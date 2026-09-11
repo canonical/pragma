@@ -65,7 +65,7 @@ let saveSessionInstances = 0;
  * Create a save session over one durable value. Persistence execution stays
  * with the caller; this record owns only the baseline/dirty race. Attempt
  * identities make completions one-shot: a late completion of a superseded
- * attempt is ignored, exactly like stale request completions.
+ * attempt is ignored, exactly like superseded request completions.
  */
 export default function createSaveSession<T>(
   config: SaveSessionConfig<T>,

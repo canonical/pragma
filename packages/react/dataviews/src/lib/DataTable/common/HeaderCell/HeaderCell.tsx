@@ -31,6 +31,7 @@ const nextSort = (
 export default function HeaderCell({
   column,
   field,
+  sortable,
   sort,
   setSort,
   interaction,
@@ -39,14 +40,13 @@ export default function HeaderCell({
   width,
   labelId,
 }: HeaderCellProps): ReactElement {
-  const ariaSort =
-    column.sortable !== true
-      ? undefined
-      : sort === undefined
-        ? "none"
-        : sort.direction === "asc"
-          ? "ascending"
-          : "descending";
+  const ariaSort = !sortable
+    ? undefined
+    : sort === undefined
+      ? "none"
+      : sort.direction === "asc"
+        ? "ascending"
+        : "descending";
   return (
     // biome-ignore lint/a11y/useSemanticElements: <th> is only valid inside a <table>, and this grid is deliberately not one
     // biome-ignore lint/a11y/useFocusableInteractive: the header is structure, not a widget — its sort button and resize control carry the focus
@@ -55,7 +55,7 @@ export default function HeaderCell({
       className={componentCssClassName}
       aria-sort={ariaSort}
     >
-      {column.sortable === true ? (
+      {sortable ? (
         <button
           type="button"
           id={labelId}

@@ -156,7 +156,7 @@ export default function createSourceBinding(
 
   const publish = (running: Execution, result: CompletionResult): void => {
     if (execution !== running) {
-      // Released or superseded: a stale execution never publishes.
+      // Released or superseded: that execution never publishes.
       return;
     }
     // A source declaring no count never has one published, so an

@@ -244,4 +244,23 @@ describe("DataViews.Pagination", () => {
     expect(nav).toHaveClass("ds", "data-views-pagination", "footer");
     expect(nav).toHaveAttribute("id", "machines-pages");
   });
+
+  it("claims no total beside an earlier query's rows after the current one failed", () => {
+    const provider = makeProvider();
+    mount(provider);
+    load(provider, machines(2), 5);
+    act(() => {
+      provider.setSearch("m1");
+    });
+    const failed = provider.result.get().pendingRequestId;
+    if (failed === null) {
+      throw new Error("expected a pending request");
+    }
+    act(() => {
+      provider.complete(failed, { status: "failure", reason: "offline" });
+    });
+    expect(provider.result.get().result.status).toBe("stale");
+    expect(position()).toHaveTextContent(/^Page 1$/);
+    expect(next()).toBeDisabled();
+  });
 });

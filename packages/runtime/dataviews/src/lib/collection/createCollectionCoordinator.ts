@@ -10,12 +10,18 @@ import type {
 } from "../query/types.js";
 import type { RowRecord } from "../rows/types.js";
 
-/** Display status of the result projection. */
+/**
+ * Display status of the result projection. A settled failure over retained
+ * rows is `ready` only while those rows still answer the current query, as
+ * after a failed refresh; over rows an earlier query produced it is `stale`,
+ * so a result that does not match the query never reports `ready`.
+ */
 export type ResultStatus =
   | "idle"
   | "pending"
   | "refreshing"
   | "ready"
+  | "stale"
   | "error";
 
 /**
@@ -104,7 +110,10 @@ export type CollectionCoordinator<TRow extends object = RowRecord> = {
    * Publish a completion for the most recently issued request, at most once.
    * Completions for superseded requests, rotated scopes or a disposed
    * coordinator are ignored; a success publishes rows, provenance and count
-   * together; a failure retains rows with the error recorded.
+   * together; a failure keeps the rows with the error recorded — `error`
+   * when no rows have been published, `ready` while the kept rows still
+   * answer the current query, `stale` when an earlier query produced them,
+   * even an empty set.
    */
   readonly complete: (
     requestId: string,
@@ -297,8 +306,8 @@ export default function createCollectionCoordinator<
     },
     complete(requestId: string, completion: CompletionResult<TRow>): boolean {
       if (disposed || lastRequestId === null || requestId !== lastRequestId) {
-        // Obsolete request, rotated scope, repeated delivery, idle
-        // coordinator, or no request at all: never publish stale results.
+        // Disposed coordinator, obsolete request, rotated scope, repeated
+        // delivery, or no request at all: such a completion never publishes.
         return false;
       }
       lastRequestId = null;
@@ -314,7 +323,12 @@ export default function createCollectionCoordinator<
         return true;
       }
       publish({
-        status: result.rows === null ? "error" : "ready",
+        status:
+          result.rows === null
+            ? "error"
+            : publishedFingerprint === currentFingerprint
+              ? "ready"
+              : "stale",
         rows: result.rows,
         count: result.count,
         provenance: result.provenance,

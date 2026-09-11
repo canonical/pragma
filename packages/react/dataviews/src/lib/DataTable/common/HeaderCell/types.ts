@@ -12,6 +12,12 @@ export type HeaderCellProps = {
   readonly column: DataTableColumn;
   /** The record field this column shows and sorts on. */
   readonly field: string;
+  /**
+   * Whether this header offers sorting: the column asks for it and the
+   * provider's capabilities declare its field sortable and allow at least
+   * one sort term.
+   */
+  readonly sortable: boolean;
   /** This column's term in the applied ordering, if it has one. */
   readonly sort: SortTerm | undefined;
   /** Replace the applied ordering. */

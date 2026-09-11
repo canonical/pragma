@@ -48,13 +48,15 @@ export function useMachineProvider({
   window: resultWindow,
   prepare,
 }: MachineProviderOptions = {}): MachineProvider {
+  const [adapter] = useState(source);
   const [provider] = useState(() =>
     createDataViewsProvider<MachineFields>({
       schema: machineSchema,
       window: resultWindow,
+      // The table offers a sort only where the source declares one.
+      capabilities: adapter.capabilities,
     }),
   );
-  const [adapter] = useState(source);
   const [setUp] = useState(() => prepare);
   useEffect(() => {
     const binding = createSourceBinding({ host: provider, adapter });

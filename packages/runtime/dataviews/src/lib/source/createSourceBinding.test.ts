@@ -381,7 +381,7 @@ describe("createSourceBinding", () => {
     host.setSearch("web");
     source.callAt(1).deliver({ status: "failure", reason: "503 from ex:api" });
     expect(host.result.get().result).toEqual({
-      status: "ready",
+      status: "stale",
       rows,
       count: 3,
       provenance: { requestId: source.callAt(0).request.requestId },
@@ -447,7 +447,8 @@ describe("createSourceBinding", () => {
     });
     host.refresh();
     expect(calls).toBe(2);
-    // The stale failure must not cancel the request that replaced it.
+    // The superseded request's failure must not publish over the request
+    // that replaced it.
     expect(host.result.get().result.lastError).not.toBe("late failure");
     binding.dispose();
   });
@@ -510,6 +511,72 @@ describe("createSourceBinding", () => {
       requestId,
       slice: host.result.get().slice,
       window: { page: 3, size: 25 },
+    });
+    binding.dispose();
+  });
+
+  // A column offering a sort its source never declared: every later query
+  // carries the refused term and is refused too, and the rows shown are the
+  // last ones that worked. They must say so rather than claim to be ready.
+  it("reports rows kept past a refused sort as stale until the sort is cleared", () => {
+    const fleet = Array.from({ length: 9 }, (_, index) => ({
+      id: `m${index}`,
+      status: index % 3 === 0 ? "failed" : "ready",
+      cpu: (index % 4) + 1,
+    }));
+    const host = provider();
+    const binding = createSourceBinding({
+      host,
+      adapter: createArraySource({ rows: fleet, fields: ["status"] }),
+    });
+    const observed = () => {
+      const state = host.result.get();
+      return {
+        rows: state.result.rows?.length,
+        status: state.result.status,
+        matches: state.resultsMatchCurrentQuery,
+        lastError: state.result.lastError,
+      };
+    };
+    const refused = 'field "cpu" cannot be sorted';
+    host.refresh();
+    expect(observed()).toEqual({
+      rows: 9,
+      status: "ready",
+      matches: true,
+      lastError: null,
+    });
+    host.fields.status.eq.set(["failed"]);
+    expect(observed()).toEqual({
+      rows: 3,
+      status: "ready",
+      matches: true,
+      lastError: null,
+    });
+    host.setSort([{ field: "cpu", direction: "asc" }]);
+    expect(observed()).toEqual({
+      rows: 3,
+      status: "stale",
+      matches: false,
+      lastError: refused,
+    });
+    host.fields.status.eq.set(["ready"]);
+    expect(observed()).toEqual({
+      rows: 3,
+      status: "stale",
+      matches: false,
+      lastError: refused,
+    });
+    // The query stays as asked: the refused term is shown, never dropped.
+    expect(host.result.get().slice.sort).toEqual([
+      { field: "cpu", direction: "asc" },
+    ]);
+    host.setSort([]);
+    expect(observed()).toEqual({
+      rows: 6,
+      status: "ready",
+      matches: true,
+      lastError: null,
     });
     binding.dispose();
   });

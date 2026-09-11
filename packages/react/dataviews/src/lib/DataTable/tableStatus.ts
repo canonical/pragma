@@ -2,19 +2,24 @@ import type { CollectionCoordinatorState } from "@canonical/dataviews-core";
 import type { DataTableStatus } from "./types.js";
 
 /**
- * Why a table has no rows to render, or null when it has some.
+ * What the table says instead of its rows or beside them, or null when the
+ * rows speak for themselves.
  *
  * The cases stay distinct so the table never says "no results" about a
  * collection it failed to read, or "no data" about a query that simply
- * matched nothing. Retained rows keep rendering: a failed refresh reports
- * its error through the root's status surface, not by blanking the table.
+ * matched nothing. Retained rows keep rendering: rows an earlier query
+ * produced are shown as such beside the reason the current one failed,
+ * while rows kept through a failed refresh of the same query still answer
+ * it, so they are shown as they are and the error stays in `lastError`.
  */
 export default function tableStatus(
   state: CollectionCoordinatorState<object>,
 ): DataTableStatus | null {
   const { result } = state;
   if (result.rows !== null && result.rows.length > 0) {
-    return null;
+    return result.status === "stale" && result.lastError !== null
+      ? { kind: "stale", reason: result.lastError }
+      : null;
   }
   if (result.lastError !== null) {
     return { kind: "error", reason: result.lastError };

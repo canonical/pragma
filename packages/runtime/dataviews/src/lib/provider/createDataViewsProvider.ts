@@ -97,8 +97,9 @@ export type DataViewsProviderConfig<
   readonly identify?: RowIdentifier<TRow>;
   /**
    * What the source bound to this provider declares it can execute — the
-   * adapter's own `capabilities`. Connected parts offer only what is
-   * declared, and a location clause outside it is refused.
+   * adapter's own `capabilities`. Connected parts, and DataTable's sortable
+   * columns, offer only what is declared, and a location clause outside it
+   * is refused.
    */
   readonly capabilities?: SourceCapabilities;
 };

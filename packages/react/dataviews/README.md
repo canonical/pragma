@@ -20,8 +20,8 @@ Under active development; the public surface grows change by change. The current
 - **`useDataViewsField(handle)`** — a field's input buffer, applied semantic value and feedback, with `edit`/`set`/`clear` routed through the provider.
 - **`useDataViewsCell(provider)`** — the current cell's scope (row id, column id, read-only row/fields/selected channels), installed by the table renderer; throws outside a rendered cell or on a witness mismatch.
 - **`DataViews.Filters`** — the connected query-editing part. Which fields it offers and which operators each accepts come from the provider — its schema, and the capabilities its source declares — so it never offers a restriction the source would refuse, takes no query props, and has no draft query to keep in step with the applied one. Throws when the provider was created without the source's capabilities.
-- **`DataViews.Pagination`** — the connected window navigation. Its destinations are the ones the collection can actually reach: a source that publishes a filtered total gets numbered pages and a last one, a source that publishes no count gets a Next offered only while the page is full, and a pending replacement claims no total at all.
-- **`DataTable`** — the row renderer: div rows over ARIA table roles, one shared column track list, sorting, selection and resizing. It takes its provider explicitly, so it behaves the same standalone and inside a `DataViews` root.
+- **`DataViews.Pagination`** — the connected window navigation. Its destinations are the ones the collection can actually reach: a source that publishes a filtered total gets numbered pages and a last one, a source that publishes no count gets a Next offered only while the page is full, and a pending or failed replacement claims no total at all.
+- **`DataTable`** — the row renderer: div rows over ARIA table roles, one shared column track list, sorting, selection and resizing. It takes its provider explicitly, so it behaves the same standalone and inside a `DataViews` root. A column's `sortable` is honoured only on a field the provider's source declares sortable — the same declaration `DataViews.Filters` reads — so the table never offers an ordering the source would refuse; a sortable column on a provider created without the source's capabilities throws.
 
 The remaining connected parts (Views, Summary, Actions) land in later changes.
 
@@ -32,8 +32,9 @@ The remaining connected parts (Views, Summary, Actions) land in later changes.
 ```tsx
 const machinesProvider = createDataViewsProvider({
   schema,
-  // What the source can execute: Filters offers nothing beyond it, and the
-  // binding refuses a provider told anything else.
+  // What the source can execute: Filters and the table's sortable columns
+  // offer nothing beyond it, and the binding refuses a provider told
+  // anything else.
   capabilities: source.capabilities,
 });
 createSourceBinding({ host: machinesProvider, adapter: source });
@@ -108,8 +109,8 @@ The recipes, with consumer code and the live stories beside them, are the Storyb
 
 - **A table over a provider** — build the provider once and bind the source in an effect.
 - **Columns and sizing** — fixed and flexible widths, bounds, and the last column taking the rest.
-- **Sorting** — offer a sort only on a field the source declares.
+- **Sorting** — offer a sort only on a field the source declares: `sortable` takes effect only where the provider's `capabilities` declare the field sortable, so pass the source's capabilities to `createDataViewsProvider`.
 - **Selection** — real checkboxes named by `rowLabel`; select-all acts on the displayed rows.
 - **Resizing and its limits** — held to the declared bounds; no control on the last column; one shared `presentation` gives two tables on a provider the same arrangement.
 - **A cell that reads its own scope** — a renderer reading its row's channels.
-- **The four outcomes** — loading, failed, empty and no match, and `renderStatus`.
+- **The outcomes** — loading, failed, empty, no match, and retained rows that no longer answer the current query (`stale`), with `renderStatus`.
