@@ -289,6 +289,11 @@ export default function createDataViewsProvider<
       return requestId;
     },
     complete(requestId: string, completion: CompletionResult<TRow>): boolean {
+      // Only the pending request can publish: nothing is built for another,
+      // such as a source's later delivery of a request already settled.
+      if (coordinator.state.pendingRequestId !== requestId) {
+        return false;
+      }
       // The model is built before the coordinator publishes, so a record
       // with an ambiguous identity rejects the whole completion instead of
       // leaving displayed rows the table cannot key.

@@ -1,6 +1,6 @@
 {
   "name": "@canonical/dataviews-core",
-  "description": "Framework-agnostic collection-views core for Canonical apps: query grammar, schema-enforced field validation, observation channels, selection and window projection, lifecycle transition records, the request-lifecycle coordinator, the provider assembling them, the Location port with the flat URL query grammar and the authority loop that keeps them in step, and the source adapter contract with its local-array and observable-query-client adapters",
+  "description": "Framework-agnostic collection-views core for Canonical apps: query grammar, schema-enforced field validation, observation channels, selection and window projection, lifecycle transition records, the request-lifecycle coordinator, the provider assembling them, the Location port with the flat URL query grammar and the authority loop that keeps them in step, and the source adapter contract with its local-array, observable-query-client and Relay forward-connection adapters, and an explicitly imported local-first IndexedDB saved-view store",
   "version": "0.37.0",
   "type": "module",
   "module": "dist/esm/index.js",
@@ -10,6 +10,10 @@
     ".": {
       "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js"
+    },
+    "./views": {
+      "types": "./dist/types/lib/views/index.d.ts",
+      "import": "./dist/esm/lib/views/index.js"
     }
   },
   "files": [
@@ -51,7 +55,10 @@
     "@canonical/webarchitect": "^0.37.0",
     "@tanstack/query-core": "5.102.8",
     "@types/node": "^26.0.0",
+    "@types/relay-runtime": "20.1.1",
     "@vitest/coverage-v8": "^4.0.18",
+    "fake-indexeddb": "6.2.5",
+    "relay-runtime": "21.0.1",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   }

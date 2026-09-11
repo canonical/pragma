@@ -9,6 +9,15 @@ export type {
 } from "./createQuerySource.js";
 export { default as createQuerySource } from "./createQuerySource.js";
 export type {
+  RelayConnection,
+  RelayEnvironment,
+  RelayOperation,
+  RelayPageRequest,
+  RelaySnapshot,
+  RelaySourceConfig,
+} from "./createRelaySource.js";
+export { default as createRelaySource } from "./createRelaySource.js";
+export type {
   SourceBinding,
   SourceBindingConfig,
   SourceHost,

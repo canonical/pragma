@@ -40,7 +40,11 @@ export type EncodeQueryConfig = {
   /** The schema whose field addresses the encode owns. */
   readonly schema: Schema<readonly SchemaFieldDefinition[]>;
   readonly slice: Slice;
-  readonly window: ResultWindow;
+  /**
+   * The window to write, or null to write the query alone — no `page` or
+   * `size` — as a saved view stores it.
+   */
+  readonly window: ResultWindow | null;
   /**
    * Parameters to carry through. The grammar's own keys are replaced; every
    * other parameter survives in its original order, duplicates included.

@@ -70,6 +70,12 @@ import type {
   QueryObserverFactory,
   QuerySourceConfig,
   ReadonlyChannel,
+  RelayConnection,
+  RelayEnvironment,
+  RelayOperation,
+  RelayPageRequest,
+  RelaySnapshot,
+  RelaySourceConfig,
   ResolvedColumn,
   ResultProvenance,
   ResultState,
@@ -108,6 +114,48 @@ import type {
   SourceSupport,
 } from "./index.js";
 import * as dataviews from "./index.js";
+import type {
+  IndexedDBFactory,
+  IndexedDBViewStoreConfig,
+  JsonValue,
+  PreferenceResult,
+  PresentationPatch,
+  PresentationTarget,
+  SavedView,
+  UnreadableView,
+  ViewChanges,
+  ViewCreateResult,
+  ViewDraft,
+  ViewGetResult,
+  ViewList,
+  ViewPresentation,
+  ViewRemoveResult,
+  ViewRevision,
+  ViewStore,
+  ViewUpdateResult,
+} from "./lib/views/index.js";
+
+/** Every type the saved-view entry point exports, as one enumerable tuple. */
+type EveryViewsType = [
+  IndexedDBFactory,
+  IndexedDBViewStoreConfig,
+  JsonValue,
+  PreferenceResult,
+  PresentationPatch,
+  PresentationTarget,
+  SavedView,
+  UnreadableView,
+  ViewChanges,
+  ViewCreateResult,
+  ViewDraft,
+  ViewGetResult,
+  ViewList,
+  ViewPresentation,
+  ViewRemoveResult,
+  ViewRevision,
+  ViewStore,
+  ViewUpdateResult,
+];
 
 /** Every type the package root re-exports, as one enumerable tuple. */
 type EveryPublicType = [
@@ -197,6 +245,12 @@ type EveryPublicType = [
   QueryObserver<SourcePage>,
   QueryObserverFactory<SourcePage>,
   QuerySourceConfig,
+  RelayConnection,
+  RelayEnvironment,
+  RelayOperation,
+  RelayPageRequest,
+  RelaySnapshot,
+  RelaySourceConfig,
   SourceActionRequest,
   SourceActionRunner,
   SourceAdapter,
@@ -214,7 +268,15 @@ type EveryPublicType = [
 describe("public surface types", () => {
   it("re-exports the full type surface from the barrel", () => {
     expectTypeOf<EveryPublicType>().not.toBeAny();
-    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<98>();
+    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<104>();
+  });
+
+  it("exports the saved-view types from their own entry point", () => {
+    expectTypeOf<EveryViewsType>().not.toBeAny();
+    expectTypeOf<EveryViewsType["length"]>().toEqualTypeOf<18>();
+    expectTypeOf<
+      ViewStore["create"]
+    >().returns.resolves.toEqualTypeOf<ViewCreateResult>();
   });
 
   it("exports the identity functions with the declared shapes", () => {

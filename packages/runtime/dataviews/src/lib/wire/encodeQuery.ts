@@ -85,9 +85,11 @@ export default function encodeQuery(
   if (canonical.group !== null) {
     params.set("group", canonical.group);
   }
-  // Written always: a window read back is the window that was displayed,
-  // never a default the reader has to know.
-  params.set("page", String(window.page));
-  params.set("size", String(window.size));
+  // Written whenever given: a window read back is the window that was
+  // displayed, never a default the reader has to know.
+  if (window !== null) {
+    params.set("page", String(window.page));
+    params.set("size", String(window.size));
+  }
   return params;
 }
