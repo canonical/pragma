@@ -1,7 +1,6 @@
 import type { ReactElement } from "react";
 import { memo } from "react";
 import useDataViewsValue from "../../../DataViews/hooks/useDataViewsValue.js";
-import { rowStyle } from "../../tableStyles.js";
 import { Cell } from "../Cell/index.js";
 import { SelectionCell } from "../SelectionCell/index.js";
 import type { RowProps } from "./types.js";
@@ -27,7 +26,6 @@ function Row<TRow extends object>({
       className={[componentCssClassName, selected && "selected"]
         .filter(Boolean)
         .join(" ")}
-      style={rowStyle}
       aria-selected={selectable ? selected : undefined}
     >
       {selectable ? (

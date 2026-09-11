@@ -21,8 +21,8 @@ import {
   useTableGeometry,
 } from "./hooks/index.js";
 import tableStatus from "./tableStatus.js";
-import { rowStyle } from "./tableStyles.js";
 import type { DataTableProps } from "./types.js";
+import "./styles.css";
 
 const componentCssClassName = "ds data-table";
 
@@ -190,10 +190,10 @@ export default function DataTable<
       aria-busy={busy}
     >
       {/* biome-ignore lint/a11y/useSemanticElements: <thead> is only valid inside a <table>, and this grid is deliberately not one */}
-      <div role="rowgroup" className="row-group header">
+      <div role="rowgroup" className="ds data-table-row-group header">
         {/* biome-ignore lint/a11y/useSemanticElements: <tr> is only valid inside a <table>, and this grid is deliberately not one */}
         {/* biome-ignore lint/a11y/useFocusableInteractive: the row is structure, not a widget — the focusable controls live in its cells */}
-        <div role="row" className="row" style={rowStyle}>
+        <div role="row" className="ds data-table-row">
           {selectable ? (
             <SelectAllCell selection={provider.selection} ids={scopes.ids} />
           ) : null}

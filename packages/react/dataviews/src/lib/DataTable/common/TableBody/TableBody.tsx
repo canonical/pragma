@@ -1,7 +1,6 @@
 import type { ReactElement } from "react";
 import { memo } from "react";
 import useDataViewsValue from "../../../DataViews/hooks/useDataViewsValue.js";
-import { rowStyle, statusCellStyle } from "../../tableStyles.js";
 import { Row } from "../Row/index.js";
 import type { TableBodyProps } from "./types.js";
 
@@ -36,12 +35,11 @@ function TableBody<TRow extends object>({
       ) : (
         // biome-ignore lint/a11y/useSemanticElements: <tr> is only valid inside a <table>, and this grid is deliberately not one
         // biome-ignore lint/a11y/useFocusableInteractive: the row is structure, not a widget — the focusable controls live in its cells
-        <div role="row" className="row status" style={rowStyle}>
+        <div role="row" className="ds data-table-row status">
           {/* biome-ignore lint/a11y/useSemanticElements: <td> is only valid inside a <table>, and this grid is deliberately not one */}
           <div
             role="cell"
-            className={`cell status ${status.kind}`}
-            style={statusCellStyle}
+            className={`ds data-table-cell status ${status.kind}`}
           >
             {renderStatus(status)}
           </div>

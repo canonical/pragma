@@ -125,13 +125,21 @@ describe("DataTable", () => {
     ).toEqual(["alpha", "running"]);
   });
 
+  // The geometry is one publication on the container and one class on every
+  // row: `styles.css` reads the custom property into the shared
+  // `grid-template-columns`, so no row ever carries a width of its own. The
+  // stylesheet is not applied under jsdom, so what is pinned here is the two
+  // halves of that contract — the published value, and the class that reads
+  // it — rather than a resolved computed style.
   it("publishes one track list on the container and shares it with every row", () => {
     loadedTable();
     const table = screen.getByRole("table", { name: "Machines" });
     expect(table.style.getPropertyValue("--data-table-columns")).not.toBe("");
     for (const row of screen.getAllByRole("row")) {
-      expect(row.style.gridTemplateColumns).toBe("var(--data-table-columns)");
+      expect(row.matches(".ds.data-table-row")).toBe(true);
+      expect(row.getAttribute("style")).toBeNull();
     }
+    expect(table.querySelector('[role="cell"][style]')).toBeNull();
   });
 
   it("merges the caller's class name and inline style onto the root", () => {

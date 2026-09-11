@@ -1,0 +1,19 @@
+/* @canonical/dataviews-react — every component stylesheet the package ships
+ *
+ * One file a consumer can link, so that every component rule is in the entry
+ * stylesheet from the first paint:
+ *
+ *   @import url("@canonical/dataviews-react/index.css");
+ *
+ * What it buys is presence, not position. Each component imports its own
+ * stylesheet from its module, so without this file a component's rules reach
+ * the page only when the JavaScript that renders it does — and a lazily
+ * loaded route paints before its CSS arrives. Linking this file means no
+ * route can ever render unstyled.
+ *
+ * A hand-written list, not a generated one, and `index.css.test.ts` fails if
+ * it ever disagrees with the stylesheets on disk. Add a component, add its
+ * line, alphabetically.
+ */
+
+@import url("./DataTable/styles.css");

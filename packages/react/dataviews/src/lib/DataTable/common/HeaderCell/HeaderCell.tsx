@@ -62,7 +62,7 @@ export default function HeaderCell({
             setSort(nextSort(field, sort));
           }}
         >
-          {column.header}
+          <span className="label">{column.header}</span>
         </button>
       ) : (
         <span id={labelId} className="label">
