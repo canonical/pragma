@@ -6,21 +6,22 @@ import { expect, userEvent, waitFor } from "storybook/test";
 import type {
   MachineFields,
   SortableField,
-} from "../../storybook/dataTable/fixtures.js";
+} from "../../storybook/machines/fixtures.js";
 import {
   createEmptySource,
   createFailingSource,
   createPendingSource,
-} from "../../storybook/dataTable/fixtures.js";
+} from "../../storybook/machines/fixtures.js";
 import type {
   MachineProvider,
   MachineProviderOptions,
-} from "../../storybook/dataTable/story-utils.js";
+} from "../../storybook/machines/story-utils.js";
 import {
+  hostName,
   useMachineProvider,
   withAppScope,
   withFrame,
-} from "../../storybook/dataTable/story-utils.js";
+} from "../../storybook/machines/story-utils.js";
 import useDataViewsCell from "../DataViews/hooks/useDataViewsCell.js";
 import useDataViewsValue from "../DataViews/hooks/useDataViewsValue.js";
 import Component from "./DataTable.js";
@@ -56,10 +57,6 @@ type StoryTableProps = Omit<
   DataTableProps<MachineFields, RowRecord>,
   "provider" | "columns" | "rowLabel"
 >;
-
-/** Names a record for its selection checkbox: by host, else by identity. */
-const hostName = (row: RowRecord, rowId: string): string =>
-  typeof row.name === "string" ? row.name : rowId;
 
 /** The table over a provider bound to the story's own source. */
 function MachinesTable({

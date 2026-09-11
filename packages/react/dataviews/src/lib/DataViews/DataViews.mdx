@@ -1,0 +1,125 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./DataViews.stories";
+
+<Meta of={Stories} name="Recipes" />
+
+# DataViews composition recipes
+
+A `DataViews` root mounts one provider for the parts inside it. The parts read the root: they take presentation choices — a name, visible field labels, the page sizes to offer — and never a second copy of the query, the window or the selection the provider already owns. Ordinary wrappers and your own components sit between them; moving pagination means moving an element, not asking for a slot.
+
+## The connected parts
+
+Build the source and the provider once, and tell the provider what the source can execute: the filters and the table's sortable columns offer nothing beyond it, and the binding refuses a provider told anything else. Then place the parts inside the root, in any order and inside any wrapper.
+
+```tsx
+import {
+  createArraySource,
+  createDataViewsProvider,
+  createSourceBinding,
+} from "@canonical/dataviews-core";
+import {
+  DataTable,
+  DataViews,
+  type DataTableColumn,
+} from "@canonical/dataviews-react";
+import { useEffect, useState } from "react";
+import { machineSchema, machines } from "./machines.js";
+
+const columns: readonly DataTableColumn[] = [
+  { id: "name", header: "Host" },
+  { id: "status", header: "Status" },
+  { id: "cores", header: "Cores" },
+  { id: "owner", header: "Owner" },
+];
+
+export function Machines() {
+  const [source] = useState(() =>
+    createArraySource({
+      rows: machines,
+      fields: ["name", "status", "region", "cores", "owner"],
+    }),
+  );
+  const [provider] = useState(() =>
+    createDataViewsProvider({
+      schema: machineSchema,
+      capabilities: source.capabilities,
+    }),
+  );
+  useEffect(() => {
+    const binding = createSourceBinding({ host: provider, adapter: source });
+    if (provider.result.get().result.status === "idle") {
+      provider.refresh();
+    }
+    return binding.dispose;
+  }, [provider, source]);
+  return (
+    <DataViews provider={provider}>
+      <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
+      <DataTable
+        provider={provider}
+        columns={columns}
+        label="Machines"
+        selectable
+        rowLabel={(row) => String(row.name)}
+      />
+      <DataViews.Actions />
+      <DataViews.Pagination label="Machines pagination" />
+    </DataViews>
+  );
+}
+```
+
+<Canvas of={Stories.ConnectedParts} sourceState="none" />
+
+## Keeping the query in the URL
+
+A location binding makes the URL the query's other home. Every edit the filters make writes the canonical query to the location, and back, forward or a pasted URL is adopted by the provider — one authority, no mirroring effect. A link carrying a clause the grammar, the schema or the source refuses is not adopted: it stays in the URL and its reasons are published on `binding.issues`, for the host to show beside the controls. The parts read the provider either way.
+
+`createLocationBinding` and `createPlatformLocation` come from `@canonical/dataviews-core`. The platform is your router's platform surface — anything with `getLocation`, `navigate` and `subscribe`.
+
+```tsx
+import {
+  createLocationBinding,
+  createPlatformLocation,
+  type DataViewsProvider,
+  type PlatformLocation,
+} from "@canonical/dataviews-core";
+import { useDataViewsValue } from "@canonical/dataviews-react";
+import { useEffect, useMemo } from "react";
+import { machineSchema } from "./machines.js";
+
+type MachinesProvider = DataViewsProvider<typeof machineSchema.fields>;
+
+export function MachinesUrlQuery({
+  provider,
+  platform,
+}: {
+  provider: MachinesProvider;
+  platform: PlatformLocation;
+}) {
+  // Building the binding subscribes to nothing; observing does, so it
+  // happens in an effect and a discarded render leaves nothing behind.
+  const binding = useMemo(
+    () =>
+      createLocationBinding({
+        host: provider,
+        location: createPlatformLocation(platform),
+      }),
+    [provider, platform],
+  );
+  useEffect(() => binding.observe(), [binding]);
+  const issues = useDataViewsValue(binding.issues);
+  return issues.length === 0 ? null : (
+    <ul className="query-issues">
+      {issues.map((issue, index) => (
+        // One parameter can be refused for several reasons.
+        <li key={`${index}:${issue.parameter}`}>{issue.reason}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+The story below arrives on a location carrying `status=failed`. The location wins when it carries a query, so the provider adopts it, and the filters and the table show only failed machines. It uses a memory location, so the story never rewrites this page's own address.
+
+<Canvas of={Stories.QueryInTheUrl} sourceState="none" />

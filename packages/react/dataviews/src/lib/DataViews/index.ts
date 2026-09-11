@@ -1,4 +1,5 @@
 export type { CellScopeValue } from "./CellScopeContext.js";
+export type { ActionsProps } from "./common/Actions/index.js";
 export type { FiltersProps } from "./common/Filters/index.js";
 export type { PaginationProps } from "./common/Pagination/index.js";
 export * from "./hooks/index.js";

@@ -1,0 +1,105 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /**
+   * PaginationBar styles
+   *
+   * The specification is the anatomy beside the code,
+   * `PaginationBar.anatomy.yaml`. Every value below is one it binds; what it
+   * could not bind is recorded there, never hardcoded here.
+   *
+   * The selects and buttons are the design system's own. The bar themes them
+   * through their channels — the form layer's input tokens and the Button's
+   * padding — and overrides only what a row of them needs: a select's width,
+   * and each icon-only button's square.
+   */
+  .ds.data-table-pagination-bar {
+    /* Held to the bottom of whatever scrolls it, over the rows beneath. */
+    position: sticky;
+    inset-block-end: 0;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--dimension-100);
+    padding-inline-start: var(--density-padding-inline);
+    color: var(--surface-color-text, var(--color-text));
+    font-family: var(--typography-text-primary-font-family);
+    font-size: var(--typography-text-primary-font-size);
+    font-weight: var(--typography-text-primary-font-weight);
+    /* The surface it sits on, so the rows it covers do not show through. */
+    background-color: var(--surface-color-background, var(--color-background));
+    border-block-start: var(--dimension-stroke-thickness-medium) solid
+      var(--color-border-muted);
+
+    /* The design's compact, borderless dropdown, on the select's own tokens. */
+    --form-input-height: var(--density-line-height-effective);
+    --form-input-padding-block: var(--dimension-050);
+    --form-input-padding-inline: var(--dimension-100);
+    --form-input-background: var(--color-foreground-ghost);
+    --form-input-border-color: transparent;
+
+    & > .leading,
+    & > .trailing {
+      display: flex;
+      align-items: center;
+      gap: var(--dimension-100);
+    }
+
+    & > .leading > .page-size,
+    & > .trailing > .page {
+      display: flex;
+      align-items: center;
+      gap: var(--dimension-050);
+      white-space: nowrap;
+    }
+
+    & > .trailing > .page {
+      padding-inline-end: var(--dimension-100);
+    }
+
+    & > .leading > .summary {
+      padding-inline-start: var(--dimension-100);
+      white-space: nowrap;
+    }
+
+    & > .leading > .divider,
+    & > .trailing > .divider {
+      inline-size: var(--dimension-stroke-thickness-medium);
+      block-size: var(--dimension-300);
+      background-color: var(--color-border-muted);
+    }
+
+    /* The input chrome fills its container; in a bar it takes its content. */
+    & > .leading > .page-size > .ds.input.select,
+    & > .trailing > .page > .ds.input.select {
+      inline-size: auto;
+    }
+
+    & > .trailing > .navigation {
+      display: flex;
+      align-items: center;
+    }
+
+    /* Icon-only Buttons collapse without a label. Each is held to a square
+       one row tall, its icon centred and its side padding equal. */
+    & > .trailing > .navigation > .ds.button {
+      --button-padding-inline-end: var(--dimension-100);
+      min-block-size: var(--density-line-height-effective);
+      min-inline-size: var(--density-line-height-effective);
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Until the design's skip icons ship: a bar with an arrow meeting it,
+       turned towards the edge the button goes to. */
+    & > .trailing > .navigation > .first .ds.icon {
+      rotate: -90deg;
+    }
+
+    & > .trailing > .navigation > .last .ds.icon {
+      rotate: 90deg;
+    }
+  }
+}

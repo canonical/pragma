@@ -1,0 +1,93 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./Filters.stories";
+
+<Meta of={Stories} name="Recipes" />
+
+# DataViews.Filters recipes
+
+`DataViews.Filters` edits the collection's query. It takes no query and no list of fields: which fields it offers comes from the provider's schema, and which operators each accepts comes from what the provider's source declares it can execute. It never offers a restriction the source would refuse, and it has no draft to keep in step with the applied query — each edit is the applied query.
+
+The design has not drawn the filters yet, so the part renders plain form controls: a group of checkboxes for a choices field, a from and a to bound for a number or date field, and one checkbox for a flag.
+
+## Filters over a composed collection
+
+Tell the provider the source's capabilities: the filters read them, and throw when they were not given. `labels` names the fields for the reader; a field without a label is named by its field name.
+
+```tsx
+import {
+  createArraySource,
+  createDataViewsProvider,
+  createSchema,
+  createSourceBinding,
+} from "@canonical/dataviews-core";
+import {
+  DataTable,
+  DataViews,
+  type DataTableColumn,
+} from "@canonical/dataviews-react";
+import { useEffect, useState } from "react";
+import { machines } from "./machines.js";
+
+// The fields a filter can edit, and the values each takes.
+const machineSchema = createSchema([
+  { field: "status", kind: "choices", options: ["running", "failed", "pending"] },
+  { field: "cores", kind: "number", min: 1 },
+]);
+
+const columns: readonly DataTableColumn[] = [
+  { id: "name", header: "Host" },
+  { id: "status", header: "Status" },
+  { id: "cores", header: "Cores" },
+  { id: "owner", header: "Owner" },
+];
+
+export function Machines() {
+  const [source] = useState(() =>
+    createArraySource({
+      rows: machines,
+      fields: ["name", "status", "region", "cores", "owner"],
+    }),
+  );
+  const [provider] = useState(() =>
+    createDataViewsProvider({
+      schema: machineSchema,
+      capabilities: source.capabilities,
+    }),
+  );
+  useEffect(() => {
+    const binding = createSourceBinding({ host: provider, adapter: source });
+    if (provider.result.get().result.status === "idle") {
+      provider.refresh();
+    }
+    return binding.dispose;
+  }, [provider, source]);
+  return (
+    <DataViews provider={provider}>
+      <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
+      <DataTable provider={provider} columns={columns} label="Machines" />
+    </DataViews>
+  );
+}
+```
+
+<Canvas of={Stories.Default} sourceState="none" />
+
+## The applied query, not a draft
+
+A checked status or a filled bound is the restriction in force. The provider's field handles apply the same edits from code — `provider.fields.status.eq.set(["failed"])` — and the controls follow.
+
+<Canvas of={Stories.ChoiceApplied} sourceState="none" />
+
+<Canvas of={Stories.BoundApplied} sourceState="none" />
+
+## An invalid edit keeps the restriction
+
+A bound that does not parse is refused, not applied. The restriction already in force stays in force, and the message beside the input says so, because the text on screen is no longer what filters the rows. Emptying a bound is incomplete rather than a removal; the clear button removes it.
+
+<Canvas of={Stories.InvalidEditKeepsTheRestriction} sourceState="none" />
+
+## Only what the source can run
+
+A field the source does not declare filterable gets no control. Here the source cannot filter by cores, so there is no cores bound, even though the schema names the field.
+
+<Canvas of={Stories.UndeclaredField} sourceState="none" />

@@ -6,7 +6,7 @@ import type {
 import { isIdentity } from "@canonical/dataviews-core";
 import type { ReactElement } from "react";
 import DataViewsContext from "./Context.js";
-import { Filters, Pagination } from "./common/index.js";
+import { Actions, Filters, Pagination } from "./common/index.js";
 import type { DataViewsProps } from "./types.js";
 
 /**
@@ -35,6 +35,8 @@ function DataViews<
   );
 }
 
+/** The connected action bar, over the current selection. */
+DataViews.Actions = Actions;
 /** The connected query-editing part of the composition. */
 DataViews.Filters = Filters;
 /** The connected window-navigation part of the composition. */
