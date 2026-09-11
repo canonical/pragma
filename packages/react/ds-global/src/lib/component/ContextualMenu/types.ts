@@ -6,12 +6,19 @@ import type {
   WindowFitmentPlacement,
   WindowFitmentSide,
 } from "../../hooks/index.js";
+import type ButtonProps from "../Button/types.js";
 
 export type { MenuEntry, MenuItem, MenuSeparator } from "../../hooks/index.js";
 
 type OwnProps = Pick<
   UseContextualMenuProps,
-  "distance" | "gutter" | "maxWidth" | "autoFit"
+  | "distance"
+  | "gutter"
+  | "maxWidth"
+  | "autoFit"
+  | "closeOnEscape"
+  | "closeOnOutsideClick"
+  | "highlightFirstItem"
 > & {
   /**
    * Whether arrow keys wrap at the first/last item. Defaults to true (the
@@ -25,6 +32,11 @@ type OwnProps = Pick<
    * the menu.
    */
   trigger: ReactNode;
+  /**
+   * Design-system Button props for a styled trigger. Children are supplied by
+   * `trigger`; omit this prop to preserve the native button trigger.
+   */
+  triggerProps?: Omit<ButtonProps, "children">;
   /**
    * The menu entries: one flat list of items and separators
    * (`{ type: "separator", key: "…" }`). An item's own `items` form its submenu, which

@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { createRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import Component from "./Button.js";
 
@@ -237,6 +238,14 @@ describe("Button component", () => {
   });
 
   describe("HTML attributes", () => {
+    it("forwards a ref to the native button", () => {
+      const ref = createRef<HTMLButtonElement>();
+      render(<Component ref={ref}>Test</Component>);
+
+      expect(ref.current).toBe(screen.getByRole("button"));
+      expect(ref.current).toBeInstanceOf(HTMLButtonElement);
+    });
+
     it("passes through HTML button attributes", () => {
       render(
         <Component type="submit" name="submitBtn" value="submit">
