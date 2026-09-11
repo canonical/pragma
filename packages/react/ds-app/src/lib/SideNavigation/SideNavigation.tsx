@@ -1,5 +1,5 @@
 import type React from "react";
-import { useCallback, useId, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { useCollapseShortcut } from "./common/hooks/useCollapseShortcut/index.js";
 import { Content, ContextSwitcher, Footer, Header } from "./common/index.js";
 import type { SideNavigationProps } from "./types.js";
@@ -18,10 +18,12 @@ const componentCssClassName = "ds side-navigation";
  * navigation, so it sits outside the landmark in a plain `<div>` between
  * Header and Content; hidden when collapsed, where labels are unviable),
  * Content (the main `<nav>` landmark) and Footer (user profile, settings
- * and non-navigational actions). The root element is a plain `<div>` — the
- * only landmark is the Content `<nav>`, so screen readers announce exactly
- * one navigation region. `aria-label` is forwarded to that `<nav>` and
- * defaults to `"Main navigation"`.
+ * and non-navigational actions). The root element is a plain `<div>` and
+ * the component's single *navigation* landmark is Content's `<nav>`, so
+ * screen readers announce exactly one navigation region; the regions
+ * themselves are `<header>`/`<footer>` elements, which additionally
+ * expose banner/contentinfo landmarks. `aria-label` is forwarded to the
+ * `<nav>` and defaults to `"Main navigation"`.
  *
  * A visually hidden "Skip to main content" link is the first element in the
  * component's DOM order, so keyboard users can bypass the navigation block;
@@ -50,22 +52,34 @@ const SideNavigation = ({
   skipTo = "#main-content",
   // Controlled circuit — not official yet.
   // expanded: expandedProp,
-  defaultExpanded = true,
+  defaultExpanded: defaultExpandedProp,
   // onExpandedChange,
-  keyboardShortcut = false,
+  keyboardShortcut = true,
   "aria-label": ariaLabel,
   ...props
 }: SideNavigationProps): React.ReactElement => {
   const contentId = useId();
 
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  const [expanded, setExpanded] = useState(defaultExpandedProp ?? true);
+
+  // Mobile seed (SPEC.md §4 responsive): below the small breakpoint, the
+  // expanded state renders as a fullscreen fixed overlay — a takeover, not a
+  // rail — so with `defaultExpanded` left unset (desktop default `true`), a
+  // small viewport collapses the rail after mount instead. An explicit
+  // `defaultExpanded` always wins, on every viewport. Post-mount on purpose:
+  // the server cannot know the viewport, so SSR/hydration stay pure — the
+  // cost is one frame of the expanded rail on a phone before the flip.
+  useEffect(() => {
+    if (defaultExpandedProp !== undefined) return;
+    if (window.matchMedia("(width < 620px)").matches) setExpanded(false);
+  }, [defaultExpandedProp]);
 
   const handleToggle = useCallback(() => {
     setExpanded((current) => !current);
   }, []);
 
-  // Reserved (§10.1) — inert until `keyboardShortcut` opts in.
-  // See common/hooks/useCollapseShortcut.
+  // Ctrl+B rail-collapse shortcut (the 24.04 spec §10.1) — on unless
+  // `keyboardShortcut` opts out. See common/hooks/useCollapseShortcut.
   useCollapseShortcut({ enabled: keyboardShortcut, onTrigger: handleToggle });
 
   // --- Controlled circuit (not official yet) -------------------------------
@@ -102,11 +116,10 @@ const SideNavigation = ({
       {contextSwitcher ? (
         // Own plain <div> region — a select-like widget is not navigation,
         // so it sits outside the <nav> landmark. Hidden when collapsed:
-        // its rows are label-driven, unviable icon-only.
-        <div
-          className="ds side-navigation-context-switcher-region"
-          data-expanded={expanded}
-        >
+        // its rows are label-driven, unviable icon-only (the collapsed CSS
+        // hides the region via the root's data-expanded, so the region
+        // carries no state of its own).
+        <div className="ds side-navigation-context-switcher-region">
           <ContextSwitcher {...contextSwitcher} />
         </div>
       ) : null}
