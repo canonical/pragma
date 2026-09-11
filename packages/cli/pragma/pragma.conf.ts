@@ -72,7 +72,15 @@ exactly the domain that was published.`;
 
 /**
  * The read stories the design-system pack supplies — `block`, `token`,
- * `modifier` and `tier` as declared data rather than code.
+ * `variable`, `modifier` and `tier` as declared data rather than code.
+ *
+ * `token` and `variable` read the TOKEN-ONTOLOGY pack's four strata rather than
+ * this one's graph, and they are declared here anyway, deliberately: `token
+ * consumers` joins a symbol to the design-system records that consume it, so
+ * the pair spans both packs and there is no single pack whose `stories/*.json`
+ * could carry them. The day the strata are addressable without the design
+ * system — or the day either pack ships its own stories — is the day to split
+ * them out, and the note below about deletion applies to whichever half moves.
  *
  * The association with the pack is the point: when `@canonical/design-system`
  * starts shipping its own `stories/*.json`, this block is deleted and the
@@ -314,6 +322,37 @@ const designSystemStories: readonly PackDefinition[] = [
             { name: "uri", property: "ds:name", graphqlField: "uri" },
           ],
         },
+        // A `tokens` expand belongs here — which symbols this block consumes,
+        // at which style key and rank, the mirror of `token consumers` — and it
+        // is DELIBERATELY ABSENT rather than forgotten. There is no path from a
+        // block to a consumed symbol that the shipped ontology defines, by
+        // either candidate route, and `block.shipped.exec.test.ts` holds every
+        // term this story names to being DEFINED for exactly the reason a
+        // silently unrenderable expand is a bug rather than a gap.
+        //
+        // Measured against the shipped pack:
+        //
+        //   ds:hasTokenBinding, ds:consumesSymbol, ds:rank, ds:viaBlock,
+        //   ds:node — none is declared a property. The record they hang off is
+        //   the design system's to mint (the anatomy vocabulary's own note
+        //   calls it "design-system's ds:TokenBinding record"), and it has not
+        //   landed.
+        //
+        //   The anatomy route is complete in itself and unreachable from here:
+        //   `anatomy:Specification → rootNode → Node → hasStyle → Style →
+        //   consumes` is all defined, but NO property anywhere ranges over
+        //   `anatomy:Specification`, so nothing joins a block to its anatomy
+        //   graph — a block carries its anatomy as the `ds:anatomyDsl` STRING
+        //   read above, not as nodes. Of the anatomy classes only
+        //   `anatomy:StyleKey` has instances (111, the registry).
+        //
+        // When either edge is defined, the declaration is one entry: relation
+        // `ds:hasTokenBinding`, selecting `ds:consumesSymbol`,
+        // `anatomy:styleKey`, `anatomy:styleState`, `ds:rank`, `ds:viaBlock`
+        // and `ds:node` — all seven, because a binding is identified by the
+        // whole tuple. `token consumers` already answers the same question from
+        // the symbol's end and needs no code change when the records arrive;
+        // this expand needs the terms to exist first.
       ],
       disclosure: {
         levels: ["summary", "standard", "detailed"],
@@ -327,59 +366,780 @@ const designSystemStories: readonly PackDefinition[] = [
     },
   },
 
-  // Design tokens: SPARQL-sourced on both verbs. There is no `ds:Token` GraphQL
-  // type to project against when the graph ships no tokens, and the lookup reads
-  // a property path (`ds:tokenType/rdfs:label`) only SPARQL can express. The
-  // `emptyRecovery` install hint is the story users see on an empty store. The
-  // noun is now purely declarative: `token add-config` wrote a starter file, and
-  // L-OPEN-9 removed it rather than growing the read grammar a mutation verb.
+  // The design-token SYMBOLS — S1 of the four token strata, keyed on the name
+  // literal the binding programme publishes.
+  //
+  // REPOINTED from `ds:Token`, a class no graph asserts. The shipped pack
+  // carries 0 instances of it and 745 `dt:TokenSymbol`, so every `token list`
+  // on every install answered an empty table while the population sat one
+  // namespace over — the same silent shape as reading a retired `ds:whenToUse`,
+  // and caught the same way (`listBudget.shipped.exec.test.ts` measured this
+  // story at 0 rows / 2 bytes). `ds:valueLight`/`ds:valueDark` go with it: a
+  // symbol's value is not a pair of theme columns but one row per POSITION in
+  // the coordinate space, which is what `token values` answers.
+  //
+  // NO `nameFallback`, deliberately. The kernel's IRI derivation publishes a
+  // dotted local name with SLASHES (`dt:color.text` → `color/text`), which
+  // contradicts the dotted notation ruled for symbol names and would make this
+  // answer disagree with the anatomy's spelling of the same symbol. The
+  // consequence is visible rather than hidden: until the pack ships
+  // `rdfs:label` on the symbols, `token list` publishes no rows and
+  // `token lookup` resolves no name. An empty answer that says so beats a
+  // populated one whose names nothing else recognises — and it is why `token`
+  // is still in `EMPTY_CORPUS_TODAY`.
   {
     noun: "token",
-    description: "List all design tokens.",
+    description: "List the design-token symbols.",
     toolDescription:
-      "List all design tokens with their type. Use when browsing which tokens exist under the active scope. Example: token_list {}.",
+      'List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description every definition of that symbol agrees on, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: "color" }.',
     list: {
+      // Type and description are DEFINITION-level facts, and 393 of the 745
+      // symbols have more than one definition (`color.text` has 20). The
+      // AGREEMENT RULE decides which reaches the row: a value is published when
+      // every definition of that symbol agrees on it, and left blank when they
+      // disagree. That is one fact and one rule, and it lives HERE — in the
+      // query — because a formatter cannot see the population it would have to
+      // judge, and because the same rule has to hold for the documentation
+      // projection reading the same graph.
+      //
+      // `COUNT(DISTINCT ...) = 1` is the whole rule; `MIN` then names the one
+      // value there is, and is preferred to `SAMPLE` because it ignores an
+      // unbound row rather than being free to return it. A symbol with NO
+      // definition at all (the 25 minted channels) counts 0, not 1, so it
+      // blanks too — absence and disagreement both answer blank, which is the
+      // honest reading of "no value every definition agrees on".
+      //
+      // Measured over the 745 symbols: the agreement rule blanks 40
+      // descriptions by disagreement and 0 types, plus 25 of each by absence.
+      // The rejected alternative — prefer the mode file — blanks BOTH fields
+      // for 391 of them, every primitive included, so `token list --type color`
+      // could not have returned a single palette symbol.
       query: [
-        "SELECT ?uri ?name ?category WHERE {",
-        "  ?uri a ds:Token ;",
-        "       ds:tokenId ?name .",
-        "  OPTIONAL {",
-        "    ?uri ds:tokenType ?type .",
-        "    ?type rdfs:label ?category .",
+        "SELECT ?uri ?name ?type ?description ?channelOf",
+        "WHERE {",
+        "  ?uri a dt:TokenSymbol ;",
+        "       rdfs:label ?name .",
+        // A channel IS a symbol after the binding programme, so the relation to
+        // the symbol it provisions is a column on this population rather than a
+        // noun of its own. Bound to the base symbol's LABEL, not its IRI: the
+        // filter column and the displayed column are one column, and an
+        // unbound IRI cell renders as a full IRI.
+        "  OPTIONAL { ?uri dt:channelOf/rdfs:label ?channelOf }",
+        "  {",
+        "    SELECT ?uri",
+        '           (IF(COUNT(DISTINCT ?definedType) = 1, MIN(?typeLabel), "") AS ?type)',
+        '           (IF(COUNT(DISTINCT ?definedDescription) = 1, MIN(?definedDescription), "") AS ?description)',
+        "    WHERE {",
+        "      ?uri a dt:TokenSymbol .",
+        "      OPTIONAL {",
+        "        ?definition dt:symbol ?uri .",
+        "        OPTIONAL {",
+        "          ?definition dt:tokenType ?definedType .",
+        "          ?definedType rdfs:label ?typeLabel .",
+        "        }",
+        "        OPTIONAL { ?definition w3c-tokens:description ?definedDescription }",
+        "      }",
+        "    }",
+        "    GROUP BY ?uri",
         "  }",
         "}",
         "ORDER BY ?name",
       ].join("\n"),
       columns: [
-        { field: "uri", label: "IRI" },
         { field: "name", label: "Name" },
-        { field: "category", label: "Type" },
+        { field: "type", label: "Type" },
+        { field: "channelOf", label: "Channel of" },
+        { field: "description", label: "Description" },
+        { field: "uri", label: "IRI" },
       ],
+      filters: [
+        {
+          param: "type",
+          variable: "type",
+          // The seven typed members of the definition's type class, which is
+          // the same term the `type` column reads through its definitions. A
+          // type the ontology declares that no symbol is filed under is a calm
+          // empty list, not a bad argument.
+          vocabulary: {
+            query: [
+              "SELECT DISTINCT ?type WHERE {",
+              "  ?kind a w3c-tokens:TokenType ;",
+              "        rdfs:label ?type .",
+              "}",
+            ].join("\n"),
+          },
+          description: "Filter by the agreed type.",
+        },
+        {
+          param: "channelOf",
+          variable: "channelOf",
+          // The dimension is "which SYMBOL", so the roster is EVERY symbol —
+          // not the far smaller set that happens to have a channel today.
+          // Asking for a symbol nothing provisions is the documented calm empty
+          // list, which is the whole reason a vocabulary is read from the graph
+          // rather than from the rows a page returned.
+          //
+          // Keyed on `rdfs:label`, the same term the column binds and the same
+          // term the lookup resolves by. All three move together or not at all.
+          vocabulary: {
+            query: [
+              "SELECT DISTINCT ?channelOf WHERE {",
+              "  ?symbol a dt:TokenSymbol ;",
+              "          rdfs:label ?channelOf .",
+              "}",
+            ].join("\n"),
+          },
+          description: "Filter to one symbol's channels.",
+        },
+      ],
+      search: {
+        variables: ["name", "description"],
+        description: "Search name and description.",
+      },
       emptyRecovery: {
         message:
-          "No tokens in the store. Build it from the configured design-system packs.",
+          "No token symbols in the store. The @canonical/token-ontology pack provides them, and a symbol is only addressable once that pack publishes its name literals.",
         cli: "sources update",
       },
     },
+    verbs: [
+      {
+        verb: "values",
+        description:
+          "List the value each symbol resolves to at each position, with its chain or its derivation.",
+        toolDescription:
+          'List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell. Example: token_values { symbol: "color.text" }.',
+        // The resolved-value shape admits exactly one of a chain or a
+        // derivation, so BOTH are selected wherever a value is projected. A
+        // surface that selected only the chain would show a blank row for every
+        // one of the 165 channel routings — and channel values are precisely
+        // what the anatomy validator and the editor's completion ask about.
+        //
+        // Both are rdf:LISTs, not literals: `dt:resolutionChain` is a list of
+        // definition IRIs, so it needs `/rdf:rest*/rdf:first` and an aggregate
+        // to become one cell. The chain items are trimmed to the path inside
+        // the token files, which is the form the resolution chain is quoted in.
+        //
+        // The cell is a SET, and its order is NOT the list's. `GROUP_CONCAT`
+        // has no defined order in SPARQL and takes no `ORDER BY`, so the links
+        // of a multi-link chain may come back either way round — which a test
+        // pinning one spelling of a two-link chain found by flaking. Reading
+        // the cell as "which definitions this value passed through" is
+        // therefore right and reading it as "in what order" is not. The
+        // ORDERED anchor a caller usually wants is the chain's HEAD, the
+        // definition the value was authored in, and that is what the lookup's
+        // `values` expand projects with `rdf:first`.
+        query: [
+          "SELECT ?symbol ?position ?value ?derivedFrom",
+          '       (GROUP_CONCAT(DISTINCT ?chainItem; SEPARATOR=" ") AS ?chain)',
+          "WHERE {",
+          "  ?resolved a dt:ResolvedValue ;",
+          "            dt:forSymbol ?symbolUri .",
+          "  ?symbolUri rdfs:label ?symbol .",
+          "  OPTIONAL { ?resolved dt:coordinate ?coordinate }",
+          "  OPTIONAL { ?resolved dt:resolvesTo ?value }",
+          "  OPTIONAL { ?resolved dt:derivedFrom/rdfs:label ?derivedFrom }",
+          "  OPTIONAL {",
+          "    ?resolved dt:resolutionChain/rdf:rest*/rdf:first ?chainUri .",
+          '    BIND(REPLACE(STR(?chainUri), "^.*/file/", "") AS ?chainItem)',
+          "  }",
+          // The coordinate's own dotted name, with the class prefix its IRI
+          // carries dropped: `dt:coordinate.mode.dark` displays and filters as
+          // `mode.dark`, which is how a position is written everywhere else.
+          // A value at the DEFAULT position carries no coordinate at all, and
+          // its cell is empty rather than a full IRI.
+          '  BIND(REPLACE(REPLACE(STR(?coordinate), "^.*[/#]", ""), "^coordinate[.]", "") AS ?position)',
+          "}",
+          "GROUP BY ?resolved ?symbol ?position ?value ?derivedFrom",
+          "ORDER BY ?symbol ?position",
+        ].join("\n"),
+        columns: [
+          { field: "symbol", label: "Symbol" },
+          { field: "position", label: "Position" },
+          { field: "value", label: "Value" },
+          { field: "chain", label: "Chain" },
+          { field: "derivedFrom", label: "Derived from" },
+        ],
+        filters: [
+          {
+            param: "symbol",
+            variable: "symbol",
+            vocabulary: {
+              query: [
+                "SELECT DISTINCT ?symbol WHERE {",
+                "  ?s a dt:TokenSymbol ;",
+                "     rdfs:label ?symbol .",
+                "}",
+              ].join("\n"),
+            },
+            description: "Filter to one symbol.",
+          },
+          {
+            param: "position",
+            variable: "position",
+            // `set`, because ONE row can sit at several positions at once: a
+            // value asserted `dt:alsoAt` a second coordinate is one row
+            // belonging to both, and a filter comparing only the whole cell
+            // would answer such a row for neither.
+            match: "set",
+            vocabulary: {
+              query: [
+                "SELECT DISTINCT ?position WHERE {",
+                "  ?c a dt:Coordinate .",
+                '  BIND(REPLACE(REPLACE(STR(?c), "^.*[/#]", ""), "^coordinate[.]", "") AS ?position)',
+                "}",
+              ].join("\n"),
+            },
+            description: "Filter to one position.",
+          },
+        ],
+        search: {
+          variables: ["symbol", "value", "derivedFrom"],
+          description: "Search symbol, value, derivation.",
+        },
+        emptyRecovery: {
+          message:
+            "No resolved token values in the store. The @canonical/token-ontology pack provides them, and a value is only addressable by symbol once that pack publishes its name literals.",
+          cli: "sources update",
+        },
+      },
+      {
+        verb: "consumers",
+        description:
+          "List which blocks consume which token symbol, at which style key, state and rank.",
+        toolDescription:
+          'List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { variable: "color-text" }.',
+        // Seven identity columns, and not one of them is decoration: a binding
+        // is identified by the whole tuple, so dropping `rank` or `node` would
+        // publish rows a caller cannot tell apart — which is worse than a wide
+        // table, because a deduplicating consumer would silently lose facts.
+        //
+        // `ds:hasTokenBinding` and its four siblings are DEFINED BY the
+        // design-system ontology only from the binding programme's records
+        // onward; today the shipped ontology defines none of them, and the `ds:`
+        // prefix IS bound, so this answers a calm empty list with the recovery
+        // below rather than failing. It starts answering with no code change.
+        query: [
+          "SELECT ?block ?symbol ?key ?state ?rank ?node ?uri",
+          '       (GROUP_CONCAT(DISTINCT ?variableName; SEPARATOR=" ") AS ?variable)',
+          "WHERE {",
+          "  ?blockUri ds:hasTokenBinding ?uri .",
+          "  ?uri ds:consumesSymbol ?symbolUri .",
+          "  ?symbolUri rdfs:label ?symbol .",
+          "  OPTIONAL { ?uri anatomy:styleKey ?key }",
+          "  OPTIONAL { ?uri anatomy:styleState ?state }",
+          "  OPTIONAL { ?uri ds:rank ?rank }",
+          "  OPTIONAL { ?uri ds:node ?node }",
+          "  OPTIONAL { ?uri ds:viaBlock ?viaUri . OPTIONAL { ?viaUri ds:name ?viaName } }",
+          "  OPTIONAL { ?blockUri ds:name ?blockName }",
+          // Every platform spelling of the consumed symbol, as a SET rather
+          // than a join that multiplies the row: 204 symbols carry both a
+          // kebab and a camelCase variable, and binding one row per variable
+          // would publish each binding twice under names a caller cannot tell
+          // apart. Aggregated, both spellings land in one cell and `--variable`
+          // set-matches either — which is also why the two spellings of one
+          // symbol return the SAME set rather than partitioning it.
+          "  OPTIONAL {",
+          "    ?variableUri dt:ofSymbol ?symbolUri ;",
+          "                 rdfs:label ?variableName .",
+          "  }",
+          '  BIND(COALESCE(?viaName, ?blockName, REPLACE(STR(?blockUri), "^.*[/#]", "")) AS ?block)',
+          "}",
+          "GROUP BY ?block ?symbol ?key ?state ?rank ?node ?uri",
+          "ORDER BY ?block ?symbol ?key ?state ?rank ?node",
+        ].join("\n"),
+        columns: [
+          { field: "block", label: "Block" },
+          { field: "symbol", label: "Symbol" },
+          { field: "variable", label: "Variables" },
+          { field: "key", label: "Style key" },
+          { field: "state", label: "State" },
+          { field: "rank", label: "Rank" },
+          { field: "node", label: "Node" },
+          { field: "uri", label: "IRI" },
+        ],
+        filters: [
+          {
+            param: "symbol",
+            variable: "symbol",
+            vocabulary: {
+              query: [
+                "SELECT DISTINCT ?symbol WHERE {",
+                "  ?s a dt:TokenSymbol ;",
+                "     rdfs:label ?symbol .",
+                "}",
+              ].join("\n"),
+            },
+            description: "Filter to one symbol.",
+          },
+          {
+            param: "variable",
+            variable: "variable",
+            // The SAME constraint as `--symbol`, named by the other spelling.
+            // A web implementer holds a CSS custom-property name, not a dotted
+            // symbol, so answering "what breaks if I change --color-text" used
+            // to take two calls and a spelling the caller did not start with.
+            // The join is in the query instead.
+            //
+            // `set`, because the cell is every platform spelling of the
+            // consumed symbol and one row legitimately belongs to all of them.
+            match: "set",
+            // The variable labels, the same source `variable lookup` resolves
+            // against — so a name that works there works here.
+            vocabulary: {
+              query: [
+                "SELECT DISTINCT ?variable WHERE {",
+                "  ?v a dt:Variable ;",
+                "     rdfs:label ?variable .",
+                "}",
+              ].join("\n"),
+            },
+            // Two things a caller will otherwise assume, both wrong.
+            //
+            // A CHANNEL variable and its semantic sibling are DIFFERENT
+            // constraints: `--variable modifier-color-text` finds the blocks
+            // that bind the channel, `--variable color-text` those that bind
+            // the symbol, and neither includes the other. Whether a block's
+            // resolution eventually reaches the other through a fallback is a
+            // question about the consumed list, not about this single-symbol
+            // join, and blurring them here would answer a question nobody
+            // asked with rows nobody can check.
+            //
+            // And a variable standing for NO symbol has no answer down this
+            // path at all — 236 of them do — which is an empty answer for a
+            // reason the recovery below names, not evidence that nothing
+            // consumes it.
+            description:
+              "A CSS variable name for the consumed symbol — the other spelling of the symbol parameter. A channel variable and its semantic sibling differ.",
+          },
+          {
+            param: "key",
+            variable: "key",
+            // The style-key REGISTRY, which the anatomy pack publishes as 111
+            // `anatomy:StyleKey` individuals. Their identity is the IRI and
+            // they carry no key literal, so the admissible spelling is the
+            // IRI's local name with the class prefix its minting adds dropped:
+            // `anatomy:key.appearance.background` is the key
+            // `appearance.background`, which is how the vocabulary's own
+            // examples write it.
+            //
+            // Read from the REGISTRY rather than from the records, and that is
+            // the point: no block has a binding record yet, so a roster read
+            // from records would be empty and would refuse every key a caller
+            // could legitimately ask about. The registry is the graph's
+            // statement of what a key may be; the records are the population.
+            vocabulary: {
+              query: [
+                "SELECT DISTINCT ?key WHERE {",
+                "  ?styleKey a anatomy:StyleKey .",
+                '  BIND(REPLACE(REPLACE(STR(?styleKey), "^.*[/#]", ""), "^key[.]", "") AS ?key)',
+                "}",
+              ].join("\n"),
+            },
+            description: "Filter to one style key.",
+          },
+          {
+            param: "state",
+            variable: "state",
+            // The closed interaction-state vocabulary, read from the shape that
+            // closes it rather than transcribed here: the anatomy pack's shapes
+            // constrain `anatomy:styleState` with an `sh:in` list, so the five
+            // admissible states are a query over that list. Hard-coding them
+            // would be the "don't hard-code the slugs" defect with an extra
+            // step — the graph already says it.
+            vocabulary: {
+              query: [
+                "SELECT DISTINCT ?state WHERE {",
+                "  ?shape sh:path anatomy:styleState ;",
+                "         sh:in/rdf:rest*/rdf:first ?state .",
+                "}",
+              ].join("\n"),
+            },
+            description: "Filter to one interaction state.",
+          },
+        ],
+        search: {
+          variables: ["block", "symbol", "key", "state", "node"],
+          description: "Search block, symbol, key, state and node.",
+        },
+        // Deliberately `sources update`: unlike `standard list`, this story's
+        // data does NOT ride the embedded snapshot — the binding records are
+        // written by the design-system packs, so an empty answer here really is
+        // a store that predates them.
+        emptyRecovery: {
+          message:
+            "No token bindings in the store. Either the design-system packs have not recorded which block consumes which symbol yet — a store built before they did carries none — or, if you filtered by a CSS variable, that variable stands for no symbol at all (236 of them do not) and has no consumer down this path: ask `variable chain` what it finally reaches instead.",
+          cli: "sources update",
+        },
+      },
+    ],
     lookup: {
       source: "sparql",
-      by: "ds:tokenId",
-      type: "ds:Token",
+      // `rdfs:label`, matching the `name` the list publishes — the two-step
+      // grammar is that a row's `name` goes VERBATIM to lookup. Both halves
+      // REQUIRE the literal, so both are empty together rather than one
+      // publishing names the other cannot resolve.
+      by: "rdfs:label",
+      type: "dt:TokenSymbol",
+      description:
+        "Look up one or more token symbols by dotted name, IRI, or glob.",
       toolDescription:
-        'Get type and theme values for one or more design tokens by name. Use when resolving specific tokens\' light/dark values. Example: token_lookup { name: ["color.primary"] }.',
+        'Get one design-token symbol in full: every definition behind it with that definition\'s own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob. Example: token_lookup { name: ["color.text"] }.',
       fields: [
+        // Single-valued: a channel provisions exactly one symbol.
         {
-          name: "category",
-          property: "ds:tokenType/rdfs:label",
-          label: "Type",
+          name: "channelOf",
+          property: "dt:channelOf/rdfs:label",
+          label: "Channel of",
         },
-        { name: "valueLight", property: "ds:valueLight", label: "Light value" },
-        { name: "valueDark", property: "ds:valueDark", label: "Dark value" },
+      ],
+      // A symbol-level `type` and `description` are deliberately NOT fields
+      // here. A lookup field is a property PATH, and the path from a symbol to
+      // its definitions' types is multi-valued — 20 rows for `color.text` — of
+      // which the resolver keeps the first. That is exactly the "sample one
+      // definition" the agreement rule exists to refuse, and a path cannot
+      // express `COUNT(DISTINCT ...) = 1`. So the agreed pair is published
+      // where a query can judge it (`token list`, and `--search <name>` to
+      // reach one symbol), and the `definitions` expand — which CAN show the
+      // definitions apart — carries each definition's own.
+      expand: [
+        {
+          name: "definitions",
+          heading: "Definitions",
+          kind: "table",
+          // The inverse edge: definitions point AT the symbol
+          // (`?definition dt:symbol ?uri`), so the relation from the symbol is
+          // `^dt:symbol`. 1,311 definitions stand behind 745 symbols.
+          relation: "^dt:symbol",
+          select: [
+            { name: "file", property: "w3c-tokens:inFile/w3c-tokens:path" },
+            { name: "type", property: "dt:tokenType/rdfs:label" },
+            { name: "description", property: "w3c-tokens:description" },
+          ],
+        },
+        {
+          name: "coverage",
+          heading: "Covered by",
+          // Coverage hangs on the FAMILY, not on the symbol
+          // (`?family dt:covers ?symbol`), so this is the inverse too. The
+          // family is a `ds:` entity, so its name comes from the
+          // design-system pack rather than the token ontology.
+          relation: "^dt:covers",
+          select: [{ name: "family", property: "ds:name" }],
+        },
+        {
+          name: "values",
+          heading: "Values",
+          kind: "table",
+          relation: "^dt:forSymbol",
+          // BOTH the chain and the derivation, for the reason `token values`
+          // states: the shape admits exactly one of them, and selecting only
+          // the chain would blank every channel routing.
+          //
+          // `rdf:first` and NOT `/rdf:rest*/rdf:first`, which is the walk
+          // `token values` uses. An expand's child field is a plain triple with
+          // no aggregate available, so a multi-hop chain multiplies the CHILD:
+          // 204 of the 1,072 values carry a chain of 2 or 3 links, and
+          // `color.background.container` rendered four "Values" rows for its
+          // two positions, each repeating the same value beside a different
+          // link. A caller counting positions would have read that as four.
+          // The head of the list is the definition the value was AUTHORED in
+          // (the tail is what it aliased through to a primitive), so one link
+          // per row is both correct and the most useful one; the full walk is
+          // `token values`, which can GROUP_CONCAT it into a single cell.
+          select: [
+            { name: "position", property: "dt:coordinate" },
+            { name: "value", property: "dt:resolvesTo" },
+            { name: "chain", property: "dt:resolutionChain/rdf:first" },
+            { name: "derivedFrom", property: "dt:derivedFrom/rdfs:label" },
+          ],
+        },
       ],
       sample: {
         fixedCount: true,
         toolDescription:
-          "Return randomly selected complete design tokens (with theme values) as exemplars. Use BEFORE writing queries to see actual data shapes. Example: token_sample {}.",
+          "Return random complete design-token symbols — definitions, coverage and resolved values — as exemplars. Use BEFORE writing queries to see real data shapes. Example: token_sample {}.",
+      },
+    },
+  },
+
+  // The platform VARIABLES — S4, the stylesheet's own names for the values.
+  //
+  // A SECOND noun rather than a flag on `token`, and one measurement settles
+  // it: 236 of the 1,156 variables stand for NO symbol at all — legacy twins
+  // the ontology itself names, plus the computed states and resets.
+  // `--disabled--color-text` and `--modifier-color-text` are nobody's symbol, so
+  // a surface keyed on symbols cannot address them. The cut is by STRATUM ROLE,
+  // not by platform: the platform is read out of the IRI base as an ordinary
+  // filter, so a second platform's catalogue arrives as one more value of
+  // `--platform` and not as a noun of its own.
+  //
+  // The published name is the label with its leading `--` STRIPPED, and that is
+  // what makes the noun usable at all: `--color-text` cannot be typed as a
+  // positional argument — the parser answers `unknown option '--color-text'`
+  // and a glob is no escape. Upstream publishes the stripped form as
+  // `rdfs:label`, and the stripping is measurably safe: over the 1,156
+  // variables it produces 1,156 distinct names and collides with no symbol
+  // name. `variable.parity.test.ts` pins both halves.
+  {
+    noun: "variable",
+    description:
+      "List the platform variables the design tokens are emitted as.",
+    toolDescription:
+      'List the platform VARIABLES a stylesheet declares as CSS custom properties, with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`). Example: variable_list { symbol: "color.text" }.',
+    list: {
+      query: [
+        "SELECT ?uri ?name ?platform ?symbol ?tier ?visibility",
+        '       (GROUP_CONCAT(DISTINCT ?coordinateName; SEPARATOR=" ") AS ?coordinate)',
+        "WHERE {",
+        "  ?uri a dt:Variable ;",
+        "       rdfs:label ?name .",
+        "  OPTIONAL { ?uri dt:ofSymbol/rdfs:label ?symbol }",
+        "  OPTIONAL { ?uri dt:tier ?tierUri }",
+        "  OPTIONAL { ?uri dt:visibility ?visibilityUri }",
+        // A variable is selected at a coordinate two ways, and both count: the
+        // CONDITION its declaration sits under selects one
+        // (`.success` → `criticality.success`), and a declaration may assert a
+        // second directly (`dt:alsoAt`, which is `mode.dark` for all 261 of
+        // them). 305 of the 1,156 variables reach at least one coordinate.
+        "  OPTIONAL {",
+        "    { ?uri dt:declaredAt/dt:under/dt:selectsCoordinate ?coordinateUri }",
+        "    UNION",
+        "    { ?uri dt:declaredAt/dt:alsoAt ?coordinateUri }",
+        '    BIND(REPLACE(REPLACE(STR(?coordinateUri), "^.*[/#]", ""), "^coordinate[.]", "") AS ?coordinateName)',
+        "  }",
+        // The platform, read out of the IRI base rather than asserted: every
+        // variable is minted under `…/s4/<platform>/`. STRAFTER/STRBEFORE
+        // rather than a regex so a variable whose IRI carries no such segment
+        // answers an EMPTY cell instead of its own full IRI, which is what a
+        // failed REPLACE returns.
+        '  BIND(STRBEFORE(STRAFTER(STR(?uri), "/s4/"), "/") AS ?platform)',
+        '  BIND(REPLACE(REPLACE(STR(?tierUri), "^.*[/#]", ""), "^tier[.]", "") AS ?tier)',
+        '  BIND(REPLACE(REPLACE(STR(?visibilityUri), "^.*[/#]", ""), "^visibility[.]", "") AS ?visibility)',
+        "}",
+        "GROUP BY ?uri ?name ?platform ?symbol ?tier ?visibility",
+        "ORDER BY ?name",
+      ].join("\n"),
+      columns: [
+        { field: "name", label: "Name" },
+        { field: "symbol", label: "Symbol" },
+        { field: "tier", label: "Tier" },
+        { field: "visibility", label: "Visibility" },
+        { field: "platform", label: "Platform" },
+        { field: "coordinate", label: "Coordinates" },
+        { field: "uri", label: "IRI" },
+      ],
+      filters: [
+        {
+          param: "platform",
+          variable: "platform",
+          // The vocabulary is a query over the IRI base, exactly as the column
+          // is — the platform is not asserted anywhere, so the file identity
+          // in the IRI is the only thing that states it. One value today
+          // (`web`); a second platform's catalogue adds itself here with no
+          // edit.
+          vocabulary: {
+            query: [
+              "SELECT DISTINCT ?platform WHERE {",
+              "  ?v a dt:Variable .",
+              '  BIND(STRBEFORE(STRAFTER(STR(?v), "/s4/"), "/") AS ?platform)',
+              "}",
+            ].join("\n"),
+          },
+          description: "Filter by platform.",
+        },
+        {
+          param: "symbol",
+          variable: "symbol",
+          // The symbol roster, read the same way `token list`'s `channelOf`
+          // filter reads it: every symbol, keyed on `rdfs:label`.
+          vocabulary: {
+            query: [
+              "SELECT DISTINCT ?symbol WHERE {",
+              "  ?s a dt:TokenSymbol ;",
+              "     rdfs:label ?symbol .",
+              "}",
+            ].join("\n"),
+          },
+          description: "Filter to one symbol.",
+        },
+        {
+          param: "tier",
+          variable: "tier",
+          vocabulary: {
+            query: [
+              "SELECT DISTINCT ?tier WHERE {",
+              "  ?t a dt:Tier .",
+              '  BIND(REPLACE(REPLACE(STR(?t), "^.*[/#]", ""), "^tier[.]", "") AS ?tier)',
+              "}",
+            ].join("\n"),
+          },
+          description: "Filter by tier.",
+        },
+        {
+          param: "visibility",
+          variable: "visibility",
+          vocabulary: {
+            query: [
+              "SELECT DISTINCT ?visibility WHERE {",
+              "  ?v a dt:Visibility .",
+              '  BIND(REPLACE(REPLACE(STR(?v), "^.*[/#]", ""), "^visibility[.]", "") AS ?visibility)',
+              "}",
+            ].join("\n"),
+          },
+          description: "Filter by visibility.",
+        },
+        {
+          param: "coordinate",
+          variable: "coordinate",
+          // `set`, and it has to be: `--modifier-color-text` is selected at 17
+          // coordinates at once, so its cell is the whole set its declarations
+          // reach and a filter comparing the whole cell would answer for none
+          // of them. The cell is a `GROUP_CONCAT`, so this predicate can only
+          // run after aggregation — which is why the page wraps the query.
+          match: "set",
+          vocabulary: {
+            query: [
+              "SELECT DISTINCT ?coordinate WHERE {",
+              "  ?c a dt:Coordinate .",
+              '  BIND(REPLACE(REPLACE(STR(?c), "^.*[/#]", ""), "^coordinate[.]", "") AS ?coordinate)',
+              "}",
+            ].join("\n"),
+          },
+          description: "Filter to one coordinate.",
+        },
+      ],
+      search: {
+        variables: ["name", "symbol"],
+        description: "Search name and symbol.",
+      },
+      emptyRecovery: {
+        message:
+          "No platform variables in the store. The @canonical/token-ontology pack provides them, and a variable is only addressable once that pack publishes its name literals.",
+        cli: "sources update",
+      },
+    },
+    verbs: [
+      {
+        verb: "chain",
+        description:
+          "List the walk from a variable to every symbol it reaches, through every variable in between.",
+        toolDescription:
+          'List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: "modifier-color-text" }.',
+        // ONE property path carries the whole walk, which is why this is a
+        // query and not a traversal in code. `dt:references` is an rdf:List of
+        // the variables a declaration's value reads, so each hop is
+        // `dt:declaredAt/dt:references/rdf:rest*/rdf:first`, and the `+` makes
+        // the whole thing transitive. The terminal is a variable that stands
+        // for a symbol, which is what `dt:ofSymbol` reads.
+        query: [
+          "SELECT ?variable ?reaches ?symbol",
+          "WHERE {",
+          "  ?uri a dt:Variable ;",
+          "       rdfs:label ?variable .",
+          "  ?uri (dt:declaredAt/dt:references/rdf:rest*/rdf:first)+ ?reachedUri .",
+          "  ?reachedUri dt:ofSymbol ?symbolUri ;",
+          "              rdfs:label ?reaches .",
+          "  ?symbolUri rdfs:label ?symbol .",
+          "}",
+          "ORDER BY ?variable ?reaches ?symbol",
+        ].join("\n"),
+        columns: [
+          { field: "variable", label: "Variable" },
+          { field: "reaches", label: "Reaches" },
+          { field: "symbol", label: "Symbol" },
+        ],
+        filters: [
+          {
+            param: "variable",
+            variable: "variable",
+            // The variable roster, keyed on the same `rdfs:label` the column
+            // binds and the lookup resolves by — the CSS name with its leading
+            // `--` already stripped, which is the only form typable as a
+            // positional. `variable.parity.test.ts` pins that the stripping is
+            // injective and collides with no symbol name.
+            vocabulary: {
+              query: [
+                "SELECT DISTINCT ?variable WHERE {",
+                "  ?v a dt:Variable ;",
+                "     rdfs:label ?variable .",
+                "}",
+              ].join("\n"),
+            },
+            description: "Filter to one variable.",
+          },
+          {
+            param: "symbol",
+            variable: "symbol",
+            vocabulary: {
+              query: [
+                "SELECT DISTINCT ?symbol WHERE {",
+                "  ?s a dt:TokenSymbol ;",
+                "     rdfs:label ?symbol .",
+                "}",
+              ].join("\n"),
+            },
+            description: "Filter to one symbol.",
+          },
+        ],
+        emptyRecovery: {
+          message:
+            "No resolution walk in the store. The @canonical/token-ontology pack provides the declarations the walk follows, and the walk is only addressable by name once that pack publishes its name literals.",
+          cli: "sources update",
+        },
+      },
+    ],
+    lookup: {
+      source: "sparql",
+      // `rdfs:label`, matching the `name` the list publishes, and with NO
+      // `nameFallback` for the same reason `token` has none: the kernel's IRI
+      // derivation would publish `--color-text` with its dashes intact and its
+      // dots as slashes, and a `--`-prefixed positional cannot be typed at all.
+      by: "rdfs:label",
+      type: "dt:Variable",
+      description:
+        "Look up one or more platform variables by name (without the leading dashes), IRI, or glob.",
+      toolDescription:
+        'Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the emitted value, the source location, the coordinate it also applies at, and the derivation. Address it by the CSS name WITHOUT its leading dashes (`color-text`). Example: variable_lookup { name: ["color-text"] }.',
+      fields: [
+        { name: "symbol", property: "dt:ofSymbol/rdfs:label", label: "Symbol" },
+        { name: "tier", property: "dt:tier", label: "Tier" },
+        { name: "visibility", property: "dt:visibility", label: "Visibility" },
+      ],
+      expand: [
+        {
+          name: "declarations",
+          heading: "Declarations",
+          kind: "table",
+          relation: "dt:declaredAt",
+          // 927 variables are declared once; the rest up to 17 times, which is
+          // why this is an expand and not a set of fields.
+          select: [
+            { name: "under", property: "dt:under" },
+            { name: "selector", property: "dt:under/dt-web:selector" },
+            // The at-rule STACK, not one at-rule: `dt-web:inAtRule` is an
+            // rdf:List, so the walk is `/rdf:rest*/rdf:first`. One condition of
+            // the 31 nests two levels deep and so contributes two rows for one
+            // declaration — that is the stack, read outermost-in, rather than a
+            // duplicate.
+            {
+              name: "inAtRule",
+              property: "dt:under/dt-web:inAtRule/rdf:rest*/rdf:first",
+            },
+            { name: "emits", property: "dt:emits" },
+            // `dt:at` is the SOURCE LOCATION (`modifiers.theme.css:322`), not a
+            // coordinate; `dt:alsoAt` is the coordinate. The two read alike and
+            // mean different things, which is why both are labelled.
+            { name: "at", property: "dt:at", label: "source" },
+            { name: "alsoAt", property: "dt:alsoAt", label: "alsoAt" },
+            { name: "derives", property: "dt:derives" },
+          ],
+        },
+      ],
+      sample: {
+        fixedCount: true,
+        toolDescription:
+          "Return random complete platform variables — symbol, tier, visibility and every declaration — as exemplars. Use BEFORE writing queries to see real data shapes. Example: variable_sample {}.",
       },
     },
   },

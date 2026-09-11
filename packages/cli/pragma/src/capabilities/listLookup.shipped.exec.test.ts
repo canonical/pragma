@@ -36,6 +36,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { compileStoryModule } from "../kernel/packs/compile.js";
+import { DEFAULT_LIST_LIMIT, MAX_LIST_WINDOW } from "../kernel/packs/paging.js";
 import { listEntityNames } from "../kernel/packs/resolveEntity.js";
 import {
   distributionSource,
@@ -63,18 +64,25 @@ const NOUNS: readonly string[] = [...declaredStories]
   .map(([noun]) => noun);
 
 /**
- * Nouns whose shipped corpus is empty TODAY (`ds:Token` has no instances in
- * the current packs) — a data-content gap this suite does not own.
+ * Nouns whose shipped corpus is empty TODAY — a data-content gap this suite
+ * does not own.
  *
- * The allowlist EXPIRES BY CONSTRUCTION: an entry here is asserted to have
- * ZERO rows, so the moment upstream ships instances the entry goes red and
- * must be deleted. A list that merely skipped the non-empty assertion would
- * be a permanent blind spot — `token` gains data, nobody removes the entry,
- * a later regression back to zero rows stays vacuously green — which is
- * exactly the hidden-empty case this guard exists to prevent, sitting inside
- * the guard itself.
+ * EMPTY, and that is the allowlist working as designed rather than a list
+ * nobody maintains. `token` was its only entry, because the noun addressed
+ * `ds:Token` — a class no shipped graph asserted. Repointed at the token
+ * SYMBOLS, and with the token-ontology pack now publishing the name literal
+ * both halves of the grammar key on, the noun answers 745 rows and the entry
+ * had to go: an entry here is ASSERTED to have zero rows, so it goes red the
+ * moment the corpus arrives.
+ *
+ * The allowlist EXPIRES BY CONSTRUCTION, which is why it is kept rather than
+ * deleted. A list that merely skipped the non-empty assertion would be a
+ * permanent blind spot — a noun gains data, nobody removes the entry, a later
+ * regression back to zero rows stays vacuously green — which is exactly the
+ * hidden-empty case this guard exists to prevent, sitting inside the guard
+ * itself.
  */
-const EMPTY_CORPUS_TODAY: readonly string[] = ["token"];
+const EMPTY_CORPUS_TODAY: readonly string[] = [];
 
 /** The verb `<noun> <verb>` from a compiled module, or throw naming the gap. */
 function verbOf(
@@ -87,16 +95,49 @@ function verbOf(
   return found;
 }
 
-/** Run `<noun> list` and return the names it publishes, verbatim, deduped. */
+/**
+ * Run `<noun> list` and return every name it publishes, verbatim, deduped.
+ *
+ * WALKS THE PAGES, and it has to. This file's promise is the round trip over the
+ * WHOLE corpus rather than a sample, and that used to come free: every declared
+ * population fitted inside one default page, so one call was the corpus. Three
+ * populations now exceed it — the token symbols, the platform variables and the
+ * chain — so reading one page would quietly turn this suite into a test of the
+ * first 300 names in alphabetical order, which is the sampling it exists to
+ * refuse.
+ *
+ * The walk is bounded by the kernel's own row ceiling for the same reason the
+ * budget sweep's is: a list needing more pages than that is a cursor defect, not
+ * a large corpus, and an unbounded `while` over a broken cursor would hang the
+ * suite instead of failing it.
+ */
 async function publishedNames(
   rt: PragmaRuntime,
   module: CapabilityModule,
   noun: string,
 ): Promise<string[]> {
-  const { rows } = (await verbOf(module, noun, "list").run({}, rt)) as PackPage;
-  return [
-    ...new Set(rows.map((row) => row.name ?? "").filter((name) => name !== "")),
-  ];
+  const verb = verbOf(module, noun, "list");
+  const names = new Set<string>();
+  let after: string | undefined;
+  let pages = 0;
+  do {
+    const page = (await verb.run(
+      after === undefined ? {} : { after },
+      rt,
+    )) as PackPage;
+    for (const row of page.rows) {
+      const name = row.name ?? "";
+      if (name !== "") names.add(name);
+    }
+    after = page.nextAfter;
+    pages += 1;
+    if (pages > MAX_LIST_WINDOW / DEFAULT_LIST_LIMIT) {
+      throw new Error(
+        `${noun} list did not terminate after ${pages} pages — the cursor is not advancing`,
+      );
+    }
+  } while (after !== undefined);
+  return [...names];
 }
 
 /**

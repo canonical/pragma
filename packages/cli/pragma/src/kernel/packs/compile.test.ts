@@ -12,6 +12,8 @@ import { RECOVERY_CLI_PREFIX } from "../../constants.js";
 import { buildFixtureRuntime } from "../../testing/helpers/packRuntime.js";
 import { PragmaError } from "../error/index.js";
 import type { PragmaRuntime } from "../runtime/types.js";
+import { kebabCase } from "../spec/emitSurface.js";
+import type { VerbSpec } from "../spec/types.js";
 import { compileListable, compilePack, compileStoryModule } from "./compile.js";
 import { encodeCursor, pageFingerprint } from "./cursor.js";
 import { DEFAULT_LIST_LIMIT, MAX_LIST_WINDOW } from "./paging.js";
@@ -271,6 +273,51 @@ describe("the grammar rejects what the compiler cannot build (PROTECTED)", () =>
         verbs: [{ ...listShape, verb: "categories", filters: twice }],
       }),
     ).toThrow(/filter param "kind" is declared twice/);
+  });
+
+  it("admits a camelCase filter param, and it reaches the flag the projector spells", () => {
+    // The grammar and the projector have to agree about what a param name may
+    // be. `emitVerb` writes a flag as `--${kebabCase(param)}`, so a two-word
+    // dimension only has a readable spelling if the param may carry the hump —
+    // and the gate used to refuse the one spelling that projects well while
+    // admitting `channelof`, which projects to `--channelof`.
+    const definition = parsePackDefinition(
+      {
+        noun: "widget",
+        list: {
+          query:
+            "SELECT ?uri ?channelOf WHERE { ?uri ex:channelOf ?channelOf }",
+          columns: [{ field: "uri" }, { field: "channelOf" }],
+          filters: [
+            { param: "channelOf", variable: "channelOf", values: ["a"] },
+          ],
+        },
+      },
+      "pkg/stories/widget.json",
+    );
+    const list = compilePack(
+      definition,
+      distributionSource("pkg/stories/widget.json"),
+      PREFIXES,
+    ).find((verb) => verbKey(verb.path) === "widget list") as VerbSpec;
+    // The MCP key keeps the declared spelling; the CLI flag is its kebab form.
+    expect(list.params.map((param) => param.name)).toContain("channelOf");
+    expect(`--${kebabCase("channelOf")}`).toBe("--channel-of");
+  });
+
+  it("still refuses a filter param that does not start lowercase", () => {
+    // A leading capital would kebab to a LEADING DASH, and Commander would
+    // register a flag with an empty name — outside every error envelope the
+    // CLI owns. The widening is the hump, not the initial.
+    expect(
+      parse({
+        noun: "widget",
+        list: {
+          ...listShape,
+          filters: [{ param: "ChannelOf", variable: "uri", values: ["a"] }],
+        },
+      }),
+    ).toThrow();
   });
 
   it("still accepts the distinct forms, and they compile to unique keys/params", () => {

@@ -20,7 +20,7 @@ pragma block list [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -139,7 +139,7 @@ pragma concept list [options]
 | --- | --- | --- |
 | `--type` | `<string>` | Filter by concept type (e.g. Explanation, How-to guide). |
 | `--search` | `<string>` | Search in name and summary. |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -514,7 +514,7 @@ pragma implementation libraries [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -544,7 +544,7 @@ pragma implementation list [options]
 | `--platform` | `<string>` | Filter by platform (e.g. react, svelte, typescript). |
 | `--library` | `<string>` | Filter by implementation library name. |
 | `--search` | `<string>` | Search in block and library name. |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -608,7 +608,7 @@ pragma modifier list [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -997,7 +997,7 @@ pragma standard categories [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -1026,7 +1026,7 @@ pragma standard list [options]
 | --- | --- | --- |
 | `--category` | `<string>` | Filter by category slug. A parent category answers for its whole branch. |
 | `--search` | `<string>` | Search in name and description. |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -1106,7 +1106,7 @@ pragma tier list [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -1146,11 +1146,43 @@ pragma tier lookup <name>
 
 ## token
 
+### pragma token consumers
+
+List which blocks consume which token symbol, at which style key, state and rank.
+
+List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { variable: "color-text" }.
+
+```
+pragma token consumers [options]
+```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--symbol` | `<string>` | Filter to one symbol. |
+| `--variable` | `<string>` | A CSS variable name for the consumed symbol — the other spelling of the symbol parameter. A channel variable and its semantic sibling differ. |
+| `--key` | `<string>` | Filter to one style key. |
+| `--state` | `<string>` | Filter to one interaction state. |
+| `--search` | `<string>` | Search block, symbol, key, state and node. |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
+| `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `token_consumers` tool.
+
+**Examples**
+
+```bash
+pragma token consumers
+pragma token consumers --format llm
+```
+
 ### pragma token list
 
-List all design tokens.
+List the design-token symbols.
 
-List all design tokens with their type. Use when browsing which tokens exist under the active scope. Example: token_list {}.
+List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description every definition of that symbol agrees on, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: "color" }.
 
 ```
 pragma token list [options]
@@ -1160,7 +1192,10 @@ pragma token list [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 500). |
+| `--type` | `<string>` | Filter by the agreed type. |
+| `--channel-of` | `<string>` | Filter to one symbol's channels. |
+| `--search` | `<string>` | Search name and description. |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
 - Store: reads the local store (`pragma sources update` builds it).
@@ -1175,9 +1210,9 @@ pragma token list --format llm
 
 ### pragma token lookup
 
-Look up token details by name, IRI, or glob.
+Look up one or more token symbols by dotted name, IRI, or glob.
 
-Get type and theme values for one or more design tokens by name. Use when resolving specific tokens' light/dark values. Example: token_lookup { name: ["color.primary"] }.
+Get one design-token symbol in full: every definition behind it with that definition's own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob. Example: token_lookup { name: ["color.text"] }.
 
 ```
 pragma token lookup <name...>
@@ -1202,7 +1237,7 @@ pragma token lookup <name>
 
 Return randomly selected complete token entries as exemplars.
 
-Return randomly selected complete design tokens (with theme values) as exemplars. Use BEFORE writing queries to see actual data shapes. Example: token_sample {}.
+Return random complete design-token symbols — definitions, coverage and resolved values — as exemplars. Use BEFORE writing queries to see real data shapes. Example: token_sample {}.
 
 ```
 pragma token sample
@@ -1215,6 +1250,36 @@ pragma token sample
 
 ```bash
 pragma token sample
+```
+
+### pragma token values
+
+List the value each symbol resolves to at each position, with its chain or its derivation.
+
+List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell. Example: token_values { symbol: "color.text" }.
+
+```
+pragma token values [options]
+```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--symbol` | `<string>` | Filter to one symbol. |
+| `--position` | `<string>` | Filter to one position. |
+| `--search` | `<string>` | Search symbol, value, derivation. |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
+| `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `token_values` tool.
+
+**Examples**
+
+```bash
+pragma token values
+pragma token values --format llm
 ```
 
 ## upgrade
@@ -1238,6 +1303,114 @@ pragma upgrade
 ```bash
 pragma upgrade
 pragma upgrade --dry-run  # show the delta and the command
+```
+
+## variable
+
+### pragma variable chain
+
+List the walk from a variable to every symbol it reaches, through every variable in between.
+
+List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: "modifier-color-text" }.
+
+```
+pragma variable chain [options]
+```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--variable` | `<string>` | Filter to one variable. |
+| `--symbol` | `<string>` | Filter to one symbol. |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
+| `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `variable_chain` tool.
+
+**Examples**
+
+```bash
+pragma variable chain
+pragma variable chain --format llm
+```
+
+### pragma variable list
+
+List the platform variables the design tokens are emitted as.
+
+List the platform VARIABLES a stylesheet declares as CSS custom properties, with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`). Example: variable_list { symbol: "color.text" }.
+
+```
+pragma variable list [options]
+```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--platform` | `<string>` | Filter by platform. |
+| `--symbol` | `<string>` | Filter to one symbol. |
+| `--tier` | `<string>` | Filter by tier. |
+| `--visibility` | `<string>` | Filter by visibility. |
+| `--coordinate` | `<string>` | Filter to one coordinate. |
+| `--search` | `<string>` | Search name and symbol. |
+| `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
+| `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `variable_list` tool.
+
+**Examples**
+
+```bash
+pragma variable list
+pragma variable list --format llm
+```
+
+### pragma variable lookup
+
+Look up one or more platform variables by name (without the leading dashes), IRI, or glob.
+
+Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the emitted value, the source location, the coordinate it also applies at, and the derivation. Address it by the CSS name WITHOUT its leading dashes (`color-text`). Example: variable_lookup { name: ["color-text"] }.
+
+```
+pragma variable lookup <name...>
+```
+
+**Arguments**
+
+| Argument | Required | Description |
+| --- | --- | --- |
+| `<name...>` | yes | Variable names, prefixed names/IRIs, or glob patterns. |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `variable_lookup` tool.
+
+**Examples**
+
+```bash
+pragma variable lookup <name>
+```
+
+### pragma variable sample
+
+Return randomly selected complete variable entries as exemplars.
+
+Return random complete platform variables — symbol, tier, visibility and every declaration — as exemplars. Use BEFORE writing queries to see real data shapes. Example: variable_sample {}.
+
+```
+pragma variable sample
+```
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `variable_sample` tool.
+
+**Examples**
+
+```bash
+pragma variable sample
 ```
 
 ## version

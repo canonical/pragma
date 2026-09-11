@@ -259,6 +259,8 @@ describe("validateStories — package stories NEVER throw (PROTECTED)", () => {
     const before = capabilities.find((module) => module.name === "token");
     expect(before?.verbs.map((verb) => verb.path.join(" "))).toEqual([
       "token list",
+      "token values",
+      "token consumers",
       "token lookup",
       "token sample",
     ]);

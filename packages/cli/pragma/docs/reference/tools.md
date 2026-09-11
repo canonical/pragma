@@ -14,7 +14,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### block_lookup
@@ -72,7 +72,7 @@ Read-only.
 | --- | --- | --- | --- |
 | `type` | string | no | Filter by concept type (e.g. Explanation, How-to guide). |
 | `search` | string | no | Search in name and summary. |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### concept_lookup
@@ -258,7 +258,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### implementation_list
@@ -274,7 +274,7 @@ Read-only.
 | `platform` | string | no | Filter by platform (e.g. react, svelte, typescript). |
 | `library` | string | no | Filter by implementation library name. |
 | `search` | string | no | Search in block and library name. |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### info
@@ -297,7 +297,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### modifier_lookup
@@ -442,7 +442,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### standard_list
@@ -457,7 +457,7 @@ Read-only.
 | --- | --- | --- | --- |
 | `category` | string | no | Filter by category slug. A parent category answers for its whole branch. |
 | `search` | string | no | Search in name and description. |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### standard_lookup
@@ -495,7 +495,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### tier_lookup
@@ -510,9 +510,9 @@ Read-only.
 | --- | --- | --- | --- |
 | `name` | string[] | yes | Tier names, prefixed names/IRIs, or glob patterns. |
 
-### token_list
+### token_consumers
 
-List all design tokens with their type. Use when browsing which tokens exist under the active scope. Example: token_list {}.
+List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { variable: "color-text" }.
 
 Read-only.
 
@@ -520,12 +520,33 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 500). |
+| `symbol` | string | no | Filter to one symbol. |
+| `variable` | string | no | A CSS variable name for the consumed symbol — the other spelling of the symbol parameter. A channel variable and its semantic sibling differ. |
+| `key` | string | no | Filter to one style key. |
+| `state` | string | no | Filter to one interaction state. |
+| `search` | string | no | Search block, symbol, key, state and node. |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
+| `after` | string | no | Continue from a previous page: the cursor that page reported. |
+
+### token_list
+
+List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description every definition of that symbol agrees on, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: "color" }.
+
+Read-only.
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `type` | string | no | Filter by the agreed type. |
+| `channelOf` | string | no | Filter to one symbol's channels. |
+| `search` | string | no | Search name and description. |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### token_lookup
 
-Get type and theme values for one or more design tokens by name. Use when resolving specific tokens' light/dark values. Example: token_lookup { name: ["color.primary"] }.
+Get one design-token symbol in full: every definition behind it with that definition's own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob. Example: token_lookup { name: ["color.text"] }.
 
 Read-only.
 
@@ -537,13 +558,29 @@ Read-only.
 
 ### token_sample
 
-Return randomly selected complete design tokens (with theme values) as exemplars. Use BEFORE writing queries to see actual data shapes. Example: token_sample {}.
+Return random complete design-token symbols — definitions, coverage and resolved values — as exemplars. Use BEFORE writing queries to see real data shapes. Example: token_sample {}.
 
 Read-only.
 
 **Input**
 
 _No input parameters._
+
+### token_values
+
+List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell. Example: token_values { symbol: "color.text" }.
+
+Read-only.
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `symbol` | string | no | Filter to one symbol. |
+| `position` | string | no | Filter to one position. |
+| `search` | string | no | Search symbol, value, derivation. |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
+| `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
 ### upgrade
 
@@ -557,6 +594,62 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 | --- | --- | --- | --- |
 | `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
 | `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
+
+### variable_chain
+
+List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: "modifier-color-text" }.
+
+Read-only.
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `variable` | string | no | Filter to one variable. |
+| `symbol` | string | no | Filter to one symbol. |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
+| `after` | string | no | Continue from a previous page: the cursor that page reported. |
+
+### variable_list
+
+List the platform VARIABLES a stylesheet declares as CSS custom properties, with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`). Example: variable_list { symbol: "color.text" }.
+
+Read-only.
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `platform` | string | no | Filter by platform. |
+| `symbol` | string | no | Filter to one symbol. |
+| `tier` | string | no | Filter by tier. |
+| `visibility` | string | no | Filter by visibility. |
+| `coordinate` | string | no | Filter to one coordinate. |
+| `search` | string | no | Search name and symbol. |
+| `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
+| `after` | string | no | Continue from a previous page: the cursor that page reported. |
+
+### variable_lookup
+
+Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the emitted value, the source location, the coordinate it also applies at, and the derivation. Address it by the CSS name WITHOUT its leading dashes (`color-text`). Example: variable_lookup { name: ["color-text"] }.
+
+Read-only.
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `name` | string[] | yes | Variable names, prefixed names/IRIs, or glob patterns. |
+
+### variable_sample
+
+Return random complete platform variables — symbol, tier, visibility and every declaration — as exemplars. Use BEFORE writing queries to see real data shapes. Example: variable_sample {}.
+
+Read-only.
+
+**Input**
+
+_No input parameters._
 
 ## Non-tool surface
 
