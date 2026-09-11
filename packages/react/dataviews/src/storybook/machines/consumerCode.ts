@@ -8,6 +8,8 @@
 type ConsumerCode = {
   /** Named imports from `@canonical/dataviews-react`. */
   readonly parts: readonly string[];
+  /** Functions from `@canonical/dataviews-core` the declarations use. */
+  readonly core?: readonly string[];
   /** Types from `@canonical/dataviews-core` the declarations use. */
   readonly coreTypes?: readonly string[];
   /** Further import lines, in place of the machines module's default one. */
@@ -22,6 +24,8 @@ type ConsumerCode = {
   readonly prepare?: string;
   /** Keep the binding in state, for children that run actions through it. */
   readonly keepsBinding?: boolean;
+  /** Give the provider the browser's saved-view store. */
+  readonly views?: boolean;
   /** React hooks the declarations use beyond `useEffect` and `useState`. */
   readonly hooks?: readonly string[];
   /** What the component renders, as JSX source text. */
@@ -33,6 +37,17 @@ const machineSource = `createArraySource({
       fields: ["name", "status", "region", "cores", "owner"],
       searchFields: ["name", "owner"],
     })`;
+
+/** The application's saved-view store, declared once beside the collection. */
+const viewStore = `// One store per collection, for as long as the application runs. On a
+// server \`globalThis.indexedDB\` is undefined and nothing reads it: the
+// store is first read when the Views control mounts in the browser.
+const views = createIndexedDBViewStore({
+  indexedDB: globalThis.indexedDB,
+  database: "operations-console-views",
+  collection: "machines",
+  partition: null,
+});`;
 
 const indent = (text: string, depth: number): string =>
   text
@@ -72,6 +87,7 @@ const bindingEffect = (
 /** The story parameters that show the consumer code for one story. */
 export const consumerCode = ({
   parts,
+  core: coreFunctions = [],
   coreTypes = [],
   imports,
   declarations,
@@ -79,12 +95,14 @@ export const consumerCode = ({
   window,
   prepare,
   keepsBinding = false,
+  views = false,
   hooks = [],
   render,
 }: ConsumerCode) => {
   const core = [
     ...(source.includes("createArraySource(") ? ["createArraySource"] : []),
     "createDataViewsProvider",
+    ...coreFunctions,
     "createSourceBinding",
     ...[...coreTypes, ...(keepsBinding ? ["SourceBinding"] : [])].map(
       (name) => `type ${name}`,
@@ -97,10 +115,11 @@ export const consumerCode = ({
         code: [
           `import {
 ${core.map((name) => `  ${name},`).join("\n")}
-} from "@canonical/dataviews-core";
+} from "@canonical/dataviews-core";${views ? `\nimport { createIndexedDBViewStore } from "@canonical/dataviews-core/views";` : ""}
 import { ${parts.join(", ")} } from "@canonical/dataviews-react";
 import { ${["useEffect", "useState", ...hooks].join(", ")} } from "react";
 ${imports ?? `import { machineSchema, machines } from "./machines.js";`}`,
+          views ? viewStore : undefined,
           declarations,
           `export function Machines() {
   const [source] = useState(() =>
@@ -110,7 +129,7 @@ ${imports ?? `import { machineSchema, machines } from "./machines.js";`}`,
     createDataViewsProvider({
       schema: machineSchema,
       // What the source can execute: the parts offer nothing beyond it.
-      capabilities: source.capabilities,${window === undefined ? "" : `\n      window: ${window},`}
+      capabilities: source.capabilities,${window === undefined ? "" : `\n      window: ${window},`}${views ? "\n      views," : ""}
     }),
   );
 ${bindingEffect(prepare, keepsBinding)}

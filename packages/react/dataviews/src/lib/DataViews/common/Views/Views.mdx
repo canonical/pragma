@@ -1,0 +1,71 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./Views.stories";
+
+<Meta of={Stories} name="Recipes" />
+
+# DataViews.Views recipes
+
+`DataViews.Views` is the collection's saved views: which view is open, whether the query has moved away from it, and the way to switch, save, save as, rename and delete. It reads the views of the enclosing root's provider, which holds the store the application gave it. The part takes a name and nothing else: the views, the open one and the query all belong to the provider.
+
+A saved view is a named query. Opening one applies its query on the first page; the filters, the table and the pagination bar follow, because they read the same provider. The view is *modified* while the live query differs from the one it was opened or saved at. The page, the selection and the column widths never count.
+
+## Saved views in a composition
+
+Views live in a store the application creates and gives to the provider. `createIndexedDBViewStore` keeps them in the browser's IndexedDB, and it is imported from its own entry point, `@canonical/dataviews-core/views`, so an application without views never bundles it. Declare one store for as long as the application runs, and give it to each provider built for the collection, as the code beneath this story does.
+
+<Canvas of={Stories.SavedViews} sourceState="shown" />
+
+## The store's scope
+
+The store's scope — its database, the collection and an opaque partition such as the signed-in account — is fixed when it is created; the `@canonical/dataviews-core` README describes each. When the account changes, create a store for the new partition and a provider over it; dispose of the old provider, then its store.
+
+## Saving, saving as, renaming
+
+**Save** writes the live query into the open view, and **Reset** applies the view's query again. **Save as…** saves the live query, and the column widths in force, under a new name, and opens the new view. **Rename…** renames the open view. A name that is empty, or already another view's, is refused beside the input before anything is written.
+
+Every outcome is said in a polite status. A save that did not happen never reads as saved: a failure names its reason, and the store is never replaced by one in memory.
+
+<Canvas of={Stories.SaveAsANewView} sourceState="none" />
+
+## Two tabs editing one view
+
+Every edit names the revision of the view it was made against. When another tab saved the view first, saving here is a conflict, not a silent overwrite. The stored view becomes the open one: **Overwrite** saves this tab's query over it, **Save as…** keeps both, and **Discard changes** applies the stored query when this collection can read it.
+
+<Canvas of={Stories.AConflictBetweenTabs} sourceState="none" />
+
+## Deleting
+
+**Delete…** asks first, naming the view, with the focus on Cancel. The view goes; the query it applied stays, so the rows on screen do not change.
+
+<Canvas of={Stories.DeletingAView} sourceState="none" />
+
+## Column widths and the arrangement
+
+The column widths in force come from four places, each over the one before:
+
+1. the widths the columns declare;
+2. the viewer's default arrangement;
+3. the arrangement the open view was saved with;
+4. the viewer's own changes to the open view.
+
+A resize is saved as the viewer's own: to the open view's preferences, or to the default arrangement while no view is open. It never changes the arrangement a view was saved with, so a view stays the same for anyone who opens it again from its saved state. Save as carries the widths in force into the new view. A width outside a column's declared bounds is held to them. The URL carries no widths, so a link opens with the viewer's own.
+
+<Canvas of={Stories.AViewsArrangement} sourceState="none" />
+
+## Keeping the query in the URL
+
+With a location binding, opening a view is an edit like any other: the provider adopts the view's query, and the binding writes it to the URL. The link carries the query, which works in any browser. It does not carry the view: views live in this browser's storage, and a reload keeps the query, not the open view.
+
+<Canvas of={Stories.WithTheQueryInTheUrl} sourceState="shown" />
+
+## When storage is refused, and without JavaScript
+
+A browser can refuse storage: a private window, a site setting, a full disk. The control then says views are unavailable and why, with a way to try again, and the rest of the collection works as before.
+
+On the server, and in a browser without JavaScript, the control renders only a notice that saved views need JavaScript: a server cannot read the browser's storage. A link carrying a query still works there, since the query is in the URL.
+
+<Canvas of={Stories.StorageUnavailable} sourceState="none" />
+
+## No store, no views
+
+A provider created without `views` has none: `provider.views` is `null`, and `DataViews.Views` throws inside its root rather than keep views in memory that a reload would lose. To keep views elsewhere — a backend of your own — implement the `ViewStore` contract from `@canonical/dataviews-core/views` and pass that instead.
