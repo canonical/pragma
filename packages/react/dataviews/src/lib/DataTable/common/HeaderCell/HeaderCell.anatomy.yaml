@@ -1,0 +1,111 @@
+---
+# DataTable.HeaderCell — one column heading: its label, the sort control when
+# the column offers sorting, and the resize handle when it offers resizing.
+#
+# Anatomy DSL 0.3.0, checked in review against the DSL's JSON schema.
+# A named subcomponent, not a role: it carries a contract of its own — sort,
+# resize and focus — independent of the table around it. Named is not
+# exported; the component is private to DataTable.
+#
+# Names — one per part, the same in the design, the DOM and here:
+#   HeaderCell      design "HeaderCell"   DOM `ds data-table-header-cell`
+#   sort control    design "Sort by icon wrapper"   DOM `button.sort`
+#   sort icon       design `sort-both` (hidden at rest)   DOM `svg.ds.icon`
+#   resize handle   design "Resize handle wrapper" + "Column resizing handle"
+#                                         DOM `ds data-table-resize-handle`
+#
+# States:
+#   - Sort none, ascending, descending are `aria-sort` on the heading, shown by
+#     the sort icon: `chevron-up` ascending, `chevron-down` descending, nothing
+#     at rest, as the design hides its icon at rest. The chevrons stand in for
+#     the design's `sort-both`, which `@canonical/ds-assets` does not ship yet;
+#     when it lands the switch collapses to one icon.
+#   - Focus sits on the controls (the sort button, the resize handle), not on
+#     the cell: the table claims table semantics, not grid.
+#   - No hover reveal at rest: the package has no opacity token and the design
+#     shows nothing at rest.
+#   - The resize handle's behaviour — idle, previewing, keyboard step (±16px
+#     per arrow key), cancelled (Escape or a cancelled pointer) — changes no
+#     style and is recorded here, not as states.
+#
+# The resize mark is a pseudo-element, which the DSL cannot express. It is a
+# 3×20 hairline centred in the handle's 16px pointer target:
+#   width  dimension/stroke/thickness/large (3px)
+#   height dimension/250 (20px)
+#   colour color/border/muted; on hover and on focus, color/focus-ring
+#
+# A header cell holding a resize handle drops its trailing inline padding:
+# the handle carries that inset itself. The DSL cannot condition a style on
+# a child, so this is recorded here.
+#
+# Icons take `1em` from the Icon component, so beside 14px text they render at
+# 14px; the design draws 16px, and the package has no icon-size token.
+#
+# `color/focus-ring` is the package's `color.focusRing`, whose camelCase id the
+# DSL's token-path grammar cannot spell.
+#
+# Accessibility: "Sort/header menu/resize" (2.1.1, 2.5.2, 2.5.7-2.5.8, 4.1.2),
+# with 1.4.1 — the ordering is `aria-sort`, never only the chevron — and 2.5.8
+# for the resize handle: its 16px strip is under the 24px minimum target and
+# passes only with the keyboard alternative and the spacing exception.
+node:
+  uri: apps.subcomponent.data_table-header_cell
+  styles:
+    layout.type: stack
+    layout.direction: row
+    layout.align: center
+    layout.overflow: visible
+    spacing.gap: dimension/050
+    spacing.internal.inline: density/padding-inline
+    typography.weight: typography/text/primary/bold/font-weight
+  edges:
+    # The column's `sortable` prop, honoured only where the provider's source
+    # declares the field sortable, chooses a sort control or a plain label.
+    - switch:
+        "on": props
+        cases:
+          - node:
+              role: sort control
+              styles:
+                layout.type: stack
+                layout.direction: row
+                layout.align: center
+                spacing.gap: dimension/050
+                interaction.cursor: pointer
+                appearance.outline@focus: color/focus-ring
+                appearance.outline.width@focus: dimension/stroke/thickness/large
+              edges:
+                - node:
+                    role: label
+                  relation:
+                    cardinality: "1"
+                # The applied ordering chooses the icon; none at rest.
+                - switch:
+                    "on": internal
+                    cases:
+                      - node:
+                          uri: global.component.icon
+                          props:
+                            icon: chevron-up
+                      - node:
+                          uri: global.component.icon
+                          props:
+                            icon: chevron-down
+                  relation:
+                    cardinality: "0..1"
+          - node:
+              role: label
+      relation:
+        cardinality: "1"
+        slotName: label
+    # Absent on the last column, whatever it declares: its trailing edge is
+    # the table's own edge.
+    - node:
+        role: resize handle
+        styles:
+          size.width: dimension/200
+          interaction.cursor: col-resize
+          appearance.outline@focus: color/focus-ring
+          appearance.outline.width@focus: dimension/stroke/thickness/large
+      relation:
+        cardinality: "0..1"
