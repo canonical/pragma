@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Slice } from "../query/types.js";
 import createSchema from "../schema/createSchema.js";
 import createDataViewsProvider from "./createDataViewsProvider.js";
@@ -334,6 +334,31 @@ describe("createDataViewsProvider", () => {
     p.setSearch("failed");
     p.complete(stale, { status: "success", rows: [{ id: "m-1" }], count: 1 });
     expect(p.rows.get().ids).toEqual([]);
+  });
+
+  it("builds nothing for a delivery of a request already settled", () => {
+    const identify = vi.fn((row: { readonly id: string }) => row.id);
+    const p = createDataViewsProvider<
+      ReturnType<typeof machinesSchema>["fields"],
+      { readonly id: string }
+    >({ schema: machinesSchema(), identify });
+    const settled = refreshRequest(p);
+    p.complete(settled, { status: "success", rows: [{ id: "m-1" }], count: 1 });
+    identify.mockClear();
+    let notifications = 0;
+    p.result.subscribe(() => {
+      notifications += 1;
+    });
+    expect(
+      p.complete(settled, {
+        status: "success",
+        rows: [{ id: "m-2" }],
+        count: 1,
+      }),
+    ).toBe(false);
+    expect(identify).not.toHaveBeenCalled();
+    expect(notifications).toBe(0);
+    expect(p.rows.get().ids).toEqual(["m-1"]);
   });
 
   it("empties the row model when the scope rotates", () => {

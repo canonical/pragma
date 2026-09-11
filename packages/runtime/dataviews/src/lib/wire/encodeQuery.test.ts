@@ -41,6 +41,20 @@ describe("encodeQuery", () => {
     ).toBe("page=2&size=25");
   });
 
+  it("writes no window when it is null, as a saved view keeps the query", () => {
+    expect(
+      encodeQuery({
+        schema: machines(),
+        window: null,
+        slice: {
+          ...emptySlice,
+          filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
+        },
+        preserve: new URLSearchParams("as=table&page=4&size=10"),
+      }).toString(),
+    ).toBe("as=table&status=failed");
+  });
+
   it("repeats equality operands and canonicalizes them as a set", () => {
     const params = encodeQuery({
       schema: machines(),

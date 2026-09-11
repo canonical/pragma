@@ -20,6 +20,7 @@ describe("public surface", () => {
       "createPlatformLocation",
       "createPresentation",
       "createQuerySource",
+      "createRelaySource",
       "createRowModel",
       "createRowScopes",
       "createSaveSession",
@@ -109,5 +110,19 @@ describe("public surface", () => {
         params: new URLSearchParams("status=failed&page=3"),
       }).window,
     ).toEqual({ page: 3, size: 50 });
+  });
+
+  it("keeps saved-view storage out of the root, behind its own entry point", async () => {
+    expect(dataviews).not.toHaveProperty("createIndexedDBViewStore");
+    const views = await import("./lib/views/index.js");
+    expect(Object.keys(views)).toEqual(["createIndexedDBViewStore"]);
+    const { readFileSync } = await import("node:fs");
+    const manifest = JSON.parse(
+      readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+    );
+    expect(manifest.exports["./views"]).toEqual({
+      types: "./dist/types/lib/views/index.d.ts",
+      import: "./dist/esm/lib/views/index.js",
+    });
   });
 });
