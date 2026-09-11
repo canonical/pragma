@@ -1,6 +1,7 @@
 import type {
   DataViewsProvider,
   ResultWindow,
+  RowRecord,
   SourceAdapter,
 } from "@canonical/dataviews-core";
 import {
@@ -13,13 +14,14 @@ import type { MachineFields } from "./fixtures.js";
 import { createMachineSource, machineSchema } from "./fixtures.js";
 
 /**
- * Story machinery for DataTable: the provider hook every story drives and the
+ * Story machinery for the machine collection's stories — the table, its
+ * filters and its bars: the provider hook every story drives and the
  * decorators that frame it. Story-only; the records and sources live in
  * `./fixtures.ts`.
  */
 
 /**
- * The provider every DataTable story drives. Its rows are the source's own
+ * The provider every story drives. Its rows are the source's own
  * records: the binding's host contract is typed over `RowRecord`.
  */
 export type MachineProvider = DataViewsProvider<MachineFields>;
@@ -74,8 +76,9 @@ export function useMachineProvider({
 }
 
 /**
- * Render the story inside the `.app` typography scope, which the table
- * assumes: primary text there takes the application sizes.
+ * Render the story inside the `.app` scope, which the table and its bars
+ * assume: primary text there takes the application sizes, and the density
+ * channel its application values.
  */
 export const withAppScope: Decorator = (Story) => (
   <div className="app">
@@ -91,3 +94,16 @@ export const withFrame =
       <Story />
     </div>
   );
+
+/** A frame of the given height that scrolls its content, as a panel would. */
+export const withScrollingFrame =
+  (height: string): Decorator =>
+  (Story) => (
+    <div style={{ maxHeight: height, overflow: "auto" }}>
+      <Story />
+    </div>
+  );
+
+/** Names a record for its selection checkbox: by host, else by identity. */
+export const hostName = (row: RowRecord, rowId: string): string =>
+  typeof row.name === "string" ? row.name : rowId;

@@ -2,8 +2,9 @@ import type { RowRecord, SourceAdapter } from "@canonical/dataviews-core";
 import { createArraySource, createSchema } from "@canonical/dataviews-core";
 
 /**
- * Story fixtures for DataTable. Story-only: this folder is excluded from the
- * package build, and the tests define their own minimal fixtures inline.
+ * Story fixtures for the machine collection. Story-only: this folder is
+ * excluded from the package build, and the tests define their own minimal
+ * fixtures inline.
  *
  * The stories drive a real `createArraySource` rather than a frozen page of
  * rows, so sorting, searching and paging in a story run the same path a
@@ -23,7 +24,7 @@ type Machine = {
 };
 
 /** Twelve machines, every status represented; one story pages them by five. */
-const machines = [
+export const machines = [
   {
     id: "m-01",
     name: "alder.example.com",
@@ -170,8 +171,36 @@ export const createMachineSource = (
     searchFields: ["name", "owner"],
   });
 
+/**
+ * A source that cannot filter or order by cores: its declaration leaves the
+ * field out, so no part may offer it.
+ */
+export const createSourceWithoutCores = (): SourceAdapter =>
+  createArraySource({
+    rows: machines,
+    fields: sortableFields.filter((field) => field !== "cores"),
+    searchFields: ["name", "owner"],
+  });
+
 /** A source whose collection has nothing in it. */
 export const createEmptySource = (): SourceAdapter => createMachineSource([]);
+
+/**
+ * A source that pages without counting, as many backends do: it declares no
+ * total and publishes none, so nothing can offer a last page.
+ */
+export const createUncountedSource = (): SourceAdapter => {
+  const source = createMachineSource();
+  return {
+    capabilities: { ...source.capabilities, count: "none" },
+    execute: (request, deliver) =>
+      source.execute(request, (result) => {
+        deliver(
+          result.status === "success" ? { ...result, count: null } : result,
+        );
+      }),
+  };
+};
 
 /** A source that accepts a request and never answers it. */
 export const createPendingSource = (): SourceAdapter => ({

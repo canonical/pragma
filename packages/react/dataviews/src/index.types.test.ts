@@ -10,6 +10,7 @@ import type {
 } from "@canonical/dataviews-core";
 import { describe, expectTypeOf, it } from "vitest";
 import type {
+  ActionsProps,
   CellScopeValue,
   DataTableCellProps,
   DataTableColumn,
@@ -17,6 +18,7 @@ import type {
   DataTableStatus,
   DataViewsProps,
   FiltersProps,
+  PaginationBarProps,
   PaginationProps,
   UseDataViewsCellResult,
   UseDataViewsFieldResult,
@@ -27,6 +29,7 @@ type Fields = readonly SchemaFieldDefinition[];
 
 /** Every type the package root re-exports, as one enumerable tuple. */
 type EveryPublicType = [
+  ActionsProps,
   CellScopeValue,
   DataTableCellProps,
   DataTableColumn,
@@ -34,6 +37,7 @@ type EveryPublicType = [
   DataTableStatus,
   DataViewsProps<Fields>,
   FiltersProps,
+  PaginationBarProps<Fields>,
   PaginationProps,
   UseDataViewsCellResult,
   UseDataViewsFieldResult<unknown>,
@@ -43,7 +47,26 @@ type EveryPublicType = [
 describe("public surface types", () => {
   it("re-exports the full type surface from the barrel", () => {
     expectTypeOf<EveryPublicType>().not.toBeAny();
-    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<11>();
+    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<13>();
+  });
+});
+
+describe("the pagination bar's props", () => {
+  it("requires the provider it pages and derives its contents", () => {
+    expectTypeOf<PaginationBarProps<Fields>>()
+      .toHaveProperty("provider")
+      .not.toBeNullable();
+    expectTypeOf<PaginationBarProps<Fields>>().not.toHaveProperty("children");
+    expectTypeOf<PaginationBarProps<Fields>>().not.toHaveProperty("role");
+    expectTypeOf<PaginationBarProps<Fields>>().not.toHaveProperty("aria-label");
+  });
+
+  it("is the connected part's props with the provider", () => {
+    // The connected part is the same bar; only its provider's source differs.
+    expectTypeOf<PaginationProps>().not.toHaveProperty("provider");
+    expectTypeOf<
+      Omit<PaginationBarProps<Fields>, "provider">
+    >().toEqualTypeOf<PaginationProps>();
   });
 });
 
@@ -64,5 +87,16 @@ describe("connected part props", () => {
     expectTypeOf<PaginationProps>().not.toHaveProperty("aria-label");
     expectTypeOf<PaginationProps>().not.toHaveProperty("aria-labelledby");
     expectTypeOf<PaginationProps>().toHaveProperty("id");
+  });
+
+  it("keeps what Actions derives out of its props", () => {
+    // Its name comes from its label and the group role is its own; its
+    // children are the caller's actions.
+    expectTypeOf<ActionsProps>().not.toHaveProperty("role");
+    expectTypeOf<ActionsProps>().not.toHaveProperty("aria-label");
+    expectTypeOf<ActionsProps>().not.toHaveProperty("aria-labelledby");
+    expectTypeOf<ActionsProps>().not.toHaveProperty("selection");
+    expectTypeOf<ActionsProps>().not.toHaveProperty("ref");
+    expectTypeOf<ActionsProps>().toHaveProperty("children");
   });
 });

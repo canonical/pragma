@@ -1,0 +1,266 @@
+---
+# PaginationBar — the bar beneath a collection's rows: how many items are on
+# screen, how many a page holds, and the way to every other page.
+#
+# Anatomy DSL 0.3.0. No validator runs on this file yet: it is checked in
+# review against the DSL's JSON schema. Pinned props on a named node
+# (`props:`) are 0.3.0's; older schemas refuse them. The root carries the
+# design-system graph's IRI; its parts are role nodes, and the controls
+# reference the design system's own Button and SelectInput.
+#
+# Names — one per part, the same in the design, the DOM and here:
+#   pagination bar  design "Table pagination"   graph "DataTable.PaginationBar"
+#                                         DOM `ds data-table-pagination-bar`
+#   leading group   design "Frame 1062"   DOM `.leading`
+#   page size       design "Items per page:" + "Pagination dropdown"
+#                                         DOM `.page-size`
+#   divider         design "Rectangle 1"  DOM `.divider`
+#   result summary  design "Table pagination item indicator"
+#                                         DOM `.summary`
+#   trailing group  design "Frame 1067"   DOM `.trailing`
+#   page control    design "Pagination dropdown" + "Total page amount wrapper"
+#                                         DOM `.page`
+#   page total      design "of 2 pages"   DOM `.total`
+#   navigation      design "Frame 1066"   DOM `.navigation`
+#   first           design "Pagination button"   DOM `.first`
+#   previous        design "Pagination button"   DOM `.previous`
+#   next            design "Pagination button"   DOM `.next`
+#   last            design "Pagination button"   DOM `.last`
+# The design's layer names are frame numbers; the design owners are asked to
+# adopt the names above.
+#
+# Tokens are `/`-paths over `@canonical/design-tokens` 0.10.0 ids. The bar's
+# leading inset reads the `@canonical/styles` density channel
+# (`density/padding-inline`, `--density-padding-inline`), as the table's cells
+# do; the DSL cannot name a channel, so the path does and this note records it.
+#
+# The two selects are the design system's SelectInput, themed through the form
+# layer's own channels on the bar, never restyled:
+#   --form-input-height          density/line-height-effective
+#   --form-input-padding-block   dimension/050
+#   --form-input-padding-inline  dimension/100
+#   --form-input-background      color/foreground/ghost
+#   --form-input-border-color    none: the design draws the dropdown borderless
+# One property is overridden rather than themed: the input chrome fills its
+# container's width, and in a bar it takes its content's. Its caret is the
+# form layer's own, drawn in `color/icon`. The chrome comes from the
+# `@canonical/react-ds-global-form` stylesheet, which the page loads.
+#
+# The four buttons are the design system's Button, tertiary: a ghost fill
+# with no border, its hover, active and focus states the Button's own. An
+# icon-only Button collapses to its icon, because the Button seats its height
+# on a label, so the bar holds each to a square of the density line
+# (`density/line-height-effective`) with its icon centred in it: the one
+# place it overrides the Button's box. The design draws 36×36. The trailing
+# inline padding is set to `dimension/100` through the Button's own padding
+# channel. A disabled tertiary Button draws a border its enabled state hides;
+# the design draws no disabled state, and the Button's own is kept.
+#
+# Icons: `chevron-left` and `chevron-right` as drawn. The design's
+# `skip-to-start` and `skip-to-end` are not in `@canonical/ds-assets`; until
+# they land, first and last show `back-to-top` turned a quarter-turn towards
+# their edge — a bar with an arrow meeting it. The DSL cannot express the
+# turn; the stylesheet does, and this note records it. Icons take `1em` from
+# the Icon component; the design draws 16px, and the package has no icon-size
+# token.
+#
+# Deviations the DSL cannot express, recorded here:
+#   - `layout.position: sticky` holds the bar to the bottom edge of the
+#     scrolling container: the key is valid under the DSL's open key pattern
+#     but outside its documented vocabulary. The bar stacks above the rows
+#     scrolling beneath it at z-index 1; the package has no stacking token.
+#   - The background and text are the surface channel
+#     (`--surface-color-background`, `--surface-color-text`, falling back to
+#     `color/background` and `color/text`), so a sticky bar hides the rows
+#     beneath it on any surface. The design binds `color/foreground/ghost`,
+#     which is the same white in the light theme and transparent in no theme.
+#   - The top border is `dimension/stroke/thickness/medium` (1px). The design
+#     draws 2px; the package has no 2px stroke.
+#   - The result summary names the range on screen ("Showing 6–10 out of 12
+#     items"; one row as "Showing item 6 out of 12") where the design
+#     writes the count ("Showing 50 out of 942 items"). The count reads the
+#     same on every full page, so a page move would change nothing a screen
+#     reader hears.
+#   - The result summary is empty while the rows on screen do not answer the
+#     current query: a pending replacement, or a failed one that left an
+#     earlier query's rows in view. Conditional display is deferred in the
+#     DSL.
+#   - `spacing.internal.inline.start` and `.end` bind one side's inset: a
+#     level below the documented keys, valid under the open key pattern.
+#   - The groups wrap onto two lines when the bar is too narrow for both;
+#     the DSL has no wrapping key.
+#
+# States:
+#   - first and previous are disabled on the first page; next is disabled
+#     when no later page is known to exist; last is disabled on the last page
+#     and whenever there is no total for the current query — before results,
+#     while a replacement loads, or from a source that publishes none. Each is
+#     the Button's `@disabled`.
+#   - The page select lists every page the last settled total makes, keeping
+#     that list while a page move loads (a new query, page size or scope
+#     drops it), and lists a window past the last page after the pages there
+#     are. One option per page: a very large total makes a long list, which
+#     is carried to a later change.
+#   - The page total is absent while the source has published no total that
+#     answers the current query. The design's hidden "Skeleton loading item"
+#     on the total is not specified: one loading state belongs to the table.
+#
+# Accessibility (DataViews component coverage):
+#   bar, page size, page control, navigation
+#                       "Pagination/page size" (2.1.1, 2.4.4, 2.4.6, 3.2.2,
+#                       4.1.2). The bar is a named `nav`; the page size select
+#                       is labelled by its visible text, the page select is
+#                       named "Page" and described by its total, and each
+#                       button is named for its destination ("First page",
+#                       "Previous page", "Next page", "Last page").
+#   result summary      "Summary" (1.3.1, 4.1.3). A polite status: it changes
+#                       only when settled results change what it says, so a
+#                       background refresh with the same answer is silent.
+node:
+  uri: apps.subcomponent.data_table-pagination_bar
+  styles:
+    layout.type: stack
+    layout.direction: row
+    layout.align: center
+    layout.justify: space-between
+    layout.position: sticky
+    spacing.gap: dimension/100
+    spacing.internal.inline.start: density/padding-inline
+    typography.color: color/text
+    typography.family: typography/text/primary/font-family
+    typography.size: typography/text/primary/font-size
+    typography.weight: typography/text/primary/font-weight
+    appearance.background: color/background
+    appearance.border.top.width: dimension/stroke/thickness/medium
+    appearance.border.top.color: color/border/muted
+  edges:
+    - node:
+        role: leading group
+        styles:
+          layout.type: stack
+          layout.direction: row
+          layout.align: center
+          spacing.gap: dimension/100
+        edges:
+          - node:
+              role: page size
+              styles:
+                layout.type: stack
+                layout.direction: row
+                layout.align: center
+                spacing.gap: dimension/050
+              edges:
+                - node:
+                    role: label
+                  relation:
+                    cardinality: "1"
+                - uri: global.subcomponent.select_input
+                  relation:
+                    cardinality: "1"
+            relation:
+              cardinality: "1"
+          - node:
+              role: divider
+              styles:
+                size.width: dimension/stroke/thickness/medium
+                size.height: dimension/300
+                appearance.background: color/border/muted
+            relation:
+              cardinality: "1"
+          - node:
+              role: result summary
+              styles:
+                spacing.internal.inline.start: dimension/100
+            relation:
+              cardinality: "1"
+      relation:
+        cardinality: "1"
+    - node:
+        role: trailing group
+        styles:
+          layout.type: stack
+          layout.direction: row
+          layout.align: center
+          spacing.gap: dimension/100
+        edges:
+          - node:
+              role: page control
+              styles:
+                layout.type: stack
+                layout.direction: row
+                layout.align: center
+                spacing.gap: dimension/050
+                spacing.internal.inline.end: dimension/100
+              edges:
+                - uri: global.subcomponent.select_input
+                  relation:
+                    cardinality: "1"
+                - node:
+                    role: page total
+                  relation:
+                    cardinality: "0..1"
+            relation:
+              cardinality: "1"
+          - node:
+              role: divider
+              styles:
+                size.width: dimension/stroke/thickness/medium
+                size.height: dimension/300
+                appearance.background: color/border/muted
+            relation:
+              cardinality: "1"
+          - node:
+              role: navigation
+              styles:
+                layout.type: stack
+                layout.direction: row
+                layout.align: center
+              edges:
+                - node:
+                    uri: global.component.button
+                    props:
+                      importance: tertiary
+                      icon: back-to-top
+                    styles:
+                      size.min.width: density/line-height-effective
+                      size.min.height: density/line-height-effective
+                  relation:
+                    cardinality: "1"
+                    slotName: first
+                - node:
+                    uri: global.component.button
+                    props:
+                      importance: tertiary
+                      icon: chevron-left
+                    styles:
+                      size.min.width: density/line-height-effective
+                      size.min.height: density/line-height-effective
+                  relation:
+                    cardinality: "1"
+                    slotName: previous
+                - node:
+                    uri: global.component.button
+                    props:
+                      importance: tertiary
+                      icon: chevron-right
+                    styles:
+                      size.min.width: density/line-height-effective
+                      size.min.height: density/line-height-effective
+                  relation:
+                    cardinality: "1"
+                    slotName: next
+                - node:
+                    uri: global.component.button
+                    props:
+                      importance: tertiary
+                      icon: back-to-top
+                    styles:
+                      size.min.width: density/line-height-effective
+                      size.min.height: density/line-height-effective
+                  relation:
+                    cardinality: "1"
+                    slotName: last
+            relation:
+              cardinality: "1"
+      relation:
+        cardinality: "1"

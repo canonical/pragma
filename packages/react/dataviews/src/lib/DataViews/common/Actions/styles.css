@@ -1,0 +1,42 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /**
+   * Actions styles
+   *
+   * The specification is the anatomy beside the code, `Actions.anatomy.yaml`.
+   * Every value below is one it binds; what it could not bind is recorded
+   * there, never hardcoded here.
+   *
+   * The bar sits on the design system's contrasted surface: its root carries
+   * `.contrasted`, which sets the surface channel read here, so no colour
+   * below is the bar's own.
+   */
+  .ds.data-table-action-bar {
+    display: inline-flex;
+    align-items: center;
+    color: var(--surface-color-text, var(--color-text));
+    font-family: var(--typography-text-primary-font-family);
+    font-size: var(--typography-text-primary-font-size);
+    font-weight: var(--typography-text-primary-font-weight);
+    background-color: var(--surface-color-background, var(--color-background));
+    /* The Button reads the page's text colour for its label, not the
+       surface's; its own text channel carries the surface's to it. */
+    --button-color-text: var(--surface-color-text, var(--color-text));
+
+    & > .indicator {
+      padding-inline: var(--density-padding-inline);
+      white-space: nowrap;
+    }
+
+    /* An icon-only Button collapses without a label: held to a square one
+       row tall, its icon centred and its side padding equal. */
+    & > .ds.button.deselect {
+      --button-padding-inline-end: var(--dimension-100);
+      min-block-size: var(--density-line-height-effective);
+      min-inline-size: var(--density-line-height-effective);
+      align-items: center;
+      justify-content: center;
+    }
+  }
+}

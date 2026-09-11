@@ -1,6 +1,6 @@
 # @canonical/dataviews-react
 
-React bindings for Canonical collection views, built on `@canonical/dataviews-core`: the `DataViews` root with its connected `Filters` and `Pagination` parts, the provider context, the four scoped observation hooks, and the `DataTable` renderer.
+React bindings for Canonical collection views, built on `@canonical/dataviews-core`: the `DataViews` root with its connected `Filters`, `Actions` and `Pagination` parts, the provider context, the four scoped observation hooks, the `DataTable` renderer and the `PaginationBar`.
 
 > **Stability: pre-1.0 / experimental.** The API is still consolidating and breaking changes may land between minor versions. Every breaking change ships with a conventional-commit subject and a CHANGELOG entry — those are the migration record. Pin a minor version if you need stability today.
 
@@ -20,80 +20,25 @@ Under active development; the public surface grows change by change. The current
 - **`useDataViewsField(handle)`** — a field's input buffer, applied semantic value and feedback, with `edit`/`set`/`clear` routed through the provider.
 - **`useDataViewsCell(provider)`** — the current cell's scope (row id, column id, read-only row/fields/selected channels), installed by the table renderer; throws outside a rendered cell or on a witness mismatch.
 - **`DataViews.Filters`** — the connected query-editing part. Which fields it offers and which operators each accepts come from the provider — its schema, and the capabilities its source declares — so it never offers a restriction the source would refuse, takes no query props, and has no draft query to keep in step with the applied one. Throws when the provider was created without the source's capabilities.
-- **`DataViews.Pagination`** — the connected window navigation. Its destinations are the ones the collection can actually reach: a source that publishes a filtered total gets numbered pages and a last one, a source that publishes no count gets a Next offered only while the page is full, and a pending or failed replacement claims no total at all.
+- **`DataViews.Pagination`** — the connected window navigation: the `PaginationBar`, bound to the enclosing root's provider.
+- **`DataViews.Actions`** — the connected action bar: the selection's count, the actions a caller places, and a button that clears the selection, on the design system's contrasted surface. It reads the root's selection, takes no copy of it, and is absent while nothing is selected.
+- **`PaginationBar`** — the bar beneath a collection's rows: the page size, a summary of the items on screen out of the filtered total, a page select and first, previous, next and last buttons. It takes its provider explicitly, as `DataTable` does, so a standalone table gets the same footer as a composed one. Its destinations are the ones the collection can actually reach: a source that publishes a filtered total gets a page total and a last page, a source that publishes no count gets a Next offered only while the page is full, and a pending or failed replacement claims no total at all.
 - **`DataTable`** — the row renderer: div rows over ARIA table roles, one shared column track list, sorting, selection and resizing. It takes its provider explicitly, so it behaves the same standalone and inside a `DataViews` root. A column's `sortable` is honoured only on a field the provider's source declares sortable — the same declaration `DataViews.Filters` reads — so the table never offers an ordering the source would refuse; a sortable column on a provider created without the source's capabilities throws.
 
-The remaining connected parts (Views, Summary, Actions) land in later changes.
+The remaining connected parts (Views, Summary) land in later changes. The pagination bar already carries the result summary and the action bar the selection count, so `Summary` is designed not to repeat either.
 
 ## Composition recipes
 
-### The connected parts
+The recipes, with consumer code and the live stories beside them, are the Storybook page **_work_in_progress / DataViews / Composition / Recipes** — source in [`src/lib/DataViews/DataViews.mdx`](src/lib/DataViews/DataViews.mdx):
 
-```tsx
-const machinesProvider = createDataViewsProvider({
-  schema,
-  // What the source can execute: Filters and the table's sortable columns
-  // offer nothing beyond it, and the binding refuses a provider told
-  // anything else.
-  capabilities: source.capabilities,
-});
-createSourceBinding({ host: machinesProvider, adapter: source });
+- **The connected parts** — one root, every part reading its provider; place them in any order and any wrapper.
+- **Keeping the query in the URL** — a location binding makes the URL the query's other home, and a refused link reports its reasons on `binding.issues`.
 
-<DataViews provider={machinesProvider}>
-  <DataViews.Filters labels={{ status: "Status", cpu: "Cores" }} />
-
-  <DataTable provider={machinesProvider} columns={columns} label="Machines" />
-
-  <div className="collection-footer">
-    <DataViews.Pagination label="Machines pagination" />
-  </div>
-</DataViews>
-```
-
-Both parts read the enclosing root: they take presentation choices — a name,
-visible field labels, the page sizes to offer — and never a second copy of
-the query, the window or the selection the provider already owns. Ordinary
-wrappers and custom children sit between them; moving pagination means moving
-an element, not asking for a slot.
-
-### Keeping the query in the URL
-
-```tsx
-function MachinesUrlQuery({ platform }: { platform: PlatformLocation }) {
-  // Building the binding subscribes to nothing; observing does, so it
-  // happens in an effect and a discarded render leaves nothing behind.
-  const binding = useMemo(
-    () =>
-      createLocationBinding({
-        host: machinesProvider,
-        location: createPlatformLocation(platform),
-      }),
-    [platform],
-  );
-  useEffect(() => binding.observe(), [binding]);
-  const issues = useDataViewsValue(binding.issues);
-  return issues.length === 0 ? null : (
-    <ul className="query-issues">
-      {issues.map((issue, index) => (
-        // One parameter can be refused for several reasons.
-        <li key={`${index}:${issue.parameter}`}>{issue.reason}</li>
-      ))}
-    </ul>
-  );
-}
-```
-
-`createSourceBinding`, `createLocationBinding` and `createPlatformLocation`
-come from `@canonical/dataviews-core`. Every edit the filters make writes the
-canonical query to the location, and back, forward or a pasted URL is adopted
-by the provider — one authority, no mirroring effect. A link carrying a clause
-the grammar, the schema or the source refuses is not adopted: it stays in the
-URL and its reasons are published on `binding.issues`, for the host to show
-beside the controls. The parts read the provider either way.
+The parts have recipe pages of their own: [`Filters.mdx`](src/lib/DataViews/common/Filters/Filters.mdx), [`Actions.mdx`](src/lib/DataViews/common/Actions/Actions.mdx), [`Pagination.mdx`](src/lib/DataViews/common/Pagination/Pagination.mdx) and [`PaginationBar.mdx`](src/lib/PaginationBar/PaginationBar.mdx).
 
 ## Styles
 
-`DataTable` imports its own stylesheet, so a page that renders one has the rules it needs. A page that would rather have every rule present from the first paint — before the JavaScript of a lazily loaded route arrives — links the package's entry stylesheet instead:
+Each component imports its own stylesheet, so a page that renders one has the rules it needs. A page that would rather have every rule present from the first paint — before the JavaScript of a lazily loaded route arrives — links the package's entry stylesheet instead:
 
 ```css
 @import url("@canonical/dataviews-react/index.css");
@@ -102,6 +47,8 @@ beside the controls. The parts read the provider either way.
 The table assumes the `.app` context of `@canonical/styles`, which the page loads: render it inside an element carrying the `.app` class, where the design system's primary text takes its application sizes. It is dense wherever it sits — its root carries the design system's `.dense` class — and its rows and cells take their height and padding from the density channel that class sets; it defines no density rule of its own. Its sort chevrons and checkbox marks are `@canonical/ds-assets` icons, served at `/icons` like every other design-system icon.
 
 The sheet is in the `ds.components.global` cascade layer and reads its colours, spacing, borders and type from `@canonical/design-tokens`. The one thing it cannot carry is the column track list: the solver derives that per render from the measured container, and the table publishes the data columns' tracks on itself as `--data-table-columns` (nothing at all when it has no columns), which every row consumes after the selection column's own track. That property is the table's own channel, not a customisation hook: the table writes it after any `style` it is given.
+
+The pagination bar's selects are the design system's `SelectInput`, whose input chrome is in the `@canonical/react-ds-global-form` stylesheet: a page that renders the bar loads `@canonical/react-ds-global-form/dist/esm/index.css` beside `@canonical/styles`. The bar sticks to the bottom of whatever scrolls it. The action bar sits on the design system's contrasted surface, `.contrasted`, and paints nothing of its own.
 
 ## DataTable recipes
 

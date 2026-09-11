@@ -12,11 +12,15 @@ export type {
   RatingInputProps,
   RatingScale,
 } from "./subcomponent/index.js";
-// CheckboxInput is exposed directly too: other design-system components
-// compose the bare checkbox — a table's row selection, say — where no Field or
-// form applies. The component only: its props type is not yet a contract this
-// package commits to.
-export { CheckboxInput, RatingInput } from "./subcomponent/index.js";
+// CheckboxInput and SelectInput are exposed directly too: other design-system
+// components compose the bare control — a table's row selection, a pagination
+// bar's page select — where no Field or form applies. The components only:
+// their props types are not yet a contract this package commits to.
+export {
+  CheckboxInput,
+  RatingInput,
+  SelectInput,
+} from "./subcomponent/index.js";
 // Value formatting. `Formatter` is the contract for an input whose displayed
 // string differs from the one it submits; `useFormattedValue` is the piece worth
 // sharing, since keeping the caret stable across a reformat is the hard part.

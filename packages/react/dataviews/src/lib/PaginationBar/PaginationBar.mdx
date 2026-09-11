@@ -1,0 +1,97 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./PaginationBar.stories";
+
+<Meta of={Stories} name="Recipes" />
+
+# PaginationBar recipes
+
+`PaginationBar` is the bar beneath a collection's rows: how many items a page holds, which are on screen out of how many, and the way to every other page. It pages a provider's window and nothing else — the provider owns the query, the source answers it, and the bar only asks for another window.
+
+It takes its provider explicitly, as `DataTable` does. A table used on its own gets the same footer as one composed inside a `DataViews` root, and the bar never behaves differently because some context happened to be present. Inside a root, `DataViews.Pagination` renders this same bar for the root's provider.
+
+The page size and page selects are the design system's `SelectInput`, and the buttons its `Button`. The select's chrome comes from the `@canonical/react-ds-global-form` stylesheet, so load it on the page beside `@canonical/styles`:
+
+```css
+@import url("@canonical/styles");
+@import url("@canonical/react-ds-global-form/dist/esm/index.css");
+@import url("@canonical/dataviews-react/index.css");
+```
+
+## A table and its pagination bar
+
+Build the source and the provider once, tell the provider what the source can execute, and bind them in an effect that disposes the binding. The table and the bar read the same provider: the bar asks for a window, and the table shows the rows that answer it.
+
+```tsx
+import {
+  createArraySource,
+  createDataViewsProvider,
+  createSourceBinding,
+} from "@canonical/dataviews-core";
+import {
+  DataTable,
+  PaginationBar,
+  type DataTableColumn,
+} from "@canonical/dataviews-react";
+import { useEffect, useState } from "react";
+import { machineSchema, machines } from "./machines.js";
+
+const columns: readonly DataTableColumn[] = [
+  { id: "name", header: "Host" },
+  { id: "status", header: "Status" },
+  { id: "region", header: "Region" },
+  { id: "owner", header: "Owner" },
+];
+
+export function Machines() {
+  const [source] = useState(() =>
+    createArraySource({
+      rows: machines,
+      fields: ["name", "status", "region", "cores", "owner"],
+    }),
+  );
+  const [provider] = useState(() =>
+    createDataViewsProvider({
+      schema: machineSchema,
+      capabilities: source.capabilities,
+      window: { page: 1, size: 5 },
+    }),
+  );
+  useEffect(() => {
+    const binding = createSourceBinding({ host: provider, adapter: source });
+    if (provider.result.get().result.status === "idle") {
+      provider.refresh();
+    }
+    return binding.dispose;
+  }, [provider, source]);
+  return (
+    <>
+      <DataTable provider={provider} columns={columns} label="Machines" />
+      <PaginationBar provider={provider} sizes={[5, 10, 25]} />
+    </>
+  );
+}
+```
+
+<Canvas of={Stories.FirstPage} sourceState="none" />
+
+`sizes` are the page sizes on offer: 50, 75 and 100 unless you say otherwise. The applied size is always among them, so a provider started on a size you did not list still shows it. Choosing a size returns to the first page, because the old page number counted rows of a different size.
+
+<Canvas of={Stories.LastPage} sourceState="none" />
+
+## Counts it can stand behind
+
+Every count describes the rows on screen, and every button goes somewhere the collection can reach. A source that publishes a filtered total gets a page total and a last page. A source that pages without counting — its capabilities declare `count: "none"` — gets neither: the summary counts the rows on screen, Last is unavailable, and Next is offered while the page is full, the only evidence there may be another.
+
+<Canvas of={Stories.WithoutACount} sourceState="none" />
+
+While the rows on screen do not answer the current query — nothing has arrived yet, a new page is loading, or the request failed and left an earlier query's rows in view — the summary and the page total say nothing, and Next waits. A total from an earlier query is not this one's.
+
+<Canvas of={Stories.Loading} sourceState="none" />
+
+The summary is a polite status. It names the rows on screen — "Showing 6–10 out of 12 items", or "Showing item 11 out of 12" for one — and speaks when settled results change what it says, so moving to another page or narrowing the collection is announced, and a background refresh with the same answer is not. When a navigation button that has the focus becomes unavailable — Next while its page loads, Last on arriving at the last page — the focus moves to the page select rather than to the document.
+
+## Sticky at the bottom
+
+The bar holds to the bottom edge of whatever scrolls it and paints the surface it sits on, so the rows scrolling beneath it never show through. A sticky element cannot leave its parent's box, so make the bar a direct child of the scrolling container, beside the table — not the only child of a wrapper its own height.
+
+<Canvas of={Stories.StickyInAScrollingFrame} sourceState="none" />
