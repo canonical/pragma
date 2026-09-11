@@ -52,7 +52,7 @@ const SideNavigation = ({
   // expanded: expandedProp,
   defaultExpanded: defaultExpandedProp,
   // onExpandedChange,
-  keyboardShortcut = false,
+  keyboardShortcut = true,
   "aria-label": ariaLabel,
   ...props
 }: SideNavigationProps): React.ReactElement => {
@@ -76,7 +76,7 @@ const SideNavigation = ({
     setExpanded((current) => !current);
   }, []);
 
-  // Reserved (§10.1) — inert until `keyboardShortcut` opts in.
+  // Ctrl+B rail-collapse shortcut — on unless `keyboardShortcut` opts out.
   // See common/hooks/useCollapseShortcut.
   useCollapseShortcut({ enabled: keyboardShortcut, onTrigger: handleToggle });
 

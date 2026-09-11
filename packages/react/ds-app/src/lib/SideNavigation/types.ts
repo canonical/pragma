@@ -188,9 +188,8 @@ type OwnProps = {
   /** Initial expanded (rail) state when uncontrolled. Defaults to `true`. */
   defaultExpanded?: boolean;
   /**
-   * Reserved. Binds the Ctrl+B rail-collapse shortcut when `true`.
-   * **Pending approval** — the key is not ratified, so the shortcut ships
-   * off by default.
+   * Binds the Ctrl+B rail-collapse shortcut. Defaults to `true`;
+   * pass `false` to opt out.
    */
   keyboardShortcut?: boolean;
   /**

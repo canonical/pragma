@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import SideNavigation from "./SideNavigation.js";
 import type { FooterRoot, NavRoot } from "./types.js";
@@ -176,11 +182,19 @@ describe("SideNavigation", () => {
   //   expect(onExpandedChange).toHaveBeenCalledWith(false);
   // });
 
-  it("does not respond to the collapse shortcut by default (reserved)", () => {
+  it("collapses via the Ctrl+B shortcut by default, and keyboardShortcut: false opts out", () => {
     const { container } = render(<SideNavigation root={root} />);
     const el = container.firstElementChild as HTMLElement;
     fireEvent.keyDown(window, { key: "b", ctrlKey: true });
-    expect(el.dataset.expanded).toBe("true");
+    expect(el.dataset.expanded).toBe("false");
+    cleanup();
+
+    const { container: optedOut } = render(
+      <SideNavigation root={root} keyboardShortcut={false} />,
+    );
+    const elOptedOut = optedOut.firstElementChild as HTMLElement;
+    fireEvent.keyDown(window, { key: "b", ctrlKey: true });
+    expect(elOptedOut.dataset.expanded).toBe("true");
   });
 
   it("collapses after mount on a small viewport when defaultExpanded is left unset", async () => {

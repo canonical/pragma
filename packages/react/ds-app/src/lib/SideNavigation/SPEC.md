@@ -228,7 +228,7 @@ all.
 | `LinkComponent` | `ComponentType<LinkComponentProps> \| "a"` | `"a"` | Renders navigable items; pass a router `Link` for client-side navigation. |
 | `currentUrl` | `string` | — | Live location; resolves the active item (`aria-current="page"`) and expands its branch. |
 | `defaultExpanded` | `boolean` | `true` | Initial rail state; see §4. |
-| `keyboardShortcut` | `boolean` | `false` | Opts into the Ctrl+B collapse shortcut (**pending approval**); see §4. |
+| `keyboardShortcut` | `boolean` | `true` | Binds the Ctrl+B collapse shortcut (§4); pass `false` to opt out. |
 | `skipTo` | `string` | `"#main-content"` | Skip-link target; see §5. |
 | `aria-label` | `string` | `"Main navigation"` | Forwarded to Content's `<nav>`. |
 
@@ -324,11 +324,10 @@ than both sides. Browsers without the feature keep the static
 top-anchored panel (current absolute positioning) — `@supports`-gated, no
 JS anywhere.
 
-### Keyboard shortcut — Ctrl+B, pending approval
+### Keyboard shortcut — Ctrl+B
 
-The rail-collapse keyboard shortcut is **Ctrl+B**. It is **off by default**
-(`keyboardShortcut`, default `false`) — the binding is *pending approval*,
-so it ships opt-in until design ratifies it. No story enables it.
+The rail-collapse keyboard shortcut is **Ctrl+B**. It is **on by default**
+(`keyboardShortcut`, default `true`); pass `false` to opt out.
 
 ### Selection & active state
 
@@ -398,7 +397,6 @@ top-to-bottom → footer items top-to-bottom, matching DOM order.
 - **No `GroupHeader` interactive story or tooltip** — semantic divider,
   covered by the grouped stories (§1).
 - **No controlled expansion circuit** — uncontrolled only, pending design.
-- **Shortcut not ratified** — Ctrl+B ships opt-in, off by default (§4).
 - **No collapsed-state tooltips on footer items** — the 800ms-delay tooltip
   enhancement is tracked separately.
 - **No drill-down navigation on small screens** — out of scope (§4).

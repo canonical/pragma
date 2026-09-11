@@ -5,17 +5,15 @@ import type {
 } from "./types.js";
 
 /**
- * The reserved rail-collapse shortcut: Ctrl+B. Kept as a single named
- * constant so the key can change in one place if/when a consumer needs a
- * different binding.
+ * The rail-collapse shortcut: Ctrl+B. A single named constant so the key
+ * can change in one place if a consumer needs a different binding.
  */
 export const COLLAPSE_SHORTCUT = { key: "b", ctrlKey: true } as const;
 
 /**
- * Reserved: binds `COLLAPSE_SHORTCUT` to `onTrigger` while `enabled`.
- * `SideNavigation` calls this with `enabled: keyboardShortcut`, which
- * defaults to `false` — the shortcut is **pending approval**, so no
- * listener is ever attached and it stays inert until a consumer opts in.
+ * Binds `COLLAPSE_SHORTCUT` to `onTrigger` while `enabled`.
+ * `SideNavigation` calls this with `enabled: keyboardShortcut`
+ * (default `true`).
  *
  * The match is exact: the Ctrl+B chord with no other modifiers held, and
  * only when the event's target is not an editable element (an input,
