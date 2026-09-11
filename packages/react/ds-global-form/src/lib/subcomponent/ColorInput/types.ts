@@ -1,9 +1,8 @@
-import type { BaseProps } from "../types.js";
+import type { ComponentProps } from "react";
 
 export type HexFormat = "hex6" | "hex3" | "hex8";
 
-/** Props for the presentational Color input (no react-hook-form). */
-export type ColorInputProps = BaseProps & {
+type OwnProps = {
   /** Controlled value — supplied by the field tier, or directly when standalone. */
   value?: string;
 
@@ -25,3 +24,8 @@ export type ColorInputProps = BaseProps & {
   /** Accepted hex formats (default ["hex6"]) */
   hexFormats?: HexFormat[];
 };
+
+/** Props for the presentational Color input (no react-hook-form). Renders a
+ * `<div class="ds input color">` as its root. */
+export type ColorInputProps = OwnProps &
+  Omit<ComponentProps<"div">, keyof OwnProps>;

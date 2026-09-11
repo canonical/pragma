@@ -24,11 +24,13 @@ export const RichChoices = ({
   options,
   value,
   onChange,
+  ...rest
 }: RichChoicesPresentationProps): React.ReactElement => {
   const type = isMultiple ? "checkbox" : "radio";
 
   return (
     <fieldset
+      {...rest}
       id={id}
       style={style}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}

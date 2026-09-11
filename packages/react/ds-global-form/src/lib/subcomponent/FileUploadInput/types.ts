@@ -1,7 +1,6 @@
-import type { BaseProps } from "../types.js";
+import type { ComponentProps } from "react";
 
-/** Props for the presentational FileUpload input (controlled, no react-hook-form). */
-export type FileUploadInputProps = BaseProps & {
+type OwnProps = {
   /** Selected files (controlled value). */
   value?: File[];
 
@@ -23,3 +22,8 @@ export type FileUploadInputProps = BaseProps & {
   /** Whether the input is disabled */
   disabled?: boolean;
 };
+
+/** Props for the presentational FileUpload input (controlled, no
+ * react-hook-form). Renders a `<div class="ds input file-upload">` as its root. */
+export type FileUploadInputProps = OwnProps &
+  Omit<ComponentProps<"div">, keyof OwnProps>;

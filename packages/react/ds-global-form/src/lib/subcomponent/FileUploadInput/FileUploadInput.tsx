@@ -22,8 +22,8 @@ export const FileUploadInput = ({
   value,
   onChange,
   accept,
-  // Destructured out of `otherProps` so they are NOT spread onto the drop-zone
-  // <button> as invalid DOM attributes. The FIELD reads them (as RHF validation
+  // Destructured out of `otherProps` so they are NOT spread onto the root
+  // <div> as invalid DOM attributes. The FIELD reads them (as RHF validation
   // rules); the presentational input does not enforce them.
   maxSize,
   maxFiles,
@@ -111,6 +111,7 @@ export const FileUploadInput = ({
 
   return (
     <div
+      {...otherProps}
       id={id}
       style={style}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
@@ -126,7 +127,6 @@ export const FileUploadInput = ({
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         disabled={disabled}
-        {...otherProps}
       >
         <span className="drop-zone-text p">
           {isDragOver

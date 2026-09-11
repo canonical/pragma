@@ -42,5 +42,5 @@ export type { TextInputProps, TextInputType } from "./TextInput/index.js";
 export { TextInput } from "./TextInput/index.js";
 export type { TimeInputProps } from "./TimeInput/index.js";
 export { TimeInput } from "./TimeInput/index.js";
-// Shared subcomponent types (BaseProps, Option, OptionsProps, NativeInputType).
+// Shared subcomponent types (Option, OptionsProps, NativeInputType).
 export * from "./types.js";

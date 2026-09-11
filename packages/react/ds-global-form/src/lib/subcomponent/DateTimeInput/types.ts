@@ -1,8 +1,6 @@
-import type React from "react";
+import type { ComponentProps } from "react";
 
-type NativeDateInputProps = React.InputHTMLAttributes<HTMLInputElement>;
-
-type AdditionalDateTimeProps = {
+type OwnProps = {
   /** Minimum datetime value (YYYY-MM-DDTHH:MM format) */
   min?: string;
 
@@ -13,5 +11,7 @@ type AdditionalDateTimeProps = {
   step?: number;
 };
 
-/** Props for the presentational datetime-local input (no react-hook-form). */
-export type DateTimeInputProps = NativeDateInputProps & AdditionalDateTimeProps;
+/** Props for the presentational datetime-local input (no react-hook-form).
+ * Renders an `<input type="datetime-local">` as its root. */
+export type DateTimeInputProps = OwnProps &
+  Omit<ComponentProps<"input">, keyof OwnProps>;
