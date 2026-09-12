@@ -1,4 +1,5 @@
 export type {
+  ActionInvocation,
   Operation,
   OperationConfig,
   OperationFailure,

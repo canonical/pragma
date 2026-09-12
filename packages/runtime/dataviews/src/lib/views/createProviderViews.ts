@@ -1,8 +1,8 @@
-import type { CollectionCoordinatorState } from "../collection/createCollectionCoordinator.js";
+import type { CollectionState } from "../collection/createCollectionCoordinator.js";
 import type { ReadonlyChannel } from "../observable/createChannel.js";
 import createChannel from "../observable/createChannel.js";
 import sliceEquals from "../query/sliceEquals.js";
-import type { ResultWindow, Slice } from "../query/types.js";
+import type { Query, ResultWindow, Slice } from "../query/types.js";
 import type { Schema } from "../schema/createSchema.js";
 import type { SchemaFieldDefinition } from "../schema/types.js";
 import reasonOf from "../source/reasonOf.js";
@@ -17,11 +17,11 @@ import type {
   PresentationTarget,
   ProviderViews,
   SavedView,
-  SettledOutcome,
   ViewAction,
   ViewDraft,
   ViewOutcome,
   ViewPresentation,
+  ViewSettledOutcome,
   ViewStore,
   ViewsState,
   ViewUpdateResult,
@@ -34,9 +34,9 @@ export type ViewsHost = {
   /** What the source can execute; a stored clause outside it is refused. */
   readonly capabilities: SourceCapabilities | null;
   /** The live query and window, which "modified" is derived from. */
-  readonly result: ReadonlyChannel<CollectionCoordinatorState<object>>;
+  readonly state: ReadonlyChannel<CollectionState<object>>;
   /** Adopt a view's query and window together. */
-  readonly adopt: (slice: Slice, window: ResultWindow) => void;
+  readonly adopt: (query: Query) => void;
 };
 
 /** Configuration of one provider's views. */
@@ -156,7 +156,7 @@ const settleLayer = (
  * which runs only while the scope it was made in is still current.
  */
 type Settlement = {
-  readonly outcome: SettledOutcome;
+  readonly outcome: ViewSettledOutcome;
   readonly apply?: () => Partial<ViewsState>;
 };
 
@@ -229,7 +229,7 @@ export default function createProviderViews(
   let disposed = false;
 
   const modifiedNow = (): boolean =>
-    baseline !== null && !sliceEquals(baseline, host.result.get().slice);
+    baseline !== null && !sliceEquals(baseline, host.state.get().slice);
 
   const publish = (changed: Partial<ViewsState>): void => {
     if (disposed) {
@@ -253,7 +253,7 @@ export default function createProviderViews(
     state.set(Object.freeze(published));
   };
 
-  const stopHost = host.result.subscribe(() => {
+  const stopHost = host.state.subscribe(() => {
     if (state.get().modified !== modifiedNow()) {
       publish({});
     }
@@ -293,8 +293,12 @@ export default function createProviderViews(
 
   /** The first page of the current page size. */
   const firstPage = (): ResultWindow => ({
+    ...host.state.get().window,
     page: 1,
-    size: host.result.get().window.size,
+    cursor: null,
+    // A view carries its own grouping, and a collapsed path names a group
+    // of the grouping it was made under: none of them survives the change.
+    collapsed: [],
   });
 
   /** The listed views with this one in them, as the store now has it. */
@@ -328,7 +332,7 @@ export default function createProviderViews(
           ...(current !== null && !views.some(({ id }) => id === current.id)
             ? leave(current.id)
             : {}),
-          listing: { status: "listed" },
+          listing: { status: "ready" },
           views: Object.freeze([...views].sort(byName)),
           unreadable,
         });
@@ -336,7 +340,7 @@ export default function createProviderViews(
       (error: unknown) => {
         if (token === listRead) {
           publish({
-            listing: { status: "unavailable", reason: reasonOf(error) },
+            listing: { status: "failed", reason: reasonOf(error) },
           });
         }
       },
@@ -546,7 +550,7 @@ export default function createProviderViews(
       return "a view needs a name";
     }
     const { listing, views, current } = state.get();
-    if (listing.status !== "listed") {
+    if (listing.status !== "ready") {
       return "the saved views are not listed, so the name cannot be checked";
     }
     const taken = [...views, ...(current === null ? [] : [current])].find(
@@ -565,7 +569,7 @@ export default function createProviderViews(
       if (observers === 1) {
         unsubscribe = store.subscribe(refresh);
         if (state.get().listing.status === "idle") {
-          publish({ listing: { status: "loading" } });
+          publish({ listing: { status: "pending" } });
         }
         refresh();
       }
@@ -611,7 +615,7 @@ export default function createProviderViews(
             baseline = decoded.slice;
             own = emptyLayer();
             readPreferences(view);
-            host.adopt(decoded.slice, firstPage());
+            host.adopt({ slice: decoded.slice, window: firstPage() });
             return { current: view, views: listedWith(view) };
           },
         };
@@ -620,7 +624,7 @@ export default function createProviderViews(
 
     reset() {
       if (baseline !== null) {
-        host.adopt(baseline, firstPage());
+        host.adopt({ slice: baseline, window: firstPage() });
         // Discarding the changes settles what the last operation left, but
         // not one still running.
         publish(
@@ -637,7 +641,7 @@ export default function createProviderViews(
         if (current === null) {
           return MISSING;
         }
-        const { slice } = host.result.get();
+        const { slice } = host.state.get();
         return async () =>
           updated(
             await store.update(current, { query: queryText(slice) }),
@@ -650,7 +654,7 @@ export default function createProviderViews(
     saveAs(name) {
       return run("saveAs", () => {
         const trimmed = name.trim();
-        const { slice } = host.result.get();
+        const { slice } = host.state.get();
         const query = queryText(slice);
         const { presentation } = state.get();
         const retried =

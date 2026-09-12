@@ -2,10 +2,10 @@ import createIdentity, { type Identity } from "../createIdentity.js";
 
 /** Per-target outcome of a partial operation result. */
 export type OperationOutcome =
-  | { readonly target: string; readonly status: "success" }
+  | { readonly target: string; readonly status: "succeeded" }
   | {
       readonly target: string;
-      readonly status: "failure";
+      readonly status: "failed";
       readonly reason: string;
     };
 
@@ -23,12 +23,21 @@ export type OperationState = {
   readonly payload: unknown;
   /** Selection revision captured at construction. */
   readonly selectionRevision: number;
-  readonly status: "pending" | "partial" | "success" | "failure";
+  readonly status: "pending" | "partial" | "succeeded" | "failed";
   readonly succeeded: readonly string[];
   readonly failed: readonly OperationFailure[];
   /** Captured targets without a reported outcome yet. */
   readonly remaining: readonly string[];
   readonly attempts: number;
+};
+
+/**
+ * What a caller asks to be run over explicitly captured rows: the same
+ * capture an operation records, without the revision its owner supplies.
+ */
+export type ActionInvocation = {
+  readonly targets: readonly string[];
+  readonly payload?: unknown;
 };
 
 /** Configuration of one invocation; the capture happens at construction. */
@@ -48,7 +57,7 @@ export type Operation = {
    * with their reasons, and outcomes for unknown, already-settled or foreign
    * targets are ignored.
    */
-  readonly recordOutcome: (outcomes: readonly OperationOutcome[]) => void;
+  readonly recordOutcomes: (outcomes: readonly OperationOutcome[]) => void;
   /**
    * Retry the failed captured targets under the same operation identity,
    * keeping the original capture. No-op unless the last attempt ended in
@@ -78,7 +87,7 @@ export default function createOperation(config: OperationConfig): Operation {
 
   function settle(): void {
     if (remaining.length === 0) {
-      status = failed.length > 0 ? "failure" : "success";
+      status = failed.length > 0 ? "failed" : "succeeded";
     } else {
       status = "partial";
     }
@@ -102,7 +111,7 @@ export default function createOperation(config: OperationConfig): Operation {
     get state(): OperationState {
       return snapshot;
     },
-    recordOutcome(outcomes: readonly OperationOutcome[]): void {
+    recordOutcomes(outcomes: readonly OperationOutcome[]): void {
       const open = new Set(remaining);
       let settled = false;
       for (const entry of outcomes) {
@@ -113,7 +122,7 @@ export default function createOperation(config: OperationConfig): Operation {
         // A target settles at most once per attempt: it leaves `open`, so a
         // later outcome for it cannot arrive through this path.
         open.delete(entry.target);
-        if (entry.status === "success") {
+        if (entry.status === "succeeded") {
           succeeded.push(entry.target);
         } else {
           failed.push({ target: entry.target, reason: entry.reason });
@@ -127,7 +136,7 @@ export default function createOperation(config: OperationConfig): Operation {
       snapshot = buildSnapshot();
     },
     retry(): void {
-      if (status !== "failure") {
+      if (status !== "failed") {
         return;
       }
       remaining = failed.map((failure) => failure.target);

@@ -21,10 +21,10 @@ export type Schema<TFields extends readonly SchemaFieldDefinition[]> = {
   /** Whether a field with this name exists. */
   readonly hasField: (name: string) => boolean;
   /**
-   * Validate a text input buffer for the field's single-value editing path.
-   * Flag fields edit through direct commands instead of a text buffer.
+   * Validate a text text input for the field's single-value editing path.
+   * Flag fields edit through direct commands instead of a text input.
    */
-  readonly validateBuffer: (name: string, buffer: string) => FieldValidation;
+  readonly validateInput: (name: string, input: string) => FieldValidation;
   /**
    * Build the addressed predicate for a field, enforcing the kind's legal
    * operators, the operator's grammar arity, and schema semantics beyond
@@ -242,7 +242,7 @@ export default function createSchema<
     fields: storedFields,
     fieldNames,
     hasField: (name: string) => byName.has(name),
-    validateBuffer(name: string, buffer: string): FieldValidation {
+    validateInput(name: string, input: string): FieldValidation {
       const definition = byName.get(name);
       if (definition === undefined) {
         return { status: "invalid", reason: `unknown field "${name}"` };
@@ -253,28 +253,28 @@ export default function createSchema<
           reason: "flag fields edit through direct commands",
         };
       }
-      if (buffer === "") {
+      if (input === "") {
         return { status: "incomplete" };
       }
       const parsed: PredicateOperand[] = [];
       if (definition.kind === "choices") {
         const operand = definition.options.find(
-          (option) => String(option) === buffer,
+          (option) => String(option) === input,
         );
         if (operand === undefined) {
           return {
             status: "invalid",
-            reason: `"${buffer}" is not an option of "${name}"`,
+            reason: `"${input}" is not an option of "${name}"`,
           };
         }
         parsed.push(operand);
       } else if (definition.kind === "number") {
-        if (!/^-?\d+(\.\d+)?$/.test(buffer)) {
+        if (!/^-?\d+(\.\d+)?$/.test(input)) {
           return { status: "invalid", reason: "not a number" };
         }
-        parsed.push(Number(buffer));
+        parsed.push(Number(input));
       } else {
-        parsed.push(buffer);
+        parsed.push(input);
       }
       const rejection = operandRejection(definition, parsed);
       if (rejection !== null) {

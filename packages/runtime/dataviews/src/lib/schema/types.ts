@@ -1,7 +1,7 @@
 /**
  * Schema field definitions for the bounded collection grammar. The field
  * kind decides its legal operators, its applied semantic type and how an
- * input buffer validates.
+ * text input validates.
  */
 
 /** A closed-set field: equality over a set of option values. */
@@ -59,11 +59,18 @@ export type AppliedOf<TField extends SchemaFieldDefinition> = TField extends {
  * field name. Literal field names and options are inferred through the
  * schema factory's const type parameter, with no `as const` annotation.
  */
-export type SchemaFields<TFields extends readonly SchemaFieldDefinition[]> = {
+export type AppliedValues<TFields extends readonly SchemaFieldDefinition[]> = {
   readonly [TDefinition in TFields[number] as TDefinition["field"]]: AppliedOf<TDefinition>;
 };
 
-/** A value that may be absent: the explicit none/value split. */
+/**
+ * A value that may be absent.
+ *
+ * `T | null` would not do: `null` is a legal `PredicateOperand`, so an
+ * applied value that *is* null and one that is absent are different facts
+ * and must stay tellable apart. No field kind applies a null value today;
+ * the explicit split is what keeps the door open without ambiguity.
+ */
 export type EmptyOr<T> =
   | { readonly kind: "empty" }
   | { readonly kind: "value"; readonly value: T };

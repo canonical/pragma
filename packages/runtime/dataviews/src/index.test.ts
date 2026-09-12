@@ -1,15 +1,20 @@
 import { describe, expect, it } from "vitest";
 import * as dataviews from "./index.js";
 
+const EMPTY_SLICE = dataviews.EMPTY_SLICE;
+
 describe("public surface", () => {
   it("exports exactly the public API", () => {
     expect(Object.keys(dataviews).sort()).toEqual([
+      "DEFAULT_WINDOW",
+      "EMPTY_SLICE",
       "applyWindow",
       "canonicalSlice",
       "columnTemplate",
       "createArraySource",
       "createChannel",
       "createCollectionCoordinator",
+      "createColumnLayout",
       "createDataViewsProvider",
       "createFieldInteraction",
       "createGridInteraction",
@@ -18,7 +23,6 @@ describe("public surface", () => {
       "createMemoryLocation",
       "createOperation",
       "createPlatformLocation",
-      "createPresentation",
       "createQuerySource",
       "createRelaySource",
       "createRowModel",
@@ -35,7 +39,7 @@ describe("public surface", () => {
       "resolveColumns",
       "sizingEquals",
       "sliceEquals",
-      "supportsSlice",
+      "supportsRequest",
     ]);
   });
 
@@ -48,9 +52,13 @@ describe("public surface", () => {
       dataviews.createSchema([{ field: "owner", kind: "flag" }]).fieldNames,
     ).toEqual(["owner"]);
     expect(dataviews.createChannel(0).get()).toBe(0);
-    expect(dataviews.createSelection().state.ids.size).toBe(0);
-    expect(dataviews.applyWindow(["a"], { page: 1, size: 10 })).toEqual(["a"]);
-    expect(dataviews.createRowModel([{ id: "a" }]).ids).toEqual(["a"]);
+    expect(dataviews.createSelection().state.get().ids.size).toBe(0);
+    expect(dataviews.applyWindow(["a"], dataviews.DEFAULT_WINDOW)).toEqual([
+      "a",
+    ]);
+    expect(dataviews.createRowModel({ rows: [{ id: "a" }] }).ids).toEqual([
+      "a",
+    ]);
     expect(
       dataviews.columnTemplate(
         [{ id: "a", sizing: { kind: "fixed", px: 8 } }],
@@ -63,15 +71,17 @@ describe("public surface", () => {
         { kind: "fixed", px: 8 },
       ),
     ).toBe(true);
-    const emptySlice = { filter: [], search: null, sort: [], group: null };
     const source = dataviews.createArraySource({
       rows: [{ id: "a" }],
       fields: ["id"],
     });
-    expect(dataviews.supportsSlice(source.capabilities, emptySlice)).toEqual({
-      status: "supported",
-    });
-    expect(dataviews.executeSlice([{ id: "a" }], emptySlice)).toEqual([
+    expect(
+      dataviews.supportsRequest(source.capabilities, {
+        slice: EMPTY_SLICE,
+        window: dataviews.DEFAULT_WINDOW,
+      }),
+    ).toEqual([]);
+    expect(dataviews.executeSlice([{ id: "a" }], EMPTY_SLICE)).toEqual([
       { id: "a" },
     ]);
   });
@@ -89,7 +99,7 @@ describe("public surface", () => {
       location,
     });
     const release = binding.observe();
-    expect(provider.result.get().slice.filter).toEqual([
+    expect(provider.state.get().slice.filter).toEqual([
       { field: "status", operator: "eq", operands: ["failed"] },
     ]);
     expect(location.read().toString()).toBe("status=failed&page=1&size=50");
@@ -100,8 +110,8 @@ describe("public surface", () => {
       dataviews
         .encodeQuery({
           schema,
-          slice: provider.result.get().slice,
-          window: { page: 2, size: 10 },
+          slice: provider.state.get().slice,
+          window: { ...dataviews.DEFAULT_WINDOW, page: 2, size: 10 },
         })
         .toString(),
     ).toBe("status=failed&page=2&size=10");
@@ -110,7 +120,7 @@ describe("public surface", () => {
         schema,
         params: new URLSearchParams("status=failed&page=3"),
       }).window,
-    ).toEqual({ page: 3, size: 50 });
+    ).toEqual({ ...dataviews.DEFAULT_WINDOW, page: 3 });
   });
 
   it("keeps the virtual range out of the root, behind its own entry point", async () => {

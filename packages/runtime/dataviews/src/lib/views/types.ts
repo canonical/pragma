@@ -201,7 +201,7 @@ export type ViewOutcome =
   | { readonly status: "failed"; readonly reason: string };
 
 /** An outcome an operation settles to: never a refused name. */
-export type SettledOutcome = Exclude<
+export type ViewSettledOutcome = Exclude<
   ViewOutcome,
   { readonly status: "invalid" }
 >;
@@ -215,7 +215,7 @@ export type ViewOperation =
   | {
       readonly action: ViewAction;
       readonly status: "settled";
-      readonly outcome: SettledOutcome;
+      readonly outcome: ViewSettledOutcome;
     };
 
 /** A collection's saved views, as its controls show them. */
@@ -223,11 +223,11 @@ export type ViewsState = {
   /**
    * Whether the store's views are known. `idle` until something observes
    * them — so always on a server, which never runs the effect that does —
-   * then `loading`, then `listed` or `unavailable` with the store's reason.
+   * then `pending`, then `ready`, or `failed` with the store's reason.
    */
   readonly listing:
-    | { readonly status: "idle" | "loading" | "listed" }
-    | { readonly status: "unavailable"; readonly reason: string };
+    | { readonly status: "idle" | "pending" | "ready" }
+    | { readonly status: "failed"; readonly reason: string };
   /** The readable views, by name. */
   readonly views: readonly SavedView[];
   readonly unreadable: readonly UnreadableView[];

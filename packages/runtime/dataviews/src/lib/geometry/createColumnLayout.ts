@@ -1,22 +1,22 @@
+import type { ReadonlyChannel } from "../observable/createChannel.js";
 import createChannel from "../observable/createChannel.js";
 import sizingEquals from "./sizingEquals.js";
 import type { ColumnSizing, ColumnToSize } from "./types.js";
 
-/** Immutable presentation snapshot: declared sizing plus user overrides. */
-export type PresentationState = {
+/** Immutable layout snapshot: declared sizing plus user overrides. */
+export type ColumnLayoutState = {
   /** The declared sizing per column id. */
   readonly declared: Readonly<Record<string, ColumnSizing>>;
   /** User-fixed sizing overrides per column id. */
   readonly overrides: Readonly<Record<string, ColumnSizing>>;
-  /** Bumped on every accepted presentation change. */
+  /** Bumped on every accepted layout change. */
   readonly revision: number;
 };
 
-/** Handle of one presentation record. */
-export type Presentation = {
-  readonly state: PresentationState;
-  /** Observe presentation changes; snapshots are immutable between sets. */
-  readonly subscribe: (listener: () => void) => () => void;
+/** Handle of one column-layout record. */
+export type ColumnLayout = {
+  /** The layout's snapshots; immutable between publications. */
+  readonly state: ReadonlyChannel<ColumnLayoutState>;
   /** The effective sizing of one column: its override, else its declared sizing. */
   readonly effective: (id: string) => ColumnSizing;
   /** Record a user-fixed sizing override (a resize commit). */
@@ -24,18 +24,18 @@ export type Presentation = {
   /** Drop one column's override, restoring its declared sizing. */
   readonly resetOverride: (id: string) => void;
   /** Drop every override, restoring all declared sizing. */
-  readonly reset: () => void;
+  readonly resetOverrides: () => void;
   /** The columns to size: declared sizing with overrides applied. */
   readonly toColumns: () => readonly ColumnToSize[];
 };
 
 /**
- * Create the presentation record for one collection's columns: declared
+ * Create the layout record for one collection's columns: declared
  * sizing plus user-fixed overrides, with a channel published on change.
  */
-export default function createPresentation(
+export default function createColumnLayout(
   columns: readonly ColumnToSize[],
-): Presentation {
+): ColumnLayout {
   const declared: Record<string, ColumnSizing> = {};
   for (const column of columns) {
     if (column.id === "") {
@@ -54,7 +54,7 @@ export default function createPresentation(
   );
 
   let overrides: Readonly<Record<string, ColumnSizing>> = Object.freeze({});
-  const channel = createChannel<PresentationState>(
+  const channel = createChannel<ColumnLayoutState>(
     Object.freeze({
       declared: initialDeclared,
       overrides,
@@ -74,10 +74,7 @@ export default function createPresentation(
   };
 
   return {
-    get state(): PresentationState {
-      return channel.get();
-    },
-    subscribe: (listener: () => void) => channel.subscribe(listener),
+    state: channel,
     effective(id: string): ColumnSizing {
       if (!Object.hasOwn(initialDeclared, id)) {
         throw new Error(`unknown column id "${id}"`);
@@ -102,7 +99,7 @@ export default function createPresentation(
       delete next[id];
       publish(Object.freeze(next));
     },
-    reset(): void {
+    resetOverrides(): void {
       if (Object.keys(overrides).length === 0) {
         return;
       }

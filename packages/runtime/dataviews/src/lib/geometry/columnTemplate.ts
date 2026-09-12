@@ -1,11 +1,5 @@
 import type { ColumnToSize, ResolvedColumn } from "./types.js";
 
-/** A live resize preview substituted into the published track list. */
-export type ColumnPreview = {
-  readonly id: string;
-  readonly width: number;
-};
-
 /** The declarative track of one column, used before any width is measured. */
 const declaredTrack = (column: ColumnToSize): string => {
   const { sizing } = column;
@@ -27,25 +21,19 @@ const declaredTrack = (column: ColumnToSize): string => {
  * aligned and readable before the solver can run and server output is
  * deterministic. Once the container is measured the caller passes the
  * solver's resolved vector — the one it already holds, so the solve is not
- * repeated here — which is what capping and resizing need. A live preview
- * replaces its own column's track in either mode; the authoritative
- * presentation is untouched until the resize commits.
+ * repeated here — which is what capping and resizing need. A live resize
+ * preview is substituted into that vector by its holder, before the last
+ * column is filled, so the authoritative layout is untouched until the
+ * resize commits.
  */
 export default function columnTemplate(
   columns: readonly ColumnToSize[],
   resolved: readonly ResolvedColumn[] | null,
-  preview?: ColumnPreview,
 ): string {
   if (columns.length === 0) {
     return "none";
   }
-  const trackOf = (id: string, track: string): string =>
-    preview !== undefined && preview.id === id ? `${preview.width}px` : track;
   return resolved === null
-    ? columns
-        .map((column) => trackOf(column.id, declaredTrack(column)))
-        .join(" ")
-    : resolved
-        .map((column) => trackOf(column.id, `${column.width}px`))
-        .join(" ");
+    ? columns.map(declaredTrack).join(" ")
+    : resolved.map((column) => `${column.width}px`).join(" ");
 }

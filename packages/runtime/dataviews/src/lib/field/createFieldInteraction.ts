@@ -6,7 +6,7 @@ import type {
   QueryCommand,
 } from "../query/types.js";
 
-/** Result of validating one input buffer. */
+/** Result of validating one text input. */
 export type FieldValidation =
   | {
       readonly status: "valid";
@@ -15,13 +15,13 @@ export type FieldValidation =
   | { readonly status: "incomplete" }
   | { readonly status: "invalid"; readonly reason: string };
 
-/** Feedback a field control renders beside its buffer. */
+/** Feedback a field control renders beside its input. */
 export type FieldFeedback =
-  | { readonly kind: "none" }
-  | { readonly kind: "applied" }
-  | { readonly kind: "incomplete" }
+  | { readonly status: "none" }
+  | { readonly status: "applied" }
+  | { readonly status: "incomplete" }
   | {
-      readonly kind: "invalid";
+      readonly status: "invalid";
       readonly reason: string;
       /** True when a prior applied predicate is still restricting results. */
       readonly retainsPredicate: boolean;
@@ -29,7 +29,7 @@ export type FieldFeedback =
 
 /** Immutable interaction state of one filter field. */
 export type FieldInteractionState = {
-  readonly buffer: string;
+  readonly input: string;
   readonly feedback: FieldFeedback;
   readonly applied: Predicate | null;
 };
@@ -41,14 +41,14 @@ export type FieldInteractionConfig = {
   /** Operator the interaction addresses. */
   readonly operator: PredicateOperator;
   /**
-   * Validate an input buffer. `incomplete` retains the applied predicate
+   * Validate a text input. `incomplete` retains the applied predicate
    * with local feedback; `invalid` retains it with the prior-restriction
    * note; `valid` produces the addressed replacement command.
    */
-  readonly validate: (buffer: string) => FieldValidation;
+  readonly validate: (input: string) => FieldValidation;
   /**
-   * Optional formatter deriving a buffer from an applied predicate on
-   * external query changes. Without it, external changes clear the buffer.
+   * Optional formatter deriving an input from an applied predicate on
+   * external query changes. Without it, external changes clear the input.
    */
   readonly format?: (applied: Predicate | null) => string;
 };
@@ -58,16 +58,16 @@ export type FieldInteraction = {
   readonly identity: Identity;
   readonly state: FieldInteractionState;
   /**
-   * Edit the input buffer. Returns the addressed replacement command when
-   * the buffer is valid, and null when the buffer is invalid or incomplete —
+   * Edit the text input. Returns the addressed replacement command when
+   * the input is valid, and null when the input is invalid or incomplete —
    * in both cases the applied predicate is retained.
    */
-  readonly edit: (buffer: string) => QueryCommand | null;
+  readonly edit: (input: string) => QueryCommand | null;
   /** Explicitly remove the addressed predicate. Always returns the command. */
   readonly clear: () => QueryCommand;
   /**
    * Adopt the authoritative applied predicate (external query or history
-   * change). Stale buffers and feedback are discarded, never replayed; the
+   * change). Stale inputs and feedback are discarded, never replayed; the
    * predicate must address this record's field and operator.
    */
   readonly setApplied: (applied: Predicate | null) => void;
@@ -75,7 +75,7 @@ export type FieldInteraction = {
 
 /**
  * Create the interaction record for one filter field: it owns the input
- * buffer and its feedback, and produces addressed query commands. It never
+ * input and its feedback, and produces addressed query commands. It never
  * owns the applied query — the coordinator does. A valid edit assumes its
  * returned command is dispatched and accepted; external authoritative
  * changes arrive through `setApplied`.
@@ -89,13 +89,13 @@ export default function createFieldInteraction(
     );
   }
   const identity = createIdentity();
-  let buffer = "";
-  let feedback: FieldFeedback = { kind: "none" };
+  let input = "";
+  let feedback: FieldFeedback = { status: "none" };
   let applied: Predicate | null = null;
   let snapshot = buildSnapshot();
 
   function buildSnapshot(): FieldInteractionState {
-    return Object.freeze({ buffer, feedback, applied });
+    return Object.freeze({ input, feedback, applied });
   }
 
   const predicateFrom = (operands: readonly PredicateOperand[]): Predicate => ({
@@ -109,23 +109,23 @@ export default function createFieldInteraction(
     get state(): FieldInteractionState {
       return snapshot;
     },
-    edit(nextBuffer: string): QueryCommand | null {
-      buffer = nextBuffer;
-      const validation = config.validate(nextBuffer);
+    edit(next: string): QueryCommand | null {
+      input = next;
+      const validation = config.validate(next);
       if (validation.status === "valid") {
-        feedback = { kind: "applied" };
+        feedback = { status: "applied" };
         applied = predicateFrom(validation.operands);
         snapshot = buildSnapshot();
         return {
-          kind: "replacePredicate",
+          kind: "setPredicate",
           predicate: applied,
         };
       }
       if (validation.status === "incomplete") {
-        feedback = { kind: "incomplete" };
+        feedback = { status: "incomplete" };
       } else {
         feedback = {
-          kind: "invalid",
+          status: "invalid",
           reason: validation.reason,
           retainsPredicate: applied !== null,
         };
@@ -134,8 +134,8 @@ export default function createFieldInteraction(
       return null;
     },
     clear(): QueryCommand {
-      buffer = "";
-      feedback = { kind: "none" };
+      input = "";
+      feedback = { status: "none" };
       applied = null;
       snapshot = buildSnapshot();
       return {
@@ -155,8 +155,8 @@ export default function createFieldInteraction(
         );
       }
       applied = nextApplied;
-      buffer = config.format ? config.format(nextApplied) : "";
-      feedback = { kind: "none" };
+      input = config.format ? config.format(nextApplied) : "";
+      feedback = { status: "none" };
       snapshot = buildSnapshot();
     },
   };
