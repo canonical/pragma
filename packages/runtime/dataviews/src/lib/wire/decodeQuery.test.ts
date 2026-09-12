@@ -5,7 +5,10 @@
  */
 
 import { describe, expect, it } from "vitest";
+import DEFAULT_WINDOW from "../query/defaultWindow.js";
+import type { ResultWindow } from "../query/types.js";
 import createSchema from "../schema/createSchema.js";
+import { declaring, sorting } from "../source/capabilities.fixtures.js";
 import decodeQuery from "./decodeQuery.js";
 import encodeQuery from "./encodeQuery.js";
 
@@ -24,16 +27,20 @@ const machines = () =>
 const decode = (search: string) =>
   decodeQuery({ schema: machines(), params: new URLSearchParams(search) });
 
+const noQuery = { filter: [], search: null, sort: [], group: [] };
+
+const firstPage: ResultWindow = {
+  page: 1,
+  size: 50,
+  cursor: null,
+  collapsed: [],
+};
+
 describe("decodeQuery", () => {
   it("defaults the window and decodes an empty parameter set", () => {
     const decoded = decode("");
-    expect(decoded.slice).toEqual({
-      filter: [],
-      search: null,
-      sort: [],
-      group: null,
-    });
-    expect(decoded.window).toEqual({ page: 1, size: 50 });
+    expect(decoded.slice).toEqual(noQuery);
+    expect(decoded.window).toEqual(firstPage);
     expect(decoded.issues).toEqual([]);
   });
 
@@ -59,16 +66,22 @@ describe("decodeQuery", () => {
     ]);
   });
 
-  it("reads search, grouping and an ordered sort", () => {
-    const decoded = decode(
-      "q=yak&group=status&sort=status__asc&sort=updated__desc",
-    );
+  it("reads search and an ordered sort", () => {
+    const decoded = decode("q=yak&sort=status__asc&sort=updated__desc");
     expect(decoded.slice.search).toBe("yak");
-    expect(decoded.slice.group).toBe("status");
     expect(decoded.slice.sort).toEqual([
       { field: "status", direction: "asc" },
       { field: "updated", direction: "desc" },
     ]);
+  });
+
+  it("reads repeated group parameters as ordered nesting levels", () => {
+    const decoded = decode("group=status&group=owner");
+    expect(decoded.slice.group).toEqual([
+      { field: "status" },
+      { field: "owner" },
+    ]);
+    expect(decoded.issues).toEqual([]);
   });
 
   it("reads an empty search as no search", () => {
@@ -76,9 +89,13 @@ describe("decodeQuery", () => {
   });
 
   it("reads the window and reports a value that is not a page", () => {
-    expect(decode("page=3&size=25").window).toEqual({ page: 3, size: 25 });
+    expect(decode("page=3&size=25").window).toEqual({
+      ...firstPage,
+      page: 3,
+      size: 25,
+    });
     expect(decode("page=none")).toMatchObject({
-      window: { page: 1, size: 50 },
+      window: firstPage,
       issues: [
         { parameter: "page", reason: '"none" is not a positive integer' },
       ],
@@ -91,13 +108,59 @@ describe("decodeQuery", () => {
   it("refuses a page or size past the safe integer range", () => {
     const huge = "9".repeat(400);
     expect(decode(`page=${huge}&size=${huge}`)).toEqual({
-      slice: { filter: [], search: null, sort: [], group: null },
-      window: { page: 1, size: 50 },
+      slice: noQuery,
+      window: firstPage,
       issues: [
         { parameter: "page", reason: `"${huge}" is too large` },
         { parameter: "size", reason: `"${huge}" is too large` },
       ],
     });
+  });
+
+  it("reads the token addressing the page's start", () => {
+    expect(decode("page=3&cursor=after-page-two").window).toEqual({
+      ...firstPage,
+      page: 3,
+      cursor: "after-page-two",
+    });
+  });
+
+  it("drops a cursor the source cannot reach, and says so once", () => {
+    const decoded = decodeQuery({
+      schema: machines(),
+      params: new URLSearchParams("page=3&cursor=after-page-two&sort=cpu__asc"),
+      capabilities: declaring({ sort: sorting(["cpu"]) }),
+    });
+    // The source pages by number, so the token addresses nothing: the page
+    // stands, the token goes, and the window is reported once rather than
+    // once per clause.
+    expect(decoded.window).toMatchObject({ page: 3, cursor: null });
+    expect(decoded.slice.sort).toEqual([{ field: "cpu", direction: "asc" }]);
+    expect(decoded.issues).toEqual([
+      {
+        parameter: "cursor",
+        reason: "this source pages by number and reaches no page by token",
+      },
+    ]);
+  });
+
+  it("refuses a cursor carrying no token", () => {
+    expect(decode("page=3&cursor=")).toMatchObject({
+      window: { page: 3, cursor: null },
+      issues: [
+        {
+          parameter: "cursor",
+          reason: '"cursor" must carry the token a page handed back',
+        },
+      ],
+    });
+  });
+
+  it("collapses nothing, whatever the parameters say", () => {
+    // Collapse has no spelling, so a reload expands every group.
+    expect(decode("group=status&collapsed=failed").window.collapsed).toEqual(
+      [],
+    );
   });
 
   it("reports extra values on the parameters the grammar spells once", () => {
@@ -109,7 +172,13 @@ describe("decodeQuery", () => {
       },
     ]);
     expect(decode("q=yak&q=ox").slice.search).toBe("yak");
-    expect(decode("group=status&group=cpu").slice.group).toBe("status");
+    expect(decode("cursor=a&cursor=b").window.cursor).toBe("a");
+    expect(decode("cursor=a&cursor=b").issues).toEqual([
+      {
+        parameter: "cursor",
+        reason: '"cursor" takes one value; the extra values were ignored',
+      },
+    ]);
     expect(decode("cpu__gte=4&cpu__gte=8").slice.filter).toEqual([
       { field: "cpu", operator: "gte", operands: [4] },
     ]);
@@ -121,11 +190,20 @@ describe("decodeQuery", () => {
     ]);
   });
 
-  it("refuses a group naming nothing", () => {
+  it("refuses a grouping level naming nothing", () => {
     expect(decode("group=")).toMatchObject({
-      slice: { group: null },
+      slice: { group: [] },
       issues: [{ parameter: "group", reason: '"group" must name a field' }],
     });
+  });
+
+  it("refuses a whole grouping when any of its levels names nothing", () => {
+    // Dropping one level would nest the rest under a parent nobody asked for.
+    const decoded = decode("group=status&group=&group=owner");
+    expect(decoded.slice.group).toEqual([]);
+    expect(decoded.issues).toEqual([
+      { parameter: "group", reason: '"group" must name a field' },
+    ]);
   });
 
   it("refuses a sort value that is not an ordered term", () => {
@@ -156,21 +234,23 @@ describe("decodeQuery", () => {
     ]);
   });
 
-  it("sorts on a field the filter schema does not describe", () => {
-    // Sortable and filterable are different capabilities: a name column may
-    // be ordered without ever being a filter field.
+  it("sorts and groups on fields the filter schema does not describe", () => {
+    // Sortable, groupable and filterable are different capabilities: a name
+    // column may be ordered without ever being a filter field.
     expect(decode("sort=name__asc").slice.sort).toEqual([
       { field: "name", direction: "asc" },
     ]);
     expect(decode("sort=name__asc").issues).toEqual([]);
+    expect(decode("group=region").slice.group).toEqual([{ field: "region" }]);
+    expect(decode("group=region").issues).toEqual([]);
   });
 
   it("leaves the host's own parameters alone", () => {
     // Unknown, not invalid: a parameter naming no field of this collection
     // is the host's and is neither read nor reported.
-    expect(decode("tab=overview&cursor=abc&view=mine")).toEqual({
-      slice: { filter: [], search: null, sort: [], group: null },
-      window: { page: 1, size: 50 },
+    expect(decode("tab=overview&as=table&view=mine&item=m1")).toEqual({
+      slice: noQuery,
+      window: firstPage,
       issues: [],
     });
   });
@@ -179,16 +259,16 @@ describe("decodeQuery", () => {
     // A host may spell its own keys with the delimiter; only a field's
     // addresses are the collection's.
     expect(decode("utm__source=mail&memory__gte=4")).toEqual({
-      slice: { filter: [], search: null, sort: [], group: null },
-      window: { page: 1, size: 50 },
+      slice: noQuery,
+      window: firstPage,
       issues: [],
     });
   });
 
   it("refuses an unknown operator on a field it owns", () => {
     expect(decode("cpu__near=4")).toEqual({
-      slice: { filter: [], search: null, sort: [], group: null },
-      window: { page: 1, size: 50 },
+      slice: noQuery,
+      window: firstPage,
       issues: [{ parameter: "cpu__near", reason: 'unknown operator "near"' }],
     });
   });
@@ -260,17 +340,15 @@ describe("decodeQuery", () => {
     const values = [1e21, -1.25e22, 1e-7, -1.5e-7, 0.1, 2 ** 53, 123.456];
     for (const value of values) {
       const slice = {
+        ...noQuery,
         filter: [
           { field: "load", operator: "gte" as const, operands: [value] },
         ],
-        search: null,
-        sort: [],
-        group: null,
       };
       const params = encodeQuery({
         schema,
         slice,
-        window: { page: 1, size: 5 },
+        window: { ...DEFAULT_WINDOW, size: 5 },
       });
       expect(decodeQuery({ schema, params }).slice).toEqual(slice);
     }
@@ -282,14 +360,10 @@ describe("decodeQuery", () => {
   });
 
   it("refuses each clause the source cannot execute, and only those", () => {
-    const capabilities = {
-      filter: { status: ["eq" as const], cpu: ["gte" as const] },
-      search: [],
-      sort: ["cpu"],
-      sortTerms: 1,
-      group: [],
-      count: "filtered" as const,
-    };
+    const capabilities = declaring({
+      filter: { status: ["eq"], cpu: ["gte"] },
+      sort: sorting(["cpu"], 1),
+    });
     const decoded = decodeQuery({
       schema: machines(),
       params: new URLSearchParams(
@@ -304,7 +378,7 @@ describe("decodeQuery", () => {
       ],
       search: null,
       sort: [{ field: "cpu", direction: "asc" }],
-      group: null,
+      group: [],
     });
     expect(decoded.issues).toEqual([
       {
@@ -313,10 +387,10 @@ describe("decodeQuery", () => {
       },
       {
         parameter: "owner__isSet",
-        reason: 'field "owner" cannot be filtered with isSet',
+        reason: 'field "owner" cannot be filtered',
       },
       { parameter: "q", reason: "this source cannot search" },
-      { parameter: "group", reason: 'field "status" cannot be grouped' },
+      { parameter: "group", reason: "this source cannot group" },
     ]);
   });
 
@@ -324,14 +398,7 @@ describe("decodeQuery", () => {
     const decoded = decodeQuery({
       schema: machines(),
       params: new URLSearchParams("sort=cpu__asc&sort=name__desc"),
-      capabilities: {
-        filter: {},
-        search: [],
-        sort: [],
-        sortTerms: null,
-        group: [],
-        count: "none",
-      },
+      capabilities: declaring({ sort: sorting(["status"]) }),
     });
     expect(decoded.issues).toEqual([
       { parameter: "sort", reason: 'field "cpu" cannot be sorted' },
@@ -340,37 +407,71 @@ describe("decodeQuery", () => {
   });
 
   it("checks only the grammar and the schema without a declaration", () => {
-    const decoded = decodeQuery({
-      schema: machines(),
-      params: new URLSearchParams("q=yak&sort=cpu__asc"),
-      capabilities: null,
-    });
-    expect(decoded.slice).toEqual({
-      filter: [],
-      search: "yak",
-      sort: [{ field: "cpu", direction: "asc" }],
-      group: null,
-    });
-    expect(decoded.issues).toEqual([]);
+    for (const capabilities of [undefined, null]) {
+      const decoded = decodeQuery({
+        schema: machines(),
+        params: new URLSearchParams("q=yak&sort=cpu__asc&group=status"),
+        capabilities,
+      });
+      expect(decoded.slice).toEqual({
+        filter: [],
+        search: "yak",
+        sort: [{ field: "cpu", direction: "asc" }],
+        group: [{ field: "status" }],
+      });
+      expect(decoded.issues).toEqual([]);
+    }
   });
 
   it("refuses an ordering whole rather than truncating it", () => {
     const decoded = decodeQuery({
       schema: machines(),
       params: new URLSearchParams("sort=cpu__asc&sort=name__desc"),
-      capabilities: {
-        filter: {},
-        search: [],
-        sort: ["cpu"],
-        sortTerms: null,
-        group: [],
-        count: "none",
-      },
+      capabilities: declaring({ sort: sorting(["cpu"]) }),
     });
     expect(decoded.slice.sort).toEqual([]);
     expect(decoded.issues).toEqual([
       { parameter: "sort", reason: 'field "name" cannot be sorted' },
     ]);
+  });
+
+  it("refuses a grouping whole rather than truncating it", () => {
+    const decoded = decodeQuery({
+      schema: machines(),
+      params: new URLSearchParams("group=status&group=region"),
+      capabilities: declaring({
+        group: {
+          fields: ["status"],
+          depth: 2,
+          summaries: "counts",
+          collapse: false,
+        },
+      }),
+    });
+    expect(decoded.slice.group).toEqual([]);
+    expect(decoded.issues).toEqual([
+      { parameter: "group", reason: 'field "region" cannot be grouped' },
+    ]);
+  });
+
+  it("keeps a grouping the source declares it can nest", () => {
+    const decoded = decodeQuery({
+      schema: machines(),
+      params: new URLSearchParams("group=status&group=owner"),
+      capabilities: declaring({
+        group: {
+          fields: ["status", "owner"],
+          depth: 2,
+          summaries: "counts",
+          collapse: false,
+        },
+      }),
+    });
+    expect(decoded.slice.group).toEqual([
+      { field: "status" },
+      { field: "owner" },
+    ]);
+    expect(decoded.issues).toEqual([]);
   });
 
   it("round-trips an encoded query", () => {
@@ -386,9 +487,14 @@ describe("decodeQuery", () => {
       ],
       search: "yak",
       sort: [{ field: "updated", direction: "desc" as const }],
-      group: "status",
+      group: [{ field: "status" }],
     };
-    const window = { page: 2, size: 25 };
+    const window: ResultWindow = {
+      page: 2,
+      size: 25,
+      cursor: "after-page-one",
+      collapsed: [],
+    };
     const decoded = decodeQuery({
       schema,
       params: encodeQuery({ schema, slice, window }),

@@ -1,11 +1,14 @@
 import canonicalSlice from "../query/canonicalSlice.js";
+import type { Query } from "../query/types.js";
+import type { SourcePage, SourceRefusal } from "../result/types.js";
+import type { RowRecord } from "../rows/types.js";
 import copyCapabilities from "./copyCapabilities.js";
 import reasonOf from "./reasonOf.js";
 import type {
+  Source,
   SourceActionRunner,
-  SourceAdapter,
   SourceCapabilities,
-  SourcePage,
+  SourceLookup,
   SourceRequest,
 } from "./types.js";
 
@@ -49,26 +52,37 @@ export type QueryObserverFactory<TData> = (
 ) => QueryObserver<TData>;
 
 /** Configuration of one query-library source. */
-export type QuerySourceConfig = {
+export type QuerySourceConfig<TRow extends object = RowRecord> = {
   /** What this endpoint can execute. Declared, never inferred. */
   readonly capabilities: SourceCapabilities;
+  /**
+   * Refusals the declaration cannot express, such as a search this endpoint
+   * cannot combine with a filter. Pure and synchronous; no round trip.
+   */
+  readonly refuses?: (query: Query) => readonly SourceRefusal[];
   /** Stable prefix of the query key; the canonical query is appended. */
   readonly queryKey: readonly unknown[];
   /**
-   * Fetch one page. Transport, retry and cancellation belong to the client
-   * this function runs under.
+   * Fetch one page, mapping the endpoint's answer onto the envelope.
+   * Transport, retry and cancellation belong to the client this function
+   * runs under.
    */
-  readonly fetchPage: (request: SourceRequest) => Promise<SourcePage>;
+  readonly fetchPage: (request: SourceRequest) => Promise<SourcePage<TRow>>;
   /** Mint one observer against the application's client. */
-  readonly observe: QueryObserverFactory<SourcePage>;
+  readonly observe: QueryObserverFactory<SourcePage<TRow>>;
+  /**
+   * Records by identity, batched by what the declaration allows. Required
+   * whenever the declaration carries a `lookup`.
+   */
+  readonly lookup?: SourceLookup<TRow>;
   /** Row operations, when the endpoint has any. */
   readonly runAction?: SourceActionRunner;
 };
 
 /** The last thing delivered, so an unchanged observation is not repeated. */
-type Delivered =
-  | { readonly status: "success"; readonly page: SourcePage }
-  | { readonly status: "failure"; readonly error: unknown };
+type Delivered<TRow extends object> =
+  | { readonly status: "succeeded"; readonly page: SourcePage<TRow> }
+  | { readonly status: "failed"; readonly error: unknown };
 
 /**
  * Create a source over an observable query client such as TanStack Query.
@@ -81,12 +95,13 @@ type Delivered =
  * Unchanged observations are recognised by reference, so the client must
  * hand back the same `data` reference while the payload has not changed.
  */
-export default function createQuerySource(
-  config: QuerySourceConfig,
-): SourceAdapter {
+export default function createQuerySource<TRow extends object = RowRecord>(
+  config: QuerySourceConfig<TRow>,
+): Source<TRow> {
   const capabilities = copyCapabilities(config.capabilities);
   return {
     capabilities,
+    ...(config.refuses === undefined ? {} : { refuses: config.refuses }),
     execute(request, deliver) {
       const observer = config.observe({
         queryKey: [
@@ -96,9 +111,9 @@ export default function createQuerySource(
         ],
         queryFn: () => config.fetchPage(request),
       });
-      let delivered: Delivered | null = null;
+      let delivered: Delivered<TRow> | null = null;
 
-      const push = (observation: QueryObservation<SourcePage>): void => {
+      const push = (observation: QueryObservation<SourcePage<TRow>>): void => {
         switch (observation.status) {
           case "pending":
             // The coordinator already shows the request as in flight.
@@ -108,20 +123,27 @@ export default function createQuerySource(
             if (page === undefined) {
               return;
             }
-            if (delivered?.status === "success" && delivered.page === page) {
+            if (delivered?.status === "succeeded" && delivered.page === page) {
               return;
             }
-            delivered = { status: "success", page };
-            deliver({ status: "success", rows: page.rows, count: page.count });
+            delivered = { status: "succeeded", page };
+            deliver({ status: "succeeded", page });
             return;
           }
           case "error": {
             const { error } = observation;
-            if (delivered?.status === "failure" && delivered.error === error) {
+            if (delivered?.status === "failed" && delivered.error === error) {
               return;
             }
-            delivered = { status: "failure", error };
-            deliver({ status: "failure", reason: reasonOf(error) });
+            delivered = { status: "failed", error };
+            deliver({
+              status: "failed",
+              failure: {
+                reason: reasonOf(error),
+                cause: error,
+                transient: null,
+              },
+            });
             return;
           }
         }
@@ -134,6 +156,7 @@ export default function createQuerySource(
         observer.destroy();
       };
     },
+    ...(config.lookup === undefined ? {} : { lookup: config.lookup }),
     ...(config.runAction === undefined ? {} : { runAction: config.runAction }),
   };
 }

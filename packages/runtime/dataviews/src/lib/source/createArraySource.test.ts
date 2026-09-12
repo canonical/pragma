@@ -1,17 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
-import type { CompletionResult } from "../collection/createCollectionCoordinator.js";
+import DEFAULT_WINDOW from "../query/defaultWindow.js";
 import type { Slice } from "../query/types.js";
+import type { SourceDelivery } from "../result/types.js";
+import type { RowRecord } from "../rows/types.js";
 import createArraySource from "./createArraySource.js";
 import type { SourceActionRunner, SourceRequest } from "./types.js";
 
-const emptySlice: Slice = { filter: [], search: null, sort: [], group: null };
+const emptySlice: Slice = { filter: [], search: null, sort: [], group: [] };
 
 const request = (overrides: Partial<SourceRequest> = {}): SourceRequest => ({
   requestId: "i1:r1",
   slice: emptySlice,
-  window: { page: 1, size: 2 },
+  window: { ...DEFAULT_WINDOW, size: 2 },
   ...overrides,
 });
+
+const exact = (value: number) => ({ kind: "exact", value });
 
 const rows = [
   { id: "a", name: "Alpha", cpu: 4 },
@@ -20,19 +24,19 @@ const rows = [
 ];
 
 const source = () =>
-  createArraySource({
+  createArraySource<RowRecord>({
     rows,
     fields: ["id", "name", "cpu"],
     searchFields: ["name"],
   });
 
-const delivery = () => vi.fn<(result: CompletionResult) => void>();
+const delivery = () => vi.fn<(delivery: SourceDelivery) => void>();
 
 /** The nth delivery, or a failure rather than a silently skipped assertion. */
 const deliveredAt = (
   deliver: ReturnType<typeof delivery>,
   index: number,
-): CompletionResult => {
+): SourceDelivery => {
   const call = deliver.mock.calls[index];
   if (call === undefined) {
     throw new Error(`expected a delivery at index ${index}`);
@@ -40,10 +44,10 @@ const deliveredAt = (
   return call[0];
 };
 
-const idsOf = (result: CompletionResult) =>
-  result.status === "success"
-    ? result.rows.map((row) => (row as { id: string }).id)
-    : [result.reason];
+const idsOf = (delivered: SourceDelivery) =>
+  delivered.status === "succeeded"
+    ? delivered.page.rows.map((row) => (row as { id: string }).id)
+    : [delivered.failure.reason];
 
 describe("createArraySource", () => {
   it("declares complete input and every grammar operator per field", () => {
@@ -53,18 +57,28 @@ describe("createArraySource", () => {
         name: ["eq", "gte", "lte", "isSet"],
         cpu: ["eq", "gte", "lte", "isSet"],
       },
-      search: ["name"],
-      sort: ["id", "name", "cpu"],
-      sortTerms: null,
-      group: [],
-      count: "filtered",
+      search: { fields: ["name"] },
+      sort: {
+        fields: ["id", "name", "cpu"],
+        terms: null,
+        default: [],
+        tiebreak: "opaque",
+        collation: null,
+      },
+      group: { fields: [], depth: 0, summaries: "none", collapse: false },
+      counts: { visible: "exact", matched: "exact", total: "exact" },
+      pagination: { mode: "offset" },
+      selection: { scope: "explicit" },
+      lookup: { batch: null },
+      actions: {},
+      kinds: null,
     });
   });
 
   it("declares no search when no field is searchable", () => {
     expect(
       createArraySource({ rows, fields: ["id"] }).capabilities.search,
-    ).toEqual([]);
+    ).toBeNull();
   });
 
   it("freezes its declaration against the caller's arrays", () => {
@@ -73,47 +87,70 @@ describe("createArraySource", () => {
     const { capabilities } = createArraySource({ rows, fields, searchFields });
     fields.push("cpu");
     searchFields.push("cpu");
-    expect(capabilities.sort).toEqual(["id", "name"]);
-    expect(capabilities.search).toEqual(["name"]);
+    expect(capabilities.sort.fields).toEqual(["id", "name"]);
+    expect(capabilities.search).toEqual({ fields: ["name"] });
     expect(Object.isFrozen(capabilities)).toBe(true);
-    expect(Object.isFrozen(capabilities.sort)).toBe(true);
+    expect(Object.isFrozen(capabilities.sort.fields)).toBe(true);
   });
 
-  it("delivers the requested window synchronously with the filtered total", () => {
+  it("delivers the requested window synchronously with all three counts", () => {
     const deliver = delivery();
     source().execute(request(), deliver);
     expect(deliver).toHaveBeenCalledTimes(1);
     expect(deliveredAt(deliver, 0)).toEqual({
-      status: "success",
-      rows: [rows[0], rows[1]],
-      count: 3,
+      status: "succeeded",
+      page: {
+        rows: [rows[0], rows[1]],
+        groups: null,
+        counts: { visible: exact(3), matched: exact(3), total: exact(3) },
+        more: null,
+        cursors: null,
+      },
     });
   });
 
-  it("counts the filtered set, not the loaded page", () => {
+  it("counts the matched set, not the loaded page, and the whole input", () => {
     const deliver = delivery();
     source().execute(
       request({
         slice: { ...emptySlice, search: "a" },
-        window: { page: 1, size: 1 },
+        window: { ...DEFAULT_WINDOW, size: 1 },
       }),
       deliver,
     );
-    expect(deliveredAt(deliver, 0)).toEqual({
-      status: "success",
-      rows: [rows[0]],
-      count: 3,
+    expect(deliveredAt(deliver, 0)).toMatchObject({
+      page: {
+        rows: [rows[0]],
+        counts: { visible: exact(3), matched: exact(3), total: exact(3) },
+      },
+    });
+  });
+
+  it("reports the filtered set apart from the collection total", () => {
+    const deliver = delivery();
+    source().execute(
+      request({
+        slice: {
+          ...emptySlice,
+          filter: [{ field: "cpu", operator: "gte", operands: [8] }],
+        },
+      }),
+      deliver,
+    );
+    expect(deliveredAt(deliver, 0)).toMatchObject({
+      page: {
+        counts: { visible: exact(2), matched: exact(2), total: exact(3) },
+      },
     });
   });
 
   it("windows past the end of the result as an empty page", () => {
     const deliver = delivery();
-    source().execute(request({ window: { page: 3, size: 2 } }), deliver);
-    expect(deliveredAt(deliver, 0)).toEqual({
-      status: "success",
-      rows: [],
-      count: 3,
-    });
+    source().execute(
+      request({ window: { ...DEFAULT_WINDOW, page: 3, size: 2 } }),
+      deliver,
+    );
+    expect(deliveredAt(deliver, 0)).toMatchObject({ page: { rows: [] } });
   });
 
   it("reuses one query's matched set across window changes", () => {
@@ -136,7 +173,7 @@ describe("createArraySource", () => {
       request({
         requestId: "i1:r2",
         slice: query,
-        window: { page: 2, size: 2 },
+        window: { ...DEFAULT_WINDOW, page: 2, size: 2 },
       }),
       second,
     );
@@ -232,16 +269,69 @@ describe("createArraySource", () => {
       }),
       deliver,
     );
-    expect(deliveredAt(deliver, 0)).toMatchObject({ count: 1 });
+    expect(deliveredAt(deliver, 0)).toMatchObject({
+      page: { counts: { matched: exact(1) } },
+    });
+  });
+
+  it("looks records up by identity, reporting the absent ones as missing", async () => {
+    const live = source();
+    const found = [
+      { id: "c", status: "found", record: rows[2] },
+      { id: "gone", status: "missing" },
+      { id: "a", status: "found", record: rows[0] },
+    ];
+    await expect(live.lookup?.(["c", "gone", "a"])).resolves.toEqual(found);
+    // The index outlives one call, so a second lookup reads the same
+    // records rather than indexing every row again.
+    await expect(live.lookup?.(["c", "gone", "a"])).resolves.toEqual(found);
+  });
+
+  it("looks up through a caller-supplied identity", async () => {
+    const live = createArraySource({
+      rows: [{ key: "k1" }, { key: "k2" }],
+      fields: ["key"],
+      identify: (row) => row.key,
+    });
+    await expect(live.lookup?.(["k2"])).resolves.toEqual([
+      { id: "k2", status: "found", record: { key: "k2" } },
+    ]);
+  });
+
+  it("looks up against the replacement records after a write", async () => {
+    const live = source();
+    // The identity index is kept between lookups, so the write is what has
+    // to drop it; a second lookup must not answer from the old records.
+    await expect(live.lookup?.(["a"])).resolves.toEqual([
+      { id: "a", status: "found", record: rows[0] },
+    ]);
+    live.setRows([{ id: "z", name: "Zed", cpu: 1 }]);
+    await expect(live.lookup?.(["a", "z"])).resolves.toEqual([
+      { id: "a", status: "missing" },
+      { id: "z", status: "found", record: { id: "z", name: "Zed", cpu: 1 } },
+    ]);
   });
 
   it("carries the application's row operations", async () => {
     const runAction = vi.fn<SourceActionRunner>().mockResolvedValue([]);
-    const live = createArraySource({ rows, fields: ["id"], runAction });
-    await live.runAction?.({ action: "stop", targets: ["a"], payload: null });
+    const live = createArraySource({
+      rows,
+      fields: ["id"],
+      actions: { stop: { targets: "explicit", limit: null } },
+      runAction,
+    });
+    expect(live.capabilities.actions.stop).toEqual({
+      targets: "explicit",
+      limit: null,
+    });
+    await live.runAction?.({
+      action: "stop",
+      targets: { kind: "explicit", ids: ["a"] },
+      payload: null,
+    });
     expect(runAction).toHaveBeenCalledWith({
       action: "stop",
-      targets: ["a"],
+      targets: { kind: "explicit", ids: ["a"] },
       payload: null,
     });
   });

@@ -1,17 +1,20 @@
-import type {
-  CollectionCoordinatorState,
-  CompletionResult,
-} from "../collection/createCollectionCoordinator.js";
+import type { CollectionState } from "../collection/createCollectionCoordinator.js";
 import type { Identity } from "../createIdentity.js";
 import type { FieldInteractionState } from "../field/createFieldInteraction.js";
-import type { Channel } from "../observable/createChannel.js";
-import type { Operation } from "../operation/createOperation.js";
+import type { ReadonlyChannel } from "../observable/createChannel.js";
 import type {
+  ActionInvocation,
+  Operation,
+} from "../operation/createOperation.js";
+import type {
+  GroupPath,
+  GroupTerm,
   PredicateOperand,
-  ResultWindow,
-  Slice,
+  Query,
   SortTerm,
+  WindowNavigation,
 } from "../query/types.js";
+import type { Completion } from "../result/types.js";
 import type { RowModel, RowRecord } from "../rows/types.js";
 import type { Schema } from "../schema/createSchema.js";
 import type {
@@ -23,14 +26,14 @@ import type { Selection } from "../selection/createSelection.js";
 import type { SourceCapabilities } from "../source/types.js";
 import type { ProviderViews } from "../views/types.js";
 
-/** One field handle of a provider: observation plus bounded edits. */
-export type ProviderFieldHandle<TApplied> = {
-  /** The field's interaction state channel (buffer and feedback). */
-  readonly state: Channel<FieldInteractionState>;
-  /** The field's applied semantic value channel. */
-  readonly applied: Channel<EmptyOr<TApplied>>;
-  /** Edit through the text buffer; invalid edits retain the predicate. */
-  readonly edit: (buffer: string) => void;
+/** One filter address on a provider: observation plus bounded edits. */
+export type FieldHandle<TApplied> = {
+  /** The field's interaction state: its input and its feedback. */
+  readonly state: ReadonlyChannel<FieldInteractionState>;
+  /** The field's applied semantic value. */
+  readonly applied: ReadonlyChannel<EmptyOr<TApplied>>;
+  /** Edit through the text input; invalid edits retain the predicate. */
+  readonly edit: (input: string) => void;
   /** Set the semantic operands directly (multi-value controls). */
   readonly set: (operands: readonly PredicateOperand[]) => void;
   /** Explicitly remove the field's predicate. */
@@ -42,14 +45,14 @@ export type ProviderFields<TFields extends readonly SchemaFieldDefinition[]> = {
   readonly [TDefinition in TFields[number] as TDefinition["field"]]: TDefinition extends {
     readonly kind: "choices";
   }
-    ? { readonly eq: ProviderFieldHandle<AppliedOf<TDefinition>> }
+    ? { readonly eq: FieldHandle<AppliedOf<TDefinition>> }
     : TDefinition extends { readonly kind: "number" | "date" }
       ? {
-          readonly gte: ProviderFieldHandle<AppliedOf<TDefinition>>;
-          readonly lte: ProviderFieldHandle<AppliedOf<TDefinition>>;
+          readonly gte: FieldHandle<AppliedOf<TDefinition>>;
+          readonly lte: FieldHandle<AppliedOf<TDefinition>>;
         }
       : TDefinition extends { readonly kind: "flag" }
-        ? { readonly isSet: ProviderFieldHandle<AppliedOf<TDefinition>> }
+        ? { readonly isSet: FieldHandle<AppliedOf<TDefinition>> }
         : never;
 };
 
@@ -68,14 +71,17 @@ export type DataViewsProvider<
    * columns, offer only what is declared.
    */
   readonly capabilities: SourceCapabilities | null;
-  /** The coordinator's snapshot channel (result, query and window). */
-  readonly result: Channel<CollectionCoordinatorState<TRow>>;
+  /**
+   * The collection's snapshot: query, window, result and pending request,
+   * published at every mutation boundary.
+   */
+  readonly state: ReadonlyChannel<CollectionState<TRow>>;
   /**
    * The displayed rows as one shared model: stable identities in result
    * order. Every root and every table on this provider reads the same model,
    * so no cell owns a duplicate record.
    */
-  readonly rows: Channel<RowModel<TRow>>;
+  readonly rows: ReadonlyChannel<RowModel<TRow>>;
   readonly selection: Selection;
   /**
    * The collection's saved views over the store the provider was given, or
@@ -85,22 +91,33 @@ export type DataViewsProvider<
   readonly views: ProviderViews | null;
   readonly fields: ProviderFields<TFields>;
   /** Bounded commands, not raw dispatch: */
-  readonly navigateWindow: (page?: number, size?: number) => void;
+  readonly navigateWindow: (window: WindowNavigation) => void;
   readonly setSort: (sort: readonly SortTerm[]) => void;
   readonly setSearch: (search: string) => void;
+  /**
+   * Replace the grouping levels.
+   *
+   * Seam for the grouping unit: reserved, and refused while no source
+   * declares a groupable field.
+   */
+  readonly setGroup: (group: readonly GroupTerm[]) => void;
+  /**
+   * Replace the collapsed group paths.
+   *
+   * Seam for the grouping unit: reserved, and refused while no source
+   * honours collapse.
+   */
+  readonly setCollapsed: (collapsed: readonly GroupPath[]) => void;
   readonly refresh: () => string | null;
-  /** Adopt externally authoritative query/window state (back/forward). */
-  readonly adopt: (slice: Slice, window: ResultWindow) => string | null;
-  /** Adapter-facing request completion. */
+  /** Invoke an operation with immutable captured targets. */
+  readonly invokeAction: (invocation: ActionInvocation) => Operation;
+  /** Adopt an externally authoritative query (back/forward, a saved view). */
+  readonly adopt: (query: Query) => string | null;
+  /** Source-facing request completion. */
   readonly complete: (
     requestId: string,
-    result: CompletionResult<TRow>,
+    completion: Completion<TRow>,
   ) => boolean;
-  /** Invoke an operation with immutable captured targets. */
-  readonly invokeAction: (
-    targets: readonly string[],
-    payload?: unknown,
-  ) => Operation;
   /** Rotate to a fresh scope: query/window/result/selection all reset. */
   readonly rotateScope: () => void;
   /** Detach permanently: subscriptions and pending requests die. */

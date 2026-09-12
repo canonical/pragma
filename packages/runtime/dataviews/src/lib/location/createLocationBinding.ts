@@ -1,8 +1,8 @@
-import type { CollectionCoordinatorState } from "../collection/createCollectionCoordinator.js";
+import type { CollectionState } from "../collection/createCollectionCoordinator.js";
 import type { ReadonlyChannel } from "../observable/createChannel.js";
 import createChannel from "../observable/createChannel.js";
 import sliceEquals from "../query/sliceEquals.js";
-import type { ResultWindow, Slice } from "../query/types.js";
+import type { Query } from "../query/types.js";
 import type { Schema } from "../schema/createSchema.js";
 import type { SchemaFieldDefinition } from "../schema/types.js";
 import type { SourceCapabilities } from "../source/types.js";
@@ -25,14 +25,14 @@ export type LocationHost = {
    * and widest in its record type, so a provider built for any row type is
    * a host without a cast — the binding never publishes on it.
    */
-  readonly result: ReadonlyChannel<CollectionCoordinatorState<object>>;
+  readonly state: ReadonlyChannel<CollectionState<object>>;
   /**
    * What the host's source declares it can execute, or null when the host
    * was not told. A location clause outside it is refused, not adopted.
    */
   readonly capabilities: SourceCapabilities | null;
   /** Adopt externally authoritative query and window together. */
-  readonly adopt: (slice: Slice, window: ResultWindow) => void;
+  readonly adopt: (query: Query) => void;
 };
 
 /** Configuration of one location binding. */
@@ -71,28 +71,28 @@ export type LocationBinding = {
   readonly observe: () => () => void;
 };
 
-/** One query authority's position: its applied query and its window. */
-type Position = {
-  readonly slice: Slice;
-  readonly window: ResultWindow;
-};
-
 /** One read-back of the location: where the host began it, and what it owes. */
 type ReadBack = {
-  readonly from: Position;
+  readonly from: Query;
   /** The history mode of a write owed once it is done, or null. */
   owed: "push" | "replace" | null;
 };
 
-const positionOf = (source: Position): Position => ({
+const queryOf = (source: Query): Query => ({
   slice: source.slice,
   window: source.window,
 });
 
-const samePosition = (a: Position, b: Position): boolean =>
+/**
+ * Two queries the location cannot tell apart. Every window member the
+ * grammar spells is compared; `collapsed` is not, because it has no spelling
+ * — collapsing a group must not provoke a write of the same URL.
+ */
+const sameQuery = (a: Query, b: Query): boolean =>
   (a.slice === b.slice || sliceEquals(a.slice, b.slice)) &&
   a.window.page === b.window.page &&
-  a.window.size === b.window.size;
+  a.window.size === b.window.size &&
+  a.window.cursor === b.window.cursor;
 
 const issuesEqual = (
   a: readonly QueryIssue[],
@@ -125,13 +125,13 @@ export default function createLocationBinding(
     equals: issuesEqual,
   });
   /**
-   * The position the location stands at, or null when it is owed a write.
+   * The query the location stands at, or null when it is owed a write.
    * The host sitting there writes nothing: rows arriving, a refresh and an
-   * error all publish the same position, and a refused location keeps its
+   * error all publish the same query, and a refused location keeps its
    * parameters — so the error survives a reload instead of quietly
    * becoming the broader query that was not asked for.
    */
-  let standing: Position | null = null;
+  let standing: Query | null = null;
   /**
    * The parameters the binding last wrote or found already written. Their
    * echo is read back but never re-canonicalized — which is also what ends
@@ -143,7 +143,7 @@ export default function createLocationBinding(
   let reading: ReadBack | null = null;
 
   /**
-   * Write the host's position. `then` says what follows a write with
+   * Write the host's query. `then` says what follows a write with
    * nothing to write: `"read-back"` reads the location back as its echo
    * would; `"skip"` does not, because the caller has just decoded the
    * location.
@@ -162,17 +162,17 @@ export default function createLocationBinding(
       // Termination holds per synchronous
       // dispatch; a listener that re-applies a refused clause lands where
       // the read-back began and is taken as its own.
-      const moved = host.result.get();
+      const moved = host.state.get();
       const provoked =
         standing !== null &&
-        (samePosition(standing, moved) || samePosition(reading.from, moved));
+        (sameQuery(standing, moved) || sameQuery(reading.from, moved));
       if (!provoked) {
         reading.owed = mode;
       }
       return;
     }
-    const state = host.result.get();
-    if (standing !== null && samePosition(standing, state)) {
+    const state = host.state.get();
+    if (standing !== null && sameQuery(standing, state)) {
       return;
     }
     const preserve = location.read();
@@ -186,7 +186,7 @@ export default function createLocationBinding(
     // Recorded before the write: a location notifying synchronously
     // re-enters adoptFromLocation from inside it, and what that adoption
     // records — a refusal included — must have the last word.
-    const at = positionOf(state);
+    const at = queryOf(state);
     standing = at;
     issues.set([]);
     written = spelled;
@@ -235,15 +235,15 @@ export default function createLocationBinding(
     // Recorded before adopting: the adoption publishes, and that
     // publication re-enters writeToLocation, which must find the location
     // already standing here.
-    standing = positionOf(decoded);
-    if (samePosition(host.result.get(), decoded)) {
+    standing = queryOf(decoded);
+    if (sameQuery(host.state.get(), decoded)) {
       // The echo of the binding's own write, or a change that reads the
       // same: adopting would discard live input sessions for nothing. The
       // host's own slice is kept, so later comparisons short-circuit on
       // reference.
-      standing = positionOf(host.result.get());
+      standing = queryOf(host.state.get());
     } else {
-      host.adopt(decoded.slice, decoded.window);
+      host.adopt({ slice: decoded.slice, window: decoded.window });
     }
     if (decoded.issues.length === 0 && params.toString() !== written) {
       // A clean location is canonicalized in place — unless it is the
@@ -267,7 +267,7 @@ export default function createLocationBinding(
     observe(): () => void {
       let live = true;
       const onHostChange = (): void => {
-        if (host.result.get().disposed) {
+        if (host.state.get().disposed) {
           release();
           return;
         }
@@ -279,7 +279,7 @@ export default function createLocationBinding(
       const stopLocation = location.subscribe(() => {
         adoptFromLocation();
       });
-      const stopHost = host.result.subscribe(onHostChange);
+      const stopHost = host.state.subscribe(onHostChange);
       function release(): void {
         if (!live) {
           return;
@@ -289,7 +289,7 @@ export default function createLocationBinding(
         stopHost();
       }
 
-      if (host.result.get().disposed) {
+      if (host.state.get().disposed) {
         release();
         return release;
       }

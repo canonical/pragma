@@ -1,8 +1,9 @@
 /**
  * The flat, form-compatible wire grammar: how a query is spelled as URL
- * parameters. Repeated values carry equality operand sets and ordered sort
- * terms; a `field__operator` key carries a bound; the window is `page` and
- * `size`. Everything else in a URL belongs to the host.
+ * parameters. Repeated values carry equality operand sets, ordered sort
+ * terms and nested grouping levels; a `field__operator` key carries a
+ * bound; the window is `page`, `size` and `cursor`. Everything else in a
+ * URL belongs to the host.
  */
 
 import type { PredicateOperator } from "../query/types.js";
@@ -10,23 +11,26 @@ import type { PredicateOperator } from "../query/types.js";
 /** The delimiter between a field's wire name and its operator. */
 export const OPERATOR_DELIMITER = "__";
 
-/** The parameters the grammar writes for every collection. */
+/**
+ * The parameters the grammar writes for every collection. Collapse is
+ * window-class but has no spelling: a reload expands every group.
+ */
 const WRITTEN_QUERY_KEYS: readonly string[] = Object.freeze([
   "q",
   "sort",
   "group",
   "page",
   "size",
+  "cursor",
 ]);
 
 /**
- * Parameter names the grammar reserves: those it writes, plus the window
- * and annotation names it leaves to the host. A field's wire name may not
+ * Parameter names the grammar reserves: those it writes, plus the
+ * annotation names it leaves to the host. A field's wire name may not
  * collide with one — the query would be ambiguous.
  */
 export const RESERVED_QUERY_KEYS: readonly string[] = Object.freeze([
   ...WRITTEN_QUERY_KEYS,
-  "cursor",
   "as",
   "view",
   "item",

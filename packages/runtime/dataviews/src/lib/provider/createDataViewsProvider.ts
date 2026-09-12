@@ -1,23 +1,29 @@
 import type {
   CollectionCoordinator,
-  CollectionCoordinatorState,
-  CompletionResult,
+  CollectionState,
 } from "../collection/createCollectionCoordinator.js";
 import createCollectionCoordinator from "../collection/createCollectionCoordinator.js";
 import createIdentity from "../createIdentity.js";
 import type { FieldInteractionState } from "../field/createFieldInteraction.js";
 import createFieldInteraction from "../field/createFieldInteraction.js";
+import type { Channel } from "../observable/createChannel.js";
 import createChannel from "../observable/createChannel.js";
+import type { ActionInvocation } from "../operation/createOperation.js";
 import createOperation from "../operation/createOperation.js";
-import canonicalSlice from "../query/canonicalSlice.js";
+import canonicalSlice, { predicateAddress } from "../query/canonicalSlice.js";
 import type {
+  GroupPath,
+  GroupTerm,
   Predicate,
   PredicateOperand,
   PredicateOperator,
+  Query,
   ResultWindow,
   Slice,
   SortTerm,
+  WindowNavigation,
 } from "../query/types.js";
+import type { Completion } from "../result/types.js";
 import createRowModel from "../rows/createRowModel.js";
 import type { RowIdentifier, RowModel, RowRecord } from "../rows/types.js";
 import type { Schema } from "../schema/createSchema.js";
@@ -27,7 +33,7 @@ import copyCapabilities from "../source/copyCapabilities.js";
 import type { SourceCapabilities } from "../source/types.js";
 import createProviderViews from "../views/createProviderViews.js";
 import type { ViewStore } from "../views/types.js";
-import type { DataViewsProvider, ProviderFieldHandle } from "./types.js";
+import type { DataViewsProvider, FieldHandle } from "./types.js";
 
 /** The legal operators of a field kind, in display order. */
 const operatorsFor = (
@@ -99,7 +105,7 @@ export type DataViewsProviderConfig<
   readonly identify?: RowIdentifier<TRow>;
   /**
    * What the source bound to this provider declares it can execute — the
-   * adapter's own `capabilities`. Connected parts, and DataTable's sortable
+   * source's own `capabilities`. Connected parts, and DataTable's sortable
    * columns, offer only what is declared, and a location clause outside it
    * is refused.
    */
@@ -118,7 +124,10 @@ type AddressedRecord = {
   readonly operator: PredicateOperator;
   readonly definition: SchemaFieldDefinition;
   readonly interaction: ReturnType<typeof createFieldInteraction>;
-  readonly handle: ProviderFieldHandle<unknown>;
+  /** The writable side, kept here so the handle can publish read-only. */
+  readonly state: Channel<FieldInteractionState>;
+  readonly applied: Channel<EmptyOr<unknown>>;
+  readonly handle: FieldHandle<unknown>;
 };
 
 /**
@@ -140,15 +149,14 @@ export default function createDataViewsProvider<
     window: config.window,
   });
   const selection = createSelection();
-  const result = createChannel<CollectionCoordinatorState<TRow>>(
-    coordinator.state,
-    { equals: (a, b) => a === b },
-  );
-  const emptyRows = createRowModel<TRow>([], identify);
+  const state = createChannel<CollectionState<TRow>>(coordinator.state, {
+    equals: (a, b) => a === b,
+  });
+  const emptyRows = createRowModel<TRow>({ rows: [], identify });
   const rows = createChannel<RowModel<TRow>>(emptyRows);
 
-  const publishResult = (): void => {
-    result.set(coordinator.state);
+  const publishState = (): void => {
+    state.set(coordinator.state);
   };
 
   const dispatchCommand = (
@@ -156,21 +164,24 @@ export default function createDataViewsProvider<
   ): void => {
     const outcome = coordinator.dispatch(command);
     if (outcome.status === "accepted" && outcome.requestId !== null) {
-      publishResult();
+      publishState();
     }
   };
 
-  const appliedOf = (
-    field: string,
-    operator: PredicateOperator,
-  ): Predicate | null => {
-    const canonical = canonicalSlice(coordinator.state.slice);
-    for (const predicate of canonical.filter) {
-      if (predicate.field === field && predicate.operator === operator) {
-        return predicate;
-      }
+  /**
+   * Every applied predicate by its address. Built once per sync: the slice
+   * is the same one for every field, and canonicalizing it per field would
+   * rebuild it once for each address the schema offers.
+   */
+  const appliedByAddress = (): Map<string, Predicate> => {
+    const applied = new Map<string, Predicate>();
+    for (const predicate of canonicalSlice(coordinator.state.slice).filter) {
+      applied.set(
+        predicateAddress(predicate.field, predicate.operator),
+        predicate,
+      );
     }
-    return null;
+    return applied;
   };
 
   const buildFieldRecord = (
@@ -180,25 +191,27 @@ export default function createDataViewsProvider<
     const interaction = createFieldInteraction({
       field: definition.field,
       operator,
-      validate: (buffer) => schema.validateBuffer(definition.field, buffer),
+      validate: (input) => schema.validateInput(definition.field, input),
       format: (predicate) =>
         predicate === null ? "" : String(predicate.operands[0] ?? ""),
     });
-    const state = createChannel<FieldInteractionState>(interaction.state);
+    const stateChannel = createChannel<FieldInteractionState>(
+      interaction.state,
+    );
     const applied = createChannel<EmptyOr<unknown>>(
       { kind: "empty" },
       { equals: emptyOrEqual },
     );
 
-    const handle: ProviderFieldHandle<unknown> = {
-      state,
+    const handle: FieldHandle<unknown> = {
+      state: stateChannel,
       applied,
-      edit(buffer: string): void {
-        const command = interaction.edit(buffer);
+      edit(input: string): void {
+        const command = interaction.edit(input);
         if (command !== null) {
           dispatchCommand(command);
         }
-        state.set(interaction.state);
+        stateChannel.set(interaction.state);
         applied.set(appliedValueOf(definition, interaction.state.applied));
       },
       set(operands: readonly PredicateOperand[]): void {
@@ -207,18 +220,18 @@ export default function createDataViewsProvider<
           return;
         }
         dispatchCommand({
-          kind: "replacePredicate",
+          kind: "setPredicate",
           predicate: built.predicate,
         });
         interaction.setApplied(built.predicate);
         applied.set(appliedValueOf(definition, built.predicate));
-        state.set(interaction.state);
+        stateChannel.set(interaction.state);
       },
       clear(): void {
         const command = interaction.clear();
         dispatchCommand(command);
         applied.set({ kind: "empty" });
-        state.set(interaction.state);
+        stateChannel.set(interaction.state);
       },
     };
     return {
@@ -226,17 +239,16 @@ export default function createDataViewsProvider<
       operator,
       definition,
       interaction,
+      state: stateChannel,
+      applied,
       handle,
     };
   };
 
   const fieldRecords: AddressedRecord[] = [];
-  const fields = {} as Record<
-    string,
-    Record<string, ProviderFieldHandle<unknown>>
-  >;
+  const fields: Record<string, Record<string, FieldHandle<unknown>>> = {};
   for (const definition of schema.fields) {
-    const byOperator: Record<string, ProviderFieldHandle<unknown>> = {};
+    const byOperator: Record<string, FieldHandle<unknown>> = {};
     for (const operator of operatorsFor(definition.kind)) {
       const record = buildFieldRecord(definition, operator);
       fieldRecords.push(record);
@@ -247,11 +259,13 @@ export default function createDataViewsProvider<
 
   /** Re-sync every field's applied mirror from the coordinator's slice. */
   const syncFields = (): void => {
+    const applied = appliedByAddress();
     for (const record of fieldRecords) {
-      const predicate = appliedOf(record.field, record.operator);
+      const predicate =
+        applied.get(predicateAddress(record.field, record.operator)) ?? null;
       record.interaction.setApplied(predicate);
-      record.handle.state.set(record.interaction.state);
-      record.handle.applied.set(appliedValueOf(record.definition, predicate));
+      record.state.set(record.interaction.state);
+      record.applied.set(appliedValueOf(record.definition, predicate));
     }
   };
 
@@ -260,12 +274,12 @@ export default function createDataViewsProvider<
       ? null
       : copyCapabilities(config.capabilities);
 
-  const adopt = (slice: Slice, window: ResultWindow): string | null => {
-    const requestId = coordinator.adopt(slice, window);
+  const adopt = (query: Query): string | null => {
+    const requestId = coordinator.adopt(query);
     // External authority wins: sync every field's applied mirror.
     syncFields();
     if (requestId !== null) {
-      publishResult();
+      publishState();
     }
     return requestId;
   };
@@ -274,43 +288,52 @@ export default function createDataViewsProvider<
     config.views === undefined
       ? null
       : createProviderViews({
-          host: { schema, capabilities, result, adopt },
+          host: { schema, capabilities, state, adopt },
           store: config.views,
         });
 
   const dispose = (): void => {
     views?.dispose();
     coordinator.dispose();
-    publishResult();
+    publishState();
   };
 
   return {
     identity,
     schema,
     capabilities,
-    result,
+    state,
     rows,
     selection,
     views,
+    // Built by walking `schema.fields`, so it holds exactly the schema's
+    // own literal keys and their operators; the map type is what the walk
+    // can say, and this is what the walk in fact produced.
     fields: fields as DataViewsProvider<TFields>["fields"],
-    navigateWindow(page?: number, size?: number): void {
-      dispatchCommand({ kind: "navigateWindow", page, size });
+    navigateWindow(window: WindowNavigation): void {
+      dispatchCommand({ kind: "navigateWindow", ...window });
     },
     setSort(sort: readonly SortTerm[]): void {
-      dispatchCommand({ kind: "replaceSort", sort });
+      dispatchCommand({ kind: "setSort", sort });
     },
     setSearch(search: string): void {
-      dispatchCommand({ kind: "replaceSearch", search });
+      dispatchCommand({ kind: "setSearch", search });
+    },
+    setGroup(group: readonly GroupTerm[]): void {
+      dispatchCommand({ kind: "setGroup", group });
+    },
+    setCollapsed(collapsed: readonly GroupPath[]): void {
+      dispatchCommand({ kind: "setCollapsed", collapsed });
     },
     refresh(): string | null {
       const requestId = coordinator.refresh();
       if (requestId !== null) {
-        publishResult();
+        publishState();
       }
       return requestId;
     },
     adopt,
-    complete(requestId: string, completion: CompletionResult<TRow>): boolean {
+    complete(requestId: string, completion: Completion<TRow>): boolean {
       // Only the pending request can publish: nothing is built for another,
       // such as a source's later delivery of a request already settled.
       if (coordinator.state.pendingRequestId !== requestId) {
@@ -320,23 +343,27 @@ export default function createDataViewsProvider<
       // with an ambiguous identity rejects the whole completion instead of
       // leaving displayed rows the table cannot key.
       const model =
-        completion.status === "success"
-          ? createRowModel(completion.rows, identify, rows.get())
+        completion.status === "succeeded"
+          ? createRowModel({
+              rows: completion.page.rows,
+              identify,
+              previous: rows.get(),
+            })
           : null;
       const published = coordinator.complete(requestId, completion);
       if (published) {
         if (model !== null) {
           rows.set(model);
         }
-        publishResult();
+        publishState();
       }
       return published;
     },
-    invokeAction(targets: readonly string[], payload?: unknown) {
+    invokeAction(invocation: ActionInvocation) {
       return createOperation({
-        targets,
-        payload,
-        selectionRevision: selection.state.revision,
+        targets: invocation.targets,
+        payload: invocation.payload,
+        selectionRevision: selection.state.get().revision,
       });
     },
     rotateScope(): void {
@@ -345,7 +372,7 @@ export default function createDataViewsProvider<
       selection.clear();
       views?.forget();
       syncFields();
-      publishResult();
+      publishState();
     },
     dispose,
   };

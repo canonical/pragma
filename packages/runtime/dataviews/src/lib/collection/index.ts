@@ -1,10 +1,8 @@
 export type {
   CollectionCoordinator,
   CollectionCoordinatorConfig,
-  CollectionCoordinatorState,
-  CompletionResult,
+  CollectionState,
   DispatchResult,
-  ResultProvenance,
   ResultState,
   ResultStatus,
 } from "./createCollectionCoordinator.js";

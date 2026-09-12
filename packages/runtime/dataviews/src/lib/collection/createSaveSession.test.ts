@@ -25,7 +25,7 @@ describe("createSaveSession", () => {
       status: "idle",
       dirty: false,
       revision: 0,
-      failureReason: null,
+      failure: null,
       submitted: null,
     });
   });
@@ -71,7 +71,7 @@ describe("createSaveSession", () => {
     expect(state.current).toEqual({ density: "compact" });
     expect(state.dirty).toBe(true);
     expect(state.status).toBe("failed");
-    expect(state.failureReason).toBe("quota exceeded");
+    expect(state.failure).toBe("quota exceeded");
   });
 
   it("allows a retry after failure", () => {
@@ -95,7 +95,7 @@ describe("createSaveSession", () => {
     // The first attempt's durable success resolves after the retry started.
     save.saveCompleted(first);
     const state = save.state;
-    expect(state.status).toBe("saving");
+    expect(state.status).toBe("pending");
     expect(state.submitted).toEqual({ density: "compact" });
     save.saveCompleted(second);
     expect(save.state.status).toBe("idle");
@@ -112,9 +112,9 @@ describe("createSaveSession", () => {
     // The first attempt's failure resolves after the retry started.
     save.saveFailed(first, "stale failure");
     const state = save.state;
-    expect(state.status).toBe("saving");
+    expect(state.status).toBe("pending");
     expect(state.submitted).toEqual({ density: "compact" });
-    expect(state.failureReason).toBeNull();
+    expect(state.failure).toBeNull();
     save.saveCompleted(second);
     expect(save.state.status).toBe("idle");
   });
@@ -132,7 +132,7 @@ describe("createSaveSession", () => {
     save.saveCompleted("s9");
     save.saveFailed("s9", "unexpected");
     expect(save.state.status).toBe("idle");
-    expect(save.state.failureReason).toBeNull();
+    expect(save.state.failure).toBeNull();
   });
 
   it("applies a delayed external read to the still-current target", () => {
@@ -170,7 +170,7 @@ describe("createSaveSession", () => {
     );
     const state = save.state;
     expect(state.status).toBe("idle");
-    expect(state.failureReason).toBeNull();
+    expect(state.failure).toBeNull();
     expect(state.dirty).toBe(false);
   });
 
@@ -208,7 +208,7 @@ describe("createSaveSession", () => {
     expect(save.state.status).toBe("failed");
     save.edit({ density: "compact" });
     expect(save.state.status).toBe("idle");
-    expect(save.state.failureReason).toBeNull();
+    expect(save.state.failure).toBeNull();
     expect(save.state.dirty).toBe(true);
   });
 

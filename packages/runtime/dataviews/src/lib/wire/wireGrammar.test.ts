@@ -15,7 +15,7 @@ import {
 } from "./wireGrammar.js";
 
 describe("the wire grammar's names", () => {
-  it("reserves the written keys, the cursor and the annotations", () => {
+  it("reserves the written keys and the annotations", () => {
     expect([...RESERVED_QUERY_KEYS]).toEqual([
       "q",
       "sort",
@@ -53,6 +53,9 @@ describe("the wire grammar's names", () => {
     expect(wireNameRejection("sort")).toBe(
       'field name "sort" is a reserved query parameter',
     );
+    expect(wireNameRejection("cursor")).toBe(
+      'field name "cursor" is a reserved query parameter',
+    );
     expect(wireNameRejection("item")).toBe(
       'field name "item" is a reserved query parameter',
     );
@@ -60,18 +63,19 @@ describe("the wire grammar's names", () => {
 
   it("owns the written keys and every address of a field, and nothing else", () => {
     const hasField = (name: string) => name === "cpu";
-    for (const key of ["q", "sort", "group", "page", "size"]) {
+    // The cursor is written now, so it is the collection's: a write that
+    // does not carry one clears the token a previous page left behind.
+    for (const key of ["q", "sort", "group", "page", "size", "cursor"]) {
       expect(isOwnedKey(key, hasField)).toBe(true);
     }
     expect(isOwnedKey("cpu", hasField)).toBe(true);
     expect(isOwnedKey("cpu__gte", hasField)).toBe(true);
     // A refused operator is still the field's, so a write clears it.
     expect(isOwnedKey("cpu__near", hasField)).toBe(true);
-    // The cursor and the annotations are reserved but not owned: the host
-    // interprets them. A delimited name whose prefix is no field is the
-    // host's too.
-    expect(isOwnedKey("cursor", hasField)).toBe(false);
+    // The annotations are reserved but not owned: the host interprets them.
+    // A delimited name whose prefix is no field is the host's too.
     expect(isOwnedKey("view", hasField)).toBe(false);
+    expect(isOwnedKey("as", hasField)).toBe(false);
     expect(isOwnedKey("utm__source", hasField)).toBe(false);
     expect(isOwnedKey("tab", hasField)).toBe(false);
   });

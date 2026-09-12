@@ -1,14 +1,17 @@
-import DEFAULT_RESULT_WINDOW from "../query/defaultWindow.js";
+import DEFAULT_WINDOW from "../query/defaultWindow.js";
+import EMPTY_SLICE from "../query/emptySlice.js";
 import type {
+  GroupTerm,
   Predicate,
   PredicateOperand,
   PredicateOperator,
+  ResultWindow,
   Slice,
   SortTerm,
 } from "../query/types.js";
 import type { Schema, SchemaPredicateResult } from "../schema/createSchema.js";
 import type { SchemaFieldDefinition } from "../schema/types.js";
-import supportsSlice from "../source/supportsSlice.js";
+import supportsRequest from "../source/supportsRequest.js";
 import type { SourceCapabilities } from "../source/types.js";
 import type { DecodedQuery, DecodeQueryConfig, QueryIssue } from "./types.js";
 import {
@@ -20,13 +23,6 @@ import {
 } from "./wireGrammar.js";
 
 const DIGITS = /^\d+$/;
-
-const NO_QUERY: Slice = Object.freeze({
-  filter: [],
-  search: null,
-  sort: [],
-  group: null,
-});
 
 const isOperator = (
   suffix: string,
@@ -128,7 +124,7 @@ const readPredicate = (
   }
   const operands: PredicateOperand[] = [];
   for (const value of values) {
-    const parsed = schema.validateBuffer(field, value);
+    const parsed = schema.validateInput(field, value);
     if (parsed.status === "valid") {
       operands.push(...parsed.operands);
       continue;
@@ -164,8 +160,10 @@ const readPredicate = (
 
 /**
  * Leave out every clause the source cannot execute, reporting each. Each
- * clause is checked alone, so one refusal names one parameter; an ordering
- * is kept or refused whole, never truncated.
+ * clause is checked alone, over the default window, so one refusal names the
+ * one parameter that caused it — a window the source cannot address is the
+ * window's own refusal, not every clause's. An ordering is kept or refused
+ * whole, never truncated.
  */
 const executableOf = (
   slice: Slice,
@@ -173,11 +171,14 @@ const executableOf = (
   issues: QueryIssue[],
 ): Slice => {
   const keeps = (parameter: string, clause: Slice): boolean => {
-    const support = supportsSlice(capabilities, clause);
-    if (support.status === "supported") {
+    const refusals = supportsRequest(capabilities, {
+      slice: clause,
+      window: DEFAULT_WINDOW,
+    });
+    if (refusals.length === 0) {
       return true;
     }
-    for (const refusal of support.refusals) {
+    for (const refusal of refusals) {
       issues.push({ parameter, reason: refusal.reason });
     }
     return false;
@@ -185,18 +186,42 @@ const executableOf = (
   return {
     filter: slice.filter.filter((predicate) =>
       keeps(wireKeyOf(predicate.field, predicate.operator), {
-        ...NO_QUERY,
+        ...EMPTY_SLICE,
         filter: [predicate],
       }),
     ),
-    search: keeps("q", { ...NO_QUERY, search: slice.search })
+    search: keeps("q", { ...EMPTY_SLICE, search: slice.search })
       ? slice.search
       : null,
-    sort: keeps("sort", { ...NO_QUERY, sort: slice.sort }) ? slice.sort : [],
-    group: keeps("group", { ...NO_QUERY, group: slice.group })
+    sort: keeps("sort", { ...EMPTY_SLICE, sort: slice.sort }) ? slice.sort : [],
+    group: keeps("group", { ...EMPTY_SLICE, group: slice.group })
       ? slice.group
-      : null,
+      : [],
   };
+};
+
+/**
+ * The window a source can address, reporting what it cannot. Only the token
+ * is refusable here: a decoded window collapses nothing, and a page number
+ * out of a cursor source's reach is that source's own refusal at execution,
+ * which needs the trail this layer does not have.
+ */
+const addressableWindow = (
+  window: ResultWindow,
+  capabilities: SourceCapabilities,
+  issues: QueryIssue[],
+): ResultWindow => {
+  const refusals = supportsRequest(capabilities, {
+    slice: EMPTY_SLICE,
+    window,
+  });
+  if (refusals.length === 0) {
+    return window;
+  }
+  for (const refusal of refusals) {
+    issues.push({ parameter: "cursor", reason: refusal.reason });
+  }
+  return { ...window, cursor: null };
 };
 
 /**
@@ -220,9 +245,10 @@ export default function decodeQuery(config: DecodeQueryConfig): DecodedQuery {
   const filter: Predicate[] = [];
   let sort: SortTerm[] = [];
   let search: string | null = null;
-  let group: string | null = null;
-  let page = DEFAULT_RESULT_WINDOW.page;
-  let size = DEFAULT_RESULT_WINDOW.size;
+  let group: GroupTerm[] = [];
+  let page = DEFAULT_WINDOW.page;
+  let size = DEFAULT_WINDOW.size;
+  let cursor = DEFAULT_WINDOW.cursor;
 
   for (const key of new Set(params.keys())) {
     const values = params.getAll(key);
@@ -250,12 +276,29 @@ export default function decodeQuery(config: DecodeQueryConfig): DecodedQuery {
       continue;
     }
     if (key === "group") {
+      const levels: GroupTerm[] = [];
+      for (const value of values) {
+        if (value === "") {
+          issues.push({ parameter: key, reason: `"${key}" must name a field` });
+        } else {
+          levels.push({ field: value });
+        }
+      }
+      // A grouping is kept whole or not at all: dropping one level would
+      // nest the rest under a parent nobody asked for.
+      group = levels.length === values.length ? levels : [];
+      continue;
+    }
+    if (key === "cursor") {
       const value = singletonOf(key, values, issues);
       if (value === "") {
-        issues.push({ parameter: key, reason: `"${key}" must name a field` });
+        issues.push({
+          parameter: key,
+          reason: `"${key}" must carry the token a page handed back`,
+        });
         continue;
       }
-      group = value;
+      cursor = value;
       continue;
     }
     if (key === "page") {
@@ -267,8 +310,8 @@ export default function decodeQuery(config: DecodeQueryConfig): DecodedQuery {
       continue;
     }
     if (RESERVED_QUERY_KEYS.includes(key)) {
-      // A reserved name the grammar does not read here — cursor and the
-      // annotation names — is the host's to interpret.
+      // A reserved name the grammar does not read here — the annotation
+      // names — is the host's to interpret.
       continue;
     }
     const kind = kinds.get(fieldOfWireKey(key));
@@ -279,12 +322,14 @@ export default function decodeQuery(config: DecodeQueryConfig): DecodedQuery {
   }
 
   const read: Slice = { filter, search, sort, group };
+  // Collapse has no spelling, so a decoded window never collapses anything.
+  const readWindow: ResultWindow = { page, size, cursor, collapsed: [] };
+  if (capabilities === undefined || capabilities === null) {
+    return { slice: read, window: readWindow, issues };
+  }
   return {
-    slice:
-      capabilities === undefined || capabilities === null
-        ? read
-        : executableOf(read, capabilities, issues),
-    window: { page, size },
+    slice: executableOf(read, capabilities, issues),
+    window: addressableWindow(readWindow, capabilities, issues),
     issues,
   };
 }

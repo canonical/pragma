@@ -4,10 +4,10 @@
  * sorting and windowing all move records between positions.
  */
 
-import type { Channel } from "../observable/createChannel.js";
+import type { ReadonlyChannel } from "../observable/createChannel.js";
 
 /**
- * The default row shape: an adapter record keyed by field name. Rows are
+ * The default row shape: a plain record keyed by field name. Rows are
  * only constrained to `object`, so a consumer's own `interface` is a legal
  * row type without an index signature.
  */
@@ -88,14 +88,15 @@ export type DisplayEntryKind = DisplayEntry["kind"];
 /**
  * One row's observation scope. Minted once per row identity and shared by
  * every cell of that row: field channels notify only the cells whose value
- * actually changed.
+ * actually changed. A projection, so every channel on it is read-only —
+ * the registry that mints it is the only publisher.
  */
 export type RowScope<TRow extends object> = {
   readonly id: string;
   /** The whole record. Watching it is broader than watching one field. */
-  readonly row: Channel<TRow>;
+  readonly row: ReadonlyChannel<TRow>;
   /** One channel per observed field name. */
-  readonly fields: Readonly<Record<string, Channel<unknown>>>;
+  readonly fields: Readonly<Record<string, ReadonlyChannel<unknown>>>;
   /** This row's membership of the collection's selection. */
-  readonly selected: Channel<boolean>;
+  readonly selected: ReadonlyChannel<boolean>;
 };
