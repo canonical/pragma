@@ -250,6 +250,10 @@ router.setSearchParams({ filter: null });
 router.setSearchParams({ page: "2" }, { replace: true });
 ```
 
+`setSearchParams()` is how a page restates its own view — a filter, a grouping, a sort, a tab — so that the address can be copied and reopened on that view. It is not a navigation: the store commits the new location, subscribers are notified, and the adapter records the address (pushed, or replacing the current entry with `replace: true`), but there is no view transition, no scroll restoration, no focus move and no route announcement. The reader stays on the control they were using. A `getTitle` option still runs, so the document title follows the address.
+
+Everything else that changes the address stays a navigation, including one that differs only in its search: `navigate()` to the same page with other search params, the browser's back and forward, and a redirect reached from a search update (which the reader did not ask for) all run the full [accessibility](#accessibility) effects. Only the caller knows that an address is the same page restated, so the distinction is made by the method called, not inferred from the address — `/?user=ana` and `/?user=bob` may well be two different pages.
+
 ## Navigation blocking
 
 `router.block(isActive)` registers a blocker and returns a handle. While `isActive()` returns true, `navigate()` is intercepted and held until the handle decides it:
@@ -313,7 +317,7 @@ See the [middleware cookbook](../../../docs/how-to-guides/ROUTER_MIDDLEWARE_COOK
 The adapter decides where the location lives; everything else about the router is identical across them:
 
 - `createBrowserAdapter()` — auto-detects the best API: uses the Navigation API (`window.navigation`) when available, falls back to the History API (`pushState` / `popstate`) for older browsers.
-- `createNavigationAdapter()` — explicitly use the Navigation API. Baseline Newly Available since January 2026.
+- `createNavigationAdapter()` — explicitly use the Navigation API. Baseline Newly Available since January 2026. Navigations the router makes are intercepted with `scroll: "manual"` and `focusReset: "manual"`, so the router's own scroll and focus management applies, as it does under the History API; navigations the browser starts (back/forward, reload) keep the browser's handling.
 - `createHistoryAdapter()` — explicitly use the History API.
 - `createHashAdapter()` — store the route in `window.location.hash`; useful where the path is fixed (Storybook, static file hosts).
 - `createMemoryAdapter(initialUrl?, options?)` — in-memory adapter for testing.
@@ -399,7 +403,7 @@ The router auto-wires browser-side accessibility orchestration:
 - `RouteAnnouncer` — announces route changes to screen readers
 - `ViewTransitionManager` — wraps navigations in View Transitions when available
 
-Override or disable them through `RouterOptions.accessibility`.
+They run for navigations — `navigate()`, back/forward, and redirects — and not for the initial load or a [`setSearchParams()`](#search-param-mutation) update. Override or disable them through `RouterOptions.accessibility`.
 
 ## Public API
 

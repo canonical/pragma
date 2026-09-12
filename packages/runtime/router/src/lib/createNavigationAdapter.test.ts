@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import createNavigationAdapter from "./createNavigationAdapter.js";
 
+interface FakeInterceptOptions {
+  handler?: () => void | Promise<void>;
+  focusReset?: "after-transition" | "manual";
+  scroll?: "after-transition" | "manual";
+}
+
 function createFakeNavigationWindow(initialHref = "https://example.com/") {
   let navigateListener:
     | ((event: {
@@ -8,7 +14,7 @@ function createFakeNavigationWindow(initialHref = "https://example.com/") {
         destination: { url: string };
         canIntercept: boolean;
         hashChange: boolean;
-        intercept: (options?: { handler?: () => void | Promise<void> }) => void;
+        intercept: (options?: FakeInterceptOptions) => void;
       }) => void)
     | null = null;
 
@@ -22,11 +28,20 @@ function createFakeNavigationWindow(initialHref = "https://example.com/") {
     navigation: {
       currentEntry: { url: initialHref },
       navigate(url: string, options?: { history?: "push" | "replace" }) {
-        navigationWindow.location.href = new URL(
-          url,
-          navigationWindow.location.href,
-        ).href;
-        void options;
+        const destination = new URL(url, navigationWindow.location.href).href;
+
+        // As in the browser, the navigate event fires synchronously inside
+        // navigation.navigate(), before the URL changes.
+        navigateListener?.({
+          navigationType: options?.history ?? "push",
+          destination: { url: destination },
+          canIntercept: true,
+          hashChange: false,
+          intercept: (interceptOptions?: FakeInterceptOptions) => {
+            navigationWindow.lastInterceptOptions = interceptOptions;
+          },
+        });
+        navigationWindow.location.href = destination;
 
         return navigationWindow.nextNavigateResult;
       },
@@ -42,9 +57,7 @@ function createFakeNavigationWindow(initialHref = "https://example.com/") {
         }
       },
     },
-    lastInterceptOptions: undefined as
-      | { handler?: () => void | Promise<void> }
-      | undefined,
+    lastInterceptOptions: undefined as FakeInterceptOptions | undefined,
     dispatchNavigate(nextHref: string, navigationType: string = "traverse") {
       navigationWindow.location.href = nextHref;
       navigateListener?.({
@@ -52,7 +65,7 @@ function createFakeNavigationWindow(initialHref = "https://example.com/") {
         destination: { url: nextHref },
         canIntercept: true,
         hashChange: false,
-        intercept: (options?: { handler?: () => void | Promise<void> }) => {
+        intercept: (options?: FakeInterceptOptions) => {
           navigationWindow.lastInterceptOptions = options;
         },
       });
@@ -274,5 +287,69 @@ describe("createNavigationAdapter (Navigation API)", () => {
     const handler = navigationWindow.lastInterceptOptions?.handler;
 
     await expect(Promise.resolve(handler?.())).resolves.toBeUndefined();
+  });
+
+  it("leaves scroll and focus to the router for the navigations it asks for", () => {
+    const navigationWindow = createFakeNavigationWindow();
+    const adapter = createNavigationAdapter(navigationWindow);
+
+    adapter.subscribe(() => {});
+
+    // Left to the browser, an intercepted push or replace scrolls to the top
+    // and moves focus to <body> once the handler settles.
+    adapter.navigate("/docs");
+    expect(navigationWindow.lastInterceptOptions).toMatchObject({
+      focusReset: "manual",
+      scroll: "manual",
+    });
+
+    navigationWindow.lastInterceptOptions = undefined;
+    adapter.navigate("/docs?page=2", { replace: true });
+    expect(navigationWindow.lastInterceptOptions).toMatchObject({
+      focusReset: "manual",
+      scroll: "manual",
+    });
+  });
+
+  it("keeps the browser's scroll and focus handling for navigations it did not ask for", () => {
+    const navigationWindow = createFakeNavigationWindow();
+    const adapter = createNavigationAdapter(navigationWindow);
+
+    adapter.subscribe(() => {});
+    adapter.navigate("/docs");
+
+    for (const navigationType of ["traverse", "push", "replace", "reload"]) {
+      navigationWindow.dispatchNavigate(
+        "https://example.com/elsewhere",
+        navigationType,
+      );
+
+      expect(navigationWindow.lastInterceptOptions).not.toHaveProperty(
+        "focusReset",
+      );
+      expect(navigationWindow.lastInterceptOptions).not.toHaveProperty(
+        "scroll",
+      );
+    }
+  });
+
+  it("stops claiming navigations once a navigate() call throws", () => {
+    const navigationWindow = createFakeNavigationWindow();
+    const adapter = createNavigationAdapter(navigationWindow);
+    const navigate = navigationWindow.navigation.navigate;
+
+    adapter.subscribe(() => {});
+    navigationWindow.navigation.navigate = () => {
+      throw new TypeError("Invalid URL");
+    };
+
+    expect(() => {
+      adapter.navigate("http://[");
+    }).toThrow("Invalid URL");
+
+    navigationWindow.navigation.navigate = navigate;
+    navigationWindow.dispatchNavigate("https://example.com/back", "traverse");
+
+    expect(navigationWindow.lastInterceptOptions).not.toHaveProperty("scroll");
   });
 });
