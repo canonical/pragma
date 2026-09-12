@@ -317,7 +317,7 @@ See the [middleware cookbook](../../../docs/how-to-guides/ROUTER_MIDDLEWARE_COOK
 The adapter decides where the location lives; everything else about the router is identical across them:
 
 - `createBrowserAdapter()` — auto-detects the best API: uses the Navigation API (`window.navigation`) when available, falls back to the History API (`pushState` / `popstate`) for older browsers.
-- `createNavigationAdapter()` — explicitly use the Navigation API. Baseline Newly Available since January 2026.
+- `createNavigationAdapter()` — explicitly use the Navigation API. Baseline Newly Available since January 2026. Navigations the router makes are intercepted with `scroll: "manual"` and `focusReset: "manual"`, so the router's own scroll and focus management applies, as it does under the History API; navigations the browser starts (back/forward, reload) keep the browser's handling.
 - `createHistoryAdapter()` — explicitly use the History API.
 - `createHashAdapter()` — store the route in `window.location.hash`; useful where the path is fixed (Storybook, static file hosts).
 - `createMemoryAdapter(initialUrl?, options?)` — in-memory adapter for testing.

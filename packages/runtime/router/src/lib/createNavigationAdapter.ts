@@ -26,7 +26,13 @@ interface NavigateEventLike {
   readonly destination: { readonly url: string };
   readonly canIntercept: boolean;
   readonly hashChange: boolean;
-  intercept(options?: { handler?: () => void | Promise<void> }): void;
+  intercept(options?: NavigationInterceptOptionsLike): void;
+}
+
+interface NavigationInterceptOptionsLike {
+  readonly handler?: () => void | Promise<void>;
+  readonly focusReset?: "after-transition" | "manual";
+  readonly scroll?: "after-transition" | "manual";
 }
 
 interface NavigationWindowLike {
@@ -66,6 +72,9 @@ export default function createNavigationAdapter(
   const subscribers = new Set<(location: string | URL) => void>();
   const navigation = navigationWindow.navigation;
   let trackedLoad: Promise<void> | null = null;
+  /** True while this adapter's own `navigate()` is calling the Navigation
+   * API, whose `navigate` event fires synchronously inside that call. */
+  let navigatingForRouter = false;
 
   function getLocation(): URL {
     return new URL(navigationWindow.location.href);
@@ -94,12 +103,25 @@ export default function createNavigationAdapter(
     // on a later microtask.  A failed load still commits router state, so
     // the handler never rejects — it must not mark the browser navigation
     // as failed.
+    //
+    // A navigation the router asked for leaves scroll and focus to the
+    // router.  Left to the browser, an intercepted push or replace scrolls
+    // to the top and moves focus to <body> once the handler settles — also
+    // for `setSearchParams()`, where the router deliberately leaves the
+    // reader where they are — and would repeat what the router's own
+    // ScrollManager and FocusManager already did for a real navigation.
+    // That also matches the History API adapter, where the browser does
+    // neither.  Navigations the browser starts (back/forward, reload, a link
+    // the router did not handle) keep the browser's defaults.
     event.intercept({
       handler: () =>
         Promise.resolve(trackedLoad).then(
           () => undefined,
           ignoreNavigationTransitionError,
         ),
+      ...(navigatingForRouter
+        ? { focusReset: "manual", scroll: "manual" }
+        : undefined),
     });
 
     if (
@@ -115,9 +137,17 @@ export default function createNavigationAdapter(
       return getLocation();
     },
     navigate(url, navigationOptions?: PlatformNavigateOptions) {
-      const result = navigation.navigate(url, {
-        history: navigationOptions?.replace ? "replace" : "push",
-      });
+      navigatingForRouter = true;
+
+      let result: NavigationResultLike | undefined;
+
+      try {
+        result = navigation.navigate(url, {
+          history: navigationOptions?.replace ? "replace" : "push",
+        });
+      } finally {
+        navigatingForRouter = false;
+      }
 
       result?.committed?.catch(ignoreNavigationTransitionError);
       result?.finished?.catch(ignoreNavigationTransitionError);
