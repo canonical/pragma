@@ -43,7 +43,23 @@ import type {
   StandardSchemaIssue,
 } from "./types.js";
 
-type NavigationMode = "initial" | "none" | "pop" | "push";
+/**
+ * How a load reaches the reader.  `"push"` and `"pop"` are navigations and run
+ * the view transition and the accessibility effects; `"initial"` and `"none"`
+ * run neither.  `"search"` is a page restating its own view through
+ * `setSearchParams()`: the address changes, but the reader stays where they
+ * are, so it runs neither the transition nor the scroll, focus and
+ * announcement effects — only the title is kept in step with the address.
+ */
+type NavigationMode = "initial" | "none" | "pop" | "push" | "search";
+
+/**
+ * The mode a redirect loads in.  A redirect sends the reader to an address
+ * they did not ask for, so one reached from a search update is a navigation.
+ */
+function toRedirectMode(mode: NavigationMode): NavigationMode {
+  return mode === "search" ? "push" : mode;
+}
 
 function toHref(input: string | URL): string {
   const url = buildUrl(input);
@@ -942,7 +958,7 @@ export default function createRouter<
         thrownError.to,
         context.redirectDepth + 1,
         context.shouldSyncAdapter,
-        context.mode,
+        toRedirectMode(context.mode),
       )
         .then((redirectedResult) => {
           if (
@@ -1047,7 +1063,7 @@ export default function createRouter<
     result: RouterLoadResult<TRoutes, TNotFound>,
     mode: NavigationMode,
   ): void {
-    if (mode !== "pop" && mode !== "push") {
+    if (mode === "initial" || mode === "none") {
       return;
     }
 
@@ -1063,6 +1079,10 @@ export default function createRouter<
         accessibilityDocument
       ) {
         accessibilityDocument.title = nextTitle;
+      }
+
+      if (mode === "search") {
+        return;
       }
 
       scrollManager?.restore(result.location.href, mode);
@@ -1220,7 +1240,7 @@ export default function createRouter<
     }
 
     syncAdapterLocation(href, replace ? { replace: true } : undefined);
-    scheduleAdapterLoad(href, replace ? "pop" : "push");
+    scheduleAdapterLoad(href, "search");
   }
 
   function warm<TName extends RouteName<TRoutes>>(
@@ -1331,7 +1351,7 @@ export default function createRouter<
         redirectMatch.redirectTo,
         redirectDepth + 1,
         shouldSyncAdapter,
-        mode,
+        toRedirectMode(mode),
       );
 
       if (
@@ -1450,7 +1470,7 @@ export default function createRouter<
           thrownError.to,
           redirectDepth + 1,
           shouldSyncAdapter,
-          mode,
+          toRedirectMode(mode),
         );
 
         if (

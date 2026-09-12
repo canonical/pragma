@@ -114,7 +114,7 @@ interface Router<TRoutes extends RouteMap, TNotFound extends AnyRoute | undefine
 - **`render(result?)`** returns `unknown` (framework-agnostic); the React layer consumes it via `<Outlet>`. Typing is supplied by `TRendered` on `content`/`wrapper.component`.
 - **`dispose()`** aborts the in-flight load and unsubscribes from the adapter.
 - **`content.preload`**, when a route declares it, is **awaited during the load** — unlike `warm`, it gates navigation completion (it exists for code-splitting, where rendering without the module is impossible).
-- **`setSearchParams`/`subscribeToSearchParam`** key their `key`/update-object keys against [`SearchParamKey<TRoutes>`](#search-validation) — the union of every key declared by a route's `search` schema across the route map, falling back to `string` when no route declares one. `setSearchParams` merges into the current search params; a key set to `null` **or `undefined`** removes it (an explicit `undefined` value in an update object removes the param rather than serializing the literal string `"undefined"`).
+- **`setSearchParams`/`subscribeToSearchParam`** key their `key`/update-object keys against [`SearchParamKey<TRoutes>`](#search-validation) — the union of every key declared by a route's `search` schema across the route map, falling back to `string` when no route declares one. `setSearchParams` merges into the current search params; a key set to `null` **or `undefined`** removes it (an explicit `undefined` value in an update object removes the param rather than serializing the literal string `"undefined"`). **`setSearchParams` is not a navigation:** it commits the location, notifies subscribers and writes the adapter (push, or replace with `replace: true`), but runs no view transition, scroll restoration, focus move or announcement — only `getTitle`. A `navigate()` to an address that differs only in its search, adapter-driven back/forward, and a redirect reached from a search update remain navigations and run them all.
 
 ```ts
 router.navigate("account", { search: { auth: "1" } });
@@ -746,7 +746,7 @@ class ViewTransitionManager {  // wraps committed updates in document.startViewT
 }
 ```
 
-`getTitle` sets `document.title` after push/pop navigations from the accessibility context.
+`getTitle` sets `document.title` from the accessibility context after navigations (`navigate()`, back/forward, redirects) and `setSearchParams()` updates. The scroll, focus, announcement and view-transition managers run for navigations only — not for the initial load, and not for a `setSearchParams()` update, which restates the current page rather than leaving it.
 
 ### Low-level helpers
 
