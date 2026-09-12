@@ -56,9 +56,10 @@ describe("public surface", () => {
     expect(dataviews.applyWindow(["a"], dataviews.DEFAULT_WINDOW)).toEqual([
       "a",
     ]);
-    expect(dataviews.createRowModel({ rows: [{ id: "a" }] }).ids).toEqual([
-      "a",
-    ]);
+    expect(dataviews.createRowModel({ rows: [{ id: "a" }] })).toMatchObject({
+      status: "built",
+      model: { ids: ["a"] },
+    });
     expect(
       dataviews.columnTemplate(
         [{ id: "a", sizing: { kind: "fixed", px: 8 } }],

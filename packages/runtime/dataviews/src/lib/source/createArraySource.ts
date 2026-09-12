@@ -69,7 +69,8 @@ export default function createArraySource<TRow extends object = RowRecord>(
   config: ArraySourceConfig<TRow>,
 ): ArraySource<TRow> {
   const read = config.read ?? readProperty;
-  const identify = config.identify ?? defaultRowIdentifier;
+  const identify: (row: TRow) => unknown =
+    config.identify ?? defaultRowIdentifier;
   const searchFields = config.searchFields ?? [];
   const capabilities = copyCapabilities({
     filter: Object.fromEntries(
@@ -143,7 +144,12 @@ export default function createArraySource<TRow extends object = RowRecord>(
       if (index === null) {
         index = new Map<string, TRow>();
         for (const row of rows) {
-          index.set(identify(row), row);
+          const id = identify(row);
+          // A record with no usable identity cannot be addressed by one, so
+          // it never enters the index and a lookup of it answers "missing".
+          if (typeof id === "string" && id !== "") {
+            index.set(id, row);
+          }
         }
       }
       const built = index;

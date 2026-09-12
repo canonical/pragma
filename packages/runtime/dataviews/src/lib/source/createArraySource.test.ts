@@ -298,6 +298,20 @@ describe("createArraySource", () => {
     ]);
   });
 
+  it("reports a record with no usable identity as missing", async () => {
+    // A record nothing can address is a record no lookup can name: it never
+    // enters the index, rather than keying it under a value that is not one.
+    const live = createArraySource<RowRecord>({
+      rows: [{ id: "a" }, { name: "unidentified" }, { id: "" }],
+      fields: ["id"],
+    });
+    await expect(live.lookup?.(["a", "unidentified", ""])).resolves.toEqual([
+      { id: "a", status: "found", record: { id: "a" } },
+      { id: "unidentified", status: "missing" },
+      { id: "", status: "missing" },
+    ]);
+  });
+
   it("looks up against the replacement records after a write", async () => {
     const live = source();
     // The identity index is kept between lookups, so the write is what has
