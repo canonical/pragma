@@ -22,10 +22,11 @@ type OwnProps = {
  * selection's commands, so it extends native div props. `role` is excluded,
  * since the group role is the bar's own, and so are `aria-label` and
  * `aria-labelledby`, which would override the name it takes from `label`.
- * So is `ref`: the bar holds its root to hand the focus back when it leaves.
+ * `ref` is merged with the bar's own, which it holds to hand the focus back
+ * when it leaves.
  */
-export type ActionsProps = OwnProps &
+export type DataViewsActionsProps = OwnProps &
   Omit<
     ComponentProps<"div">,
-    keyof OwnProps | "role" | "aria-label" | "aria-labelledby" | "ref"
+    keyof OwnProps | "role" | "aria-label" | "aria-labelledby"
   >;

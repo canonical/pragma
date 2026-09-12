@@ -22,10 +22,16 @@ describe("DataTable SSR", () => {
     if (requestId === null) {
       throw new Error("expected a refresh request");
     }
+    const one = { kind: "exact", value: 1 } as const;
     provider.complete(requestId, {
-      status: "success",
-      rows: [{ id: "m-1", name: "alpha", status: "running" }],
-      count: 1,
+      status: "succeeded",
+      page: {
+        rows: [{ id: "m-1", name: "alpha", status: "running" }],
+        groups: null,
+        counts: { visible: one, matched: one, total: one },
+        more: null,
+        cursors: null,
+      },
     });
     const html = renderToString(
       <DataTable

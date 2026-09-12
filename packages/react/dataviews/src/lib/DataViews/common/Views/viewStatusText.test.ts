@@ -1,4 +1,8 @@
-import type { SavedView, ViewOperation } from "@canonical/dataviews-core/views";
+import type {
+  SavedView,
+  ViewAction,
+  ViewSettledOutcome,
+} from "@canonical/dataviews-core";
 import { describe, expect, it } from "vitest";
 import viewStatusText from "./viewStatusText.js";
 
@@ -13,8 +17,8 @@ const view: SavedView = {
   updatedAt: "2026-09-11T00:00:00.000Z",
 };
 
-type Action = ViewOperation["action"];
-type Outcome = Extract<ViewOperation, { status: "settled" }>["outcome"];
+type Action = ViewAction;
+type Outcome = ViewSettledOutcome;
 
 const actions: readonly Action[] = [
   "open",

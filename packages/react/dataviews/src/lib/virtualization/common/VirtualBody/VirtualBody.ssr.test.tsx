@@ -27,7 +27,17 @@ describe("windowed DataTable SSR", () => {
       id: `m-${position}`,
       name: `host-${position}`,
     }));
-    provider.complete(requestId, { status: "success", rows, count: 30 });
+    const counted = { kind: "exact", value: 30 } as const;
+    provider.complete(requestId, {
+      status: "succeeded",
+      page: {
+        rows,
+        groups: null,
+        counts: { visible: counted, matched: counted, total: counted },
+        more: null,
+        cursors: null,
+      },
+    });
     const html = renderToString(
       <DataTable
         provider={provider}

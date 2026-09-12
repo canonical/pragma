@@ -63,10 +63,13 @@ describe("useDataViews", () => {
       wrapper: ({ children }) => <Root provider={p}>{children}</Root>,
     });
     expect(result.current.selection).toBe(p.selection);
-    expect(result.current.result).toBe(p.result);
-    expect(result.current.fields.status.eq).toBeDefined();
-    expect(result.current.fields.cpu.gte).toBeDefined();
-    expect(result.current.fields.owner.isSet).toBeDefined();
+    expect(result.current.state).toBe(p.state);
+    expect(Object.keys(result.current.fields.status)).toEqual(["eq"]);
+    expect(Object.keys(result.current.fields.cpu).sort()).toEqual([
+      "gte",
+      "lte",
+    ]);
+    expect(Object.keys(result.current.fields.owner)).toEqual(["isSet"]);
   });
 
   it("serves the same scope across re-renders", () => {
@@ -108,7 +111,7 @@ describe("useDataViews", () => {
 
   it("is safe under StrictMode double-mount without duplicate subscriptions", () => {
     const p = machinesProvider();
-    const channel = p.result;
+    const channel = p.state;
     let notifications = 0;
     channel.subscribe(() => {
       notifications += 1;

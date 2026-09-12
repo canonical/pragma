@@ -1,7 +1,4 @@
-import type {
-  PredicateOperand,
-  ProviderFieldHandle,
-} from "@canonical/dataviews-core";
+import type { FieldHandle, PredicateOperand } from "@canonical/dataviews-core";
 
 /**
  * Props of one closed-set filter.
@@ -14,7 +11,7 @@ export type ChoicesFilterProps = {
   /** The field's option values, in schema order. */
   readonly options: readonly (string | number)[];
   /** The provider handle for this field's equality predicate. */
-  readonly handle: ProviderFieldHandle<ReadonlySet<PredicateOperand>>;
+  readonly handle: FieldHandle<ReadonlySet<PredicateOperand>>;
   /** The group's visible name. */
   readonly label: string;
   /**

@@ -7,7 +7,7 @@ import { Fragment, useContext } from "react";
 import DataViewsContext from "../../Context.js";
 import { BoundFilter, ChoicesFilter, FlagFilter } from "./common/index.js";
 import handleFor from "./handleFor.js";
-import type { FiltersProps } from "./types.js";
+import type { DataViewsFiltersProps } from "./types.js";
 
 const componentCssClassName = "ds data-views-filters";
 
@@ -26,7 +26,7 @@ export default function Filters({
   labels,
   className,
   ...rest
-}: FiltersProps): ReactElement {
+}: DataViewsFiltersProps): ReactElement {
   const provider = useContext(DataViewsContext);
   if (provider === null) {
     throw new Error("DataViews.Filters must be used inside a DataViews root");

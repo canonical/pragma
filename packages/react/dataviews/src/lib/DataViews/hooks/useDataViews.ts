@@ -37,15 +37,20 @@ export default function useDataViews<
   }
   return useMemo(
     () => ({
-      result: provider.result,
+      identity: provider.identity,
+      schema: provider.schema,
+      capabilities: provider.capabilities,
+      state: provider.state,
       rows: provider.rows,
       selection: provider.selection,
+      views: provider.views,
       fields: provider.fields,
       navigateWindow: provider.navigateWindow,
       setSort: provider.setSort,
       setSearch: provider.setSearch,
+      setGroup: provider.setGroup,
+      setCollapsed: provider.setCollapsed,
       refresh: provider.refresh,
-      adopt: provider.adopt,
       invokeAction: provider.invokeAction,
     }),
     [provider],

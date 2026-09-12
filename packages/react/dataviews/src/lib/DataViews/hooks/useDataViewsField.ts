@@ -1,13 +1,13 @@
-import type { ProviderFieldHandle } from "@canonical/dataviews-core";
+import type { FieldHandle } from "@canonical/dataviews-core";
 import { useMemo, useSyncExternalStore } from "react";
 import type { UseDataViewsFieldResult } from "./types.js";
 
 /**
- * Bind to one field handle: its input buffer, applied semantic value and
+ * Bind to one field handle: its text input, applied semantic value and
  * feedback, with edit and clear routed through the provider.
  */
 export default function useDataViewsField<TApplied>(
-  handle: ProviderFieldHandle<TApplied>,
+  handle: FieldHandle<TApplied>,
 ): UseDataViewsFieldResult<TApplied> {
   const state = useSyncExternalStore(
     handle.state.subscribe,
@@ -21,13 +21,13 @@ export default function useDataViewsField<TApplied>(
   );
   return useMemo(
     () => ({
-      input: state.buffer,
+      input: state.input,
       applied,
       feedback: state.feedback,
       edit: handle.edit,
       set: handle.set,
       clear: handle.clear,
     }),
-    [handle, state.buffer, state.feedback, applied],
+    [handle, state.input, state.feedback, applied],
   );
 }

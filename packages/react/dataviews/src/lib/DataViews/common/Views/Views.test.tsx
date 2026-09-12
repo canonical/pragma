@@ -3,13 +3,16 @@
  * which the shipped store never falls back to — so every outcome can be
  * brought about on cue: a conflict, a rejection, an unreadable record.
  */
-import type { DataViewsProvider } from "@canonical/dataviews-core";
+import type {
+  DataViewsProvider,
+  SavedView,
+  ViewStore,
+} from "@canonical/dataviews-core";
 import {
   createArraySource,
   createDataViewsProvider,
   createSchema,
 } from "@canonical/dataviews-core";
-import type { SavedView, ViewStore } from "@canonical/dataviews-core/views";
 import {
   act,
   fireEvent,
@@ -249,7 +252,7 @@ describe("DataViews.Views", () => {
   it("opens a chosen view: its query applies, and it is the one shown", async () => {
     const { provider } = await listed(memoryStore([failed, running]).store);
     await choose(failed);
-    expect(provider.result.get().slice.filter).toEqual([
+    expect(provider.state.get().slice.filter).toEqual([
       { field: "status", operator: "eq", operands: ["failed"] },
     ]);
     await waitFor(() => {
@@ -430,7 +433,7 @@ describe("DataViews.Views", () => {
     });
     expect(select()).toHaveValue("");
     expect(select()).toHaveFocus();
-    expect(provider.result.get().slice.filter).toHaveLength(1);
+    expect(provider.state.get().slice.filter).toHaveLength(1);
   });
 
   it("returns the focus to Delete when the deletion fails", async () => {
@@ -488,7 +491,7 @@ describe("DataViews.Views", () => {
       expect(button("Discard changes")).toBeEnabled();
     });
     fireEvent.click(button("Discard changes"));
-    expect(provider.result.get().slice.filter[0].operands).toEqual(["running"]);
+    expect(provider.state.get().slice.filter[0].operands).toEqual(["running"]);
     expect(screen.queryByText("Modified")).toBeNull();
     expect(status()).toHaveTextContent("");
     expect(button("Save")).toBeDisabled();

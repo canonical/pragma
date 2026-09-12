@@ -106,11 +106,17 @@ const largeTable = (selectable = false) => {
   if (requestId === null) {
     throw new Error("expected a refresh request");
   }
+  const counted = { kind: "exact", value: rows.length } as const;
   act(() => {
     provider.complete(requestId, {
-      status: "success",
-      rows,
-      count: rows.length,
+      status: "succeeded",
+      page: {
+        rows,
+        groups: null,
+        counts: { visible: counted, matched: counted, total: counted },
+        more: null,
+        cursors: null,
+      },
     });
   });
   const table = screen.getByRole("table");
@@ -196,7 +202,7 @@ describe("windowed DataTable, bounded work", () => {
     );
     fireEvent.keyDown(screen.getByRole("separator"), { key: "ArrowRight" });
     expect(cellRenders).toBe(0);
-    expect(provider.selection.state.ids.size).toBe(rows.length);
+    expect(provider.selection.state.get().ids.size).toBe(rows.length);
   });
 
   it("keeps its gaps equal to the rows they stand for, however tall each is", () => {
@@ -224,7 +230,7 @@ describe("windowed DataTable, bounded work", () => {
   it("leaves nothing subscribed or observed after repeated mounting", () => {
     const provider = createDataViewsProvider<Fields, Machine>({ schema });
     let live = 0;
-    for (const channel of [provider.rows, provider.result]) {
+    for (const channel of [provider.rows, provider.state]) {
       const subscribe = channel.subscribe;
       vi.spyOn(channel, "subscribe").mockImplementation((listener) => {
         live += 1;

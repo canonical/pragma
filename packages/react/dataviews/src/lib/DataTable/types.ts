@@ -1,7 +1,8 @@
 import type {
+  ColumnLayout,
   ColumnSizing,
   DataViewsProvider,
-  Presentation,
+  RowRecord,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
 import type { ComponentProps, ComponentType, ReactNode } from "react";
@@ -60,19 +61,22 @@ export type DataTableColumn = {
 };
 
 /**
- * What the table says in place of its rows, or beside them. The four no-rows
+ * What the table says in place of its rows, or beside them. The no-rows
  * cases stay distinct: an unfiltered collection with nothing in it is not a
- * query that matched nothing, and neither is an error. `loading` covers a
+ * query that matched nothing, and neither is a failure. `loading` covers a
  * collection nothing displayable has arrived for yet, requested or not.
  * `stale` is shown above rows kept from an earlier query, because the
- * current one failed for `reason`.
+ * current one failed for `reason`; `refresh-failed` above rows that still
+ * answer the current query, whose refresh failed — without it the failure
+ * would show nothing at all.
  */
 export type DataTableStatus =
-  | { readonly kind: "loading" }
-  | { readonly kind: "error"; readonly reason: string }
-  | { readonly kind: "stale"; readonly reason: string }
-  | { readonly kind: "no-data" }
-  | { readonly kind: "no-results" };
+  | { readonly status: "loading" }
+  | { readonly status: "failed"; readonly reason: string }
+  | { readonly status: "refresh-failed"; readonly reason: string }
+  | { readonly status: "stale"; readonly reason: string }
+  | { readonly status: "no-data" }
+  | { readonly status: "no-results" };
 
 /**
  * A table that mounts only the rows near its viewport. Made by
@@ -96,13 +100,13 @@ type OwnProps<
   /** The table's accessible name. */
   readonly label: string;
   /**
-   * The presentation record holding declared sizing and user overrides.
+   * The column-layout record holding declared sizing and user overrides.
    * Supply one to share user arrangement between two tables on the same
    * provider; omitted, the table keeps its own. On a provider with views,
-   * the widths follow the collection's presentation and a resize is saved
-   * to it; without views they last for the record's lifetime.
+   * the widths follow the collection's saved presentation and a resize is
+   * saved to it; without views they last for the record's lifetime.
    */
-  readonly presentation?: Presentation;
+  readonly layout?: ColumnLayout;
   /** Render a leading selection column backed by the provider's selection. */
   readonly selectable?: boolean;
   /**
@@ -129,10 +133,12 @@ type OwnProps<
 
 /**
  * DataTable props. The root is a `div` carrying the table role, so it
- * extends native div props. `children` is excluded — the table's content is
- * its rows, which it renders itself — and so is `role`, which the table owns.
- * `className`, `style` and `ref` are merged with the table's own rather than
- * clobbered by either side.
+ * extends native div props, less the ones the table owns: `children`,
+ * because the table's content is its rows, which it renders itself; and
+ * `role`, `aria-label`, `aria-labelledby`, `aria-busy` and `aria-rowcount`,
+ * each of which the table sets from what it knows. `className`, `style` and
+ * `ref` are merged with the table's own rather than clobbered by either
+ * side.
  *
  * `ref` is honoured in both React forms: a callback ref that returns a
  * cleanup has that cleanup called on detach, and one that returns nothing is
@@ -141,9 +147,15 @@ type OwnProps<
  */
 export type DataTableProps<
   TFields extends readonly SchemaFieldDefinition[],
-  TRow extends object,
+  TRow extends object = RowRecord,
 > = OwnProps<TFields, TRow> &
   Omit<
     ComponentProps<"div">,
-    keyof OwnProps<TFields, TRow> | "children" | "role"
+    | keyof OwnProps<TFields, TRow>
+    | "children"
+    | "role"
+    | "aria-label"
+    | "aria-labelledby"
+    | "aria-busy"
+    | "aria-rowcount"
   >;

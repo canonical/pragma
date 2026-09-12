@@ -4,7 +4,7 @@ import type {
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
 import { isIdentity } from "@canonical/dataviews-core";
-import { useContext } from "react";
+import { useContext, useMemo } from "react";
 import CellScopeContext from "../CellScopeContext.js";
 import type { UseDataViewsCellResult } from "./types.js";
 
@@ -35,6 +35,10 @@ export default function useDataViewsCell<
       "useDataViewsCell was passed a provider that is not the enclosing cell's provider",
     );
   }
-  const { provider: _provider, ...cellScope } = scope;
-  return cellScope;
+  // Memoised on the scope the table installed, which is itself stable for a
+  // mounted cell, so a custom cell may memoise on what it is handed.
+  return useMemo(() => {
+    const { provider: _provider, ...cellScope } = scope;
+    return cellScope;
+  }, [scope]);
 }

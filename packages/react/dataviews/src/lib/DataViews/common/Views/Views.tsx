@@ -11,10 +11,10 @@ import {
 } from "react";
 import DataViewsContext from "../../Context.js";
 import useDataViewsValue from "../../hooks/useDataViewsValue.js";
-import plural from "../../plural.js";
+import pluralNoun from "../../pluralNoun.js";
 import sentenceOf from "../../sentenceOf.js";
 import { DeleteConfirm, NameForm } from "./common/index.js";
-import type { ViewsProps } from "./types.js";
+import type { DataViewsViewsProps } from "./types.js";
 import viewStatusText from "./viewStatusText.js";
 import "./styles.css";
 
@@ -49,7 +49,7 @@ export default function Views({
   onFocus,
   onBlur,
   ...rest
-}: ViewsProps): ReactElement {
+}: DataViewsViewsProps): ReactElement {
   const provider = useContext(DataViewsContext);
   if (provider === null) {
     throw new Error("DataViews.Views must be used inside a DataViews root");
@@ -124,7 +124,7 @@ export default function Views({
     closePanel();
   };
 
-  const listed = listing.status === "listed";
+  const listed = listing.status === "ready";
   const conflicted =
     operation?.status === "settled" &&
     operation.action === "save" &&
@@ -246,7 +246,7 @@ export default function Views({
             >
               Delete…
             </Button>
-            {listing.status === "unavailable" ||
+            {listing.status === "failed" ||
             state.presentationFailure !== null ? (
               <Button ref={retry} type="button" onClick={views.reload}>
                 Try again
@@ -295,12 +295,12 @@ export default function Views({
             {viewStatusText(operation, modified)}
           </p>
           <div role="status" className="notices">
-            {listing.status === "loading" ? <p>Loading saved views…</p> : null}
-            {listing.status === "unavailable" ? (
+            {listing.status === "pending" ? <p>Loading saved views…</p> : null}
+            {listing.status === "failed" ? (
               <p>{`Saved views are unavailable: ${listing.reason}.`}</p>
             ) : null}
             {unreadable > 0 ? (
-              <p>{`${unreadable} saved ${plural(unreadable, "view")} cannot be read.`}</p>
+              <p>{`${unreadable} saved ${pluralNoun(unreadable, "view")} cannot be read.`}</p>
             ) : null}
             {state.presentationFailure === null ? null : (
               <p>{`Column widths are not being saved: ${state.presentationFailure}.`}</p>

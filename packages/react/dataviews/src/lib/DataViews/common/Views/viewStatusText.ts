@@ -1,6 +1,4 @@
-import type { ViewOperation } from "@canonical/dataviews-core/views";
-
-type ViewAction = ViewOperation["action"];
+import type { ViewAction, ViewOperation } from "@canonical/dataviews-core";
 
 const PENDING: Readonly<Record<ViewAction, string>> = {
   open: "Opening the view…",

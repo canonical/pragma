@@ -1,10 +1,10 @@
-import type { RowRecord, SourceAdapter } from "@canonical/dataviews-core";
+import type { RowRecord, Source } from "@canonical/dataviews-core";
 import { createArraySource, createSchema } from "@canonical/dataviews-core";
 
 /**
  * Story fixtures for the machine collection. Story-only: this folder is
- * excluded from the package build, and the tests define their own minimal
- * fixtures inline.
+ * excluded from the package build, and the unit tests take their own
+ * declarations and pages from `lib/capabilities.fixtures.ts` instead.
  *
  * The stories drive a real `createArraySource` rather than a frozen page of
  * rows, so sorting, searching and paging in a story run the same path a
@@ -175,8 +175,8 @@ export const manyMachines = (count: number): readonly RowRecord[] =>
 /** A local-array source over the machines, or over a caller's own rows. */
 export const createMachineSource = (
   rows: readonly RowRecord[] = machines,
-): SourceAdapter =>
-  createArraySource({
+): Source =>
+  createArraySource<RowRecord>({
     rows,
     fields: sortableFields,
     searchFields: ["name", "owner"],
@@ -186,46 +186,61 @@ export const createMachineSource = (
  * A source that cannot filter or order by cores: its declaration leaves the
  * field out, so no part may offer it.
  */
-export const createSourceWithoutCores = (): SourceAdapter =>
-  createArraySource({
+export const createSourceWithoutCores = (): Source =>
+  createArraySource<RowRecord>({
     rows: machines,
     fields: sortableFields.filter((field) => field !== "cores"),
     searchFields: ["name", "owner"],
   });
 
 /** A source whose collection has nothing in it. */
-export const createEmptySource = (): SourceAdapter => createMachineSource([]);
+export const createEmptySource = (): Source => createMachineSource([]);
 
 /**
  * A source that pages without counting, as many backends do: it declares no
  * total and publishes none, so nothing can offer a last page.
  */
-export const createUncountedSource = (): SourceAdapter => {
+export const createUncountedSource = (): Source => {
   const source = createMachineSource();
+  const counts = { visible: "none", matched: "none", total: "none" } as const;
   return {
-    capabilities: { ...source.capabilities, count: "none" },
+    capabilities: { ...source.capabilities, counts },
     execute: (request, deliver) =>
-      source.execute(request, (result) => {
-        deliver(
-          result.status === "success" ? { ...result, count: null } : result,
-        );
+      source.execute(request, (delivery) => {
+        if (delivery.status !== "succeeded") {
+          deliver(delivery);
+          return;
+        }
+        const unknown = { kind: "unknown" } as const;
+        deliver({
+          status: "succeeded",
+          page: {
+            ...delivery.page,
+            counts: { visible: unknown, matched: unknown, total: unknown },
+          },
+        });
       }),
+    lookup: source.lookup,
   };
 };
 
 /** A source that accepts a request and never answers it. */
-export const createPendingSource = (): SourceAdapter => ({
+export const createPendingSource = (): Source => ({
   ...createMachineSource(),
   execute: () => () => undefined,
 });
 
 /** A source that fails every request: the inventory cannot be reached. */
-export const createFailingSource = (): SourceAdapter => ({
+export const createFailingSource = (): Source => ({
   ...createMachineSource(),
   execute: (_request, deliver) => {
     deliver({
-      status: "failure",
-      reason: "The machine inventory could not be reached.",
+      status: "failed",
+      failure: {
+        reason: "the machine inventory could not be reached",
+        cause: null,
+        transient: null,
+      },
     });
     return () => undefined;
   },

@@ -32,13 +32,18 @@ const wasReplaced = (
  * table's status row leaves while the next request is pending, and its
  * measurement leaves with it.
  */
-const replaced = (before: Snapshot, after: Snapshot): string[] =>
-  after.entries.flatMap((entry) =>
-    entry.kind === "record" &&
-    wasReplaced(before.model, after.model, entry.rowId)
-      ? [entry.id]
-      : [],
-  );
+const replaced = (before: Snapshot, after: Snapshot): string[] => {
+  const ids: string[] = [];
+  for (const entry of after.entries) {
+    if (
+      entry.kind === "record" &&
+      wasReplaced(before.model, after.model, entry.rowId)
+    ) {
+      ids.push(entry.id);
+    }
+  }
+  return ids;
+};
 
 /** The viewport a body measures against: the table root, its parent. */
 const viewportOf = (body: HTMLDivElement | null): HTMLElement =>

@@ -1,16 +1,18 @@
 import type {
   ColumnToSize,
+  RowRecord,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
 import {
+  createColumnLayout,
   createGridInteraction,
-  createPresentation,
   displayEntries,
   isIdentity,
 } from "@canonical/dataviews-core";
-import type { CSSProperties, ReactElement, Ref } from "react";
+import type { CSSProperties, ReactElement } from "react";
 import { useCallback, useEffect, useId, useMemo, useRef } from "react";
 import useDataViewsValue from "../DataViews/hooks/useDataViewsValue.js";
+import useMergedRef from "../useMergedRef.js";
 import {
   boundsOf,
   sameColumnModel,
@@ -39,6 +41,9 @@ import "./styles.css";
  */
 const componentCssClassName = "ds data-table dense";
 
+/** One identity for a source that orders by nothing. */
+const NO_SORTABLE_FIELDS: readonly string[] = Object.freeze([]);
+
 /** A record answers to its own identity until the caller names it better. */
 const defaultRowLabel = (_row: object, rowId: string): string => rowId;
 
@@ -55,26 +60,6 @@ const windowedRows = <TRow extends object>(
   return (
     <Body {...props} estimatedRowHeight={estimatedRowHeight} tracks={tracks} />
   );
-};
-
-/**
- * Hand the container to the caller's ref, in whichever form it arrives, and
- * report back the cleanup a callback ref returned. React 19 ref callbacks
- * may return one, and a caller that does gets it called on detach instead of
- * the `null` call React 19 no longer makes on its own.
- */
-const applyRef = (
-  ref: Ref<HTMLDivElement> | undefined,
-  node: HTMLDivElement | null,
-): (() => void) | undefined => {
-  if (typeof ref === "function") {
-    const cleanup = ref(node);
-    return typeof cleanup === "function" ? cleanup : undefined;
-  }
-  if (ref) {
-    ref.current = node;
-  }
-  return undefined;
 };
 
 /**
@@ -100,12 +85,12 @@ const applyRef = (
  */
 export default function DataTable<
   TFields extends readonly SchemaFieldDefinition[],
-  TRow extends object,
+  TRow extends object = RowRecord,
 >({
   provider,
   columns,
   label,
-  presentation,
+  layout,
   selectable = false,
   rowLabel = defaultRowLabel,
   renderStatus = defaultStatusText,
@@ -129,14 +114,20 @@ export default function DataTable<
     );
   }
   const sortableFields =
-    declared === null || declared.sortTerms === 0 ? [] : declared.sort;
+    declared === null || declared.sort.terms === 0
+      ? NO_SORTABLE_FIELDS
+      : declared.sort.fields;
+  // A set, because the header asks once per column and the table redraws on
+  // every frame of a resize. One identity for "nothing is sortable", so the
+  // memo holds there too.
+  const orderable = useMemo(() => new Set(sortableFields), [sortableFields]);
   const baseId = useId();
 
   // Both derivations are keyed on content, not on array identity: a caller
   // who rebuilds its column array on every render must not re-mint the
-  // presentation, the interaction or one row scope, nor re-render one cell.
+  // layout, the interaction or one row scope, nor re-render one cell.
   // The two keys are separate because they answer different questions — a
-  // caller's inline `header` node must not cost anyone a new presentation.
+  // caller's inline `header` node must not cost anyone a new layout.
   const model = useStableValue(columns, sameColumnModel);
   const rendered = useStableValue(columns, sameColumns);
 
@@ -153,69 +144,53 @@ export default function DataTable<
     [declaredTracks],
   );
 
-  const ownPresentation = useMemo(
-    () => createPresentation(declaredTracks),
+  const ownLayout = useMemo(
+    () => createColumnLayout(declaredTracks),
     [declaredTracks],
   );
-  const activePresentation = presentation ?? ownPresentation;
+  const activeLayout = layout ?? ownLayout;
   const interaction = useMemo(
-    () => createGridInteraction(activePresentation),
-    [activePresentation],
+    () => createGridInteraction(activeLayout),
+    [activeLayout],
   );
   // Subscribed from an effect, never from the render that built it: React
   // may discard a render — StrictMode double-invokes the body, and a
   // concurrent render can be thrown away — and a subscription taken at
   // construction would outlive the interaction nothing else holds.
   useEffect(() => interaction.observe(), [interaction]);
-  usePreferredWidths(activePresentation, provider.views);
+  usePreferredWidths(activeLayout, provider.views);
 
-  const geometry = useTableGeometry(activePresentation, interaction, columnIds);
+  const geometry = useTableGeometry(activeLayout, interaction, columnIds);
   const scopes = useRowScopes(provider, fields);
-  const result = useDataViewsValue(provider.result);
+  const state = useDataViewsValue(provider.state);
   // Held at one reference while it says the same thing, so the entries are
   // derived again only when a row identity or the status changes.
-  const status = useStableValue(tableStatus(result), sameStatus);
+  const status = useStableValue(tableStatus(state), sameStatus);
   const ids = useDataViewsValue(scopes.ids);
   // The status row first, then the rows: kept beside a stale status,
   // replaced by any other.
   const entries = useMemo(
     () =>
       displayEntries({
-        rowIds: status === null || status.kind === "stale" ? ids : [],
+        rowIds:
+          status === null ||
+          status.status === "stale" ||
+          status.status === "refresh-failed"
+            ? ids
+            : [],
         status,
       }),
     [ids, status],
   );
   const busy =
-    result.result.status === "pending" || result.result.status === "refreshing";
+    state.result.status === "pending" || state.result.status === "refreshing";
 
   // The container ref is the table's own — the solver measures it — so a
   // caller's ref is merged onto it rather than dropped, as className and
-  // style are. React sees one callback returning one cleanup, which detaches
-  // the geometry and then releases the caller's ref: its own cleanup when it
-  // returned one, the pre-19 `null` call when it did not. The caller's ref is
-  // read through a latest-ref so an inline callback ref cannot change this
-  // one's identity — a ref React re-ran per render would rebuild the resize
-  // observer and re-measure the container on every frame of a drag.
-  const callerRef = useRef(ref);
-  callerRef.current = ref;
-  const attachGeometry = geometry.attach;
-  const attach = useCallback(
-    (node: HTMLDivElement): (() => void) => {
-      const detachGeometry = attachGeometry(node);
-      const attached = callerRef.current;
-      const releaseCaller = applyRef(attached, node);
-      return () => {
-        detachGeometry?.();
-        if (releaseCaller === undefined) {
-          applyRef(attached, null);
-        } else {
-          releaseCaller();
-        }
-      };
-    },
-    [attachGeometry],
-  );
+  // style are. The merge holds the caller's ref behind one identity, which
+  // matters most here: a ref React re-ran per render would rebuild the
+  // resize observer and re-measure the container on every frame of a drag.
+  const attach = useMergedRef(ref, geometry.attach);
 
   // Held behind one identity apiece: the README's own examples pass these
   // as lambdas, and a new function per render would re-render every row
@@ -277,10 +252,9 @@ export default function DataTable<
               column={column}
               field={fields[position]}
               sortable={
-                column.sortable === true &&
-                sortableFields.includes(fields[position])
+                column.sortable === true && orderable.has(fields[position])
               }
-              sort={result.slice.sort.find(
+              sort={state.slice.sort.find(
                 (term) => term.field === fields[position],
               )}
               setSort={provider.setSort}
@@ -288,7 +262,7 @@ export default function DataTable<
               resizable={
                 column.resizable === true && position < rendered.length - 1
               }
-              bounds={boundsOf(activePresentation.state.declared[column.id])}
+              bounds={boundsOf(activeLayout.state.get().declared[column.id])}
               width={geometry.widths[position]}
               labelId={`${baseId}-${column.id}`}
             />

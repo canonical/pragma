@@ -1,7 +1,7 @@
 /**
  * The keys decide whether a caller's rebuilt column array is a change. Too
  * loose and a real column edit never reaches the table; too tight and every
- * render re-mints the presentation and re-renders every cell. Each case
+ * render re-mints the layout and re-renders every cell. Each case
  * below is one fact the keys must carry, or deliberately must not.
  */
 import type { ColumnToSize } from "@canonical/dataviews-core";

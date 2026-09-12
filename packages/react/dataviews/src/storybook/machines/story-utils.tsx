@@ -2,17 +2,16 @@ import type {
   DataViewsProvider,
   ResultWindow,
   RowRecord,
-  SourceAdapter,
+  Source,
+  ViewDraft,
+  ViewStore,
 } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSourceBinding,
+  DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
-import type {
-  IndexedDBFactory,
-  ViewDraft,
-  ViewStore,
-} from "@canonical/dataviews-core/views";
+import type { IndexedDBFactory } from "@canonical/dataviews-core/views";
 import { createIndexedDBViewStore } from "@canonical/dataviews-core/views";
 import type { Decorator } from "@storybook/react-vite";
 import { useEffect, useState } from "react";
@@ -33,11 +32,11 @@ import { createMachineSource, machineSchema } from "./fixtures.js";
 export type MachineProvider = DataViewsProvider<MachineFields>;
 
 /** How one story's collection is set up. Read once, when the story mounts. */
-export type MachineProviderOptions = {
+export type MachineProviderConfig = {
   /** The source the table reads; every machine by default. */
-  readonly source?: () => SourceAdapter;
+  readonly source?: () => Source;
   /** The displayed window; the provider's default page otherwise. */
-  readonly window?: ResultWindow;
+  readonly window?: Partial<ResultWindow>;
   /** Commands issued once the source is bound: a sort, a search, a selection. */
   readonly prepare?: (provider: MachineProvider) => void;
   /** Where the collection's saved views live; none by default. */
@@ -58,30 +57,34 @@ export function useMachineProvider({
   window: resultWindow,
   prepare,
   views,
-}: MachineProviderOptions = {}): MachineProvider {
-  const [adapter] = useState(source);
+}: MachineProviderConfig = {}): MachineProvider {
+  const [bound] = useState(source);
   const [provider] = useState(() =>
     createDataViewsProvider<MachineFields>({
       schema: machineSchema,
-      window: resultWindow,
+      window:
+        resultWindow === undefined
+          ? undefined
+          : { ...DEFAULT_WINDOW, ...resultWindow },
       // The table offers a sort only where the source declares one.
-      capabilities: adapter.capabilities,
+      capabilities: bound.capabilities,
       views,
     }),
   );
   const [setUp] = useState(() => prepare);
   useEffect(() => {
-    const binding = createSourceBinding({ host: provider, adapter });
+    const binding = createSourceBinding({ host: provider, source: bound });
+    const release = binding.observe();
     setUp?.(provider);
     // Only a provider that has never been asked needs its first page: a
     // prepared query has already been answered, and a remount finds its
     // request still pending or already settled.
-    const { pendingRequestId, result } = provider.result.get();
+    const { pendingRequestId, result } = provider.state.get();
     if (pendingRequestId === null && result.status === "idle") {
       provider.refresh();
     }
-    return binding.dispose;
-  }, [provider, adapter, setUp]);
+    return release;
+  }, [provider, bound, setUp]);
   return provider;
 }
 
@@ -125,7 +128,7 @@ export type StoryViewStore = {
 };
 
 /** How one story's saved-view store is set up. Read once, when it mounts. */
-export type StoryViewStoreOptions = {
+export type StoryViewStoreConfig = {
   /** The views the store holds when the story opens. */
   readonly seed?: readonly ViewDraft[];
   /** The browser's IndexedDB by default; a stand-in shows refused storage. */
@@ -141,7 +144,7 @@ export type StoryViewStoreOptions = {
 export function useStoryViewStore({
   seed = [],
   indexedDB = globalThis.indexedDB,
-}: StoryViewStoreOptions = {}): StoryViewStore {
+}: StoryViewStoreConfig = {}): StoryViewStore {
   const [database] = useState(
     () => `dataviews-story-views-${Math.random().toString(36).slice(2)}`,
   );

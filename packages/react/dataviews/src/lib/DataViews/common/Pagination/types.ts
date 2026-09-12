@@ -5,7 +5,7 @@ import type { PaginationBarProps } from "../../../PaginationBar/types.js";
  * Props of the connected pagination part: the pagination bar's, less the
  * provider, which comes from the enclosing root.
  */
-export type PaginationProps = Omit<
+export type DataViewsPaginationProps = Omit<
   PaginationBarProps<readonly SchemaFieldDefinition[]>,
   "provider"
 >;

@@ -13,7 +13,7 @@ type OwnProps = {
  * and `aria-labelledby`, which would override the name it takes from
  * `label`.
  */
-export type ViewsProps = OwnProps &
+export type DataViewsViewsProps = OwnProps &
   Omit<
     ComponentProps<"div">,
     keyof OwnProps | "children" | "role" | "aria-label" | "aria-labelledby"

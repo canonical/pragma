@@ -5,19 +5,26 @@
  * cell. Each case is mutation-tested against that contract.
  */
 import type {
+  ColumnLayout,
+  Completion,
   DataViewsProvider,
-  Presentation,
-  SourceCapabilities,
 } from "@canonical/dataviews-core";
 import {
+  createColumnLayout,
   createDataViewsProvider,
-  createPresentation,
   createSchema,
 } from "@canonical/dataviews-core";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { createRef, StrictMode, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
+import {
+  COUNTED_EXACTLY,
+  declaring,
+  delivered,
+  exact,
+  sorting,
+} from "../capabilities.fixtures.js";
 import useDataViewsCell from "../DataViews/hooks/useDataViewsCell.js";
 import useDataViewsValue from "../DataViews/hooks/useDataViewsValue.js";
 import DataTable from "./DataTable.js";
@@ -48,17 +55,21 @@ const columns: readonly DataTableColumn[] = [
 ];
 
 /** What the fixture source declares: it can order by `name` alone. */
-const capabilities: SourceCapabilities = {
+const capabilities = declaring({
   filter: { status: ["eq"] },
-  search: ["name"],
-  sort: ["name"],
-  sortTerms: 1,
-  group: [],
-  count: "filtered",
-};
+  search: { fields: ["name"] },
+  sort: sorting(["name"], 1),
+  counts: COUNTED_EXACTLY,
+});
 
 const makeProvider = (): DataViewsProvider<Fields, Machine> =>
   createDataViewsProvider<Fields, Machine>({ schema, capabilities });
+
+/** A request the source accepted and could not complete. */
+const failure = (reason: string): Completion<Machine> => ({
+  status: "failed",
+  failure: { reason, cause: new Error(reason), transient: null },
+});
 
 /** Refresh and return the request id, failing loudly rather than casting. */
 const refreshRequest = (
@@ -77,7 +88,7 @@ const refreshRequest = (
 const pendingRequest = (
   provider: DataViewsProvider<Fields, Machine>,
 ): string => {
-  const requestId = provider.result.get().pendingRequestId;
+  const requestId = provider.state.get().pendingRequestId;
   if (requestId === null) {
     throw new Error("expected a pending request");
   }
@@ -90,11 +101,7 @@ const load = (
 ): void => {
   const requestId = refreshRequest(provider);
   act(() => {
-    provider.complete(requestId, {
-      status: "success",
-      rows,
-      count: rows.length,
-    });
+    provider.complete(requestId, delivered(rows));
   });
 };
 
@@ -322,11 +329,12 @@ describe("DataTable", () => {
     );
     const requestId = refreshRequest(provider);
     act(() => {
-      provider.complete(requestId, {
-        status: "success",
-        rows: [{ id: "m-1", flag: false, big: 9007199254740993n, shape: {} }],
-        count: 1,
-      });
+      provider.complete(
+        requestId,
+        delivered<Record<string, unknown>>([
+          { id: "m-1", flag: false, big: 9007199254740993n, shape: {} },
+        ]),
+      );
     });
     expect(
       within(screen.getAllByRole("row")[1])
@@ -385,7 +393,7 @@ describe("DataTable", () => {
 
     const button = within(sortable).getByRole("button", { name: "Name" });
     fireEvent.click(button);
-    expect(provider.result.get().slice.sort).toEqual([
+    expect(provider.state.get().slice.sort).toEqual([
       { field: "name", direction: "asc" },
     ]);
     expect(screen.getAllByRole("columnheader")[0]).toHaveAttribute(
@@ -410,7 +418,7 @@ describe("DataTable", () => {
     );
 
     fireEvent.click(button);
-    expect(provider.result.get().slice.sort).toEqual([]);
+    expect(provider.state.get().slice.sort).toEqual([]);
     expect(screen.getAllByRole("columnheader")[0]).toHaveAttribute(
       "aria-sort",
       "none",
@@ -418,30 +426,80 @@ describe("DataTable", () => {
     expect(glyph()).toBeNull();
   });
 
-  it("shows the loading, no-data and no-results outcomes and lets the caller replace them", () => {
+  it("says it is loading, without announcing it as a status message", () => {
     const provider = makeProvider();
-    const { rerender } = render(
+    render(
       <DataTable provider={provider} columns={columns} label="Machines" />,
     );
     expect(screen.getByRole("row", { name: "Loading…" })).toBeInTheDocument();
-    // The loading row is not a status message (role="status").
+    // Nothing has gone wrong and nothing has arrived: there is no outcome to
+    // announce, so the row is not a `role="status"` live region.
     expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("tells an empty collection from a query that matched nothing", () => {
+    // The two call for different responses — add something, or change the
+    // query — so they are never one message.
+    const provider = makeProvider();
+    render(
+      <DataTable provider={provider} columns={columns} label="Machines" />,
+    );
     load(provider, []);
     expect(screen.getByText("There is nothing here yet.")).toBeInTheDocument();
     act(() => {
       provider.setSearch("alpha");
     });
+    load(provider, []);
     expect(screen.getByText("No rows match this query.")).toBeInTheDocument();
+  });
 
-    rerender(
+  it("lets the caller replace the words of an outcome", () => {
+    const provider = makeProvider();
+    render(
       <DataTable
         provider={provider}
         columns={columns}
         label="Machines"
-        renderStatus={(status) => <em>nothing: {status.kind}</em>}
+        renderStatus={(status) => <em>nothing: {status.status}</em>}
       />,
     );
+    load(provider, []);
+    act(() => {
+      provider.setSearch("alpha");
+    });
+    load(provider, []);
     expect(screen.getByText("nothing: no-results")).toBeInTheDocument();
+  });
+
+  it("reports no sorted column while a declared default is not executed", () => {
+    // Seam for the ordering unit: a source declares the order its pages
+    // already come in, and nothing reads it yet. Until it does, a header
+    // that claimed the sorted attribute would be claiming an order the
+    // table cannot show or change.
+    const declared = declaring({
+      filter: { status: ["eq"] },
+      sort: {
+        ...sorting(["name"], 1),
+        default: [{ field: "name", direction: "asc" }],
+      },
+      counts: COUNTED_EXACTLY,
+    });
+    const provider = createDataViewsProvider<Fields, Machine>({
+      schema,
+      capabilities: declared,
+    });
+    render(
+      <DataTable
+        provider={provider}
+        columns={[{ id: "name", header: "Name", sortable: true }]}
+        label="Machines"
+      />,
+    );
+    load(provider, [machine("m-1", "alpha")]);
+    expect(screen.getByRole("columnheader", { name: /Name/ })).toHaveAttribute(
+      "aria-sort",
+      "none",
+    );
   });
 
   it("offers a real checkbox per row, named after the record", () => {
@@ -455,7 +513,7 @@ describe("DataTable", () => {
       "false",
     );
     fireEvent.click(checkbox);
-    expect([...provider.selection.state.ids]).toEqual(["m-1"]);
+    expect([...provider.selection.state.get().ids]).toEqual(["m-1"]);
     expect(screen.getAllByRole("row")[1]).toHaveAttribute(
       "aria-selected",
       "true",
@@ -464,7 +522,7 @@ describe("DataTable", () => {
       "ds data-table-row selected",
     );
     fireEvent.click(screen.getByRole("checkbox", { name: "Select alpha" }));
-    expect(provider.selection.state.ids.size).toBe(0);
+    expect(provider.selection.state.get().ids.size).toBe(0);
   });
 
   it("names a row by its identity when no label is supplied", () => {
@@ -502,7 +560,7 @@ describe("DataTable", () => {
     expect(selectAll.indeterminate).toBe(false);
 
     fireEvent.click(selectAll);
-    expect([...provider.selection.state.ids].sort()).toEqual([
+    expect([...provider.selection.state.get().ids].sort()).toEqual([
       "elsewhere",
       "m-1",
       "m-2",
@@ -518,7 +576,7 @@ describe("DataTable", () => {
     fireEvent.click(
       screen.getByRole("checkbox", { name: "Select all displayed rows" }),
     );
-    expect([...provider.selection.state.ids]).toEqual(["elsewhere"]);
+    expect([...provider.selection.state.get().ids]).toEqual(["elsewhere"]);
   });
 
   it("shows a partial selection of the displayed rows as mixed", () => {
@@ -702,9 +760,9 @@ describe("DataTable", () => {
     expect(renders).toEqual([]);
   });
 
-  it("shares user arrangement between two tables on one presentation", () => {
+  it("shares user arrangement between two tables on one layout", () => {
     const provider = makeProvider();
-    const presentation: Presentation = createPresentation([
+    const layout: ColumnLayout = createColumnLayout([
       { id: "name", sizing: { kind: "flex", weight: 1, minPx: 96 } },
       { id: "status", sizing: { kind: "flex", weight: 1, minPx: 96 } },
     ]);
@@ -714,18 +772,18 @@ describe("DataTable", () => {
           provider={provider}
           columns={columns}
           label="Machines"
-          presentation={presentation}
+          layout={layout}
         />
         <DataTable
           provider={provider}
           columns={columns}
           label="Machines elsewhere"
-          presentation={presentation}
+          layout={layout}
         />
       </>,
     );
     act(() => {
-      presentation.setOverride("name", { kind: "fixed", px: 200 });
+      layout.setOverride("name", { kind: "fixed", px: 200 });
     });
     for (const name of ["Machines", "Machines elsewhere"]) {
       expect(
@@ -738,9 +796,9 @@ describe("DataTable", () => {
     }
   });
 
-  it("refuses a presentation that does not declare a rendered column", () => {
+  it("refuses a layout that does not declare a rendered column", () => {
     const provider = makeProvider();
-    const presentation = createPresentation([
+    const layout = createColumnLayout([
       { id: "name", sizing: { kind: "fixed", px: 100 } },
     ]);
     expect(() =>
@@ -749,7 +807,7 @@ describe("DataTable", () => {
           provider={provider}
           columns={columns}
           label="Machines"
-          presentation={presentation}
+          layout={layout}
         />,
       ),
     ).toThrow('unknown column id "status"');
@@ -947,7 +1005,7 @@ describe("DataTable", () => {
     });
     try {
       const provider = makeProvider();
-      const presentation = createPresentation([
+      const layout = createColumnLayout([
         { id: "name", sizing: { kind: "flex", weight: 1, minPx: 50 } },
         { id: "status", sizing: { kind: "flex", weight: 1, minPx: 96 } },
       ]);
@@ -959,7 +1017,7 @@ describe("DataTable", () => {
             { id: "status", header: "Status" },
           ]}
           label="Machines"
-          presentation={presentation}
+          layout={layout}
         />,
       );
       load(provider, [machine("m-1", "alpha")]);
@@ -978,7 +1036,7 @@ describe("DataTable", () => {
         // pointer travelled 180 from there.
       ).toBe("230px 96px");
       // The authority is untouched until the pointer is released.
-      expect(presentation.state.overrides.name).toBeUndefined();
+      expect(layout.state.get().overrides.name).toBeUndefined();
     } finally {
       vi.unstubAllGlobals();
     }
@@ -991,7 +1049,6 @@ describe("DataTable", () => {
       ...provider,
       rows: {
         get: provider.rows.get,
-        set: provider.rows.set,
         subscribe: (listener) => {
           rowSubscriptions += 1;
           const unsubscribe = provider.rows.subscribe(listener);
@@ -1002,28 +1059,24 @@ describe("DataTable", () => {
         },
       },
     };
-    const declared = createPresentation([
+    const declared = createColumnLayout([
       { id: "name", sizing: { kind: "flex", weight: 1, minPx: 96 } },
       { id: "status", sizing: { kind: "flex", weight: 1, minPx: 96 } },
     ]);
-    let presentationSubscriptions = 0;
-    const presentation: Presentation = {
-      get state() {
-        return declared.state;
+    let layoutSubscriptions = 0;
+    const layout: ColumnLayout = {
+      ...declared,
+      state: {
+        get: declared.state.get,
+        subscribe: (listener) => {
+          layoutSubscriptions += 1;
+          const unsubscribe = declared.state.subscribe(listener);
+          return () => {
+            layoutSubscriptions -= 1;
+            unsubscribe();
+          };
+        },
       },
-      subscribe: (listener) => {
-        presentationSubscriptions += 1;
-        const unsubscribe = declared.subscribe(listener);
-        return () => {
-          presentationSubscriptions -= 1;
-          unsubscribe();
-        };
-      },
-      effective: declared.effective,
-      setOverride: declared.setOverride,
-      resetOverride: declared.resetOverride,
-      reset: declared.reset,
-      toColumns: declared.toColumns,
     };
     // Elements under observation, across every observer the table creates:
     // its container's and its selection cell's.
@@ -1048,7 +1101,7 @@ describe("DataTable", () => {
             provider={observed}
             columns={columns}
             label="Machines"
-            presentation={presentation}
+            layout={layout}
             selectable
           />
         </StrictMode>,
@@ -1063,7 +1116,7 @@ describe("DataTable", () => {
       expect(observing).toBe(2);
       unmount();
       expect(rowSubscriptions).toBe(0);
-      expect(presentationSubscriptions).toBe(0);
+      expect(layoutSubscriptions).toBe(0);
       expect(observing).toBe(0);
     } finally {
       vi.unstubAllGlobals();
@@ -1319,9 +1372,9 @@ describe("DataTable", () => {
     }
   });
 
-  it("holds a resize to the presentation's declared bounds, not the column's", () => {
+  it("holds a resize to the layout's declared bounds, not the column's", () => {
     const provider = makeProvider();
-    const presentation = createPresentation([
+    const layout = createColumnLayout([
       { id: "name", sizing: { kind: "flex", weight: 1, minPx: 50 } },
       { id: "status", sizing: { kind: "flex", weight: 1, minPx: 96 } },
     ]);
@@ -1333,18 +1386,18 @@ describe("DataTable", () => {
           { id: "status", header: "Status" },
         ]}
         label="Machines"
-        presentation={presentation}
+        layout={layout}
       />,
     );
     load(provider, [machine("m-1", "alpha")]);
     const handle = screen.getByRole("separator");
     // The column declares nothing, so on its own it would default to a 96px
-    // minimum; the shared presentation, which the widths are solved from,
+    // minimum; the shared layout, which the widths are solved from,
     // declares 50. The column sits at 50, and a step left moves nothing.
     expect(handle).toHaveAttribute("aria-valuemin", "50");
     expect(handle).toHaveAttribute("aria-valuenow", "50");
     fireEvent.keyDown(handle, { key: "ArrowLeft" });
-    expect(presentation.state.overrides.name).toBeUndefined();
+    expect(layout.state.get().overrides.name).toBeUndefined();
   });
 
   it("offers sorting only on a field its source declares sortable", () => {
@@ -1364,7 +1417,10 @@ describe("DataTable", () => {
   it("offers no sorting on a source that can order nothing", () => {
     const provider = createDataViewsProvider<Fields, Machine>({
       schema,
-      capabilities: { ...capabilities, sortTerms: 0 },
+      capabilities: {
+        ...capabilities,
+        sort: { ...capabilities.sort, terms: 0 },
+      },
     });
     render(
       <DataTable provider={provider} columns={columns} label="Machines" />,
@@ -1401,10 +1457,7 @@ describe("DataTable", () => {
     fireEvent.click(button);
     const request = pendingRequest(provider);
     act(() => {
-      provider.complete(request, {
-        status: "failure",
-        reason: "the inventory is unreachable",
-      });
+      provider.complete(request, failure("the inventory is unreachable"));
     });
     const table = screen.getByRole("table", { name: "Machines" });
     expect(table).toHaveAttribute("aria-busy", "false");
@@ -1438,7 +1491,7 @@ describe("DataTable", () => {
     });
     const request = pendingRequest(provider);
     act(() => {
-      provider.complete(request, { status: "failure", reason: "offline" });
+      provider.complete(request, failure("offline"));
     });
     const statusMessage = screen.getByRole("status");
     rerender(
@@ -1460,7 +1513,7 @@ describe("DataTable", () => {
     });
     const failed = pendingRequest(provider);
     act(() => {
-      provider.complete(failed, { status: "failure", reason: "offline" });
+      provider.complete(failed, failure("offline"));
     });
     expect(screen.getByRole("status")).toBeInTheDocument();
     act(() => {
@@ -1468,32 +1521,25 @@ describe("DataTable", () => {
     });
     const recovered = pendingRequest(provider);
     act(() => {
-      provider.complete(recovered, {
-        status: "success",
-        rows: [machine("m-2", "beta")],
-        count: 1,
-      });
+      provider.complete(recovered, delivered([machine("m-2", "beta")]));
     });
     expect(screen.queryByRole("status")).toBeNull();
-    expect(provider.result.get().result.status).toBe("ready");
+    expect(provider.state.get().result.status).toBe("ready");
     expect(screen.getAllByRole("row")).toHaveLength(2);
   });
 
   it("hands a stale status to the caller's renderStatus", () => {
     const { provider } = loadedTable(undefined, {
       renderStatus: (status) =>
-        status.kind === "stale"
+        status.status === "stale"
           ? `Out of date (${status.reason})`
-          : status.kind,
+          : status.status,
     });
     act(() => {
       provider.setSearch("beta");
     });
     act(() => {
-      provider.complete(pendingRequest(provider), {
-        status: "failure",
-        reason: "offline",
-      });
+      provider.complete(pendingRequest(provider), failure("offline"));
     });
     expect(screen.getByRole("status")).toHaveTextContent(
       /^Out of date \(offline\)$/,
@@ -1506,23 +1552,73 @@ describe("DataTable", () => {
       provider.setSearch("beta");
     });
     act(() => {
-      provider.complete(pendingRequest(provider), {
-        status: "failure",
-        reason: "offline",
-      });
+      provider.complete(pendingRequest(provider), failure("offline"));
     });
     // One batch, as a synchronous source delivers it: the pending state in
     // between never renders.
     act(() => {
       provider.setSearch("gamma");
-      provider.complete(pendingRequest(provider), {
-        status: "failure",
-        reason: "timed out",
-      });
+      provider.complete(pendingRequest(provider), failure("timed out"));
     });
     expect(screen.getByRole("status")).toHaveTextContent(
       "These rows do not match the current query: timed out",
     );
+  });
+
+  it("keeps the rows a failed refresh could not replace, and says why", () => {
+    const { provider } = loadedTable();
+    act(() => {
+      provider.complete(
+        refreshRequest(provider),
+        failure("the inventory is unreachable"),
+      );
+    });
+    const table = screen.getByRole("table", { name: "Machines" });
+    expect(table).toHaveAttribute("aria-busy", "false");
+    // The rows still answer the query the user asked, so they stay, and the
+    // failure is said above them rather than shown nowhere at all.
+    expect(within(table).getByRole("status")).toHaveTextContent(
+      "These rows could not be refreshed: the inventory is unreachable",
+    );
+    const body = within(table).getAllByRole("rowgroup")[1];
+    const [status, ...rows] = within(body).getAllByRole("row");
+    expect(status).toHaveClass("status");
+    expect(rows.map((row) => row.textContent)).toEqual([
+      "alpharunning",
+      "betarunning",
+    ]);
+  });
+
+  it("hands a failed refresh to the caller's renderStatus", () => {
+    const { provider } = loadedTable(undefined, {
+      renderStatus: (status) =>
+        status.status === "refresh-failed"
+          ? `Not refreshed (${status.reason})`
+          : status.status,
+    });
+    act(() => {
+      provider.complete(refreshRequest(provider), failure("offline"));
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      /^Not refreshed \(offline\)$/,
+    );
+  });
+
+  it("drops the failed refresh's status once a refresh succeeds", () => {
+    const { provider } = loadedTable();
+    act(() => {
+      provider.complete(refreshRequest(provider), failure("offline"));
+    });
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    act(() => {
+      provider.complete(
+        refreshRequest(provider),
+        delivered([machine("m-1", "alpha")]),
+      );
+    });
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(provider.state.get().result.status).toBe("ready");
+    expect(screen.getAllByRole("row")).toHaveLength(2);
   });
 
   it("marks the table busy while a request is in flight", () => {

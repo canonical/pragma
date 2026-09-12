@@ -8,9 +8,9 @@ import { isIdentity, sliceEquals } from "@canonical/dataviews-core";
 import { Button } from "@canonical/react-ds-global";
 import { SelectInput } from "@canonical/react-ds-global-form";
 import type { FocusEvent, ReactElement } from "react";
-import { useId, useLayoutEffect, useRef, useState } from "react";
+import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import useDataViewsValue from "../DataViews/hooks/useDataViewsValue.js";
-import plural from "../DataViews/plural.js";
+import pluralNoun from "../DataViews/pluralNoun.js";
 import type { PaginationState } from "./paginationState.js";
 import paginationState from "./paginationState.js";
 import type { PaginationBarProps } from "./types.js";
@@ -38,7 +38,7 @@ const summaryOf = ({ page, size, shown, total }: PaginationState): string => {
   const range = shown === 0 ? "0" : `${first}–${first + shown - 1}`;
   return total === null
     ? `Showing ${range} items`
-    : `Showing ${range} out of ${total} ${plural(total, "item")}`;
+    : `Showing ${range} out of ${total} ${pluralNoun(total, "item")}`;
 };
 
 /** A settled page count, and the scope, query and page size that made it. */
@@ -78,8 +78,12 @@ export default function PaginationBar<
       "PaginationBar requires a provider created by createDataViewsProvider",
     );
   }
-  const snapshot = useDataViewsValue(provider.result);
-  const view = paginationState(snapshot, sizes);
+  const snapshot = useDataViewsValue(provider.state);
+  const view = paginationState(
+    snapshot,
+    sizes,
+    provider.capabilities?.pagination ?? null,
+  );
   const { page, pages } = view;
   const baseId = useId();
   const sizeId = `${baseId}-size`;
@@ -102,11 +106,16 @@ export default function PaginationBar<
   }
   const listed = pages ?? matching?.pages ?? page;
   // A page past the last is listed after the real pages, so the select can
-  // show it.
-  const pageOptions = optionsOf([
-    ...Array.from({ length: listed }, (_, at) => at + 1),
-    ...(page > listed ? [page] : []),
-  ]);
+  // show it. Built once per page count: the bar redraws on every one of the
+  // collection's publications, and the list is as long as the collection.
+  const pageOptions = useMemo(
+    () =>
+      optionsOf([
+        ...Array.from({ length: listed }, (_unused, at) => at + 1),
+        ...(page > listed ? [page] : []),
+      ]),
+    [listed, page],
+  );
 
   // The navigation button last focused, until focus leaves it. A button
   // disabled while focused reports no blur, so this finds focus stranded.
@@ -127,8 +136,11 @@ export default function PaginationBar<
     },
   };
 
-  const go = (destination: number) => () => {
-    provider.navigateWindow(destination);
+  // The token goes with the page it addresses: a cursor source reaches its
+  // next page only through the one its current page handed back, and an
+  // offset source hands none back, so it moves by number alone.
+  const go = (destination: number, cursor: string | null) => () => {
+    provider.navigateWindow({ page: destination, cursor });
   };
 
   return (
@@ -147,7 +159,11 @@ export default function PaginationBar<
             onChange={(event) => {
               // A new page size is a new window: the old page number counted
               // rows of a different size, so it cannot survive the change.
-              provider.navigateWindow(1, Number(event.target.value));
+              provider.navigateWindow({
+                page: 1,
+                size: Number(event.target.value),
+                cursor: null,
+              });
             }}
           />
         </div>
@@ -165,12 +181,15 @@ export default function PaginationBar<
             value={String(page)}
             options={pageOptions}
             onChange={(event) => {
-              provider.navigateWindow(Number(event.target.value));
+              provider.navigateWindow({
+                page: Number(event.target.value),
+                cursor: null,
+              });
             }}
           />
           {pages === null ? null : (
             <span id={totalId} className="total">
-              {`of ${pages} ${plural(pages, "page")}`}
+              {`of ${pages} ${pluralNoun(pages, "page")}`}
             </span>
           )}
         </div>
@@ -184,7 +203,7 @@ export default function PaginationBar<
             className="first"
             aria-label="First page"
             disabled={page <= 1}
-            onClick={go(1)}
+            onClick={go(1, null)}
           />
           <Button
             {...trackFocus}
@@ -194,7 +213,7 @@ export default function PaginationBar<
             className="previous"
             aria-label="Previous page"
             disabled={page <= 1}
-            onClick={go(view.back)}
+            onClick={go(view.back, view.backCursor)}
           />
           <Button
             {...trackFocus}
@@ -204,7 +223,7 @@ export default function PaginationBar<
             className="next"
             aria-label="Next page"
             disabled={!view.hasNext}
-            onClick={go(page + 1)}
+            onClick={go(page + 1, view.nextCursor)}
           />
           <Button
             {...trackFocus}
@@ -214,7 +233,7 @@ export default function PaginationBar<
             className="last"
             aria-label="Last page"
             disabled={pages === null || page === pages}
-            onClick={go(pages ?? page)}
+            onClick={go(pages ?? page, null)}
           />
         </div>
       </div>
