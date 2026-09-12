@@ -166,15 +166,20 @@ export default function createSchema<
   // input cannot desynchronize the public list from the lookups: the
   // lookups answer from the frozen copies, not the originals.
   const storedFields = Object.freeze(
-    fields.map((definition) =>
-      definition.kind === "choices"
+    fields.map((definition) => {
+      const scoping =
+        definition.types === undefined
+          ? {}
+          : { types: Object.freeze([...definition.types]) };
+      return definition.kind === "choices"
         ? Object.freeze({
             field: definition.field,
             kind: definition.kind,
             options: Object.freeze([...definition.options]),
+            ...scoping,
           })
-        : Object.freeze({ ...definition }),
-    ),
+        : Object.freeze({ ...definition, ...scoping });
+    }),
   ) as TFields;
   const fieldNames = Object.freeze(
     storedFields.map((definition) => definition.field),
@@ -194,6 +199,14 @@ export default function createSchema<
     const unspellable = wireNameRejection(definition.field);
     if (unspellable !== null) {
       throw new Error(`schema ${unspellable}`);
+    }
+    // A field scoped to no type applies to no row at all. The provider
+    // checks the names themselves against the discriminator's options; an
+    // empty list is the one mistake only the schema can see.
+    if (definition.types !== undefined && definition.types.length === 0) {
+      throw new Error(
+        `field "${definition.field}" is scoped to no record type`,
+      );
     }
     if (definition.kind === "number") {
       const { min, max } = definition;

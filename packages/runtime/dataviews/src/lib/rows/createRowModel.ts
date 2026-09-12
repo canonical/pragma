@@ -1,5 +1,10 @@
 import defaultRowIdentifier from "./defaultRowIdentifier.js";
-import type { RowEntry, RowIdentifier, RowModel } from "./types.js";
+import type {
+  RowEntry,
+  RowIdentifier,
+  RowModel,
+  RowModelResult,
+} from "./types.js";
 
 /** Configuration of one row model build. */
 export type RowModelConfig<TRow extends object> = {
@@ -22,14 +27,25 @@ export type RowModelConfig<TRow extends object> = {
  * and returns `previous` itself when the whole model is unchanged, so an
  * unrelated republication recreates nothing.
  *
- * Empty, duplicate and non-string identities throw: an ambiguous row identity
- * would silently key selection, focus and actions to the wrong record.
+ * Empty, duplicate and non-string identities reject the build rather than
+ * throwing: an ambiguous row identity would silently key selection, focus and
+ * actions to the wrong record, and the caller that asked for the model is the
+ * one that can report it — the provider fails the completion the rows came in.
  */
 export default function createRowModel<TRow extends object>(
   config: RowModelConfig<TRow>,
-): RowModel<TRow> {
+): RowModelResult<TRow> {
   const { rows, previous } = config;
-  const identify = config.identify ?? defaultRowIdentifier;
+  const identify: (row: TRow) => unknown =
+    config.identify ?? defaultRowIdentifier;
+  // Named once, not per row: a declared identifier that answered with a
+  // non-identity is a different mistake from a record with no `id` at all.
+  // Both are fragments a renderer composes into a sentence, so neither
+  // tells the developer what to do about it; `identify` says that.
+  const identityRejection =
+    config.identify === undefined
+      ? "row record has no non-empty string id"
+      : "row identity must be a non-empty string";
   const reusable = new Map<string, RowEntry<TRow>>();
   for (const entry of previous?.entries ?? []) {
     reusable.set(entry.id, entry);
@@ -48,10 +64,10 @@ export default function createRowModel<TRow extends object>(
   for (const [position, record] of rows.entries()) {
     const id = identify(record);
     if (typeof id !== "string" || id === "") {
-      throw new Error("row identity must be a non-empty string");
+      return { status: "rejected", reason: identityRejection };
     }
     if (index.has(id)) {
-      throw new Error(`duplicate row id "${id}"`);
+      return { status: "rejected", reason: `duplicate row id "${id}"` };
     }
     const carried = reusable.get(id);
     const entry =
@@ -67,11 +83,14 @@ export default function createRowModel<TRow extends object>(
   }
 
   if (unmoved !== undefined) {
-    return unmoved;
+    return { status: "built", model: unmoved };
   }
-  return Object.freeze({
-    entries: Object.freeze(entries),
-    ids: Object.freeze(ids),
-    byId: (id: string): TRow | undefined => index.get(id),
-  });
+  return {
+    status: "built",
+    model: Object.freeze({
+      entries: Object.freeze(entries),
+      ids: Object.freeze(ids),
+      byId: (id: string): TRow | undefined => index.get(id),
+    }),
+  };
 }

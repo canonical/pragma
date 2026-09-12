@@ -31,12 +31,29 @@ export type DateField = {
   readonly kind: "date";
 };
 
-/** One schema field definition. */
-export type SchemaFieldDefinition =
-  | ChoicesField
-  | NumberField
-  | FlagField
-  | DateField;
+/**
+ * Which record types a field applies to; absent means every one of them.
+ *
+ * For a row of another type the field is *not applicable* — a third state
+ * beside value and empty. It never satisfies a predicate, `isSet` included,
+ * and it reads as absent to ordering, so a predicate on a scoped field
+ * restricts the result to that field's types by meaning and never by
+ * spelling: nothing is added to the query, the wire or a saved view.
+ *
+ * That holds because a source writes no value at a scoped key for a row the
+ * field does not apply to, which is the source's obligation and not checked
+ * here: a row carrying one anyway is filtered and ordered by it.
+ *
+ * A collection declaring no discriminator has one record type, so scoping
+ * has nothing to exclude and every field applies to every row.
+ */
+type TypeScoped = {
+  readonly types?: readonly string[];
+};
+
+/** One schema field definition; any kind may be scoped to record types. */
+export type SchemaFieldDefinition = TypeScoped &
+  (ChoicesField | NumberField | FlagField | DateField);
 
 /** The applied semantic value a field's predicate carries. */
 export type AppliedOf<TField extends SchemaFieldDefinition> = TField extends {

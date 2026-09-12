@@ -34,6 +34,26 @@ export type RowModel<TRow extends object> = {
   readonly byId: (id: string) => TRow | undefined;
 };
 
+/**
+ * Whether a schema field applies to a row, by the field's type scoping.
+ * Value and empty are the field's own states; this is the third.
+ *
+ * Seam for the cells unit: a not-applicable cell draws a dash with the
+ * accessible text "not applicable", where an empty one still draws nothing.
+ */
+export type Applicability = "applies" | "not-applicable";
+
+/**
+ * What one model build produced. Building never throws: rows the table
+ * could not key reject the completion they arrived in, which the provider
+ * publishes as a failure, so the rows already displayed stay — reporting
+ * `refreshFailed`, or `stale` once the query has moved on — rather than being
+ * replaced by rows nothing can address.
+ */
+export type RowModelResult<TRow extends object> =
+  | { readonly status: "built"; readonly model: RowModel<TRow> }
+  | { readonly status: "rejected"; readonly reason: string };
+
 /** What every display entry carries, whatever its kind. */
 type DisplayEntryBase = {
   /**

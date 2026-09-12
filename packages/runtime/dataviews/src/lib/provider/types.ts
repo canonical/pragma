@@ -15,7 +15,7 @@ import type {
   WindowNavigation,
 } from "../query/types.js";
 import type { Completion } from "../result/types.js";
-import type { RowModel, RowRecord } from "../rows/types.js";
+import type { Applicability, RowModel, RowRecord } from "../rows/types.js";
 import type { Schema } from "../schema/createSchema.js";
 import type {
   AppliedOf,
@@ -56,6 +56,68 @@ export type ProviderFields<TFields extends readonly SchemaFieldDefinition[]> = {
         : never;
 };
 
+/** Whether a row's value at one key can carry a field's options. */
+type CarriesOptions<TRow, TName, TOption> = TName extends keyof TRow
+  ? // The default row shape says nothing about its values, so it carries any.
+    unknown extends TRow[TName]
+    ? true
+    : // A key the row may not have carries no type, and such a row fails
+      // every completion: this is the case the check exists to catch.
+      undefined extends TRow[TName]
+      ? false
+      : [TRow[TName]] extends [TOption]
+        ? true
+        : // An adapter typing the key as the wider `string` carries them too.
+          [TOption] extends [TRow[TName]]
+          ? true
+          : false
+  : false;
+
+/**
+ * The schema fields that may declare a collection's record types: a
+ * `choices` field with string options, carried by the row at the same key
+ * with a value its options and the row agree on.
+ */
+export type DiscriminatorField<
+  TFields extends readonly SchemaFieldDefinition[],
+  TRow extends object = RowRecord,
+> = {
+  [TDefinition in TFields[number] as TDefinition["field"]]: TDefinition extends {
+    readonly kind: "choices";
+    readonly options: infer TOptions extends readonly string[];
+  }
+    ? CarriesOptions<TRow, TDefinition["field"], TOptions[number]> extends true
+      ? TDefinition["field"]
+      : never
+    : never;
+}[TFields[number]["field"]] &
+  /* The mapped type answers with field names, which the compiler cannot see
+     through an unresolved `TFields`; this says so. */
+  string;
+
+/**
+ * How a collection's records declare their type: one field of the schema,
+ * carried by every row. A source whose backend sends no such field writes it
+ * when it builds its rows. A row carrying a value outside the field's options
+ * fails the completion; it is never displayed.
+ *
+ * Declaring none makes the collection monomorphic, and nothing here applies.
+ */
+export type RecordTypes<
+  TFields extends readonly SchemaFieldDefinition[],
+  TRow extends object = RowRecord,
+> = {
+  readonly field: DiscriminatorField<TFields, TRow>;
+};
+
+/** A collection's record types as the provider publishes them. */
+export type DeclaredRecordTypes = {
+  /** The schema field every row carries its type in. */
+  readonly field: string;
+  /** Every type name the field declares, in declaration order. */
+  readonly names: readonly string[];
+};
+
 /** The provider: the one owner assembling core state for a collection. */
 export type DataViewsProvider<
   TFields extends
@@ -90,6 +152,38 @@ export type DataViewsProvider<
    */
   readonly views: ProviderViews | null;
   readonly fields: ProviderFields<TFields>;
+  /**
+   * The collection's record types, or null when it declares none and is
+   * therefore monomorphic.
+   *
+   * Seam for the actions unit, which reads `names` for an action's own
+   * types. A column's scope is narrower than the collection's — it is the
+   * `types` of that column's own schema field.
+   */
+  readonly types: DeclaredRecordTypes | null;
+  /**
+   * Whether a schema field applies to a row, by the field's type scoping.
+   * Always "applies" on a monomorphic collection, and on a field the schema
+   * does not scope.
+   *
+   * Seam for the cells unit: the not-applicable cell is the third state
+   * beside value and empty.
+   */
+  readonly applicability: (field: string, row: TRow) => Applicability;
+  /**
+   * The type remembered for a selected identity, or null when the provider
+   * never modelled it while it was selected — a selection restored by a host
+   * over rows this provider has not seen. A remembered type is let go when
+   * the rows are next replaced after its identity leaves the selection, so
+   * one reselected before then answers as before. It answers from the row on
+   * display whenever there is one, so it never contradicts `applicability`,
+   * and it changes only with a `rows` or a `selection` publication: watching
+   * those is watching this.
+   *
+   * Seam for the actions unit: an action's applicability to records selected
+   * on an earlier page is decidable from here, with no lookup.
+   */
+  readonly recordType: (id: string) => string | null;
   /** Bounded commands, not raw dispatch: */
   readonly navigateWindow: (window: WindowNavigation) => void;
   readonly setSort: (sort: readonly SortTerm[]) => void;

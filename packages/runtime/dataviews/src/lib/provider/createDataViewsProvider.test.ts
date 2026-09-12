@@ -5,6 +5,7 @@ import type { Completion } from "../result/types.js";
 import createSchema from "../schema/createSchema.js";
 import { declaring, sorting } from "../source/capabilities.fixtures.js";
 import createDataViewsProvider from "./createDataViewsProvider.js";
+import type { RecordTypes } from "./types.js";
 
 const machinesSchema = () =>
   createSchema([
@@ -350,14 +351,37 @@ describe("createDataViewsProvider", () => {
     expect(p.rows.get()).toBe(first);
   });
 
-  it("rejects the whole completion when a record has no usable identity", () => {
+  it("fails the whole completion when a record has no usable identity", () => {
     const p = provider();
     const requestId = refreshRequest(p);
-    expect(() =>
-      p.complete(requestId, delivered([{ name: "unidentified" }])),
-    ).toThrow("row record has no non-empty string id");
+    expect(p.complete(requestId, delivered([{ name: "unidentified" }]))).toBe(
+      true,
+    );
     expect(p.rows.get().ids).toEqual([]);
-    expect(p.state.get().result.status).toBe("refreshing");
+    const { result } = p.state.get();
+    expect(result.status).toBe("failed");
+    expect(result.problem).toMatchObject({
+      status: "failed",
+      failure: {
+        reason: "row record has no non-empty string id",
+        transient: false,
+      },
+    });
+  });
+
+  it("fails a completion whose records claim one identity", () => {
+    const p = provider();
+    p.complete(refreshRequest(p), delivered([{ id: "m-1" }]));
+    const retained = p.rows.get();
+    p.complete(refreshRequest(p), delivered([{ id: "m-2" }, { id: "m-2" }]));
+    // The rows still answer the query, so they are kept and the refresh is
+    // reported as failed over them — never replaced by rows nothing can key.
+    expect(p.rows.get()).toBe(retained);
+    expect(p.state.get().result.status).toBe("refreshFailed");
+    expect(p.state.get().result.problem).toMatchObject({
+      status: "failed",
+      failure: { reason: 'duplicate row id "m-2"' },
+    });
   });
 
   it("identifies records through a declared identifier", () => {
@@ -446,5 +470,210 @@ describe("createDataViewsProvider", () => {
     expect(p.capabilities).not.toBe(declared);
     expect(Object.isFrozen(p.capabilities)).toBe(true);
     expect(Object.isFrozen(p.capabilities?.filter.status)).toBe(true);
+  });
+});
+
+describe("createDataViewsProvider record types", () => {
+  type Container = { readonly id: string; readonly type: "container" };
+  type VirtualMachine = {
+    readonly id: string;
+    readonly type: "virtual-machine";
+    readonly secureboot?: string;
+  };
+  type Instance = Container | VirtualMachine;
+
+  const instancesSchema = () =>
+    createSchema([
+      {
+        field: "type",
+        kind: "choices",
+        options: ["container", "virtual-machine"],
+      },
+      {
+        field: "secureboot",
+        kind: "choices",
+        options: ["true", "false"],
+        types: ["virtual-machine"],
+      },
+    ]);
+
+  const instances = () =>
+    createDataViewsProvider<
+      ReturnType<typeof instancesSchema>["fields"],
+      Instance
+    >({ schema: instancesSchema(), types: { field: "type" } });
+
+  const container = (id: string): Container => ({ id, type: "container" });
+  const machine = (id: string): VirtualMachine => ({
+    id,
+    type: "virtual-machine",
+  });
+
+  it("publishes the declared types, and null without them", () => {
+    const declared = instances().types;
+    expect(declared).toEqual({
+      field: "type",
+      names: ["container", "virtual-machine"],
+    });
+    expect(Object.isFrozen(declared)).toBe(true);
+    expect(provider().types).toBeNull();
+  });
+
+  it("takes only a field that can name a record's type", () => {
+    type Declaration = RecordTypes<
+      ReturnType<typeof instancesSchema>["fields"],
+      Instance
+    >;
+    const legal: Declaration = { field: "type" };
+    // @ts-expect-error a choices field, but not the key this row union
+    // carries its type in
+    const illegal: Declaration = { field: "secureboot" };
+    expect([legal.field, illegal.field]).toEqual(["type", "secureboot"]);
+  });
+
+  it("refuses a discriminator the types could not see", () => {
+    expect(() =>
+      createDataViewsProvider({
+        schema: machinesSchema(),
+        // As a provider whose row type was erased would reach it.
+        types: { field: "owner" } as { field: never },
+      }),
+    ).toThrow('discriminator field "owner" must be a choices field');
+  });
+
+  it("answers whether a field applies to a row", () => {
+    const p = instances();
+    expect(p.applicability("secureboot", machine("v-1"))).toBe("applies");
+    expect(p.applicability("secureboot", container("c-1"))).toBe(
+      "not-applicable",
+    );
+  });
+
+  it("fails a completion carrying a row of an undeclared type", () => {
+    const p = instances();
+    p.complete(refreshRequest(p), delivered([machine("v-1")]));
+    const retained = p.rows.get();
+    const rogue = { id: "x-1", type: "sandbox" } as unknown as Instance;
+    expect(p.complete(refreshRequest(p), delivered([rogue]))).toBe(true);
+    // Never displayed: the rows already on screen stay, and the refresh is
+    // reported as failed over them.
+    expect(p.rows.get()).toBe(retained);
+    expect(p.state.get().result.status).toBe("refreshFailed");
+    expect(p.state.get().result.problem).toMatchObject({
+      status: "failed",
+      failure: {
+        reason: 'record type "sandbox" of row "x-1" is not declared',
+        transient: false,
+      },
+    });
+  });
+
+  it("reads no row for a type when the same records come back", () => {
+    let reads = 0;
+    const counted = new Proxy(
+      { id: "v-1", type: "virtual-machine" },
+      {
+        get(target, key) {
+          if (key === "type") {
+            reads += 1;
+          }
+          return Reflect.get(target, key);
+        },
+      },
+    ) as Instance;
+    const p = instances();
+    p.complete(refreshRequest(p), delivered([counted]));
+    const checked = reads;
+    expect(checked).toBeGreaterThan(0);
+    p.complete(refreshRequest(p), delivered([counted]));
+    // The model came back whole, so its rows were checked once and are not
+    // read again: they were already accepted and have not changed since.
+    expect(reads).toBe(checked);
+  });
+
+  it("remembers the type of a record selected on an earlier page", () => {
+    const p = instances();
+    p.complete(
+      refreshRequest(p),
+      delivered([machine("v-1"), container("c-1")]),
+    );
+    p.selection.set(["v-1", "c-1"]);
+    p.complete(refreshRequest(p), delivered([machine("v-2")]));
+    expect(p.rows.get().byId("v-1")).toBeUndefined();
+    expect(p.recordType("v-1")).toBe("virtual-machine");
+    expect(p.recordType("c-1")).toBe("container");
+  });
+
+  it("knows no type for a selection restored over rows it never saw", () => {
+    const p = instances();
+    p.selection.set(["unseen"]);
+    expect(p.recordType("unseen")).toBeNull();
+  });
+
+  it("forgets every remembered type when the scope rotates", () => {
+    const p = instances();
+    p.complete(refreshRequest(p), delivered([machine("v-1")]));
+    p.selection.set(["v-1"]);
+    p.complete(refreshRequest(p), delivered([]));
+    expect(p.recordType("v-1")).toBe("virtual-machine");
+    p.rotateScope();
+    p.selection.set(["v-1"]);
+    expect(p.recordType("v-1")).toBeNull();
+  });
+});
+
+describe("a monomorphic collection", () => {
+  // Nothing in the record-type work reaches a collection that declares no
+  // discriminator: no row is read for a type, no memory is kept, and every
+  // field applies to every row.
+  it("declares no types, remembers nothing and applies every field", () => {
+    const p = provider();
+    expect(p.types).toBeNull();
+    p.complete(refreshRequest(p), delivered([{ id: "m-1" }]));
+    p.selection.set(["m-1"]);
+    expect(p.recordType("m-1")).toBeNull();
+    expect(p.applicability("status", { id: "m-1" })).toBe("applies");
+    expect(p.applicability("anything", { id: "m-1" })).toBe("applies");
+  });
+
+  it("leaves a scoped field applying to every row", () => {
+    const scoped = createDataViewsProvider({
+      schema: createSchema([
+        { field: "type", kind: "choices", options: ["container"] },
+        { field: "secureboot", kind: "flag", types: ["container"] },
+      ]),
+    });
+    // No discriminator: there is one record type, so a field scoped to it
+    // has nothing to exclude and the scoping never fires.
+    expect(scoped.types).toBeNull();
+    expect(scoped.applicability("secureboot", { id: "m-1" })).toBe("applies");
+  });
+
+  it("never reads a row for a type", () => {
+    // The discriminator is the only reason a provider reads a row for
+    // anything but its identity. A record that answers to no read at all
+    // still completes, so nothing here touches it.
+    const p = createDataViewsProvider<
+      ReturnType<typeof machinesSchema>["fields"],
+      { readonly uuid: string }
+    >({ schema: machinesSchema(), identify: (row) => row.uuid });
+    const record = new Proxy(
+      // The record carries a key that looks like a discriminator, so a
+      // provider that read one would reach the trap rather than an absent
+      // key, which no read of any kind can be told from.
+      { uuid: "m-1", type: "container" },
+      {
+        get(target, key) {
+          if (key !== "uuid") {
+            throw new Error(`read of ${String(key)} on a monomorphic row`);
+          }
+          return Reflect.get(target, key);
+        },
+      },
+    );
+    expect(p.complete(refreshRequest(p), delivered([record]))).toBe(true);
+    expect(p.state.get().result.status).toBe("ready");
+    p.selection.set(["m-1"]);
+    expect(p.recordType("m-1")).toBeNull();
   });
 });

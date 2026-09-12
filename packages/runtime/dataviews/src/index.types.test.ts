@@ -13,6 +13,7 @@ import type {
   ActionCapabilities,
   ActionInvocation,
   ActionTargets,
+  Applicability,
   AppliedOf,
   AppliedValues,
   ArraySource,
@@ -34,8 +35,10 @@ import type {
   DataViewsProvider,
   DataViewsProviderConfig,
   DateField,
+  DeclaredRecordTypes,
   DecodedQuery,
   DecodeQueryConfig,
+  DiscriminatorField,
   DispatchResult,
   DisplayEntriesConfig,
   DisplayEntry,
@@ -95,6 +98,7 @@ import type {
   QueryObserverFactory,
   QuerySourceConfig,
   ReadonlyChannel,
+  RecordTypes,
   RelayConnection,
   RelayEnvironment,
   RelayOperation,
@@ -111,6 +115,7 @@ import type {
   RowIdentifier,
   RowModel,
   RowModelConfig,
+  RowModelResult,
   RowRecord,
   RowScope,
   RowScopes,
@@ -186,6 +191,7 @@ type EveryPublicType = [
   ActionCapabilities,
   ActionInvocation,
   ActionTargets,
+  Applicability,
   AppliedOf<FlagField>,
   AppliedValues<readonly SchemaFieldDefinition[]>,
   ArraySource,
@@ -208,8 +214,10 @@ type EveryPublicType = [
   DataViewsProviderConfig<readonly SchemaFieldDefinition[]>,
   DateField,
   DecodedQuery,
+  DeclaredRecordTypes,
   DecodeQueryConfig,
   DispatchResult,
+  DiscriminatorField<readonly SchemaFieldDefinition[], RowRecord>,
   DisplayEntriesConfig<unknown>,
   DisplayEntry,
   DisplayEntryKind,
@@ -268,6 +276,7 @@ type EveryPublicType = [
   QueryObserverFactory<SourcePage>,
   QuerySourceConfig,
   ReadonlyChannel<unknown>,
+  RecordTypes<readonly SchemaFieldDefinition[], RowRecord>,
   RelayConnection,
   RelayEnvironment,
   RelayOperation,
@@ -284,6 +293,7 @@ type EveryPublicType = [
   RowIdentifier<RowRecord>,
   RowModel<RowRecord>,
   RowModelConfig<RowRecord>,
+  RowModelResult<RowRecord>,
   RowRecord,
   RowScope<RowRecord>,
   RowScopes<RowRecord>,
@@ -396,7 +406,7 @@ describe("public surface types", () => {
       ...new Set(surfaceOf(path.resolve("src/lib/index.ts"))),
     ].sort();
     expect(surface).toEqual(pinned().sort());
-    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<152>();
+    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<157>();
   });
 
   it("keeps only the saved-view store behind its own entry point", () => {

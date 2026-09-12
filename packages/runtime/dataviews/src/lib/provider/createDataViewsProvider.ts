@@ -25,7 +25,13 @@ import type {
 } from "../query/types.js";
 import type { Completion } from "../result/types.js";
 import createRowModel from "../rows/createRowModel.js";
-import type { RowIdentifier, RowModel, RowRecord } from "../rows/types.js";
+import EMPTY_ROW_MODEL from "../rows/emptyRowModel.js";
+import type {
+  Applicability,
+  RowIdentifier,
+  RowModel,
+  RowRecord,
+} from "../rows/types.js";
 import type { Schema } from "../schema/createSchema.js";
 import type { EmptyOr, SchemaFieldDefinition } from "../schema/types.js";
 import createSelection from "../selection/createSelection.js";
@@ -33,7 +39,8 @@ import copyCapabilities from "../source/copyCapabilities.js";
 import type { SourceCapabilities } from "../source/types.js";
 import createProviderViews from "../views/createProviderViews.js";
 import type { ViewStore } from "../views/types.js";
-import type { DataViewsProvider, FieldHandle } from "./types.js";
+import createRecordTyping from "./createRecordTyping.js";
+import type { DataViewsProvider, FieldHandle, RecordTypes } from "./types.js";
 
 /** The legal operators of a field kind, in display order. */
 const operatorsFor = (
@@ -116,6 +123,14 @@ export type DataViewsProviderConfig<
    * store of the application's own. Left out, the collection has no views.
    */
   readonly views?: ViewStore;
+  /**
+   * How this collection's records declare their type: one `choices` field of
+   * the schema, carried by every row. Left out, the collection is
+   * monomorphic — no memory is kept, no row is read for a type, and nothing
+   * else here behaves differently. A field scoped to record types is then
+   * inert, since there is only the one type for it to apply to.
+   */
+  readonly types?: RecordTypes<TFields, TRow>;
 };
 
 /** One field record with its address, for re-syncing after external changes. */
@@ -152,8 +167,16 @@ export default function createDataViewsProvider<
   const state = createChannel<CollectionState<TRow>>(coordinator.state, {
     equals: (a, b) => a === b,
   });
-  const emptyRows = createRowModel<TRow>({ rows: [], identify });
-  const rows = createChannel<RowModel<TRow>>(emptyRows);
+  const rows = createChannel<RowModel<TRow>>(EMPTY_ROW_MODEL);
+  const recordTyping =
+    config.types === undefined
+      ? null
+      : createRecordTyping<TFields, TRow>({
+          schema,
+          field: config.types.field,
+          selection,
+          rows,
+        });
 
   const publishState = (): void => {
     state.set(coordinator.state);
@@ -310,6 +333,13 @@ export default function createDataViewsProvider<
     // own literal keys and their operators; the map type is what the walk
     // can say, and this is what the walk in fact produced.
     fields: fields as DataViewsProvider<TFields>["fields"],
+    types: recordTyping?.declared ?? null,
+    applicability(field: string, row: TRow): Applicability {
+      return recordTyping?.applicability(field, row) ?? "applies";
+    },
+    recordType(id: string): string | null {
+      return recordTyping?.recordType(id) ?? null;
+    },
     navigateWindow(window: WindowNavigation): void {
       dispatchCommand({ kind: "navigateWindow", ...window });
     },
@@ -339,20 +369,48 @@ export default function createDataViewsProvider<
       if (coordinator.state.pendingRequestId !== requestId) {
         return false;
       }
-      // The model is built before the coordinator publishes, so a record
-      // with an ambiguous identity rejects the whole completion instead of
-      // leaving displayed rows the table cannot key.
-      const model =
-        completion.status === "succeeded"
-          ? createRowModel({
-              rows: completion.page.rows,
-              identify,
-              previous: rows.get(),
-            })
-          : null;
-      const published = coordinator.complete(requestId, completion);
+      // The model is built before the coordinator publishes, so rows with
+      // an ambiguous identity, or with a type the schema does not declare,
+      // fail the request instead of replacing rows that can still be keyed
+      // and displayed. Those rows then report `refreshFailed`, or `stale`
+      // once the query has moved on from the one they answer.
+      let model: RowModel<TRow> | null = null;
+      let rejection: string | null = null;
+      if (completion.status === "succeeded") {
+        const built = createRowModel({
+          rows: completion.page.rows,
+          identify,
+          previous: rows.get(),
+        });
+        // A model handed back whole was checked when it was accepted and
+        // holds the same records still, so there is nothing to read again
+        // and nothing about to leave the display.
+        if (built.status === "built" && built.model !== rows.get()) {
+          rejection = recordTyping?.rejectionOf(built.model) ?? null;
+          model = rejection === null ? built.model : null;
+        } else if (built.status === "rejected") {
+          rejection = built.reason;
+        }
+      }
+      const reported: Completion<TRow> =
+        rejection === null
+          ? completion
+          : {
+              status: "failed",
+              failure: {
+                reason: rejection,
+                // Retrying the same request delivers the same rows.
+                transient: false,
+                // No library raised anything: the rows themselves are wrong.
+                cause: null,
+              },
+            };
+      const published = coordinator.complete(requestId, reported);
       if (published) {
         if (model !== null) {
+          // The outgoing model is the last one these rows were displayed
+          // in, so the memory is taken from it before it is let go.
+          recordTyping?.remember(rows.get());
           rows.set(model);
         }
         publishState();
@@ -368,8 +426,9 @@ export default function createDataViewsProvider<
     },
     rotateScope(): void {
       coordinator.rotateScope();
-      rows.set(emptyRows);
+      rows.set(EMPTY_ROW_MODEL);
       selection.clear();
+      recordTyping?.forget();
       views?.forget();
       syncFields();
       publishState();
