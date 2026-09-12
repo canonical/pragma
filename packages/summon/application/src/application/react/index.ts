@@ -473,9 +473,9 @@ fallback.`,
           // ClientOnly SSR guard (whose only consumer today is the catalog page).
           when(answers.relay, copy("src/relay/schema.graphql")),
           when(answers.relay, copy("src/relay/schema.ts")),
-          when(answers.relay, copy("src/relay/schema.tests.ts")),
+          when(answers.relay, copy("src/relay/schema.test.ts")),
           when(answers.relay, copy("src/relay/environment.ts")),
-          when(answers.relay, copy("src/relay/environment.tests.ts")),
+          when(answers.relay, copy("src/relay/environment.test.ts")),
           // Committed relay-compiler artifacts — deterministic outputs of the
           // committed schema + the catalog queries; `bun run relay` regenerates
           // them in the scaffolded app after any schema or graphql-tag edit.
@@ -516,8 +516,8 @@ fallback.`,
           when(
             answers.relay,
             template({
-              source: src("src/domains/catalog/ProductList.tests.tsx.ejs"),
-              dest: dest("src/domains/catalog/ProductList.tests.tsx"),
+              source: src("src/domains/catalog/ProductList.test.tsx.ejs"),
+              dest: dest("src/domains/catalog/ProductList.test.tsx"),
               vars,
             }),
           ),
@@ -533,8 +533,8 @@ fallback.`,
           when(
             answers.relay,
             template({
-              source: src("src/domains/catalog/ErrorBoundary.tests.tsx.ejs"),
-              dest: dest("src/domains/catalog/ErrorBoundary.tests.tsx"),
+              source: src("src/domains/catalog/ErrorBoundary.test.tsx.ejs"),
+              dest: dest("src/domains/catalog/ErrorBoundary.test.tsx"),
               vars,
             }),
           ),
@@ -609,7 +609,7 @@ fallback.`,
           when(answers.intl, copy("src/lib/LocaleSelector/LocaleSelector.tsx")),
           when(
             answers.intl,
-            copy("src/lib/LocaleSelector/LocaleSelector.tests.tsx"),
+            copy("src/lib/LocaleSelector/LocaleSelector.test.tsx"),
           ),
           when(answers.intl, copy("src/lib/LocaleSelector/index.ts")),
 
@@ -621,12 +621,12 @@ fallback.`,
           when(answers.intl, copy("src/i18n/fr.ts")),
           when(answers.intl, copy("src/i18n/ar.ts")),
           when(answers.intl, copy("src/i18n/index.ts")),
-          when(answers.intl, copy("src/i18n/negotiation.tests.ts")),
+          when(answers.intl, copy("src/i18n/negotiation.test.ts")),
 
           // Lib: ExampleComponent
           copy("src/lib/ExampleComponent/ExampleComponent.tsx"),
           copy("src/lib/ExampleComponent/ExampleComponent.stories.tsx"),
-          copy("src/lib/ExampleComponent/ExampleComponent.tests.tsx"),
+          copy("src/lib/ExampleComponent/ExampleComponent.test.tsx"),
           copy("src/lib/ExampleComponent/index.ts"),
           copy("src/lib/ExampleComponent/types.ts"),
           copy("src/lib/ExampleComponent/styles.css"),
@@ -645,7 +645,7 @@ fallback.`,
           ),
           when(
             answers.relay && !spa,
-            copy("src/lib/ClientOnly/ClientOnly.tests.tsx"),
+            copy("src/lib/ClientOnly/ClientOnly.test.tsx"),
           ),
           when(answers.relay && !spa, copy("src/lib/ClientOnly/index.ts")),
 

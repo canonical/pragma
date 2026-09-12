@@ -2,6 +2,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readdirSync,
+  readFileSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -219,6 +220,46 @@ describe("application/react generator", () => {
     ).toEqual([]);
   });
 
+  it("names generated unit tests *.test.ts(x), the pattern its Vitest config includes", () => {
+    const result = dryRun(
+      generators["application/react"].generate({
+        appPath: "my-app",
+        forms: true,
+        intl: true,
+        rendering: "ssr",
+        relay: true,
+        runInstall: false,
+      }),
+    );
+    const testFiles = result.effects
+      .filter((e) => e._tag === "WriteFile" || e._tag === "CopyFile")
+      .map(
+        (e) =>
+          (e as { path?: string; dest?: string }).path ??
+          (e as { dest?: string }).dest ??
+          "",
+      )
+      .filter((p) => /\.tests?\.tsx?$/.test(p));
+
+    expect(testFiles).toContain(
+      "my-app/src/lib/ExampleComponent/ExampleComponent.test.tsx",
+    );
+    expect(testFiles.filter((p) => p.includes(".tests."))).toEqual([]);
+
+    const vitestConfig = readFileSync(
+      fileURLToPath(
+        new URL(
+          "./application/react/templates/vitest.config.ts",
+          import.meta.url,
+        ),
+      ),
+      "utf8",
+    );
+    expect(vitestConfig).toContain(
+      'include: ["src/**/*.test.ts", "src/**/*.test.tsx"]',
+    );
+  });
+
   it("includes contact domain when forms=true", () => {
     const result = dryRun(
       generators["application/react"].generate({
@@ -304,9 +345,9 @@ describe("application/react generator", () => {
     expect(filePaths).toContain("my-app/relay.config.json");
     expect(filePaths).toContain("my-app/src/relay/schema.graphql");
     expect(filePaths).toContain("my-app/src/relay/schema.ts");
-    expect(filePaths).toContain("my-app/src/relay/schema.tests.ts");
+    expect(filePaths).toContain("my-app/src/relay/schema.test.ts");
     expect(filePaths).toContain("my-app/src/relay/environment.ts");
-    expect(filePaths).toContain("my-app/src/relay/environment.tests.ts");
+    expect(filePaths).toContain("my-app/src/relay/environment.test.ts");
     expect(filePaths).toContain(
       "my-app/src/relay/__generated__/ProductCard_product.graphql.ts",
     );
@@ -321,19 +362,19 @@ describe("application/react generator", () => {
       "my-app/src/domains/catalog/ProductList.stories.tsx",
     );
     expect(filePaths).toContain(
-      "my-app/src/domains/catalog/ProductList.tests.tsx",
+      "my-app/src/domains/catalog/ProductList.test.tsx",
     );
     expect(filePaths).toContain("my-app/src/domains/catalog/ProductCard.tsx");
     expect(filePaths).toContain("my-app/src/domains/catalog/ErrorBoundary.tsx");
     expect(filePaths).toContain(
-      "my-app/src/domains/catalog/ErrorBoundary.tests.tsx",
+      "my-app/src/domains/catalog/ErrorBoundary.test.tsx",
     );
     expect(filePaths).toContain("my-app/src/domains/catalog/routes.ts");
 
     // ClientOnly SSR guard (relay is its only consumer today)
     expect(filePaths).toContain("my-app/src/lib/ClientOnly/ClientOnly.tsx");
     expect(filePaths).toContain(
-      "my-app/src/lib/ClientOnly/ClientOnly.tests.tsx",
+      "my-app/src/lib/ClientOnly/ClientOnly.test.tsx",
     );
     expect(filePaths).toContain("my-app/src/lib/ClientOnly/index.ts");
 
