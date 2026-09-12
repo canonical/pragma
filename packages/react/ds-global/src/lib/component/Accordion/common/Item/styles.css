@@ -12,10 +12,11 @@
    * color-text, the chevron uses color-icon, and dividers use color-border-muted.
    * Vertical padding is expressed in baseline multiples.
    *
-   * NOTE: the apps/sites element-size sizing (collapsed item at 36px sites / 32px
-   * apps, and the matching h6 line box) is intentionally NOT set here — control
-   * heights across apps vs sites are owned by the density/height bucket, not this
-   * design-review geometry pass.
+   * NOTE: the element size (collapsed item at 36px sites / 32px apps, 28/24
+   * dense, and the matching h6 line box) is intentionally NOT a fixed height
+   * anywhere in this file — it EMERGES from the density seat block at the
+   * bottom, which seats the heading (and an h6 heading too) on the shared
+   * control seat, so the header keeps one geometry with every other control.
    */
   :root {
     --accordion-item-color-text: var(--color-text);
@@ -171,11 +172,11 @@
 
     /* Normalise every heading element except <h6> down to the inherited body
        tier. <h6> keeps the base h6 tier from @canonical/styles-typography
-       (correct heading-6 tokens, including the baseline-snapped line-height) — no
-       heading-6 tokens are restated here.
-       NOTE: the per-context h6 line box (24px sites / 20px apps) and zeroing the
-       heading padding-block nudges to make the header height padding-driven are
-       part of the apps/sites height bucket, not this pass. */
+       (heading-6 font-size/weight/letter-spacing) — no heading-6 tokens are
+       restated here. Inside a density scope the h6 additionally gives up its
+       own fixed line box and baseline padding nudges and takes the seat line,
+       so an h6 header stays exactly on the density cell — see the heading rule
+       in the density block below. */
     & :is(h1, h2, h3, h4, h5) {
       margin: 0;
       font: inherit;
@@ -283,10 +284,14 @@
    * on the flex line, whose cross-size IS the heading's line box — the same
    * "centre on the glyph run" pairing the input affixes use.
    *
-   * KNOWN LIMIT: an <h6> heading keeps its own engine line-height (see the
-   * heading rule above), so its line box may differ from --control-seat-line;
-   * the h6-in-header case is owned by a later pass. The default (body-tier)
-   * heading is exact. */
+   * An <h6> heading would otherwise bring its own FIXED line box (the heading-6
+   * tier's 24px, plus any typography-engine padding nudges) into the header:
+   * taller than the dense seat lines (16px apps / 20px sites), so the h6 row
+   * blew past the cell while every other row obeyed it. On the comfy cells the
+   * 24px box happened to fit — by coincidence, not by construction. The heading
+   * rule below therefore seats the h6 too: it keeps its heading-6 font but
+   * inherits the seat line and drops the nudges, so an h6 header is exact in
+   * every cell and tracks the seat if the tokens ever move. */
   :is(.comfortable, .dense, .app, .site, .docs) .ds.accordion-item {
     /* The CONTENT panel consumes the density system's semantic spacing rung for
        its block padding — space-md (16px apps-comfortable, 8px apps-dense,
@@ -328,5 +333,16 @@
     > .header
     > .heading {
     line-height: var(--control-seat-line);
+
+    /* The h6 keeps its heading-6 font, but its own line box is FIXED (the
+       heading-6 tier's line-height plus the typography engine's padding
+       nudges), so it can't follow the seat — declare the seat line on it and
+       zero the nudges. Without this the h6's 24px box overflows the dense
+       cells (seat line 16px apps / 20px sites); the comfy cells only fit it
+       by coincidence, which this makes true by construction. */
+    & h6 {
+      padding-block: 0;
+      line-height: inherit;
+    }
   }
 }
