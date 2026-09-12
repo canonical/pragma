@@ -1,6 +1,6 @@
 import type {
+  ColumnLayout,
   ColumnSizing,
-  Presentation,
   ProviderViews,
 } from "@canonical/dataviews-core";
 import { sizingEquals } from "@canonical/dataviews-core";
@@ -8,30 +8,29 @@ import { useLayoutEffect } from "react";
 import { boundsOf } from "../columnKeys.js";
 
 /**
- * The key a column's width is kept under in the collection's presentation.
- * Named for the renderer, so another renderer's arrangement never reads a
- * table's widths as its own.
+ * The key a column's width is kept under in the collection's saved
+ * presentation. Named for the renderer, so another renderer's arrangement
+ * never reads a table's widths as its own.
  */
 export const widthKey = (id: string): string => `table.width.${id}`;
 
 /**
- * Keep a table's column widths in its collection's presentation, when the
- * provider has views.
+ * Keep a table's column widths in its collection's saved presentation, when
+ * the provider has views.
  *
  * A width the presentation holds becomes the column's fixed width, held to
  * the bounds its declared sizing sets; a column it holds none for keeps its
- * declared sizing. A column width the table's presentation record changes to
- * something the collection's presentation does not already imply is a
- * resize the user made, saved back as the viewer's arrangement — of the
- * open view, or the default one — so two tables sharing a record never save
- * each other's.
+ * declared sizing. A column width the table's layout record changes to
+ * something the saved presentation does not already imply is a resize the
+ * user made, saved back as the viewer's arrangement — of the open view, or
+ * the default one — so two tables sharing a record never save each other's.
  *
  * The hook observes the views itself: a table restores its widths with no
  * views control on the page. Without views the table keeps its widths for
  * its own lifetime.
  */
 export default function usePreferredWidths(
-  presentation: Presentation,
+  layout: ColumnLayout,
   views: ProviderViews | null,
 ): void {
   // Before paint, so widths already read are never painted declared first.
@@ -39,15 +38,15 @@ export default function usePreferredWidths(
     if (views === null) {
       return;
     }
-    const ids = Object.keys(presentation.state.declared);
+    const ids = Object.keys(layout.state.get().declared);
 
-    /** The width the collection's presentation sets a column to, if any. */
+    /** The width the saved presentation sets a column to, if any. */
     const implied = (id: string): ColumnSizing | null => {
       const width = views.state.get().presentation[widthKey(id)];
       if (typeof width !== "number" || !Number.isFinite(width) || width < 0) {
         return null;
       }
-      const { min, max } = boundsOf(presentation.state.declared[id]);
+      const { min, max } = boundsOf(layout.state.get().declared[id]);
       return { kind: "fixed", px: Math.min(max, Math.max(min, width)) };
     };
 
@@ -55,18 +54,18 @@ export default function usePreferredWidths(
       for (const id of ids) {
         const sizing = implied(id);
         if (sizing === null) {
-          presentation.resetOverride(id);
+          layout.resetOverride(id);
         } else {
-          presentation.setOverride(id, sizing);
+          layout.setOverride(id, sizing);
         }
       }
     };
 
     // Only a column whose width changed is looked at: while widths are being
     // applied one by one, the rest still differ from what is implied.
-    let seen = presentation.state.overrides;
-    const stopPresentation = presentation.subscribe(() => {
-      const { overrides } = presentation.state;
+    let seen = layout.state.get().overrides;
+    const stopLayout = layout.state.subscribe(() => {
+      const { overrides } = layout.state.get();
       const patch: Record<string, number | null> = {};
       for (const id of ids) {
         const override = overrides[id];
@@ -100,8 +99,8 @@ export default function usePreferredWidths(
     apply();
     return () => {
       release();
-      stopPresentation();
+      stopLayout();
       stopViews();
     };
-  }, [presentation, views]);
+  }, [layout, views]);
 }

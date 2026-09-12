@@ -23,7 +23,7 @@ export type {
   SourceHost,
 } from "./createSourceBinding.js";
 export { default as createSourceBinding } from "./createSourceBinding.js";
-export type { ExecuteSliceOptions } from "./executeSlice.js";
+export type { ExecuteSliceConfig } from "./executeSlice.js";
 export { default as executeSlice } from "./executeSlice.js";
-export { default as supportsSlice } from "./supportsSlice.js";
+export { default as supportsRequest } from "./supportsRequest.js";
 export type * from "./types.js";

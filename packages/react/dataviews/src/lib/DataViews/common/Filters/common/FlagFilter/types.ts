@@ -1,4 +1,4 @@
-import type { ProviderFieldHandle } from "@canonical/dataviews-core";
+import type { FieldHandle } from "@canonical/dataviews-core";
 
 /**
  * Props of one presence filter.
@@ -9,7 +9,7 @@ import type { ProviderFieldHandle } from "@canonical/dataviews-core";
  */
 export type FlagFilterProps = {
   /** The provider handle for this field's presence predicate. */
-  readonly handle: ProviderFieldHandle<boolean>;
+  readonly handle: FieldHandle<boolean>;
   /** The field's visible name. */
   readonly label: string;
   /**

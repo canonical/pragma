@@ -6,11 +6,11 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import type { SavedView, ViewStore } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
 } from "@canonical/dataviews-core";
-import type { SavedView, ViewStore } from "@canonical/dataviews-core/views";
 import {
   act,
   fireEvent,

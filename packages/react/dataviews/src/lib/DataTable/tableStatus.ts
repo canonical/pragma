@@ -1,5 +1,11 @@
-import type { CollectionCoordinatorState } from "@canonical/dataviews-core";
+import type { CollectionState, ResultProblem } from "@canonical/dataviews-core";
 import type { DataTableStatus } from "./types.js";
+
+/** One problem as the sentence shown beside or in place of the rows. */
+const reasonOf = (problem: ResultProblem): string =>
+  problem.status === "refused"
+    ? problem.refusals.map((refusal) => refusal.reason).join("; ")
+    : problem.failure.reason;
 
 /**
  * What the table says instead of its rows or beside them, or null when the
@@ -8,34 +14,41 @@ import type { DataTableStatus } from "./types.js";
  * The cases stay distinct so the table never says "no results" about a
  * collection it failed to read, or "no data" about a query that simply
  * matched nothing. Retained rows keep rendering: rows an earlier query
- * produced are shown as such beside the reason the current one failed,
- * while rows kept through a failed refresh of the same query still answer
- * it, so they are shown as they are and the error stays in `lastError`.
+ * produced are shown as stale beside the reason the current one failed, and
+ * rows that still answer the query, whose refresh failed, are shown beside
+ * that reason too — saying nothing there would hide the failure entirely.
  */
 export default function tableStatus(
-  state: CollectionCoordinatorState<object>,
+  state: CollectionState<object>,
 ): DataTableStatus | null {
   const { result } = state;
+  const reason = result.problem === null ? null : reasonOf(result.problem);
   if (result.rows !== null && result.rows.length > 0) {
-    return result.status === "stale" && result.lastError !== null
-      ? { kind: "stale", reason: result.lastError }
-      : null;
+    if (reason === null) {
+      return null;
+    }
+    // A problem standing over rows is one of exactly two things, and the
+    // coordinator has already decided which: an earlier query produced the
+    // rows, or a refresh of the query they answer failed.
+    return result.status === "stale"
+      ? { status: "stale", reason }
+      : { status: "refresh-failed", reason };
   }
-  if (result.lastError !== null) {
-    return { kind: "error", reason: result.lastError };
+  if (reason !== null) {
+    return { status: "failed", reason };
   }
   if (result.rows === null) {
-    return { kind: "loading" };
+    return { status: "loading" };
   }
   const filtered = state.slice.filter.length > 0 || state.slice.search !== null;
-  return { kind: filtered ? "no-results" : "no-data" };
+  return { status: filtered ? "no-results" : "no-data" };
 }
 
-/** A status's reason, where its kind has one. */
-const reasonOf = (status: DataTableStatus): string | undefined =>
+/** A status's reason, where its status has one. */
+const reasonIn = (status: DataTableStatus): string | undefined =>
   "reason" in status ? status.reason : undefined;
 
-/** Two statuses say the same thing: the same kind, for the same reason. */
+/** Two statuses say the same thing: the same status, for the same reason. */
 export const sameStatus = (
   a: DataTableStatus | null,
   b: DataTableStatus | null,
@@ -43,5 +56,5 @@ export const sameStatus = (
   a === b ||
   (a !== null &&
     b !== null &&
-    a.kind === b.kind &&
-    reasonOf(a) === reasonOf(b));
+    a.status === b.status &&
+    reasonIn(a) === reasonIn(b));

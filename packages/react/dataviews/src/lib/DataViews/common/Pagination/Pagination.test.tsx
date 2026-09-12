@@ -7,6 +7,7 @@ import type { DataViewsProvider } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
+  DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -19,8 +20,10 @@ const schema = createSchema([
 
 type Fields = typeof schema.fields;
 
+const firstOfTwo = { ...DEFAULT_WINDOW, page: 1, size: 2 };
+
 const makeProvider = (): DataViewsProvider<Fields> =>
-  createDataViewsProvider<Fields>({ schema, window: { page: 1, size: 2 } });
+  createDataViewsProvider<Fields>({ schema, window: firstOfTwo });
 
 describe("DataViews.Pagination", () => {
   it("is reachable as the composition's Pagination part", () => {
@@ -44,11 +47,17 @@ describe("DataViews.Pagination", () => {
     if (requestId === null) {
       throw new Error("expected a refresh request");
     }
+    const counted = { kind: "exact", value: 5 } as const;
     act(() => {
       provider.complete(requestId, {
-        status: "success",
-        rows: [{ id: "m1" }, { id: "m2" }],
-        count: 5,
+        status: "succeeded",
+        page: {
+          rows: [{ id: "m1" }, { id: "m2" }],
+          groups: null,
+          counts: { visible: counted, matched: counted, total: counted },
+          more: null,
+          cursors: null,
+        },
       });
     });
     const nav = screen.getByRole("navigation", { name: "Machines pagination" });
@@ -57,6 +66,9 @@ describe("DataViews.Pagination", () => {
       "Showing 1–2 out of 5 items",
     );
     fireEvent.click(screen.getByRole("button", { name: "Next page" }));
-    expect(provider.result.get().window).toEqual({ page: 2, size: 2 });
+    expect(provider.state.get().window).toEqual({
+      ...firstOfTwo,
+      page: 2,
+    });
   });
 });

@@ -12,7 +12,7 @@ export type SaveSessionState<T> = {
   readonly current: T;
   /** Snapshot submitted to the store, or null when idle. */
   readonly submitted: T | null;
-  readonly status: "idle" | "saving" | "failed";
+  readonly status: "idle" | "pending" | "failed";
   readonly dirty: boolean;
   /**
    * Version of the local value: bumped on every edit and on every save
@@ -20,7 +20,7 @@ export type SaveSessionState<T> = {
    */
   readonly revision: number;
   /** Failure note of the last save attempt; null means no failure on record. */
-  readonly failureReason: string | null;
+  readonly failure: string | null;
 };
 
 /** Configuration of one save session. */
@@ -80,7 +80,7 @@ export default function createSaveSession<T>(
   let attemptCounter = 0;
   let status: SaveSessionState<T>["status"] = "idle";
   let revision = 0;
-  let failureReason: string | null = null;
+  let failure: string | null = null;
   let snapshot = buildSnapshot();
 
   function buildSnapshot(): SaveSessionState<T> {
@@ -91,7 +91,7 @@ export default function createSaveSession<T>(
       status,
       dirty: !config.equals(current, baseline),
       revision,
-      failureReason,
+      failure,
     });
   }
 
@@ -105,18 +105,18 @@ export default function createSaveSession<T>(
       if (status === "failed") {
         status = "idle";
       }
-      failureReason = null;
+      failure = null;
       snapshot = buildSnapshot();
     },
     beginSave(): string | null {
-      if (status === "saving") {
+      if (status === "pending") {
         return null;
       }
       attemptCounter += 1;
       currentAttempt = `${instanceKey}:s${attemptCounter}`;
       submitted = current;
-      status = "saving";
-      failureReason = null;
+      status = "pending";
+      failure = null;
       // A save submission also moves the value's version: a read issued
       // before it must not clobber the submitted state when it resolves.
       revision += 1;
@@ -132,7 +132,7 @@ export default function createSaveSession<T>(
       submitted = null;
       currentAttempt = null;
       status = "idle";
-      failureReason = null;
+      failure = null;
       snapshot = buildSnapshot();
     },
     saveFailed(attempt: string, reason: string): void {
@@ -142,11 +142,11 @@ export default function createSaveSession<T>(
       submitted = null;
       currentAttempt = null;
       status = "failed";
-      failureReason = reason;
+      failure = reason;
       snapshot = buildSnapshot();
     },
     applyExternalRead(value: T, seenRevision: number): boolean {
-      if (status === "saving" || seenRevision !== revision) {
+      if (status === "pending" || seenRevision !== revision) {
         // A save is in flight, or the value moved on since the read was
         // issued; the read must not overwrite either.
         return false;
@@ -154,7 +154,7 @@ export default function createSaveSession<T>(
       baseline = value;
       current = value;
       status = "idle";
-      failureReason = null;
+      failure = null;
       snapshot = buildSnapshot();
       return true;
     },

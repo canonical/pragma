@@ -1,95 +1,183 @@
 /**
- * The source adapter contract: how a data source executes the request
- * identities the collection coordinator issues, and what it declares it
- * can execute. Adapters own transport, cache, retry, deduplication and
- * invalidation through the application's existing query library — this
- * package never runs a competing one.
+ * The source contract: how a data source executes the request identities
+ * the collection coordinator issues, and what it declares it can execute.
+ * Sources own transport, cache, retry, deduplication and invalidation
+ * through the application's existing query library — this package never
+ * runs a competing one.
  */
 
-import type { CompletionResult } from "../collection/createCollectionCoordinator.js";
 import type { OperationOutcome } from "../operation/createOperation.js";
-import type { PredicateOperator, ResultWindow, Slice } from "../query/types.js";
+import type {
+  PredicateOperator,
+  Query,
+  Slice,
+  SortTerm,
+} from "../query/types.js";
+import type { SourceDelivery, SourceRefusal } from "../result/types.js";
 import type { RowRecord } from "../rows/types.js";
 
 /** One executable request: the issued identity and the query it addresses. */
-export type SourceRequest = {
+export type SourceRequest = Query & {
   readonly requestId: string;
-  readonly slice: Slice;
-  readonly window: ResultWindow;
+};
+
+/** How exactly a source can answer one count. */
+export type CountSupport = "exact" | "atLeast" | "none";
+
+/**
+ * What breaks ties after the last ordered term. Named terms the source
+ * appends itself; "opaque" for a stable total order it does not name (a
+ * cursor, input order); "none" when ties are unordered, so offset pages may
+ * repeat or skip rows across a boundary and the UI says so.
+ */
+export type SortTiebreak = readonly SortTerm[] | "opaque" | "none";
+
+/**
+ * Everything a source declares about ordering, in one block, so a header
+ * reads its whole contract from one place.
+ *
+ * Seam for the ordering unit: `default`, `tiebreak` and `collation` are
+ * declared here now and nothing reads them for comparison yet.
+ */
+export type SortCapabilities = {
+  /** Sortable fields. A field absent here cannot be ordered. */
+  readonly fields: readonly string[];
+  /**
+   * Maximum ordered terms. Zero means sorting is unavailable and null
+   * declares no limit. Pushdown is all-or-nothing: an ordering carrying one
+   * unexecutable term is refused whole, never truncated.
+   */
+  readonly terms: number | null;
+  /**
+   * The effective ordering when the query carries no sort term. Empty
+   * declares that the source documents no order, so pages may not be
+   * stable.
+   *
+   * Seam for the ordering unit, which will have a header report it and
+   * "clear sort" return to it. Nothing reads it today, so a header over a
+   * query with no term reports no sorted column rather than claiming one.
+   */
+  readonly default: readonly SortTerm[];
+  readonly tiebreak: SortTiebreak;
+  /**
+   * The locale text compares under, as a BCP-47 tag, or null when the
+   * source names none and text compares by code point. The source's locale,
+   * never the viewer's, so a server render and a local execution agree.
+   */
+  readonly collation: string | null;
 };
 
 /**
- * One page produced by a source: the rows-and-count of a successful
- * `CompletionResult`, without the discriminant a fetch does not need — a
- * fetch reports failure by rejecting. Rows stay opaque to this package.
+ * What a source declares about grouping.
+ *
+ * Seam for the grouping unit: every shipped source declares `depth: 0`, so
+ * a grouped or collapsing request is refused rather than answered ungrouped.
  */
-export type SourcePage = {
-  /** The rows of the requested window. */
-  readonly rows: readonly RowRecord[];
-  /** The filtered total, or null when the source cannot produce one. */
-  readonly count: number | null;
+export type GroupCapabilities = {
+  readonly fields: readonly string[];
+  /** Maximum nesting; zero means grouping is unavailable. */
+  readonly depth: number;
+  /** Whether pages carry `groups`. */
+  readonly summaries: "counts" | "none";
+  /** Whether `window.collapsed` is honoured; false refuses a collapse. */
+  readonly collapse: boolean;
 };
 
-/** The part of a query a source refused. */
-export type SourceRefusalPart = "filter" | "search" | "sort" | "group";
-
-/**
- * One structured refusal. A source reports what it cannot execute; it
- * never silently rewrites the query or truncates an ordering. `field` and
- * `operator` are null when the refusal addresses neither.
- */
-export type SourceRefusal = {
-  readonly part: SourceRefusalPart;
-  readonly field: string | null;
-  readonly operator: PredicateOperator | null;
-  /** The reason, for accessible presentation next to the offered control. */
-  readonly reason: string;
+/** What a source declares about each of the three counts. */
+export type CountCapabilities = {
+  readonly visible: CountSupport;
+  readonly matched: CountSupport;
+  readonly total: CountSupport;
 };
 
-/** Whether a source can execute a query, with every refusal it collected. */
-export type SourceSupport =
-  | { readonly status: "supported" }
+/** How pages are addressed. */
+export type PaginationCapabilities =
+  /** Any page is reachable by number. */
+  | { readonly mode: "offset" }
+  /**
+   * A page is reachable only through a token an adjacent page handed back.
+   * `backward`: previous-page tokens exist. `durable`: tokens survive time
+   * and writes (keyset); false means they may expire (server cursors).
+   */
   | {
-      readonly status: "unsupported";
-      readonly refusals: readonly SourceRefusal[];
+      readonly mode: "cursor";
+      readonly backward: boolean;
+      readonly durable: boolean;
     };
 
+/** One row operation: what it may address, and at most how many at once. */
+export type ActionCapabilities = {
+  readonly targets: "explicit" | "query";
+  readonly limit: number | null;
+};
+
 /**
- * What a source declares it can execute. Absence means unavailable, never
- * "probably supported": the UI offers only what is declared here.
+ * What a source may declare per record kind when its collection holds
+ * several types. The collection-level members are what every kind
+ * supports; a kind may support more.
+ *
+ * Seam for the polymorphism unit: the rule for combining these across the
+ * kinds present, and whether identity is scoped by kind, are that unit's.
+ */
+export type KindCapabilities = Pick<
+  SourceCapabilities,
+  "filter" | "sort" | "actions" | "lookup"
+>;
+
+/**
+ * What a source declares it can execute. Pure data: copied, frozen and
+ * compared by the binding, carried by the provider, read by every control.
+ * Absence means unavailable, never "probably supported". The binding checks
+ * every declared capability against the port that must serve it, so a
+ * declaration is never a promise the source cannot keep.
  */
 export type SourceCapabilities = {
   /** Executable operators per field. A field absent here cannot be filtered. */
   readonly filter: Readonly<
     Partial<Record<string, readonly PredicateOperator[]>>
   >;
-  /** Fields free-text search reads; empty means search is unavailable. */
-  readonly search: readonly string[];
+  /** Fields free-text search reads, or null when search is unavailable. */
+  readonly search: { readonly fields: readonly string[] } | null;
+  readonly sort: SortCapabilities;
+  readonly group: GroupCapabilities;
+  readonly counts: CountCapabilities;
+  readonly pagination: PaginationCapabilities;
+  /** Whether actions may address every row matching a query, not only ids. */
+  readonly selection: { readonly scope: "explicit" | "query" };
   /**
-   * Sortable fields. Sort pushdown is all-or-nothing over the requested
-   * terms: a source never executes part of an ordering it cannot complete.
+   * Record lookup by identity; `batch` is the most ids per call and null is
+   * unbounded. Null declares no lookup, and the `lookup` port must then be
+   * absent.
    */
-  readonly sort: readonly string[];
+  readonly lookup: { readonly batch: number | null } | null;
+  /** Row operations by name. A name absent here cannot be run. */
+  readonly actions: Readonly<Record<string, ActionCapabilities>>;
   /**
-   * Maximum ordered sort terms. Zero means sorting is unavailable and null
-   * declares no limit.
+   * Per-record-kind narrowing, or null for a monomorphic collection, which
+   * needs nothing else.
+   *
+   * Seam for the polymorphism unit.
    */
-  readonly sortTerms: number | null;
-  /** Groupable fields; empty means grouping is unavailable. */
-  readonly group: readonly string[];
-  /**
-   * Whether each page carries a filtered total. A source declaring "none"
-   * never has a count published, so an unfiltered total can never reach the
-   * UI as the filtered one.
-   */
-  readonly count: "filtered" | "none";
+  readonly kinds: Readonly<Record<string, KindCapabilities>> | null;
 };
 
-/** One row operation over explicitly captured targets. */
+/**
+ * Who an action addresses. `query` requires `selection.scope === "query"`
+ * and carries the exclusions the user made within the matching set.
+ */
+export type ActionTargets =
+  | { readonly kind: "explicit"; readonly ids: readonly string[] }
+  | {
+      readonly kind: "query";
+      readonly slice: Slice;
+      readonly except: readonly string[];
+    };
+
+/** One row operation the source is asked to run. */
 export type SourceActionRequest = {
   /** The application's action name; the source maps it to its own call. */
   readonly action: string;
-  readonly targets: readonly string[];
+  readonly targets: ActionTargets;
   readonly payload: unknown;
 };
 
@@ -98,22 +186,58 @@ export type SourceActionRunner = (
   request: SourceActionRequest,
 ) => Promise<readonly OperationOutcome[]>;
 
-/** A source adapter: one request-scoped, observable execution port. */
-export type SourceAdapter = {
+/**
+ * One record looked up by identity. Missing, forbidden and failed stay
+ * distinct, and a forbidden record carries nothing of the record.
+ */
+export type LookupOutcome<TRow extends object = RowRecord> =
+  | { readonly id: string; readonly status: "found"; readonly record: TRow }
+  | { readonly id: string; readonly status: "missing" }
+  | { readonly id: string; readonly status: "forbidden" }
+  | { readonly id: string; readonly status: "failed"; readonly reason: string };
+
+/** Look records up by identity, one outcome per id in the order given. */
+export type SourceLookup<TRow extends object = RowRecord> = (
+  ids: readonly string[],
+) => Promise<readonly LookupOutcome<TRow>[]>;
+
+/**
+ * A source: a declaration plus request-scoped execution ports. The binding
+ * checks at construction that every declared capability has the port that
+ * serves it and throws otherwise.
+ */
+export type Source<TRow extends object = RowRecord> = {
   readonly capabilities: SourceCapabilities;
   /**
+   * Refusals the declaration cannot express — an unreachable cursor page, a
+   * filter-with-search combination one endpoint rejects. Pure and
+   * synchronous over the source's own state; never a round trip. Empty when
+   * the request is executable. Required of a cursor source, which alone
+   * knows which pages its tokens reach.
+   */
+  readonly refuses?: (query: Query) => readonly SourceRefusal[];
+  /**
    * Begin executing one request. `deliver` may be called synchronously and
-   * more than once: a later call is an external change to the same query,
-   * which the binding republishes under a fresh request identity. The
-   * returned release detaches this request's observers and nothing else —
-   * never the application's query client.
+   * more than once: every later call is an external change to the same
+   * query — a store write, an invalidation — which the binding republishes
+   * under a fresh identity. A throw is a failed request. The returned
+   * release detaches this request's observers and nothing else: never the
+   * application's client or its cache.
    */
   readonly execute: (
     request: SourceRequest,
-    deliver: (result: CompletionResult) => void,
+    deliver: (delivery: SourceDelivery<TRow>) => void,
   ) => () => void;
-  /** Row operations, when the source has any. */
+  /** Records by identity; present exactly when `capabilities.lookup` is. */
+  readonly lookup?: SourceLookup<TRow>;
+  /** Run one action; present whenever `capabilities.actions` has a name. */
   readonly runAction?: SourceActionRunner;
+  /**
+   * The kind of one record; present exactly when `capabilities.kinds` is.
+   *
+   * Seam for the polymorphism unit.
+   */
+  readonly kindOf?: (row: TRow) => string;
 };
 
 /** How one field is read off an opaque row. */

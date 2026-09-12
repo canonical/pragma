@@ -1,10 +1,11 @@
+import { DEFAULT_WINDOW } from "@canonical/dataviews-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactElement } from "react";
 import { expect, waitFor } from "storybook/test";
 import { consumerCode } from "../../../../storybook/machines/consumerCode.js";
 import type {
   MachineProvider,
-  MachineProviderOptions,
+  MachineProviderConfig,
 } from "../../../../storybook/machines/story-utils.js";
 import {
   useMachineProvider,
@@ -14,7 +15,7 @@ import DataTable from "../../../DataTable/DataTable.js";
 import type { DataTableColumn } from "../../../DataTable/types.js";
 import DataViews from "../../Provider.js";
 import Component from "./Pagination.js";
-import type { PaginationProps } from "./types.js";
+import type { DataViewsPaginationProps } from "./types.js";
 
 const meta = {
   title: "_work_in_progress/DataViews/Pagination",
@@ -49,11 +50,11 @@ const composition = `<DataViews provider={provider}>
 function ComposedMachines({
   options,
   ...args
-}: PaginationProps & {
-  readonly options?: MachineProviderOptions;
+}: DataViewsPaginationProps & {
+  readonly options?: MachineProviderConfig;
 }): ReactElement {
   const provider = useMachineProvider({
-    window: { page: 1, size: 5 },
+    window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
     ...options,
   });
   return (
@@ -77,7 +78,7 @@ export const InAComposition: Story = {
   parameters: consumerCode({
     parts: ["DataTable", "DataViews", "type DataTableColumn"],
     declarations: columnsCode,
-    window: "{ page: 1, size: 5 }",
+    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
     render: composition,
   }),
   render: (args) => <ComposedMachines {...args} />,
@@ -100,7 +101,7 @@ export const AFilteredTotal: Story = {
   parameters: consumerCode({
     parts: ["DataTable", "DataViews", "type DataTableColumn"],
     declarations: columnsCode,
-    window: "{ page: 1, size: 5 }",
+    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
     prepare: `provider.fields.status.eq.set(["failed"]);`,
     render: composition,
   }),

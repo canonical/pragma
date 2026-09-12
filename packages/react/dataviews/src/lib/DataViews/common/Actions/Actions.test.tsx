@@ -8,11 +8,11 @@ import {
   createSchema,
 } from "@canonical/dataviews-core";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { StrictMode } from "react";
+import { createRef, StrictMode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import DataViews from "../../Provider.js";
 import Actions from "./Actions.js";
-import type { ActionsProps } from "./types.js";
+import type { DataViewsActionsProps } from "./types.js";
 
 const schema = createSchema([
   { field: "status", kind: "choices", options: ["failed", "ready"] },
@@ -23,7 +23,10 @@ type Fields = typeof schema.fields;
 const makeProvider = (): DataViewsProvider<Fields> =>
   createDataViewsProvider<Fields>({ schema });
 
-const mount = (provider: DataViewsProvider<Fields>, props: ActionsProps = {}) =>
+const mount = (
+  provider: DataViewsProvider<Fields>,
+  props: DataViewsActionsProps = {},
+) =>
   render(
     <DataViews provider={provider}>
       <Actions {...props} />
@@ -80,7 +83,7 @@ describe("DataViews.Actions", () => {
     mount(provider);
     select(provider, ["m1", "m2"]);
     fireEvent.click(screen.getByRole("button", { name: "Deselect 2 items" }));
-    expect(provider.selection.state.ids.size).toBe(0);
+    expect(provider.selection.state.get().ids.size).toBe(0);
     expect(screen.queryByRole("group")).toBeNull();
   });
 
@@ -266,6 +269,39 @@ describe("DataViews.Actions", () => {
       provider.selection.clear();
     });
     expect(document.body).toHaveFocus();
+  });
+
+  it("merges the caller's ref with the one it holds, in both forms", () => {
+    const provider = makeProvider();
+    const held = createRef<HTMLDivElement>();
+    const view = mount(provider, { ref: held });
+    select(provider, ["m1"]);
+    expect(held.current).toBe(bar());
+    view.unmount();
+    // A ref object is cleared on detach, and the bar still has its own root
+    // to hand the focus back from.
+    expect(held.current).toBe(null);
+
+    const seen: (HTMLDivElement | null)[] = [];
+    const second = makeProvider();
+    const callback = mount(second, {
+      ref: (node) => {
+        seen.push(node);
+      },
+    });
+    select(second, ["m1"]);
+    expect(seen).toEqual([bar()]);
+    callback.unmount();
+    expect(seen[1]).toBe(null);
+
+    // A callback returning its own cleanup gets that called instead.
+    const cleanup = vi.fn();
+    const third = makeProvider();
+    const returning = mount(third, { ref: () => cleanup });
+    select(third, ["m1"]);
+    expect(cleanup).not.toHaveBeenCalled();
+    returning.unmount();
+    expect(cleanup).toHaveBeenCalledTimes(1);
   });
 
   it("follows the selection under StrictMode", () => {

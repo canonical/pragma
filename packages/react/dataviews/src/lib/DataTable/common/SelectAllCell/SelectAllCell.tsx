@@ -1,7 +1,6 @@
 import { CheckboxInput } from "@canonical/react-ds-global-form";
 import type { ReactElement } from "react";
 import { useMemo } from "react";
-import useDataViewsState from "../../../DataViews/hooks/useDataViewsState.js";
 import useDataViewsValue from "../../../DataViews/hooks/useDataViewsValue.js";
 import type { SelectAllCellProps } from "./types.js";
 
@@ -17,7 +16,7 @@ export default function SelectAllCell({
   ids: displayed,
   reserve,
 }: SelectAllCellProps): ReactElement {
-  const state = useDataViewsState(selection);
+  const state = useDataViewsValue(selection.state);
   const ids = useDataViewsValue(displayed);
   // Counted, not filtered: this runs on every render of the header, and
   // an intermediate array per render is one allocation and one scan the

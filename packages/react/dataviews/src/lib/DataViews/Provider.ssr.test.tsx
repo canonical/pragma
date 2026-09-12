@@ -22,7 +22,7 @@ const ScopeProbe = ({
   onRead: () => void;
 }) => {
   const scope = useDataViews(provider);
-  const snapshot = useDataViewsValue(scope.result);
+  const snapshot = useDataViewsValue(scope.state);
   onRead();
   return <span data-testid="status">{snapshot.result.status}</span>;
 };
@@ -40,6 +40,6 @@ describe("DataViews SSR", () => {
     expect(html).toContain("idle");
     // The hook read the channel during the server render.
     expect(read).toHaveBeenCalled();
-    expect(provider.result.get().result.status).toBe("idle");
+    expect(provider.state.get().result.status).toBe("idle");
   });
 });

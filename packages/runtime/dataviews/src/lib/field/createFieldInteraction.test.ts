@@ -4,14 +4,14 @@ import type { FieldValidation } from "./createFieldInteraction.js";
 import createFieldInteraction from "./createFieldInteraction.js";
 
 /** Validator for a numeric bound: incomplete while partial, invalid beyond. */
-const validateNumber = (buffer: string): FieldValidation => {
-  if (buffer === "" || buffer === "-") {
+const validateNumber = (input: string): FieldValidation => {
+  if (input === "" || input === "-") {
     return { status: "incomplete" };
   }
-  if (!/^-?\d+(\.\d+)?$/.test(buffer)) {
+  if (!/^-?\d+(\.\d+)?$/.test(input)) {
     return { status: "invalid", reason: "not a number" };
   }
-  return { status: "valid", operands: [Number(buffer)] };
+  return { status: "valid", operands: [Number(input)] };
 };
 
 const interaction = (
@@ -46,10 +46,10 @@ describe("createFieldInteraction", () => {
     const field = interaction();
     const command = field.edit("4");
     expect(command).toEqual({
-      kind: "replacePredicate",
+      kind: "setPredicate",
       predicate: { field: "cpu", operator: "gte", operands: [4] },
     });
-    expect(field.state.feedback).toEqual({ kind: "applied" });
+    expect(field.state.feedback).toEqual({ status: "applied" });
     expect(field.state.applied).toEqual({
       field: "cpu",
       operator: "gte",
@@ -68,7 +68,7 @@ describe("createFieldInteraction", () => {
       operands: [4],
     });
     expect(field.state.feedback).toEqual({
-      kind: "invalid",
+      status: "invalid",
       reason: "not a number",
       retainsPredicate: true,
     });
@@ -78,7 +78,7 @@ describe("createFieldInteraction", () => {
     const field = interaction();
     field.edit("nope");
     expect(field.state.feedback).toEqual({
-      kind: "invalid",
+      status: "invalid",
       reason: "not a number",
       retainsPredicate: false,
     });
@@ -90,7 +90,7 @@ describe("createFieldInteraction", () => {
     const command = field.edit("-");
     expect(command).toBeNull();
     expect(field.state.applied).toBeNull();
-    expect(field.state.feedback).toEqual({ kind: "incomplete" });
+    expect(field.state.feedback).toEqual({ status: "incomplete" });
   });
 
   it("retains the applied predicate while incomplete", () => {
@@ -102,7 +102,7 @@ describe("createFieldInteraction", () => {
       operator: "gte",
       operands: [4],
     });
-    expect(field.state.feedback).toEqual({ kind: "incomplete" });
+    expect(field.state.feedback).toEqual({ status: "incomplete" });
   });
 
   it("clears explicitly, distinct from invalid input", () => {
@@ -115,8 +115,8 @@ describe("createFieldInteraction", () => {
       operator: "gte",
     });
     expect(field.state.applied).toBeNull();
-    expect(field.state.buffer).toBe("");
-    expect(field.state.feedback).toEqual({ kind: "none" });
+    expect(field.state.input).toBe("");
+    expect(field.state.feedback).toEqual({ status: "none" });
   });
 
   it("still returns the removal command when nothing is applied", () => {
@@ -128,7 +128,7 @@ describe("createFieldInteraction", () => {
     });
   });
 
-  it("discards stale buffers and feedback on an external query change", () => {
+  it("discards stale inputs and feedback on an external query change", () => {
     const field = interaction();
     field.edit("four");
     const applied: Predicate = {
@@ -137,22 +137,22 @@ describe("createFieldInteraction", () => {
       operands: [8],
     };
     field.setApplied(applied);
-    expect(field.state.buffer).toBe("");
-    expect(field.state.feedback).toEqual({ kind: "none" });
+    expect(field.state.input).toBe("");
+    expect(field.state.feedback).toEqual({ status: "none" });
     expect(field.state.applied).toEqual(applied);
   });
 
-  it("adopts external removal without replaying the stale buffer", () => {
+  it("adopts external removal without replaying the stale input", () => {
     const field = interaction();
     field.edit("4");
     field.edit("nope");
     field.setApplied(null);
     expect(field.state.applied).toBeNull();
-    expect(field.state.buffer).toBe("");
-    expect(field.state.feedback).toEqual({ kind: "none" });
+    expect(field.state.input).toBe("");
+    expect(field.state.feedback).toEqual({ status: "none" });
   });
 
-  it("formats the buffer from an external change when configured", () => {
+  it("formats the input from an external change when configured", () => {
     const field = interaction({
       format: (applied) =>
         applied === null ? "" : String(applied.operands[0] ?? ""),
@@ -162,9 +162,9 @@ describe("createFieldInteraction", () => {
       operator: "gte",
       operands: [8],
     });
-    expect(field.state.buffer).toBe("8");
+    expect(field.state.input).toBe("8");
     field.setApplied(null);
-    expect(field.state.buffer).toBe("");
+    expect(field.state.input).toBe("");
   });
 
   it("rejects a misrouted external predicate without side effects", () => {

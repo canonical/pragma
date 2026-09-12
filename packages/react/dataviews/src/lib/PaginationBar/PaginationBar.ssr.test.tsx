@@ -1,6 +1,7 @@
 import {
   createDataViewsProvider,
   createSchema,
+  DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -31,16 +32,22 @@ describe("PaginationBar SSR", () => {
   it("renders results the provider already holds", () => {
     const provider = createDataViewsProvider({
       schema,
-      window: { page: 1, size: 2 },
+      window: { ...DEFAULT_WINDOW, page: 1, size: 2 },
     });
     const requestId = provider.refresh();
     if (requestId === null) {
       throw new Error("expected a refresh request");
     }
+    const counted = { kind: "exact", value: 5 } as const;
     provider.complete(requestId, {
-      status: "success",
-      rows: [{ id: "m1" }, { id: "m2" }],
-      count: 5,
+      status: "succeeded",
+      page: {
+        rows: [{ id: "m1" }, { id: "m2" }],
+        groups: null,
+        counts: { visible: counted, matched: counted, total: counted },
+        more: null,
+        cursors: null,
+      },
     });
     const html = renderToString(<PaginationBar provider={provider} />);
     expect(html).toContain("Showing 1–2 out of 5 items");

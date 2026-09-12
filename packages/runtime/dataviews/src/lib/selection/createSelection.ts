@@ -1,4 +1,4 @@
-import type { Channel } from "../observable/createChannel.js";
+import type { ReadonlyChannel } from "../observable/createChannel.js";
 import createChannel from "../observable/createChannel.js";
 
 /** Immutable selection snapshot: an explicit set of record identities. */
@@ -13,9 +13,8 @@ export type SelectionState = {
 
 /** Handle of one selection record. */
 export type Selection = {
-  readonly state: SelectionState;
-  /** Observe selection changes; snapshots are immutable between sets. */
-  readonly subscribe: (listener: () => void) => () => void;
+  /** The selection's snapshots; immutable between publications. */
+  readonly state: ReadonlyChannel<SelectionState>;
   /** Toggle one identity. */
   readonly toggle: (id: string) => void;
   /** Replace the selection with the given identities. */
@@ -61,10 +60,7 @@ export default function createSelection(
   };
 
   return {
-    get state(): SelectionState {
-      return channel.get();
-    },
-    subscribe: (listener: () => void) => channel.subscribe(listener),
+    state: channel,
     toggle(id: string): void {
       const next = new Set(channel.get().ids);
       if (next.has(id)) {

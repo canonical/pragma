@@ -22,7 +22,7 @@ const feedbackTextOf = (
   feedback: FieldFeedback,
   retained: boolean,
 ): string | null => {
-  switch (feedback.kind) {
+  switch (feedback.status) {
     case "none":
     case "applied":
       return null;
@@ -74,7 +74,7 @@ export default function BoundFilter({
         value={field.input}
         // Undeclared, the bound can only be cleared, never replaced.
         readOnly={!declared}
-        aria-invalid={field.feedback.kind === "invalid"}
+        aria-invalid={field.feedback.status === "invalid"}
         aria-describedby={message === null ? undefined : feedbackId}
         onChange={(event) => {
           field.edit(event.target.value);

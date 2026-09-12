@@ -4,55 +4,112 @@
  * props take their root's native props except the ones each part derives.
  */
 
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import type {
   RowRecord,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
-import { describe, expectTypeOf, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import type {
-  ActionsProps,
-  CellScopeValue,
   DataTableCellProps,
   DataTableColumn,
   DataTableProps,
   DataTableStatus,
   DataTableWindowing,
+  DataViewsActionsProps,
+  DataViewsDataTableProps,
+  DataViewsFiltersProps,
+  DataViewsPaginationProps,
   DataViewsProps,
-  FiltersProps,
+  DataViewsViewsProps,
   PaginationBarProps,
-  PaginationProps,
   UseDataViewsCellResult,
   UseDataViewsFieldResult,
   UseDataViewsResult,
-  ViewsProps,
 } from "./index.js";
-import type { VirtualRowsOptions } from "./lib/virtualization/index.js";
+import type { VirtualRowsConfig } from "./lib/virtualization/index.js";
 import { virtualRows } from "./lib/virtualization/index.js";
 
 type Fields = readonly SchemaFieldDefinition[];
 
 /** Every type the package root re-exports, as one enumerable tuple. */
 type EveryPublicType = [
-  ActionsProps,
-  CellScopeValue,
+  DataViewsActionsProps,
+  DataViewsDataTableProps<Fields>,
   DataTableCellProps,
   DataTableColumn,
-  DataTableProps<Fields, RowRecord>,
+  DataTableProps<Fields>,
   DataTableStatus,
   DataTableWindowing,
   DataViewsProps<Fields>,
-  FiltersProps,
+  DataViewsFiltersProps,
   PaginationBarProps<Fields>,
-  PaginationProps,
+  DataViewsPaginationProps,
   UseDataViewsCellResult,
   UseDataViewsFieldResult<unknown>,
   UseDataViewsResult<Fields>,
-  ViewsProps,
+  DataViewsViewsProps,
 ];
+
+/** Every type name one barrel puts on the surface, following its re-exports. */
+const surfaceOf = (barrel: string): string[] => {
+  const text = readFileSync(barrel, "utf8");
+  const from = (spec: string): string =>
+    path.join(path.dirname(barrel), spec.replace(/\.js$/, ".ts"));
+  const names: string[] = [];
+  for (const [, spec] of text.matchAll(/^export \* from "([^"]+)";/gm)) {
+    names.push(...surfaceOf(from(spec)));
+  }
+  for (const [, spec] of text.matchAll(/^export type \* from "([^"]+)";/gm)) {
+    names.push(
+      ...[
+        ...readFileSync(from(spec), "utf8").matchAll(
+          /^export (?:type|interface) (\w+)/gm,
+        ),
+      ].map(([, name]) => name),
+    );
+  }
+  for (const [, list] of text.matchAll(
+    /^export type \{([^}]*)\} from "[^"]+";/gms,
+  )) {
+    for (const entry of list.split(",")) {
+      const name = entry
+        .trim()
+        .split(/\s+as\s+/)
+        .pop();
+      if (name !== undefined && name !== "") {
+        names.push(name);
+      }
+    }
+  }
+  return names;
+};
+
+/** The names this file pins, read from its own import of the barrel. */
+const pinned = (): string[] => {
+  // Resolved from the package root, which is where the suite runs: the
+  // module's own URL is not a file URL in every project this runs under.
+  const text = readFileSync(path.resolve("src/index.types.test.ts"), "utf8");
+  const block = text.match(/import type \{([^}]*)\} from "\.\/index\.js";/s);
+  if (block === null) {
+    throw new Error("this file must import its pins from the barrel");
+  }
+  return block[1]
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry !== "");
+};
 
 describe("public surface types", () => {
   it("re-exports the full type surface from the barrel", () => {
-    expectTypeOf<EveryPublicType>().not.toBeAny();
+    // The import above is checked by the compiler, so a name that leaves
+    // the barrel fails to compile. This is the other direction: a name that
+    // *enters* it without a decision, which no type assertion can catch.
+    const surface = [
+      ...new Set(surfaceOf(path.resolve("src/lib/index.ts"))),
+    ].sort();
+    expect(surface).toEqual(pinned().sort());
     expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<15>();
   });
 });
@@ -72,7 +129,7 @@ describe("the windowing prop", () => {
     expectTypeOf<{
       readonly estimatedRowHeight: number;
     }>().not.toExtend<DataTableWindowing>();
-    expectTypeOf<VirtualRowsOptions>().toEqualTypeOf<{
+    expectTypeOf<VirtualRowsConfig>().toEqualTypeOf<{
       readonly estimatedRowHeight: number;
     }>();
   });
@@ -90,10 +147,10 @@ describe("the pagination bar's props", () => {
 
   it("is the connected part's props with the provider", () => {
     // The connected part is the same bar; only its provider's source differs.
-    expectTypeOf<PaginationProps>().not.toHaveProperty("provider");
+    expectTypeOf<DataViewsPaginationProps>().not.toHaveProperty("provider");
     expectTypeOf<
       Omit<PaginationBarProps<Fields>, "provider">
-    >().toEqualTypeOf<PaginationProps>();
+    >().toEqualTypeOf<DataViewsPaginationProps>();
   });
 });
 
@@ -101,29 +158,33 @@ describe("connected part props", () => {
   it("keeps what Filters derives out of its props", () => {
     // Its controls come from the provider, its name from its legend and the
     // fieldset's group role is its own.
-    expectTypeOf<FiltersProps>().not.toHaveProperty("children");
-    expectTypeOf<FiltersProps>().not.toHaveProperty("role");
-    expectTypeOf<FiltersProps>().not.toHaveProperty("aria-label");
-    expectTypeOf<FiltersProps>().not.toHaveProperty("aria-labelledby");
-    expectTypeOf<FiltersProps>().toHaveProperty("disabled");
+    expectTypeOf<DataViewsFiltersProps>().not.toHaveProperty("children");
+    expectTypeOf<DataViewsFiltersProps>().not.toHaveProperty("role");
+    expectTypeOf<DataViewsFiltersProps>().not.toHaveProperty("aria-label");
+    expectTypeOf<DataViewsFiltersProps>().not.toHaveProperty("aria-labelledby");
+    expectTypeOf<DataViewsFiltersProps>().toHaveProperty("disabled");
   });
 
   it("keeps what Pagination derives out of its props", () => {
-    expectTypeOf<PaginationProps>().not.toHaveProperty("children");
-    expectTypeOf<PaginationProps>().not.toHaveProperty("role");
-    expectTypeOf<PaginationProps>().not.toHaveProperty("aria-label");
-    expectTypeOf<PaginationProps>().not.toHaveProperty("aria-labelledby");
-    expectTypeOf<PaginationProps>().toHaveProperty("id");
+    expectTypeOf<DataViewsPaginationProps>().not.toHaveProperty("children");
+    expectTypeOf<DataViewsPaginationProps>().not.toHaveProperty("role");
+    expectTypeOf<DataViewsPaginationProps>().not.toHaveProperty("aria-label");
+    expectTypeOf<DataViewsPaginationProps>().not.toHaveProperty(
+      "aria-labelledby",
+    );
+    expectTypeOf<DataViewsPaginationProps>().toHaveProperty("id");
   });
 
   it("keeps what Actions derives out of its props", () => {
     // Its name comes from its label and the group role is its own; its
     // children are the caller's actions.
-    expectTypeOf<ActionsProps>().not.toHaveProperty("role");
-    expectTypeOf<ActionsProps>().not.toHaveProperty("aria-label");
-    expectTypeOf<ActionsProps>().not.toHaveProperty("aria-labelledby");
-    expectTypeOf<ActionsProps>().not.toHaveProperty("selection");
-    expectTypeOf<ActionsProps>().not.toHaveProperty("ref");
-    expectTypeOf<ActionsProps>().toHaveProperty("children");
+    expectTypeOf<DataViewsActionsProps>().not.toHaveProperty("role");
+    expectTypeOf<DataViewsActionsProps>().not.toHaveProperty("aria-label");
+    expectTypeOf<DataViewsActionsProps>().not.toHaveProperty("aria-labelledby");
+    expectTypeOf<DataViewsActionsProps>().not.toHaveProperty("selection");
+    // The bar holds its root to hand the focus back; the caller's own ref
+    // is merged with that, never dropped.
+    expectTypeOf<DataViewsActionsProps>().toHaveProperty("ref");
+    expectTypeOf<DataViewsActionsProps>().toHaveProperty("children");
   });
 });

@@ -1,10 +1,11 @@
 import { Button } from "@canonical/react-ds-global";
 import type { ReactElement } from "react";
 import { useCallback, useContext, useRef } from "react";
+import useMergedRef from "../../../useMergedRef.js";
 import DataViewsContext from "../../Context.js";
-import useDataViewsState from "../../hooks/useDataViewsState.js";
-import plural from "../../plural.js";
-import type { ActionsProps } from "./types.js";
+import useDataViewsValue from "../../hooks/useDataViewsValue.js";
+import pluralNoun from "../../pluralNoun.js";
+import type { DataViewsActionsProps } from "./types.js";
 import "./styles.css";
 
 /**
@@ -34,14 +35,15 @@ export default function Actions({
   children,
   className,
   onFocus,
+  ref,
   ...rest
-}: ActionsProps): ReactElement | null {
+}: DataViewsActionsProps): ReactElement | null {
   const provider = useContext(DataViewsContext);
   if (provider === null) {
     throw new Error("DataViews.Actions must be used inside a DataViews root");
   }
   const { selection } = provider;
-  const count = useDataViewsState(selection).ids.size;
+  const count = useDataViewsValue(selection.state).ids.size;
 
   // Where focus entered the bar from. React releases the bar's ref before
   // it removes the bar, so a bar leaving with the focus inside it can still
@@ -58,6 +60,10 @@ export default function Actions({
     },
     [],
   );
+  // The bar's root is its own, so a caller's ref is merged onto it rather
+  // than dropped: the focus goes back first, then the caller's ref is
+  // released.
+  const attach = useMergedRef(ref, returnFocus);
 
   if (count === 0) {
     return null;
@@ -66,7 +72,7 @@ export default function Actions({
     // biome-ignore lint/a11y/useSemanticElements: a fieldset groups form controls under a legend; this groups commands under the name its label gives it
     <div
       {...rest}
-      ref={returnFocus}
+      ref={attach}
       role="group"
       aria-label={label}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
@@ -89,7 +95,7 @@ export default function Actions({
         importance="tertiary"
         icon="close"
         className="deselect"
-        aria-label={`Deselect ${count} ${plural(count, "item")}`}
+        aria-label={`Deselect ${count} ${pluralNoun(count, "item")}`}
         onClick={() => {
           selection.clear();
         }}

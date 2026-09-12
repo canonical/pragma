@@ -7,10 +7,7 @@
  * jsdom lays nothing out, so the viewport's height, its scroll position
  * and every row's measured size are the test's to set.
  */
-import type {
-  DataViewsProvider,
-  SourceCapabilities,
-} from "@canonical/dataviews-core";
+import type { DataViewsProvider } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
@@ -21,6 +18,11 @@ import { StrictMode } from "react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  COUNTED_EXACTLY,
+  declaring,
+  sorting,
+} from "../../../capabilities.fixtures.js";
 import DataTable from "../../../DataTable/DataTable.js";
 import type {
   DataTableCellProps,
@@ -40,14 +42,12 @@ type Machine = {
   readonly status: string;
 };
 
-const capabilities: SourceCapabilities = {
+const capabilities = declaring({
   filter: { status: ["eq"] },
-  search: ["name"],
-  sort: ["name"],
-  sortTerms: 1,
-  group: [],
-  count: "filtered",
-};
+  search: { fields: ["name"] },
+  sort: sorting(["name"], 1),
+  counts: COUNTED_EXACTLY,
+});
 
 /** `count` machines from `m-<from>`, each named `host-<n>`. */
 const machines = (count: number, from = 0): Machine[] =>
@@ -139,11 +139,17 @@ const load = (
   if (requestId === null) {
     throw new Error("expected a refresh request");
   }
+  const counted = { kind: "exact", value: rows.length } as const;
   act(() => {
     provider.complete(requestId, {
-      status: "success",
-      rows,
-      count: rows.length,
+      status: "succeeded",
+      page: {
+        rows,
+        groups: null,
+        counts: { visible: counted, matched: counted, total: counted },
+        more: null,
+        cursors: null,
+      },
     });
   });
 };
@@ -640,14 +646,14 @@ describe("windowed DataTable", () => {
       act(() => {
         provider.setSearch("host-1");
       });
-      const requestId = provider.result.get().pendingRequestId;
+      const requestId = provider.state.get().pendingRequestId;
       if (requestId === null) {
         throw new Error("expected the search to issue a request");
       }
       act(() => {
         provider.complete(requestId, {
-          status: "failure",
-          reason: "unreachable",
+          status: "failed",
+          failure: { reason: "unreachable", cause: null, transient: null },
         });
       });
       expect(table).toHaveAttribute("aria-rowcount", "1002");
@@ -664,14 +670,14 @@ describe("windowed DataTable", () => {
       act(() => {
         provider.setSearch("host-1");
       });
-      const requestId = provider.result.get().pendingRequestId;
+      const requestId = provider.state.get().pendingRequestId;
       if (requestId === null) {
         throw new Error("expected the search to issue a request");
       }
       act(() => {
         provider.complete(requestId, {
-          status: "failure",
-          reason: "unreachable",
+          status: "failed",
+          failure: { reason: "unreachable", cause: null, transient: null },
         });
       });
       const calls = renderStatus.mock.calls.length;
@@ -694,7 +700,7 @@ describe("windowed DataTable", () => {
     fireEvent.click(
       screen.getByRole("checkbox", { name: "Select all displayed rows" }),
     );
-    expect(provider.selection.state.ids.size).toBe(1000);
+    expect(provider.selection.state.get().ids.size).toBe(1000);
   });
 
   it("resizes a column across the rows it mounts", () => {

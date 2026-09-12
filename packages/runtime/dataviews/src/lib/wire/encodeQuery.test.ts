@@ -5,6 +5,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+import DEFAULT_WINDOW from "../query/defaultWindow.js";
 import type { ResultWindow, Slice } from "../query/types.js";
 import createSchema from "../schema/createSchema.js";
 import encodeQuery from "./encodeQuery.js";
@@ -25,10 +26,10 @@ const emptySlice: Slice = {
   filter: [],
   search: null,
   sort: [],
-  group: null,
+  group: [],
 };
 
-const firstPage: ResultWindow = { page: 1, size: 50 };
+const firstPage: ResultWindow = DEFAULT_WINDOW;
 
 describe("encodeQuery", () => {
   it("writes the window even when the query is empty", () => {
@@ -36,7 +37,7 @@ describe("encodeQuery", () => {
       encodeQuery({
         schema: machines(),
         slice: emptySlice,
-        window: { page: 2, size: 25 },
+        window: { ...DEFAULT_WINDOW, page: 2, size: 25 },
       }).toString(),
     ).toBe("page=2&size=25");
   });
@@ -50,7 +51,7 @@ describe("encodeQuery", () => {
           ...emptySlice,
           filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
         },
-        preserve: new URLSearchParams("as=table&page=4&size=10"),
+        preserve: new URLSearchParams("as=table&page=4&size=10&cursor=abc"),
       }).toString(),
     ).toBe("as=table&status=failed");
   });
@@ -73,7 +74,7 @@ describe("encodeQuery", () => {
     expect(params.getAll("status")).toEqual(["cancelled", "failed"]);
   });
 
-  it("spells bounds, the zero-value operator, search and grouping", () => {
+  it("spells bounds, the zero-value operator and search", () => {
     const params = encodeQuery({
       schema: machines(),
       slice: {
@@ -84,7 +85,7 @@ describe("encodeQuery", () => {
         ],
         search: "yak",
         sort: [],
-        group: "status",
+        group: [],
       },
       window: firstPage,
     });
@@ -92,7 +93,28 @@ describe("encodeQuery", () => {
     expect(params.get("updated__lte")).toBe("2026-01-01");
     expect(params.get("owner__isSet")).toBe("1");
     expect(params.get("q")).toBe("yak");
-    expect(params.get("group")).toBe("status");
+  });
+
+  it("writes one group parameter per nesting level, outermost first", () => {
+    const params = encodeQuery({
+      schema: machines(),
+      slice: {
+        ...emptySlice,
+        group: [{ field: "status" }, { field: "owner" }],
+      },
+      window: firstPage,
+    });
+    expect(params.getAll("group")).toEqual(["status", "owner"]);
+  });
+
+  it("writes no group parameter for an ungrouped query", () => {
+    expect(
+      encodeQuery({
+        schema: machines(),
+        slice: emptySlice,
+        window: firstPage,
+      }).has("group"),
+    ).toBe(false);
   });
 
   it("preserves sort precedence rather than ordering the terms", () => {
@@ -126,9 +148,50 @@ describe("encodeQuery", () => {
     ).toBe(false);
   });
 
+  it("writes the cursor the window carries", () => {
+    expect(
+      encodeQuery({
+        schema: machines(),
+        slice: emptySlice,
+        window: { ...DEFAULT_WINDOW, page: 3, cursor: "after-page-two" },
+      }).toString(),
+    ).toBe("page=3&size=50&cursor=after-page-two");
+  });
+
+  it("writes no cursor when the window carries none", () => {
+    expect(
+      encodeQuery({
+        schema: machines(),
+        slice: emptySlice,
+        window: { ...DEFAULT_WINDOW, page: 3 },
+      }).has("cursor"),
+    ).toBe(false);
+  });
+
+  it("clears a stale cursor rather than leaving it to address another page", () => {
+    expect(
+      encodeQuery({
+        schema: machines(),
+        slice: emptySlice,
+        window: { ...DEFAULT_WINDOW, page: 2 },
+        preserve: new URLSearchParams("cursor=stale&tab=overview"),
+      }).toString(),
+    ).toBe("tab=overview&page=2&size=50");
+  });
+
+  it("never writes the collapsed groups, so a reload expands them", () => {
+    expect(
+      encodeQuery({
+        schema: machines(),
+        slice: { ...emptySlice, group: [{ field: "status" }] },
+        window: { ...DEFAULT_WINDOW, collapsed: [["failed"], ["ready"]] },
+      }).toString(),
+    ).toBe("group=status&page=1&size=50");
+  });
+
   it("replaces its own keys and leaves the host's parameters alone", () => {
     const preserve = new URLSearchParams(
-      "tab=overview&status=ready&tab=details&page=9&cursor=abc&sort=stale__asc",
+      "tab=overview&status=ready&tab=details&page=9&view=mine&sort=stale__asc",
     );
     const params = encodeQuery({
       schema: machines(),
@@ -141,8 +204,8 @@ describe("encodeQuery", () => {
     });
     // Host duplicates survive in their original order.
     expect(params.getAll("tab")).toEqual(["overview", "details"]);
-    // The cursor is reserved but not owned: the host still holds it.
-    expect(params.get("cursor")).toBe("abc");
+    // An annotation is reserved but not owned: the host still holds it.
+    expect(params.get("view")).toBe("mine");
     // Stale owned parameters are gone, not merged.
     expect(params.getAll("status")).toEqual(["failed"]);
     expect(params.getAll("sort")).toEqual([]);
@@ -177,6 +240,7 @@ describe("encodeQuery", () => {
     expect(spell(1e21)).toBe("1000000000000000000000");
     expect(spell(-1.25e22)).toBe("-12500000000000000000000");
     expect(spell(1.5e-7)).toBe("0.00000015");
+    expect(spell(-1.5e-7)).toBe("-0.00000015");
     expect(spell(4)).toBe("4");
   });
 
@@ -189,15 +253,11 @@ describe("encodeQuery", () => {
       ],
       search: "yak",
       sort: [{ field: "updated", direction: "desc" }],
-      group: "status",
+      group: [{ field: "status" }],
     };
-    const first = encodeQuery({ schema, slice, window: firstPage });
-    const second = encodeQuery({
-      schema,
-      slice,
-      window: firstPage,
-      preserve: first,
-    });
+    const window: ResultWindow = { ...DEFAULT_WINDOW, cursor: "token" };
+    const first = encodeQuery({ schema, slice, window });
+    const second = encodeQuery({ schema, slice, window, preserve: first });
     expect(second.toString()).toBe(first.toString());
   });
 });

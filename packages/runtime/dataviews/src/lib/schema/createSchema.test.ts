@@ -130,54 +130,54 @@ describe("createSchema", () => {
     ).toThrow();
   });
 
-  it("validates a choices buffer against the option set", () => {
-    expect(schema.validateBuffer("status", "failed")).toEqual({
+  it("validates a choices input against the option set", () => {
+    expect(schema.validateInput("status", "failed")).toEqual({
       status: "valid",
       operands: ["failed"],
     });
-    expect(schema.validateBuffer("status", "deployed")).toEqual({
+    expect(schema.validateInput("status", "deployed")).toEqual({
       status: "invalid",
       reason: '"deployed" is not an option of "status"',
     });
-    expect(schema.validateBuffer("status", " failed ")).toEqual({
+    expect(schema.validateInput("status", " failed ")).toEqual({
       status: "invalid",
       reason: '" failed " is not an option of "status"',
     });
-    expect(schema.validateBuffer("status", "")).toEqual({
+    expect(schema.validateInput("status", "")).toEqual({
       status: "incomplete",
     });
   });
 
-  it("validates number buffers with range enforcement", () => {
-    expect(schema.validateBuffer("cpu", "4")).toEqual({
+  it("validates number inputs with range enforcement", () => {
+    expect(schema.validateInput("cpu", "4")).toEqual({
       status: "valid",
       operands: [4],
     });
-    expect(schema.validateBuffer("cpu", "0")).toEqual({
+    expect(schema.validateInput("cpu", "0")).toEqual({
       status: "valid",
       operands: [0],
     });
-    expect(schema.validateBuffer("cpu", "64")).toEqual({
+    expect(schema.validateInput("cpu", "64")).toEqual({
       status: "valid",
       operands: [64],
     });
-    expect(schema.validateBuffer("cpu", "4.5")).toEqual({
+    expect(schema.validateInput("cpu", "4.5")).toEqual({
       status: "valid",
       operands: [4.5],
     });
-    expect(schema.validateBuffer("cpu", "")).toEqual({
+    expect(schema.validateInput("cpu", "")).toEqual({
       status: "incomplete",
     });
-    expect(schema.validateBuffer("cpu", "-2")).toEqual({
+    expect(schema.validateInput("cpu", "-2")).toEqual({
       status: "invalid",
       reason: "-2 is below the minimum of 0",
     });
-    expect(schema.validateBuffer("cpu", "99")).toEqual({
+    expect(schema.validateInput("cpu", "99")).toEqual({
       status: "invalid",
       reason: "99 is above the maximum of 64",
     });
     for (const bad of ["four", "1e3", " 4", "+4"]) {
-      expect(schema.validateBuffer("cpu", bad)).toEqual({
+      expect(schema.validateInput("cpu", bad)).toEqual({
         status: "invalid",
         reason: "not a number",
       });
@@ -185,26 +185,26 @@ describe("createSchema", () => {
   });
 
   it("accepts any finite number for unbounded number fields", () => {
-    expect(schema.validateBuffer("memory", "-1")).toEqual({
+    expect(schema.validateInput("memory", "-1")).toEqual({
       status: "valid",
       operands: [-1],
     });
   });
 
-  it("validates date buffers as ISO-8601 calendar dates", () => {
-    expect(schema.validateBuffer("updated", "2026-01-31")).toEqual({
+  it("validates date inputs as ISO-8601 calendar dates", () => {
+    expect(schema.validateInput("updated", "2026-01-31")).toEqual({
       status: "valid",
       operands: ["2026-01-31"],
     });
-    expect(schema.validateBuffer("updated", "2024-02-29")).toEqual({
+    expect(schema.validateInput("updated", "2024-02-29")).toEqual({
       status: "valid",
       operands: ["2024-02-29"],
     });
-    expect(schema.validateBuffer("updated", "2000-02-29")).toEqual({
+    expect(schema.validateInput("updated", "2000-02-29")).toEqual({
       status: "valid",
       operands: ["2000-02-29"],
     });
-    expect(schema.validateBuffer("updated", "")).toEqual({
+    expect(schema.validateInput("updated", "")).toEqual({
       status: "incomplete",
     });
     for (const invalid of [
@@ -219,7 +219,7 @@ describe("createSchema", () => {
       "2026-01-00",
       "yesterday",
     ]) {
-      expect(schema.validateBuffer("updated", invalid)).toEqual({
+      expect(schema.validateInput("updated", invalid)).toEqual({
         status: "invalid",
         reason: `"${invalid}" is not an ISO-8601 calendar date (YYYY-MM-DD)`,
       });
@@ -227,18 +227,18 @@ describe("createSchema", () => {
   });
 
   it("reports unknown fields as invalid", () => {
-    expect(schema.validateBuffer("zone", "north")).toEqual({
+    expect(schema.validateInput("zone", "north")).toEqual({
       status: "invalid",
       reason: 'unknown field "zone"',
     });
   });
 
-  it("refuses text-buffer editing for flag fields before other checks", () => {
-    expect(schema.validateBuffer("owner", "1")).toEqual({
+  it("refuses text-input editing for flag fields before other checks", () => {
+    expect(schema.validateInput("owner", "1")).toEqual({
       status: "invalid",
       reason: "flag fields edit through direct commands",
     });
-    expect(schema.validateBuffer("owner", "")).toEqual({
+    expect(schema.validateInput("owner", "")).toEqual({
       status: "invalid",
       reason: "flag fields edit through direct commands",
     });
@@ -429,7 +429,7 @@ describe("createSchema", () => {
     const numeric = createSchema([
       { field: "priority", kind: "choices", options: [1, 2, 3] },
     ]);
-    expect(numeric.validateBuffer("priority", "2")).toEqual({
+    expect(numeric.validateInput("priority", "2")).toEqual({
       status: "valid",
       operands: [2],
     });
@@ -442,7 +442,7 @@ describe("createSchema", () => {
       status: "invalid",
       reason: '"2" is not an option of "priority"',
     });
-    expect(numeric.validateBuffer("priority", " 1")).toEqual({
+    expect(numeric.validateInput("priority", " 1")).toEqual({
       status: "invalid",
       reason: '" 1" is not an option of "priority"',
     });

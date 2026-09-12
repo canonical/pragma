@@ -7,7 +7,7 @@ import { isOwnedKey, OPERATOR_DELIMITER, wireKeyOf } from "./wireGrammar.js";
 const IS_SET_VALUE = "1";
 
 /**
- * A number in the plain decimal the buffer grammar reads. A number's own
+ * A number in the plain decimal the input grammar reads. A number's own
  * string form switches to exponent notation beyond 1e21 and below 1e-6;
  * moving the point respells the same shortest round-trip digits, so the
  * value read back is exactly the value written.
@@ -33,7 +33,7 @@ const plainDecimal = (value: number): string => {
   return negative ? `-${body}` : body;
 };
 
-/** One operand as the buffer grammar spells it. */
+/** One operand as the input grammar spells it. */
 const operandText = (operand: PredicateOperand): string =>
   typeof operand === "number" ? plainDecimal(operand) : String(operand);
 
@@ -82,14 +82,18 @@ export default function encodeQuery(
       `${term.field}${OPERATOR_DELIMITER}${term.direction}`,
     );
   }
-  if (canonical.group !== null) {
-    params.set("group", canonical.group);
+  for (const term of canonical.group) {
+    params.append("group", term.field);
   }
   // Written whenever given: a window read back is the window that was
-  // displayed, never a default the reader has to know.
+  // displayed, never a default the reader has to know. Collapse is left
+  // out, so a reload expands every group.
   if (window !== null) {
     params.set("page", String(window.page));
     params.set("size", String(window.size));
+    if (window.cursor !== null) {
+      params.set("cursor", window.cursor);
+    }
   }
   return params;
 }

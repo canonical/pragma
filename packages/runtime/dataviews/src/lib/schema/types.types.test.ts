@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import createSchema from "./createSchema.js";
-import type { SchemaFields } from "./types.js";
+import type { AppliedValues } from "./types.js";
 
 const machines = createSchema([
   { field: "status", kind: "choices", options: ["failed", "cancelled"] },
@@ -8,7 +8,7 @@ const machines = createSchema([
   { field: "owner", kind: "flag" },
 ]);
 
-type MachinesFields = SchemaFields<typeof machines.fields>;
+type MachinesFields = AppliedValues<typeof machines.fields>;
 
 describe("schema type inference", () => {
   it("infers literal field names from the construction", () => {

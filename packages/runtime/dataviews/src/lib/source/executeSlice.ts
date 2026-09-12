@@ -1,6 +1,5 @@
 import canonicalSlice, { operandRankOf } from "../query/canonicalSlice.js";
 import type { Predicate, PredicateOperand, Slice } from "../query/types.js";
-import type { RowRecord } from "../rows/types.js";
 import type { FieldReader } from "./types.js";
 
 /** Own-property read: the default field access for plain record rows. */
@@ -150,7 +149,7 @@ const matchesSearch = (
 };
 
 /** How a local execution reads rows and what free text searches. */
-export type ExecuteSliceOptions = {
+export type ExecuteSliceConfig = {
   /** Field access; own-property lookup by default. */
   readonly read?: FieldReader;
   /** Fields free-text search reads; none by default. */
@@ -160,17 +159,21 @@ export type ExecuteSliceOptions = {
 /**
  * Execute a query over complete local input: filter, then search, then
  * sort. Windowing stays a separate projection (`applyWindow`), so the
- * caller still holds the filtered total. The sort is stable over a total
- * order, so the input order is the effective default ordering and the
- * tiebreak of every term.
+ * caller still holds every matching row and can count it. The sort is
+ * stable over a total order, so the input order is the effective default
+ * ordering and the tiebreak of every term.
+ *
+ * Seam for the grouping unit: group levels order before the sort terms and
+ * produce the summaries of one page. Nothing here groups, because no source
+ * declares a groupable field and a grouped request is refused.
  */
-export default function executeSlice(
-  rows: readonly RowRecord[],
+export default function executeSlice<TRow extends object>(
+  rows: readonly TRow[],
   slice: Slice,
-  options: ExecuteSliceOptions = {},
-): readonly RowRecord[] {
-  const read = options.read ?? readProperty;
-  const searchFields = options.searchFields ?? [];
+  config: ExecuteSliceConfig = {},
+): readonly TRow[] {
+  const read = config.read ?? readProperty;
+  const searchFields = config.searchFields ?? [];
   const query = canonicalSlice(slice);
   const needle = query.search === null ? null : query.search.toLowerCase();
   const predicates = query.filter.map(compilePredicate);

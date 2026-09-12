@@ -13,6 +13,7 @@
   "exclude": [
     "src/**/*.stories.ts",
     "src/**/*.stories.tsx",
+    "src/**/*.fixtures.ts",
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "src/**/*.ssr.test.ts",

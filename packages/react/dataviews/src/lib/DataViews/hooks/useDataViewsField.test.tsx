@@ -40,9 +40,9 @@ describe("useDataViewsField", () => {
     });
     expect(result.current.input).toBe("4");
     expect(result.current.applied).toEqual({ kind: "value", value: 4 });
-    expect(result.current.feedback).toEqual({ kind: "applied" });
+    expect(result.current.feedback).toEqual({ status: "applied" });
     // The edit dispatched through the coordinator.
-    expect(p.result.get().slice.filter).toEqual([
+    expect(p.state.get().slice.filter).toEqual([
       { field: "cpu", operator: "gte", operands: [4] },
     ]);
   });
@@ -59,11 +59,11 @@ describe("useDataViewsField", () => {
       result.current.edit("four");
     });
     expect(result.current.feedback).toEqual({
-      kind: "invalid",
+      status: "invalid",
       reason: "not a number",
       retainsPredicate: true,
     });
-    expect(p.result.get().slice.filter).toEqual([
+    expect(p.state.get().slice.filter).toEqual([
       { field: "cpu", operator: "gte", operands: [4] },
     ]);
   });
@@ -81,7 +81,7 @@ describe("useDataViewsField", () => {
     });
     expect(result.current.input).toBe("");
     expect(result.current.applied).toEqual({ kind: "empty" });
-    expect(p.result.get().slice.filter).toEqual([]);
+    expect(p.state.get().slice.filter).toEqual([]);
   });
 
   it("re-binds when the handle changes", () => {
@@ -117,7 +117,7 @@ describe("useDataViewsField", () => {
       kind: "value",
       value: new Set(["failed", "cancelled"]),
     });
-    expect(p.result.get().slice.filter).toEqual([
+    expect(p.state.get().slice.filter).toEqual([
       { field: "status", operator: "eq", operands: ["failed", "cancelled"] },
     ]);
   });

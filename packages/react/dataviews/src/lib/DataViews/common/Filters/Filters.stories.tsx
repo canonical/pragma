@@ -5,7 +5,7 @@ import { consumerCode } from "../../../../storybook/machines/consumerCode.js";
 import { createSourceWithoutCores } from "../../../../storybook/machines/fixtures.js";
 import type {
   MachineProvider,
-  MachineProviderOptions,
+  MachineProviderConfig,
 } from "../../../../storybook/machines/story-utils.js";
 import {
   useMachineProvider,
@@ -15,7 +15,7 @@ import DataTable from "../../../DataTable/DataTable.js";
 import type { DataTableColumn } from "../../../DataTable/types.js";
 import DataViews from "../../Provider.js";
 import Component from "./Filters.js";
-import type { FiltersProps } from "./types.js";
+import type { DataViewsFiltersProps } from "./types.js";
 
 const meta = {
   title: "_work_in_progress/DataViews/Filters",
@@ -54,8 +54,8 @@ const parts = ["DataTable", "DataViews", "type DataTableColumn"];
 function FilteredMachines({
   options,
   ...args
-}: FiltersProps & {
-  readonly options?: MachineProviderOptions;
+}: DataViewsFiltersProps & {
+  readonly options?: MachineProviderConfig;
 }): ReactElement {
   const provider = useMachineProvider(options);
   return (
@@ -67,7 +67,7 @@ function FilteredMachines({
 }
 
 const renderWith =
-  (options?: MachineProviderOptions): NonNullable<Story["render"]> =>
+  (options?: MachineProviderConfig): NonNullable<Story["render"]> =>
   (args) => <FilteredMachines {...args} options={options} />;
 
 /** The table's record rows: every row but the header's. */

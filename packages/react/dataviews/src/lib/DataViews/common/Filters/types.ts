@@ -20,7 +20,7 @@ type OwnProps = {
  * the fieldset's `group` role, and `aria-label` and `aria-labelledby`,
  * which would override the name it takes from `label`.
  */
-export type FiltersProps = OwnProps &
+export type DataViewsFiltersProps = OwnProps &
   Omit<
     ComponentProps<"fieldset">,
     keyof OwnProps | "children" | "role" | "aria-label" | "aria-labelledby"

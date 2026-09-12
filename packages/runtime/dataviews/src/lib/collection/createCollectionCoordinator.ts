@@ -1,58 +1,65 @@
 import createIdentity, { type Identity } from "../createIdentity.js";
 import applyQueryCommand from "../query/applyQueryCommand.js";
 import canonicalSlice from "../query/canonicalSlice.js";
-import DEFAULT_RESULT_WINDOW from "../query/defaultWindow.js";
+import DEFAULT_WINDOW from "../query/defaultWindow.js";
+import EMPTY_SLICE from "../query/emptySlice.js";
+import stableJson from "../query/stableJson.js";
 import type {
+  Query,
   QueryCommand,
   QueryCommandResult,
   ResultWindow,
   Slice,
 } from "../query/types.js";
+import type {
+  Completion,
+  GroupSummary,
+  PageCursors,
+  ResultProblem,
+  ResultProvenance,
+  SourceCounts,
+} from "../result/types.js";
 import type { RowRecord } from "../rows/types.js";
 
 /**
- * Display status of the result projection. A settled failure over retained
- * rows is `ready` only while those rows still answer the current query, as
- * after a failed refresh; over rows an earlier query produced it is `stale`,
- * so a result that does not match the query never reports `ready`.
+ * Display status of the result projection.
+ *
+ * `refreshFailed` is a settled problem over rows that still answer the
+ * current query, as after a failed refresh: the rows are usable and the
+ * problem is real, so both are reported. `stale` is the same over rows an
+ * earlier query produced. `failed` is a problem with no rows to keep. A
+ * result that does not match the current query never reports `ready`.
+ *
+ * Seam for the grouping unit: a shape change withholds rows behind a
+ * status of its own, which nothing can reach while no source groups.
  */
 export type ResultStatus =
   | "idle"
   | "pending"
   | "refreshing"
   | "ready"
+  | "refreshFailed"
   | "stale"
-  | "error";
+  | "failed";
 
 /**
- * Which request produced the currently displayed rows. A pending or failed
- * request keeps the previous provenance: retained rows are never described
- * as results of the current query.
- */
-export type ResultProvenance = {
-  readonly requestId: string;
-};
-
-/**
- * Immutable result state. `lastError` records a failed request truthfully;
- * retained rows stay displayed when one exists.
+ * Immutable result state: one page of a collection as the renderer sees
+ * it. Retained rows keep the provenance of the request that produced them,
+ * so they are never described as results of the current query.
  */
 export type ResultState<TRow extends object = RowRecord> = {
   readonly status: ResultStatus;
   readonly rows: readonly TRow[] | null;
-  readonly count: number | null;
+  /** Seam for the grouping unit: null until a source declares summaries. */
+  readonly groups: readonly GroupSummary[] | null;
+  readonly counts: SourceCounts | null;
+  /** Whether a further page exists when no count says so; null when unknown. */
+  readonly more: boolean | null;
+  readonly cursors: PageCursors | null;
   readonly provenance: ResultProvenance | null;
-  readonly lastError: string | null;
+  /** The last refusal or failure, structurally; null after a success. */
+  readonly problem: ResultProblem | null;
 };
-
-/** Completion payload of one request. */
-export type CompletionResult<TRow extends object = RowRecord> =
-  | {
-      readonly status: "success";
-      readonly rows: readonly TRow[];
-      readonly count: number | null;
-    }
-  | { readonly status: "failure"; readonly reason: string };
 
 /** Coordinator configuration; `slice` and `window` seed every fresh scope. */
 export type CollectionCoordinatorConfig = {
@@ -67,13 +74,11 @@ export type DispatchResult = QueryCommandResult & {
 };
 
 /** Immutable coordinator snapshot; referentially stable between mutations. */
-export type CollectionCoordinatorState<TRow extends object = RowRecord> = {
+export type CollectionState<TRow extends object = RowRecord> = Query & {
   readonly scope: Identity;
-  readonly slice: Slice;
-  readonly window: ResultWindow;
   readonly result: ResultState<TRow>;
   /** True when displayed rows were produced by the current query and window. */
-  readonly resultsMatchCurrentQuery: boolean;
+  readonly resultMatchesQuery: boolean;
   /**
    * The one request identity awaiting completion, or null when none is
    * outstanding. A source executes exactly this request: every other
@@ -85,7 +90,7 @@ export type CollectionCoordinatorState<TRow extends object = RowRecord> = {
 
 /** Handle owning query/window coherence and the request lifecycle. */
 export type CollectionCoordinator<TRow extends object = RowRecord> = {
-  readonly state: CollectionCoordinatorState<TRow>;
+  readonly state: CollectionState<TRow>;
   /**
    * Apply one addressed command coherently. An accepted change that moves
    * the query or window issues a new request identity and retains previous
@@ -98,26 +103,25 @@ export type CollectionCoordinator<TRow extends object = RowRecord> = {
    */
   readonly refresh: () => string | null;
   /**
-   * Adopt an externally authoritative slice and window together, as on
-   * back/forward navigation or a restored view. Invalid windows throw, the
-   * same rejections the addressed command layer applies. Supersedes any
-   * pending request, discards stale input sessions above this layer, and
-   * returns a request identity when the adopted state differs from the
-   * current one.
+   * Adopt an externally authoritative query, as on back/forward navigation
+   * or a restored view. Invalid windows throw, the same rejections the
+   * addressed command layer applies. Supersedes any pending request,
+   * discards stale input sessions above this layer, and returns a request
+   * identity when the adopted query differs from the current one.
    */
-  readonly adopt: (slice: Slice, window: ResultWindow) => string | null;
+  readonly adopt: (query: Query) => string | null;
   /**
-   * Publish a completion for the most recently issued request, at most once.
-   * Completions for superseded requests, rotated scopes or a disposed
-   * coordinator are ignored; a success publishes rows, provenance and count
-   * together; a failure keeps the rows with the error recorded — `error`
-   * when no rows have been published, `ready` while the kept rows still
-   * answer the current query, `stale` when an earlier query produced them,
-   * even an empty set.
+   * Publish a completion for the most recently issued request, at most
+   * once. Completions for superseded requests, rotated scopes or a disposed
+   * coordinator are ignored. A success publishes rows, summaries, counts,
+   * cursors and provenance together. A refusal or a failure keeps the rows
+   * with the problem recorded — `failed` when no rows have been published,
+   * `refreshFailed` while the kept rows still answer the current query,
+   * `stale` when an earlier query produced them, even an empty set.
    */
   readonly complete: (
     requestId: string,
-    result: CompletionResult<TRow>,
+    completion: Completion<TRow>,
   ) => boolean;
   /**
    * Rotate to a fresh scope: query, window and result reset to the
@@ -129,13 +133,6 @@ export type CollectionCoordinator<TRow extends object = RowRecord> = {
   readonly dispose: () => void;
 };
 
-const emptySlice: Slice = Object.freeze({
-  filter: [],
-  search: null,
-  sort: [],
-  group: null,
-});
-
 /** Monotonic instance key: exact cross-instance distinctness, no
  * environment requirements. */
 let coordinatorInstances = 0;
@@ -143,24 +140,21 @@ let coordinatorInstances = 0;
 const idleResult: ResultState<never> = Object.freeze({
   status: "idle",
   rows: null,
-  count: null,
+  groups: null,
+  counts: null,
+  more: null,
+  cursors: null,
   provenance: null,
-  lastError: null,
+  problem: null,
 });
 
 const fingerprintOf = (slice: Slice, window: ResultWindow): string =>
-  JSON.stringify([canonicalSlice(slice), window], (_key, value) =>
-    typeof value === "number" && !Number.isFinite(value)
-      ? // An object marker cannot collide with any genuine operand: the
-        // operand domain has no objects.
-        { nonfinite: String(value) }
-      : value,
-  );
+  stableJson([canonicalSlice(slice), window]);
 
 /**
  * Copy a caller-supplied slice so later mutations of the original cannot
- * corrupt adopted or seeded state, including nested predicate and
- * sort-term objects.
+ * corrupt adopted or seeded state, including nested predicate, sort-term
+ * and group-term objects.
  */
 const copySlice = (slice: Slice): Slice =>
   Object.freeze({
@@ -179,7 +173,9 @@ const copySlice = (slice: Slice): Slice =>
         Object.freeze({ field: term.field, direction: term.direction }),
       ),
     ),
-    group: slice.group,
+    group: Object.freeze(
+      slice.group.map((term) => Object.freeze({ field: term.field })),
+    ),
   });
 
 const copyWindow = (window: ResultWindow): ResultWindow => {
@@ -189,7 +185,17 @@ const copyWindow = (window: ResultWindow): ResultWindow => {
   if (!Number.isInteger(window.size) || window.size < 1) {
     throw new Error("size must be a positive integer");
   }
-  return Object.freeze({ page: window.page, size: window.size });
+  if (window.cursor === "") {
+    throw new Error("cursor must not be empty; use null to clear it");
+  }
+  return Object.freeze({
+    page: window.page,
+    size: window.size,
+    cursor: window.cursor,
+    collapsed: Object.freeze(
+      window.collapsed.map((path) => Object.freeze([...path])),
+    ),
+  });
 };
 
 /**
@@ -203,9 +209,9 @@ export default function createCollectionCoordinator<
   TRow extends object = RowRecord,
 >(config: CollectionCoordinatorConfig = {}): CollectionCoordinator<TRow> {
   const seedSlice =
-    config.slice === undefined ? emptySlice : copySlice(config.slice);
+    config.slice === undefined ? EMPTY_SLICE : copySlice(config.slice);
   const seedWindow = copyWindow(
-    config.window === undefined ? DEFAULT_RESULT_WINDOW : config.window,
+    config.window === undefined ? DEFAULT_WINDOW : config.window,
   );
 
   let scope = createIdentity();
@@ -222,13 +228,13 @@ export default function createCollectionCoordinator<
   let result: ResultState<TRow> = idleResult;
   let disposed = false;
 
-  function buildSnapshot(): CollectionCoordinatorState<TRow> {
+  function buildSnapshot(): CollectionState<TRow> {
     return Object.freeze({
       scope,
       slice,
       window,
       result,
-      resultsMatchCurrentQuery:
+      resultMatchesQuery:
         result.provenance !== null &&
         publishedFingerprint === currentFingerprint,
       pendingRequestId: lastRequestId,
@@ -247,17 +253,25 @@ export default function createCollectionCoordinator<
     counter += 1;
     lastRequestId = `${instanceKey}:r${counter}`;
     publish({
+      ...result,
       status: refreshing ? "refreshing" : "pending",
-      rows: result.rows,
-      count: result.count,
-      provenance: result.provenance,
-      lastError: null,
+      problem: null,
     });
     return lastRequestId;
   };
 
+  /** Where a settled problem leaves the projection. */
+  const problemStatus = (): ResultStatus => {
+    if (result.rows === null) {
+      return "failed";
+    }
+    return publishedFingerprint === currentFingerprint
+      ? "refreshFailed"
+      : "stale";
+  };
+
   return {
-    get state(): CollectionCoordinatorState<TRow> {
+    get state(): CollectionState<TRow> {
       return snapshot;
     },
     dispatch(command: QueryCommand): DispatchResult {
@@ -274,11 +288,21 @@ export default function createCollectionCoordinator<
       if (applied.status === "rejected") {
         return { ...applied, requestId: null };
       }
-      if (!applied.queryChanged && !applied.windowChanged) {
+      if (!applied.sliceChanged && !applied.windowChanged) {
         return { ...applied, requestId: null };
       }
-      slice = applied.slice;
-      window = applied.window;
+      // The command layer threads the caller's own predicate, sort-term and
+      // group-path objects through, so what it changed is copied here, as it
+      // is on the adopt path. What it did not change is already this
+      // coordinator's own copy, and keeping its identity is what lets a
+      // source tell a window-only move from a new query without comparing
+      // them.
+      if (applied.slice !== slice) {
+        slice = copySlice(applied.slice);
+      }
+      // The window is rebuilt by every accepted command, so it is always the
+      // command layer's object and always copied.
+      window = copyWindow(applied.window);
       currentFingerprint = fingerprintOf(slice, window);
       const requestId = beginRequest(false);
       return { ...applied, requestId };
@@ -289,12 +313,12 @@ export default function createCollectionCoordinator<
       }
       return beginRequest(true);
     },
-    adopt(nextSlice: Slice, nextWindow: ResultWindow): string | null {
+    adopt(query: Query): string | null {
       if (disposed) {
         return null;
       }
-      const copiedSlice = copySlice(nextSlice);
-      const copiedWindow = copyWindow(nextWindow);
+      const copiedSlice = copySlice(query.slice);
+      const copiedWindow = copyWindow(query.window);
       const nextFingerprint = fingerprintOf(copiedSlice, copiedWindow);
       if (nextFingerprint === currentFingerprint) {
         return null;
@@ -304,36 +328,45 @@ export default function createCollectionCoordinator<
       currentFingerprint = nextFingerprint;
       return beginRequest(false);
     },
-    complete(requestId: string, completion: CompletionResult<TRow>): boolean {
+    complete(requestId: string, completion: Completion<TRow>): boolean {
       if (disposed || lastRequestId === null || requestId !== lastRequestId) {
         // Disposed coordinator, obsolete request, rotated scope, repeated
         // delivery, or no request at all: such a completion never publishes.
         return false;
       }
       lastRequestId = null;
-      if (completion.status === "success") {
+      if (completion.status === "succeeded") {
+        const { page } = completion;
         publishedFingerprint = currentFingerprint;
         publish({
           status: "ready",
-          rows: [...completion.rows],
-          count: completion.count,
-          provenance: { requestId },
-          lastError: null,
+          // Copied, not aliased: a source reusing one envelope across
+          // deliveries must not mutate a snapshot already published.
+          rows: Object.freeze([...page.rows]),
+          groups: page.groups === null ? null : Object.freeze([...page.groups]),
+          counts: Object.freeze({
+            visible: page.counts.visible,
+            matched: page.counts.matched,
+            total: page.counts.total,
+          }),
+          more: page.more,
+          cursors:
+            page.cursors === null
+              ? null
+              : Object.freeze({
+                  next: page.cursors.next,
+                  previous: page.cursors.previous,
+                }),
+          // Provenance is the request this coordinator issued, never
+          // anything the source says about it.
+          provenance: Object.freeze({ requestId, slice, window }),
+          problem: null,
         });
         return true;
       }
-      publish({
-        status:
-          result.rows === null
-            ? "error"
-            : publishedFingerprint === currentFingerprint
-              ? "ready"
-              : "stale",
-        rows: result.rows,
-        count: result.count,
-        provenance: result.provenance,
-        lastError: completion.reason,
-      });
+      // The completion is the problem: re-keying it would put one fact in
+      // two shapes on the surface.
+      publish({ ...result, status: problemStatus(), problem: completion });
       return true;
     },
     rotateScope(): void {

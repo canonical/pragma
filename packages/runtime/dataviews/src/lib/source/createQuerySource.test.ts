@@ -3,11 +3,13 @@ import {
   QueryObserver as TanStackObserver,
 } from "@tanstack/query-core";
 import { describe, expect, it, vi } from "vitest";
-import type { CompletionResult } from "../collection/createCollectionCoordinator.js";
 import createDataViewsProvider from "../provider/createDataViewsProvider.js";
+import DEFAULT_WINDOW from "../query/defaultWindow.js";
 import type { Slice } from "../query/types.js";
+import type { SourceDelivery, SourcePage } from "../result/types.js";
 import type { RowRecord } from "../rows/types.js";
 import createSchema from "../schema/createSchema.js";
+import { declaring, sorting } from "./capabilities.fixtures.js";
 import createQuerySource, {
   type QueryObservation,
   type QueryObserver,
@@ -16,48 +18,55 @@ import createSourceBinding from "./createSourceBinding.js";
 import type {
   SourceActionRunner,
   SourceCapabilities,
-  SourcePage,
+  SourceLookup,
   SourceRequest,
 } from "./types.js";
 
 /**
- * The query-client adapter, exercised against the real `@tanstack/query-core`
- * client: its cache, its refetching and its external writes. The adapter
+ * The query-client source, exercised against the real `@tanstack/query-core`
+ * client: its cache, its refetching and its external writes. The source
  * itself imports nothing from the library — the client reaches it through
  * the structural observer surface, which these tests prove the real
  * `QueryObserver` satisfies.
  */
 
-const emptySlice: Slice = { filter: [], search: null, sort: [], group: null };
+const emptySlice: Slice = { filter: [], search: null, sort: [], group: [] };
 
 const request = (overrides: Partial<SourceRequest> = {}): SourceRequest => ({
   requestId: "i1:r1",
   slice: emptySlice,
-  window: { page: 1, size: 50 },
+  window: DEFAULT_WINDOW,
   ...overrides,
 });
 
-/** A constrained REST endpoint: one sort term, filtered totals. */
-const endpoint: SourceCapabilities = {
+/** A constrained REST endpoint: one sort term, exact matched counts. */
+const endpoint: SourceCapabilities = declaring({
   filter: { status: ["eq"] },
-  search: ["name"],
-  sort: ["cpu"],
-  sortTerms: 1,
-  group: [],
-  count: "filtered",
-};
-
-const page = (rows: readonly RowRecord[], count: number): SourcePage => ({
-  rows,
-  count,
+  search: { fields: ["name"] },
+  sort: sorting(["cpu"], 1),
+  counts: { visible: "exact", matched: "exact", total: "exact" },
 });
 
-const delivery = () => vi.fn<(result: CompletionResult) => void>();
+const exact = (value: number) => ({ kind: "exact" as const, value });
+
+const page = (rows: readonly RowRecord[], matched: number): SourcePage => ({
+  rows,
+  groups: null,
+  counts: {
+    visible: exact(matched),
+    matched: exact(matched),
+    total: exact(matched),
+  },
+  more: null,
+  cursors: null,
+});
+
+const delivery = () => vi.fn<(delivered: SourceDelivery) => void>();
 
 const deliveredAt = (
   deliver: ReturnType<typeof delivery>,
   index: number,
-): CompletionResult => {
+): SourceDelivery => {
   const call = deliver.mock.calls[index];
   if (call === undefined) {
     throw new Error(`expected a delivery at index ${index}`);
@@ -95,41 +104,46 @@ const soleQueryKey = (queryClient: QueryClient): readonly unknown[] => {
 };
 
 describe("createQuerySource over @tanstack/query-core", () => {
-  it("delivers the fetched page and its filtered total", async () => {
+  it("delivers the fetched page and its counts", async () => {
     const deliver = delivery();
     const fetchPage = vi.fn().mockResolvedValue(page([{ id: "a" }], 42));
     source(client(), fetchPage).execute(request(), deliver);
     await vi.waitFor(() => expect(deliver).toHaveBeenCalled());
     expect(deliveredAt(deliver, 0)).toEqual({
-      status: "success",
-      rows: [{ id: "a" }],
-      count: 42,
+      status: "succeeded",
+      page: page([{ id: "a" }], 42),
     });
   });
 
   it("delivers a rejected fetch as a failure carrying its message", async () => {
     const deliver = delivery();
-    const fetchPage = vi.fn().mockRejectedValue(new Error("503 from ex:api"));
+    const error = new Error("503 from ex:api");
+    const fetchPage = vi.fn().mockRejectedValue(error);
     source(client(), fetchPage).execute(request(), deliver);
     await vi.waitFor(() => expect(deliver).toHaveBeenCalled());
     expect(deliveredAt(deliver, 0)).toEqual({
-      status: "failure",
-      reason: "503 from ex:api",
+      status: "failed",
+      failure: { reason: "503 from ex:api", cause: error, transient: null },
     });
   });
 
   it("freezes the declaration it was handed", () => {
-    const capabilities = { ...endpoint, sort: ["cpu"] };
-    const adapter = source(client(), () => Promise.resolve(page([], 0)));
-    expect(Object.isFrozen(adapter.capabilities)).toBe(true);
-    capabilities.sort.push("zone");
-    expect(adapter.capabilities.sort).toEqual(["cpu"]);
+    const fields = ["cpu"];
+    const built = createQuerySource({
+      capabilities: declaring({ sort: sorting(fields, 1) }),
+      queryKey: ["machines"],
+      fetchPage: () => Promise.resolve(page([], 0)),
+      observe: (query) => new TanStackObserver(client(), query),
+    });
+    expect(Object.isFrozen(built.capabilities)).toBe(true);
+    fields.push("zone");
+    expect(built.capabilities.sort.fields).toEqual(["cpu"]);
   });
 
   it("keys the cache by the canonical query, so respellings share it", async () => {
     const queryClient = client();
     const fetchPage = vi.fn().mockResolvedValue(page([{ id: "a" }], 1));
-    const adapter = source(queryClient, fetchPage);
+    const built = source(queryClient, fetchPage);
     const spelled: Slice = {
       ...emptySlice,
       filter: [
@@ -144,11 +158,11 @@ describe("createQuerySource over @tanstack/query-core", () => {
     };
 
     const first = delivery();
-    adapter.execute(request({ slice: spelled }), first);
+    built.execute(request({ slice: spelled }), first);
     await vi.waitFor(() => expect(first).toHaveBeenCalled());
 
     const second = delivery();
-    adapter.execute(request({ requestId: "i1:r2", slice: respelled }), second);
+    built.execute(request({ requestId: "i1:r2", slice: respelled }), second);
     expect(second).toHaveBeenCalledTimes(1);
     expect(fetchPage).toHaveBeenCalledTimes(1);
     expect(queryClient.getQueryCache().getAll()).toHaveLength(1);
@@ -157,9 +171,9 @@ describe("createQuerySource over @tanstack/query-core", () => {
   it("fetches a different query separately", async () => {
     const queryClient = client();
     const fetchPage = vi.fn().mockResolvedValue(page([], 0));
-    const adapter = source(queryClient, fetchPage);
-    adapter.execute(request(), delivery());
-    adapter.execute(
+    const built = source(queryClient, fetchPage);
+    built.execute(request(), delivery());
+    built.execute(
       request({ requestId: "i1:r2", slice: { ...emptySlice, search: "web" } }),
       delivery(),
     );
@@ -170,10 +184,13 @@ describe("createQuerySource over @tanstack/query-core", () => {
   it("fetches a different window separately", async () => {
     const queryClient = client();
     const fetchPage = vi.fn().mockResolvedValue(page([], 0));
-    const adapter = source(queryClient, fetchPage);
-    adapter.execute(request(), delivery());
-    adapter.execute(
-      request({ requestId: "i1:r2", window: { page: 2, size: 50 } }),
+    const built = source(queryClient, fetchPage);
+    built.execute(request(), delivery());
+    built.execute(
+      request({
+        requestId: "i1:r2",
+        window: { ...DEFAULT_WINDOW, page: 2 },
+      }),
       delivery(),
     );
     await vi.waitFor(() => expect(fetchPage).toHaveBeenCalledTimes(2));
@@ -194,48 +211,46 @@ describe("createQuerySource over @tanstack/query-core", () => {
   it("delivers a cached page at attach time without refetching", async () => {
     const queryClient = client();
     const fetchPage = vi.fn().mockResolvedValue(page([{ id: "a" }], 1));
-    const adapter = source(queryClient, fetchPage);
+    const built = source(queryClient, fetchPage);
     const warm = delivery();
-    const release = adapter.execute(request(), warm);
+    const release = built.execute(request(), warm);
     await vi.waitFor(() => expect(warm).toHaveBeenCalled());
     release();
 
     const deliver = delivery();
-    adapter.execute(request({ requestId: "i1:r2" }), deliver);
+    built.execute(request({ requestId: "i1:r2" }), deliver);
     expect(deliver).toHaveBeenCalledTimes(1);
     expect(deliveredAt(deliver, 0)).toEqual({
-      status: "success",
-      rows: [{ id: "a" }],
-      count: 1,
+      status: "succeeded",
+      page: page([{ id: "a" }], 1),
     });
     expect(fetchPage).toHaveBeenCalledTimes(1);
   });
 
   it("delivers a write into the client's cache as an external change", async () => {
     const queryClient = client();
-    const adapter = source(queryClient, () =>
+    const built = source(queryClient, () =>
       Promise.resolve(page([{ id: "a" }], 1)),
     );
     const deliver = delivery();
-    adapter.execute(request(), deliver);
+    built.execute(request(), deliver);
     await vi.waitFor(() => expect(deliver).toHaveBeenCalledTimes(1));
 
     queryClient.setQueryData(soleQueryKey(queryClient), page([{ id: "z" }], 2));
     expect(deliver).toHaveBeenCalledTimes(2);
     expect(deliveredAt(deliver, 1)).toEqual({
-      status: "success",
-      rows: [{ id: "z" }],
-      count: 2,
+      status: "succeeded",
+      page: page([{ id: "z" }], 2),
     });
   });
 
   it("releasing detaches this request's observer and leaves the cache", async () => {
     const queryClient = client();
-    const adapter = source(queryClient, () =>
+    const built = source(queryClient, () =>
       Promise.resolve(page([{ id: "a" }], 1)),
     );
     const deliver = delivery();
-    const release = adapter.execute(request(), deliver);
+    const release = built.execute(request(), deliver);
     await vi.waitFor(() => expect(deliver).toHaveBeenCalledTimes(1));
 
     release();
@@ -255,51 +270,88 @@ describe("createQuerySource over @tanstack/query-core", () => {
     let served = page([{ id: "a" }], 1);
     const binding = createSourceBinding({
       host,
-      adapter: source(queryClient, () => Promise.resolve(served)),
+      source: source(queryClient, () => Promise.resolve(served)),
     });
+    const release = binding.observe();
     const first = host.refresh();
     await vi.waitFor(() =>
-      expect(host.result.get().result.status).toBe("ready"),
+      expect(host.state.get().result.status).toBe("ready"),
     );
-    expect(host.result.get().result.provenance?.requestId).toBe(first);
+    expect(host.state.get().result.provenance?.requestId).toBe(first);
 
     served = page([{ id: "a" }, { id: "b" }], 2);
     await queryClient.invalidateQueries();
-    await vi.waitFor(() => expect(host.result.get().result.count).toBe(2));
-    const state = host.result.get();
+    await vi.waitFor(() =>
+      expect(host.state.get().result.counts?.matched).toEqual(exact(2)),
+    );
+    const state = host.state.get();
     expect(state.result.provenance).not.toBeNull();
     expect(state.result.provenance?.requestId).not.toBe(first);
-    expect(state.resultsMatchCurrentQuery).toBe(true);
-    binding.dispose();
+    expect(state.resultMatchesQuery).toBe(true);
+    release();
+  });
+
+  it("carries the refusals the declaration cannot express", () => {
+    const refuses = vi.fn().mockReturnValue([]);
+    const built = createQuerySource({
+      capabilities: endpoint,
+      queryKey: ["machines"],
+      fetchPage: () => Promise.resolve(page([], 0)),
+      observe: (query) => new TanStackObserver(client(), query),
+      refuses,
+    });
+    expect(built.refuses?.(request())).toEqual([]);
+    expect(refuses).toHaveBeenCalledTimes(1);
+  });
+
+  it("carries the endpoint's record lookup", async () => {
+    const lookup = vi
+      .fn<SourceLookup>()
+      .mockResolvedValue([{ id: "a", status: "missing" }]);
+    const built = createQuerySource({
+      capabilities: declaring({ lookup: { batch: 10 } }),
+      queryKey: ["machines"],
+      fetchPage: () => Promise.resolve(page([], 0)),
+      observe: (query) => new TanStackObserver(client(), query),
+      lookup,
+    });
+    await expect(built.lookup?.(["a"])).resolves.toEqual([
+      { id: "a", status: "missing" },
+    ]);
   });
 
   it("carries the application's row operations", async () => {
     const runAction = vi.fn<SourceActionRunner>().mockResolvedValue([]);
-    const adapter = createQuerySource({
+    const built = createQuerySource({
       capabilities: endpoint,
       queryKey: ["machines"],
       fetchPage: () => Promise.resolve(page([], 0)),
       observe: (query) => new TanStackObserver(client(), query),
       runAction,
     });
-    await adapter.runAction?.({ action: "stop", targets: ["a"], payload: 1 });
+    await built.runAction?.({
+      action: "stop",
+      targets: { kind: "explicit", ids: ["a"] },
+      payload: 1,
+    });
     expect(runAction).toHaveBeenCalledWith({
       action: "stop",
-      targets: ["a"],
+      targets: { kind: "explicit", ids: ["a"] },
       payload: 1,
     });
   });
 
-  it("has no row operations unless the application supplies them", () => {
-    expect(
-      "runAction" in source(client(), () => Promise.resolve(page([], 0))),
-    ).toBe(false);
+  it("has no optional port unless the application supplies one", () => {
+    const built = source(client(), () => Promise.resolve(page([], 0)));
+    expect("refuses" in built).toBe(false);
+    expect("lookup" in built).toBe(false);
+    expect("runAction" in built).toBe(false);
   });
 });
 
 /** A hand-driven observer: the emissions a real client cannot be made to
  * produce on demand, and a `destroy` that does not detach, so the
- * adapter's own unsubscribe is what has to do the work. */
+ * source's own unsubscribe is what has to do the work. */
 const fakeObserver = () => {
   let listener: ((observation: QueryObservation<SourcePage>) => void) | null =
     null;
@@ -367,9 +419,8 @@ describe("createQuerySource observation handling", () => {
     });
     expect(deliver).toHaveBeenCalledTimes(2);
     expect(deliveredAt(deliver, 1)).toEqual({
-      status: "success",
-      rows: [{ id: "b" }],
-      count: 2,
+      status: "succeeded",
+      page: page([{ id: "b" }], 2),
     });
   });
 
@@ -384,9 +435,9 @@ describe("createQuerySource observation handling", () => {
       data: undefined,
       error: new Error("504"),
     });
-    expect(deliveredAt(deliver, 1)).toEqual({
-      status: "failure",
-      reason: "504",
+    expect(deliveredAt(deliver, 1)).toMatchObject({
+      status: "failed",
+      failure: { reason: "504" },
     });
   });
 
@@ -403,8 +454,8 @@ describe("createQuerySource observation handling", () => {
       error: null,
     });
     expect(deliver.mock.calls.map((call) => call[0].status)).toEqual([
-      "failure",
-      "success",
+      "failed",
+      "succeeded",
     ]);
   });
 

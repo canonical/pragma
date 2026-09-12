@@ -68,4 +68,4 @@ On the server, and in a browser without JavaScript, the control renders only a n
 
 ## No store, no views
 
-A provider created without `views` has none: `provider.views` is `null`, and `DataViews.Views` throws inside its root rather than keep views in memory that a reload would lose. To keep views elsewhere — a backend of your own — implement the `ViewStore` contract from `@canonical/dataviews-core/views` and pass that instead.
+A provider created without `views` has none: `provider.views` is `null`, and `DataViews.Views` throws inside its root rather than keep views in memory that a reload would lose. To keep views elsewhere — a backend of your own — implement the `ViewStore` contract, which the package root exports, and pass that instead.

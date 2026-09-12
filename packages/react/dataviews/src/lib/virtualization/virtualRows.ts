@@ -1,7 +1,7 @@
 import type { DataTableWindowing } from "../DataTable/types.js";
 import windowed from "../DataTable/windowed.js";
 import { VirtualBody } from "./common/index.js";
-import type { VirtualRowsOptions } from "./types.js";
+import type { VirtualRowsConfig } from "./types.js";
 
 /**
  * Mount only the rows near a DataTable's viewport, however many rows its
@@ -19,7 +19,7 @@ import type { VirtualRowsOptions } from "./types.js";
  */
 export default function virtualRows({
   estimatedRowHeight,
-}: VirtualRowsOptions): DataTableWindowing {
+}: VirtualRowsConfig): DataTableWindowing {
   if (!Number.isFinite(estimatedRowHeight) || estimatedRowHeight <= 0) {
     throw new Error(
       "virtualRows requires a positive estimatedRowHeight, in pixels",

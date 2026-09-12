@@ -3,17 +3,22 @@ import defaultStatusText from "./defaultStatusText.js";
 
 describe("defaultStatusText", () => {
   it("gives each status its own words", () => {
-    expect(defaultStatusText({ kind: "loading" })).toBe("Loading…");
-    expect(defaultStatusText({ kind: "error", reason: "offline" })).toBe(
-      "offline",
+    expect(defaultStatusText({ status: "loading" })).toBe("Loading…");
+    expect(defaultStatusText({ status: "failed", reason: "offline" })).toBe(
+      "These rows could not be loaded: offline",
     );
-    expect(defaultStatusText({ kind: "stale", reason: "offline" })).toBe(
+    // A failed refresh keeps its rows, so the words say what could not be
+    // done rather than what is missing.
+    expect(
+      defaultStatusText({ status: "refresh-failed", reason: "offline" }),
+    ).toBe("These rows could not be refreshed: offline");
+    expect(defaultStatusText({ status: "stale", reason: "offline" })).toBe(
       "These rows do not match the current query: offline",
     );
-    expect(defaultStatusText({ kind: "no-results" })).toBe(
+    expect(defaultStatusText({ status: "no-results" })).toBe(
       "No rows match this query.",
     );
-    expect(defaultStatusText({ kind: "no-data" })).toBe(
+    expect(defaultStatusText({ status: "no-data" })).toBe(
       "There is nothing here yet.",
     );
   });

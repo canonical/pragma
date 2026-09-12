@@ -13,9 +13,11 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import type { SourcePage } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
+  DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
 import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -65,6 +67,19 @@ const selectorOf = (dom: string): string =>
         .join("")
     : dom;
 
+/** Two of three rows, counted exactly, as a source delivers them. */
+const twoOfThree: SourcePage = {
+  rows: [{ id: "m1" }, { id: "m2" }],
+  groups: null,
+  counts: {
+    visible: { kind: "exact", value: 3 },
+    matched: { kind: "exact", value: 3 },
+    total: { kind: "exact", value: 3 },
+  },
+  more: null,
+  cursors: null,
+};
+
 /** A bar over two pages of results, the page total showing. */
 const loaded = (): HTMLElement => {
   const schema = createSchema([
@@ -72,7 +87,7 @@ const loaded = (): HTMLElement => {
   ]);
   const provider = createDataViewsProvider({
     schema,
-    window: { page: 1, size: 2 },
+    window: { ...DEFAULT_WINDOW, page: 1, size: 2 },
   });
   const { container } = render(<PaginationBar provider={provider} />);
   const requestId = provider.refresh();
@@ -80,11 +95,7 @@ const loaded = (): HTMLElement => {
     throw new Error("expected a refresh request");
   }
   act(() => {
-    provider.complete(requestId, {
-      status: "success",
-      rows: [{ id: "m1" }, { id: "m2" }],
-      count: 3,
-    });
+    provider.complete(requestId, { status: "succeeded", page: twoOfThree });
   });
   return container;
 };

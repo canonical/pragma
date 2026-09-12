@@ -1,24 +1,49 @@
 /**
  * The table's statuses must stay distinct: a collection that failed to load
  * is not an empty one, a query that matched nothing is not a collection with
- * nothing in it, and rows an earlier query produced are not an answer to the
- * current one. Each case is driven through a real provider rather than a
+ * nothing in it, rows an earlier query produced are not an answer to the
+ * current one, and rows whose refresh failed are usable rows beside a real
+ * failure. Each case is driven through a real provider rather than a
  * hand-built snapshot.
  */
+import type { Completion, SourceRefusal } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
 } from "@canonical/dataviews-core";
 import { describe, expect, it } from "vitest";
+import { delivered, exact } from "../capabilities.fixtures.js";
 import tableStatus, { sameStatus } from "./tableStatus.js";
 
 const schema = createSchema([
   { field: "status", kind: "choices", options: ["failed", "running"] },
 ]);
 
+type Row = { readonly id: string };
+
 type Provider = ReturnType<
-  typeof createDataViewsProvider<typeof schema.fields>
+  typeof createDataViewsProvider<typeof schema.fields, Row>
 >;
+
+/** A request the source accepted and could not complete. */
+const failure = (reason: string): Completion<Row> => ({
+  status: "failed",
+  failure: { reason, cause: new Error(reason), transient: null },
+});
+
+/** A request the binding refused before executing it. */
+const refusal = (...reasons: readonly string[]): Completion<Row> => ({
+  status: "refused",
+  refusals: reasons.map(
+    (reason): SourceRefusal => ({
+      part: "sort",
+      code: "undeclared-field",
+      field: "name",
+      operator: null,
+      reason,
+    }),
+  ),
+});
 
 /** Refresh and return the request id, failing loudly rather than casting. */
 const refreshRequest = (provider: Provider): string => {
@@ -31,65 +56,82 @@ const refreshRequest = (provider: Provider): string => {
 
 /** The request a query edit issued, failing loudly rather than casting. */
 const pendingRequest = (provider: Provider): string => {
-  const requestId = provider.result.get().pendingRequestId;
+  const requestId = provider.state.get().pendingRequestId;
   if (requestId === null) {
     throw new Error("expected a pending request");
   }
   return requestId;
 };
 
-const loaded = (rows: readonly { readonly id: string }[]) => {
-  const provider = createDataViewsProvider({ schema });
-  provider.complete(refreshRequest(provider), {
-    status: "success",
-    rows,
-    count: rows.length,
+const loaded = (rows: readonly Row[]): Provider => {
+  const provider = createDataViewsProvider<typeof schema.fields, Row>({
+    schema,
   });
+  provider.complete(refreshRequest(provider), delivered(rows));
   return provider;
 };
 
 describe("tableStatus", () => {
   it("reports nothing displayable yet before any rows arrive", () => {
-    const provider = createDataViewsProvider({ schema });
-    expect(tableStatus(provider.result.get())).toEqual({ kind: "loading" });
+    const provider = createDataViewsProvider<typeof schema.fields, Row>({
+      schema,
+    });
+    expect(tableStatus(provider.state.get())).toEqual({ status: "loading" });
   });
 
   it("reports the failure of a request that produced no rows", () => {
-    const provider = createDataViewsProvider({ schema });
-    provider.complete(refreshRequest(provider), {
-      status: "failure",
+    const provider = createDataViewsProvider<typeof schema.fields, Row>({
+      schema,
+    });
+    provider.complete(
+      refreshRequest(provider),
+      failure("the collection is unreachable"),
+    );
+    expect(tableStatus(provider.state.get())).toEqual({
+      status: "failed",
       reason: "the collection is unreachable",
     });
-    expect(tableStatus(provider.result.get())).toEqual({
-      kind: "error",
-      reason: "the collection is unreachable",
+  });
+
+  it("reads a refusal's reasons as one sentence", () => {
+    const provider = createDataViewsProvider<typeof schema.fields, Row>({
+      schema,
+    });
+    provider.complete(
+      refreshRequest(provider),
+      refusal("name cannot be ordered", "two orderings at once"),
+    );
+    expect(tableStatus(provider.state.get())).toEqual({
+      status: "failed",
+      reason: "name cannot be ordered; two orderings at once",
     });
   });
 
   it("reports an unfiltered collection with nothing in it as no data", () => {
-    expect(tableStatus(loaded([]).result.get())).toEqual({ kind: "no-data" });
+    expect(tableStatus(loaded([]).state.get())).toEqual({ status: "no-data" });
   });
 
   it("reports a filtered query that matched nothing as no results", () => {
     const provider = loaded([]);
     provider.fields.status.eq.set(["failed"]);
-    expect(tableStatus(provider.result.get())).toEqual({ kind: "no-results" });
+    expect(tableStatus(provider.state.get())).toEqual({
+      status: "no-results",
+    });
   });
 
   it("reports a search that matched nothing as no results", () => {
     const provider = loaded([]);
     provider.setSearch("machine");
-    expect(tableStatus(provider.result.get())).toEqual({ kind: "no-results" });
+    expect(tableStatus(provider.state.get())).toEqual({
+      status: "no-results",
+    });
   });
 
-  it("prefers the error over emptiness when an empty result then failed", () => {
+  it("prefers the failure over emptiness when an empty result then failed", () => {
     const provider = loaded([]);
-    provider.complete(refreshRequest(provider), {
-      status: "failure",
-      reason: "offline",
-    });
-    expect(tableStatus(provider.result.get())).toEqual({
-      kind: "error",
+    provider.complete(refreshRequest(provider), failure("offline"));
+    expect(tableStatus(provider.state.get())).toEqual({
+      status: "failed",
       reason: "offline",
     });
   });
@@ -97,63 +139,75 @@ describe("tableStatus", () => {
   it("reports rows an earlier query produced as stale, with the reason", () => {
     const provider = loaded([{ id: "m-1" }]);
     provider.setSearch("machine");
-    provider.complete(pendingRequest(provider), {
-      status: "failure",
-      reason: "search is unavailable",
-    });
-    expect(tableStatus(provider.result.get())).toEqual({
-      kind: "stale",
+    provider.complete(
+      pendingRequest(provider),
+      failure("search is unavailable"),
+    );
+    expect(provider.state.get().result.status).toBe("stale");
+    expect(tableStatus(provider.state.get())).toEqual({
+      status: "stale",
       reason: "search is unavailable",
     });
   });
 
-  it("reports a failed query with no earlier rows to keep as an error", () => {
+  it("reports a failed query with no earlier rows to keep as a failure", () => {
     const provider = loaded([]);
     provider.setSearch("machine");
-    provider.complete(pendingRequest(provider), {
-      status: "failure",
-      reason: "search is unavailable",
-    });
-    expect(provider.result.get().result.status).toBe("stale");
-    expect(tableStatus(provider.result.get())).toEqual({
-      kind: "error",
+    provider.complete(
+      pendingRequest(provider),
+      failure("search is unavailable"),
+    );
+    expect(provider.state.get().result.status).toBe("stale");
+    expect(tableStatus(provider.state.get())).toEqual({
+      status: "failed",
       reason: "search is unavailable",
     });
   });
 
-  it("reports nothing for rows kept through a failed refresh of the same query", () => {
+  it("reports rows kept through a failed refresh, with the reason", () => {
     const provider = loaded([{ id: "m-1" }]);
-    provider.complete(refreshRequest(provider), {
-      status: "failure",
+    provider.complete(refreshRequest(provider), failure("offline"));
+    expect(provider.state.get().result.status).toBe("refreshFailed");
+    expect(tableStatus(provider.state.get())).toEqual({
+      status: "refresh-failed",
       reason: "offline",
     });
-    expect(tableStatus(provider.result.get())).toBeNull();
   });
 
   it("reports nothing at all while rows are displayed", () => {
-    expect(tableStatus(loaded([{ id: "m-1" }]).result.get())).toBeNull();
+    expect(tableStatus(loaded([{ id: "m-1" }]).state.get())).toBeNull();
   });
 });
 
 describe("sameStatus", () => {
   it("holds two statuses alike when they say the same thing", () => {
     expect(sameStatus(null, null)).toBe(true);
+    expect(sameStatus({ status: "loading" }, { status: "loading" })).toBe(true);
     expect(
       sameStatus(
-        { kind: "stale", reason: "unreachable" },
-        { kind: "stale", reason: "unreachable" },
+        { status: "stale", reason: "unreachable" },
+        { status: "stale", reason: "unreachable" },
       ),
     ).toBe(true);
   });
 
-  it("tells apart a different kind, a different reason and no status", () => {
-    expect(sameStatus({ kind: "loading" }, { kind: "no-data" })).toBe(false);
+  it("tells apart a different status, a different reason and no status", () => {
+    expect(sameStatus({ status: "loading" }, { status: "no-data" })).toBe(
+      false,
+    );
     expect(
       sameStatus(
-        { kind: "error", reason: "unreachable" },
-        { kind: "error", reason: "timed out" },
+        { status: "failed", reason: "unreachable" },
+        { status: "failed", reason: "timed out" },
       ),
     ).toBe(false);
-    expect(sameStatus({ kind: "loading" }, null)).toBe(false);
+    expect(
+      sameStatus(
+        { status: "stale", reason: "offline" },
+        { status: "refresh-failed", reason: "offline" },
+      ),
+    ).toBe(false);
+    expect(sameStatus({ status: "loading" }, null)).toBe(false);
+    expect(sameStatus(null, { status: "loading" })).toBe(false);
   });
 });

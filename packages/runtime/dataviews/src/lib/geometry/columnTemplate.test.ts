@@ -1,7 +1,7 @@
 /**
  * columnTemplate builds the one geometry publication every row consumes.
  * Each case is mutation-tested: changing a track's shape, the measured
- * branch or the preview substitution fails one of these assertions.
+ * branch fails one of these assertions.
  */
 import { describe, expect, it } from "vitest";
 import columnTemplate from "./columnTemplate.js";
@@ -51,30 +51,5 @@ describe("columnTemplate", () => {
         solved(["select", 40], ["name", 260]),
       ),
     ).toBe("40px 260px");
-  });
-
-  it("substitutes a live preview into the declarative tracks", () => {
-    expect(
-      columnTemplate([fixed("select", 40), flex("name", 1, 100)], null, {
-        id: "name",
-        width: 175,
-      }),
-    ).toBe("40px 175px");
-  });
-
-  it("substitutes a live preview into the resolved vector", () => {
-    expect(
-      columnTemplate(
-        [fixed("select", 40), flex("name", 1, 100)],
-        solved(["select", 40], ["name", 260]),
-        { id: "name", width: 175 },
-      ),
-    ).toBe("40px 175px");
-  });
-
-  it("leaves the tracks alone when the preview names no rendered column", () => {
-    expect(
-      columnTemplate([fixed("select", 40)], null, { id: "absent", width: 999 }),
-    ).toBe("40px");
   });
 });

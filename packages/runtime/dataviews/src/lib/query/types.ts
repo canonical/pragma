@@ -1,6 +1,7 @@
 /**
  * The bounded collection grammar: AND-ed filter predicates, text search,
- * ordered sort terms and one grouping field.
+ * ordered sort terms and ordered grouping levels, plus the window those
+ * results are read through.
  */
 
 /** Bounded predicate operators. */
@@ -30,26 +31,84 @@ export type SortTerm = {
 };
 
 /**
- * The applied collection query: filters, text search, ordering and grouping,
- * independent of renderer presentation and the result window.
+ * One grouping level. Levels nest in list order.
+ *
+ * Seam for the grouping unit: a later `bucket` member (day, month, year for
+ * dates) is the only planned extension, and nothing executes a group term
+ * yet — every source declares grouping unavailable, so a grouped query is
+ * refused.
+ */
+export type GroupTerm = {
+  readonly field: string;
+};
+
+/**
+ * The key of one group at each level down to it: `["failed", "eu-west"]` is
+ * the `eu-west` group inside the `failed` group.
+ *
+ * Seam for the grouping unit.
+ */
+export type GroupPath = readonly PredicateOperand[];
+
+/**
+ * The applied collection query: filters, text search, ordering and
+ * grouping, independent of renderer presentation and the result window.
+ * Query-class throughout: saved with a view, and a difference marks a view
+ * modified.
  */
 export type Slice = {
   readonly filter: readonly Predicate[];
   readonly search: string | null;
   readonly sort: readonly SortTerm[];
-  readonly group: string | null;
+  /** Ordered grouping levels; empty is ungrouped. */
+  readonly group: readonly GroupTerm[];
 };
 
-/** One-based offset over the result set. */
+/**
+ * The visible portion of a result. Window-class throughout: part of request
+ * identity, never part of a saved view, and never a reason a view is
+ * modified.
+ */
 export type ResultWindow = {
+  /** One-based page over the result set. */
   readonly page: number;
   readonly size: number;
+  /**
+   * Opaque token of this page's start, as the source handed it back with an
+   * earlier page's `cursors`. Null on page one and for offset sources.
+   * Cleared whenever `page` or `size` moves without a token of its own, so
+   * a token never describes a page it was not minted for.
+   */
+  readonly cursor: string | null;
+  /**
+   * Groups whose rows are left out of the page and of `counts.visible`.
+   * Reset when grouping changes, kept across paging and filtering.
+   *
+   * Seam for the grouping unit: nothing collapses while no source declares
+   * grouping, so a non-empty value is refused.
+   */
+  readonly collapsed: readonly GroupPath[];
 };
 
-/** An addressed query command. `navigateWindow` addresses the window only. */
+/** Where a collection is: its slice and its window, always adopted together. */
+export type Query = {
+  readonly slice: Slice;
+  readonly window: ResultWindow;
+};
+
+/**
+ * The window members `navigateWindow` addresses. `collapsed` moves with
+ * `setCollapsed` instead, so paging and collapsing stay separate gestures.
+ */
+export type WindowNavigation = Partial<Omit<ResultWindow, "collapsed">>;
+
+/**
+ * An addressed query command. `set*` replaces a whole value and the caller
+ * computes it; `navigateWindow` and `setCollapsed` address the window only.
+ */
 export type QueryCommand =
   | {
-      readonly kind: "replacePredicate";
+      readonly kind: "setPredicate";
       readonly predicate: Predicate;
     }
   | {
@@ -57,29 +116,25 @@ export type QueryCommand =
       readonly field: string;
       readonly operator: PredicateOperator;
     }
-  | { readonly kind: "replaceSearch"; readonly search: string }
-  | { readonly kind: "replaceSort"; readonly sort: readonly SortTerm[] }
-  | { readonly kind: "setGroup"; readonly group: string | null }
+  | { readonly kind: "setSearch"; readonly search: string }
+  | { readonly kind: "setSort"; readonly sort: readonly SortTerm[] }
+  | { readonly kind: "setGroup"; readonly group: readonly GroupTerm[] }
   | {
-      readonly kind: "navigateWindow";
-      readonly page?: number;
-      readonly size?: number;
-    };
+      readonly kind: "setCollapsed";
+      readonly collapsed: readonly GroupPath[];
+    }
+  | ({ readonly kind: "navigateWindow" } & WindowNavigation);
 
 /** Outcome of applying a query command: accepted change or explicit rejection. */
 export type QueryCommandResult =
-  | {
+  | (Query & {
       readonly status: "accepted";
-      readonly slice: Slice;
-      readonly window: ResultWindow;
       /** True when the semantic query changed (dirty comparisons, history). */
-      readonly queryChanged: boolean;
-      /** True when the result window changed (window is part of request identity). */
+      readonly sliceChanged: boolean;
+      /** True when the window changed (window is part of request identity). */
       readonly windowChanged: boolean;
-    }
-  | {
+    })
+  | (Query & {
       readonly status: "rejected";
       readonly reason: string;
-      readonly slice: Slice;
-      readonly window: ResultWindow;
-    };
+    });

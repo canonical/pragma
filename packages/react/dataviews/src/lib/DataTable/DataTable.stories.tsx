@@ -1,4 +1,5 @@
 import type { RowRecord } from "@canonical/dataviews-core";
+import { DEFAULT_WINDOW } from "@canonical/dataviews-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ComponentType, ReactElement, ReactNode } from "react";
 import { useState } from "react";
@@ -16,7 +17,7 @@ import {
 } from "../../storybook/machines/fixtures.js";
 import type {
   MachineProvider,
-  MachineProviderOptions,
+  MachineProviderConfig,
 } from "../../storybook/machines/story-utils.js";
 import {
   hostName,
@@ -46,7 +47,7 @@ const meta = {
   argTypes: {
     provider: { control: false },
     columns: { control: false },
-    presentation: { control: false },
+    layout: { control: false },
     rowLabel: { control: false },
     renderStatus: { control: false },
     windowing: { control: false },
@@ -69,7 +70,7 @@ function MachinesTable({
   ...args
 }: StoryTableProps & {
   readonly columns: readonly DataTableColumn[];
-  readonly options?: MachineProviderOptions;
+  readonly options?: MachineProviderConfig;
 }): ReactElement {
   const provider = useMachineProvider(options);
   return (
@@ -86,7 +87,7 @@ function MachinesTable({
 const renderMachines =
   (
     columns: readonly DataTableColumn[],
-    options?: MachineProviderOptions,
+    options?: MachineProviderConfig,
   ): NonNullable<Story["render"]> =>
   (args) => <MachinesTable {...args} columns={columns} options={options} />;
 
@@ -413,13 +414,13 @@ provider.selection.add(["m-02", "m-09"]);
     {
       provider: `createDataViewsProvider({
   schema: machineSchema,
-  window: { page: 1, size: 5 },
+  window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
 })`,
     },
   ),
   args: { selectable: true },
   render: renderMachines(plainColumns, {
-    window: { page: 1, size: 5 },
+    window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
     prepare: selectOnAndOffThePage,
   }),
   play: async ({ canvas }) => {
@@ -911,7 +912,9 @@ export const Failed: Story = {
   render: renderMachines(plainColumns, { source: createFailingSource }),
   play: async ({ canvas }) => {
     await expect(
-      await canvas.findByText("The machine inventory could not be reached."),
+      await canvas.findByText(
+        "These rows could not be loaded: the machine inventory could not be reached",
+      ),
     ).toBeInTheDocument();
     await expect(canvas.getByRole("table")).toHaveAttribute(
       "aria-busy",
@@ -1004,7 +1007,7 @@ const windowing = virtualRows({ estimatedRowHeight: 24 });
 /** Ten thousand machines, all in one window. */
 const tenThousand = {
   source: () => createMachineSource(manyMachines(10_000)),
-  window: { page: 1, size: 10_000 },
+  window: { ...DEFAULT_WINDOW, page: 1, size: 10_000 },
 } as const;
 
 /** A windowed story's render: its args, windowed, over ten thousand machines. */
@@ -1041,7 +1044,7 @@ ${columns}
   schema: machineSchema,
   capabilities: source.capabilities,
   // Ten thousand machines, all in one window.
-  window: { page: 1, size: 10_000 },
+  window: { ...DEFAULT_WINDOW, page: 1, size: 10_000 },
 })`,
     },
   );

@@ -7,10 +7,10 @@ import type { DataTableColumn } from "./types.js";
  *
  * A caller writing its columns as a literal rebuilds the array on every
  * render, and none of the table's machinery may notice: re-minting the
- * presentation would drop every user-resized width, and a new array
+ * layout would drop every user-resized width, and a new array
  * reference alone would re-render every cell of every row. So the table
  * keys on content — and on two different readings of it, because an inline
- * `header` node must not cost anyone a new presentation.
+ * `header` node must not cost anyone a new layout.
  */
 
 /** Declared sizing when a column names none: flexible, with a 96px floor. */
@@ -39,7 +39,7 @@ export const boundsOf = (
 
 /**
  * The column facts everything below the rendered tree is derived from: the
- * presentation's declared tracks, the observed field names, the solved
+ * layout's declared tracks, the observed field names, the solved
  * geometry and one row scope per identity.
  */
 export const sameColumnModel = (
@@ -78,7 +78,7 @@ export const sameColumns = (
 
 /**
  * Two solved track lists say the same thing. The tracks are read through
- * the presentation record on every render, so this is what keeps the
+ * the layout record on every render, so this is what keeps the
  * solver from running again for an unchanged arrangement.
  */
 export const sameTracks = (

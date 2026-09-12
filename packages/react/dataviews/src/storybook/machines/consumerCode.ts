@@ -2,7 +2,7 @@
  * A story's consumer code, as its "Show code" panel shows it: one component
  * an application could paste, wired the way an application wires one — the
  * source, a provider told what that source can execute, and the binding
- * built and disposed in an effect. Story-only.
+ * built and released in an effect. Story-only.
  */
 
 type ConsumerCode = {
@@ -62,25 +62,27 @@ const bindingEffect = (
 ): string => {
   const commands = prepare === undefined ? "" : `\n${indent(prepare, 4)}`;
   const firstPage = `
-    if (provider.result.get().result.status === "idle") {
+    if (provider.state.get().result.status === "idle") {
       provider.refresh();
     }`;
   return keepsBinding
-    ? `  // The binding subscribes, so it lives in an effect that disposes it;
-  // it is kept in state for the actions that run through it.
+    ? `  // Observing subscribes, so it lives in an effect that releases it; the
+  // binding is kept in state for the actions that run through it.
   const [binding, setBinding] = useState<SourceBinding | null>(null);
   useEffect(() => {
-    const bound = createSourceBinding({ host: provider, adapter: source });
+    const bound = createSourceBinding({ host: provider, source });
+    const release = bound.observe();
     setBinding(bound);${commands}${firstPage}
     return () => {
-      bound.dispose();
+      release();
       setBinding(null);
     };
   }, [provider, source]);`
     : `  useEffect(() => {
-    // The binding subscribes, so it lives in an effect that disposes it.
-    const binding = createSourceBinding({ host: provider, adapter: source });${commands}${firstPage}
-    return binding.dispose;
+    // Observing subscribes, so it lives in an effect that releases it.
+    const binding = createSourceBinding({ host: provider, source });
+    const release = binding.observe();${commands}${firstPage}
+    return release;
   }, [provider, source]);`;
 };
 
@@ -99,11 +101,17 @@ export const consumerCode = ({
   hooks = [],
   render,
 }: ConsumerCode) => {
+  // A window is built from the package's default one, so whichever block
+  // spells it out pulls the import in.
+  const usesDefaultWindow = [window, prepare, declarations, render].some(
+    (block) => block?.includes("DEFAULT_WINDOW") === true,
+  );
   const core = [
     ...(source.includes("createArraySource(") ? ["createArraySource"] : []),
     "createDataViewsProvider",
     ...coreFunctions,
     "createSourceBinding",
+    ...(usesDefaultWindow ? ["DEFAULT_WINDOW"] : []),
     ...[...coreTypes, ...(keepsBinding ? ["SourceBinding"] : [])].map(
       (name) => `type ${name}`,
     ),

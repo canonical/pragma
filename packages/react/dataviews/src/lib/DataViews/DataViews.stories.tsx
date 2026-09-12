@@ -1,6 +1,7 @@
 import {
   createLocationBinding,
   createMemoryLocation,
+  DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactElement } from "react";
@@ -13,7 +14,6 @@ import {
   useMachineProvider,
   withAppScope,
 } from "../../storybook/machines/story-utils.js";
-import DataTable from "../DataTable/DataTable.js";
 import type { DataTableColumn } from "../DataTable/types.js";
 import useDataViewsValue from "./hooks/useDataViewsValue.js";
 import Component from "./Provider.js";
@@ -62,8 +62,7 @@ function Collection({
     <Component provider={provider}>
       <Component.Filters labels={{ status: "Status", cores: "Cores" }} />
       {children}
-      <DataTable
-        provider={provider}
+      <Component.DataTable
         columns={columns}
         label="Machines"
         selectable
@@ -87,14 +86,13 @@ const selectTwo = (provider: MachineProvider): void => {
  */
 export const ConnectedParts: Story = {
   parameters: consumerCode({
-    parts: ["DataTable", "DataViews", "type DataTableColumn"],
+    parts: ["DataViews", "type DataTableColumn"],
     declarations: columnsCode,
-    window: "{ page: 1, size: 5 }",
+    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
     prepare: `provider.selection.add(["m-02", "m-06"]);`,
     render: `<DataViews provider={provider}>
   <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
-  <DataTable
-    provider={provider}
+  <DataViews.DataTable
     columns={columns}
     label="Machines"
     selectable
@@ -106,7 +104,7 @@ export const ConnectedParts: Story = {
   }),
   render: function Render() {
     const provider = useMachineProvider({
-      window: { page: 1, size: 5 },
+      window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
       prepare: selectTwo,
     });
     return <Collection provider={provider} />;
@@ -212,7 +210,9 @@ export function MachinesUrlQuery({
     },
   },
   render: function Render() {
-    const provider = useMachineProvider({ window: { page: 1, size: 5 } });
+    const provider = useMachineProvider({
+      window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
+    });
     return (
       <Collection provider={provider}>
         <QueryInTheLocation provider={provider} />

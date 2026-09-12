@@ -3,14 +3,16 @@
  * counts that describe the rows on screen. It takes its provider explicitly,
  * so every case here mounts it with no DataViews root at all.
  */
-import type { DataViewsProvider } from "@canonical/dataviews-core";
+import type { Count, DataViewsProvider } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
+  DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
 import { describe, expect, it } from "vitest";
+import { declaring } from "../capabilities.fixtures.js";
 import DataViews from "../DataViews/Provider.js";
 import PaginationBar from "./PaginationBar.js";
 import type { PaginationBarProps } from "./types.js";
@@ -22,26 +24,47 @@ const schema = createSchema([
 type Fields = typeof schema.fields;
 type Machine = { readonly id: string };
 
-const makeProvider = (
-  window = { page: 1, size: 2 },
-): DataViewsProvider<Fields, Machine> =>
+/** The default window on one page of one size, as every case reads it. */
+const at = (page: number, size: number) => ({
+  ...DEFAULT_WINDOW,
+  page,
+  size,
+});
+
+const makeProvider = (window = at(1, 2)): DataViewsProvider<Fields, Machine> =>
   createDataViewsProvider<Fields, Machine>({ schema, window });
 
 const machines = (count: number): readonly Machine[] =>
   Array.from({ length: count }, (_unused, index) => ({ id: `m${index}` }));
 
-/** Deliver one page for the request the provider currently wants. */
+/**
+ * Deliver one page for the request the provider currently wants: `count`
+ * rows the window pages over, counted exactly, or null for a source that
+ * counts nothing. `more` is the source's own word on a further page.
+ */
 const load = (
   provider: DataViewsProvider<Fields, Machine>,
   rows: readonly Machine[],
   count: number | null,
+  more: boolean | null = null,
 ): void => {
-  const pending = provider.result.get().pendingRequestId ?? provider.refresh();
+  const pending = provider.state.get().pendingRequestId ?? provider.refresh();
   if (pending === null) {
     throw new Error("expected a pending request");
   }
+  const counted: Count =
+    count === null ? { kind: "unknown" } : { kind: "exact", value: count };
   act(() => {
-    provider.complete(pending, { status: "success", rows, count });
+    provider.complete(pending, {
+      status: "succeeded",
+      page: {
+        rows,
+        groups: null,
+        counts: { visible: counted, matched: counted, total: counted },
+        more,
+        cursors: null,
+      },
+    });
   });
 };
 
@@ -61,7 +84,7 @@ const last = () => button("Last page");
 const values = (select: HTMLElement) =>
   [...select.querySelectorAll("option")].map((option) => option.value);
 const windowOf = (provider: DataViewsProvider<Fields, Machine>) =>
-  provider.result.get().window;
+  provider.state.get().window;
 
 describe("PaginationBar", () => {
   it("refuses anything but a provider", () => {
@@ -90,8 +113,8 @@ describe("PaginationBar", () => {
     );
     load(own, machines(2), 6);
     fireEvent.click(next());
-    expect(windowOf(own)).toEqual({ page: 2, size: 2 });
-    expect(windowOf(outer)).toEqual({ page: 1, size: 2 });
+    expect(windowOf(own)).toEqual(at(2, 2));
+    expect(windowOf(outer)).toEqual(at(1, 2));
   });
 
   it("is a navigation named by its label, in the drawn order", () => {
@@ -167,17 +190,31 @@ describe("PaginationBar", () => {
     expect(pageSelect()).toHaveValue("2");
   });
 
+  it("takes the page's own word on a further page over its own guess", () => {
+    const provider = makeProvider();
+    mount(provider);
+    // A full page the source says is the last one.
+    load(provider, machines(2), null, false);
+    expect(next()).toBeDisabled();
+    act(() => {
+      provider.refresh();
+    });
+    // A short page the source says has another behind it.
+    load(provider, machines(1), null, true);
+    expect(next()).toBeEnabled();
+  });
+
   it("goes to the first and last pages a count declares", () => {
     const provider = makeProvider();
     mount(provider);
     load(provider, machines(2), 6);
     fireEvent.click(last());
-    expect(windowOf(provider)).toEqual({ page: 3, size: 2 });
+    expect(windowOf(provider)).toEqual(at(3, 2));
     load(provider, machines(2), 6);
     expect(next()).toBeDisabled();
     expect(last()).toBeDisabled();
     fireEvent.click(first());
-    expect(windowOf(provider)).toEqual({ page: 1, size: 2 });
+    expect(windowOf(provider)).toEqual(at(1, 2));
   });
 
   it("steps one page from wherever it is", () => {
@@ -188,10 +225,10 @@ describe("PaginationBar", () => {
     load(provider, machines(2), 6);
     expect(pageSelect()).toHaveValue("2");
     fireEvent.click(previous());
-    expect(windowOf(provider)).toEqual({ page: 1, size: 2 });
+    expect(windowOf(provider)).toEqual(at(1, 2));
     load(provider, machines(2), 6);
     fireEvent.click(next());
-    expect(windowOf(provider)).toEqual({ page: 2, size: 2 });
+    expect(windowOf(provider)).toEqual(at(2, 2));
   });
 
   it("jumps to the page the select names", () => {
@@ -199,35 +236,35 @@ describe("PaginationBar", () => {
     mount(provider);
     load(provider, machines(2), 6);
     fireEvent.change(pageSelect(), { target: { value: "3" } });
-    expect(windowOf(provider)).toEqual({ page: 3, size: 2 });
+    expect(windowOf(provider)).toEqual(at(3, 2));
   });
 
   it("steps back from past the last page to the last one there is", () => {
-    const provider = makeProvider({ page: 9, size: 2 });
+    const provider = makeProvider(at(9, 2));
     mount(provider);
     load(provider, [], 4);
     // The select still says where the window is, after the pages there are.
     expect(pageSelect()).toHaveValue("9");
     expect(values(pageSelect())).toEqual(["1", "2", "9"]);
     fireEvent.click(previous());
-    expect(windowOf(provider)).toEqual({ page: 2, size: 2 });
+    expect(windowOf(provider)).toEqual(at(2, 2));
   });
 
   it("steps back one page from the last", () => {
-    const provider = makeProvider({ page: 3, size: 2 });
+    const provider = makeProvider(at(3, 2));
     mount(provider);
     load(provider, machines(2), 6);
     fireEvent.click(previous());
-    expect(windowOf(provider)).toEqual({ page: 2, size: 2 });
+    expect(windowOf(provider)).toEqual(at(2, 2));
   });
 
   it("goes to the last page from past it", () => {
-    const provider = makeProvider({ page: 9, size: 2 });
+    const provider = makeProvider(at(9, 2));
     mount(provider);
     load(provider, [], 4);
     expect(last()).toBeEnabled();
     fireEvent.click(last());
-    expect(windowOf(provider)).toEqual({ page: 2, size: 2 });
+    expect(windowOf(provider)).toEqual(at(2, 2));
   });
 
   it("keeps one page when the collection is empty", () => {
@@ -244,7 +281,7 @@ describe("PaginationBar", () => {
     mount(provider);
     load(provider, machines(2), 5);
     act(() => {
-      provider.navigateWindow(2);
+      provider.navigateWindow({ page: 2 });
     });
     // The previous query's total does not describe the pending one, and the
     // rows still on screen are not the ones Next would page past.
@@ -285,7 +322,10 @@ describe("PaginationBar", () => {
     load(provider, machines(2), 6);
     // Back or forward adopts an equal query under a new identity.
     act(() => {
-      provider.adopt({ ...provider.result.get().slice }, { page: 2, size: 2 });
+      provider.adopt({
+        slice: provider.state.get().slice,
+        window: at(2, 2),
+      });
     });
     expect(values(pageSelect())).toEqual(["1", "2", "3"]);
   });
@@ -321,14 +361,17 @@ describe("PaginationBar", () => {
     act(() => {
       provider.setSearch("m1");
     });
-    const failed = provider.result.get().pendingRequestId;
+    const failed = provider.state.get().pendingRequestId;
     if (failed === null) {
       throw new Error("expected a pending request");
     }
     act(() => {
-      provider.complete(failed, { status: "failure", reason: "offline" });
+      provider.complete(failed, {
+        status: "failed",
+        failure: { reason: "offline", cause: null, transient: null },
+      });
     });
-    expect(provider.result.get().result.status).toBe("stale");
+    expect(provider.state.get().result.status).toBe("stale");
     expect(summary()).toBeEmptyDOMElement();
     expect(next()).toBeDisabled();
     expect(last()).toBeDisabled();
@@ -342,7 +385,7 @@ describe("PaginationBar", () => {
     load(provider, machines(2), 40);
     fireEvent.change(sizeSelect(), { target: { value: "25" } });
     // The old page number counted rows of a different size.
-    expect(windowOf(provider)).toEqual({ page: 1, size: 25 });
+    expect(windowOf(provider)).toEqual(at(1, 25));
   });
 
   it("always offers the applied size, in order", () => {
@@ -352,7 +395,7 @@ describe("PaginationBar", () => {
   });
 
   it("offers each size once, and exactly the sizes given when one is applied", () => {
-    mount(makeProvider({ page: 1, size: 25 }), { sizes: [50, 25, 50] });
+    mount(makeProvider(at(1, 25)), { sizes: [50, 25, 50] });
     expect(values(sizeSelect())).toEqual(["50", "25"]);
   });
 
@@ -368,7 +411,7 @@ describe("PaginationBar", () => {
   });
 
   it("keeps focus on a button that stays available", () => {
-    const provider = makeProvider({ page: 3, size: 2 });
+    const provider = makeProvider(at(3, 2));
     mount(provider);
     load(provider, machines(2), 6);
     previous().focus();
@@ -385,7 +428,7 @@ describe("PaginationBar", () => {
     next().focus();
     next().blur();
     act(() => {
-      provider.navigateWindow(2);
+      provider.navigateWindow({ page: 2 });
     });
     expect(next()).toBeDisabled();
     expect(pageSelect()).not.toHaveFocus();
@@ -401,9 +444,53 @@ describe("PaginationBar", () => {
     load(provider, machines(2), 5);
     expect(summary()).toHaveTextContent(/^Showing 1–2 out of 5 items$/);
     fireEvent.click(next());
-    expect(windowOf(provider)).toEqual({ page: 2, size: 2 });
+    expect(windowOf(provider)).toEqual(at(2, 2));
     load(provider, machines(2), 5);
     expect(pageSelect()).toHaveValue("2");
+  });
+
+  it("pages a cursor source by its tokens, and offers no jump", () => {
+    // A forward cursor source reaches its next page only through the token
+    // the current one handed back. It may still count its rows exactly; a
+    // page total would nevertheless name pages nothing can address.
+    const provider = createDataViewsProvider<Fields, Machine>({
+      schema,
+      window: at(1, 2),
+      capabilities: declaring({
+        counts: { visible: "exact", matched: "none", total: "none" },
+        pagination: { mode: "cursor", backward: false, durable: false },
+      }),
+    });
+    mount(provider);
+    const pending = provider.state.get().pendingRequestId ?? provider.refresh();
+    if (pending === null) {
+      throw new Error("expected a pending request");
+    }
+    act(() => {
+      provider.complete(pending, {
+        status: "succeeded",
+        page: {
+          rows: machines(2),
+          groups: null,
+          counts: {
+            visible: { kind: "exact", value: 6 },
+            matched: { kind: "unknown" },
+            total: { kind: "unknown" },
+          },
+          more: null,
+          cursors: { next: "c:m1", previous: null },
+        },
+      });
+    });
+    expect(summary()).toHaveTextContent(/^Showing 1–2 out of 6 items$/);
+    expect(screen.queryByText(/of \d+ pages?/)).toBe(null);
+    expect(values(pageSelect())).toEqual(["1"]);
+    expect(last()).toBeDisabled();
+    fireEvent.click(next());
+    expect(windowOf(provider)).toEqual({
+      ...at(2, 2),
+      cursor: "c:m1",
+    });
   });
 
   it("passes native nav props through and merges the class name", () => {

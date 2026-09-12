@@ -18,6 +18,8 @@ import {
   createArraySource,
   createDataViewsProvider,
   createSourceBinding,
+  DEFAULT_WINDOW,
+  type RowRecord,
 } from "@canonical/dataviews-core";
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
 import { useEffect, useState } from "react";
@@ -31,7 +33,7 @@ const columns: readonly DataTableColumn[] = [
 
 export function Machines() {
   const [source] = useState(() =>
-    createArraySource({ rows: machines, fields: ["name", "status", "cores"] }),
+    createArraySource<RowRecord>({ rows: machines, fields: ["name", "status", "cores"] }),
   );
   const [provider] = useState(() =>
     createDataViewsProvider({
@@ -40,11 +42,12 @@ export function Machines() {
     }),
   );
   useEffect(() => {
-    const binding = createSourceBinding({ host: provider, adapter: source });
-    if (provider.result.get().result.status === "idle") {
+    const binding = createSourceBinding({ host: provider, source });
+    const release = binding.observe();
+    if (provider.state.get().result.status === "idle") {
       provider.refresh();
     }
-    return binding.dispose;
+    return release;
   }, [provider, source]);
   return <DataTable provider={provider} columns={columns} label="Machines" />;
 }
@@ -59,7 +62,10 @@ Every column shows the record field its id names; `field` names a different one.
 A column is `fixed` — it keeps exactly its width — or `flex`: it takes at least its `minPx`, at most its `maxPx`, and a share of whatever is left by `weight`. The solver reserves every fixed width and every minimum first, then shares the rest; a column that reaches its maximum hands its excess back to the others. When even the reservations do not fit, nothing is squeezed: the table scrolls. The one exception is the last column, which takes whatever width the columns before it leave — past its own maximum or fixed width when there is room to spare — so the table never ends in a gap.
 
 ```tsx
-import { createDataViewsProvider } from "@canonical/dataviews-core";
+import {
+  createDataViewsProvider,
+  DEFAULT_WINDOW,
+} from "@canonical/dataviews-core";
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
 import { machineSchema, source } from "./machines.js";
 
@@ -86,7 +92,10 @@ const columns: readonly DataTableColumn[] = [
 Mark a column `sortable` only when its source declares that field sortable, and pass the source's declaration to the provider as `capabilities`: the table reads it, and a sortable column on a provider created without it throws. A source refuses a query carrying a sort term it never declared, so a heading offering that sort would be a control that does nothing. The heading cycles ascending, descending, then back to the source's own order, and reports it through `aria-sort`. An ordered heading shows a chevron — up for ascending, down for descending — and an unordered one shows none; the chevron repeats the order for the eye, and `aria-sort` is what carries it to assistive technology.
 
 ```tsx
-import { createDataViewsProvider } from "@canonical/dataviews-core";
+import {
+  createDataViewsProvider,
+  DEFAULT_WINDOW,
+} from "@canonical/dataviews-core";
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
 import { machineSchema, source } from "./machines.js";
 
@@ -113,7 +122,10 @@ const columns: readonly DataTableColumn[] = [
 `selectable` adds a leading 32px column of the design system's `CheckboxInput`, backed by the provider's selection; the column's width is the stylesheet's, and the data columns share what it leaves. Name each record with `rowLabel`, so a checkbox says which machine it selects rather than which position it holds. The header checkbox acts on the rows the reader can see, and leaves a selection made on another page alone.
 
 ```tsx
-import { createDataViewsProvider } from "@canonical/dataviews-core";
+import {
+  createDataViewsProvider,
+  DEFAULT_WINDOW,
+} from "@canonical/dataviews-core";
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
 import { machineSchema, source } from "./machines.js";
 
@@ -143,10 +155,13 @@ const columns: readonly DataTableColumn[] = [
 
 `resizable` puts a control on a column's trailing edge, driven by the pointer or the keyboard — arrow keys step the edge, Escape abandons a drag. Every resize is held to the column's declared `minPx` and `maxPx`, however often it has been resized, and a column widened past the container scrolls the table so the edge being moved stays in view.
 
-The last column never gets a control, even when it is declared `resizable`: its trailing edge is the table's own edge, with nothing beyond it to resize against. It takes whatever width the others leave instead. To give two tables on one provider the same user arrangement, pass them one shared `presentation`.
+The last column never gets a control, even when it is declared `resizable`: its trailing edge is the table's own edge, with nothing beyond it to resize against. It takes whatever width the others leave instead. To give two tables on one provider the same user arrangement, pass them one shared `layout`.
 
 ```tsx
-import { createDataViewsProvider } from "@canonical/dataviews-core";
+import {
+  createDataViewsProvider,
+  DEFAULT_WINDOW,
+} from "@canonical/dataviews-core";
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
 import { machineSchema, source } from "./machines.js";
 
@@ -182,7 +197,7 @@ import {
   useDataViewsCell,
   useDataViewsValue,
 } from "@canonical/dataviews-react";
-import { type Machine, machineSchema } from "./machines.js";
+import { type Machine, machineSchema, source } from "./machines.js";
 
 const provider = createDataViewsProvider({
   schema: machineSchema,
@@ -224,9 +239,11 @@ const columns: readonly DataTableColumn[] = [
 
 <Canvas of={Stories.CellReadingItsScope} sourceState="none" />
 
-## The four outcomes
+## The outcomes
 
-A table with no rows says why, and the four reasons stay distinct: nothing has arrived yet, the read failed, the collection is empty, or the query matched nothing. They call for different responses from the reader — wait, retry, add something, change the query — so they are never collapsed into one message. `renderStatus` replaces the default text with your own words; the stories below show the defaults.
+A table with no rows says why, and the reasons stay distinct: nothing has arrived yet (`loading`), the read failed (`failed`), the collection is empty (`no-data`), or the query matched nothing (`no-results`). They call for different responses from the reader — wait, retry, add something, change the query — so they are never collapsed into one message.
+
+Two more are said *beside* rows rather than in place of them, because a table that keeps showing rows must not hide what went wrong: `refresh-failed`, where the rows still answer the query but the request that would have replaced them failed, and `stale`, where an earlier query produced them. `renderStatus` replaces the default text with your own words; the stories below show the defaults.
 
 ```tsx
 import { createDataViewsProvider } from "@canonical/dataviews-core";
@@ -248,11 +265,15 @@ const columns: readonly DataTableColumn[] = [
 ];
 
 const statusText = (status: DataTableStatus): string => {
-  switch (status.kind) {
+  switch (status.status) {
     case "loading":
       return "Fetching machines…";
-    case "error":
+    case "failed":
       return `Could not read machines: ${status.reason}`;
+    case "refresh-failed":
+      return `These machines could not be refreshed: ${status.reason}`;
+    case "stale":
+      return `These machines do not match the current search: ${status.reason}`;
     case "no-data":
       return "No machines are enrolled yet.";
     case "no-results":
@@ -277,7 +298,10 @@ const statusText = (status: DataTableStatus): string => {
 A table renders every row of its result window, which is the right default: a page of fifty is small, and every row is in the page for the browser's own search and for a reader without JavaScript. When a result window holds thousands of rows, give the table `windowing`, and it mounts only the rows near its viewport. `virtualRows` comes from its own entry point, `@canonical/dataviews-react/virtualization`, so an application that never imports it never ships it.
 
 ```tsx
-import { createDataViewsProvider } from "@canonical/dataviews-core";
+import {
+  createDataViewsProvider,
+  DEFAULT_WINDOW,
+} from "@canonical/dataviews-core";
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
 import { virtualRows } from "@canonical/dataviews-react/virtualization";
 import { machineSchema, source } from "./machines.js";
@@ -285,7 +309,7 @@ import { machineSchema, source } from "./machines.js";
 const provider = createDataViewsProvider({
   schema: machineSchema,
   capabilities: source.capabilities,
-  window: { page: 1, size: 10_000 },
+  window: { ...DEFAULT_WINDOW, size: 10_000 },
 });
 
 // One descriptor serves any number of tables: each keeps its own

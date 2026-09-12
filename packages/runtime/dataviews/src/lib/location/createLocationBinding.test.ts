@@ -6,11 +6,17 @@
 
 import { describe, expect, it, vi } from "vitest";
 import createDataViewsProvider from "../provider/createDataViewsProvider.js";
-import type { ResultWindow, Slice } from "../query/types.js";
+import DEFAULT_WINDOW from "../query/defaultWindow.js";
+import type { Query, ResultWindow, Slice } from "../query/types.js";
+import type { Completion } from "../result/types.js";
+import type { RowRecord } from "../rows/types.js";
 import createSchema from "../schema/createSchema.js";
+import {
+  declaring,
+  NOTHING_DECLARED,
+} from "../source/capabilities.fixtures.js";
 import createArraySource from "../source/createArraySource.js";
 import createSourceBinding from "../source/createSourceBinding.js";
-import type { SourceCapabilities } from "../source/types.js";
 import type { LocationHost } from "./createLocationBinding.js";
 import createLocationBinding from "./createLocationBinding.js";
 import createMemoryLocation from "./createMemoryLocation.js";
@@ -28,26 +34,29 @@ const machines = () =>
 
 /** A provider behind a counting host: adoptions are the observable here. */
 const tracked = (provider: ReturnType<typeof machinesProvider>) => {
-  const adopt = vi.fn((slice: Slice, window: ResultWindow): string | null =>
-    provider.adopt(slice, window),
-  );
+  const adopt = vi.fn((query: Query): string | null => provider.adopt(query));
   const host: LocationHost = {
     schema: provider.schema,
-    result: provider.result,
+    state: provider.state,
     capabilities: provider.capabilities,
     adopt,
   };
   return { host, adopt };
 };
 
-/** A source that can execute no filter, search, sort or grouping. */
-const declaresNothing: SourceCapabilities = {
-  filter: {},
-  search: [],
-  sort: [],
-  sortTerms: 0,
-  group: [],
-  count: "filtered",
+/** One exactly counted page of rows, as a source delivers it. */
+const delivered = (rows: readonly RowRecord[]): Completion => {
+  const count = { kind: "exact" as const, value: rows.length };
+  return {
+    status: "succeeded",
+    page: {
+      rows,
+      groups: null,
+      counts: { visible: count, matched: count, total: count },
+      more: null,
+      cursors: null,
+    },
+  };
 };
 
 /** A memory location that records every write with its history mode. */
@@ -68,7 +77,7 @@ const recording = (href: string) => {
 };
 
 /** Two failed machines and three ready ones, for a source to execute over. */
-const fleet = [
+const fleet: readonly RowRecord[] = [
   { id: "m1", status: "failed", cpu: 4 },
   { id: "m2", status: "ready", cpu: 2 },
   { id: "m3", status: "ready", cpu: 8 },
@@ -79,12 +88,17 @@ const fleet = [
 const machinesProvider = (slice?: Slice, window?: ResultWindow) =>
   createDataViewsProvider({ schema: machines(), slice, window });
 
+const windowAt = (overrides: Partial<ResultWindow> = {}): ResultWindow => ({
+  ...DEFAULT_WINDOW,
+  ...overrides,
+});
+
 describe("createLocationBinding", () => {
   it("subscribes to nothing until it is observed", () => {
     const provider = machinesProvider();
     const location = createMemoryLocation({ href: "/machines?status=failed" });
     createLocationBinding({ host: provider, location });
-    expect(provider.result.get().slice.filter).toEqual([]);
+    expect(provider.state.get().slice.filter).toEqual([]);
     expect(location.read().toString()).toBe("status=failed");
   });
 
@@ -97,10 +111,10 @@ describe("createLocationBinding", () => {
       host: provider,
       location,
     }).observe();
-    expect(provider.result.get().slice.filter).toEqual([
+    expect(provider.state.get().slice.filter).toEqual([
       { field: "status", operator: "eq", operands: ["failed", "cancelled"] },
     ]);
-    expect(provider.result.get().window).toEqual({ page: 2, size: 50 });
+    expect(provider.state.get().window).toEqual(windowAt({ page: 2 }));
     release();
   });
 
@@ -109,7 +123,7 @@ describe("createLocationBinding", () => {
       filter: [{ field: "cpu", operator: "gte", operands: [4] }],
       search: null,
       sort: [{ field: "cpu", direction: "desc" }],
-      group: null,
+      group: [],
     });
     const location = createMemoryLocation({ href: "/machines?tab=overview" });
     const release = createLocationBinding({
@@ -119,7 +133,7 @@ describe("createLocationBinding", () => {
     expect(location.read().toString()).toBe(
       "tab=overview&cpu__gte=4&sort=cpu__desc&page=1&size=50",
     );
-    expect(provider.result.get().slice.filter).toEqual([
+    expect(provider.state.get().slice.filter).toEqual([
       { field: "cpu", operator: "gte", operands: [4] },
     ]);
     release();
@@ -146,12 +160,74 @@ describe("createLocationBinding", () => {
     }).observe();
     provider.fields.cpu.gte.edit("4");
     expect(location.read().get("cpu__gte")).toBe("4");
-    provider.navigateWindow(3);
+    provider.navigateWindow({ page: 3 });
     expect(location.read().get("page")).toBe("3");
     provider.setSearch("yak");
     expect(location.read().get("q")).toBe("yak");
     // A changed query resets the window, and the location says so.
     expect(location.read().get("page")).toBe("1");
+    release();
+  });
+
+  it("carries the page's token through the location and back", () => {
+    const provider = machinesProvider();
+    const location = createMemoryLocation({
+      href: "/machines?page=2&size=50&cursor=after-page-one",
+    });
+    const release = createLocationBinding({
+      host: provider,
+      location,
+    }).observe();
+    expect(provider.state.get().window).toEqual(
+      windowAt({ page: 2, cursor: "after-page-one" }),
+    );
+    // Adopted verbatim, so a reload reaches the same page start.
+    expect(location.read().toString()).toBe(
+      "page=2&size=50&cursor=after-page-one",
+    );
+
+    provider.navigateWindow({ page: 3, cursor: "after-page-two" });
+    expect(location.read().toString()).toBe(
+      "page=3&size=50&cursor=after-page-two",
+    );
+
+    // Paging without a token leaves none behind to address the page.
+    provider.navigateWindow({ page: 4 });
+    expect(location.read().toString()).toBe("page=4&size=50");
+    expect(provider.state.get().window.cursor).toBeNull();
+    release();
+  });
+
+  it("writes a token that moves while the page number does not", () => {
+    // The token alone decides which rows a page holds, so a page re-issued
+    // against a different one is a different place, and the location has to
+    // say so or a reload lands somewhere else.
+    const provider = machinesProvider();
+    const location = createMemoryLocation({
+      href: "/machines?page=2&size=50&cursor=after-page-one",
+    });
+    const release = createLocationBinding({
+      host: provider,
+      location,
+    }).observe();
+    provider.navigateWindow({ page: 2, cursor: "after-page-one-again" });
+    expect(location.read().toString()).toBe(
+      "page=2&size=50&cursor=after-page-one-again",
+    );
+    release();
+  });
+
+  it("adopts a location whose token moved under an unchanged page", () => {
+    const provider = machinesProvider();
+    const location = createMemoryLocation({
+      href: "/machines?page=2&size=50&cursor=after-page-one",
+    });
+    const { host, adopt } = tracked(provider);
+    const release = createLocationBinding({ host, location }).observe();
+    adopt.mockClear();
+    location.write(new URLSearchParams("page=2&size=50&cursor=elsewhere"));
+    expect(adopt).toHaveBeenCalledTimes(1);
+    expect(provider.state.get().window.cursor).toBe("elsewhere");
     release();
   });
 
@@ -163,8 +239,8 @@ describe("createLocationBinding", () => {
     provider.fields.cpu.gte.edit("4");
     expect(location.read().get("cpu__gte")).toBe("4");
     expect(adopt).not.toHaveBeenCalled();
-    // The live input session survives: nothing re-synced the buffer.
-    expect(provider.fields.cpu.gte.state.get().buffer).toBe("4");
+    // The live input session survives: nothing re-synced the input.
+    expect(provider.fields.cpu.gte.state.get().input).toBe("4");
     release();
   });
 
@@ -177,12 +253,12 @@ describe("createLocationBinding", () => {
     }).observe();
     provider.fields.cpu.gte.edit("4");
     location.write(new URLSearchParams("status=ready&page=2"));
-    expect(provider.result.get().slice.filter).toEqual([
+    expect(provider.state.get().slice.filter).toEqual([
       { field: "status", operator: "eq", operands: ["ready"] },
     ]);
-    expect(provider.result.get().window).toEqual({ page: 2, size: 50 });
+    expect(provider.state.get().window).toEqual(windowAt({ page: 2 }));
     // The authoritative query wins: the stale input session is discarded.
-    expect(provider.fields.cpu.gte.state.get().buffer).toBe("");
+    expect(provider.fields.cpu.gte.state.get().input).toBe("");
     release();
   });
 
@@ -194,7 +270,7 @@ describe("createLocationBinding", () => {
       host: provider,
       location,
     }).observe();
-    provider.navigateWindow(2);
+    provider.navigateWindow({ page: 2 });
     expect(write).toHaveBeenLastCalledWith(expect.anything(), {
       history: "replace",
     });
@@ -205,7 +281,7 @@ describe("createLocationBinding", () => {
       location,
       history: "push",
     }).observe();
-    provider.navigateWindow(3);
+    provider.navigateWindow({ page: 3 });
     expect(write).toHaveBeenLastCalledWith(expect.anything(), {
       history: "push",
     });
@@ -223,7 +299,7 @@ describe("createLocationBinding", () => {
       { parameter: "status", reason: '"melted" is not an option of "status"' },
       { parameter: "cpu__near", reason: 'unknown operator "near"' },
     ]);
-    expect(provider.result.get().slice.filter).toEqual([]);
+    expect(provider.state.get().slice.filter).toEqual([]);
     // The host's parameter survives the canonicalizing write.
     expect(location.read().get("tab")).toBe("overview");
     release();
@@ -240,11 +316,7 @@ describe("createLocationBinding", () => {
     // A row completion is not a query change, so it does not rewrite either.
     const requestId = provider.refresh();
     expect(requestId).not.toBeNull();
-    provider.complete(String(requestId), {
-      status: "success",
-      rows: [{ id: "a" }],
-      count: 1,
-    });
+    provider.complete(String(requestId), delivered([{ id: "a" }]));
     expect(location.read().toString()).toBe("status=melted");
 
     // Moving the query does: the user has replaced what was refused.
@@ -267,7 +339,7 @@ describe("createLocationBinding", () => {
     expect(binding.issues.get()).toEqual([
       { parameter: "status", reason: '"melted" is not an option of "status"' },
     ]);
-    expect(provider.result.get().window).toEqual({ page: 2, size: 50 });
+    expect(provider.state.get().window).toEqual(windowAt({ page: 2 }));
     release();
   });
 
@@ -281,7 +353,7 @@ describe("createLocationBinding", () => {
     // the other reading the location.
     first();
     location.write(new URLSearchParams("status=ready&page=1&size=50"));
-    expect(provider.result.get().slice.filter).toEqual([
+    expect(provider.state.get().slice.filter).toEqual([
       { field: "status", operator: "eq", operands: ["ready"] },
     ]);
     second();
@@ -297,15 +369,11 @@ describe("createLocationBinding", () => {
     const read = vi.spyOn(location, "read");
     for (let cycle = 0; cycle < 3; cycle += 1) {
       const requestId = provider.refresh();
-      provider.complete(String(requestId), {
-        status: "success",
-        rows: [{ id: "a" }],
-        count: 1,
-      });
+      provider.complete(String(requestId), delivered([{ id: "a" }]));
     }
     expect(read).not.toHaveBeenCalled();
     // A query that does move is still written.
-    provider.navigateWindow(2);
+    provider.navigateWindow({ page: 2 });
     expect(location.read().get("page")).toBe("2");
     release();
   });
@@ -343,7 +411,7 @@ describe("createLocationBinding", () => {
       host: provider,
       location,
     }).observe();
-    provider.navigateWindow(2);
+    provider.navigateWindow({ page: 2 });
     expect(location.read().toString()).toBe(
       "tab=a&tab=b&status=cancelled&status=failed&page=2&size=50",
     );
@@ -356,7 +424,7 @@ describe("createLocationBinding", () => {
     const binding = createLocationBinding({ host: provider, location });
     binding.observe()();
     const release = binding.observe();
-    provider.navigateWindow(2);
+    provider.navigateWindow({ page: 2 });
     release();
     location.write(new URLSearchParams("tab=x"));
     const again = binding.observe();
@@ -387,7 +455,7 @@ describe("createLocationBinding", () => {
     const binding = createLocationBinding({ host: provider, location });
     const release = binding.observe();
     location.write(new URLSearchParams("status=failed&status=melted"));
-    expect(provider.result.get().slice.filter).toEqual([
+    expect(provider.state.get().slice.filter).toEqual([
       { field: "status", operator: "eq", operands: ["failed"] },
     ]);
     // Back where the binding last wrote — but the location has moved since,
@@ -416,7 +484,7 @@ describe("createLocationBinding", () => {
       history: "replace",
     });
     expect(location.read().toString()).toBe("status=ready&page=1&size=50");
-    provider.navigateWindow(2);
+    provider.navigateWindow({ page: 2 });
     expect(write).toHaveBeenLastCalledWith(expect.anything(), {
       history: "push",
     });
@@ -442,25 +510,18 @@ describe("createLocationBinding", () => {
   it("refuses a clause the host's source cannot execute rather than adopting it", () => {
     const provider = createDataViewsProvider({
       schema: machines(),
-      capabilities: {
-        filter: { status: ["eq"] },
-        search: [],
-        sort: [],
-        sortTerms: 0,
-        group: [],
-        count: "filtered",
-      },
+      capabilities: declaring({ filter: { status: ["eq"], cpu: ["lte"] } }),
     });
     const location = createMemoryLocation({
       href: "/machines?status=ready&cpu__gte=4&sort=cpu__asc",
     });
     const binding = createLocationBinding({ host: provider, location });
     const release = binding.observe();
-    expect(provider.result.get().slice).toEqual({
+    expect(provider.state.get().slice).toEqual({
       filter: [{ field: "status", operator: "eq", operands: ["ready"] }],
       search: null,
       sort: [],
-      group: null,
+      group: [],
     });
     expect(binding.issues.get()).toEqual([
       {
@@ -482,7 +543,10 @@ describe("createLocationBinding", () => {
       schema: machines(),
       capabilities: source.capabilities,
     });
-    const binding = createSourceBinding({ host: provider, adapter: source });
+    const stopSource = createSourceBinding({
+      host: provider,
+      source,
+    }).observe();
     const location = createMemoryLocation({
       href: "/machines?status=failed&sort=cpu__asc",
     });
@@ -491,15 +555,15 @@ describe("createLocationBinding", () => {
     expect(loop.issues.get()).toEqual([
       { parameter: "sort", reason: 'field "cpu" cannot be sorted' },
     ]);
-    const state = provider.result.get();
+    const state = provider.state.get();
     expect(state.slice.sort).toEqual([]);
     expect(state.result.status).toBe("ready");
-    expect(state.resultsMatchCurrentQuery).toBe(true);
+    expect(state.resultMatchesQuery).toBe(true);
     expect(state.result.rows).toHaveLength(2);
     // The refused parameter stands, so the refusal survives a reload.
     expect(location.read().toString()).toBe("status=failed&sort=cpu__asc");
     release();
-    binding.dispose();
+    stopSource();
   });
 
   it("shows rows a refused location sort could not replace as stale, and recovers on the way back", () => {
@@ -507,29 +571,43 @@ describe("createLocationBinding", () => {
     // Not told the source's capabilities, so the location's sort is adopted
     // and it is the source that refuses it.
     const provider = machinesProvider();
-    const binding = createSourceBinding({ host: provider, adapter: source });
+    const stopSource = createSourceBinding({
+      host: provider,
+      source,
+    }).observe();
     const location = createMemoryLocation({ href: "/machines?status=failed" });
     const release = createLocationBinding({
       host: provider,
       location,
     }).observe();
-    expect(provider.result.get().result.status).toBe("ready");
+    expect(provider.state.get().result.status).toBe("ready");
 
     location.write(new URLSearchParams("status=ready&sort=cpu__asc"));
-    const refused = provider.result.get();
+    const refused = provider.state.get();
     expect(refused.slice.sort).toEqual([{ field: "cpu", direction: "asc" }]);
     expect(refused.result.status).toBe("stale");
-    expect(refused.resultsMatchCurrentQuery).toBe(false);
+    expect(refused.resultMatchesQuery).toBe(false);
     expect(refused.result.rows).toHaveLength(2);
-    expect(refused.result.lastError).toBe('field "cpu" cannot be sorted');
+    expect(refused.result.problem).toEqual({
+      status: "refused",
+      refusals: [
+        {
+          part: "sort",
+          code: "undeclared-field",
+          field: "cpu",
+          operator: null,
+          reason: 'field "cpu" cannot be sorted',
+        },
+      ],
+    });
 
     location.write(new URLSearchParams("status=ready"));
-    const recovered = provider.result.get();
+    const recovered = provider.state.get();
     expect(recovered.result.status).toBe("ready");
-    expect(recovered.resultsMatchCurrentQuery).toBe(true);
+    expect(recovered.resultMatchesQuery).toBe(true);
     expect(recovered.result.rows).toHaveLength(3);
     release();
-    binding.dispose();
+    stopSource();
   });
 
   it("retries a write the location threw on at the next publication", () => {
@@ -542,7 +620,9 @@ describe("createLocationBinding", () => {
     const write = vi.spyOn(location, "write").mockImplementationOnce(() => {
       throw new Error("history refused");
     });
-    expect(() => provider.navigateWindow(2)).toThrow("history refused");
+    expect(() => provider.navigateWindow({ page: 2 })).toThrow(
+      "history refused",
+    );
     expect(location.read().get("page")).toBe("1");
     provider.refresh();
     expect(write).toHaveBeenCalledTimes(2);
@@ -557,10 +637,10 @@ describe("createLocationBinding", () => {
       host: provider,
       location,
     }).observe();
-    provider.navigateWindow(1, 25);
+    provider.navigateWindow({ page: 1, size: 25 });
     expect(location.read().toString()).toBe("page=1&size=25");
     location.write(new URLSearchParams("page=1&size=10"));
-    expect(provider.result.get().window).toEqual({ page: 1, size: 10 });
+    expect(provider.state.get().window).toEqual(windowAt({ size: 10 }));
     release();
   });
 
@@ -586,7 +666,7 @@ describe("createLocationBinding", () => {
     // rather than be overwritten by the write that provoked it.
     const provider = createDataViewsProvider({
       schema: machines(),
-      capabilities: declaresNothing,
+      capabilities: NOTHING_DECLARED,
     });
     const location = createMemoryLocation({ href: "/machines" });
     const binding = createLocationBinding({ host: provider, location });
@@ -595,7 +675,7 @@ describe("createLocationBinding", () => {
     expect(binding.issues.get()).toEqual([
       { parameter: "q", reason: "this source cannot search" },
     ]);
-    expect(provider.result.get().slice.search).toBeNull();
+    expect(provider.state.get().slice.search).toBeNull();
     // Standing: a publication at the adopted position rewrites nothing.
     provider.refresh();
     expect(location.read().toString()).toBe("q=abc&page=1&size=50");
@@ -605,21 +685,21 @@ describe("createLocationBinding", () => {
   it("refuses an unexecutable clause again when the host re-applies it", () => {
     const provider = createDataViewsProvider({
       schema: machines(),
-      capabilities: declaresNothing,
+      capabilities: NOTHING_DECLARED,
     });
     const location = createMemoryLocation({
       href: "/machines?q=abc&page=1&size=50",
     });
     const binding = createLocationBinding({ host: provider, location });
     const release = binding.observe();
-    expect(provider.result.get().slice.search).toBeNull();
+    expect(provider.state.get().slice.search).toBeNull();
     // The encode matches what the location already says, so nothing is
     // written and nothing echoes — the refusal must still hold.
     provider.setSearch("abc");
     expect(binding.issues.get()).toEqual([
       { parameter: "q", reason: "this source cannot search" },
     ]);
-    expect(provider.result.get().slice.search).toBeNull();
+    expect(provider.state.get().slice.search).toBeNull();
     expect(location.read().toString()).toBe("q=abc&page=1&size=50");
     release();
   });
@@ -627,7 +707,7 @@ describe("createLocationBinding", () => {
   it("keeps a refusal when a listener throws after the write landed", () => {
     const provider = createDataViewsProvider({
       schema: machines(),
-      capabilities: declaresNothing,
+      capabilities: NOTHING_DECLARED,
     });
     const location = createMemoryLocation({ href: "/machines" });
     const binding = createLocationBinding({ host: provider, location });
@@ -653,7 +733,7 @@ describe("createLocationBinding", () => {
   it("keeps a refusal when a listener that threw first never let it echo", () => {
     const provider = createDataViewsProvider({
       schema: machines(),
-      capabilities: declaresNothing,
+      capabilities: NOTHING_DECLARED,
     });
     const location = createMemoryLocation({ href: "/machines" });
     // Subscribed before the binding, so its throw stops the location before
@@ -672,7 +752,7 @@ describe("createLocationBinding", () => {
     expect(binding.issues.get()).toEqual([
       { parameter: "q", reason: "this source cannot search" },
     ]);
-    expect(provider.result.get().slice.search).toBeNull();
+    expect(provider.state.get().slice.search).toBeNull();
     stop();
     release();
   });
@@ -680,7 +760,7 @@ describe("createLocationBinding", () => {
   it("writes a host move made while the location was being read back", () => {
     const provider = createDataViewsProvider({
       schema: machines(),
-      capabilities: declaresNothing,
+      capabilities: NOTHING_DECLARED,
     });
     const location = createMemoryLocation({
       href: "/machines?q=abc&page=1&size=50",
@@ -690,14 +770,14 @@ describe("createLocationBinding", () => {
     provider.setSearch("abc");
     // Refused again by the read-back — and, reacting to that, something
     // else pages on. That move is the user's, not the read-back's.
-    const stop = provider.result.subscribe(() => {
-      const { slice, window } = provider.result.get();
+    const stop = provider.state.subscribe(() => {
+      const { slice, window } = provider.state.get();
       if (slice.search === null && window.page === 1) {
-        provider.navigateWindow(2);
+        provider.navigateWindow({ page: 2 });
       }
     });
     provider.setSearch("abc");
-    expect(provider.result.get().window.page).toBe(2);
+    expect(provider.state.get().window.page).toBe(2);
     expect(location.read().toString()).toBe("page=2&size=50");
     stop();
     release();
@@ -706,7 +786,7 @@ describe("createLocationBinding", () => {
   it("canonicalizes a location respelled while it was being read back", () => {
     const provider = createDataViewsProvider({
       schema: machines(),
-      capabilities: declaresNothing,
+      capabilities: NOTHING_DECLARED,
     });
     const location = createMemoryLocation({
       href: "/machines?q=abc&page=1&size=50",
@@ -715,14 +795,14 @@ describe("createLocationBinding", () => {
     const release = binding.observe();
     provider.setSearch("abc");
     let respelled = false;
-    const stop = provider.result.subscribe(() => {
-      if (!respelled && provider.result.get().slice.search === null) {
+    const stop = provider.state.subscribe(() => {
+      if (!respelled && provider.state.get().slice.search === null) {
         respelled = true;
         location.write(new URLSearchParams("page=007&size=50"));
       }
     });
     provider.setSearch("abc");
-    expect(provider.result.get().window.page).toBe(7);
+    expect(provider.state.get().window.page).toBe(7);
     expect(location.read().toString()).toBe("page=7&size=50");
     stop();
     release();
@@ -731,7 +811,7 @@ describe("createLocationBinding", () => {
   it("owes a read-back respelling a replace, even in push mode", () => {
     const provider = createDataViewsProvider({
       schema: machines(),
-      capabilities: declaresNothing,
+      capabilities: NOTHING_DECLARED,
     });
     const { memory, location, writes } = recording(
       "/machines?q=abc&page=1&size=50",
@@ -744,8 +824,8 @@ describe("createLocationBinding", () => {
     const release = binding.observe();
     provider.setSearch("abc");
     let step = 0;
-    const stop = provider.result.subscribe(() => {
-      const { slice } = provider.result.get();
+    const stop = provider.state.subscribe(() => {
+      const { slice } = provider.state.get();
       if (step === 0 && slice.search === null) {
         step = 1;
         memory.write(new URLSearchParams("page=007&size=50"));
@@ -761,7 +841,7 @@ describe("createLocationBinding", () => {
   it("owes a host move made during a read-back the transition's push", () => {
     const provider = createDataViewsProvider({
       schema: machines(),
-      capabilities: declaresNothing,
+      capabilities: NOTHING_DECLARED,
     });
     const { location, writes } = recording("/machines?q=abc&page=1&size=50");
     const release = createLocationBinding({
@@ -770,10 +850,10 @@ describe("createLocationBinding", () => {
       history: "push",
     }).observe();
     provider.setSearch("abc");
-    const pager = provider.result.subscribe(() => {
-      const { slice, window } = provider.result.get();
+    const pager = provider.state.subscribe(() => {
+      const { slice, window } = provider.state.get();
       if (slice.search === null && window.page === 1) {
-        provider.navigateWindow(2);
+        provider.navigateWindow({ page: 2 });
       }
     });
     writes.length = 0;
@@ -786,7 +866,7 @@ describe("createLocationBinding", () => {
   it("lets a genuine move after a respelling in one read-back push", () => {
     const provider = createDataViewsProvider({
       schema: machines(),
-      capabilities: declaresNothing,
+      capabilities: NOTHING_DECLARED,
     });
     const { memory, location, writes } = recording(
       "/machines?q=abc&page=1&size=50",
@@ -799,16 +879,16 @@ describe("createLocationBinding", () => {
     const release = binding.observe();
     provider.setSearch("abc");
     let respelled = false;
-    const respell = provider.result.subscribe(() => {
-      if (!respelled && provider.result.get().slice.search === null) {
+    const respell = provider.state.subscribe(() => {
+      if (!respelled && provider.state.get().slice.search === null) {
         respelled = true;
         memory.write(new URLSearchParams("page=007&size=50"));
       }
     });
     // Subscribed after the binding: it moves once the respelling is adopted.
     const mover = location.subscribe(() => {
-      if (provider.result.get().window.page === 7) {
-        provider.navigateWindow(8);
+      if (provider.state.get().window.page === 7) {
+        provider.navigateWindow({ page: 8 });
       }
     });
     writes.length = 0;
@@ -823,7 +903,7 @@ describe("createLocationBinding", () => {
   it("keeps a read-back respelling a replace when the host republishes in place", () => {
     const provider = createDataViewsProvider({
       schema: machines(),
-      capabilities: declaresNothing,
+      capabilities: NOTHING_DECLARED,
     });
     const { memory, location, writes } = recording(
       "/machines?q=abc&page=1&size=50",
@@ -836,8 +916,8 @@ describe("createLocationBinding", () => {
     const release = binding.observe();
     provider.setSearch("abc");
     let respelled = false;
-    const respell = provider.result.subscribe(() => {
-      if (!respelled && provider.result.get().slice.search === null) {
+    const respell = provider.state.subscribe(() => {
+      if (!respelled && provider.state.get().slice.search === null) {
         respelled = true;
         memory.write(new URLSearchParams("page=007&size=50"));
       }
@@ -845,7 +925,7 @@ describe("createLocationBinding", () => {
     // Publishes without moving once the respelling is adopted.
     let refreshed = false;
     const republish = location.subscribe(() => {
-      if (!refreshed && provider.result.get().window.page === 7) {
+      if (!refreshed && provider.state.get().window.page === 7) {
         refreshed = true;
         provider.refresh();
       }
@@ -861,7 +941,7 @@ describe("createLocationBinding", () => {
   it("keeps writing after a listener throws during a read-back", () => {
     const provider = createDataViewsProvider({
       schema: machines(),
-      capabilities: declaresNothing,
+      capabilities: NOTHING_DECLARED,
     });
     const location = createMemoryLocation({
       href: "/machines?q=abc&page=1&size=50",
@@ -870,15 +950,15 @@ describe("createLocationBinding", () => {
     const release = binding.observe();
     provider.setSearch("abc");
     let armed = true;
-    const stop = provider.result.subscribe(() => {
-      if (armed && provider.result.get().slice.search === null) {
+    const stop = provider.state.subscribe(() => {
+      if (armed && provider.state.get().slice.search === null) {
         armed = false;
         throw new Error("listener failed");
       }
     });
     expect(() => provider.setSearch("abc")).toThrow("listener failed");
     stop();
-    provider.navigateWindow(3);
+    provider.navigateWindow({ page: 3 });
     expect(location.read().get("page")).toBe("3");
     release();
   });
@@ -886,12 +966,12 @@ describe("createLocationBinding", () => {
   it("reads back once for a host that publishes on adopt without moving", () => {
     const provider = createDataViewsProvider({
       schema: machines(),
-      capabilities: declaresNothing,
+      capabilities: NOTHING_DECLARED,
     });
     // Breaks the adopt contract: it publishes and stays where it was.
     const host: LocationHost = {
       schema: provider.schema,
-      result: provider.result,
+      state: provider.state,
       capabilities: provider.capabilities,
       adopt: () => {
         provider.refresh();
@@ -902,10 +982,19 @@ describe("createLocationBinding", () => {
     });
     const binding = createLocationBinding({ host, location });
     const release = binding.observe();
-    expect(() => provider.setSearch("abc")).not.toThrow();
+    const reads = vi.spyOn(location, "read");
+    const writes = vi.spyOn(location, "write");
+    provider.setSearch("abc");
+    // Once, and it terminates: a host that publishes on adopt without
+    // moving would otherwise bring the read-back straight back here, and
+    // the refused clause is left standing rather than rewritten away.
+    expect(reads).toHaveBeenCalledTimes(1);
+    expect(writes).not.toHaveBeenCalled();
     expect(binding.issues.get()).toEqual([
       { parameter: "q", reason: "this source cannot search" },
     ]);
+    reads.mockRestore();
+    writes.mockRestore();
     release();
   });
 
@@ -916,9 +1005,9 @@ describe("createLocationBinding", () => {
         filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
         search: null,
         sort: [],
-        group: null,
+        group: [],
       },
-      capabilities: declaresNothing,
+      capabilities: NOTHING_DECLARED,
     });
     const location = createMemoryLocation({ href: "/machines" });
     const binding = createLocationBinding({ host: provider, location });
@@ -926,10 +1015,10 @@ describe("createLocationBinding", () => {
     expect(binding.issues.get()).toEqual([
       {
         parameter: "status",
-        reason: 'field "status" cannot be filtered with eq',
+        reason: 'field "status" cannot be filtered',
       },
     ]);
-    expect(provider.result.get().slice.filter).toEqual([]);
+    expect(provider.state.get().slice.filter).toEqual([]);
     expect(location.read().toString()).toBe("status=failed&page=1&size=50");
     release();
   });
@@ -942,7 +1031,7 @@ describe("createLocationBinding", () => {
     release();
     release();
 
-    provider.navigateWindow(4);
+    provider.navigateWindow({ page: 4 });
     expect(location.read().get("page")).toBe("1");
     location.write(new URLSearchParams("status=ready"));
     expect(adopt).not.toHaveBeenCalled();
@@ -956,10 +1045,10 @@ describe("createLocationBinding", () => {
     const second = binding.observe();
     first();
 
-    provider.navigateWindow(2);
+    provider.navigateWindow({ page: 2 });
     expect(location.read().get("page")).toBe("2");
     second();
-    provider.navigateWindow(3);
+    provider.navigateWindow({ page: 3 });
     expect(location.read().get("page")).toBe("2");
   });
 

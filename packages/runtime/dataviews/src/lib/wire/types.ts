@@ -3,7 +3,7 @@
  * including the owned parameters it rejected.
  */
 
-import type { ResultWindow, Slice } from "../query/types.js";
+import type { Query, ResultWindow, Slice } from "../query/types.js";
 import type { Schema } from "../schema/createSchema.js";
 import type { SchemaFieldDefinition } from "../schema/types.js";
 import type { SourceCapabilities } from "../source/types.js";
@@ -25,9 +25,7 @@ export type QueryIssue = {
  * query and reported: the slice is what could be read, the issues are what
  * could not.
  */
-export type DecodedQuery = {
-  readonly slice: Slice;
-  readonly window: ResultWindow;
+export type DecodedQuery = Query & {
   /**
    * Every owned parameter refused — grammar and schema refusals in
    * parameter order, then the source's.

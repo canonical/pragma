@@ -1,5 +1,5 @@
 /**
- * The one structural comparison behind the presentation's write guards and
+ * The one structural comparison behind the layout's write guards and
  * the interaction's conflict check. It is public because a caller keying a
  * render on declared sizing needs the same answer, not a second one.
  */

@@ -2,6 +2,10 @@
  * Column sizing intent and resolved geometry. Declared sizing is a fixed
  * pixel reservation or a flex weight with bounds; user resizing creates a
  * fixed override.
+ *
+ * Every length here, and everywhere else in this package, is in CSS pixels:
+ * the `Px` suffixes say nothing the type does not, and are kept only
+ * because retiring them reaches some two hundred places.
  */
 
 /** Fixed sizing: reserve exactly these pixels. */

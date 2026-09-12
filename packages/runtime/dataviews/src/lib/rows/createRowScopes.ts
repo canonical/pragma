@@ -1,4 +1,4 @@
-import type { Channel } from "../observable/createChannel.js";
+import type { Channel, ReadonlyChannel } from "../observable/createChannel.js";
 import createChannel from "../observable/createChannel.js";
 import type { Selection } from "../selection/createSelection.js";
 import readField from "./readField.js";
@@ -7,7 +7,7 @@ import type { RowModel, RowScope } from "./types.js";
 /** Configuration of one table's row-scope registry. */
 export type RowScopesConfig<TRow extends object> = {
   /** The provider's row model channel. */
-  readonly rows: Channel<RowModel<TRow>>;
+  readonly rows: ReadonlyChannel<RowModel<TRow>>;
   /** The collection's selection record. */
   readonly selection: Selection;
   /** The field names the mounted cells observe. Duplicates are collapsed. */
@@ -17,7 +17,7 @@ export type RowScopesConfig<TRow extends object> = {
 /** The row scopes of one mounted table. */
 export type RowScopes<TRow extends object> = {
   /** The modelled row identities, in result order. */
-  readonly ids: Channel<readonly string[]>;
+  readonly ids: ReadonlyChannel<readonly string[]>;
   /** The scope of one modelled row. Unmodelled identities throw. */
   readonly scope: (id: string) => RowScope<TRow>;
   /**
@@ -33,9 +33,11 @@ export type RowScopes<TRow extends object> = {
 /** One observed field, paired with the channel it publishes into. */
 type FieldSlot = { readonly field: string; readonly channel: Channel<unknown> };
 
-/** A scope with the slots its updates write through. */
+/** A scope with the writable channels its updates go through. */
 type ScopeRecord<TRow extends object> = {
   readonly scope: RowScope<TRow>;
+  readonly row: Channel<TRow>;
+  readonly selected: Channel<boolean>;
   readonly slots: readonly FieldSlot[];
 };
 
@@ -76,20 +78,24 @@ export default function createRowScopes<TRow extends object>(
       fields[field] = channel;
       slots.push({ field, channel });
     }
+    const row = createChannel<TRow>(record);
+    const membership = createChannel(selected);
     return {
       scope: Object.freeze({
         id,
-        row: createChannel<TRow>(record),
+        row,
         fields: Object.freeze(fields),
-        selected: createChannel(selected),
+        selected: membership,
       }),
+      row,
+      selected: membership,
       slots,
     };
   };
 
   const reconcile = (): void => {
     const model = config.rows.get();
-    const selected = config.selection.state.ids;
+    const selected = config.selection.state.get().ids;
     const live = new Set<string>();
     for (const entry of model.entries) {
       live.add(entry.id);
@@ -101,7 +107,7 @@ export default function createRowScopes<TRow extends object>(
         );
         continue;
       }
-      if (!existing.scope.row.set(entry.record)) {
+      if (!existing.row.set(entry.record)) {
         // The model carries the same record object for an unchanged row and
         // records are immutable snapshots, so no field of it can have
         // moved: reconciliation is O(rows) plus the changed rows' fields.
@@ -120,9 +126,9 @@ export default function createRowScopes<TRow extends object>(
   };
 
   const syncSelection = (): void => {
-    const selected = config.selection.state.ids;
+    const selected = config.selection.state.get().ids;
     for (const [id, record] of records) {
-      record.scope.selected.set(selected.has(id));
+      record.selected.set(selected.has(id));
     }
   };
 
@@ -143,7 +149,8 @@ export default function createRowScopes<TRow extends object>(
       reconcile();
       syncSelection();
       const unsubscribeRows = config.rows.subscribe(reconcile);
-      const unsubscribeSelection = config.selection.subscribe(syncSelection);
+      const unsubscribeSelection =
+        config.selection.state.subscribe(syncSelection);
       return () => {
         unsubscribeRows();
         unsubscribeSelection();

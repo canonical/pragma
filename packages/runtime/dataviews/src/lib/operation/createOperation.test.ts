@@ -41,12 +41,12 @@ describe("createOperation", () => {
       selectionRevision: 1,
     });
     // The user changes selection after construction; execution stays captured.
-    operation.recordOutcome([
-      { target: "machine-2", status: "success" },
-      { target: "machine-1", status: "success" },
+    operation.recordOutcomes([
+      { target: "machine-2", status: "succeeded" },
+      { target: "machine-1", status: "succeeded" },
     ]);
     expect(operation.state.succeeded).toEqual(["machine-1"]);
-    expect(operation.state.status).toBe("success");
+    expect(operation.state.status).toBe("succeeded");
   });
 
   it("keeps the snapshot when an outcome batch settles nothing", () => {
@@ -56,7 +56,7 @@ describe("createOperation", () => {
       selectionRevision: 1,
     });
     const before = operation.state;
-    operation.recordOutcome([{ target: "machine-9", status: "success" }]);
+    operation.recordOutcomes([{ target: "machine-9", status: "succeeded" }]);
     expect(operation.state).toBe(before);
   });
 
@@ -66,9 +66,9 @@ describe("createOperation", () => {
       payload: null,
       selectionRevision: 1,
     });
-    operation.recordOutcome([
-      { target: "machine-1", status: "success" },
-      { target: "machine-1", status: "failure", reason: "contradiction" },
+    operation.recordOutcomes([
+      { target: "machine-1", status: "succeeded" },
+      { target: "machine-1", status: "failed", reason: "contradiction" },
     ]);
     expect(operation.state.succeeded).toEqual(["machine-1"]);
     expect(operation.state.failed).toEqual([]);
@@ -80,9 +80,9 @@ describe("createOperation", () => {
       payload: null,
       selectionRevision: 1,
     });
-    operation.recordOutcome([
-      { target: "machine-1", status: "success" },
-      { target: "machine-2", status: "failure", reason: "locked" },
+    operation.recordOutcomes([
+      { target: "machine-1", status: "succeeded" },
+      { target: "machine-2", status: "failed", reason: "locked" },
     ]);
     expect(operation.state.status).toBe("partial");
     expect(operation.state.succeeded).toEqual(["machine-1"]);
@@ -92,29 +92,29 @@ describe("createOperation", () => {
     expect(operation.state.remaining).toEqual(["machine-3"]);
   });
 
-  it("ends in failure when every captured target failed", () => {
+  it("ends failed when every captured target failed", () => {
     const operation = createOperation({
       targets: ["machine-1"],
       payload: null,
       selectionRevision: 1,
     });
-    operation.recordOutcome([
-      { target: "machine-1", status: "failure", reason: "forbidden" },
+    operation.recordOutcomes([
+      { target: "machine-1", status: "failed", reason: "forbidden" },
     ]);
-    expect(operation.state.status).toBe("failure");
+    expect(operation.state.status).toBe("failed");
     expect(operation.state.remaining).toEqual([]);
   });
 
-  it("ends in success when every captured target succeeded", () => {
+  it("ends succeeded when every captured target succeeded", () => {
     const operation = createOperation({
       targets: ["machine-1", "machine-2"],
       payload: null,
       selectionRevision: 1,
     });
-    operation.recordOutcome([{ target: "machine-1", status: "success" }]);
+    operation.recordOutcomes([{ target: "machine-1", status: "succeeded" }]);
     expect(operation.state.status).toBe("partial");
-    operation.recordOutcome([{ target: "machine-2", status: "success" }]);
-    expect(operation.state.status).toBe("success");
+    operation.recordOutcomes([{ target: "machine-2", status: "succeeded" }]);
+    expect(operation.state.status).toBe("succeeded");
     expect(operation.state.failed).toEqual([]);
   });
 
@@ -124,15 +124,15 @@ describe("createOperation", () => {
       payload: null,
       selectionRevision: 1,
     });
-    operation.recordOutcome([
-      { target: "machine-1", status: "failure", reason: "locked" },
-      { target: "machine-2", status: "failure", reason: "offline" },
+    operation.recordOutcomes([
+      { target: "machine-1", status: "failed", reason: "locked" },
+      { target: "machine-2", status: "failed", reason: "offline" },
     ]);
     expect(operation.state.failed).toEqual([
       { target: "machine-1", reason: "locked" },
       { target: "machine-2", reason: "offline" },
     ]);
-    expect(operation.state.status).toBe("failure");
+    expect(operation.state.status).toBe("failed");
   });
 
   it("retries only the failed captured targets under the same identity", () => {
@@ -141,9 +141,9 @@ describe("createOperation", () => {
       payload: null,
       selectionRevision: 3,
     });
-    operation.recordOutcome([
-      { target: "machine-1", status: "success" },
-      { target: "machine-2", status: "failure", reason: "timeout" },
+    operation.recordOutcomes([
+      { target: "machine-1", status: "succeeded" },
+      { target: "machine-2", status: "failed", reason: "timeout" },
     ]);
     const identityBefore = operation.identity;
     operation.retry();
@@ -163,12 +163,12 @@ describe("createOperation", () => {
       payload: null,
       selectionRevision: 1,
     });
-    operation.recordOutcome([{ target: "machine-1", status: "success" }]);
-    operation.recordOutcome([
-      { target: "machine-2", status: "failure", reason: "timeout" },
+    operation.recordOutcomes([{ target: "machine-1", status: "succeeded" }]);
+    operation.recordOutcomes([
+      { target: "machine-2", status: "failed", reason: "timeout" },
     ]);
     operation.retry();
-    operation.recordOutcome([{ target: "machine-1", status: "success" }]);
+    operation.recordOutcomes([{ target: "machine-1", status: "succeeded" }]);
     expect(operation.state.succeeded).toEqual([]);
     expect(operation.state.remaining).toEqual(["machine-2"]);
   });
@@ -179,9 +179,9 @@ describe("createOperation", () => {
       payload: null,
       selectionRevision: 1,
     });
-    operation.recordOutcome([{ target: "machine-1", status: "success" }]);
+    operation.recordOutcomes([{ target: "machine-1", status: "succeeded" }]);
     operation.retry();
-    expect(operation.state.status).toBe("success");
+    expect(operation.state.status).toBe("succeeded");
     expect(operation.state.attempts).toBe(1);
   });
 
@@ -199,8 +199,8 @@ describe("createOperation", () => {
       payload: null,
       selectionRevision: 1,
     });
-    partial.recordOutcome([
-      { target: "machine-1", status: "failure", reason: "locked" },
+    partial.recordOutcomes([
+      { target: "machine-1", status: "failed", reason: "locked" },
     ]);
     partial.retry();
     expect(partial.state.status).toBe("partial");
@@ -215,7 +215,7 @@ describe("createOperation", () => {
     });
     const first = operation.state;
     expect(operation.state).toBe(first);
-    operation.recordOutcome([{ target: "machine-1", status: "success" }]);
+    operation.recordOutcomes([{ target: "machine-1", status: "succeeded" }]);
     expect(operation.state).not.toBe(first);
   });
 

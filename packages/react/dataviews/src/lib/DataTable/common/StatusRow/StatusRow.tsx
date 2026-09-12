@@ -26,9 +26,9 @@ export default function StatusRow({
       {/* biome-ignore lint/a11y/useSemanticElements: <td> is only valid inside a <table>, and this grid is deliberately not one */}
       <div
         role="cell"
-        className={`ds data-table-body-cell status ${status.kind}`}
+        className={`ds data-table-body-cell status ${status.status}`}
       >
-        {status.kind === "stale" ? (
+        {status.status === "stale" || status.status === "refresh-failed" ? (
           // A polite status message: the rows did not move, so nothing
           // else says so.
           <span role="status">{renderStatus(status)}</span>

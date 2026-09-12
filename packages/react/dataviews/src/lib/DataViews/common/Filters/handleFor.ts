@@ -1,7 +1,7 @@
 import type {
   DataViewsProvider,
+  FieldHandle,
   PredicateOperator,
-  ProviderFieldHandle,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
 
@@ -17,9 +17,9 @@ export default function handleFor<TApplied>(
   provider: DataViewsProvider<readonly SchemaFieldDefinition[]>,
   field: string,
   operator: PredicateOperator,
-): ProviderFieldHandle<TApplied> {
+): FieldHandle<TApplied> {
   const byField = provider.fields as unknown as Readonly<
-    Record<string, Readonly<Record<string, ProviderFieldHandle<TApplied>>>>
+    Record<string, Readonly<Record<string, FieldHandle<TApplied>>>>
   >;
   return byField[field][operator];
 }

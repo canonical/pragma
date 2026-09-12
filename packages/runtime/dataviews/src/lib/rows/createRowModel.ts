@@ -1,19 +1,16 @@
-import readField from "./readField.js";
+import defaultRowIdentifier from "./defaultRowIdentifier.js";
 import type { RowEntry, RowIdentifier, RowModel } from "./types.js";
 
-/**
- * The identifier used when a provider declares none: the record's own `id`,
- * which must be a non-empty string. A record without one is a configuration
- * error, not a row with an unknown identity.
- */
-const defaultRowIdentifier = <TRow extends object>(row: TRow): string => {
-  const id = readField(row, "id");
-  if (typeof id !== "string" || id === "") {
-    throw new Error(
-      "row record has no non-empty string id; declare identify to name one",
-    );
-  }
-  return id;
+/** Configuration of one row model build. */
+export type RowModelConfig<TRow extends object> = {
+  readonly rows: readonly TRow[];
+  /**
+   * Reads one record's stable identity. Defaults to the record's own `id`,
+   * which must then be a non-empty string.
+   */
+  readonly identify?: RowIdentifier<TRow>;
+  /** The model this one supersedes, so unchanged entries keep their object. */
+  readonly previous?: RowModel<TRow>;
 };
 
 /**
@@ -29,10 +26,10 @@ const defaultRowIdentifier = <TRow extends object>(row: TRow): string => {
  * would silently key selection, focus and actions to the wrong record.
  */
 export default function createRowModel<TRow extends object>(
-  rows: readonly TRow[],
-  identify: RowIdentifier<TRow> = defaultRowIdentifier,
-  previous?: RowModel<TRow>,
+  config: RowModelConfig<TRow>,
 ): RowModel<TRow> {
+  const { rows, previous } = config;
+  const identify = config.identify ?? defaultRowIdentifier;
   const reusable = new Map<string, RowEntry<TRow>>();
   for (const entry of previous?.entries ?? []) {
     reusable.set(entry.id, entry);

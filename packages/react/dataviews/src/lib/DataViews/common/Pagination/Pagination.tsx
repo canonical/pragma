@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 import { useContext } from "react";
 import PaginationBar from "../../../PaginationBar/PaginationBar.js";
 import DataViewsContext from "../../Context.js";
-import type { PaginationProps } from "./types.js";
+import type { DataViewsPaginationProps } from "./types.js";
 
 /**
  * Window navigation for the collection: the pagination bar, bound to the
@@ -12,7 +12,9 @@ import type { PaginationProps } from "./types.js";
  * difference is where the provider comes from: this part reads the root it
  * is placed in, and throws outside one, rather than taking a provider prop.
  */
-export default function Pagination(props: PaginationProps): ReactElement {
+export default function Pagination(
+  props: DataViewsPaginationProps,
+): ReactElement {
   const provider = useContext(DataViewsContext);
   if (provider === null) {
     throw new Error(

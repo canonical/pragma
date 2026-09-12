@@ -1,6 +1,6 @@
 {
   "name": "@canonical/dataviews-core",
-  "description": "Framework-agnostic collection-views core for Canonical apps: query grammar, schema-enforced field validation, observation channels, selection and window projection, lifecycle transition records, the request-lifecycle coordinator, the provider assembling them, the Location port with the flat URL query grammar and the authority loop that keeps them in step, and the source adapter contract with its local-array, observable-query-client and Relay forward-connection adapters, the provider's saved views over a store it is given, an explicitly imported local-first IndexedDB saved-view store, and the explicitly imported virtual range a windowed table mounts its rows by",
+  "description": "Framework-agnostic collection-views core for Canonical apps: query grammar, schema-enforced field validation, observation channels, selection and window projection, lifecycle transition records, the request-lifecycle coordinator, the provider assembling them, the Location port with the flat URL query grammar and the authority loop that keeps them in step, and the source contract with its local-array, observable-query-client and Relay forward-connection sources, the provider's saved views over a store it is given, an explicitly imported local-first IndexedDB saved-view store, and the explicitly imported virtual range a windowed table mounts its rows by",
   "version": "0.37.0",
   "type": "module",
   "module": "dist/esm/index.js",

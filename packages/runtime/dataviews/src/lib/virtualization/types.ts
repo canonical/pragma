@@ -36,6 +36,12 @@ export type MountedRange = {
  * Everything is keyed by entry id — measurements, the scroll anchor and
  * the retained entry — so an entry that moves or leaves takes nothing that
  * belongs to another with it. Positions are the current entries' only.
+ *
+ * The one record on this surface that *is* its channel rather than
+ * publishing one under `state`. A range has exactly one thing to observe
+ * and its commands only ever change that one thing, so a `state` member
+ * would name the record twice; it reads as a channel with commands, which
+ * is what a renderer holds it as.
  */
 export type VirtualRange = ReadonlyChannel<MountedRange> & {
   /**

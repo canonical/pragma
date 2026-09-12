@@ -11,7 +11,7 @@ It renders on the design system's contrasted surface — its root carries `.cont
 
 ## Actions over the selection
 
-The actions are your own components, placed as children. Each reads the selection when it is pressed, through `useDataViews`, and runs through the source binding: `binding.runAction(action, targets)` captures those targets, calls the source's `runAction`, and removes the targets that succeed from the selection. A failed target stays selected, for review and retry.
+The actions are your own components, placed as children. Each reads the selection when it is pressed, through `useDataViews`, and runs through the source binding: `binding.runAction({ action, targets, payload })` captures those targets, calls the source's own `runAction`, and removes the targets that succeed from the selection. A failed target stays selected, for review and retry. An action the source did not declare, or one addressing more rows than it declared it can take at once, is refused before anything runs.
 
 A destructive action is the design system's `Button` with `anticipation="destructive"`.
 
@@ -21,6 +21,8 @@ import {
   createDataViewsProvider,
   createSourceBinding,
   type DataViewsProvider,
+  DEFAULT_WINDOW,
+  type RowRecord,
   type SourceBinding,
 } from "@canonical/dataviews-core";
 import {
@@ -28,6 +30,7 @@ import {
   DataViews,
   type DataTableColumn,
   useDataViews,
+  useDataViewsValue,
 } from "@canonical/dataviews-react";
 import { Button, type ButtonProps } from "@canonical/react-ds-global";
 import { useEffect, useState } from "react";
@@ -59,7 +62,11 @@ function SelectionAction({
       importance="tertiary"
       disabled={binding === null}
       onClick={() => {
-        void binding?.runAction(action, [...selection.state.ids]);
+        void binding?.runAction({
+          action,
+          targets: { kind: "explicit", ids: [...selection.state.get().ids] },
+          payload: undefined,
+        });
       }}
     />
   );
@@ -67,29 +74,34 @@ function SelectionAction({
 
 export function Machines() {
   const [source] = useState(() =>
-    createArraySource({
+    createArraySource<RowRecord>({
       rows: machines,
       fields: ["name", "status", "region", "cores", "owner"],
+      // Declared, then served: the binding refuses an action either half
+      // is missing.
+      actions: { archive: { targets: "explicit", limit: null } },
       // Resolves with one outcome per target: { target, status }.
-      runAction: ({ action, targets }) => archiveMachines(action, targets),
+      runAction: ({ action, targets }) =>
+        archiveMachines(action, targets.kind === "explicit" ? targets.ids : []),
     }),
   );
   const [provider] = useState(() =>
     createDataViewsProvider({
       schema: machineSchema,
       capabilities: source.capabilities,
-      window: { page: 1, size: 5 },
+      window: { ...DEFAULT_WINDOW, size: 5 },
     }),
   );
   const [binding, setBinding] = useState<SourceBinding | null>(null);
   useEffect(() => {
-    const bound = createSourceBinding({ host: provider, adapter: source });
+    const bound = createSourceBinding({ host: provider, source });
+    const release = bound.observe();
     setBinding(bound);
-    if (provider.result.get().result.status === "idle") {
+    if (provider.state.get().result.status === "idle") {
       provider.refresh();
     }
     return () => {
-      bound.dispose();
+      release();
       setBinding(null);
     };
   }, [provider, source]);
@@ -145,8 +157,7 @@ When an action succeeds for every target, the targets leave the selection, and w
 ```tsx
 function MachinesSelected({ provider }: { provider: MachinesProvider }) {
   const { selection } = useDataViews(provider);
-  const read = () => selection.state.ids.size;
-  const count = useSyncExternalStore(selection.subscribe, read, read);
+  const count = useDataViewsValue(selection.state).ids.size;
   return (
     <span role="status" className="indicator">
       {`${count} ${count === 1 ? "machine" : "machines"} selected`}

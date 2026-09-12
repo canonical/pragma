@@ -3,62 +3,51 @@
  * type here; hook props types live beside them when a hook takes config.
  */
 import type {
-  Channel,
-  CollectionCoordinatorState,
+  DataViewsProvider,
   EmptyOr,
   FieldFeedback,
-  Operation,
   PredicateOperand,
-  ProviderFields,
   ReadonlyChannel,
-  ResultWindow,
-  RowModel,
   RowRecord,
   SchemaFieldDefinition,
-  Selection,
-  Slice,
-  SortTerm,
 } from "@canonical/dataviews-core";
 
 /**
- * A core record publishing its own immutable state. `Selection`,
- * `Presentation` and `GridInteraction` expose a `state` getter and a
- * `subscribe` rather than a channel, so `useDataViewsState` observes them
- * through this shape while channels go through `useDataViewsValue`.
+ * The typed collection scope returned by useDataViews: the provider's own
+ * members a child of a root may read and command, and nothing else.
+ * Derived, so a signature is written once; `adopt`, `complete`,
+ * `rotateScope` and `dispose` are left out, because a child that imposed a
+ * query or completed a request would be fighting the location binding and
+ * the source binding for authority they already hold.
  */
-export type StateRecord<T> = {
-  readonly state: T;
-  readonly subscribe: (listener: () => void) => () => void;
-};
-
-/** The typed collection scope returned by useDataViews. */
 export type UseDataViewsResult<
   TFields extends readonly SchemaFieldDefinition[],
   TRow extends object = RowRecord,
-> = {
-  /** The coordinator snapshot channel (result, query and window). */
-  readonly result: Channel<CollectionCoordinatorState<TRow>>;
-  /** The displayed rows as one shared model, keyed by stable identity. */
-  readonly rows: Channel<RowModel<TRow>>;
-  readonly selection: Selection;
-  readonly fields: ProviderFields<TFields>;
-  readonly navigateWindow: (page?: number, size?: number) => void;
-  readonly setSort: (sort: readonly SortTerm[]) => void;
-  readonly setSearch: (search: string) => void;
-  readonly refresh: () => string | null;
-  readonly adopt: (slice: Slice, window: ResultWindow) => string | null;
-  readonly invokeAction: (
-    targets: readonly string[],
-    payload?: unknown,
-  ) => Operation;
-};
+> = Pick<
+  DataViewsProvider<TFields, TRow>,
+  | "identity"
+  | "schema"
+  | "capabilities"
+  | "state"
+  | "rows"
+  | "selection"
+  | "views"
+  | "fields"
+  | "navigateWindow"
+  | "setSort"
+  | "setSearch"
+  | "setGroup"
+  | "setCollapsed"
+  | "refresh"
+  | "invokeAction"
+>;
 
 /** The binding returned by useDataViewsField. */
 export type UseDataViewsFieldResult<TApplied> = {
   readonly input: string;
   readonly applied: EmptyOr<TApplied>;
   readonly feedback: FieldFeedback;
-  readonly edit: (buffer: string) => void;
+  readonly edit: (input: string) => void;
   readonly set: (operands: readonly PredicateOperand[]) => void;
   readonly clear: () => void;
 };

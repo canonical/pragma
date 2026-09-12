@@ -1,12 +1,10 @@
+import type { ViewDraft, ViewStore } from "@canonical/dataviews-core";
 import {
   createLocationBinding,
   createMemoryLocation,
+  DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
-import type {
-  IndexedDBFactory,
-  ViewDraft,
-  ViewStore,
-} from "@canonical/dataviews-core/views";
+import type { IndexedDBFactory } from "@canonical/dataviews-core/views";
 import { Button } from "@canonical/react-ds-global";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactElement, ReactNode } from "react";
@@ -64,7 +62,7 @@ const failedMachines: ViewDraft = {
 const parameters = consumerCode({
   parts: ["DataTable", "DataViews", "type DataTableColumn"],
   declarations: columnsCode,
-  window: "{ page: 1, size: 5 }",
+  window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
   views: true,
   render: composition,
 });
@@ -98,7 +96,7 @@ function SavedMachines({
 }): ReactElement {
   const { store } = useStoryViewStore({ seed, indexedDB });
   const provider = useMachineProvider({
-    window: { page: 1, size: 5 },
+    window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
     views: store,
   });
   return <Collection provider={provider} />;
@@ -214,7 +212,7 @@ export const AConflictBetweenTabs: Story = {
       seed: [failedMachines],
     });
     const provider = useMachineProvider({
-      window: { page: 1, size: 5 },
+      window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
       views: store,
     });
     return (
@@ -383,7 +381,7 @@ function UrlQuery({
   useEffect(() => binding.observe(), [binding]);
   return null;
 }`,
-    window: "{ page: 1, size: 5 }",
+    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
     views: true,
     render: composition.replace(
       "  <DataViews.Views />",
@@ -393,7 +391,7 @@ function UrlQuery({
   render: function Render() {
     const { store } = useStoryViewStore({ seed: [failedMachines] });
     const provider = useMachineProvider({
-      window: { page: 1, size: 5 },
+      window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
       views: store,
     });
     return (

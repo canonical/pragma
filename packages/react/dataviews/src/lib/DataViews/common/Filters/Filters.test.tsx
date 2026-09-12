@@ -11,10 +11,12 @@ import type {
 import {
   createDataViewsProvider,
   createSchema,
+  DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
 import { describe, expect, it } from "vitest";
+import { COUNTED_EXACTLY, declaring } from "../../../capabilities.fixtures.js";
 import DataViews from "../../Provider.js";
 import Filters from "./Filters.js";
 
@@ -31,20 +33,16 @@ const schema = createSchema([
 
 type Fields = typeof schema.fields;
 
-/** A source declaring every operator the schema allows. */
-const everything: SourceCapabilities = {
+/** A source declaring every operator the schema allows, and nothing else. */
+const everything = declaring({
   filter: {
     status: ["eq"],
     cpu: ["gte", "lte"],
     updated: ["gte", "lte"],
     owner: ["isSet"],
   },
-  search: [],
-  sort: [],
-  sortTerms: 0,
-  group: [],
-  count: "filtered",
-};
+  counts: COUNTED_EXACTLY,
+});
 
 const makeProvider = (
   capabilities: SourceCapabilities = everything,
@@ -127,12 +125,12 @@ describe("DataViews.Filters", () => {
     const provider = makeProvider();
     mount(provider);
     fireEvent.click(screen.getByRole("checkbox", { name: "failed" }));
-    expect(provider.result.get().slice.filter).toEqual([
+    expect(provider.state.get().slice.filter).toEqual([
       { field: "status", operator: "eq", operands: ["failed"] },
     ]);
 
     fireEvent.click(screen.getByRole("checkbox", { name: "ready" }));
-    expect(provider.result.get().slice.filter).toEqual([
+    expect(provider.state.get().slice.filter).toEqual([
       { field: "status", operator: "eq", operands: ["failed", "ready"] },
     ]);
     expect(screen.getByRole("checkbox", { name: "failed" })).toBeChecked();
@@ -141,7 +139,7 @@ describe("DataViews.Filters", () => {
     ).not.toBeChecked();
 
     fireEvent.click(screen.getByRole("checkbox", { name: "failed" }));
-    expect(provider.result.get().slice.filter).toEqual([
+    expect(provider.state.get().slice.filter).toEqual([
       { field: "status", operator: "eq", operands: ["ready"] },
     ]);
   });
@@ -152,7 +150,7 @@ describe("DataViews.Filters", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "failed" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "failed" }));
     // Not an empty restriction matching nothing: no restriction.
-    expect(provider.result.get().slice.filter).toEqual([]);
+    expect(provider.state.get().slice.filter).toEqual([]);
   });
 
   it("applies and removes a presence predicate", () => {
@@ -160,12 +158,12 @@ describe("DataViews.Filters", () => {
     mount(provider);
     const owner = screen.getByRole("checkbox", { name: "owner" });
     fireEvent.click(owner);
-    expect(provider.result.get().slice.filter).toEqual([
+    expect(provider.state.get().slice.filter).toEqual([
       { field: "owner", operator: "isSet", operands: [] },
     ]);
     expect(owner).toBeChecked();
     fireEvent.click(owner);
-    expect(provider.result.get().slice.filter).toEqual([]);
+    expect(provider.state.get().slice.filter).toEqual([]);
     expect(owner).not.toBeChecked();
   });
 
@@ -176,11 +174,11 @@ describe("DataViews.Filters", () => {
     fireEvent.change(screen.getByLabelText("cpu from"), {
       target: { value: "4" },
     });
-    expect(provider.result.get().slice.filter).toEqual([
+    expect(provider.state.get().slice.filter).toEqual([
       { field: "cpu", operator: "gte", operands: [4] },
     ]);
     fireEvent.click(screen.getByRole("button", { name: "Clear cpu from" }));
-    expect(provider.result.get().slice.filter).toEqual([]);
+    expect(provider.state.get().slice.filter).toEqual([]);
     expect(screen.queryByRole("button", { name: "Clear cpu from" })).toBeNull();
   });
 
@@ -191,7 +189,7 @@ describe("DataViews.Filters", () => {
     fireEvent.change(input, { target: { value: "4" } });
     fireEvent.change(input, { target: { value: "99" } });
 
-    expect(provider.result.get().slice.filter).toEqual([
+    expect(provider.state.get().slice.filter).toEqual([
       { field: "cpu", operator: "gte", operands: [4] },
     ]);
     expect(input).toHaveAttribute("aria-invalid", "true");
@@ -211,7 +209,7 @@ describe("DataViews.Filters", () => {
     expect(
       screen.getByText("99 is above the maximum of 64."),
     ).toBeInTheDocument();
-    expect(provider.result.get().slice.filter).toEqual([]);
+    expect(provider.state.get().slice.filter).toEqual([]);
   });
 
   it("shows the text typed, and reads text that is not a number as invalid", () => {
@@ -247,7 +245,7 @@ describe("DataViews.Filters", () => {
     const input = screen.getByLabelText("cpu from");
     fireEvent.change(input, { target: { value: "4" } });
     fireEvent.change(input, { target: { value: "" } });
-    expect(provider.result.get().slice.filter).toEqual([
+    expect(provider.state.get().slice.filter).toEqual([
       { field: "cpu", operator: "gte", operands: [4] },
     ]);
     expect(input).toHaveAttribute("aria-invalid", "false");
@@ -287,8 +285,8 @@ describe("DataViews.Filters", () => {
     mount(provider);
     expect(screen.queryByRole("checkbox")).toBeNull();
     act(() => {
-      provider.adopt(
-        {
+      provider.adopt({
+        slice: {
           filter: [
             { field: "status", operator: "eq", operands: ["failed"] },
             { field: "cpu", operator: "lte", operands: [8] },
@@ -296,10 +294,10 @@ describe("DataViews.Filters", () => {
           ],
           search: null,
           sort: [],
-          group: null,
+          group: [],
         },
-        { page: 1, size: 50 },
-      );
+        window: DEFAULT_WINDOW,
+      });
     });
     // Nothing else removes it, so each stays offered while it stands — for
     // removal only: nothing can be added the source never declared.
@@ -309,7 +307,7 @@ describe("DataViews.Filters", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "failed" }));
     fireEvent.click(screen.getByRole("button", { name: "Clear cpu to" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "owner" }));
-    expect(provider.result.get().slice.filter).toEqual([]);
+    expect(provider.state.get().slice.filter).toEqual([]);
     expect(screen.queryByRole("checkbox")).toBeNull();
     expect(screen.queryByLabelText("cpu to")).toBeNull();
   });
@@ -318,18 +316,18 @@ describe("DataViews.Filters", () => {
     const provider = makeProvider();
     mount(provider);
     act(() => {
-      provider.adopt(
-        {
+      provider.adopt({
+        slice: {
           filter: [
             { field: "status", operator: "eq", operands: ["cancelled"] },
             { field: "cpu", operator: "gte", operands: [8] },
           ],
           search: null,
           sort: [],
-          group: null,
+          group: [],
         },
-        { page: 1, size: 50 },
-      );
+        window: DEFAULT_WINDOW,
+      });
     });
     expect(screen.getByRole("checkbox", { name: "cancelled" })).toBeChecked();
     expect(screen.getByLabelText("cpu from")).toHaveValue("8");
@@ -348,20 +346,20 @@ describe("DataViews.Filters", () => {
     fireEvent.change(screen.getByLabelText("cpu from"), {
       target: { value: "4" },
     });
-    expect(provider.result.get().slice.filter).toEqual([
+    expect(provider.state.get().slice.filter).toEqual([
       { field: "status", operator: "eq", operands: ["failed"] },
       { field: "cpu", operator: "gte", operands: [4] },
     ]);
     act(() => {
-      provider.adopt(
-        {
+      provider.adopt({
+        slice: {
           filter: [{ field: "status", operator: "eq", operands: ["ready"] }],
           search: null,
           sort: [],
-          group: null,
+          group: [],
         },
-        { page: 1, size: 50 },
-      );
+        window: DEFAULT_WINDOW,
+      });
     });
     expect(screen.getByRole("checkbox", { name: "ready" })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: "failed" })).not.toBeChecked();

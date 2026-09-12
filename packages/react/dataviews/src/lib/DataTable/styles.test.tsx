@@ -13,17 +13,20 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type {
-  CompletionResult,
-  SortTerm,
-  SourceCapabilities,
-} from "@canonical/dataviews-core";
+import type { Completion, SortTerm } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
 } from "@canonical/dataviews-core";
 import { act, cleanup, render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import {
+  COUNTED_EXACTLY,
+  declaring,
+  delivered,
+  exact,
+  sorting,
+} from "../capabilities.fixtures.js";
 import virtualRows from "../virtualization/virtualRows.js";
 import DataTable from "./DataTable.js";
 import type { DataTableColumn } from "./types.js";
@@ -66,14 +69,11 @@ type Machine = {
 };
 
 /** What the fixture source declares: it can order by `name`, which the table sorts. */
-const capabilities: SourceCapabilities = {
+const capabilities = declaring({
   filter: { status: ["eq"] },
-  search: [],
-  sort: ["name"],
-  sortTerms: 1,
-  group: [],
-  count: "filtered",
-};
+  sort: sorting(["name"], 1),
+  counts: COUNTED_EXACTLY,
+});
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Name", sortable: true, resizable: true },
@@ -81,11 +81,11 @@ const columns: readonly DataTableColumn[] = [
 ];
 
 /**
- * Render a selectable table and settle its first request with `result`,
+ * Render a selectable table and settle its first request with `completion`,
  * then, given a `sort`, settle the ordered query with the same answer.
  */
 const settled = (
-  result: CompletionResult<Machine>,
+  completion: Completion<Machine>,
   sort?: SortTerm,
 ): HTMLElement => {
   const provider = createDataViewsProvider<typeof schema.fields, Machine>({
@@ -105,19 +105,19 @@ const settled = (
     throw new Error("expected a refresh request");
   }
   act(() => {
-    provider.complete(requestId, result);
+    provider.complete(requestId, completion);
     provider.selection.add(["m-1"]);
   });
   if (sort !== undefined) {
     act(() => {
       provider.setSort([sort]);
     });
-    const ordered = provider.result.get().pendingRequestId;
+    const ordered = provider.state.get().pendingRequestId;
     if (ordered === null) {
       throw new Error("expected the sort to issue a request");
     }
     act(() => {
-      provider.complete(ordered, result);
+      provider.complete(ordered, completion);
     });
   }
   return container;
@@ -125,19 +125,58 @@ const settled = (
 
 const loaded = (): HTMLElement =>
   settled(
-    {
-      status: "success",
-      rows: [
-        { id: "m-1", name: "alpha", status: "running" },
-        { id: "m-2", name: "beta", status: "failed" },
-      ],
-      count: 2,
-    },
+    delivered([
+      { id: "m-1", name: "alpha", status: "running" },
+      { id: "m-2", name: "beta", status: "failed" },
+    ]),
     { field: "name", direction: "asc" },
   );
 
 const failed = (): HTMLElement =>
-  settled({ status: "failure", reason: "unreachable" });
+  settled({
+    status: "failed",
+    failure: {
+      reason: "unreachable",
+      cause: new Error("unreachable"),
+      transient: null,
+    },
+  });
+
+/** Rows that still answer the query, under a refresh that failed. */
+const refreshFailed = (): HTMLElement => {
+  const provider = createDataViewsProvider<typeof schema.fields, Machine>({
+    schema,
+    capabilities,
+  });
+  const { container } = render(
+    <DataTable provider={provider} columns={columns} label="Machines" />,
+  );
+  const first = provider.refresh();
+  if (first === null) {
+    throw new Error("expected a refresh request");
+  }
+  act(() => {
+    provider.complete(
+      first,
+      delivered([{ id: "m-1", name: "alpha", status: "running" }]),
+    );
+  });
+  const again = provider.refresh();
+  if (again === null) {
+    throw new Error("expected the refresh to issue a request");
+  }
+  act(() => {
+    provider.complete(again, {
+      status: "failed",
+      failure: {
+        reason: "unreachable",
+        cause: new Error("unreachable"),
+        transient: null,
+      },
+    });
+  });
+  return container;
+};
 
 /** A windowed table over more rows than it mounts, so it holds a gap. */
 const windowedTable = (): HTMLElement => {
@@ -163,7 +202,7 @@ const windowedTable = (): HTMLElement => {
     status: "running",
   }));
   act(() => {
-    provider.complete(requestId, { status: "success", rows, count: 20 });
+    provider.complete(requestId, delivered(rows));
   });
   return container;
 };
@@ -176,6 +215,24 @@ const classesOf = (container: HTMLElement): Set<string> =>
   );
 
 describe("DataTable stylesheet", () => {
+  it("colours both failures with the error token and nothing else", () => {
+    // The one thing a render cannot show: a status that lost its colour
+    // still reads as a status. Both failures carry it; a stale or empty
+    // table is muted, because nothing went wrong there.
+    expect(rule(/\.ds\.data-table-body-cell\.status/)).toMatch(
+      /color:\s*var\(--color-text-muted\)/,
+    );
+    // Nested inside that rule, so it is read from the sheet rather than
+    // through `rule`, which stops at the first nested block.
+    const failures = sheet.match(
+      /&\.failed,\s*&\.refresh-failed\s*\{([^{}]*)\}/,
+    );
+    if (failures === null) {
+      throw new Error("no rule colours the two failure statuses together");
+    }
+    expect(failures[1]).toMatch(/color:\s*var\(--color-text-error\)/);
+  });
+
   it("styles only classes the table renders", () => {
     const styled = new Set(
       [...sheet.matchAll(/\.([a-z][\w-]*)/g)].map(([, name]) => name),
@@ -183,6 +240,10 @@ describe("DataTable stylesheet", () => {
     const rendered = classesOf(loaded());
     cleanup();
     for (const name of classesOf(failed())) {
+      rendered.add(name);
+    }
+    cleanup();
+    for (const name of classesOf(refreshFailed())) {
       rendered.add(name);
     }
     expect(styled.size).toBeGreaterThan(0);
@@ -212,7 +273,7 @@ describe("DataTable stylesheet", () => {
     cleanup();
     expect(
       failed().querySelector(
-        ".ds.data-table-row-group.body > .ds.data-table-row.status > .ds.data-table-body-cell.status.error",
+        ".ds.data-table-row-group.body > .ds.data-table-row.status > .ds.data-table-body-cell.status.failed",
       ),
     ).not.toBeNull();
   });

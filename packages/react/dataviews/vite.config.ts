@@ -18,7 +18,13 @@ export default defineConfig({
     ssr: true,
     // Story fixtures and stories are exercised by Storybook, not by the
     // unit suite; the ratchet measures the library the package ships.
-    coverage: { exclude: ["src/storybook/**", "**/*.stories.{ts,tsx}"] },
+    coverage: {
+      exclude: [
+        "src/storybook/**",
+        "**/*.stories.{ts,tsx}",
+        "**/*.fixtures.ts",
+      ],
+    },
     plugins,
     setupFiles: ["./vitest.setup.ts"],
   }),

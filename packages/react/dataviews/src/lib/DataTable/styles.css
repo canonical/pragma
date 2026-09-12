@@ -248,8 +248,10 @@
     overflow: visible;
   }
 
-  /* The one no-rows outcome: a single cell spanning every track, saying
-     which of the four it is. */
+  /* The table's status: a single cell spanning every track, saying which
+     outcome it is. It stands in place of the rows when there are none, and
+     above them when rows are kept. The two failures carry the error colour;
+     everything else is muted, because nothing went wrong. */
   .ds.data-table-body-cell.status {
     grid-column: 1 / -1;
     padding-block: var(--dimension-300);
@@ -257,7 +259,8 @@
     white-space: normal;
     text-align: center;
 
-    &.error {
+    &.failed,
+    &.refresh-failed {
       color: var(--color-text-error);
     }
   }

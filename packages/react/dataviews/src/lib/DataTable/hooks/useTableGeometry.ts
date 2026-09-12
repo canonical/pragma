@@ -1,12 +1,12 @@
 import type {
+  ColumnLayout,
   ColumnToSize,
   GridInteraction,
-  Presentation,
   ResolvedColumn,
 } from "@canonical/dataviews-core";
 import { columnTemplate, resolveColumns } from "@canonical/dataviews-core";
 import { useCallback, useMemo, useState } from "react";
-import useDataViewsState from "../../DataViews/hooks/useDataViewsState.js";
+import useDataViewsValue from "../../DataViews/hooks/useDataViewsValue.js";
 import { sameTracks } from "../columnKeys.js";
 import type { TableGeometry } from "./types.js";
 import useStableValue from "./useStableValue.js";
@@ -62,18 +62,18 @@ const observeResize = (
  * written onto every cell. Before the container is measured the tracks are
  * declarative, so the baseline is aligned and server output deterministic;
  * afterwards the solver's pixel vector is published, which is what capping
- * and resizing need. The authoritative presentation is untouched while a
+ * and resizing need. The authoritative layout is untouched while a
  * resize previews: the preview only replaces its own column's track.
  *
  * The columns are resolved against the container's content width less the
  * selection track, whose width is the stylesheet's: it is read back from the
  * cell that track sizes, observed for as long as that cell is there.
  *
- * Two tables sharing one presentation therefore share user arrangement while
+ * Two tables sharing one layout therefore share user arrangement while
  * resolving their own widths against their own container.
  */
 export default function useTableGeometry(
-  presentation: Presentation,
+  layout: ColumnLayout,
   interaction: GridInteraction,
   columnIds: readonly string[],
 ): TableGeometry {
@@ -81,9 +81,9 @@ export default function useTableGeometry(
   const [reserved, setReserved] = useState(0);
   // Subscribed for the re-render, not for the snapshot: the tracks below
   // are read through the record itself, so its unknown-id guard is the one
-  // answer to a column the presentation never declared.
-  useDataViewsState(presentation);
-  const interactionState = useDataViewsState(interaction);
+  // answer to a column the layout never declared.
+  useDataViewsValue(layout.state);
+  const interactionState = useDataViewsValue(interaction.state);
 
   const attach = useCallback(
     (node: HTMLDivElement): (() => void) | undefined => {
@@ -116,7 +116,7 @@ export default function useTableGeometry(
   const width = container === null ? null : Math.max(0, container - reserved);
 
   const tracks = useStableValue<readonly ColumnToSize[]>(
-    columnIds.map((id) => ({ id, sizing: presentation.effective(id) })),
+    columnIds.map((id) => ({ id, sizing: layout.effective(id) })),
     sameTracks,
   );
 

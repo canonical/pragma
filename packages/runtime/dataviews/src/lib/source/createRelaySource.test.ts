@@ -11,28 +11,34 @@ import {
   type Variables,
 } from "relay-runtime";
 import { describe, expect, it, vi } from "vitest";
-import type {
-  CollectionCoordinatorState,
-  CompletionResult,
-} from "../collection/createCollectionCoordinator.js";
 import createDataViewsProvider from "../provider/createDataViewsProvider.js";
-import type { Slice } from "../query/types.js";
+import DEFAULT_WINDOW from "../query/defaultWindow.js";
+import type { Query, ResultWindow, Slice } from "../query/types.js";
+import type {
+  Count,
+  SourceCounts,
+  SourceDelivery,
+  SourceRefusal,
+} from "../result/types.js";
 import createSchema from "../schema/createSchema.js";
+import { declaring, sorting } from "./capabilities.fixtures.js";
 import createRelaySource, {
   type RelayEnvironment,
   type RelayPageRequest,
 } from "./createRelaySource.js";
 import createSourceBinding from "./createSourceBinding.js";
 import type {
+  Source,
   SourceActionRunner,
   SourceCapabilities,
+  SourceLookup,
   SourceRequest,
 } from "./types.js";
 
 /**
- * The Relay adapter, exercised against the real `relay-runtime`
+ * The Relay source, exercised against the real `relay-runtime`
  * environment: its normalized store, its fetching, its retention and its
- * local updates. The adapter imports nothing from Relay — the environment
+ * local updates. The source imports nothing from Relay — the environment
  * reaches it through the structural surface, which these tests prove
  * Relay's own `Environment` satisfies.
  */
@@ -47,7 +53,10 @@ type Machine = {
 type MachinesData = {
   readonly machines: {
     readonly totalCount: number | null;
-    readonly pageInfo: { readonly endCursor: string | null };
+    readonly pageInfo: {
+      readonly endCursor: string | null;
+      readonly hasNextPage: boolean | null;
+    };
     readonly edges: ReadonlyArray<{
       readonly node: Machine | null;
     } | null> | null;
@@ -95,7 +104,10 @@ const machinesField = linked(
   "MachineConnection",
   [
     scalar("totalCount"),
-    linked("pageInfo", "PageInfo", [scalar("endCursor")]),
+    linked("pageInfo", "PageInfo", [
+      scalar("endCursor"),
+      scalar("hasNextPage"),
+    ]),
     linked(
       "edges",
       "MachineEdge",
@@ -124,7 +136,7 @@ const machinesField = linked(
  *   query MachinesQuery($first: Int!, $after: String, $status: [String!]) {
  *     machines(first: $first, after: $after, status: $status) {
  *       totalCount
- *       pageInfo { endCursor }
+ *       pageInfo { endCursor hasNextPage }
  *       edges { node { id name status } }
  *     }
  *   }
@@ -216,13 +228,17 @@ const pageFor = (variables: Variables): GraphQLResponse => {
     after === null
       ? 0
       : matching.findIndex((machine) => `c:${machine.id}` === after) + 1;
-  const page = matching.slice(start, start + (variables.first as number));
+  const size = variables.first as number;
+  const page = matching.slice(start, start + size);
   const last = page.at(-1);
   return {
     data: {
       machines: {
         totalCount: matching.length,
-        pageInfo: { endCursor: last === undefined ? null : `c:${last.id}` },
+        pageInfo: {
+          endCursor: last === undefined ? null : `c:${last.id}`,
+          hasNextPage: start + size < matching.length,
+        },
         edges: page.map((node) => ({ node })),
       },
     },
@@ -278,15 +294,23 @@ const relay = () => {
   return { environment, fetches, fetchAt };
 };
 
-/** A forward connection: status filter, no search, no sorting, a total. */
-const connectionCapabilities: SourceCapabilities = {
+/** A forward connection: a status filter, no search, no sorting, a total. */
+const connectionCapabilities: SourceCapabilities = declaring({
   filter: { status: ["eq"] },
-  search: [],
-  sort: [],
-  sortTerms: 0,
-  group: [],
-  count: "filtered",
-};
+  counts: { visible: "exact", matched: "exact", total: "none" },
+  pagination: { mode: "cursor", backward: false, durable: false },
+});
+
+const UNKNOWN: Count = { kind: "unknown" };
+
+const exactly = (value: number): Count => ({ kind: "exact", value });
+
+/** What an ungrouped connection counts: the matched rows are the visible ones. */
+const countsOf = (matched: Count): SourceCounts => ({
+  visible: matched,
+  matched,
+  total: UNKNOWN,
+});
 
 const statusOf = (slice: Slice): readonly string[] | null => {
   const predicate = slice.filter.find(({ field }) => field === "status");
@@ -311,24 +335,51 @@ const source = (
     connection: (data: MachinesData) => data.machines,
   });
 
-const emptySlice: Slice = { filter: [], search: null, sort: [], group: null };
+const emptySlice: Slice = { filter: [], search: null, sort: [], group: [] };
+
+/** A window over the two-row pages these tests read. */
+const paged = (overrides: Partial<ResultWindow> = {}): ResultWindow => ({
+  ...DEFAULT_WINDOW,
+  size: 2,
+  ...overrides,
+});
 
 const request = (overrides: Partial<SourceRequest> = {}): SourceRequest => ({
   requestId: "i1:r1",
   slice: emptySlice,
-  window: { page: 1, size: 2 },
+  window: paged(),
   ...overrides,
 });
 
-const delivery = () => vi.fn<(result: CompletionResult) => void>();
+/** What the source refuses one query, failing loudly without the port. */
+const refusalsOf = (
+  adapter: Source,
+  overrides: Partial<Query> = {},
+): readonly SourceRefusal[] => {
+  const { refuses } = adapter;
+  if (refuses === undefined) {
+    throw new Error("expected a source declaring which pages it cannot reach");
+  }
+  return refuses({ slice: emptySlice, window: paged(), ...overrides });
+};
 
-const idsOf = (result: CompletionResult | undefined) =>
-  result?.status === "success"
-    ? result.rows.map((row) => (row as Machine).id)
-    : result;
+const unreachable = (page: number): SourceRefusal => ({
+  part: "window",
+  code: "unreachable-page",
+  field: null,
+  operator: null,
+  reason: `a forward connection reaches page ${page} only from page ${page - 1}`,
+});
+
+const delivery = () => vi.fn<(delivered: SourceDelivery) => void>();
+
+const idsOf = (delivered: SourceDelivery) =>
+  delivered.status === "succeeded"
+    ? delivered.page.rows.map((row) => (row as Machine).id)
+    : delivered;
 
 /** The latest delivery, or a failure rather than a skipped assertion. */
-const lastOf = (deliver: ReturnType<typeof delivery>): CompletionResult => {
+const lastOf = (deliver: ReturnType<typeof delivery>): SourceDelivery => {
   const call = deliver.mock.calls.at(-1);
   if (call === undefined) {
     throw new Error("expected a delivery");
@@ -345,20 +396,23 @@ const collection = (environment: RelayEnvironment) => {
   const host = createDataViewsProvider({
     schema,
     capabilities: connectionCapabilities,
-    window: { page: 1, size: 2 },
+    window: paged(),
   });
-  const binding = createSourceBinding({ host, adapter: source(environment) });
+  const release = createSourceBinding({
+    host,
+    source: source(environment),
+  }).observe();
   const shown = () => {
-    const state: CollectionCoordinatorState = host.result.get();
+    const state = host.state.get();
     return {
       ids: (state.result.rows ?? []).map((row) => (row as Machine).id),
       status: state.result.status,
-      count: state.result.count,
-      matches: state.resultsMatchCurrentQuery,
-      lastError: state.result.lastError,
+      counts: state.result.counts,
+      matches: state.resultMatchesQuery,
+      problem: state.result.problem,
     };
   };
-  return { host, binding, shown };
+  return { host, release, shown };
 };
 
 /** An environment whose retentions, subscriptions and fetches are counted. */
@@ -403,7 +457,7 @@ const counted = (environment: RelayEnvironment) => {
 };
 
 describe("createRelaySource over relay-runtime", () => {
-  it("fetches the first page and delivers its records and total", () => {
+  it("delivers the first page as rows, counts, more and cursors together", () => {
     const { environment, fetchAt } = relay();
     const deliver = delivery();
     source(environment).execute(request(), deliver);
@@ -417,9 +471,14 @@ describe("createRelaySource over relay-runtime", () => {
     fetchAt(0).respond();
     expect(deliver).toHaveBeenCalledTimes(1);
     expect(lastOf(deliver)).toEqual({
-      status: "success",
-      rows: [machines[0], machines[1]],
-      count: 5,
+      status: "succeeded",
+      page: {
+        rows: [machines[0], machines[1]],
+        groups: null,
+        counts: countsOf(exactly(5)),
+        more: true,
+        cursors: { next: "c:m2", previous: null },
+      },
     });
   });
 
@@ -450,22 +509,59 @@ describe("createRelaySource over relay-runtime", () => {
     fetchAt(0).respond();
 
     const deliver = delivery();
-    adapter.execute(request({ window: { page: 2, size: 2 } }), deliver);
+    adapter.execute(request({ window: paged({ page: 2 }) }), deliver);
     expect(fetchAt(1).variables.after).toBe("c:m2");
     fetchAt(1).respond();
     expect(idsOf(lastOf(deliver))).toEqual(["m3", "m4"]);
 
-    adapter.execute(request({ window: { page: 3, size: 2 } }), deliver);
+    adapter.execute(request({ window: paged({ page: 3 }) }), deliver);
     expect(fetchAt(2).variables.after).toBe("c:m4");
     fetchAt(2).respond();
     expect(idsOf(lastOf(deliver))).toEqual(["m5"]);
+    // The last page ends in a cursor, and no page follows it.
+    expect(lastOf(deliver)).toMatchObject({
+      page: { more: false, cursors: { next: null, previous: null } },
+    });
   });
 
-  it("refuses a page it has no cursor for rather than inventing one", () => {
+  it("refuses a page no token and no remembered cursor reaches", () => {
+    const { environment, fetches } = relay();
+    expect(
+      refusalsOf(source(environment), { window: paged({ page: 3 }) }),
+    ).toEqual([unreachable(3)]);
+    expect(fetches).toHaveLength(0);
+  });
+
+  it("refuses nothing for the first page or a page its trail reaches", () => {
+    const { environment, fetchAt } = relay();
+    const adapter = source(environment);
+    expect(refusalsOf(adapter)).toEqual([]);
+    adapter.execute(request(), delivery());
+    fetchAt(0).respond();
+    expect(refusalsOf(adapter, { window: paged({ page: 2 }) })).toEqual([]);
+  });
+
+  it("prefers the window's own token over a remembered cursor", () => {
+    const { environment, fetchAt } = relay();
+    const adapter = source(environment);
+    adapter.execute(request(), delivery());
+    fetchAt(0).respond();
+    // The trail remembers "c:m2" for page two; the window names another, and
+    // a token reaches a page no trail ever did.
+    const carried = paged({ page: 2, cursor: "c:m1" });
+    expect(refusalsOf(adapter, { window: carried })).toEqual([]);
+    expect(
+      refusalsOf(adapter, { window: paged({ page: 9, cursor: "c:m4" }) }),
+    ).toEqual([]);
+    adapter.execute(request({ window: carried }), delivery());
+    expect(fetchAt(1).variables.after).toBe("c:m1");
+  });
+
+  it("guards execute against a page nothing reaches", () => {
     const { environment, fetches } = relay();
     expect(() =>
       source(environment).execute(
-        request({ window: { page: 3, size: 2 } }),
+        request({ window: paged({ page: 3 }) }),
         delivery(),
       ),
     ).toThrow("a forward connection reaches page 3 only from page 2");
@@ -477,9 +573,9 @@ describe("createRelaySource over relay-runtime", () => {
     const adapter = source(environment);
     adapter.execute(request(), delivery());
     fetchAt(0).respond();
-    expect(() =>
-      adapter.execute(request({ window: { page: 2, size: 3 } }), delivery()),
-    ).toThrow("reaches page 2 only from page 1");
+    expect(
+      refusalsOf(adapter, { window: paged({ page: 2, size: 3 }) }),
+    ).toEqual([unreachable(2)]);
   });
 
   it("shares cursors between respellings of the same query", () => {
@@ -500,7 +596,7 @@ describe("createRelaySource over relay-runtime", () => {
     adapter.execute(request({ slice: spelled }), delivery());
     fetchAt(0).respond();
     adapter.execute(
-      request({ slice: respelled, window: { page: 2, size: 2 } }),
+      request({ slice: respelled, window: paged({ page: 2 }) }),
       delivery(),
     );
     expect(fetchAt(1).variables.after).toBe("c:m2");
@@ -515,19 +611,16 @@ describe("createRelaySource over relay-runtime", () => {
       ...emptySlice,
       filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
     };
-    expect(() =>
-      adapter.execute(
-        request({ slice: failed, window: { page: 2, size: 2 } }),
-        delivery(),
-      ),
-    ).toThrow("reaches page 2 only from page 1");
+    expect(
+      refusalsOf(adapter, { slice: failed, window: paged({ page: 2 }) }),
+    ).toEqual([unreachable(2)]);
   });
 
   it("remembers the cursors of the most recently used queries only", () => {
     const { environment, fetchAt } = relay();
     const adapter = source(environment);
     const firstPage = (size: number) => {
-      adapter.execute(request({ window: { page: 1, size } }), delivery());
+      adapter.execute(request({ window: paged({ size }) }), delivery());
     };
     // Two queries with cursors, the second one older only by use.
     firstPage(2);
@@ -538,14 +631,14 @@ describe("createRelaySource over relay-runtime", () => {
       firstPage(size);
     }
     // Paging on the oldest makes it the most recently used…
-    adapter.execute(request({ window: { page: 2, size: 2 } }), delivery());
+    adapter.execute(request({ window: paged({ page: 2 }) }), delivery());
     // …so one more query pushes out the one used least recently instead.
     firstPage(34);
-    adapter.execute(request({ window: { page: 2, size: 2 } }), delivery());
+    adapter.execute(request({ window: paged({ page: 2 }) }), delivery());
     expect(fetchAt(34).variables.after).toBe("c:m2");
-    expect(() =>
-      adapter.execute(request({ window: { page: 2, size: 3 } }), delivery()),
-    ).toThrow("reaches page 2 only from page 1");
+    expect(
+      refusalsOf(adapter, { window: paged({ page: 2, size: 3 }) }),
+    ).toEqual([unreachable(2)]);
   });
 
   it("never lets a refused page push another query's cursors out", () => {
@@ -555,32 +648,43 @@ describe("createRelaySource over relay-runtime", () => {
     fetchAt(0).respond();
     // Thirty-one other queries leave the first one the oldest remembered.
     for (let size = 3; size < 34; size += 1) {
-      adapter.execute(request({ window: { page: 1, size } }), delivery());
+      adapter.execute(request({ window: paged({ size }) }), delivery());
     }
+    const unreached = paged({ page: 2, size: 99 });
+    expect(refusalsOf(adapter, { window: unreached })).toEqual([
+      unreachable(2),
+    ]);
     expect(() =>
-      adapter.execute(request({ window: { page: 2, size: 99 } }), delivery()),
+      adapter.execute(request({ window: unreached }), delivery()),
     ).toThrow("reaches page 2 only from page 1");
-    adapter.execute(request({ window: { page: 2, size: 2 } }), delivery());
+    adapter.execute(request({ window: paged({ page: 2 }) }), delivery());
     expect(fetchAt(32).variables.after).toBe("c:m2");
   });
 
-  it("reports a null total as unknown, never as zero", () => {
+  it("counts a null total as unknown, and an absent next page as unknown", () => {
     const { environment, fetchAt } = relay();
     const deliver = delivery();
     source(environment).execute(request(), deliver);
-    const answer = pageFor({ first: 2, after: null, status: null });
     fetchAt(0).respond({
       data: {
         machines: {
-          ...(answer as { data: { machines: object } }).data.machines,
           totalCount: null,
+          pageInfo: { endCursor: "c:m2", hasNextPage: null },
+          edges: [{ node: machines[0] }, { node: machines[1] }],
         },
       },
     });
-    expect(lastOf(deliver)).toMatchObject({ status: "success", count: null });
+    expect(lastOf(deliver)).toMatchObject({
+      status: "succeeded",
+      page: {
+        counts: countsOf(UNKNOWN),
+        more: null,
+        cursors: { next: "c:m2", previous: null },
+      },
+    });
   });
 
-  it("reports an empty last page with no cursor to go on from", () => {
+  it("delivers an empty last page with no cursor to go on from", () => {
     const { environment, fetchAt } = relay();
     const adapter = source(environment);
     const failed: Slice = {
@@ -590,13 +694,19 @@ describe("createRelaySource over relay-runtime", () => {
     const deliver = delivery();
     adapter.execute(request({ slice: failed }), deliver);
     fetchAt(0).respond();
-    expect(lastOf(deliver)).toEqual({ status: "success", rows: [], count: 0 });
-    expect(() =>
-      adapter.execute(
-        request({ slice: failed, window: { page: 2, size: 2 } }),
-        delivery(),
-      ),
-    ).toThrow("reaches page 2 only from page 1");
+    expect(lastOf(deliver)).toEqual({
+      status: "succeeded",
+      page: {
+        rows: [],
+        groups: null,
+        counts: countsOf(exactly(0)),
+        more: false,
+        cursors: { next: null, previous: null },
+      },
+    });
+    expect(
+      refusalsOf(adapter, { slice: failed, window: paged({ page: 2 }) }),
+    ).toEqual([unreachable(2)]);
   });
 
   it("delivers a page already in the store at once, and still fetches it", () => {
@@ -625,22 +735,21 @@ describe("createRelaySource over relay-runtime", () => {
 
     const deliver = delivery();
     adapter.execute(request(), deliver);
-    const answer = pageFor({ first: 2, after: null, status: null });
-    const renamed = {
+    fetchAt(1).respond({
       data: {
         machines: {
-          ...(answer as { data: { machines: object } }).data.machines,
+          totalCount: 5,
+          pageInfo: { endCursor: "c:m2", hasNextPage: true },
           edges: [
             { node: { ...machines[0], name: "alpha-renamed" } },
             { node: machines[1] },
           ],
         },
       },
-    };
-    fetchAt(1).respond(renamed);
+    });
     expect(deliver).toHaveBeenCalledTimes(2);
     expect(lastOf(deliver)).toMatchObject({
-      rows: [{ id: "m1", name: "alpha-renamed" }, machines[1]],
+      page: { rows: [{ id: "m1", name: "alpha-renamed" }, machines[1]] },
     });
   });
 
@@ -655,8 +764,8 @@ describe("createRelaySource over relay-runtime", () => {
     });
     expect(deliver).toHaveBeenCalledTimes(2);
     expect(lastOf(deliver)).toMatchObject({
-      status: "success",
-      rows: [{ id: "m1", name: "alpha-renamed" }, machines[1]],
+      status: "succeeded",
+      page: { rows: [{ id: "m1", name: "alpha-renamed" }, machines[1]] },
     });
 
     // An update to a record this page does not show changes nothing.
@@ -666,13 +775,23 @@ describe("createRelaySource over relay-runtime", () => {
     expect(deliver).toHaveBeenCalledTimes(2);
   });
 
-  it("delivers a failed fetch as a failure carrying its message", () => {
+  it("delivers a failed fetch as a failure carrying its cause", () => {
     const { environment, fetchAt } = relay();
     const deliver = delivery();
     source(environment).execute(request(), deliver);
-    fetchAt(0).fail(new Error("502 from the graph"));
+    const error = new Error("502 from the graph");
+    fetchAt(0).fail(error);
     expect(deliver.mock.calls).toEqual([
-      [{ status: "failure", reason: "502 from the graph" }],
+      [
+        {
+          status: "failed",
+          failure: {
+            reason: "502 from the graph",
+            cause: error,
+            transient: null,
+          },
+        },
+      ],
     ]);
   });
 
@@ -685,7 +804,7 @@ describe("createRelaySource over relay-runtime", () => {
       data: {
         machines: {
           totalCount: 5,
-          pageInfo: { endCursor: "c:m2" },
+          pageInfo: { endCursor: "c:m2", hasNextPage: true },
           // The second record lacks a field the query selects.
           edges: [
             { node: machines[0] },
@@ -698,8 +817,12 @@ describe("createRelaySource over relay-runtime", () => {
     expect(deliver.mock.calls).toEqual([
       [
         {
-          status: "failure",
-          reason: "the store is missing data this page selects",
+          status: "failed",
+          failure: {
+            reason: "the store is missing data this page selects",
+            cause: null,
+            transient: null,
+          },
         },
       ],
     ]);
@@ -720,8 +843,12 @@ describe("createRelaySource over relay-runtime", () => {
     expect(deliver.mock.calls.slice(1)).toEqual([
       [
         {
-          status: "failure",
-          reason: "the store is missing data this page selects",
+          status: "failed",
+          failure: {
+            reason: "the store is missing data this page selects",
+            cause: null,
+            transient: null,
+          },
         },
       ],
     ]);
@@ -741,14 +868,14 @@ describe("createRelaySource over relay-runtime", () => {
       data: {
         machines: {
           totalCount: 5,
-          pageInfo: { endCursor: "c:m2" },
+          pageInfo: { endCursor: "c:m2", hasNextPage: true },
           edges: [{ node: machines[0] }, { node: null }],
         },
       },
     });
-    expect(lastOf(deliver)).toEqual({
-      status: "failure",
-      reason: "the connection carries an edge without a record",
+    expect(lastOf(deliver)).toMatchObject({
+      status: "failed",
+      failure: { reason: "the connection carries an edge without a record" },
     });
   });
 
@@ -760,9 +887,9 @@ describe("createRelaySource over relay-runtime", () => {
     commitLocalUpdate(environment, (store) => {
       store.delete("m2");
     });
-    expect(lastOf(deliver)).toEqual({
-      status: "failure",
-      reason: "the connection carries an edge without a record",
+    expect(lastOf(deliver)).toMatchObject({
+      status: "failed",
+      failure: { reason: "the connection carries an edge without a record" },
     });
   });
 
@@ -772,8 +899,12 @@ describe("createRelaySource over relay-runtime", () => {
     source(environment).execute(request(), deliver);
     fetchAt(0).respond({ data: { machines: null } });
     expect(lastOf(deliver)).toEqual({
-      status: "failure",
-      reason: "the response carries no connection",
+      status: "failed",
+      failure: {
+        reason: "the response carries no connection",
+        cause: null,
+        transient: null,
+      },
     });
   });
 
@@ -785,14 +916,14 @@ describe("createRelaySource over relay-runtime", () => {
       data: {
         machines: {
           totalCount: 5,
-          pageInfo: { endCursor: "c:m2" },
+          pageInfo: { endCursor: "c:m2", hasNextPage: true },
           edges: [{ node: machines[0] }, null],
         },
       },
     });
-    expect(lastOf(deliver)).toEqual({
-      status: "failure",
-      reason: "the connection carries an edge without a record",
+    expect(lastOf(deliver)).toMatchObject({
+      status: "failed",
+      failure: { reason: "the connection carries an edge without a record" },
     });
   });
 
@@ -802,12 +933,16 @@ describe("createRelaySource over relay-runtime", () => {
     source(environment).execute(request(), deliver);
     fetchAt(0).respond({
       data: {
-        machines: { totalCount: 5, pageInfo: { endCursor: null }, edges: null },
+        machines: {
+          totalCount: 5,
+          pageInfo: { endCursor: null, hasNextPage: false },
+          edges: null,
+        },
       },
     });
-    expect(lastOf(deliver)).toEqual({
-      status: "failure",
-      reason: "the connection carries no edges",
+    expect(lastOf(deliver)).toMatchObject({
+      status: "failed",
+      failure: { reason: "the connection carries no edges" },
     });
   });
 
@@ -887,6 +1022,29 @@ describe("createRelaySource over relay-runtime", () => {
     expect(fetches).toHaveLength(0);
   });
 
+  it("never refuses a query carrying a handle that is not a connection", () => {
+    // Relay writes a handle for other directives too — an appended edge, a
+    // deleted record, a client field. Only `@connection` merges pages, so
+    // only `@connection` is refused.
+    const { environment, fetches } = relay();
+    const otherHandle = withSelections([
+      ...MachinesQuery.operation.selections,
+      { ...connectionHandle, handle: "deleteRecord", key: "" },
+    ]);
+    createRelaySource<MachinesOperation>({
+      capabilities: connectionCapabilities,
+      environment,
+      operation: (page) =>
+        createOperationDescriptor(otherHandle, {
+          first: page.first,
+          after: page.after,
+          status: null,
+        }),
+      connection: (data: MachinesData) => data.machines,
+    }).execute(request(), delivery());
+    expect(fetches).toHaveLength(1);
+  });
+
   it("never refuses a query for a row's own @connection list", () => {
     const { environment, fetches } = relay();
     const rowsWithLists = withSelections([
@@ -929,19 +1087,20 @@ describe("createRelaySource over relay-runtime", () => {
     adapter.execute(request(), delivery());
     fetchAt(0).respond();
     for (let size = 3; size < 34; size += 1) {
-      adapter.execute(request({ window: { page: 1, size } }), delivery());
+      adapter.execute(request({ window: paged({ size }) }), delivery());
     }
     expect(() =>
-      adapter.execute(request({ window: { page: 1, size: 99 } }), delivery()),
+      adapter.execute(request({ window: paged({ size: 99 }) }), delivery()),
     ).toThrow("merges its pages");
-    adapter.execute(request({ window: { page: 2, size: 2 } }), delivery());
+    adapter.execute(request({ window: paged({ page: 2 }) }), delivery());
     expect(fetchAt(32).variables.after).toBe("c:m2");
   });
 
   it("forgets the next page once its page no longer ends in a cursor", () => {
     const { environment, fetchAt } = relay();
     const adapter = source(environment);
-    adapter.execute(request(), delivery());
+    const deliver = delivery();
+    adapter.execute(request(), deliver);
     fetchAt(0).respond();
     commitLocalUpdate(environment, (store) => {
       store
@@ -950,26 +1109,34 @@ describe("createRelaySource over relay-runtime", () => {
         ?.getLinkedRecord("pageInfo")
         ?.setValue(null, "endCursor");
     });
-    expect(() =>
-      adapter.execute(request({ window: { page: 2, size: 2 } }), delivery()),
-    ).toThrow("reaches page 2 only from page 1");
+    expect(lastOf(deliver)).toMatchObject({
+      page: { more: true, cursors: { next: null, previous: null } },
+    });
+    expect(refusalsOf(adapter, { window: paged({ page: 2 }) })).toEqual([
+      unreachable(2),
+    ]);
   });
 
   it("fails a page whose connection selector throws", () => {
     const { environment, fetchAt } = relay();
     const deliver = delivery();
+    const thrown = new Error("the query has no machines field");
     createRelaySource<MachinesOperation>({
       capabilities: connectionCapabilities,
       environment,
       operation,
       connection: () => {
-        throw new Error("the query has no machines field");
+        throw thrown;
       },
     }).execute(request(), deliver);
     fetchAt(0).respond();
     expect(lastOf(deliver)).toEqual({
-      status: "failure",
-      reason: "the query has no machines field",
+      status: "failed",
+      failure: {
+        reason: "the query has no machines field",
+        cause: thrown,
+        transient: null,
+      },
     });
   });
 
@@ -990,15 +1157,15 @@ describe("createRelaySource over relay-runtime", () => {
       },
     }).execute(request(), deliver);
     fetchAt(0).respond();
-    expect(lastOf(deliver)).toMatchObject({ status: "success" });
+    expect(lastOf(deliver)).toMatchObject({ status: "succeeded" });
     expect(() =>
       commitLocalUpdate(environment, (store) => {
         store.get("m1")?.setValue("alpha-renamed", "name");
       }),
     ).not.toThrow();
-    expect(lastOf(deliver)).toEqual({
-      status: "failure",
-      reason: "the renamed field is not a machine",
+    expect(lastOf(deliver)).toMatchObject({
+      status: "failed",
+      failure: { reason: "the renamed field is not a machine" },
     });
   });
 
@@ -1019,51 +1186,57 @@ describe("createRelaySource over relay-runtime", () => {
 
   it("freezes the declaration it was handed", () => {
     const { environment } = relay();
-    const capabilities = { ...connectionCapabilities, group: ["status"] };
+    const fields = ["name"];
+    const capabilities = declaring({ sort: sorting(fields) });
     const adapter = source(environment, { capabilities });
-    capabilities.group.push("name");
+    fields.push("zone");
     expect(Object.isFrozen(adapter.capabilities)).toBe(true);
-    expect(adapter.capabilities.group).toEqual(["status"]);
+    expect(adapter.capabilities.sort.fields).toEqual(["name"]);
   });
 
-  it("carries the application's row operations", async () => {
+  it("carries the application's lookup and row operations", () => {
     const { environment } = relay();
     const runAction: SourceActionRunner = vi.fn().mockResolvedValue([]);
+    const lookup: SourceLookup = vi.fn().mockResolvedValue([]);
     const adapter = createRelaySource<MachinesOperation>({
       capabilities: connectionCapabilities,
       environment,
       operation,
       connection: (data: MachinesData) => data.machines,
+      lookup,
       runAction,
     });
+    expect(adapter.lookup).toBe(lookup);
     expect(adapter.runAction).toBe(runAction);
-    expect("runAction" in source(environment)).toBe(false);
+    const plain = source(environment);
+    expect("lookup" in plain).toBe(false);
+    expect("runAction" in plain).toBe(false);
   });
 });
 
 describe("createRelaySource bound to a collection", () => {
   it("publishes pages under the collection's request identities", () => {
     const { environment, fetchAt } = relay();
-    const { host, shown, binding } = collection(environment);
+    const { host, shown, release } = collection(environment);
     host.refresh();
     fetchAt(0).respond();
     expect(shown()).toMatchObject({
       ids: ["m1", "m2"],
       status: "ready",
-      count: 5,
+      counts: countsOf(exactly(5)),
       matches: true,
     });
 
-    host.navigateWindow(2);
+    host.navigateWindow({ page: 2 });
     expect(shown().status).toBe("pending");
     fetchAt(1).respond();
     expect(shown()).toMatchObject({ ids: ["m3", "m4"], status: "ready" });
-    binding.dispose();
+    release();
   });
 
   it("never lets an abandoned filter replace a newer one", () => {
     const { environment, fetchAt } = relay();
-    const { host, shown, binding } = collection(environment);
+    const { host, shown, release } = collection(environment);
     host.fields.status.eq.set(["failed"]);
     host.fields.status.eq.set(["ready"]);
     expect(fetchAt(0).cancelled).toBe(true);
@@ -1075,98 +1248,123 @@ describe("createRelaySource bound to a collection", () => {
     expect(shown()).toMatchObject({
       ids: ["m1", "m3"],
       status: "ready",
-      count: 3,
+      counts: countsOf(exactly(3)),
       matches: true,
     });
-    binding.dispose();
+    release();
   });
 
   it("follows a local update into the collection without refetching", () => {
     const { environment, fetches, fetchAt } = relay();
-    const { host, shown, binding } = collection(environment);
+    const { host, shown, release } = collection(environment);
     host.refresh();
     fetchAt(0).respond();
-    const before = host.result.get().result.provenance;
+    const before = host.state.get().result.provenance;
 
     commitLocalUpdate(environment, (store) => {
       store.get("m2")?.setValue("failed", "status");
       store.get("m2")?.setValue("beta-renamed", "name");
     });
-    const rows = host.result.get().result.rows as readonly Machine[];
+    const rows = host.state.get().result.rows as readonly Machine[];
     expect(rows[1]).toEqual({
       id: "m2",
       name: "beta-renamed",
       status: "failed",
     });
-    expect(host.result.get().result.provenance).not.toEqual(before);
+    expect(host.state.get().result.provenance).not.toEqual(before);
     expect(shown().matches).toBe(true);
     expect(fetches).toHaveLength(1);
-    binding.dispose();
+    release();
   });
 
-  it("reports a page reached without its cursor as a visible failure", () => {
-    const { environment } = relay();
+  it("reports a page reached without its cursor as a refusal", () => {
+    const { environment, fetches } = relay();
     const host = createDataViewsProvider({
       schema,
       capabilities: connectionCapabilities,
-      window: { page: 3, size: 2 },
+      window: paged({ page: 3 }),
     });
-    const binding = createSourceBinding({ host, adapter: source(environment) });
+    const release = createSourceBinding({
+      host,
+      source: source(environment),
+    }).observe();
     host.refresh();
-    expect(host.result.get().result).toMatchObject({
-      status: "error",
-      lastError: "a forward connection reaches page 3 only from page 2",
+    expect(host.state.get().result).toMatchObject({
+      status: "failed",
+      rows: null,
+      problem: { status: "refused", refusals: [unreachable(3)] },
     });
-    binding.dispose();
+    // A refused request costs no round trip.
+    expect(fetches).toHaveLength(0);
+    release();
   });
 
-  it("keeps the rows but reports the failure when a refetch fails", () => {
+  it("keeps the rows and reports the failure when a refetch fails", () => {
     const { environment, fetchAt } = relay();
-    const { host, shown, binding } = collection(environment);
+    const { host, shown, release } = collection(environment);
     host.refresh();
     fetchAt(0).respond();
     host.refresh();
     fetchAt(1).fail(new Error("timeout"));
     expect(shown()).toMatchObject({
       ids: ["m1", "m2"],
-      status: "ready",
-      lastError: "timeout",
+      status: "refreshFailed",
+      matches: true,
+      problem: { status: "failed", failure: { reason: "timeout" } },
     });
-    binding.dispose();
+    release();
   });
 
   it("releases everything when the scope rotates", () => {
     const { environment, fetchAt } = relay();
     const { released, wrapped } = counted(environment);
-    const host = createDataViewsProvider({ schema });
-    const binding = createSourceBinding({ host, adapter: source(wrapped) });
+    const host = createDataViewsProvider({
+      schema,
+      capabilities: connectionCapabilities,
+      window: paged(),
+    });
+    const release = createSourceBinding({
+      host,
+      source: source(wrapped),
+    }).observe();
     host.refresh();
     host.rotateScope();
     expect(released).toEqual({ retentions: 1, subscriptions: 1, fetches: 1 });
     expect(fetchAt(0).cancelled).toBe(true);
-    expect(host.result.get().result.status).toBe("idle");
-    binding.dispose();
+    expect(host.state.get().result.status).toBe("idle");
+    release();
   });
 
-  it("releases everything when the binding or the provider is disposed", () => {
+  it("releases everything when the observation ends or the provider is disposed", () => {
     const { environment, fetchAt } = relay();
-    const disposing = counted(environment);
-    const host = createDataViewsProvider({ schema });
-    const binding = createSourceBinding({
-      host,
-      adapter: source(disposing.wrapped),
+    const detaching = counted(environment);
+    const host = createDataViewsProvider({
+      schema,
+      capabilities: connectionCapabilities,
+      window: paged(),
     });
+    const release = createSourceBinding({
+      host,
+      source: source(detaching.wrapped),
+    }).observe();
     host.refresh();
-    binding.dispose();
-    expect(disposing.released).toEqual({
+    release();
+    expect(detaching.released).toEqual({
       retentions: 1,
       subscriptions: 1,
       fetches: 1,
     });
 
     const ending = counted(environment);
-    const other = createDataViewsProvider({ schema });
-    createSourceBinding({ host: other, adapter: source(ending.wrapped) });
+    const other = createDataViewsProvider({
+      schema,
+      capabilities: connectionCapabilities,
+      window: paged(),
+    });
+    createSourceBinding({
+      host: other,
+      source: source(ending.wrapped),
+    }).observe();
     other.refresh();
     fetchAt(1).respond();
     other.dispose();

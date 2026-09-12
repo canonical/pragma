@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Slice } from "../query/types.js";
 import executeSlice, { readProperty } from "./executeSlice.js";
 
-const emptySlice: Slice = { filter: [], search: null, sort: [], group: null };
+const emptySlice: Slice = { filter: [], search: null, sort: [], group: [] };
 
 const slice = (overrides: Partial<Slice> = {}): Slice => ({
   ...emptySlice,
@@ -290,6 +290,52 @@ describe("executeSlice", () => {
         ),
       ),
     ).toEqual(["x", "y"]);
+  });
+
+  it("breaks a tie on a text term with the next term", () => {
+    // Two equal strings must compare equal, not merely consistently: a tie
+    // that never falls through leaves the second term unread.
+    const duplicates = [
+      { id: "x", name: "same", cpu: 8 },
+      { id: "y", name: "same", cpu: 2 },
+      { id: "z", name: "same", cpu: 5 },
+    ];
+    expect(
+      ids(
+        executeSlice(
+          duplicates,
+          slice({
+            sort: [
+              { field: "name", direction: "asc" },
+              { field: "cpu", direction: "asc" },
+            ],
+          }),
+        ),
+      ),
+    ).toEqual(["y", "z", "x"]);
+  });
+
+  it("breaks a tie between two values of one incomparable bucket", () => {
+    // Neither value orders against the other, so both land in the same
+    // bucket and the next term is what decides between them.
+    const unordered = [
+      { id: "x", name: Number.NaN, cpu: 8 },
+      { id: "y", name: Number.NaN, cpu: 2 },
+      { id: "z", name: Number.NaN, cpu: 5 },
+    ];
+    expect(
+      ids(
+        executeSlice(
+          unordered,
+          slice({
+            sort: [
+              { field: "name", direction: "asc" },
+              { field: "cpu", direction: "asc" },
+            ],
+          }),
+        ),
+      ),
+    ).toEqual(["y", "z", "x"]);
   });
 
   it("keeps input order for rows absent on every term", () => {

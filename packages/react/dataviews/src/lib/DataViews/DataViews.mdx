@@ -11,17 +11,16 @@ A `DataViews` root mounts one provider for the parts inside it. The parts read t
 
 Build the source and the provider once, and tell the provider what the source can execute: the filters and the table's sortable columns offer nothing beyond it, and the binding refuses a provider told anything else. Then place the parts inside the root, in any order and inside any wrapper.
 
+Each part comes in one of two forms. A **connected** part — every `DataViews.*` — reads the enclosing root and throws outside one. A **standalone** part — `DataTable`, `PaginationBar` — takes its provider explicitly and never reads context, so it behaves the same alone as it does here. Each standalone part has a connected twin taking its props less the provider: `DataViews.DataTable` and `DataViews.Pagination` below are exactly that. Use the connected form inside a root, and the standalone form when there is no root to read.
+
 ```tsx
 import {
   createArraySource,
   createDataViewsProvider,
   createSourceBinding,
+  type RowRecord,
 } from "@canonical/dataviews-core";
-import {
-  DataTable,
-  DataViews,
-  type DataTableColumn,
-} from "@canonical/dataviews-react";
+import { DataViews, type DataTableColumn } from "@canonical/dataviews-react";
 import { useEffect, useState } from "react";
 import { machineSchema, machines } from "./machines.js";
 
@@ -34,7 +33,7 @@ const columns: readonly DataTableColumn[] = [
 
 export function Machines() {
   const [source] = useState(() =>
-    createArraySource({
+    createArraySource<RowRecord>({
       rows: machines,
       fields: ["name", "status", "region", "cores", "owner"],
     }),
@@ -46,17 +45,17 @@ export function Machines() {
     }),
   );
   useEffect(() => {
-    const binding = createSourceBinding({ host: provider, adapter: source });
-    if (provider.result.get().result.status === "idle") {
+    const binding = createSourceBinding({ host: provider, source });
+    const release = binding.observe();
+    if (provider.state.get().result.status === "idle") {
       provider.refresh();
     }
-    return binding.dispose;
+    return release;
   }, [provider, source]);
   return (
     <DataViews provider={provider}>
       <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
-      <DataTable
-        provider={provider}
+      <DataViews.DataTable
         columns={columns}
         label="Machines"
         selectable

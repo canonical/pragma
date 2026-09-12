@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import createPresentation from "./createPresentation.js";
+import createColumnLayout from "./createColumnLayout.js";
 import type { ColumnToSize } from "./types.js";
 
 const columns = (): readonly ColumnToSize[] => [
@@ -8,66 +8,64 @@ const columns = (): readonly ColumnToSize[] => [
   { id: "zone", sizing: { kind: "flex", weight: 1, minPx: 100, maxPx: 300 } },
 ];
 
-describe("createPresentation", () => {
+describe("createColumnLayout", () => {
   it("declares sizing per column and rejects empty or duplicate ids", () => {
-    const presentation = createPresentation(columns());
-    expect(presentation.effective("name")).toEqual({
+    const layout = createColumnLayout(columns());
+    expect(layout.effective("name")).toEqual({
       kind: "flex",
       weight: 2,
       minPx: 120,
     });
-    expect(presentation.effective("status")).toEqual({
+    expect(layout.effective("status")).toEqual({
       kind: "fixed",
       px: 120,
     });
     expect(() =>
-      createPresentation([{ id: "", sizing: { kind: "fixed", px: 1 } }]),
+      createColumnLayout([{ id: "", sizing: { kind: "fixed", px: 1 } }]),
     ).toThrow("must not be empty");
     expect(() =>
-      createPresentation([
+      createColumnLayout([
         { id: "name", sizing: { kind: "fixed", px: 1 } },
         { id: "name", sizing: { kind: "fixed", px: 2 } },
       ]),
     ).toThrow("duplicate");
     // The prototype chain is not a member.
-    expect(() => presentation.effective("toString")).toThrow(
-      "unknown column id",
-    );
+    expect(() => layout.effective("toString")).toThrow("unknown column id");
   });
 
   it("applies user-fixed overrides over declared sizing", () => {
-    const presentation = createPresentation(columns());
-    presentation.setOverride("name", { kind: "fixed", px: 340 });
-    expect(presentation.effective("name")).toEqual({ kind: "fixed", px: 340 });
-    expect(presentation.effective("status")).toEqual({
+    const layout = createColumnLayout(columns());
+    layout.setOverride("name", { kind: "fixed", px: 340 });
+    expect(layout.effective("name")).toEqual({ kind: "fixed", px: 340 });
+    expect(layout.effective("status")).toEqual({
       kind: "fixed",
       px: 120,
     });
   });
 
   it("rejects overrides for unknown columns", () => {
-    const presentation = createPresentation(columns());
+    const layout = createColumnLayout(columns());
     expect(() =>
-      presentation.setOverride("toString", { kind: "fixed", px: 10 }),
+      layout.setOverride("toString", { kind: "fixed", px: 10 }),
     ).toThrow("unknown column id");
     expect(() =>
-      presentation.setOverride("zone2", { kind: "fixed", px: 10 }),
+      layout.setOverride("zone2", { kind: "fixed", px: 10 }),
     ).toThrow("unknown column id");
   });
 
-  it("restores declared sizing on resetOverride and reset", () => {
-    const presentation = createPresentation(columns());
-    presentation.setOverride("name", { kind: "fixed", px: 340 });
-    presentation.setOverride("zone", { kind: "fixed", px: 250 });
-    presentation.resetOverride("name");
-    expect(presentation.effective("name")).toEqual({
+  it("restores declared sizing on resetOverride and resetOverrides", () => {
+    const layout = createColumnLayout(columns());
+    layout.setOverride("name", { kind: "fixed", px: 340 });
+    layout.setOverride("zone", { kind: "fixed", px: 250 });
+    layout.resetOverride("name");
+    expect(layout.effective("name")).toEqual({
       kind: "flex",
       weight: 2,
       minPx: 120,
     });
-    expect(presentation.effective("zone")).toEqual({ kind: "fixed", px: 250 });
-    presentation.reset();
-    expect(presentation.effective("zone")).toEqual({
+    expect(layout.effective("zone")).toEqual({ kind: "fixed", px: 250 });
+    layout.resetOverrides();
+    expect(layout.effective("zone")).toEqual({
       kind: "flex",
       weight: 1,
       minPx: 100,
@@ -76,34 +74,34 @@ describe("createPresentation", () => {
   });
 
   it("publishes a snapshot only on an actual change", () => {
-    const presentation = createPresentation(columns());
+    const layout = createColumnLayout(columns());
     let notifications = 0;
-    presentation.subscribe(() => {
+    layout.state.subscribe(() => {
       notifications += 1;
     });
-    presentation.setOverride("name", { kind: "fixed", px: 340 });
+    layout.setOverride("name", { kind: "fixed", px: 340 });
     expect(notifications).toBe(1);
     // Restating the same override is a no-op, as the reset paths are.
-    presentation.setOverride("name", { kind: "fixed", px: 340 });
+    layout.setOverride("name", { kind: "fixed", px: 340 });
     expect(notifications).toBe(1);
-    expect(presentation.state.revision).toBe(1);
+    expect(layout.state.get().revision).toBe(1);
     // A different sizing of the same kind is an accepted change.
-    presentation.setOverride("name", { kind: "fixed", px: 341 });
+    layout.setOverride("name", { kind: "fixed", px: 341 });
     expect(notifications).toBe(2);
-    presentation.resetOverride("name");
+    layout.resetOverride("name");
     expect(notifications).toBe(3);
     // Resetting a column without an override is a no-op.
-    presentation.resetOverride("zone");
+    layout.resetOverride("zone");
     expect(notifications).toBe(3);
-    // With no overrides left, reset is a no-op.
-    presentation.reset();
+    // With no overrides left, resetOverrides is a no-op.
+    layout.resetOverrides();
     expect(notifications).toBe(3);
   });
 
   it("serves toColumns with overrides applied, in input order", () => {
-    const presentation = createPresentation(columns());
-    presentation.setOverride("status", { kind: "fixed", px: 200 });
-    const resolved = presentation.toColumns();
+    const layout = createColumnLayout(columns());
+    layout.setOverride("status", { kind: "fixed", px: 200 });
+    const resolved = layout.toColumns();
     expect(resolved.map((column) => column.id)).toEqual([
       "name",
       "status",
@@ -118,24 +116,24 @@ describe("createPresentation", () => {
   });
 
   it("bumps the revision on every accepted change", () => {
-    const presentation = createPresentation(columns());
-    expect(presentation.state.revision).toBe(0);
-    presentation.setOverride("name", { kind: "fixed", px: 340 });
-    expect(presentation.state.revision).toBe(1);
-    presentation.resetOverride("name");
-    expect(presentation.state.revision).toBe(2);
+    const layout = createColumnLayout(columns());
+    expect(layout.state.get().revision).toBe(0);
+    layout.setOverride("name", { kind: "fixed", px: 340 });
+    expect(layout.state.get().revision).toBe(1);
+    layout.resetOverride("name");
+    expect(layout.state.get().revision).toBe(2);
   });
 
   it("keeps the declared sizing immune to caller mutations", () => {
     const input = columns();
-    const presentation = createPresentation(input);
+    const layout = createColumnLayout(input);
     (input as { id: string; sizing: unknown }[]).push({
       id: "sneaky",
       sizing: { kind: "fixed", px: 1 },
     });
-    expect(() => presentation.effective("sneaky")).toThrow("unknown column id");
+    expect(() => layout.effective("sneaky")).toThrow("unknown column id");
     // toColumns answers from the construction-time order, not the caller's array.
-    expect(presentation.toColumns().map((column) => column.id)).toEqual([
+    expect(layout.toColumns().map((column) => column.id)).toEqual([
       "name",
       "status",
       "zone",
@@ -143,22 +141,22 @@ describe("createPresentation", () => {
   });
 
   it("treats a flex override differing in any bound as a change", () => {
-    const presentation = createPresentation(columns());
+    const layout = createColumnLayout(columns());
     let notifications = 0;
-    presentation.subscribe(() => {
+    layout.state.subscribe(() => {
       notifications += 1;
     });
     const base = { kind: "flex", weight: 1, minPx: 100, maxPx: 300 } as const;
-    presentation.setOverride("name", base);
+    layout.setOverride("name", base);
     expect(notifications).toBe(1);
-    presentation.setOverride("name", { ...base });
+    layout.setOverride("name", { ...base });
     expect(notifications).toBe(1);
-    presentation.setOverride("name", { ...base, maxPx: undefined });
+    layout.setOverride("name", { ...base, maxPx: undefined });
     expect(notifications).toBe(2);
-    presentation.setOverride("name", { ...base, weight: 2, maxPx: undefined });
+    layout.setOverride("name", { ...base, weight: 2, maxPx: undefined });
     expect(notifications).toBe(3);
     // A kind change is a change.
-    presentation.setOverride("name", { kind: "fixed", px: 100 });
+    layout.setOverride("name", { kind: "fixed", px: 100 });
     expect(notifications).toBe(4);
   });
 });
