@@ -1,4 +1,5 @@
 import type { RowRecord } from "@canonical/dataviews-core";
+import { DEFAULT_WINDOW } from "@canonical/dataviews-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactElement } from "react";
 import { expect, waitFor } from "storybook/test";
@@ -10,7 +11,7 @@ import {
 } from "../../storybook/machines/fixtures.js";
 import type {
   MachineProvider,
-  MachineProviderOptions,
+  MachineProviderConfig,
 } from "../../storybook/machines/story-utils.js";
 import {
   useMachineProvider,
@@ -61,10 +62,10 @@ function MachinesPage({
   options,
   ...args
 }: Omit<PaginationBarProps<MachineFields, RowRecord>, "provider"> & {
-  readonly options?: MachineProviderOptions;
+  readonly options?: MachineProviderConfig;
 }): ReactElement {
   const provider = useMachineProvider({
-    window: { page: 1, size: 5 },
+    window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
     ...options,
   });
   return (
@@ -76,13 +77,13 @@ function MachinesPage({
 }
 
 const renderWith =
-  (options?: MachineProviderOptions): NonNullable<Story["render"]> =>
+  (options?: MachineProviderConfig): NonNullable<Story["render"]> =>
   (args) => <MachinesPage {...args} options={options} />;
 
 const goTo =
   (page: number) =>
   (provider: MachineProvider): void => {
-    provider.navigateWindow(page);
+    provider.navigateWindow({ page });
   };
 
 /** The canvas a story's play function queries. */
@@ -111,7 +112,7 @@ export const FirstPage: Story = {
   parameters: consumerCode({
     parts: ["DataTable", "PaginationBar", "type DataTableColumn"],
     declarations: columnsCode,
-    window: "{ page: 1, size: 5 }",
+    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
     render: pageCode,
   }),
   render: renderWith(),
@@ -131,8 +132,8 @@ export const MiddlePage: Story = {
   parameters: consumerCode({
     parts: ["DataTable", "PaginationBar", "type DataTableColumn"],
     declarations: columnsCode,
-    window: "{ page: 1, size: 5 }",
-    prepare: "provider.navigateWindow(2);",
+    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
+    prepare: "provider.navigateWindow({ page: 2 });",
     render: pageCode,
   }),
   render: renderWith({ prepare: goTo(2) }),
@@ -154,8 +155,8 @@ export const LastPage: Story = {
   parameters: consumerCode({
     parts: ["DataTable", "PaginationBar", "type DataTableColumn"],
     declarations: columnsCode,
-    window: "{ page: 1, size: 5 }",
-    prepare: "provider.navigateWindow(3);",
+    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
+    prepare: "provider.navigateWindow({ page: 3 });",
     render: pageCode,
   }),
   render: renderWith({ prepare: goTo(3) }),
@@ -181,10 +182,10 @@ export const WithoutACount: Story = {
     imports: `import { machineSchema, machinesApi } from "./machines.js";`,
     declarations: `${columnsCode}
 
-// A source whose capabilities declare \`count: "none"\`: each page arrives
-// with no total, as from a backend that pages without counting.`,
+// A source whose capabilities declare every count as "none": each page
+// arrives with no total, as from a backend that pages without counting.`,
     source: "machinesApi",
-    window: "{ page: 1, size: 5 }",
+    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
     render: pageCode,
   }),
   render: renderWith({ source: createUncountedSource }),
@@ -207,7 +208,7 @@ export const Loading: Story = {
     declarations: `${columnsCode}
 
 // Rendered before the bound source has answered.`,
-    window: "{ page: 1, size: 5 }",
+    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
     render: pageCode,
   }),
   render: renderWith({ source: createPendingSource }),
@@ -241,7 +242,7 @@ export const StickyInAScrollingFrame: Story = {
 </div>`,
   }),
   decorators: [withScrollingFrame("16rem")],
-  render: renderWith({ window: { page: 1, size: 25 } }),
+  render: renderWith({ window: { ...DEFAULT_WINDOW, page: 1, size: 25 } }),
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(canvas.getByRole("status")).toHaveTextContent(

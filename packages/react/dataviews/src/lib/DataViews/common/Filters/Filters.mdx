@@ -19,6 +19,7 @@ import {
   createDataViewsProvider,
   createSchema,
   createSourceBinding,
+  type RowRecord,
 } from "@canonical/dataviews-core";
 import {
   DataTable,
@@ -43,7 +44,7 @@ const columns: readonly DataTableColumn[] = [
 
 export function Machines() {
   const [source] = useState(() =>
-    createArraySource({
+    createArraySource<RowRecord>({
       rows: machines,
       fields: ["name", "status", "region", "cores", "owner"],
     }),
@@ -55,11 +56,12 @@ export function Machines() {
     }),
   );
   useEffect(() => {
-    const binding = createSourceBinding({ host: provider, adapter: source });
-    if (provider.result.get().result.status === "idle") {
+    const binding = createSourceBinding({ host: provider, source });
+    const release = binding.observe();
+    if (provider.state.get().result.status === "idle") {
       provider.refresh();
     }
-    return binding.dispose;
+    return release;
   }, [provider, source]);
   return (
     <DataViews provider={provider}>

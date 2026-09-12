@@ -1,8 +1,13 @@
-import type { RowRecord, SourceBinding } from "@canonical/dataviews-core";
+import type {
+  ActionCapabilities,
+  RowRecord,
+  SourceBinding,
+} from "@canonical/dataviews-core";
 import {
   createArraySource,
   createDataViewsProvider,
   createSourceBinding,
+  DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
 import type { ButtonProps } from "@canonical/react-ds-global";
 import { Button } from "@canonical/react-ds-global";
@@ -66,7 +71,11 @@ function SelectionAction({
       importance="tertiary"
       disabled={binding === null}
       onClick={() => {
-        void binding?.runAction(action, [...selection.state.ids]);
+        void binding?.runAction({
+          action,
+          targets: { kind: "explicit", ids: [...selection.state.get().ids] },
+          payload: null,
+        });
       }}
     />
   );
@@ -85,18 +94,22 @@ function ManagedMachines({
 }): ReactElement {
   const [source] = useState(() => {
     let remaining: readonly RowRecord[] = machines;
+    const overAnyRows: ActionCapabilities = {
+      targets: "explicit",
+      limit: null,
+    };
     const managed = createArraySource({
       rows: remaining,
       fields: ["name", "status", "region", "cores", "owner"],
+      actions: { archive: overAnyRows, delete: overAnyRows },
       // Both actions take the machines out of the collection.
       runAction: async ({ targets }) => {
-        remaining = remaining.filter(
-          (row) => !targets.includes(String(row.id)),
-        );
+        const ids = targets.kind === "explicit" ? targets.ids : [];
+        remaining = remaining.filter((row) => !ids.includes(String(row.id)));
         managed.setRows(remaining);
-        return targets.map((target) => ({
+        return ids.map((target) => ({
           target,
-          status: "success" as const,
+          status: "succeeded" as const,
         }));
       },
     });
@@ -106,20 +119,21 @@ function ManagedMachines({
     createDataViewsProvider<MachineFields>({
       schema: machineSchema,
       capabilities: source.capabilities,
-      window: { page: 1, size: 5 },
+      window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
     }),
   );
   const [initial] = useState(select);
   const [binding, setBinding] = useState<SourceBinding | null>(null);
   useEffect(() => {
-    const bound = createSourceBinding({ host: provider, adapter: source });
+    const bound = createSourceBinding({ host: provider, source });
+    const release = bound.observe();
     setBinding(bound);
     provider.selection.add(initial);
-    if (provider.result.get().result.status === "idle") {
+    if (provider.state.get().result.status === "idle") {
       provider.refresh();
     }
     return () => {
-      bound.dispose();
+      release();
       setBinding(null);
     };
   }, [provider, source, initial]);
@@ -179,7 +193,11 @@ function SelectionAction({
       importance="tertiary"
       disabled={binding === null}
       onClick={() => {
-        void binding?.runAction(action, [...selection.state.ids]);
+        void binding?.runAction({
+          action,
+          targets: { kind: "explicit", ids: [...selection.state.get().ids] },
+          payload: null,
+        });
       }}
     />
   );
@@ -207,10 +225,15 @@ import { archiveMachines, machineSchema, machines } from "./machines.js";`,
     source: `createArraySource({
       rows: machines,
       fields: ["name", "status", "region", "cores", "owner"],
+      // What each operation may address; nothing else can be run.
+      actions: {
+        archive: { targets: "explicit", limit: null },
+        delete: { targets: "explicit", limit: null },
+      },
       // Resolves with one outcome per target: { target, status }.
       runAction: ({ action, targets }) => archiveMachines(action, targets),
     })`,
-    window: "{ page: 1, size: 5 }",
+    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
     prepare,
     keepsBinding: true,
     render: `<DataViews provider={provider}>
@@ -304,8 +327,8 @@ function MachinesSelected({
   readonly provider: MachineProvider;
 }): ReactElement {
   const { selection } = useDataViews(provider);
-  const read = () => selection.state.ids.size;
-  const count = useSyncExternalStore(selection.subscribe, read, read);
+  const read = () => selection.state.get().ids.size;
+  const count = useSyncExternalStore(selection.state.subscribe, read, read);
   return (
     <span role="status" className="indicator">
       {`${count} ${count === 1 ? "machine" : "machines"} selected`}
@@ -318,8 +341,8 @@ const machinesSelectedCode = `
 // Follows the selection, and announces it as the default count does.
 function MachinesSelected({ provider }: { provider: MachinesProvider }) {
   const { selection } = useDataViews(provider);
-  const read = () => selection.state.ids.size;
-  const count = useSyncExternalStore(selection.subscribe, read, read);
+  const read = () => selection.state.get().ids.size;
+  const count = useSyncExternalStore(selection.state.subscribe, read, read);
   return (
     <span role="status" className="indicator">
       {\`\${count} \${count === 1 ? "machine" : "machines"} selected\`}

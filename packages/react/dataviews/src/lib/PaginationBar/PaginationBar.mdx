@@ -26,6 +26,8 @@ import {
   createArraySource,
   createDataViewsProvider,
   createSourceBinding,
+  DEFAULT_WINDOW,
+  type RowRecord,
 } from "@canonical/dataviews-core";
 import {
   DataTable,
@@ -44,7 +46,7 @@ const columns: readonly DataTableColumn[] = [
 
 export function Machines() {
   const [source] = useState(() =>
-    createArraySource({
+    createArraySource<RowRecord>({
       rows: machines,
       fields: ["name", "status", "region", "cores", "owner"],
     }),
@@ -53,15 +55,16 @@ export function Machines() {
     createDataViewsProvider({
       schema: machineSchema,
       capabilities: source.capabilities,
-      window: { page: 1, size: 5 },
+      window: { ...DEFAULT_WINDOW, size: 5 },
     }),
   );
   useEffect(() => {
-    const binding = createSourceBinding({ host: provider, adapter: source });
-    if (provider.result.get().result.status === "idle") {
+    const binding = createSourceBinding({ host: provider, source });
+    const release = binding.observe();
+    if (provider.state.get().result.status === "idle") {
       provider.refresh();
     }
-    return binding.dispose;
+    return release;
   }, [provider, source]);
   return (
     <>
@@ -80,7 +83,9 @@ export function Machines() {
 
 ## Counts it can stand behind
 
-Every count describes the rows on screen, and every button goes somewhere the collection can reach. A source that publishes a filtered total gets a page total and a last page. A source that pages without counting — its capabilities declare `count: "none"` — gets neither: the summary counts the rows on screen, Last is unavailable, and Next is offered while the page is full, the only evidence there may be another.
+Every count describes the rows on screen, and every button goes somewhere the collection can reach. A source that counts the rows the window pages over exactly — `counts.visible` declared `"exact"` — gets a page total and a last page. One that counts them loosely or not at all gets neither: the summary counts the rows on screen, Last is unavailable, and Next is taken from the page's own word that more exists, or, failing that, offered while the page is full, the only evidence left that there may be another.
+
+A source that reaches its pages only through tokens — `pagination.mode` declared `"cursor"` — is paged by those tokens: Next carries the one the current page handed back, Previous the one before it. Such a source may still count its rows exactly, and the summary says so, but no page total is shown and Last stays unavailable, because a page number addresses nothing there.
 
 <Canvas of={Stories.WithoutACount} sourceState="none" />
 
