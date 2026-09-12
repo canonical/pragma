@@ -44,10 +44,10 @@
       inset: 0;
       mask-repeat: no-repeat;
       mask-position: center;
-      mask-size: 75%;
+      mask-size: 100%;
       -webkit-mask-repeat: no-repeat;
       -webkit-mask-position: center;
-      -webkit-mask-size: 75%;
+      -webkit-mask-size: 100%;
     }
 
     &:checked {

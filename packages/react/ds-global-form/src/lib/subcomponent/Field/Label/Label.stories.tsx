@@ -23,7 +23,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * Default ("required") marking: a required field gets a "*" marker before the
+ * Default ("required") marking: a required field gets a "*" marker after the
  * label, drawn as a CSS pseudo-element so it never enters the accessible name.
  */
 export const Default: Story = {

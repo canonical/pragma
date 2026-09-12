@@ -14,46 +14,42 @@
       padding: 0;
     }
 
-    /* Control row: the control centres on the label's FIRST line, and a multi-line
-       (sentence) label wraps below — never centring the box on the whole paragraph
-       (AV-325). `align-items: start` tops the row so wrapped lines flow under the
-       first; the control is then nudged down half a line-box to sit centred on the
-       first line (see the control rule below). The first-line box is one density
-       line-height (`--density-line-height-effective`, set on the density scope;
-       falls back to `1lh` outside a density context). */
+    /* Control row: `align-items: center` centres the control on the row, and a
+       multi-line (sentence) label wraps below it (AV-325). Spacing belongs to
+       the FIELD, not the label or control: the row's column-gap separates
+       control and label, the field's row-gap separates the row from the
+       description/error, and neither label nor control carries any padding or
+       margin — so spacing changes never shift the control off-centre. */
     & > .field-toggle-control {
       --toggle-control-line: var(--density-line-height-effective, 1lh);
 
       display: flex;
       flex-direction: row;
-      align-items: start;
+      align-items: center;
       column-gap: var(--form-field-inline-gap);
 
       /* Every direct child that ISN'T the label is the control (checkbox / switch
          input): a fixed 16px-tall box (--dimension-200 — checkbox 16×16, switch
-         track 16 high). Centre it on the first line by pushing it down half the
-         leftover between the line-box and the control's own height. The control
-         keeps its intrinsic size — only its vertical offset changes, so the click
-         target is untouched. */
+         track 16 high). The row's `align-items: center` does the centring; the
+         control itself carries no offset, margin or padding, so its intrinsic
+         size and click target are unchanged. */
       & > :not(.ds.field-label) {
         --toggle-control-size: var(--dimension-200);
-        align-self: start;
-        margin-block-start: max(
-          0px,
-          calc((var(--toggle-control-line) - var(--toggle-control-size)) / 2)
-        );
       }
 
       /* The control label is often a full clickable sentence, so it reads as
          regular body prose (not the bold heading weight the field label uses by
          default): normal weight, left-aligned, pointer cursor, and it takes the
-         remaining width so it wraps beside the control instead of pushing it. */
+         remaining width so it wraps beside the control instead of pushing it.
+         `padding: 0` keeps the label flush with the control — spacing between
+         blocks is the field's row-gap, never label geometry. */
       & > .ds.field-label {
         flex: 1;
         min-width: 0;
         font-weight: var(--typography-text-primary-font-weight);
         text-align: start;
         cursor: pointer;
+        padding: 0;
       }
 
       /* Label BEFORE the control (switch convention): the DOM stays
@@ -62,6 +58,25 @@
          Logical `row-reverse` mirrors correctly in RTL. */
       &.label-before {
         flex-direction: row-reverse;
+      }
+    }
+
+    /* Disabled control: the row stops signalling clickable and the control
+       label takes the disabled text token (color.text.disabled) — color, not
+       an opacity dim of the whole row. State-driven via :has so no disabled
+       plumbing is needed on the wrapper (same idiom as the choices Option's
+       `.disabled` and RatingInput). */
+    &:has(> .field-toggle-control input:disabled) {
+      cursor: not-allowed;
+
+      & > .field-toggle-control > .ds.field-label {
+        color: var(--form-label-color-disabled, var(--color-text-disabled));
+        &[data-required]::after {
+          color: var(
+            --form-required-marker-color-disabled,
+            var(--form-label-color-disabled, var(--color-text-disabled))
+          );
+        }
       }
     }
   }

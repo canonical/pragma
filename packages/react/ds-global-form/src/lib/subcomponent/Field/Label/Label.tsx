@@ -29,10 +29,10 @@ const Label = ({
   tag: Element = "label",
 }: LabelProps): React.ReactElement => {
   // "required" mode marks the required fields, "optional" marks the optional
-  // ones. The required marker (default "*") is drawn as a CSS `::before`
+  // ones. The required marker (default "*") is drawn as a CSS `::after`
   // pseudo-element keyed off `data-required`, NOT as text: that keeps it out of
   // the label's accessible name (a screen reader would otherwise announce
-  // "asterisk Email" \u2014 the required state is conveyed by `aria-required` on the
+  // "Email asterisk" — the required state is conveyed by `aria-required` on the
   // input instead). The "(optional)" suffix IS real text, since it's
   // informational and belongs in the accessible name.
   const markRequired = requiredIndicator === "required" && !isOptional;
