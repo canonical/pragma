@@ -25,7 +25,7 @@ Under active development; the public surface grows change by change. The current
 - **Field interaction** — `createFieldInteraction`: text input and feedback for one filter field; invalid or incomplete edits retain the applied predicate; explicit `clear` is distinct from invalid input.
 - **Operation record** — `createOperation`: captures targets and selection revision immutably at construction so later selection changes never retarget execution; partial outcomes settle each target once; retry re-runs only failed targets.
 - **Collection coordinator** — `createCollectionCoordinator`: addressed commands as coherent query+window transitions (a query change resets the page), request identities whose superseded completions are ignored, atomic publication of rows, group summaries, counts, cursors and provenance, scope rotation, and `adopt` for externally authoritative state such as back/forward navigation. Provenance is the request the coordinator issued — the slice and window the rows answer — never anything the source says about them. A refusal or failure over retained rows reports `refreshFailed` while those rows still answer the current query, so a failed refresh is never silent; over rows an earlier query produced it reports `stale`; with no rows at all it reports `failed`.
-- **Rows** — `createRowModel`: the ordered model of one result, keyed by each record's stable identity rather than its position, carrying unchanged entries across reorders and republications; `createRowScopes`: one observation scope per row identity, shared by every cell of that row, with a channel per observed field so an unchanged value never notifies its cell.
+- **Rows** — `createRowModel`: the ordered model of one result, keyed by each record's stable identity rather than its position, carrying unchanged entries across reorders and republications, and answering with a result rather than throwing, so an ambiguous identity fails the completion the rows arrived in instead of the call that built them; `createRowScopes`: one observation scope per row identity, shared by every cell of that row, with a channel per observed field so an unchanged value never notifies its cell.
 - **Geometry** — `resolveColumns`: fixed columns reserve their declared width, flexible ones share what is left by weight until capped, and declared widths survive an overflow (the container scrolls); `createColumnLayout`: declared sizing plus user-fixed overrides; `createGridInteraction`: one clamped live resize preview that never touches the authority until it commits; `columnTemplate`: the resolved geometry as the one CSS track list a renderer publishes.
 - **Save race** — `createSaveSession`: a save completion updates only the submitted baseline, so edits made while saving remain dirty; delayed external reads never overwrite newer local state.
 - **Sources** — `createSourceBinding` binds a source to the coordinator's request lifecycle: it executes exactly the newest request identity, drops completions from released or superseded executions, refuses — before execution, so a refusal costs no round trip — a request the source has not declared support for, holds every count to what the declaration allows, and republishes a later delivery of the same query under a fresh identity so retained rows never carry another request's provenance. It throws at construction when a declared capability has no port to serve it, so a declaration is never a promise the source cannot keep. Construction subscribes to nothing: `observe()` starts and the release it returns stops. `createArraySource` is the default and recommended source — complete local input, so all three of its counts are exact rather than one loaded page's, and it serves record lookup by identity locally. `createQuerySource` runs over an observable query client such as TanStack Query, reached through a structural observer surface so no query library is imported here or forced on consumers. `createRelaySource` runs over a forward-paginating Relay connection through a structural environment surface that Relay's own `Environment` satisfies: each request retains its operation, delivers a page already in the store at once, fetches it, and follows every later store change — a mutation or a local update — so Relay's store stays the only cache. It pages forward from each page's end cursor or from a token the window carries, and refuses — structurally, with `code: "unreachable-page"` — a page it can reach neither way, as after a reload onto page three, instead of inventing one. The query pages by its own `first` and `after` arguments: one paging through `@connection` is refused, since Relay merges such a connection's pages into one list. A missing `totalCount` counts nothing, never zero, and a page with a missing record fails rather than being delivered shorter. `supportsRequest` and `executeSlice` are the pure pieces underneath: the declared-capability check, which returns one structured refusal per unexecutable term, and local execution over complete input. A control holding the binding reads `binding.supports(query)` before offering a destination — it composes that check with the source's own, which the declaration cannot express — and `binding.capabilities` is the frozen declaration the binding compared, for a source whose own object was never frozen.
@@ -59,6 +59,71 @@ The scope — database, collection and partition — is fixed at construction; s
 - **Across tabs** — `subscribe` hears this tab's writes and, through a `BroadcastChannel` where the platform has one, other tabs'; it says only that something changed, and IndexedDB stays the authority to read again.
 
 A REST-backed store is the application's own: it implements the same `ViewStore` contract, the revision preconditions and per-key patches included, and no REST adapter ships here.
+
+## Records of several types
+
+One collection may hold records of several types — an LXD list of containers
+and virtual machines, a Juju list of machines and units. The collection names
+one `choices` field of its schema as the discriminator, and every row carries
+it:
+
+```ts
+const schema = createSchema([
+  { field: "type", kind: "choices", options: ["container", "virtual-machine"] },
+  { field: "status", kind: "choices", options: ["Running", "Stopped"] },
+  {
+    field: "secureboot",
+    kind: "choices",
+    options: ["true", "false"],
+    types: ["virtual-machine"],
+  },
+  { field: "processes", kind: "number", min: 0, types: ["container"] },
+]);
+
+const provider = createDataViewsProvider<typeof schema.fields, Instance>({
+  schema,
+  capabilities: source.capabilities,
+  identify: (row) => row.name, // unique across both types
+  types: { field: "type" }, // a choices field every Instance carries
+});
+```
+
+- **Declared, never derived.** A source whose backend sends no such field
+  writes it when it builds its rows, as GraphQL servers materialise
+  `__typename` and JSON:API requires `type`. A row carrying a value that is
+  not one of the field's options fails the completion and is never displayed:
+  the rows already on screen stay, reporting `refreshFailed` or `stale` as the
+  coordinator does for any other failure, which is the treatment an ambiguous
+  identity gets too. The row type is checked against the field's
+  options at compile time, and the field's existence at construction.
+- **The discriminator is an ordinary field.** It is filtered, sorted and
+  grouped under the source's declared capabilities, with no new grammar and no
+  reserved name.
+- **Scoping and the not-applicable state.** `types` on a field names the
+  record types it applies to; absent means every one of them. For a row of
+  another type the field is *not applicable* — a third state beside value and
+  empty. It satisfies no predicate, `isSet` included, and reads as absent to
+  ordering, so filtering on a scoped field restricts the result to that field's
+  types by meaning: nothing is added to the query, the URL or a saved view.
+  `provider.applicability(field, row)` answers which state a cell is in. This
+  rests on the source writing no value at a scoped key for a row the field
+  does not apply to — the source's obligation, not something checked here.
+- **Identities stay opaque strings**, unique across types within the
+  provider's scope and minted by the source, which prefixes with the type only
+  where its own backend's identities collide. The UI never parses one.
+- **Type memory.** `provider.recordType(id)` answers the type of a selected
+  identity, taken while the row was displayed and kept until the rows are next
+  replaced after it leaves the selection, so an action's applicability to
+  records selected on an earlier page is decidable without a lookup. The row on display always
+  answers for itself, so this never contradicts `provider.applicability`, and
+  it changes only with a `rows` or a `selection` publication. An identity a
+  host restored over rows this provider never modelled while they were
+  selected answers null: not loaded, never assumed.
+
+**A monomorphic collection declares no `types`, and none of this reaches it.**
+`provider.types` is null, `provider.applicability` answers `"applies"` for
+every field, `provider.recordType` answers null, no row is ever read for a
+type, and nothing costs anything.
 
 ## Words this package uses twice
 
