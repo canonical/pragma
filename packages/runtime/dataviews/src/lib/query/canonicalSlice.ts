@@ -1,4 +1,5 @@
 import type {
+  GroupTerm,
   Predicate,
   PredicateOperand,
   PredicateOperator,
@@ -56,9 +57,9 @@ const compareByAddress = (a: Predicate, b: Predicate): number =>
 
 /**
  * Normalize a slice to its canonical form: equality operands are sets,
- * predicates are ordered by address, sort terms keep their order, and an
- * empty search is no search. Idempotent: `canonicalSlice(canonicalSlice(x))`
- * equals `canonicalSlice(x)`.
+ * predicates are ordered by address, sort and group terms keep their order,
+ * and an empty search is no search. Idempotent:
+ * `canonicalSlice(canonicalSlice(x))` equals `canonicalSlice(x)`.
  */
 export default function canonicalSlice(slice: Slice): Slice {
   const byAddress = new Map<string, Predicate>();
@@ -77,6 +78,6 @@ export default function canonicalSlice(slice: Slice): Slice {
       field: term.field,
       direction: term.direction,
     })),
-    group: slice.group,
+    group: slice.group.map((term): GroupTerm => ({ field: term.field })),
   };
 }

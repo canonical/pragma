@@ -6,7 +6,7 @@ const slice = (overrides: Partial<Slice> = {}): Slice => ({
   filter: [],
   search: null,
   sort: [],
-  group: null,
+  group: [],
   ...overrides,
 });
 
@@ -20,6 +20,7 @@ describe("canonicalSlice", () => {
         { field: "updated", direction: "desc" },
         { field: "name", direction: "asc" },
       ],
+      group: [{ field: "zone" }, { field: "status" }],
     });
     const once = canonicalSlice(input);
     expect(canonicalSlice(once)).toEqual(once);
@@ -60,6 +61,27 @@ describe("canonicalSlice", () => {
       }),
     );
     expect(result.filter[0]?.operands).toEqual(["failed"]);
+  });
+
+  it("keeps grouping levels in their nesting order", () => {
+    const input = slice({
+      group: [{ field: "zone" }, { field: "status" }],
+    });
+    expect(canonicalSlice(input).group).toEqual([
+      { field: "zone" },
+      { field: "status" },
+    ]);
+    // Rebuilt, so a caller's later mutation cannot reach the canonical form.
+    expect(canonicalSlice(input).group[0]).not.toBe(input.group[0]);
+  });
+
+  it("keeps an ungrouped slice ungrouped", () => {
+    expect(canonicalSlice(slice()).group).toEqual([]);
+  });
+
+  it("keeps repeated grouping levels, which nest rather than collapse", () => {
+    const input = slice({ group: [{ field: "zone" }, { field: "zone" }] });
+    expect(canonicalSlice(input).group).toHaveLength(2);
   });
 
   it("keeps sort term order untouched", () => {

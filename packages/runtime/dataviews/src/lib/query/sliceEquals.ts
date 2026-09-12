@@ -25,6 +25,10 @@ const predicatesEqual = (a: Slice["filter"], b: Slice["filter"]): boolean =>
     );
   });
 
+const groupsEqual = (a: Slice["group"], b: Slice["group"]): boolean =>
+  a.length === b.length &&
+  a.every((term, index) => term.field === b[index].field);
+
 const sortsEqual = (a: Slice["sort"], b: Slice["sort"]): boolean =>
   a.length === b.length &&
   a.every(
@@ -41,7 +45,7 @@ export default function sliceEquals(a: Slice, b: Slice): boolean {
   const right = canonicalSlice(b);
   return (
     left.search === right.search &&
-    left.group === right.group &&
+    groupsEqual(left.group, right.group) &&
     predicatesEqual(left.filter, right.filter) &&
     sortsEqual(left.sort, right.sort)
   );
