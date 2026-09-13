@@ -11,10 +11,7 @@ import {
   type Variables,
 } from "relay-runtime";
 import { describe, expect, it, vi } from "vitest";
-import {
-  declareCapabilities,
-  declareSorting,
-} from "../../../testing/fixtures.js";
+import { declare, declareSort } from "../../../testing/fixtures.js";
 import { createDataViewsProvider } from "../provider/index.js";
 import {
   DEFAULT_WINDOW,
@@ -29,12 +26,11 @@ import type {
   SourceRefusal,
 } from "../result/index.js";
 import { createSchema } from "../schema/index.js";
-import createRelaySource, {
-  type RelayEnvironment,
-  type RelayPageRequest,
-} from "./createRelaySource.js";
+import createRelaySource from "./createRelaySource.js";
 import createSourceBinding from "./createSourceBinding.js";
 import type {
+  RelayEnvironment,
+  RelayPageRequest,
   Source,
   SourceActionRunner,
   SourceCapabilities,
@@ -300,11 +296,11 @@ const relay = () => {
   return { environment, fetches, fetchAt };
 };
 
-/** A forward connection: a status filter, no search, no declareSorting, a total. */
-const connectionCapabilities: SourceCapabilities = declareCapabilities({
+/** A forward connection: a status filter, no search, no declareSort, a total. */
+const connectionCapabilities: SourceCapabilities = declare({
   filter: { status: ["eq"] },
-  counts: { visible: "exact", matched: "exact", total: "none" },
-  pagination: { mode: "cursor", backward: false, durable: false },
+  counts: { pageable: "exact", matched: "exact", total: "unknown" },
+  pagination: { kind: "cursor", backward: false, durable: false },
 });
 
 const UNKNOWN: Count = { kind: "unknown" };
@@ -313,7 +309,7 @@ const exactly = (value: number): Count => ({ kind: "exact", value });
 
 /** What an ungrouped connection counts: the matched rows are the visible ones. */
 const countsOf = (matched: Count): SourceCounts => ({
-  visible: matched,
+  pageable: matched,
   matched,
   total: UNKNOWN,
 });
@@ -358,17 +354,15 @@ const request = (overrides: Partial<SourceRequest> = {}): SourceRequest => ({
 });
 
 /** What the source refuses one query, failing loudly without the port. */
-const refusalsOf = (
+const readRefusals = (
   adapter: Source,
   overrides: Partial<Query> = {},
 ): readonly SourceRefusal[] => {
-  const { refuses } = adapter;
-  if (refuses === undefined) {
-    throw new Error(
-      "expected a source declareCapabilities which pages it cannot reach",
-    );
+  const { refusals } = adapter;
+  if (refusals === undefined) {
+    throw new Error("expected a source declaring which pages it cannot reach");
   }
-  return refuses({ slice: emptySlice, window: paged(), ...overrides });
+  return refusals({ slice: emptySlice, window: paged(), ...overrides });
 };
 
 const unreachable = (page: number): SourceRefusal => ({
@@ -535,7 +529,7 @@ describe("createRelaySource over relay-runtime", () => {
   it("refuses a page no token and no remembered cursor reaches", () => {
     const { environment, fetches } = relay();
     expect(
-      refusalsOf(source(environment), { window: paged({ page: 3 }) }),
+      readRefusals(source(environment), { window: paged({ page: 3 }) }),
     ).toEqual([unreachable(3)]);
     expect(fetches).toHaveLength(0);
   });
@@ -543,10 +537,10 @@ describe("createRelaySource over relay-runtime", () => {
   it("refuses nothing for the first page or a page its trail reaches", () => {
     const { environment, fetchAt } = relay();
     const adapter = source(environment);
-    expect(refusalsOf(adapter)).toEqual([]);
+    expect(readRefusals(adapter)).toEqual([]);
     adapter.execute(request(), delivery());
     fetchAt(0).respond();
-    expect(refusalsOf(adapter, { window: paged({ page: 2 }) })).toEqual([]);
+    expect(readRefusals(adapter, { window: paged({ page: 2 }) })).toEqual([]);
   });
 
   it("prefers the window's own token over a remembered cursor", () => {
@@ -557,9 +551,9 @@ describe("createRelaySource over relay-runtime", () => {
     // The trail remembers "c:m2" for page two; the window names another, and
     // a token reaches a page no trail ever did.
     const carried = paged({ page: 2, cursor: "c:m1" });
-    expect(refusalsOf(adapter, { window: carried })).toEqual([]);
+    expect(readRefusals(adapter, { window: carried })).toEqual([]);
     expect(
-      refusalsOf(adapter, { window: paged({ page: 9, cursor: "c:m4" }) }),
+      readRefusals(adapter, { window: paged({ page: 9, cursor: "c:m4" }) }),
     ).toEqual([]);
     adapter.execute(request({ window: carried }), delivery());
     expect(fetchAt(1).variables["after"]).toBe("c:m1");
@@ -582,7 +576,7 @@ describe("createRelaySource over relay-runtime", () => {
     adapter.execute(request(), delivery());
     fetchAt(0).respond();
     expect(
-      refusalsOf(adapter, { window: paged({ page: 2, size: 3 }) }),
+      readRefusals(adapter, { window: paged({ page: 2, size: 3 }) }),
     ).toEqual([unreachable(2)]);
   });
 
@@ -620,7 +614,7 @@ describe("createRelaySource over relay-runtime", () => {
       filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
     };
     expect(
-      refusalsOf(adapter, { slice: failed, window: paged({ page: 2 }) }),
+      readRefusals(adapter, { slice: failed, window: paged({ page: 2 }) }),
     ).toEqual([unreachable(2)]);
   });
 
@@ -645,7 +639,7 @@ describe("createRelaySource over relay-runtime", () => {
     adapter.execute(request({ window: paged({ page: 2 }) }), delivery());
     expect(fetchAt(34).variables["after"]).toBe("c:m2");
     expect(
-      refusalsOf(adapter, { window: paged({ page: 2, size: 3 }) }),
+      readRefusals(adapter, { window: paged({ page: 2, size: 3 }) }),
     ).toEqual([unreachable(2)]);
   });
 
@@ -659,7 +653,7 @@ describe("createRelaySource over relay-runtime", () => {
       adapter.execute(request({ window: paged({ size }) }), delivery());
     }
     const unreached = paged({ page: 2, size: 99 });
-    expect(refusalsOf(adapter, { window: unreached })).toEqual([
+    expect(readRefusals(adapter, { window: unreached })).toEqual([
       unreachable(2),
     ]);
     expect(() =>
@@ -713,7 +707,7 @@ describe("createRelaySource over relay-runtime", () => {
       },
     });
     expect(
-      refusalsOf(adapter, { slice: failed, window: paged({ page: 2 }) }),
+      readRefusals(adapter, { slice: failed, window: paged({ page: 2 }) }),
     ).toEqual([unreachable(2)]);
   });
 
@@ -1120,7 +1114,7 @@ describe("createRelaySource over relay-runtime", () => {
     expect(lastOf(deliver)).toMatchObject({
       page: { more: true, cursors: { next: null, previous: null } },
     });
-    expect(refusalsOf(adapter, { window: paged({ page: 2 }) })).toEqual([
+    expect(readRefusals(adapter, { window: paged({ page: 2 }) })).toEqual([
       unreachable(2),
     ]);
   });
@@ -1195,7 +1189,7 @@ describe("createRelaySource over relay-runtime", () => {
   it("freezes the declaration it was handed", () => {
     const { environment } = relay();
     const fields = ["name"];
-    const capabilities = declareCapabilities({ sort: declareSorting(fields) });
+    const capabilities = declare({ sort: declareSort(fields) });
     const adapter = source(environment, { capabilities });
     fields.push("zone");
     expect(Object.isFrozen(adapter.capabilities)).toBe(true);
@@ -1312,7 +1306,7 @@ describe("createRelaySource bound to a collection", () => {
     fetchAt(1).fail(new Error("timeout"));
     expect(shown()).toMatchObject({
       ids: ["m1", "m2"],
-      status: "refreshFailed",
+      status: "refresh-failed",
       matches: true,
       problem: { status: "failed", failure: { reason: "timeout" } },
     });

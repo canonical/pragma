@@ -1,4 +1,4 @@
-import { canonicalSlice, type Query } from "../query/index.js";
+import { canonicalizeSlice, type Query } from "../query/index.js";
 import type { SourceRefusal } from "../result/index.js";
 import pluralize from "./pluralize.js";
 import type { SourceCapabilities } from "./types.js";
@@ -20,24 +20,25 @@ const refusal = (
  * Sort and group are all-or-nothing over their terms: an ordering carrying
  * one unsupported term is refused whole, never truncated. What a
  * declaration cannot express — which cursor pages are reachable, which
- * combinations one endpoint rejects — is the source's own `refuses`, and
+ * combinations one endpoint rejects — is the source's own `refusals`, and
  * the binding runs both.
  */
-export default function supportsRequest(
+export default function refusalsOf(
   capabilities: SourceCapabilities,
   query: Query,
 ): readonly SourceRefusal[] {
   // Canonicalizing first deduplicates addresses and fixes the order, so
   // one query always produces the same refusals.
-  const slice = canonicalSlice(query.slice);
+  const slice = canonicalizeSlice(query.slice);
   const { window } = query;
   const refusals: SourceRefusal[] = [];
 
   for (const predicate of slice.filter) {
+    // A field declared with no operator is a field not declared.
     const operators = Object.hasOwn(capabilities.filter, predicate.field)
       ? capabilities.filter[predicate.field]
       : undefined;
-    if (operators === undefined) {
+    if (operators === undefined || operators.length === 0) {
       refusals.push(
         refusal(
           "filter",
@@ -97,19 +98,19 @@ export default function supportsRequest(
     }
   }
 
-  const { depth } = capabilities.group;
-  if (slice.group.length > depth) {
+  const { levels } = capabilities.group;
+  if (slice.group.length > levels) {
     refusals.push(
       refusal(
         "group",
-        "too-deep",
-        depth === 0
+        "too-many-levels",
+        levels === 0
           ? "this source cannot group"
-          : `this source groups by at most ${pluralize(depth, "level")}`,
+          : `this source groups by at most ${pluralize(levels, "level")}`,
       ),
     );
   }
-  for (const term of depth === 0 ? [] : slice.group) {
+  for (const term of levels === 0 ? [] : slice.group) {
     if (!capabilities.group.fields.includes(term.field)) {
       refusals.push(
         refusal(
@@ -126,13 +127,13 @@ export default function supportsRequest(
     refusals.push(
       refusal(
         "window",
-        "collapse-unsupported",
+        "unsupported-collapse",
         "this source cannot leave collapsed groups out of a page",
       ),
     );
   }
 
-  if (capabilities.pagination.mode === "offset" && window.cursor !== null) {
+  if (capabilities.pagination.kind === "offset" && window.cursor !== null) {
     refusals.push(
       refusal(
         "window",
