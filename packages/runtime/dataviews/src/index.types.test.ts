@@ -43,6 +43,7 @@ import type {
   DisplayEntriesConfig,
   DisplayEntry,
   DisplayEntryKind,
+  EffectiveOrdering,
   EmptyOr,
   EncodeQueryConfig,
   ExecuteSliceConfig,
@@ -150,6 +151,7 @@ import type {
   SourceRefusalCode,
   SourceRefusalPart,
   SourceRequest,
+  TextField,
   UnreadableView,
   ViewAction,
   ViewChanges,
@@ -221,6 +223,7 @@ type EveryPublicType = [
   DisplayEntriesConfig<unknown>,
   DisplayEntry,
   DisplayEntryKind,
+  EffectiveOrdering,
   EmptyOr<unknown>,
   EncodeQueryConfig,
   ExecuteSliceConfig,
@@ -328,6 +331,7 @@ type EveryPublicType = [
   SourceRefusalCode,
   SourceRefusalPart,
   SourceRequest,
+  TextField,
   UnreadableView,
   ViewAction,
   ViewChanges,
@@ -406,7 +410,7 @@ describe("public surface types", () => {
       ...new Set(surfaceOf(path.resolve("src/lib/index.ts"))),
     ].sort();
     expect(surface).toEqual(pinned().sort());
-    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<157>();
+    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<159>();
   });
 
   it("keeps only the saved-view store behind its own entry point", () => {

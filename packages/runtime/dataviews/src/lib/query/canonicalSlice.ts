@@ -1,3 +1,4 @@
+import collapseSortTerms from "./collapseSortTerms.js";
 import type {
   GroupTerm,
   Predicate,
@@ -57,8 +58,9 @@ const compareByAddress = (a: Predicate, b: Predicate): number =>
 
 /**
  * Normalize a slice to its canonical form: equality operands are sets,
- * predicates are ordered by address, sort and group terms keep their order,
- * and an empty search is no search. Idempotent:
+ * predicates are ordered by address, sort and group terms keep their order
+ * with a repeated sort field collapsed to its first occurrence, and an empty
+ * search is no search. Idempotent:
  * `canonicalSlice(canonicalSlice(x))` equals `canonicalSlice(x)`.
  */
 export default function canonicalSlice(slice: Slice): Slice {
@@ -74,10 +76,7 @@ export default function canonicalSlice(slice: Slice): Slice {
       .map(canonicalPredicate)
       .sort(compareByAddress),
     search: slice.search === "" ? null : slice.search,
-    sort: slice.sort.map((term) => ({
-      field: term.field,
-      direction: term.direction,
-    })),
+    sort: collapseSortTerms(slice.sort),
     group: slice.group.map((term): GroupTerm => ({ field: term.field })),
   };
 }

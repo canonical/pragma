@@ -46,6 +46,10 @@ export default function Filters({
     >
       <legend className="legend">{label}</legend>
       {provider.schema.fields.map((definition) => {
+        if (definition.kind === "text") {
+          // Text is ordered, never filtered.
+          return null;
+        }
         const { field } = definition;
         const name = labels?.[field] ?? field;
         if (definition.kind === "choices") {

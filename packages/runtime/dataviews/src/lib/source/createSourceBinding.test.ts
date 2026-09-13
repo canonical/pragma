@@ -1,4 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
+import {
+  declareCapabilities,
+  declareSorting,
+} from "../../../testing/fixtures.js";
 import type { CollectionState } from "../collection/createCollectionCoordinator.js";
 import createCollectionCoordinator from "../collection/createCollectionCoordinator.js";
 import createChannel, { type Channel } from "../observable/createChannel.js";
@@ -15,7 +19,6 @@ import type {
 import type { RowRecord } from "../rows/types.js";
 import createSchema from "../schema/createSchema.js";
 import createSelection from "../selection/createSelection.js";
-import { declaring, sorting } from "./capabilities.fixtures.js";
 import createArraySource from "./createArraySource.js";
 import createSourceBinding, { type SourceHost } from "./createSourceBinding.js";
 import type {
@@ -36,10 +39,10 @@ const schema = createSchema([
 const provider = () => createDataViewsProvider({ schema });
 
 /** Everything the fixture query needs, and three exact counts. */
-const permissive: SourceCapabilities = declaring({
+const permissive: SourceCapabilities = declareCapabilities({
   filter: { status: ["eq"], cpu: ["gte", "lte"] },
   search: { fields: ["name"] },
-  sort: sorting(["cpu"], 2),
+  sort: declareSorting(["cpu"], 2),
   counts: { visible: "exact", matched: "exact", total: "exact" },
 });
 
@@ -106,10 +109,17 @@ const rows = [
   { id: "c", name: "Gamma", cpu: 8 },
 ];
 
+const localSchema = createSchema([
+  { field: "id", kind: "text" },
+  { field: "name", kind: "text" },
+  { field: "cpu", kind: "number" },
+  { field: "status", kind: "choices", options: ["failed", "ready"] },
+]);
+
 const local = () =>
   createArraySource<RowRecord>({
     rows,
-    fields: ["id", "name", "cpu", "status"],
+    schema: localSchema,
     searchFields: ["name"],
   });
 
@@ -184,19 +194,19 @@ const structuralHost = () => {
 
 const machineKind: KindCapabilities = {
   filter: { status: ["eq"] },
-  sort: sorting(["cpu"], 2),
+  sort: declareSorting(["cpu"], 2),
   actions: {},
   lookup: null,
 };
 
 describe("createSourceBinding construction", () => {
   it("binds a host told its source's own declaration, however spelled", () => {
-    const spelled = declaring({
+    const spelled = declareCapabilities({
       ...permissive,
       // A field declared with no operator list is a field not declared.
       filter: { ...permissive.filter, owner: undefined },
       search: { fields: ["name", "owner"] },
-      sort: sorting(["cpu", "status"], 2),
+      sort: declareSorting(["cpu", "status"], 2),
       group: {
         fields: ["status", "cpu"],
         depth: 1,
@@ -221,7 +231,7 @@ describe("createSourceBinding construction", () => {
         // Every list is a set: order and repetition say nothing.
         filter: { cpu: ["lte", "gte", "gte"], status: ["eq"], zone: [] },
         search: { fields: ["owner", "name", "name"] },
-        sort: sorting(["status", "cpu", "cpu"], 2),
+        sort: declareSorting(["status", "cpu", "cpu"], 2),
         group: {
           fields: ["cpu", "status", "status"],
           depth: 1,
@@ -251,7 +261,7 @@ describe("createSourceBinding construction", () => {
     // Seam for the polymorphism unit: a source may declare kinds and read
     // one off a row, and this release neither combines them nor asks.
     const kindOf = vi.fn(() => "machine");
-    const declared = declaring({
+    const declared = declareCapabilities({
       ...permissive,
       kinds: { machine: machineKind, image: machineKind },
     });
@@ -271,7 +281,7 @@ describe("createSourceBinding construction", () => {
   it("refuses a host told a different narrowing for the same kind", () => {
     // The kinds are compared by what each one narrows, not by their names:
     // one name carrying two offers is the same disagreement as any other.
-    const declared = declaring({
+    const declared = declareCapabilities({
       ...permissive,
       kinds: { machine: machineKind },
     });
@@ -300,13 +310,13 @@ describe("createSourceBinding construction", () => {
     ],
     ["search field", { search: { fields: ["name", "owner"] } }],
     ["search at all", { search: null }],
-    ["sortable field", { sort: sorting(["cpu", "status"], 2) }],
-    ["sort-term limit", { sort: sorting(["cpu"], 3) }],
+    ["sortable field", { sort: declareSorting(["cpu", "status"], 2) }],
+    ["sort-term limit", { sort: declareSorting(["cpu"], 3) }],
     [
       "default ordering",
       {
         sort: {
-          ...sorting(["cpu"], 2),
+          ...declareSorting(["cpu"], 2),
           default: [{ field: "cpu", direction: "desc" }],
         },
       },
@@ -346,7 +356,7 @@ describe("createSourceBinding construction", () => {
   it.each([
     [
       "a lookup it has no port for",
-      { capabilities: declaring({ lookup: { batch: null } }) },
+      { capabilities: declareCapabilities({ lookup: { batch: null } }) },
       "this source declares a lookup it has no port for",
     ],
     [
@@ -357,7 +367,7 @@ describe("createSourceBinding construction", () => {
     [
       "row operations it has no port for",
       {
-        capabilities: declaring({
+        capabilities: declareCapabilities({
           actions: { stop: { targets: "explicit", limit: null } },
         }),
       },
@@ -370,7 +380,9 @@ describe("createSourceBinding construction", () => {
     ],
     [
       "record kinds it has no port for",
-      { capabilities: declaring({ kinds: { machine: machineKind } }) },
+      {
+        capabilities: declareCapabilities({ kinds: { machine: machineKind } }),
+      },
       "this source declares record kinds it has no port for",
     ],
     [
@@ -381,20 +393,23 @@ describe("createSourceBinding construction", () => {
     [
       "cursor pages nothing says are reachable",
       {
-        capabilities: declaring({
+        capabilities: declareCapabilities({
           pagination: { mode: "cursor", backward: false, durable: false },
         }),
       },
       "a cursor source must declare which pages it cannot reach through refuses",
     ],
-  ])("refuses a source declaring %s", (_part, difference, message) => {
-    expect(() =>
-      createSourceBinding({
-        host: provider(),
-        source: { ...manual().source, ...difference },
-      }),
-    ).toThrow(message);
-  });
+  ])(
+    "refuses a source declareCapabilities %s",
+    (_part, difference, message) => {
+      expect(() =>
+        createSourceBinding({
+          host: provider(),
+          source: { ...manual().source, ...difference },
+        }),
+      ).toThrow(message);
+    },
+  );
 
   it("binds a cursor source that says which pages it cannot reach", () => {
     expect(() =>
@@ -402,7 +417,7 @@ describe("createSourceBinding construction", () => {
         host: provider(),
         source: {
           ...manual(
-            declaring({
+            declareCapabilities({
               pagination: { mode: "cursor", backward: true, durable: true },
             }),
           ).source,
@@ -429,19 +444,22 @@ describe("createSourceBinding construction", () => {
     ["negative", -1],
     ["fractional", 1.5],
     ["not a number", Number.NaN],
-  ])("refuses a source declaring a %s lookup batch", (_kind, batch) => {
-    expect(() =>
-      createSourceBinding({
-        host: provider(),
-        source: {
-          ...manual(declaring({ lookup: { batch } })).source,
-          lookup: () => Promise.resolve([]),
-        },
-      }),
-    ).toThrow(
-      "a lookup batch must be a positive whole number, or null for no limit",
-    );
-  });
+  ])(
+    "refuses a source declareCapabilities a %s lookup batch",
+    (_kind, batch) => {
+      expect(() =>
+        createSourceBinding({
+          host: provider(),
+          source: {
+            ...manual(declareCapabilities({ lookup: { batch } })).source,
+            lookup: () => Promise.resolve([]),
+          },
+        }),
+      ).toThrow(
+        "a lookup batch must be a positive whole number, or null for no limit",
+      );
+    },
+  );
 
   it("offers a frozen copy, so the declaration cannot move under it", () => {
     const declared: SourceCapabilities = { ...permissive };
@@ -506,7 +524,9 @@ describe("createSourceBinding refusals", () => {
 
   it("refuses a request before it costs the source a round trip", () => {
     const host = provider();
-    const source = manual(declaring({ ...permissive, sort: sorting([], 0) }));
+    const source = manual(
+      declareCapabilities({ ...permissive, sort: declareSorting([], 0) }),
+    );
     const release = createSourceBinding({
       host,
       source: source.source,
@@ -532,7 +552,11 @@ describe("createSourceBinding refusals", () => {
   it("reaches the host with every refusal at once", () => {
     const host = provider();
     const source = manual(
-      declaring({ ...permissive, search: null, sort: sorting([], 0) }),
+      declareCapabilities({
+        ...permissive,
+        search: null,
+        sort: declareSorting([], 0),
+      }),
     );
     const release = createSourceBinding({
       host,
@@ -560,7 +584,10 @@ describe("createSourceBinding refusals", () => {
     const host = provider();
     const source = manual(
       // Legal per the declaration type, and it must not read as "any operator".
-      declaring({ ...permissive, filter: { status: ["eq"], cpu: undefined } }),
+      declareCapabilities({
+        ...permissive,
+        filter: { status: ["eq"], cpu: undefined },
+      }),
     );
     const release = createSourceBinding({
       host,
@@ -1002,9 +1029,12 @@ describe("createSourceBinding", () => {
     const host = provider();
     const release = createSourceBinding({
       host,
+      // The source holds no cpu field, so it cannot order by one.
       source: createArraySource<RowRecord>({
         rows: fleet,
-        fields: ["status"],
+        schema: createSchema(
+          localSchema.fields.filter((field) => field.field !== "cpu"),
+        ),
       }),
     }).observe();
     const observed = () => {
@@ -1294,7 +1324,7 @@ describe("createSourceBinding counts", () => {
     delivered: SourcePage["counts"],
   ) => {
     const host = provider();
-    const source = manual(declaring({ ...permissive, counts }));
+    const source = manual(declareCapabilities({ ...permissive, counts }));
     const release = createSourceBinding({
       host,
       source: source.source,
@@ -1385,7 +1415,7 @@ describe("createSourceBinding counts", () => {
   it("holds the counts of an external change as well", () => {
     const host = provider();
     const source = manual(
-      declaring({
+      declareCapabilities({
         ...permissive,
         counts: { visible: "none", matched: "none", total: "none" },
       }),
@@ -1409,7 +1439,7 @@ describe("createSourceBinding counts", () => {
   it("leaves a failure alone on a source that declares no count", () => {
     const host = provider();
     const source = manual(
-      declaring({
+      declareCapabilities({
         ...permissive,
         counts: { visible: "none", matched: "none", total: "none" },
       }),
@@ -1433,7 +1463,8 @@ describe("createSourceBinding record lookup", () => {
     createSourceBinding({
       host: provider(),
       source: {
-        ...manual(declaring({ ...permissive, lookup: { batch } })).source,
+        ...manual(declareCapabilities({ ...permissive, lookup: { batch } }))
+          .source,
         lookup,
       },
     });
@@ -1511,7 +1542,7 @@ describe("createSourceBinding row operations", () => {
       host,
       source: {
         ...manual(
-          declaring({
+          declareCapabilities({
             ...permissive,
             selection: { scope },
             actions: { stop: action },

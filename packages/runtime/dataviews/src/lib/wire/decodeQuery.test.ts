@@ -5,10 +5,13 @@
  */
 
 import { describe, expect, it } from "vitest";
+import {
+  declareCapabilities,
+  declareSorting,
+} from "../../../testing/fixtures.js";
 import DEFAULT_WINDOW from "../query/defaultWindow.js";
 import type { ResultWindow } from "../query/types.js";
 import createSchema from "../schema/createSchema.js";
-import { declaring, sorting } from "../source/capabilities.fixtures.js";
 import decodeQuery from "./decodeQuery.js";
 import encodeQuery from "./encodeQuery.js";
 
@@ -22,6 +25,7 @@ const machines = () =>
     { field: "cpu", kind: "number", min: 0, max: 64 },
     { field: "updated", kind: "date" },
     { field: "owner", kind: "flag" },
+    { field: "name", kind: "text" },
   ]);
 
 const decode = (search: string) =>
@@ -129,7 +133,7 @@ describe("decodeQuery", () => {
     const decoded = decodeQuery({
       schema: machines(),
       params: new URLSearchParams("page=3&cursor=after-page-two&sort=cpu__asc"),
-      capabilities: declaring({ sort: sorting(["cpu"]) }),
+      capabilities: declareCapabilities({ sort: declareSorting(["cpu"]) }),
     });
     // The source pages by number, so the token addresses nothing: the page
     // stands, the token goes, and the window is reported once rather than
@@ -234,15 +238,48 @@ describe("decodeQuery", () => {
     ]);
   });
 
-  it("sorts and groups on fields the filter schema does not describe", () => {
-    // Sortable, groupable and filterable are different capabilities: a name
-    // column may be ordered without ever being a filter field.
+  it("orders by a field carrying no filter of its own", () => {
+    // Sortable and filterable are different capabilities: a name column is
+    // ordered without ever being a filter field.
     expect(decode("sort=name__asc").slice.sort).toEqual([
       { field: "name", direction: "asc" },
     ]);
     expect(decode("sort=name__asc").issues).toEqual([]);
+    expect(decode("name=alder").slice.filter).toEqual([]);
+    expect(decode("name=alder").issues).toEqual([
+      {
+        parameter: "name",
+        reason: "text fields are ordered, not filtered",
+      },
+    ]);
+  });
+
+  it("groups on a field the schema does not describe", () => {
+    // Seam for the grouping unit: a group level is not yet checked against
+    // the schema the way an ordered term is.
     expect(decode("group=region").slice.group).toEqual([{ field: "region" }]);
     expect(decode("group=region").issues).toEqual([]);
+  });
+
+  it("refuses an ordering naming no field of the collection, whole", () => {
+    const decoded = decode("sort=cpu__asc&sort=region__desc");
+    expect(decoded.slice.sort).toEqual([]);
+    expect(decoded.issues).toEqual([
+      {
+        parameter: "sort",
+        reason: '"region" is not a field of this collection',
+      },
+    ]);
+  });
+
+  it("collapses a field spelled twice to its first term, without an issue", () => {
+    // Not a refusal, only a respelling: the canonical link replaces it.
+    const decoded = decode("sort=cpu__asc&sort=name__asc&sort=cpu__desc");
+    expect(decoded.slice.sort).toEqual([
+      { field: "cpu", direction: "asc" },
+      { field: "name", direction: "asc" },
+    ]);
+    expect(decoded.issues).toEqual([]);
   });
 
   it("leaves the host's own parameters alone", () => {
@@ -360,9 +397,9 @@ describe("decodeQuery", () => {
   });
 
   it("refuses each clause the source cannot execute, and only those", () => {
-    const capabilities = declaring({
+    const capabilities = declareCapabilities({
       filter: { status: ["eq"], cpu: ["gte"] },
-      sort: sorting(["cpu"], 1),
+      sort: declareSorting(["cpu"], 1),
     });
     const decoded = decodeQuery({
       schema: machines(),
@@ -398,12 +435,39 @@ describe("decodeQuery", () => {
     const decoded = decodeQuery({
       schema: machines(),
       params: new URLSearchParams("sort=cpu__asc&sort=name__desc"),
-      capabilities: declaring({ sort: sorting(["status"]) }),
+      capabilities: declareCapabilities({ sort: declareSorting(["status"]) }),
     });
+    expect(decoded.slice.sort).toEqual([]);
     expect(decoded.issues).toEqual([
       { parameter: "sort", reason: 'field "cpu" cannot be sorted' },
       { parameter: "sort", reason: 'field "name" cannot be sorted' },
     ]);
+  });
+
+  it("refuses an ordering longer than the source executes, whole", () => {
+    const capabilities = declareCapabilities({
+      sort: declareSorting(["cpu", "name"], 1),
+    });
+    const decoded = decodeQuery({
+      schema: machines(),
+      params: new URLSearchParams("sort=cpu__asc&sort=name__desc"),
+      capabilities,
+    });
+    expect(decoded.slice.sort).toEqual([]);
+    expect(decoded.issues).toEqual([
+      { parameter: "sort", reason: "this source orders by at most 1 term" },
+    ]);
+    // A field spelled twice is one term, so it fits the same limit.
+    expect(
+      decodeQuery({
+        schema: machines(),
+        params: new URLSearchParams("sort=cpu__asc&sort=cpu__desc"),
+        capabilities,
+      }),
+    ).toMatchObject({
+      slice: { sort: [{ field: "cpu", direction: "asc" }] },
+      issues: [],
+    });
   });
 
   it("checks only the grammar and the schema without a declaration", () => {
@@ -427,7 +491,7 @@ describe("decodeQuery", () => {
     const decoded = decodeQuery({
       schema: machines(),
       params: new URLSearchParams("sort=cpu__asc&sort=name__desc"),
-      capabilities: declaring({ sort: sorting(["cpu"]) }),
+      capabilities: declareCapabilities({ sort: declareSorting(["cpu"]) }),
     });
     expect(decoded.slice.sort).toEqual([]);
     expect(decoded.issues).toEqual([
@@ -439,7 +503,7 @@ describe("decodeQuery", () => {
     const decoded = decodeQuery({
       schema: machines(),
       params: new URLSearchParams("group=status&group=region"),
-      capabilities: declaring({
+      capabilities: declareCapabilities({
         group: {
           fields: ["status"],
           depth: 2,
@@ -458,7 +522,7 @@ describe("decodeQuery", () => {
     const decoded = decodeQuery({
       schema: machines(),
       params: new URLSearchParams("group=status&group=owner"),
-      capabilities: declaring({
+      capabilities: declareCapabilities({
         group: {
           fields: ["status", "owner"],
           depth: 2,

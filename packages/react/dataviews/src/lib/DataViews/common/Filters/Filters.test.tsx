@@ -29,6 +29,7 @@ const schema = createSchema([
   { field: "cpu", kind: "number", min: 0, max: 64 },
   { field: "updated", kind: "date" },
   { field: "owner", kind: "flag" },
+  { field: "name", kind: "text" },
 ]);
 
 type Fields = typeof schema.fields;
@@ -105,6 +106,10 @@ describe("DataViews.Filters", () => {
     expect(screen.getByRole("checkbox", { name: "owner" })).toBeInTheDocument();
     // A choices field has one operator, so it gets no bounds.
     expect(screen.queryByLabelText("status from")).toBeNull();
+    // A text field has no operator at all, so it gets no control: it is
+    // ordered instead.
+    expect(screen.queryByLabelText("name")).toBeNull();
+    expect(screen.queryByLabelText("name from")).toBeNull();
   });
 
   it("names the group and its fields from the supplied labels", () => {

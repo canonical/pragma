@@ -5,16 +5,16 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
+import {
+  declareCapabilities,
+  NOTHING_DECLARED,
+} from "../../../testing/fixtures.js";
 import createDataViewsProvider from "../provider/createDataViewsProvider.js";
 import DEFAULT_WINDOW from "../query/defaultWindow.js";
 import type { Query, ResultWindow, Slice } from "../query/types.js";
 import type { Completion } from "../result/types.js";
 import type { RowRecord } from "../rows/types.js";
 import createSchema from "../schema/createSchema.js";
-import {
-  declaring,
-  NOTHING_DECLARED,
-} from "../source/capabilities.fixtures.js";
 import createArraySource from "../source/createArraySource.js";
 import createSourceBinding from "../source/createSourceBinding.js";
 import type { LocationHost } from "./createLocationBinding.js";
@@ -31,6 +31,10 @@ const machines = () =>
     { field: "cpu", kind: "number", min: 0, max: 64 },
     { field: "owner", kind: "flag" },
   ]);
+
+/** The machines as a source that holds no cpu field and cannot order by one. */
+const createSchemaWithoutCpu = () =>
+  createSchema(machines().fields.filter((field) => field.field !== "cpu"));
 
 /** A provider behind a counting host: adoptions are the observable here. */
 const tracked = (provider: ReturnType<typeof machinesProvider>) => {
@@ -510,7 +514,9 @@ describe("createLocationBinding", () => {
   it("refuses a clause the host's source cannot execute rather than adopting it", () => {
     const provider = createDataViewsProvider({
       schema: machines(),
-      capabilities: declaring({ filter: { status: ["eq"], cpu: ["lte"] } }),
+      capabilities: declareCapabilities({
+        filter: { status: ["eq"], cpu: ["lte"] },
+      }),
     });
     const location = createMemoryLocation({
       href: "/machines?status=ready&cpu__gte=4&sort=cpu__asc",
@@ -538,7 +544,10 @@ describe("createLocationBinding", () => {
   });
 
   it("refuses a sort its source cannot execute arriving in the location, and answers the rest", () => {
-    const source = createArraySource({ rows: fleet, fields: ["status"] });
+    const source = createArraySource({
+      rows: fleet,
+      schema: createSchemaWithoutCpu(),
+    });
     const provider = createDataViewsProvider({
       schema: machines(),
       capabilities: source.capabilities,
@@ -567,7 +576,10 @@ describe("createLocationBinding", () => {
   });
 
   it("shows rows a refused location sort could not replace as stale, and recovers on the way back", () => {
-    const source = createArraySource({ rows: fleet, fields: ["status"] });
+    const source = createArraySource({
+      rows: fleet,
+      schema: createSchemaWithoutCpu(),
+    });
     // Not told the source's capabilities, so the location's sort is adopted
     // and it is the source that refuses it.
     const provider = machinesProvider();
@@ -608,6 +620,79 @@ describe("createLocationBinding", () => {
     expect(recovered.result.rows).toHaveLength(3);
     release();
     stopSource();
+  });
+
+  it("pushes a history entry for a sort command, whatever the default mode", () => {
+    const provider = machinesProvider();
+    const { location, writes } = recording("/machines");
+    const release = createLocationBinding({
+      host: provider,
+      location,
+    }).observe();
+    provider.setSort([{ field: "cpu", direction: "asc" }]);
+    provider.setSort([{ field: "cpu", direction: "desc" }]);
+    provider.setSort([
+      { field: "cpu", direction: "desc" },
+      { field: "status", direction: "asc" },
+    ]);
+    provider.setSort([{ field: "status", direction: "asc" }]);
+    expect(writes.map(([spelled, mode]) => [spelled, mode])).toEqual([
+      ["page=1&size=50", "replace"],
+      ["sort=cpu__asc&page=1&size=50", "push"],
+      ["sort=cpu__desc&page=1&size=50", "push"],
+      ["sort=cpu__desc&sort=status__asc&page=1&size=50", "push"],
+      ["sort=status__asc&page=1&size=50", "push"],
+    ]);
+    release();
+  });
+
+  it("writes nothing when a sort command only respells the ordering in force", () => {
+    const provider = machinesProvider();
+    const { location, writes } = recording("/machines?sort=cpu__asc");
+    const release = createLocationBinding({
+      host: provider,
+      location,
+    }).observe();
+    const before = writes.length;
+    provider.setSort([
+      { field: "cpu", direction: "asc" },
+      { field: "cpu", direction: "desc" },
+    ]);
+    expect(writes.slice(before)).toEqual([]);
+    release();
+  });
+
+  it("replaces rather than pushes when a command leaves the ordering alone", () => {
+    const provider = machinesProvider();
+    const { location, writes } = recording("/machines?sort=cpu__asc");
+    const release = createLocationBinding({
+      host: provider,
+      location,
+    }).observe();
+    provider.setSearch("yak");
+    expect(writes).toEqual([
+      ["sort=cpu__asc&page=1&size=50", "replace"],
+      ["q=yak&sort=cpu__asc&page=1&size=50", "replace"],
+    ]);
+    release();
+  });
+
+  it("replaces when a location respells an ordering it already carries", () => {
+    // The first occurrence is the ordering, so the duplicate is a
+    // respelling rather than a step the reader took.
+    const provider = machinesProvider();
+    const { location, writes } = recording(
+      "/machines?sort=cpu__asc&sort=cpu__desc",
+    );
+    const release = createLocationBinding({
+      host: provider,
+      location,
+    }).observe();
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "cpu", direction: "asc" },
+    ]);
+    expect(writes).toEqual([["sort=cpu__asc&page=1&size=50", "replace"]]);
+    release();
   });
 
   it("retries a write the location threw on at the next publication", () => {

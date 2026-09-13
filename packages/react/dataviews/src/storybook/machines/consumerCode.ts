@@ -34,7 +34,7 @@ type ConsumerCode = {
 
 const machineSource = `createArraySource({
       rows: machines,
-      fields: ["name", "status", "region", "cores", "owner"],
+      schema: machineSchema,
       searchFields: ["name", "owner"],
     })`;
 

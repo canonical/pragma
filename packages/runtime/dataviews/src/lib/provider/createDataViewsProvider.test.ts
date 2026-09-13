@@ -1,9 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, expectTypeOf, it, vi } from "vitest";
+import {
+  declareCapabilities,
+  declareSorting,
+} from "../../../testing/fixtures.js";
 import DEFAULT_WINDOW from "../query/defaultWindow.js";
 import type { Slice } from "../query/types.js";
 import type { Completion } from "../result/types.js";
 import createSchema from "../schema/createSchema.js";
-import { declaring, sorting } from "../source/capabilities.fixtures.js";
 import createDataViewsProvider from "./createDataViewsProvider.js";
 import type { RecordTypes } from "./types.js";
 
@@ -13,6 +16,7 @@ const machinesSchema = () =>
     { field: "cpu", kind: "number", min: 0, max: 64 },
     { field: "owner", kind: "flag" },
     { field: "updated", kind: "date" },
+    { field: "name", kind: "text" },
   ]);
 
 const provider = () => createDataViewsProvider({ schema: machinesSchema() });
@@ -71,8 +75,19 @@ const refreshRequest = (p: {
 describe("createDataViewsProvider", () => {
   it("assembles scope identity, schema, selection and field handles", () => {
     const p = provider();
-    expect(p.schema.fieldNames).toEqual(["status", "cpu", "owner", "updated"]);
+    expect(p.schema.fieldNames).toEqual([
+      "status",
+      "cpu",
+      "owner",
+      "updated",
+      "name",
+    ]);
     expect(p.selection.state.get().ids.size).toBe(0);
+    // A text field accepts no operator, so it has no handle at all, in the
+    // type as at runtime.
+    expectTypeOf<keyof typeof p.fields>().toEqualTypeOf<
+      "status" | "cpu" | "owner" | "updated"
+    >();
     expect(Object.keys(p.fields).sort()).toEqual([
       "cpu",
       "owner",
@@ -458,9 +473,9 @@ describe("createDataViewsProvider", () => {
 
   it("carries the source's declaration as a frozen copy, or null", () => {
     expect(provider().capabilities).toBeNull();
-    const declared = declaring({
+    const declared = declareCapabilities({
       filter: { status: ["eq"] },
-      sort: sorting(["cpu"], 1),
+      sort: declareSorting(["cpu"], 1),
     });
     const p = createDataViewsProvider({
       schema: machinesSchema(),

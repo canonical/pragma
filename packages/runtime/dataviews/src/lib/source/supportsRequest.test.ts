@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
+import {
+  declareCapabilities,
+  declareSorting,
+} from "../../../testing/fixtures.js";
 import DEFAULT_WINDOW from "../query/defaultWindow.js";
 import type { Query, ResultWindow, Slice } from "../query/types.js";
-import { declaring, sorting } from "./capabilities.fixtures.js";
 import supportsRequest from "./supportsRequest.js";
 import type { SourceCapabilities } from "./types.js";
 
@@ -16,10 +19,10 @@ const query = (
 });
 
 /** A source that can execute the whole fixture query. */
-const permissive: SourceCapabilities = declaring({
+const permissive: SourceCapabilities = declareCapabilities({
   filter: { status: ["eq"], cpu: ["gte", "lte"] },
   search: { fields: ["name"] },
-  sort: sorting(["cpu"], 2),
+  sort: declareSorting(["cpu"], 2),
   group: { fields: ["status"], depth: 2, summaries: "counts", collapse: true },
 });
 
@@ -85,7 +88,7 @@ describe("supportsRequest", () => {
 
   it("reads a field declared with no operator list as unfilterable", () => {
     const refusals = supportsRequest(
-      declaring({ filter: { cpu: undefined } }),
+      declareCapabilities({ filter: { cpu: undefined } }),
       query({ filter: [{ field: "cpu", operator: "gte", operands: [1] }] }),
     );
     expect(refusals).toMatchObject([
@@ -94,7 +97,9 @@ describe("supportsRequest", () => {
   });
 
   it("refuses a search on a source that declares none", () => {
-    expect(supportsRequest(declaring({}), query({ search: "web" }))).toEqual([
+    expect(
+      supportsRequest(declareCapabilities({}), query({ search: "web" })),
+    ).toEqual([
       {
         part: "search",
         code: "undeclared-field",
@@ -105,10 +110,10 @@ describe("supportsRequest", () => {
     ]);
   });
 
-  it("refuses any ordering on a source declaring no sort terms", () => {
+  it("refuses any ordering on a source declareCapabilities no sort terms", () => {
     expect(
       supportsRequest(
-        declaring({}),
+        declareCapabilities({}),
         query({ sort: [{ field: "cpu", direction: "asc" }] }),
       ),
     ).toEqual([
@@ -125,7 +130,7 @@ describe("supportsRequest", () => {
   it("refuses an over-long ordering whole rather than truncating it", () => {
     expect(
       supportsRequest(
-        declaring({ sort: sorting(["cpu", "name"], 1) }),
+        declareCapabilities({ sort: declareSorting(["cpu", "name"], 1) }),
         query({
           sort: [
             { field: "cpu", direction: "asc" },
@@ -144,15 +149,48 @@ describe("supportsRequest", () => {
     ]);
   });
 
-  it("counts the term limit in the plural above one", () => {
+  it("reports an unsortable field beside the term limit, not instead of it", () => {
     expect(
       supportsRequest(
-        declaring({ sort: sorting(["cpu"], 2) }),
+        declareCapabilities({ sort: declareSorting(["cpu"], 1) }),
+        query({
+          sort: [
+            { field: "cpu", direction: "asc" },
+            { field: "zone", direction: "desc" },
+          ],
+        }),
+      ).map((refusal) => [refusal.code, refusal.field]),
+    ).toEqual([
+      ["too-many-terms", null],
+      ["undeclared-field", "zone"],
+    ]);
+  });
+
+  it("counts a field spelled twice once against the term limit", () => {
+    expect(
+      supportsRequest(
+        declareCapabilities({ sort: declareSorting(["cpu"], 1) }),
         query({
           sort: [
             { field: "cpu", direction: "asc" },
             { field: "cpu", direction: "desc" },
+          ],
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it("counts the term limit in the plural above one", () => {
+    expect(
+      supportsRequest(
+        declareCapabilities({
+          sort: declareSorting(["cpu", "name", "zone"], 2),
+        }),
+        query({
+          sort: [
             { field: "cpu", direction: "asc" },
+            { field: "name", direction: "desc" },
+            { field: "zone", direction: "asc" },
           ],
         }),
       ),
@@ -162,7 +200,7 @@ describe("supportsRequest", () => {
   it("refuses an ordering term on a field it cannot sort", () => {
     expect(
       supportsRequest(
-        declaring({ sort: sorting(["cpu"]) }),
+        declareCapabilities({ sort: declareSorting(["cpu"]) }),
         query({ sort: [{ field: "zone", direction: "asc" }] }),
       ),
     ).toEqual([
@@ -176,9 +214,12 @@ describe("supportsRequest", () => {
     ]);
   });
 
-  it("refuses any grouping on a source declaring no depth", () => {
+  it("refuses any grouping on a source declareCapabilities no depth", () => {
     expect(
-      supportsRequest(declaring({}), query({ group: [{ field: "status" }] })),
+      supportsRequest(
+        declareCapabilities({}),
+        query({ group: [{ field: "status" }] }),
+      ),
     ).toEqual([
       {
         part: "group",
@@ -191,7 +232,7 @@ describe("supportsRequest", () => {
   });
 
   it("refuses a grouping nested deeper than it declares", () => {
-    const shallow = declaring({
+    const shallow = declareCapabilities({
       group: {
         fields: ["status", "zone"],
         depth: 1,
@@ -216,7 +257,7 @@ describe("supportsRequest", () => {
   });
 
   it("counts the grouping depth in the plural above one", () => {
-    const deeper = declaring({
+    const deeper = declareCapabilities({
       group: {
         fields: ["status"],
         depth: 2,
@@ -254,7 +295,10 @@ describe("supportsRequest", () => {
 
   it("refuses a collapsed group on a source that cannot leave rows out", () => {
     expect(
-      supportsRequest(declaring({}), query({}, { collapsed: [["failed"]] })),
+      supportsRequest(
+        declareCapabilities({}),
+        query({}, { collapsed: [["failed"]] }),
+      ),
     ).toEqual([
       {
         part: "window",
@@ -267,23 +311,23 @@ describe("supportsRequest", () => {
   });
 
   it("refuses a cursor on a source that pages by number", () => {
-    expect(supportsRequest(declaring({}), query({}, { cursor: "c1" }))).toEqual(
-      [
-        {
-          part: "window",
-          code: "unreachable-page",
-          field: null,
-          operator: null,
-          reason: "this source pages by number and reaches no page by token",
-        },
-      ],
-    );
+    expect(
+      supportsRequest(declareCapabilities({}), query({}, { cursor: "c1" })),
+    ).toEqual([
+      {
+        part: "window",
+        code: "unreachable-page",
+        field: null,
+        operator: null,
+        reason: "this source pages by number and reaches no page by token",
+      },
+    ]);
   });
 
   it("leaves a cursor alone on a source that pages by token", () => {
     expect(
       supportsRequest(
-        declaring({
+        declareCapabilities({
           pagination: { mode: "cursor", backward: false, durable: true },
         }),
         query({}, { cursor: "c1" }),
@@ -294,7 +338,7 @@ describe("supportsRequest", () => {
   it("collects every refusal at once rather than the first", () => {
     expect(
       supportsRequest(
-        declaring({}),
+        declareCapabilities({}),
         query(
           {
             filter: [{ field: "zone", operator: "eq", operands: ["eu"] }],

@@ -178,8 +178,9 @@ export const UndeclaredField: Story = {
     declarations: columnsCode,
     source: `createArraySource({
       rows: machines,
-      // No "cores": this source can neither filter nor order by it.
-      fields: ["name", "status", "region", "owner"],
+      // No "cores": its schema leaves the field out, so this source can
+      // neither filter nor order by it.
+      schema: machineSchemaWithoutCores,
     })`,
     render: composition,
   }),

@@ -94,6 +94,22 @@ describe("canonicalSlice", () => {
     expect(canonicalSlice(input).sort).toEqual(input.sort);
   });
 
+  it("collapses a sort field spelled twice to its first term, in place", () => {
+    const result = canonicalSlice(
+      slice({
+        sort: [
+          { field: "updated", direction: "desc" },
+          { field: "status", direction: "asc" },
+          { field: "updated", direction: "asc" },
+        ],
+      }),
+    );
+    expect(result.sort).toEqual([
+      { field: "updated", direction: "desc" },
+      { field: "status", direction: "asc" },
+    ]);
+  });
+
   it("collapses duplicate predicate addresses, keeping the last", () => {
     const result = canonicalSlice(
       slice({

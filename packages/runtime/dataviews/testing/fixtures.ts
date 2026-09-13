@@ -4,7 +4,7 @@
  * capability member does not have to be spelled into ninety test files.
  */
 
-import type { SourceCapabilities } from "./types.js";
+import type { SourceCapabilities } from "../src/lib/source/types.js";
 
 /** A source declaring nothing executable: every request is refused. */
 export const NOTHING_DECLARED: SourceCapabilities = Object.freeze({
@@ -32,12 +32,12 @@ export const NOTHING_DECLARED: SourceCapabilities = Object.freeze({
 });
 
 /** `NOTHING_DECLARED` with the named members replaced. */
-export const declaring = (
+export const declareCapabilities = (
   overrides: Partial<SourceCapabilities>,
 ): SourceCapabilities => ({ ...NOTHING_DECLARED, ...overrides });
 
 /** A sort block over the given fields, unbounded and undocumented. */
-export const sorting = (
+export const declareSorting = (
   fields: readonly string[],
   terms: number | null = null,
 ): SourceCapabilities["sort"] => ({

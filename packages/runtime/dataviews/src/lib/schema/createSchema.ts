@@ -5,6 +5,7 @@ import type {
   PredicateOperator,
 } from "../query/types.js";
 import { wireNameRejection } from "../wire/wireGrammar.js";
+import isCalendarDate from "./isCalendarDate.js";
 import type { SchemaFieldDefinition } from "./types.js";
 
 /** A schema-enforced predicate, or the reason it is not valid. */
@@ -21,8 +22,17 @@ export type Schema<TFields extends readonly SchemaFieldDefinition[]> = {
   /** Whether a field with this name exists. */
   readonly hasField: (name: string) => boolean;
   /**
-   * Validate a text text input for the field's single-value editing path.
-   * Flag fields edit through direct commands instead of a text input.
+   * The operators the field's kind accepts, empty for an unknown field and
+   * for a kind the grammar has no operator for. One authority, so a source
+   * declaring what it filters and a control offering it agree.
+   *
+   * @experimental Added with the text kind; a later operator on text would
+   * change what it lists for such a field.
+   */
+  readonly listOperators: (name: string) => readonly PredicateOperator[];
+  /**
+   * Validate one text input for the field's single-value editing path.
+   * Flag and text fields do not edit through a text input.
    */
   readonly validateInput: (name: string, input: string) => FieldValidation;
   /**
@@ -35,42 +45,6 @@ export type Schema<TFields extends readonly SchemaFieldDefinition[]> = {
     operator: PredicateOperator,
     operands: readonly PredicateOperand[],
   ) => SchemaPredicateResult;
-};
-
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
-const isLeapYear = (year: number): boolean =>
-  (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-
-/**
- * A real calendar check: `Date.parse` is not portable here — JavaScriptCore
- * accepts out-of-range dates such as 2026-02-30 by rolling them over.
- */
-const isCalendarDate = (value: string): boolean => {
-  if (!ISO_DATE.test(value)) {
-    return false;
-  }
-  const year = Number(value.slice(0, 4));
-  const month = Number(value.slice(5, 7));
-  const day = Number(value.slice(8, 10));
-  if (month < 1 || month > 12 || day < 1) {
-    return false;
-  }
-  const daysInMonth = [
-    31,
-    isLeapYear(year) ? 29 : 28,
-    31,
-    30,
-    31,
-    30,
-    31,
-    31,
-    30,
-    31,
-    30,
-    31,
-  ];
-  return day <= daysInMonth[month - 1];
 };
 
 const isFiniteNumber = (value: PredicateOperand): value is number =>
@@ -91,6 +65,9 @@ const legalOperators = (
       return ["gte", "lte"];
     case "flag":
       return ["isSet"];
+    case "text":
+      // The grammar has no substring operator.
+      return [];
   }
 };
 
@@ -121,7 +98,9 @@ const operandRejection = (
 ): string | null => {
   switch (definition.kind) {
     case "flag":
-      // Operand arity is the operator's concern; see `arityRejection`.
+    case "text":
+      // Neither carries an operand to check. Operand arity is the
+      // operator's concern; see `arityRejection`.
       return null;
     case "choices":
       for (const operand of operands) {
@@ -255,6 +234,10 @@ export default function createSchema<
     fields: storedFields,
     fieldNames,
     hasField: (name: string) => byName.has(name),
+    listOperators(name: string): readonly PredicateOperator[] {
+      const definition = byName.get(name);
+      return definition === undefined ? [] : legalOperators(definition);
+    },
     validateInput(name: string, input: string): FieldValidation {
       const definition = byName.get(name);
       if (definition === undefined) {
@@ -264,6 +247,12 @@ export default function createSchema<
         return {
           status: "invalid",
           reason: "flag fields edit through direct commands",
+        };
+      }
+      if (definition.kind === "text") {
+        return {
+          status: "invalid",
+          reason: "text fields are ordered, not filtered",
         };
       }
       if (input === "") {

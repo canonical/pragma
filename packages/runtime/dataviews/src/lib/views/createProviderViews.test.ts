@@ -31,10 +31,7 @@ const schema = createSchema([
 
 type Fields = typeof schema.fields;
 
-const capabilities = createArraySource({
-  rows: [],
-  fields: ["status", "cores"],
-}).capabilities;
+const capabilities = createArraySource({ rows: [], schema }).capabilities;
 
 const stores: ViewStore[] = [];
 

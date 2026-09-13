@@ -29,10 +29,14 @@ import {
 import { useEffect, useState } from "react";
 import { machines } from "./machines.js";
 
-// The fields a filter can edit, and the values each takes.
+// Every field and its kind: the kind decides which filter a field offers —
+// text offers none — and how the rows order by it.
 const machineSchema = createSchema([
   { field: "status", kind: "choices", options: ["running", "failed", "pending"] },
   { field: "cores", kind: "number", min: 1 },
+  { field: "name", kind: "text" },
+  { field: "region", kind: "text" },
+  { field: "owner", kind: "text" },
 ]);
 
 const columns: readonly DataTableColumn[] = [
@@ -46,7 +50,7 @@ export function Machines() {
   const [source] = useState(() =>
     createArraySource<RowRecord>({
       rows: machines,
-      fields: ["name", "status", "region", "cores", "owner"],
+      schema: machineSchema,
     }),
   );
   const [provider] = useState(() =>

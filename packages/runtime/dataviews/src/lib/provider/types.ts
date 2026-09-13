@@ -21,6 +21,7 @@ import type {
   AppliedOf,
   EmptyOr,
   SchemaFieldDefinition,
+  TextField,
 } from "../schema/types.js";
 import type { Selection } from "../selection/createSelection.js";
 import type { SourceCapabilities } from "../source/types.js";
@@ -42,7 +43,11 @@ export type FieldHandle<TApplied> = {
 
 /** The provider's field handles, keyed by field and its legal operators. */
 export type ProviderFields<TFields extends readonly SchemaFieldDefinition[]> = {
-  readonly [TDefinition in TFields[number] as TDefinition["field"]]: TDefinition extends {
+  // A text field accepts no operator, so it has no handle to address.
+  readonly [TDefinition in Exclude<
+    TFields[number],
+    TextField
+  > as TDefinition["field"]]: TDefinition extends {
     readonly kind: "choices";
   }
     ? { readonly eq: FieldHandle<AppliedOf<TDefinition>> }

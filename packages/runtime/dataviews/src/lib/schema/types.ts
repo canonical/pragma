@@ -25,10 +25,31 @@ export type FlagField = {
   readonly kind: "flag";
 };
 
-/** A date field: ISO-8601 calendar-date bounds. */
+/**
+ * A date field: ISO-8601 calendar-date bounds.
+ *
+ * The filter domain is the calendar date. For ordering, a row value may be a
+ * calendar-date string, an ISO-8601 instant carrying `Z` or an offset, a
+ * `Date`, or epoch milliseconds, all compared as instants. A local range
+ * filter still compares a row's value with the calendar-date bound as given,
+ * so it reads only calendar-date strings.
+ */
 export type DateField = {
   readonly field: string;
   readonly kind: "date";
+};
+
+/**
+ * A free-text field: ordered through the source's collator, and filtered by
+ * nothing. The grammar has no substring operator, so a text field carries no
+ * predicate and free-text search covers the reading it would have served.
+ *
+ * @experimental A substring operator may later give the kind a filter, which
+ * would change the applied value it maps to.
+ */
+export type TextField = {
+  readonly field: string;
+  readonly kind: "text";
 };
 
 /**
@@ -53,9 +74,12 @@ type TypeScoped = {
 
 /** One schema field definition; any kind may be scoped to record types. */
 export type SchemaFieldDefinition = TypeScoped &
-  (ChoicesField | NumberField | FlagField | DateField);
+  (ChoicesField | NumberField | FlagField | DateField | TextField);
 
-/** The applied semantic value a field's predicate carries. */
+/**
+ * The applied semantic value a field's predicate carries. A text field
+ * carries no predicate, so it applies nothing.
+ */
 export type AppliedOf<TField extends SchemaFieldDefinition> = TField extends {
   readonly kind: "choices";
   readonly options: infer TOptions;
@@ -77,7 +101,10 @@ export type AppliedOf<TField extends SchemaFieldDefinition> = TField extends {
  * schema factory's const type parameter, with no `as const` annotation.
  */
 export type AppliedValues<TFields extends readonly SchemaFieldDefinition[]> = {
-  readonly [TDefinition in TFields[number] as TDefinition["field"]]: AppliedOf<TDefinition>;
+  readonly [TDefinition in Exclude<
+    TFields[number],
+    TextField
+  > as TDefinition["field"]]: AppliedOf<TDefinition>;
 };
 
 /**

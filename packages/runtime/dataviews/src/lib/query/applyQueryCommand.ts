@@ -1,4 +1,5 @@
 import { predicateAddress } from "./canonicalSlice.js";
+import collapseSortTerms from "./collapseSortTerms.js";
 import sliceEquals from "./sliceEquals.js";
 import type {
   GroupPath,
@@ -232,7 +233,9 @@ const applyToSlice = (slice: Slice, command: SliceCommand): Slice => {
         search: command.search === "" ? null : command.search,
       };
     case "setSort":
-      return { ...slice, sort: [...command.sort] };
+      // Collapsed here as well as in canonicalization, so the query the
+      // coordinator holds is the one the user can read back off the URL.
+      return { ...slice, sort: collapseSortTerms(command.sort) };
     case "setGroup":
       return {
         ...slice,

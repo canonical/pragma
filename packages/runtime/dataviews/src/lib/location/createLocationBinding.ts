@@ -1,6 +1,7 @@
 import type { CollectionState } from "../collection/createCollectionCoordinator.js";
 import type { ReadonlyChannel } from "../observable/createChannel.js";
 import createChannel from "../observable/createChannel.js";
+import { areSortsEqual } from "../query/index.js";
 import sliceEquals from "../query/sliceEquals.js";
 import type { Query } from "../query/types.js";
 import type { Schema } from "../schema/createSchema.js";
@@ -43,7 +44,8 @@ export type LocationBindingConfig = {
    * How a host transition enters history. Defaults to `"replace"`, so a
    * stream of edits does not bury the entry the user arrived on. Seeding
    * and canonicalizing an adopted location always replace: neither is a
-   * step the user took.
+   * step the user took. A transition that changes the ordering always
+   * pushes, whatever this says.
    */
   readonly history?: "push" | "replace";
 };
@@ -93,6 +95,18 @@ const sameQuery = (a: Query, b: Query): boolean =>
   a.window.page === b.window.page &&
   a.window.size === b.window.size &&
   a.window.cursor === b.window.cursor;
+
+/**
+ * Whether a transition changed the ordering.
+ *
+ * Ordering is the one discrete step in the grammar: a reader sorts a column,
+ * reads the rows and expects Back to return to the order they came from. A
+ * filter or a search is a stream of small edits, so those keep the
+ * configured mode; a respelling of an ordering already in the location is
+ * not a step either, and the terms then read the same.
+ */
+const hasOrderingChanged = (a: Query, b: Query): boolean =>
+  !areSortsEqual(a.slice.sort, b.slice.sort);
 
 const issuesEqual = (
   a: readonly QueryIssue[],
@@ -271,7 +285,13 @@ export default function createLocationBinding(
           release();
           return;
         }
-        writeToLocation(history, "read-back");
+        const moved = host.state.get();
+        writeToLocation(
+          standing !== null && hasOrderingChanged(standing, moved)
+            ? "push"
+            : history,
+          "read-back",
+        );
       };
       // Its own closure, never the shared function: a Location holds its
       // listeners in a set, so two observations subscribing one reference
