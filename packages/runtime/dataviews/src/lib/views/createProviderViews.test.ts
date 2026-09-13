@@ -317,7 +317,7 @@ describe("createProviderViews opening and saving", () => {
     expect(views.state.get()).toMatchObject({
       current: view,
       modified: false,
-      operation: { action: "saveAs", status: "settled", outcome },
+      operation: { action: "save-as", status: "settled", outcome },
     });
     expect(await store.get(view.id)).toEqual({ status: "found", view });
   });
@@ -653,7 +653,7 @@ describe("createProviderViews names", () => {
     });
     // A refused name leaves the status to the last operation that ran.
     expect(views.state.get().operation).toMatchObject({
-      action: "saveAs",
+      action: "save-as",
       status: "settled",
       outcome: { status: "saved" },
     });

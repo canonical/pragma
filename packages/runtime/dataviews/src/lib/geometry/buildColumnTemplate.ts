@@ -25,8 +25,11 @@ const declaredTrack = (column: ColumnToSize): string => {
  * preview is substituted into that vector by its holder, before the last
  * column is filled, so the authoritative layout is untouched until the
  * resize commits.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
-export default function columnTemplate(
+export default function buildColumnTemplate(
   columns: readonly ColumnToSize[],
   resolved: readonly ResolvedColumn[] | null,
 ): string {

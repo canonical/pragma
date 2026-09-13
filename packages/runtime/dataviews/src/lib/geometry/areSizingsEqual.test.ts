@@ -4,31 +4,31 @@
  * render on declared sizing needs the same answer, not a second one.
  */
 import { describe, expect, it } from "vitest";
-import sizingEquals from "./sizingEquals.js";
+import areSizingsEqual from "./areSizingsEqual.js";
 
-describe("sizingEquals", () => {
+describe("areSizingsEqual", () => {
   it("compares fixed sizings by their pixels", () => {
     expect(
-      sizingEquals({ kind: "fixed", px: 80 }, { kind: "fixed", px: 80 }),
+      areSizingsEqual({ kind: "fixed", px: 80 }, { kind: "fixed", px: 80 }),
     ).toBe(true);
     expect(
-      sizingEquals({ kind: "fixed", px: 80 }, { kind: "fixed", px: 81 }),
+      areSizingsEqual({ kind: "fixed", px: 80 }, { kind: "fixed", px: 81 }),
     ).toBe(false);
   });
 
   it("compares flex sizings by weight and both bounds", () => {
     const unbounded = { kind: "flex", weight: 1, minPx: 96 } as const;
     const flex = { ...unbounded, maxPx: 240 } as const;
-    expect(sizingEquals(flex, { ...flex })).toBe(true);
-    expect(sizingEquals(flex, { ...flex, weight: 2 })).toBe(false);
-    expect(sizingEquals(flex, { ...flex, minPx: 97 })).toBe(false);
-    expect(sizingEquals(flex, unbounded)).toBe(false);
+    expect(areSizingsEqual(flex, { ...flex })).toBe(true);
+    expect(areSizingsEqual(flex, { ...flex, weight: 2 })).toBe(false);
+    expect(areSizingsEqual(flex, { ...flex, minPx: 97 })).toBe(false);
+    expect(areSizingsEqual(flex, unbounded)).toBe(false);
   });
 
   it("never equates the two kinds", () => {
     const fixed = { kind: "fixed", px: 96 } as const;
     const flex = { kind: "flex", weight: 1, minPx: 96 } as const;
-    expect(sizingEquals(fixed, flex)).toBe(false);
-    expect(sizingEquals(flex, fixed)).toBe(false);
+    expect(areSizingsEqual(fixed, flex)).toBe(false);
+    expect(areSizingsEqual(flex, fixed)).toBe(false);
   });
 });

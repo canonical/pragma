@@ -1,37 +1,6 @@
-import {
-  type Channel,
-  createChannel,
-  type ReadonlyChannel,
-} from "../observable/index.js";
-import type { Selection } from "../selection/index.js";
+import { type Channel, createChannel } from "../observable/index.js";
 import readField from "./readField.js";
-import type { RowModel, RowScope } from "./types.js";
-
-/** Configuration of one table's row-scope registry. */
-export type RowScopesConfig<TRow extends object> = {
-  /** The provider's row model channel. */
-  readonly rows: ReadonlyChannel<RowModel<TRow>>;
-  /** The collection's selection record. */
-  readonly selection: Selection;
-  /** The field names the mounted cells observe. Duplicates are collapsed. */
-  readonly fields: readonly string[];
-};
-
-/** The row scopes of one mounted table. */
-export type RowScopes<TRow extends object> = {
-  /** The modelled row identities, in result order. */
-  readonly ids: ReadonlyChannel<readonly string[]>;
-  /** The scope of one modelled row. Unmodelled identities throw. */
-  readonly scope: (id: string) => RowScope<TRow>;
-  /**
-   * Begin observing the row model and the selection; the return value
-   * detaches. Construction reads the current model but subscribes to
-   * nothing, so a registry whose caller never attaches it — a render React
-   * discarded, or a server render — holds no subscription to leak, and
-   * re-attaching after a detach is an ordinary second call.
-   */
-  readonly observe: () => () => void;
-};
+import type { RowScope, RowScopes, RowScopesConfig } from "./types.js";
 
 /** One observed field, paired with the channel it publishes into. */
 type FieldSlot = { readonly field: string; readonly channel: Channel<unknown> };
@@ -59,6 +28,9 @@ const sameOrder = (a: readonly string[], b: readonly string[]): boolean =>
  *
  * Observation is a separate step: the registry is readable as soon as it is
  * built, and only `observe()` subscribes.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export default function createRowScopes<TRow extends object>(
   config: RowScopesConfig<TRow>,

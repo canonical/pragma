@@ -1,75 +1,17 @@
-import type { CollectionState } from "../collection/index.js";
-import { createChannel, type ReadonlyChannel } from "../observable/index.js";
-import { areSortsEqual, type Query, sliceEquals } from "../query/index.js";
-import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
-import type { SourceCapabilities } from "../source/index.js";
+import { createChannel } from "../observable/index.js";
+import {
+  areListsEqual,
+  areSlicesEqual,
+  areSortsEqual,
+  type Query,
+} from "../query/index.js";
 import {
   decodeQuery,
   encodeQuery,
   isOwnedKey,
   type QueryIssue,
 } from "../wire/index.js";
-import type { Location } from "./types.js";
-
-/**
- * The structural host surface the location binding drives. The handle
- * `createDataViewsProvider` returns satisfies it, and so can a narrower
- * host.
- */
-export type LocationHost = {
-  /** The schema whose field addresses the query occupies. */
-  readonly schema: Schema<readonly SchemaFieldDefinition[]>;
-  /**
-   * The coordinator snapshot channel: query, window and disposal. Read-only
-   * and widest in its record type, so a provider built for any row type is
-   * a host without a cast — the binding never publishes on it.
-   */
-  readonly state: ReadonlyChannel<CollectionState<object>>;
-  /**
-   * What the host's source declares it can execute, or null when the host
-   * was not told. A location clause outside it is refused, not adopted.
-   */
-  readonly capabilities: SourceCapabilities | null;
-  /** Adopt externally authoritative query and window together. */
-  readonly adopt: (query: Query) => void;
-};
-
-/** Configuration of one location binding. */
-export type LocationBindingConfig = {
-  readonly host: LocationHost;
-  readonly location: Location;
-  /**
-   * How a host transition enters history. Defaults to `"replace"`, so a
-   * stream of edits does not bury the entry the user arrived on. Seeding
-   * and canonicalizing an adopted location always replace: neither is a
-   * step the user took. A transition that changes the ordering always
-   * pushes, whatever this says.
-   */
-  readonly history?: "push" | "replace";
-};
-
-/** Handle of one location binding. */
-export type LocationBinding = {
-  /**
-   * The owned parameters the location currently carries that were
-   * refused. Empty while the query is clean; a host renders it as the
-   * visible query error beside its controls.
-   */
-  readonly issues: ReadonlyChannel<readonly QueryIssue[]>;
-  /**
-   * Start the loop and return its release.
-   *
-   * On start the location wins when it carries a query, and takes the
-   * host's seed when it carries none. After that, every accepted host
-   * transition writes the canonical query and every external location
-   * change — back, forward, a pasted URL — is adopted.
-   *
-   * Constructing the binding subscribes to nothing: a React host builds it
-   * in a memo and observes from an effect, and a discarded render must
-   * leave no live subscription behind.
-   */
-  readonly observe: () => () => void;
-};
+import type { LocationBinding, LocationBindingConfig } from "./types.js";
 
 /** One read-back of the location: where the host began it, and what it owes. */
 type ReadBack = {
@@ -89,7 +31,7 @@ const queryOf = (source: Query): Query => ({
  * — collapsing a group must not provoke a write of the same URL.
  */
 const sameQuery = (a: Query, b: Query): boolean =>
-  (a.slice === b.slice || sliceEquals(a.slice, b.slice)) &&
+  (a.slice === b.slice || areSlicesEqual(a.slice, b.slice)) &&
   a.window.page === b.window.page &&
   a.window.size === b.window.size &&
   a.window.cursor === b.window.cursor;
@@ -110,12 +52,12 @@ const issuesEqual = (
   a: readonly QueryIssue[],
   b: readonly QueryIssue[],
 ): boolean =>
-  a.length === b.length &&
-  a.every((issue, index) => {
-    // In range: the lengths were compared first.
-    const other = b[index] as QueryIssue;
-    return issue.parameter === other.parameter && issue.reason === other.reason;
-  });
+  areListsEqual(
+    a,
+    b,
+    (issue, other) =>
+      issue.parameter === other.parameter && issue.reason === other.reason,
+  );
 
 /**
  * Bind a Location to a host's query authority.
@@ -127,6 +69,9 @@ const issuesEqual = (
  *
  * One binding owns one host: two bindings on the same host both write every
  * transition.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export default function createLocationBinding(
   config: LocationBindingConfig,
@@ -316,7 +261,7 @@ export default function createLocationBinding(
       standing = null;
       written = null;
       const carriesQuery = [...location.read().keys()].some((key) =>
-        isOwnedKey(key, host.schema.hasField),
+        isOwnedKey(key, host.schema),
       );
       if (carriesQuery) {
         adoptFromLocation();

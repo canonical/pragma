@@ -78,7 +78,7 @@ describe("createGridInteraction", () => {
     });
   });
 
-  it("cancel leaves the authoritative layout untouched", () => {
+  it("leaves the authoritative layout untouched on cancel", () => {
     const { layout, interaction } = harness();
     interaction.startResize("name", 500, 100);
     interaction.preview(650);

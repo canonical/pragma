@@ -1,22 +1,10 @@
-import defaultRowIdentifier from "./defaultRowIdentifier.js";
+import readDefaultIdentity from "./readDefaultIdentity.js";
 import type {
   RowEntry,
-  RowIdentifier,
   RowModel,
+  RowModelConfig,
   RowModelResult,
 } from "./types.js";
-
-/** Configuration of one row model build. */
-export type RowModelConfig<TRow extends object> = {
-  readonly rows: readonly TRow[];
-  /**
-   * Reads one record's stable identity. Defaults to the record's own `id`,
-   * which must then be a non-empty string.
-   */
-  readonly identify?: RowIdentifier<TRow> | undefined;
-  /** The model this one supersedes, so unchanged entries keep their object. */
-  readonly previous?: RowModel<TRow> | undefined;
-};
 
 /**
  * Build the ordered row model of one result: stable identities in result
@@ -37,7 +25,7 @@ export default function createRowModel<TRow extends object>(
 ): RowModelResult<TRow> {
   const { rows, previous } = config;
   const identify: (row: TRow) => unknown =
-    config.identify ?? defaultRowIdentifier;
+    config.identify ?? readDefaultIdentity;
   // Named once, not per row: a declared identifier that answered with a
   // non-identity is a different mistake from a record with no `id` at all.
   // Both are fragments a renderer composes into a sentence, so neither

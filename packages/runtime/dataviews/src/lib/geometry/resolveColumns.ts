@@ -35,6 +35,9 @@ const sizingRejection = (column: ColumnToSize): string | null => {
  * remaining flexible columns. When minima plus fixed widths exceed the
  * available width, declared widths are preserved (the container scrolls).
  * When every column is capped or fixed, leftover space stays unassigned.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export default function resolveColumns(
   columns: readonly ColumnToSize[],

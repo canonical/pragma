@@ -7,7 +7,7 @@
  * domain has no objects, so the marker collides with nothing a caller can
  * write.
  */
-export default function stableJson(value: unknown): string {
+export default function stringifyStable(value: unknown): string {
   return JSON.stringify(value, (_key, member) =>
     typeof member === "number" && !Number.isFinite(member)
       ? { nonfinite: String(member) }

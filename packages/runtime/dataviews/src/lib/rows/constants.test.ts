@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import EMPTY_ROW_MODEL from "./emptyRowModel.js";
+import { EMPTY_ROW_MODEL } from "./constants.js";
 
 describe("EMPTY_ROW_MODEL", () => {
   it("holds no entries and addresses no identity", () => {

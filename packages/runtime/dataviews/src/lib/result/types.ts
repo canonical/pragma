@@ -20,38 +20,57 @@ import type { RowRecord } from "../rows/index.js";
  * A number a source claims, with how much it claims. Never a bare null:
  * "unknown" is a value, so an unfiltered total can never be read as a
  * filtered one and a missing count can never be read as zero.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type Count =
   | { readonly kind: "exact"; readonly value: number }
   /** A lower bound, as Elasticsearch's `gte` relation reports one. */
-  | { readonly kind: "atLeast"; readonly value: number }
+  | { readonly kind: "at-least"; readonly value: number }
   | { readonly kind: "unknown" };
 
 /**
- * Three counts with distinct provenance. `visible`: rows the window pages
+ * Three counts with distinct provenance. `pageable`: rows the window pages
  * over, after collapse — the only basis for "page n of m". `matched`: rows
  * satisfying filter and search, before collapse. `total`: the collection
- * ignoring the query. Without grouping `visible` equals `matched`.
+ * ignoring the query, which nothing displays yet. Without grouping
+ * `pageable` equals `matched`.
+ *
+ * @seam summary — read by `DataViews.Summary`, which shows `total` under
+ * its own label
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type SourceCounts = {
-  readonly visible: Count;
+  readonly pageable: Count;
   readonly matched: Count;
   readonly total: Count;
 };
 
 /**
  * One non-empty group of the slice. Listed pre-order — a parent before its
- * children — in the order the rows come, so headers need no re-sort.
+ * children — in the order the rows come, so headers need no re-sort. No
+ * source declares summaries yet, so `groups` is null on every page this
+ * release delivers.
  *
- * Seam for the grouping unit: no source declares summaries yet, so `groups`
- * is null on every page this release delivers.
+ * @seam grouping — read by the group header row's count
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type GroupSummary = {
   readonly path: GroupPath;
   readonly count: Count;
 };
 
-/** Opaque tokens reaching the adjacent pages; null where none exists. */
+/**
+ * Opaque tokens reaching the adjacent pages; null where none exists.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type PageCursors = {
   readonly next: string | null;
   readonly previous: string | null;
@@ -68,6 +87,9 @@ export type PageCursors = {
  *   and otherwise lists every non-empty group of the slice, collapse
  *   ignored;
  * - `counts` claim no more than `capabilities.counts` declares.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type SourcePage<TRow extends object = RowRecord> = {
   readonly rows: readonly TRow[];
@@ -80,12 +102,13 @@ export type SourcePage<TRow extends object = RowRecord> = {
 };
 
 /**
- * Which member of a request was refused.
- *
- * Seam for the query-wide selection contract: `targets` names an action
- * addressing every row a query matches. Nothing declares that scope yet, so
+ * Which member of a request was refused. `targets` names an action
+ * addressing every row a query matches; nothing declares that scope, so
  * the binding rejects such a request outright rather than answering a
  * refusal nothing could act on.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type SourceRefusalPart =
   | "filter"
@@ -97,24 +120,29 @@ export type SourceRefusalPart =
 
 /**
  * Machine-readable cause, so a control can react without reading text.
+ * `query-targets-unsupported` is the refusal a query-wide target set
+ * would carry; see `SourceRefusalPart`.
  *
- * Seam for the query-wide selection contract: `query-targets-unsupported`
- * is the refusal that scope will carry; see `SourceRefusalPart`.
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type SourceRefusalCode =
   | "undeclared-field"
   | "undeclared-operator"
   | "too-many-terms"
-  | "too-deep"
+  | "too-many-levels"
   | "unreachable-page"
-  | "collapse-unsupported"
+  | "unsupported-collapse"
   | "query-targets-unsupported"
-  | "combination";
+  | "unsupported-combination";
 
 /**
  * One structured refusal. A source reports what it cannot execute; it never
  * rewrites the query, truncates an ordering or answers with broader rows.
  * `field` and `operator` are null when the refusal addresses neither.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type SourceRefusal = {
   readonly part: SourceRefusalPart;
@@ -125,7 +153,12 @@ export type SourceRefusal = {
   readonly reason: string;
 };
 
-/** A request the source accepted and could not complete. */
+/**
+ * A request the source accepted and could not complete.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type SourceFailure = {
   /**
    * A lowercase fragment, as a refusal's reason is, so a renderer can
@@ -142,12 +175,20 @@ export type SourceFailure = {
 /**
  * What a source delivers. Refusal is not here: it is decided before
  * execution, so a refused request costs no round trip.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type SourceDelivery<TRow extends object = RowRecord> =
   | { readonly status: "succeeded"; readonly page: SourcePage<TRow> }
   | { readonly status: "failed"; readonly failure: SourceFailure };
 
-/** What one request completes with: a delivery, or the binding's refusal. */
+/**
+ * What one request completes with: a delivery, or the binding's refusal.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type Completion<TRow extends object = RowRecord> =
   | SourceDelivery<TRow>
   | {
@@ -159,6 +200,9 @@ export type Completion<TRow extends object = RowRecord> =
  * The executed request the displayed rows answer. Stamped by the binding
  * from the request it issued, never by the source, so a source cannot
  * mislabel its rows.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type ResultProvenance = {
   readonly requestId: string;
@@ -170,6 +214,9 @@ export type ResultProvenance = {
  * Why the last request produced nothing, structurally: the completion it
  * ended with, less the success. One shape, so a renderer switches on the
  * same `status` the source answered with.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type ResultProblem = Exclude<
   Completion,

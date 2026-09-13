@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import applyWindow from "./applyWindow.js";
-import DEFAULT_WINDOW from "./defaultWindow.js";
+import { DEFAULT_WINDOW } from "./constants.js";
 import type { ResultWindow } from "./types.js";
 
 const rows = ["a", "b", "c", "d", "e", "f", "g"];

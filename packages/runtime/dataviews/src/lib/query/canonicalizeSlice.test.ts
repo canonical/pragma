@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import canonicalSlice from "./canonicalSlice.js";
+import canonicalizeSlice from "./canonicalizeSlice.js";
 import type { Slice } from "./types.js";
 
 const slice = (overrides: Partial<Slice> = {}): Slice => ({
@@ -10,7 +10,7 @@ const slice = (overrides: Partial<Slice> = {}): Slice => ({
   ...overrides,
 });
 
-describe("canonicalSlice", () => {
+describe("canonicalizeSlice", () => {
   it("is idempotent", () => {
     const input = slice({
       filter: [
@@ -22,12 +22,12 @@ describe("canonicalSlice", () => {
       ],
       group: [{ field: "zone" }, { field: "status" }],
     });
-    const once = canonicalSlice(input);
-    expect(canonicalSlice(once)).toEqual(once);
+    const once = canonicalizeSlice(input);
+    expect(canonicalizeSlice(once)).toEqual(once);
   });
 
   it("treats equality operands as a set regardless of order", () => {
-    const left = canonicalSlice(
+    const left = canonicalizeSlice(
       slice({
         filter: [
           {
@@ -38,7 +38,7 @@ describe("canonicalSlice", () => {
         ],
       }),
     );
-    const right = canonicalSlice(
+    const right = canonicalizeSlice(
       slice({
         filter: [
           {
@@ -53,7 +53,7 @@ describe("canonicalSlice", () => {
   });
 
   it("deduplicates repeated equality operands", () => {
-    const result = canonicalSlice(
+    const result = canonicalizeSlice(
       slice({
         filter: [
           { field: "status", operator: "eq", operands: ["failed", "failed"] },
@@ -67,21 +67,21 @@ describe("canonicalSlice", () => {
     const input = slice({
       group: [{ field: "zone" }, { field: "status" }],
     });
-    expect(canonicalSlice(input).group).toEqual([
+    expect(canonicalizeSlice(input).group).toEqual([
       { field: "zone" },
       { field: "status" },
     ]);
     // Rebuilt, so a caller's later mutation cannot reach the canonical form.
-    expect(canonicalSlice(input).group[0]).not.toBe(input.group[0]);
+    expect(canonicalizeSlice(input).group[0]).not.toBe(input.group[0]);
   });
 
   it("keeps an ungrouped slice ungrouped", () => {
-    expect(canonicalSlice(slice()).group).toEqual([]);
+    expect(canonicalizeSlice(slice()).group).toEqual([]);
   });
 
   it("keeps repeated grouping levels, which nest rather than collapse", () => {
     const input = slice({ group: [{ field: "zone" }, { field: "zone" }] });
-    expect(canonicalSlice(input).group).toHaveLength(2);
+    expect(canonicalizeSlice(input).group).toHaveLength(2);
   });
 
   it("keeps sort term order untouched", () => {
@@ -91,11 +91,11 @@ describe("canonicalSlice", () => {
         { field: "status", direction: "asc" },
       ],
     });
-    expect(canonicalSlice(input).sort).toEqual(input.sort);
+    expect(canonicalizeSlice(input).sort).toEqual(input.sort);
   });
 
   it("collapses a sort field spelled twice to its first term, in place", () => {
-    const result = canonicalSlice(
+    const result = canonicalizeSlice(
       slice({
         sort: [
           { field: "updated", direction: "desc" },
@@ -111,7 +111,7 @@ describe("canonicalSlice", () => {
   });
 
   it("collapses duplicate predicate addresses, keeping the last", () => {
-    const result = canonicalSlice(
+    const result = canonicalizeSlice(
       slice({
         filter: [
           { field: "status", operator: "eq", operands: ["failed"] },
@@ -125,7 +125,7 @@ describe("canonicalSlice", () => {
   });
 
   it("orders predicates by field then operator", () => {
-    const result = canonicalSlice(
+    const result = canonicalizeSlice(
       slice({
         filter: [
           { field: "zone", operator: "eq", operands: ["north"] },
@@ -147,21 +147,21 @@ describe("canonicalSlice", () => {
   });
 
   it("treats an empty search as no search", () => {
-    expect(canonicalSlice(slice({ search: "" })).search).toBeNull();
-    expect(canonicalSlice(slice({ search: "yak" })).search).toBe("yak");
+    expect(canonicalizeSlice(slice({ search: "" })).search).toBeNull();
+    expect(canonicalizeSlice(slice({ search: "yak" })).search).toBe("yak");
   });
 
   it("orders equality operands identically regardless of input order", () => {
     // Distinct strings that locale collation may tie (é NFC vs e + combining
     // acute) must still canonicalize to one deterministic order.
-    const left = canonicalSlice(
+    const left = canonicalizeSlice(
       slice({
         filter: [
           { field: "owner", operator: "eq", operands: ["e\u0301", "é", "ed"] },
         ],
       }),
     );
-    const right = canonicalSlice(
+    const right = canonicalizeSlice(
       slice({
         filter: [
           { field: "owner", operator: "eq", operands: ["ed", "é", "e\u0301"] },
@@ -172,7 +172,7 @@ describe("canonicalSlice", () => {
   });
 
   it("keeps mixed-type operands distinct with a stable cross-type order", () => {
-    const result = canonicalSlice(
+    const result = canonicalizeSlice(
       slice({
         filter: [
           {
@@ -186,7 +186,7 @@ describe("canonicalSlice", () => {
     // The typeof tag keeps every operand distinct; nothing is deduped away.
     expect(result.filter[0]?.operands).toHaveLength(6);
     // Canonical order is total regardless of input order.
-    const reordered = canonicalSlice(
+    const reordered = canonicalizeSlice(
       slice({
         filter: [
           {
@@ -207,7 +207,7 @@ describe("canonicalSlice", () => {
         { field: "owner", operator: "isSet", operands: [] },
       ],
     });
-    expect(canonicalSlice(input).filter).toEqual([
+    expect(canonicalizeSlice(input).filter).toEqual([
       { field: "owner", operator: "isSet", operands: [] },
       { field: "updated", operator: "gte", operands: ["2026-01-01"] },
     ]);

@@ -6,6 +6,6 @@ import readField from "./readField.js";
  * not a row with an unknown identity, and the model rejects it — the read
  * itself answers with whatever the record carried.
  */
-export default function defaultRowIdentifier(row: object): unknown {
+export default function readDefaultIdentity(row: object): unknown {
   return readField(row, "id");
 }

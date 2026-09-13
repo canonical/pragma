@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import applyQueryCommand from "./applyQueryCommand.js";
-import DEFAULT_WINDOW from "./defaultWindow.js";
-import sliceEquals from "./sliceEquals.js";
+import areSlicesEqual from "./areSlicesEqual.js";
+import { DEFAULT_WINDOW } from "./constants.js";
 import type { Slice } from "./types.js";
 
 const slice = (overrides: Partial<Slice> = {}): Slice => ({
@@ -12,10 +12,10 @@ const slice = (overrides: Partial<Slice> = {}): Slice => ({
   ...overrides,
 });
 
-describe("sliceEquals", () => {
+describe("areSlicesEqual", () => {
   it("is true when an ordering repeats a field it already orders by", () => {
     expect(
-      sliceEquals(
+      areSlicesEqual(
         slice({
           sort: [
             { field: "cpu", direction: "asc" },
@@ -29,7 +29,7 @@ describe("sliceEquals", () => {
 
   it("is true for identical slices", () => {
     const value = slice({ search: "yak" });
-    expect(sliceEquals(value, slice({ search: "yak" }))).toBe(true);
+    expect(areSlicesEqual(value, slice({ search: "yak" }))).toBe(true);
   });
 
   it("is true when only equality operand order differs", () => {
@@ -43,7 +43,7 @@ describe("sliceEquals", () => {
         { field: "status", operator: "eq", operands: ["cancelled", "failed"] },
       ],
     });
-    expect(sliceEquals(left, right)).toBe(true);
+    expect(areSlicesEqual(left, right)).toBe(true);
   });
 
   it("is true when only predicate list order differs", () => {
@@ -59,7 +59,7 @@ describe("sliceEquals", () => {
         { field: "status", operator: "eq", operands: ["failed"] },
       ],
     });
-    expect(sliceEquals(left, right)).toBe(true);
+    expect(areSlicesEqual(left, right)).toBe(true);
   });
 
   it("is false when sort order differs", () => {
@@ -75,18 +75,18 @@ describe("sliceEquals", () => {
         { field: "status", direction: "asc" },
       ],
     });
-    expect(sliceEquals(left, right)).toBe(false);
+    expect(areSlicesEqual(left, right)).toBe(false);
   });
 
   it("is false when sort direction differs", () => {
     const left = slice({ sort: [{ field: "name", direction: "asc" }] });
     const right = slice({ sort: [{ field: "name", direction: "desc" }] });
-    expect(sliceEquals(left, right)).toBe(false);
+    expect(areSlicesEqual(left, right)).toBe(false);
   });
 
   it("is false when the sort has a term the other does not", () => {
     const left = slice({ sort: [{ field: "name", direction: "asc" }] });
-    expect(sliceEquals(left, slice())).toBe(false);
+    expect(areSlicesEqual(left, slice())).toBe(false);
   });
 
   it("is false when an operand differs", () => {
@@ -96,7 +96,7 @@ describe("sliceEquals", () => {
     const right = slice({
       filter: [{ field: "status", operator: "eq", operands: ["cancelled"] }],
     });
-    expect(sliceEquals(left, right)).toBe(false);
+    expect(areSlicesEqual(left, right)).toBe(false);
   });
 
   it("is false when a predicate's field, operator or arity differs", () => {
@@ -104,7 +104,7 @@ describe("sliceEquals", () => {
       filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
     });
     expect(
-      sliceEquals(
+      areSlicesEqual(
         eq,
         slice({
           filter: [{ field: "zone", operator: "eq", operands: ["failed"] }],
@@ -112,7 +112,7 @@ describe("sliceEquals", () => {
       ),
     ).toBe(false);
     expect(
-      sliceEquals(
+      areSlicesEqual(
         eq,
         slice({
           filter: [{ field: "status", operator: "isSet", operands: [] }],
@@ -120,7 +120,7 @@ describe("sliceEquals", () => {
       ),
     ).toBe(false);
     expect(
-      sliceEquals(
+      areSlicesEqual(
         eq,
         slice({
           filter: [
@@ -129,37 +129,37 @@ describe("sliceEquals", () => {
         }),
       ),
     ).toBe(false);
-    expect(sliceEquals(eq, slice())).toBe(false);
+    expect(areSlicesEqual(eq, slice())).toBe(false);
   });
 
   it("is false when the search differs", () => {
-    expect(sliceEquals(slice({ search: "yak" }), slice())).toBe(false);
+    expect(areSlicesEqual(slice({ search: "yak" }), slice())).toBe(false);
   });
 
   it("compares grouping levels in order, not as a set", () => {
     const nested = slice({ group: [{ field: "zone" }, { field: "status" }] });
     expect(
-      sliceEquals(
+      areSlicesEqual(
         nested,
         slice({ group: [{ field: "zone" }, { field: "status" }] }),
       ),
     ).toBe(true);
     // The outer level decides what the inner one nests inside.
     expect(
-      sliceEquals(
+      areSlicesEqual(
         nested,
         slice({ group: [{ field: "status" }, { field: "zone" }] }),
       ),
     ).toBe(false);
     // A level fewer is a different grouping.
-    expect(sliceEquals(nested, slice({ group: [{ field: "zone" }] }))).toBe(
+    expect(areSlicesEqual(nested, slice({ group: [{ field: "zone" }] }))).toBe(
       false,
     );
-    expect(sliceEquals(nested, slice())).toBe(false);
+    expect(areSlicesEqual(nested, slice())).toBe(false);
   });
 
   it("treats an empty search as equal to no search", () => {
-    expect(sliceEquals(slice({ search: "" }), slice({ search: null }))).toBe(
+    expect(areSlicesEqual(slice({ search: "" }), slice({ search: null }))).toBe(
       true,
     );
   });
@@ -170,12 +170,12 @@ describe("sliceEquals", () => {
         filter: [{ field: "cpu", operator: "gte", operands }],
       });
     // The string "0" never equals the number 0.
-    expect(sliceEquals(withOperands([0]), withOperands(["0"]))).toBe(false);
+    expect(areSlicesEqual(withOperands([0]), withOperands(["0"]))).toBe(false);
     // Negative zero and zero are the same value to a fingerprint.
-    expect(sliceEquals(withOperands([-0]), withOperands([0]))).toBe(true);
+    expect(areSlicesEqual(withOperands([-0]), withOperands([0]))).toBe(true);
     // NaN equals itself, exactly like the fingerprint marker.
     expect(
-      sliceEquals(withOperands([Number.NaN]), withOperands([Number.NaN])),
+      areSlicesEqual(withOperands([Number.NaN]), withOperands([Number.NaN])),
     ).toBe(true);
   });
 

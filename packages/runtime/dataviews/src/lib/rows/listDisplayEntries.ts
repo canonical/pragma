@@ -1,12 +1,4 @@
-import type { DisplayEntry } from "./types.js";
-
-/** What one table body displays. */
-export type DisplayEntriesConfig<TStatus> = {
-  /** The rows shown, in result order: empty when a status replaces them. */
-  readonly rowIds: readonly string[];
-  /** The table's status, shown ahead of any rows, or null for none. */
-  readonly status: TStatus | null;
-};
+import type { DisplayEntriesConfig, DisplayEntry } from "./types.js";
 
 /** The table's header row is logical row 1; its entries follow it. */
 const headerRows = 1;
@@ -19,8 +11,11 @@ const headerRows = 1;
  * row identity can collide with the status row's — and each carries its
  * logical row position. A renderer keys, measures and indexes rows by these
  * entries rather than by array position.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
-export default function displayEntries<TStatus>({
+export default function listDisplayEntries<TStatus>({
   rowIds,
   status,
 }: DisplayEntriesConfig<TStatus>): readonly DisplayEntry<TStatus>[] {

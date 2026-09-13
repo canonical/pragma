@@ -1,13 +1,10 @@
-import type { CollectionState } from "../collection/index.js";
-import { createChannel, type ReadonlyChannel } from "../observable/index.js";
+import { createChannel } from "../observable/index.js";
 import {
-  type Query,
+  areSlicesEqual,
   type ResultWindow,
   type Slice,
-  sliceEquals,
 } from "../query/index.js";
-import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
-import { reasonOf, type SourceCapabilities } from "../source/index.js";
+import { describeError } from "../source/index.js";
 import {
   decodeQuery,
   encodeQuery,
@@ -16,45 +13,19 @@ import {
 } from "../wire/index.js";
 import type {
   JsonValue,
+  OwnedViews,
   PresentationPatch,
   PresentationTarget,
-  ProviderViews,
+  ProviderViewsConfig,
   SavedView,
   ViewAction,
   ViewDraft,
   ViewOutcome,
   ViewPresentation,
   ViewSettledOutcome,
-  ViewStore,
   ViewsState,
   ViewUpdateResult,
 } from "./types.js";
-
-/** The query authority the views read and drive: their provider's. */
-export type ViewsHost = {
-  /** The schema a stored query is read against. */
-  readonly schema: Schema<readonly SchemaFieldDefinition[]>;
-  /** What the source can execute; a stored clause outside it is refused. */
-  readonly capabilities: SourceCapabilities | null;
-  /** The live query and window, which "modified" is derived from. */
-  readonly state: ReadonlyChannel<CollectionState<object>>;
-  /** Adopt a view's query and window together. */
-  readonly adopt: (query: Query) => void;
-};
-
-/** Configuration of one provider's views. */
-export type ProviderViewsConfig = {
-  readonly host: ViewsHost;
-  readonly store: ViewStore;
-};
-
-/** The provider's views, with what only the provider calls. */
-export type OwnedViews = ProviderViews & {
-  /** Forget the open view, as a scope rotation resets the query. */
-  readonly forget: () => void;
-  /** Detach from the store and the host for good. */
-  readonly dispose: () => void;
-};
 
 /** The renderer a saved query names; the table is the only one so far. */
 const RENDERER = "table";
@@ -83,6 +54,9 @@ const INITIAL: ViewsState = Object.freeze({
 /**
  * A fresh view id: 128 random bits in hex. `getRandomValues`, unlike
  * `randomUUID`, is there outside secure contexts too.
+ *
+ * @note Impure: reads the platform's random source, so two calls never
+ * return the same id.
  */
 const mintId = (): string =>
   Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
@@ -237,7 +211,7 @@ export default function createProviderViews(
   let disposed = false;
 
   const modifiedNow = (): boolean =>
-    baseline !== null && !sliceEquals(baseline, host.state.get().slice);
+    baseline !== null && !areSlicesEqual(baseline, host.state.get().slice);
 
   const publish = (changed: Partial<ViewsState>): void => {
     if (disposed) {
@@ -291,7 +265,7 @@ export default function createProviderViews(
       capabilities: host.capabilities,
     });
     const unknown = [...new Set(params.keys())]
-      .filter((key) => key !== "as" && !isOwnedKey(key, host.schema.hasField))
+      .filter((key) => key !== "as" && !isOwnedKey(key, host.schema))
       .map((key) => ({
         parameter: key,
         reason: `"${key}" names no field of this collection`,
@@ -348,7 +322,7 @@ export default function createProviderViews(
       (error: unknown) => {
         if (token === listRead) {
           publish({
-            listing: { status: "failed", reason: reasonOf(error) },
+            listing: { status: "failed", reason: describeError(error) },
           });
         }
       },
@@ -379,7 +353,7 @@ export default function createProviderViews(
       },
       (error: unknown) => {
         if (token === preferenceRead) {
-          readFailure = reasonOf(error);
+          readFailure = describeError(error);
           publish({});
         }
       },
@@ -424,14 +398,19 @@ export default function createProviderViews(
           );
         },
         (error: unknown) => {
-          settle(reasonOf(error));
+          settle(describeError(error));
         },
       );
     }
     queued.clear();
   };
 
-  /** Change a target's preferences at once, and write the change behind. */
+  /**
+   * Change a target's preferences at once, and write the change behind.
+   *
+   * @note Impure: schedules the write on a timer, so the store sees one
+   * batched write after `WRITE_DELAY` rather than one per change.
+   */
   const persist = (
     layer: Layer,
     target: PresentationTarget,
@@ -490,7 +469,7 @@ export default function createProviderViews(
       publish({ operation: { action, status: "pending" } });
       const settled = await prepared().catch(
         (error: unknown): Settlement => ({
-          outcome: { status: "failed", reason: reasonOf(error) },
+          outcome: { status: "failed", reason: describeError(error) },
         }),
       );
       if (generation === at) {
@@ -660,7 +639,7 @@ export default function createProviderViews(
     },
 
     saveAs(name) {
-      return run("saveAs", () => {
+      return run("save-as", () => {
         const trimmed = name.trim();
         const { slice } = host.state.get();
         const query = queryText(slice);

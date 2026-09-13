@@ -5,9 +5,8 @@
  */
 import { describe, expect, it } from "vitest";
 import built from "../../../testing/buildRowModel.js";
-import type { RowModelConfig } from "./createRowModel.js";
 import createRowModel from "./createRowModel.js";
-import type { RowIdentifier, RowRecord } from "./types.js";
+import type { RowIdentifier, RowModelConfig, RowRecord } from "./types.js";
 
 type Machine = { readonly id: string; readonly status: string };
 

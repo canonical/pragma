@@ -4,15 +4,16 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { createSchema } from "../schema/index.js";
 import {
-  fieldOfWireKey,
-  isOwnedKey,
   OPERATOR_DELIMITER,
   RESERVED_QUERY_KEYS,
   SUFFIXED_OPERATORS,
-  wireKeyOf,
-  wireNameRejection,
-} from "./wireGrammar.js";
+} from "./constants.js";
+import isOwnedKey from "./isOwnedKey.js";
+import readWireField from "./readWireField.js";
+import rejectWireName from "./rejectWireName.js";
+import spellWireKey from "./spellWireKey.js";
 
 describe("the wire grammar's names", () => {
   it("reserves the written keys and the annotations", () => {
@@ -33,36 +34,36 @@ describe("the wire grammar's names", () => {
 
   it("spells eq as the bare field name and the rest with the delimiter", () => {
     expect(OPERATOR_DELIMITER).toBe("__");
-    expect(wireKeyOf("status", "eq")).toBe("status");
-    expect(wireKeyOf("cpu", "gte")).toBe("cpu__gte");
-    expect(wireKeyOf("cpu", "lte")).toBe("cpu__lte");
-    expect(wireKeyOf("owner", "isSet")).toBe("owner__isSet");
+    expect(spellWireKey("status", "eq")).toBe("status");
+    expect(spellWireKey("cpu", "gte")).toBe("cpu__gte");
+    expect(spellWireKey("cpu", "lte")).toBe("cpu__lte");
+    expect(spellWireKey("owner", "isSet")).toBe("owner__isSet");
   });
 
   it("reads the field a wire key addresses", () => {
-    expect(fieldOfWireKey("status")).toBe("status");
-    expect(fieldOfWireKey("cpu__gte")).toBe("cpu");
-    expect(fieldOfWireKey("a__b__c")).toBe("a");
+    expect(readWireField("status")).toBe("status");
+    expect(readWireField("cpu__gte")).toBe("cpu");
+    expect(readWireField("a__b__c")).toBe("a");
   });
 
   it("refuses a field name the grammar cannot spell", () => {
-    expect(wireNameRejection("status")).toBeNull();
-    expect(wireNameRejection("cpu__gte")).toBe(
+    expect(rejectWireName("status")).toBeNull();
+    expect(rejectWireName("cpu__gte")).toBe(
       'field name "cpu__gte" must not contain "__"',
     );
-    expect(wireNameRejection("sort")).toBe(
+    expect(rejectWireName("sort")).toBe(
       'field name "sort" is a reserved query parameter',
     );
-    expect(wireNameRejection("cursor")).toBe(
+    expect(rejectWireName("cursor")).toBe(
       'field name "cursor" is a reserved query parameter',
     );
-    expect(wireNameRejection("item")).toBe(
+    expect(rejectWireName("item")).toBe(
       'field name "item" is a reserved query parameter',
     );
   });
 
   it("owns the written keys and every address of a field, and nothing else", () => {
-    const hasField = (name: string) => name === "cpu";
+    const hasField = createSchema([{ field: "cpu", kind: "number" }]);
     // The cursor is written now, so it is the collection's: a write that
     // does not carry one clears the token a previous page left behind.
     for (const key of ["q", "sort", "group", "page", "size", "cursor"]) {

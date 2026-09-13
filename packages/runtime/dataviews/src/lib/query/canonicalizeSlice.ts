@@ -1,25 +1,7 @@
+import addressPredicate from "./addressPredicate.js";
 import collapseSortTerms from "./collapseSortTerms.js";
-import type {
-  GroupTerm,
-  Predicate,
-  PredicateOperand,
-  PredicateOperator,
-  Slice,
-} from "./types.js";
-
-/** Stable address of a predicate: its field and operator pair. */
-export const predicateAddress = (
-  field: string,
-  operator: PredicateOperator,
-): string => `${field}\u0000${operator}`;
-
-/**
- * Total order over operand values: type tag first, then value within type.
- * Plain code-point comparison, not locale collation, so canonical order is
- * environment-stable and never ties on distinct strings.
- */
-export const operandRankOf = (operand: PredicateOperand): string =>
-  `${typeof operand}:${String(operand)}`;
+import rankOperand from "./rankOperand.js";
+import type { GroupTerm, Predicate, PredicateOperand, Slice } from "./types.js";
 
 /** Canonicalize one predicate: equality operands become an ordered set. */
 const canonicalPredicate = (predicate: Predicate): Predicate => {
@@ -31,14 +13,14 @@ const canonicalPredicate = (predicate: Predicate): Predicate => {
     };
   }
   const sorted = [...predicate.operands].sort((a, b) => {
-    const left = operandRankOf(a);
-    const right = operandRankOf(b);
+    const left = rankOperand(a);
+    const right = rankOperand(b);
     return left < right ? -1 : left > right ? 1 : 0;
   });
   const operands: PredicateOperand[] = [];
   for (const operand of sorted) {
     const last = operands.at(-1);
-    if (last === undefined || operandRankOf(last) !== operandRankOf(operand)) {
+    if (last === undefined || rankOperand(last) !== rankOperand(operand)) {
       operands.push(operand);
     }
   }
@@ -52,7 +34,7 @@ const canonicalPredicate = (predicate: Predicate): Predicate => {
  * strict comparison is a total order and never returns 0.
  */
 const compareByAddress = (a: Predicate, b: Predicate): number =>
-  predicateAddress(a.field, a.operator) > predicateAddress(b.field, b.operator)
+  addressPredicate(a.field, a.operator) > addressPredicate(b.field, b.operator)
     ? 1
     : -1;
 
@@ -61,13 +43,16 @@ const compareByAddress = (a: Predicate, b: Predicate): number =>
  * predicates are ordered by address, sort and group terms keep their order
  * with a repeated sort field collapsed to its first occurrence, and an empty
  * search is no search. Idempotent:
- * `canonicalSlice(canonicalSlice(x))` equals `canonicalSlice(x)`.
+ * `canonicalizeSlice(canonicalizeSlice(x))` equals `canonicalizeSlice(x)`.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
-export default function canonicalSlice(slice: Slice): Slice {
+export default function canonicalizeSlice(slice: Slice): Slice {
   const byAddress = new Map<string, Predicate>();
   for (const predicate of slice.filter) {
     byAddress.set(
-      predicateAddress(predicate.field, predicate.operator),
+      addressPredicate(predicate.field, predicate.operator),
       predicate,
     );
   }
