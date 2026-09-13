@@ -59,5 +59,5 @@ export type DecodeQueryConfig = {
    * like a malformed one, so an unexecutable link never becomes the query.
    * Omitted or null, only the grammar and the schema are checked.
    */
-  readonly capabilities?: SourceCapabilities | null;
+  readonly capabilities?: SourceCapabilities | null | undefined;
 };

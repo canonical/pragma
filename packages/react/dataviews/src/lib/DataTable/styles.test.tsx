@@ -236,7 +236,7 @@ describe("DataTable stylesheet", () => {
 
   it("styles only classes the table renders", () => {
     const styled = new Set(
-      [...sheet.matchAll(/\.([a-z][\w-]*)/g)].map(([, name]) => name),
+      [...sheet.matchAll(/\.([a-z][\w-]*)/g)].map(([, name = ""]) => name),
     );
     const rendered = classesOf(loaded());
     cleanup();
@@ -435,7 +435,7 @@ describe("DataTable anatomy", () => {
   it("states only DOM the table renders", () => {
     const stated = new Set(
       anatomies.flatMap(([anatomy]) =>
-        [...read(anatomy).matchAll(/DOM `([^`]+)`/g)].map(([, dom]) =>
+        [...read(anatomy).matchAll(/DOM `([^`]+)`/g)].map(([, dom = ""]) =>
           selectorOf(dom),
         ),
       ),

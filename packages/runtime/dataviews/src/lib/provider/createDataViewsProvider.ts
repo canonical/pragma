@@ -94,26 +94,26 @@ export type DataViewsProviderConfig<
   TRow extends object = RowRecord,
 > = {
   readonly schema: Schema<TFields>;
-  readonly slice?: Slice;
-  readonly window?: ResultWindow;
+  readonly slice?: Slice | undefined;
+  readonly window?: ResultWindow | undefined;
   /**
    * Reads one record's stable identity. Defaults to the record's own `id`,
    * which must then be a non-empty string.
    */
-  readonly identify?: RowIdentifier<TRow>;
+  readonly identify?: RowIdentifier<TRow> | undefined;
   /**
    * What the source bound to this provider declares it can execute — the
    * source's own `capabilities`. Connected parts, and DataTable's sortable
    * columns, offer only what is declared, and a location clause outside it
    * is refused.
    */
-  readonly capabilities?: SourceCapabilities;
+  readonly capabilities?: SourceCapabilities | undefined;
   /**
    * Where the collection's saved views and presentation preferences live —
    * `createIndexedDBViewStore` from `@canonical/dataviews-core/indexeddb`, or a
    * store of the application's own. Left out, the collection has no views.
    */
-  readonly views?: ViewStore;
+  readonly views?: ViewStore | undefined;
   /**
    * How this collection's records declare their type: one `choices` field of
    * the schema, carried by every row. Left out, the collection is
@@ -121,7 +121,7 @@ export type DataViewsProviderConfig<
    * else here behaves differently. A field scoped to record types is then
    * inert, since there is only the one type for it to apply to.
    */
-  readonly types?: RecordTypes<TFields, TRow>;
+  readonly types?: RecordTypes<TFields, TRow> | undefined;
 };
 
 /** One field record with its address, for re-syncing after external changes. */

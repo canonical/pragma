@@ -66,7 +66,7 @@ const listTypeSurface = (barrel: string): string[] => {
     throw new Error(`${barrel} re-exports a domain whole: ${wildcard[0]}`);
   }
   const names: string[] = [];
-  for (const [, list] of text.matchAll(
+  for (const [, list = ""] of text.matchAll(
     /^export type \{([^}]*)\} from "[^"]+";/gms,
   )) {
     for (const entry of list.split(",")) {
@@ -95,7 +95,7 @@ const listPinned = (specifier: string): string[] => {
   if (block === null) {
     throw new Error(`this file must import its pins from ${specifier}`);
   }
-  return block[1]
+  return (block[1] ?? "")
     .split(",")
     .map((entry) => entry.trim())
     .filter((entry) => entry !== "");

@@ -52,7 +52,7 @@ function FilteredMachines({
   options,
   ...args
 }: DataViewsFiltersProps & {
-  readonly options?: MachineProviderConfig;
+  readonly options?: MachineProviderConfig | undefined;
 }): ReactElement {
   const provider = useMachineProvider(options);
   return (

@@ -14,19 +14,19 @@ const declared = (
 describe("copyCapabilities", () => {
   it("reads a field declared without operators as filterable by none", () => {
     const copy = copyCapabilities(declared({ filter: { cpu: undefined } }));
-    expect(copy.filter.cpu).toEqual([]);
+    expect(copy.filter["cpu"]).toEqual([]);
   });
 
   it("keeps the declared operators of a field that has them", () => {
     const copy = copyCapabilities(declared({ filter: { status: ["eq"] } }));
-    expect(copy.filter.status).toEqual(["eq"]);
+    expect(copy.filter["status"]).toEqual(["eq"]);
   });
 
   it("does not change when the declaration is mutated afterwards", () => {
     const filter: Record<string, PredicateOperator[]> = { status: ["eq"] };
     const copy = copyCapabilities(declared({ filter }));
-    filter.status?.push("isSet");
-    expect(copy.filter.status).toEqual(["eq"]);
+    filter["status"]?.push("isSet");
+    expect(copy.filter["status"]).toEqual(["eq"]);
   });
 
   it("reads a field named for a prototype member as absent", () => {
@@ -126,8 +126,8 @@ describe("copyCapabilities", () => {
   it("copies each declared row operation", () => {
     const actions = { stop: { targets: "explicit" as const, limit: 10 } };
     const copy = copyCapabilities(declared({ actions }));
-    expect(copy.actions.stop).toEqual({ targets: "explicit", limit: 10 });
-    expect(Object.isFrozen(copy.actions.stop)).toBe(true);
+    expect(copy.actions["stop"]).toEqual({ targets: "explicit", limit: 10 });
+    expect(Object.isFrozen(copy.actions["stop"])).toBe(true);
     expect(copyCapabilities(declared()).actions).toEqual({});
   });
 
@@ -141,7 +141,7 @@ describe("copyCapabilities", () => {
     );
     expect(Object.isFrozen(copy)).toBe(true);
     expect(Object.isFrozen(copy.filter)).toBe(true);
-    expect(Object.isFrozen(copy.filter.status)).toBe(true);
+    expect(Object.isFrozen(copy.filter["status"])).toBe(true);
     expect(Object.isFrozen(copy.search)).toBe(true);
     expect(Object.isFrozen(copy.sort.fields)).toBe(true);
     expect(Object.isFrozen(copy.group)).toBe(true);

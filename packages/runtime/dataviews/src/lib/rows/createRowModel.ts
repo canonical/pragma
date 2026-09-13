@@ -13,9 +13,9 @@ export type RowModelConfig<TRow extends object> = {
    * Reads one record's stable identity. Defaults to the record's own `id`,
    * which must then be a non-empty string.
    */
-  readonly identify?: RowIdentifier<TRow>;
+  readonly identify?: RowIdentifier<TRow> | undefined;
   /** The model this one supersedes, so unchanged entries keep their object. */
-  readonly previous?: RowModel<TRow>;
+  readonly previous?: RowModel<TRow> | undefined;
 };
 
 /**

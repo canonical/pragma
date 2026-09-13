@@ -90,8 +90,8 @@ function ManagedMachines({
   select = [],
   indicator,
 }: {
-  readonly select?: readonly string[];
-  readonly indicator?: (provider: MachineProvider) => ReactNode;
+  readonly select?: readonly string[] | undefined;
+  readonly indicator?: ((provider: MachineProvider) => ReactNode) | undefined;
 }): ReactElement {
   const [source] = useState(() => {
     let remaining: readonly RowRecord[] = machines;
@@ -106,7 +106,7 @@ function ManagedMachines({
       // Both actions take the machines out of the collection.
       runAction: async ({ targets }) => {
         const ids = targets.kind === "explicit" ? targets.ids : [];
-        remaining = remaining.filter((row) => !ids.includes(String(row.id)));
+        remaining = remaining.filter((row) => !ids.includes(String(row["id"])));
         managed.setRows(remaining);
         return ids.map((target) => ({
           target,
@@ -211,10 +211,10 @@ const actionsCode = ({
   declarations = "",
   hooks = [],
 }: {
-  readonly prepare?: string;
-  readonly indicator?: string;
-  readonly declarations?: string;
-  readonly hooks?: readonly string[];
+  readonly prepare?: string | undefined;
+  readonly indicator?: string | undefined;
+  readonly declarations?: string | undefined;
+  readonly hooks?: readonly string[] | undefined;
 } = {}) =>
   consumerCode({
     parts: ["DataTable", "DataViews", "type DataTableColumn", "useDataViews"],

@@ -61,7 +61,7 @@ const order = (
   options: Ordered = {},
 ): readonly string[] =>
   orderRows(rows, buildOrderConfig(terms, options)).map((row) =>
-    String(row.id),
+    String(row["id"]),
   );
 
 describe("orderRows", () => {

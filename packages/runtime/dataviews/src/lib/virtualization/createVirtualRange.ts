@@ -20,7 +20,8 @@ const sameRange = (a: MountedRange, b: MountedRange): boolean =>
   a.after === b.after &&
   a.runs.length === b.runs.length &&
   a.runs.every((run, position) => {
-    const other = b.runs[position];
+    // In range: the lengths were compared first.
+    const other = b.runs[position] as MountedRun;
     return (
       run.start === other.start &&
       run.end === other.end &&
@@ -50,6 +51,7 @@ export default function createVirtualRange(
   const listeners = new Set<() => void>();
   const measured = new Map<string, number>();
   let entries: readonly DisplayEntry[] = [];
+  /** Where each entry sits, by id. */
   let positions = new Map<string, number>();
   let sizes: SizeIndex = createSizeIndex([]);
   let start = 0;
@@ -63,10 +65,11 @@ export default function createVirtualRange(
   // past, as the browser's own scroll anchoring leaves them.
   const anchorAt = (offset: number): void => {
     const position = sizes.at(offset);
+    const entry = entries[position];
     anchor =
-      entries.length === 0 || offset <= 0
+      entry === undefined || offset <= 0
         ? null
-        : { id: entries[position].id, within: offset - sizes.offset(position) };
+        : { id: entry.id, within: offset - sizes.offset(position) };
   };
 
   // Move the viewport by however far the sizes or entries before its
@@ -86,19 +89,17 @@ export default function createVirtualRange(
     if (count === 0) {
       return emptyRange;
     }
-    const spans: [number, number][] = [
-      [
-        Math.max(0, sizes.at(start) - overscan),
-        Math.min(count, sizes.at(start + size) + 1 + overscan),
-      ],
+    const main: [number, number] = [
+      Math.max(0, sizes.at(start) - overscan),
+      Math.min(count, sizes.at(start + size) + 1 + overscan),
     ];
+    const spans: [number, number][] = [main];
     const kept = retained === null ? undefined : positions.get(retained);
     if (kept !== undefined) {
       const span: [number, number] = [
         Math.max(0, kept - 1),
         Math.min(count, kept + 2),
       ];
-      const [main] = spans;
       if (span[1] < main[0]) {
         spans.unshift(span);
       } else if (span[0] > main[1]) {
@@ -209,7 +210,9 @@ export default function createVirtualRange(
           continue;
         }
         measured.delete(id);
-        const estimate = config.estimates[entries[position].kind];
+        // In range: the positions were built from these entries.
+        const entry = entries[position] as DisplayEntry;
+        const estimate = config.estimates[entry.kind];
         if (sizes.size(position) !== estimate) {
           sizes.set(position, estimate);
           changed = true;

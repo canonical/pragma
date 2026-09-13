@@ -48,7 +48,7 @@ function ComposedMachines({
   options,
   ...args
 }: DataViewsPaginationProps & {
-  readonly options?: MachineProviderConfig;
+  readonly options?: MachineProviderConfig | undefined;
 }): ReactElement {
   const provider = useMachineProvider({
     window: { ...DEFAULT_WINDOW, page: 1, size: 5 },

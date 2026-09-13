@@ -63,8 +63,8 @@ export type ResultState<TRow extends object = RowRecord> = {
 
 /** Coordinator configuration; `slice` and `window` seed every fresh scope. */
 export type CollectionCoordinatorConfig = {
-  readonly slice?: Slice;
-  readonly window?: ResultWindow;
+  readonly slice?: Slice | undefined;
+  readonly window?: ResultWindow | undefined;
 };
 
 /** Result of dispatching one command through the coordinator. */

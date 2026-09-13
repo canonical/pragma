@@ -17,7 +17,6 @@ export type RowProps<TRow extends object> = {
   readonly provider: DataViewsProvider<readonly SchemaFieldDefinition[], TRow>;
   readonly scope: RowScope<TRow>;
   readonly columns: readonly DataTableColumn[];
-  readonly fields: readonly string[];
   readonly selectable: boolean;
   readonly rowLabel: (row: TRow, rowId: string) => string;
   /** The row's logical position, reported only by a windowed table. */

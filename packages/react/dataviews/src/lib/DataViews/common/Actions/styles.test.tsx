@@ -88,7 +88,7 @@ const bar = ".ds.data-table-action-bar";
 describe("Actions stylesheet", () => {
   it("styles only classes the bar renders", () => {
     const styled = new Set(
-      [...sheet.matchAll(/\.([a-z][\w-]*)/g)].map(([, name]) => name),
+      [...sheet.matchAll(/\.([a-z][\w-]*)/g)].map(([, name = ""]) => name),
     );
     const rendered = new Set(
       [...selected().querySelectorAll("[class]")].flatMap((element) => [
@@ -165,7 +165,7 @@ describe("Actions anatomy", () => {
   });
 
   it("states only DOM the bar renders", () => {
-    const stated = [...anatomy.matchAll(/DOM `([^`]+)`/g)].map(([, dom]) =>
+    const stated = [...anatomy.matchAll(/DOM `([^`]+)`/g)].map(([, dom = ""]) =>
       selectorOf(dom),
     );
     expect(stated.length).toBeGreaterThan(0);

@@ -486,7 +486,7 @@ describe("DataViews.Views", () => {
       expect(button("Discard changes")).toBeEnabled();
     });
     fireEvent.click(button("Discard changes"));
-    expect(provider.state.get().slice.filter[0].operands).toEqual(["running"]);
+    expect(provider.state.get().slice.filter[0]?.operands).toEqual(["running"]);
     expect(screen.queryByText("Modified")).toBeNull();
     expect(status()).toHaveTextContent("");
     expect(button("Save")).toBeDisabled();

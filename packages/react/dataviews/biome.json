@@ -3,6 +3,7 @@
   "files": {
     "includes": [
       "src",
+      "testing",
       ".storybook",
       "*.json",
       "vite.config.ts",

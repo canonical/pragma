@@ -68,7 +68,7 @@ function MachinesTable({
   ...args
 }: StoryTableProps & {
   readonly columns: readonly DataTableColumn[];
-  readonly options?: MachineProviderConfig;
+  readonly options?: MachineProviderConfig | undefined;
 }): ReactElement {
   const provider = useMachineProvider(options);
   return (
@@ -191,7 +191,10 @@ import { machineSchema, source } from "./machines.js";`;
  */
 const consumer = (
   body: string,
-  options: { readonly imports?: string; readonly provider?: string } = {},
+  options: {
+    readonly imports?: string | undefined;
+    readonly provider?: string;
+  } = {},
 ): NonNullable<Story["parameters"]> => ({
   docs: {
     source: {
@@ -368,7 +371,7 @@ export const Selectable: Story = {
     // The select-all header leads the row: the stylesheet's track, from the
     // design's 32px dimension token.
     const [selection, ...columns] = canvas.getAllByRole("columnheader");
-    await expect(widthOf(selection)).toBe(32);
+    await expect(selection === undefined ? null : widthOf(selection)).toBe(32);
     // The data columns share exactly what that track leaves.
     const shared = columns.reduce(
       (total, column) => total + column.getBoundingClientRect().width,
@@ -1150,20 +1153,21 @@ const columns: readonly DataTableColumn[] = [
     };
     await frames();
     const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
-    const [first] = rows().filter(
+    const first = rows().find(
       (row) => row.getBoundingClientRect().bottom > headerBottom,
     );
-    const top = first.getBoundingClientRect().top;
+    const top = first?.getBoundingClientRect().top;
+    await expect(top).toBeDefined();
     // Settled, and measured: the row being read holds still.
     await frames();
-    await expect(first.getBoundingClientRect().top).toBe(top);
+    await expect(first?.getBoundingClientRect().top).toBe(top);
     // The mounted rows cover the viewport, with no blank band at either end.
     const mounted = rows();
-    await expect(mounted[0].getBoundingClientRect().top).toBeLessThanOrEqual(
-      headerBottom,
-    );
     await expect(
-      mounted[mounted.length - 1].getBoundingClientRect().bottom,
+      mounted.at(0)?.getBoundingClientRect().top,
+    ).toBeLessThanOrEqual(headerBottom);
+    await expect(
+      mounted.at(-1)?.getBoundingClientRect().bottom,
     ).toBeGreaterThanOrEqual(table.getBoundingClientRect().bottom - 1);
     await expect(
       new Set(

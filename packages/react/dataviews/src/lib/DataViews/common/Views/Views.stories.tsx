@@ -79,7 +79,7 @@ function Collection({
   children,
 }: {
   readonly provider: MachineProvider;
-  readonly children?: ReactNode;
+  readonly children?: ReactNode | undefined;
 }): ReactElement {
   return (
     <DataViews provider={provider}>
@@ -97,8 +97,8 @@ function SavedMachines({
   seed,
   indexedDB,
 }: {
-  readonly seed?: readonly ViewDraft[];
-  readonly indexedDB?: IndexedDBFactory;
+  readonly seed?: readonly ViewDraft[] | undefined;
+  readonly indexedDB?: IndexedDBFactory | undefined;
 }): ReactElement {
   const { store } = useStoryViewStore({ seed, indexedDB });
   const provider = useMachineProvider({

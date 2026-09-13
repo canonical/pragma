@@ -13,6 +13,7 @@ import {
 } from "@canonical/dataviews-core";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import elementAt from "../../../testing/elementAt.js";
 import {
   DataTable,
   type DataTableCellProps,
@@ -210,15 +211,24 @@ describe("windowed DataTable, bounded work", () => {
     const measured = mountedRows(table).map(
       (row, position) => [row, position % 2 === 0 ? 32 : 64] as const,
     );
-    const [observer] = FakeResizeObserver.live.filter((candidate) =>
-      candidate.observed.has(measured[0][0]),
+    const firstMeasured = elementAt(measured, 0)[0];
+    const observer = FakeResizeObserver.live.find((candidate) =>
+      candidate.observed.has(firstMeasured),
     );
+    if (observer === undefined) {
+      throw new Error("no observer is measuring the rows");
+    }
     act(() => {
       observer.report(measured);
     });
     scrollTo(table, 160_000);
-    const [before] = table.querySelectorAll<HTMLElement>(".ds.data-table-gap");
-    const first = Number(mountedRows(table)[0].getAttribute("aria-rowindex"));
+    const before = elementAt(
+      [...table.querySelectorAll<HTMLElement>(".ds.data-table-gap")],
+      0,
+    );
+    const first = Number(
+      elementAt(mountedRows(table), 0).getAttribute("aria-rowindex"),
+    );
     // Every row before the first mounted one: the measured ones at their
     // measured heights, the rest at the estimate.
     const grown = measured.reduce((total, [, height]) => total + height, 0);

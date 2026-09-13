@@ -4,8 +4,10 @@ import createSizeIndex from "./createSizeIndex.js";
 /** The offsets a plain running sum gives, for comparison. */
 const runningOffsets = (sizes: readonly number[]): number[] => {
   const offsets = [0];
+  let total = 0;
   for (const size of sizes) {
-    offsets.push(offsets[offsets.length - 1] + size);
+    total += size;
+    offsets.push(total);
   }
   return offsets;
 };
@@ -50,6 +52,16 @@ describe("createSizeIndex", () => {
     expect(index.at(15)).toBe(2);
   });
 
+  it("has no size for a position outside the sequence, and sets none", () => {
+    const index = createSizeIndex([10, 20]);
+    expect(index.size(2)).toBeNaN();
+    expect(index.size(-1)).toBeNaN();
+    index.set(2, 5);
+    index.set(-1, 5);
+    expect(index.offset(2)).toBe(30);
+    expect([0, 1].map(index.size)).toEqual([10, 20]);
+  });
+
   it("agrees with a running sum through any series of replacements", () => {
     const sizes = pseudoRandomSizes(1000, 7);
     const index = createSizeIndex(sizes);
@@ -63,8 +75,10 @@ describe("createSizeIndex", () => {
       expect(index.offset(position)).toBe(offsets[position]);
     }
     for (let position = 0; position < sizes.length; position += 1) {
-      expect(index.at(offsets[position])).toBe(position);
-      expect(index.at(offsets[position + 1] - 0.5)).toBe(position);
+      const from = offsets[position] ?? Number.NaN;
+      const to = offsets[position + 1] ?? Number.NaN;
+      expect(index.at(from)).toBe(position);
+      expect(index.at(to - 0.5)).toBe(position);
     }
   });
 });

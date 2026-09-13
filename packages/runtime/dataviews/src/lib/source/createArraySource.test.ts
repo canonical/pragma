@@ -354,7 +354,7 @@ describe("createArraySource", () => {
       actions: { stop: { targets: "explicit", limit: null } },
       runAction,
     });
-    expect(live.capabilities.actions.stop).toEqual({
+    expect(live.capabilities.actions["stop"]).toEqual({
       targets: "explicit",
       limit: null,
     });

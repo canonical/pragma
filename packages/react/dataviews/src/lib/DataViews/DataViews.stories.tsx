@@ -55,7 +55,7 @@ function Collection({
   children,
 }: {
   readonly provider: MachineProvider;
-  readonly children?: ReactElement;
+  readonly children?: ReactElement | undefined;
 }): ReactElement {
   return (
     <Component provider={provider}>

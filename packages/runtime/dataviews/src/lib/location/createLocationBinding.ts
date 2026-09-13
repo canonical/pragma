@@ -111,11 +111,11 @@ const issuesEqual = (
   b: readonly QueryIssue[],
 ): boolean =>
   a.length === b.length &&
-  a.every(
-    (issue, index) =>
-      issue.parameter === b[index].parameter &&
-      issue.reason === b[index].reason,
-  );
+  a.every((issue, index) => {
+    // In range: the lengths were compared first.
+    const other = b[index] as QueryIssue;
+    return issue.parameter === other.parameter && issue.reason === other.reason;
+  });
 
 /**
  * Bind a Location to a host's query authority.

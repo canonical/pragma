@@ -1,5 +1,8 @@
 {
-  "extends": "../../../configs/typescript/tsconfig.json",
+  "extends": [
+    "../../../configs/typescript/tsconfig.json",
+    "@canonical/typescript-config-strict"
+  ],
   "compilerOptions": {
     "baseUrl": "src",
     "types": ["node"],

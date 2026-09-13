@@ -10,7 +10,6 @@ function TableBody<TRow extends object>({
   scopes,
   entries,
   columns,
-  fields,
   selectable,
   rowLabel,
   renderStatus,
@@ -31,7 +30,6 @@ function TableBody<TRow extends object>({
             provider={provider}
             scope={scopes.scope(entry.rowId)}
             columns={columns}
-            fields={fields}
             selectable={selectable}
             rowLabel={rowLabel}
           />

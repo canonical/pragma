@@ -225,9 +225,9 @@ const isStoredPreference = (record: unknown): record is StoredPreference => {
 
 /** Why a stored record cannot be read as a saved view. */
 const unreadableReason = (record: Readonly<Record<string, unknown>>): string =>
-  record.v === RECORD_VERSION
+  record["v"] === RECORD_VERSION
     ? "the record does not have the shape of a saved view"
-    : `record version ${String(record.v)} is not the supported version ${RECORD_VERSION}`;
+    : `record version ${String(record["v"])} is not the supported version ${RECORD_VERSION}`;
 
 /** A stored saved view as this viewer sees it. */
 const viewOf = (record: StoredView, pinned: boolean): SavedView => ({
@@ -572,7 +572,7 @@ export default function createIndexedDBViewStore(
               found.push(viewOf(record, pinned.has(record.id)));
             } else {
               unreadable.push({
-                id: String(record.id),
+                id: String(record["id"]),
                 reason: unreadableReason(record),
               });
             }

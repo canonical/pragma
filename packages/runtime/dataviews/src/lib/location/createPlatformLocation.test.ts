@@ -1,53 +1,22 @@
-import {
-  createMemoryAdapter,
-  createRouter,
-  route,
-} from "@canonical/router-core";
+import { createMemoryAdapter } from "@canonical/router-core";
 import { describe, expect, it } from "vitest";
 import createPlatformLocation from "./createPlatformLocation.js";
 
 /**
  * The duplicate-preserving transport fixture: repeated query values must
- * survive navigation, paging, sorting and back/forward through the real
- * router. The router's scalar helpers are proven lossy where they are.
+ * survive write, read, paging, sorting and back/forward through the
+ * router's own memory adapter. The same fixture through the router itself
+ * is an integration test under `src/testing/integration`.
  */
-
-const routes = {
-  machines: route({
-    url: "/machines",
-    content: () => "Machines",
-  }),
-} as const;
 
 const harness = () => {
   const adapter = createMemoryAdapter();
-  // Land on the route before the router's initial load so the fixture's
-  // writes run against the matched /machines route, not the router's base.
   adapter.navigate("/machines");
-  const router = createRouter(routes, { adapter });
   const location = createPlatformLocation(adapter);
-  return { adapter, router, location };
-};
-
-/** Await the router's asynchronous load pipeline observing a condition. */
-const until = async (check: () => boolean): Promise<void> => {
-  for (let attempt = 0; attempt < 50; attempt += 1) {
-    if (check()) {
-      return;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  }
-  throw new Error("the router never reached the expected state");
+  return { adapter, location };
 };
 
 describe("URL transport over the platform adapter", () => {
-  it("runs against the matched /machines route", async () => {
-    const { router } = harness();
-    await until(() => router.getState().match?.kind === "route");
-    expect(router.getState().match?.kind).toBe("route");
-    expect(router.getState().location.pathname).toBe("/machines");
-  });
-
   it("preserves repeated query values through write and read", () => {
     const { location } = harness();
     const next = new URLSearchParams();
@@ -80,18 +49,6 @@ describe("URL transport over the platform adapter", () => {
     expect(location.read().getAll("sort")).toEqual([
       "status__asc",
       "updated__desc",
-    ]);
-  });
-
-  it("lets the router see adapter-driven writes through its own state", async () => {
-    const { router, location } = harness();
-    location.write(new URLSearchParams("status=failed&status=cancelled"));
-    await until(
-      () => router.getState().location.searchParams.getAll("status").length > 0,
-    );
-    expect(router.getState().location.searchParams.getAll("status")).toEqual([
-      "failed",
-      "cancelled",
     ]);
   });
 
@@ -206,31 +163,5 @@ describe("createPlatformLocation input normalization", () => {
   it("resolves relative hrefs against the local base", () => {
     const { location } = platformOf("/machines?status=failed");
     expect(location.read().get("status")).toBe("failed");
-  });
-});
-
-describe("the router's scalar search helpers", () => {
-  it("collapse repeated values on read — the documented lossy path", async () => {
-    const { router, location } = harness();
-    location.write(new URLSearchParams("status=failed&status=cancelled"));
-    await until(
-      () => router.getState().location.searchParams.getAll("status").length > 0,
-    );
-    // The typed search machinery reads each key once.
-    const typed = router.getState().location.searchParams.get("status");
-    expect(typed).toBe("failed");
-  });
-  it("collapse repeated values through setSearchParams — the documented lossy write", async () => {
-    const { router, location } = harness();
-    location.write(new URLSearchParams("status=failed&status=cancelled"));
-    // The adapter's own state is synchronous; the router's store settles
-    // through its async load pipeline.
-    await until(
-      () => router.getState().location.searchParams.getAll("status").length > 0,
-    );
-    router.setSearchParams({ page: "2" });
-    // The adapter commits synchronously; the collapsed write is immediate.
-    expect(location.read().getAll("status")).toEqual(["cancelled"]);
-    expect(location.read().get("page")).toBe("2");
   });
 });

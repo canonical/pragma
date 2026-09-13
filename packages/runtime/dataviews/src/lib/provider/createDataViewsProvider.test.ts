@@ -483,7 +483,7 @@ describe("createDataViewsProvider", () => {
     expect(p.capabilities).toEqual(declared);
     expect(p.capabilities).not.toBe(declared);
     expect(Object.isFrozen(p.capabilities)).toBe(true);
-    expect(Object.isFrozen(p.capabilities?.filter.status)).toBe(true);
+    expect(Object.isFrozen(p.capabilities?.filter["status"])).toBe(true);
   });
 });
 

@@ -22,7 +22,6 @@ function VirtualBody<TRow extends object>({
   scopes,
   entries,
   columns,
-  fields,
   selectable,
   rowLabel,
   renderStatus,
@@ -61,7 +60,6 @@ function VirtualBody<TRow extends object>({
             provider={provider}
             scope={scopes.scope(entry.rowId)}
             columns={columns}
-            fields={fields}
             selectable={selectable}
             rowLabel={rowLabel}
           />

@@ -44,7 +44,8 @@ const singletonOf = (
       reason: `"${key}" takes one value; the extra values were ignored`,
     });
   }
-  return values[0];
+  // A key read off the parameters has at least the value it was read from.
+  return values[0] as string;
 };
 
 /** Read one window value, falling back rather than paging somewhere absurd. */
@@ -153,7 +154,7 @@ const readPredicate = (
     schema.predicateFor(
       field,
       operator,
-      operator === "eq" ? operands : [operands[0]],
+      operator === "eq" ? operands : operands.slice(0, 1),
     ),
     key,
     filter,

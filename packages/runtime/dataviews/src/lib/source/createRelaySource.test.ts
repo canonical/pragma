@@ -225,16 +225,16 @@ const machines: readonly Machine[] = [
 
 /** The server's answer to one page's variables: a forward connection. */
 const pageFor = (variables: Variables): GraphQLResponse => {
-  const statuses = variables.status as readonly string[] | null;
+  const statuses = variables["status"] as readonly string[] | null;
   const matching = machines.filter(
     (machine) => statuses === null || statuses.includes(machine.status),
   );
-  const after = variables.after as string | null;
+  const after = variables["after"] as string | null;
   const start =
     after === null
       ? 0
       : matching.findIndex((machine) => `c:${machine.id}` === after) + 1;
-  const size = variables.first as number;
+  const size = variables["first"] as number;
   const page = matching.slice(start, start + size);
   const last = page.at(-1);
   return {
@@ -518,12 +518,12 @@ describe("createRelaySource over relay-runtime", () => {
 
     const deliver = delivery();
     adapter.execute(request({ window: paged({ page: 2 }) }), deliver);
-    expect(fetchAt(1).variables.after).toBe("c:m2");
+    expect(fetchAt(1).variables["after"]).toBe("c:m2");
     fetchAt(1).respond();
     expect(idsOf(lastOf(deliver))).toEqual(["m3", "m4"]);
 
     adapter.execute(request({ window: paged({ page: 3 }) }), deliver);
-    expect(fetchAt(2).variables.after).toBe("c:m4");
+    expect(fetchAt(2).variables["after"]).toBe("c:m4");
     fetchAt(2).respond();
     expect(idsOf(lastOf(deliver))).toEqual(["m5"]);
     // The last page ends in a cursor, and no page follows it.
@@ -562,7 +562,7 @@ describe("createRelaySource over relay-runtime", () => {
       refusalsOf(adapter, { window: paged({ page: 9, cursor: "c:m4" }) }),
     ).toEqual([]);
     adapter.execute(request({ window: carried }), delivery());
-    expect(fetchAt(1).variables.after).toBe("c:m1");
+    expect(fetchAt(1).variables["after"]).toBe("c:m1");
   });
 
   it("guards execute against a page nothing reaches", () => {
@@ -607,7 +607,7 @@ describe("createRelaySource over relay-runtime", () => {
       request({ slice: respelled, window: paged({ page: 2 }) }),
       delivery(),
     );
-    expect(fetchAt(1).variables.after).toBe("c:m2");
+    expect(fetchAt(1).variables["after"]).toBe("c:m2");
   });
 
   it("keeps each query's cursors apart from another's", () => {
@@ -643,7 +643,7 @@ describe("createRelaySource over relay-runtime", () => {
     // …so one more query pushes out the one used least recently instead.
     firstPage(34);
     adapter.execute(request({ window: paged({ page: 2 }) }), delivery());
-    expect(fetchAt(34).variables.after).toBe("c:m2");
+    expect(fetchAt(34).variables["after"]).toBe("c:m2");
     expect(
       refusalsOf(adapter, { window: paged({ page: 2, size: 3 }) }),
     ).toEqual([unreachable(2)]);
@@ -666,7 +666,7 @@ describe("createRelaySource over relay-runtime", () => {
       adapter.execute(request({ window: unreached }), delivery()),
     ).toThrow("reaches page 2 only from page 1");
     adapter.execute(request({ window: paged({ page: 2 }) }), delivery());
-    expect(fetchAt(32).variables.after).toBe("c:m2");
+    expect(fetchAt(32).variables["after"]).toBe("c:m2");
   });
 
   it("counts a null total as unknown, and an absent next page as unknown", () => {
@@ -1101,7 +1101,7 @@ describe("createRelaySource over relay-runtime", () => {
       adapter.execute(request({ window: paged({ size: 99 }) }), delivery()),
     ).toThrow("merges its pages");
     adapter.execute(request({ window: paged({ page: 2 }) }), delivery());
-    expect(fetchAt(32).variables.after).toBe("c:m2");
+    expect(fetchAt(32).variables["after"]).toBe("c:m2");
   });
 
   it("forgets the next page once its page no longer ends in a cursor", () => {

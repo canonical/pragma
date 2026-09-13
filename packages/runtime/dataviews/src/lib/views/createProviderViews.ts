@@ -145,10 +145,15 @@ const settleLayer = (
     if (change <= since && !layer.failed.has(key)) {
       continue;
     }
-    if (Object.hasOwn(layer.values, key)) {
-      values[key] = layer.values[key];
-    } else {
+    // An own property only: a key naming a prototype member has no value
+    // just because the prototype has that member.
+    const value = Object.hasOwn(layer.values, key)
+      ? layer.values[key]
+      : undefined;
+    if (value === undefined) {
       delete values[key];
+    } else {
+      values[key] = value;
     }
   }
   layer.values = values;

@@ -31,6 +31,8 @@ describe("createColumnLayout", () => {
     ).toThrow("duplicate");
     // The prototype chain is not a member.
     expect(() => layout.effective("toString")).toThrow("unknown column id");
+    expect(() => layout.readDeclared("toString")).toThrow("unknown column id");
+    expect(layout.readDeclared("status")).toEqual({ kind: "fixed", px: 120 });
   });
 
   it("applies user-fixed overrides over declared sizing", () => {
@@ -146,14 +148,15 @@ describe("createColumnLayout", () => {
     layout.state.subscribe(() => {
       notifications += 1;
     });
-    const base = { kind: "flex", weight: 1, minPx: 100, maxPx: 300 } as const;
+    const unbounded = { kind: "flex", weight: 1, minPx: 100 } as const;
+    const base = { ...unbounded, maxPx: 300 } as const;
     layout.setOverride("name", base);
     expect(notifications).toBe(1);
     layout.setOverride("name", { ...base });
     expect(notifications).toBe(1);
-    layout.setOverride("name", { ...base, maxPx: undefined });
+    layout.setOverride("name", unbounded);
     expect(notifications).toBe(2);
-    layout.setOverride("name", { ...base, weight: 2, maxPx: undefined });
+    layout.setOverride("name", { ...unbounded, weight: 2 });
     expect(notifications).toBe(3);
     // A kind change is a change.
     layout.setOverride("name", { kind: "fixed", px: 100 });

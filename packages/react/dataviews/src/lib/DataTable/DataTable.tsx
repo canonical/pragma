@@ -22,6 +22,7 @@ import { useDataViewsValue } from "../DataViews/hooks/index.js";
 import { useMergedRef } from "../hooks/index.js";
 import {
   boundsOf,
+  fieldOf,
   sameColumnModel,
   sameColumns,
   sizingOf,
@@ -142,10 +143,7 @@ export default function DataTable<
   const model = useStableValue(columns, sameColumnModel);
   const rendered = useStableValue(columns, sameColumns);
 
-  const fields = useMemo<readonly string[]>(
-    () => model.map((column) => column.field ?? column.id),
-    [model],
-  );
+  const fields = useMemo<readonly string[]>(() => model.map(fieldOf), [model]);
   const declaredTracks = useMemo<readonly ColumnToSize[]>(
     () => model.map((column) => ({ id: column.id, sizing: sizingOf(column) })),
     [model],
@@ -214,7 +212,6 @@ export default function DataTable<
     scopes,
     entries,
     columns: rendered,
-    fields,
     selectable,
     rowLabel: nameRow,
     // While a status shows, the caller's own function, so a new one is
@@ -261,20 +258,21 @@ export default function DataTable<
             <HeaderCell
               key={column.id}
               column={column}
-              field={fields[position]}
+              field={fieldOf(column)}
               sortable={
-                column.sortable === true && orderable.has(fields[position])
+                column.sortable === true && orderable.has(fieldOf(column))
               }
               sort={state.slice.sort.find(
-                (term) => term.field === fields[position],
+                (term) => term.field === fieldOf(column),
               )}
               setSort={provider.setSort}
               interaction={interaction}
               resizable={
                 column.resizable === true && position < rendered.length - 1
               }
-              bounds={boundsOf(activeLayout.state.get().declared[column.id])}
-              width={geometry.widths[position]}
+              bounds={boundsOf(activeLayout.readDeclared(column.id))}
+              // Solved for every rendered column, in the same order.
+              width={geometry.widths[position] as number}
               labelId={`${baseId}-${column.id}`}
             />
           ))}

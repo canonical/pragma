@@ -26,13 +26,17 @@ export type SizeIndex = {
 export default function createSizeIndex(sizes: readonly number[]): SizeIndex {
   const count = sizes.length;
   const own = Float64Array.from(sizes);
-  // tree[i] sums the `i & -i` sizes ending at position i - 1.
+  // tree[i] sums the `i & -i` sizes ending at position i - 1. Every read of
+  // either array below is on the hot path and its index is held within
+  // the array by the loop it sits in, so the read is asserted in place
+  // rather than handled: an undefined here is not a case, it is a broken
+  // loop bound.
   const tree = new Float64Array(count + 1);
   for (let node = 1; node <= count; node += 1) {
-    tree[node] += own[node - 1];
+    tree[node] = (tree[node] as number) + (own[node - 1] as number);
     const parent = node + (node & -node);
     if (parent <= count) {
-      tree[parent] += tree[node];
+      tree[parent] = (tree[parent] as number) + (tree[node] as number);
     }
   }
   // The largest power of two within the tree: where a descent starts.
@@ -42,18 +46,26 @@ export default function createSizeIndex(sizes: readonly number[]): SizeIndex {
   }
 
   return {
-    size: (position) => own[position],
+    // A position outside the sequence has no size: the caller asked about
+    // an entry that is not there, and NaN says so where zero would lie.
+    size: (position) => own[position] ?? Number.NaN,
     set(position, size) {
-      const delta = size - own[position];
+      // A position outside the sequence has no entry to size: nothing
+      // changes, and the walk below never starts from a node before the
+      // tree's root, where it would not advance.
+      if (position < 0 || position >= count) {
+        return;
+      }
+      const delta = size - (own[position] as number);
       own[position] = size;
       for (let node = position + 1; node <= count; node += node & -node) {
-        tree[node] += delta;
+        tree[node] = (tree[node] as number) + delta;
       }
     },
     offset(position) {
       let sum = 0;
       for (let node = position; node > 0; node -= node & -node) {
-        sum += tree[node];
+        sum += tree[node] as number;
       }
       return sum;
     },
@@ -64,9 +76,10 @@ export default function createSizeIndex(sizes: readonly number[]): SizeIndex {
       let remaining = offset;
       for (let step = top; step > 0; step >>= 1) {
         const node = position + step;
-        if (node <= count && tree[node] <= remaining) {
+        const covered = node <= count ? (tree[node] as number) : Number.NaN;
+        if (covered <= remaining) {
           position = node;
-          remaining -= tree[node];
+          remaining -= covered;
         }
       }
       return Math.min(position, Math.max(0, count - 1));

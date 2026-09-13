@@ -26,7 +26,6 @@ export type TableBodyProps<TRow extends object> = {
    */
   readonly entries: readonly DisplayEntry<DataTableStatus>[];
   readonly columns: readonly DataTableColumn[];
-  readonly fields: readonly string[];
   readonly selectable: boolean;
   readonly rowLabel: (row: TRow, rowId: string) => string;
   readonly renderStatus: (status: DataTableStatus) => ReactNode;

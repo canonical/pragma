@@ -10,6 +10,7 @@
     "skipLibCheck": false,
     "types": ["node", "react", "react-dom"]
   },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": [
     "src/**/*.stories.ts",
     "src/**/*.stories.tsx",

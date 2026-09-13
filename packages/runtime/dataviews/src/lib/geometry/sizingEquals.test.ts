@@ -17,11 +17,12 @@ describe("sizingEquals", () => {
   });
 
   it("compares flex sizings by weight and both bounds", () => {
-    const flex = { kind: "flex", weight: 1, minPx: 96, maxPx: 240 } as const;
+    const unbounded = { kind: "flex", weight: 1, minPx: 96 } as const;
+    const flex = { ...unbounded, maxPx: 240 } as const;
     expect(sizingEquals(flex, { ...flex })).toBe(true);
     expect(sizingEquals(flex, { ...flex, weight: 2 })).toBe(false);
     expect(sizingEquals(flex, { ...flex, minPx: 97 })).toBe(false);
-    expect(sizingEquals(flex, { ...flex, maxPx: undefined })).toBe(false);
+    expect(sizingEquals(flex, unbounded)).toBe(false);
   });
 
   it("never equates the two kinds", () => {

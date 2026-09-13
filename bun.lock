@@ -257,6 +257,18 @@
         "typescript": "^5.9.3",
       },
     },
+    "configs/typescript-strict": {
+      "name": "@canonical/typescript-config-strict",
+      "version": "0.37.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.5.12",
+        "@canonical/biome-config": "^0.37.0",
+        "typescript": "^5.9.3",
+      },
+      "peerDependencies": {
+        "typescript": "^5.9.3",
+      },
+    },
     "configs/typescript-svelte": {
       "name": "@canonical/typescript-config-svelte",
       "version": "0.37.0",
@@ -468,6 +480,7 @@
         "@canonical/storybook-config": "^0.37.0",
         "@canonical/typescript-config": "^0.37.0",
         "@canonical/typescript-config-react": "^0.37.0",
+        "@canonical/typescript-config-strict": "^0.37.0",
         "@canonical/vitest-config-react": "^0.37.0",
         "@canonical/webarchitect": "^0.37.0",
         "@chromatic-com/storybook": "^5.0.1",
@@ -1055,6 +1068,7 @@
         "@biomejs/biome": "2.5.12",
         "@canonical/biome-config": "^0.37.0",
         "@canonical/router-core": "^0.37.0",
+        "@canonical/typescript-config-strict": "^0.37.0",
         "@canonical/webarchitect": "^0.37.0",
         "@tanstack/query-core": "5.102.8",
         "@types/node": "^26.0.0",
@@ -2057,6 +2071,8 @@
     "@canonical/typescript-config-lit": ["@canonical/typescript-config-lit@workspace:configs/typescript-lit"],
 
     "@canonical/typescript-config-react": ["@canonical/typescript-config-react@workspace:configs/typescript-react"],
+
+    "@canonical/typescript-config-strict": ["@canonical/typescript-config-strict@workspace:configs/typescript-strict"],
 
     "@canonical/typescript-config-svelte": ["@canonical/typescript-config-svelte@workspace:configs/typescript-svelte"],
 

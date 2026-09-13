@@ -29,6 +29,11 @@ function BodyCell<TRow extends object>({
   field,
 }: BodyCellProps<TRow>): ReactElement {
   const channel = scope.fields[field];
+  if (channel === undefined) {
+    // The scopes observe every field the columns read, so a cell without
+    // its channel is a table built against another column list.
+    throw new Error(`no channel observes the field "${field}"`);
+  }
   const value = useDataViewsValue(channel);
   const cellScope = useMemo<CellScopeValue>(
     () => ({

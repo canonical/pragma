@@ -57,7 +57,7 @@ describe("useDataViewsCell", () => {
       id: "machine-1",
       status: "failed",
     });
-    expect(result.current.fields.status?.get()).toBe("failed");
+    expect(result.current.fields["status"]?.get()).toBe("failed");
     expect(result.current.selected.get()).toBe(false);
   });
 

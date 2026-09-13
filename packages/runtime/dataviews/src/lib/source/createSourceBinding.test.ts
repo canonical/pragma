@@ -727,7 +727,7 @@ describe("createSourceBinding", () => {
     expect(host.state.get().result.status).toBe("pending");
     expect(host.state.get().pendingRequestId).toBe(pending);
 
-    source.callAt(1).deliver(succeeded([rows[0]]));
+    source.callAt(1).deliver(succeeded(rows.slice(0, 1)));
     expect(idsOf(host.state.get())).toEqual(["a"]);
     release();
   });
@@ -999,7 +999,7 @@ describe("createSourceBinding", () => {
     const requestId = host.refresh();
     expect(source.calls).toHaveLength(2);
     expect(source.callAt(1).request.requestId).toBe(requestId);
-    source.callAt(1).deliver(succeeded([rows[0]]));
+    source.callAt(1).deliver(succeeded(rows.slice(0, 1)));
     expect(idsOf(host.state.get())).toEqual(["a"]);
     release();
   });
@@ -1071,7 +1071,7 @@ describe("createSourceBinding", () => {
     const first = host.refresh();
     source.callAt(0).deliver(succeeded(rows));
 
-    source.callAt(0).deliver(succeeded([rows[0]]));
+    source.callAt(0).deliver(succeeded(rows.slice(0, 1)));
     expect(source.calls).toHaveLength(1);
     const state = host.state.get();
     expect(idsOf(state)).toEqual(["a"]);
@@ -1099,7 +1099,7 @@ describe("createSourceBinding", () => {
         host.setSearch("web");
       }
     });
-    source.callAt(0).deliver(succeeded([rows[0]]));
+    source.callAt(0).deliver(succeeded(rows.slice(0, 1)));
 
     const pending = host.state.get().pendingRequestId;
     expect(pending).not.toBeNull();
@@ -1318,7 +1318,7 @@ describe("createSourceBinding counts", () => {
     }).observe();
     host.refresh();
     source.callAt(0).deliver(succeeded(rows));
-    source.callAt(0).deliver(succeeded([rows[0]]));
+    source.callAt(0).deliver(succeeded(rows.slice(0, 1)));
     expect(idsOf(host.state.get())).toEqual(["a"]);
     expect(host.state.get().result.counts).toEqual({
       visible: { kind: "unknown" },

@@ -59,8 +59,8 @@ describe("createRowScopes", () => {
     const scope = scopes.scope("m-1");
     const status = vi.fn();
     const cpu = vi.fn();
-    scope.fields.status.subscribe(status);
-    scope.fields.cpu.subscribe(cpu);
+    scope.fields["status"]?.subscribe(status);
+    scope.fields["cpu"]?.subscribe(cpu);
     publish([machine("m-1", "stopped", 4)]);
     expect(status).toHaveBeenCalledTimes(1);
     expect(cpu).not.toHaveBeenCalled();
@@ -68,7 +68,7 @@ describe("createRowScopes", () => {
 
   it("publishes undefined for a field the record does not carry", () => {
     const { scopes } = harness([machine("m-1")], ["absent"]);
-    expect(scopes.scope("m-1").fields.absent.get()).toBeUndefined();
+    expect(scopes.scope("m-1").fields["absent"]?.get()).toBeUndefined();
   });
 
   it("collapses a repeated field name to one channel", () => {
@@ -146,7 +146,7 @@ describe("createRowScopes", () => {
       buildRowModel({ rows: [counted("stopped")], previous: channel.get() }),
     );
     expect(reads).toBe(minted + 1);
-    expect(scopes.scope("m-1").fields.status.get()).toBe("stopped");
+    expect(scopes.scope("m-1").fields["status"]?.get()).toBe("stopped");
   });
 
   it("reads a record's own fields only, never the prototype chain", () => {
@@ -154,7 +154,7 @@ describe("createRowScopes", () => {
     const { scopes } = harness([machine("m-1")], inherited);
     const scope = scopes.scope("m-1");
     for (const name of inherited) {
-      expect(scope.fields[name].get()).toBeUndefined();
+      expect(scope.fields[name]?.get()).toBeUndefined();
     }
   });
 
