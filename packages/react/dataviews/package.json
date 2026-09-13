@@ -6,6 +6,9 @@
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
   "style": "dist/esm/lib/index.css",
+  "sideEffects": [
+    "**/*.css"
+  ],
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",

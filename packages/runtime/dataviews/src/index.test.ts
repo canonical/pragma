@@ -20,13 +20,16 @@ describe("public surface", () => {
       "createDataViewsProvider",
       "createLocationBinding",
       "createMemoryLocation",
+      "createPage",
       "createPlatformLocation",
       "createQuerySource",
       "createRelaySource",
       "createSchema",
       "createSourceBinding",
+      "declareCapabilities",
       "decodeQuery",
       "encodeQuery",
+      "readSlice",
     ]);
   });
 
@@ -39,13 +42,18 @@ describe("public surface", () => {
       rows: [{ id: "a" }],
       schema: idSchema,
     });
+    expect(dataviews.declareCapabilities(idSchema, {}).sort.terms).toBe(0);
+    expect(dataviews.readSlice(idSchema, EMPTY_SLICE).filters).toEqual({});
+    expect(dataviews.createPage({ rows: [] }).counts.total).toEqual({
+      kind: "unknown",
+    });
     const provider = dataviews.createDataViewsProvider({
       schema: idSchema,
       capabilities: source.capabilities,
     });
     const binding = dataviews.createSourceBinding({ host: provider, source });
     expect(
-      binding.supports({
+      binding.refusals({
         slice: EMPTY_SLICE,
         window: dataviews.DEFAULT_WINDOW,
       }),
@@ -95,7 +103,7 @@ describe("public surface", () => {
   });
 
   it("names every entry point in the manifest, and no other", () => {
-    expect(Object.keys(manifest().exports)).toEqual([
+    expect(Object.keys(manifest().exports).sort()).toEqual([
       ".",
       "./bindings",
       "./indexeddb",
@@ -111,35 +119,37 @@ describe("public surface", () => {
 
   it("hands framework bindings their shared machinery from ./bindings", () => {
     expect(Object.keys(bindings).sort()).toEqual([
-      "canonicalSlice",
-      "columnTemplate",
-      "createChannel",
+      "areListsEqual",
+      "areSizingsEqual",
+      "areSlicesEqual",
+      "buildColumnTemplate",
       "createColumnLayout",
       "createGridInteraction",
-      "createIdentity",
       "createRowScopes",
-      "displayEntries",
       "isIdentity",
+      "listDisplayEntries",
       "resolveColumns",
-      "sizingEquals",
-      "sliceEquals",
     ]);
     for (const name of Object.keys(bindings)) {
       expect(dataviews).not.toHaveProperty(name);
     }
-    expect(bindings.isIdentity(bindings.createIdentity())).toBe(true);
-    expect(bindings.createChannel(0).get()).toBe(0);
+    expect(bindings.isIdentity(undefined)).toBe(false);
     expect(
-      bindings.columnTemplate(
+      bindings.buildColumnTemplate(
         [{ id: "a", sizing: { kind: "fixed", px: 8 } }],
         null,
       ),
     ).toBe("8px");
     expect(
-      bindings.sizingEquals({ kind: "fixed", px: 8 }, { kind: "fixed", px: 8 }),
+      bindings.areSizingsEqual(
+        { kind: "fixed", px: 8 },
+        { kind: "fixed", px: 8 },
+      ),
     ).toBe(true);
-    expect(bindings.sliceEquals(EMPTY_SLICE, EMPTY_SLICE)).toBe(true);
-    expect(bindings.displayEntries({ rowIds: ["a"], status: null })).toEqual([
+    expect(bindings.areSlicesEqual(EMPTY_SLICE, EMPTY_SLICE)).toBe(true);
+    expect(
+      bindings.listDisplayEntries({ rowIds: ["a"], status: null }),
+    ).toEqual([
       { kind: "record", id: "record:a", index: 2, parent: null, rowId: "a" },
     ]);
   });

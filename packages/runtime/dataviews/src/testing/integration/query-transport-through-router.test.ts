@@ -68,7 +68,7 @@ describe("query transport through the router", () => {
 });
 
 describe("the router's scalar search helpers", () => {
-  it("collapse repeated values on read — the documented lossy path", async () => {
+  it("collapses repeated values on read — the documented lossy path", async () => {
     const { router, location } = harness();
     location.write(new URLSearchParams("status=failed&status=cancelled"));
     await until(
@@ -78,7 +78,7 @@ describe("the router's scalar search helpers", () => {
     const typed = router.getState().location.searchParams.get("status");
     expect(typed).toBe("failed");
   });
-  it("collapse repeated values through setSearchParams — the documented lossy write", async () => {
+  it("collapses repeated values through setSearchParams — the documented lossy write", async () => {
     const { router, location } = harness();
     location.write(new URLSearchParams("status=failed&status=cancelled"));
     // The adapter's own state is synchronous; the router's store settles

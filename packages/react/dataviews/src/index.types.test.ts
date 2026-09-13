@@ -30,7 +30,7 @@ import type {
 } from "./index.js";
 import * as dataviewsReact from "./index.js";
 import type { VirtualRowsConfig } from "./lib/virtualization/index.js";
-import { virtualRows } from "./lib/virtualization/index.js";
+import { virtualizeRows } from "./lib/virtualization/index.js";
 
 type Fields = readonly SchemaFieldDefinition[];
 
@@ -110,7 +110,38 @@ describe("public surface types", () => {
       ...new Set(listTypeSurface(path.resolve("src/lib/index.ts"))),
     ].sort();
     expect(surface).toEqual(listPinned("\\./index\\.js").sort());
-    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<15>();
+    // No member of the surface has collapsed to `any`.
+    expectTypeOf<EveryPublicType[number]>().not.toBeAny();
+  });
+
+  it("publishes the root through one line of the package entry", () => {
+    // The entry file is what `.` resolves to; the walk above reads the
+    // barrel behind it, so the entry must hold that barrel and nothing else.
+    const text = readFileSync(path.resolve("src/index.ts"), "utf8");
+    const exports = text.match(/^export .*$/gm) ?? [];
+    expect(exports).toEqual(['export * from "./lib/index.js";']);
+  });
+
+  it("names every entry point in the manifest, and no other", () => {
+    const manifest = JSON.parse(
+      readFileSync(path.resolve("package.json"), "utf8"),
+    ) as {
+      readonly exports: Record<string, unknown>;
+      readonly sideEffects: unknown;
+    };
+    expect(Object.keys(manifest.exports).sort()).toEqual([
+      ".",
+      "./index.css",
+      "./package.json",
+      "./virtualization",
+    ]);
+    expect(manifest.exports["./virtualization"]).toEqual({
+      types: "./dist/types/lib/virtualization/index.d.ts",
+      import: "./dist/esm/lib/virtualization/index.js",
+    });
+    // Only the stylesheets a component imports for its own effect survive
+    // tree-shaking; everything else is pure.
+    expect(manifest.sideEffects).toEqual(["**/*.css"]);
   });
 
   it("re-exports the virtualization entry point's types name by name", () => {
@@ -138,9 +169,9 @@ describe("public surface types", () => {
 });
 
 describe("the windowing prop", () => {
-  it("takes the descriptor virtualRows makes, and only that", () => {
+  it("takes the descriptor virtualizeRows makes, and only that", () => {
     expectTypeOf(
-      virtualRows({ estimatedRowHeight: 40 }),
+      virtualizeRows({ estimatedRowHeight: 40 }),
     ).toEqualTypeOf<DataTableWindowing>();
     expectTypeOf<
       DataTableProps<Fields, RowRecord>["windowing"]

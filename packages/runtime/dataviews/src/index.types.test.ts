@@ -1,7 +1,7 @@
 /**
  * Compile-time contract tests for the package's public type surface.
  *
- * Runtime behavior lives in the sibling test files; this file pins the type
+ * Runtime behaviour lives in the sibling test files; this file pins the type
  * exports of each entry point through its barrel: removing a name from a
  * barrel, adding one without a decision, or changing one of the pinned
  * shapes fails here.
@@ -16,9 +16,9 @@ import type {
   ActionTargets,
   Applicability,
   AppliedOf,
-  AppliedValues,
   ArraySource,
   ArraySourceConfig,
+  CapabilityDeclaration,
   ChoicesField,
   CollectionState,
   Completion,
@@ -31,13 +31,12 @@ import type {
   DeclaredRecordTypes,
   DecodedQuery,
   DecodeQueryConfig,
-  DiscriminatorField,
   EmptyOr,
   EncodeQueryConfig,
   FieldFeedback,
   FieldHandle,
   FieldInteractionState,
-  FieldReader,
+  FieldKind,
   FieldValidation,
   FlagField,
   GroupCapabilities,
@@ -56,6 +55,7 @@ import type {
   OperationFailure,
   OperationOutcome,
   OperationState,
+  PageConfig,
   PageCursors,
   PaginationCapabilities,
   PlatformLocation,
@@ -89,6 +89,7 @@ import type {
   Selection,
   SelectionState,
   Slice,
+  SliceReading,
   SortCapabilities,
   SortDirection,
   SortTerm,
@@ -129,8 +130,6 @@ import type {
 } from "./index.js";
 import * as dataviews from "./index.js";
 import type {
-  Channel,
-  ChannelConfig,
   ColumnLayout,
   ColumnLayoutState,
   ColumnSizing,
@@ -169,9 +168,9 @@ type EveryPublicType = [
   ActionTargets,
   Applicability,
   AppliedOf<FlagField>,
-  AppliedValues<readonly SchemaFieldDefinition[]>,
   ArraySource,
   ArraySourceConfig,
+  CapabilityDeclaration<readonly SchemaFieldDefinition[]>,
   ChoicesField,
   CollectionState,
   Completion,
@@ -184,13 +183,12 @@ type EveryPublicType = [
   DecodedQuery,
   DeclaredRecordTypes,
   DecodeQueryConfig,
-  DiscriminatorField<readonly SchemaFieldDefinition[], RowRecord>,
   EmptyOr<unknown>,
   EncodeQueryConfig,
   FieldFeedback,
   FieldHandle<unknown>,
   FieldInteractionState,
-  FieldReader,
+  FieldKind,
   FieldValidation,
   FlagField,
   GroupCapabilities,
@@ -210,6 +208,7 @@ type EveryPublicType = [
   OperationOutcome,
   OperationState,
   PageCursors,
+  PageConfig,
   PaginationCapabilities,
   PlatformLocation,
   Predicate,
@@ -242,6 +241,7 @@ type EveryPublicType = [
   Selection,
   SelectionState,
   Slice,
+  SliceReading<readonly SchemaFieldDefinition[]>,
   SortCapabilities,
   SortDirection,
   SortTerm,
@@ -283,8 +283,6 @@ type EveryPublicType = [
 
 /** Every type the binding entry point exports, as one enumerable tuple. */
 type EveryBindingType = [
-  Channel<unknown>,
-  ChannelConfig<unknown>,
   ColumnLayout,
   ColumnLayoutState,
   ColumnSizing,
@@ -355,13 +353,21 @@ describe("public surface types", () => {
   it("re-exports the root's type surface name by name", () => {
     // The import above is checked by the compiler, so a name that leaves
     // the barrel fails to compile. This is the other direction: a name that
-    // *enters* it without a decision, which no type assertion can catch —
-    // the tuple's own length only ever compares the list against itself.
+    // *enters* it without a decision, which no type assertion can catch.
     const surface = [
       ...new Set(listTypeSurface(path.resolve("src/lib/index.ts"))),
     ].sort();
     expect(surface).toEqual(listPinned("\\./index\\.js").sort());
-    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<115>();
+    // No member of the surface has collapsed to `any`.
+    expectTypeOf<EveryPublicType[number]>().not.toBeAny();
+  });
+
+  it("publishes the root through one line of the package entry", () => {
+    // The entry file is what `.` resolves to; the walk above reads the
+    // barrel behind it, so the entry must hold that barrel and nothing else.
+    const text = readFileSync(path.resolve("src/index.ts"), "utf8");
+    const exports = text.match(/^export .*$/gm) ?? [];
+    expect(exports).toEqual(['export * from "./lib/index.js";']);
   });
 
   it("re-exports the binding entry point's type surface name by name", () => {
@@ -369,7 +375,7 @@ describe("public surface types", () => {
       ...new Set(listTypeSurface(path.resolve("src/lib/bindings/index.ts"))),
     ].sort();
     expect(surface).toEqual(listPinned("\\./lib/bindings/index\\.js").sort());
-    expectTypeOf<EveryBindingType["length"]>().toEqualTypeOf<17>();
+    expectTypeOf<EveryBindingType[number]>().not.toBeAny();
     // Nothing a binding takes from here is also on the application root.
     for (const name of surface) {
       expect(listTypeSurface(path.resolve("src/lib/index.ts"))).not.toContain(
@@ -392,7 +398,7 @@ describe("public surface types", () => {
       "areSortsEqual",
       "collapseSortTerms",
       "executeSlice",
-      "supportsRequest",
+      "refusalsOf",
       "readField",
       "isCalendarDate",
     ]) {
@@ -403,7 +409,7 @@ describe("public surface types", () => {
 
   it("keeps only the saved-view store behind ./indexeddb", () => {
     expectTypeOf<EveryIndexedDBType>().not.toBeAny();
-    expectTypeOf<EveryIndexedDBType["length"]>().toEqualTypeOf<2>();
+    expectTypeOf<EveryIndexedDBType[number]>().not.toBeAny();
     // The contract itself is at the root, where types cost no bytes.
     expectTypeOf<
       ViewStore["create"]
@@ -440,8 +446,7 @@ describe("public surface types", () => {
     >().toEqualTypeOf<"stale">();
   });
 
-  it("exports the identity functions with the declared shapes", () => {
-    expectTypeOf(bindings.createIdentity).returns.toEqualTypeOf<Identity>();
+  it("exports the identity check with the declared shape", () => {
     expectTypeOf(bindings.isIdentity).parameter(0).toEqualTypeOf<unknown>();
   });
 
@@ -458,8 +463,7 @@ describe("public surface types", () => {
   });
 
   it("exports the query grammar with the slice comparison on ./bindings", () => {
-    expectTypeOf(bindings.canonicalSlice).parameter(0).toEqualTypeOf<Slice>();
-    expectTypeOf(bindings.sliceEquals).parameters.toEqualTypeOf<
+    expectTypeOf(bindings.areSlicesEqual).parameters.toEqualTypeOf<
       [Slice, Slice]
     >();
     expectTypeOf<Query>().toEqualTypeOf<{
@@ -482,9 +486,6 @@ describe("public surface types", () => {
     expectTypeOf<GridInteraction["state"]>().toEqualTypeOf<
       ReadonlyChannel<GridInteractionState>
     >();
-    expectTypeOf(bindings.createChannel<number>).returns.toEqualTypeOf<
-      Channel<number>
-    >();
   });
 
   it("discriminates the completion and outcome unions by status", () => {
@@ -496,7 +497,7 @@ describe("public surface types", () => {
       | "pending"
       | "refreshing"
       | "ready"
-      | "refreshFailed"
+      | "refresh-failed"
       | "stale"
       | "failed"
     >();
@@ -519,12 +520,16 @@ describe("public surface types", () => {
       { field: "cpu", kind: "number" },
       { field: "owner", kind: "flag" },
     ]);
-    type Machines = AppliedValues<typeof machines.fields>;
-    expectTypeOf<Machines["status"]>().toEqualTypeOf<
-      ReadonlySet<"failed" | "cancelled">
+    type Machines = ProviderFields<typeof machines.fields>;
+    expectTypeOf<Machines["status"]["eq"]["applied"]>().toEqualTypeOf<
+      ReadonlyChannel<EmptyOr<ReadonlySet<"failed" | "cancelled">>>
     >();
-    expectTypeOf<Machines["cpu"]>().toEqualTypeOf<number>();
-    expectTypeOf<Machines["owner"]>().toEqualTypeOf<boolean>();
+    expectTypeOf<Machines["cpu"]["gte"]["applied"]>().toEqualTypeOf<
+      ReadonlyChannel<EmptyOr<number>>
+    >();
+    expectTypeOf<Machines["owner"]["isSet"]["applied"]>().toEqualTypeOf<
+      ReadonlyChannel<EmptyOr<boolean>>
+    >();
   });
 
   it("takes the provider's bounded commands one object at a time", () => {
@@ -614,14 +619,14 @@ describe("public surface types", () => {
     expectTypeOf<SourceRefusalPart>().toEqualTypeOf<
       "filter" | "search" | "sort" | "group" | "window" | "targets"
     >();
-    expectTypeOf<SourceBinding["supports"]>().returns.toEqualTypeOf<
+    expectTypeOf<SourceBinding["refusals"]>().returns.toEqualTypeOf<
       readonly SourceRefusal[]
     >();
     // Every count is declared on its own, and claimed on its own.
     expectTypeOf<
       SourceCapabilities["counts"]
     >().toEqualTypeOf<CountCapabilities>();
-    expectTypeOf<SourceCounts["visible"]>().toEqualTypeOf<Count>();
+    expectTypeOf<SourceCounts["pageable"]>().toEqualTypeOf<Count>();
   });
 
   it("addresses an action's targets explicitly or by query", () => {
@@ -649,7 +654,7 @@ describe("public surface types", () => {
     // The observer TanStack Query mints and the environment Relay hands the
     // adapter are matched structurally; an application writes the config
     // and never names the shape the client is held to.
-    expectTypeOf<QuerySourceConfig>().toHaveProperty("observe");
+    expectTypeOf<QuerySourceConfig>().toHaveProperty("createObserver");
     expectTypeOf<RelaySourceConfig>().toHaveProperty("environment");
     const surface = listTypeSurface(path.resolve("src/lib/index.ts"));
     expect(
