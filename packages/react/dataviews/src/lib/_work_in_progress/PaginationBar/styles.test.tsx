@@ -13,14 +13,13 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  createDataViewsProvider,
-  createSchema,
-  DEFAULT_WINDOW,
-  type SourcePage,
-} from "@canonical/dataviews-core";
+import { createPage, DEFAULT_WINDOW } from "@canonical/dataviews-core";
 import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import {
+  createMachineProvider,
+  machine,
+} from "../../../../testing/machines.js";
 import PaginationBar from "./PaginationBar.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -68,34 +67,24 @@ const selectorOf = (dom: string): string =>
     : dom;
 
 /** Two of three rows, counted exactly, as a source delivers them. */
-const twoOfThree: SourcePage = {
-  rows: [{ id: "m1" }, { id: "m2" }],
-  groups: null,
-  counts: {
-    pageable: { kind: "exact", value: 3 },
-    matched: { kind: "exact", value: 3 },
-    total: { kind: "exact", value: 3 },
-  },
-  more: null,
-  cursors: null,
-};
+const twoOfThree = createPage({
+  rows: [machine("m1", "one"), machine("m2", "two")],
+  matched: 3,
+  total: 3,
+});
 
-/** A bar over two pages of results, the page total showing. */
+/**
+ * A bar over two pages of results, the page total showing. The bar
+ * observes its provider on mount, so the source's request exists once it
+ * has rendered, and is answered then.
+ */
 const loaded = (): HTMLElement => {
-  const schema = createSchema([
-    { field: "status", kind: "choices", options: ["failed", "ready"] },
-  ]);
-  const provider = createDataViewsProvider({
-    schema,
-    window: { ...DEFAULT_WINDOW, page: 1, size: 2 },
+  const { provider, source } = createMachineProvider({
+    seed: { window: { ...DEFAULT_WINDOW, page: 1, size: 2 } },
   });
   const { container } = render(<PaginationBar provider={provider} />);
-  const requestId = provider.refresh();
-  if (requestId === null) {
-    throw new Error("expected a refresh request");
-  }
   act(() => {
-    provider.complete(requestId, { status: "succeeded", page: twoOfThree });
+    source.latest().deliver({ status: "succeeded", page: twoOfThree });
   });
   return container;
 };

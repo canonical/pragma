@@ -7,19 +7,22 @@
  * jsdom lays nothing out, so the viewport's height, its scroll position
  * and every row's measured size are the test's to set.
  */
-import {
-  createDataViewsProvider,
-  createSchema,
-  type DataViewsProvider,
-  declareCapabilities,
-} from "@canonical/dataviews-core";
+import type { DataViewsProvider } from "@canonical/dataviews-core";
+import { readProviderHost } from "@canonical/dataviews-core/bindings";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { type ReactElement, StrictMode } from "react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import elementAt from "../../../../../testing/elementAt.js";
-import { COUNTED_EXACTLY } from "../../../../../testing/fixtures.js";
+import { deliverRows, pageOf } from "../../../../../testing/fixtures.js";
+import {
+  createMachineProvider,
+  type Machine,
+  type MachineFields,
+  machine,
+} from "../../../../../testing/machines.js";
+import type { ManualSource } from "../../../../../testing/types.js";
 import {
   DataTable,
   type DataTableCellProps,
@@ -28,32 +31,13 @@ import {
 } from "../../../_work_in_progress/DataTable/index.js";
 import virtualizeRows from "../../virtualizeRows.js";
 
-const schema = createSchema([
-  { field: "name", kind: "text" },
-  { field: "status", kind: "choices", options: ["failed", "running"] },
-]);
-
-type Fields = typeof schema.fields;
-type Machine = {
-  readonly id: string;
-  readonly name: string;
-  readonly status: string;
-};
-
-const capabilities = declareCapabilities(schema, {
-  filter: { status: ["eq"] },
-  search: ["name"],
-  sort: { fields: ["name"], terms: 1, tiebreak: "opaque" },
-  counts: COUNTED_EXACTLY,
-});
+type Provider = DataViewsProvider<MachineFields, Machine>;
 
 /** `count` machines from `m-<from>`, each named `host-<n>`. */
 const machines = (count: number, from = 0): Machine[] =>
-  Array.from({ length: count }, (_, position) => ({
-    id: `m-${from + position}`,
-    name: `host-${from + position}`,
-    status: "running",
-  }));
+  Array.from({ length: count }, (_, position) =>
+    machine(`m-${from + position}`, `host-${from + position}`),
+  );
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Name", resizable: true },
@@ -138,28 +122,37 @@ const report = (
   });
 };
 
-/** Settle a fresh request on the provider with these rows. */
+/**
+ * Deliver these rows for the source's live request. A request already
+ * settled takes a later delivery as an external change to the same query,
+ * which the provider republishes under a fresh identity.
+ */
 const load = (
-  provider: DataViewsProvider<Fields, Machine>,
+  source: ManualSource<Machine>,
   rows: readonly Machine[],
 ): void => {
-  const requestId = provider.refresh();
-  if (requestId === null) {
-    throw new Error("expected a refresh request");
-  }
-  const counted = { kind: "exact", value: rows.length } as const;
   act(() => {
-    provider.complete(requestId, {
-      status: "succeeded",
-      page: {
-        rows,
-        groups: null,
-        counts: { pageable: counted, matched: counted, total: counted },
-        more: null,
-        cursors: null,
-      },
+    source.latest().deliver({ status: "succeeded", page: pageOf(rows) });
+  });
+};
+
+/** Fail the source's live request. */
+const fail = (source: ManualSource<Machine>, reason: string): void => {
+  act(() => {
+    source.latest().deliver({
+      status: "failed",
+      failure: { reason, cause: null, transient: null },
     });
   });
+};
+
+/**
+ * Feed rows to a provider nothing observes yet, as a server or a host that
+ * already holds them would: its first observer then asks for nothing.
+ */
+const preload = (provider: Provider, rows: readonly Machine[]): void => {
+  const host = readProviderHost(provider);
+  host.complete(host.refresh(), deliverRows(rows));
 };
 
 /** Give a table a scroll position the test can set, starting at the top. */
@@ -172,16 +165,13 @@ const scrollable = (table: HTMLElement): HTMLElement => {
   return table;
 };
 
-const makeProvider = (): DataViewsProvider<Fields, Machine> =>
-  createDataViewsProvider<Fields, Machine>({ schema, capabilities });
-
-/** A windowed table over `rows`, scrolled to the top. */
+/** A windowed table over `rows`, delivered by hand, scrolled to the top. */
 const windowedTable = (
   rows: readonly Machine[] = machines(1000),
-  props: Partial<DataTableProps<Fields, Machine>> = {},
+  props: Partial<DataTableProps<MachineFields, Machine>> = {},
   wrap: (table: ReactElement) => ReactElement = (table) => table,
 ) => {
-  const provider = makeProvider();
+  const { provider, source } = createMachineProvider();
   const view = render(
     wrap(
       <DataTable
@@ -193,8 +183,13 @@ const windowedTable = (
       />,
     ),
   );
-  load(provider, rows);
-  return { provider, view, table: scrollable(screen.getByRole("table")) };
+  load(source, rows);
+  return {
+    provider,
+    source,
+    view,
+    table: scrollable(screen.getByRole("table")),
+  };
 };
 
 /**
@@ -586,10 +581,10 @@ describe("windowed DataTable", () => {
 
     it("holds the view at the bottom when rows above it leave", () => {
       const rows = machines(1000);
-      const { provider, table } = windowedTable(rows);
+      const { source, table } = windowedTable(rows);
       pageBound(table);
       scrollTo(table, 9900);
-      load(provider, rows.slice(5));
+      load(source, rows.slice(5));
       expect(table.scrollTop).toBe(9850);
     });
 
@@ -625,11 +620,11 @@ describe("windowed DataTable", () => {
 
     it("forgets the height of a row whose record was replaced", () => {
       const rows = machines(1000);
-      const { provider, table } = windowedTable(rows);
+      const { source, table } = windowedTable(rows);
       report(machines(5).map((row) => [rowOf(row.name), 20] as const));
       scrollTo(table, 5000);
       load(
-        provider,
+        source,
         rows.map((row) =>
           row.id === "m-2" ? { ...row, name: "renamed" } : row,
         ),
@@ -641,39 +636,30 @@ describe("windowed DataTable", () => {
   describe("new entries", () => {
     it("keeps the view on its rows when rows arrive above them", () => {
       const rows = machines(1000);
-      const { provider, table } = windowedTable(rows);
+      const { source, table } = windowedTable(rows);
       scrollTo(table, 5000);
-      load(provider, [...machines(5, 1000), ...rows]);
+      load(source, [...machines(5, 1000), ...rows]);
       expect(table.scrollTop).toBe(5050);
       expect(rowOf("host-500")).toHaveAttribute("aria-rowindex", "507");
       // The correction is made once: the same rows again move nothing.
-      load(provider, [...machines(5, 1000), ...rows]);
+      load(source, [...machines(5, 1000), ...rows]);
       expect(table.scrollTop).toBe(5050);
     });
 
     it("shows rows arriving at the very top rather than scrolling past them", () => {
       const rows = machines(1000);
-      const { provider, table } = windowedTable(rows);
-      load(provider, [...machines(5, 1000), ...rows]);
+      const { source, table } = windowedTable(rows);
+      load(source, [...machines(5, 1000), ...rows]);
       expect(table.scrollTop).toBe(0);
       expect(mountedHosts()[0]).toBe("host-1000");
     });
 
     it("counts and places a stale status among the rows it stands above", () => {
-      const { provider, table } = windowedTable();
+      const { provider, source, table } = windowedTable();
       act(() => {
         provider.setSearch("host-1");
       });
-      const requestId = provider.state.get().pendingRequestId;
-      if (requestId === null) {
-        throw new Error("expected the search to issue a request");
-      }
-      act(() => {
-        provider.complete(requestId, {
-          status: "failed",
-          failure: { reason: "unreachable", cause: null, transient: null },
-        });
-      });
+      fail(source, "unreachable");
       expect(table).toHaveAttribute("aria-rowcount", "1002");
       const [, status, first] = screen.getAllByRole("row");
       expect(status).toHaveAttribute("aria-rowindex", "2");
@@ -682,22 +668,13 @@ describe("windowed DataTable", () => {
 
     it("renders an unchanged status once, however often the table renders", () => {
       const renderStatus = vi.fn(() => "Not current");
-      const { provider, table, view } = windowedTable(machines(1000), {
+      const { provider, source, table, view } = windowedTable(machines(1000), {
         renderStatus,
       });
       act(() => {
         provider.setSearch("host-1");
       });
-      const requestId = provider.state.get().pendingRequestId;
-      if (requestId === null) {
-        throw new Error("expected the search to issue a request");
-      }
-      act(() => {
-        provider.complete(requestId, {
-          status: "failed",
-          failure: { reason: "unreachable", cause: null, transient: null },
-        });
-      });
+      fail(source, "unreachable");
       const calls = renderStatus.mock.calls.length;
       view.rerender(
         <DataTable
@@ -731,8 +708,12 @@ describe("windowed DataTable", () => {
   });
 
   it("keeps each table's own range, whatever descriptor they share", () => {
-    const first = makeProvider();
-    const second = makeProvider();
+    const { provider: first } = createMachineProvider({
+      rows: machines(1000),
+    });
+    const { provider: second } = createMachineProvider({
+      rows: machines(1000),
+    });
     render(
       <>
         <DataTable
@@ -749,8 +730,6 @@ describe("windowed DataTable", () => {
         />
       </>,
     );
-    load(first, machines(1000));
-    load(second, machines(1000));
     const tables = screen.getAllByRole("table").map(scrollable);
     const one = elementAt(tables, 0);
     const two = elementAt(tables, 1);
@@ -784,8 +763,10 @@ describe("windowed DataTable", () => {
   });
 
   it("measures the rows it mounted before a double mount remounted it", () => {
-    const provider = makeProvider();
-    load(provider, machines(1000));
+    // The rows are there before the first mount, as a host that already
+    // holds them would have it.
+    const { provider } = createMachineProvider();
+    preload(provider, machines(1000));
     render(
       <StrictMode>
         <DataTable
@@ -848,8 +829,10 @@ describe("windowed DataTable", () => {
 
   it("hydrates the server's whole window without a mismatch, then narrows it", async () => {
     const errors = vi.spyOn(console, "error");
-    const provider = makeProvider();
-    load(provider, machines(100));
+    // The server holds the rows before it renders; nothing observes the
+    // provider there, and the client's first observer finds nothing pending.
+    const { provider, source } = createMachineProvider();
+    preload(provider, machines(100));
     const table = (
       <DataTable
         provider={provider}
@@ -864,6 +847,11 @@ describe("windowed DataTable", () => {
     expect(container.querySelectorAll('[role="row"]')).toHaveLength(101);
     const root = await act(async () => hydrateRoot(container, table));
     expect(errors).not.toHaveBeenCalled();
+    // The hydrated table observes the provider: the server's rows stay on
+    // screen while the source, live for the first time on the client, is
+    // asked for the same query once.
+    expect(source.calls).toHaveLength(1);
+    expect(provider.state.get().result.status).toBe("refreshing");
     expect(container.querySelectorAll('[role="row"]')).toHaveLength(16);
     // A row hydrated from the server's markup is measured like any other.
     const hydrated = container.querySelector('[aria-rowindex="4"]');

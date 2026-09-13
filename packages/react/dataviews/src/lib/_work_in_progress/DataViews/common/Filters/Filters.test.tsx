@@ -5,47 +5,66 @@
  * mutation-tested against that contract.
  */
 import {
+  createCollection,
   createDataViewsProvider,
-  createSchema,
   type DataViewsProvider,
   DEFAULT_WINDOW,
   declareCapabilities,
+  type Query,
+  type Slice,
   type SourceCapabilities,
 } from "@canonical/dataviews-core";
+import { readProviderHost } from "@canonical/dataviews-core/bindings";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
 import { describe, expect, it } from "vitest";
+import createManualSource from "../../../../../../testing/createManualSource.js";
 import { COUNTED_EXACTLY } from "../../../../../../testing/fixtures.js";
 import DataViews from "../../Provider.js";
 import Filters from "./Filters.js";
 
-const schema = createSchema([
-  {
-    field: "status",
-    kind: "choices",
-    options: ["failed", "cancelled", "ready"],
-  },
-  { field: "cpu", kind: "number", min: 0, max: 64 },
-  { field: "updated", kind: "date" },
-  { field: "owner", kind: "flag" },
-  { field: "name", kind: "text" },
-]);
+/** One record of the collection; the controls never read a row. */
+type Row = { readonly id: string };
 
-type Fields = typeof schema.fields;
+/** A collection with a field of every kind, so every control is exercised. */
+const collection = createCollection({
+  identify: (row: Row) => row.id,
+  fields: [
+    {
+      field: "status",
+      kind: "choices",
+      options: ["failed", "cancelled", "ready"],
+    },
+    { field: "cpu", kind: "number", min: 0, max: 64 },
+    { field: "updated", kind: "date" },
+    { field: "owner", kind: "flag" },
+    { field: "name", kind: "text" },
+  ],
+});
+
+type Fields = typeof collection.schema.fields;
 
 /** A source declaring every operator the schema allows, and nothing else. */
-const everything = declareCapabilities(schema, {
+const everything = declareCapabilities(collection, {
   filter: { status: true, cpu: true, updated: true, owner: true },
   counts: COUNTED_EXACTLY,
 });
 
+/**
+ * A provider over a source declaring `capabilities`, which no case ever
+ * answers: the controls edit the query, and what the source delivers for
+ * it is the table's concern.
+ */
 const makeProvider = (
   capabilities: SourceCapabilities = everything,
-): DataViewsProvider<Fields> =>
-  createDataViewsProvider<Fields>({ schema, capabilities });
+): DataViewsProvider<Fields, Row> =>
+  createDataViewsProvider({
+    collection,
+    source: createManualSource<Row>({ capabilities }).source,
+  });
 
 const mount = (
-  provider: DataViewsProvider<Fields>,
+  provider: DataViewsProvider<Fields, Row>,
   props: Parameters<typeof Filters>[0] = {},
 ) =>
   render(
@@ -53,6 +72,20 @@ const mount = (
       <Filters {...props} />
     </DataViews>,
   );
+
+/** Move the query under the root, as a location or a saved view would. */
+const adopt = (
+  provider: DataViewsProvider<Fields, Row>,
+  filter: Slice["filter"],
+): void => {
+  const query: Query = {
+    slice: { filter, search: null, sort: [], group: [] },
+    window: DEFAULT_WINDOW,
+  };
+  act(() => {
+    readProviderHost(provider).adopt(query);
+  });
+};
 
 describe("DataViews.Filters", () => {
   it("is reachable as the composition's Filters part", () => {
@@ -62,13 +95,6 @@ describe("DataViews.Filters", () => {
   it("fails clearly outside a DataViews root", () => {
     expect(() => render(<Filters />)).toThrow(
       "DataViews.Filters must be used inside a DataViews root",
-    );
-  });
-
-  it("fails clearly when the provider was not told what its source executes", () => {
-    const provider = createDataViewsProvider<Fields>({ schema });
-    expect(() => mount(provider)).toThrow(
-      "DataViews.Filters requires a provider given the source's capabilities; pass them to createDataViewsProvider",
     );
   });
 
@@ -199,6 +225,52 @@ describe("DataViews.Filters", () => {
     expect(feedback).toHaveAttribute("role", "status");
   });
 
+  it("keeps the applied bound on an edit the source refuses and says why", () => {
+    // The declaration allows every bound; the source itself refuses one
+    // range — the check a declaration cannot express.
+    const source = createManualSource<Row>({
+      capabilities: everything,
+      refusals: (query) =>
+        query.slice.filter.some(
+          (predicate) =>
+            predicate.field === "cpu" && Number(predicate.operands[0]) > 32,
+        )
+          ? [
+              {
+                part: "filter",
+                code: "unsupported-combination",
+                field: "cpu",
+                operator: "gte",
+                reason: "this source counts cores up to 32",
+              },
+            ]
+          : [],
+    });
+    const provider = createDataViewsProvider({
+      collection,
+      source: source.source,
+    });
+    mount(provider);
+    const input = screen.getByLabelText("cpu from");
+    fireEvent.change(input, { target: { value: "48" } });
+    expect(provider.state.get().slice.filter).toEqual([]);
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(
+      screen.getByText("This source counts cores up to 32."),
+    ).toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: "4" } });
+    fireEvent.change(input, { target: { value: "48" } });
+    expect(provider.state.get().slice.filter).toEqual([
+      { field: "cpu", operator: "gte", operands: [4] },
+    ]);
+    expect(
+      screen.getByText(
+        "This source counts cores up to 32. The previous restriction still applies.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("does not claim a restriction still applies when none does", () => {
     const provider = makeProvider();
     mount(provider);
@@ -283,51 +355,37 @@ describe("DataViews.Filters", () => {
     const provider = makeProvider({ ...everything, filter: {} });
     mount(provider);
     expect(screen.queryByRole("checkbox")).toBeNull();
-    act(() => {
-      provider.adopt({
-        slice: {
-          filter: [
-            { field: "status", operator: "eq", operands: ["failed"] },
-            { field: "cpu", operator: "lte", operands: [8] },
-            { field: "owner", operator: "isSet", operands: [] },
-          ],
-          search: null,
-          sort: [],
-          group: [],
-        },
-        window: DEFAULT_WINDOW,
-      });
-    });
+    adopt(provider, [
+      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "cpu", operator: "lte", operands: [8] },
+      { field: "owner", operator: "isSet", operands: [] },
+    ]);
     // Nothing else removes it, so each stays offered while it stands — for
     // removal only: nothing can be added the source never declared.
     expect(screen.getByRole("checkbox", { name: "cancelled" })).toBeDisabled();
     expect(screen.getByRole("checkbox", { name: "failed" })).toBeEnabled();
+    expect(screen.getByRole("checkbox", { name: "owner" })).toBeEnabled();
     expect(screen.getByLabelText("cpu to")).toHaveAttribute("readonly");
-    fireEvent.click(screen.getByRole("checkbox", { name: "failed" }));
-    fireEvent.click(screen.getByRole("button", { name: "Clear cpu to" }));
-    fireEvent.click(screen.getByRole("checkbox", { name: "owner" }));
-    expect(provider.state.get().slice.filter).toEqual([]);
+    expect(
+      screen.getByRole("button", { name: "Clear cpu to" }),
+    ).toBeInTheDocument();
+    // The query moving on withdraws what no longer stands.
+    adopt(provider, [{ field: "cpu", operator: "lte", operands: [8] }]);
     expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(screen.getByLabelText("cpu to")).toHaveValue("8");
+    // The last undeclared restriction is removed through its own control.
+    fireEvent.click(screen.getByRole("button", { name: "Clear cpu to" }));
+    expect(provider.state.get().slice.filter).toEqual([]);
     expect(screen.queryByLabelText("cpu to")).toBeNull();
   });
 
   it("shows the query the provider adopted from elsewhere", () => {
     const provider = makeProvider();
     mount(provider);
-    act(() => {
-      provider.adopt({
-        slice: {
-          filter: [
-            { field: "status", operator: "eq", operands: ["cancelled"] },
-            { field: "cpu", operator: "gte", operands: [8] },
-          ],
-          search: null,
-          sort: [],
-          group: [],
-        },
-        window: DEFAULT_WINDOW,
-      });
-    });
+    adopt(provider, [
+      { field: "status", operator: "eq", operands: ["cancelled"] },
+      { field: "cpu", operator: "gte", operands: [8] },
+    ]);
     expect(screen.getByRole("checkbox", { name: "cancelled" })).toBeChecked();
     expect(screen.getByLabelText("cpu from")).toHaveValue("8");
   });
@@ -349,17 +407,7 @@ describe("DataViews.Filters", () => {
       { field: "status", operator: "eq", operands: ["failed"] },
       { field: "cpu", operator: "gte", operands: [4] },
     ]);
-    act(() => {
-      provider.adopt({
-        slice: {
-          filter: [{ field: "status", operator: "eq", operands: ["ready"] }],
-          search: null,
-          sort: [],
-          group: [],
-        },
-        window: DEFAULT_WINDOW,
-      });
-    });
+    adopt(provider, [{ field: "status", operator: "eq", operands: ["ready"] }]);
     expect(screen.getByRole("checkbox", { name: "ready" })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: "failed" })).not.toBeChecked();
     expect(screen.getByLabelText("cpu from")).toHaveValue("");

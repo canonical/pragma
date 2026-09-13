@@ -13,12 +13,9 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  createDataViewsProvider,
-  createSchema,
-} from "@canonical/dataviews-core";
 import { act, render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { createMachineProvider } from "../../../../../../testing/machines.js";
 import DataViews from "../../Provider.js";
 import Actions from "./Actions.js";
 
@@ -68,10 +65,7 @@ const selectorOf = (dom: string): string =>
 
 /** An action bar over a selection of two. */
 const selected = (): HTMLElement => {
-  const schema = createSchema([
-    { field: "status", kind: "choices", options: ["failed", "ready"] },
-  ]);
-  const provider = createDataViewsProvider({ schema });
+  const { provider } = createMachineProvider({ rows: [] });
   const { container } = render(
     <DataViews provider={provider}>
       <Actions />

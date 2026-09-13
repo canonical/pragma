@@ -7,6 +7,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import type {
+  EmptyOr,
+  ReadonlyChannel,
   RowRecord,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
@@ -25,7 +27,7 @@ import type {
   DataViewsViewsProps,
   PaginationBarProps,
   UseDataViewsCellResult,
-  UseDataViewsFieldResult,
+  UseDataViewsFilterResult,
   UseDataViewsResult,
 } from "./index.js";
 import * as dataviewsReact from "./index.js";
@@ -37,7 +39,7 @@ type Fields = readonly SchemaFieldDefinition[];
 /** Every type the package root re-exports, as one enumerable tuple. */
 type EveryPublicType = [
   DataViewsActionsProps,
-  DataViewsDataTableProps<Fields>,
+  DataViewsDataTableProps,
   DataTableCellProps,
   DataTableColumn,
   DataTableProps<Fields>,
@@ -48,7 +50,7 @@ type EveryPublicType = [
   PaginationBarProps<Fields>,
   DataViewsPaginationProps,
   UseDataViewsCellResult,
-  UseDataViewsFieldResult<unknown>,
+  UseDataViewsFilterResult<unknown>,
   UseDataViewsResult<Fields>,
   DataViewsViewsProps,
 ];
@@ -162,7 +164,7 @@ describe("public surface types", () => {
       "PaginationBar",
       "useDataViews",
       "useDataViewsCell",
-      "useDataViewsField",
+      "useDataViewsFilter",
       "useDataViewsValue",
     ]);
   });
@@ -208,7 +210,35 @@ describe("the pagination bar's props", () => {
   });
 });
 
+describe("the hooks' results", () => {
+  it("type the record and the applied value by the collection they were given", () => {
+    expectTypeOf<
+      UseDataViewsCellResult<{ readonly id: string }>["record"]
+    >().toEqualTypeOf<ReadonlyChannel<{ readonly id: string }>>();
+    expectTypeOf<UseDataViewsFilterResult<number>["applied"]>().toEqualTypeOf<
+      EmptyOr<number>
+    >();
+  });
+
+  it("hand a child the provider's commands and this root's filters, and nothing that starts or resets it", () => {
+    expectTypeOf<UseDataViewsResult<Fields>>().toHaveProperty("filters");
+    expectTypeOf<UseDataViewsResult<Fields>>().toHaveProperty("runAction");
+    expectTypeOf<UseDataViewsResult<Fields>>().not.toHaveProperty("observe");
+    expectTypeOf<UseDataViewsResult<Fields>>().not.toHaveProperty("reset");
+  });
+});
+
 describe("connected part props", () => {
+  it("keeps the connected table's provider out of its props", () => {
+    // The root supplies it; the records are the widest shape, narrowed by a
+    // custom cell through `useDataViewsCell(collection)`.
+    expectTypeOf<DataViewsDataTableProps>().not.toHaveProperty("provider");
+    expectTypeOf<DataViewsDataTableProps>().toHaveProperty("columns");
+    expectTypeOf<
+      Omit<DataTableProps<Fields, RowRecord>, "provider">
+    >().toEqualTypeOf<DataViewsDataTableProps>();
+  });
+
   it("keeps what Filters derives out of its props", () => {
     // Its controls come from the provider, its name from its legend and the
     // fieldset's group role is its own.

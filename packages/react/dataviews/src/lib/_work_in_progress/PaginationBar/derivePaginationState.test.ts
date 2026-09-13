@@ -1,22 +1,33 @@
 import {
-  type CollectionState,
   type Count,
+  createCollection,
   createDataViewsProvider,
-  createSchema,
+  type DataViewsState,
   DEFAULT_WINDOW,
+  declareCapabilities,
   type PageCursors,
   type ResultWindow,
   type SourceCapabilities,
   type SourceCounts,
   type SourcePage,
 } from "@canonical/dataviews-core";
+import { readProviderHost } from "@canonical/dataviews-core/bindings";
 import { describe, expect, it } from "vitest";
-import { countExactly } from "../../../../testing/fixtures.js";
+import createManualSource from "../../../../testing/createManualSource.js";
+import { COUNTED_EXACTLY, countExactly } from "../../../../testing/fixtures.js";
 import derivePaginationState from "./derivePaginationState.js";
 
-const schema = createSchema([
-  { field: "status", kind: "choices", options: ["failed", "ready"] },
-]);
+type Machine = { readonly id: string };
+
+const collection = createCollection({
+  identify: (machine: Machine) => machine.id,
+  fields: [{ field: "status", kind: "choices", options: ["failed", "ready"] }],
+});
+
+/** What the fixture source declares: every count exact, pages by number. */
+const capabilities = declareCapabilities(collection, {
+  counts: COUNTED_EXACTLY,
+});
 
 const on = (page: number, size: number): ResultWindow => ({
   ...DEFAULT_WINDOW,
@@ -49,13 +60,16 @@ const pageOf = ({
   pageable = unknown,
   more = null,
   cursors = null,
-}: Settled): SourcePage => ({
+}: Settled): SourcePage<Machine> => ({
   rows: Array.from({ length: rows }, (_unused, at) => ({ id: `m${at}` })),
   groups: null,
   counts: counting(pageable),
   more,
   cursors,
 });
+
+/** An offset source: any page is reachable by number. */
+const BY_NUMBER: SourceCapabilities["pagination"] = { kind: "offset" };
 
 /** A forward cursor source: pages are reached only through its tokens. */
 const FORWARD_CURSORS: SourceCapabilities["pagination"] = {
@@ -67,19 +81,22 @@ const FORWARD_CURSORS: SourceCapabilities["pagination"] = {
 /**
  * A provider's snapshot on `window`: settled with `settled` when given, and
  * with a replacement for the next page in flight when `pending` is set.
+ * Nothing observes the provider, so the page is fed through its host by
+ * hand rather than through the source.
  */
 const snapshot = (
   window: ResultWindow,
   settled?: Settled,
   pending = false,
-): CollectionState<object> => {
-  const provider = createDataViewsProvider({ schema, window });
+): DataViewsState<object> => {
+  const provider = createDataViewsProvider({
+    collection,
+    source: createManualSource<Machine>({ capabilities }).source,
+    seed: { window },
+  });
+  const host = readProviderHost(provider);
   if (settled !== undefined) {
-    const requestId = provider.refresh();
-    if (requestId === null) {
-      throw new Error("expected a refresh request");
-    }
-    provider.complete(requestId, {
+    host.complete(host.refresh(), {
       status: "succeeded",
       page: pageOf(settled),
     });
@@ -92,7 +109,9 @@ const snapshot = (
 
 describe("derivePaginationState", () => {
   it("claims nothing before the first results", () => {
-    expect(derivePaginationState(snapshot(on(1, 5)), [5])).toMatchObject({
+    expect(
+      derivePaginationState(snapshot(on(1, 5)), [5], BY_NUMBER),
+    ).toMatchObject({
       page: 1,
       size: 5,
       shown: null,
@@ -107,6 +126,7 @@ describe("derivePaginationState", () => {
     const state = derivePaginationState(
       snapshot(on(2, 5), { rows: 5, pageable: countExactly(12) }),
       [5],
+      BY_NUMBER,
     );
     expect(state).toMatchObject({ shown: 5, total: 12, pages: 3 });
     expect(state.hasNext).toBe(true);
@@ -117,6 +137,7 @@ describe("derivePaginationState", () => {
     const state = derivePaginationState(
       snapshot(on(3, 5), { rows: 2, pageable: countExactly(12) }),
       [5],
+      BY_NUMBER,
     );
     expect(state.hasNext).toBe(false);
     expect(state.back).toBe(2);
@@ -128,6 +149,7 @@ describe("derivePaginationState", () => {
       derivePaginationState(
         snapshot(on(1, 5), { rows: 5, pageable: atLeast(40) }),
         [5],
+        BY_NUMBER,
       ),
     ).toMatchObject({ shown: 5, total: null, pages: null });
   });
@@ -137,6 +159,7 @@ describe("derivePaginationState", () => {
       derivePaginationState(
         snapshot(on(1, 5), { rows: 5, pageable: unknown }),
         [5],
+        BY_NUMBER,
       ),
     ).toMatchObject({ total: null, pages: null });
   });
@@ -146,29 +169,42 @@ describe("derivePaginationState", () => {
       derivePaginationState(
         snapshot(on(1, 5), { rows: 0, pageable: countExactly(0) }),
         [5],
+        BY_NUMBER,
       ).pages,
     ).toBe(1);
   });
 
   it("takes the page's own word on a further page over a full page", () => {
     expect(
-      derivePaginationState(snapshot(on(1, 5), { rows: 5, more: false }), [5])
-        .hasNext,
+      derivePaginationState(
+        snapshot(on(1, 5), { rows: 5, more: false }),
+        [5],
+        BY_NUMBER,
+      ).hasNext,
     ).toBe(false);
     expect(
-      derivePaginationState(snapshot(on(1, 5), { rows: 4, more: true }), [5])
-        .hasNext,
+      derivePaginationState(
+        snapshot(on(1, 5), { rows: 4, more: true }),
+        [5],
+        BY_NUMBER,
+      ).hasNext,
     ).toBe(true);
   });
 
   it("guesses from a full page only where the source says nothing", () => {
     expect(
-      derivePaginationState(snapshot(on(1, 5), { rows: 5, more: null }), [5])
-        .hasNext,
+      derivePaginationState(
+        snapshot(on(1, 5), { rows: 5, more: null }),
+        [5],
+        BY_NUMBER,
+      ).hasNext,
     ).toBe(true);
     expect(
-      derivePaginationState(snapshot(on(1, 5), { rows: 4, more: null }), [5])
-        .hasNext,
+      derivePaginationState(
+        snapshot(on(1, 5), { rows: 4, more: null }),
+        [5],
+        BY_NUMBER,
+      ).hasNext,
     ).toBe(false);
   });
 
@@ -177,6 +213,7 @@ describe("derivePaginationState", () => {
       derivePaginationState(
         snapshot(on(9, 5), { rows: 0, pageable: countExactly(12) }),
         [5],
+        BY_NUMBER,
       ).back,
     ).toBe(3);
   });
@@ -189,6 +226,7 @@ describe("derivePaginationState", () => {
         true,
       ),
       [5],
+      BY_NUMBER,
     );
     expect(state).toMatchObject({ page: 2, shown: null, total: null });
     // Neither the count nor the source's word describes the pending page.
@@ -249,7 +287,7 @@ describe("derivePaginationState", () => {
         cursors: { next: "c:m4", previous: "c:m0" },
       }),
       [5],
-      { kind: "offset" },
+      BY_NUMBER,
     );
     expect(state.pages).toBe(3);
     expect(state.nextCursor).toBe(null);
@@ -260,10 +298,10 @@ describe("derivePaginationState", () => {
 
   it("offers each size once, the applied one always among them", () => {
     expect(
-      derivePaginationState(snapshot(on(1, 25)), [50, 10, 50]).sizes,
+      derivePaginationState(snapshot(on(1, 25)), [50, 10, 50], BY_NUMBER).sizes,
     ).toEqual([10, 25, 50]);
     expect(
-      derivePaginationState(snapshot(on(1, 25)), [25, 50, 25]).sizes,
+      derivePaginationState(snapshot(on(1, 25)), [25, 50, 25], BY_NUMBER).sizes,
     ).toEqual([25, 50]);
   });
 });

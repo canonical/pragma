@@ -2,38 +2,29 @@
  * The connected action bar: it reads the root's selection, shows only while
  * something is selected, and clears it.
  */
-import {
-  createDataViewsProvider,
-  createSchema,
-  type DataViewsProvider,
-} from "@canonical/dataviews-core";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { createRef, StrictMode } from "react";
 import { describe, expect, it, vi } from "vitest";
+import {
+  createMachineProvider,
+  type MachineProvider,
+} from "../../../../../../testing/machines.js";
 import DataViews from "../../Provider.js";
 import Actions from "./Actions.js";
 import type { DataViewsActionsProps } from "./types.js";
 
-const schema = createSchema([
-  { field: "status", kind: "choices", options: ["failed", "ready"] },
-]);
+/** A provider whose source answers every request at once with no rows. */
+const makeProvider = (): MachineProvider =>
+  createMachineProvider({ rows: [] }).provider;
 
-type Fields = typeof schema.fields;
-
-const makeProvider = (): DataViewsProvider<Fields> =>
-  createDataViewsProvider<Fields>({ schema });
-
-const mount = (
-  provider: DataViewsProvider<Fields>,
-  props: DataViewsActionsProps = {},
-) =>
+const mount = (provider: MachineProvider, props: DataViewsActionsProps = {}) =>
   render(
     <DataViews provider={provider}>
       <Actions {...props} />
     </DataViews>,
   );
 
-const select = (provider: DataViewsProvider<Fields>, ids: string[]): void => {
+const select = (provider: MachineProvider, ids: string[]): void => {
   act(() => {
     provider.selection.add(ids);
   });

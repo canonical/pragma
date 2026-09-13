@@ -1,6 +1,6 @@
 import type {
   DataViewsProvider,
-  Identity,
+  FilterHandles,
   ReadonlyChannel,
   RowRecord,
   SchemaFieldDefinition,
@@ -33,21 +33,39 @@ export type DataViewsProps<
 > = OwnProps<TFields, TRow>;
 
 /**
- * The value installed per rendered cell by the table renderer: the owning
- * provider, stable row and column identifiers, and the cell's observable
- * channels. The channels are read-only: a cell scope is a projection, not
- * another place to publish from.
- *
- * The provider is held as what its one consumer uses it for — a witness
- * compared by reference. Typing it as the whole provider would fix a field
- * list the table cannot know, and every table would cast its own provider
- * to satisfy it.
+ * The value one root installs for its connected parts and hooks: the
+ * provider, at the widest shape the context can hold, and this root's own
+ * filter records. The hooks narrow the provider back to its collection's
+ * types after checking, at runtime, that the collection is the one they
+ * were handed.
  */
-export type CellScopeValue = {
-  readonly provider: { readonly identity: Identity };
+export type ContextOptions = {
+  readonly provider: DataViewsProvider<readonly SchemaFieldDefinition[]>;
+  /**
+   * The filter records of this root — one per field and legal operator.
+   * The root's, not the provider's: two roots on one provider share the
+   * applied query and never each other's half-typed input.
+   */
+  readonly filters: FilterHandles<readonly SchemaFieldDefinition[]>;
+};
+
+/**
+ * The value installed per rendered cell by the table renderer: the
+ * collection the cell's provider was built over, stable row and column
+ * identifiers, and the cell's observable channels. The channels are
+ * read-only: a cell scope is a projection, not another place to publish
+ * from.
+ *
+ * The collection is held as what its one consumer uses it for — a witness
+ * compared by reference, never read. Typing it as a collection would fix a
+ * record type the table cannot know, and every table would cast its own
+ * collection to satisfy it.
+ */
+export type CellContextValue = {
+  readonly collection: object;
   readonly rowId: string;
   readonly columnId: string;
-  readonly row: ReadonlyChannel<unknown>;
+  readonly record: ReadonlyChannel<unknown>;
   readonly fields: Readonly<Record<string, ReadonlyChannel<unknown>>>;
   readonly selected: ReadonlyChannel<boolean>;
 };

@@ -52,7 +52,7 @@ export default function Views({
   onBlur,
   ...rest
 }: DataViewsViewsProps): ReactElement {
-  const provider = useDataViewsRoot("Views");
+  const { provider } = useDataViewsRoot("Views");
   const { views } = provider;
   if (views === null) {
     throw new Error(

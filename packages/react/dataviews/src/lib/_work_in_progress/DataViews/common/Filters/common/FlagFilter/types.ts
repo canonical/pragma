@@ -1,4 +1,4 @@
-import type { FieldHandle } from "@canonical/dataviews-core";
+import type { FilterHandle } from "@canonical/dataviews-core";
 
 /**
  * Props of one presence filter.
@@ -8,8 +8,8 @@ import type { FieldHandle } from "@canonical/dataviews-core";
  * a caller's native props.
  */
 export type FlagFilterProps = {
-  /** The provider handle for this field's presence predicate. */
-  readonly handle: FieldHandle<boolean>;
+  /** The root's handle for this field's presence predicate. */
+  readonly handle: FilterHandle<boolean>;
   /** The field's visible name. */
   readonly label: string;
   /**

@@ -6,12 +6,9 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  createDataViewsProvider,
-  createSchema,
-} from "@canonical/dataviews-core";
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { createMachineProvider } from "../../../../../testing/machines.js";
 import { DataTable } from "../../../_work_in_progress/DataTable/index.js";
 import virtualizeRows from "../../virtualizeRows.js";
 
@@ -22,9 +19,7 @@ const sheet = readFileSync(
 
 describe("windowed DataTable stylesheet", () => {
   it("styles the table a windowed body renders", () => {
-    const provider = createDataViewsProvider({
-      schema: createSchema([{ field: "owner", kind: "flag" }]),
-    });
+    const { provider } = createMachineProvider();
     const { container } = render(
       <DataTable
         provider={provider}

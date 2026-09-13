@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { useDataViewsField } from "../../../../hooks/index.js";
+import { useFilterHandle } from "../../../../hooks/index.js";
 import type { FlagFilterProps } from "./types.js";
 
 const componentCssClassName = "ds data-views-filters-flag";
@@ -14,7 +14,7 @@ export default function FlagFilter({
   label,
   declared,
 }: FlagFilterProps): ReactElement | null {
-  const field = useDataViewsField(handle);
+  const field = useFilterHandle(handle);
   const applied = field.applied.kind === "value";
   if (!declared && !applied) {
     return null;

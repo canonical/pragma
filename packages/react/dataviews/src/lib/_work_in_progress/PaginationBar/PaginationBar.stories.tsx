@@ -1,4 +1,4 @@
-import { DEFAULT_WINDOW, type RowRecord } from "@canonical/dataviews-core";
+import { DEFAULT_WINDOW } from "@canonical/dataviews-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactElement } from "react";
 import { expect, waitFor } from "storybook/test";
@@ -10,6 +10,7 @@ import { consumerCode } from "../../../storybook/machines/consumerCode.js";
 import {
   createPendingSource,
   createUncountedSource,
+  type Machine,
   type MachineFields,
 } from "../../../storybook/machines/fixtures.js";
 import {
@@ -59,7 +60,7 @@ const pageCode = `<>
 function MachinesPage({
   options,
   ...args
-}: Omit<PaginationBarProps<MachineFields, RowRecord>, "provider"> & {
+}: Omit<PaginationBarProps<MachineFields, Machine>, "provider"> & {
   readonly options?: MachineProviderConfig | undefined;
 }): ReactElement {
   const provider = useMachineProvider({
@@ -177,11 +178,12 @@ export const LastPage: Story = {
 export const WithoutACount: Story = {
   parameters: consumerCode({
     parts: ["DataTable", "PaginationBar", "type DataTableColumn"],
-    imports: `import { machineSchema, machinesApi } from "./machines.js";`,
+    imports: `import { machineCollection, machinesApi } from "./machines.js";`,
     declarations: `${columnsCode}
 
-// A source whose capabilities declare every count "unknown": each page
-// arrives with no total, as from a backend that pages without counting.`,
+// A source over the machine collection whose capabilities declare every
+// count "unknown": each page arrives with no total, as from a backend that
+// pages without counting.`,
     source: "machinesApi",
     window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
     render: pageCode,
@@ -205,7 +207,7 @@ export const Loading: Story = {
     parts: ["DataTable", "PaginationBar", "type DataTableColumn"],
     declarations: `${columnsCode}
 
-// Rendered before the bound source has answered.`,
+// Shown while the source has not answered its first request.`,
     window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
     render: pageCode,
   }),

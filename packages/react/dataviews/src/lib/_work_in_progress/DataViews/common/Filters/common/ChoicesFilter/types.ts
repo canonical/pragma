@@ -1,4 +1,4 @@
-import type { FieldHandle, PredicateOperand } from "@canonical/dataviews-core";
+import type { FilterHandle, PredicateOperand } from "@canonical/dataviews-core";
 
 /**
  * Props of one closed-set filter.
@@ -10,8 +10,8 @@ import type { FieldHandle, PredicateOperand } from "@canonical/dataviews-core";
 export type ChoicesFilterProps = {
   /** The field's option values, in schema order. */
   readonly options: readonly (string | number)[];
-  /** The provider handle for this field's equality predicate. */
-  readonly handle: FieldHandle<ReadonlySet<PredicateOperand>>;
+  /** The root's handle for this field's equality predicate. */
+  readonly handle: FilterHandle<ReadonlySet<PredicateOperand>>;
   /** The group's visible name. */
   readonly label: string;
   /**

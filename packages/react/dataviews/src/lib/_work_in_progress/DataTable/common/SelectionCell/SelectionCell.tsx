@@ -11,19 +11,19 @@ const componentCssClassName = "ds data-table-body-cell selection";
  */
 export default function SelectionCell<TRow extends object>({
   provider,
-  scope,
+  channels,
   selected,
   rowLabel,
 }: SelectionCellProps<TRow>): ReactElement {
-  const record = useDataViewsValue(scope.row);
+  const record = useDataViewsValue(channels.record);
   return (
     // biome-ignore lint/a11y/useSemanticElements: <td> is only valid inside a <table>, and this grid is deliberately not one
     <div role="cell" className={componentCssClassName}>
       <CheckboxInput
         checked={selected}
-        aria-label={`Select ${rowLabel(record, scope.id)}`}
+        aria-label={`Select ${rowLabel(record, channels.id)}`}
         onChange={() => {
-          provider.selection.toggle(scope.id);
+          provider.selection.toggle(channels.id);
         }}
       />
     </div>

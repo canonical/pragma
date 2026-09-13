@@ -6,12 +6,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  createDataViewsProvider,
-  createSchema,
-  type SavedView,
-  type ViewStore,
-} from "@canonical/dataviews-core";
+import type { SavedView, ViewStore } from "@canonical/dataviews-core";
+import { readProviderHost } from "@canonical/dataviews-core/bindings";
 import {
   act,
   fireEvent,
@@ -20,6 +16,7 @@ import {
   within,
 } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { createMachineProvider } from "../../../../../../testing/machines.js";
 import DataViews from "../../Provider.js";
 import Views from "./Views.js";
 
@@ -83,12 +80,7 @@ const store: ViewStore = {
 
 /** The control with a modified view open and one panel opened by `command`. */
 const opened = async (command: "Save as…" | "Delete…"): Promise<Element> => {
-  const provider = createDataViewsProvider({
-    schema: createSchema([
-      { field: "status", kind: "choices", options: ["failed", "running"] },
-    ]),
-    views: store,
-  });
+  const { provider } = createMachineProvider({ rows: [], views: store });
   const { container } = render(
     <DataViews provider={provider}>
       <Views />
@@ -102,7 +94,11 @@ const opened = async (command: "Save as…" | "Delete…"): Promise<Element> => 
     await provider.views?.open(view.id);
   });
   act(() => {
-    provider.fields.status.eq.set(["running"]);
+    readProviderHost(provider).setPredicate({
+      field: "status",
+      operator: "eq",
+      operands: ["running"],
+    });
   });
   fireEvent.click(control.getByRole("button", { name: command }));
   if (command === "Save as…") {

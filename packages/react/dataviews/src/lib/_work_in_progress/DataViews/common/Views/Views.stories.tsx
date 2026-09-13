@@ -1,7 +1,7 @@
 import {
-  createLocationBinding,
   createMemoryLocation,
   DEFAULT_WINDOW,
+  type QueryLocation,
   type ViewDraft,
   type ViewStore,
 } from "@canonical/dataviews-core";
@@ -11,8 +11,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
   type ReactElement,
   type ReactNode,
-  useEffect,
-  useMemo,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -331,20 +329,10 @@ export const StorageUnavailable: Story = {
 
 /** The query the location carries, shown the way an address bar would. */
 function QueryInTheLocation({
-  provider,
+  location,
 }: {
-  readonly provider: MachineProvider;
+  readonly location: QueryLocation;
 }): ReactElement {
-  // A memory location stands in for the browser's here, so the story never
-  // rewrites the page's own address.
-  const [location] = useState(() =>
-    createMemoryLocation({ href: "/machines" }),
-  );
-  const binding = useMemo(
-    () => createLocationBinding({ host: provider, location }),
-    [provider, location],
-  );
-  useEffect(() => binding.observe(), [binding]);
   const query = useSyncExternalStore(location.subscribe, () =>
     location.read().toString(),
   );
@@ -356,53 +344,39 @@ function QueryInTheLocation({
 }
 
 /**
- * The query in the URL: opening a view applies its query, and the location
- * binding writes that query to the location like any other edit. The query
- * travels in the link; the view itself stays in this browser.
+ * The query in the URL: opening a view applies its query, and the provider
+ * writes that query to its location like any other edit. The query travels
+ * in the link; the view itself stays in this browser.
  */
 export const WithTheQueryInTheUrl: Story = {
   parameters: consumerCode({
     parts: ["DataTable", "DataViews", "type DataTableColumn"],
-    core: ["createLocationBinding", "createPlatformLocation"],
-    coreTypes: ["DataViewsProvider"],
-    imports: `import { machineSchema, machines } from "./machines.js";
+    core: ["createPlatformLocation"],
+    imports: `import { machineCollection, machines } from "./machines.js";
 import { platform } from "./router.js";`,
-    hooks: ["useMemo"],
-    declarations: `${columnsCode}
-
-/** The URL as the query's other home: opening a view writes its query there. */
-function UrlQuery({
-  provider,
-}: {
-  provider: DataViewsProvider<typeof machineSchema.fields>;
-}) {
-  const binding = useMemo(
-    () =>
-      createLocationBinding({
-        host: provider,
-        location: createPlatformLocation(platform),
-      }),
-    [provider],
-  );
-  useEffect(() => binding.observe(), [binding]);
-  return null;
-}`,
+    declarations: columnsCode,
+    // The router's platform surface: anything with getLocation, navigate
+    // and subscribe. Opening a view writes its query there.
+    location: "createPlatformLocation(platform)",
     window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
     views: true,
-    render: composition.replace(
-      "  <DataViews.Views />",
-      "  <UrlQuery provider={provider} />\n  <DataViews.Views />",
-    ),
+    render: composition,
   }),
   render: function Render() {
+    // A memory location stands in for the browser's here, so the story
+    // never rewrites the page's own address.
+    const [location] = useState(() =>
+      createMemoryLocation({ href: "/machines" }),
+    );
     const { store } = useStoryViewStore({ seed: [failedMachines] });
     const provider = useMachineProvider({
       window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
       views: store,
+      location,
     });
     return (
       <Collection provider={provider}>
-        <QueryInTheLocation provider={provider} />
+        <QueryInTheLocation location={location} />
       </Collection>
     );
   },

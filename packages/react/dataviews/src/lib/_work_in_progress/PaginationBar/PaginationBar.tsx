@@ -1,15 +1,18 @@
 import type {
-  Identity,
   RowRecord,
   SchemaFieldDefinition,
   Slice,
 } from "@canonical/dataviews-core";
-import { areSlicesEqual, isIdentity } from "@canonical/dataviews-core/bindings";
+import {
+  areSlicesEqual,
+  isDataViewsProvider,
+} from "@canonical/dataviews-core/bindings";
 import { Button } from "@canonical/react-ds-global";
 import { SelectInput } from "@canonical/react-ds-global-form";
 import {
   type FocusEvent,
   type ReactElement,
+  useEffect,
   useId,
   useLayoutEffect,
   useMemo,
@@ -52,10 +55,10 @@ const describeSummary = ({
     : `Showing ${range} out of ${total} ${pluralizeNoun(total, "item")}`;
 };
 
-/** A settled page count, and the scope, query and page size that made it. */
+/** A settled page count, and the generation, query and page size that made it. */
 type SettledPages = {
   readonly pages: number;
-  readonly scope: Identity;
+  readonly generation: number;
   readonly slice: Slice;
   readonly size: number;
 };
@@ -95,16 +98,20 @@ export default function PaginationBar<
   className,
   ...rest
 }: PaginationBarProps<TFields, TRow>): ReactElement {
-  if (!isIdentity(provider?.identity)) {
+  if (!isDataViewsProvider(provider)) {
     throw new Error(
       "PaginationBar requires a provider created by createDataViewsProvider",
     );
   }
+  // Observed for as long as the bar is mounted: a standalone bar is a mount
+  // that reads the provider, and the ref-count makes a bar inside a root
+  // that already observes cost nothing.
+  useEffect(() => provider.observe(), [provider]);
   const snapshot = useDataViewsValue(provider.state);
   const view = derivePaginationState(
     snapshot,
     sizes,
-    provider.capabilities?.pagination ?? null,
+    provider.capabilities.pagination,
   );
   const { page, pages } = view;
   const baseId = useId();
@@ -113,18 +120,20 @@ export default function PaginationBar<
 
   // The page select keeps the last settled page count while a page move
   // loads, so stepping through it does not cut its own list short. A new
-  // query, page size or scope makes a new count, so it drops the old one.
+  // query, page size or generation makes a new count, so it drops the old one.
   const [settled, setSettled] = useState<SettledPages | null>(null);
-  const { scope, slice } = snapshot;
+  const { generation, slice } = snapshot;
   const matching =
     settled !== null &&
-    settled.scope === scope &&
+    settled.generation === generation &&
     settled.size === view.size &&
-    areSlicesEqual(settled.slice, slice)
+    // The coordinator keeps the slice's identity while it stands, so the
+    // comparison is by reference until the query really moves.
+    (settled.slice === slice || areSlicesEqual(settled.slice, slice))
       ? settled
       : null;
   if (pages !== null && matching?.pages !== pages) {
-    setSettled({ pages, scope, slice, size: view.size });
+    setSettled({ pages, generation, slice, size: view.size });
   }
   const listed = pages ?? matching?.pages ?? page;
   // A page past the last is listed after the real pages, so the select can

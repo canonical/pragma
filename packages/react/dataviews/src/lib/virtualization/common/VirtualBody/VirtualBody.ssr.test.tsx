@@ -3,41 +3,31 @@
  * current window: the markup a reader without JavaScript gets is complete,
  * and the range narrows it once the client measures.
  */
-import {
-  createDataViewsProvider,
-  createSchema,
-} from "@canonical/dataviews-core";
+import { readProviderHost } from "@canonical/dataviews-core/bindings";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { deliverRows } from "../../../../../testing/fixtures.js";
+import {
+  createMachineProvider,
+  machine,
+} from "../../../../../testing/machines.js";
 import { DataTable } from "../../../_work_in_progress/DataTable/index.js";
 import virtualizeRows from "../../virtualizeRows.js";
 
-const schema = createSchema([
-  { field: "status", kind: "choices", options: ["failed", "running"] },
-]);
-
 describe("windowed DataTable SSR", () => {
   it("renders every row of the window, each at its logical position", () => {
-    const provider = createDataViewsProvider({ schema });
-    const requestId = provider.refresh();
-    if (requestId === null) {
-      throw new Error("expected a refresh request");
-    }
-    const rows = Array.from({ length: 30 }, (_, position) => ({
-      id: `m-${position}`,
-      name: `host-${position}`,
-    }));
-    const counted = { kind: "exact", value: 30 } as const;
-    provider.complete(requestId, {
-      status: "succeeded",
-      page: {
-        rows,
-        groups: null,
-        counts: { pageable: counted, matched: counted, total: counted },
-        more: null,
-        cursors: null,
-      },
-    });
+    // Rows the server already holds, fed to the provider by hand: nothing
+    // observes it there, so nothing else would ask the source.
+    const { provider } = createMachineProvider();
+    const host = readProviderHost(provider);
+    host.complete(
+      host.refresh(),
+      deliverRows(
+        Array.from({ length: 30 }, (_, position) =>
+          machine(`m-${position}`, `host-${position}`),
+        ),
+      ),
+    );
     const html = renderToString(
       <DataTable
         provider={provider}

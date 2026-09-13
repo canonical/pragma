@@ -9,44 +9,28 @@
  * beyond it to trade width with.
  */
 
-import {
-  createDataViewsProvider,
-  createSchema,
-  declareCapabilities,
-} from "@canonical/dataviews-core";
-import {
-  act,
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-} from "@testing-library/react";
+import { declareCapabilities } from "@canonical/dataviews-core";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { deliverRows } from "../../../testing/fixtures.js";
+import {
+  createMachineProvider,
+  machine,
+  machines,
+} from "../../../testing/machines.js";
 import { DataTable } from "../../lib/_work_in_progress/DataTable/index.js";
-
-const schema = createSchema([
-  { field: "name", kind: "text" },
-  { field: "status", kind: "choices", options: ["running"] },
-]);
-type Machine = { readonly id: string; readonly name: string };
 
 afterEach(cleanup);
 
-/** A table over one loaded row, with the given columns. */
+/**
+ * A table over one loaded row, with the given columns. The source declares
+ * nothing beyond delivering rows, and answers every request at once.
+ */
 const mountTable = (columns: Parameters<typeof DataTable>[0]["columns"]) => {
-  const provider = createDataViewsProvider<typeof schema.fields, Machine>({
-    schema,
-    capabilities: declareCapabilities(schema, {}),
+  const { provider } = createMachineProvider({
+    rows: [machine("m-1", "alpha")],
+    capabilities: declareCapabilities(machines, {}),
   });
   render(<DataTable provider={provider} columns={columns} label="Machines" />);
-  const requestId = provider.refresh();
-  if (requestId === null) {
-    throw new Error("expected a refresh request");
-  }
-  act(() => {
-    provider.complete(requestId, deliverRows([{ id: "m-1", name: "alpha" }]));
-  });
   return provider;
 };
 

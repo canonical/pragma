@@ -1,4 +1,4 @@
-import type { CollectionState, ResultProblem } from "@canonical/dataviews-core";
+import type { DataViewsState, ResultProblem } from "@canonical/dataviews-core";
 import type { DataTableStatus } from "./types.js";
 
 /** One problem as the sentence shown beside or in place of the rows. */
@@ -19,7 +19,7 @@ const describeError = (problem: ResultProblem): string =>
  * that reason too — saying nothing there would hide the failure entirely.
  */
 export default function deriveTableStatus(
-  state: CollectionState<object>,
+  state: DataViewsState<object>,
 ): DataTableStatus | null {
   const { result } = state;
   const reason = result.problem === null ? null : describeError(result.problem);

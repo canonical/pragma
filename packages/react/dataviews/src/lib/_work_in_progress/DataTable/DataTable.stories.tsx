@@ -1,19 +1,17 @@
-import { DEFAULT_WINDOW, type RowRecord } from "@canonical/dataviews-core";
+import { DEFAULT_WINDOW } from "@canonical/dataviews-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import {
-  type ComponentType,
-  type ReactElement,
-  type ReactNode,
-  useState,
-} from "react";
+import type { ReactElement, ReactNode } from "react";
 import { expect, userEvent, waitFor } from "storybook/test";
 import { withAppScope, withFrame } from "../../../storybook/decorators.js";
+import { consumerCode } from "../../../storybook/machines/consumerCode.js";
 import {
   createEmptySource,
   createFailingSource,
   createMachineSource,
   createPendingSource,
+  type Machine,
   type MachineFields,
+  machineCollection,
   manyMachines,
   type SortableField,
 } from "../../../storybook/machines/fixtures.js";
@@ -56,7 +54,7 @@ type Story = StoryObj<typeof Component>;
 
 /** The table's own props, less the ones a story's collection supplies. */
 type StoryTableProps = Omit<
-  DataTableProps<MachineFields, RowRecord>,
+  DataTableProps<MachineFields, Machine>,
   "provider" | "columns" | "rowLabel"
 >;
 
@@ -179,35 +177,51 @@ const searchForNothing = (provider: MachineProvider): void => {
   provider.setSearch("quartz");
 };
 
-const consumerImports = `import { createDataViewsProvider } from "@canonical/dataviews-core";
-import { DataTable, useDataViewsCell, useDataViewsValue, type DataTableColumn } from "@canonical/dataviews-react";
-import { machineSchema, source } from "./machines.js";`;
+/** What every table story imports from the package. */
+const tableParts = ["DataTable", "type DataTableColumn"];
 
-/**
- * A story's consumer code, as its "Show code" panel shows it: the provider,
- * the columns and the table a consumer writes — never the fixture source,
- * the binding or the effect wiring this file keeps behind them.
- */
-const consumer = (
-  body: string,
-  options: {
-    readonly imports?: string | undefined;
-    readonly provider?: string;
-  } = {},
-): NonNullable<Story["parameters"]> => ({
-  docs: {
-    source: {
-      language: "tsx",
-      code: [
-        options.imports === undefined
-          ? consumerImports
-          : `${consumerImports}\n${options.imports}`,
-        `const provider = ${options.provider ?? "createDataViewsProvider({ schema: machineSchema, capabilities: source.capabilities })"};`,
-        body,
-      ].join("\n\n"),
-    },
-  },
-});
+/** The table, as a story's consumer code renders it. */
+const tableCode = `<DataTable provider={provider} columns={columns} label="Machines" />`;
+
+/** The table with its selection column, named by host. */
+const selectableTableCode = `<DataTable
+  provider={provider}
+  columns={columns}
+  label="Machines"
+  selectable
+  rowLabel={(row) => row.name}
+/>`;
+
+/** The table inside a frame of the given width. */
+const framedTableCode = (
+  width: string,
+): string => `<div style={{ maxWidth: "${width}" }}>
+  ${tableCode}
+</div>`;
+
+const plainColumnsCode = `const columns: readonly DataTableColumn[] = [
+  { id: "name", header: "Host" },
+  { id: "status", header: "Status" },
+  { id: "region", header: "Region" },
+  { id: "cores", header: "Cores" },
+  { id: "owner", header: "Owner" },
+];`;
+
+const sortableColumnsCode = `const columns: readonly DataTableColumn[] = [
+  { id: "name", header: "Host", sortable: true },
+  { id: "status", header: "Status", sortable: true },
+  { id: "region", header: "Region" },
+  { id: "cores", header: "Cores", sortable: true },
+  { id: "owner", header: "Owner" },
+];`;
+
+const sizedColumnsCode = `const columns: readonly DataTableColumn[] = [
+  { id: "name", header: "Host", sizing: { kind: "flex", weight: 2, minPx: 160 } },
+  { id: "status", header: "Status", sizing: { kind: "fixed", px: 112 } },
+  { id: "region", header: "Region", sizing: { kind: "flex", weight: 1, minPx: 96, maxPx: 144 } },
+  { id: "cores", header: "Cores", sizing: { kind: "fixed", px: 80 } },
+  { id: "owner", header: "Owner", sizing: { kind: "flex", weight: 1, minPx: 96 } },
+];`;
 
 /** Press one key on a control, `times` times over. */
 const press = async (
@@ -230,15 +244,11 @@ const widthOf = (element: HTMLElement): number =>
  * takes the ghost fill under the pointer.
  */
 export const Default: Story = {
-  parameters: consumer(`const columns: readonly DataTableColumn[] = [
-  { id: "name", header: "Host" },
-  { id: "status", header: "Status" },
-  { id: "region", header: "Region" },
-  { id: "cores", header: "Cores" },
-  { id: "owner", header: "Owner" },
-];
-
-<DataTable provider={provider} columns={columns} label="Machines" />;`),
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: plainColumnsCode,
+    render: tableCode,
+  }),
   render: renderMachines(plainColumns),
 };
 
@@ -253,15 +263,11 @@ export const Default: Story = {
  * rather than claiming `none` about an order they cannot change.
  */
 export const Sortable: Story = {
-  parameters: consumer(`const columns: readonly DataTableColumn[] = [
-  { id: "name", header: "Host", sortable: true },
-  { id: "status", header: "Status", sortable: true },
-  { id: "region", header: "Region" },
-  { id: "cores", header: "Cores", sortable: true },
-  { id: "owner", header: "Owner" },
-];
-
-<DataTable provider={provider} columns={columns} label="Machines" />;`),
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: sortableColumnsCode,
+    render: tableCode,
+  }),
   render: renderMachines(sortableColumns),
 };
 
@@ -271,17 +277,12 @@ export const Sortable: Story = {
  * source's order among themselves.
  */
 export const SortedAscending: Story = {
-  parameters: consumer(`const columns: readonly DataTableColumn[] = [
-  { id: "name", header: "Host", sortable: true },
-  { id: "status", header: "Status", sortable: true },
-  { id: "region", header: "Region" },
-  { id: "cores", header: "Cores", sortable: true },
-  { id: "owner", header: "Owner" },
-];
-
-provider.setSort([{ field: "status", direction: "asc" }]);
-
-<DataTable provider={provider} columns={columns} label="Machines" />;`),
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: sortableColumnsCode,
+    prepare: `provider.setSort([{ field: "status", direction: "asc" }]);`,
+    render: tableCode,
+  }),
   render: renderMachines(sortableColumns, { prepare: sortByStatus }),
   play: async ({ canvas }) => {
     await waitFor(() =>
@@ -310,17 +311,12 @@ provider.setSort([{ field: "status", direction: "asc" }]);
  * at ascending.
  */
 export const SortedDescending: Story = {
-  parameters: consumer(`const columns: readonly DataTableColumn[] = [
-  { id: "name", header: "Host", sortable: true },
-  { id: "status", header: "Status", sortable: true },
-  { id: "region", header: "Region" },
-  { id: "cores", header: "Cores", sortable: true },
-  { id: "owner", header: "Owner" },
-];
-
-provider.setSort([{ field: "cores", direction: "desc" }]);
-
-<DataTable provider={provider} columns={columns} label="Machines" />;`),
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: sortableColumnsCode,
+    prepare: `provider.setSort([{ field: "cores", direction: "desc" }]);`,
+    render: tableCode,
+  }),
   render: renderMachines(sortableColumns, { prepare: sortByCoresDescending }),
   play: async ({ canvas }) => {
     await waitFor(() =>
@@ -348,21 +344,11 @@ provider.setSort([{ field: "cores", direction: "desc" }]);
  * two cannot disagree. A selected row takes the information tint.
  */
 export const Selectable: Story = {
-  parameters: consumer(`const columns: readonly DataTableColumn[] = [
-  { id: "name", header: "Host" },
-  { id: "status", header: "Status" },
-  { id: "region", header: "Region" },
-  { id: "cores", header: "Cores" },
-  { id: "owner", header: "Owner" },
-];
-
-<DataTable
-  provider={provider}
-  columns={columns}
-  label="Machines"
-  selectable
-  rowLabel={(row) => String(row.name)}
-/>;`),
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: plainColumnsCode,
+    render: selectableTableCode,
+  }),
   args: { selectable: true },
   render: renderMachines(plainColumns),
   play: async ({ canvas }) => {
@@ -393,31 +379,13 @@ export const Selectable: Story = {
  * alone. It never reaches a row the reader cannot see.
  */
 export const SelectAllActsOnDisplayedRows: Story = {
-  parameters: consumer(
-    `const columns: readonly DataTableColumn[] = [
-  { id: "name", header: "Host" },
-  { id: "status", header: "Status" },
-  { id: "region", header: "Region" },
-  { id: "cores", header: "Cores" },
-  { id: "owner", header: "Owner" },
-];
-
-provider.selection.add(["m-02", "m-09"]);
-
-<DataTable
-  provider={provider}
-  columns={columns}
-  label="Machines"
-  selectable
-  rowLabel={(row) => String(row.name)}
-/>;`,
-    {
-      provider: `createDataViewsProvider({
-  schema: machineSchema,
-  window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
-})`,
-    },
-  ),
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: plainColumnsCode,
+    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
+    prepare: `provider.selection.add(["m-02", "m-09"]);`,
+    render: selectableTableCode,
+  }),
   args: { selectable: true },
   render: renderMachines(plainColumns, {
     window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
@@ -445,17 +413,11 @@ provider.selection.add(["m-02", "m-09"]);
  * column is ever squeezed below its minimum to make room.
  */
 export const FixedAndFlexibleColumns: Story = {
-  parameters: consumer(`const columns: readonly DataTableColumn[] = [
-  { id: "name", header: "Host", sizing: { kind: "flex", weight: 2, minPx: 160 } },
-  { id: "status", header: "Status", sizing: { kind: "fixed", px: 112 } },
-  { id: "region", header: "Region", sizing: { kind: "flex", weight: 1, minPx: 96, maxPx: 144 } },
-  { id: "cores", header: "Cores", sizing: { kind: "fixed", px: 80 } },
-  { id: "owner", header: "Owner", sizing: { kind: "flex", weight: 1, minPx: 96 } },
-];
-
-<div style={{ maxWidth: "48rem" }}>
-  <DataTable provider={provider} columns={columns} label="Machines" />
-</div>;`),
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: sizedColumnsCode,
+    render: framedTableCode("48rem"),
+  }),
   decorators: [withFrame("48rem")],
   render: renderMachines(sizedColumns),
 };
@@ -468,17 +430,11 @@ export const FixedAndFlexibleColumns: Story = {
  * column when scrolled.
  */
 export const HorizontalScroll: Story = {
-  parameters: consumer(`const columns: readonly DataTableColumn[] = [
-  { id: "name", header: "Host", sizing: { kind: "flex", weight: 2, minPx: 160 } },
-  { id: "status", header: "Status", sizing: { kind: "fixed", px: 112 } },
-  { id: "region", header: "Region", sizing: { kind: "flex", weight: 1, minPx: 96, maxPx: 144 } },
-  { id: "cores", header: "Cores", sizing: { kind: "fixed", px: 80 } },
-  { id: "owner", header: "Owner", sizing: { kind: "flex", weight: 1, minPx: 96 } },
-];
-
-<div style={{ maxWidth: "24rem" }}>
-  <DataTable provider={provider} columns={columns} label="Machines" />
-</div>;`),
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: sizedColumnsCode,
+    render: framedTableCode("24rem"),
+  }),
   decorators: [withFrame("24rem")],
   render: renderMachines(sizedColumns),
 };
@@ -499,15 +455,17 @@ export const HorizontalScroll: Story = {
  * so it has no control and takes whatever width the others leave.
  */
 export const Resizable: Story = {
-  parameters: consumer(`const columns: readonly DataTableColumn[] = [
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: `const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host", sizing: { kind: "flex", weight: 2, minPx: 160 }, resizable: true },
   { id: "status", header: "Status", sizing: { kind: "fixed", px: 112 } },
   { id: "region", header: "Region", sizing: { kind: "flex", weight: 1, minPx: 96, maxPx: 144 }, resizable: true },
   { id: "cores", header: "Cores", sizing: { kind: "fixed", px: 80 } },
   { id: "owner", header: "Owner", sizing: { kind: "flex", weight: 1, minPx: 96 }, resizable: true },
-];
-
-<DataTable provider={provider} columns={columns} label="Machines" />;`),
+];`,
+    render: tableCode,
+  }),
   decorators: [withFrame("48rem")],
   render: renderMachines(resizing(sizedColumns, ["name", "region", "owner"])),
   play: async ({ canvas }) => {
@@ -525,15 +483,17 @@ export const Resizable: Story = {
  * control appears exactly where a column may be resized, and nowhere else.
  */
 export const MixedResizableColumns: Story = {
-  parameters: consumer(`const columns: readonly DataTableColumn[] = [
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: `const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host", resizable: true },
   { id: "status", header: "Status" },
   { id: "region", header: "Region", resizable: true },
   { id: "cores", header: "Cores" },
   { id: "owner", header: "Owner" },
-];
-
-<DataTable provider={provider} columns={columns} label="Machines" />;`),
+];`,
+    render: tableCode,
+  }),
   decorators: [withFrame("48rem")],
   render: renderMachines(resizing(plainColumns, ["name", "region"])),
 };
@@ -573,14 +533,16 @@ const boundedColumns: readonly DataTableColumn[] = [
  * width is left.
  */
 export const ResizeWithinBounds: Story = {
-  parameters: consumer(`const columns: readonly DataTableColumn[] = [
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: `const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host", resizable: true, sizing: { kind: "flex", weight: 1, minPx: 120, maxPx: 320 } },
   { id: "region", header: "Region", resizable: true, sizing: { kind: "flex", weight: 1, minPx: 96, maxPx: 160 } },
   { id: "status", header: "Status", sizing: { kind: "fixed", px: 112 } },
   { id: "owner", header: "Owner", sizing: { kind: "flex", weight: 1, minPx: 96 } },
-];
-
-<DataTable provider={provider} columns={columns} label="Machines" />;`),
+];`,
+    render: tableCode,
+  }),
   decorators: [withFrame("48rem")],
   render: renderMachines(boundedColumns),
   play: async ({ canvas }) => {
@@ -606,17 +568,17 @@ export const ResizeWithinBounds: Story = {
  * scrolls.
  */
 export const ResizePastTheContainer: Story = {
-  parameters: consumer(`const columns: readonly DataTableColumn[] = [
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: `const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host", sizing: { kind: "flex", weight: 2, minPx: 160 }, resizable: true },
   { id: "status", header: "Status", sizing: { kind: "fixed", px: 112 } },
   { id: "region", header: "Region", sizing: { kind: "flex", weight: 1, minPx: 96, maxPx: 144 }, resizable: true },
   { id: "cores", header: "Cores", sizing: { kind: "fixed", px: 80 } },
   { id: "owner", header: "Owner", sizing: { kind: "flex", weight: 1, minPx: 96 } },
-];
-
-<div style={{ maxWidth: "36rem" }}>
-  <DataTable provider={provider} columns={columns} label="Machines" />
-</div>;`),
+];`,
+    render: framedTableCode("36rem"),
+  }),
   decorators: [withFrame("36rem")],
   render: renderMachines(resizing(sizedColumns, ["name", "region"])),
   play: async ({ canvas }) => {
@@ -667,15 +629,15 @@ const fixedColumns: readonly DataTableColumn[] = [
  * scrolls.
  */
 export const LastColumnTakesTheRest: Story = {
-  parameters: consumer(`const columns: readonly DataTableColumn[] = [
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: `const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host", resizable: true, sizing: { kind: "fixed", px: 200 } },
   { id: "status", header: "Status", sizing: { kind: "fixed", px: 112 } },
   { id: "owner", header: "Owner", sizing: { kind: "fixed", px: 120 } },
-];
-
-<div style={{ maxWidth: "48rem" }}>
-  <DataTable provider={provider} columns={columns} label="Machines" />
-</div>;`),
+];`,
+    render: framedTableCode("48rem"),
+  }),
   decorators: [withFrame("48rem")],
   render: renderMachines(fixedColumns),
   play: async ({ canvas }) => {
@@ -718,8 +680,9 @@ function StatusCell({ value }: DataTableCellProps): ReactElement | null {
  * caller authoring any other header, row or cell.
  */
 export const CustomCellRenderer: Story = {
-  parameters: consumer(
-    `const statusDisplay: Record<string, { label: string; tone: string }> = {
+  parameters: consumerCode({
+    parts: ["DataTable", "type DataTableCellProps", "type DataTableColumn"],
+    declarations: `const statusDisplay: Record<string, { label: string; tone: string }> = {
   running: { label: "Running", tone: "var(--color-icon-success)" },
   failed: { label: "Failed", tone: "var(--color-icon-destructive)" },
   pending: { label: "Pending", tone: "var(--color-icon-muted)" },
@@ -743,13 +706,9 @@ const columns: readonly DataTableColumn[] = [
   { id: "region", header: "Region" },
   { id: "cores", header: "Cores" },
   { id: "owner", header: "Owner" },
-];
-
-<DataTable provider={provider} columns={columns} label="Machines" />;`,
-    {
-      imports: `import type { DataTableCellProps } from "@canonical/dataviews-react";`,
-    },
-  ),
+];`,
+    render: tableCode,
+  }),
   render: renderMachines(
     plainColumns.map((column) =>
       column.id === "status" ? { ...column, cell: StatusCell } : column,
@@ -758,59 +717,34 @@ const columns: readonly DataTableColumn[] = [
 };
 
 /**
- * A Host cell that reads its own cell scope. The scope hook takes the
- * provider as its witness, so the cell is built for one provider.
+ * A Host cell that reads its own cell scope. The collection is the witness,
+ * so the record arrives typed as a machine and the cell is declared once, at
+ * module scope, for every table over the collection.
  */
-const hostCellFor = (
-  provider: MachineProvider,
-): ComponentType<DataTableCellProps> =>
-  function HostCell({ value }: DataTableCellProps): ReactElement {
-    const scope = useDataViewsCell(provider);
-    const record = useDataViewsValue(scope.row);
-    const selected = useDataViewsValue(scope.selected);
-    const owner =
-      typeof record === "object" &&
-      record !== null &&
-      "owner" in record &&
-      typeof record.owner === "string"
-        ? record.owner
-        : null;
-    return (
-      <span
-        style={{
-          fontWeight: selected
-            ? "var(--typography-text-primary-bold-font-weight)"
-            : undefined,
-        }}
-      >
-        {typeof value === "string" ? value : null}
-        {owner === null ? null : (
-          <span style={{ color: "var(--color-text-muted)" }}> ({owner})</span>
-        )}
-      </span>
-    );
-  };
-
-/** The table whose Host column reads its own cell scope. */
-function ScopedHostTable(args: StoryTableProps): ReactElement {
-  const provider = useMachineProvider();
-  // Built once, in state: the cell renderer's identity must hold for the
-  // table's lifetime, which a memo does not promise.
-  const [columns] = useState<readonly DataTableColumn[]>(() => [
-    { id: "name", header: "Host", cell: hostCellFor(provider) },
-    { id: "status", header: "Status" },
-    { id: "region", header: "Region" },
-    { id: "cores", header: "Cores" },
-  ]);
+function HostCell({ value }: DataTableCellProps): ReactElement {
+  const cell = useDataViewsCell(machineCollection);
+  const { owner } = useDataViewsValue(cell.record);
+  const selected = useDataViewsValue(cell.selected);
   return (
-    <Component
-      {...args}
-      provider={provider}
-      columns={columns}
-      rowLabel={hostName}
-    />
+    <span
+      style={{
+        fontWeight: selected
+          ? "var(--typography-text-primary-bold-font-weight)"
+          : undefined,
+      }}
+    >
+      {typeof value === "string" ? value : null}
+      <span style={{ color: "var(--color-text-muted)" }}> ({owner})</span>
+    </span>
   );
 }
+
+const scopedColumns: readonly DataTableColumn[] = [
+  { id: "name", header: "Host", cell: HostCell },
+  { id: "status", header: "Status" },
+  { id: "region", header: "Region" },
+  { id: "cores", header: "Cores" },
+];
 
 /**
  * Cell reading its scope: the Host cell calls `useDataViewsCell` for the
@@ -821,11 +755,18 @@ function ScopedHostTable(args: StoryTableProps): ReactElement {
  * cells, and every other row, stay as they are.
  */
 export const CellReadingItsScope: Story = {
-  parameters: consumer(
-    `function HostCell({ value }: DataTableCellProps) {
-  const { row, selected } = useDataViewsCell(provider);
-  // The cell scope carries the record as the source delivered it.
-  const { owner } = useDataViewsValue(row) as Machine;
+  parameters: consumerCode({
+    parts: [
+      "DataTable",
+      "type DataTableCellProps",
+      "type DataTableColumn",
+      "useDataViewsCell",
+      "useDataViewsValue",
+    ],
+    declarations: `function HostCell({ value }: DataTableCellProps) {
+  // The collection is the witness: the record is typed as a machine.
+  const { record, selected } = useDataViewsCell(machineCollection);
+  const { owner } = useDataViewsValue(record);
   const isSelected = useDataViewsValue(selected);
   return (
     <span
@@ -846,22 +787,11 @@ const columns: readonly DataTableColumn[] = [
   { id: "status", header: "Status" },
   { id: "region", header: "Region" },
   { id: "cores", header: "Cores" },
-];
-
-<DataTable
-  provider={provider}
-  columns={columns}
-  label="Machines"
-  selectable
-  rowLabel={(row) => String(row.name)}
-/>;`,
-    {
-      imports: `import type { DataTableCellProps } from "@canonical/dataviews-react";
-import type { Machine } from "./machines.js";`,
-    },
-  ),
+];`,
+    render: selectableTableCode,
+  }),
   args: { selectable: true },
-  render: (args) => <ScopedHostTable {...args} />,
+  render: renderMachines(scopedColumns),
 };
 
 /**
@@ -871,16 +801,13 @@ import type { Machine } from "./machines.js";`,
  * know yet.
  */
 export const Loading: Story = {
-  parameters: consumer(`const columns: readonly DataTableColumn[] = [
-  { id: "name", header: "Host" },
-  { id: "status", header: "Status" },
-  { id: "region", header: "Region" },
-  { id: "cores", header: "Cores" },
-  { id: "owner", header: "Owner" },
-];
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: `${plainColumnsCode}
 
-// Rendered before the bound source has answered.
-<DataTable provider={provider} columns={columns} label="Machines" />;`),
+// Shown while the source has not answered its first request.`,
+    render: tableCode,
+  }),
   render: renderMachines(plainColumns, { source: createPendingSource }),
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("Loading…")).toBeInTheDocument();
@@ -898,16 +825,13 @@ export const Loading: Story = {
  * nothing.
  */
 export const Failed: Story = {
-  parameters: consumer(`const columns: readonly DataTableColumn[] = [
-  { id: "name", header: "Host" },
-  { id: "status", header: "Status" },
-  { id: "region", header: "Region" },
-  { id: "cores", header: "Cores" },
-  { id: "owner", header: "Owner" },
-];
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: `${plainColumnsCode}
 
-// Rendered after the bound source's first read has failed.
-<DataTable provider={provider} columns={columns} label="Machines" />;`),
+// Shown once the source has failed its first request.`,
+    render: tableCode,
+  }),
   render: renderMachines(plainColumns, { source: createFailingSource }),
   play: async ({ canvas }) => {
     await expect(
@@ -928,16 +852,13 @@ export const Failed: Story = {
  * matched nothing — there is nothing here to find.
  */
 export const EmptyCollection: Story = {
-  parameters: consumer(`const columns: readonly DataTableColumn[] = [
-  { id: "name", header: "Host" },
-  { id: "status", header: "Status" },
-  { id: "region", header: "Region" },
-  { id: "cores", header: "Cores" },
-  { id: "owner", header: "Owner" },
-];
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: `${plainColumnsCode}
 
-// Rendered after the bound source answers with no records.
-<DataTable provider={provider} columns={columns} label="Machines" />;`),
+// Shown once the source has answered with no records.`,
+    render: tableCode,
+  }),
   render: renderMachines(plainColumns, { source: createEmptySource }),
   play: async ({ canvas }) => {
     await expect(
@@ -953,17 +874,12 @@ export const EmptyCollection: Story = {
  * collection is empty.
  */
 export const NoMatch: Story = {
-  parameters: consumer(`const columns: readonly DataTableColumn[] = [
-  { id: "name", header: "Host" },
-  { id: "status", header: "Status" },
-  { id: "region", header: "Region" },
-  { id: "cores", header: "Cores" },
-  { id: "owner", header: "Owner" },
-];
-
-provider.setSearch("quartz");
-
-<DataTable provider={provider} columns={columns} label="Machines" />;`),
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: plainColumnsCode,
+    prepare: `provider.setSearch("quartz");`,
+    render: tableCode,
+  }),
   render: renderMachines(plainColumns, { prepare: searchForNothing }),
   play: async ({ canvas }) => {
     await expect(
@@ -979,15 +895,15 @@ provider.setSearch("quartz");
  * technology reads and what a copy selects.
  */
 export const LongValues: Story = {
-  parameters: consumer(`const columns: readonly DataTableColumn[] = [
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: `const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host", sizing: { kind: "fixed", px: 176 } },
   { id: "status", header: "Status", sizing: { kind: "fixed", px: 96 } },
   { id: "note", header: "Note", sizing: { kind: "flex", weight: 1, minPx: 160 } },
-];
-
-<div style={{ maxWidth: "40rem" }}>
-  <DataTable provider={provider} columns={columns} label="Machines" />
-</div>;`),
+];`,
+    render: framedTableCode("40rem"),
+  }),
   decorators: [withFrame("40rem")],
   render: renderMachines([
     { id: "name", header: "Host", sizing: { kind: "fixed", px: 176 } },
@@ -1021,32 +937,34 @@ const renderWindowed =
     />
   );
 
-/** A windowed story's consumer code: the table, windowed, in a capped frame. */
-const windowedConsumer = (columns: string): NonNullable<Story["parameters"]> =>
-  consumer(
-    `const windowing = virtualizeRows({ estimatedRowHeight: 24 });
+/**
+ * A windowed story's consumer code: the table, windowed, in a capped frame,
+ * over a provider whose window holds every one of ten thousand machines.
+ */
+const windowedConsumer = (
+  columns: string,
+  parts: readonly string[] = tableParts,
+): NonNullable<Story["parameters"]> =>
+  consumerCode({
+    parts,
+    imports: `import { virtualizeRows } from "@canonical/dataviews-react/virtualization";
+import { machineCollection, machines } from "./machines.js";`,
+    declarations: `// One descriptor serves any number of tables: each keeps its own
+// viewport, measurements and focus.
+const windowing = virtualizeRows({ estimatedRowHeight: 24 });
 
-${columns}
-
-<DataTable
+${columns}`,
+    window: "{ ...DEFAULT_WINDOW, page: 1, size: 10_000 }",
+    render: `<DataTable
   provider={provider}
   columns={columns}
   label="Machines"
   selectable
-  rowLabel={(row) => String(row.name)}
+  rowLabel={(row) => row.name}
   windowing={windowing}
   style={{ maxBlockSize: "24rem" }}
-/>;`,
-    {
-      imports: `import { virtualizeRows } from "@canonical/dataviews-react/virtualization";`,
-      provider: `createDataViewsProvider({
-  schema: machineSchema,
-  capabilities: source.capabilities,
-  // Ten thousand machines, all in one window.
-  window: { ...DEFAULT_WINDOW, page: 1, size: 10_000 },
-})`,
-    },
-  );
+/>`,
+  });
 
 /** The logical positions of the rows mounted right now. */
 const mountedPositions = (table: HTMLElement): number[] =>
@@ -1105,8 +1023,8 @@ function WrappingNote({ value }: DataTableCellProps): ReactElement {
  * its estimate, the view stays on the rows being read rather than jumping.
  */
 export const WindowedVariableHeights: Story = {
-  parameters:
-    windowedConsumer(`function WrappingNote({ value }: DataTableCellProps) {
+  parameters: windowedConsumer(
+    `function WrappingNote({ value }: DataTableCellProps) {
   return <span style={{ whiteSpace: "normal" }}>{String(value)}</span>;
 }
 
@@ -1119,7 +1037,9 @@ const columns: readonly DataTableColumn[] = [
     cell: WrappingNote,
     sizing: { kind: "flex", weight: 1, minPx: 160 },
   },
-];`),
+];`,
+    ["DataTable", "type DataTableCellProps", "type DataTableColumn"],
+  ),
   args: { selectable: true, style: { maxBlockSize: "24rem" } },
   decorators: [withFrame("40rem")],
   render: renderWindowed([

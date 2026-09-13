@@ -1,17 +1,16 @@
-import type { FieldHandle } from "@canonical/dataviews-core";
+import type { FilterHandle } from "@canonical/dataviews-core";
 import { useMemo, useSyncExternalStore } from "react";
-import type { UseDataViewsFieldResult } from "./types.js";
+import type { UseFilterHandleResult } from "./types.js";
 
 /**
- * Bind to one field handle: its text input, applied semantic value and
- * feedback, with edit and clear routed through the provider.
- *
- * @experimental Pre-release: the whole surface is still settling, and this
- * name may change or move before the first release.
+ * Bind to one filter handle: its text input, applied semantic value and
+ * feedback, with edit, set and clear routed through the record. The
+ * subscription is the handle's two channels and nothing else, so a control
+ * re-renders for its own filter only.
  */
-export default function useDataViewsField<TApplied>(
-  handle: FieldHandle<TApplied>,
-): UseDataViewsFieldResult<TApplied> {
+export default function useFilterHandle<TApplied>(
+  handle: FilterHandle<TApplied>,
+): UseFilterHandleResult<TApplied> {
   const state = useSyncExternalStore(
     handle.state.subscribe,
     handle.state.get,

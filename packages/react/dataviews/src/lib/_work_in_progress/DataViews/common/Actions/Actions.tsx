@@ -48,7 +48,7 @@ export default function Actions({
   ref,
   ...rest
 }: DataViewsActionsProps): ReactElement | null {
-  const provider = useDataViewsRoot("Actions");
+  const { provider } = useDataViewsRoot("Actions");
   const { selection } = provider;
   const count = useDataViewsValue(selection.state).ids.size;
 
