@@ -113,11 +113,57 @@ describe("first install — an empty cwd answers real reads offline", () => {
 });
 
 describe("first install — empty results are honest, not papered over", () => {
-  it("token list exits calmly with no rows (the graph carries no ds:Token)", async () => {
-    expect(
-      await readData(verbOf(tokenModule, "token list"), emptyCwd()),
-    ).toEqual([]);
-  });
+  // `token list` used to be this describe's first case, asserting no rows
+  // "because the graph carries no ds:Token". That is no longer true and the
+  // change is the point: the noun addressed a class no shipped graph asserted,
+  // it now addresses the token symbols, and the embedded pack carries them with
+  // the name literal the story keys on — so a first install ANSWERS. The case
+  // moved rather than being deleted, and it moved in both directions.
+  // ONE case and ONE store boot for the whole token noun, deliberately. Each
+  // `readData` here boots its own runtime — which is the point of this file,
+  // since a fresh install is what is under test — and the embedded pack is the
+  // expensive part of that. Three separate cases meant three boots of a
+  // 53,467-triple store for three claims about the same install, which is a
+  // cost this file pays under every parallel run for no extra coverage.
+  it("the token noun answers a first install: rows, a named symbol, and honest emptiness", async () => {
+    const cwd = emptyCwd();
+    const runtime = bootRuntime(JSON_FLAGS, cwd);
+
+    const read = async (
+      verb: VerbSpec,
+      params: Record<string, unknown> = {},
+    ): Promise<unknown> => {
+      const outcome = await executeVerb(verb, params, NO_MUTATION, runtime);
+      return (JSON.parse(outcome.stdout as string) as { data: unknown }).data;
+    };
+
+    // The symbols resolve offline, from the embedded pack, with no build.
+    const rows = (await read(verbOf(tokenModule, "token list"))) as {
+      name: string;
+    }[];
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) expect(row.name).toBeTruthy();
+
+    // Membership, never a count — but asserted through a FILTER rather than
+    // through the unfiltered page, because this is the first population large
+    // enough for the page to matter: 436 symbols sort before `color.text`, so
+    // it is not on the first page and an unfiltered `toContain` would be
+    // testing the alphabet. A filter compiles INTO the query, so it answers
+    // from the whole population however the rows happen to page.
+    const matched = (await read(verbOf(tokenModule, "token list"), {
+      search: "color.text",
+    })) as { name: string }[];
+    expect(matched.map((row) => row.name)).toContain("color.text");
+
+    // And the honest emptiness this describe exists for: the symbols ship with
+    // the pack, the BINDINGS between blocks and symbols do not, so this verb
+    // answers nothing on a first install rather than erroring.
+    expect(await read(verbOf(tokenModule, "token consumers"))).toEqual([]);
+    // An explicit budget, because this case boots the embedded pack and that
+    // pack grew to 53,467 triples when the token graph joined it. The default
+    // five seconds was enough for the old snapshot and is not for this one,
+    // which is a fact about the store's size rather than about this assertion.
+  }, 60_000);
 
   it("prompt list exits calmly with no prompts (the graph carries no ds:Prompt)", async () => {
     expect(await readData(promptListVerb as VerbSpec, emptyCwd())).toEqual({

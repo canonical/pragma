@@ -203,7 +203,17 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
     "passed": true,
   },
   {
+    "id": "tool-token-consumers-answers-or-recovers",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
     "id": "tool-token-lookup-addresses-only-what-list-publishes",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-token-lookup-dotted-name-resolves-with-its-definitions",
     "kind": "tool",
     "passed": true,
   },
@@ -218,7 +228,17 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
     "passed": true,
   },
   {
+    "id": "tool-token-values-narrows-to-one-symbol",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
     "id": "tool-upgrade-is-plan-first",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-variable-lookup-resolves-without-the-leading-dashes",
     "kind": "tool",
     "passed": true,
   },

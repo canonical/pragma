@@ -6,14 +6,33 @@
  * speculatively paid for all of it. A default is what makes the cap real — a
  * `--limit` nobody passes bounds nothing.
  *
- * WHY THIS DEFAULT. {@link DEFAULT_LIST_LIMIT} sits above the row count of
- * every story the distribution declares (the largest, `block list`, is 252), so
- * the pair arrives truncating nothing: today's answers are the answers, byte
- * for byte, and the mechanism is exercised first by the populations large
- * enough to need it. It is a KERNEL default and not a per-story one — a story
- * has no page-size knob, so there is exactly one number to know, and it is
- * written here, in the help text of every list verb, and in `BUDGETS.md`
- * beside the payload it bounds.
+ * WHY THIS DEFAULT. It answers to TWO constraints, and it is the largest number
+ * that satisfies both.
+ *
+ * From below: it stays above the row count of every story that already existed
+ * when the page arrived (the largest, `block list`, is 252), so no answer that
+ * was whole before the pair is truncated by it now.
+ *
+ * From above: the payload budget bounds ONE answer, and the suite that enforces
+ * it requires the largest default answer to sit under 0.8 of the ceiling —
+ * 100,000 bytes — so a ceiling nothing approaches keeps catching things and one
+ * sitting on the measurement does not flake. The fattest row any declared story
+ * serialises is `token values` at 244 bytes, so 300 rows of it is about 73 KB
+ * and the gate holds with room to spare.
+ *
+ * The first constraint alone gave 500, which is what this was, and the second
+ * retired it: the token-graph stories brought populations of 745, 1,156, 1,237
+ * and 1,746 rows, and at 500 rows `token values` measured 121,776 bytes —
+ * inside the ceiling and past the gate, with no headroom left. So the number is
+ * now derived from the budget rather than from a population that no longer
+ * bounds anything.
+ *
+ * It is still a KERNEL default and not a per-story one — a story has no
+ * page-size knob, so there is exactly one number to know, and it is written
+ * here, in the help text of every list verb, and in `BUDGETS.md` beside the
+ * payload it bounds. A per-story knob is what to reach for when one story's
+ * rows are so much fatter than the rest that one number cannot serve both;
+ * that is not true of any story today.
  *
  * WHY A CEILING AS WELL. The page's two integers are emitted into the query
  * ({@link ./sparql/buildListQuery}), and the store's own `LIMIT`/`OFFSET` must
@@ -36,9 +55,10 @@ import { PragmaError } from "../error/index.js";
 /**
  * Rows a list-shaped verb returns when the caller names no `--limit`.
  *
- * Above every declared story's population, deliberately — see the module note.
+ * Derived from the payload budget and from the populations that predate the
+ * page — see the module note for both halves of the arithmetic.
  */
-export const DEFAULT_LIST_LIMIT = 500;
+export const DEFAULT_LIST_LIMIT = 300;
 
 /**
  * The largest `--limit`, and the largest cursor offset, the kernel admits.
@@ -50,9 +70,9 @@ export const DEFAULT_LIST_LIMIT = 500;
  * possibly serialise is `{}` plus its separating comma — three bytes — so no
  * answer of more than 41,666 rows can be inside the budget whatever a story's
  * columns are. A limit that cannot produce a legal answer is not a legal limit;
- * rounded down to a number a message can carry, that is 40,000. It stays 158×
- * the largest population the distribution ships (252) and 80× the default page,
- * so it refuses nothing a caller could want today.
+ * rounded down to a number a message can carry, that is 40,000. It stays 22×
+ * the largest population the distribution ships (1,746) and 133× the default
+ * page, so it refuses nothing a caller could want today.
  *
  * The cursor's OFFSET takes the same ceiling, for a reason of its own: an offset
  * is a count of rows already answered, and a walk that has passed 40,000 of

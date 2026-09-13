@@ -182,17 +182,47 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   token_list: {
     category: "read",
     use_when:
-      "Browsing design tokens, optionally filtered by category (color, spacing, etc.)",
+      "Browsing which token SYMBOLS exist (the logical dotted names), optionally by type or by the symbol a channel provisions",
   },
   token_lookup: {
     category: "read",
     use_when:
-      "Need theme values and resolution details for specific tokens by name or IRI",
+      "Need one symbol in full — its definitions, the families that may rebind it, and what it resolves to at each position",
+  },
+  token_values: {
+    category: "read",
+    use_when:
+      "Need the value a symbol resolves to at a position, with the chain that produced it or the symbol it derives from",
+  },
+  token_consumers: {
+    category: "read",
+    use_when:
+      "Need which blocks consume a symbol, at which style key, state and rank",
   },
   token_sample: {
     category: "read",
     use_when:
-      "See actual token data shapes (with theme values) before querying — returns random instances each call",
+      "See actual token symbol data shapes before querying — returns random instances each call",
+  },
+  variable_list: {
+    category: "read",
+    use_when:
+      "Browsing the platform names a stylesheet declares, by platform, symbol, tier, visibility or coordinate — including the 236 that stand for no symbol",
+  },
+  variable_lookup: {
+    category: "read",
+    use_when:
+      "Need one platform variable in full — its symbol, tier, visibility, and every selector and at-rule it is declared under",
+  },
+  variable_chain: {
+    category: "read",
+    use_when:
+      "Need what a variable finally means: the transitive walk to every symbol it reaches",
+  },
+  variable_sample: {
+    category: "read",
+    use_when:
+      "See actual platform variable data shapes before querying — returns random instances each call",
   },
 
   // — Write ——————————————————————————————————————————————————————————————————

@@ -33,7 +33,11 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { compileStoryModule } from "../kernel/packs/compile.js";
 import { DEFAULT_LIST_LIMIT, MAX_LIST_WINDOW } from "../kernel/packs/paging.js";
-import { distributionSource, type PackList } from "../kernel/packs/types.js";
+import {
+  distributionSource,
+  type PackList,
+  type PackPage,
+} from "../kernel/packs/types.js";
 import { verbKey } from "../kernel/packs/uniqueness.js";
 import { bootRuntime } from "../kernel/runtime/boot.js";
 import type { PragmaRuntime } from "../kernel/runtime/types.js";
@@ -147,17 +151,60 @@ describe("list response budget, shipped pack (PROTECTED)", () => {
   );
 
   it.each(BODIES.map((body) => [body.label, body] as const))(
-    "%s: so is the whole population, today",
+    "%s: a population past the budget is PAGED, and each page is inside it",
     async (_label, body) => {
-      // Recorded as well as asserted. Every declared story fits inside one
-      // default page right now, so these two measurements are the same number
-      // — which is exactly why the pair's arrival truncated no answer. The day
-      // a story outgrows the page they diverge, and this is the assertion that
-      // says so rather than the one above.
-      const { bytes } = await payloadBytes(body, { limit: MAX_LIST_WINDOW });
-      expect(bytes).toBeLessThanOrEqual(LIST_PAYLOAD_BUDGET_BYTES);
+      // This case used to assert that the whole population also fitted one
+      // answer, and recorded that the two measurements were the same number
+      // because every story fitted one default page. Its own note said the day
+      // a story outgrew the page they would diverge and that this assertion
+      // would be what said so. They have diverged: the token-graph stories
+      // brought populations of 745, 1,156, 1,237 and 1,746 rows, and asking one
+      // of them for everything at once now measures 158 KB to 273 KB.
+      //
+      // So the claim moves to the one that survives, and it is the stronger of
+      // the two for exactly the bodies that broke the old one. The budget
+      // bounds an ANSWER, never a population — a population outgrowing it is
+      // what pagination is for, and the promise is that every page a caller can
+      // reach is inside the budget and that the pages together are the whole
+      // answer. A story still inside the budget is held to the old assertion
+      // unchanged, so nothing is given up where nothing had to be.
+      const whole = await payloadBytes(body, { limit: MAX_LIST_WINDOW });
+      if (whole.bytes <= LIST_PAYLOAD_BUDGET_BYTES) {
+        expect(whole.bytes).toBeLessThanOrEqual(LIST_PAYLOAD_BUDGET_BYTES);
+        return;
+      }
+      // Past the budget: every page inside it, and the pages exhaust the
+      // population rather than stopping short of it.
+      let after: string | undefined;
+      let seen = 0;
+      let pages = 0;
+      do {
+        const page = (await body.verb.run(
+          after === undefined ? {} : { after },
+          rt,
+        )) as PackPage;
+        const bytes = Buffer.byteLength(
+          JSON.stringify(
+            JSON.parse(body.verb.output.formatters.json(page as never)),
+          ),
+        );
+        expect(
+          bytes,
+          `page ${pages + 1} of ${body.label} is outside the budget`,
+        ).toBeLessThanOrEqual(LIST_PAYLOAD_BUDGET_BYTES);
+        expect(page.rows.length).toBeLessThanOrEqual(DEFAULT_LIST_LIMIT);
+        seen += page.rows.length;
+        after = page.nextAfter;
+        pages += 1;
+        // A guard against a cursor that never terminates: the kernel's own row
+        // ceiling bounds how far a caller may walk, so a walk needing more
+        // pages than that is a defect in the cursor rather than a big corpus.
+        expect(pages).toBeLessThan(MAX_LIST_WINDOW / DEFAULT_LIST_LIMIT);
+      } while (after !== undefined);
+      expect(pages).toBeGreaterThan(1);
+      expect(seen).toBe(whole.rows);
     },
-    60_000,
+    120_000,
   );
 
   it("the budget has headroom over the largest answer, and is not slack", async () => {

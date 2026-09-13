@@ -83,9 +83,22 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       "sample",
     ]);
     // `token` is purely declarative since L-OPEN-9 removed `add-config`: the
-    // three read verbs its story compiles, and no mutation.
+    // read verbs its story compiles, and no mutation. The two extra
+    // list-shaped verbs sit between `list` and `lookup` because that is the
+    // order the compiler emits them in — `list`, then each declared verb, then
+    // `lookup`, then `sample`.
     expect(emitted.nouns.token?.verbs.map((v) => v.v)).toEqual([
       "list",
+      "values",
+      "consumers",
+      "lookup",
+      "sample",
+    ]);
+    // `variable` is the same shape over the platform stratum, with one extra
+    // verb rather than two.
+    expect(emitted.nouns.variable?.verbs.map((v) => v.v)).toEqual([
+      "list",
+      "chain",
       "lookup",
       "sample",
     ]);
@@ -351,14 +364,14 @@ describe("surface COMPLETE — emitted == covenant (PROTECTED)", () => {
   // The CLOSING direction: assertConforms already proves emitted ⊆ covenant;
   // this proves covenant ⊆ emitted, so together the tool sets are EQUAL — the
   // surface-complete milestone. After PR7, every covenant tool is realized.
-  it("emits every covenant tool (all 43) — set equality with the covenant", () => {
+  it("emits every covenant tool (all 49) — set equality with the covenant", () => {
     const emittedTools = new Set(emitted.mcpSurface.tools);
     const missing = golden.mcpSurface.tools.filter((t) => !emittedTools.has(t));
     expect(missing).toEqual([]);
     expect([...emitted.mcpSurface.tools].sort()).toEqual(
       [...golden.mcpSurface.tools].sort(),
     );
-    expect(emitted.mcpSurface.tools).toHaveLength(43);
+    expect(emitted.mcpSurface.tools).toHaveLength(49);
   });
 
   // The covenant edit: the non-tool MCP surface is frozen too.

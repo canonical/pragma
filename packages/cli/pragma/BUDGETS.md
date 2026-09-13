@@ -412,7 +412,7 @@ enforced. They are split by MEASUREMENT TYPE:
 | Budget         | Measured (full catalog)      | Ceiling      | Pass                 |
 | -------------- | ---------------------------- | ------------ | -------------------- |
 | `mcpP95Warm`   | p95 ≈ 0.4 ms (in-process)    | 100 ms       | serial perf (`test:perf`) |
-| `condensedSDL` | 2767 tokens (38 tools)       | 8000 tokens  | eval/coverage        |
+| `condensedSDL` | 2767 tokens (38 tools) — STALE, see the 2026-09-10 re-measurement at the end of this file | 8000 tokens  | eval/coverage        |
 
 Confirmed by the spike:
 
@@ -895,3 +895,113 @@ read with nothing; the storeless fast paths (`--help`, `__complete`,
 module — `paging.ts` carries the default and no hash, and the cursor codec that
 does hash is reached only from a run body. `bun run test:perf` stays green at
 its existing ceilings.
+
+---
+
+## 2026-09-10 — the tool catalogue at 49 tools, and the ceiling now binds
+
+Adding the token-graph nouns took the catalogue from 43 to **49 tools**, and the
+`condensedSDL` figure recorded above is badly stale. Re-measured the same way
+the assertion measures it (name + description + `inputSchema` per tool, joined,
+at ~4 chars/token, over the live in-process MCP catalogue):
+
+| When              | Tools | Chars  | ≈ Tokens | % of the 8000 ceiling |
+| ----------------- | ----- | ------ | -------- | --------------------- |
+| PR7 record        | 38    | 11 068 | 2 767    | 35%                   |
+| Before this work  | 43    | 21 733 | 5 434    | **68%**               |
+| After this work   | 49    | 29 277 | 7 320    | **91%**               |
+
+Three things to take from it.
+
+**The catalogue was already the binding constraint before this work.** The 35%
+figure invited "there is room for about fifteen more tools"; the real headroom
+at 43 tools was about four. The 2 767-token record was taken when descriptions
+were terse and has not been re-taken through five subsequent surfaces.
+
+**Input schemas outweigh descriptions**, 17 029 characters against 11 316 across
+the whole catalogue. A filter is therefore not free even when its description is
+one short sentence: it adds a property, a type and a doc string to the schema.
+`variable list`, at eight flags, is the single largest entry in the catalogue at
+1 119 characters.
+
+**Every description added by this work was cut back once against this
+measurement**, twice for the fattest two, which recovered about 370 tokens. What
+is left is load-bearing: that a variable is addressed without its leading
+dashes, that only materialised positions appear in `token values`, that 236
+variables stand for no symbol. Removing those sentences would buy single-digit
+percentages and cost the misuse they prevent.
+
+**The next few tools breach the ceiling**, and the fix is not a bigger number
+without a decision behind it. The honest options are to trim the pre-existing
+43 (where the `create` family and `setup` are the four fattest entries), to
+raise the ceiling against a measurement of what a real client actually spends,
+or to stop adding tools. That is an owner call, not a budget edit, so this
+record states the position rather than moving the constant.
+
+The measurement is a pure character count, so it stays where it is — a
+deterministic assertion in the eval harness rather than the serial perf pass.
+No latency constant moves: declaring stories remains measurably free, and this
+work adds no module to any fast path.
+
+---
+
+## 2026-09-11 — the default page re-derived, and the budget's second claim retired
+
+The token-graph stories are the first populations the page actually bounds: 745
+symbols, 1,156 variables, 1,237 resolved values and 1,746 chain rows, against a
+largest-before of 252 (`block list`). Two numbers moved, and both are recorded
+here.
+
+**`DEFAULT_LIST_LIMIT` 500 → 300.** The 500 was derived from below only — it sat
+above every declared population, so the page's arrival truncated nothing. That
+reason expired the moment three populations passed it, and the measurement said
+so: at 500 rows `token values` serialised **121,776 bytes**, inside the 125,000
+ceiling but past the 0.8 gate the suite enforces, with no headroom left. 300
+answers to both constraints instead. It is still above the 252 that predates the
+page, so no previously-whole answer is truncated; and at the fattest measured
+row it leaves the largest default answer at 61 per cent of the ceiling.
+
+Still ONE kernel number rather than a per-story knob: no story's rows are so
+much fatter than the rest that one number cannot serve them. A per-story page is
+what to reach for when that stops being true.
+
+Measured at the new default, largest first:
+
+| Body                       | Rows @ default | Bytes  |
+| -------------------------- | -------------- | ------ |
+| `standard list`            | 147            | 78 129 |
+| `variable list`            | 300            | 75 999 |
+| `token list`               | 300            | 69 840 |
+| `token values`             | 300            | 69 755 |
+| `variable chain`           | 300            | 37 149 |
+| `block list`               | 252            | 32 956 |
+| `implementation list`      | 94             | 29 059 |
+| `modifier list`            | 11             | 1 392  |
+| `concept list`             | 4              | 1 340  |
+| `tier list`                | 15             | 1 051  |
+| `implementation libraries` | 4              | 711    |
+| `standard categories`      | 21             | 689    |
+| `token consumers`          | 0              | 2      |
+
+`standard list` is still the largest answer, which is why the budget's own
+"has headroom and is not slack" pair is unchanged: 78 129 is 63 per cent of the
+ceiling, above the quarter-of-budget floor and under the 0.8 gate.
+
+**The budget's whole-population claim is retired, and replaced rather than
+dropped.** The suite asserted that each story's WHOLE population also fitted one
+answer, and its own note said the two measurements coincided only because no
+story outgrew the page: the day one did they would diverge, and that assertion
+would be what said so. They have diverged — asking one of the new stories for
+everything at once measures 158 KB to 273 KB.
+
+A population past the budget is what pagination is FOR, so the claim moves to
+the one that survives, and it is the stronger of the two for exactly the bodies
+that broke the old one: every page a caller can reach is inside the budget, and
+the pages together exhaust the population. A story still inside the budget is
+held to the old assertion unchanged, so nothing is given up where nothing had
+to be. The walk is bounded too — a body needing more pages than
+`MAX_LIST_WINDOW / DEFAULT_LIST_LIMIT` would be a cursor defect rather than a
+large corpus, and the suite says so.
+
+No latency constant moves. A page is two integers in a generated query, and the
+store does the work either way.

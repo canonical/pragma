@@ -389,6 +389,7 @@ const NOUNS = [
   "tier",
   "token",
   "upgrade",
+  "variable",
   "version",
 ] as const;
 

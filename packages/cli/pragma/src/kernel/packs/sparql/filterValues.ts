@@ -26,6 +26,7 @@
  */
 
 import { PragmaError } from "../../error/index.js";
+import { formatValidOptions } from "../../error/validOptions.js";
 import type { PackFilter } from "../types.js";
 import type { ListPredicate } from "./buildListQuery.js";
 
@@ -141,7 +142,10 @@ function rejectUnknownValue(
   throw PragmaError.invalidInput(filter.param, String(occurrences[index]), {
     validOptions,
     recovery: {
-      message: `Values allowed for --${filter.param}: ${validOptions.join(", ")}.`,
+      message: `${formatValidOptions(
+        validOptions,
+        `Values allowed for --${filter.param}`,
+      )}.`,
     },
   });
 }

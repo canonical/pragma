@@ -165,7 +165,7 @@ export const readNounEvalCases: readonly EvalCase[] = [
     id: "tool-token-lookup-addresses-only-what-list-publishes",
     kind: "tool",
     input:
-      "a ds:Token carrying no ds:tokenId appears in no token_list row, resolves through no token_lookup name, and is drawn by no token_sample.",
+      "a dt:TokenSymbol carrying no rdfs:label appears in no token_list row, resolves through no token_lookup name, and is drawn by no token_sample.",
     async expect() {
       await withCanonicalFixture(ALL_VISIBLE_CONFIG, async (mcp) => {
         const list = await mcp.callTool("token_list");
@@ -175,11 +175,11 @@ export const readNounEvalCases: readonly EvalCase[] = [
         );
         assert.ok(published.size > 0, "expected token_list to publish rows");
         // The IRI-derived spellings the fallback would have minted for
-        // `ds:token.legacy.borderRadius` (local name, dots as slashes).
-        for (const derived of [
-          "token.legacy.borderRadius",
-          "token/legacy/borderRadius",
-        ]) {
+        // `dt:legacy.borderRadius` — the local name, and the same local name
+        // with its dots published as slashes, which is what the kernel's
+        // derivation actually does and the reason the token noun declares no
+        // fallback at all.
+        for (const derived of ["legacy.borderRadius", "legacy/borderRadius"]) {
           assert.ok(
             !published.has(derived),
             `token_list must not publish ${derived}`,
@@ -454,6 +454,88 @@ export const readNounEvalCases: readonly EvalCase[] = [
           "root: button; children: label, icon",
         );
       });
+    },
+  },
+  // The token-graph nouns run against the SHARED env rather than a fixture:
+  // the canonical fixture carries no token strata, and what these cases are
+  // for is that the SHIPPED pack answers them — the name literals both nouns
+  // key on ship with the pack, so a fixture would prove nothing about that.
+  {
+    id: "tool-token-lookup-dotted-name-resolves-with-its-definitions",
+    kind: "tool",
+    input:
+      "token_lookup {name:[color.text]} resolves the dotted name and carries definitions, coverage and values.",
+    async expect({ mcp }) {
+      const result = await mcp.callTool("token_lookup", {
+        name: ["color.text"],
+      });
+      assert.equal(result.ok, true);
+      const entity = (result.data as { results: Record<string, unknown>[] })
+        .results[0];
+      assert.equal(entity?.name, "color.text");
+      for (const section of ["definitions", "coverage", "values"]) {
+        assert.ok(
+          Array.isArray(entity?.[section]) &&
+            (entity[section] as unknown[]).length > 0,
+          `expected a non-empty ${section} array`,
+        );
+      }
+    },
+  },
+  {
+    id: "tool-variable-lookup-resolves-without-the-leading-dashes",
+    kind: "tool",
+    input:
+      "variable_lookup {name:[color-text]} resolves the dash-stripped CSS name and names the symbol it stands for.",
+    async expect({ mcp }) {
+      const result = await mcp.callTool("variable_lookup", {
+        name: ["color-text"],
+      });
+      assert.equal(result.ok, true);
+      const entity = (result.data as { results: Record<string, unknown>[] })
+        .results[0];
+      assert.equal(entity?.name, "color-text");
+      assert.equal(entity?.symbol, "color.text");
+      assert.ok(
+        Array.isArray(entity?.declarations) &&
+          (entity.declarations as unknown[]).length > 0,
+        "expected a non-empty declarations array",
+      );
+    },
+  },
+  {
+    id: "tool-token-values-narrows-to-one-symbol",
+    kind: "tool",
+    input:
+      "token_values {symbol:color.text} returns only that symbol's materialised positions, each with a value or a derivation.",
+    async expect({ mcp }) {
+      const result = await mcp.callTool("token_values", {
+        symbol: "color.text",
+      });
+      assert.equal(result.ok, true);
+      const rows = result.data as Record<string, string>[];
+      assert.ok(rows.length > 0, "expected at least one resolved value");
+      for (const row of rows) {
+        assert.equal(row.symbol, "color.text");
+        assert.ok(
+          row.value !== undefined || row.derivedFrom !== undefined,
+          "every row carries a value or a derivation",
+        );
+      }
+    },
+  },
+  {
+    id: "tool-token-consumers-answers-or-recovers",
+    kind: "tool",
+    input:
+      "token_consumers {} either returns binding rows or reports a recoverable empty result — never an error.",
+    async expect({ mcp }) {
+      // Deliberately not asserting emptiness: the design-system packs will
+      // record bindings, and a case pinning the empty answer would fail on
+      // that correct change. What must hold either way is that the call
+      // SUCCEEDS.
+      const result = await mcp.callTool("token_consumers", {});
+      assert.equal(result.ok, true);
     },
   },
   {

@@ -186,7 +186,13 @@ export const effectfulEvalCases: readonly EvalCase[] = [
         assert.ok(!tools.includes("token_add-config"));
         assert.deepEqual(
           tools.filter((name) => name.startsWith("token")).sort(),
-          ["token_list", "token_lookup", "token_sample"],
+          [
+            "token_consumers",
+            "token_list",
+            "token_lookup",
+            "token_sample",
+            "token_values",
+          ],
         );
       });
     },

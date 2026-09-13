@@ -42,28 +42,82 @@ const PREFIXES = {
   owl: "http://www.w3.org/2002/07/owl#",
   rdfs: "http://www.w3.org/2000/01/rdf-schema#",
   xsd: "http://www.w3.org/2001/XMLSchema#",
+  dt: "https://dt.canonical.com/",
+  "dt-web": "https://dt.canonical.com/platform/web/",
+  "w3c-tokens": "https://dt.canonical.com/w3c-tokens/",
+  anatomy: "https://anatomy.canonical.com/",
+  sh: "http://www.w3.org/ns/shacl#",
+  rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
 };
 
 // The ontology (TBox) with NO individuals — a booted-but-empty store.
 const TTL = `
 @prefix ds: <https://ds.canonical.com/> .
 @prefix cs: <https://ds.canonical.com/code-standards/> .
+@prefix dt: <https://dt.canonical.com/> .
+@prefix dt-web: <https://dt.canonical.com/platform/web/> .
+@prefix w3c-tokens: <https://dt.canonical.com/w3c-tokens/> .
+@prefix anatomy: <https://anatomy.canonical.com/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 ds:ModifierFamily a owl:Class .
 ds:Modifier a owl:Class .
-ds:Token a owl:Class .
-ds:TokenType a owl:Class .
 cs:CodeStandard a owl:Class .
 cs:Category a owl:Class .
 ds:name a owl:DatatypeProperty ; rdfs:domain ds:ModifierFamily ; rdfs:range xsd:string .
 ds:hasModifier a owl:ObjectProperty ; rdfs:domain ds:ModifierFamily ; rdfs:range ds:Modifier .
 ds:modifierFamily a owl:ObjectProperty ; rdfs:domain ds:Modifier ; rdfs:range ds:ModifierFamily .
-ds:tokenId a owl:DatatypeProperty ; rdfs:domain ds:Token ; rdfs:range xsd:string .
-ds:tokenType a owl:ObjectProperty ; rdfs:domain ds:Token ; rdfs:range ds:TokenType .
 cs:description a owl:DatatypeProperty ; rdfs:domain cs:CodeStandard ; rdfs:range xsd:string .
 cs:slug a owl:DatatypeProperty ; rdfs:domain cs:Category ; rdfs:range xsd:string .
+# The token strata's TBox, which replaces the retired ds:Token declarations: the
+# story reads dt: and w3c-tokens: now, and a booted-but-empty store has to BIND
+# the terms a declared read names or the read fails as an unbuilt store instead
+# of answering the empty list this suite is about. Declarations only — no
+# individuals — which is the whole point of the fixture.
+dt:TokenSymbol a owl:Class .
+dt:ResolvedValue a owl:Class .
+dt:Variable a owl:Class .
+dt:Declaration a owl:Class .
+dt:Coordinate a owl:Class .
+dt:Tier a owl:Class .
+dt:Visibility a owl:Class .
+w3c-tokens:Token a owl:Class .
+w3c-tokens:TokenType a owl:Class .
+dt:channelOf a owl:ObjectProperty ; rdfs:range dt:TokenSymbol .
+dt:symbol a owl:ObjectProperty ; rdfs:range dt:TokenSymbol .
+dt:tokenType a owl:ObjectProperty ; rdfs:range w3c-tokens:TokenType .
+dt:covers a owl:ObjectProperty ; rdfs:range dt:TokenSymbol .
+dt:forSymbol a owl:ObjectProperty ; rdfs:range dt:TokenSymbol .
+dt:coordinate a owl:ObjectProperty ; rdfs:range dt:Coordinate .
+dt:derivedFrom a owl:ObjectProperty ; rdfs:range dt:TokenSymbol .
+dt:resolutionChain a owl:ObjectProperty .
+dt:resolvesTo a owl:DatatypeProperty ; rdfs:range xsd:string .
+dt:ofSymbol a owl:ObjectProperty ; rdfs:range dt:TokenSymbol .
+dt:tier a owl:ObjectProperty ; rdfs:range dt:Tier .
+dt:visibility a owl:ObjectProperty ; rdfs:range dt:Visibility .
+dt:declaredAt a owl:ObjectProperty ; rdfs:range dt:Declaration .
+dt:under a owl:ObjectProperty .
+dt:emits a owl:DatatypeProperty ; rdfs:range xsd:string .
+dt:at a owl:DatatypeProperty ; rdfs:range xsd:string .
+dt:alsoAt a owl:ObjectProperty ; rdfs:range dt:Coordinate .
+dt:derives a owl:ObjectProperty .
+dt:references a owl:ObjectProperty .
+dt:selectsCoordinate a owl:ObjectProperty ; rdfs:range dt:Coordinate .
+dt-web:selector a owl:DatatypeProperty ; rdfs:range xsd:string .
+dt-web:inAtRule a owl:ObjectProperty .
+w3c-tokens:description a owl:DatatypeProperty ; rdfs:range xsd:string .
+w3c-tokens:inFile a owl:ObjectProperty .
+w3c-tokens:path a owl:DatatypeProperty ; rdfs:range xsd:string .
+anatomy:StyleKey a owl:Class .
+anatomy:styleKey a owl:DatatypeProperty ; rdfs:range xsd:string .
+anatomy:styleState a owl:DatatypeProperty ; rdfs:range xsd:string .
+ds:hasTokenBinding a owl:ObjectProperty .
+ds:consumesSymbol a owl:ObjectProperty ; rdfs:range dt:TokenSymbol .
+ds:rank a owl:DatatypeProperty .
+ds:node a owl:DatatypeProperty .
+ds:viaBlock a owl:ObjectProperty .
 `;
 
 let rt: PragmaRuntime;

@@ -89,7 +89,11 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
     const storyCounts = defaults.packs?.map((pack) =>
       typeof pack === "string" ? 0 : (pack.stories?.length ?? 0),
     );
-    expect(storyCounts).toEqual([5, 0, 0, 1, 1]);
+    // Six on the design-system pack: block, token, variable, modifier, tier
+    // and concept. `token` and `variable` read the token-ontology pack's
+    // strata and are declared on this one anyway, because `token consumers`
+    // spans both and no single pack's stories could carry the pair.
+    expect(storyCounts).toEqual([6, 0, 0, 1, 1]);
   });
 
   it("declares no removed field — the validator would refuse to load one", () => {

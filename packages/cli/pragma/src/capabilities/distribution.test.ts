@@ -46,6 +46,7 @@ describe("the distribution's declared stories (PROTECTED)", () => {
       "standard",
       "tier",
       "token",
+      "variable",
     ]);
   });
 
@@ -86,6 +87,21 @@ describe("the distribution's declared stories (PROTECTED)", () => {
       "implementation list --library",
       "implementation list --platform",
       "standard list --category",
+      "token consumers --key",
+      "token consumers --state",
+      "token consumers --symbol",
+      "token consumers --variable",
+      "token list --channelOf",
+      "token list --type",
+      "token values --position",
+      "token values --symbol",
+      "variable chain --symbol",
+      "variable chain --variable",
+      "variable list --coordinate",
+      "variable list --platform",
+      "variable list --symbol",
+      "variable list --tier",
+      "variable list --visibility",
     ]);
     for (const [label, filter] of filters) {
       expect(
