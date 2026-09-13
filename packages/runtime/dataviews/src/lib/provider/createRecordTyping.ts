@@ -11,55 +11,36 @@ const valueLabel = (value: unknown): string =>
   typeof value === "string" ? `"${value}"` : String(value);
 
 /**
- * Create one collection's record typing: the discriminator checked against
- * the schema, the type scoping of every field indexed, and the memory of
- * what type each selected identity was displayed as.
+ * Create one collection's record typing: the type scoping of every field
+ * indexed, and the memory of what type each selected identity was
+ * displayed as. The declaration itself — the discriminator and its names —
+ * was checked when the collection was created.
  *
  * A monomorphic collection builds none of this; the provider holds null
  * instead and answers from that.
+ *
+ * @note Impure by design: the typing remembers the type of each selected
+ * identity across row replacements; that memory is its purpose.
  */
 export default function createRecordTyping<
   TFields extends readonly SchemaFieldDefinition[],
   TRow extends object = RowRecord,
 >(config: RecordTypingConfig<TFields, TRow>): RecordTyping<TRow> {
-  const { schema, field: discriminator, selection, rows } = config;
-  const definition = schema.fields.find(
-    (candidate) => candidate.field === discriminator,
-  );
-  if (definition === undefined) {
-    throw new Error(`unknown discriminator field "${discriminator}"`);
+  const { collection, selection, rows } = config;
+  const types = collection.types;
+  if (types === null) {
+    throw new Error("a monomorphic collection has no record typing to build");
   }
-  if (definition.kind !== "choices") {
-    throw new Error(
-      `discriminator field "${discriminator}" must be a choices field, not a ${definition.kind} one`,
-    );
-  }
-  const names: string[] = [];
-  for (const option of definition.options) {
-    if (typeof option !== "string") {
-      throw new Error(
-        `discriminator field "${discriminator}" requires string options`,
-      );
-    }
-    names.push(option);
-  }
-  const declared = new Set(names);
+  const discriminator = types.field;
+  const declared = new Set(types.names);
 
   // One scope per scoped field, indexed once: applicability is asked per
   // cell, and walking the field list would be a walk per cell.
   const scopes = new Map<string, ReadonlySet<string>>();
-  for (const scoped of schema.fields) {
-    if (scoped.types === undefined) {
-      continue;
+  for (const scoped of collection.schema.fields) {
+    if (scoped.appliesTo !== undefined) {
+      scopes.set(scoped.field, new Set(scoped.appliesTo));
     }
-    for (const name of scoped.types) {
-      if (!declared.has(name)) {
-        throw new Error(
-          `field "${scoped.field}" is scoped to "${name}", which is not a type of "${discriminator}"`,
-        );
-      }
-    }
-    scopes.set(scoped.field, new Set(scoped.types));
   }
 
   /** A row's declared type name, or null when it carries no such name. */
@@ -73,10 +54,6 @@ export default function createRecordTyping<
   let remembered = new Map<string, string>();
 
   return {
-    declared: Object.freeze({
-      field: discriminator,
-      names: Object.freeze(names),
-    }),
     rejectionOf(model: RowModel<TRow>): string | null {
       for (const entry of model.entries) {
         const value = readField(entry.record, discriminator);

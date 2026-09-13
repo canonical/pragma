@@ -19,6 +19,6 @@ import type { DataViewsPaginationProps } from "./types.js";
 export default function Pagination(
   props: DataViewsPaginationProps,
 ): ReactElement {
-  const provider = useDataViewsRoot("Pagination");
+  const { provider } = useDataViewsRoot("Pagination");
   return <PaginationBar {...props} provider={provider} />;
 }

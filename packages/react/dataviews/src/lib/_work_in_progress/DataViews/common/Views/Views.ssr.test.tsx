@@ -4,13 +4,10 @@
  * nothing from the store.
  */
 
-import {
-  createDataViewsProvider,
-  createSchema,
-  type ViewStore,
-} from "@canonical/dataviews-core";
+import type { ViewStore } from "@canonical/dataviews-core";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, onTestFinished, vi } from "vitest";
+import { createMachineProvider } from "../../../../../../testing/machines.js";
 import DataViews from "../../Provider.js";
 import Views from "./Views.js";
 
@@ -38,12 +35,7 @@ describe("DataViews.Views SSR", () => {
       subscribe,
       dispose: () => {},
     };
-    const provider = createDataViewsProvider({
-      schema: createSchema([
-        { field: "status", kind: "choices", options: ["failed"] },
-      ]),
-      views: store,
-    });
+    const { provider, source } = createMachineProvider({ views: store });
     const html = renderToString(
       <DataViews provider={provider}>
         <Views />
@@ -54,6 +46,8 @@ describe("DataViews.Views SSR", () => {
     );
     expect(list).not.toHaveBeenCalled();
     expect(subscribe).not.toHaveBeenCalled();
+    // Nor did the server render observe the provider: the source never ran.
+    expect(source.calls).toHaveLength(0);
     expect(errors).not.toHaveBeenCalled();
   });
 });

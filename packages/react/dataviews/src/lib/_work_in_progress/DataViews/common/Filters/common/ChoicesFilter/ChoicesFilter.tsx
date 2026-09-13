@@ -1,6 +1,6 @@
 import type { PredicateOperand } from "@canonical/dataviews-core";
 import type { ReactElement } from "react";
-import { useDataViewsField } from "../../../../hooks/index.js";
+import { useFilterHandle } from "../../../../hooks/index.js";
 import type { ChoicesFilterProps } from "./types.js";
 
 const componentCssClassName = "ds data-views-filters-choices";
@@ -19,7 +19,7 @@ export default function ChoicesFilter({
   label,
   declared,
 }: ChoicesFilterProps): ReactElement | null {
-  const field = useDataViewsField(handle);
+  const field = useFilterHandle(handle);
   if (!declared && field.applied.kind === "empty") {
     return null;
   }

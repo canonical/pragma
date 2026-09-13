@@ -6,7 +6,7 @@ import {
   type ColumnToSize,
   createColumnLayout,
   createGridInteraction,
-  isIdentity,
+  isDataViewsProvider,
   listDisplayEntries,
 } from "@canonical/dataviews-core/bindings";
 import {
@@ -73,9 +73,10 @@ const windowedRows = <TRow extends object>(
  * DataTable renders the rows of one collection.
  *
  * It renders rows and nothing else: it does not fetch, own the URL or decide
- * where views persist. The provider is explicit, so the same table works
- * standalone and inside a DataViews root, and never changes behaviour
- * because some optional context happened to be present.
+ * where views persist — it observes its provider, which does. The provider
+ * is explicit, so the same table works standalone and inside a DataViews
+ * root, and never changes behaviour because some optional context happened
+ * to be present.
  *
  * Its rows are divs consuming one shared track list, published once on the
  * container as a custom property. Fixed columns keep their declared width,
@@ -112,23 +113,19 @@ export default function DataTable<
   ref,
   ...rest
 }: DataTableProps<TFields, TRow>): ReactElement {
-  if (!isIdentity(provider?.identity)) {
+  if (!isDataViewsProvider(provider)) {
     throw new Error(
       "DataTable requires a provider created by createDataViewsProvider",
     );
   }
-  // Sorting is offered from the same declaration Filters reads, so a
-  // provider not given one cannot offer it.
+  // Observed for as long as the table is mounted: a standalone table is a
+  // mount that reads the provider, and the ref-count makes a table inside
+  // a root that already observes cost nothing.
+  useEffect(() => provider.observe(), [provider]);
+  // Sorting is offered from the same declaration Filters reads.
   const declared = provider.capabilities;
-  if (declared === null && columns.some((column) => column.sortable === true)) {
-    throw new Error(
-      "DataTable requires a provider given the source's capabilities to offer a sortable column; pass them to createDataViewsProvider",
-    );
-  }
   const sortableFields =
-    declared === null || declared.sort.terms === 0
-      ? NO_SORTABLE_FIELDS
-      : declared.sort.fields;
+    declared.sort.terms === 0 ? NO_SORTABLE_FIELDS : declared.sort.fields;
   // A set, because the header asks once per column and the table redraws on
   // every frame of a resize. One identity for "nothing is sortable", so the
   // memo holds there too.

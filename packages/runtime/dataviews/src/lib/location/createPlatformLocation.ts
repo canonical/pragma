@@ -1,4 +1,4 @@
-import type { Location, PlatformLocation } from "./types.js";
+import type { PlatformLocation, QueryLocation } from "./types.js";
 
 const resolve = (input: string | URL): URL => {
   if (input instanceof URL) {
@@ -11,7 +11,7 @@ const resolve = (input: string | URL): URL => {
 };
 
 /**
- * Create a Location over a host platform surface (for example a router's
+ * Create a location over a host platform surface (for example a router's
  * platform adapter). Reads parse the raw href — repeated parameters survive
  * — and writes navigate the raw href, so the host's own subscription loop
  * picks the change up like any other navigation.
@@ -21,7 +21,7 @@ const resolve = (input: string | URL): URL => {
  */
 export default function createPlatformLocation(
   platform: PlatformLocation,
-): Location {
+): QueryLocation {
   return {
     read(): URLSearchParams {
       return new URLSearchParams(resolve(platform.getLocation()).search);

@@ -6,14 +6,14 @@
  * mounting that leaves nothing subscribed. Layout, paint and latency need
  * a browser and are not measured here.
  */
-import {
-  createDataViewsProvider,
-  createSchema,
-  type DataViewsProvider,
-} from "@canonical/dataviews-core";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import elementAt from "../../../testing/elementAt.js";
+import {
+  createMachineProvider,
+  type Machine,
+  machine,
+} from "../../../testing/machines.js";
 import {
   DataTable,
   type DataTableCellProps,
@@ -21,24 +21,8 @@ import {
 } from "../_work_in_progress/DataTable/index.js";
 import virtualizeRows from "./virtualizeRows.js";
 
-const schema = createSchema([
-  { field: "status", kind: "choices", options: ["failed", "running"] },
-]);
-
-type Fields = typeof schema.fields;
-type Machine = {
-  readonly id: string;
-  readonly name: string;
-  readonly status: string;
-};
-
-const rows: readonly Machine[] = Array.from(
-  { length: 10_000 },
-  (_, position) => ({
-    id: `m-${position}`,
-    name: `host-${position}`,
-    status: "running",
-  }),
+const rows: readonly Machine[] = Array.from({ length: 10_000 }, (_, position) =>
+  machine(`m-${position}`, `host-${position}`),
 );
 
 /** 32px rows in a 640px viewport: twenty in view, four more past each edge. */
@@ -88,12 +72,13 @@ class FakeResizeObserver {
   }
 }
 
-/** A windowed table over all ten thousand rows, scrolled to the top. */
+/**
+ * A windowed table over all ten thousand rows, scrolled to the top. The
+ * source answers the table's first request at once, so the rows are there
+ * after the table's effect observes the provider.
+ */
 const largeTable = (selectable = false) => {
-  const provider: DataViewsProvider<Fields, Machine> = createDataViewsProvider<
-    Fields,
-    Machine
-  >({ schema });
+  const { provider } = createMachineProvider({ rows });
   const view = render(
     <DataTable
       provider={provider}
@@ -103,23 +88,6 @@ const largeTable = (selectable = false) => {
       windowing={virtualizeRows({ estimatedRowHeight: rowHeight })}
     />,
   );
-  const requestId = provider.refresh();
-  if (requestId === null) {
-    throw new Error("expected a refresh request");
-  }
-  const counted = { kind: "exact", value: rows.length } as const;
-  act(() => {
-    provider.complete(requestId, {
-      status: "succeeded",
-      page: {
-        rows,
-        groups: null,
-        counts: { pageable: counted, matched: counted, total: counted },
-        more: null,
-        cursors: null,
-      },
-    });
-  });
   const table = screen.getByRole("table");
   Object.defineProperty(table, "scrollTop", {
     value: 0,
@@ -238,19 +206,7 @@ describe("windowed DataTable, bounded work", () => {
   });
 
   it("leaves nothing subscribed or observed after repeated mounting", () => {
-    const provider = createDataViewsProvider<Fields, Machine>({ schema });
-    let live = 0;
-    for (const channel of [provider.rows, provider.state]) {
-      const subscribe = channel.subscribe;
-      vi.spyOn(channel, "subscribe").mockImplementation((listener) => {
-        live += 1;
-        const unsubscribe = subscribe(listener);
-        return () => {
-          live -= 1;
-          unsubscribe();
-        };
-      });
-    }
+    const { provider, source } = createMachineProvider({ rows });
     for (let cycle = 0; cycle < 25; cycle += 1) {
       const { unmount } = render(
         <DataTable
@@ -262,7 +218,11 @@ describe("windowed DataTable, bounded work", () => {
       );
       unmount();
     }
-    expect(live).toBe(0);
+    // Each mount observed the provider once and released it: one execution
+    // per mount, every one of them released. A provider's channels are
+    // frozen, so what the table subscribed is read off the source it drove.
+    expect(source.calls).toHaveLength(25);
+    expect(source.calls.every((call) => call.releases === 1)).toBe(true);
     expect(
       FakeResizeObserver.live.every((observer) => observer.observed.size === 0),
     ).toBe(true);

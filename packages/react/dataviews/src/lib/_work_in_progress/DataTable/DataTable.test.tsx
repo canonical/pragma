@@ -3,108 +3,89 @@
  * that carry the relationships the elements do not, keyed observation so an
  * unrelated change does no work, and one scope per row rather than one per
  * cell. Each case is mutation-tested against that contract.
+ *
+ * The table observes its provider from an effect, so nothing runs until it
+ * is mounted: a manual source receives its first request after `render`,
+ * and the test answers it by hand, or the provider is built over a source
+ * that answers every request at once.
  */
 import {
-  type Completion,
+  createCollection,
   createDataViewsProvider,
-  createSchema,
   type DataViewsProvider,
   declareCapabilities,
+  type SourceDelivery,
 } from "@canonical/dataviews-core";
 import {
   type ColumnLayout,
   createColumnLayout,
+  readProviderHost,
 } from "@canonical/dataviews-core/bindings";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { createRef, type ReactElement, StrictMode, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
+import createManualSource from "../../../../testing/createManualSource.js";
 import elementAt from "../../../../testing/elementAt.js";
-import { COUNTED_EXACTLY, deliverRows } from "../../../../testing/fixtures.js";
-import { useDataViewsCell, useDataViewsValue } from "../DataViews/index.js";
+import { deliverRows, pageOf } from "../../../../testing/fixtures.js";
+import {
+  createMachineProvider,
+  MACHINE_CAPABILITIES,
+  type Machine,
+  type MachineFields,
+  machine,
+  machines,
+} from "../../../../testing/machines.js";
+import type { ManualSource } from "../../../../testing/types.js";
+import {
+  DataViews,
+  useDataViewsCell,
+  useDataViewsValue,
+} from "../DataViews/index.js";
 import DataTable from "./DataTable.js";
 import type { DataTableCellProps, DataTableColumn } from "./types.js";
 
-const schema = createSchema([
-  { field: "name", kind: "text" },
-  { field: "status", kind: "choices", options: ["failed", "running"] },
-]);
-
-type Fields = typeof schema.fields;
-type Machine = {
-  readonly id: string;
-  readonly name: string;
-  readonly status: string;
-  readonly cores: number;
-};
-
-const machine = (id: string, name: string, status = "running"): Machine => ({
-  id,
-  name,
-  status,
-  cores: 4,
-});
+type Provider = DataViewsProvider<MachineFields, Machine>;
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Name", sortable: true },
   { id: "status", header: "Status" },
 ];
 
-/** What the fixture source declares: it can order by `name` alone. */
-const capabilities = declareCapabilities(schema, {
-  filter: { status: ["eq"] },
-  search: ["name"],
-  sort: { fields: ["name"], terms: 1, tiebreak: "opaque" },
-  counts: COUNTED_EXACTLY,
+/** A page of rows, as the manual source delivers one. */
+const page = (rows: readonly Machine[]): SourceDelivery<Machine> => ({
+  status: "succeeded",
+  page: pageOf(rows),
 });
 
-const makeProvider = (): DataViewsProvider<Fields, Machine> =>
-  createDataViewsProvider<Fields, Machine>({ schema, capabilities });
-
 /** A request the source accepted and could not complete. */
-const failure = (reason: string): Completion<Machine> => ({
+const failure = (reason: string): SourceDelivery<Machine> => ({
   status: "failed",
   failure: { reason, cause: new Error(reason), transient: null },
 });
 
-/** Refresh and return the request id, failing loudly rather than casting. */
-const refreshRequest = (
-  provider:
-    | DataViewsProvider<Fields, Machine>
-    | DataViewsProvider<Fields, Record<string, unknown>>,
-): string => {
-  const requestId = provider.refresh();
-  if (requestId === null) {
-    throw new Error("expected a refresh request");
-  }
-  return requestId;
-};
-
-/** The request a query edit issued, failing loudly rather than casting. */
-const pendingRequest = (
-  provider: DataViewsProvider<Fields, Machine>,
-): string => {
-  const requestId = provider.state.get().pendingRequestId;
-  if (requestId === null) {
-    throw new Error("expected a pending request");
-  }
-  return requestId;
-};
-
-const load = (
-  provider: DataViewsProvider<Fields, Machine>,
+/** Answer the source's latest request with these rows. */
+const deliver = (
+  source: ManualSource<Machine>,
   rows: readonly Machine[],
 ): void => {
-  const requestId = refreshRequest(provider);
   act(() => {
-    provider.complete(requestId, deliverRows(rows));
+    source.latest().deliver(page(rows));
   });
 };
 
+/** Fail the source's latest request. */
+const fail = (source: ManualSource<Machine>, reason: string): void => {
+  act(() => {
+    source.latest().deliver(failure(reason));
+  });
+};
+
+/** A table whose source answers every request at once with `rows`. */
 const loadedTable = (
   rows: readonly Machine[] = [machine("m-1", "alpha"), machine("m-2", "beta")],
-  extra: Partial<Parameters<typeof DataTable<Fields, Machine>>[0]> = {},
+  extra: Partial<Parameters<typeof DataTable<MachineFields, Machine>>[0]> = {},
 ) => {
-  const provider = makeProvider();
+  const { provider, source } = createMachineProvider({ rows });
   const view = render(
     <DataTable
       provider={provider}
@@ -113,13 +94,34 @@ const loadedTable = (
       {...extra}
     />,
   );
-  load(provider, rows);
-  return { provider, view };
+  return { provider, source, view };
+};
+
+/**
+ * A table over a source the test answers by hand, its first request
+ * settled with `rows`: what a scenario that later fails a request starts
+ * from.
+ */
+const deliveredTable = (
+  rows: readonly Machine[] = [machine("m-1", "alpha"), machine("m-2", "beta")],
+  extra: Partial<Parameters<typeof DataTable<MachineFields, Machine>>[0]> = {},
+) => {
+  const { provider, source } = createMachineProvider();
+  const view = render(
+    <DataTable
+      provider={provider}
+      columns={columns}
+      label="Machines"
+      {...extra}
+    />,
+  );
+  deliver(source, rows);
+  return { provider, source, view };
 };
 
 describe("DataTable", () => {
   it("refuses a value that is not a provider", () => {
-    const notAProvider = {} as DataViewsProvider<Fields, Machine>;
+    const notAProvider = {} as Provider;
     expect(() =>
       render(
         <DataTable
@@ -179,7 +181,7 @@ describe("DataTable", () => {
   });
 
   it("hands the root to a caller's callback ref without losing its own", () => {
-    const provider = makeProvider();
+    const { provider } = createMachineProvider();
     const seen: (HTMLDivElement | null)[] = [];
     const { unmount } = render(
       <DataTable
@@ -200,7 +202,7 @@ describe("DataTable", () => {
   });
 
   it("honours the cleanup a React 19 callback ref returns", () => {
-    const provider = makeProvider();
+    const { provider } = createMachineProvider();
     const seen: (HTMLDivElement | null)[] = [];
     let cleanups = 0;
     const { unmount } = render(
@@ -225,7 +227,7 @@ describe("DataTable", () => {
   });
 
   it("keeps one attachment across renders that rebuild the caller's ref", () => {
-    const provider = makeProvider();
+    const { provider } = createMachineProvider();
     const attachments: (HTMLDivElement | null)[] = [];
     const Host = (): ReactElement => {
       const [tick, setTick] = useState(0);
@@ -256,7 +258,7 @@ describe("DataTable", () => {
   });
 
   it("fills and clears a caller's ref object", () => {
-    const provider = makeProvider();
+    const { provider } = createMachineProvider();
     const ref = createRef<HTMLDivElement>();
     const { unmount } = render(
       <DataTable
@@ -272,32 +274,19 @@ describe("DataTable", () => {
   });
 
   it("renders primitive values as text and leaves other values to a renderer", () => {
-    const provider = makeProvider();
-    render(
-      <DataTable
-        provider={provider}
-        columns={[
+    loadedTable(
+      [
+        machine("m-1", "alpha", "running", 4),
+        machine("m-2", "beta", "running", 8),
+      ],
+      {
+        columns: [
           { id: "name", header: "Name" },
           { id: "cores", header: "Cores" },
           { id: "status", header: "Status" },
-        ]}
-        label="Machines"
-      />,
+        ],
+      },
     );
-    load(provider, [
-      {
-        id: "m-1",
-        name: "alpha",
-        cores: 4,
-        status: "running",
-      } as Machine,
-      {
-        id: "m-2",
-        name: "beta",
-        cores: 8,
-        status: "running",
-      } as Machine,
-    ]);
     const cells = within(elementAt(screen.getAllByRole("row"), 1)).getAllByRole(
       "cell",
     );
@@ -309,8 +298,26 @@ describe("DataTable", () => {
   });
 
   it("renders booleans, bigints and unrenderable values by their own rules", () => {
-    const provider = createDataViewsProvider<Fields, Record<string, unknown>>({
-      schema,
+    // Records the machine collection does not describe: a collection of
+    // their own, over a source that answers with the one odd row.
+    type Oddity = {
+      readonly id: string;
+      readonly flag: boolean;
+      readonly big: bigint;
+      readonly shape: object;
+    };
+    const oddities = createCollection({
+      identify: (row: Oddity) => row.id,
+      fields: [{ field: "flag", kind: "flag" }],
+    });
+    const source = createManualSource<Oddity>({
+      capabilities: declareCapabilities(oddities, {}),
+      answer: () =>
+        pageOf([{ id: "m-1", flag: false, big: 9007199254740993n, shape: {} }]),
+    });
+    const provider = createDataViewsProvider({
+      collection: oddities,
+      source: source.source,
     });
     render(
       <DataTable
@@ -324,15 +331,6 @@ describe("DataTable", () => {
         label="Machines"
       />,
     );
-    const requestId = refreshRequest(provider);
-    act(() => {
-      provider.complete(
-        requestId,
-        deliverRows<Record<string, unknown>>([
-          { id: "m-1", flag: false, big: 9007199254740993n, shape: {} },
-        ]),
-      );
-    });
     expect(
       within(elementAt(screen.getAllByRole("row"), 1))
         .getAllByRole("cell")
@@ -341,37 +339,27 @@ describe("DataTable", () => {
   });
 
   it("reads the record field a column names instead of its own id", () => {
-    const provider = makeProvider();
-    render(
-      <DataTable
-        provider={provider}
-        columns={[{ id: "machine-name", header: "Name", field: "name" }]}
-        label="Machines"
-      />,
-    );
-    load(provider, [machine("m-1", "alpha")]);
+    loadedTable([machine("m-1", "alpha")], {
+      columns: [{ id: "machine-name", header: "Name", field: "name" }],
+    });
     expect(elementAt(screen.getAllByRole("cell"), 0).textContent).toBe("alpha");
   });
 
   it("renders a column's own content inside that cell's scope", () => {
+    // The cell takes no provider: the collection is its witness, and the
+    // record channel is typed as its records.
     const Badge = ({ value, rowId, columnId }: DataTableCellProps) => {
-      const cell = useDataViewsCell(provider);
-      const record = useDataViewsValue(cell.row) as Machine;
+      const cell = useDataViewsCell(machines);
+      const record = useDataViewsValue(cell.record);
       return (
         <span data-testid={`${rowId}-${columnId}`}>
           {String(value)} of {record.name}
         </span>
       );
     };
-    const provider = makeProvider();
-    render(
-      <DataTable
-        provider={provider}
-        columns={[{ id: "status", header: "Status", cell: Badge }]}
-        label="Machines"
-      />,
-    );
-    load(provider, [machine("m-1", "alpha", "failed")]);
+    loadedTable([machine("m-1", "alpha", "failed")], {
+      columns: [{ id: "status", header: "Status", cell: Badge }],
+    });
     expect(screen.getByTestId("m-1-status").textContent).toBe(
       "failed of alpha",
     );
@@ -426,10 +414,12 @@ describe("DataTable", () => {
   });
 
   it("says it is loading, without announcing it as a status message", () => {
-    const provider = makeProvider();
+    const { provider, source } = createMachineProvider();
     render(
       <DataTable provider={provider} columns={columns} label="Machines" />,
     );
+    // The first request is out and unanswered.
+    expect(source.calls).toHaveLength(1);
     expect(screen.getByRole("row", { name: "Loading…" })).toBeInTheDocument();
     // Nothing has gone wrong and nothing has arrived: there is no outcome to
     // announce, so the row is not a `role="status"` live region.
@@ -439,34 +429,23 @@ describe("DataTable", () => {
   it("tells an empty collection from a query that matched nothing", () => {
     // The two call for different responses — add something, or change the
     // query — so they are never one message.
-    const provider = makeProvider();
-    render(
-      <DataTable provider={provider} columns={columns} label="Machines" />,
-    );
-    load(provider, []);
+    const { provider, source } = deliveredTable([]);
     expect(screen.getByText("There is nothing here yet.")).toBeInTheDocument();
     act(() => {
       provider.setSearch("alpha");
     });
-    load(provider, []);
+    deliver(source, []);
     expect(screen.getByText("No rows match this query.")).toBeInTheDocument();
   });
 
   it("lets the caller replace the words of an outcome", () => {
-    const provider = makeProvider();
-    render(
-      <DataTable
-        provider={provider}
-        columns={columns}
-        label="Machines"
-        renderStatus={(status) => <em>nothing: {status.status}</em>}
-      />,
-    );
-    load(provider, []);
+    const { provider, source } = deliveredTable([], {
+      renderStatus: (status) => <em>nothing: {status.status}</em>,
+    });
     act(() => {
       provider.setSearch("alpha");
     });
-    load(provider, []);
+    deliver(source, []);
     expect(screen.getByText("nothing: no-results")).toBeInTheDocument();
   });
 
@@ -474,19 +453,18 @@ describe("DataTable", () => {
     // A source's declared default already orders
     // its rows, but the header does not report it yet, so it claims no
     // sorted column rather than half of that contract.
-    const declared = declareCapabilities(schema, {
-      filter: { status: ["eq"] },
-      sort: {
-        fields: ["name"],
-        terms: 1,
-        tiebreak: "opaque",
-        default: [{ field: "name", direction: "asc" }],
-      },
-      counts: COUNTED_EXACTLY,
-    });
-    const provider = createDataViewsProvider<Fields, Machine>({
-      schema,
-      capabilities: declared,
+    const { provider } = createMachineProvider({
+      rows: [machine("m-1", "alpha")],
+      capabilities: declareCapabilities(machines, {
+        filter: { status: ["eq"] },
+        sort: {
+          fields: ["name"],
+          terms: 1,
+          tiebreak: "opaque",
+          default: [{ field: "name", direction: "asc" }],
+        },
+        counts: MACHINE_CAPABILITIES.counts,
+      }),
     });
     render(
       <DataTable
@@ -495,7 +473,6 @@ describe("DataTable", () => {
         label="Machines"
       />,
     );
-    load(provider, [machine("m-1", "alpha")]);
     expect(screen.getByRole("columnheader", { name: /Name/ })).toHaveAttribute(
       "aria-sort",
       "none",
@@ -608,20 +585,17 @@ describe("DataTable", () => {
     const Probe = ({ rowId }: DataTableCellProps) => {
       // Reads the row's membership, so this probe is notified exactly when
       // that row's selection channel publishes.
-      useDataViewsValue(useDataViewsCell(provider).selected);
+      useDataViewsValue(useDataViewsCell(machines).selected);
       renders.push(rowId);
       return null;
     };
-    const provider = makeProvider();
-    render(
-      <DataTable
-        provider={provider}
-        columns={[{ id: "name", header: "Name", cell: Probe }]}
-        label="Machines"
-        selectable
-      />,
+    const { provider } = loadedTable(
+      [machine("m-1", "alpha"), machine("m-2", "beta")],
+      {
+        columns: [{ id: "name", header: "Name", cell: Probe }],
+        selectable: true,
+      },
     );
-    load(provider, [machine("m-1", "alpha"), machine("m-2", "beta")]);
     renders.length = 0;
     act(() => {
       provider.selection.toggle("m-2");
@@ -635,35 +609,32 @@ describe("DataTable", () => {
       renders.push(`${rowId}/${columnId}`);
       return null;
     };
-    const provider = makeProvider();
-    render(
-      <DataTable
-        provider={provider}
-        columns={[
+    const { source } = deliveredTable(
+      [machine("m-1", "alpha"), machine("m-2", "beta")],
+      {
+        columns: [
           { id: "name", header: "Name", cell: Probe },
           { id: "status", header: "Status", cell: Probe },
-        ]}
-        label="Machines"
-      />,
+        ],
+      },
     );
-    load(provider, [machine("m-1", "alpha"), machine("m-2", "beta")]);
     renders.length = 0;
-    load(provider, [machine("m-1", "alpha", "failed"), machine("m-2", "beta")]);
+    // A later delivery of the same request: a store write, republished.
+    deliver(source, [
+      machine("m-1", "alpha", "failed"),
+      machine("m-2", "beta"),
+    ]);
     expect(renders).toEqual(["m-1/status"]);
   });
 
   it("mints one scope per row, shared by its cells and stable across renders", () => {
-    const seen: { rowId: string; row: unknown; provider: unknown }[] = [];
+    const seen: { rowId: string; record: unknown }[] = [];
     const Probe = () => {
-      const cell = useDataViewsCell(provider);
-      seen.push({
-        rowId: cell.rowId,
-        row: cell.row,
-        provider: provider.identity,
-      });
+      const cell = useDataViewsCell(machines);
+      seen.push({ rowId: cell.rowId, record: cell.record });
       return null;
     };
-    const provider = makeProvider();
+    const { provider, source } = createMachineProvider();
     const Host = (): ReactElement => {
       const [tick, setTick] = useState(0);
       return (
@@ -685,13 +656,13 @@ describe("DataTable", () => {
       );
     };
     render(<Host />);
-    load(provider, [machine("m-1", "alpha"), machine("m-2", "beta")]);
+    deliver(source, [machine("m-1", "alpha"), machine("m-2", "beta")]);
     const firstRow = seen.filter((entry) => entry.rowId === "m-1");
     expect(firstRow).toHaveLength(2);
     const [firstSeen, secondSeen] = firstRow;
-    expect(firstSeen?.row).toBe(secondSeen?.row);
-    expect(firstSeen?.row).not.toBe(
-      seen.find((entry) => entry.rowId === "m-2")?.row,
+    expect(firstSeen?.record).toBe(secondSeen?.record);
+    expect(firstSeen?.record).not.toBe(
+      seen.find((entry) => entry.rowId === "m-2")?.record,
     );
 
     seen.length = 0;
@@ -704,23 +675,21 @@ describe("DataTable", () => {
 
     // And nothing was re-minted: the next record change reaches the same
     // scope the first render handed out.
-    load(provider, [machine("m-1", "alpha", "failed"), machine("m-2", "beta")]);
-    expect(seen.find((entry) => entry.rowId === "m-1")?.row).toBe(
-      firstSeen?.row,
+    deliver(source, [
+      machine("m-1", "alpha", "failed"),
+      machine("m-2", "beta"),
+    ]);
+    expect(seen.find((entry) => entry.rowId === "m-1")?.record).toBe(
+      firstSeen?.record,
     );
-    expect(new Set(seen.map((entry) => entry.provider)).size).toBe(1);
   });
 
   it("rebuilds its model when a column genuinely changes", () => {
-    const provider = makeProvider();
-    const { rerender } = render(
-      <DataTable provider={provider} columns={columns} label="Machines" />,
-    );
-    load(provider, [machine("m-1", "alpha")]);
+    const { provider, view } = loadedTable([machine("m-1", "alpha")]);
     expect(
       screen.getAllByRole("columnheader").map((header) => header.textContent),
     ).toEqual(["Name", "Status"]);
-    rerender(
+    view.rerender(
       <DataTable
         provider={provider}
         columns={[...columns, { id: "cores", header: "Cores" }]}
@@ -743,18 +712,21 @@ describe("DataTable", () => {
       renders.push(rowId);
       return null;
     };
-    const provider = makeProvider();
-    const { unmount } = render(
-      <DataTable
-        provider={provider}
-        columns={[{ id: "name", header: "Name", cell: Probe }]}
-        label="Machines"
-      />,
+    const { provider, source, view } = deliveredTable(
+      [machine("m-1", "alpha")],
+      { columns: [{ id: "name", header: "Name", cell: Probe }] },
     );
-    load(provider, [machine("m-1", "alpha")]);
-    unmount();
+    view.unmount();
+    // The last observer left, so the source was released with it.
+    expect(source.latest().releases).toBe(1);
     renders.length = 0;
-    load(provider, [machine("m-1", "alpha", "failed")]);
+    // Rows fed to the unobserved provider by hand, and a selection change:
+    // nothing is mounted to render either.
+    const host = readProviderHost(provider);
+    host.complete(
+      host.refresh(),
+      deliverRows([machine("m-1", "alpha", "failed")]),
+    );
     act(() => {
       provider.selection.toggle("m-1");
     });
@@ -762,7 +734,7 @@ describe("DataTable", () => {
   });
 
   it("shares user arrangement between two tables on one layout", () => {
-    const provider = makeProvider();
+    const { provider } = createMachineProvider();
     const layout: ColumnLayout = createColumnLayout([
       { id: "name", sizing: { kind: "flex", weight: 1, minPx: 96 } },
       { id: "status", sizing: { kind: "flex", weight: 1, minPx: 96 } },
@@ -798,7 +770,7 @@ describe("DataTable", () => {
   });
 
   it("refuses a layout that does not declare a rendered column", () => {
-    const provider = makeProvider();
+    const { provider } = createMachineProvider();
     const layout = createColumnLayout([
       { id: "name", sizing: { kind: "fixed", px: 100 } },
     ]);
@@ -857,7 +829,7 @@ describe("DataTable", () => {
         return this.matches(".selection") ? selectionWidth : 0;
       });
     try {
-      const provider = makeProvider();
+      const { provider } = createMachineProvider();
       const view = (selectable: boolean) => (
         <DataTable
           provider={provider}
@@ -905,7 +877,7 @@ describe("DataTable", () => {
     // nothing published, the selection track stands alone.
     render(
       <DataTable
-        provider={makeProvider()}
+        provider={createMachineProvider().provider}
         columns={[]}
         label="Machines"
         selectable
@@ -933,7 +905,7 @@ describe("DataTable", () => {
     }
     vi.stubGlobal("ResizeObserver", StubObserver);
     try {
-      const provider = makeProvider();
+      const { provider } = createMachineProvider();
       const { unmount } = render(
         <DataTable
           provider={provider}
@@ -971,23 +943,17 @@ describe("DataTable", () => {
   });
 
   it("resizes a column from its header, publishing new tracks", () => {
-    const provider = makeProvider();
-    render(
-      <DataTable
-        provider={provider}
-        columns={[
-          {
-            id: "name",
-            header: "Name",
-            resizable: true,
-            sizing: { kind: "flex", weight: 1, minPx: 50 },
-          },
-          { id: "status", header: "Status" },
-        ]}
-        label="Machines"
-      />,
-    );
-    load(provider, [machine("m-1", "alpha")]);
+    loadedTable([machine("m-1", "alpha")], {
+      columns: [
+        {
+          id: "name",
+          header: "Name",
+          resizable: true,
+          sizing: { kind: "flex", weight: 1, minPx: 50 },
+        },
+        { id: "status", header: "Status" },
+      ],
+    });
     const handle = screen.getByRole("separator");
     expect(handle).toHaveAccessibleName("Name");
     fireEvent.keyDown(handle, { key: "ArrowRight" });
@@ -1005,23 +971,17 @@ describe("DataTable", () => {
       return frames.length;
     });
     try {
-      const provider = makeProvider();
       const layout = createColumnLayout([
         { id: "name", sizing: { kind: "flex", weight: 1, minPx: 50 } },
         { id: "status", sizing: { kind: "flex", weight: 1, minPx: 96 } },
       ]);
-      render(
-        <DataTable
-          provider={provider}
-          columns={[
-            { id: "name", header: "Name", resizable: true },
-            { id: "status", header: "Status" },
-          ]}
-          label="Machines"
-          layout={layout}
-        />,
-      );
-      load(provider, [machine("m-1", "alpha")]);
+      loadedTable([machine("m-1", "alpha")], {
+        columns: [
+          { id: "name", header: "Name", resizable: true },
+          { id: "status", header: "Status" },
+        ],
+        layout,
+      });
       fireEvent.pointerDown(screen.getByRole("separator"), { clientX: 0 });
       fireEvent.pointerMove(window, { clientX: 180 });
       act(() => {
@@ -1044,22 +1004,9 @@ describe("DataTable", () => {
   });
 
   it("is safe under StrictMode double-mount without orphaned subscriptions", () => {
-    const provider = makeProvider();
-    let rowSubscriptions = 0;
-    const observed: DataViewsProvider<Fields, Machine> = {
-      ...provider,
-      rows: {
-        get: provider.rows.get,
-        subscribe: (listener) => {
-          rowSubscriptions += 1;
-          const unsubscribe = provider.rows.subscribe(listener);
-          return () => {
-            rowSubscriptions -= 1;
-            unsubscribe();
-          };
-        },
-      },
-    };
+    const { provider, source } = createMachineProvider({
+      rows: [machine("m-1", "alpha")],
+    });
     const declared = createColumnLayout([
       { id: "name", sizing: { kind: "flex", weight: 1, minPx: 96 } },
       { id: "status", sizing: { kind: "flex", weight: 1, minPx: 96 } },
@@ -1099,7 +1046,7 @@ describe("DataTable", () => {
       const { unmount } = render(
         <StrictMode>
           <DataTable
-            provider={observed}
+            provider={provider}
             columns={columns}
             label="Machines"
             layout={layout}
@@ -1107,21 +1054,103 @@ describe("DataTable", () => {
           />
         </StrictMode>,
       );
-      load(observed, [machine("m-1", "alpha")]);
-      // The rows still arrive: the double-invoked mount left one live
-      // registry, not a disposed one.
+      // The rows arrived through the kept mount's observation: the
+      // double-invoked mount left one live registry, not a disposed one.
       expect(
         screen.getAllByRole("cell").map((cell) => cell.textContent),
       ).toEqual(["", "alpha", "running"]);
       // The rehearsal's observers were released; one per element remains.
       expect(observing).toBe(2);
+      // The kept mount holds the one live execution: a later delivery of
+      // the same query reaches the rows.
+      expect(source.calls.filter((call) => call.releases === 0)).toHaveLength(
+        1,
+      );
+      act(() => {
+        source.latest().deliver(page([machine("m-2", "beta")]));
+      });
+      expect(screen.getByRole("cell", { name: "beta" })).toBeInTheDocument();
       unmount();
-      expect(rowSubscriptions).toBe(0);
+      // Every execution the rehearsal and the kept mount asked for is
+      // released: nothing observes the provider any more.
+      expect(source.calls.every((call) => call.releases === 1)).toBe(true);
       expect(layoutSubscriptions).toBe(0);
       expect(observing).toBe(0);
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  it("keeps one live execution through StrictMode's double mount, and releases it on unmount", () => {
+    const { provider, source } = createMachineProvider();
+    const table = (
+      <StrictMode>
+        <DataTable provider={provider} columns={columns} label="Machines" />
+      </StrictMode>
+    );
+    const { rerender, unmount } = render(table);
+    // The rehearsal mount observed and was released, which released its
+    // execution; the kept mount observed again and the same request was
+    // executed once more. Whatever React rehearsed, exactly one execution
+    // is live, and none was released more than once.
+    const live = source.calls.filter((call) => call.releases === 0);
+    expect(live).toHaveLength(1);
+    expect(source.calls.every((call) => call.releases <= 1)).toBe(true);
+    const [kept] = live;
+    if (kept === undefined) {
+      throw new Error("expected a live execution");
+    }
+    act(() => {
+      kept.deliver(page([machine("m-1", "alpha")]));
+    });
+    expect(screen.getByRole("cell", { name: "alpha" })).toBeInTheDocument();
+    // A render that changes nothing observes nothing again.
+    const executions = source.calls.length;
+    rerender(table);
+    expect(source.calls).toHaveLength(executions);
+    unmount();
+    expect(source.calls.every((call) => call.releases === 1)).toBe(true);
+  });
+
+  it("executes each request once for two mounts on one provider, and releases with the last", () => {
+    const { provider, source } = createMachineProvider();
+    // A root observing the provider, with a connected table inside it, and
+    // a standalone table outside it observing the same provider.
+    const root = render(
+      <DataViews provider={provider}>
+        <DataViews.DataTable columns={columns} label="Inside" />
+      </DataViews>,
+    );
+    const standalone = render(
+      <DataTable provider={provider} columns={columns} label="Outside" />,
+    );
+    // Three observers, one request.
+    expect(source.calls).toHaveLength(1);
+    deliver(source, [machine("m-1", "alpha")]);
+    for (const name of ["Inside", "Outside"]) {
+      expect(
+        within(screen.getByRole("table", { name })).getByRole("cell", {
+          name: "alpha",
+        }),
+      ).toBeInTheDocument();
+    }
+    // One mount leaving keeps the source running for the other.
+    standalone.unmount();
+    expect(source.latest().releases).toBe(0);
+    expect(screen.getByRole("table", { name: "Inside" })).toBeInTheDocument();
+    act(() => {
+      provider.setSearch("alpha");
+    });
+    expect(source.calls).toHaveLength(2);
+    deliver(source, [machine("m-1", "alpha")]);
+    expect(
+      within(screen.getByRole("table", { name: "Inside" })).getByRole("cell", {
+        name: "alpha",
+      }),
+    ).toBeInTheDocument();
+    // The last mount leaving releases the live execution.
+    root.unmount();
+    expect(source.calls.every((call) => call.releases === 1)).toBe(true);
   });
 
   it("renders no row and no cell again for a live resize preview", () => {
@@ -1130,24 +1159,18 @@ describe("DataTable", () => {
       renders.push(`${rowId}/${columnId}`);
       return null;
     };
-    const provider = makeProvider();
-    render(
-      <DataTable
-        provider={provider}
-        columns={[
-          {
-            id: "name",
-            header: "Name",
-            cell: Probe,
-            resizable: true,
-            sizing: { kind: "flex", weight: 1, minPx: 50 },
-          },
-          { id: "status", header: "Status", cell: Probe },
-        ]}
-        label="Machines"
-      />,
-    );
-    load(provider, [machine("m-1", "alpha"), machine("m-2", "beta")]);
+    loadedTable([machine("m-1", "alpha"), machine("m-2", "beta")], {
+      columns: [
+        {
+          id: "name",
+          header: "Name",
+          cell: Probe,
+          resizable: true,
+          sizing: { kind: "flex", weight: 1, minPx: 50 },
+        },
+        { id: "status", header: "Status", cell: Probe },
+      ],
+    });
     renders.length = 0;
     fireEvent.keyDown(screen.getByRole("separator"), { key: "ArrowRight" });
     // The geometry moved — one publication on the container — and not one
@@ -1161,23 +1184,17 @@ describe("DataTable", () => {
   });
 
   it("offers no resize control on the table's trailing edge", () => {
-    const provider = makeProvider();
-    const { rerender } = render(
-      <DataTable
-        provider={provider}
-        columns={[
-          { id: "name", header: "Name", resizable: true },
-          { id: "status", header: "Status", resizable: true },
-        ]}
-        label="Machines"
-      />,
-    );
-    load(provider, [machine("m-1", "alpha")]);
+    const { provider, view } = loadedTable([machine("m-1", "alpha")], {
+      columns: [
+        { id: "name", header: "Name", resizable: true },
+        { id: "status", header: "Status", resizable: true },
+      ],
+    });
     // Status declares itself resizable, but no column follows it to trade
     // width with, so neither a pointer nor a key can reach its edge.
     expect(screen.getAllByRole("separator")).toHaveLength(1);
     expect(screen.getByRole("separator")).toHaveAccessibleName("Name");
-    rerender(
+    view.rerender(
       <DataTable
         provider={provider}
         columns={[{ id: "name", header: "Name", resizable: true }]}
@@ -1204,7 +1221,7 @@ describe("DataTable", () => {
       return frames.length;
     });
     try {
-      const provider = makeProvider();
+      const { provider } = createMachineProvider();
       render(
         <DataTable
           provider={provider}
@@ -1261,23 +1278,17 @@ describe("DataTable", () => {
   });
 
   it("holds every resize to the column's declared bounds", () => {
-    const provider = makeProvider();
-    render(
-      <DataTable
-        provider={provider}
-        columns={[
-          {
-            id: "name",
-            header: "Name",
-            resizable: true,
-            sizing: { kind: "flex", weight: 1, minPx: 50, maxPx: 80 },
-          },
-          { id: "status", header: "Status" },
-        ]}
-        label="Machines"
-      />,
-    );
-    load(provider, [machine("m-1", "alpha")]);
+    loadedTable([machine("m-1", "alpha")], {
+      columns: [
+        {
+          id: "name",
+          header: "Name",
+          resizable: true,
+          sizing: { kind: "flex", weight: 1, minPx: 50, maxPx: 80 },
+        },
+        { id: "status", header: "Status" },
+      ],
+    });
     const handle = screen.getByRole("separator");
     const tracks = (): string =>
       screen
@@ -1301,23 +1312,17 @@ describe("DataTable", () => {
       return frames.length;
     });
     try {
-      const provider = makeProvider();
-      render(
-        <DataTable
-          provider={provider}
-          columns={[
-            {
-              id: "name",
-              header: "Name",
-              resizable: true,
-              sizing: { kind: "fixed", px: 100 },
-            },
-            { id: "status", header: "Status" },
-          ]}
-          label="Machines"
-        />,
-      );
-      load(provider, [machine("m-1", "alpha")]);
+      loadedTable([machine("m-1", "alpha")], {
+        columns: [
+          {
+            id: "name",
+            header: "Name",
+            resizable: true,
+            sizing: { kind: "fixed", px: 100 },
+          },
+          { id: "status", header: "Status" },
+        ],
+      });
       const table = screen.getByRole("table", { name: "Machines" });
       const handle = screen.getByRole("separator");
       const box = (left: number, width: number) =>
@@ -1374,23 +1379,17 @@ describe("DataTable", () => {
   });
 
   it("holds a resize to the layout's declared bounds, not the column's", () => {
-    const provider = makeProvider();
     const layout = createColumnLayout([
       { id: "name", sizing: { kind: "flex", weight: 1, minPx: 50 } },
       { id: "status", sizing: { kind: "flex", weight: 1, minPx: 96 } },
     ]);
-    render(
-      <DataTable
-        provider={provider}
-        columns={[
-          { id: "name", header: "Name", resizable: true },
-          { id: "status", header: "Status" },
-        ]}
-        label="Machines"
-        layout={layout}
-      />,
-    );
-    load(provider, [machine("m-1", "alpha")]);
+    loadedTable([machine("m-1", "alpha")], {
+      columns: [
+        { id: "name", header: "Name", resizable: true },
+        { id: "status", header: "Status" },
+      ],
+      layout,
+    });
     const handle = screen.getByRole("separator");
     // The column declares nothing, so on its own it would default to a 96px
     // minimum; the shared layout, which the widths are solved from,
@@ -1402,6 +1401,8 @@ describe("DataTable", () => {
   });
 
   it("offers sorting only on a field its source declares sortable", () => {
+    // The declaration is the source's own, read through the provider: a
+    // column asking for sorting on a field outside it gets no control.
     loadedTable(undefined, {
       columns: [
         { id: "name", header: "Name", sortable: true },
@@ -1418,11 +1419,10 @@ describe("DataTable", () => {
   });
 
   it("offers no sorting on a source that can order nothing", () => {
-    const provider = createDataViewsProvider<Fields, Machine>({
-      schema,
+    const { provider } = createMachineProvider({
       capabilities: {
-        ...capabilities,
-        sort: { ...capabilities.sort, terms: 0 },
+        ...MACHINE_CAPABILITIES,
+        sort: { ...MACHINE_CAPABILITIES.sort, terms: 0 },
       },
     });
     render(
@@ -1434,34 +1434,14 @@ describe("DataTable", () => {
     );
   });
 
-  it("refuses a sortable column on a provider not told what its source can sort", () => {
-    const provider = createDataViewsProvider<Fields, Machine>({ schema });
-    expect(() =>
-      render(
-        <DataTable provider={provider} columns={columns} label="Machines" />,
-      ),
-    ).toThrow(
-      "DataTable requires a provider given the source's capabilities to offer a sortable column; pass them to createDataViewsProvider",
-    );
-    render(
-      <DataTable
-        provider={provider}
-        columns={[{ id: "name", header: "Name" }]}
-        label="Machines"
-      />,
-    );
-    expect(screen.getByRole("columnheader")).not.toHaveAttribute("aria-sort");
-  });
-
   it("keeps an earlier query's rows in view, says they are stale and why, and leaves focus alone", () => {
-    const { provider } = loadedTable();
+    const { source } = deliveredTable();
     const button = screen.getByRole("button", { name: "Name" });
     button.focus();
     fireEvent.click(button);
-    const request = pendingRequest(provider);
-    act(() => {
-      provider.complete(request, failure("the inventory is unreachable"));
-    });
+    // The ordering issued a request the source is now executing.
+    expect(source.calls).toHaveLength(2);
+    fail(source, "the inventory is unreachable");
     const table = screen.getByRole("table", { name: "Machines" });
     expect(table).toHaveAttribute("aria-busy", "false");
     expect(within(table).getByRole("status")).toHaveTextContent(
@@ -1477,7 +1457,7 @@ describe("DataTable", () => {
       "betarunning",
     ]);
     expect(document.activeElement).toBe(button);
-    // The query is shown as asked, with the refused ordering still applied.
+    // The query is shown as asked, with the failed ordering still applied.
     expect(screen.getAllByRole("columnheader")[0]).toHaveAttribute(
       "aria-sort",
       "ascending",
@@ -1485,20 +1465,15 @@ describe("DataTable", () => {
   });
 
   it("keeps one stale status element across re-renders", () => {
-    const provider = makeProvider();
-    const { rerender } = render(
-      <DataTable provider={provider} columns={columns} label="Machines" />,
-    );
-    load(provider, [machine("m-1", "alpha")]);
+    const { provider, source, view } = deliveredTable([
+      machine("m-1", "alpha"),
+    ]);
     act(() => {
       provider.setSearch("beta");
     });
-    const request = pendingRequest(provider);
-    act(() => {
-      provider.complete(request, failure("offline"));
-    });
+    fail(source, "offline");
     const statusMessage = screen.getByRole("status");
-    rerender(
+    view.rerender(
       <DataTable provider={provider} columns={[...columns]} label="Machines" />,
     );
     act(() => {
@@ -1511,29 +1486,23 @@ describe("DataTable", () => {
   });
 
   it("returns to a coherent table once the stale query is replaced", () => {
-    const { provider } = loadedTable();
+    const { provider, source } = deliveredTable();
     act(() => {
       provider.setSearch("beta");
     });
-    const failed = pendingRequest(provider);
-    act(() => {
-      provider.complete(failed, failure("offline"));
-    });
+    fail(source, "offline");
     expect(screen.getByRole("status")).toBeInTheDocument();
     act(() => {
       provider.setSearch("");
     });
-    const recovered = pendingRequest(provider);
-    act(() => {
-      provider.complete(recovered, deliverRows([machine("m-2", "beta")]));
-    });
+    deliver(source, [machine("m-2", "beta")]);
     expect(screen.queryByRole("status")).toBeNull();
     expect(provider.state.get().result.status).toBe("ready");
     expect(screen.getAllByRole("row")).toHaveLength(2);
   });
 
   it("hands a stale status to the caller's renderStatus", () => {
-    const { provider } = loadedTable(undefined, {
+    const { provider, source } = deliveredTable(undefined, {
       renderStatus: (status) =>
         status.status === "stale"
           ? `Out of date (${status.reason})`
@@ -1542,27 +1511,23 @@ describe("DataTable", () => {
     act(() => {
       provider.setSearch("beta");
     });
-    act(() => {
-      provider.complete(pendingRequest(provider), failure("offline"));
-    });
+    fail(source, "offline");
     expect(screen.getByRole("status")).toHaveTextContent(
       /^Out of date \(offline\)$/,
     );
   });
 
   it("shows the new reason when a later query fails differently", () => {
-    const { provider } = loadedTable();
+    const { provider, source } = deliveredTable();
     act(() => {
       provider.setSearch("beta");
     });
-    act(() => {
-      provider.complete(pendingRequest(provider), failure("offline"));
-    });
+    fail(source, "offline");
     // One batch, as a synchronous source delivers it: the pending state in
     // between never renders.
     act(() => {
       provider.setSearch("gamma");
-      provider.complete(pendingRequest(provider), failure("timed out"));
+      source.latest().deliver(failure("timed out"));
     });
     expect(screen.getByRole("status")).toHaveTextContent(
       "These rows do not match the current query: timed out",
@@ -1570,13 +1535,11 @@ describe("DataTable", () => {
   });
 
   it("keeps the rows a failed refresh could not replace, and says why", () => {
-    const { provider } = loadedTable();
+    const { provider, source } = deliveredTable();
     act(() => {
-      provider.complete(
-        refreshRequest(provider),
-        failure("the inventory is unreachable"),
-      );
+      provider.refresh();
     });
+    fail(source, "the inventory is unreachable");
     const table = screen.getByRole("table", { name: "Machines" });
     expect(table).toHaveAttribute("aria-busy", "false");
     // The rows still answer the query the user asked, so they stay, and the
@@ -1595,39 +1558,39 @@ describe("DataTable", () => {
   });
 
   it("hands a failed refresh to the caller's renderStatus", () => {
-    const { provider } = loadedTable(undefined, {
+    const { provider, source } = deliveredTable(undefined, {
       renderStatus: (status) =>
         status.status === "refresh-failed"
           ? `Not refreshed (${status.reason})`
           : status.status,
     });
     act(() => {
-      provider.complete(refreshRequest(provider), failure("offline"));
+      provider.refresh();
     });
+    fail(source, "offline");
     expect(screen.getByRole("status")).toHaveTextContent(
       /^Not refreshed \(offline\)$/,
     );
   });
 
   it("drops the failed refresh's status once a refresh succeeds", () => {
-    const { provider } = loadedTable();
+    const { provider, source } = deliveredTable();
     act(() => {
-      provider.complete(refreshRequest(provider), failure("offline"));
+      provider.refresh();
     });
+    fail(source, "offline");
     expect(screen.getByRole("status")).toBeInTheDocument();
     act(() => {
-      provider.complete(
-        refreshRequest(provider),
-        deliverRows([machine("m-1", "alpha")]),
-      );
+      provider.refresh();
     });
+    deliver(source, [machine("m-1", "alpha")]);
     expect(screen.queryByRole("status")).toBeNull();
     expect(provider.state.get().result.status).toBe("ready");
     expect(screen.getAllByRole("row")).toHaveLength(2);
   });
 
   it("marks the table busy while a request is in flight", () => {
-    const { provider } = loadedTable();
+    const { provider, source } = deliveredTable();
     expect(screen.getByRole("table", { name: "Machines" })).toHaveAttribute(
       "aria-busy",
       "false",
@@ -1635,6 +1598,8 @@ describe("DataTable", () => {
     act(() => {
       provider.refresh();
     });
+    // The refresh is out and the source has not answered it.
+    expect(source.latest().releases).toBe(0);
     expect(screen.getByRole("table", { name: "Machines" })).toHaveAttribute(
       "aria-busy",
       "true",

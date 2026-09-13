@@ -1,5 +1,5 @@
 import type {
-  CollectionState,
+  DataViewsState,
   SourceCapabilities,
 } from "@canonical/dataviews-core";
 import type { PaginationState } from "./types.js";
@@ -13,16 +13,16 @@ import type { PaginationState } from "./types.js";
  * last page. A total that belongs to an earlier query is not this one's.
  */
 export default function derivePaginationState(
-  snapshot: CollectionState<object>,
+  snapshot: DataViewsState<object>,
   sizes: readonly number[],
-  pagination: SourceCapabilities["pagination"] | null = null,
+  pagination: SourceCapabilities["pagination"],
 ): PaginationState {
   const { page, size } = snapshot.window;
   const current = snapshot.resultMatchesQuery;
   const rows = snapshot.result.rows;
   // A page is addressable by number unless the source says it reaches its
   // pages only through the tokens an adjacent page hands back.
-  const byNumber = pagination === null || pagination.kind === "offset";
+  const byNumber = pagination.kind === "offset";
   // Only the rows the window pages over can say how many pages there are,
   // and only an exact count of them can.
   const pageable = snapshot.result.counts?.pageable;

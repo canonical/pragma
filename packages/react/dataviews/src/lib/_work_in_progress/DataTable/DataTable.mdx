@@ -5,25 +5,34 @@ import * as Stories from "./DataTable.stories";
 
 # DataTable recipes
 
-`DataTable` renders the rows of one collection and nothing else: it does not fetch, own the URL or decide where views persist. A provider owns the collection's query, result and selection; a source binding feeds it; the table reads it. Each recipe below is the smallest complete code for one job, followed by the live story that shows it.
+`DataTable` renders the rows of one collection and nothing else: it does not fetch, own the URL or decide where views persist. A provider owns the collection's query, result and selection and drives the source that answers it; the table observes the provider and shows what it holds. Each recipe below is the smallest complete code for one job, followed by the live story that shows it.
 
 The table is dense wherever it sits: its root carries the design system's `.dense` class, and its rows and cells take their height and padding from the density channel of `@canonical/styles`, so load that stylesheet on the page. Its sort chevrons and checkbox marks are `@canonical/ds-assets` icons, which the page serves at `/icons`, as for every other design-system icon.
 
 ## A table over a provider
 
-Build the provider once and keep it for the table's lifetime. The binding is different: it subscribes to the provider, so it belongs in an effect that disposes it — a render React throws away must never leave a subscription behind. Ask for the first page only while nothing has been asked yet: StrictMode runs the effect twice in development, and the second run finds the first page already requested. From then on every sort, search or page change issues its own request. The source declares every field it can filter and sort, and the provider is told that declaration through `capabilities`, so the table and the filters offer only what the source can run.
+Declare the collection once, at module scope: its fields, and the identity every record carries. It is the witness the provider is built over and every hook is handed, and the record type is inferred from `identify`, so nothing is spelled twice. Then build the provider once, in state, over the collection and its source. Building it starts nothing: the table observes the provider for as long as it is mounted, and the first observer runs the source and asks for the first page. From then on every sort, search or page change issues its own request, and the last observer to leave stops it all. The source declares what it can filter and sort, the provider reads that declaration, and the table offers only what the source can run.
 
 ```tsx
 import {
   createArraySource,
+  createCollection,
   createDataViewsProvider,
-  createSourceBinding,
-  DEFAULT_WINDOW,
-  type RowRecord,
 } from "@canonical/dataviews-core";
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
-import { useEffect, useState } from "react";
-import { machineSchema, machines } from "./machines.js";
+import { useState } from "react";
+import { type Machine, machines } from "./machines.js";
+
+// Declared once, beside the records it describes.
+export const machineCollection = createCollection({
+  identify: (machine: Machine) => machine.id,
+  fields: [
+    { field: "status", kind: "choices", options: ["running", "failed", "pending"] },
+    { field: "cores", kind: "number", min: 1 },
+    { field: "name", kind: "text" },
+    { field: "owner", kind: "text" },
+  ],
+});
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host" },
@@ -32,23 +41,17 @@ const columns: readonly DataTableColumn[] = [
 ];
 
 export function Machines() {
-  const [source] = useState(() =>
-    createArraySource<RowRecord>({ rows: machines, schema: machineSchema }),
-  );
+  // Built once: the table observes it, which starts its source.
   const [provider] = useState(() =>
     createDataViewsProvider({
-      schema: machineSchema,
-      capabilities: source.capabilities,
+      collection: machineCollection,
+      source: createArraySource({
+        rows: machines,
+        collection: machineCollection,
+        searchFields: ["name", "owner"],
+      }),
     }),
   );
-  useEffect(() => {
-    const binding = createSourceBinding({ host: provider, source });
-    const release = binding.observe();
-    if (provider.state.get().result.status === "idle") {
-      provider.refresh();
-    }
-    return release;
-  }, [provider, source]);
   return <DataTable provider={provider} columns={columns} label="Machines" />;
 }
 ```
@@ -59,20 +62,12 @@ Every column shows the record field its id names; `field` names a different one.
 
 ## Columns and sizing
 
+The recipes from here on keep the provider built above and change only the columns.
+
 A column is `fixed` — it keeps exactly its width — or `flex`: it takes at least its `minPx`, at most its `maxPx`, and a share of whatever is left by `weight`. The solver reserves every fixed width and every minimum first, then shares the rest; a column that reaches its maximum hands its excess back to the others. When even the reservations do not fit, nothing is squeezed: the table scrolls. The one exception is the last column, which takes whatever width the columns before it leave — past its own maximum or fixed width when there is room to spare — so the table never ends in a gap.
 
 ```tsx
-import {
-  createDataViewsProvider,
-  DEFAULT_WINDOW,
-} from "@canonical/dataviews-core";
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
-import { machineSchema, source } from "./machines.js";
-
-const provider = createDataViewsProvider({
-  schema: machineSchema,
-  capabilities: source.capabilities,
-});
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host", sizing: { kind: "flex", weight: 2, minPx: 160 } },
@@ -89,20 +84,10 @@ const columns: readonly DataTableColumn[] = [
 
 ## Sorting
 
-Mark a column `sortable` only when its source declares that field sortable, and pass the source's declaration to the provider as `capabilities`: the table reads it, and a sortable column on a provider created without it throws. A source refuses a query carrying a sort term it never declared, so a heading offering that sort would be a control that does nothing. The heading cycles ascending, descending, then back to the source's own order, and reports it through `aria-sort`. An ordered heading shows a chevron — up for ascending, down for descending — and an unordered one shows none; the chevron repeats the order for the eye, and `aria-sort` is what carries it to assistive technology.
+Mark a column `sortable` and the table offers the order, but only when the source declares that field sortable: the provider carries the source's declaration, and a `sortable` column on a field outside it offers nothing, because a heading offering a sort the source would refuse would be a control that does nothing. The heading cycles ascending, descending, then back to the source's own order, and reports it through `aria-sort`. An ordered heading shows a chevron — up for ascending, down for descending — and an unordered one shows none; the chevron repeats the order for the eye, and `aria-sort` is what carries it to assistive technology.
 
 ```tsx
-import {
-  createDataViewsProvider,
-  DEFAULT_WINDOW,
-} from "@canonical/dataviews-core";
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
-import { machineSchema, source } from "./machines.js";
-
-const provider = createDataViewsProvider({
-  schema: machineSchema,
-  capabilities: source.capabilities,
-});
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host", sortable: true },
@@ -115,24 +100,16 @@ const columns: readonly DataTableColumn[] = [
 <DataTable provider={provider} columns={columns} label="Machines" />;
 ```
 
+To open on an order, issue it once the provider is built, before anything observes it: `provider.setSort([{ field: "status", direction: "asc" }])` inside the state initializer. The first request then carries it.
+
 <Canvas of={Stories.Sortable} sourceState="none" />
 
 ## Selection
 
-`selectable` adds a leading 32px column of the design system's `CheckboxInput`, backed by the provider's selection; the column's width is the stylesheet's, and the data columns share what it leaves. Name each record with `rowLabel`, so a checkbox says which machine it selects rather than which position it holds. The header checkbox acts on the rows the reader can see, and leaves a selection made on another page alone.
+`selectable` adds a leading 32px column of the design system's `CheckboxInput`, backed by the provider's selection; the column's width is the stylesheet's, and the data columns share what it leaves. Name each record with `rowLabel`, so a checkbox says which machine it selects rather than which position it holds — the row is typed as the collection's record, so its fields need no cast. The header checkbox acts on the rows the reader can see, and leaves a selection made on another page alone.
 
 ```tsx
-import {
-  createDataViewsProvider,
-  DEFAULT_WINDOW,
-} from "@canonical/dataviews-core";
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
-import { machineSchema, source } from "./machines.js";
-
-const provider = createDataViewsProvider({
-  schema: machineSchema,
-  capabilities: source.capabilities,
-});
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host" },
@@ -145,7 +122,7 @@ const columns: readonly DataTableColumn[] = [
   columns={columns}
   label="Machines"
   selectable
-  rowLabel={(row) => String(row.name)}
+  rowLabel={(row) => row.name}
 />;
 ```
 
@@ -158,17 +135,7 @@ const columns: readonly DataTableColumn[] = [
 The last column never gets a control, even when it is declared `resizable`: its trailing edge is the table's own edge, with nothing beyond it to resize against. It takes whatever width the others leave instead. To give two tables on one provider the same user arrangement, pass them one shared `layout`.
 
 ```tsx
-import {
-  createDataViewsProvider,
-  DEFAULT_WINDOW,
-} from "@canonical/dataviews-core";
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
-import { machineSchema, source } from "./machines.js";
-
-const provider = createDataViewsProvider({
-  schema: machineSchema,
-  capabilities: source.capabilities,
-});
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host", resizable: true, sizing: { kind: "flex", weight: 1, minPx: 120, maxPx: 320 } },
@@ -186,10 +153,9 @@ const columns: readonly DataTableColumn[] = [
 
 ## A cell that reads its own scope
 
-A column's `cell` renderer runs inside its cell's scope, so it can read the row's channels with `useDataViewsCell` — the whole record, another field, or the row's selection — without the table handing every cell a copy of the record. It re-renders when those channels change, and nothing else does.
+A column's `cell` renderer runs inside its cell's scope, so it can read the row's channels with `useDataViewsCell` — the whole record, another field, or the row's selection — without the table handing every cell a copy of the record. The hook takes the collection as its witness: it checks, at runtime, that the table's provider was built over that very collection, and in return the record arrives typed as the collection's record, with no cast at the call site. Because the collection lives at module scope, so does the cell; it is declared once, for every table over the collection. It re-renders when its channels change, and nothing else does.
 
 ```tsx
-import { createDataViewsProvider } from "@canonical/dataviews-core";
 import {
   DataTable,
   type DataTableCellProps,
@@ -197,17 +163,12 @@ import {
   useDataViewsCell,
   useDataViewsValue,
 } from "@canonical/dataviews-react";
-import { type Machine, machineSchema, source } from "./machines.js";
-
-const provider = createDataViewsProvider({
-  schema: machineSchema,
-  capabilities: source.capabilities,
-});
+import { machineCollection } from "./machines.js";
 
 function HostCell({ value }: DataTableCellProps) {
-  const { row, selected } = useDataViewsCell(provider);
-  // The cell scope carries the record as the source delivered it.
-  const { owner } = useDataViewsValue(row) as Machine;
+  // The collection is the witness: the record is typed as a machine.
+  const { record, selected } = useDataViewsCell(machineCollection);
+  const { owner } = useDataViewsValue(record);
   const isSelected = useDataViewsValue(selected);
   return (
     <span
@@ -233,7 +194,7 @@ const columns: readonly DataTableColumn[] = [
   columns={columns}
   label="Machines"
   selectable
-  rowLabel={(row) => String(row.name)}
+  rowLabel={(row) => row.name}
 />;
 ```
 
@@ -246,18 +207,11 @@ A table with no rows says why, and the reasons stay distinct: nothing has arrive
 Two more are said *beside* rows rather than in place of them, because a table that keeps showing rows must not hide what went wrong: `refresh-failed`, where the rows still answer the query but the request that would have replaced them failed, and `stale`, where an earlier query produced them. `renderStatus` replaces the default text with your own words; the stories below show the defaults.
 
 ```tsx
-import { createDataViewsProvider } from "@canonical/dataviews-core";
 import {
   DataTable,
   type DataTableColumn,
   type DataTableStatus,
 } from "@canonical/dataviews-react";
-import { machineSchema, source } from "./machines.js";
-
-const provider = createDataViewsProvider({
-  schema: machineSchema,
-  capabilities: source.capabilities,
-});
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host" },
@@ -295,22 +249,18 @@ const statusText = (status: DataTableStatus): string => {
 
 ## Mounting only the rows in view
 
-A table renders every row of its result window, which is the right default: a page of fifty is small, and every row is in the page for the browser's own search and for a reader without JavaScript. When a result window holds thousands of rows, give the table `windowing`, and it mounts only the rows near its viewport. `virtualizeRows` comes from its own entry point, `@canonical/dataviews-react/virtualization`, so an application that never imports it never ships it.
+A table renders every row of its result window, which is the right default: a page of fifty is small, and every row is in the page for the browser's own search and for a reader without JavaScript. When a result window holds thousands of rows, give the table `windowing`, and it mounts only the rows near its viewport. `virtualizeRows` comes from its own entry point, `@canonical/dataviews-react/virtualization`, so an application that never imports it never ships it. The window the provider starts on is its `seed`.
 
 ```tsx
 import {
+  createArraySource,
   createDataViewsProvider,
   DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
 import { virtualizeRows } from "@canonical/dataviews-react/virtualization";
-import { machineSchema, source } from "./machines.js";
-
-const provider = createDataViewsProvider({
-  schema: machineSchema,
-  capabilities: source.capabilities,
-  window: { ...DEFAULT_WINDOW, size: 10_000 },
-});
+import { useState } from "react";
+import { machineCollection, machines } from "./machines.js";
 
 // One descriptor serves any number of tables: each keeps its own
 // viewport, measurements and focus.
@@ -322,13 +272,29 @@ const columns: readonly DataTableColumn[] = [
   { id: "owner", header: "Owner" },
 ];
 
-<DataTable
-  provider={provider}
-  columns={columns}
-  label="Machines"
-  windowing={windowing}
-  style={{ maxBlockSize: "24rem" }}
-/>;
+export function Machines() {
+  const [provider] = useState(() =>
+    createDataViewsProvider({
+      collection: machineCollection,
+      source: createArraySource({
+        rows: machines,
+        collection: machineCollection,
+        searchFields: ["name", "owner"],
+      }),
+      // Every machine in one window.
+      seed: { window: { ...DEFAULT_WINDOW, size: 10_000 } },
+    }),
+  );
+  return (
+    <DataTable
+      provider={provider}
+      columns={columns}
+      label="Machines"
+      windowing={windowing}
+      style={{ maxBlockSize: "24rem" }}
+    />
+  );
+}
 ```
 
 - **Give the table its height.** The table becomes its own scroll viewport, with the header held above its rows. It is no taller than the screen unless its style says otherwise; a table as tall as its content would mount every row.

@@ -1,6 +1,6 @@
 import type {
-  DataViewsProvider,
   FieldKind,
+  FilterHandles,
   PredicateOperand,
   PredicateOperator,
   SchemaFieldDefinition,
@@ -8,15 +8,15 @@ import type {
 } from "@canonical/dataviews-core";
 import { Fragment, type ReactElement } from "react";
 import { useDataViewsRoot } from "../../hooks/index.js";
+import { findFilterHandle } from "../utils/index.js";
 import { BoundFilter, ChoicesFilter, FlagFilter } from "./common/index.js";
-import findHandle from "./findHandle.js";
 import type { DataViewsFiltersProps } from "./types.js";
 
 const componentCssClassName = "ds data-views-filters";
 
-/** What every control is built against: the root's provider and what its source declares. */
+/** What every control is built against: the root's records and what its source declares. */
 type FilterContext = {
-  readonly provider: DataViewsProvider<readonly SchemaFieldDefinition[]>;
+  readonly filters: FilterHandles<readonly SchemaFieldDefinition[]>;
   readonly capabilities: SourceCapabilities;
 };
 
@@ -40,8 +40,8 @@ const renderBounds = (
     {(["gte", "lte"] as const).map((bound) => (
       <BoundFilter
         key={bound}
-        handle={findHandle<number | string>(
-          context.provider,
+        handle={findFilterHandle<number | string>(
+          context.filters,
           definition.field,
           bound,
         )}
@@ -70,8 +70,8 @@ const controls: {
     <ChoicesFilter
       key={definition.field}
       options={definition.options}
-      handle={findHandle<ReadonlySet<PredicateOperand>>(
-        context.provider,
+      handle={findFilterHandle<ReadonlySet<PredicateOperand>>(
+        context.filters,
         definition.field,
         "eq",
       )}
@@ -82,7 +82,11 @@ const controls: {
   flag: (context, definition, name) => (
     <FlagFilter
       key={definition.field}
-      handle={findHandle<boolean>(context.provider, definition.field, "isSet")}
+      handle={findFilterHandle<boolean>(
+        context.filters,
+        definition.field,
+        "isSet",
+      )}
       label={name}
       declared={declares(context, definition.field, "isSet")}
     />
@@ -111,11 +115,13 @@ const renderControl = (
  * The collection's query-editing controls.
  *
  * Which fields are on offer and which operators each accepts come from the
- * provider — its schema, and what its source declares it can execute — not
- * from props: a restriction the source would refuse is never offered, and
- * there is no second query to keep in step with the applied one. Edits go
- * straight to the applied query — an invalid or incomplete edit keeps the
- * restriction that is already in force and says so beside the control.
+ * provider — its collection's schema, and what its source declares it can
+ * execute — not from props: a restriction the source would refuse is never
+ * offered, and there is no second query to keep in step with the applied
+ * one. Edits go straight to the applied query through the root's own
+ * filter records — an invalid or incomplete edit keeps the restriction that
+ * is already in force and says so beside the control, and two roots over
+ * one provider never share a half-typed input.
  *
  * `import { DataViews } from "@canonical/dataviews-react";`
  *
@@ -128,21 +134,18 @@ export default function Filters({
   className,
   ...rest
 }: DataViewsFiltersProps): ReactElement {
-  const provider = useDataViewsRoot("Filters");
-  const { capabilities } = provider;
-  if (capabilities === null) {
-    throw new Error(
-      "DataViews.Filters requires a provider given the source's capabilities; pass them to createDataViewsProvider",
-    );
-  }
-  const context: FilterContext = { provider, capabilities };
+  const { provider, filters } = useDataViewsRoot("Filters");
+  const context: FilterContext = {
+    filters,
+    capabilities: provider.capabilities,
+  };
   return (
     <fieldset
       {...rest}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
     >
       <legend className="legend">{label}</legend>
-      {provider.schema.fields.map((definition) =>
+      {provider.collection.schema.fields.map((definition) =>
         renderControl(
           context,
           definition,

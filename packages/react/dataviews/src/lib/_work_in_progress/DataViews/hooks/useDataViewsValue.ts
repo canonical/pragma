@@ -1,5 +1,6 @@
 import type { ReadonlyChannel } from "@canonical/dataviews-core";
 import { useSyncExternalStore } from "react";
+import type { UseDataViewsValueResult } from "./types.js";
 
 /**
  * Observe one provider channel and re-render only when it publishes. The
@@ -8,6 +9,8 @@ import { useSyncExternalStore } from "react";
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
  */
-export default function useDataViewsValue<T>(channel: ReadonlyChannel<T>): T {
+export default function useDataViewsValue<T>(
+  channel: ReadonlyChannel<T>,
+): UseDataViewsValueResult<T> {
   return useSyncExternalStore(channel.subscribe, channel.get, channel.get);
 }

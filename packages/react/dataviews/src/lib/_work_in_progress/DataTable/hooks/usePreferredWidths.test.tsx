@@ -3,23 +3,18 @@
  * widths within their declared bounds, and a committed resize saved back.
  */
 
-import {
-  createDataViewsProvider,
-  createSchema,
-  type ProviderViews,
-  type ViewPresentation,
-  type ViewStore,
+import type {
+  ProviderViews,
+  ViewPresentation,
+  ViewStore,
 } from "@canonical/dataviews-core";
 import { createColumnLayout } from "@canonical/dataviews-core/bindings";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { StrictMode } from "react";
 import { describe, expect, it, vi } from "vitest";
+import { createMachineProvider } from "../../../../../testing/machines.js";
 import { spellWidthKey } from "../common/utils/index.js";
 import usePreferredWidths from "./usePreferredWidths.js";
-
-const schema = createSchema([
-  { field: "status", kind: "choices", options: ["failed"] },
-]);
 
 const columns = () =>
   createColumnLayout([
@@ -51,7 +46,7 @@ const viewsWith = (
     subscribe: () => () => {},
     dispose: () => {},
   };
-  const { views } = createDataViewsProvider({ schema, views: store });
+  const { views } = createMachineProvider({ views: store }).provider;
   if (views === null) {
     throw new Error("expected views");
   }

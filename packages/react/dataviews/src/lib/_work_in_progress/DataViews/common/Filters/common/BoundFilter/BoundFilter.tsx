@@ -1,7 +1,7 @@
-import type { FieldFeedback } from "@canonical/dataviews-core";
+import type { FilterFeedback } from "@canonical/dataviews-core";
 import { type ReactElement, useId } from "react";
 import { composeSentence } from "../../../../../../utils/index.js";
-import { useDataViewsField } from "../../../../hooks/index.js";
+import { useFilterHandle } from "../../../../hooks/index.js";
 import type { BoundFilterProps } from "./types.js";
 
 const componentCssClassName = "ds data-views-filters-bound";
@@ -18,7 +18,7 @@ const STILL_APPLIES = "The previous restriction still applies.";
  * still filtered and the text on screen is not what filtered them.
  */
 const feedbackTextOf = (
-  feedback: FieldFeedback,
+  feedback: FilterFeedback,
   retained: boolean,
 ): string | null => {
   switch (feedback.status) {
@@ -33,6 +33,15 @@ const feedbackTextOf = (
       return feedback.retainsPredicate
         ? `${composeSentence(feedback.reason)} ${STILL_APPLIES}`
         : composeSentence(feedback.reason);
+    case "refused": {
+      // Every reason the source gave, each as its own sentence.
+      const reasons = feedback.refusals
+        .map((refusal) => composeSentence(refusal.reason))
+        .join(" ");
+      return feedback.retainsPredicate
+        ? `${reasons} ${STILL_APPLIES}`
+        : reasons;
+    }
   }
 };
 
@@ -51,7 +60,7 @@ export default function BoundFilter({
   kind,
   declared,
 }: BoundFilterProps): ReactElement | null {
-  const field = useDataViewsField(handle);
+  const field = useFilterHandle(handle);
   const inputId = useId();
   const retained = field.applied.kind === "value";
   if (!declared && !retained) {
@@ -73,7 +82,10 @@ export default function BoundFilter({
         value={field.input}
         // Undeclared, the bound can only be cleared, never replaced.
         readOnly={!declared}
-        aria-invalid={field.feedback.status === "invalid"}
+        aria-invalid={
+          field.feedback.status === "invalid" ||
+          field.feedback.status === "refused"
+        }
         aria-describedby={message === null ? undefined : feedbackId}
         onChange={(event) => {
           field.edit(event.target.value);

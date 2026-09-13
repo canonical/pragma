@@ -13,16 +13,15 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  type Completion,
-  createDataViewsProvider,
-  createSchema,
-  declareCapabilities,
-  type SortTerm,
-} from "@canonical/dataviews-core";
+import type { SortTerm, SourceDelivery } from "@canonical/dataviews-core";
 import { act, cleanup, render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { COUNTED_EXACTLY, deliverRows } from "../../../../testing/fixtures.js";
+import { pageOf } from "../../../../testing/fixtures.js";
+import {
+  createMachineProvider,
+  type Machine,
+  machine,
+} from "../../../../testing/machines.js";
 import { virtualizeRows } from "../../virtualization/index.js";
 import DataTable from "./DataTable.js";
 import type { DataTableColumn } from "./types.js";
@@ -54,41 +53,38 @@ const rule = (selector: RegExp): string => {
   return body;
 };
 
-const schema = createSchema([
-  { field: "name", kind: "text" },
-  { field: "status", kind: "choices", options: ["running", "failed"] },
-]);
-
-type Machine = {
-  readonly id: string;
-  readonly name: string;
-  readonly status: string;
-};
-
-/** What the fixture source declares: it can order by `name`, which the table sorts. */
-const capabilities = declareCapabilities(schema, {
-  filter: { status: ["eq"] },
-  sort: { fields: ["name"], terms: 1, tiebreak: "opaque" },
-  counts: COUNTED_EXACTLY,
-});
-
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Name", sortable: true, resizable: true },
   { id: "status", header: "Status" },
 ];
 
+/** A page of rows, as the manual source delivers one. */
+const page = (rows: readonly Machine[]): SourceDelivery<Machine> => ({
+  status: "succeeded",
+  page: pageOf(rows),
+});
+
+/** A request the source accepted and could not complete. */
+const unreachable: SourceDelivery<Machine> = {
+  status: "failed",
+  failure: {
+    reason: "unreachable",
+    cause: new Error("unreachable"),
+    transient: null,
+  },
+};
+
 /**
- * Render a selectable table and settle its first request with `completion`,
- * then, given a `sort`, settle the ordered query with the same answer.
+ * Render a selectable table and settle its first request with `delivery`,
+ * then, given a `sort`, settle the ordered query with the same answer. The
+ * table's effect observes the provider, so the source's first request
+ * exists once the table is mounted.
  */
 const settled = (
-  completion: Completion<Machine>,
+  delivery: SourceDelivery<Machine>,
   sort?: SortTerm,
 ): HTMLElement => {
-  const provider = createDataViewsProvider<typeof schema.fields, Machine>({
-    schema,
-    capabilities,
-  });
+  const { provider, source } = createMachineProvider();
   const { container } = render(
     <DataTable
       provider={provider}
@@ -97,24 +93,16 @@ const settled = (
       selectable
     />,
   );
-  const requestId = provider.refresh();
-  if (requestId === null) {
-    throw new Error("expected a refresh request");
-  }
   act(() => {
-    provider.complete(requestId, completion);
+    source.latest().deliver(delivery);
     provider.selection.add(["m-1"]);
   });
   if (sort !== undefined) {
     act(() => {
       provider.setSort([sort]);
     });
-    const ordered = provider.state.get().pendingRequestId;
-    if (ordered === null) {
-      throw new Error("expected the sort to issue a request");
-    }
     act(() => {
-      provider.complete(ordered, completion);
+      source.latest().deliver(delivery);
     });
   }
   return container;
@@ -122,65 +110,39 @@ const settled = (
 
 const loaded = (): HTMLElement =>
   settled(
-    deliverRows([
-      { id: "m-1", name: "alpha", status: "running" },
-      { id: "m-2", name: "beta", status: "failed" },
+    page([
+      machine("m-1", "alpha", "running"),
+      machine("m-2", "beta", "failed"),
     ]),
     { field: "name", direction: "asc" },
   );
 
-const failed = (): HTMLElement =>
-  settled({
-    status: "failed",
-    failure: {
-      reason: "unreachable",
-      cause: new Error("unreachable"),
-      transient: null,
-    },
-  });
+const failed = (): HTMLElement => settled(unreachable);
 
 /** Rows that still answer the query, under a refresh that failed. */
 const refreshFailedTable = (): HTMLElement => {
-  const provider = createDataViewsProvider<typeof schema.fields, Machine>({
-    schema,
-    capabilities,
-  });
+  const { provider, source } = createMachineProvider();
   const { container } = render(
     <DataTable provider={provider} columns={columns} label="Machines" />,
   );
-  const first = provider.refresh();
-  if (first === null) {
-    throw new Error("expected a refresh request");
-  }
   act(() => {
-    provider.complete(
-      first,
-      deliverRows([{ id: "m-1", name: "alpha", status: "running" }]),
-    );
+    source.latest().deliver(page([machine("m-1", "alpha")]));
   });
-  const again = provider.refresh();
-  if (again === null) {
-    throw new Error("expected the refresh to issue a request");
-  }
   act(() => {
-    provider.complete(again, {
-      status: "failed",
-      failure: {
-        reason: "unreachable",
-        cause: new Error("unreachable"),
-        transient: null,
-      },
-    });
+    provider.refresh();
+  });
+  act(() => {
+    source.latest().deliver(unreachable);
   });
   return container;
 };
 
 /** A windowed table over more rows than it mounts, so it holds a gap. */
 const windowedTable = (): HTMLElement => {
-  const provider = createDataViewsProvider<typeof schema.fields, Machine>({
-    schema,
-    capabilities,
-  });
+  const rows = Array.from({ length: 20 }, (_, position) =>
+    machine(`m-${position}`, `host-${position}`),
+  );
+  const { provider } = createMachineProvider({ rows });
   const { container } = render(
     <DataTable
       provider={provider}
@@ -189,18 +151,6 @@ const windowedTable = (): HTMLElement => {
       windowing={virtualizeRows({ estimatedRowHeight: 32 })}
     />,
   );
-  const requestId = provider.refresh();
-  if (requestId === null) {
-    throw new Error("expected a refresh request");
-  }
-  const rows = Array.from({ length: 20 }, (_, position) => ({
-    id: `m-${position}`,
-    name: `host-${position}`,
-    status: "running",
-  }));
-  act(() => {
-    provider.complete(requestId, deliverRows(rows));
-  });
   return container;
 };
 

@@ -1,11 +1,14 @@
-import { DEFAULT_WINDOW } from "@canonical/dataviews-core";
+import {
+  DEFAULT_WINDOW,
+  EMPTY_SLICE,
+  type Slice,
+} from "@canonical/dataviews-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactElement } from "react";
 import { expect, waitFor } from "storybook/test";
 import { withAppScope } from "../../../../../storybook/decorators.js";
 import { consumerCode } from "../../../../../storybook/machines/consumerCode.js";
 import {
-  type MachineProvider,
   type MachineProviderConfig,
   useMachineProvider,
 } from "../../../../../storybook/machines/story-utils.js";
@@ -62,8 +65,10 @@ function ComposedMachines({
   );
 }
 
-const onlyFailed = (provider: MachineProvider): void => {
-  provider.fields.status.eq.set(["failed"]);
+/** The query the filtered story starts on: failed machines only. */
+const onlyFailed: Slice = {
+  ...EMPTY_SLICE,
+  filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
 };
 
 /**
@@ -90,20 +95,23 @@ export const InAComposition: Story = {
 };
 
 /**
- * A filtered total: with only failed machines applied, the source counts
- * three, and the part offers the one page they fill. The total it shows is
- * always the current query's.
+ * A filtered total: the provider starts on a query keeping only failed
+ * machines, the source counts three, and the part offers the one page they
+ * fill. The total it shows is always the current query's.
  */
 export const AFilteredTotal: Story = {
   parameters: consumerCode({
     parts: ["DataTable", "DataViews", "type DataTableColumn"],
     declarations: columnsCode,
+    slice: `{
+    ...EMPTY_SLICE,
+    filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
+  }`,
     window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
-    prepare: `provider.fields.status.eq.set(["failed"]);`,
     render: composition,
   }),
   render: (args) => (
-    <ComposedMachines {...args} options={{ prepare: onlyFailed }} />
+    <ComposedMachines {...args} options={{ slice: onlyFailed }} />
   ),
   play: async ({ canvas }) => {
     await waitFor(() =>

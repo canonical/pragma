@@ -1,11 +1,9 @@
 import type {
-  DataViewsProvider,
   RowRecord,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
-import { isIdentity } from "@canonical/dataviews-core/bindings";
 import type { ReactElement } from "react";
-import DataViewsContext from "./Context.js";
+import Context from "./Context.js";
 import {
   Actions,
   DataTable,
@@ -13,11 +11,14 @@ import {
   Pagination,
   Views,
 } from "./common/index.js";
+import { useProviderState } from "./hooks/index.js";
 import type { DataViewsProps } from "./types.js";
 
 /**
  * The DataViews root: mounts the collection provider's context for the
- * hooks and connected parts of the composition.
+ * hooks and connected parts of the composition, observes the provider for
+ * as long as it is mounted, and owns the filter records its parts edit
+ * through.
  *
  * Pure composition — no single root element (AGENTS.md rule 6): the root is
  * a context mount, not a DOM node.
@@ -31,15 +32,8 @@ export default function DataViews<
   TFields extends readonly SchemaFieldDefinition[],
   TRow extends object = RowRecord,
 >({ provider, children }: DataViewsProps<TFields, TRow>): ReactElement {
-  if (!isIdentity(provider?.identity)) {
-    throw new Error(
-      "DataViews requires a provider created by createDataViewsProvider",
-    );
-  }
-  // The context stores the widest provider shape, schema and record type
-  // alike; the hooks' identity witness narrows it back at runtime.
-  const value = provider as DataViewsProvider<readonly SchemaFieldDefinition[]>;
-  return <DataViewsContext value={value}>{children}</DataViewsContext>;
+  const value = useProviderState({ provider });
+  return <Context value={value}>{children}</Context>;
 }
 
 /** The connected action bar, over the current selection. */

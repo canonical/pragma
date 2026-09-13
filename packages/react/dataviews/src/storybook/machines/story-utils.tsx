@@ -1,10 +1,17 @@
+/**
+ * Story machinery for the machine collection's stories — the table, its
+ * filters and its bars: the provider hook every story drives and the
+ * saved-view store a story opens. Story-only; the records and sources live
+ * in `./fixtures.ts`.
+ */
+
 import {
   createDataViewsProvider,
-  createSourceBinding,
   type DataViewsProvider,
   DEFAULT_WINDOW,
+  type QueryLocation,
   type ResultWindow,
-  type RowRecord,
+  type Slice,
   type Source,
   type ViewDraft,
   type ViewStore,
@@ -16,83 +23,69 @@ import {
 import { useEffect, useState } from "react";
 import {
   createMachineSource,
+  type Machine,
   type MachineFields,
-  machineSchema,
+  machineCollection,
 } from "./fixtures.js";
 
-/**
- * Story machinery for the machine collection's stories — the table, its
- * filters and its bars: the provider hook every story drives and the
- * decorators that frame it. Story-only; the records and sources live in
- * `./fixtures.ts`.
- */
-
-/**
- * The provider every story drives. Its rows are the source's own
- * records: the binding's host contract is typed over `RowRecord`.
- */
-export type MachineProvider = DataViewsProvider<MachineFields>;
+/** The provider every story drives, over the machine collection. */
+export type MachineProvider = DataViewsProvider<MachineFields, Machine>;
 
 /** How one story's collection is set up. Read once, when the story mounts. */
 export type MachineProviderConfig = {
   /** The source the table reads; every machine by default. */
-  readonly source?: (() => Source) | undefined;
+  readonly source?: (() => Source<Machine>) | undefined;
+  /** The slice the provider starts on; nothing filtered or ordered otherwise. */
+  readonly slice?: Slice | undefined;
   /** The displayed window; the provider's default page otherwise. */
   readonly window?: Partial<ResultWindow> | undefined;
-  /** Commands issued once the source is bound: a sort, a search, a selection. */
+  /** Commands issued once the provider is built: a sort, a search, a selection. */
   readonly prepare?: ((provider: MachineProvider) => void) | undefined;
+  /** Where the applied query lives; in the provider alone by default. */
+  readonly location?: QueryLocation | undefined;
   /** Where the collection's saved views live; none by default. */
   readonly views?: ViewStore | undefined;
 };
 
 /**
- * A provider bound to a real source, wired the way an application wires one.
- *
- * The provider is built once, in state. The binding subscribes to the
- * provider's result channel, so it is built in an effect and disposed by the
- * same effect: a render React throws away never leaves one listening, and
- * StrictMode's rehearsal unmount disposes a binding that the kept mount then
- * rebuilds.
+ * A provider over a real source, built the way an application builds one:
+ * once, in state, and handed to the parts. Nothing here subscribes — the
+ * parts observe the provider from their effects, and the ref-count starts
+ * its ports on the first of them and stops them on the last.
  */
 export function useMachineProvider({
   source = createMachineSource,
+  slice,
   window: resultWindow,
   prepare,
+  location,
   views,
 }: MachineProviderConfig = {}): MachineProvider {
-  const [bound] = useState<Source>(source);
-  const [provider] = useState(() =>
-    createDataViewsProvider<MachineFields>({
-      schema: machineSchema,
-      window:
-        resultWindow === undefined
+  const [provider] = useState(() => {
+    const built = createDataViewsProvider({
+      collection: machineCollection,
+      source: source(),
+      ...(location === undefined ? {} : { location }),
+      ...(views === undefined ? {} : { views }),
+      seed:
+        slice === undefined && resultWindow === undefined
           ? undefined
-          : { ...DEFAULT_WINDOW, ...resultWindow },
-      // The table offers a sort only where the source declares one.
-      capabilities: bound.capabilities,
-      views,
-    }),
-  );
-  const [setUp] = useState(() => prepare);
-  useEffect(() => {
-    const binding = createSourceBinding({ host: provider, source: bound });
-    const release = binding.observe();
-    setUp?.(provider);
-    // Only a provider that has never been asked needs its first page: a
-    // prepared query has already been answered, and a remount finds its
-    // request still pending or already settled.
-    const { pendingRequestId, result } = provider.state.get();
-    if (pendingRequestId === null && result.status === "idle") {
-      provider.refresh();
-    }
-    return release;
-  }, [provider, bound, setUp]);
+          : {
+              slice,
+              window:
+                resultWindow === undefined
+                  ? undefined
+                  : { ...DEFAULT_WINDOW, ...resultWindow },
+            },
+    });
+    prepare?.(built);
+    return built;
+  });
   return provider;
 }
 
-/** Names a record for its selection checkbox: by host, else by identity. */
-export const hostName = (row: RowRecord, rowId: string): string =>
-  typeof row["name"] === "string" ? row["name"] : rowId;
+/** Names a machine for its selection checkbox: by host. */
+export const hostName = (row: Machine): string => row.name;
 
 /** A story's saved-view store, and a way to open another tab over it. */
 export type StoryViewStore = {

@@ -61,7 +61,7 @@ function VirtualBody<TRow extends object>({
             ref={refFor(entry.id)}
             position={entry.index}
             provider={provider}
-            scope={scopes.scope(entry.rowId)}
+            channels={scopes.readRow(entry.rowId)}
             columns={columns}
             selectable={selectable}
             rowLabel={rowLabel}

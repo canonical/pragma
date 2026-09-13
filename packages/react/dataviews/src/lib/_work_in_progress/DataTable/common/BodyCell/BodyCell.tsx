@@ -1,8 +1,8 @@
 import { memo, type ReactElement, type ReactNode, useMemo } from "react";
 import { useDataViewsValue } from "../../../DataViews/hooks/index.js";
 import {
-  CellScopeContext,
-  type CellScopeValue,
+  CellContext,
+  type CellContextValue,
 } from "../../../DataViews/index.js";
 import type { BodyCellProps } from "./types.js";
 
@@ -24,40 +24,40 @@ const defaultContent = (value: unknown): ReactNode => {
 
 function BodyCell<TRow extends object>({
   provider,
-  scope,
+  channels,
   column,
   field,
 }: BodyCellProps<TRow>): ReactElement {
-  const channel = scope.fields[field];
+  const channel = channels.fields[field];
   if (channel === undefined) {
     // The scopes observe every field the columns read, so a cell without
     // its channel is a table built against another column list.
     throw new Error(`no channel observes the field "${field}"`);
   }
   const value = useDataViewsValue(channel);
-  const cellScope = useMemo<CellScopeValue>(
+  const cell = useMemo<CellContextValue>(
     () => ({
-      provider,
-      rowId: scope.id,
+      collection: provider.collection,
+      rowId: channels.id,
       columnId: column.id,
-      row: scope.row,
-      fields: scope.fields,
-      selected: scope.selected,
+      record: channels.record,
+      fields: channels.fields,
+      selected: channels.selected,
     }),
-    [provider, scope, column.id],
+    [provider, channels, column.id],
   );
   const Content = column.cell;
   return (
-    <CellScopeContext value={cellScope}>
+    <CellContext value={cell}>
       {/* biome-ignore lint/a11y/useSemanticElements: <td> is only valid inside a <table>, and this grid is deliberately not one */}
       <div role="cell" className={componentCssClassName}>
         {Content === undefined ? (
           defaultContent(value)
         ) : (
-          <Content value={value} rowId={scope.id} columnId={column.id} />
+          <Content value={value} rowId={channels.id} columnId={column.id} />
         )}
       </div>
-    </CellScopeContext>
+    </CellContext>
   );
 }
 
@@ -77,7 +77,7 @@ function BodyCell<TRow extends object>({
  * implementation covers: the text cell and a column's own renderer, with
  * no inline editing or row actions yet. One body cell subscribes to its
  * own field's channel, so a record update re-renders only the cells whose
- * values actually changed, and it installs the cell scope its column's own
+ * values actually changed, and it installs the cell context its column's own
  * renderer reads.
  *
  * Memoised: without it the claim above would hold for the channel and be

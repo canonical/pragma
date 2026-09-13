@@ -5,39 +5,41 @@ import * as Stories from "./Filters.stories";
 
 # DataViews.Filters recipes
 
-`DataViews.Filters` edits the collection's query. It takes no query and no list of fields: which fields it offers comes from the provider's schema, and which operators each accepts comes from what the provider's source declares it can execute. It never offers a restriction the source would refuse, and it has no draft to keep in step with the applied query — each edit is the applied query.
+`DataViews.Filters` edits the collection's query. It takes no query and no list of fields: which fields it offers comes from the collection's schema, and which operators each accepts comes from what the provider's source declares it can execute. It never offers a restriction the source would refuse, and it has no draft to keep in step with the applied query — each edit is the applied query.
 
 The design has not drawn the filters yet, so the part renders plain form controls: a group of checkboxes for a choices field, a from and a to bound for a number or date field, and one checkbox for a flag.
 
 ## Filters over a composed collection
 
-Tell the provider the source's capabilities: the filters read them, and throw when they were not given. `labels` names the fields for the reader; a field without a label is named by its field name.
+The collection is declared once, at module scope, and the provider is built over it and a source: the filters read the schema from the one and the capabilities from the other. `labels` names the fields for the reader; a field without a label is named by its field name.
 
 ```tsx
 import {
   createArraySource,
+  createCollection,
   createDataViewsProvider,
-  createSchema,
-  createSourceBinding,
-  type RowRecord,
 } from "@canonical/dataviews-core";
 import {
   DataTable,
   DataViews,
   type DataTableColumn,
 } from "@canonical/dataviews-react";
-import { useEffect, useState } from "react";
-import { machines } from "./machines.js";
+import { useState } from "react";
+import { type Machine, machines } from "./machines.js";
 
 // Every field and its kind: the kind decides which filter a field offers —
-// text offers none — and how the rows order by it.
-const machineSchema = createSchema([
-  { field: "status", kind: "choices", options: ["running", "failed", "pending"] },
-  { field: "cores", kind: "number", min: 1 },
-  { field: "name", kind: "text" },
-  { field: "region", kind: "text" },
-  { field: "owner", kind: "text" },
-]);
+// text offers none — and how the rows order by it. Declared once, beside
+// the identity every machine carries.
+const machineCollection = createCollection({
+  identify: (machine: Machine) => machine.id,
+  fields: [
+    { field: "status", kind: "choices", options: ["running", "failed", "pending"] },
+    { field: "cores", kind: "number", min: 1 },
+    { field: "name", kind: "text" },
+    { field: "region", kind: "text" },
+    { field: "owner", kind: "text" },
+  ],
+});
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host" },
@@ -47,26 +49,13 @@ const columns: readonly DataTableColumn[] = [
 ];
 
 export function Machines() {
-  const [source] = useState(() =>
-    createArraySource<RowRecord>({
-      rows: machines,
-      schema: machineSchema,
-    }),
-  );
+  // Built once: the parts observe it, which starts its source and ports.
   const [provider] = useState(() =>
     createDataViewsProvider({
-      schema: machineSchema,
-      capabilities: source.capabilities,
+      collection: machineCollection,
+      source: createArraySource({ rows: machines, collection: machineCollection }),
     }),
   );
-  useEffect(() => {
-    const binding = createSourceBinding({ host: provider, source });
-    const release = binding.observe();
-    if (provider.state.get().result.status === "idle") {
-      provider.refresh();
-    }
-    return release;
-  }, [provider, source]);
   return (
     <DataViews provider={provider}>
       <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
@@ -80,7 +69,7 @@ export function Machines() {
 
 ## The applied query, not a draft
 
-A checked status or a filled bound is the restriction in force. The provider's field handles apply the same edits from code — `provider.fields.status.eq.set(["failed"])` — and the controls follow.
+A checked status or a filled bound is the restriction in force. A query the provider starts on — a `seed.slice`, a view it opens, a URL it adopts — shows in the controls the same way, and from inside the root the same edits are made in code through this root's filter handles: `useDataViews(machineCollection).filters.status.eq.set(["failed"])`. The handles are the root's, not the provider's: two roots over one provider share the applied query and never each other's half-typed input.
 
 <Canvas of={Stories.ChoiceApplied} sourceState="none" />
 
@@ -94,6 +83,6 @@ A bound that does not parse is refused, not applied. The restriction already in 
 
 ## Only what the source can run
 
-A field the source does not declare filterable gets no control. Here the source cannot filter by cores, so there is no cores bound, even though the schema names the field.
+A field the source does not declare filterable gets no control. Here the source cannot filter by cores, so there is no cores bound, even though the collection's schema names the field.
 
 <Canvas of={Stories.UndeclaredField} sourceState="none" />

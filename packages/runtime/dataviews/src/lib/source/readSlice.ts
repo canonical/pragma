@@ -1,13 +1,13 @@
+import type { Collection } from "../collection/index.js";
 import { canonicalizeSlice, type Slice } from "../query/index.js";
 import {
   resolveFieldKind,
-  type Schema,
   type SchemaFieldDefinition,
 } from "../schema/index.js";
 import type { SliceReading } from "./types.js";
 
 /**
- * Read one slice by field, typed from the schema. A predicate on a field
+ * Read one slice by field, typed from the collection's schema. A predicate on a field
  * the schema does not define is left out: it can carry no applied value
  * of any kind, and the declaration would have refused it before this.
  *
@@ -21,7 +21,9 @@ import type { SliceReading } from "./types.js";
  */
 export default function readSlice<
   const TFields extends readonly SchemaFieldDefinition[],
->(schema: Schema<TFields>, slice: Slice): SliceReading<TFields> {
+  TRow extends object,
+>(collection: Collection<TFields, TRow>, slice: Slice): SliceReading<TFields> {
+  const { schema } = collection;
   const canonical = canonicalizeSlice(slice);
   const filters: Record<string, unknown> = {};
   /** The range bounds read so far, one record per bounded field. */

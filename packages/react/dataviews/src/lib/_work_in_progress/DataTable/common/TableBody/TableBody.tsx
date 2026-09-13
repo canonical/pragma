@@ -28,7 +28,7 @@ function TableBody<TRow extends object>({
           <Row
             key={entry.id}
             provider={provider}
-            scope={scopes.scope(entry.rowId)}
+            channels={scopes.readRow(entry.rowId)}
             columns={columns}
             selectable={selectable}
             rowLabel={rowLabel}

@@ -1,4 +1,4 @@
-import { createChannel } from "../observable/index.js";
+import { createChannel, protectChannel } from "../observable/index.js";
 import type { Selection, SelectionState } from "./types.js";
 
 const setsEqual = (a: ReadonlySet<string>, b: ReadonlySet<string>): boolean => {
@@ -34,7 +34,7 @@ export default function createSelection(
   };
 
   return {
-    state: channel,
+    state: protectChannel(channel),
     toggle(id: string): void {
       const next = new Set(channel.get().ids);
       if (next.has(id)) {

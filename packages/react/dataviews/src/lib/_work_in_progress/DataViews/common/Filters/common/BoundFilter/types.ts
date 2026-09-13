@@ -1,5 +1,5 @@
 import type {
-  FieldHandle,
+  FilterHandle,
   PredicateOperator,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
@@ -12,8 +12,8 @@ import type {
  * a caller's native props.
  */
 export type BoundFilterProps = {
-  /** The provider handle for this field's lower or upper bound. */
-  readonly handle: FieldHandle<number | string>;
+  /** The root's handle for this field's lower or upper bound. */
+  readonly handle: FilterHandle<number | string>;
   /** The field's visible name; the bound's own wording is added to it. */
   readonly label: string;
   /** Which bound this control edits. */

@@ -5,12 +5,13 @@
  */
 import {
   createArraySource,
+  createCollection,
   createDataViewsProvider,
-  createSchema,
   type DataViewsProvider,
   type SavedView,
   type ViewStore,
 } from "@canonical/dataviews-core";
+import { readProviderHost } from "@canonical/dataviews-core/bindings";
 import {
   act,
   fireEvent,
@@ -24,13 +25,31 @@ import { describe, expect, it, onTestFinished, vi } from "vitest";
 import DataViews from "../../Provider.js";
 import Views from "./Views.js";
 
-const schema = createSchema([
-  { field: "status", kind: "choices", options: ["failed", "running"] },
-]);
+/** One record of the collection; no case reads a row. */
+type Row = { readonly id: string };
 
-type Fields = typeof schema.fields;
+const collection = createCollection({
+  identify: (row: Row) => row.id,
+  fields: [
+    { field: "status", kind: "choices", options: ["failed", "running"] },
+  ],
+});
 
-const capabilities = createArraySource({ rows: [], schema }).capabilities;
+type Fields = typeof collection.schema.fields;
+
+/** Restrict the query by status, as a filter control would. */
+const setStatus = (
+  provider: DataViewsProvider<Fields, Row>,
+  operands: readonly ("failed" | "running")[],
+): void => {
+  act(() => {
+    readProviderHost(provider).setPredicate({
+      field: "status",
+      operator: "eq",
+      operands,
+    });
+  });
+};
 
 const stamp = "2026-09-11T00:00:00.000Z";
 
@@ -123,8 +142,13 @@ const memoryStore = (seed: readonly SavedView[] = []) => {
 const failed = viewNamed("v-failed", "Failed", "as=table&status=failed");
 const running = viewNamed("v-running", "Running", "as=table&status=running");
 
-const providerOver = (store: ViewStore): DataViewsProvider<Fields> =>
-  createDataViewsProvider<Fields>({ schema, capabilities, views: store });
+/** A provider over an empty local source, with its views in `store`. */
+const providerOver = (store: ViewStore): DataViewsProvider<Fields, Row> =>
+  createDataViewsProvider({
+    collection,
+    source: createArraySource<Row>({ rows: [], collection }),
+    views: store,
+  });
 
 const mount = (store: ViewStore, props: { label?: string } = {}) => {
   const provider = providerOver(store);
@@ -177,7 +201,10 @@ describe("DataViews.Views", () => {
   });
 
   it("fails clearly over a provider given no store", () => {
-    const provider = createDataViewsProvider<Fields>({ schema });
+    const provider = createDataViewsProvider({
+      collection,
+      source: createArraySource<Row>({ rows: [], collection }),
+    });
     expect(() =>
       render(
         <DataViews provider={provider}>
@@ -261,18 +288,14 @@ describe("DataViews.Views", () => {
     const { provider } = await listed(memoryStore([failed]).store);
     await choose(failed);
     expect(screen.queryByText("Modified")).toBeNull();
-    act(() => {
-      provider.fields.status.eq.set(["failed", "running"]);
-    });
+    setStatus(provider, ["failed", "running"]);
     expect(screen.getByText("Modified")).toBeInTheDocument();
     expect(select()).toHaveAccessibleDescription("Modified");
     // The open confirmation is no longer true, so it goes.
     expect(status()).toHaveTextContent("");
     fireEvent.click(button("Reset"));
     expect(screen.queryByText("Modified")).toBeNull();
-    act(() => {
-      provider.fields.status.eq.set(["running"]);
-    });
+    setStatus(provider, ["running"]);
     button("Save").focus();
     fireEvent.click(button("Save"));
     await waitFor(() => {
@@ -300,9 +323,7 @@ describe("DataViews.Views", () => {
     };
     const { provider } = await listed(gated);
     await choose(failed);
-    act(() => {
-      provider.fields.status.eq.set(["running"]);
-    });
+    setStatus(provider, ["running"]);
     fireEvent.click(button("Save"));
     await waitFor(() => {
       expect(status()).toHaveTextContent("Saving…");
@@ -320,9 +341,7 @@ describe("DataViews.Views", () => {
 
   it("saves the query as a new view, refusing an empty or taken name beside the input", async () => {
     const { provider } = await listed(memoryStore([failed]).store);
-    act(() => {
-      provider.fields.status.eq.set(["running"]);
-    });
+    setStatus(provider, ["running"]);
     fireEvent.click(button("Save as…"));
     const form = screen.getByRole("form", { name: "Save as a new view" });
     const name = within(form).getByRole("textbox", { name: "Name" });
@@ -457,9 +476,7 @@ describe("DataViews.Views", () => {
     const { provider } = await listed(memory.store);
     await choose(failed);
     memory.elsewhere(failed.id, { query: "as=table&status=running" });
-    act(() => {
-      provider.fields.status.eq.set(["failed", "running"]);
-    });
+    setStatus(provider, ["failed", "running"]);
     fireEvent.click(button("Save"));
     await waitFor(() => {
       expect(status()).toHaveTextContent(
@@ -478,9 +495,7 @@ describe("DataViews.Views", () => {
     const { provider } = await listed(memory.store);
     await choose(failed);
     memory.elsewhere(failed.id, { query: "as=table&status=running" });
-    act(() => {
-      provider.fields.status.eq.set(["failed", "running"]);
-    });
+    setStatus(provider, ["failed", "running"]);
     fireEvent.click(button("Save"));
     await waitFor(() => {
       expect(button("Discard changes")).toBeEnabled();
@@ -621,9 +636,7 @@ describe("DataViews.Views", () => {
       elsewhere.remove();
     });
     for (const moved of [false, true]) {
-      act(() => {
-        provider.fields.status.eq.set(["running"]);
-      });
+      setStatus(provider, ["running"]);
       act(() => {
         button("Save").focus();
         // Focus leaving for nowhere, as a browser blurs a control it removes.
@@ -632,9 +645,7 @@ describe("DataViews.Views", () => {
           elsewhere.focus();
         }
       });
-      act(() => {
-        provider.fields.status.eq.set(["failed"]);
-      });
+      setStatus(provider, ["failed"]);
       expect(moved ? elsewhere : select()).toHaveFocus();
     }
   });
@@ -653,9 +664,7 @@ describe("DataViews.Views", () => {
       elsewhere.remove();
     });
     elsewhere.focus();
-    act(() => {
-      provider.fields.status.eq.set(["running"]);
-    });
+    setStatus(provider, ["running"]);
     expect(elsewhere).toHaveFocus();
   });
 

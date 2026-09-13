@@ -1,4 +1,4 @@
-import { createChannel } from "../observable/index.js";
+import { createChannel, protectChannel } from "../observable/index.js";
 import areSizingsEqual from "./areSizingsEqual.js";
 import type {
   ColumnLayout,
@@ -57,7 +57,7 @@ export default function createGridInteraction(
   };
 
   return {
-    state: channel,
+    state: protectChannel(channel),
     startResize(columnId: string, originX: number, startWidth: number): void {
       resizingBaseline = layout.effective(columnId);
       publish({

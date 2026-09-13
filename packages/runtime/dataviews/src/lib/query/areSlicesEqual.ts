@@ -1,23 +1,8 @@
 import areListsEqual from "./areListsEqual.js";
+import arePredicatesEqual from "./arePredicatesEqual.js";
 import areSortsEqual from "./areSortsEqual.js";
 import canonicalizeSlice from "./canonicalizeSlice.js";
-import rankOperand from "./rankOperand.js";
-import type { Predicate, Slice } from "./types.js";
-
-/**
- * Operands are equal when their rank strings match, keeping slice equality
- * exactly consistent with request fingerprints (NaN equals NaN; the string
- * "0" never equals the number 0).
- */
-const operandEquals = (
-  a: Slice["filter"][number]["operands"][number],
-  b: Slice["filter"][number]["operands"][number],
-): boolean => rankOperand(a) === rankOperand(b);
-
-const predicateEquals = (a: Predicate, b: Predicate): boolean =>
-  a.field === b.field &&
-  a.operator === b.operator &&
-  areListsEqual(a.operands, b.operands, operandEquals);
+import type { Slice } from "./types.js";
 
 const groupsEqual = (a: Slice["group"], b: Slice["group"]): boolean =>
   areListsEqual(a, b, (left, right) => left.field === right.field);
@@ -35,7 +20,7 @@ export default function areSlicesEqual(a: Slice, b: Slice): boolean {
   return (
     left.search === right.search &&
     groupsEqual(left.group, right.group) &&
-    areListsEqual(left.filter, right.filter, predicateEquals) &&
+    areListsEqual(left.filter, right.filter, arePredicatesEqual) &&
     areSortsEqual(left.sort, right.sort)
   );
 }

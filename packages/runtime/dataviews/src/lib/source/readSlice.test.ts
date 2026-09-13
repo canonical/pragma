@@ -1,15 +1,19 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
+import { byId } from "../../../testing/fixtures.js";
+import { createCollection } from "../collection/index.js";
 import { EMPTY_SLICE } from "../query/index.js";
-import { createSchema } from "../schema/index.js";
 import readSlice from "./readSlice.js";
 
-const machines = createSchema([
-  { field: "status", kind: "choices", options: ["failed", "ready"] },
-  { field: "cpu", kind: "number" },
-  { field: "updated", kind: "date" },
-  { field: "owner", kind: "flag" },
-  { field: "name", kind: "text" },
-]);
+const machines = createCollection({
+  identify: byId,
+  fields: [
+    { field: "status", kind: "choices", options: ["failed", "ready"] },
+    { field: "cpu", kind: "number" },
+    { field: "updated", kind: "date" },
+    { field: "owner", kind: "flag" },
+    { field: "name", kind: "text" },
+  ],
+});
 
 describe("readSlice", () => {
   it("reads each filter by field through its kind", () => {

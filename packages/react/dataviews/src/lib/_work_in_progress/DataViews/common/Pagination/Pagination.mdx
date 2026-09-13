@@ -11,23 +11,21 @@ Use the part inside a composition and the bar beside a standalone table. The two
 
 ## In a composition
 
-The part takes presentation choices — a name, the page sizes — and never a second copy of the window the provider owns. Moving it means moving the element: it can sit anywhere inside the root.
+The part takes presentation choices — a name, the page sizes — and never a second copy of the window the provider owns. Moving it means moving the element: it can sit anywhere inside the root. The root observes the provider for as long as it is mounted, and that is what starts the source; the parts inside it read what the provider holds.
 
 ```tsx
 import {
   createArraySource,
   createDataViewsProvider,
-  createSourceBinding,
   DEFAULT_WINDOW,
-  type RowRecord,
 } from "@canonical/dataviews-core";
 import {
   DataTable,
   DataViews,
   type DataTableColumn,
 } from "@canonical/dataviews-react";
-import { useEffect, useState } from "react";
-import { machineSchema, machines } from "./machines.js";
+import { useState } from "react";
+import { machineCollection, machines } from "./machines.js";
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host" },
@@ -36,27 +34,18 @@ const columns: readonly DataTableColumn[] = [
 ];
 
 export function Machines() {
-  const [source] = useState(() =>
-    createArraySource<RowRecord>({
-      rows: machines,
-      schema: machineSchema,
-    }),
-  );
+  // Built once: the root observes it, which starts its source.
   const [provider] = useState(() =>
     createDataViewsProvider({
-      schema: machineSchema,
-      capabilities: source.capabilities,
-      window: { ...DEFAULT_WINDOW, size: 5 },
+      collection: machineCollection,
+      source: createArraySource({
+        rows: machines,
+        collection: machineCollection,
+        searchFields: ["name", "owner"],
+      }),
+      seed: { window: { ...DEFAULT_WINDOW, size: 5 } },
     }),
   );
-  useEffect(() => {
-    const binding = createSourceBinding({ host: provider, source });
-    const release = binding.observe();
-    if (provider.state.get().result.status === "idle") {
-      provider.refresh();
-    }
-    return release;
-  }, [provider, source]);
   return (
     <DataViews provider={provider}>
       <DataTable provider={provider} columns={columns} label="Machines" />
@@ -70,6 +59,33 @@ export function Machines() {
 
 ## A filtered total
 
-The summary and the page total describe the current query. Filter the collection and both follow the source's new count; while the new count is on its way, they say nothing rather than repeat the old one.
+The summary and the page total describe the current query. Filter the collection and both follow the source's new count; while the new count is on its way, they say nothing rather than repeat the old one. A query the collection should open on is the provider's `seed`: the story below starts on failed machines only.
+
+```tsx
+import {
+  createArraySource,
+  createDataViewsProvider,
+  DEFAULT_WINDOW,
+  EMPTY_SLICE,
+} from "@canonical/dataviews-core";
+
+const [provider] = useState(() =>
+  createDataViewsProvider({
+    collection: machineCollection,
+    source: createArraySource({
+      rows: machines,
+      collection: machineCollection,
+      searchFields: ["name", "owner"],
+    }),
+    seed: {
+      slice: {
+        ...EMPTY_SLICE,
+        filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
+      },
+      window: { ...DEFAULT_WINDOW, size: 5 },
+    },
+  }),
+);
+```
 
 <Canvas of={Stories.AFilteredTotal} sourceState="none" />

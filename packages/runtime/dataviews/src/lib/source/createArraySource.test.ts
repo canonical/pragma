@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
+import { byId } from "../../../testing/fixtures.js";
+import { createCollection } from "../collection/index.js";
 import { DEFAULT_WINDOW, type Slice, type SortTerm } from "../query/index.js";
 import type { SourceDelivery } from "../result/index.js";
 import type { RowRecord } from "../rows/index.js";
-import { createSchema } from "../schema/index.js";
 import { ROOT_NUMERIC_COLLATION } from "./constants.js";
 import createArraySource from "./createArraySource.js";
 import type { SourceActionRunner, SourceRequest } from "./types.js";
@@ -24,16 +25,19 @@ const rows = [
   { id: "c", name: "Gamma", cpu: 8 },
 ];
 
-const schema = createSchema([
-  { field: "id", kind: "text" },
-  { field: "name", kind: "text" },
-  { field: "cpu", kind: "number" },
-]);
+const collection = createCollection({
+  identify: byId,
+  fields: [
+    { field: "id", kind: "text" },
+    { field: "name", kind: "text" },
+    { field: "cpu", kind: "number" },
+  ],
+});
 
 const source = () =>
   createArraySource<RowRecord>({
     rows,
-    schema,
+    collection,
     searchFields: ["name"],
   });
 
@@ -82,7 +86,7 @@ describe("createArraySource", () => {
     expect(
       createArraySource({
         rows,
-        schema,
+        collection,
         defaultSort: [
           { field: "cpu", direction: "desc" },
           { field: "cpu", direction: "asc" },
@@ -95,7 +99,7 @@ describe("createArraySource", () => {
     expect(() =>
       createArraySource({
         rows,
-        schema,
+        collection,
         defaultSort: [{ field: "zone", direction: "asc" }],
       }),
     ).toThrow('the default ordering names "zone", which is not sortable');
@@ -104,7 +108,7 @@ describe("createArraySource", () => {
   it("runs its declared default when a query states no term of its own", () => {
     const live = createArraySource({
       rows,
-      schema,
+      collection,
       defaultSort: [{ field: "cpu", direction: "desc" }],
     });
     const deliver = delivery();
@@ -117,7 +121,7 @@ describe("createArraySource", () => {
       { id: "n10", name: "node10" },
       { id: "n2", name: "node2" },
     ];
-    const live = createArraySource({ rows: numbered, schema });
+    const live = createArraySource({ rows: numbered, collection });
     const deliver = delivery();
     live.execute(
       request({
@@ -129,7 +133,7 @@ describe("createArraySource", () => {
 
     const byCodePoint = createArraySource({
       rows: numbered,
-      schema,
+      collection,
       collation: null,
     });
     const other = delivery();
@@ -143,7 +147,9 @@ describe("createArraySource", () => {
   });
 
   it("declares no search when no field is searchable", () => {
-    expect(createArraySource({ rows, schema }).capabilities.search).toBeNull();
+    expect(
+      createArraySource({ rows, collection }).capabilities.search,
+    ).toBeNull();
   });
 
   it("freezes its declaration against the caller's arrays", () => {
@@ -151,7 +157,7 @@ describe("createArraySource", () => {
     const searchFields = ["name"];
     const { capabilities } = createArraySource({
       rows,
-      schema,
+      collection,
       defaultSort,
       searchFields,
     });
@@ -237,7 +243,7 @@ describe("createArraySource", () => {
         },
       }),
     );
-    const live = createArraySource({ rows: counted, schema });
+    const live = createArraySource({ rows: counted, collection });
     const query: Slice = {
       ...emptySlice,
       sort: [{ field: "cpu", direction: "asc" }],
@@ -312,7 +318,7 @@ describe("createArraySource", () => {
 
   it("copies the records, so a caller's later mutation cannot leak in", () => {
     const mutable = [{ id: "a" }];
-    const live = createArraySource({ rows: mutable, schema });
+    const live = createArraySource({ rows: mutable, collection });
     mutable.push({ id: "b" });
     const deliver = delivery();
     live.execute(request(), deliver);
@@ -334,7 +340,7 @@ describe("createArraySource", () => {
     const runAction = vi.fn<SourceActionRunner>().mockResolvedValue([]);
     const live = createArraySource({
       rows,
-      schema,
+      collection,
       actions: { stop: { targets: "explicit", limit: null } },
       runAction,
     });

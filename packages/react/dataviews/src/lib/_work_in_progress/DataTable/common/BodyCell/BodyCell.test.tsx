@@ -1,41 +1,41 @@
 import {
-  createDataViewsProvider,
-  createSchema,
-} from "@canonical/dataviews-core";
-import { createRowScopes } from "@canonical/dataviews-core/bindings";
+  createRowScopes,
+  readProviderHost,
+} from "@canonical/dataviews-core/bindings";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { deliverRows } from "../../../../../../testing/fixtures.js";
+import {
+  createMachineProvider,
+  machine,
+} from "../../../../../../testing/machines.js";
 import { BodyCell } from "./index.js";
 
-const schema = createSchema([{ field: "name", kind: "text" }]);
-
-/** One row scope over the given fields, minted as the table mints them. */
-const scopeOver = (fields: readonly string[]) => {
-  const provider = createDataViewsProvider({ schema });
-  const requestId = provider.refresh();
-  if (requestId === null) {
-    throw new Error("expected a refresh request");
-  }
-  provider.complete(requestId, deliverRows([{ id: "m-1", name: "alpha" }]));
+/**
+ * One row's channels over the given fields, minted as the table mints
+ * them. The row is fed to the provider by hand: nothing observes it here.
+ */
+const channelsOver = (fields: readonly string[]) => {
+  const { provider } = createMachineProvider();
+  const host = readProviderHost(provider);
+  host.complete(host.refresh(), deliverRows([machine("m-1", "alpha")]));
   const scopes = createRowScopes({
     rows: provider.rows,
     selection: provider.selection,
     fields,
   });
-  return { provider, scopes };
+  return { provider, channels: scopes.readRow("m-1") };
 };
 
 describe("BodyCell", () => {
   it("reports a field no scope channel observes instead of rendering nothing", () => {
-    const { provider, scopes } = scopeOver(["name"]);
-    const scope = scopes.scope("m-1");
+    const { provider, channels } = channelsOver(["name"]);
     const failure = vi.spyOn(console, "error").mockImplementation(() => {});
     expect(() =>
       render(
         <BodyCell
           provider={provider}
-          scope={scope}
+          channels={channels}
           column={{ id: "zone", header: "Zone" }}
           field="zone"
         />,

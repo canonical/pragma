@@ -24,14 +24,14 @@ export type {
   DataViewsProps,
   DataViewsViewsProps,
   UseDataViewsCellResult,
-  UseDataViewsFieldResult,
+  UseDataViewsFilterResult,
   UseDataViewsResult,
 } from "./_work_in_progress/DataViews/index.js";
 export {
   DataViews,
   useDataViews,
   useDataViewsCell,
-  useDataViewsField,
+  useDataViewsFilter,
   useDataViewsValue,
 } from "./_work_in_progress/DataViews/index.js";
 export type { PaginationBarProps } from "./_work_in_progress/PaginationBar/index.js";

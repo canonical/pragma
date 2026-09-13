@@ -9,6 +9,12 @@ const columns = (): readonly ColumnToSize[] => [
 ];
 
 describe("createColumnLayout", () => {
+  it("hands its state out read-only at runtime", () => {
+    const { state } = createColumnLayout(columns());
+    expect(Object.isFrozen(state)).toBe(true);
+    expect(state).not.toHaveProperty("set");
+  });
+
   it("declares sizing per column and rejects empty or duplicate ids", () => {
     const layout = createColumnLayout(columns());
     expect(layout.effective("name")).toEqual({

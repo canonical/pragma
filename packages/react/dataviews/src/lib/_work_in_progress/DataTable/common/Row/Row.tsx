@@ -9,14 +9,14 @@ const componentCssClassName = "ds data-table-row";
 
 function Row<TRow extends object>({
   provider,
-  scope,
+  channels,
   columns,
   selectable,
   rowLabel,
   position,
   ref,
 }: RowProps<TRow>): ReactElement {
-  const selected = useDataViewsValue(scope.selected);
+  const selected = useDataViewsValue(channels.selected);
   return (
     // aria-selected is only meaningful where selection is offered, and it
     // must agree with the row's checkbox: both read this one channel.
@@ -34,7 +34,7 @@ function Row<TRow extends object>({
       {selectable ? (
         <SelectionCell
           provider={provider}
-          scope={scope}
+          channels={channels}
           selected={selected}
           rowLabel={rowLabel}
         />
@@ -43,7 +43,7 @@ function Row<TRow extends object>({
         <BodyCell
           key={column.id}
           provider={provider}
-          scope={scope}
+          channels={channels}
           column={column}
           field={readFieldName(column)}
         />

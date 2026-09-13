@@ -57,10 +57,10 @@ export type DataTableColumn = {
   /** Declared sizing. Defaults to a flexible column with a 96px minimum. */
   readonly sizing?: ColumnSizing;
   /**
-   * Offer sorting on this column's field. Honoured only when the provider's
-   * capabilities declare the field sortable and allow at least one sort
-   * term, so the table never offers an ordering the source would refuse. On
-   * a provider created without capabilities, a sortable column throws.
+   * Offer sorting on this column's field. Honoured only when the source's
+   * declaration, which the provider carries, names the field sortable and
+   * allows at least one sort term, so the table never offers an ordering
+   * the source would refuse; on any other field this offers nothing.
    */
   readonly sortable?: boolean;
   /**

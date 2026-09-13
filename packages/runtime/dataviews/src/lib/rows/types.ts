@@ -1,5 +1,5 @@
 /**
- * Row records and the scopes their cells observe. A row's identity comes
+ * Row records and the channels their cells observe. A row's identity comes
  * from its record, never from its position in the current array: paging,
  * sorting and windowing all move records between positions.
  */
@@ -142,18 +142,18 @@ export type DisplayEntry<TStatus = unknown> =
 export type DisplayEntryKind = DisplayEntry["kind"];
 
 /**
- * One row's observation scope. Minted once per row identity and shared by
- * every cell of that row: field channels notify only the cells whose value
- * actually changed. A projection, so every channel on it is read-only —
- * the registry that mints it is the only publisher.
+ * One row's channels. Minted once per row identity and shared by every
+ * cell of that row: field channels notify only the cells whose value
+ * actually changed. A projection, so every channel on it is read-only at
+ * runtime — the registry that mints it is the only publisher.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
  */
-export type RowScope<TRow extends object = RowRecord> = {
+export type RowChannels<TRow extends object = RowRecord> = {
   readonly id: string;
   /** The whole record. Watching it is broader than watching one field. */
-  readonly row: ReadonlyChannel<TRow>;
+  readonly record: ReadonlyChannel<TRow>;
   /** One channel per observed field name. */
   readonly fields: Readonly<Record<string, ReadonlyChannel<unknown>>>;
   /** This row's membership of the collection's selection. */
@@ -163,11 +163,8 @@ export type RowScope<TRow extends object = RowRecord> = {
 /** Configuration of one row model build. */
 export type RowModelConfig<TRow extends object> = {
   readonly rows: readonly TRow[];
-  /**
-   * Reads one record's stable identity. Defaults to the record's own `id`,
-   * which must then be a non-empty string.
-   */
-  readonly identify?: RowIdentifier<TRow> | undefined;
+  /** Reads one record's stable identity: the collection's `identify`. */
+  readonly identify: RowIdentifier<TRow>;
   /** The model this one supersedes, so unchanged entries keep their object. */
   readonly previous?: RowModel<TRow> | undefined;
 };
@@ -196,8 +193,8 @@ export type RowScopesConfig<TRow extends object = RowRecord> = {
 export type RowScopes<TRow extends object = RowRecord> = {
   /** The modelled row identities, in result order. */
   readonly ids: ReadonlyChannel<readonly string[]>;
-  /** The scope of one modelled row. Unmodelled identities throw. */
-  readonly scope: (id: string) => RowScope<TRow>;
+  /** The channels of one modelled row. Unmodelled identities throw. */
+  readonly readRow: (id: string) => RowChannels<TRow>;
   /**
    * Begin observing the row model and the selection; the return value
    * detaches. Construction reads the current model but subscribes to

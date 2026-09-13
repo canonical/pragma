@@ -1,20 +1,22 @@
 import {
-  createLocationBinding,
   createMemoryLocation,
   DEFAULT_WINDOW,
+  type QueryLocation,
+  type ViewDraft,
 } from "@canonical/dataviews-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { type ReactElement, useEffect, useMemo, useState } from "react";
+import { type ReactElement, useState, useSyncExternalStore } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import { withAppScope } from "../../../storybook/decorators.js";
 import { consumerCode } from "../../../storybook/machines/consumerCode.js";
+import { machineCollection } from "../../../storybook/machines/fixtures.js";
 import {
-  hostName,
   type MachineProvider,
   useMachineProvider,
+  useStoryViewStore,
 } from "../../../storybook/machines/story-utils.js";
 import type { DataTableColumn } from "../DataTable/index.js";
-import { useDataViewsValue } from "./hooks/index.js";
+import { useDataViews, useDataViewsValue } from "./hooks/index.js";
 import Component from "./Provider.js";
 
 const meta = {
@@ -43,6 +45,39 @@ const columnsCode = `const columns: readonly DataTableColumn[] = [
   { id: "owner", header: "Owner" },
 ];`;
 
+/**
+ * The parameters the location carried that the provider refused — a clause
+ * the grammar, the schema or the source cannot run. Reads the root, like
+ * any child of one; empty without a location.
+ */
+function QueryIssues(): ReactElement | null {
+  const { issues } = useDataViews(machineCollection);
+  const refused = useDataViewsValue(issues);
+  return refused.length === 0 ? null : (
+    <ul className="query-issues">
+      {refused.map((issue) => (
+        // One parameter can be refused for several reasons.
+        <li key={`${issue.parameter}:${issue.reason}`}>{issue.reason}</li>
+      ))}
+    </ul>
+  );
+}
+
+const queryIssuesCode = `// Refused parameters of the URL: a clause the grammar, the collection or the
+// source cannot run stays in the URL, and its reasons are the provider's.
+function QueryIssues() {
+  const { issues } = useDataViews(machineCollection);
+  const refused = useDataViewsValue(issues);
+  return refused.length === 0 ? null : (
+    <ul className="query-issues">
+      {refused.map((issue) => (
+        // One parameter can be refused for several reasons.
+        <li key={\`\${issue.parameter}:\${issue.reason}\`}>{issue.reason}</li>
+      ))}
+    </ul>
+  );
+}`;
+
 /** The pagination bar's summary: the filters hold status regions of their own. */
 const summary = (canvas: ReturnType<typeof within>): HTMLElement =>
   within(canvas.getByRole("navigation", { name: "Pagination" })).getByRole(
@@ -59,13 +94,17 @@ function Collection({
 }): ReactElement {
   return (
     <Component provider={provider}>
+      {provider.views === null ? null : <Component.Views />}
       <Component.Filters labels={{ status: "Status", cores: "Cores" }} />
+      <QueryIssues />
       {children}
       <Component.DataTable
         columns={columns}
         label="Machines"
         selectable
-        rowLabel={hostName}
+        // The connected table's records are the widest shape; a typed
+        // label goes through the standalone table, or a cell's collection.
+        rowLabel={(row) => String(row["name"])}
       />
       <Component.Actions />
       <Component.Pagination sizes={[5, 10, 25]} />
@@ -77,34 +116,64 @@ const selectTwo = (provider: MachineProvider): void => {
   provider.selection.add(["m-02", "m-06"]);
 };
 
+/** A saved view the screen's store opens with. */
+const failedMachines: ViewDraft = {
+  id: "failed-machines",
+  name: "Failed machines",
+  query: "as=table&status=failed",
+};
+
 /**
- * The connected parts: one root, and every part reading it. The filters edit
- * the query, the table shows the rows that answer it, the action bar acts on
- * the selection, and the pagination bar pages the window. None of them takes
- * a copy of the query, the window or the selection.
+ * The whole screen: one provider over a source, a location and a store of
+ * saved views, and every part reading it. The views open a query, the
+ * filters edit it, the table shows the rows that answer it, the action bar
+ * acts on the selection, and the pagination bar pages the window. None of
+ * them takes a copy of the query, the window or the selection; the URL and
+ * the store follow the provider, which owns both loops.
  */
 export const ConnectedParts: Story = {
   parameters: consumerCode({
-    parts: ["DataViews", "type DataTableColumn"],
-    declarations: columnsCode,
+    parts: [
+      "DataViews",
+      "type DataTableColumn",
+      "useDataViews",
+      "useDataViewsValue",
+    ],
+    core: ["createPlatformLocation"],
+    imports: `import { machineCollection, machines } from "./machines.js";
+import { platform } from "./router.js";`,
+    declarations: `${columnsCode}
+
+${queryIssuesCode}`,
+    location: "createPlatformLocation(platform)",
+    views: true,
     window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
-    prepare: `provider.selection.add(["m-02", "m-06"]);`,
     render: `<DataViews provider={provider}>
+  <DataViews.Views />
   <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
+  <QueryIssues />
   <DataViews.DataTable
     columns={columns}
     label="Machines"
     selectable
-    rowLabel={(row) => String(row.name)}
+    rowLabel={(row) => String(row["name"])}
   />
   <DataViews.Actions />
   <DataViews.Pagination sizes={[5, 10, 25]} />
 </DataViews>`,
   }),
   render: function Render() {
+    // A memory location and a story's own store stand in for the browser's
+    // here, so the story never rewrites the page's own address or its views.
+    const [location] = useState(() =>
+      createMemoryLocation({ href: "/machines" }),
+    );
+    const { store } = useStoryViewStore({ seed: [failedMachines] });
     const provider = useMachineProvider({
       window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
       prepare: selectTwo,
+      location,
+      views: store,
     });
     return <Collection provider={provider} />;
   },
@@ -115,38 +184,24 @@ export const ConnectedParts: Story = {
     await expect(
       canvas.getByRole("group", { name: "Selection actions" }),
     ).toHaveTextContent("2 selected");
+    await expect(
+      canvas.getByRole("group", { name: "Saved views" }),
+    ).toBeVisible();
   },
 };
 
 /** The query the location carries, shown the way an address bar would. */
 function QueryInTheLocation({
-  provider,
+  location,
 }: {
-  readonly provider: MachineProvider;
+  readonly location: QueryLocation;
 }): ReactElement {
-  // A memory location stands in for the browser's here, so the story never
-  // rewrites the page's own address.
-  const [location] = useState(() =>
-    createMemoryLocation({ href: "/machines?status=failed" }),
+  const query = useSyncExternalStore(location.subscribe, () =>
+    location.read().toString(),
   );
-  const binding = useMemo(
-    () => createLocationBinding({ host: provider, location }),
-    [provider, location],
-  );
-  useEffect(() => binding.observe(), [binding]);
-  const [query, setQuery] = useState(() => location.read().toString());
-  useEffect(
-    () =>
-      location.subscribe(() => {
-        setQuery(location.read().toString());
-      }),
-    [location],
-  );
-  const issues = useDataViewsValue(binding.issues);
   return (
     <p>
       <output aria-label="Location">{`/machines?${query}`}</output>
-      {issues.length === 0 ? null : ` — ${issues.length} refused`}
     </p>
   );
 }
@@ -155,65 +210,53 @@ function QueryInTheLocation({
  * The query in the URL: the location arrived carrying `status=failed`, so
  * the provider adopted it, and running machines were then added in the
  * filters, which wrote the query back to the location. A link carrying a
- * clause the source refuses stays in the URL with its reasons on
- * `binding.issues`.
+ * clause the source refuses stays in the URL with its reasons on the
+ * provider's `issues`.
  */
 export const QueryInTheUrl: Story = {
-  parameters: {
-    docs: {
-      source: {
-        language: "tsx",
-        code: `import {
-  createLocationBinding,
-  createPlatformLocation,
-  type DataViewsProvider,
-  type PlatformLocation,
-} from "@canonical/dataviews-core";
-import { useDataViewsValue } from "@canonical/dataviews-react";
-import { machineSchema } from "./machines.js";
+  parameters: consumerCode({
+    parts: [
+      "DataViews",
+      "type DataTableColumn",
+      "useDataViews",
+      "useDataViewsValue",
+    ],
+    core: ["createPlatformLocation"],
+    imports: `import { machineCollection, machines } from "./machines.js";
+import { platform } from "./router.js";`,
+    declarations: `${columnsCode}
 
-type MachinesProvider = DataViewsProvider<typeof machineSchema.fields>;
-
-// Render beside the parts, inside the root, with the provider the
-// collection's root mounts and your router's platform surface.
-export function MachinesUrlQuery({
-  provider,
-  platform,
-}: {
-  provider: MachinesProvider;
-  platform: PlatformLocation;
-}) {
-  // Building the binding subscribes to nothing; observing does, so it
-  // happens in an effect and a discarded render leaves nothing behind.
-  const binding = useMemo(
-    () =>
-      createLocationBinding({
-        host: provider,
-        location: createPlatformLocation(platform),
-      }),
-    [provider, platform],
-  );
-  useEffect(() => binding.observe(), [binding]);
-  const issues = useDataViewsValue(binding.issues);
-  return issues.length === 0 ? null : (
-    <ul className="query-issues">
-      {issues.map((issue, index) => (
-        // One parameter can be refused for several reasons.
-        <li key={\`\${index}:\${issue.parameter}\`}>{issue.reason}</li>
-      ))}
-    </ul>
-  );
-}`,
-      },
-    },
-  },
+${queryIssuesCode}`,
+    // The router's platform surface: anything with getLocation, navigate
+    // and subscribe. The provider adopts the query it carries and writes
+    // every edit back.
+    location: "createPlatformLocation(platform)",
+    render: `<DataViews provider={provider}>
+  <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
+  <QueryIssues />
+  <DataViews.DataTable
+    columns={columns}
+    label="Machines"
+    selectable
+    rowLabel={(row) => String(row["name"])}
+  />
+  <DataViews.Actions />
+  <DataViews.Pagination sizes={[5, 10, 25]} />
+</DataViews>`,
+  }),
   render: function Render() {
+    // A memory location stands in for the browser's here, so the story
+    // never rewrites the page's own address.
+    const [location] = useState(() =>
+      createMemoryLocation({ href: "/machines?status=failed" }),
+    );
     const provider = useMachineProvider({
       window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
+      location,
     });
     return (
       <Collection provider={provider}>
-        <QueryInTheLocation provider={provider} />
+        <QueryInTheLocation location={location} />
       </Collection>
     );
   },

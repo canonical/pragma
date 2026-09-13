@@ -3,27 +3,17 @@
  * root's provider. The bar's own behaviour is pinned beside it; this pins the
  * binding.
  */
-import {
-  createDataViewsProvider,
-  createSchema,
-  type DataViewsProvider,
-  DEFAULT_WINDOW,
-} from "@canonical/dataviews-core";
+import { createPage, DEFAULT_WINDOW } from "@canonical/dataviews-core";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import {
+  createMachineProvider,
+  machine,
+} from "../../../../../../testing/machines.js";
 import DataViews from "../../Provider.js";
 import Pagination from "./Pagination.js";
 
-const schema = createSchema([
-  { field: "status", kind: "choices", options: ["failed", "ready"] },
-]);
-
-type Fields = typeof schema.fields;
-
 const firstOfTwo = { ...DEFAULT_WINDOW, page: 1, size: 2 };
-
-const makeProvider = (): DataViewsProvider<Fields> =>
-  createDataViewsProvider<Fields>({ schema, window: firstOfTwo });
 
 describe("DataViews.Pagination", () => {
   it("is reachable as the composition's Pagination part", () => {
@@ -37,27 +27,24 @@ describe("DataViews.Pagination", () => {
   });
 
   it("pages the root's provider and takes the bar's props", () => {
-    const provider = makeProvider();
+    const { provider, source } = createMachineProvider({
+      seed: { window: firstOfTwo },
+    });
     render(
       <DataViews provider={provider}>
         <Pagination label="Machines pagination" className="footer" />
       </DataViews>,
     );
-    const requestId = provider.refresh();
-    if (requestId === null) {
-      throw new Error("expected a refresh request");
-    }
-    const counted = { kind: "exact", value: 5 } as const;
+    // The root observed the provider, which asked for the seeded window.
+    expect(source.latest().request.window).toEqual(firstOfTwo);
     act(() => {
-      provider.complete(requestId, {
+      source.latest().deliver({
         status: "succeeded",
-        page: {
-          rows: [{ id: "m1" }, { id: "m2" }],
-          groups: null,
-          counts: { pageable: counted, matched: counted, total: counted },
-          more: null,
-          cursors: null,
-        },
+        page: createPage({
+          rows: [machine("m1", "alpha"), machine("m2", "beta")],
+          matched: 5,
+          total: 5,
+        }),
       });
     });
     const nav = screen.getByRole("navigation", { name: "Machines pagination" });
@@ -70,5 +57,8 @@ describe("DataViews.Pagination", () => {
       ...firstOfTwo,
       page: 2,
     });
+    // The bar inside the root observes too; one run answers both.
+    expect(source.latest().request.window).toEqual({ ...firstOfTwo, page: 2 });
+    expect(source.calls).toHaveLength(2);
   });
 });

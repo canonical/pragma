@@ -21,10 +21,11 @@ const exact = (value: number) => ({ kind: "exact" as const, value });
 export default function createArraySource<TRow extends object = RowRecord>(
   config: ArraySourceConfig<TRow>,
 ): ArraySource<TRow> {
-  const { schema, collation = ROOT_NUMERIC_COLLATION } = config;
+  const { collection, collation = ROOT_NUMERIC_COLLATION } = config;
+  const { schema } = collection;
   const searchFields = config.searchFields ?? [];
   const defaultSort = collapseSortTerms(config.defaultSort ?? []);
-  const capabilities = declareCapabilities(schema, {
+  const capabilities = declareCapabilities(collection, {
     filter: Object.fromEntries(
       schema.fieldNames.map((field) => [field, true] as const),
     ),

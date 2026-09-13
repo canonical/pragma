@@ -1,4 +1,4 @@
-import { createChannel } from "../observable/index.js";
+import { createChannel, protectChannel } from "../observable/index.js";
 import areSizingsEqual from "./areSizingsEqual.js";
 import type {
   ColumnLayout,
@@ -70,7 +70,7 @@ export default function createColumnLayout(
   };
 
   return {
-    state: channel,
+    state: protectChannel(channel),
     readDeclared: declaredOf,
     effective(id: string): ColumnSizing {
       return overrideOf(id) ?? declaredOf(id);
