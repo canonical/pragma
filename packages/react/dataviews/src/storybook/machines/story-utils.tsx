@@ -13,7 +13,6 @@ import {
   createIndexedDBViewStore,
   type IndexedDBFactory,
 } from "@canonical/dataviews-core/indexeddb";
-import type { Decorator } from "@storybook/react-vite";
 import { useEffect, useState } from "react";
 import {
   createMachineSource,
@@ -90,35 +89,6 @@ export function useMachineProvider({
   }, [provider, bound, setUp]);
   return provider;
 }
-
-/**
- * Render the story inside the `.app` scope, which the table and its bars
- * assume: primary text there takes the application sizes, and the density
- * channel its application values.
- */
-export const withAppScope: Decorator = (Story) => (
-  <div className="app">
-    <Story />
-  </div>
-);
-
-/** Render the story inside a frame of the given width, as a layout would. */
-export const withFrame =
-  (maxWidth: string): Decorator =>
-  (Story) => (
-    <div style={{ maxWidth }}>
-      <Story />
-    </div>
-  );
-
-/** A frame of the given height that scrolls its content, as a panel would. */
-export const withScrollingFrame =
-  (height: string): Decorator =>
-  (Story) => (
-    <div style={{ maxHeight: height, overflow: "auto" }}>
-      <Story />
-    </div>
-  );
 
 /** Names a record for its selection checkbox: by host, else by identity. */
 export const hostName = (row: RowRecord, rowId: string): string =>

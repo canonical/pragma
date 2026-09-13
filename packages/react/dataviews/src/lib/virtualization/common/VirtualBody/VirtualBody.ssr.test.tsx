@@ -9,8 +9,8 @@ import {
 } from "@canonical/dataviews-core";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { DataTable } from "../../../DataTable/index.js";
-import virtualRows from "../../virtualRows.js";
+import { DataTable } from "../../../_work_in_progress/DataTable/index.js";
+import virtualizeRows from "../../virtualizeRows.js";
 
 const schema = createSchema([
   { field: "status", kind: "choices", options: ["failed", "running"] },
@@ -33,7 +33,7 @@ describe("windowed DataTable SSR", () => {
       page: {
         rows,
         groups: null,
-        counts: { visible: counted, matched: counted, total: counted },
+        counts: { pageable: counted, matched: counted, total: counted },
         more: null,
         cursors: null,
       },
@@ -43,7 +43,7 @@ describe("windowed DataTable SSR", () => {
         provider={provider}
         label="Machines"
         columns={[{ id: "name", header: "Name" }]}
-        windowing={virtualRows({ estimatedRowHeight: 32 })}
+        windowing={virtualizeRows({ estimatedRowHeight: 32 })}
       />,
     );
     expect(html).toContain('aria-rowcount="31"');

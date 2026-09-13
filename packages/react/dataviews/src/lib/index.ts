@@ -14,8 +14,8 @@ export type {
   DataTableProps,
   DataTableStatus,
   DataTableWindowing,
-} from "./DataTable/index.js";
-export { DataTable } from "./DataTable/index.js";
+} from "./_work_in_progress/DataTable/index.js";
+export { DataTable } from "./_work_in_progress/DataTable/index.js";
 export type {
   DataViewsActionsProps,
   DataViewsDataTableProps,
@@ -26,13 +26,13 @@ export type {
   UseDataViewsCellResult,
   UseDataViewsFieldResult,
   UseDataViewsResult,
-} from "./DataViews/index.js";
+} from "./_work_in_progress/DataViews/index.js";
 export {
   DataViews,
   useDataViews,
   useDataViewsCell,
   useDataViewsField,
   useDataViewsValue,
-} from "./DataViews/index.js";
-export type { PaginationBarProps } from "./PaginationBar/index.js";
-export { PaginationBar } from "./PaginationBar/index.js";
+} from "./_work_in_progress/DataViews/index.js";
+export type { PaginationBarProps } from "./_work_in_progress/PaginationBar/index.js";
+export { PaginationBar } from "./_work_in_progress/PaginationBar/index.js";

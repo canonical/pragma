@@ -1,0 +1,220 @@
+---
+# DataTable — the rows of one collection, over ARIA table roles.
+#
+# Anatomy DSL 0.3.0. No validator runs on this file yet: it is checked in
+# review against the DSL's JSON schema. Named nodes carry the design-system
+# graph's IRIs; everything else is a role node. HeaderCell and BodyCell have
+# their own files beside their components; this file only references them.
+#
+# Names — one per part, the same in the design, the DOM and here:
+#   DataTable       design "DataTable"    DOM `ds data-table dense`
+#   header row group                      DOM `ds data-table-row-group header`
+#   header row, row                       DOM `ds data-table-row`
+#   select-all cell                       DOM `ds data-table-header-cell selection`
+#   body row group                        DOM `ds data-table-row-group body`
+#   selection cell  design "BodyCell: Checkbox variant"
+#                                         DOM `ds data-table-body-cell selection`
+#   status row      DOM `ds data-table-row status`
+#   status cell     DOM `ds data-table-body-cell status <kind>`
+#   gap             DOM `ds data-table-gap`, hidden from assistive technology
+# The selection and status cells share the body cell's class for its shared
+# box, but they are role nodes here, not BodyCells: the table's `selectable`
+# prop and its outcome choose them, never a column.
+#
+# Tokens are `/`-paths over `@canonical/design-tokens` 0.10.0 ids. Two
+# bindings read a `@canonical/styles` channel rather than a token: the row's
+# minimum height (`density/line-height-effective`, `--density-line-height-effective`)
+# and the cells' inline padding (`density/padding-inline`,
+# `--density-padding-inline`). The DSL has no way to say "channel", so the
+# path names it and this note records the deviation.
+#
+# Density: the root carries the design system's `.dense` class, so the table
+# is dense wherever it sits. It reads the channel and defines no density rule
+# of its own. `.dense` is a class, not a state; nothing changes structurally.
+#
+# Accessibility (DataViews component coverage):
+#   root, rows, cells   "DataTable/header/row/cell"
+#                       (1.3.1-1.3.2, 2.1.1-2.1.2, 2.4.3, 2.4.7, 4.1.2)
+#   select-all, selection cells
+#                       "Row/select-all checkboxes" (1.3.1, 2.1.1, 4.1.2-4.1.3)
+#                       — CheckboxInput's own contract, plus the table's
+#                       names: "Select all displayed rows", "Select <row>"
+#   status row          "Loading/no-data/no-results/error/no-access"
+#                       (1.3.1, 1.4.1, 4.1.3). The cell is `role=cell`, not a
+#                       live region; only the stale message is `role=status`.
+#   settings cell       "ContextualMenu trigger/items", when the part ships
+#   windowed body       "DataTable windowed rows" (1.3.1, 2.1.1, 2.4.3,
+#                       4.1.2): the root reports `aria-rowcount` and every
+#                       mounted row its `aria-rowindex` in logical order, the
+#                       header row being 1, so a gap is never read as the
+#                       table's end; the row holding focus stays mounted.
+#
+# Windowed: a table given `windowing` mounts only the entries near its
+# viewport. The body row group takes the `windowed` class and holds gaps
+# in place of the entries it does not mount: before the first run of
+# mounted entries, between runs, and after the last. The root becomes the
+# scroll viewport the range is measured against. None of this changes a
+# table without `windowing`.
+#
+# Deviations the DSL cannot express, recorded here:
+#   - The surface background channel: `appearance.background` is read through
+#     `--surface-color-background`, falling back to `color/background`.
+#   - Borders are two keys (width, colour): the package has no composite
+#     border token.
+#   - `layout.position: sticky` on the header row group: the key is valid
+#     under the DSL's open key pattern but outside its documented
+#     vocabulary.
+#   - Row tracks come from `--data-table-columns`, the solver's per-render
+#     publication — component-local geometry no stylesheet can know. The
+#     selection track precedes it and is the stylesheet's own.
+#   - A selected row under the pointer takes
+#     `color/foreground/secondary/information/hover`; compound states
+#     (`@selected@hover`) are reserved, not permitted, in 0.3.0.
+#   - The status row and the rows are exclusive, except that a stale status
+#     precedes the rows it describes. Conditional display is deferred in the
+#     DSL.
+#   - A row's bottom border is drawn on every row but the last: the DSL
+#     cannot condition a style on position.
+#   - The status cell wraps where every other cell holds one line, and its
+#     row lays out as a block, so it spans the table even when a selectable
+#     table has no columns; the DSL has no keys for either.
+#   - The status kinds (loading, error, stale, no-data, no-results) are not
+#     registry states. They change text, and error takes `color/text/error`
+#     in place of `color/text/muted`.
+#   - `color/focus-ring` is the package's `color.focusRing`: a camelCase id
+#     the DSL's token-path grammar (`[a-z0-9-]+`) cannot spell.
+#   - The header row group's stacking above the scrolled body uses z-index 1;
+#     the package has no stacking token.
+#   - A gap's height is the range's per-render publication, the height of
+#     the entries it stands for, written on the gap itself: geometry no
+#     stylesheet can know, as `--data-table-columns` is.
+#   - The windowed root is positioned (`layout.position: relative`), so the
+#     body's offset is measured from it, and it opts out of the browser's
+#     scroll anchoring (`overflow-anchor: none`): the range anchors the
+#     scroll itself, and two corrections would move it twice. By default it
+#     is no taller than the viewport (`100svh`), so the range stays bounded
+#     wherever it sits; a caller's own maximum wins. `windowed` is a class,
+#     not a registry state, and the DSL has no key for scroll anchoring.
+#
+# Rows take a minimum height from the density line, never a fixed one, so a
+# taller cell grows its row (see BodyCell). One status row covers the four
+# no-rows outcomes and the first load, and a refresh keeps the retained rows
+# visible while the table reports busy; there is no per-cell skeleton. The
+# stylesheet names the rows' trailing grid line, so a track after the data
+# tracks lands there without the solver.
+node:
+  uri: apps.pattern.data_table
+  styles:
+    layout.overflow: auto
+    typography.color: color/text
+    typography.family: typography/text/primary/font-family
+    typography.size: typography/text/primary/font-size
+    typography.weight: typography/text/primary/font-weight
+    appearance.background: color/background
+    appearance.border.width: dimension/stroke/thickness/medium
+    appearance.border.color: color/border/muted
+  edges:
+    - node:
+        role: header row group
+        styles:
+          layout.position: sticky
+          appearance.background: color/background/layer2
+          appearance.border.bottom.width: dimension/stroke/thickness/medium
+          appearance.border.bottom.color: color/border/muted
+        edges:
+          - node:
+              role: header row
+              styles:
+                layout.type: grid
+                layout.align: center
+                size.min.height: density/line-height-effective
+              edges:
+                - node:
+                    role: select-all cell
+                    styles:
+                      layout.type: stack
+                      layout.align: center
+                      layout.justify: center
+                      layout.overflow: visible
+                      size.width: dimension/400
+                      spacing.internal.inline: 0
+                    edges:
+                      # Unchecked, mixed or checked over the displayed rows —
+                      # the checkbox's own states and tokens.
+                      - uri: global.subcomponent.checkbox_input
+                        relation:
+                          cardinality: "1"
+                  relation:
+                    cardinality: "0..1"
+                - uri: apps.subcomponent.data_table-header_cell
+                  relation:
+                    cardinality: "1..*"
+                - node:
+                    role: settings cell
+                    edges:
+                      - uri: apps.subcomponent.data_table-settings_menu
+                        relation:
+                          cardinality: "1"
+                  relation:
+                    cardinality: "0..1"
+            relation:
+              cardinality: "1"
+      relation:
+        cardinality: "1"
+    - node:
+        role: body row group
+        edges:
+          - node:
+              role: row
+              styles:
+                layout.type: grid
+                layout.align: center
+                size.min.height: density/line-height-effective
+                appearance.border.bottom.width: dimension/stroke/thickness/medium
+                appearance.border.bottom.color: color/border/muted
+                appearance.background@hover: color/foreground/ghost/hover
+                appearance.background@selected: color/foreground/secondary/information
+              edges:
+                - node:
+                    role: selection cell
+                    styles:
+                      layout.type: stack
+                      layout.align: center
+                      layout.justify: center
+                      layout.overflow: visible
+                      size.width: dimension/400
+                      spacing.internal.inline: 0
+                    edges:
+                      # Unchecked or checked — the checkbox's own states and
+                      # tokens. No table-specific checkbox styles.
+                      - uri: global.subcomponent.checkbox_input
+                        relation:
+                          cardinality: "1"
+                  relation:
+                    cardinality: "0..1"
+                - uri: apps.subcomponent.data_table-body_cell
+                  relation:
+                    cardinality: "1..*"
+            relation:
+              cardinality: "0..*"
+          - node:
+              role: status row
+              edges:
+                - node:
+                    role: status cell
+                    styles:
+                      spacing.internal.block: dimension/300
+                      spacing.internal.inline: density/padding-inline
+                      typography.color: color/text/muted
+                      typography.align: center
+                  relation:
+                    cardinality: "1"
+            relation:
+              cardinality: "0..1"
+          # Windowed only: the space of the entries not mounted.
+          - node:
+              role: gap
+            relation:
+              cardinality: "0..*"
+      relation:
+        cardinality: "1"

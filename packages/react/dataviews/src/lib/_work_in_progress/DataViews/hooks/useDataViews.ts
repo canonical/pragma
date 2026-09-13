@@ -1,0 +1,61 @@
+import type {
+  DataViewsProvider,
+  RowRecord,
+  SchemaFieldDefinition,
+} from "@canonical/dataviews-core";
+import { isIdentity } from "@canonical/dataviews-core/bindings";
+import { useContext, useMemo } from "react";
+import DataViewsContext from "../Context.js";
+import type { UseDataViewsResult } from "./types.js";
+
+/**
+ * Read the enclosing DataViews root's typed collection scope.
+ *
+ * The passed provider is an identity witness: it must be the exact provider
+ * the enclosing root mounts. The returned scope is stable across renders for
+ * the provider's lifetime.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export default function useDataViews<
+  TFields extends readonly SchemaFieldDefinition[],
+  TRow extends object = RowRecord,
+>(
+  provider: DataViewsProvider<TFields, TRow>,
+): UseDataViewsResult<TFields, TRow> {
+  if (!isIdentity(provider?.identity)) {
+    throw new Error(
+      "useDataViews requires a provider created by createDataViewsProvider",
+    );
+  }
+  const nearest = useContext(DataViewsContext);
+  if (nearest === null) {
+    throw new Error("useDataViews must be used inside a DataViews root");
+  }
+  if (nearest !== provider) {
+    throw new Error(
+      "useDataViews was passed a provider that is not the enclosing DataViews root's provider",
+    );
+  }
+  return useMemo(
+    () => ({
+      identity: provider.identity,
+      schema: provider.schema,
+      capabilities: provider.capabilities,
+      state: provider.state,
+      rows: provider.rows,
+      selection: provider.selection,
+      views: provider.views,
+      fields: provider.fields,
+      navigateWindow: provider.navigateWindow,
+      setSort: provider.setSort,
+      setSearch: provider.setSearch,
+      setGroup: provider.setGroup,
+      setCollapsed: provider.setCollapsed,
+      refresh: provider.refresh,
+      invokeAction: provider.invokeAction,
+    }),
+    [provider],
+  );
+}

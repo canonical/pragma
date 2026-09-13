@@ -47,11 +47,21 @@ const replaced = (before: Snapshot, after: Snapshot): string[] => {
   return ids;
 };
 
+/**
+ * The mounted body, which a layout effect and every listener it installs
+ * run with. An absent one is a hook driven outside its table.
+ */
+const readMounted = (body: HTMLDivElement | null): HTMLDivElement => {
+  if (body === null) {
+    throw new Error("the virtualized body is not mounted");
+  }
+  return body;
+};
+
 /** The viewport a body measures against: the table root, its parent. */
-const viewportOf = (body: HTMLDivElement | null): HTMLElement =>
-  // A layout effect runs with the body mounted, and the body is always
-  // rendered inside the table's root.
-  (body as HTMLDivElement).parentElement as HTMLElement;
+const readViewport = (body: HTMLDivElement | null): HTMLElement =>
+  // A mounted body is rendered inside the table's root, so it has a parent.
+  readMounted(body).parentElement as HTMLElement;
 
 /**
  * Mount one table's entries near its viewport: the range deciding which,
@@ -99,7 +109,9 @@ export default function useVirtualRows({
 
   // Set while rendering, so the runs always index the entries rendered;
   // the range notifies nobody for it, and the scroll it asks for is made
-  // once the rows are committed.
+  // once the rows are committed. Setting the same entries again is a no-op
+  // that returns zero, so a render StrictMode repeats or React discards
+  // leaves the range as one commit would.
   shift.current += range.setEntries(entries);
 
   const complete = useMemo<MountedRange>(
@@ -116,8 +128,8 @@ export default function useVirtualRows({
   // the entries in view start where the scroll does, in a viewport one
   // header shorter.
   const place = useCallback((): void => {
-    const group = body.current as HTMLDivElement;
-    const viewport = viewportOf(group);
+    const group = readMounted(body.current);
+    const viewport = readViewport(group);
     expected.current = viewport.scrollTop;
     range.setViewport(
       expected.current,
@@ -128,7 +140,7 @@ export default function useVirtualRows({
   const correct = useCallback((moved: number): void => {
     if (moved !== 0) {
       expected.current += moved;
-      viewportOf(body.current).scrollTop = expected.current;
+      readViewport(body.current).scrollTop = expected.current;
     }
   }, []);
 
@@ -162,6 +174,7 @@ export default function useVirtualRows({
 
   const onFocus = useCallback(
     (event: FocusEvent<HTMLDivElement>): void => {
+      // A focus event bubbling through the body targets an element of it.
       const row = (event.target as Element).closest('[role="row"]');
       const id = row === null ? undefined : measured.get(row);
       if (id !== undefined) {
@@ -187,7 +200,7 @@ export default function useVirtualRows({
   );
 
   useLayoutEffect(() => {
-    const viewport = viewportOf(body.current);
+    const viewport = readViewport(body.current);
     reassert.current = false;
     let width: number | undefined;
     const resizes =
@@ -268,7 +281,7 @@ export default function useVirtualRows({
   useLayoutEffect(() => {
     if (reassert.current && mounted === range.get()) {
       reassert.current = false;
-      viewportOf(body.current).scrollTop = expected.current;
+      readViewport(body.current).scrollTop = expected.current;
       place();
     }
   });

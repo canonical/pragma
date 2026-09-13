@@ -16,8 +16,8 @@
  * line, alphabetically.
  */
 
-@import url("./DataTable/styles.css");
-@import url("./DataViews/common/Actions/styles.css");
-@import url("./DataViews/common/Views/styles.css");
-@import url("./PaginationBar/styles.css");
+@import url("./_work_in_progress/DataTable/styles.css");
+@import url("./_work_in_progress/DataViews/common/Actions/styles.css");
+@import url("./_work_in_progress/DataViews/common/Views/styles.css");
+@import url("./_work_in_progress/PaginationBar/styles.css");
 @import url("./virtualization/common/VirtualBody/styles.css");

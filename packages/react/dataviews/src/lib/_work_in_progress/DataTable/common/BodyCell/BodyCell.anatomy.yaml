@@ -1,0 +1,82 @@
+---
+# DataTable.BodyCell — one data cell: the field its column shows, rendered as
+# text by default or by the column's own `cell` renderer.
+#
+# Anatomy DSL 0.3.0, checked in review against the DSL's JSON schema.
+# A named subcomponent, not a role: it carries a contract of its own — the
+# renderer it runs and the cell scope it installs for that renderer. Named is
+# not exported; a column's `cell` is the public override point.
+#
+# Names — one per part, the same in the design, the DOM and here:
+#   BodyCell        design "BodyCell"     DOM `ds data-table-body-cell`
+# The design's "Checkbox variant" is not a case here: it is the table's
+# selection cell, chosen by the table's `selectable` prop, not per column.
+#
+# Content is one switch, selected by `override`: text is the default, and a
+# column's `cell` replaces it. One prop-switch per node — the DSL's switch
+# names no prop, so two sibling switches on one node would be
+# indistinguishable. `icon and text` and `actions` have no house renderer; a
+# column fills them with its own `cell`.
+#
+# Single line: the text case holds one line, which does not wrap and ends in an
+# ellipsis when it does not fit, without the cell becoming a scroll container.
+# The DSL has no keys for wrapping or text overflow; recorded here.
+#
+# The row takes its height as a minimum from the density line, so a second
+# line of content grows the row rather than clipping.
+#
+# States: none. Selection and hover belong to the row; the graph's editing
+# states (`highlighted`, `validation-state`) arrive with inline editing.
+#
+# Inline padding reads the `@canonical/styles` density channel
+# (`--density-padding-inline`), not a design token; the DSL cannot name a
+# channel, so the path does and this note records it.
+#
+# Accessibility: "DataTable/header/row/cell" (1.3.1-1.3.2, 2.1.1-2.1.2, 2.4.3,
+# 2.4.7, 4.1.2) for text; "Custom links/badges/compound cells" (1.1.1, 1.4.1,
+# 2.4.4, 2.5.3, 4.1.2) for a column's own renderer, which owns its content's
+# names and its keyboard entry.
+node:
+  uri: apps.subcomponent.data_table-body_cell
+  styles:
+    layout.overflow: clip
+    size.min.width: 0
+    spacing.internal.inline: density/padding-inline
+  edges:
+    - switch:
+        "on": override
+        cases:
+          - node:
+              role: text
+              edges:
+                - node:
+                    role: line 1
+                  relation:
+                    cardinality: "1"
+                - node:
+                    role: line 2
+                  relation:
+                    cardinality: "0..1"
+          - node:
+              role: icon and text
+              edges:
+                - uri: global.component.icon
+                  relation:
+                    cardinality: "1"
+                - node:
+                    role: label
+                  relation:
+                    cardinality: "1"
+          - node:
+              role: actions
+              edges:
+                - uri: global.component.button
+                  relation:
+                    cardinality: "1..4"
+                - uri: global.component.contextual_menu
+                  relation:
+                    cardinality: "0..1"
+          - uri: $custom
+      relation:
+        cardinality: "1"
+        slotName: default
