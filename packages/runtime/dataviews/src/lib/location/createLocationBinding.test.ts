@@ -5,16 +5,16 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
+import {
+  declareCapabilities,
+  NOTHING_DECLARED,
+} from "../../../testing/fixtures.js";
 import createDataViewsProvider from "../provider/createDataViewsProvider.js";
 import DEFAULT_WINDOW from "../query/defaultWindow.js";
 import type { Query, ResultWindow, Slice } from "../query/types.js";
 import type { Completion } from "../result/types.js";
 import type { RowRecord } from "../rows/types.js";
 import createSchema from "../schema/createSchema.js";
-import {
-  declaring,
-  NOTHING_DECLARED,
-} from "../source/capabilities.fixtures.js";
 import createArraySource from "../source/createArraySource.js";
 import createSourceBinding from "../source/createSourceBinding.js";
 import type { LocationHost } from "./createLocationBinding.js";
@@ -510,7 +510,9 @@ describe("createLocationBinding", () => {
   it("refuses a clause the host's source cannot execute rather than adopting it", () => {
     const provider = createDataViewsProvider({
       schema: machines(),
-      capabilities: declaring({ filter: { status: ["eq"], cpu: ["lte"] } }),
+      capabilities: declareCapabilities({
+        filter: { status: ["eq"], cpu: ["lte"] },
+      }),
     });
     const location = createMemoryLocation({
       href: "/machines?status=ready&cpu__gte=4&sort=cpu__asc",

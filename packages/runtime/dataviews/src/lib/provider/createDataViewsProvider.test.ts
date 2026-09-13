@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
+import {
+  declareCapabilities,
+  declareSorting,
+} from "../../../testing/fixtures.js";
 import DEFAULT_WINDOW from "../query/defaultWindow.js";
 import type { Slice } from "../query/types.js";
 import type { Completion } from "../result/types.js";
 import createSchema from "../schema/createSchema.js";
-import { declaring, sorting } from "../source/capabilities.fixtures.js";
 import createDataViewsProvider from "./createDataViewsProvider.js";
 import type { RecordTypes } from "./types.js";
 
@@ -458,9 +461,9 @@ describe("createDataViewsProvider", () => {
 
   it("carries the source's declaration as a frozen copy, or null", () => {
     expect(provider().capabilities).toBeNull();
-    const declared = declaring({
+    const declared = declareCapabilities({
       filter: { status: ["eq"] },
-      sort: sorting(["cpu"], 1),
+      sort: declareSorting(["cpu"], 1),
     });
     const p = createDataViewsProvider({
       schema: machinesSchema(),

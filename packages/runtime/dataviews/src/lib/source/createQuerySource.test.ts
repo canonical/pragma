@@ -3,13 +3,16 @@ import {
   QueryObserver as TanStackObserver,
 } from "@tanstack/query-core";
 import { describe, expect, it, vi } from "vitest";
+import {
+  declareCapabilities,
+  declareSorting,
+} from "../../../testing/fixtures.js";
 import createDataViewsProvider from "../provider/createDataViewsProvider.js";
 import DEFAULT_WINDOW from "../query/defaultWindow.js";
 import type { Slice } from "../query/types.js";
 import type { SourceDelivery, SourcePage } from "../result/types.js";
 import type { RowRecord } from "../rows/types.js";
 import createSchema from "../schema/createSchema.js";
-import { declaring, sorting } from "./capabilities.fixtures.js";
 import createQuerySource, {
   type QueryObservation,
   type QueryObserver,
@@ -40,10 +43,10 @@ const request = (overrides: Partial<SourceRequest> = {}): SourceRequest => ({
 });
 
 /** A constrained REST endpoint: one sort term, exact matched counts. */
-const endpoint: SourceCapabilities = declaring({
+const endpoint: SourceCapabilities = declareCapabilities({
   filter: { status: ["eq"] },
   search: { fields: ["name"] },
-  sort: sorting(["cpu"], 1),
+  sort: declareSorting(["cpu"], 1),
   counts: { visible: "exact", matched: "exact", total: "exact" },
 });
 
@@ -130,7 +133,7 @@ describe("createQuerySource over @tanstack/query-core", () => {
   it("freezes the declaration it was handed", () => {
     const fields = ["cpu"];
     const built = createQuerySource({
-      capabilities: declaring({ sort: sorting(fields, 1) }),
+      capabilities: declareCapabilities({ sort: declareSorting(fields, 1) }),
       queryKey: ["machines"],
       fetchPage: () => Promise.resolve(page([], 0)),
       observe: (query) => new TanStackObserver(client(), query),
@@ -309,7 +312,7 @@ describe("createQuerySource over @tanstack/query-core", () => {
       .fn<SourceLookup>()
       .mockResolvedValue([{ id: "a", status: "missing" }]);
     const built = createQuerySource({
-      capabilities: declaring({ lookup: { batch: 10 } }),
+      capabilities: declareCapabilities({ lookup: { batch: 10 } }),
       queryKey: ["machines"],
       fetchPage: () => Promise.resolve(page([], 0)),
       observe: (query) => new TanStackObserver(client(), query),

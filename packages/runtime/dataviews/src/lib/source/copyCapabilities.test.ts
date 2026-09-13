@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
+import {
+  declareCapabilities,
+  declareSorting,
+} from "../../../testing/fixtures.js";
 import type { PredicateOperator, SortTerm } from "../query/types.js";
-import { declaring, sorting } from "./capabilities.fixtures.js";
 import copyCapabilities from "./copyCapabilities.js";
 import type { SourceCapabilities } from "./types.js";
 
 const declared = (
   overrides: Partial<SourceCapabilities> = {},
-): SourceCapabilities => declaring(overrides);
+): SourceCapabilities => declareCapabilities(overrides);
 
 describe("copyCapabilities", () => {
   it("reads a field declared without operators as filterable by none", () => {
@@ -66,15 +69,15 @@ describe("copyCapabilities", () => {
   });
 
   it("keeps a named tiebreak as the word it was declared with", () => {
-    expect(copyCapabilities(declared({ sort: sorting(["cpu"]) })).sort).toEqual(
-      {
-        fields: ["cpu"],
-        terms: null,
-        default: [],
-        tiebreak: "opaque",
-        collation: null,
-      },
-    );
+    expect(
+      copyCapabilities(declared({ sort: declareSorting(["cpu"]) })).sort,
+    ).toEqual({
+      fields: ["cpu"],
+      terms: null,
+      default: [],
+      tiebreak: "opaque",
+      collation: null,
+    });
   });
 
   it("copies the grouping block against a later mutation", () => {
@@ -141,13 +144,13 @@ describe("copyCapabilities", () => {
         kinds: {
           machine: {
             filter: { status: ["eq"] },
-            sort: sorting(["cpu"], 1),
+            sort: declareSorting(["cpu"], 1),
             actions: { stop: { targets: "explicit", limit: null } },
             lookup: { batch: 5 },
           },
           image: {
             filter: {},
-            sort: sorting([]),
+            sort: declareSorting([]),
             actions: {},
             lookup: null,
           },
@@ -156,7 +159,7 @@ describe("copyCapabilities", () => {
     );
     expect(copy.kinds?.machine).toEqual({
       filter: { status: ["eq"] },
-      sort: { ...sorting(["cpu"], 1) },
+      sort: { ...declareSorting(["cpu"], 1) },
       actions: { stop: { targets: "explicit", limit: null } },
       lookup: { batch: 5 },
     });
@@ -170,7 +173,7 @@ describe("copyCapabilities", () => {
       declared({
         filter: { status: ["eq"] },
         search: { fields: ["name"] },
-        sort: sorting(["cpu"]),
+        sort: declareSorting(["cpu"]),
       }),
     );
     expect(Object.isFrozen(copy)).toBe(true);

@@ -11,6 +11,10 @@ import {
   type Variables,
 } from "relay-runtime";
 import { describe, expect, it, vi } from "vitest";
+import {
+  declareCapabilities,
+  declareSorting,
+} from "../../../testing/fixtures.js";
 import createDataViewsProvider from "../provider/createDataViewsProvider.js";
 import DEFAULT_WINDOW from "../query/defaultWindow.js";
 import type { Query, ResultWindow, Slice } from "../query/types.js";
@@ -21,7 +25,6 @@ import type {
   SourceRefusal,
 } from "../result/types.js";
 import createSchema from "../schema/createSchema.js";
-import { declaring, sorting } from "./capabilities.fixtures.js";
 import createRelaySource, {
   type RelayEnvironment,
   type RelayPageRequest,
@@ -294,8 +297,8 @@ const relay = () => {
   return { environment, fetches, fetchAt };
 };
 
-/** A forward connection: a status filter, no search, no sorting, a total. */
-const connectionCapabilities: SourceCapabilities = declaring({
+/** A forward connection: a status filter, no search, no declareSorting, a total. */
+const connectionCapabilities: SourceCapabilities = declareCapabilities({
   filter: { status: ["eq"] },
   counts: { visible: "exact", matched: "exact", total: "none" },
   pagination: { mode: "cursor", backward: false, durable: false },
@@ -358,7 +361,9 @@ const refusalsOf = (
 ): readonly SourceRefusal[] => {
   const { refuses } = adapter;
   if (refuses === undefined) {
-    throw new Error("expected a source declaring which pages it cannot reach");
+    throw new Error(
+      "expected a source declareCapabilities which pages it cannot reach",
+    );
   }
   return refuses({ slice: emptySlice, window: paged(), ...overrides });
 };
@@ -1187,7 +1192,7 @@ describe("createRelaySource over relay-runtime", () => {
   it("freezes the declaration it was handed", () => {
     const { environment } = relay();
     const fields = ["name"];
-    const capabilities = declaring({ sort: sorting(fields) });
+    const capabilities = declareCapabilities({ sort: declareSorting(fields) });
     const adapter = source(environment, { capabilities });
     fields.push("zone");
     expect(Object.isFrozen(adapter.capabilities)).toBe(true);

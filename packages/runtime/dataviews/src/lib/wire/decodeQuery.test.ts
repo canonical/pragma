@@ -5,10 +5,13 @@
  */
 
 import { describe, expect, it } from "vitest";
+import {
+  declareCapabilities,
+  declareSorting,
+} from "../../../testing/fixtures.js";
 import DEFAULT_WINDOW from "../query/defaultWindow.js";
 import type { ResultWindow } from "../query/types.js";
 import createSchema from "../schema/createSchema.js";
-import { declaring, sorting } from "../source/capabilities.fixtures.js";
 import decodeQuery from "./decodeQuery.js";
 import encodeQuery from "./encodeQuery.js";
 
@@ -129,7 +132,7 @@ describe("decodeQuery", () => {
     const decoded = decodeQuery({
       schema: machines(),
       params: new URLSearchParams("page=3&cursor=after-page-two&sort=cpu__asc"),
-      capabilities: declaring({ sort: sorting(["cpu"]) }),
+      capabilities: declareCapabilities({ sort: declareSorting(["cpu"]) }),
     });
     // The source pages by number, so the token addresses nothing: the page
     // stands, the token goes, and the window is reported once rather than
@@ -360,9 +363,9 @@ describe("decodeQuery", () => {
   });
 
   it("refuses each clause the source cannot execute, and only those", () => {
-    const capabilities = declaring({
+    const capabilities = declareCapabilities({
       filter: { status: ["eq"], cpu: ["gte"] },
-      sort: sorting(["cpu"], 1),
+      sort: declareSorting(["cpu"], 1),
     });
     const decoded = decodeQuery({
       schema: machines(),
@@ -398,7 +401,7 @@ describe("decodeQuery", () => {
     const decoded = decodeQuery({
       schema: machines(),
       params: new URLSearchParams("sort=cpu__asc&sort=name__desc"),
-      capabilities: declaring({ sort: sorting(["status"]) }),
+      capabilities: declareCapabilities({ sort: declareSorting(["status"]) }),
     });
     expect(decoded.issues).toEqual([
       { parameter: "sort", reason: 'field "cpu" cannot be sorted' },
@@ -427,7 +430,7 @@ describe("decodeQuery", () => {
     const decoded = decodeQuery({
       schema: machines(),
       params: new URLSearchParams("sort=cpu__asc&sort=name__desc"),
-      capabilities: declaring({ sort: sorting(["cpu"]) }),
+      capabilities: declareCapabilities({ sort: declareSorting(["cpu"]) }),
     });
     expect(decoded.slice.sort).toEqual([]);
     expect(decoded.issues).toEqual([
@@ -439,7 +442,7 @@ describe("decodeQuery", () => {
     const decoded = decodeQuery({
       schema: machines(),
       params: new URLSearchParams("group=status&group=region"),
-      capabilities: declaring({
+      capabilities: declareCapabilities({
         group: {
           fields: ["status"],
           depth: 2,
@@ -458,7 +461,7 @@ describe("decodeQuery", () => {
     const decoded = decodeQuery({
       schema: machines(),
       params: new URLSearchParams("group=status&group=owner"),
-      capabilities: declaring({
+      capabilities: declareCapabilities({
         group: {
           fields: ["status", "owner"],
           depth: 2,
