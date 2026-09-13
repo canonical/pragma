@@ -3,7 +3,7 @@ import {
   declareCapabilities,
   declareSorting,
 } from "../../../testing/fixtures.js";
-import type { PredicateOperator, SortTerm } from "../query/types.js";
+import type { PredicateOperator, SortTerm } from "../query/index.js";
 import copyCapabilities from "./copyCapabilities.js";
 import type { SourceCapabilities } from "./types.js";
 

@@ -1,8 +1,10 @@
 import type { RowModel } from "@canonical/dataviews-core";
-import type { MountedRange } from "@canonical/dataviews-core/virtualization";
-import { createVirtualRange } from "@canonical/dataviews-core/virtualization";
-import type { FocusEvent } from "react";
 import {
+  createVirtualRange,
+  type MountedRange,
+} from "@canonical/dataviews-core/virtualization";
+import {
+  type FocusEvent,
   useCallback,
   useLayoutEffect,
   useMemo,

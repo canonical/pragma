@@ -4,7 +4,7 @@
  * sorting and windowing all move records between positions.
  */
 
-import type { ReadonlyChannel } from "../observable/createChannel.js";
+import type { ReadonlyChannel } from "../observable/index.js";
 
 /**
  * The default row shape: a plain record keyed by field name. Rows are

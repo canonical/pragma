@@ -1,5 +1,8 @@
-import type { Slice, SortTerm } from "../query/index.js";
-import { collapseSortTerms } from "../query/index.js";
+import {
+  collapseSortTerms,
+  type Slice,
+  type SortTerm,
+} from "../query/index.js";
 import type { EffectiveOrdering, SortCapabilities } from "./types.js";
 
 /**

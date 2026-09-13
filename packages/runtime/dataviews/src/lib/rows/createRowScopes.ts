@@ -1,6 +1,9 @@
-import type { Channel, ReadonlyChannel } from "../observable/createChannel.js";
-import createChannel from "../observable/createChannel.js";
-import type { Selection } from "../selection/createSelection.js";
+import {
+  type Channel,
+  createChannel,
+  type ReadonlyChannel,
+} from "../observable/index.js";
+import type { Selection } from "../selection/index.js";
 import readField from "./readField.js";
 import type { RowModel, RowScope } from "./types.js";
 

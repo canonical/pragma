@@ -1,9 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import DEFAULT_WINDOW from "../query/defaultWindow.js";
-import type { Slice, SortTerm } from "../query/types.js";
-import type { SourceDelivery } from "../result/types.js";
-import type { RowRecord } from "../rows/types.js";
-import createSchema from "../schema/createSchema.js";
+import { DEFAULT_WINDOW, type Slice, type SortTerm } from "../query/index.js";
+import type { SourceDelivery } from "../result/index.js";
+import type { RowRecord } from "../rows/index.js";
+import { createSchema } from "../schema/index.js";
 import { ROOT_NUMERIC_COLLATION } from "./constants.js";
 import createArraySource from "./createArraySource.js";
 import type { SourceActionRunner, SourceRequest } from "./types.js";

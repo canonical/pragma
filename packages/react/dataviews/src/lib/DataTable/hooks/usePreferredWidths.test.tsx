@@ -3,14 +3,12 @@
  * widths within their declared bounds, and a committed resize saved back.
  */
 
-import type {
-  ProviderViews,
-  ViewPresentation,
-  ViewStore,
-} from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
+  type ProviderViews,
+  type ViewPresentation,
+  type ViewStore,
 } from "@canonical/dataviews-core";
 import { createColumnLayout } from "@canonical/dataviews-core/bindings";
 import { act, renderHook, waitFor } from "@testing-library/react";

@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import * as root from "../../index.js";
-import windowed from "../DataTable/windowed.js";
+import { windowed } from "../DataTable/index.js";
 import { VirtualBody } from "./common/index.js";
 import * as entry from "./index.js";
 import virtualRows from "./virtualRows.js";

@@ -1,6 +1,5 @@
 import { Button } from "@canonical/react-ds-global";
-import type { ReactElement } from "react";
-import { useId, useLayoutEffect, useRef } from "react";
+import { type ReactElement, useId, useLayoutEffect, useRef } from "react";
 import type { DeleteConfirmProps } from "./types.js";
 
 const componentCssClassName = "ds data-views-views-confirm";

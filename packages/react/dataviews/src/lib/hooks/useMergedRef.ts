@@ -1,6 +1,5 @@
-import type { Ref } from "react";
-import { useCallback, useRef } from "react";
-import applyRef from "./applyRef.js";
+import { type Ref, useCallback, useRef } from "react";
+import { applyRef } from "../utils/index.js";
 
 /**
  * One callback ref that serves the caller and the part at once: the node

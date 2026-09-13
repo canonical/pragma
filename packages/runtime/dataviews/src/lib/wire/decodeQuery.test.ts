@@ -9,9 +9,8 @@ import {
   declareCapabilities,
   declareSorting,
 } from "../../../testing/fixtures.js";
-import DEFAULT_WINDOW from "../query/defaultWindow.js";
-import type { ResultWindow } from "../query/types.js";
-import createSchema from "../schema/createSchema.js";
+import { DEFAULT_WINDOW, type ResultWindow } from "../query/index.js";
+import { createSchema } from "../schema/index.js";
 import decodeQuery from "./decodeQuery.js";
 import encodeQuery from "./encodeQuery.js";
 

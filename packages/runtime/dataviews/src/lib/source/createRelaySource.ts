@@ -1,8 +1,11 @@
-import canonicalSlice from "../query/canonicalSlice.js";
-import stableJson from "../query/stableJson.js";
-import type { Query, Slice } from "../query/types.js";
-import type { Count, SourceDelivery, SourceRefusal } from "../result/types.js";
-import type { RowRecord } from "../rows/types.js";
+import {
+  canonicalSlice,
+  type Query,
+  type Slice,
+  stableJson,
+} from "../query/index.js";
+import type { Count, SourceDelivery, SourceRefusal } from "../result/index.js";
+import type { RowRecord } from "../rows/index.js";
 import copyCapabilities from "./copyCapabilities.js";
 import reasonOf from "./reasonOf.js";
 import type {

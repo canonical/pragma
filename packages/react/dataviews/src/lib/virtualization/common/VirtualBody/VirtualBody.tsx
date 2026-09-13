@@ -1,7 +1,6 @@
-import type { ReactElement } from "react";
-import { memo } from "react";
-import { Row, StatusRow } from "../../../DataTable/common/index.js";
-import useDataViewsValue from "../../../DataViews/hooks/useDataViewsValue.js";
+import { memo, type ReactElement } from "react";
+import { Row, StatusRow } from "../../../DataTable/index.js";
+import { useDataViewsValue } from "../../../DataViews/hooks/index.js";
 import { useVirtualRows } from "../../hooks/index.js";
 import type { VirtualBodyProps } from "./types.js";
 import "./styles.css";

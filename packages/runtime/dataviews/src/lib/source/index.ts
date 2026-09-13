@@ -1,3 +1,4 @@
+export { default as copyCapabilities } from "./copyCapabilities.js";
 export type { ArraySource, ArraySourceConfig } from "./createArraySource.js";
 export { default as createArraySource } from "./createArraySource.js";
 export type { QuerySourceConfig } from "./createQuerySource.js";
@@ -12,5 +13,6 @@ export type {
 export { default as createSourceBinding } from "./createSourceBinding.js";
 export type { ExecuteSliceConfig } from "./executeSlice.js";
 export { default as executeSlice } from "./executeSlice.js";
+export { default as reasonOf } from "./reasonOf.js";
 export { default as supportsRequest } from "./supportsRequest.js";
 export type * from "./types.js";

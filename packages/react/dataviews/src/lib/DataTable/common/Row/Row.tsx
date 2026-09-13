@@ -1,6 +1,5 @@
-import type { ReactElement } from "react";
-import { memo } from "react";
-import useDataViewsValue from "../../../DataViews/hooks/useDataViewsValue.js";
+import { memo, type ReactElement } from "react";
+import { useDataViewsValue } from "../../../DataViews/hooks/index.js";
 import { BodyCell } from "../BodyCell/index.js";
 import { SelectionCell } from "../SelectionCell/index.js";
 import type { RowProps } from "./types.js";

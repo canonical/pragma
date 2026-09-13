@@ -1,9 +1,12 @@
-import type { ReadonlyChannel } from "../observable/createChannel.js";
-import readField from "../rows/readField.js";
-import type { Applicability, RowModel, RowRecord } from "../rows/types.js";
-import type { Schema } from "../schema/createSchema.js";
-import type { SchemaFieldDefinition } from "../schema/types.js";
-import type { Selection } from "../selection/createSelection.js";
+import type { ReadonlyChannel } from "../observable/index.js";
+import {
+  type Applicability,
+  type RowModel,
+  type RowRecord,
+  readField,
+} from "../rows/index.js";
+import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
+import type { Selection } from "../selection/index.js";
 import type { DeclaredRecordTypes } from "./types.js";
 
 /** Configuration of one collection's record typing. */

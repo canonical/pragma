@@ -1,7 +1,7 @@
 import { Button } from "@canonical/react-ds-global";
 import { SelectInput } from "@canonical/react-ds-global-form";
-import type { ReactElement } from "react";
 import {
+  type ReactElement,
   useContext,
   useEffect,
   useId,
@@ -9,10 +9,9 @@ import {
   useRef,
   useState,
 } from "react";
+import { composeSentence, pluralizeNoun } from "../../../utils/index.js";
 import DataViewsContext from "../../Context.js";
 import useDataViewsValue from "../../hooks/useDataViewsValue.js";
-import pluralNoun from "../../pluralNoun.js";
-import sentenceOf from "../../sentenceOf.js";
 import { DeleteConfirm, NameForm } from "./common/index.js";
 import type { DataViewsViewsProps } from "./types.js";
 import viewStatusText from "./viewStatusText.js";
@@ -138,7 +137,7 @@ export default function Views({
       ? views.rename(name)
       : views.saveAs(name));
     if (outcome.status === "invalid") {
-      return sentenceOf(outcome.reason);
+      return composeSentence(outcome.reason);
     }
     if (outcome.status === "saved") {
       closePanel();
@@ -300,7 +299,7 @@ export default function Views({
               <p>{`Saved views are unavailable: ${listing.reason}.`}</p>
             ) : null}
             {unreadable > 0 ? (
-              <p>{`${unreadable} saved ${pluralNoun(unreadable, "view")} cannot be read.`}</p>
+              <p>{`${unreadable} saved ${pluralizeNoun(unreadable, "view")} cannot be read.`}</p>
             ) : null}
             {state.presentationFailure === null ? null : (
               <p>{`Column widths are not being saved: ${state.presentationFailure}.`}</p>

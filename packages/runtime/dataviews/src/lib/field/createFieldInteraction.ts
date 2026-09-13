@@ -4,7 +4,7 @@ import type {
   PredicateOperand,
   PredicateOperator,
   QueryCommand,
-} from "../query/types.js";
+} from "../query/index.js";
 
 /** Result of validating one text input. */
 export type FieldValidation =

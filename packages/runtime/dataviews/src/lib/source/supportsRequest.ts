@@ -1,7 +1,6 @@
-import plural from "../plural.js";
-import canonicalSlice from "../query/canonicalSlice.js";
-import type { Query } from "../query/types.js";
-import type { SourceRefusal } from "../result/types.js";
+import { canonicalSlice, type Query } from "../query/index.js";
+import type { SourceRefusal } from "../result/index.js";
+import pluralize from "./pluralize.js";
 import type { SourceCapabilities } from "./types.js";
 
 const refusal = (
@@ -77,7 +76,7 @@ export default function supportsRequest(
         "too-many-terms",
         terms === 0
           ? "this source cannot sort"
-          : `this source orders by at most ${plural(terms, "term")}`,
+          : `this source orders by at most ${pluralize(terms, "term")}`,
       ),
     );
   }
@@ -106,7 +105,7 @@ export default function supportsRequest(
         "too-deep",
         depth === 0
           ? "this source cannot group"
-          : `this source groups by at most ${plural(depth, "level")}`,
+          : `this source groups by at most ${pluralize(depth, "level")}`,
       ),
     );
   }

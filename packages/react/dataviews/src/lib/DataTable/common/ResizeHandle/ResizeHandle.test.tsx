@@ -3,13 +3,11 @@
  * and must leave the authoritative layout alone until it commits.
  * Pointer previews are coalesced to one publication per animation frame.
  */
-import type {
-  ColumnLayout,
-  GridInteraction,
-} from "@canonical/dataviews-core/bindings";
 import {
+  type ColumnLayout,
   createColumnLayout,
   createGridInteraction,
+  type GridInteraction,
 } from "@canonical/dataviews-core/bindings";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

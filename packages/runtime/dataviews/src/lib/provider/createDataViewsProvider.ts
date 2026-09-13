@@ -1,44 +1,46 @@
-import type {
-  CollectionCoordinator,
-  CollectionState,
-} from "../collection/createCollectionCoordinator.js";
-import createCollectionCoordinator from "../collection/createCollectionCoordinator.js";
-import type { FieldInteractionState } from "../field/createFieldInteraction.js";
-import createFieldInteraction from "../field/createFieldInteraction.js";
+import {
+  type CollectionCoordinator,
+  type CollectionState,
+  createCollectionCoordinator,
+} from "../collection/index.js";
+import {
+  createFieldInteraction,
+  type FieldInteractionState,
+} from "../field/index.js";
 import { createIdentity } from "../identity/index.js";
-import type { Channel } from "../observable/createChannel.js";
-import createChannel from "../observable/createChannel.js";
-import type { ActionInvocation } from "../operation/createOperation.js";
-import createOperation from "../operation/createOperation.js";
-import canonicalSlice, { predicateAddress } from "../query/canonicalSlice.js";
+import { type Channel, createChannel } from "../observable/index.js";
+import { type ActionInvocation, createOperation } from "../operation/index.js";
+import {
+  canonicalSlice,
+  type GroupPath,
+  type GroupTerm,
+  type Predicate,
+  type PredicateOperand,
+  type PredicateOperator,
+  predicateAddress,
+  type Query,
+  type ResultWindow,
+  type Slice,
+  type SortTerm,
+  type WindowNavigation,
+} from "../query/index.js";
+import type { Completion } from "../result/index.js";
+import {
+  type Applicability,
+  createRowModel,
+  EMPTY_ROW_MODEL,
+  type RowIdentifier,
+  type RowModel,
+  type RowRecord,
+} from "../rows/index.js";
 import type {
-  GroupPath,
-  GroupTerm,
-  Predicate,
-  PredicateOperand,
-  PredicateOperator,
-  Query,
-  ResultWindow,
-  Slice,
-  SortTerm,
-  WindowNavigation,
-} from "../query/types.js";
-import type { Completion } from "../result/types.js";
-import createRowModel from "../rows/createRowModel.js";
-import EMPTY_ROW_MODEL from "../rows/emptyRowModel.js";
-import type {
-  Applicability,
-  RowIdentifier,
-  RowModel,
-  RowRecord,
-} from "../rows/types.js";
-import type { Schema } from "../schema/createSchema.js";
-import type { EmptyOr, SchemaFieldDefinition } from "../schema/types.js";
-import createSelection from "../selection/createSelection.js";
-import copyCapabilities from "../source/copyCapabilities.js";
-import type { SourceCapabilities } from "../source/types.js";
-import createProviderViews from "../views/createProviderViews.js";
-import type { ViewStore } from "../views/types.js";
+  EmptyOr,
+  Schema,
+  SchemaFieldDefinition,
+} from "../schema/index.js";
+import { createSelection } from "../selection/index.js";
+import { copyCapabilities, type SourceCapabilities } from "../source/index.js";
+import { createProviderViews, type ViewStore } from "../views/index.js";
 import createRecordTyping from "./createRecordTyping.js";
 import type { DataViewsProvider, FieldHandle, RecordTypes } from "./types.js";
 

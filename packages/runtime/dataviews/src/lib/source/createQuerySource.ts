@@ -1,7 +1,6 @@
-import canonicalSlice from "../query/canonicalSlice.js";
-import type { Query } from "../query/types.js";
-import type { SourcePage, SourceRefusal } from "../result/types.js";
-import type { RowRecord } from "../rows/types.js";
+import { canonicalSlice, type Query } from "../query/index.js";
+import type { SourcePage, SourceRefusal } from "../result/index.js";
+import type { RowRecord } from "../rows/index.js";
 import copyCapabilities from "./copyCapabilities.js";
 import reasonOf from "./reasonOf.js";
 import type {

@@ -1,33 +1,34 @@
-import type {
-  ActionCapabilities,
-  RowRecord,
-  SourceBinding,
-} from "@canonical/dataviews-core";
 import {
+  type ActionCapabilities,
   createArraySource,
   createDataViewsProvider,
   createSourceBinding,
   DEFAULT_WINDOW,
+  type RowRecord,
+  type SourceBinding,
 } from "@canonical/dataviews-core";
-import type { ButtonProps } from "@canonical/react-ds-global";
-import { Button } from "@canonical/react-ds-global";
+import { Button, type ButtonProps } from "@canonical/react-ds-global";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { ReactElement, ReactNode } from "react";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import {
+  type ReactElement,
+  type ReactNode,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import { consumerCode } from "../../../../storybook/machines/consumerCode.js";
-import type { MachineFields } from "../../../../storybook/machines/fixtures.js";
 import {
+  type MachineFields,
   machineSchema,
   machines,
 } from "../../../../storybook/machines/fixtures.js";
-import type { MachineProvider } from "../../../../storybook/machines/story-utils.js";
 import {
   hostName,
+  type MachineProvider,
   withAppScope,
 } from "../../../../storybook/machines/story-utils.js";
-import DataTable from "../../../DataTable/DataTable.js";
-import type { DataTableColumn } from "../../../DataTable/types.js";
+import { DataTable, type DataTableColumn } from "../../../DataTable/index.js";
 import useDataViews from "../../hooks/useDataViews.js";
 import DataViews from "../../Provider.js";
 import Pagination from "../Pagination/Pagination.js";

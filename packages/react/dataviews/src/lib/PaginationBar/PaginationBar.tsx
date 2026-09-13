@@ -7,10 +7,17 @@ import type {
 import { isIdentity, sliceEquals } from "@canonical/dataviews-core/bindings";
 import { Button } from "@canonical/react-ds-global";
 import { SelectInput } from "@canonical/react-ds-global-form";
-import type { FocusEvent, ReactElement } from "react";
-import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
-import useDataViewsValue from "../DataViews/hooks/useDataViewsValue.js";
-import pluralNoun from "../DataViews/pluralNoun.js";
+import {
+  type FocusEvent,
+  type ReactElement,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useDataViewsValue } from "../DataViews/hooks/index.js";
+import { pluralizeNoun } from "../utils/index.js";
 import type { PaginationState } from "./paginationState.js";
 import paginationState from "./paginationState.js";
 import type { PaginationBarProps } from "./types.js";
@@ -38,7 +45,7 @@ const summaryOf = ({ page, size, shown, total }: PaginationState): string => {
   const range = shown === 0 ? "0" : `${first}–${first + shown - 1}`;
   return total === null
     ? `Showing ${range} items`
-    : `Showing ${range} out of ${total} ${pluralNoun(total, "item")}`;
+    : `Showing ${range} out of ${total} ${pluralizeNoun(total, "item")}`;
 };
 
 /** A settled page count, and the scope, query and page size that made it. */
@@ -189,7 +196,7 @@ export default function PaginationBar<
           />
           {pages === null ? null : (
             <span id={totalId} className="total">
-              {`of ${pages} ${pluralNoun(pages, "page")}`}
+              {`of ${pages} ${pluralizeNoun(pages, "page")}`}
             </span>
           )}
         </div>

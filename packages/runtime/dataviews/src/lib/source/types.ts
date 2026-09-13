@@ -6,15 +6,15 @@
  * runs a competing one.
  */
 
-import type { OperationOutcome } from "../operation/createOperation.js";
+import type { OperationOutcome } from "../operation/index.js";
 import type {
   PredicateOperator,
   Query,
   Slice,
   SortTerm,
-} from "../query/types.js";
-import type { SourceDelivery, SourceRefusal } from "../result/types.js";
-import type { RowRecord } from "../rows/types.js";
+} from "../query/index.js";
+import type { SourceDelivery, SourceRefusal } from "../result/index.js";
+import type { RowRecord } from "../rows/index.js";
 
 /** One executable request: the issued identity and the query it addresses. */
 export type SourceRequest = Query & {

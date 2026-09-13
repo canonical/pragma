@@ -1,4 +1,4 @@
-import type { DisplayEntry } from "../rows/types.js";
+import type { DisplayEntry } from "../rows/index.js";
 import type { SizeIndex } from "./createSizeIndex.js";
 import createSizeIndex from "./createSizeIndex.js";
 import type {

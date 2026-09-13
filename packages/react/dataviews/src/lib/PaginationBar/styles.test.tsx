@@ -13,11 +13,11 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { SourcePage } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
   DEFAULT_WINDOW,
+  type SourcePage,
 } from "@canonical/dataviews-core";
 import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";

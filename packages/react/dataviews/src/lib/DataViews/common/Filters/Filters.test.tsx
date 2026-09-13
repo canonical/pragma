@@ -4,14 +4,12 @@
  * invalid input that keeps the restriction already in force. Each case is
  * mutation-tested against that contract.
  */
-import type {
-  DataViewsProvider,
-  SourceCapabilities,
-} from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
+  type DataViewsProvider,
   DEFAULT_WINDOW,
+  type SourceCapabilities,
 } from "@canonical/dataviews-core";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { StrictMode } from "react";

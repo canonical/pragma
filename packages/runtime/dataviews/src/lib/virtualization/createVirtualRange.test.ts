@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import displayEntries from "../rows/displayEntries.js";
+import { displayEntries } from "../rows/index.js";
 import createVirtualRange from "./createVirtualRange.js";
 
 /** Row identities `r-0` to `r-<count - 1>`. */

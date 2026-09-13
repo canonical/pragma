@@ -1,21 +1,18 @@
-import type { CollectionState } from "../collection/createCollectionCoordinator.js";
-import type { ReadonlyChannel } from "../observable/createChannel.js";
-import type {
-  ActionInvocation,
-  Operation,
-} from "../operation/createOperation.js";
-import plural from "../plural.js";
-import type { PredicateOperator, Query } from "../query/types.js";
+import type { CollectionState } from "../collection/index.js";
+import type { ReadonlyChannel } from "../observable/index.js";
+import type { ActionInvocation, Operation } from "../operation/index.js";
+import type { PredicateOperator, Query } from "../query/index.js";
 import type {
   Completion,
   Count,
   SourceCounts,
   SourceDelivery,
   SourceRefusal,
-} from "../result/types.js";
-import type { RowRecord } from "../rows/types.js";
-import type { Selection } from "../selection/createSelection.js";
+} from "../result/index.js";
+import type { RowRecord } from "../rows/index.js";
+import type { Selection } from "../selection/index.js";
 import copyCapabilities from "./copyCapabilities.js";
+import pluralize from "./pluralize.js";
 import reasonOf from "./reasonOf.js";
 import supportsRequest from "./supportsRequest.js";
 import type {
@@ -399,7 +396,7 @@ export default function createSourceBinding<TRow extends object = RowRecord>(
       const { limit } = declared;
       if (limit !== null && targets.ids.length > limit) {
         throw new Error(
-          `"${request.action}" addresses at most ${plural(limit, "row")} at a time`,
+          `"${request.action}" addresses at most ${pluralize(limit, "row")} at a time`,
         );
       }
       const operation = host.invokeAction({

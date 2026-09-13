@@ -1,7 +1,11 @@
-import type { Slice, SortTerm } from "../query/index.js";
-import { applyWindow, collapseSortTerms } from "../query/index.js";
-import type { SourceDelivery } from "../result/types.js";
-import type { RowRecord } from "../rows/types.js";
+import {
+  applyWindow,
+  collapseSortTerms,
+  type Slice,
+  type SortTerm,
+} from "../query/index.js";
+import type { SourceDelivery } from "../result/index.js";
+import type { RowRecord } from "../rows/index.js";
 import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
 import { ROOT_NUMERIC_COLLATION } from "./constants.js";
 import copyCapabilities from "./copyCapabilities.js";

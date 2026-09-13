@@ -1,16 +1,14 @@
-import type {
-  CollectionState,
-  Count,
-  PageCursors,
-  ResultWindow,
-  SourceCapabilities,
-  SourceCounts,
-  SourcePage,
-} from "@canonical/dataviews-core";
 import {
+  type CollectionState,
+  type Count,
   createDataViewsProvider,
   createSchema,
   DEFAULT_WINDOW,
+  type PageCursors,
+  type ResultWindow,
+  type SourceCapabilities,
+  type SourceCounts,
+  type SourcePage,
 } from "@canonical/dataviews-core";
 import { describe, expect, it } from "vitest";
 import { exact } from "../capabilities.fixtures.js";

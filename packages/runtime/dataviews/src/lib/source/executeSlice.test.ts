@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { declareSorting } from "../../../testing/fixtures.js";
-import type { Slice, SortTerm } from "../query/types.js";
-import createSchema from "../schema/createSchema.js";
+import type { Slice, SortTerm } from "../query/index.js";
+import { createSchema } from "../schema/index.js";
 import type { ExecuteSliceConfig } from "./executeSlice.js";
 import executeSlice from "./executeSlice.js";
 

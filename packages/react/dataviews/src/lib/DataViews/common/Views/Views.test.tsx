@@ -3,15 +3,13 @@
  * which the shipped store never falls back to — so every outcome can be
  * brought about on cue: a conflict, a rejection, an unreadable record.
  */
-import type {
-  DataViewsProvider,
-  SavedView,
-  ViewStore,
-} from "@canonical/dataviews-core";
 import {
   createArraySource,
   createDataViewsProvider,
   createSchema,
+  type DataViewsProvider,
+  type SavedView,
+  type ViewStore,
 } from "@canonical/dataviews-core";
 import {
   act,

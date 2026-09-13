@@ -5,8 +5,8 @@
  * accepting the case.
  */
 import { describe, expect, it } from "vitest";
-import type { RowRecord } from "../rows/types.js";
-import createSchema from "../schema/createSchema.js";
+import type { RowRecord } from "../rows/index.js";
+import { createSchema } from "../schema/index.js";
 import type { DiscriminatorField } from "./types.js";
 
 const instances = createSchema([

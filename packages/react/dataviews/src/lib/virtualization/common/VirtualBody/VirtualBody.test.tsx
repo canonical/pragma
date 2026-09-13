@@ -7,14 +7,13 @@
  * jsdom lays nothing out, so the viewport's height, its scroll position
  * and every row's measured size are the test's to set.
  */
-import type { DataViewsProvider } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
+  type DataViewsProvider,
 } from "@canonical/dataviews-core";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import type { ReactElement } from "react";
-import { StrictMode } from "react";
+import { type ReactElement, StrictMode } from "react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -23,12 +22,12 @@ import {
   declaring,
   sorting,
 } from "../../../capabilities.fixtures.js";
-import DataTable from "../../../DataTable/DataTable.js";
-import type {
-  DataTableCellProps,
-  DataTableColumn,
-  DataTableProps,
-} from "../../../DataTable/types.js";
+import {
+  DataTable,
+  type DataTableCellProps,
+  type DataTableColumn,
+  type DataTableProps,
+} from "../../../DataTable/index.js";
 import virtualRows from "../../virtualRows.js";
 
 const schema = createSchema([

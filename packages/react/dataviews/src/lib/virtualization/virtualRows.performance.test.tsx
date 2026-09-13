@@ -6,18 +6,18 @@
  * mounting that leaves nothing subscribed. Layout, paint and latency need
  * a browser and are not measured here.
  */
-import type { DataViewsProvider } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
+  type DataViewsProvider,
 } from "@canonical/dataviews-core";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import DataTable from "../DataTable/DataTable.js";
-import type {
-  DataTableCellProps,
-  DataTableColumn,
-} from "../DataTable/types.js";
+import {
+  DataTable,
+  type DataTableCellProps,
+  type DataTableColumn,
+} from "../DataTable/index.js";
 import virtualRows from "./virtualRows.js";
 
 const schema = createSchema([

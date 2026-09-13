@@ -1,3 +1,5 @@
+export type { CellScopeValue } from "./CellScopeContext.js";
+export { default as CellScopeContext } from "./CellScopeContext.js";
 export type { DataViewsActionsProps } from "./common/Actions/index.js";
 export type { DataViewsDataTableProps } from "./common/DataTable/index.js";
 export type { DataViewsFiltersProps } from "./common/Filters/index.js";

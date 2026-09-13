@@ -3,22 +3,23 @@ import {
   declareCapabilities,
   declareSorting,
 } from "../../../testing/fixtures.js";
-import type { CollectionState } from "../collection/createCollectionCoordinator.js";
-import createCollectionCoordinator from "../collection/createCollectionCoordinator.js";
-import createChannel, { type Channel } from "../observable/createChannel.js";
-import createOperation from "../operation/createOperation.js";
-import createDataViewsProvider from "../provider/createDataViewsProvider.js";
-import DEFAULT_WINDOW from "../query/defaultWindow.js";
-import type { Slice } from "../query/types.js";
+import {
+  type CollectionState,
+  createCollectionCoordinator,
+} from "../collection/index.js";
+import { type Channel, createChannel } from "../observable/index.js";
+import { createOperation } from "../operation/index.js";
+import { createDataViewsProvider } from "../provider/index.js";
+import { DEFAULT_WINDOW, type Slice } from "../query/index.js";
 import type {
   Count,
   SourceDelivery,
   SourcePage,
   SourceRefusal,
-} from "../result/types.js";
-import type { RowRecord } from "../rows/types.js";
-import createSchema from "../schema/createSchema.js";
-import createSelection from "../selection/createSelection.js";
+} from "../result/index.js";
+import type { RowRecord } from "../rows/index.js";
+import { createSchema } from "../schema/index.js";
+import { createSelection } from "../selection/index.js";
 import createArraySource from "./createArraySource.js";
 import createSourceBinding, { type SourceHost } from "./createSourceBinding.js";
 import type {

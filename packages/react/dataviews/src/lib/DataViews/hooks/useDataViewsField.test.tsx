@@ -1,7 +1,7 @@
-import type { DataViewsProvider } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
+  type DataViewsProvider,
 } from "@canonical/dataviews-core";
 import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";

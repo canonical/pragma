@@ -1,7 +1,12 @@
 import { Button } from "@canonical/react-ds-global";
 import { TextInput } from "@canonical/react-ds-global-form";
-import type { ReactElement } from "react";
-import { useId, useLayoutEffect, useRef, useState } from "react";
+import {
+  type ReactElement,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import type { NameFormProps } from "./types.js";
 
 const componentCssClassName = "ds data-views-views-name-form";

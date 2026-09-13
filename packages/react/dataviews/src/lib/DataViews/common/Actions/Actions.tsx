@@ -1,10 +1,9 @@
 import { Button } from "@canonical/react-ds-global";
-import type { ReactElement } from "react";
-import { useCallback, useContext, useRef } from "react";
-import useMergedRef from "../../../useMergedRef.js";
+import { type ReactElement, useCallback, useContext, useRef } from "react";
+import { useMergedRef } from "../../../hooks/index.js";
+import { pluralizeNoun } from "../../../utils/index.js";
 import DataViewsContext from "../../Context.js";
 import useDataViewsValue from "../../hooks/useDataViewsValue.js";
-import pluralNoun from "../../pluralNoun.js";
 import type { DataViewsActionsProps } from "./types.js";
 import "./styles.css";
 
@@ -95,7 +94,7 @@ export default function Actions({
         importance="tertiary"
         icon="close"
         className="deselect"
-        aria-label={`Deselect ${count} ${pluralNoun(count, "item")}`}
+        aria-label={`Deselect ${count} ${pluralizeNoun(count, "item")}`}
         onClick={() => {
           selection.clear();
         }}

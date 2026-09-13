@@ -1,4 +1,4 @@
-import reasonOf from "../source/reasonOf.js";
+import { reasonOf } from "../source/index.js";
 import type {
   JsonValue,
   PreferenceResult,
@@ -12,7 +12,7 @@ import type {
   ViewRemoveResult,
   ViewStore,
   ViewUpdateResult,
-} from "../views/types.js";
+} from "../views/index.js";
 
 /**
  * An event-handler slot. The parameter is `never` so the platform's own

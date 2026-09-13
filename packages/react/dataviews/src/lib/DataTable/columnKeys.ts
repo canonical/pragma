@@ -1,8 +1,8 @@
-import type {
-  ColumnSizing,
-  ColumnToSize,
+import {
+  type ColumnSizing,
+  type ColumnToSize,
+  sizingEquals,
 } from "@canonical/dataviews-core/bindings";
-import { sizingEquals } from "@canonical/dataviews-core/bindings";
 import type { DataTableColumn } from "./types.js";
 
 /**

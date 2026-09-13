@@ -6,10 +6,11 @@
  * failure. Each case is driven through a real provider rather than a
  * hand-built snapshot.
  */
-import type { Completion, SourceRefusal } from "@canonical/dataviews-core";
 import {
+  type Completion,
   createDataViewsProvider,
   createSchema,
+  type SourceRefusal,
 } from "@canonical/dataviews-core";
 import { describe, expect, it } from "vitest";
 import { delivered, exact } from "../capabilities.fixtures.js";

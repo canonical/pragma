@@ -12,11 +12,13 @@
 
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import createIndexedDBViewStore from "../../lib/indexeddb/createIndexedDBViewStore.js";
-import createDataViewsProvider from "../../lib/provider/createDataViewsProvider.js";
-import type { DataViewsProvider } from "../../lib/provider/types.js";
-import createSchema from "../../lib/schema/createSchema.js";
-import type { ViewStore } from "../../lib/views/types.js";
+import { createIndexedDBViewStore } from "../../lib/indexeddb/index.js";
+import {
+  createDataViewsProvider,
+  type DataViewsProvider,
+} from "../../lib/provider/index.js";
+import { createSchema } from "../../lib/schema/index.js";
+import type { ViewStore } from "../../lib/views/index.js";
 
 const schema = createSchema([{ field: "cpu", kind: "number" }]);
 const database = "operations-console";

@@ -2,8 +2,7 @@ import type {
   PredicateOperand,
   PredicateOperator,
 } from "@canonical/dataviews-core";
-import type { ReactElement } from "react";
-import { Fragment, useContext } from "react";
+import { Fragment, type ReactElement, useContext } from "react";
 import DataViewsContext from "../../Context.js";
 import { BoundFilter, ChoicesFilter, FlagFilter } from "./common/index.js";
 import handleFor from "./handleFor.js";

@@ -4,17 +4,16 @@ import {
   DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { ReactElement } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { type ReactElement, useEffect, useMemo, useState } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import { consumerCode } from "../../storybook/machines/consumerCode.js";
-import type { MachineProvider } from "../../storybook/machines/story-utils.js";
 import {
   hostName,
+  type MachineProvider,
   useMachineProvider,
   withAppScope,
 } from "../../storybook/machines/story-utils.js";
-import type { DataTableColumn } from "../DataTable/types.js";
+import type { DataTableColumn } from "../DataTable/index.js";
 import useDataViewsValue from "./hooks/useDataViewsValue.js";
 import Component from "./Provider.js";
 
@@ -171,7 +170,6 @@ export const QueryInTheUrl: Story = {
   type PlatformLocation,
 } from "@canonical/dataviews-core";
 import { useDataViewsValue } from "@canonical/dataviews-react";
-import { useEffect, useMemo } from "react";
 import { machineSchema } from "./machines.js";
 
 type MachinesProvider = DataViewsProvider<typeof machineSchema.fields>;

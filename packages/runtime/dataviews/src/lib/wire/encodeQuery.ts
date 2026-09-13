@@ -1,5 +1,4 @@
-import canonicalSlice from "../query/canonicalSlice.js";
-import type { PredicateOperand } from "../query/types.js";
+import { canonicalSlice, type PredicateOperand } from "../query/index.js";
 import type { EncodeQueryConfig } from "./types.js";
 import { isOwnedKey, OPERATOR_DELIMITER, wireKeyOf } from "./wireGrammar.js";
 

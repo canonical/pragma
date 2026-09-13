@@ -15,16 +15,20 @@ import {
   declareCapabilities,
   declareSorting,
 } from "../../../testing/fixtures.js";
-import createDataViewsProvider from "../provider/createDataViewsProvider.js";
-import DEFAULT_WINDOW from "../query/defaultWindow.js";
-import type { Query, ResultWindow, Slice } from "../query/types.js";
+import { createDataViewsProvider } from "../provider/index.js";
+import {
+  DEFAULT_WINDOW,
+  type Query,
+  type ResultWindow,
+  type Slice,
+} from "../query/index.js";
 import type {
   Count,
   SourceCounts,
   SourceDelivery,
   SourceRefusal,
-} from "../result/types.js";
-import createSchema from "../schema/createSchema.js";
+} from "../result/index.js";
+import { createSchema } from "../schema/index.js";
 import createRelaySource, {
   type RelayEnvironment,
   type RelayPageRequest,

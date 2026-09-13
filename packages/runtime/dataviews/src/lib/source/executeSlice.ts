@@ -1,7 +1,11 @@
-import canonicalSlice, { operandRankOf } from "../query/canonicalSlice.js";
-import type { Predicate, PredicateOperand, Slice } from "../query/types.js";
-import type { Schema } from "../schema/createSchema.js";
-import type { SchemaFieldDefinition } from "../schema/types.js";
+import {
+  canonicalSlice,
+  operandRankOf,
+  type Predicate,
+  type PredicateOperand,
+  type Slice,
+} from "../query/index.js";
+import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
 import orderRows from "./orderRows.js";
 import readProperty from "./readProperty.js";
 import resolveEffectiveOrdering from "./resolveEffectiveOrdering.js";

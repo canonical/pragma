@@ -2,25 +2,36 @@ import type {
   RowRecord,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
-import type { ColumnToSize } from "@canonical/dataviews-core/bindings";
 import {
+  type ColumnToSize,
   createColumnLayout,
   createGridInteraction,
   displayEntries,
   isIdentity,
 } from "@canonical/dataviews-core/bindings";
-import type { CSSProperties, ReactElement } from "react";
-import { useCallback, useEffect, useId, useMemo, useRef } from "react";
-import useDataViewsValue from "../DataViews/hooks/useDataViewsValue.js";
-import useMergedRef from "../useMergedRef.js";
+import {
+  type CSSProperties,
+  type ReactElement,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+} from "react";
+import { useDataViewsValue } from "../DataViews/hooks/index.js";
+import { useMergedRef } from "../hooks/index.js";
 import {
   boundsOf,
   sameColumnModel,
   sameColumns,
   sizingOf,
 } from "./columnKeys.js";
-import type { TableBodyProps } from "./common/index.js";
-import { HeaderCell, SelectAllCell, TableBody } from "./common/index.js";
+import {
+  HeaderCell,
+  SelectAllCell,
+  TableBody,
+  type TableBodyProps,
+} from "./common/index.js";
 import defaultStatusText from "./defaultStatusText.js";
 import {
   usePreferredWidths,

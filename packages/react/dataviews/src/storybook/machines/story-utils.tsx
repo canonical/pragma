@@ -1,22 +1,25 @@
-import type {
-  DataViewsProvider,
-  ResultWindow,
-  RowRecord,
-  Source,
-  ViewDraft,
-  ViewStore,
-} from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSourceBinding,
+  type DataViewsProvider,
   DEFAULT_WINDOW,
+  type ResultWindow,
+  type RowRecord,
+  type Source,
+  type ViewDraft,
+  type ViewStore,
 } from "@canonical/dataviews-core";
-import type { IndexedDBFactory } from "@canonical/dataviews-core/indexeddb";
-import { createIndexedDBViewStore } from "@canonical/dataviews-core/indexeddb";
+import {
+  createIndexedDBViewStore,
+  type IndexedDBFactory,
+} from "@canonical/dataviews-core/indexeddb";
 import type { Decorator } from "@storybook/react-vite";
 import { useEffect, useState } from "react";
-import type { MachineFields } from "./fixtures.js";
-import { createMachineSource, machineSchema } from "./fixtures.js";
+import {
+  createMachineSource,
+  type MachineFields,
+  machineSchema,
+} from "./fixtures.js";
 
 /**
  * Story machinery for the machine collection's stories — the table, its

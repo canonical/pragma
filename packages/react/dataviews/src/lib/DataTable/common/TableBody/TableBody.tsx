@@ -1,5 +1,4 @@
-import type { ReactElement } from "react";
-import { memo } from "react";
+import { memo, type ReactElement } from "react";
 import { Row } from "../Row/index.js";
 import { StatusRow } from "../StatusRow/index.js";
 import type { TableBodyProps } from "./types.js";

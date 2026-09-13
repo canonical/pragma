@@ -1,6 +1,6 @@
 import { forceCloseDatabase, IDBFactory, IDBObjectStore } from "fake-indexeddb";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { JsonValue, SavedView, ViewStore } from "../views/types.js";
+import type { JsonValue, SavedView, ViewStore } from "../views/index.js";
 import createIndexedDBViewStore, {
   type IndexedDBFactory,
   type IndexedDBViewStoreConfig,

@@ -7,12 +7,11 @@ import {
   declareCapabilities,
   declareSorting,
 } from "../../../testing/fixtures.js";
-import createDataViewsProvider from "../provider/createDataViewsProvider.js";
-import DEFAULT_WINDOW from "../query/defaultWindow.js";
-import type { Slice } from "../query/types.js";
-import type { SourceDelivery, SourcePage } from "../result/types.js";
-import type { RowRecord } from "../rows/types.js";
-import createSchema from "../schema/createSchema.js";
+import { createDataViewsProvider } from "../provider/index.js";
+import { DEFAULT_WINDOW, type Slice } from "../query/index.js";
+import type { SourceDelivery, SourcePage } from "../result/index.js";
+import type { RowRecord } from "../rows/index.js";
+import { createSchema } from "../schema/index.js";
 import createQuerySource, {
   type QueryObservation,
   type QueryObserver,

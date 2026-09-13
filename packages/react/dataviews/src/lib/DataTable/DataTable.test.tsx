@@ -4,16 +4,18 @@
  * unrelated change does no work, and one scope per row rather than one per
  * cell. Each case is mutation-tested against that contract.
  */
-import type { Completion, DataViewsProvider } from "@canonical/dataviews-core";
 import {
+  type Completion,
   createDataViewsProvider,
   createSchema,
+  type DataViewsProvider,
 } from "@canonical/dataviews-core";
-import type { ColumnLayout } from "@canonical/dataviews-core/bindings";
-import { createColumnLayout } from "@canonical/dataviews-core/bindings";
+import {
+  type ColumnLayout,
+  createColumnLayout,
+} from "@canonical/dataviews-core/bindings";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import type { ReactElement } from "react";
-import { createRef, StrictMode, useState } from "react";
+import { createRef, type ReactElement, StrictMode, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import {
   COUNTED_EXACTLY,
@@ -22,8 +24,7 @@ import {
   exact,
   sorting,
 } from "../capabilities.fixtures.js";
-import useDataViewsCell from "../DataViews/hooks/useDataViewsCell.js";
-import useDataViewsValue from "../DataViews/hooks/useDataViewsValue.js";
+import { useDataViewsCell, useDataViewsValue } from "../DataViews/index.js";
 import DataTable from "./DataTable.js";
 import type { DataTableCellProps, DataTableColumn } from "./types.js";
 

@@ -1,5 +1,4 @@
-import type { DataTableWindowing } from "../DataTable/types.js";
-import windowed from "../DataTable/windowed.js";
+import { type DataTableWindowing, windowed } from "../DataTable/index.js";
 import { VirtualBody } from "./common/index.js";
 import type { VirtualRowsConfig } from "./types.js";
 

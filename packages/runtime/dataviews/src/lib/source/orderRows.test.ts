@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { SortTerm } from "../query/types.js";
-import type { Schema } from "../schema/createSchema.js";
-import createSchema from "../schema/createSchema.js";
-import type { SchemaFieldDefinition } from "../schema/types.js";
+import type { SortTerm } from "../query/index.js";
+import {
+  createSchema,
+  type Schema,
+  type SchemaFieldDefinition,
+} from "../schema/index.js";
 import { ROOT_NUMERIC_COLLATION } from "./constants.js";
 import orderRows from "./orderRows.js";
 import readProperty from "./readProperty.js";

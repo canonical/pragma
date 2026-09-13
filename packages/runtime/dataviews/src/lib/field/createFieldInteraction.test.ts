@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Predicate } from "../query/types.js";
+import type { Predicate } from "../query/index.js";
 import type { FieldValidation } from "./createFieldInteraction.js";
 import createFieldInteraction from "./createFieldInteraction.js";
 

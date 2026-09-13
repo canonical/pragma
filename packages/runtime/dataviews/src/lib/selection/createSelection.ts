@@ -1,5 +1,4 @@
-import type { ReadonlyChannel } from "../observable/createChannel.js";
-import createChannel from "../observable/createChannel.js";
+import { createChannel, type ReadonlyChannel } from "../observable/index.js";
 
 /** Immutable selection snapshot: an explicit set of record identities. */
 export type SelectionState = {

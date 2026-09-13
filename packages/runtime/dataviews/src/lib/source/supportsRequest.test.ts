@@ -3,8 +3,12 @@ import {
   declareCapabilities,
   declareSorting,
 } from "../../../testing/fixtures.js";
-import DEFAULT_WINDOW from "../query/defaultWindow.js";
-import type { Query, ResultWindow, Slice } from "../query/types.js";
+import {
+  DEFAULT_WINDOW,
+  type Query,
+  type ResultWindow,
+  type Slice,
+} from "../query/index.js";
 import supportsRequest from "./supportsRequest.js";
 import type { SourceCapabilities } from "./types.js";
 

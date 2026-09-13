@@ -1,32 +1,30 @@
-import type { RowRecord } from "@canonical/dataviews-core";
-import { DEFAULT_WINDOW } from "@canonical/dataviews-core";
+import { DEFAULT_WINDOW, type RowRecord } from "@canonical/dataviews-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { ComponentType, ReactElement, ReactNode } from "react";
-import { useState } from "react";
+import {
+  type ComponentType,
+  type ReactElement,
+  type ReactNode,
+  useState,
+} from "react";
 import { expect, userEvent, waitFor } from "storybook/test";
-import type {
-  MachineFields,
-  SortableField,
-} from "../../storybook/machines/fixtures.js";
 import {
   createEmptySource,
   createFailingSource,
   createMachineSource,
   createPendingSource,
+  type MachineFields,
   manyMachines,
+  type SortableField,
 } from "../../storybook/machines/fixtures.js";
-import type {
-  MachineProvider,
-  MachineProviderConfig,
-} from "../../storybook/machines/story-utils.js";
 import {
   hostName,
+  type MachineProvider,
+  type MachineProviderConfig,
   useMachineProvider,
   withAppScope,
   withFrame,
 } from "../../storybook/machines/story-utils.js";
-import useDataViewsCell from "../DataViews/hooks/useDataViewsCell.js";
-import useDataViewsValue from "../DataViews/hooks/useDataViewsValue.js";
+import { useDataViewsCell, useDataViewsValue } from "../DataViews/index.js";
 import { virtualRows } from "../virtualization/index.js";
 import Component from "./DataTable.js";
 import type {
@@ -183,7 +181,7 @@ const searchForNothing = (provider: MachineProvider): void => {
 };
 
 const consumerImports = `import { createDataViewsProvider } from "@canonical/dataviews-core";
-import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
+import { DataTable, useDataViewsCell, useDataViewsValue, type DataTableColumn } from "@canonical/dataviews-react";
 import { machineSchema, source } from "./machines.js";`;
 
 /**
@@ -857,7 +855,6 @@ const columns: readonly DataTableColumn[] = [
 />;`,
     {
       imports: `import type { DataTableCellProps } from "@canonical/dataviews-react";
-import { useDataViewsCell, useDataViewsValue } from "@canonical/dataviews-react";
 import type { Machine } from "./machines.js";`,
     },
   ),

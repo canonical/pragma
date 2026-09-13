@@ -1,4 +1,4 @@
-import type { PredicateOperator, SortTerm } from "../query/types.js";
+import type { PredicateOperator, SortTerm } from "../query/index.js";
 import type {
   ActionCapabilities,
   SortCapabilities,
