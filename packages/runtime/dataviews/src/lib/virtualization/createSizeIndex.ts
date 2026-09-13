@@ -1,21 +1,4 @@
-/** The sizes of one sequence of entries, summed in logarithmic time. */
-export type SizeIndex = {
-  /** The size of the entry at one position. */
-  readonly size: (position: number) => number;
-  /** Replace the size of the entry at one position. */
-  readonly set: (position: number, size: number) => void;
-  /**
-   * The summed size of every entry before one position: where it starts.
-   * At the sequence's length, the whole: read from the same tree, so it
-   * never drifts from the offsets beside it.
-   */
-  readonly offset: (position: number) => number;
-  /**
-   * The position of the entry covering one offset: the last whose start is
-   * at or before it, held to the sequence. An empty sequence answers 0.
-   */
-  readonly at: (offset: number) => number;
-};
+import type { SizeIndex } from "./types.js";
 
 /**
  * Index the sizes of one sequence as a Fenwick tree. Reading where an

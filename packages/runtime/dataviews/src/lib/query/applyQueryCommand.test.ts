@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import applyQueryCommand from "./applyQueryCommand.js";
-import DEFAULT_WINDOW from "./defaultWindow.js";
+import { DEFAULT_WINDOW } from "./constants.js";
 import type { Predicate, ResultWindow, Slice } from "./types.js";
 
 const slice = (overrides: Partial<Slice> = {}): Slice => ({

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { displayEntries } from "../rows/index.js";
+import { listDisplayEntries } from "../rows/index.js";
 import createVirtualRange from "./createVirtualRange.js";
 import type { MountedRange, MountedRun } from "./types.js";
 
@@ -17,7 +17,7 @@ const rowIds = (count: number, from = 0): string[] =>
   Array.from({ length: count }, (_, position) => `r-${from + position}`);
 
 const records = (ids: readonly string[]) =>
-  displayEntries({ rowIds: ids, status: null });
+  listDisplayEntries({ rowIds: ids, status: null });
 
 /** A range over a hundred 10px rows; a status row is estimated at 30px. */
 const hundredRows = () => {
@@ -210,7 +210,10 @@ describe("createVirtualRange", () => {
     it("keeps the anchor in place when a status row appears above it", () => {
       const { range } = hundredRows();
       range.setViewport(500, 45);
-      const stale = displayEntries({ rowIds: rowIds(100), status: "stale" });
+      const stale = listDisplayEntries({
+        rowIds: rowIds(100),
+        status: "stale",
+      });
       expect(range.setEntries(stale)).toBe(30);
       // Entry 51 is r-50: the same rows stay mounted under the status row.
       expect(shape(range)).toEqual({ runs: [[47, 60, 490]], after: 410 });

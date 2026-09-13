@@ -11,6 +11,9 @@ import type { Identity } from "./types.js";
  *
  * @note Impure: every call mints a new object, and two calls never return
  * the same token; that is what makes a token an identity.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export default function createIdentity(): Identity {
   // The brand is a non-enumerable own property: spread and Object.assign

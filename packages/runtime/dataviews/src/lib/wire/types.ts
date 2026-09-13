@@ -11,6 +11,9 @@ import type { SourceCapabilities } from "../source/index.js";
  * One refusal of an owned parameter — by the grammar, the schema or the
  * source — named for a visible query error. One parameter may carry
  * several.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type QueryIssue = {
   /** The parameter as it was spelled in the URL. */
@@ -23,6 +26,9 @@ export type QueryIssue = {
  * What one parameter set decodes to. A refused clause is left out of the
  * query and reported: the slice is what could be read, the issues are what
  * could not.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type DecodedQuery = Query & {
   /**
@@ -32,7 +38,12 @@ export type DecodedQuery = Query & {
   readonly issues: readonly QueryIssue[];
 };
 
-/** Configuration of one query encode. */
+/**
+ * Configuration of one query encode.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type EncodeQueryConfig = {
   /** The schema whose field addresses the encode owns. */
   readonly schema: Schema<readonly SchemaFieldDefinition[]>;
@@ -46,10 +57,15 @@ export type EncodeQueryConfig = {
    * Parameters to carry through. The grammar's own keys are replaced; every
    * other parameter survives in its original order, duplicates included.
    */
-  readonly preserve?: URLSearchParams;
+  readonly preserve?: URLSearchParams | undefined;
 };
 
-/** Configuration of one query decode. */
+/**
+ * Configuration of one query decode.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type DecodeQueryConfig = {
   /** The schema supplying field kinds, typed parsing and legal operators. */
   readonly schema: Schema<readonly SchemaFieldDefinition[]>;

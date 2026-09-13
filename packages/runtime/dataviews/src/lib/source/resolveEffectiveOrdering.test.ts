@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { declareSorting } from "../../../testing/fixtures.js";
+import { declareSort } from "../../../testing/fixtures.js";
 import { EMPTY_SLICE, type Slice } from "../query/index.js";
 import resolveEffectiveOrdering from "./resolveEffectiveOrdering.js";
 import type { SortCapabilities } from "./types.js";
@@ -9,10 +9,10 @@ const buildSlice = (overrides: Partial<Slice> = {}): Slice => ({
   ...overrides,
 });
 
-const declareCapabilities = (
+const declareOrdering = (
   overrides: Partial<SortCapabilities> = {},
 ): SortCapabilities => ({
-  ...declareSorting(["name", "status", "cores"]),
+  ...declareSort(["name", "status", "cores"]),
   ...overrides,
 });
 
@@ -23,10 +23,7 @@ describe("resolveEffectiveOrdering", () => {
       { field: "name", direction: "desc" },
     ] as const;
     expect(
-      resolveEffectiveOrdering(
-        buildSlice({ sort: terms }),
-        declareCapabilities(),
-      ),
+      resolveEffectiveOrdering(buildSlice({ sort: terms }), declareOrdering()),
     ).toEqual({
       terms,
       tiebreak: "opaque",
@@ -38,15 +35,13 @@ describe("resolveEffectiveOrdering", () => {
     expect(
       resolveEffectiveOrdering(
         EMPTY_SLICE,
-        declareCapabilities({ default: order }),
+        declareOrdering({ default: order }),
       ),
     ).toEqual({ terms: order, tiebreak: "opaque" });
   });
 
   it("is empty when neither the query nor the source orders", () => {
-    expect(
-      resolveEffectiveOrdering(EMPTY_SLICE, declareCapabilities()),
-    ).toEqual({
+    expect(resolveEffectiveOrdering(EMPTY_SLICE, declareOrdering())).toEqual({
       terms: [],
       tiebreak: "opaque",
     });
@@ -55,7 +50,7 @@ describe("resolveEffectiveOrdering", () => {
   it("carries the source's tiebreak without putting it among the terms", () => {
     const tiebreak = [{ field: "cores", direction: "asc" }] as const;
     expect(
-      resolveEffectiveOrdering(EMPTY_SLICE, declareCapabilities({ tiebreak })),
+      resolveEffectiveOrdering(EMPTY_SLICE, declareOrdering({ tiebreak })),
     ).toEqual({
       terms: [],
       tiebreak,
@@ -71,7 +66,7 @@ describe("resolveEffectiveOrdering", () => {
             { field: "name", direction: "desc" },
           ],
         }),
-        declareCapabilities(),
+        declareOrdering(),
       ).terms,
     ).toEqual([{ field: "name", direction: "asc" }]);
   });
@@ -83,7 +78,7 @@ describe("resolveEffectiveOrdering", () => {
           group: [{ field: "status" }],
           sort: [{ field: "name", direction: "desc" }],
         }),
-        declareCapabilities(),
+        declareOrdering(),
       ).terms,
     ).toEqual([
       { field: "status", direction: "asc" },
@@ -101,7 +96,7 @@ describe("resolveEffectiveOrdering", () => {
             { field: "status", direction: "desc" },
           ],
         }),
-        declareCapabilities(),
+        declareOrdering(),
       ).terms,
     ).toEqual([
       { field: "status", direction: "desc" },

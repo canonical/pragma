@@ -14,7 +14,7 @@ import { applyRef } from "../utils/index.js";
  */
 export default function useMergedRef<TElement>(
   ref: Ref<TElement> | undefined,
-  attach: (node: TElement) => (() => void) | void,
+  attach: (node: TElement) => (() => void) | undefined,
 ): (node: TElement) => () => void {
   const callerRef = useRef(ref);
   callerRef.current = ref;

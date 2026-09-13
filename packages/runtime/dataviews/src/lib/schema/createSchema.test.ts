@@ -118,6 +118,11 @@ describe("createSchema", () => {
     expect(() =>
       createSchema([{ field: "cpu", kind: "number", min: 10, max: 0 }]),
     ).toThrow("inverted range");
+    // A range of one value is a range, not an inversion.
+    expect(
+      createSchema([{ field: "cpu", kind: "number", min: 4, max: 4 }])
+        .fieldNames,
+    ).toEqual(["cpu"]);
   });
 
   it("answers lookups from frozen copies, immune to input mutation", () => {
@@ -153,8 +158,12 @@ describe("createSchema", () => {
       "updated",
       "name",
     ]);
-    expect(schema.hasField("cpu")).toBe(true);
-    expect(schema.hasField("zone")).toBe(false);
+    expect(schema.findField("zone")).toBeUndefined();
+    expect(schema.findField("cpu")).toMatchObject({
+      field: "cpu",
+      kind: "number",
+    });
+    expect(schema.findField("zone")).toBeUndefined();
     expect(() =>
       (schema.fieldNames as unknown as { push: () => void }).push(),
     ).toThrow();

@@ -7,8 +7,8 @@
  * other inherited member reads nothing, rather than a value the record
  * never carried.
  *
- * @experimental Newly public so a source's default field reader is the same
- * read a row model makes; the signature may grow a typed row.
+ * One read for the row model and for a source's default field reader, so
+ * both read a row the same way.
  */
 export default function readField(row: object, field: string): unknown {
   return Object.hasOwn(row, field)

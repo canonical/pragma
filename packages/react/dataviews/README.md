@@ -33,12 +33,12 @@ The remaining connected part, Summary, lands in a later change. The pagination b
 
 ## Composition recipes
 
-The recipes, with consumer code and the live stories beside them, are the Storybook page **_work_in_progress / DataViews / Composition / Recipes** — source in [`src/lib/DataViews/DataViews.mdx`](src/lib/DataViews/DataViews.mdx):
+The recipes, with consumer code and the live stories beside them, are the Storybook page **_work_in_progress / DataViews / Composition / Recipes** — source in [`src/lib/_work_in_progress/DataViews/DataViews.mdx`](src/lib/_work_in_progress/DataViews/DataViews.mdx):
 
 - **The connected parts** — one root, every part reading its provider; place them in any order and any wrapper.
 - **Keeping the query in the URL** — a location binding makes the URL the query's other home, and a refused link reports its reasons on `binding.issues`.
 
-The parts have recipe pages of their own: [`Filters.mdx`](src/lib/DataViews/common/Filters/Filters.mdx), [`Actions.mdx`](src/lib/DataViews/common/Actions/Actions.mdx), [`Pagination.mdx`](src/lib/DataViews/common/Pagination/Pagination.mdx) and [`PaginationBar.mdx`](src/lib/PaginationBar/PaginationBar.mdx).
+The parts have recipe pages of their own: [`Filters.mdx`](src/lib/_work_in_progress/DataViews/common/Filters/Filters.mdx), [`Actions.mdx`](src/lib/_work_in_progress/DataViews/common/Actions/Actions.mdx), [`Pagination.mdx`](src/lib/_work_in_progress/DataViews/common/Pagination/Pagination.mdx) and [`PaginationBar.mdx`](src/lib/_work_in_progress/PaginationBar/PaginationBar.mdx).
 
 ## Styles
 
@@ -56,7 +56,7 @@ The pagination bar's selects are the design system's `SelectInput`, whose input 
 
 ## DataTable recipes
 
-The recipes, with consumer code and the live stories beside them, are the Storybook page **_work_in_progress / DataTable / Recipes** — under **DataViews** in the Storybook hub — source in [`src/lib/DataTable/DataTable.mdx`](src/lib/DataTable/DataTable.mdx):
+The recipes, with consumer code and the live stories beside them, are the Storybook page **_work_in_progress / DataTable / Recipes** — under **DataViews** in the Storybook hub — source in [`src/lib/_work_in_progress/DataTable/DataTable.mdx`](src/lib/_work_in_progress/DataTable/DataTable.mdx):
 
 - **A table over a provider** — build the provider once and bind the source in an effect.
 - **Columns and sizing** — fixed and flexible widths, bounds, and the last column taking the rest.
@@ -65,4 +65,4 @@ The recipes, with consumer code and the live stories beside them, are the Storyb
 - **Resizing and its limits** — held to the declared bounds; no control on the last column; one shared `layout` gives two tables on a provider the same arrangement.
 - **A cell that reads its own scope** — a renderer reading its row's channels.
 - **The outcomes** — loading, failed, empty and no match in place of the rows; a failed refresh and retained rows that no longer answer the current query (`refresh-failed`, `stale`) beside them, with `renderStatus`.
-- **Mounting only the rows in view** — `windowing={virtualRows({ estimatedRowHeight })}`, from `@canonical/dataviews-react/virtualization`, for a result window of thousands of rows: the table becomes its own scroll viewport and every row still counts.
+- **Mounting only the rows in view** — `windowing={virtualizeRows({ estimatedRowHeight })}`, from `@canonical/dataviews-react/virtualization`, for a result window of thousands of rows: the table becomes its own scroll viewport and every row still counts.

@@ -12,8 +12,8 @@ const isLeapYear = (year: number): boolean =>
  * A real calendar check: `Date.parse` is not portable here — JavaScriptCore
  * accepts out-of-range dates such as 2026-02-30 by rolling them over.
  *
- * @experimental Newly public so ordering can read a date field's row value
- * through the same check the schema applies to a filter bound.
+ * One check for a filter bound and for a date field's row value, so
+ * ordering reads a calendar date the way the schema validates one.
  */
 export default function isCalendarDate(value: string): boolean {
   if (!CALENDAR_DATE.test(value)) {

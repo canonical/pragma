@@ -1,19 +1,16 @@
 import { describe, expect, it } from "vitest";
-import {
-  declareCapabilities,
-  declareSorting,
-} from "../../../testing/fixtures.js";
+import { declare, declareSort } from "../../../testing/fixtures.js";
 import type { PredicateOperator, SortTerm } from "../query/index.js";
 import copyCapabilities from "./copyCapabilities.js";
 import type { SourceCapabilities } from "./types.js";
 
 const declared = (
   overrides: Partial<SourceCapabilities> = {},
-): SourceCapabilities => declareCapabilities(overrides);
+): SourceCapabilities => declare(overrides);
 
 describe("copyCapabilities", () => {
-  it("reads a field declared without operators as filterable by none", () => {
-    const copy = copyCapabilities(declared({ filter: { cpu: undefined } }));
+  it("keeps a field declared with no operator as filterable by none", () => {
+    const copy = copyCapabilities(declared({ filter: { cpu: [] } }));
     expect(copy.filter["cpu"]).toEqual([]);
   });
 
@@ -70,7 +67,7 @@ describe("copyCapabilities", () => {
 
   it("keeps a named tiebreak as the word it was declared with", () => {
     expect(
-      copyCapabilities(declared({ sort: declareSorting(["cpu"]) })).sort,
+      copyCapabilities(declared({ sort: declareSort(["cpu"]) })).sort,
     ).toEqual({
       fields: ["cpu"],
       terms: null,
@@ -84,13 +81,13 @@ describe("copyCapabilities", () => {
     const fields = ["status"];
     const copy = copyCapabilities(
       declared({
-        group: { fields, depth: 2, summaries: "counts", collapse: true },
+        group: { fields, levels: 2, summaries: "counts", collapse: true },
       }),
     );
     fields.push("zone");
     expect(copy.group).toEqual({
       fields: ["status"],
-      depth: 2,
+      levels: 2,
       summaries: "counts",
       collapse: true,
     });
@@ -99,28 +96,28 @@ describe("copyCapabilities", () => {
   it("copies the three counts", () => {
     const copy = copyCapabilities(
       declared({
-        counts: { visible: "exact", matched: "atLeast", total: "none" },
+        counts: { pageable: "exact", matched: "at-least", total: "unknown" },
       }),
     );
     expect(copy.counts).toEqual({
-      visible: "exact",
-      matched: "atLeast",
-      total: "none",
+      pageable: "exact",
+      matched: "at-least",
+      total: "unknown",
     });
   });
 
   it("copies a cursor pagination block with its two flags", () => {
     const copy = copyCapabilities(
       declared({
-        pagination: { mode: "cursor", backward: true, durable: false },
+        pagination: { kind: "cursor", backward: true, durable: false },
       }),
     );
     expect(copy.pagination).toEqual({
-      mode: "cursor",
+      kind: "cursor",
       backward: true,
       durable: false,
     });
-    expect(copyCapabilities(declared()).pagination).toEqual({ mode: "offset" });
+    expect(copyCapabilities(declared()).pagination).toEqual({ kind: "offset" });
   });
 
   it("copies each declared row operation", () => {
@@ -136,7 +133,7 @@ describe("copyCapabilities", () => {
       declared({
         filter: { status: ["eq"] },
         search: { fields: ["name"] },
-        sort: declareSorting(["cpu"]),
+        sort: declareSort(["cpu"]),
       }),
     );
     expect(Object.isFrozen(copy)).toBe(true);

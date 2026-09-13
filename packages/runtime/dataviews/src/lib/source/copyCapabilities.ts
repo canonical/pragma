@@ -46,7 +46,7 @@ const copyFilter = (
 ): SourceCapabilities["filter"] => {
   const copied = bareRecord<readonly PredicateOperator[]>();
   for (const [field, operators] of Object.entries(filter)) {
-    copied[field] = Object.freeze([...(operators ?? [])]);
+    copied[field] = Object.freeze([...operators]);
   }
   return Object.freeze(copied);
 };
@@ -70,20 +70,20 @@ export default function copyCapabilities(
     sort: copySort(capabilities.sort),
     group: Object.freeze({
       fields: Object.freeze([...capabilities.group.fields]),
-      depth: capabilities.group.depth,
+      levels: capabilities.group.levels,
       summaries: capabilities.group.summaries,
       collapse: capabilities.group.collapse,
     }),
     counts: Object.freeze({
-      visible: capabilities.counts.visible,
+      pageable: capabilities.counts.pageable,
       matched: capabilities.counts.matched,
       total: capabilities.counts.total,
     }),
     pagination:
-      capabilities.pagination.mode === "offset"
-        ? Object.freeze({ mode: "offset" as const })
+      capabilities.pagination.kind === "offset"
+        ? Object.freeze({ kind: "offset" as const })
         : Object.freeze({
-            mode: "cursor" as const,
+            kind: "cursor" as const,
             backward: capabilities.pagination.backward,
             durable: capabilities.pagination.durable,
           }),

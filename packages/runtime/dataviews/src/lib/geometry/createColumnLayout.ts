@@ -1,38 +1,18 @@
-import { createChannel, type ReadonlyChannel } from "../observable/index.js";
-import sizingEquals from "./sizingEquals.js";
-import type { ColumnSizing, ColumnToSize } from "./types.js";
-
-/** Immutable layout snapshot: declared sizing plus user overrides. */
-export type ColumnLayoutState = {
-  /** The declared sizing per column id. */
-  readonly declared: Readonly<Record<string, ColumnSizing>>;
-  /** User-fixed sizing overrides per column id. */
-  readonly overrides: Readonly<Record<string, ColumnSizing>>;
-  /** Bumped on every accepted layout change. */
-  readonly revision: number;
-};
-
-/** Handle of one column-layout record. */
-export type ColumnLayout = {
-  /** The layout's snapshots; immutable between publications. */
-  readonly state: ReadonlyChannel<ColumnLayoutState>;
-  /** The declared sizing of one column, which every column of the layout has. */
-  readonly readDeclared: (id: string) => ColumnSizing;
-  /** The effective sizing of one column: its override, else its declared sizing. */
-  readonly effective: (id: string) => ColumnSizing;
-  /** Record a user-fixed sizing override (a resize commit). */
-  readonly setOverride: (id: string, sizing: ColumnSizing) => void;
-  /** Drop one column's override, restoring its declared sizing. */
-  readonly resetOverride: (id: string) => void;
-  /** Drop every override, restoring all declared sizing. */
-  readonly resetOverrides: () => void;
-  /** The columns to size: declared sizing with overrides applied. */
-  readonly toColumns: () => readonly ColumnToSize[];
-};
+import { createChannel } from "../observable/index.js";
+import areSizingsEqual from "./areSizingsEqual.js";
+import type {
+  ColumnLayout,
+  ColumnLayoutState,
+  ColumnSizing,
+  ColumnToSize,
+} from "./types.js";
 
 /**
  * Create the layout record for one collection's columns: declared
  * sizing plus user-fixed overrides, with a channel published on change.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export default function createColumnLayout(
   columns: readonly ColumnToSize[],
@@ -98,7 +78,7 @@ export default function createColumnLayout(
     setOverride(id: string, sizing: ColumnSizing): void {
       declaredOf(id);
       const current = overrideOf(id);
-      if (current !== undefined && sizingEquals(current, sizing)) {
+      if (current !== undefined && areSizingsEqual(current, sizing)) {
         return;
       }
       publish(Object.freeze({ ...overrides, [id]: sizing }));

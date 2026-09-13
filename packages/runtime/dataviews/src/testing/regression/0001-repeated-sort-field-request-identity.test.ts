@@ -9,10 +9,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import {
-  declareCapabilities,
-  declareSorting,
-} from "../../../testing/fixtures.js";
+import { declare, declareSort } from "../../../testing/fixtures.js";
 import { createCollectionCoordinator } from "../../lib/collection/index.js";
 import {
   createLocationBinding,
@@ -25,7 +22,7 @@ import {
   type SortTerm,
 } from "../../lib/query/index.js";
 import { createSchema } from "../../lib/schema/index.js";
-import { supportsRequest } from "../../lib/source/index.js";
+import { refusalsOf } from "../../lib/source/index.js";
 
 const schema = createSchema([
   { field: "cpu", kind: "number" },
@@ -59,10 +56,10 @@ describe("regression 0001 — a repeated sort field keeps one request identity",
 
   it("counts the field once against a source's term limit", () => {
     expect(
-      supportsRequest(
-        declareCapabilities({ sort: declareSorting(["cpu"], 1) }),
-        { slice: { ...EMPTY_SLICE, sort: twice }, window: DEFAULT_WINDOW },
-      ),
+      refusalsOf(declare({ sort: declareSort(["cpu"], 1) }), {
+        slice: { ...EMPTY_SLICE, sort: twice },
+        window: DEFAULT_WINDOW,
+      }),
     ).toEqual([]);
   });
 

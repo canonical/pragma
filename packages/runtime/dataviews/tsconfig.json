@@ -1,6 +1,6 @@
 {
   "extends": [
-    "../../../configs/typescript/tsconfig.json",
+    "@canonical/typescript-config",
     "@canonical/typescript-config-strict"
   ],
   "compilerOptions": {

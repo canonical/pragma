@@ -1,4 +1,4 @@
-import type { WindowedBodyProps } from "../../../DataTable/index.js";
+import type { WindowedBodyProps } from "../../../windowing/index.js";
 
 /**
  * Props of the windowed body row group.

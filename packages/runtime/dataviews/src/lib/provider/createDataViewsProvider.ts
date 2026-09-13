@@ -11,16 +11,14 @@ import { createIdentity } from "../identity/index.js";
 import { type Channel, createChannel } from "../observable/index.js";
 import { type ActionInvocation, createOperation } from "../operation/index.js";
 import {
-  canonicalSlice,
+  addressPredicate,
+  canonicalizeSlice,
   type GroupPath,
   type GroupTerm,
   type Predicate,
   type PredicateOperand,
   type PredicateOperator,
-  predicateAddress,
   type Query,
-  type ResultWindow,
-  type Slice,
   type SortTerm,
   type WindowNavigation,
 } from "../query/index.js";
@@ -29,100 +27,23 @@ import {
   type Applicability,
   createRowModel,
   EMPTY_ROW_MODEL,
-  type RowIdentifier,
   type RowModel,
   type RowRecord,
 } from "../rows/index.js";
-import type {
-  EmptyOr,
-  Schema,
-  SchemaFieldDefinition,
+import {
+  type EmptyOr,
+  resolveFieldKind,
+  type SchemaFieldDefinition,
 } from "../schema/index.js";
 import { createSelection } from "../selection/index.js";
-import { copyCapabilities, type SourceCapabilities } from "../source/index.js";
-import { createProviderViews, type ViewStore } from "../views/index.js";
+import { copyCapabilities } from "../source/index.js";
+import { createProviderViews } from "../views/index.js";
 import createRecordTyping from "./createRecordTyping.js";
-import type { DataViewsProvider, FieldHandle, RecordTypes } from "./types.js";
-
-/**
- * Derive the applied semantic value of one field's predicate. The operator
- * decides it, not the kind: a set of options, the presence a flag states, or
- * the single bound of a range.
- */
-const deriveAppliedValue = (
-  operator: PredicateOperator,
-  predicate: Predicate | null,
-): EmptyOr<unknown> => {
-  if (predicate === null) {
-    return { kind: "empty" };
-  }
-  switch (operator) {
-    case "eq":
-      return { kind: "value", value: new Set(predicate.operands) };
-    case "isSet":
-      return { kind: "value", value: true };
-    case "gte":
-    case "lte":
-      return { kind: "value", value: predicate.operands[0] };
-  }
-};
-
-/** Structural equality over EmptyOr values, with set membership for sets. */
-const emptyOrEqual = <T>(a: EmptyOr<T>, b: EmptyOr<T>): boolean => {
-  if (a.kind === "empty" || b.kind === "empty") {
-    return a.kind === b.kind;
-  }
-  const aValue = a.value;
-  const bValue = b.value;
-  if (aValue instanceof Set && bValue instanceof Set) {
-    if (aValue.size !== bValue.size) {
-      return false;
-    }
-    for (const entry of aValue) {
-      if (!bValue.has(entry)) {
-        return false;
-      }
-    }
-    return true;
-  }
-  return aValue === bValue;
-};
-
-/** Configuration of one DataViews provider. */
-export type DataViewsProviderConfig<
-  TFields extends readonly SchemaFieldDefinition[],
-  TRow extends object = RowRecord,
-> = {
-  readonly schema: Schema<TFields>;
-  readonly slice?: Slice | undefined;
-  readonly window?: ResultWindow | undefined;
-  /**
-   * Reads one record's stable identity. Defaults to the record's own `id`,
-   * which must then be a non-empty string.
-   */
-  readonly identify?: RowIdentifier<TRow> | undefined;
-  /**
-   * What the source bound to this provider declares it can execute — the
-   * source's own `capabilities`. Connected parts, and DataTable's sortable
-   * columns, offer only what is declared, and a location clause outside it
-   * is refused.
-   */
-  readonly capabilities?: SourceCapabilities | undefined;
-  /**
-   * Where the collection's saved views and presentation preferences live —
-   * `createIndexedDBViewStore` from `@canonical/dataviews-core/indexeddb`, or a
-   * store of the application's own. Left out, the collection has no views.
-   */
-  readonly views?: ViewStore | undefined;
-  /**
-   * How this collection's records declare their type: one `choices` field of
-   * the schema, carried by every row. Left out, the collection is
-   * monomorphic — no memory is kept, no row is read for a type, and nothing
-   * else here behaves differently. A field scoped to record types is then
-   * inert, since there is only the one type for it to apply to.
-   */
-  readonly types?: RecordTypes<TFields, TRow> | undefined;
-};
+import type {
+  DataViewsProvider,
+  DataViewsProviderConfig,
+  FieldHandle,
+} from "./types.js";
 
 /** One field record with its address, for re-syncing after external changes. */
 type AddressedRecord = {
@@ -132,6 +53,8 @@ type AddressedRecord = {
   /** The writable side, kept here so the handle can publish read-only. */
   readonly state: Channel<FieldInteractionState>;
   readonly applied: Channel<EmptyOr<unknown>>;
+  /** The applied value a predicate of this field carries. */
+  readonly appliedOf: (predicate: Predicate | null) => EmptyOr<unknown>;
   readonly handle: FieldHandle<unknown>;
 };
 
@@ -140,6 +63,9 @@ type AddressedRecord = {
  * collection — the request-lifecycle coordinator, selection, and one field
  * interaction record per field and legal operator — with observation
  * channels published at mutation boundaries.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export default function createDataViewsProvider<
   TFields extends readonly SchemaFieldDefinition[],
@@ -188,9 +114,9 @@ export default function createDataViewsProvider<
    */
   const appliedByAddress = (): Map<string, Predicate> => {
     const applied = new Map<string, Predicate>();
-    for (const predicate of canonicalSlice(coordinator.state.slice).filter) {
+    for (const predicate of canonicalizeSlice(coordinator.state.slice).filter) {
       applied.set(
-        predicateAddress(predicate.field, predicate.operator),
+        addressPredicate(predicate.field, predicate.operator),
         predicate,
       );
     }
@@ -198,9 +124,16 @@ export default function createDataViewsProvider<
   };
 
   const buildFieldRecord = (
-    field: string,
+    definition: SchemaFieldDefinition,
     operator: PredicateOperator,
   ): AddressedRecord => {
+    const { field } = definition;
+    const kind = resolveFieldKind(definition.kind);
+    /** The applied value a predicate carries, through the field's kind. */
+    const appliedOf = (predicate: Predicate | null): EmptyOr<unknown> =>
+      predicate === null
+        ? { kind: "empty" }
+        : { kind: "value", value: kind.readApplied(predicate) };
     const interaction = createFieldInteraction({
       field,
       operator,
@@ -213,7 +146,12 @@ export default function createDataViewsProvider<
     );
     const applied = createChannel<EmptyOr<unknown>>(
       { kind: "empty" },
-      { equals: emptyOrEqual },
+      {
+        equals: (a, b) =>
+          a.kind === "empty" || b.kind === "empty"
+            ? a.kind === b.kind
+            : kind.areAppliedEqual(a.value, b.value),
+      },
     );
 
     const handle: FieldHandle<unknown> = {
@@ -225,7 +163,7 @@ export default function createDataViewsProvider<
           dispatchCommand(command);
         }
         stateChannel.set(interaction.state);
-        applied.set(deriveAppliedValue(operator, interaction.state.applied));
+        applied.set(appliedOf(interaction.state.applied));
       },
       set(operands: readonly PredicateOperand[]): void {
         const built = schema.predicateFor(field, operator, operands);
@@ -237,7 +175,7 @@ export default function createDataViewsProvider<
           predicate: built.predicate,
         });
         interaction.setApplied(built.predicate);
-        applied.set(deriveAppliedValue(operator, built.predicate));
+        applied.set(appliedOf(built.predicate));
         stateChannel.set(interaction.state);
       },
       clear(): void {
@@ -253,6 +191,7 @@ export default function createDataViewsProvider<
       interaction,
       state: stateChannel,
       applied,
+      appliedOf,
       handle,
     };
   };
@@ -266,7 +205,7 @@ export default function createDataViewsProvider<
     }
     const byOperator: Record<string, FieldHandle<unknown>> = {};
     for (const operator of operators) {
-      const record = buildFieldRecord(definition.field, operator);
+      const record = buildFieldRecord(definition, operator);
       fieldRecords.push(record);
       byOperator[operator] = record.handle;
     }
@@ -278,10 +217,10 @@ export default function createDataViewsProvider<
     const applied = appliedByAddress();
     for (const record of fieldRecords) {
       const predicate =
-        applied.get(predicateAddress(record.field, record.operator)) ?? null;
+        applied.get(addressPredicate(record.field, record.operator)) ?? null;
       record.interaction.setApplied(predicate);
       record.state.set(record.interaction.state);
-      record.applied.set(deriveAppliedValue(record.operator, predicate));
+      record.applied.set(record.appliedOf(predicate));
     }
   };
 
@@ -365,7 +304,7 @@ export default function createDataViewsProvider<
       // The model is built before the coordinator publishes, so rows with
       // an ambiguous identity, or with a type the schema does not declare,
       // fail the request instead of replacing rows that can still be keyed
-      // and displayed. Those rows then report `refreshFailed`, or `stale`
+      // and displayed. Those rows then report `refresh-failed`, or `stale`
       // once the query has moved on from the one they answer.
       let model: RowModel<TRow> | null = null;
       let rejection: string | null = null;

@@ -10,6 +10,9 @@ const LOCAL_BASE = "http://localhost/";
  * base URL is a parsing detail only — it never reaches consumers through
  * the port. There is no history stack; the write `history` option is
  * accepted and ignored.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export default function createMemoryLocation(
   config: LocationConfig = {},

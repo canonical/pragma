@@ -1,48 +1,11 @@
-import { createChannel, type ReadonlyChannel } from "../observable/index.js";
-import type { ColumnLayout } from "./createColumnLayout.js";
-import sizingEquals from "./sizingEquals.js";
-import type { ColumnSizing } from "./types.js";
-
-/** The grid interaction state: idle, or one live resize preview. */
-export type GridInteractionState =
-  | { readonly status: "idle" }
-  | {
-      readonly status: "resizing";
-      readonly columnId: string;
-      readonly originX: number;
-      readonly startWidth: number;
-      readonly previewWidth: number;
-    };
-
-/** Handle of one grid interaction record. */
-export type GridInteraction = {
-  /** The interaction's snapshots; immutable between publications. */
-  readonly state: ReadonlyChannel<GridInteractionState>;
-  /**
-   * Begin a resize: capture the column, the pointer origin and the current
-   * (resolved) starting width. Previews never mutate the authoritative
-   * layout.
-   */
-  readonly startResize: (
-    columnId: string,
-    originX: number,
-    startWidth: number,
-  ) => void;
-  /** Preview a pointer position; the width is clamped to the column's bounds. */
-  readonly preview: (pointerX: number) => void;
-  /** Commit the preview: the sizing override is applied to the layout. */
-  readonly commit: () => void;
-  /** Cancel: the authoritative layout is untouched, so nothing restores. */
-  readonly cancel: () => void;
-  /**
-   * Begin watching the layout for the conflicting external changes
-   * that invalidate a live preview; the return value detaches. Construction
-   * subscribes to nothing, so an interaction whose caller never attaches it
-   * holds no subscription to leak, and re-attaching is an ordinary second
-   * call.
-   */
-  readonly observe: () => () => void;
-};
+import { createChannel } from "../observable/index.js";
+import areSizingsEqual from "./areSizingsEqual.js";
+import type {
+  ColumnLayout,
+  ColumnSizing,
+  GridInteraction,
+  GridInteractionState,
+} from "./types.js";
 
 /**
  * Create the grid interaction record for one table's resize lifecycle,
@@ -50,6 +13,9 @@ export type GridInteraction = {
  * invalidates the live preview; unrelated column updates are incorporated.
  * Preview coalescing to animation frames is the renderer's concern — the
  * machine clamps and publishes per preview call.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export default function createGridInteraction(
   layout: ColumnLayout,
@@ -83,7 +49,7 @@ export default function createGridInteraction(
     const state = channel.get();
     if (state.status === "resizing" && resizingBaseline !== null) {
       const current = layout.effective(state.columnId);
-      if (!sizingEquals(current, resizingBaseline)) {
+      if (!areSizingsEqual(current, resizingBaseline)) {
         resizingBaseline = null;
         publish({ status: "idle" });
       }

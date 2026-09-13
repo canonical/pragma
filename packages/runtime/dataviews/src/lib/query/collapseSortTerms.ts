@@ -6,8 +6,8 @@ import type { SortTerm } from "./types.js";
  * field can only restate or contradict the first, and neither changes which
  * rows come out, so one effective ordering keeps one request identity.
  *
- * @experimental Newly public so every layer collapses the same way; a
- * grouping level may later collapse against it too.
+ * One collapse for every layer, so canonicalization, a command and a
+ * decode agree on the ordering a repeated field spells.
  */
 export default function collapseSortTerms(
   terms: readonly SortTerm[],

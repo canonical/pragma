@@ -11,6 +11,7 @@ import {
   createDataViewsProvider,
   createSchema,
   type DataViewsProvider,
+  declareCapabilities,
 } from "@canonical/dataviews-core";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { type ReactElement, StrictMode } from "react";
@@ -18,20 +19,17 @@ import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import elementAt from "../../../../../testing/elementAt.js";
-import {
-  COUNTED_EXACTLY,
-  declaring,
-  sorting,
-} from "../../../capabilities.fixtures.js";
+import { COUNTED_EXACTLY } from "../../../../../testing/fixtures.js";
 import {
   DataTable,
   type DataTableCellProps,
   type DataTableColumn,
   type DataTableProps,
-} from "../../../DataTable/index.js";
-import virtualRows from "../../virtualRows.js";
+} from "../../../_work_in_progress/DataTable/index.js";
+import virtualizeRows from "../../virtualizeRows.js";
 
 const schema = createSchema([
+  { field: "name", kind: "text" },
   { field: "status", kind: "choices", options: ["failed", "running"] },
 ]);
 
@@ -42,10 +40,10 @@ type Machine = {
   readonly status: string;
 };
 
-const capabilities = declaring({
+const capabilities = declareCapabilities(schema, {
   filter: { status: ["eq"] },
-  search: { fields: ["name"] },
-  sort: sorting(["name"], 1),
+  search: ["name"],
+  sort: { fields: ["name"], terms: 1, tiebreak: "opaque" },
   counts: COUNTED_EXACTLY,
 });
 
@@ -63,7 +61,7 @@ const columns: readonly DataTableColumn[] = [
 ];
 
 /** Rows placed at 10px until measured; the viewport shows 100px. */
-const windowing = virtualRows({ estimatedRowHeight: 10 });
+const windowing = virtualizeRows({ estimatedRowHeight: 10 });
 
 /** A ResizeObserver the test drives: it keeps what it observes. */
 class FakeResizeObserver {
@@ -156,7 +154,7 @@ const load = (
       page: {
         rows,
         groups: null,
-        counts: { visible: counted, matched: counted, total: counted },
+        counts: { pageable: counted, matched: counted, total: counted },
         more: null,
         cursors: null,
       },
@@ -397,7 +395,7 @@ describe("windowed DataTable", () => {
           columns={columns}
           label="Machines"
           selectable
-          windowing={virtualRows({ estimatedRowHeight: 20 })}
+          windowing={virtualizeRows({ estimatedRowHeight: 20 })}
         />,
       );
       scrollTo(table, 10_000);
@@ -813,7 +811,7 @@ describe("windowed DataTable", () => {
         provider={provider}
         columns={columns}
         label="Machines"
-        windowing={virtualRows({ estimatedRowHeight: 20 })}
+        windowing={virtualizeRows({ estimatedRowHeight: 20 })}
       />,
     );
     expect(mountedHosts()).toHaveLength(10);

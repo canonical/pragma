@@ -1,43 +1,11 @@
-import type { ReadonlyChannel } from "../observable/index.js";
 import {
   type Applicability,
   type RowModel,
   type RowRecord,
   readField,
 } from "../rows/index.js";
-import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
-import type { Selection } from "../selection/index.js";
-import type { DeclaredRecordTypes } from "./types.js";
-
-/** Configuration of one collection's record typing. */
-export type RecordTypingConfig<
-  TFields extends readonly SchemaFieldDefinition[],
-  TRow extends object = RowRecord,
-> = {
-  readonly schema: Schema<TFields>;
-  /** The discriminator: the schema field every row carries its type in. */
-  readonly field: string;
-  /** The selection whose identities are the ones worth remembering. */
-  readonly selection: Selection;
-  /** The displayed rows, read for a type the memory has not taken yet. */
-  readonly rows: ReadonlyChannel<RowModel<TRow>>;
-};
-
-/** One collection's record typing: what the provider answers about types. */
-export type RecordTyping<TRow extends object = RowRecord> = {
-  /** The discriminator and its type names, as the provider publishes them. */
-  readonly declared: DeclaredRecordTypes;
-  /** Why a model cannot be displayed, or null when every row is typed. */
-  readonly rejectionOf: (model: RowModel<TRow>) => string | null;
-  /** Whether a schema field applies to a row. */
-  readonly applicability: (field: string, row: TRow) => Applicability;
-  /** The remembered type of a selected identity. */
-  readonly recordType: (id: string) => string | null;
-  /** Take the type of every selected row of a model about to be replaced. */
-  readonly remember: (model: RowModel<TRow>) => void;
-  /** Drop the memory: the scope rotated, so nothing displayed survives. */
-  readonly forget: () => void;
-};
+import type { SchemaFieldDefinition } from "../schema/index.js";
+import type { RecordTyping, RecordTypingConfig } from "./types.js";
 
 const valueLabel = (value: unknown): string =>
   typeof value === "string" ? `"${value}"` : String(value);

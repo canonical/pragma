@@ -1,6 +1,5 @@
 import type { CollectionState } from "../collection/index.js";
-import type { ReadonlyChannel } from "../observable/index.js";
-import type { ActionInvocation, Operation } from "../operation/index.js";
+import type { Operation } from "../operation/index.js";
 import type { PredicateOperator, Query } from "../query/index.js";
 import type {
   Completion,
@@ -10,73 +9,18 @@ import type {
   SourceRefusal,
 } from "../result/index.js";
 import type { RowRecord } from "../rows/index.js";
-import type { Selection } from "../selection/index.js";
 import copyCapabilities from "./copyCapabilities.js";
+import describeError from "./describeError.js";
 import pluralize from "./pluralize.js";
-import reasonOf from "./reasonOf.js";
-import supportsRequest from "./supportsRequest.js";
+import refusalsOf from "./refusalsOf.js";
 import type {
   CountSupport,
   Source,
   SourceActionRequest,
+  SourceBinding,
+  SourceBindingConfig,
   SourceCapabilities,
 } from "./types.js";
-
-/**
- * The structural host surface the binding drives. The handle
- * `createDataViewsProvider` returns satisfies it, and so can a narrower
- * host.
- */
-export type SourceHost<TRow extends object = RowRecord> = {
-  /**
-   * What the host's source declares it can execute, or null when the host
-   * was not told. Non-null, it must be the source's own declaration.
-   */
-  readonly capabilities: SourceCapabilities | null;
-  /** The coordinator snapshot channel: query, window and pending request. */
-  readonly state: ReadonlyChannel<CollectionState<TRow>>;
-  readonly selection: Selection;
-  readonly refresh: () => string | null;
-  readonly complete: (
-    requestId: string,
-    completion: Completion<TRow>,
-  ) => boolean;
-  readonly invokeAction: (invocation: ActionInvocation) => Operation;
-};
-
-/** Configuration of one source binding. */
-export type SourceBindingConfig<TRow extends object = RowRecord> = {
-  readonly host: SourceHost<TRow>;
-  readonly source: Source<TRow>;
-};
-
-/** Handle of one source binding. */
-export type SourceBinding = {
-  /**
-   * What the bound source declares it can execute. Connected parts read the
-   * host's copy instead; this is for code holding the binding.
-   */
-  readonly capabilities: SourceCapabilities;
-  /**
-   * Every refusal a request in hand would collect, from the declaration and
-   * from the source's own check. Empty means executable.
-   */
-  readonly supports: (query: Query) => readonly SourceRefusal[];
-  /**
-   * Run one row operation. Resolves with the operation record once every
-   * captured target has an outcome — a target the source reports nothing
-   * for fails rather than staying pending. Successful targets leave the
-   * selection; failures stay for review and retry. Rejects when the action
-   * is not declared, or addresses more or other than the declaration allows.
-   */
-  readonly runAction: (request: SourceActionRequest) => Promise<Operation>;
-  /**
-   * Start executing the host's requests. The release stops the live
-   * request and detaches from the host; it never touches the source's own
-   * client or cache.
-   */
-  readonly observe: () => () => void;
-};
 
 /** A list as a set: deduplicated, then sorted. */
 const sortedUnique = (list: readonly string[]): string[] =>
@@ -89,11 +33,7 @@ const sortedUnique = (list: readonly string[]): string[] =>
  */
 const filterOf = (filter: SourceCapabilities["filter"]): string[] =>
   sortedUnique(
-    // Always a copy, so every field carries its list: `copyCapabilities`
-    // writes an empty one where a declaration named none.
-    Object.entries(
-      filter as Readonly<Record<string, readonly PredicateOperator[]>>,
-    ).flatMap(([field, operators]) =>
+    Object.entries(filter).flatMap(([field, operators]) =>
       operators.map((operator) => JSON.stringify([field, operator])),
     ),
   );
@@ -120,7 +60,7 @@ const declarationOf = (capabilities: SourceCapabilities): string =>
     sortOf(capabilities.sort),
     [
       sortedUnique(capabilities.group.fields),
-      capabilities.group.depth,
+      capabilities.group.levels,
       capabilities.group.summaries,
       capabilities.group.collapse,
     ],
@@ -147,19 +87,19 @@ const portRejection = <TRow extends object>(
       : "this source offers a row-operation port it declares no operation for";
   }
   if (
-    capabilities.pagination.mode === "cursor" &&
-    source.refuses === undefined
+    capabilities.pagination.kind === "cursor" &&
+    source.refusals === undefined
   ) {
     // Only the source knows which pages its tokens reach, so a cursor
     // source that refuses nothing would be asked for pages it cannot serve.
-    return "a cursor source must declare which pages it cannot reach through refuses";
+    return "a cursor source must declare which pages it cannot reach through refusals";
   }
   return null;
 };
 
 /** One count held to what the declaration allows. */
 const heldCount = (count: Count, support: CountSupport): Count => {
-  if (support === "none" || count.kind === "unknown") {
+  if (support === "unknown" || count.kind === "unknown") {
     return { kind: "unknown" };
   }
   if (!Number.isSafeInteger(count.value) || count.value < 0) {
@@ -167,8 +107,8 @@ const heldCount = (count: Count, support: CountSupport): Count => {
     // page total it would be NaN, a fraction or a negative.
     return { kind: "unknown" };
   }
-  if (support === "atLeast" && count.kind === "exact") {
-    return { kind: "atLeast", value: count.value };
+  if (support === "at-least" && count.kind === "exact") {
+    return { kind: "at-least", value: count.value };
   }
   return count;
 };
@@ -178,7 +118,7 @@ const heldCounts = (
   counts: SourceCounts,
   declared: SourceCapabilities["counts"],
 ): SourceCounts => ({
-  visible: heldCount(counts.visible, declared.visible),
+  pageable: heldCount(counts.pageable, declared.pageable),
   matched: heldCount(counts.matched, declared.matched),
   total: heldCount(counts.total, declared.total),
 });
@@ -202,6 +142,9 @@ type Execution = {
  * Construction subscribes to nothing: `observe()` starts, and the release it
  * returns stops. One binding owns one host: two bindings on the same host
  * both execute every request and race to complete it.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export default function createSourceBinding<TRow extends object = RowRecord>(
   config: SourceBindingConfig<TRow>,
@@ -256,7 +199,7 @@ export default function createSourceBinding<TRow extends object = RowRecord>(
 
   /** Every refusal one request collects, declaration first then the source's. */
   const refusalsFor = (query: Query): readonly SourceRefusal[] => {
-    const declared = supportsRequest(capabilities, query);
+    const declared = refusalsOf(capabilities, query);
     if (declared.length > 0) {
       // The source's own check reads state that a refused request never
       // reaches; asking it about one would be asking a question it has no
@@ -265,7 +208,7 @@ export default function createSourceBinding<TRow extends object = RowRecord>(
     }
     // Copied for the same reason a delivered page is: what a source hands
     // over reaches published state, and must not move under it afterwards.
-    return Object.freeze([...(source.refuses?.(query) ?? [])]);
+    return Object.freeze([...(source.refusals?.(query) ?? [])]);
   };
 
   const publish = (
@@ -332,7 +275,11 @@ export default function createSourceBinding<TRow extends object = RowRecord>(
       }
       host.complete(requestId, {
         status: "failed",
-        failure: { reason: reasonOf(error), cause: error, transient: null },
+        failure: {
+          reason: describeError(error),
+          cause: error,
+          transient: null,
+        },
       });
       return;
     }
@@ -368,7 +315,7 @@ export default function createSourceBinding<TRow extends object = RowRecord>(
 
   return {
     capabilities,
-    supports: refusalsFor,
+    refusals: refusalsFor,
     async runAction(request: SourceActionRequest): Promise<Operation> {
       const run = source.runAction;
       if (run === undefined) {
@@ -387,8 +334,8 @@ export default function createSourceBinding<TRow extends object = RowRecord>(
         throw new Error(
           declared.targets === "query" &&
             capabilities.selection.scope === "query"
-            ? // Seam: what a query-wide target set means under concurrent
-              // writes has no contract yet, so nothing declares it.
+            ? // What a query-wide target set means under concurrent writes
+              // has no contract yet, so nothing declares it.
               `running "${request.action}" over a whole query is not implemented`
             : `"${request.action}" addresses explicitly captured rows only`,
         );
@@ -412,7 +359,7 @@ export default function createSourceBinding<TRow extends object = RowRecord>(
           payload: request.payload,
         });
       } catch (error) {
-        const reason = reasonOf(error);
+        const reason = describeError(error);
         outcomes = captured.map((target) => ({
           target,
           status: "failed" as const,

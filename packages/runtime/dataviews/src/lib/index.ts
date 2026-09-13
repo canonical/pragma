@@ -46,7 +46,6 @@ export type {
   DataViewsProvider,
   DataViewsProviderConfig,
   DeclaredRecordTypes,
-  DiscriminatorField,
   FieldHandle,
   ProviderFields,
   RecordTypes,
@@ -90,10 +89,10 @@ export type {
 } from "./rows/index.js";
 export type {
   AppliedOf,
-  AppliedValues,
   ChoicesField,
   DateField,
   EmptyOr,
+  FieldKind,
   FlagField,
   NumberField,
   Schema,
@@ -108,13 +107,15 @@ export type {
   ActionTargets,
   ArraySource,
   ArraySourceConfig,
+  CapabilityDeclaration,
   CountCapabilities,
   CountSupport,
-  FieldReader,
   GroupCapabilities,
+  PageConfig,
   PaginationCapabilities,
   QuerySourceConfig,
   RelaySourceConfig,
+  SliceReading,
   SortCapabilities,
   SortTiebreak,
   Source,
@@ -128,9 +129,12 @@ export type {
 } from "./source/index.js";
 export {
   createArraySource,
+  createPage,
   createQuerySource,
   createRelaySource,
   createSourceBinding,
+  declareCapabilities,
+  readSlice,
 } from "./source/index.js";
 export type {
   JsonValue,

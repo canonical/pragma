@@ -88,10 +88,20 @@ describe("bundle isolation", () => {
     expect(css).not.toContain("windowed");
   }, 60_000);
 
+  it("loads the body without the table it is rendered into", async () => {
+    // The entry point is named for its bytes: what it adds to a table is
+    // the body, and a table's own graph is the table's to load.
+    const { modules } = await bundle(
+      `export { virtualizeRows } from ${from("virtualization/index.ts")};`,
+    );
+    expect(modules.some((id) => id.endsWith("VirtualBody.tsx"))).toBe(true);
+    expect(modules.some((id) => id.endsWith("/DataTable.tsx"))).toBe(false);
+  }, 60_000);
+
   it("ships the implementation over one copy of the shared core", async () => {
     const { modules, css } = await bundle(
       `export { DataTable } from ${from("index.ts")};
-export { virtualRows } from ${from("virtualization/index.ts")};`,
+export { virtualizeRows } from ${from("virtualization/index.ts")};`,
     );
     expect(modules.some((id) => id.endsWith("VirtualBody.tsx"))).toBe(true);
     expect(

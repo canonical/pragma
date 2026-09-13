@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { declareSorting } from "../../../testing/fixtures.js";
+import { declareSort } from "../../../testing/fixtures.js";
 import type { Slice, SortTerm } from "../query/index.js";
 import { createSchema } from "../schema/index.js";
-import type { ExecuteSliceConfig } from "./executeSlice.js";
 import executeSlice from "./executeSlice.js";
+import type { ExecuteSliceConfig } from "./types.js";
 
 const emptySlice: Slice = { filter: [], search: null, sort: [], group: [] };
 
@@ -18,6 +18,7 @@ const schema = createSchema([
   { field: "cpu", kind: "number" },
   { field: "ready", kind: "flag" },
   { field: "owner", kind: "text" },
+  { field: "seen", kind: "date" },
 ]);
 
 /** The source declaration of a run: everything sortable, nothing documented. */
@@ -25,7 +26,7 @@ const buildExecuteConfig = (
   overrides: Partial<ExecuteSliceConfig> = {},
 ): ExecuteSliceConfig => ({
   schema,
-  sort: declareSorting(schema.fieldNames),
+  sort: declareSort(schema.fieldNames),
   ...overrides,
 });
 
@@ -34,7 +35,7 @@ const buildConfigWithDefault = (
   terms: readonly SortTerm[],
 ): ExecuteSliceConfig =>
   buildExecuteConfig({
-    sort: { ...declareSorting(schema.fieldNames), default: terms },
+    sort: { ...declareSort(schema.fieldNames), default: terms },
   });
 
 /** Neutral fixture records. */
@@ -155,6 +156,22 @@ describe("executeSlice", () => {
         ),
       ),
     ).toEqual(["a", "b", "c"]);
+  });
+
+  it("matches nothing for a range over a field the schema does not define", () => {
+    // Nothing can say how such a field's values compare, so no row is in
+    // any range of it; an equality over it still reads the row's value.
+    expect(
+      ids(
+        executeSlice(
+          rows,
+          slice({
+            filter: [{ field: "zone", operator: "gte", operands: ["a"] }],
+          }),
+          buildExecuteConfig(),
+        ),
+      ),
+    ).toEqual([]);
   });
 
   it("never satisfies a range with an absent or null value", () => {
@@ -353,7 +370,7 @@ describe("executeSlice", () => {
           slice({ sort: [{ field: "ready", direction: "asc" }] }),
           buildExecuteConfig({
             sort: {
-              ...declareSorting(schema.fieldNames),
+              ...declareSort(schema.fieldNames),
               tiebreak: [{ field: "cpu", direction: "desc" }],
             },
           }),
@@ -417,19 +434,53 @@ describe("executeSlice", () => {
       { id: "c", cpu: 1 },
     ];
     expect(
-      executeSlice(
-        metrics,
-        slice({ filter: [{ field: "cpu", operator: "gte", operands: [100] }] }),
-        buildExecuteConfig(),
+      ids(
+        executeSlice(
+          metrics,
+          slice({
+            filter: [{ field: "cpu", operator: "lte", operands: [100] }],
+          }),
+          buildExecuteConfig(),
+        ),
       ),
-    ).toEqual([]);
+    ).toEqual(["a", "c"]);
     expect(
-      executeSlice(
-        metrics,
-        slice({ filter: [{ field: "cpu", operator: "lte", operands: [0] }] }),
-        buildExecuteConfig(),
+      ids(
+        executeSlice(
+          metrics,
+          slice({ filter: [{ field: "cpu", operator: "gte", operands: [0] }] }),
+          buildExecuteConfig(),
+        ),
       ),
-    ).toEqual([]);
+    ).toEqual(["a", "c"]);
+  });
+
+  it("bounds a date field by calendar date, inclusive at both ends", () => {
+    const seen = [
+      { id: "a", seen: "2024-01-14" },
+      { id: "b", seen: "2024-01-15" },
+      { id: "c", seen: "2024-02-01" },
+      // The filter domain is the calendar date as the row spells it; a value
+      // spelled any other way is outside it and matches no bound.
+      { id: "d", seen: new Date("2024-01-20T00:00:00Z") },
+      { id: "e", seen: null },
+    ];
+    const between = (gte: string, lte: string) =>
+      ids(
+        executeSlice(
+          seen,
+          slice({
+            filter: [
+              { field: "seen", operator: "gte", operands: [gte] },
+              { field: "seen", operator: "lte", operands: [lte] },
+            ],
+          }),
+          buildExecuteConfig(),
+        ),
+      );
+    expect(between("2024-01-15", "2024-02-01")).toEqual(["b", "c"]);
+    expect(between("2024-01-14", "2024-01-14")).toEqual(["a"]);
+    expect(between("2024-01-16", "2024-01-31")).toEqual([]);
   });
 
   it("never mutates the caller's array", () => {
@@ -440,20 +491,6 @@ describe("executeSlice", () => {
       buildExecuteConfig(),
     );
     expect(ids(input)).toEqual(["a", "b", "c", "d"]);
-  });
-
-  it("reads fields through a caller-supplied accessor", () => {
-    const wrapped = [{ record: { id: "a", cpu: 1 } }];
-    expect(
-      executeSlice(
-        wrapped,
-        slice({ filter: [{ field: "cpu", operator: "eq", operands: [1] }] }),
-        buildExecuteConfig({
-          read: (row, field) =>
-            (row as { record: Record<string, unknown> }).record[field],
-        }),
-      ),
-    ).toEqual(wrapped);
   });
 
   it("never matches a prototype member with isSet", () => {

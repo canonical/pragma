@@ -4,38 +4,29 @@
  * capability member does not have to be spelled into ninety test files.
  */
 
-import type { SourceCapabilities } from "../src/lib/source/index.js";
+import { createSchema } from "../src/lib/schema/index.js";
+import {
+  declareCapabilities,
+  type SourceCapabilities,
+} from "../src/lib/source/index.js";
 
-/** A source declaring nothing executable: every request is refused. */
-export const NOTHING_DECLARED: SourceCapabilities = Object.freeze({
-  filter: Object.freeze({}),
-  search: null,
-  sort: Object.freeze({
-    fields: Object.freeze([]),
-    terms: 0,
-    default: Object.freeze([]),
-    tiebreak: "none",
-    collation: null,
-  }),
-  group: Object.freeze({
-    fields: Object.freeze([]),
-    depth: 0,
-    summaries: "none",
-    collapse: false,
-  }),
-  counts: Object.freeze({ visible: "none", matched: "none", total: "none" }),
-  pagination: Object.freeze({ mode: "offset" }),
-  selection: Object.freeze({ scope: "explicit" }),
-  actions: Object.freeze({}),
-});
+/**
+ * A source declaring nothing executable: every request is refused. Built
+ * the way a source builds its own, so the fixture and the refusing defaults
+ * cannot drift apart; `declareCapabilities.test.ts` pins what they are.
+ */
+export const NOTHING_DECLARED: SourceCapabilities = declareCapabilities(
+  createSchema([]),
+  {},
+);
 
 /** `NOTHING_DECLARED` with the named members replaced. */
-export const declareCapabilities = (
+export const declare = (
   overrides: Partial<SourceCapabilities>,
 ): SourceCapabilities => ({ ...NOTHING_DECLARED, ...overrides });
 
-/** A sort block over the given fields, unbounded and undocumented. */
-export const declareSorting = (
+/** A sort block over the given fields, limited to `terms` (none by default) and undocumented. */
+export const declareSort = (
   fields: readonly string[],
   terms: number | null = null,
 ): SourceCapabilities["sort"] => ({

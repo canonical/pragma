@@ -15,8 +15,8 @@ import type {
   SourcePage,
 } from "../result/index.js";
 import type { RowRecord } from "../rows/index.js";
-import type { CollectionCoordinator } from "./createCollectionCoordinator.js";
 import createCollectionCoordinator from "./createCollectionCoordinator.js";
+import type { CollectionCoordinator } from "./types.js";
 
 const slice = (overrides: Partial<Slice> = {}): Slice => ({
   filter: [],
@@ -41,7 +41,7 @@ const UNKNOWN: Count = { kind: "unknown" };
 
 /** What an ungrouped source counts: the matched rows are the visible ones. */
 const counts = (matched: number): SourceCounts => ({
-  visible: { kind: "exact", value: matched },
+  pageable: { kind: "exact", value: matched },
   matched: { kind: "exact", value: matched },
   total: UNKNOWN,
 });
@@ -312,7 +312,7 @@ describe("createCollectionCoordinator", () => {
     coordinator.complete(refreshId, failed("gateway down", cause));
     const result = coordinator.state.result;
     // The rows are usable and the failure is real, so both are reported.
-    expect(result.status).toBe("refreshFailed");
+    expect(result.status).toBe("refresh-failed");
     expect(result.rows).toEqual([{ id: "machine-1" }]);
     expect(result.problem).toEqual({
       status: "failed",
@@ -332,7 +332,7 @@ describe("createCollectionCoordinator", () => {
     const refusal = refused('field "zone" cannot be filtered');
     coordinator.complete(refreshRequest(coordinator), refusal);
     const result = coordinator.state.result;
-    expect(result.status).toBe("refreshFailed");
+    expect(result.status).toBe("refresh-failed");
     expect(result.rows).toEqual([{ id: "machine-1" }]);
     expect(result.problem).toEqual({
       status: "refused",

@@ -70,9 +70,9 @@ describe("createArraySource", () => {
         tiebreak: "opaque",
         collation: ROOT_NUMERIC_COLLATION,
       },
-      group: { fields: [], depth: 0, summaries: "none", collapse: false },
-      counts: { visible: "exact", matched: "exact", total: "exact" },
-      pagination: { mode: "offset" },
+      group: { fields: [], levels: 0, summaries: "none", collapse: false },
+      counts: { pageable: "exact", matched: "exact", total: "exact" },
+      pagination: { kind: "offset" },
       selection: { scope: "explicit" },
       actions: {},
     });
@@ -98,7 +98,7 @@ describe("createArraySource", () => {
         schema,
         defaultSort: [{ field: "zone", direction: "asc" }],
       }),
-    ).toThrow('defaultSort names unknown field "zone"');
+    ).toThrow('the default ordering names "zone", which is not sortable');
   });
 
   it("runs its declared default when a query states no term of its own", () => {
@@ -174,7 +174,7 @@ describe("createArraySource", () => {
       page: {
         rows: [rows[0], rows[1]],
         groups: null,
-        counts: { visible: exact(3), matched: exact(3), total: exact(3) },
+        counts: { pageable: exact(3), matched: exact(3), total: exact(3) },
         more: null,
         cursors: null,
       },
@@ -193,7 +193,7 @@ describe("createArraySource", () => {
     expect(deliveredAt(deliver, 0)).toMatchObject({
       page: {
         rows: [rows[0]],
-        counts: { visible: exact(3), matched: exact(3), total: exact(3) },
+        counts: { pageable: exact(3), matched: exact(3), total: exact(3) },
       },
     });
   });
@@ -211,7 +211,7 @@ describe("createArraySource", () => {
     );
     expect(deliveredAt(deliver, 0)).toMatchObject({
       page: {
-        counts: { visible: exact(2), matched: exact(2), total: exact(3) },
+        counts: { pageable: exact(2), matched: exact(2), total: exact(3) },
       },
     });
   });
@@ -226,18 +226,24 @@ describe("createArraySource", () => {
   });
 
   it("reuses one query's matched set across window changes", () => {
-    const read = vi.fn((row: unknown, field: string) =>
-      typeof row === "object" && row !== null
-        ? (row as Record<string, unknown>)[field]
-        : undefined,
+    // Each row reports the reads of its ordered field through a getter.
+    let reads = 0;
+    const counted = rows.map((row) =>
+      Object.defineProperty({ ...row }, "cpu", {
+        enumerable: true,
+        get: () => {
+          reads += 1;
+          return row.cpu;
+        },
+      }),
     );
-    const live = createArraySource({ rows, schema, read });
+    const live = createArraySource({ rows: counted, schema });
     const query: Slice = {
       ...emptySlice,
       sort: [{ field: "cpu", direction: "asc" }],
     };
     live.execute(request({ slice: query }), delivery());
-    const afterFirst = read.mock.calls.length;
+    const afterFirst = reads;
     expect(afterFirst).toBeGreaterThan(0);
 
     const second = delivery();
@@ -249,7 +255,7 @@ describe("createArraySource", () => {
       }),
       second,
     );
-    expect(read.mock.calls.length).toBe(afterFirst);
+    expect(reads).toBe(afterFirst);
     expect(idsOf(deliveredAt(second, 0))).toEqual(["b"]);
   });
 
@@ -322,28 +328,6 @@ describe("createArraySource", () => {
     const later = delivery();
     live.execute(request({ requestId: "i1:r9" }), later);
     expect(idsOf(deliveredAt(later, 0))).toEqual(["z"]);
-  });
-
-  it("reads fields through a caller-supplied accessor", () => {
-    const live = createArraySource({
-      rows: [{ record: { id: "a", cpu: 1 } }],
-      schema,
-      read: (row, field) =>
-        (row as { record: Record<string, unknown> }).record[field],
-    });
-    const deliver = delivery();
-    live.execute(
-      request({
-        slice: {
-          ...emptySlice,
-          filter: [{ field: "cpu", operator: "eq", operands: [1] }],
-        },
-      }),
-      deliver,
-    );
-    expect(deliveredAt(deliver, 0)).toMatchObject({
-      page: { counts: { matched: exact(1) } },
-    });
   });
 
   it("carries the application's row operations", async () => {

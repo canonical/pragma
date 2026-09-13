@@ -1,8 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  declareCapabilities,
-  declareSorting,
-} from "../../../testing/fixtures.js";
+import { declare, declareSort } from "../../../testing/fixtures.js";
 import {
   type CollectionState,
   createCollectionCoordinator,
@@ -21,12 +18,13 @@ import type { RowRecord } from "../rows/index.js";
 import { createSchema } from "../schema/index.js";
 import { createSelection } from "../selection/index.js";
 import createArraySource from "./createArraySource.js";
-import createSourceBinding, { type SourceHost } from "./createSourceBinding.js";
+import createSourceBinding from "./createSourceBinding.js";
 import type {
   ActionCapabilities,
   Source,
   SourceActionRunner,
   SourceCapabilities,
+  SourceHost,
   SourceRequest,
 } from "./types.js";
 
@@ -38,11 +36,11 @@ const schema = createSchema([
 const provider = () => createDataViewsProvider({ schema });
 
 /** Everything the fixture query needs, and three exact counts. */
-const permissive: SourceCapabilities = declareCapabilities({
+const permissive: SourceCapabilities = declare({
   filter: { status: ["eq"], cpu: ["gte", "lte"] },
   search: { fields: ["name"] },
-  sort: declareSorting(["cpu"], 2),
-  counts: { visible: "exact", matched: "exact", total: "exact" },
+  sort: declareSort(["cpu"], 2),
+  counts: { pageable: "exact", matched: "exact", total: "exact" },
 });
 
 const exact = (value: number): Count => ({ kind: "exact", value });
@@ -51,7 +49,7 @@ const pageOf = (rows: readonly RowRecord[]): SourcePage => ({
   rows,
   groups: null,
   counts: {
-    visible: exact(rows.length),
+    pageable: exact(rows.length),
     matched: exact(rows.length),
     total: exact(rows.length),
   },
@@ -193,15 +191,15 @@ const structuralHost = () => {
 
 describe("createSourceBinding construction", () => {
   it("binds a host told its source's own declaration, however spelled", () => {
-    const spelled = declareCapabilities({
+    const spelled = declare({
       ...permissive,
-      // A field declared with no operator list is a field not declared.
-      filter: { ...permissive.filter, owner: undefined },
+      // A field declared with no operator is a field not declared.
+      filter: { ...permissive.filter, owner: [] },
       search: { fields: ["name", "owner"] },
-      sort: declareSorting(["cpu", "status"], 2),
+      sort: declareSort(["cpu", "status"], 2),
       group: {
         fields: ["status", "cpu"],
-        depth: 1,
+        levels: 1,
         summaries: "none",
         collapse: false,
       },
@@ -219,10 +217,10 @@ describe("createSourceBinding construction", () => {
         // Every list is a set: order and repetition say nothing.
         filter: { cpu: ["lte", "gte", "gte"], status: ["eq"], zone: [] },
         search: { fields: ["owner", "name", "name"] },
-        sort: declareSorting(["status", "cpu", "cpu"], 2),
+        sort: declareSort(["status", "cpu", "cpu"], 2),
         group: {
           fields: ["cpu", "status", "status"],
-          depth: 1,
+          levels: 1,
           summaries: "none",
           collapse: false,
         },
@@ -248,13 +246,13 @@ describe("createSourceBinding construction", () => {
     ],
     ["search field", { search: { fields: ["name", "owner"] } }],
     ["search at all", { search: null }],
-    ["sortable field", { sort: declareSorting(["cpu", "status"], 2) }],
-    ["sort-term limit", { sort: declareSorting(["cpu"], 3) }],
+    ["sortable field", { sort: declareSort(["cpu", "status"], 2) }],
+    ["sort-term limit", { sort: declareSort(["cpu"], 3) }],
     [
       "default ordering",
       {
         sort: {
-          ...declareSorting(["cpu"], 2),
+          ...declareSort(["cpu"], 2),
           default: [{ field: "cpu", direction: "desc" }],
         },
       },
@@ -264,16 +262,19 @@ describe("createSourceBinding construction", () => {
       {
         group: {
           fields: ["status"],
-          depth: 1,
+          levels: 1,
           summaries: "none",
           collapse: false,
         },
       },
     ],
-    ["count", { counts: { visible: "none", matched: "none", total: "none" } }],
+    [
+      "count",
+      { counts: { pageable: "unknown", matched: "unknown", total: "unknown" } },
+    ],
     [
       "pagination",
-      { pagination: { mode: "cursor", backward: false, durable: true } },
+      { pagination: { kind: "cursor", backward: false, durable: true } },
     ],
     ["selection scope", { selection: { scope: "query" } }],
     ["row operation", { actions: { stop: { targets: "explicit", limit: 1 } } }],
@@ -293,7 +294,7 @@ describe("createSourceBinding construction", () => {
     [
       "row operations it has no port for",
       {
-        capabilities: declareCapabilities({
+        capabilities: declare({
           actions: { stop: { targets: "explicit", limit: null } },
         }),
       },
@@ -307,23 +308,20 @@ describe("createSourceBinding construction", () => {
     [
       "cursor pages nothing says are reachable",
       {
-        capabilities: declareCapabilities({
-          pagination: { mode: "cursor", backward: false, durable: false },
+        capabilities: declare({
+          pagination: { kind: "cursor", backward: false, durable: false },
         }),
       },
-      "a cursor source must declare which pages it cannot reach through refuses",
+      "a cursor source must declare which pages it cannot reach through refusals",
     ],
-  ])(
-    "refuses a source declareCapabilities %s",
-    (_part, difference, message) => {
-      expect(() =>
-        createSourceBinding({
-          host: provider(),
-          source: { ...manual().source, ...difference },
-        }),
-      ).toThrow(message);
-    },
-  );
+  ])("refuses a source declaring %s", (_part, difference, message) => {
+    expect(() =>
+      createSourceBinding({
+        host: provider(),
+        source: { ...manual().source, ...difference },
+      }),
+    ).toThrow(message);
+  });
 
   it("binds a cursor source that says which pages it cannot reach", () => {
     expect(() =>
@@ -331,11 +329,11 @@ describe("createSourceBinding construction", () => {
         host: provider(),
         source: {
           ...manual(
-            declareCapabilities({
-              pagination: { mode: "cursor", backward: true, durable: true },
+            declare({
+              pagination: { kind: "cursor", backward: true, durable: true },
             }),
           ).source,
-          refuses: () => [],
+          refusals: () => [],
         },
       }),
     ).not.toThrow();
@@ -348,7 +346,7 @@ describe("createSourceBinding construction", () => {
     const told = createDataViewsProvider({ schema, capabilities: permissive });
     const source = manual({
       ...permissive,
-      counts: { total: "exact", matched: "exact", visible: "exact" },
+      counts: { total: "exact", matched: "exact", pageable: "exact" },
     }).source;
     expect(() => createSourceBinding({ host: told, source })).not.toThrow();
   });
@@ -377,10 +375,10 @@ describe("createSourceBinding refusals", () => {
       source: manual().source,
     });
     expect(
-      binding.supports(query({ sort: [{ field: "cpu", direction: "asc" }] })),
+      binding.refusals(query({ sort: [{ field: "cpu", direction: "asc" }] })),
     ).toEqual([]);
     expect(
-      binding.supports(query({ sort: [{ field: "zone", direction: "asc" }] })),
+      binding.refusals(query({ sort: [{ field: "zone", direction: "asc" }] })),
     ).toEqual([
       {
         part: "sort",
@@ -395,30 +393,28 @@ describe("createSourceBinding refusals", () => {
   it("asks the source only about a request the declaration allows", () => {
     const refusal: SourceRefusal = {
       part: "filter",
-      code: "combination",
+      code: "unsupported-combination",
       field: null,
       operator: null,
       reason: "this endpoint cannot search a filtered set",
     };
-    const refuses = vi.fn().mockReturnValue([refusal]);
+    const refusals = vi.fn().mockReturnValue([refusal]);
     const binding = createSourceBinding({
       host: provider(),
-      source: { ...manual().source, refuses },
+      source: { ...manual().source, refusals },
     });
     expect(
-      binding.supports(query({ sort: [{ field: "zone", direction: "asc" }] })),
+      binding.refusals(query({ sort: [{ field: "zone", direction: "asc" }] })),
     ).toMatchObject([{ part: "sort" }]);
-    expect(refuses).not.toHaveBeenCalled();
+    expect(refusals).not.toHaveBeenCalled();
 
-    expect(binding.supports(query({ search: "web" }))).toEqual([refusal]);
-    expect(refuses).toHaveBeenCalledTimes(1);
+    expect(binding.refusals(query({ search: "web" }))).toEqual([refusal]);
+    expect(refusals).toHaveBeenCalledTimes(1);
   });
 
   it("refuses a request before it costs the source a round trip", () => {
     const host = provider();
-    const source = manual(
-      declareCapabilities({ ...permissive, sort: declareSorting([], 0) }),
-    );
+    const source = manual(declare({ ...permissive, sort: declareSort([], 0) }));
     const release = createSourceBinding({
       host,
       source: source.source,
@@ -444,10 +440,10 @@ describe("createSourceBinding refusals", () => {
   it("reaches the host with every refusal at once", () => {
     const host = provider();
     const source = manual(
-      declareCapabilities({
+      declare({
         ...permissive,
         search: null,
-        sort: declareSorting([], 0),
+        sort: declareSort([], 0),
       }),
     );
     const release = createSourceBinding({
@@ -476,9 +472,9 @@ describe("createSourceBinding refusals", () => {
     const host = provider();
     const source = manual(
       // Legal per the declaration type, and it must not read as "any operator".
-      declareCapabilities({
+      declare({
         ...permissive,
-        filter: { status: ["eq"], cpu: undefined },
+        filter: { status: ["eq"], cpu: [] },
       }),
     );
     const release = createSourceBinding({
@@ -496,8 +492,16 @@ describe("createSourceBinding refusals", () => {
 
   it("refuses a grouped query rather than answering it ungrouped", () => {
     const host = provider();
-    const release = createSourceBinding({ host, source: local() }).observe();
+    const source = manual();
+    const release = createSourceBinding({
+      host,
+      source: source.source,
+    }).observe();
+    host.refresh();
+    source.callAt(0).deliver({ status: "succeeded", page: pageOf([]) });
     host.setGroup([{ field: "status" }]);
+    // Refused at the boundary: the source is not asked, and the page stands.
+    expect(source.calls).toHaveLength(1);
     expect(problemOf(host.state.get())).toMatchObject({
       status: "refused",
       refusals: [{ part: "group", reason: "this source cannot group" }],
@@ -507,11 +511,18 @@ describe("createSourceBinding refusals", () => {
 
   it("refuses a collapsed group on a source that cannot collapse", () => {
     const host = provider();
-    const release = createSourceBinding({ host, source: local() }).observe();
+    const source = manual();
+    const release = createSourceBinding({
+      host,
+      source: source.source,
+    }).observe();
+    host.refresh();
+    source.callAt(0).deliver({ status: "succeeded", page: pageOf([]) });
     host.setCollapsed([["failed"]]);
+    expect(source.calls).toHaveLength(1);
     expect(problemOf(host.state.get())).toMatchObject({
       status: "refused",
-      refusals: [{ part: "window", code: "collapse-unsupported" }],
+      refusals: [{ part: "window", code: "unsupported-collapse" }],
     });
     release();
   });
@@ -534,13 +545,13 @@ describe("createSourceBinding refusals", () => {
       host,
       source: {
         ...source.source,
-        refuses: (query) =>
+        refusals: (query) =>
           query.slice.search === null
             ? []
             : [
                 {
                   part: "search",
-                  code: "combination",
+                  code: "unsupported-combination",
                   field: null,
                   operator: null,
                   reason: "this endpoint cannot search a filtered set",
@@ -554,7 +565,7 @@ describe("createSourceBinding refusals", () => {
     expect(source.calls).toHaveLength(1);
     expect(problemOf(host.state.get())).toMatchObject({
       status: "refused",
-      refusals: [{ code: "combination" }],
+      refusals: [{ code: "unsupported-combination" }],
     });
     release();
   });
@@ -806,7 +817,7 @@ describe("createSourceBinding", () => {
     host.refresh();
     source.callAt(1).deliver(failed("no route"));
     expect(host.state.get().result).toMatchObject({
-      status: "refreshFailed",
+      status: "refresh-failed",
       rows,
       problem: { status: "failed", failure: { reason: "no route" } },
     });
@@ -1216,7 +1227,7 @@ describe("createSourceBinding counts", () => {
     delivered: SourcePage["counts"],
   ) => {
     const host = provider();
-    const source = manual(declareCapabilities({ ...permissive, counts }));
+    const source = manual(declare({ ...permissive, counts }));
     const release = createSourceBinding({
       host,
       source: source.source,
@@ -1232,16 +1243,19 @@ describe("createSourceBinding counts", () => {
   };
 
   const claimed = {
-    visible: exact(1),
-    matched: { kind: "atLeast", value: 2 } as Count,
+    pageable: exact(1),
+    matched: { kind: "at-least", value: 2 } as Count,
     total: { kind: "unknown" } as Count,
   };
 
   it("publishes unknown for a count the declaration does not carry", () => {
     expect(
-      publishing({ visible: "none", matched: "none", total: "none" }, claimed),
+      publishing(
+        { pageable: "unknown", matched: "unknown", total: "unknown" },
+        claimed,
+      ),
     ).toEqual({
-      visible: { kind: "unknown" },
+      pageable: { kind: "unknown" },
       matched: { kind: "unknown" },
       total: { kind: "unknown" },
     });
@@ -1250,12 +1264,12 @@ describe("createSourceBinding counts", () => {
   it("holds an exact count to the lower bound the declaration allows", () => {
     expect(
       publishing(
-        { visible: "atLeast", matched: "atLeast", total: "atLeast" },
+        { pageable: "at-least", matched: "at-least", total: "at-least" },
         claimed,
       ),
     ).toEqual({
-      visible: { kind: "atLeast", value: 1 },
-      matched: { kind: "atLeast", value: 2 },
+      pageable: { kind: "at-least", value: 1 },
+      matched: { kind: "at-least", value: 2 },
       total: { kind: "unknown" },
     });
   });
@@ -1263,7 +1277,7 @@ describe("createSourceBinding counts", () => {
   it("publishes an exact count a source is declared to answer exactly", () => {
     expect(
       publishing(
-        { visible: "exact", matched: "exact", total: "exact" },
+        { pageable: "exact", matched: "exact", total: "exact" },
         claimed,
       ),
     ).toEqual(claimed);
@@ -1274,10 +1288,10 @@ describe("createSourceBinding counts", () => {
     // nothing, and page numbers derive from this count.
     expect(
       publishing(
-        { visible: "exact", matched: "exact", total: "exact" },
-        { visible: exact(0), matched: exact(0), total: exact(0) },
+        { pageable: "exact", matched: "exact", total: "exact" },
+        { pageable: exact(0), matched: exact(0), total: exact(0) },
       ),
-    ).toEqual({ visible: exact(0), matched: exact(0), total: exact(0) });
+    ).toEqual({ pageable: exact(0), matched: exact(0), total: exact(0) });
   });
 
   it.each([
@@ -1290,15 +1304,15 @@ describe("createSourceBinding counts", () => {
     // as NaN, a fraction or a negative, and page numbers derive from it.
     expect(
       publishing(
-        { visible: "exact", matched: "exact", total: "exact" },
+        { pageable: "exact", matched: "exact", total: "exact" },
         {
-          visible: { kind: "exact", value },
+          pageable: { kind: "exact", value },
           matched: exact(2),
           total: exact(3),
         },
       ),
     ).toEqual({
-      visible: { kind: "unknown" },
+      pageable: { kind: "unknown" },
       matched: exact(2),
       total: exact(3),
     });
@@ -1307,9 +1321,9 @@ describe("createSourceBinding counts", () => {
   it("holds the counts of an external change as well", () => {
     const host = provider();
     const source = manual(
-      declareCapabilities({
+      declare({
         ...permissive,
-        counts: { visible: "none", matched: "none", total: "none" },
+        counts: { pageable: "unknown", matched: "unknown", total: "unknown" },
       }),
     );
     const release = createSourceBinding({
@@ -1321,7 +1335,7 @@ describe("createSourceBinding counts", () => {
     source.callAt(0).deliver(succeeded(rows.slice(0, 1)));
     expect(idsOf(host.state.get())).toEqual(["a"]);
     expect(host.state.get().result.counts).toEqual({
-      visible: { kind: "unknown" },
+      pageable: { kind: "unknown" },
       matched: { kind: "unknown" },
       total: { kind: "unknown" },
     });
@@ -1331,9 +1345,9 @@ describe("createSourceBinding counts", () => {
   it("leaves a failure alone on a source that declares no count", () => {
     const host = provider();
     const source = manual(
-      declareCapabilities({
+      declare({
         ...permissive,
-        counts: { visible: "none", matched: "none", total: "none" },
+        counts: { pageable: "unknown", matched: "unknown", total: "unknown" },
       }),
     );
     const release = createSourceBinding({
@@ -1361,7 +1375,7 @@ describe("createSourceBinding row operations", () => {
       host,
       source: {
         ...manual(
-          declareCapabilities({
+          declare({
             ...permissive,
             selection: { scope },
             actions: { stop: action },

@@ -1,9 +1,10 @@
+import { areListsEqual } from "../query/index.js";
 import type { DisplayEntry } from "../rows/index.js";
-import type { SizeIndex } from "./createSizeIndex.js";
 import createSizeIndex from "./createSizeIndex.js";
 import type {
   MountedRange,
   MountedRun,
+  SizeIndex,
   VirtualRange,
   VirtualRangeConfig,
 } from "./types.js";
@@ -18,16 +19,14 @@ const emptyRange: MountedRange = Object.freeze({
 
 const sameRange = (a: MountedRange, b: MountedRange): boolean =>
   a.after === b.after &&
-  a.runs.length === b.runs.length &&
-  a.runs.every((run, position) => {
-    // In range: the lengths were compared first.
-    const other = b.runs[position] as MountedRun;
-    return (
+  areListsEqual(
+    a.runs,
+    b.runs,
+    (run, other) =>
       run.start === other.start &&
       run.end === other.end &&
-      run.before === other.before
-    );
-  });
+      run.before === other.before,
+  );
 
 /**
  * Create one table's virtual range.
@@ -39,6 +38,9 @@ const sameRange = (a: MountedRange, b: MountedRange): boolean =>
  *
  * A scroll costs O(log n) and publishes only when the mounted entries or
  * the space around them change.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export default function createVirtualRange(
   config: VirtualRangeConfig,

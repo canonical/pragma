@@ -5,10 +5,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import {
-  declareCapabilities,
-  NOTHING_DECLARED,
-} from "../../../testing/fixtures.js";
+import { declare, NOTHING_DECLARED } from "../../../testing/fixtures.js";
 import { createDataViewsProvider } from "../provider/index.js";
 import {
   DEFAULT_WINDOW,
@@ -20,9 +17,9 @@ import type { Completion } from "../result/index.js";
 import type { RowRecord } from "../rows/index.js";
 import { createSchema } from "../schema/index.js";
 import { createArraySource, createSourceBinding } from "../source/index.js";
-import type { LocationHost } from "./createLocationBinding.js";
 import createLocationBinding from "./createLocationBinding.js";
 import createMemoryLocation from "./createMemoryLocation.js";
+import type { LocationHost } from "./types.js";
 
 const machines = () =>
   createSchema([
@@ -59,7 +56,7 @@ const delivered = (rows: readonly RowRecord[]): Completion => {
     page: {
       rows,
       groups: null,
-      counts: { visible: count, matched: count, total: count },
+      counts: { pageable: count, matched: count, total: count },
       more: null,
       cursors: null,
     },
@@ -517,7 +514,7 @@ describe("createLocationBinding", () => {
   it("refuses a clause the host's source cannot execute rather than adopting it", () => {
     const provider = createDataViewsProvider({
       schema: machines(),
-      capabilities: declareCapabilities({
+      capabilities: declare({
         filter: { status: ["eq"], cpu: ["lte"] },
       }),
     });

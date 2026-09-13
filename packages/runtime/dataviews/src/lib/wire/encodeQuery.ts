@@ -1,6 +1,8 @@
-import { canonicalSlice, type PredicateOperand } from "../query/index.js";
+import { canonicalizeSlice, type PredicateOperand } from "../query/index.js";
+import { OPERATOR_DELIMITER } from "./constants.js";
+import isOwnedKey from "./isOwnedKey.js";
+import spellWireKey from "./spellWireKey.js";
 import type { EncodeQueryConfig } from "./types.js";
-import { isOwnedKey, OPERATOR_DELIMITER, wireKeyOf } from "./wireGrammar.js";
 
 /** The presence marker of the zero-value operator. */
 const IS_SET_VALUE = "1";
@@ -45,6 +47,9 @@ const operandText = (operand: PredicateOperand): string =>
  * their precedence, and an empty search is no search. Only the grammar's
  * own keys are replaced in `preserve` — every host parameter survives, in
  * its original order and with its duplicates.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export default function encodeQuery(
   config: EncodeQueryConfig,
@@ -52,14 +57,14 @@ export default function encodeQuery(
   const { schema, slice, window } = config;
   const params = new URLSearchParams(config.preserve);
   for (const key of new Set(params.keys())) {
-    if (isOwnedKey(key, schema.hasField)) {
+    if (isOwnedKey(key, schema)) {
       params.delete(key);
     }
   }
 
-  const canonical = canonicalSlice(slice);
+  const canonical = canonicalizeSlice(slice);
   for (const predicate of canonical.filter) {
-    const key = wireKeyOf(predicate.field, predicate.operator);
+    const key = spellWireKey(predicate.field, predicate.operator);
     if (predicate.operator === "isSet") {
       params.append(key, IS_SET_VALUE);
       continue;

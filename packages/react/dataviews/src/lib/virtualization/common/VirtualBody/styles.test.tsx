@@ -12,8 +12,8 @@ import {
 } from "@canonical/dataviews-core";
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { DataTable } from "../../../DataTable/index.js";
-import virtualRows from "../../virtualRows.js";
+import { DataTable } from "../../../_work_in_progress/DataTable/index.js";
+import virtualizeRows from "../../virtualizeRows.js";
 
 const sheet = readFileSync(
   path.join(path.dirname(fileURLToPath(import.meta.url)), "styles.css"),
@@ -30,7 +30,7 @@ describe("windowed DataTable stylesheet", () => {
         provider={provider}
         label="Machines"
         columns={[{ id: "name", header: "Name" }]}
-        windowing={virtualRows({ estimatedRowHeight: 32 })}
+        windowing={virtualizeRows({ estimatedRowHeight: 32 })}
       />,
     );
     const selector = sheet.match(/\.ds\.data-table:has\(> ([^)]+)\)/)?.[1];

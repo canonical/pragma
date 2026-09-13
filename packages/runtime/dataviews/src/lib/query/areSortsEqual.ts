@@ -3,8 +3,8 @@ import type { Slice } from "./types.js";
 /**
  * Whether two orderings agree term for term, precedence included.
  *
- * @experimental Newly public so the location binding and slice equality
- * compare orderings the same way.
+ * One comparison for the location binding and for slice equality, so both
+ * read an ordering the same way.
  */
 export default function areSortsEqual(
   a: Slice["sort"],

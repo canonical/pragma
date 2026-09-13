@@ -1,118 +1,22 @@
 import {
-  canonicalSlice,
+  canonicalizeSlice,
   type Query,
   type Slice,
-  stableJson,
+  stringifyStable,
 } from "../query/index.js";
 import type { Count, SourceDelivery, SourceRefusal } from "../result/index.js";
 import type { RowRecord } from "../rows/index.js";
 import copyCapabilities from "./copyCapabilities.js";
-import reasonOf from "./reasonOf.js";
+import describeError from "./describeError.js";
 import type {
+  RelayConnection,
+  RelaySnapshot,
+  RelaySourceConfig,
   Source,
-  SourceActionRunner,
-  SourceCapabilities,
 } from "./types.js";
-
-/** What a Relay selector reads, and whether the store holds all of it. */
-export type RelaySnapshot = {
-  readonly data: unknown;
-  readonly isMissingData: boolean;
-};
-
-/**
- * An executable Relay operation: its fragment selects the query's data, and
- * its request carries the compiled query's normalization selections.
- */
-export type RelayOperation = {
-  readonly fragment: unknown;
-  readonly request: {
-    readonly node: {
-      readonly operation: { readonly selections: readonly unknown[] };
-    };
-  };
-};
-
-/**
- * The structural surface of a Relay environment. Relay's `Environment`
- * satisfies it by shape. The members are methods, so Relay's narrower
- * parameter types — its own selector, snapshot and operation — still do.
- */
-export type RelayEnvironment = {
-  /** Keep an operation's data in the store until disposed. */
-  retain(operation: RelayOperation): { dispose(): void };
-  /** Read what a selector selects from the store now. */
-  lookup(selector: unknown): RelaySnapshot;
-  /** Observe the store; called only when the selected data changes. */
-  subscribe(
-    snapshot: RelaySnapshot,
-    callback: (snapshot: RelaySnapshot) => void,
-  ): { dispose(): void };
-  /** Fetch an operation, publishing its response into the store. */
-  execute(config: { readonly operation: RelayOperation }): {
-    subscribe(observer: {
-      readonly error: (error: unknown) => void;
-      readonly complete: () => void;
-    }): { unsubscribe(): void };
-  };
-};
-
-/** The page one operation is built for. */
-export type RelayPageRequest = {
-  readonly slice: Slice;
-  /** The page size. */
-  readonly first: number;
-  /** The cursor the page starts after; null for the first page. */
-  readonly after: string | null;
-};
 
 /** An unknown count, shared: a connection that reports none reports nothing. */
 const UNKNOWN: Count = Object.freeze({ kind: "unknown" });
-
-/**
- * The forward connection a query's data carries, in the shape the Relay
- * compiler generates for it.
- */
-export type RelayConnection<TRow extends object = RowRecord> = {
-  readonly edges:
-    | readonly ({ readonly node: TRow | null | undefined } | null | undefined)[]
-    | null
-    | undefined;
-  readonly pageInfo: {
-    readonly endCursor?: string | null | undefined;
-    /** Whether a further page exists, as the connection spec defines it. */
-    readonly hasNextPage?: boolean | null | undefined;
-  };
-  /** The rows matching the query, when the schema counts them. */
-  readonly totalCount?: number | null | undefined;
-};
-
-/**
- * Configuration of one Relay source over a compiled query type, as the
- * Relay compiler generates it: `{ response, variables }`.
- */
-export type RelaySourceConfig<
-  TQuery extends { readonly response: unknown } = {
-    readonly response: unknown;
-  },
-  TRow extends object = RowRecord,
-> = {
-  /** What this connection can execute. Declared, never inferred. */
-  readonly capabilities: SourceCapabilities;
-  /** The application's own environment; its store stays the only cache. */
-  readonly environment: RelayEnvironment;
-  /**
-   * Build one page's operation, for example
-   * `(page) => createOperationDescriptor(MachinesQuery, variablesOf(page))`.
-   */
-  readonly operation: (page: RelayPageRequest) => RelayOperation;
-  /** The connection within the query's data. */
-  readonly connection: (
-    data: TQuery["response"],
-  ) => RelayConnection<TRow> | null | undefined;
-  /** Row operations, when the schema has any. */
-  readonly runAction?: SourceActionRunner;
-};
 
 /**
  * Whether normalization selections carry a `@connection` handle, which the
@@ -157,6 +61,9 @@ const unreachable = (page: number): string =>
  * Relay merges its pages. A connection with no `totalCount` counts nothing
  * rather than counting zero; a page with a missing record fails rather than
  * delivering a shorter page.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export default function createRelaySource<
   TQuery extends { readonly response: unknown },
@@ -170,7 +77,7 @@ export default function createRelaySource<
   /** The trail one query keeps its cursors under: what it asks for, and how
    * many rows at a time. */
   const trailKey = (slice: Slice, size: number): string =>
-    stableJson([canonicalSlice(slice), size]);
+    stringifyStable([canonicalizeSlice(slice), size]);
 
   /** The trail of one query, now the most recently used. */
   const trailOf = (key: string): Map<number, string> => {
@@ -200,7 +107,7 @@ export default function createRelaySource<
 
   return {
     capabilities,
-    refuses(query: Query): readonly SourceRefusal[] {
+    refusals(query: Query): readonly SourceRefusal[] {
       if (cursorFor(query) !== undefined) {
         return [];
       }
@@ -277,7 +184,7 @@ export default function createRelaySource<
           // as Relay's own hooks type it.
           connection = config.connection(data as TQuery["response"]);
         } catch (error) {
-          fail(data, reasonOf(error), error);
+          fail(data, describeError(error), error);
           return;
         }
         if (connection === null || connection === undefined) {
@@ -317,7 +224,7 @@ export default function createRelaySource<
             groups: null,
             // Nothing collapses, so the rows the window pages over are the
             // rows that matched; the whole collection is never asked for.
-            counts: { visible: matched, matched, total: UNKNOWN },
+            counts: { pageable: matched, matched, total: UNKNOWN },
             more,
             cursors: {
               next: more === false ? null : (endCursor ?? null),
@@ -340,7 +247,7 @@ export default function createRelaySource<
         const fetch = environment.execute({ operation }).subscribe({
           error(error) {
             settled = true;
-            fail(error, reasonOf(error), error);
+            fail(error, describeError(error), error);
           },
           complete() {
             settled = true;

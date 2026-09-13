@@ -8,7 +8,7 @@ import {
 /**
  * Story fixtures for the machine collection. Story-only: this folder is
  * excluded from the package build, and the unit tests take their own
- * declarations and pages from `lib/capabilities.fixtures.ts` instead.
+ * declarations with `declareCapabilities` and pages from `testing/fixtures.ts`.
  *
  * The stories drive a real `createArraySource` rather than a frozen page of
  * rows, so sorting, searching and paging in a story run the same path a
@@ -212,7 +212,11 @@ export const createEmptySource = (): Source => createMachineSource([]);
  */
 export const createUncountedSource = (): Source => {
   const source = createMachineSource();
-  const counts = { visible: "none", matched: "none", total: "none" } as const;
+  const counts = {
+    pageable: "unknown",
+    matched: "unknown",
+    total: "unknown",
+  } as const;
   return {
     capabilities: { ...source.capabilities, counts },
     execute: (request, deliver) =>
@@ -226,7 +230,7 @@ export const createUncountedSource = (): Source => {
           status: "succeeded",
           page: {
             ...delivery.page,
-            counts: { visible: unknown, matched: unknown, total: unknown },
+            counts: { pageable: unknown, matched: unknown, total: unknown },
           },
         });
       }),

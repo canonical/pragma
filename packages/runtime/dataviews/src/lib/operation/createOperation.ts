@@ -1,63 +1,11 @@
-import { createIdentity, type Identity } from "../identity/index.js";
-
-/** Per-target outcome of a partial operation result. */
-export type OperationOutcome =
-  | { readonly target: string; readonly status: "succeeded" }
-  | {
-      readonly target: string;
-      readonly status: "failed";
-      readonly reason: string;
-    };
-
-/** Failure detail retained for retry and reporting. */
-export type OperationFailure = {
-  readonly target: string;
-  readonly reason: string;
-};
-
-/** Immutable state of one operation invocation. */
-export type OperationState = {
-  /** Immutable captured targets, deduplicated at construction. */
-  readonly targets: readonly string[];
-  /** Caller-defined payload, captured by reference at construction. */
-  readonly payload: unknown;
-  /** Selection revision captured at construction. */
-  readonly selectionRevision: number;
-  readonly status: "pending" | "partial" | "succeeded" | "failed";
-  readonly succeeded: readonly string[];
-  readonly failed: readonly OperationFailure[];
-  /** Captured targets without a reported outcome yet. */
-  readonly remaining: readonly string[];
-};
-
-/**
- * What a caller asks to be run over explicitly captured rows: the same
- * capture an operation records, without the revision its owner supplies.
- */
-export type ActionInvocation = {
-  readonly targets: readonly string[];
-  readonly payload?: unknown;
-};
-
-/** Configuration of one invocation; the capture happens at construction. */
-export type OperationConfig = {
-  readonly targets: readonly string[];
-  readonly payload?: unknown;
-  readonly selectionRevision: number;
-};
-
-/** Handle of one operation invocation record. */
-export type Operation = {
-  readonly identity: Identity;
-  readonly state: OperationState;
-  /**
-   * Record a partial result. Outcomes apply only to captured targets still
-   * awaiting one: successful targets leave the record, failures are retained
-   * with their reasons, and outcomes for unknown, already-settled or foreign
-   * targets are ignored.
-   */
-  readonly recordOutcomes: (outcomes: readonly OperationOutcome[]) => void;
-};
+import { createIdentity } from "../identity/index.js";
+import type {
+  Operation,
+  OperationConfig,
+  OperationFailure,
+  OperationOutcome,
+  OperationState,
+} from "./types.js";
 
 /**
  * Create one operation invocation: targets, payload and the selection

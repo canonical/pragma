@@ -1,76 +1,9 @@
-import { canonicalSlice, type Query } from "../query/index.js";
-import type { SourcePage, SourceRefusal } from "../result/index.js";
+import { canonicalizeSlice } from "../query/index.js";
+import type { SourcePage } from "../result/index.js";
 import type { RowRecord } from "../rows/index.js";
 import copyCapabilities from "./copyCapabilities.js";
-import reasonOf from "./reasonOf.js";
-import type {
-  Source,
-  SourceActionRunner,
-  SourceCapabilities,
-  SourceRequest,
-} from "./types.js";
-
-/**
- * The structural surface of one query-library observation. TanStack
- * Query's `QueryObserverResult` satisfies it, and so does any client
- * reporting the same three states. It is a product rather than a union of
- * the three states, because that is the shape those clients publish.
- */
-export type QueryObservation<TData> = {
-  readonly status: "pending" | "error" | "success";
-  readonly data: TData | undefined;
-  readonly error: unknown;
-};
-
-/** The structural surface of one query-library observer. */
-export type QueryObserver<TData> = {
-  /** The current observation, read once at attach time. */
-  readonly getCurrentResult: () => QueryObservation<TData>;
-  /** Observe later changes; the return value detaches this observer. */
-  readonly subscribe: (
-    listener: (observation: QueryObservation<TData>) => void,
-  ) => () => void;
-  /** Detach the observer from its query. The client's cache is untouched. */
-  readonly destroy: () => void;
-};
-
-/** The query one observer watches. */
-export type ObservedQuery<TData> = {
-  readonly queryKey: readonly unknown[];
-  readonly queryFn: () => Promise<TData>;
-};
-
-/**
- * Mint one observer against the application's own client, for example
- * `(query) => new QueryObserver(queryClient, query)`. The client, its
- * cache, its retries and its invalidations stay the application's.
- */
-export type QueryObserverFactory<TData> = (
-  query: ObservedQuery<TData>,
-) => QueryObserver<TData>;
-
-/** Configuration of one query-library source. */
-export type QuerySourceConfig<TRow extends object = RowRecord> = {
-  /** What this endpoint can execute. Declared, never inferred. */
-  readonly capabilities: SourceCapabilities;
-  /**
-   * Refusals the declaration cannot express, such as a search this endpoint
-   * cannot combine with a filter. Pure and synchronous; no round trip.
-   */
-  readonly refuses?: (query: Query) => readonly SourceRefusal[];
-  /** Stable prefix of the query key; the canonical query is appended. */
-  readonly queryKey: readonly unknown[];
-  /**
-   * Fetch one page, mapping the endpoint's answer onto the envelope.
-   * Transport, retry and cancellation belong to the client this function
-   * runs under.
-   */
-  readonly fetchPage: (request: SourceRequest) => Promise<SourcePage<TRow>>;
-  /** Mint one observer against the application's client. */
-  readonly observe: QueryObserverFactory<SourcePage<TRow>>;
-  /** Row operations, when the endpoint has any. */
-  readonly runAction?: SourceActionRunner;
-};
+import describeError from "./describeError.js";
+import type { QueryObservation, QuerySourceConfig, Source } from "./types.js";
 
 /** The last thing delivered, so an unchanged observation is not repeated. */
 type Delivered<TRow extends object> =
@@ -87,6 +20,9 @@ type Delivered<TRow extends object> =
  *
  * Unchanged observations are recognised by reference, so the client must
  * hand back the same `data` reference while the payload has not changed.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export default function createQuerySource<TRow extends object = RowRecord>(
   config: QuerySourceConfig<TRow>,
@@ -94,12 +30,12 @@ export default function createQuerySource<TRow extends object = RowRecord>(
   const capabilities = copyCapabilities(config.capabilities);
   return {
     capabilities,
-    ...(config.refuses === undefined ? {} : { refuses: config.refuses }),
+    ...(config.refusals === undefined ? {} : { refusals: config.refusals }),
     execute(request, deliver) {
-      const observer = config.observe({
+      const observer = config.createObserver({
         queryKey: [
           ...config.queryKey,
-          canonicalSlice(request.slice),
+          canonicalizeSlice(request.slice),
           request.window,
         ],
         queryFn: () => config.fetchPage(request),
@@ -132,7 +68,7 @@ export default function createQuerySource<TRow extends object = RowRecord>(
             deliver({
               status: "failed",
               failure: {
-                reason: reasonOf(error),
+                reason: describeError(error),
                 cause: error,
                 transient: null,
               },

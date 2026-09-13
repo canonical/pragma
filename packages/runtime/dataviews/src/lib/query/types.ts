@@ -4,16 +4,29 @@
  * results are read through.
  */
 
-/** Bounded predicate operators. */
+/**
+ * Bounded predicate operators.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type PredicateOperator = "eq" | "gte" | "lte" | "isSet";
 
-/** A semantic operand value. Field metadata owns coercion; core never guesses. */
+/**
+ * A semantic operand value. Field metadata owns coercion; core never guesses.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type PredicateOperand = string | number | boolean | null;
 
 /**
  * One filter clause, addressed by its field and operator. `eq` operands are
  * a non-empty set; `gte` and `lte` carry exactly one operand; `isSet`
  * carries none. Numbers must be finite.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type Predicate = {
   readonly field: string;
@@ -21,22 +34,32 @@ export type Predicate = {
   readonly operands: readonly PredicateOperand[];
 };
 
-/** Sort direction of a single ordered term. */
+/**
+ * Sort direction of a single ordered term.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type SortDirection = "asc" | "desc";
 
-/** One sort term; term order carries sort precedence and is never reordered. */
+/**
+ * One sort term; term order carries sort precedence and is never reordered.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type SortTerm = {
   readonly field: string;
   readonly direction: SortDirection;
 };
 
 /**
- * One grouping level. Levels nest in list order.
+ * One grouping level. Levels nest in list order. Nothing executes a group
+ * term yet: every source declares grouping unavailable, so a grouped query
+ * is refused.
  *
- * Seam for the grouping unit: a later `bucket` member (day, month, year for
- * dates) is the only planned extension, and nothing executes a group term
- * yet — every source declares grouping unavailable, so a grouped query is
- * refused.
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type GroupTerm = {
   readonly field: string;
@@ -46,7 +69,8 @@ export type GroupTerm = {
  * The key of one group at each level down to it: `["failed", "eu-west"]` is
  * the `eu-west` group inside the `failed` group.
  *
- * Seam for the grouping unit.
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type GroupPath = readonly PredicateOperand[];
 
@@ -55,6 +79,9 @@ export type GroupPath = readonly PredicateOperand[];
  * grouping, independent of renderer presentation and the result window.
  * Query-class throughout: saved with a view, and a difference marks a view
  * modified.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type Slice = {
   readonly filter: readonly Predicate[];
@@ -68,6 +95,9 @@ export type Slice = {
  * The visible portion of a result. Window-class throughout: part of request
  * identity, never part of a saved view, and never a reason a view is
  * modified.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type ResultWindow = {
   /** One-based page over the result set. */
@@ -81,16 +111,20 @@ export type ResultWindow = {
    */
   readonly cursor: string | null;
   /**
-   * Groups whose rows are left out of the page and of `counts.visible`.
-   * Reset when grouping changes, kept across paging and filtering.
-   *
-   * Seam for the grouping unit: nothing collapses while no source declares
-   * grouping, so a non-empty value is refused.
+   * Groups whose rows are left out of the page and of `counts.pageable`.
+   * Reset when grouping changes, kept across paging and filtering. Nothing
+   * collapses while no source declares grouping, so a non-empty value is
+   * refused.
    */
   readonly collapsed: readonly GroupPath[];
 };
 
-/** Where a collection is: its slice and its window, always adopted together. */
+/**
+ * Where a collection is: its slice and its window, always adopted together.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type Query = {
   readonly slice: Slice;
   readonly window: ResultWindow;
@@ -99,6 +133,9 @@ export type Query = {
 /**
  * The window members `navigateWindow` addresses. `collapsed` moves with
  * `setCollapsed` instead, so paging and collapsing stay separate gestures.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type WindowNavigation = Partial<Omit<ResultWindow, "collapsed">>;
 

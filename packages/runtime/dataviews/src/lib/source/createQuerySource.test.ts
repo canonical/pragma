@@ -3,21 +3,17 @@ import {
   QueryObserver as TanStackObserver,
 } from "@tanstack/query-core";
 import { describe, expect, it, vi } from "vitest";
-import {
-  declareCapabilities,
-  declareSorting,
-} from "../../../testing/fixtures.js";
+import { declare, declareSort } from "../../../testing/fixtures.js";
 import { createDataViewsProvider } from "../provider/index.js";
 import { DEFAULT_WINDOW, type Slice } from "../query/index.js";
 import type { SourceDelivery, SourcePage } from "../result/index.js";
 import type { RowRecord } from "../rows/index.js";
 import { createSchema } from "../schema/index.js";
-import createQuerySource, {
-  type QueryObservation,
-  type QueryObserver,
-} from "./createQuerySource.js";
+import createQuerySource from "./createQuerySource.js";
 import createSourceBinding from "./createSourceBinding.js";
 import type {
+  QueryObservation,
+  QueryObserver,
   SourceActionRunner,
   SourceCapabilities,
   SourceRequest,
@@ -41,11 +37,11 @@ const request = (overrides: Partial<SourceRequest> = {}): SourceRequest => ({
 });
 
 /** A constrained REST endpoint: one sort term, exact matched counts. */
-const endpoint: SourceCapabilities = declareCapabilities({
+const endpoint: SourceCapabilities = declare({
   filter: { status: ["eq"] },
   search: { fields: ["name"] },
-  sort: declareSorting(["cpu"], 1),
-  counts: { visible: "exact", matched: "exact", total: "exact" },
+  sort: declareSort(["cpu"], 1),
+  counts: { pageable: "exact", matched: "exact", total: "exact" },
 });
 
 const exact = (value: number) => ({ kind: "exact" as const, value });
@@ -54,7 +50,7 @@ const page = (rows: readonly RowRecord[], matched: number): SourcePage => ({
   rows,
   groups: null,
   counts: {
-    visible: exact(matched),
+    pageable: exact(matched),
     matched: exact(matched),
     total: exact(matched),
   },
@@ -91,7 +87,7 @@ const source = (
     capabilities: endpoint,
     queryKey,
     fetchPage,
-    observe: (query) => new TanStackObserver(queryClient, query),
+    createObserver: (query) => new TanStackObserver(queryClient, query),
   });
 
 /** The single cached query key, or a failure rather than an empty key. */
@@ -131,10 +127,10 @@ describe("createQuerySource over @tanstack/query-core", () => {
   it("freezes the declaration it was handed", () => {
     const fields = ["cpu"];
     const built = createQuerySource({
-      capabilities: declareCapabilities({ sort: declareSorting(fields, 1) }),
+      capabilities: declare({ sort: declareSort(fields, 1) }),
       queryKey: ["machines"],
       fetchPage: () => Promise.resolve(page([], 0)),
-      observe: (query) => new TanStackObserver(client(), query),
+      createObserver: (query) => new TanStackObserver(client(), query),
     });
     expect(Object.isFrozen(built.capabilities)).toBe(true);
     fields.push("zone");
@@ -293,16 +289,16 @@ describe("createQuerySource over @tanstack/query-core", () => {
   });
 
   it("carries the refusals the declaration cannot express", () => {
-    const refuses = vi.fn().mockReturnValue([]);
+    const refusals = vi.fn().mockReturnValue([]);
     const built = createQuerySource({
       capabilities: endpoint,
       queryKey: ["machines"],
       fetchPage: () => Promise.resolve(page([], 0)),
-      observe: (query) => new TanStackObserver(client(), query),
-      refuses,
+      createObserver: (query) => new TanStackObserver(client(), query),
+      refusals,
     });
-    expect(built.refuses?.(request())).toEqual([]);
-    expect(refuses).toHaveBeenCalledTimes(1);
+    expect(built.refusals?.(request())).toEqual([]);
+    expect(refusals).toHaveBeenCalledTimes(1);
   });
 
   it("carries the application's row operations", async () => {
@@ -311,7 +307,7 @@ describe("createQuerySource over @tanstack/query-core", () => {
       capabilities: endpoint,
       queryKey: ["machines"],
       fetchPage: () => Promise.resolve(page([], 0)),
-      observe: (query) => new TanStackObserver(client(), query),
+      createObserver: (query) => new TanStackObserver(client(), query),
       runAction,
     });
     await built.runAction?.({
@@ -368,7 +364,7 @@ const fakeSource = (observer: ReturnType<typeof fakeObserver>) =>
     capabilities: endpoint,
     queryKey: ["machines"],
     fetchPage: () => Promise.resolve(page([], 0)),
-    observe: () => observer.handle,
+    createObserver: () => observer.handle,
   });
 
 describe("createQuerySource observation handling", () => {

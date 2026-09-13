@@ -1,21 +1,4 @@
-import type { Location } from "./types.js";
-
-/**
- * The minimal platform surface a Location adapter composes — satisfied
- * structurally by @canonical/router-core's `PlatformAdapter` without a
- * dependency edge. Only the read/write/subscribe seam: platform navigation
- * state payloads are not part of the port.
- */
-export type PlatformLocation = {
-  readonly getLocation: () => string | URL;
-  readonly navigate: (
-    url: string,
-    options?: { readonly replace?: boolean },
-  ) => void;
-  readonly subscribe: (
-    listener: (location: string | URL) => void,
-  ) => () => void;
-};
+import type { Location, PlatformLocation } from "./types.js";
 
 const resolve = (input: string | URL): URL => {
   if (input instanceof URL) {
@@ -32,6 +15,9 @@ const resolve = (input: string | URL): URL => {
  * platform adapter). Reads parse the raw href — repeated parameters survive
  * — and writes navigate the raw href, so the host's own subscription loop
  * picks the change up like any other navigation.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export default function createPlatformLocation(
   platform: PlatformLocation,
