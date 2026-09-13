@@ -32,6 +32,7 @@
  * test here (verified by reverting it).
  */
 
+import { readFileSync } from "node:fs";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -99,5 +100,130 @@ describe("EntryServer against a cold store", () => {
       expect(html, `cold render of ${url}`).toContain('id="root"');
       expect(html, `cold render of ${url}`).toContain('data-region="canvas"');
     }
+  });
+});
+
+/** The markup between `<head>` and `</head>`, which is what a crawler reads. */
+const headOf = (html: string): string =>
+  html.match(/<head>(?<head>[\s\S]*?)<\/head>/)?.groups?.head ?? "";
+
+/**
+ * The document title, in the head the server actually emits.
+ *
+ * `@canonical/react-head`'s `<Head>` renders the title as an element and lets
+ * React hoist it. Rendered cold, which is the honest case: the prepare step
+ * has produced nothing, so this is what a reader gets when the graph server is
+ * unreachable.
+ *
+ * This pins the page's half — one title per route, in `<head>` rather than
+ * streamed in after it. The shell's half is pinned separately below, because
+ * this render passes no `otherHeadElements` and so never sees `index.html`.
+ */
+describe("EntryServer emits the page's title", () => {
+  it.each([
+    ["/", "Home — Pragma docs"],
+    ["/components", "Components — Pragma docs"],
+    ["/standards", "Standards — Pragma docs"],
+    ["/definitions", "Definitions — Pragma docs"],
+    ["/definitions/graph", "graph — Definitions — Pragma docs"],
+    ["/journeys", "Journeys — Pragma docs"],
+    ["/journeys/adopt", "adopt — Journeys — Pragma docs"],
+    ["/guides", "Guides — Pragma docs"],
+    ["/login", "Login — Pragma docs"],
+    ["/playground", "Playground — Pragma docs"],
+    ["/guides/routing", "routing — Guides — Pragma docs"],
+    ["/no-such-page", "Page not found — Pragma docs"],
+  ])("serves %s with exactly one title in <head>", async (url, expected) => {
+    const head = headOf(await renderColdAndSettle(url));
+
+    expect(head.match(/<title>/g)?.length ?? 0, url).toBe(1);
+    expect(head, url).toContain(`<title>${expected}</title>`);
+  });
+});
+
+/**
+ * The shell's half of the same rule, which the table above cannot reach.
+ *
+ * The renderer re-emits `index.html`'s head tags AHEAD of the hoisted ones and
+ * HTML takes the first `<title>` in tree order, so a `<title>` in the shell
+ * would beat every page's. Two assertions, because each catches a different
+ * way of losing it: the file itself must carry none, and the ordering that
+ * makes that necessary must still be what React does.
+ */
+describe("the HTML shell yields the title to the page", () => {
+  it("carries no <title> of its own", () => {
+    const shell = readFileSync(
+      new URL("../../index.html", import.meta.url),
+      "utf8",
+    ).replace(/<!--[\s\S]*?-->/g, "");
+
+    expect(shell).not.toContain("<title>");
+  });
+
+  it("would beat the page's title if it carried one", async () => {
+    const html = renderToString(
+      <EntryServer
+        initialData={{ url: "/" }}
+        otherHeadElements={[<title key="shell">pragma-docs</title>]}
+      />,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Both present, shell first — which is exactly why it must carry none.
+    expect(headOf(html).match(/<title>[^<]*<\/title>/g)).toEqual([
+      "<title>pragma-docs</title>",
+      "<title>Home — Pragma docs</title>",
+    ]);
+  });
+});
+
+/**
+ * A gap this migration does not close, recorded rather than hidden.
+ *
+ * The two entity routes read their title off the graph, so their `<Head>` sits
+ * inside a component that suspends. Warm — the prepare step has seeded the
+ * store — it never suspends and the title reaches the head like every other
+ * route's. Cold, the component suspends before `<Head>` renders, React emits
+ * the Suspense fallback instead, and the page's title is never produced at
+ * all. With the shell's own `<title>` removed, those two routes then serve NO
+ * title, where before this change the shell's `pragma-docs` covered them.
+ *
+ * Closing it properly means resolving the title in the prepare step and
+ * handing it down through `initialData`, above the boundary — a larger change
+ * than this migration, and the owner's call (see the pull request). Rendering
+ * a placeholder `<Head>` in the Suspense fallback was tried and rejected: a
+ * local probe emitted no title at all that way, and even where it does, a
+ * fallback has no data, so the title would be a guess — and on the streaming
+ * bricks a boundary that resolves would leave the guess in `<head>` with the
+ * real title stranded in `<body>`.
+ *
+ * When it is closed, the pin belongs in `src/testing/regression/` as a
+ * numbered file rather than as an edit to this describe.
+ */
+describe("KNOWN GAP: an entity route cold serves no title", () => {
+  it.each([
+    [
+      "a component entity",
+      "/components/https%3A%2F%2Fexample.com%2FButton",
+      "component-entity",
+      "Loading the component…",
+    ],
+    [
+      "a standard",
+      "/standards/https%3A%2F%2Fexample.com%2Fcs",
+      "standard-reading",
+      "Loading the standard…",
+    ],
+  ])("%s", async (_name, url, view, fallback) => {
+    const html = await renderColdAndSettle(url);
+
+    // The route rendered and its interior suspended — which is the cause. A
+    // `<Head>` deleted outright would break the warm path and still leave a
+    // title-count assertion green, so the cause is pinned, not just the
+    // symptom.
+    expect(html, url).toContain(`data-view="${view}"`);
+    expect(html, url).toContain(fallback);
+    // And no title was produced anywhere — not merely hoisted out of <head>.
+    expect(html.match(/<title>/g)?.length ?? 0, url).toBe(0);
   });
 });

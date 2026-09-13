@@ -19,6 +19,7 @@ import type { FetchFunction } from "relay-runtime";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { createStaticRouter } from "#lib/router";
 import { createEnvironment } from "#relay";
+import formatDocumentTitle from "../../../../formatDocumentTitle.js";
 import { appRoutes, middleware, notFoundRoute } from "../../../../routes.js";
 import { DefinitionsPage } from "../DefinitionsPage/index.js";
 import { LensFilterProvider } from "../lensFilterContext.js";
@@ -54,7 +55,7 @@ export const definitionsPageAt = (
   records: RecordMap | undefined,
   fetchFn: FetchFunction,
 ): ReactElement => (
-  <HeadProvider>
+  <HeadProvider titleTemplate={formatDocumentTitle}>
     <RelayEnvironmentProvider
       environment={createEnvironment({ records, fetchFn })}
     >

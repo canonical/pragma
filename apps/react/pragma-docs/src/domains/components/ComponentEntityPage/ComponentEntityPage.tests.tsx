@@ -76,8 +76,8 @@ describe("ComponentEntityPage against a warm store", () => {
       screen.getByRole("complementary", { name: "Quick facts" }),
     ).toBeInTheDocument();
     expect(screen.getByText("unversioned")).toBeInTheDocument();
-    // Head: the client-only title (document.title via useHead — this app's
-    // SSR path emits no <title>). render() flushes effects, so it is set.
+    // Head: the document title, composed from the page's own <Head> and the
+    // harness's title template — the same pair the server renders.
     expect(document.title).toBe("Button — Pragma docs");
     // …and the network was NEVER consulted.
     expect(fetchFn).not.toHaveBeenCalled();
@@ -118,7 +118,7 @@ describe("ComponentEntityPage against a warm store", () => {
     const alert = screen.getByRole("alert");
     expect(alert.textContent).toContain("No component found at");
     expect(alert.textContent).toContain(NO_SUCH_URI);
-    // The not-found branch titles itself too (client-only, as above).
+    // The not-found branch titles itself too, through the same pair.
     expect(document.title).toBe("Component not found — Pragma docs");
     expect(fetchFn).not.toHaveBeenCalled();
   });

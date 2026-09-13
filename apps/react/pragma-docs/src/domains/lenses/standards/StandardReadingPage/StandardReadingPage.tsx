@@ -1,4 +1,4 @@
-import { useHead } from "@canonical/react-head";
+import { Head } from "@canonical/react-head";
 import { Link } from "@canonical/router-react";
 import type React from "react";
 import { Suspense } from "react";
@@ -83,25 +83,26 @@ const ReadingContent = ({
       : [bound.uri, ...bound.subclasses.map((subclass) => subclass.uri)],
   );
   const standard = node && permitted.has(node._meta.type.uri) ? node : null;
-  // Titles are client-only: the head hook writes `document.title` in an
-  // effect (this app's SSR path emits no `<title>` — the P-5 register).
-  useHead(
-    {
-      title: `${standard ? standard._meta.title : "Standard not found"} — Pragma docs`,
-    },
-    [standard],
-  );
+  const title = standard ? standard._meta.title : "Standard not found";
 
   if (!standard) {
     return (
-      <p role="alert">
-        No standard found at <code>{uri}</code>. The standards index lists every
-        standard the graph carries.
-      </p>
+      <>
+        <Head title={title} />
+        <p role="alert">
+          No standard found at <code>{uri}</code>. The standards index lists
+          every standard the graph carries.
+        </p>
+      </>
     );
   }
 
-  return <StandardArticle standard={standard} />;
+  return (
+    <>
+      <Head title={title} />
+      <StandardArticle standard={standard} />
+    </>
+  );
 };
 
 /**

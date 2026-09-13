@@ -1,4 +1,4 @@
-import { useHead } from "@canonical/react-head";
+import { Head } from "@canonical/react-head";
 import { Link } from "@canonical/router-react";
 import type React from "react";
 import { Suspense } from "react";
@@ -200,10 +200,9 @@ const LobbyBands = (): React.ReactElement => {
  * (the PlaygroundPage precedent).
  */
 const HomePage = (): React.ReactElement => {
-  useHead({ title: "Pragma docs" });
-
   return (
     <section aria-labelledby="lobby-title" className={componentCssClassName}>
+      <Head title="Home" />
       {/* ── hero (layout.lobby slot `hero`, cardinality 1) ──
           Pure authored prose: what the site is and what backs it. It
           promises nothing the site does not do. */}

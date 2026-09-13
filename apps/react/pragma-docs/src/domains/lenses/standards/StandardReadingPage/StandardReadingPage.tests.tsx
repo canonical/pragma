@@ -156,7 +156,8 @@ describe("StandardReadingPage against a warm store", () => {
       expect(
         document.querySelectorAll(".standard-article-prose p").length,
       ).toBeGreaterThan(1);
-      // Head: the client-only title (document.title via useHead).
+      // Head: the document title, composed from the page's own <Head> and
+      // the harness's title template.
       expect(document.title).toBe(
         "react.component.link_component — Pragma docs",
       );

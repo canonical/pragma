@@ -18,6 +18,7 @@ import {
 import { RelayEnvironmentProvider } from "react-relay";
 import { createEnvironment, setPrefetchEnvironment } from "#relay";
 import type { InitialData } from "#server";
+import formatDocumentTitle from "../formatDocumentTitle.js";
 import { appRoutes, middleware, notFoundRoute } from "../routes.js";
 
 /**
@@ -62,7 +63,7 @@ export const hydrateApp = (
 
   return hydrateRoot(
     container,
-    <HeadProvider>
+    <HeadProvider titleTemplate={formatDocumentTitle}>
       <RelayEnvironmentProvider environment={relayEnvironment}>
         <RouterProvider router={router}>
           <Outlet fallback={<p>Loading…</p>} />

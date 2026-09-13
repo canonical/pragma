@@ -1,4 +1,4 @@
-import { useHead } from "@canonical/react-head";
+import { Head } from "@canonical/react-head";
 import type { ReactElement } from "react";
 
 interface LensPlaceholderProps {
@@ -22,10 +22,10 @@ export default function LensPlaceholder({
   builtBy,
 }: LensPlaceholderProps): ReactElement {
   const headingId = `lens-${title.toLowerCase()}-title`;
-  useHead({ title: `${title} — Pragma docs` }, [title]);
 
   return (
     <section aria-labelledby={headingId}>
+      <Head title={title} />
       <h1 id={headingId}>{title}</h1>
       <p>{lands}</p>
       <p>

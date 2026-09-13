@@ -25,6 +25,7 @@ import componentEntityRecordsButton from "../domains/components/__fixtures__/com
 // React Flow needs when the well MOUNTS (ResizeObserver/DOMMatrix —
 // side-effect import, no test behaviour of its own).
 import definitionsExplorerRecords from "../domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
+import formatDocumentTitle from "../formatDocumentTitle.js";
 import "../domains/lenses/definitions/__fixtures__/stubReactFlowGlobals.js";
 import { createEnvironment, setPrefetchEnvironment } from "#relay";
 import type { InitialData } from "#server";
@@ -170,7 +171,7 @@ const renderSeededServerHtml = (
   records: RecordMap = componentProbeRecords,
 ): string =>
   renderToString(
-    <HeadProvider>
+    <HeadProvider titleTemplate={formatDocumentTitle}>
       <RelayEnvironmentProvider
         environment={createEnvironment({
           records,

@@ -36,6 +36,7 @@ import type { FetchFunction } from "relay-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { createStaticRouter } from "#lib/router";
 import { createEnvironment } from "#relay";
+import formatDocumentTitle from "../../../formatDocumentTitle.js";
 import { appRoutes, middleware, notFoundRoute } from "../../../routes.js";
 import definitionsExplorerRecords from "./__fixtures__/definitionsExplorerRecords.js";
 import { DEFINITIONS_TEST_TIMEOUT_MS } from "./__fixtures__/definitionsPageHarness.js";
@@ -59,7 +60,7 @@ const createFetchSpy = () =>
 const explorerWithChips = (fetchFn: FetchFunction): ReactElement => {
   const { Controls } = definitionsStripSlots;
   return (
-    <HeadProvider>
+    <HeadProvider titleTemplate={formatDocumentTitle}>
       <RelayEnvironmentProvider
         environment={createEnvironment({
           records: definitionsExplorerRecords,

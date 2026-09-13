@@ -10,7 +10,6 @@
  */
 
 import "./__fixtures__/stubReactFlowGlobals.js";
-import { HeadProvider } from "@canonical/react-head";
 import { RouterProvider } from "@canonical/router-react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactElement } from "react";
@@ -38,23 +37,21 @@ const stripAt = (
 ): ReactElement => {
   const { Controls, Status } = definitionsStripSlots;
   return (
-    <HeadProvider>
-      <RelayEnvironmentProvider
-        environment={createEnvironment({ records, fetchFn })}
+    <RelayEnvironmentProvider
+      environment={createEnvironment({ records, fetchFn })}
+    >
+      <RouterProvider
+        router={createStaticRouter(appRoutes, url, {
+          middleware: [...middleware],
+          notFound: notFoundRoute,
+        })}
       >
-        <RouterProvider
-          router={createStaticRouter(appRoutes, url, {
-            middleware: [...middleware],
-            notFound: notFoundRoute,
-          })}
-        >
-          <LensFilterProvider>
-            <Controls />
-            <Status />
-          </LensFilterProvider>
-        </RouterProvider>
-      </RelayEnvironmentProvider>
-    </HeadProvider>
+        <LensFilterProvider>
+          <Controls />
+          <Status />
+        </LensFilterProvider>
+      </RouterProvider>
+    </RelayEnvironmentProvider>
   );
 };
 

@@ -7,6 +7,7 @@ import { RelayEnvironmentProvider } from "react-relay";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { createStaticRouter } from "#lib/router";
 import { createEnvironment } from "#relay";
+import formatDocumentTitle from "../formatDocumentTitle.js";
 import { appRoutes, middleware, notFoundRoute } from "../routes.js";
 import "../styles/app.css";
 
@@ -84,7 +85,7 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
       </head>
       <body>
         <div id="root">
-          <HeadProvider>
+          <HeadProvider titleTemplate={formatDocumentTitle}>
             <RelayEnvironmentProvider environment={relayEnvironment}>
               <RouterProvider router={router}>
                 <Outlet fallback={<p>Loading…</p>} />

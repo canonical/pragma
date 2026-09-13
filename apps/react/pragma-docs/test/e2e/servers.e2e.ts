@@ -158,6 +158,28 @@ describe("server matrix (2×3) serves correctly", () => {
           const html = await page.text();
           expect(html).toContain('id="root"');
 
+          // 1b. SSR cells carry the page's own title, inside <head> — the
+          //     point of @canonical/react-head's <Head>, and the thing that
+          //     was silently missing before it: head tags were applied in an
+          //     effect, which never runs on the server. Scoped to <head>
+          //     deliberately: a title streamed in after a suspended boundary
+          //     lands in <body>, which is a regression a whole-document match
+          //     would not see. Exactly one, because the shell carries none for
+          //     the page's to beat.
+          if (cell.ssr) {
+            const headEnd = html.indexOf("</head>");
+
+            expect(
+              headEnd,
+              "served document must close its <head>",
+            ).toBeGreaterThan(-1);
+
+            const head = html.slice(0, headEnd);
+
+            expect(head.match(/<title>/g)?.length ?? 0).toBe(1);
+            expect(head).toContain("<title>Home — Pragma docs</title>");
+          }
+
           // 2. The HTML references at least one client script.
           const scriptSrc = html.match(/<script[^>]+src="([^"]+)"/)?.[1];
           expect(

@@ -15,6 +15,7 @@ import { RelayEnvironmentProvider } from "react-relay";
 import type { FetchFunction } from "relay-runtime";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { createEnvironment } from "#relay";
+import formatDocumentTitle from "../../../formatDocumentTitle.js";
 import { ComponentEntityPage } from "../ComponentEntityPage/index.js";
 
 /** The two captured exemplars' URIs. */
@@ -31,7 +32,7 @@ export const entityPageAt = (
   records: RecordMap | undefined,
   fetchFn: FetchFunction,
 ): ReactElement => (
-  <HeadProvider>
+  <HeadProvider titleTemplate={formatDocumentTitle}>
     <RelayEnvironmentProvider
       environment={createEnvironment({ records, fetchFn })}
     >
