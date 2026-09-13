@@ -1,0 +1,54 @@
+/*
+ * StandardArticle — `layout.reading`'s prose column: the measured middle
+ * track, minmax(0, 72ch) in the spec's grid, expressed here as a
+ * max-inline-size on the column itself because the page mounts no side
+ * tracks in v1 (see StandardReadingPage/styles.css). `pre-line` keeps the
+ * source text's hand-written line breaks (bullet lines) without a
+ * markdown pipeline. Zero conditional at-rules (the census); DS tokens
+ * with fallbacks; logical properties.
+ */
+
+.ds.standard-article {
+  max-inline-size: 72ch;
+}
+
+/* Present for assistive tech and the frame suite's key
+ * (`standard-reading-title`), absent from the layout — the mode strip's
+ * breadcrumb trail carries this standard's identity as the terminal crumb
+ * now, so the canvas h1 was a duplicate title. The shared visually-hidden
+ * idiom; the meta line and prose below stay visible. */
+.ds.standard-article .standard-article-header h1 {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.ds.standard-article .standard-article-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-200, 1rem);
+  margin-block: 0 var(--space-300, 1.5rem);
+  color: var(--color-text-muted, #666);
+}
+
+.ds.standard-article .standard-article-prose p {
+  white-space: pre-line;
+  margin-block: 0 var(--space-200, 1rem);
+}
+
+.ds.standard-article .standard-article-extends h2 {
+  margin-block: var(--space-300, 1.5rem) var(--space-100, 0.5rem);
+}
+
+.ds.standard-article .standard-article-extends ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-100, 0.5rem);
+}

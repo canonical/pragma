@@ -1,0 +1,200 @@
+/*
+ * NeighbourhoodWell — the entity page's closing well (AV-364).
+ *
+ * The section keeps the page's reading rhythm (heading, prose states); the
+ * canvas inside is an `.underground` depression (AX.3) holding the settled
+ * graph. The canvas is 1:1 px space — the SVG edge layer and the HTML chip
+ * layer share one coordinate system and NOTHING scales, so chips stay real
+ * links with crisp text at every viewport. A canvas wider than the column
+ * scrolls inside the well; the page never overflows.
+ *
+ * Grammar hooks (`--well-*`) fall back to the app's utilitarian tokens so
+ * the well inherits AV-363's surface system the day it lands, without
+ * edits here. One `prefers-reduced-motion` block at the foot kills the
+ * fades; no other at-rules (frameStability's layout-capable census).
+ */
+
+.ds.neighbourhood-well .well-canvas {
+  position: relative;
+  margin: 0; /* the figure's UA margins would break the column's rhythm */
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: var(--space-200, 1rem);
+}
+
+/* The settled graph's exact box, centred when the column is wider. */
+.ds.neighbourhood-well .well-frame {
+  position: relative;
+  margin-inline: auto;
+}
+
+.ds.neighbourhood-well .well-edges {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+/* ---- the edge grammar ------------------------------------------------ */
+
+/* Structural: the taxonomy's quiet skeleton — a hairline, hollow head. */
+.ds.neighbourhood-well .well-edge path {
+  fill: none;
+}
+
+.ds.neighbourhood-well .well-edge-structural path {
+  stroke: var(--well-line, var(--color-border-muted, #c9c2c6));
+  stroke-width: 1.4;
+}
+
+.ds.neighbourhood-well .well-head-structural {
+  fill: var(--color-background, #fff);
+  stroke: var(--well-line, var(--color-border-muted, #c9c2c6));
+  stroke-width: 1.4;
+}
+
+/* Semantic: named predicates — accent arcs wearing their label. */
+.ds.neighbourhood-well .well-edge-semantic path {
+  stroke: var(--well-accent, var(--color-link, oklch(0.55 0.17 45)));
+  stroke-width: 1.6;
+}
+
+.ds.neighbourhood-well .well-head-semantic {
+  fill: var(--well-accent, var(--color-link, oklch(0.55 0.17 45)));
+}
+
+/* The predicate label: mono in code voice, halo'd against the floor so it
+ * survives crossing any stroke (the exhibit's paint-order trick). */
+.ds.neighbourhood-well .well-edge-semantic text {
+  font-family: var(--font-family-mono, "Ubuntu Mono", monospace);
+  font-size: 0.6875rem;
+  fill: var(--well-accent, var(--color-link, oklch(0.55 0.17 45)));
+  paint-order: stroke;
+  stroke: var(--color-background, #fff);
+  stroke-width: 3px;
+  text-anchor: middle;
+}
+
+/* ---- the node layer -------------------------------------------------- */
+
+/* Each node wraps one Chip at its settled box. Nodes float raised on the
+ * well floor (AX.3: content ON the floor renders lifted) — the shadow is
+ * the lift. */
+.ds.neighbourhood-well .well-node {
+  position: absolute;
+  display: flex;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.12));
+  transition: opacity var(--duration-snap, 160ms) ease;
+}
+
+.ds.neighbourhood-well .well-node .ds.chip {
+  inline-size: 100%;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background-color: var(--color-background, #fff);
+}
+
+/* The subject: the page's own entity, held slightly larger and heavier —
+ * it is the one node that is not a link (you are already here). */
+.ds.neighbourhood-well .well-centre {
+  font-weight: 500;
+  filter: drop-shadow(0 2px 5px rgb(0 0 0 / 0.18));
+}
+
+/* ---- the ego-fade ---------------------------------------------------- */
+
+/* Quiet, not hidden: the neighbourhood stays legible behind the focused
+ * relation (the exhibit's fade, tuned for a small graph). Edges fade
+ * deeper than nodes — labels must not compete with the focused one. */
+.ds.neighbourhood-well .well-node.well-quiet {
+  opacity: 0.3;
+}
+
+.ds.neighbourhood-well .well-edge.well-quiet {
+  opacity: 0.15;
+  transition: opacity var(--duration-snap, 160ms) ease;
+}
+
+/* ---- canvas furniture ------------------------------------------------ */
+
+.ds.neighbourhood-well .well-hint {
+  position: absolute;
+  inset-block-start: var(--space-100, 0.5rem);
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0.125rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: var(--color-text-muted, #77707b);
+  background: color-mix(
+    in oklch,
+    var(--color-background, #fff) 82%,
+    transparent
+  );
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* The legend generates from EDGE_FAMILIES — it cannot drift. */
+.ds.neighbourhood-well .well-legend {
+  position: absolute;
+  inset-block-end: var(--space-100, 0.5rem);
+  inset-inline-start: var(--space-150, 0.75rem);
+  margin: 0;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--color-border-muted, #e4dfe3);
+  border-radius: 0.5rem;
+  background: color-mix(
+    in oklch,
+    var(--color-background, #fff) 88%,
+    transparent
+  );
+  font-size: 0.72rem;
+  color: var(--color-text-muted, #77707b);
+}
+
+.ds.neighbourhood-well .well-legend-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.ds.neighbourhood-well .well-legend-row dt {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-weight: 600;
+}
+
+.ds.neighbourhood-well .well-legend-row dd {
+  margin: 0;
+}
+
+.ds.neighbourhood-well .well-legend-swatch-structural {
+  stroke: var(--well-line, var(--color-border-muted, #c9c2c6));
+  stroke-width: 1.4;
+  fill: none;
+}
+
+.ds.neighbourhood-well .well-legend-swatch-semantic {
+  stroke: var(--well-accent, var(--color-link, oklch(0.55 0.17 45)));
+  stroke-width: 1.6;
+  fill: none;
+}
+
+/* ---- the honest states ----------------------------------------------- */
+
+.ds.neighbourhood-well .well-empty,
+.ds.neighbourhood-well .well-partial {
+  color: var(--color-text-muted, #77707b);
+  font-size: 0.875rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds.neighbourhood-well .well-node,
+  .ds.neighbourhood-well .well-edge.well-quiet {
+    transition: none;
+  }
+}

@@ -1,0 +1,42 @@
+/*
+ * The Journeys lens's mode-strip tenant: the Table ⇄ Graph switch
+ * (slot.journeys-view). It lives INSIDE the strip band, whose height
+ * (--strip-h) is stationary frame — nothing here may change it, or the canvas
+ * would jump on a lens switch (AX.6). Hence the fixed small metrics and
+ * `min-block-size: 0` postures, mirroring the Definitions explorer-controls
+ * tenant.
+ *
+ * A row of exclusive toggles, the checked one filled and weighted — never
+ * colour alone (WCAG 1.4.1).
+ *
+ * At-rules: none that reflow layout. The strip band never grows.
+ */
+
+.ds.journeys-view-switch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-050, 0.25rem);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+
+.ds.journeys-view-switch .journeys-view-switch-option {
+  padding-block: var(--space-050, 0.25rem);
+  padding-inline: var(--space-150, 0.75rem);
+  border: 1px solid var(--color-border-muted, #ddd);
+  border-radius: var(--border-radius, 0.25rem);
+  background: var(--color-background, #fff);
+  color: var(--color-text, #111);
+  font: inherit;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ds.journeys-view-switch .journeys-view-switch-option[aria-pressed="true"] {
+  border-color: var(--color-brand-primary, #06c);
+  background: var(--color-background-layer2, #f4f4f4);
+  font-weight: 600;
+}
