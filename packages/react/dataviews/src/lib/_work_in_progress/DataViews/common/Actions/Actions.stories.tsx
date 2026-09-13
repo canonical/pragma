@@ -19,8 +19,9 @@ import {
   hostName,
   useMachineProvider,
 } from "../../../../../storybook/machines/story-utils.js";
+import { useDataViewsValue } from "../../../../hooks/index.js";
 import { DataTable, type DataTableColumn } from "../../../DataTable/index.js";
-import { useDataViews, useDataViewsValue } from "../../hooks/index.js";
+import { useDataViews } from "../../hooks/index.js";
 import DataViews from "../../Provider.js";
 import Pagination from "../Pagination/Pagination.js";
 import Component from "./Actions.js";

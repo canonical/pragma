@@ -1,9 +1,9 @@
 import { memo, type ReactElement, type ReactNode, useMemo } from "react";
-import { useDataViewsValue } from "../../../DataViews/hooks/index.js";
 import {
   CellContext,
   type CellContextValue,
-} from "../../../DataViews/index.js";
+} from "../../../../common/index.js";
+import { useDataViewsValue } from "../../../../hooks/index.js";
 import type { BodyCellProps } from "./types.js";
 
 const componentCssClassName = "ds data-table-body-cell";

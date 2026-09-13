@@ -1,5 +1,5 @@
 /**
- * On the server there is no viewport, so a windowed table renders its whole
+ * On the server there is no viewport, so a virtualized table renders its whole
  * current window: the markup a reader without JavaScript gets is complete,
  * and the range narrows it once the client measures.
  */
@@ -14,7 +14,7 @@ import {
 import { DataTable } from "../../../_work_in_progress/DataTable/index.js";
 import virtualizeRows from "../../virtualizeRows.js";
 
-describe("windowed DataTable SSR", () => {
+describe("virtualized DataTable SSR", () => {
   it("renders every row of the window, each at its logical position", () => {
     // Rows the server already holds, fed to the provider by hand: nothing
     // observes it there, so nothing else would ask the source.
@@ -33,7 +33,7 @@ describe("windowed DataTable SSR", () => {
         provider={provider}
         label="Machines"
         columns={[{ id: "name", header: "Name" }]}
-        windowing={virtualizeRows({ estimatedRowHeight: 32 })}
+        virtualization={virtualizeRows({ estimatedRowHeight: 32 })}
       />,
     );
     expect(html).toContain('aria-rowcount="31"');

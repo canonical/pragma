@@ -1,13 +1,13 @@
 import {
   applyQueryCommand,
-  canonicalizeSlice,
   DEFAULT_WINDOW,
   EMPTY_SLICE,
   type Query,
   type QueryCommand,
   type ResultWindow,
+  rejectWindow,
   type Slice,
-  stringifyStable,
+  spellQueryKey,
 } from "../query/index.js";
 import type { Completion } from "../result/index.js";
 import type { RowRecord } from "../rows/index.js";
@@ -34,9 +34,6 @@ const idleResult: ResultState<never> = Object.freeze({
   provenance: null,
   problem: null,
 });
-
-const fingerprintQuery = (slice: Slice, window: ResultWindow): string =>
-  stringifyStable([canonicalizeSlice(slice), window]);
 
 /**
  * Copy a caller-supplied slice so later mutations of the original cannot
@@ -66,14 +63,9 @@ const copySlice = (slice: Slice): Slice =>
   });
 
 const copyWindow = (window: ResultWindow): ResultWindow => {
-  if (!Number.isInteger(window.page) || window.page < 1) {
-    throw new Error("page must be a positive integer");
-  }
-  if (!Number.isInteger(window.size) || window.size < 1) {
-    throw new Error("size must be a positive integer");
-  }
-  if (window.cursor === "") {
-    throw new Error("cursor must not be empty; use null to clear it");
+  const rejection = rejectWindow(window);
+  if (rejection !== null) {
+    throw new Error(rejection);
   }
   return Object.freeze({
     page: window.page,
@@ -112,11 +104,11 @@ export default function createQueryCoordinator<TRow extends object = RowRecord>(
   const instanceKey = `i${++coordinatorInstances}`;
   let counter = 0;
   let lastRequestId: string | null = null;
-  /** Fingerprint of the query and window that produced the displayed rows. */
-  let publishedFingerprint: string | null = null;
+  /** The key of the query and window that produced the displayed rows. */
+  let publishedKey: string | null = null;
   let slice: Slice = seedSlice;
   let window: ResultWindow = seedWindow;
-  let currentFingerprint = fingerprintQuery(slice, window);
+  let currentKey = spellQueryKey({ slice, window });
   let result: ResultState<TRow> = idleResult;
 
   function buildSnapshot(): DataViewsState<TRow> {
@@ -126,8 +118,7 @@ export default function createQueryCoordinator<TRow extends object = RowRecord>(
       window,
       result,
       resultMatchesQuery:
-        result.provenance !== null &&
-        publishedFingerprint === currentFingerprint,
+        result.provenance !== null && publishedKey === currentKey,
       pendingRequestId: lastRequestId,
     });
   }
@@ -155,9 +146,7 @@ export default function createQueryCoordinator<TRow extends object = RowRecord>(
     if (result.rows === null) {
       return "failed";
     }
-    return publishedFingerprint === currentFingerprint
-      ? "refresh-failed"
-      : "stale";
+    return publishedKey === currentKey ? "refresh-failed" : "stale";
   };
 
   return {
@@ -184,7 +173,7 @@ export default function createQueryCoordinator<TRow extends object = RowRecord>(
       // The window is rebuilt by every accepted command, so it is always the
       // command layer's object and always copied.
       window = copyWindow(applied.window);
-      currentFingerprint = fingerprintQuery(slice, window);
+      currentKey = spellQueryKey({ slice, window });
       const requestId = beginRequest(false);
       return { ...applied, requestId };
     },
@@ -197,13 +186,16 @@ export default function createQueryCoordinator<TRow extends object = RowRecord>(
     adopt(query: Query): string | null {
       const copiedSlice = copySlice(query.slice);
       const copiedWindow = copyWindow(query.window);
-      const nextFingerprint = fingerprintQuery(copiedSlice, copiedWindow);
-      if (nextFingerprint === currentFingerprint) {
+      const nextKey = spellQueryKey({
+        slice: copiedSlice,
+        window: copiedWindow,
+      });
+      if (nextKey === currentKey) {
         return null;
       }
       slice = copiedSlice;
       window = copiedWindow;
-      currentFingerprint = nextFingerprint;
+      currentKey = nextKey;
       return beginRequest(false);
     },
     complete(requestId: string, completion: Completion<TRow>): boolean {
@@ -215,7 +207,7 @@ export default function createQueryCoordinator<TRow extends object = RowRecord>(
       lastRequestId = null;
       if (completion.status === "succeeded") {
         const { page } = completion;
-        publishedFingerprint = currentFingerprint;
+        publishedKey = currentKey;
         publish({
           status: "ready",
           // Copied, not aliased: a source reusing one envelope across
@@ -256,8 +248,8 @@ export default function createQueryCoordinator<TRow extends object = RowRecord>(
       lastRequestId = null;
       slice = seedSlice;
       window = seedWindow;
-      currentFingerprint = fingerprintQuery(slice, window);
-      publishedFingerprint = null;
+      currentKey = spellQueryKey({ slice, window });
+      publishedKey = null;
       publish(idleResult);
     },
   };

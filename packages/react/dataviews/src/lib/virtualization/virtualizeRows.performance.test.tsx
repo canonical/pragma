@@ -1,5 +1,5 @@
 /**
- * The windowed table's share of the representative performance suite, as
+ * The virtualized table's share of the representative performance suite, as
  * far as jsdom takes it: bounded DOM at every scroll position of a large
  * local window, work in proportion to the rows entering the range, no row
  * work for a selection or a resize, variable-height rows, and repeated
@@ -73,7 +73,7 @@ class FakeResizeObserver {
 }
 
 /**
- * A windowed table over all ten thousand rows, scrolled to the top. The
+ * A virtualized table over all ten thousand rows, scrolled to the top. The
  * source answers the table's first request at once, so the rows are there
  * after the table's effect observes the provider.
  */
@@ -85,7 +85,7 @@ const largeTable = (selectable = false) => {
       columns={columns}
       label="Machines"
       selectable={selectable}
-      windowing={virtualizeRows({ estimatedRowHeight: rowHeight })}
+      virtualization={virtualizeRows({ estimatedRowHeight: rowHeight })}
     />,
   );
   const table = screen.getByRole("table");
@@ -127,7 +127,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("windowed DataTable, bounded work", () => {
+describe("virtualized DataTable, bounded work", () => {
   it("mounts a bounded range of a 10,000-row window at every scroll position", () => {
     const { table } = largeTable();
     for (let top = 0; top < rows.length * rowHeight; top += 3_200) {
@@ -213,7 +213,7 @@ describe("windowed DataTable, bounded work", () => {
           provider={provider}
           columns={columns}
           label="Machines"
-          windowing={virtualizeRows({ estimatedRowHeight: rowHeight })}
+          virtualization={virtualizeRows({ estimatedRowHeight: rowHeight })}
         />,
       );
       unmount();

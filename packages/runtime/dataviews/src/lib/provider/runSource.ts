@@ -1,9 +1,10 @@
 import type { DataViewsState } from "../coordinator/index.js";
-import type {
-  Completion,
-  Count,
-  SourceCounts,
-  SourceDelivery,
+import {
+  type Completion,
+  type Count,
+  type SourceCounts,
+  type SourceDelivery,
+  UNKNOWN_COUNT,
 } from "../result/index.js";
 import type { RowRecord } from "../rows/index.js";
 import type { SchemaFieldDefinition } from "../schema/index.js";
@@ -45,12 +46,12 @@ const findPortRejection = <TRow extends object>(
 /** One count held to what the declaration allows. */
 const holdCount = (count: Count, support: CountSupport): Count => {
   if (support === "unknown" || count.kind === "unknown") {
-    return { kind: "unknown" };
+    return UNKNOWN_COUNT;
   }
   if (!Number.isSafeInteger(count.value) || count.value < 0) {
     // A count that is not a whole number of rows counts nothing: read as a
     // page total it would be NaN, a fraction or a negative.
-    return { kind: "unknown" };
+    return UNKNOWN_COUNT;
   }
   if (support === "at-least" && count.kind === "exact") {
     return { kind: "at-least", value: count.value };

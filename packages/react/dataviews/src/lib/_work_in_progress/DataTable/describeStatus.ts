@@ -1,10 +1,16 @@
-import type { DataTableStatus } from "./types.js";
+import type { DisplayStatus } from "@canonical/dataviews-core";
 
-/** The text shown for each status when no renderer is supplied. */
-export default function describeStatus(status: DataTableStatus): string {
+/**
+ * The text shown for each status when no renderer is supplied. A switch
+ * over every status, so one the core adds is a compile error here until
+ * it has words.
+ */
+export default function describeStatus(status: DisplayStatus): string {
   switch (status.status) {
-    case "loading":
+    case "pending":
       return "Loading…";
+    case "regrouping":
+      return "Regrouping…";
     case "failed":
       return `These rows could not be loaded: ${status.reason}`;
     case "refresh-failed":

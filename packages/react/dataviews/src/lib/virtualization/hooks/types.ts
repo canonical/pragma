@@ -7,8 +7,9 @@ import type { RowModel } from "@canonical/dataviews-core";
 import type { DisplayEntry } from "@canonical/dataviews-core/bindings";
 import type { MountedRange } from "@canonical/dataviews-core/virtualization";
 import type { FocusEvent, RefObject } from "react";
+import type { EntryPlacement } from "../../common/index.js";
 
-/** One windowed body's range, and the handles its elements attach by. */
+/** One virtualized body's range, and the handles its elements attach by. */
 export type UseVirtualRowsResult = {
   /** The entries to mount, as runs, and the space of the rest. */
   readonly mounted: MountedRange;
@@ -18,14 +19,14 @@ export type UseVirtualRowsResult = {
    * The ref one entry's row attaches by, to be measured and to keep focus.
    * The same function for as long as the row is mounted.
    */
-  readonly refFor: (id: string) => (node: HTMLDivElement) => () => void;
+  readonly refFor: (id: string) => EntryPlacement["ref"];
   /** Keeps the row focus enters mounted, wherever the viewport goes. */
   readonly onFocus: (event: FocusEvent<HTMLDivElement>) => void;
   /** Lets it go when focus leaves the body, not when it leaves the window. */
   readonly onBlur: (event: FocusEvent<HTMLDivElement>) => void;
 };
 
-/** What one windowed body displays, and what its rows' heights hang on. */
+/** What one virtualized body displays, and what its rows' heights hang on. */
 export type UseVirtualRowsProps = {
   /** The entries, in display order. */
   readonly entries: readonly DisplayEntry[];

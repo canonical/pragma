@@ -72,13 +72,13 @@ export function Machines() {
 
 ## Counts it can stand behind
 
-Every count describes the rows on screen, and every page control goes somewhere the collection can reach. A source that counts the rows the window pages over exactly — `counts.pageable` declared `"exact"` — gets a page total and a last page. One that counts them loosely or not at all gets neither: the summary counts the rows on screen, Last is unavailable, and Next is taken from the page's own word that more exists, or, failing that, offered while the page is full, the only evidence left that there may be another.
+Every count describes the rows on screen, and every page control goes somewhere the collection can reach. A source that counts the rows the window pages over exactly — `counts.pageable` declared `"exact"` — gets a page total and a last page. One that counts them loosely — a lower bound — has the bound said as one ("out of at least 40 items"), no last page invented from it, and — on a source paged by number — Next offered while the bound proves a page past this one; on a source paged by token, the token alone says where the next page starts. One that counts nothing gets neither: the summary counts the rows on screen, Last is unavailable, and Next is taken from the page's own word that more exists, or, failing that, offered while the page is full, the only evidence left that there may be another.
 
 A source that reaches its pages only through tokens — `pagination.kind` declared `"cursor"` — is paged by those tokens: Next carries the one the current page handed back, Previous the one before it. Such a source may still count its rows exactly, and the summary says so, but no page total is shown and Last stays unavailable, because a page number addresses nothing there.
 
 <Canvas of={Stories.WithoutACount} sourceState="none" />
 
-While the rows on screen do not answer the current query — nothing has arrived yet, a new page is loading, or the request failed and left an earlier query's rows in view — the summary and the page total say nothing, and Next waits. A total from an earlier query is not this one's.
+While the rows on screen do not answer the current query — nothing has arrived yet, a replacement query is loading, or the request failed and left an earlier query's rows in view — the summary says nothing. A count belongs to the query and page size that produced it, not to the page: through a page move of the same query the page total and its destinations stand, and the summary alone waits; a new query or page size drops the count until the source answers for it. A total from an earlier query is not this one's.
 
 <Canvas of={Stories.Loading} sourceState="none" />
 

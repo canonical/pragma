@@ -123,9 +123,10 @@ describe("public surface", () => {
 
   it("hands framework bindings their shared machinery from ./bindings", () => {
     expect(Object.keys(bindings).sort()).toEqual([
+      "DISPLAY_STATUS_PHASES",
+      "areDisplayStatusesEqual",
       "areListsEqual",
       "areSizingsEqual",
-      "areSlicesEqual",
       "buildColumnTemplate",
       "createColumnLayout",
       "createFilterInputs",
@@ -135,6 +136,8 @@ describe("public surface", () => {
       "listDisplayEntries",
       "readProviderHost",
       "resolveColumns",
+      "resolveDisplayStatus",
+      "resolvePagination",
       "spellWireKey",
     ]);
     for (const name of Object.keys(bindings)) {
@@ -153,7 +156,6 @@ describe("public surface", () => {
         { kind: "fixed", px: 8 },
       ),
     ).toBe(true);
-    expect(bindings.areSlicesEqual(EMPTY_SLICE, EMPTY_SLICE)).toBe(true);
     expect(
       bindings.listDisplayEntries({ rowIds: ["a"], status: null }),
     ).toEqual([

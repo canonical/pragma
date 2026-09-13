@@ -11,9 +11,9 @@ import {
   createMachineProvider,
   machines,
 } from "../../../../testing/machines.js";
+import { useDataViewsValue } from "../../hooks/index.js";
 import useDataViews from "./hooks/useDataViews.js";
 import useDataViewsFilter from "./hooks/useDataViewsFilter.js";
-import useDataViewsValue from "./hooks/useDataViewsValue.js";
 import DataViews from "./Provider.js";
 
 /** A consumer reading the scope, a value channel and a filter during SSR. */

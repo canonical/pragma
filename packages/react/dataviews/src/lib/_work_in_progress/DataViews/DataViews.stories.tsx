@@ -15,8 +15,9 @@ import {
   useMachineProvider,
   useStoryViewStore,
 } from "../../../storybook/machines/story-utils.js";
+import { useDataViewsValue } from "../../hooks/index.js";
 import type { DataTableColumn } from "../DataTable/index.js";
-import { useDataViews, useDataViewsValue } from "./hooks/index.js";
+import { useDataViews } from "./hooks/index.js";
 import Component from "./Provider.js";
 
 const meta = {

@@ -1,5 +1,5 @@
 /**
- * The windowed body's contract: a bounded range of rows mounted from the
+ * The virtualized body's contract: a bounded range of rows mounted from the
  * whole window, logical positions and counts across the gaps, the row
  * holding focus kept mounted, and a scroll that corrects itself when rows
  * above the viewport change height.
@@ -45,7 +45,7 @@ const columns: readonly DataTableColumn[] = [
 ];
 
 /** Rows placed at 10px until measured; the viewport shows 100px. */
-const windowing = virtualizeRows({ estimatedRowHeight: 10 });
+const virtualization = virtualizeRows({ estimatedRowHeight: 10 });
 
 /** A ResizeObserver the test drives: it keeps what it observes. */
 class FakeResizeObserver {
@@ -165,8 +165,8 @@ const scrollable = (table: HTMLElement): HTMLElement => {
   return table;
 };
 
-/** A windowed table over `rows`, delivered by hand, scrolled to the top. */
-const windowedTable = (
+/** A virtualized table over `rows`, delivered by hand, scrolled to the top. */
+const virtualizedTable = (
   rows: readonly Machine[] = machines(1000),
   props: Partial<DataTableProps<MachineFields, Machine>> = {},
   wrap: (table: ReactElement) => ReactElement = (table) => table,
@@ -178,7 +178,7 @@ const windowedTable = (
         provider={provider}
         columns={columns}
         label="Machines"
-        windowing={windowing}
+        virtualization={virtualization}
         {...props}
       />,
     ),
@@ -272,15 +272,15 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("windowed DataTable", () => {
+describe("virtualized DataTable", () => {
   it("mounts the rows in view and a few past each edge, not the whole window", () => {
-    const { table } = windowedTable();
+    const { table } = virtualizedTable();
     expect(mountedHosts()).toEqual(machines(15).map((row) => row.name));
     expect(gapHeights(table)).toEqual(["9850px"]);
   });
 
   it("counts every row and places each mounted one in logical order", () => {
-    const { table } = windowedTable();
+    const { table } = virtualizedTable();
     expect(table).toHaveAttribute("aria-rowcount", "1001");
     const [header, first] = screen.getAllByRole("row");
     expect(header).toHaveAttribute("aria-rowindex", "1");
@@ -290,7 +290,7 @@ describe("windowed DataTable", () => {
   });
 
   it("moves the mounted rows with the scroll", () => {
-    const { table } = windowedTable();
+    const { table } = virtualizedTable();
     scrollTo(table, 5000);
     expect(mountedHosts()).toEqual(machines(19, 496).map((row) => row.name));
     expect(gapHeights(table)).toEqual(["4960px", "4850px"]);
@@ -308,14 +308,14 @@ describe("windowed DataTable", () => {
         return this.classList.contains("body") ? 24 : 0;
       },
     );
-    const { table } = windowedTable();
+    const { table } = virtualizedTable();
     expect(mountedHosts()).toEqual(machines(15).map((row) => row.name));
     scrollTo(table, 5000);
     expect(mountedHosts()).toEqual(machines(19, 496).map((row) => row.name));
   });
 
   it("ends on the last row, with no gap after it", () => {
-    const { table } = windowedTable();
+    const { table } = virtualizedTable();
     scrollTo(table, 9900);
     expect(rowOf("host-999")).toHaveAttribute("aria-rowindex", "1001");
     expect(gapHeights(table)).toEqual(["9860px"]);
@@ -330,7 +330,7 @@ describe("windowed DataTable", () => {
       renders += 1;
       return <>{String(value)}</>;
     };
-    const { table } = windowedTable(machines(1000), {
+    const { table } = virtualizedTable(machines(1000), {
       columns: [{ id: "name", header: "Name", cell: Counted }],
     });
     scrollTo(table, 5000);
@@ -344,7 +344,7 @@ describe("windowed DataTable", () => {
 
   describe("focus", () => {
     it("keeps the row holding focus mounted, with its neighbours, wherever the viewport goes", () => {
-      const { table } = windowedTable(machines(1000), { selectable: true });
+      const { table } = virtualizedTable(machines(1000), { selectable: true });
       const checkbox = screen.getByRole("checkbox", { name: "Select m-3" });
       act(() => {
         checkbox.focus();
@@ -362,7 +362,7 @@ describe("windowed DataTable", () => {
     });
 
     it("follows focus from one row to the next", () => {
-      const { table } = windowedTable(machines(1000), { selectable: true });
+      const { table } = virtualizedTable(machines(1000), { selectable: true });
       act(() => {
         screen.getByRole("checkbox", { name: "Select m-3" }).focus();
       });
@@ -378,7 +378,7 @@ describe("windowed DataTable", () => {
     });
 
     it("keeps a row that already holds focus when a new range mounts it", () => {
-      const { provider, table, view } = windowedTable(machines(1000), {
+      const { provider, table, view } = virtualizedTable(machines(1000), {
         selectable: true,
       });
       act(() => {
@@ -390,7 +390,7 @@ describe("windowed DataTable", () => {
           columns={columns}
           label="Machines"
           selectable
-          windowing={virtualizeRows({ estimatedRowHeight: 20 })}
+          virtualization={virtualizeRows({ estimatedRowHeight: 20 })}
         />,
       );
       scrollTo(table, 10_000);
@@ -400,7 +400,7 @@ describe("windowed DataTable", () => {
     });
 
     it("ignores focus that lands on no row", () => {
-      const { table } = windowedTable(machines(1000), { selectable: true });
+      const { table } = virtualizedTable(machines(1000), { selectable: true });
       const group = table.querySelector<HTMLElement>(
         ".ds.data-table-row-group.body",
       );
@@ -413,7 +413,7 @@ describe("windowed DataTable", () => {
     });
 
     it("lets the row go once focus leaves the table", () => {
-      const { table } = windowedTable(machines(1000), { selectable: true });
+      const { table } = virtualizedTable(machines(1000), { selectable: true });
       const outside = document.createElement("button");
       document.body.append(outside);
       act(() => {
@@ -428,7 +428,7 @@ describe("windowed DataTable", () => {
     });
 
     it("keeps the row while focus is only away with the window", () => {
-      const { table } = windowedTable(machines(1000), { selectable: true });
+      const { table } = virtualizedTable(machines(1000), { selectable: true });
       const checkbox = screen.getByRole("checkbox", { name: "Select m-3" });
       act(() => {
         checkbox.focus();
@@ -444,7 +444,7 @@ describe("windowed DataTable", () => {
 
   describe("measurement", () => {
     it("scrolls by what a row above the viewport grew, so the view holds still", () => {
-      const { table } = windowedTable();
+      const { table } = virtualizedTable();
       scrollTo(table, 5000);
       report([
         [rowOf("host-497"), 30],
@@ -455,7 +455,7 @@ describe("windowed DataTable", () => {
     });
 
     it("ignores a report that carries no box", () => {
-      const { table } = windowedTable();
+      const { table } = virtualizedTable();
       report([[rowOf("host-1"), 30]]);
       const grown = table.scrollHeight;
       act(() => {
@@ -465,7 +465,7 @@ describe("windowed DataTable", () => {
     });
 
     it("forgets the heights of rows not mounted when the rows' width changes", () => {
-      const { table } = windowedTable();
+      const { table } = virtualizedTable();
       report(machines(5).map((row) => [rowOf(row.name), 20] as const));
       scrollTo(table, 5000);
       report(
@@ -479,7 +479,7 @@ describe("windowed DataTable", () => {
     });
 
     it("mounts more rows when the viewport grows", () => {
-      const { table } = windowedTable();
+      const { table } = virtualizedTable();
       vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(
         function (this: HTMLElement) {
           return this.getAttribute("role") === "table" ? 200 : 0;
@@ -490,7 +490,7 @@ describe("windowed DataTable", () => {
     });
 
     it("observes only the rows it has mounted, however far it scrolls", () => {
-      const { table } = windowedTable();
+      const { table } = virtualizedTable();
       for (let top = 0; top <= 9000; top += 1000) {
         scrollTo(table, top);
       }
@@ -499,7 +499,7 @@ describe("windowed DataTable", () => {
     });
 
     it("forgets the heights of rows not mounted when a column is resized", () => {
-      const { table } = windowedTable();
+      const { table } = virtualizedTable();
       report(machines(5).map((row) => [rowOf(row.name), 20] as const));
       scrollTo(table, 5000);
       // New tracks re-wrap cells, whatever the rows' own width does.
@@ -508,7 +508,7 @@ describe("windowed DataTable", () => {
     });
 
     it("holds the view at the bottom when forgotten heights grow the page", () => {
-      const { table } = windowedTable();
+      const { table } = virtualizedTable();
       pageBound(table);
       report(machines(5).map((row) => [rowOf(row.name), 5] as const));
       // The very end of the page: 10,000px less 25, less the viewport.
@@ -523,7 +523,7 @@ describe("windowed DataTable", () => {
     });
 
     it("holds the view at the bottom when forgotten heights shrink the page", () => {
-      const { table } = windowedTable();
+      const { table } = virtualizedTable();
       pageBound(table);
       report(machines(5).map((row) => [rowOf(row.name), 20] as const));
       // The very end of the page: 10,000px and 50, less the viewport.
@@ -537,7 +537,7 @@ describe("windowed DataTable", () => {
     });
 
     it("holds the view at the bottom when forgotten heights grow some rows and shrink others", () => {
-      const { table } = windowedTable();
+      const { table } = virtualizedTable();
       pageBound(table);
       // Forgetting them: two rows 10px shorter, three 5px taller, net -5.
       report([
@@ -556,7 +556,7 @@ describe("windowed DataTable", () => {
     });
 
     it("holds the view when a row grows in the batch that forgets heights", () => {
-      const { table } = windowedTable();
+      const { table } = virtualizedTable();
       pageBound(table);
       report(machines(5).map((row) => [rowOf(row.name), 5] as const));
       scrollTo(table, 9875);
@@ -572,7 +572,7 @@ describe("windowed DataTable", () => {
     });
 
     it("holds the view at the bottom when a mounted row above it shrinks", () => {
-      const { table } = windowedTable();
+      const { table } = virtualizedTable();
       pageBound(table);
       scrollTo(table, 9900);
       report([[rowOf("host-987"), 5]]);
@@ -581,7 +581,7 @@ describe("windowed DataTable", () => {
 
     it("holds the view at the bottom when rows above it leave", () => {
       const rows = machines(1000);
-      const { source, table } = windowedTable(rows);
+      const { source, table } = virtualizedTable(rows);
       pageBound(table);
       scrollTo(table, 9900);
       load(source, rows.slice(5));
@@ -589,7 +589,7 @@ describe("windowed DataTable", () => {
     });
 
     it("places a viewport that grew in the batch that forgot heights", () => {
-      const { table } = windowedTable();
+      const { table } = virtualizedTable();
       report(machines(5).map((row) => [rowOf(row.name), 5] as const));
       scrollTo(table, 5000);
       vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(
@@ -610,7 +610,7 @@ describe("windowed DataTable", () => {
     });
 
     it("holds the view at the bottom when a column resize grows the page", () => {
-      const { table } = windowedTable();
+      const { table } = virtualizedTable();
       pageBound(table);
       report(machines(5).map((row) => [rowOf(row.name), 5] as const));
       scrollTo(table, 9875);
@@ -620,7 +620,7 @@ describe("windowed DataTable", () => {
 
     it("forgets the height of a row whose record was replaced", () => {
       const rows = machines(1000);
-      const { source, table } = windowedTable(rows);
+      const { source, table } = virtualizedTable(rows);
       report(machines(5).map((row) => [rowOf(row.name), 20] as const));
       scrollTo(table, 5000);
       load(
@@ -636,7 +636,7 @@ describe("windowed DataTable", () => {
   describe("new entries", () => {
     it("keeps the view on its rows when rows arrive above them", () => {
       const rows = machines(1000);
-      const { source, table } = windowedTable(rows);
+      const { source, table } = virtualizedTable(rows);
       scrollTo(table, 5000);
       load(source, [...machines(5, 1000), ...rows]);
       expect(table.scrollTop).toBe(5050);
@@ -648,14 +648,14 @@ describe("windowed DataTable", () => {
 
     it("shows rows arriving at the very top rather than scrolling past them", () => {
       const rows = machines(1000);
-      const { source, table } = windowedTable(rows);
+      const { source, table } = virtualizedTable(rows);
       load(source, [...machines(5, 1000), ...rows]);
       expect(table.scrollTop).toBe(0);
       expect(mountedHosts()[0]).toBe("host-1000");
     });
 
     it("counts and places a stale status among the rows it stands above", () => {
-      const { provider, source, table } = windowedTable();
+      const { provider, source, table } = virtualizedTable();
       act(() => {
         provider.setSearch("host-1");
       });
@@ -668,9 +668,12 @@ describe("windowed DataTable", () => {
 
     it("renders an unchanged status once, however often the table renders", () => {
       const renderStatus = vi.fn(() => "Not current");
-      const { provider, source, table, view } = windowedTable(machines(1000), {
-        renderStatus,
-      });
+      const { provider, source, table, view } = virtualizedTable(
+        machines(1000),
+        {
+          renderStatus,
+        },
+      );
       act(() => {
         provider.setSearch("host-1");
       });
@@ -681,7 +684,7 @@ describe("windowed DataTable", () => {
           provider={provider}
           columns={columns}
           label="Machines"
-          windowing={windowing}
+          virtualization={virtualization}
           renderStatus={renderStatus}
         />,
       );
@@ -691,7 +694,7 @@ describe("windowed DataTable", () => {
   });
 
   it("selects every displayed row from the header, mounted or not", () => {
-    const { provider } = windowedTable(machines(1000), { selectable: true });
+    const { provider } = virtualizedTable(machines(1000), { selectable: true });
     fireEvent.click(
       screen.getByRole("checkbox", { name: "Select all displayed rows" }),
     );
@@ -699,7 +702,7 @@ describe("windowed DataTable", () => {
   });
 
   it("resizes a column across the rows it mounts", () => {
-    const { table } = windowedTable();
+    const { table } = virtualizedTable();
     const tracks = table.style.getPropertyValue("--data-table-columns");
     fireEvent.keyDown(screen.getByRole("separator"), { key: "ArrowRight" });
     expect(table.style.getPropertyValue("--data-table-columns")).not.toBe(
@@ -720,13 +723,13 @@ describe("windowed DataTable", () => {
           provider={first}
           columns={columns}
           label="First"
-          windowing={windowing}
+          virtualization={virtualization}
         />
         <DataTable
           provider={second}
           columns={columns}
           label="Second"
-          windowing={windowing}
+          virtualization={virtualization}
         />
       </>,
     );
@@ -738,14 +741,14 @@ describe("windowed DataTable", () => {
     expect(mountedHosts(two)[0]).toBe("host-0");
   });
 
-  it("windows by its estimates where nothing can measure", () => {
+  it("virtualizes by its estimates where nothing can measure", () => {
     vi.stubGlobal("ResizeObserver", undefined);
-    windowedTable();
+    virtualizedTable();
     expect(mountedHosts()).toHaveLength(15);
   });
 
   it("keeps its range, focus and anchor through StrictMode's double mount", () => {
-    const { table } = windowedTable(
+    const { table } = virtualizedTable(
       machines(1000),
       { selectable: true },
       (element) => <StrictMode>{element}</StrictMode>,
@@ -773,7 +776,7 @@ describe("windowed DataTable", () => {
           provider={provider}
           columns={columns}
           label="Machines"
-          windowing={windowing}
+          virtualization={virtualization}
         />
       </StrictMode>,
     );
@@ -786,13 +789,13 @@ describe("windowed DataTable", () => {
   });
 
   it("starts a new range when the estimate changes", () => {
-    const { provider, view } = windowedTable();
+    const { provider, view } = virtualizedTable();
     view.rerender(
       <DataTable
         provider={provider}
         columns={columns}
         label="Machines"
-        windowing={virtualizeRows({ estimatedRowHeight: 20 })}
+        virtualization={virtualizeRows({ estimatedRowHeight: 20 })}
       />,
     );
     expect(mountedHosts()).toHaveLength(10);
@@ -801,7 +804,7 @@ describe("windowed DataTable", () => {
   it("leaves nothing observing or listening once unmounted", () => {
     const added = vi.spyOn(EventTarget.prototype, "addEventListener");
     const removed = vi.spyOn(EventTarget.prototype, "removeEventListener");
-    const { table, view } = windowedTable();
+    const { table, view } = virtualizedTable();
     const ours = added.mock.calls.flatMap(([type, listener], call) => {
       const target = added.mock.contexts[call];
       return type === "scroll" &&
@@ -838,7 +841,7 @@ describe("windowed DataTable", () => {
         provider={provider}
         columns={columns}
         label="Machines"
-        windowing={windowing}
+        virtualization={virtualization}
       />
     );
     const container = document.createElement("div");

@@ -15,7 +15,7 @@
 #   selection cell  design "BodyCell: Checkbox variant"
 #                                         DOM `ds data-table-body-cell selection`
 #   status row      DOM `ds data-table-row status`
-#   status cell     DOM `ds data-table-body-cell status <kind>`
+#   status cell     DOM `ds data-table-body-cell status`, `data-status="<status>"`
 #   gap             DOM `ds data-table-gap`, hidden from assistive technology
 # The selection and status cells share the body cell's class for its shared
 # box, but they are role nodes here, not BodyCells: the table's `selectable`
@@ -39,22 +39,24 @@
 #                       "Row/select-all checkboxes" (1.3.1, 2.1.1, 4.1.2-4.1.3)
 #                       — CheckboxInput's own contract, plus the table's
 #                       names: "Select all displayed rows", "Select <row>"
-#   status row          "Loading/no-data/no-results/error/no-access"
+#   status row          "pending/regrouping/failed/refresh-failed/stale/no-data/no-results"
 #                       (1.3.1, 1.4.1, 4.1.3). The cell is `role=cell`, not a
-#                       live region; only the stale message is `role=status`.
+#                       live region; a settled outcome — failed, stale,
+#                       refresh-failed, no-data, no-results — wraps its text
+#                       in `role=status`, a passing state is silent.
 #   settings cell       "ContextualMenu trigger/items", when the part ships
-#   windowed body       "DataTable windowed rows" (1.3.1, 2.1.1, 2.4.3,
+#   virtualized body    "DataTable virtualized rows" (1.3.1, 2.1.1, 2.4.3,
 #                       4.1.2): the root reports `aria-rowcount` and every
 #                       mounted row its `aria-rowindex` in logical order, the
 #                       header row being 1, so a gap is never read as the
 #                       table's end; the row holding focus stays mounted.
 #
-# Windowed: a table given `windowing` mounts only the entries near its
-# viewport. The body row group takes the `windowed` class and holds gaps
+# Virtualized: a table given `virtualization` mounts only the entries near its
+# viewport. The body row group takes the `virtual` class and holds gaps
 # in place of the entries it does not mount: before the first run of
 # mounted entries, between runs, and after the last. The root becomes the
 # scroll viewport the range is measured against. None of this changes a
-# table without `windowing`.
+# table without `virtualization`.
 #
 # Deviations the DSL cannot express, recorded here:
 #   - The surface background channel: `appearance.background` is read through
@@ -70,17 +72,23 @@
 #   - A selected row under the pointer takes
 #     `color/foreground/secondary/information/hover`; compound states
 #     (`@selected@hover`) are reserved, not permitted, in 0.3.0.
-#   - The status row and the rows are exclusive, except that a stale status
-#     precedes the rows it describes. Conditional display is deferred in the
-#     DSL.
+#   - The status row and the rows are exclusive, except that a stale or a
+#     refresh-failed status precedes the rows it describes. Conditional
+#     display is deferred in the DSL.
 #   - A row's bottom border is drawn on every row but the last: the DSL
 #     cannot condition a style on position.
 #   - The status cell wraps where every other cell holds one line, and its
 #     row lays out as a block, so it spans the table even when a selectable
 #     table has no columns; the DSL has no keys for either.
-#   - The status kinds (loading, error, stale, no-data, no-results) are not
-#     registry states. They change text, and error takes `color/text/error`
-#     in place of `color/text/muted`.
+#   - The statuses (pending, regrouping, failed, refresh-failed, stale,
+#     no-data, no-results) are the core's `DisplayStatus`, carried as
+#     `data-status`; they are not registry states. They change text, and the
+#     two failures take `color/text/error` in place of `color/text/muted`.
+#     A recorded deviation from the code standards' state selectors, which
+#     reserve attributes for native states and classes for custom ones: a
+#     bare state word as a class (`.failed`, `.stale`) collides with global
+#     classes, so the status is an attribute the stylesheet selects by value
+#     and the anatomy names by that value. To be raised against the standard.
 #   - `color/focus-ring` is the package's `color.focusRing`: a camelCase id
 #     the DSL's token-path grammar (`[a-z0-9-]+`) cannot spell.
 #   - The header row group's stacking above the scrolled body uses z-index 1;
@@ -88,12 +96,12 @@
 #   - A gap's height is the range's per-render publication, the height of
 #     the entries it stands for, written on the gap itself: geometry no
 #     stylesheet can know, as `--data-table-columns` is.
-#   - The windowed root is positioned (`layout.position: relative`), so the
+#   - The virtualized root is positioned (`layout.position: relative`), so the
 #     body's offset is measured from it, and it opts out of the browser's
 #     scroll anchoring (`overflow-anchor: none`): the range anchors the
 #     scroll itself, and two corrections would move it twice. By default it
 #     is no taller than the viewport (`100svh`), so the range stays bounded
-#     wherever it sits; a caller's own maximum wins. `windowed` is a class,
+#     wherever it sits; a caller's own maximum wins. `virtual` is a class,
 #     not a registry state, and the DSL has no key for scroll anchoring.
 #
 # Rows take a minimum height from the density line, never a fixed one, so a
@@ -211,7 +219,7 @@ node:
                     cardinality: "1"
             relation:
               cardinality: "0..1"
-          # Windowed only: the space of the entries not mounted.
+          # Virtualized only: the space of the entries not mounted.
           - node:
               role: gap
             relation:

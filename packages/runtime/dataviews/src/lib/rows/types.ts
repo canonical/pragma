@@ -76,71 +76,6 @@ export type RowModelResult<TRow extends object> =
   | { readonly status: "built"; readonly model: RowModel<TRow> }
   | { readonly status: "rejected"; readonly reason: string };
 
-/** What every display entry carries, whatever its kind. */
-type DisplayEntryBase = {
-  /**
-   * Unique across kinds and stable across rebuilds. Rendered rows,
-   * measurements and retained focus are keyed by it, never by position, so
-   * removing one entry moves nothing that belongs to another.
-   */
-  readonly id: string;
-  /**
-   * The entry's logical row position, as `aria-rowindex` reports it: the
-   * header row is 1 and the entries follow in display order. Worked out
-   * once, here, so every binding reports the same position.
-   *
-   * @seam grouping — read by the group header row; the rows of a collapsed
-   * group are not displayed, so they take no position
-   */
-  readonly index: number;
-  /**
-   * The entry id of the group the entry belongs to, or null at the top
-   * level. Every entry is top-level until grouping lands.
-   *
-   * @seam grouping — read by the group header row, so an entry's owning
-   * group is read from here and never recomputed
-   */
-  readonly parent: string | null;
-};
-
-/**
- * One entry of a table body, in display order: a record's row, or a status
- * row carrying a status of the renderer's own shape. An open union: the
- * virtual range's estimates are keyed by its kinds, so a kind added here
- * is a compile error until every reader knows it.
- *
- * @seam grouping — read by the group header row, which joins this union
- * as `"group"` with its path and nesting level
- *
- * @experimental Pre-release: the whole surface is still settling, and this
- * name may change or move before the first release.
- */
-export type DisplayEntry<TStatus = unknown> =
-  | (DisplayEntryBase & {
-      readonly kind: "record";
-      /** The identity of the row the entry displays. */
-      readonly rowId: string;
-    })
-  | (DisplayEntryBase & {
-      readonly kind: "status";
-      /**
-       * Why there are no rows, or why the rows after it are an earlier
-       * query's. The table's own status is the only one today.
-       *
-       * @seam grouping — read by the group header row: a group still
-       * loading is another entry of this kind, whose parent is that group
-       */
-      readonly status: TStatus;
-    });
-
-/**
- * The kinds of display entry.
- *
- * @experimental Pre-release: the whole surface is still settling, and this
- * name may change or move before the first release.
- */
-export type DisplayEntryKind = DisplayEntry["kind"];
-
 /**
  * One row's channels. Minted once per row identity and shared by every
  * cell of that row: field channels notify only the cells whose value
@@ -203,17 +138,4 @@ export type RowScopes<TRow extends object = RowRecord> = {
    * re-attaching after a detach is an ordinary second call.
    */
   readonly observe: () => () => void;
-};
-
-/**
- * What one table body displays.
- *
- * @experimental Pre-release: the whole surface is still settling, and this
- * name may change or move before the first release.
- */
-export type DisplayEntriesConfig<TStatus> = {
-  /** The rows shown, in result order: empty when a status replaces them. */
-  readonly rowIds: readonly string[];
-  /** The table's status, shown ahead of any rows, or null for none. */
-  readonly status: TStatus | null;
 };

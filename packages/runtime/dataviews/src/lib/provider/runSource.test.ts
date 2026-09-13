@@ -214,7 +214,6 @@ describe("runSource refusals", () => {
     const { host, release } = running(source.source);
     host.adopt(query({ sort: [{ field: "cpu", direction: "asc" }] }), "view");
     expect(source.calls).toHaveLength(0);
-    expect(host.state.get().result.status).toBe("failed");
     expect(problemOf(host.state.get())).toEqual({
       status: "refused",
       refusals: [
@@ -539,7 +538,10 @@ describe("runSource", () => {
     expect(source.calls).toHaveLength(0);
   });
 
-  it("publishes a failure with the retained rows and the reason", () => {
+  it("hands a delivered failure to the host as the request's problem", () => {
+    // Where that leaves the rows — stale, or a failed refresh — is the
+    // coordinator's decision, pinned with it; the run only threads the
+    // delivery through as the completion it is.
     const source = manual();
     const { provider, host, release } = running(source.source);
     host.refresh();
@@ -547,26 +549,10 @@ describe("runSource", () => {
     provider.setSearch("web");
     source.callAt(1).deliver(failed("503 from ex:api"));
     expect(host.state.get().result).toMatchObject({
-      status: "stale",
       rows,
       problem: { status: "failed", failure: { reason: "503 from ex:api" } },
     });
-    expect(host.state.get().resultMatchesQuery).toBe(false);
-    release();
-  });
-
-  it("reports a failed refresh over rows that still answer the query", () => {
-    const source = manual();
-    const { host, release } = running(source.source);
-    host.refresh();
-    source.callAt(0).deliver(succeeded(rows));
-    host.refresh();
-    source.callAt(1).deliver(failed("no route"));
-    expect(host.state.get().result).toMatchObject({
-      status: "refresh-failed",
-      rows,
-      problem: { status: "failed", failure: { reason: "no route" } },
-    });
+    expect(host.state.get().pendingRequestId).toBeNull();
     release();
   });
 
@@ -681,7 +667,6 @@ describe("runSource", () => {
       const state = host.state.get();
       return {
         rows: state.result.rows?.length,
-        status: state.result.status,
         matches: state.resultMatchesQuery,
         problem: state.result.problem?.status ?? null,
       };
@@ -693,21 +678,18 @@ describe("runSource", () => {
     host.refresh();
     expect(observed()).toEqual({
       rows: 9,
-      status: "ready",
       matches: true,
       problem: null,
     });
     host.adopt(query({ filter: failing }), "view");
     expect(observed()).toEqual({
       rows: 3,
-      status: "ready",
       matches: true,
       problem: null,
     });
     host.adopt(query({ filter: failing, sort: byCpu }), "view");
     expect(observed()).toEqual({
       rows: 3,
-      status: "stale",
       matches: false,
       problem: "refused",
     });
@@ -720,7 +702,6 @@ describe("runSource", () => {
     );
     expect(observed()).toEqual({
       rows: 3,
-      status: "stale",
       matches: false,
       problem: "refused",
     });
@@ -734,7 +715,6 @@ describe("runSource", () => {
     );
     expect(observed()).toEqual({
       rows: 6,
-      status: "ready",
       matches: true,
       problem: null,
     });

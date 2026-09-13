@@ -8,14 +8,9 @@ import { createCollection } from "@canonical/dataviews-core";
 import { renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, expectTypeOf, it } from "vitest";
-import createFakeChannel from "../../../../../testing/createFakeChannel.js";
-import {
-  type Machine,
-  machine,
-  machines,
-} from "../../../../../testing/machines.js";
-import CellContext from "../CellContext.js";
-import type { CellContextValue } from "../types.js";
+import createFakeChannel from "../../../testing/createFakeChannel.js";
+import { type Machine, machine, machines } from "../../../testing/machines.js";
+import { CellContext, type CellContextValue } from "../common/index.js";
 import useDataViewsCell from "./useDataViewsCell.js";
 
 const alpha = machine("machine-1", "alpha", "failed", 8);

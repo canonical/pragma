@@ -1,5 +1,5 @@
+import type { DisplayEntry } from "../display/index.js";
 import { areListsEqual } from "../query/index.js";
-import type { DisplayEntry } from "../rows/index.js";
 import createSizeIndex from "./createSizeIndex.js";
 import type {
   MountedRange,

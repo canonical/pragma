@@ -7,7 +7,7 @@ import {
   resolveColumns,
 } from "@canonical/dataviews-core/bindings";
 import { useCallback, useMemo, useState } from "react";
-import { useDataViewsValue } from "../../DataViews/hooks/index.js";
+import { useDataViewsValue } from "../../../hooks/index.js";
 import areTracksEqual from "../areTracksEqual.js";
 import type { UseTableGeometryResult } from "./types.js";
 import useStableValue from "./useStableValue.js";

@@ -2,7 +2,7 @@
  * The stylesheet's contract with the markup. jsdom applies no CSS, so what is
  * pinned is what a stylesheet change can break with every render still
  * green: each class the sheet styles is one the table renders, nothing below
- * the table carries a style of its own but a windowed table's gaps, which
+ * the table carries a style of its own but a virtualized table's gaps, which
  * carry their height alone, and the declarations whose loss no render would
  * show are still declared.
  *
@@ -137,8 +137,8 @@ const refreshFailedTable = (): HTMLElement => {
   return container;
 };
 
-/** A windowed table over more rows than it mounts, so it holds a gap. */
-const windowedTable = (): HTMLElement => {
+/** A virtualized table over more rows than it mounts, so it holds a gap. */
+const virtualizedTable = (): HTMLElement => {
   const rows = Array.from({ length: 20 }, (_, position) =>
     machine(`m-${position}`, `host-${position}`),
   );
@@ -148,7 +148,7 @@ const windowedTable = (): HTMLElement => {
       provider={provider}
       columns={columns}
       label="Machines"
-      windowing={virtualizeRows({ estimatedRowHeight: 32 })}
+      virtualization={virtualizeRows({ estimatedRowHeight: 32 })}
     />,
   );
   return container;
@@ -172,7 +172,7 @@ describe("DataTable stylesheet", () => {
     // Nested inside that rule, so it is read from the sheet rather than
     // through `rule`, which stops at the first nested block.
     const failures = sheet.match(
-      /&\.failed,\s*&\.refresh-failed\s*\{([^{}]*)\}/,
+      /&\[data-status="failed"\],\s*&\[data-status="refresh-failed"\]\s*\{([^{}]*)\}/,
     );
     if (failures === null) {
       throw new Error("no rule colours the two failure statuses together");
@@ -220,19 +220,19 @@ describe("DataTable stylesheet", () => {
     cleanup();
     expect(
       failed().querySelector(
-        ".ds.data-table-row-group.body > .ds.data-table-row.status > .ds.data-table-body-cell.status.failed",
+        '.ds.data-table-row-group.body > .ds.data-table-row.status > .ds.data-table-body-cell.status[data-status="failed"]',
       ),
     ).not.toBeNull();
   });
 
   it("leaves every width to the stylesheet and the one published track list", () => {
     // The container's own publication is pinned in DataTable.test.tsx; no
-    // element inside it may carry a style of its own but a windowed table's
+    // element inside it may carry a style of its own but a virtualized table's
     // gaps, each the height of the rows it stands for and nothing else.
-    for (const mount of [loaded, failed, windowedTable]) {
+    for (const mount of [loaded, failed, virtualizedTable]) {
       const table = mount().querySelector('[role="table"]');
       expect(table).not.toBeNull();
-      if (mount === windowedTable) {
+      if (mount === virtualizedTable) {
         expect(table?.querySelector(".ds.data-table-gap")).not.toBeNull();
       }
       for (const styled of table?.querySelectorAll<HTMLElement>("[style]") ??
@@ -387,7 +387,7 @@ describe("DataTable anatomy", () => {
       ),
     );
     expect(stated.size).toBeGreaterThan(0);
-    for (const mount of [loaded, failed, windowedTable]) {
+    for (const mount of [loaded, failed, virtualizedTable]) {
       const container = mount();
       for (const selector of [...stated]) {
         if (container.querySelector(selector) !== null) {

@@ -3,22 +3,22 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import * as root from "../../index.js";
-import { WINDOWED } from "../windowing/index.js";
+import { VIRTUALIZED } from "../common/index.js";
 import { VirtualBody } from "./common/index.js";
 import * as entry from "./index.js";
 import virtualizeRows from "./virtualizeRows.js";
 
 describe("virtualizeRows", () => {
-  it("describes the windowing, carrying the body it renders", () => {
-    const windowing = virtualizeRows({ estimatedRowHeight: 40 });
-    expect(windowing[WINDOWED]).toEqual({
+  it("describes the virtualization, carrying the body it renders", () => {
+    const virtualization = virtualizeRows({ estimatedRowHeight: 40 });
+    expect(virtualization[VIRTUALIZED]).toEqual({
       body: VirtualBody,
       estimatedRowHeight: 40,
     });
-    expect(Object.isFrozen(windowing)).toBe(true);
-    expect(Object.isFrozen(windowing[WINDOWED])).toBe(true);
+    expect(Object.isFrozen(virtualization)).toBe(true);
+    expect(Object.isFrozen(virtualization[VIRTUALIZED])).toBe(true);
     // Nothing but the private key: the descriptor has no field to read.
-    expect(Object.keys(windowing)).toEqual([]);
+    expect(Object.keys(virtualization)).toEqual([]);
   });
 
   it("refuses an estimate that is not a positive number of pixels", () => {

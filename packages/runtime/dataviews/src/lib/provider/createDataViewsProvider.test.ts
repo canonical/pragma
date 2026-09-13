@@ -751,7 +751,6 @@ describe("createDataViewsProvider rows", () => {
     ).toBe(true);
     expect(provider.rows.get().ids).toEqual([]);
     const { result } = provider.state.get();
-    expect(result.status).toBe("failed");
     expect(result.problem).toMatchObject({
       status: "failed",
       failure: {
@@ -770,7 +769,6 @@ describe("createDataViewsProvider rows", () => {
     // The rows still answer the query, so they are kept and the refresh is
     // reported as failed over them — never replaced by rows nothing can key.
     expect(provider.rows.get()).toBe(retained);
-    expect(provider.state.get().result.status).toBe("refresh-failed");
     expect(provider.state.get().result.problem).toMatchObject({
       status: "failed",
       failure: { reason: 'duplicate row id "m-2"' },
@@ -796,7 +794,6 @@ describe("createDataViewsProvider rows", () => {
     const retained = provider.rows.get();
     host.complete(host.refresh(), FAILED);
     expect(provider.rows.get()).toBe(retained);
-    expect(provider.state.get().result.status).toBe("refresh-failed");
     expect(provider.state.get().result.problem).toEqual(FAILED);
     host.complete(host.refresh(), REFUSED);
     expect(provider.rows.get()).toBe(retained);
@@ -1084,7 +1081,6 @@ describe("createDataViewsProvider record types", () => {
     // Never displayed: the rows already on screen stay, and the refresh is
     // reported as failed over them.
     expect(provider.rows.get()).toBe(retained);
-    expect(provider.state.get().result.status).toBe("refresh-failed");
     expect(provider.state.get().result.problem).toMatchObject({
       status: "failed",
       failure: {

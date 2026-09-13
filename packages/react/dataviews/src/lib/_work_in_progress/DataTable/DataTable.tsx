@@ -3,33 +3,38 @@ import type {
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
 import {
+  areDisplayStatusesEqual,
   type ColumnToSize,
   createColumnLayout,
   createGridInteraction,
   isDataViewsProvider,
   listDisplayEntries,
+  resolveDisplayStatus,
 } from "@canonical/dataviews-core/bindings";
 import {
   type CSSProperties,
   type ReactElement,
+  useCallback,
   useEffect,
   useId,
   useMemo,
 } from "react";
-import { useMergedRef } from "../../hooks/index.js";
-import { WINDOWED } from "../../windowing/index.js";
-import { useDataViewsValue } from "../DataViews/hooks/index.js";
+import {
+  type EntryRenderer,
+  VIRTUALIZED,
+  type VirtualizedBodyProps,
+} from "../../common/index.js";
+import { useDataViewsValue, useMergedRef } from "../../hooks/index.js";
 import areColumnModelsEqual from "./areColumnModelsEqual.js";
 import areColumnsEqual from "./areColumnsEqual.js";
-import areStatusesEqual from "./areStatusesEqual.js";
 import {
   HeaderCell,
+  Row,
   SelectAllCell,
+  StatusRow,
   TableBody,
-  type TableBodyProps,
 } from "./common/index.js";
 import { readBounds, readFieldName, readSizing } from "./common/utils/index.js";
-import deriveTableStatus from "./deriveTableStatus.js";
 import describeStatus from "./describeStatus.js";
 import {
   usePreferredWidths,
@@ -38,7 +43,7 @@ import {
   useStableValue,
   useTableGeometry,
 } from "./hooks/index.js";
-import type { DataTableProps, DataTableWindowing } from "./types.js";
+import type { DataTableProps, DataTableVirtualization } from "./types.js";
 import "./styles.css";
 
 /**
@@ -55,18 +60,16 @@ const NO_SORTABLE_FIELDS: readonly string[] = Object.freeze([]);
 const defaultRowLabel = (_row: object, rowId: string): string => rowId;
 
 /**
- * The body a windowing descriptor carries, given the table's body props and
- * its published tracks, which re-wrap cells when they change.
+ * The body a virtualization descriptor carries, given what a virtualized body
+ * renders from: the entries and their renderer, the row model, and the
+ * published tracks, which re-wrap cells when they change.
  */
-const windowedRows = <TRow extends object>(
-  windowing: DataTableWindowing,
-  props: TableBodyProps<TRow>,
-  tracks: string | undefined,
+const renderVirtualizedBody = (
+  virtualization: DataTableVirtualization,
+  props: Omit<VirtualizedBodyProps, "estimatedRowHeight">,
 ): ReactElement => {
-  const { body: Body, estimatedRowHeight } = windowing[WINDOWED];
-  return (
-    <Body {...props} estimatedRowHeight={estimatedRowHeight} tracks={tracks} />
-  );
+  const { body: Body, estimatedRowHeight } = virtualization[VIRTUALIZED];
+  return <Body {...props} estimatedRowHeight={estimatedRowHeight} />;
 };
 
 /**
@@ -86,7 +89,7 @@ const windowedRows = <TRow extends object>(
  * The selection column is not among them: its width is the stylesheet's,
  * and the columns share what it leaves.
  *
- * Given `windowing`, it mounts only the rows near its viewport and reports
+ * Given `virtualization`, it mounts only the rows near its viewport and reports
  * every row's logical position; without it, every row is rendered.
  *
  * `import { DataTable } from "@canonical/dataviews-react";`
@@ -107,7 +110,7 @@ export default function DataTable<
   selectable = false,
   rowLabel = defaultRowLabel,
   renderStatus = describeStatus,
-  windowing,
+  virtualization,
   className,
   style,
   ref,
@@ -173,27 +176,23 @@ export default function DataTable<
   const geometry = useTableGeometry(activeLayout, interaction, columnIds);
   const scopes = useRowScopes(provider, fields);
   const state = useDataViewsValue(provider.state);
-  // Held at one reference while it says the same thing, so the entries are
-  // derived again only when a row identity or the status changes.
-  const status = useStableValue(deriveTableStatus(state), areStatusesEqual);
+  // The core's answer, held at one reference while it says the same thing,
+  // so the entries are listed again only when a row identity or the status
+  // changes.
+  const status = useStableValue(
+    resolveDisplayStatus(state),
+    areDisplayStatusesEqual,
+  );
   const ids = useDataViewsValue(scopes.ids);
-  // The status row first, then the rows: kept beside a stale status,
-  // replaced by any other.
+  // The core decides what the body shows: the status row first, then the
+  // rows where the status keeps them.
   const entries = useMemo(
-    () =>
-      listDisplayEntries({
-        rowIds:
-          status === null ||
-          status.status === "stale" ||
-          status.status === "refresh-failed"
-            ? ids
-            : [],
-        status,
-      }),
+    () => listDisplayEntries({ rowIds: ids, status }),
     [ids, status],
   );
-  const busy =
-    state.result.status === "pending" || state.result.status === "refreshing";
+  // Busy while a request is in flight, and only then: the root says so
+  // over retained rows as over none.
+  const busy = state.pendingRequestId !== null;
 
   // The container ref is the table's own — the solver measures it — so a
   // caller's ref is merged onto it rather than dropped, as className and
@@ -207,18 +206,34 @@ export default function DataTable<
   // and every cell of the body for nothing.
   const nameRow = useStableCallback(rowLabel);
   const showStatus = useStableCallback(renderStatus);
+  // While a status shows, the caller's own function, so a new one is
+  // shown at once; otherwise the held one, which re-renders nothing.
+  const renderer = status === null ? showStatus : renderStatus;
 
-  const body: TableBodyProps<TRow> = {
-    provider,
-    scopes,
-    entries,
-    columns: rendered,
-    selectable,
-    rowLabel: nameRow,
-    // While a status shows, the caller's own function, so a new one is
-    // shown at once; otherwise the held one, which re-renders nothing.
-    renderStatus: status === null ? showStatus : renderStatus,
-  };
+  // One renderer for either body, held while what it closes over holds:
+  // the bodies key, place and measure rows without knowing them.
+  const renderEntry = useCallback<EntryRenderer>(
+    (entry, placement) =>
+      entry.kind === "status" ? (
+        <StatusRow
+          ref={placement?.ref}
+          position={placement?.position}
+          status={entry.status}
+          renderStatus={renderer}
+        />
+      ) : (
+        <Row
+          ref={placement?.ref}
+          position={placement?.position}
+          provider={provider}
+          channels={scopes.readRow(entry.rowId)}
+          columns={rendered}
+          selectable={selectable}
+          rowLabel={nameRow}
+        />
+      ),
+    [renderer, provider, scopes, rendered, selectable, nameRow],
+  );
 
   // A custom property, which `CSSProperties` does not spell.
   const geometryStyle = {
@@ -236,9 +251,11 @@ export default function DataTable<
       role="table"
       aria-label={label}
       aria-busy={busy}
-      // Every logical row, the header's included, so a row a windowed
+      // Every logical row, the header's included, so a row a virtualized
       // table has not mounted is still counted.
-      aria-rowcount={windowing === undefined ? undefined : entries.length + 1}
+      aria-rowcount={
+        virtualization === undefined ? undefined : entries.length + 1
+      }
     >
       {/* biome-ignore lint/a11y/useSemanticElements: <thead> is only valid inside a <table>, and this grid is deliberately not one */}
       <div role="rowgroup" className="ds data-table-row-group header">
@@ -247,7 +264,7 @@ export default function DataTable<
         <div
           role="row"
           className="ds data-table-row"
-          aria-rowindex={windowing === undefined ? undefined : 1}
+          aria-rowindex={virtualization === undefined ? undefined : 1}
         >
           {selectable ? (
             <SelectAllCell
@@ -280,10 +297,15 @@ export default function DataTable<
           ))}
         </div>
       </div>
-      {windowing === undefined ? (
-        <TableBody {...body} />
+      {virtualization === undefined ? (
+        <TableBody entries={entries} renderEntry={renderEntry} />
       ) : (
-        windowedRows(windowing, body, geometry.template)
+        renderVirtualizedBody(virtualization, {
+          entries,
+          renderEntry,
+          rows: provider.rows,
+          tracks: geometry.template,
+        })
       )}
     </div>
   );

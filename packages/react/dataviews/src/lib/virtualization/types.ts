@@ -1,5 +1,5 @@
 /**
- * How `virtualizeRows` windows a table's rows.
+ * How `virtualizeRows` virtualizes a table's rows.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.

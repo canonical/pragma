@@ -35,6 +35,22 @@
 # (`density/padding-inline`, `--density-padding-inline`), as the table's cells
 # do; the DSL cannot name a channel, so the path does and this note records it.
 #
+# The stylesheet binds each of these through the bar's own component tokens,
+# `--data-table-pagination-bar-*`, read by every rule. The static bindings
+# are declared once on the root scope: gap (`dimension/100`), gap-control
+# (`dimension/050`), inset-inline (`dimension/100`), border-width (`dimension/stroke/thickness/medium`),
+# border-color and divider-color (`color/border/muted`), font-family, -size
+# and -weight (`typography/text/primary`), divider-inline-size
+# (`dimension/stroke/thickness/medium`), divider-block-size (`dimension/300`)
+# and control-padding-inline-end (`dimension/100`). The four that read a
+# channel are declared on the bar itself, where the channel is set —
+# padding-inline-start (the density channel), control-size
+# (`density/line-height-effective`), color-text and color-background (the
+# surface channel, falling back to `color/text` and `color/background`) — so
+# they follow the nearest density and surface rather than freezing at the
+# root. The DSL binds design tokens, not a component's own tier, so the
+# styles below name the design tokens and this note records the tier between.
+#
 # The two selects are the design system's SelectInput, themed through the form
 # layer's own channels on the bar, never restyled:
 #   --form-input-height          density/line-height-effective
@@ -82,9 +98,9 @@
 # `skip-to-start` and `skip-to-end` are not in `@canonical/ds-assets`; until
 # they land, first and last show `back-to-top` turned a quarter-turn towards
 # their edge — a bar with an arrow meeting it. The DSL cannot express the
-# turn; the stylesheet does, and this note records it. Icons take `1em` from
-# the Icon component; the design draws 16px, and the package has no icon-size
-# token.
+# turn; the stylesheet does, on the control's own icon slot, and this note
+# records it. Icons take `1em` from the Icon component; the design draws
+# 16px, and the package has no icon-size token.
 #
 # Deviations the DSL cannot express, recorded here:
 #   - `layout.position: sticky` holds the bar to the bottom edge of the
@@ -118,11 +134,12 @@
 # States:
 #   - first and previous are disabled on the first page; next is disabled
 #     when no later page is known to exist; last is disabled on the last page
-#     and whenever there is no total for the current query — before results,
-#     while a replacement loads, or from a source that publishes none. A
+#     and whenever there is no total for the current query and page size —
+#     before results, while a replacement query loads, or from a source that
+#     publishes none or only a lower bound. A
 #     reachable page is a link; an unreachable one is the Button's `@disabled`.
-#   - The page select lists every page the last settled total makes, keeping
-#     that list while a page move loads (a new query, page size or scope
+#   - The page select lists every page the query's total makes, keeping
+#     that list while a page move loads (a new query, page size or generation
 #     drops it), and lists a window past the last page after the pages there
 #     are. One option per page: a very large total makes a long list, which
 #     is carried to a later change.

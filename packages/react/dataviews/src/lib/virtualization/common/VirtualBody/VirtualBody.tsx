@@ -1,14 +1,10 @@
-import { memo, type ReactElement } from "react";
-import {
-  Row,
-  StatusRow,
-} from "../../../_work_in_progress/DataTable/common/index.js";
-import { useDataViewsValue } from "../../../_work_in_progress/DataViews/hooks/index.js";
+import { Fragment, memo, type ReactElement } from "react";
+import { useDataViewsValue } from "../../../hooks/index.js";
 import { useVirtualRows } from "../../hooks/index.js";
 import type { VirtualBodyProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds data-table-row-group body windowed";
+const componentCssClassName = "ds data-table-row-group body virtual";
 
 /** The space of entries not mounted: hidden, since it holds no rows. */
 const gap = (key: string, size: number): ReactElement => (
@@ -20,18 +16,14 @@ const gap = (key: string, size: number): ReactElement => (
   />
 );
 
-function VirtualBody<TRow extends object>({
-  provider,
-  scopes,
+function VirtualBody({
   entries,
-  columns,
-  selectable,
-  rowLabel,
-  renderStatus,
+  renderEntry,
+  rows: rowModel,
   estimatedRowHeight,
   tracks,
-}: VirtualBodyProps<TRow>): ReactElement {
-  const model = useDataViewsValue(provider.rows);
+}: VirtualBodyProps): ReactElement {
+  const model = useDataViewsValue(rowModel);
   const { mounted, body, refFor, onFocus, onBlur } = useVirtualRows({
     entries,
     estimatedRowHeight,
@@ -47,26 +39,9 @@ function VirtualBody<TRow extends object>({
     }
     for (const entry of entries.slice(run.start, run.end)) {
       rows.push(
-        entry.kind === "status" ? (
-          <StatusRow
-            key={entry.id}
-            ref={refFor(entry.id)}
-            position={entry.index}
-            status={entry.status}
-            renderStatus={renderStatus}
-          />
-        ) : (
-          <Row
-            key={entry.id}
-            ref={refFor(entry.id)}
-            position={entry.index}
-            provider={provider}
-            channels={scopes.readRow(entry.rowId)}
-            columns={columns}
-            selectable={selectable}
-            rowLabel={rowLabel}
-          />
-        ),
+        <Fragment key={entry.id}>
+          {renderEntry(entry, { ref: refFor(entry.id), position: entry.index })}
+        </Fragment>,
       );
     }
   }
@@ -88,11 +63,11 @@ function VirtualBody<TRow extends object>({
 }
 
 /**
- * The table's body, windowed: the entries near the viewport, each at its
+ * The table's body, virtualized: the entries near the viewport, each at its
  * logical row position, with a gap for the space of the rest. A scroll
  * that does not change the mounted entries renders nothing, and the rows
  * are memoised as they are in the table's own body, so one that stays
  * mounted is not rendered again. New tracks render the body once, to
  * forget the heights they outdate; its rows bail out.
  */
-export default memo(VirtualBody) as typeof VirtualBody;
+export default memo(VirtualBody);

@@ -17,8 +17,7 @@ import type {
   DataTableCellProps,
   DataTableColumn,
   DataTableProps,
-  DataTableStatus,
-  DataTableWindowing,
+  DataTableVirtualization,
   DataViewsActionsProps,
   DataViewsDataTableProps,
   DataViewsFiltersProps,
@@ -44,8 +43,7 @@ type EveryPublicType = [
   DataTableCellProps,
   DataTableColumn,
   DataTableProps<Fields>,
-  DataTableStatus,
-  DataTableWindowing,
+  DataTableVirtualization,
   DataViewsProps<Fields>,
   DataViewsFiltersProps,
   PaginationBarProps<Fields>,
@@ -157,7 +155,7 @@ describe("public surface types", () => {
   });
 
   it("keeps what the parts share among themselves off the root", () => {
-    // The cell context the table installs, the windowing key it reads and
+    // The cell context the table installs, the virtualization key it reads and
     // the row parts a virtualized body reuses are reached by sibling
     // components through their owner's barrel and by no application.
     expect(Object.keys(dataviewsReact).sort()).toEqual([
@@ -172,21 +170,23 @@ describe("public surface types", () => {
   });
 });
 
-describe("the windowing prop", () => {
+describe("the virtualization prop", () => {
   it("takes the descriptor virtualizeRows makes, and only that", () => {
     expectTypeOf(
       virtualizeRows({ estimatedRowHeight: 40 }),
-    ).toEqualTypeOf<DataTableWindowing>();
+    ).toEqualTypeOf<DataTableVirtualization>();
     expectTypeOf<
-      DataTableProps<Fields, RowRecord>["windowing"]
-    >().toEqualTypeOf<DataTableWindowing | undefined>();
+      DataTableProps<Fields, RowRecord>["virtualization"]
+    >().toEqualTypeOf<DataTableVirtualization | undefined>();
     // What a descriptor carries is keyed by a symbol no entry point
     // exports, so a descriptor has nothing to read and cannot be written
     // by hand.
-    expectTypeOf<DataTableWindowing>().not.toHaveProperty("estimatedRowHeight");
+    expectTypeOf<DataTableVirtualization>().not.toHaveProperty(
+      "estimatedRowHeight",
+    );
     expectTypeOf<{
       readonly estimatedRowHeight: number;
-    }>().not.toExtend<DataTableWindowing>();
+    }>().not.toExtend<DataTableVirtualization>();
     expectTypeOf<VirtualRowsConfig>().toEqualTypeOf<{
       readonly estimatedRowHeight: number;
     }>();

@@ -1,5 +1,4 @@
-import type { DataTableWindowing } from "../_work_in_progress/DataTable/index.js";
-import { WINDOWED } from "../windowing/index.js";
+import { type DataTableVirtualization, VIRTUALIZED } from "../common/index.js";
 import { VirtualBody } from "./common/index.js";
 import type { VirtualRowsConfig } from "./types.js";
 
@@ -8,9 +7,9 @@ import type { VirtualRowsConfig } from "./types.js";
  * result window holds.
  *
  * ```tsx
- * const windowing = virtualizeRows({ estimatedRowHeight: 24 });
+ * const virtualization = virtualizeRows({ estimatedRowHeight: 24 });
  *
- * <DataTable provider={provider} columns={columns} label="Machines" windowing={windowing} />;
+ * <DataTable provider={provider} columns={columns} label="Machines" virtualization={virtualization} />;
  * ```
  *
  * The result is an immutable descriptor, not a running virtualizer: every
@@ -24,13 +23,13 @@ import type { VirtualRowsConfig } from "./types.js";
  */
 export default function virtualizeRows({
   estimatedRowHeight,
-}: VirtualRowsConfig): DataTableWindowing {
+}: VirtualRowsConfig): DataTableVirtualization {
   if (!Number.isFinite(estimatedRowHeight) || estimatedRowHeight <= 0) {
     throw new Error(
       "virtualizeRows requires a positive estimatedRowHeight, in pixels",
     );
   }
   return Object.freeze({
-    [WINDOWED]: Object.freeze({ body: VirtualBody, estimatedRowHeight }),
+    [VIRTUALIZED]: Object.freeze({ body: VirtualBody, estimatedRowHeight }),
   });
 }

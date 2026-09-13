@@ -171,7 +171,7 @@ export type MachineFields = typeof machineCollection.schema.fields;
 export type SortableField = MachineFields[number]["field"];
 
 /**
- * `count` machines for the windowed stories, made from the twelve above in
+ * `count` machines for the virtualized stories, made from the twelve above in
  * turn — their statuses, regions, owners and notes — each host numbered.
  */
 export const manyMachines = (count: number): readonly Machine[] =>

@@ -1,10 +1,10 @@
 /**
- * The virtual range a windowed table mounts its rows by: the sizes it
+ * The virtual range a virtualized table mounts its rows by: the sizes it
  * indexes, the runs it publishes and the configuration it starts from.
  */
 
+import type { DisplayEntry, DisplayEntryKind } from "../display/index.js";
 import type { ReadonlyChannel } from "../observable/index.js";
-import type { DisplayEntry, DisplayEntryKind } from "../rows/index.js";
 
 /**
  * Configuration of one table's virtual range.

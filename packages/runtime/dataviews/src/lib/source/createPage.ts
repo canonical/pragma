@@ -1,10 +1,10 @@
-import type { Count, SourcePage } from "../result/index.js";
+import { type Count, type SourcePage, UNKNOWN_COUNT } from "../result/index.js";
 import type { RowRecord } from "../rows/index.js";
 import type { PageConfig } from "./types.js";
 
 /** A count given is exact; one left out is unknown. */
 const readCount = (value: number | undefined): Count =>
-  value === undefined ? { kind: "unknown" } : { kind: "exact", value };
+  value === undefined ? UNKNOWN_COUNT : { kind: "exact", value };
 
 /**
  * Build the envelope one request answers with. A count given is exact and

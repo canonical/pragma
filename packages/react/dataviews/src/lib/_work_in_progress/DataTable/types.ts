@@ -1,12 +1,13 @@
 /**
- * The table's public contract — its props, columns, cells, statuses and
- * the windowing descriptor it takes — with the body shapes the
- * virtualization entry point fills in. Together because a column, a cell
- * and a status are read by the same renderer from the same props.
+ * The table's public contract — its props, columns, cells and the
+ * virtualization descriptor it takes — with the body shapes the virtualization
+ * entry point fills in. Together because a column and a cell are read by
+ * the same renderer from the same props.
  */
 
 import type {
   DataViewsProvider,
+  DisplayStatus,
   RowRecord,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
@@ -15,7 +16,9 @@ import type {
   ColumnSizing,
 } from "@canonical/dataviews-core/bindings";
 import type { ComponentProps, ComponentType, ReactNode } from "react";
-import type { WINDOWED, Windowed } from "../../windowing/index.js";
+import type { DataTableVirtualization } from "../../common/index.js";
+
+export type { DataTableVirtualization } from "../../common/index.js";
 
 /**
  * The props one column's cell renderer receives.
@@ -77,41 +80,6 @@ export type DataTableColumn = {
   readonly resizable?: boolean;
 };
 
-/**
- * What the table says in place of its rows, or beside them. The no-rows
- * cases stay distinct: an unfiltered collection with nothing in it is not a
- * query that matched nothing, and neither is a failure. `loading` covers a
- * collection nothing displayable has arrived for yet, requested or not.
- * `stale` is shown above rows kept from an earlier query, because the
- * current one failed for `reason`; `refresh-failed` above rows that still
- * answer the current query, whose refresh failed — without it the failure
- * would show nothing at all.
- *
- * @experimental Pre-release: the whole surface is still settling, and this
- * name may change or move before the first release.
- */
-export type DataTableStatus =
-  | { readonly status: "loading" }
-  | { readonly status: "failed"; readonly reason: string }
-  | { readonly status: "refresh-failed"; readonly reason: string }
-  | { readonly status: "stale"; readonly reason: string }
-  | { readonly status: "no-data" }
-  | { readonly status: "no-results" };
-
-/**
- * A table that mounts only the rows near its viewport. Made by
- * `virtualizeRows`, from `@canonical/dataviews-react/virtualization`: the one
- * entry point that loads the implementation, so a table that never imports
- * it never ships it.
- *
- * @experimental Pre-release: the whole surface is still settling, and this
- * name may change or move before the first release.
- */
-export type DataTableWindowing = {
-  /** The implementation, private to the package: nothing to read here. */
-  readonly [WINDOWED]: Windowed;
-};
-
 type OwnProps<
   TFields extends readonly SchemaFieldDefinition[],
   TRow extends object,
@@ -140,18 +108,20 @@ type OwnProps<
   readonly rowLabel?: (row: TRow, rowId: string) => string;
   /**
    * Replaces the default text of a status: no rows to render, or rows that
-   * no longer answer the current query. Held the same way as `rowLabel`:
-   * the latest one is always called, and its identity alone never
-   * re-renders the body.
+   * no longer answer the current query. The status is the core's, decided
+   * once from the collection's state. Held the same way as `rowLabel`
+   * while rows show alone: the latest one is always called, and its
+   * identity alone never re-renders a row. While a status shows, the newest
+   * renderer is drawn at once.
    */
-  readonly renderStatus?: (status: DataTableStatus) => ReactNode;
+  readonly renderStatus?: (status: DisplayStatus) => ReactNode;
   /**
    * Mount only the rows near the viewport, from `virtualizeRows`. The table
    * becomes its own scroll viewport, no taller than the screen unless its
    * style says otherwise, and reports each row's logical position so that
    * a row not mounted is still counted. Omitted, every row is rendered.
    */
-  readonly windowing?: DataTableWindowing;
+  readonly virtualization?: DataTableVirtualization;
 };
 
 /**

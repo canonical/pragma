@@ -19,8 +19,8 @@ export type RowProps<TRow extends object> = {
   readonly columns: readonly DataTableColumn[];
   readonly selectable: boolean;
   readonly rowLabel: (row: TRow, rowId: string) => string;
-  /** The row's logical position, reported only by a windowed table. */
-  readonly position?: number;
-  /** The row element, for a windowed table to measure. */
-  readonly ref?: Ref<HTMLDivElement>;
+  /** The row's logical position, reported only by a virtualized table. */
+  readonly position?: number | undefined;
+  /** The row element, for a virtualized table to measure. */
+  readonly ref?: Ref<HTMLDivElement> | undefined;
 };

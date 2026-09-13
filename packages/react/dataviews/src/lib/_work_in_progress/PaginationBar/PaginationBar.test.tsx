@@ -12,7 +12,6 @@ import {
   DEFAULT_WINDOW,
   declareCapabilities,
 } from "@canonical/dataviews-core";
-import { readProviderHost } from "@canonical/dataviews-core/bindings";
 import type { LinkComponentProps } from "@canonical/react-ds-global";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { type ReactElement, StrictMode } from "react";
@@ -56,11 +55,15 @@ const machines = (count: number): readonly Machine[] =>
 const load = (
   source: ManualSource<Machine>,
   rows: readonly Machine[],
-  count: number | null,
+  count: number | Count | null,
   more: boolean | null = null,
 ): void => {
   const counted: Count =
-    count === null ? { kind: "unknown" } : { kind: "exact", value: count };
+    count === null
+      ? { kind: "unknown" }
+      : typeof count === "number"
+        ? { kind: "exact", value: count }
+        : count;
   act(() => {
     source.latest().deliver({
       status: "succeeded",
@@ -296,20 +299,57 @@ describe("PaginationBar", () => {
     expect(next()).toBeDisabled();
   });
 
-  it("claims no total while a replacement request is in flight", () => {
+  it("summarises nothing while a replacement page is in flight", () => {
     const { provider, source } = makeProvider();
     mount(provider);
     load(source, machines(2), 5);
     act(() => {
       provider.navigateWindow({ page: 2 });
     });
+    // The rows still on screen are an earlier page's, so they are not
+    // summarised as this one's; the count is this query's all the same, so
+    // the pages it makes are still listed and still reachable.
+    expect(summary()).toBeEmptyDOMElement();
+    expect(screen.getByText(/^of /)).toHaveTextContent("of 3 pages");
+    expect(next()).toBeEnabled();
+    load(source, machines(2), 5);
+    expect(summary()).toHaveTextContent(/^Showing 3–4 out of 5 items$/);
+    expect(next()).toBeEnabled();
+  });
+
+  it("says a lower bound as one, and names no last page from it", () => {
+    const { provider, source } = makeProvider();
+    mount(provider);
+    load(source, machines(2), { kind: "at-least", value: 7 });
+    expect(summary()).toHaveTextContent(
+      /^Showing 1–2 out of at least 7 items$/,
+    );
+    expect(screen.queryByText(/^of /)).toBeNull();
+    expect(last()).toBeDisabled();
+    // Seven at least, two to a page: a second page is proven.
+    expect(next()).toBeEnabled();
+    fireEvent.click(next());
+    // One row, and a bound the rows already exceed: said as the source
+    // said it, and Next now rests on the page's own word, which is none.
+    load(source, machines(1), { kind: "at-least", value: 1 });
+    expect(summary()).toHaveTextContent(/^Showing item 3 out of at least 1$/);
+    expect(next()).toBeDisabled();
+  });
+
+  it("claims no total while a replacement query is in flight", () => {
+    const { provider, source } = makeProvider();
+    mount(provider);
+    load(source, machines(2), 5);
+    act(() => {
+      provider.setSearch("alpha");
+    });
     // The previous query's total does not describe the pending one, and the
     // rows still on screen are not the ones Next would page past.
     expect(summary()).toBeEmptyDOMElement();
     expect(screen.queryByText(/^of /)).toBeNull();
     expect(next()).toBeDisabled();
-    load(source, machines(2), 5);
-    expect(summary()).toHaveTextContent(/^Showing 3–4 out of 5 items$/);
+    load(source, machines(2), 3);
+    expect(summary()).toHaveTextContent(/^Showing 1–2 out of 3 items$/);
     expect(next()).toBeEnabled();
   });
 
@@ -326,69 +366,21 @@ describe("PaginationBar", () => {
     expect(summary()).toHaveTextContent(/^Showing item 5 out of 5$/);
   });
 
-  it("keeps listing the settled pages while the next count is on its way", () => {
+  it("lists the pages the core counts, through a page move and not past a new query", () => {
+    // Which pages exist is the core's decision; the bar renders the list it
+    // is handed and keeps it while a page of the same query loads.
     const { provider, source } = makeProvider();
     mount(provider);
     load(source, machines(2), 6);
     fireEvent.change(pageSelect(), { target: { value: "2" } });
-    // No total is claimed while it loads, but the list is not cut short.
-    expect(screen.queryByText(/^of /)).toBeNull();
+    expect(screen.getByText(/^of /)).toHaveTextContent("of 3 pages");
     expect(values(pageSelect())).toEqual(["1", "2", "3"]);
-  });
-
-  it("keeps the settled pages across a history step to another page", () => {
-    const { provider, source } = makeProvider();
-    mount(provider);
-    load(source, machines(2), 6);
-    // Back or forward adopts the query under a new request identity.
-    act(() => {
-      readProviderHost(provider).adopt(
-        { slice: provider.state.get().slice, window: at(2, 2) },
-        "adopt",
-      );
-    });
-    expect(values(pageSelect())).toEqual(["1", "2", "3"]);
-  });
-
-  it("keeps the settled pages through a page move within one generation, and drops them on reset", () => {
-    const { provider, source } = makeProvider();
-    mount(provider);
-    load(source, machines(2), 6);
-    const { generation } = provider.state.get();
-    fireEvent.click(next());
-    // The move issues a request, not a generation: the list stands.
-    expect(provider.state.get().generation).toBe(generation);
-    expect(values(pageSelect())).toEqual(["1", "2", "3"]);
-    load(source, machines(2), 6);
-    expect(values(pageSelect())).toEqual(["1", "2", "3"]);
-    act(() => {
-      provider.reset();
-    });
-    // The next generation returns to the seed and counts afresh: nothing
-    // settled under the old one describes it.
-    expect(provider.state.get().generation).not.toBe(generation);
-    expect(pageSelect()).toHaveValue("1");
-    expect(values(pageSelect())).toEqual(["1"]);
-    expect(screen.queryByText(/^of /)).toBeNull();
-  });
-
-  it("drops the settled pages when the query or the page size changes", () => {
-    const { provider, source } = makeProvider();
-    mount(provider, { sizes: [2, 25] });
     load(source, machines(2), 6);
     act(() => {
       provider.setSearch("m1");
     });
-    // A new query makes a new count: the old one's pages may not exist.
     expect(values(pageSelect())).toEqual(["1"]);
-    load(source, machines(2), 6);
-    act(() => {
-      provider.setSort([{ field: "name", direction: "asc" }]);
-    });
-    expect(values(pageSelect())).toEqual(["1"]);
-    load(source, machines(2), 6);
-    fireEvent.change(sizeSelect(), { target: { value: "25" } });
-    expect(values(pageSelect())).toEqual(["1"]);
+    expect(screen.queryByText(/^of /)).toBeNull();
   });
 
   it("claims no total beside an earlier query's rows after the current one failed", () => {
@@ -404,7 +396,6 @@ describe("PaginationBar", () => {
         failure: { reason: "offline", cause: null, transient: null },
       });
     });
-    expect(provider.state.get().result.status).toBe("stale");
     expect(summary()).toBeEmptyDOMElement();
     expect(next()).toBeDisabled();
     expect(last()).toBeDisabled();
