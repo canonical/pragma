@@ -1,8 +1,9 @@
-import type { ReactElement, ReactNode } from "react";
-import { memo, useMemo } from "react";
-import type { CellScopeValue } from "../../../DataViews/CellScopeContext.js";
-import CellScopeContext from "../../../DataViews/CellScopeContext.js";
-import useDataViewsValue from "../../../DataViews/hooks/useDataViewsValue.js";
+import { memo, type ReactElement, type ReactNode, useMemo } from "react";
+import { useDataViewsValue } from "../../../DataViews/hooks/index.js";
+import {
+  CellScopeContext,
+  type CellScopeValue,
+} from "../../../DataViews/index.js";
 import type { BodyCellProps } from "./types.js";
 
 const componentCssClassName = "ds data-table-body-cell";
@@ -28,6 +29,11 @@ function BodyCell<TRow extends object>({
   field,
 }: BodyCellProps<TRow>): ReactElement {
   const channel = scope.fields[field];
+  if (channel === undefined) {
+    // The scopes observe every field the columns read, so a cell without
+    // its channel is a table built against another column list.
+    throw new Error(`no channel observes the field "${field}"`);
+  }
   const value = useDataViewsValue(channel);
   const cellScope = useMemo<CellScopeValue>(
     () => ({

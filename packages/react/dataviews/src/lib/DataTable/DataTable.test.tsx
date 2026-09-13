@@ -4,20 +4,20 @@
  * unrelated change does no work, and one scope per row rather than one per
  * cell. Each case is mutation-tested against that contract.
  */
-import type {
-  ColumnLayout,
-  Completion,
-  DataViewsProvider,
-} from "@canonical/dataviews-core";
 import {
-  createColumnLayout,
+  type Completion,
   createDataViewsProvider,
   createSchema,
+  type DataViewsProvider,
 } from "@canonical/dataviews-core";
+import {
+  type ColumnLayout,
+  createColumnLayout,
+} from "@canonical/dataviews-core/bindings";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import type { ReactElement } from "react";
-import { createRef, StrictMode, useState } from "react";
+import { createRef, type ReactElement, StrictMode, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
+import elementAt from "../../../testing/elementAt.js";
 import {
   COUNTED_EXACTLY,
   declaring,
@@ -25,8 +25,7 @@ import {
   exact,
   sorting,
 } from "../capabilities.fixtures.js";
-import useDataViewsCell from "../DataViews/hooks/useDataViewsCell.js";
-import useDataViewsValue from "../DataViews/hooks/useDataViewsValue.js";
+import { useDataViewsCell, useDataViewsValue } from "../DataViews/index.js";
 import DataTable from "./DataTable.js";
 import type { DataTableCellProps, DataTableColumn } from "./types.js";
 
@@ -148,7 +147,7 @@ describe("DataTable", () => {
     ).toEqual(["Name", "Status"]);
     expect(screen.getAllByRole("row")).toHaveLength(3);
     expect(
-      within(screen.getAllByRole("row")[1])
+      within(elementAt(screen.getAllByRole("row"), 1))
         .getAllByRole("cell")
         .map((cell) => cell.textContent),
     ).toEqual(["alpha", "running"]);
@@ -303,7 +302,9 @@ describe("DataTable", () => {
         status: "running",
       } as Machine,
     ]);
-    const cells = within(screen.getAllByRole("row")[1]).getAllByRole("cell");
+    const cells = within(elementAt(screen.getAllByRole("row"), 1)).getAllByRole(
+      "cell",
+    );
     expect(cells.map((cell) => cell.textContent)).toEqual([
       "alpha",
       "4",
@@ -337,7 +338,7 @@ describe("DataTable", () => {
       );
     });
     expect(
-      within(screen.getAllByRole("row")[1])
+      within(elementAt(screen.getAllByRole("row"), 1))
         .getAllByRole("cell")
         .map((cell) => cell.textContent),
     ).toEqual(["false", "9007199254740993", "", ""]);
@@ -353,7 +354,7 @@ describe("DataTable", () => {
       />,
     );
     load(provider, [machine("m-1", "alpha")]);
-    expect(screen.getAllByRole("cell")[0].textContent).toBe("alpha");
+    expect(elementAt(screen.getAllByRole("cell"), 0).textContent).toBe("alpha");
   });
 
   it("renders a column's own content inside that cell's scope", () => {
@@ -382,13 +383,15 @@ describe("DataTable", () => {
 
   it("cycles one column's ordering and describes it with aria-sort", async () => {
     const { provider } = loadedTable();
-    const [sortable, plain] = screen.getAllByRole("columnheader");
+    const headers = screen.getAllByRole("columnheader");
+    const sortable = elementAt(headers, 0);
+    const plain = elementAt(headers, 1);
     expect(sortable).toHaveAttribute("aria-sort", "none");
     expect(plain).not.toHaveAttribute("aria-sort");
     // The chevron repeats the order for the eye, hidden from assistive
     // technology; a column at rest shows none.
     const glyph = () =>
-      screen.getAllByRole("columnheader")[0].querySelector("svg");
+      elementAt(screen.getAllByRole("columnheader"), 0).querySelector("svg");
     expect(glyph()).toBeNull();
 
     const button = within(sortable).getByRole("button", { name: "Name" });
@@ -517,7 +520,7 @@ describe("DataTable", () => {
       "aria-selected",
       "true",
     );
-    expect(screen.getAllByRole("row")[1].className).toBe(
+    expect(elementAt(screen.getAllByRole("row"), 1).className).toBe(
       "ds data-table-row selected",
     );
     fireEvent.click(screen.getByRole("checkbox", { name: "Select alpha" }));
@@ -687,8 +690,9 @@ describe("DataTable", () => {
     load(provider, [machine("m-1", "alpha"), machine("m-2", "beta")]);
     const firstRow = seen.filter((entry) => entry.rowId === "m-1");
     expect(firstRow).toHaveLength(2);
-    expect(firstRow[0].row).toBe(firstRow[1].row);
-    expect(firstRow[0].row).not.toBe(
+    const [firstSeen, secondSeen] = firstRow;
+    expect(firstSeen?.row).toBe(secondSeen?.row);
+    expect(firstSeen?.row).not.toBe(
       seen.find((entry) => entry.rowId === "m-2")?.row,
     );
 
@@ -703,8 +707,8 @@ describe("DataTable", () => {
     // And nothing was re-minted: the next record change reaches the same
     // scope the first render handed out.
     load(provider, [machine("m-1", "alpha", "failed"), machine("m-2", "beta")]);
-    expect(seen.filter((entry) => entry.rowId === "m-1")[0].row).toBe(
-      firstRow[0].row,
+    expect(seen.find((entry) => entry.rowId === "m-1")?.row).toBe(
+      firstSeen?.row,
     );
     expect(new Set(seen.map((entry) => entry.provider)).size).toBe(1);
   });
@@ -729,7 +733,7 @@ describe("DataTable", () => {
       screen.getAllByRole("columnheader").map((header) => header.textContent),
     ).toEqual(["Name", "Status", "Cores"]);
     expect(
-      within(screen.getAllByRole("row")[1])
+      within(elementAt(screen.getAllByRole("row"), 1))
         .getAllByRole("cell")
         .map((cell) => cell.textContent),
     ).toEqual(["alpha", "running", "4"]);
@@ -946,10 +950,10 @@ describe("DataTable", () => {
           label="Machines"
         />,
       );
-      if (notified.length === 0) {
+      const observer = notified[0];
+      if (observer === undefined) {
         throw new Error("expected the table to observe its container");
       }
-      const observer = notified[0];
       act(() => {
         observer(
           [{ contentRect: { width: 400 } }] as unknown as ResizeObserverEntry[],
@@ -1035,7 +1039,7 @@ describe("DataTable", () => {
         // pointer travelled 180 from there.
       ).toBe("230px 96px");
       // The authority is untouched until the pointer is released.
-      expect(layout.state.get().overrides.name).toBeUndefined();
+      expect(layout.state.get().overrides["name"]).toBeUndefined();
     } finally {
       vi.unstubAllGlobals();
     }
@@ -1396,7 +1400,7 @@ describe("DataTable", () => {
     expect(handle).toHaveAttribute("aria-valuemin", "50");
     expect(handle).toHaveAttribute("aria-valuenow", "50");
     fireEvent.keyDown(handle, { key: "ArrowLeft" });
-    expect(layout.state.get().overrides.name).toBeUndefined();
+    expect(layout.state.get().overrides["name"]).toBeUndefined();
   });
 
   it("offers sorting only on a field its source declares sortable", () => {
@@ -1406,7 +1410,9 @@ describe("DataTable", () => {
         { id: "status", header: "Status", sortable: true },
       ],
     });
-    const [name, status] = screen.getAllByRole("columnheader");
+    const headers = screen.getAllByRole("columnheader");
+    const name = elementAt(headers, 0);
+    const status = elementAt(headers, 1);
     expect(within(name).getByRole("button", { name: "Name" })).toBeVisible();
     expect(name).toHaveAttribute("aria-sort", "none");
     expect(within(status).queryByRole("button")).toBeNull();
@@ -1464,8 +1470,9 @@ describe("DataTable", () => {
       "These rows do not match the current query: the inventory is unreachable",
     );
     // The status row leads, and the retained rows follow it unblanked.
-    const body = within(table).getAllByRole("rowgroup")[1];
+    const body = elementAt(within(table).getAllByRole("rowgroup"), 1);
     const [status, ...rows] = within(body).getAllByRole("row");
+    expect(status).toBeDefined();
     expect(status).toHaveClass("status");
     expect(rows.map((row) => row.textContent)).toEqual([
       "alpharunning",
@@ -1579,8 +1586,9 @@ describe("DataTable", () => {
     expect(within(table).getByRole("status")).toHaveTextContent(
       "These rows could not be refreshed: the inventory is unreachable",
     );
-    const body = within(table).getAllByRole("rowgroup")[1];
+    const body = elementAt(within(table).getAllByRole("rowgroup"), 1);
     const [status, ...rows] = within(body).getAllByRole("row");
+    expect(status).toBeDefined();
     expect(status).toHaveClass("status");
     expect(rows.map((row) => row.textContent)).toEqual([
       "alpharunning",

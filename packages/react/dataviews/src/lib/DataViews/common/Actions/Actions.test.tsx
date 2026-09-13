@@ -2,10 +2,10 @@
  * The connected action bar: it reads the root's selection, shows only while
  * something is selected, and clears it.
  */
-import type { DataViewsProvider } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
+  type DataViewsProvider,
 } from "@canonical/dataviews-core";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { createRef, StrictMode } from "react";

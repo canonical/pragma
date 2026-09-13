@@ -1,16 +1,16 @@
-import createIdentity, { type Identity } from "../createIdentity.js";
-import applyQueryCommand from "../query/applyQueryCommand.js";
-import canonicalSlice from "../query/canonicalSlice.js";
-import DEFAULT_WINDOW from "../query/defaultWindow.js";
-import EMPTY_SLICE from "../query/emptySlice.js";
-import stableJson from "../query/stableJson.js";
-import type {
-  Query,
-  QueryCommand,
-  QueryCommandResult,
-  ResultWindow,
-  Slice,
-} from "../query/types.js";
+import { createIdentity, type Identity } from "../identity/index.js";
+import {
+  applyQueryCommand,
+  canonicalSlice,
+  DEFAULT_WINDOW,
+  EMPTY_SLICE,
+  type Query,
+  type QueryCommand,
+  type QueryCommandResult,
+  type ResultWindow,
+  type Slice,
+  stableJson,
+} from "../query/index.js";
 import type {
   Completion,
   GroupSummary,
@@ -18,8 +18,8 @@ import type {
   ResultProblem,
   ResultProvenance,
   SourceCounts,
-} from "../result/types.js";
-import type { RowRecord } from "../rows/types.js";
+} from "../result/index.js";
+import type { RowRecord } from "../rows/index.js";
 
 /**
  * Display status of the result projection.
@@ -63,8 +63,8 @@ export type ResultState<TRow extends object = RowRecord> = {
 
 /** Coordinator configuration; `slice` and `window` seed every fresh scope. */
 export type CollectionCoordinatorConfig = {
-  readonly slice?: Slice;
-  readonly window?: ResultWindow;
+  readonly slice?: Slice | undefined;
+  readonly window?: ResultWindow | undefined;
 };
 
 /** Result of dispatching one command through the coordinator. */

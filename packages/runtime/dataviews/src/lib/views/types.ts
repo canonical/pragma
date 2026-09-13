@@ -5,8 +5,8 @@
  * the IndexedDB store is the local-first one shipped here.
  */
 
-import type { ReadonlyChannel } from "../observable/createChannel.js";
-import type { QueryIssue } from "../wire/types.js";
+import type { ReadonlyChannel } from "../observable/index.js";
+import type { QueryIssue } from "../wire/index.js";
 
 /** A JSON value. */
 export type JsonValue =

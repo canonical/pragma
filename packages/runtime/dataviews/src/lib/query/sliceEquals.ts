@@ -1,6 +1,6 @@
 import areSortsEqual from "./areSortsEqual.js";
 import canonicalSlice, { operandRankOf } from "./canonicalSlice.js";
-import type { Slice } from "./types.js";
+import type { Predicate, Slice } from "./types.js";
 
 /**
  * Operands are equal when their rank strings match, keeping slice equality
@@ -12,23 +12,26 @@ const operandEquals = (
   b: Slice["filter"][number]["operands"][number],
 ): boolean => operandRankOf(a) === operandRankOf(b);
 
-const predicatesEqual = (a: Slice["filter"], b: Slice["filter"]): boolean =>
+/**
+ * Whether two lists are equal element by element. The lengths are compared
+ * first, so the parallel read is in range and asserted in place rather
+ * than handled: an undefined there is not a case, it is a broken length.
+ */
+const listsEqual = <T>(
+  a: readonly T[],
+  b: readonly T[],
+  equals: (left: T, right: T) => boolean,
+): boolean =>
   a.length === b.length &&
-  a.every((predicate, index) => {
-    const other = b[index];
-    return (
-      predicate.field === other.field &&
-      predicate.operator === other.operator &&
-      predicate.operands.length === other.operands.length &&
-      predicate.operands.every((operand, operandIndex) =>
-        operandEquals(operand, other.operands[operandIndex]),
-      )
-    );
-  });
+  a.every((left, index) => equals(left, b[index] as T));
+
+const predicateEquals = (a: Predicate, b: Predicate): boolean =>
+  a.field === b.field &&
+  a.operator === b.operator &&
+  listsEqual(a.operands, b.operands, operandEquals);
 
 const groupsEqual = (a: Slice["group"], b: Slice["group"]): boolean =>
-  a.length === b.length &&
-  a.every((term, index) => term.field === b[index].field);
+  listsEqual(a, b, (left, right) => left.field === right.field);
 
 /**
  * Semantic slice equality: two slices are equal when their canonical forms
@@ -40,7 +43,7 @@ export default function sliceEquals(a: Slice, b: Slice): boolean {
   return (
     left.search === right.search &&
     groupsEqual(left.group, right.group) &&
-    predicatesEqual(left.filter, right.filter) &&
+    listsEqual(left.filter, right.filter, predicateEquals) &&
     areSortsEqual(left.sort, right.sort)
   );
 }

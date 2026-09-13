@@ -1,15 +1,17 @@
-import canonicalSlice from "../query/canonicalSlice.js";
-import stableJson from "../query/stableJson.js";
-import type { Query, Slice } from "../query/types.js";
-import type { Count, SourceDelivery, SourceRefusal } from "../result/types.js";
-import type { RowRecord } from "../rows/types.js";
+import {
+  canonicalSlice,
+  type Query,
+  type Slice,
+  stableJson,
+} from "../query/index.js";
+import type { Count, SourceDelivery, SourceRefusal } from "../result/index.js";
+import type { RowRecord } from "../rows/index.js";
 import copyCapabilities from "./copyCapabilities.js";
 import reasonOf from "./reasonOf.js";
 import type {
   Source,
   SourceActionRunner,
   SourceCapabilities,
-  SourceLookup,
 } from "./types.js";
 
 /** What a Relay selector reads, and whether the store holds all of it. */
@@ -108,12 +110,6 @@ export type RelaySourceConfig<
   readonly connection: (
     data: TQuery["response"],
   ) => RelayConnection<TRow> | null | undefined;
-  /**
-   * Records by identity, for example through the schema's `nodes(ids:)`
-   * field, which answers one entry per argument in order. Required whenever
-   * the declaration carries a `lookup`.
-   */
-  readonly lookup?: SourceLookup<TRow>;
   /** Row operations, when the schema has any. */
   readonly runAction?: SourceActionRunner;
 };
@@ -359,7 +355,6 @@ export default function createRelaySource<
       }
       return release;
     },
-    ...(config.lookup === undefined ? {} : { lookup: config.lookup }),
     ...(config.runAction === undefined ? {} : { runAction: config.runAction }),
   };
 }

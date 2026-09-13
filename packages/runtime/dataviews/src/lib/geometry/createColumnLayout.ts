@@ -1,5 +1,4 @@
-import type { ReadonlyChannel } from "../observable/createChannel.js";
-import createChannel from "../observable/createChannel.js";
+import { createChannel, type ReadonlyChannel } from "../observable/index.js";
 import sizingEquals from "./sizingEquals.js";
 import type { ColumnSizing, ColumnToSize } from "./types.js";
 
@@ -17,6 +16,8 @@ export type ColumnLayoutState = {
 export type ColumnLayout = {
   /** The layout's snapshots; immutable between publications. */
   readonly state: ReadonlyChannel<ColumnLayoutState>;
+  /** The declared sizing of one column, which every column of the layout has. */
+  readonly readDeclared: (id: string) => ColumnSizing;
   /** The effective sizing of one column: its override, else its declared sizing. */
   readonly effective: (id: string) => ColumnSizing;
   /** Record a user-fixed sizing override (a resize commit). */
@@ -36,17 +37,32 @@ export type ColumnLayout = {
 export default function createColumnLayout(
   columns: readonly ColumnToSize[],
 ): ColumnLayout {
-  const declared: Record<string, ColumnSizing> = {};
+  const declared = new Map<string, ColumnSizing>();
   for (const column of columns) {
     if (column.id === "") {
       throw new Error("column id must not be empty");
     }
-    if (Object.hasOwn(declared, column.id)) {
+    if (declared.has(column.id)) {
       throw new Error(`duplicate column id "${column.id}"`);
     }
-    declared[column.id] = column.sizing;
+    declared.set(column.id, column.sizing);
   }
-  const initialDeclared = Object.freeze({ ...declared });
+  const initialDeclared = Object.freeze(Object.fromEntries(declared));
+  /** The declared sizing of one column, which every column has. */
+  const declaredOf = (id: string): ColumnSizing => {
+    const sizing = declared.get(id);
+    if (sizing === undefined) {
+      throw new Error(`unknown column id "${id}"`);
+    }
+    return sizing;
+  };
+  /**
+   * The override on one column, or none. An own property only: the
+   * overrides are a plain record, and a column named for a prototype
+   * member has no override just because the prototype has that member.
+   */
+  const overrideOf = (id: string): ColumnSizing | undefined =>
+    Object.hasOwn(overrides, id) ? overrides[id] : undefined;
   // Copied at construction: toColumns() must not answer from the
   // caller's array, which it may still mutate.
   const order: readonly string[] = Object.freeze(
@@ -75,17 +91,13 @@ export default function createColumnLayout(
 
   return {
     state: channel,
+    readDeclared: declaredOf,
     effective(id: string): ColumnSizing {
-      if (!Object.hasOwn(initialDeclared, id)) {
-        throw new Error(`unknown column id "${id}"`);
-      }
-      return overrides[id] ?? initialDeclared[id];
+      return overrideOf(id) ?? declaredOf(id);
     },
     setOverride(id: string, sizing: ColumnSizing): void {
-      if (!Object.hasOwn(initialDeclared, id)) {
-        throw new Error(`unknown column id "${id}"`);
-      }
-      const current = overrides[id];
+      declaredOf(id);
+      const current = overrideOf(id);
       if (current !== undefined && sizingEquals(current, sizing)) {
         return;
       }
@@ -108,7 +120,7 @@ export default function createColumnLayout(
     toColumns(): readonly ColumnToSize[] {
       return order.map((id) => ({
         id,
-        sizing: overrides[id] ?? initialDeclared[id],
+        sizing: overrideOf(id) ?? declaredOf(id),
       }));
     },
   };

@@ -1,14 +1,12 @@
-import canonicalSlice from "../query/canonicalSlice.js";
-import type { Query } from "../query/types.js";
-import type { SourcePage, SourceRefusal } from "../result/types.js";
-import type { RowRecord } from "../rows/types.js";
+import { canonicalSlice, type Query } from "../query/index.js";
+import type { SourcePage, SourceRefusal } from "../result/index.js";
+import type { RowRecord } from "../rows/index.js";
 import copyCapabilities from "./copyCapabilities.js";
 import reasonOf from "./reasonOf.js";
 import type {
   Source,
   SourceActionRunner,
   SourceCapabilities,
-  SourceLookup,
   SourceRequest,
 } from "./types.js";
 
@@ -70,11 +68,6 @@ export type QuerySourceConfig<TRow extends object = RowRecord> = {
   readonly fetchPage: (request: SourceRequest) => Promise<SourcePage<TRow>>;
   /** Mint one observer against the application's client. */
   readonly observe: QueryObserverFactory<SourcePage<TRow>>;
-  /**
-   * Records by identity, batched by what the declaration allows. Required
-   * whenever the declaration carries a `lookup`.
-   */
-  readonly lookup?: SourceLookup<TRow>;
   /** Row operations, when the endpoint has any. */
   readonly runAction?: SourceActionRunner;
 };
@@ -156,7 +149,6 @@ export default function createQuerySource<TRow extends object = RowRecord>(
         observer.destroy();
       };
     },
-    ...(config.lookup === undefined ? {} : { lookup: config.lookup }),
     ...(config.runAction === undefined ? {} : { runAction: config.runAction }),
   };
 }

@@ -1,5 +1,5 @@
-import type { Identity } from "./createIdentity.js";
-import { identityBrand } from "./identityBrand.js";
+import { IDENTITY_BRAND } from "./constants.js";
+import type { Identity } from "./types.js";
 
 /**
  * Check whether an unknown value is a DataViews identity token.
@@ -13,6 +13,6 @@ export default function isIdentity(value: unknown): value is Identity {
   return (
     typeof value === "object" &&
     value !== null &&
-    Object.hasOwn(value, identityBrand)
+    Object.hasOwn(value, IDENTITY_BRAND)
   );
 }

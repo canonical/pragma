@@ -3,11 +3,12 @@
  * and must leave the authoritative layout alone until it commits.
  * Pointer previews are coalesced to one publication per animation frame.
  */
-import type { ColumnLayout, GridInteraction } from "@canonical/dataviews-core";
 import {
+  type ColumnLayout,
   createColumnLayout,
   createGridInteraction,
-} from "@canonical/dataviews-core";
+  type GridInteraction,
+} from "@canonical/dataviews-core/bindings";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ResizeHandle from "./ResizeHandle.js";
@@ -95,7 +96,7 @@ describe("ResizeHandle", () => {
     flushFrames();
     expect(interaction.state.get()).toMatchObject({ previewWidth: 160 });
     // The authority is untouched while the preview is live.
-    expect(layout.state.get().overrides.name).toBeUndefined();
+    expect(layout.state.get().overrides["name"]).toBeUndefined();
     releasePointer("pointerUp");
     expect(layout.effective("name")).toEqual({ kind: "fixed", px: 160 });
     expect(interaction.state.get().status).toBe("idle");
@@ -127,7 +128,7 @@ describe("ResizeHandle", () => {
     flushFrames();
     releasePointer("pointerCancel");
     expect(interaction.state.get().status).toBe("idle");
-    expect(layout.state.get().overrides.name).toBeUndefined();
+    expect(layout.state.get().overrides["name"]).toBeUndefined();
   });
 
   it("drops a pending frame when the drag ends before it runs", () => {
@@ -155,7 +156,7 @@ describe("ResizeHandle", () => {
     flushFrames();
     fireEvent.keyDown(handle, { key: "Escape" });
     expect(interaction.state.get().status).toBe("idle");
-    expect(layout.state.get().overrides.name).toBeUndefined();
+    expect(layout.state.get().overrides["name"]).toBeUndefined();
     // The listeners went with it.
     movePointer(400);
     flushFrames();
@@ -166,7 +167,7 @@ describe("ResizeHandle", () => {
     const { layout, interaction, handle } = mount();
     fireEvent.keyDown(handle, { key: "Escape" });
     expect(interaction.state.get().status).toBe("idle");
-    expect(layout.state.get().overrides.name).toBeUndefined();
+    expect(layout.state.get().overrides["name"]).toBeUndefined();
   });
 
   it("resizes from the keyboard through the same commands", () => {
@@ -182,7 +183,7 @@ describe("ResizeHandle", () => {
     const event = fireEvent.keyDown(handle, { key: "a" });
     expect(event).toBe(true);
     expect(interaction.state.get().status).toBe("idle");
-    expect(layout.state.get().overrides.name).toBeUndefined();
+    expect(layout.state.get().overrides["name"]).toBeUndefined();
   });
 
   it("abandons a running drag when a second pointer goes down", () => {
@@ -219,7 +220,7 @@ describe("ResizeHandle", () => {
     unmount();
     movePointer(400);
     flushFrames();
-    expect(layout.state.get().overrides.name).toBeUndefined();
+    expect(layout.state.get().overrides["name"]).toBeUndefined();
   });
 
   it("reports the bounds it holds the column to", () => {
@@ -260,7 +261,7 @@ describe("ResizeHandle", () => {
   it("commits nothing at a bound, and still owns the key", () => {
     const { layout, handle } = mount({ width: 300 });
     expect(fireEvent.keyDown(handle, { key: "ArrowRight" })).toBe(false);
-    expect(layout.state.get().overrides.name).toBeUndefined();
+    expect(layout.state.get().overrides["name"]).toBeUndefined();
   });
 
   it("reveals nothing outside a table, through a drag and after it", () => {

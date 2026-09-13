@@ -1,9 +1,9 @@
-import type { DataViewsProvider } from "@canonical/dataviews-core";
 import {
-  createChannel,
   createDataViewsProvider,
   createSchema,
+  type DataViewsProvider,
 } from "@canonical/dataviews-core";
+import { createChannel } from "@canonical/dataviews-core/bindings";
 import { renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
@@ -57,7 +57,7 @@ describe("useDataViewsCell", () => {
       id: "machine-1",
       status: "failed",
     });
-    expect(result.current.fields.status?.get()).toBe("failed");
+    expect(result.current.fields["status"]?.get()).toBe("failed");
     expect(result.current.selected.get()).toBe(false);
   });
 

@@ -38,7 +38,7 @@ const entry = readFileSync(path.join(libDir, "index.css"), "utf8").replace(
 
 /** The paths `index.css` imports, in the order it imports them. */
 const imported = [...entry.matchAll(/^@import url\("\.\/(.+?)"\);$/gm)].map(
-  ([, importPath]) => importPath,
+  ([, importPath = ""]) => importPath,
 );
 
 const manifest = JSON.parse(

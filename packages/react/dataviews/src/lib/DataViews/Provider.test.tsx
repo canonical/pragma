@@ -1,11 +1,10 @@
-import type { DataViewsProvider } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
+  type DataViewsProvider,
 } from "@canonical/dataviews-core";
 import { act, render, renderHook, screen } from "@testing-library/react";
-import type { ReactNode } from "react";
-import { StrictMode } from "react";
+import { type ReactNode, StrictMode } from "react";
 import { describe, expect, it } from "vitest";
 import useDataViews from "./hooks/useDataViews.js";
 import useDataViewsValue from "./hooks/useDataViewsValue.js";

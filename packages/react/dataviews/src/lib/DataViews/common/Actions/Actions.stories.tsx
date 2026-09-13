@@ -1,33 +1,34 @@
-import type {
-  ActionCapabilities,
-  RowRecord,
-  SourceBinding,
-} from "@canonical/dataviews-core";
 import {
+  type ActionCapabilities,
   createArraySource,
   createDataViewsProvider,
   createSourceBinding,
   DEFAULT_WINDOW,
+  type RowRecord,
+  type SourceBinding,
 } from "@canonical/dataviews-core";
-import type { ButtonProps } from "@canonical/react-ds-global";
-import { Button } from "@canonical/react-ds-global";
+import { Button, type ButtonProps } from "@canonical/react-ds-global";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { ReactElement, ReactNode } from "react";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import {
+  type ReactElement,
+  type ReactNode,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import { consumerCode } from "../../../../storybook/machines/consumerCode.js";
-import type { MachineFields } from "../../../../storybook/machines/fixtures.js";
 import {
+  type MachineFields,
   machineSchema,
   machines,
 } from "../../../../storybook/machines/fixtures.js";
-import type { MachineProvider } from "../../../../storybook/machines/story-utils.js";
 import {
   hostName,
+  type MachineProvider,
   withAppScope,
 } from "../../../../storybook/machines/story-utils.js";
-import DataTable from "../../../DataTable/DataTable.js";
-import type { DataTableColumn } from "../../../DataTable/types.js";
+import { DataTable, type DataTableColumn } from "../../../DataTable/index.js";
 import useDataViews from "../../hooks/useDataViews.js";
 import DataViews from "../../Provider.js";
 import Pagination from "../Pagination/Pagination.js";
@@ -89,8 +90,8 @@ function ManagedMachines({
   select = [],
   indicator,
 }: {
-  readonly select?: readonly string[];
-  readonly indicator?: (provider: MachineProvider) => ReactNode;
+  readonly select?: readonly string[] | undefined;
+  readonly indicator?: ((provider: MachineProvider) => ReactNode) | undefined;
 }): ReactElement {
   const [source] = useState(() => {
     let remaining: readonly RowRecord[] = machines;
@@ -105,7 +106,7 @@ function ManagedMachines({
       // Both actions take the machines out of the collection.
       runAction: async ({ targets }) => {
         const ids = targets.kind === "explicit" ? targets.ids : [];
-        remaining = remaining.filter((row) => !ids.includes(String(row.id)));
+        remaining = remaining.filter((row) => !ids.includes(String(row["id"])));
         managed.setRows(remaining);
         return ids.map((target) => ({
           target,
@@ -210,10 +211,10 @@ const actionsCode = ({
   declarations = "",
   hooks = [],
 }: {
-  readonly prepare?: string;
-  readonly indicator?: string;
-  readonly declarations?: string;
-  readonly hooks?: readonly string[];
+  readonly prepare?: string | undefined;
+  readonly indicator?: string | undefined;
+  readonly declarations?: string | undefined;
+  readonly hooks?: readonly string[] | undefined;
 } = {}) =>
   consumerCode({
     parts: ["DataTable", "DataViews", "type DataTableColumn", "useDataViews"],

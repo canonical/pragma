@@ -6,12 +6,11 @@
  * the memory's prune fails one.
  */
 import { describe, expect, it } from "vitest";
-import createChannel from "../observable/createChannel.js";
-import EMPTY_ROW_MODEL from "../rows/emptyRowModel.js";
-import { builtRowModel } from "../rows/rowModel.fixtures.js";
-import type { RowModel } from "../rows/types.js";
-import createSchema from "../schema/createSchema.js";
-import createSelection from "../selection/createSelection.js";
+import buildRowModel from "../../../testing/buildRowModel.js";
+import { createChannel } from "../observable/index.js";
+import { EMPTY_ROW_MODEL, type RowModel } from "../rows/index.js";
+import { createSchema } from "../schema/index.js";
+import { createSelection } from "../selection/index.js";
 import createRecordTyping from "./createRecordTyping.js";
 
 type Container = {
@@ -61,7 +60,7 @@ const typing = (model: RowModel<Instance> = EMPTY_ROW_MODEL) => {
 };
 
 const modelOf = (rows: readonly Instance[]): RowModel<Instance> =>
-  builtRowModel({ rows });
+  buildRowModel({ rows });
 
 describe("createRecordTyping", () => {
   it("publishes the discriminator and its names in declaration order", () => {

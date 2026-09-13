@@ -1,26 +1,22 @@
-import type { CollectionState } from "../collection/createCollectionCoordinator.js";
-import type { ReadonlyChannel } from "../observable/createChannel.js";
-import type {
-  ActionInvocation,
-  Operation,
-} from "../operation/createOperation.js";
-import plural from "../plural.js";
-import type { PredicateOperator, Query } from "../query/types.js";
+import type { CollectionState } from "../collection/index.js";
+import type { ReadonlyChannel } from "../observable/index.js";
+import type { ActionInvocation, Operation } from "../operation/index.js";
+import type { PredicateOperator, Query } from "../query/index.js";
 import type {
   Completion,
   Count,
   SourceCounts,
   SourceDelivery,
   SourceRefusal,
-} from "../result/types.js";
-import type { RowRecord } from "../rows/types.js";
-import type { Selection } from "../selection/createSelection.js";
+} from "../result/index.js";
+import type { RowRecord } from "../rows/index.js";
+import type { Selection } from "../selection/index.js";
 import copyCapabilities from "./copyCapabilities.js";
+import pluralize from "./pluralize.js";
 import reasonOf from "./reasonOf.js";
 import supportsRequest from "./supportsRequest.js";
 import type {
   CountSupport,
-  LookupOutcome,
   Source,
   SourceActionRequest,
   SourceCapabilities,
@@ -55,7 +51,7 @@ export type SourceBindingConfig<TRow extends object = RowRecord> = {
 };
 
 /** Handle of one source binding. */
-export type SourceBinding<TRow extends object = RowRecord> = {
+export type SourceBinding = {
   /**
    * What the bound source declares it can execute. Connected parts read the
    * host's copy instead; this is for code holding the binding.
@@ -66,13 +62,6 @@ export type SourceBinding<TRow extends object = RowRecord> = {
    * from the source's own check. Empty means executable.
    */
   readonly supports: (query: Query) => readonly SourceRefusal[];
-  /**
-   * Look records up by identity, one outcome per id in the order given.
-   * Rejects when the source declares no lookup.
-   */
-  readonly lookup: (
-    ids: readonly string[],
-  ) => Promise<readonly LookupOutcome<TRow>[]>;
   /**
    * Run one row operation. Resolves with the operation record once every
    * captured target has an outcome — a target the source reports nothing
@@ -138,24 +127,7 @@ const declarationOf = (capabilities: SourceCapabilities): string =>
     capabilities.counts,
     capabilities.pagination,
     capabilities.selection,
-    capabilities.lookup,
     actionsOf(capabilities.actions),
-    // Every kind's own narrowing, not just the kinds' names: a host told
-    // one thing about a kind and a source declaring another is the same
-    // disagreement as any other, and must read as one.
-    capabilities.kinds === null
-      ? null
-      : Object.entries(capabilities.kinds)
-          .map(([kind, narrowing]) =>
-            JSON.stringify([
-              kind,
-              filterOf(narrowing.filter),
-              sortOf(narrowing.sort),
-              actionsOf(narrowing.actions),
-              narrowing.lookup,
-            ]),
-          )
-          .sort(),
   ]);
 
 /**
@@ -168,27 +140,11 @@ const portRejection = <TRow extends object>(
   capabilities: SourceCapabilities,
   source: Source<TRow>,
 ): string | null => {
-  if ((capabilities.lookup !== null) !== (source.lookup !== undefined)) {
-    return capabilities.lookup === null
-      ? "this source offers a lookup port it does not declare"
-      : "this source declares a lookup it has no port for";
-  }
   const declaresActions = Object.keys(capabilities.actions).length > 0;
   if (declaresActions !== (source.runAction !== undefined)) {
     return declaresActions
       ? "this source declares row operations it has no port for"
       : "this source offers a row-operation port it declares no operation for";
-  }
-  if ((capabilities.kinds !== null) !== (source.kindOf !== undefined)) {
-    return capabilities.kinds === null
-      ? "this source reads record kinds it does not declare"
-      : "this source declares record kinds it has no port for";
-  }
-  const batch = capabilities.lookup?.batch ?? null;
-  if (batch !== null && (!Number.isSafeInteger(batch) || batch < 1)) {
-    // A batch of zero or less would slice a lookup into calls that never
-    // advance, so the declaration is refused rather than hung on.
-    return "a lookup batch must be a positive whole number, or null for no limit";
   }
   if (
     capabilities.pagination.mode === "cursor" &&
@@ -249,7 +205,7 @@ type Execution = {
  */
 export default function createSourceBinding<TRow extends object = RowRecord>(
   config: SourceBindingConfig<TRow>,
-): SourceBinding<TRow> {
+): SourceBinding {
   const { host, source } = config;
   // Copied once, so the declaration cannot change under the binding and so
   // that both sides of the comparison below are spelled the same way: a
@@ -410,28 +366,9 @@ export default function createSourceBinding<TRow extends object = RowRecord>(
     start(state, pending);
   }
 
-  // The port check above has already tied the declaration to the port, so
-  // a source with a lookup has a declared batch size to read.
-  const lookupBatch =
-    capabilities.lookup === null ? null : capabilities.lookup.batch;
-
   return {
     capabilities,
     supports: refusalsFor,
-    async lookup(ids: readonly string[]) {
-      const look = source.lookup;
-      if (look === undefined) {
-        throw new Error("this source declares no record lookup");
-      }
-      if (lookupBatch === null || ids.length <= lookupBatch) {
-        return look(ids);
-      }
-      const outcomes: LookupOutcome<TRow>[] = [];
-      for (let at = 0; at < ids.length; at += lookupBatch) {
-        outcomes.push(...(await look(ids.slice(at, at + lookupBatch))));
-      }
-      return outcomes;
-    },
     async runAction(request: SourceActionRequest): Promise<Operation> {
       const run = source.runAction;
       if (run === undefined) {
@@ -459,7 +396,7 @@ export default function createSourceBinding<TRow extends object = RowRecord>(
       const { limit } = declared;
       if (limit !== null && targets.ids.length > limit) {
         throw new Error(
-          `"${request.action}" addresses at most ${plural(limit, "row")} at a time`,
+          `"${request.action}" addresses at most ${pluralize(limit, "row")} at a time`,
         );
       }
       const operation = host.invokeAction({

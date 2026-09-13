@@ -1,5 +1,4 @@
-import type { ReactElement } from "react";
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { type ReactElement, useEffect, useLayoutEffect, useRef } from "react";
 import type { ResizeHandleProps } from "./types.js";
 
 const componentCssClassName = "ds data-table-resize-handle";

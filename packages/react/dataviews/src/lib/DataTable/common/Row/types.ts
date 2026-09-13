@@ -1,8 +1,8 @@
 import type {
   DataViewsProvider,
-  RowScope,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
+import type { RowScope } from "@canonical/dataviews-core/bindings";
 import type { Ref } from "react";
 import type { DataTableColumn } from "../../types.js";
 
@@ -17,7 +17,6 @@ export type RowProps<TRow extends object> = {
   readonly provider: DataViewsProvider<readonly SchemaFieldDefinition[], TRow>;
   readonly scope: RowScope<TRow>;
   readonly columns: readonly DataTableColumn[];
-  readonly fields: readonly string[];
   readonly selectable: boolean;
   readonly rowLabel: (row: TRow, rowId: string) => string;
   /** The row's logical position, reported only by a windowed table. */

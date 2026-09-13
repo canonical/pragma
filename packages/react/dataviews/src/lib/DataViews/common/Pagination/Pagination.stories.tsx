@@ -3,16 +3,13 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactElement } from "react";
 import { expect, waitFor } from "storybook/test";
 import { consumerCode } from "../../../../storybook/machines/consumerCode.js";
-import type {
-  MachineProvider,
-  MachineProviderConfig,
-} from "../../../../storybook/machines/story-utils.js";
 import {
+  type MachineProvider,
+  type MachineProviderConfig,
   useMachineProvider,
   withAppScope,
 } from "../../../../storybook/machines/story-utils.js";
-import DataTable from "../../../DataTable/DataTable.js";
-import type { DataTableColumn } from "../../../DataTable/types.js";
+import { DataTable, type DataTableColumn } from "../../../DataTable/index.js";
 import DataViews from "../../Provider.js";
 import Component from "./Pagination.js";
 import type { DataViewsPaginationProps } from "./types.js";
@@ -51,7 +48,7 @@ function ComposedMachines({
   options,
   ...args
 }: DataViewsPaginationProps & {
-  readonly options?: MachineProviderConfig;
+  readonly options?: MachineProviderConfig | undefined;
 }): ReactElement {
   const provider = useMachineProvider({
     window: { ...DEFAULT_WINDOW, page: 1, size: 5 },

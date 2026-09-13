@@ -1,10 +1,10 @@
-import createIdentity, { type Identity } from "../createIdentity.js";
+import { createIdentity, type Identity } from "../identity/index.js";
 import type {
   Predicate,
   PredicateOperand,
   PredicateOperator,
   QueryCommand,
-} from "../query/types.js";
+} from "../query/index.js";
 
 /** Result of validating one text input. */
 export type FieldValidation =

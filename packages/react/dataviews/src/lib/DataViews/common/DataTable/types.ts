@@ -2,7 +2,7 @@ import type {
   RowRecord,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
-import type { DataTableProps } from "../../../DataTable/types.js";
+import type { DataTableProps } from "../../../DataTable/index.js";
 
 /**
  * Props of the connected table: the table's own, less the provider, which

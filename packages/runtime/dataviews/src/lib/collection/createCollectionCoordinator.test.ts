@@ -1,20 +1,20 @@
 import { describe, expect, it } from "vitest";
-import DEFAULT_WINDOW from "../query/defaultWindow.js";
-import type {
-  GroupTerm,
-  Predicate,
-  ResultWindow,
-  Slice,
-  SortTerm,
-} from "../query/types.js";
+import {
+  DEFAULT_WINDOW,
+  type GroupTerm,
+  type Predicate,
+  type ResultWindow,
+  type Slice,
+  type SortTerm,
+} from "../query/index.js";
 import type {
   Completion,
   Count,
   GroupSummary,
   SourceCounts,
   SourcePage,
-} from "../result/types.js";
-import type { RowRecord } from "../rows/types.js";
+} from "../result/index.js";
+import type { RowRecord } from "../rows/index.js";
 import type { CollectionCoordinator } from "./createCollectionCoordinator.js";
 import createCollectionCoordinator from "./createCollectionCoordinator.js";
 

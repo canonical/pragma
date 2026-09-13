@@ -1,5 +1,4 @@
-import type { ReadonlyChannel } from "../observable/createChannel.js";
-import createChannel from "../observable/createChannel.js";
+import { createChannel, type ReadonlyChannel } from "../observable/index.js";
 import type { ColumnLayout } from "./createColumnLayout.js";
 import sizingEquals from "./sizingEquals.js";
 import type { ColumnSizing } from "./types.js";

@@ -1,44 +1,46 @@
+import {
+  type CollectionCoordinator,
+  type CollectionState,
+  createCollectionCoordinator,
+} from "../collection/index.js";
+import {
+  createFieldInteraction,
+  type FieldInteractionState,
+} from "../field/index.js";
+import { createIdentity } from "../identity/index.js";
+import { type Channel, createChannel } from "../observable/index.js";
+import { type ActionInvocation, createOperation } from "../operation/index.js";
+import {
+  canonicalSlice,
+  type GroupPath,
+  type GroupTerm,
+  type Predicate,
+  type PredicateOperand,
+  type PredicateOperator,
+  predicateAddress,
+  type Query,
+  type ResultWindow,
+  type Slice,
+  type SortTerm,
+  type WindowNavigation,
+} from "../query/index.js";
+import type { Completion } from "../result/index.js";
+import {
+  type Applicability,
+  createRowModel,
+  EMPTY_ROW_MODEL,
+  type RowIdentifier,
+  type RowModel,
+  type RowRecord,
+} from "../rows/index.js";
 import type {
-  CollectionCoordinator,
-  CollectionState,
-} from "../collection/createCollectionCoordinator.js";
-import createCollectionCoordinator from "../collection/createCollectionCoordinator.js";
-import createIdentity from "../createIdentity.js";
-import type { FieldInteractionState } from "../field/createFieldInteraction.js";
-import createFieldInteraction from "../field/createFieldInteraction.js";
-import type { Channel } from "../observable/createChannel.js";
-import createChannel from "../observable/createChannel.js";
-import type { ActionInvocation } from "../operation/createOperation.js";
-import createOperation from "../operation/createOperation.js";
-import canonicalSlice, { predicateAddress } from "../query/canonicalSlice.js";
-import type {
-  GroupPath,
-  GroupTerm,
-  Predicate,
-  PredicateOperand,
-  PredicateOperator,
-  Query,
-  ResultWindow,
-  Slice,
-  SortTerm,
-  WindowNavigation,
-} from "../query/types.js";
-import type { Completion } from "../result/types.js";
-import createRowModel from "../rows/createRowModel.js";
-import EMPTY_ROW_MODEL from "../rows/emptyRowModel.js";
-import type {
-  Applicability,
-  RowIdentifier,
-  RowModel,
-  RowRecord,
-} from "../rows/types.js";
-import type { Schema } from "../schema/createSchema.js";
-import type { EmptyOr, SchemaFieldDefinition } from "../schema/types.js";
-import createSelection from "../selection/createSelection.js";
-import copyCapabilities from "../source/copyCapabilities.js";
-import type { SourceCapabilities } from "../source/types.js";
-import createProviderViews from "../views/createProviderViews.js";
-import type { ViewStore } from "../views/types.js";
+  EmptyOr,
+  Schema,
+  SchemaFieldDefinition,
+} from "../schema/index.js";
+import { createSelection } from "../selection/index.js";
+import { copyCapabilities, type SourceCapabilities } from "../source/index.js";
+import { createProviderViews, type ViewStore } from "../views/index.js";
 import createRecordTyping from "./createRecordTyping.js";
 import type { DataViewsProvider, FieldHandle, RecordTypes } from "./types.js";
 
@@ -92,26 +94,26 @@ export type DataViewsProviderConfig<
   TRow extends object = RowRecord,
 > = {
   readonly schema: Schema<TFields>;
-  readonly slice?: Slice;
-  readonly window?: ResultWindow;
+  readonly slice?: Slice | undefined;
+  readonly window?: ResultWindow | undefined;
   /**
    * Reads one record's stable identity. Defaults to the record's own `id`,
    * which must then be a non-empty string.
    */
-  readonly identify?: RowIdentifier<TRow>;
+  readonly identify?: RowIdentifier<TRow> | undefined;
   /**
    * What the source bound to this provider declares it can execute — the
    * source's own `capabilities`. Connected parts, and DataTable's sortable
    * columns, offer only what is declared, and a location clause outside it
    * is refused.
    */
-  readonly capabilities?: SourceCapabilities;
+  readonly capabilities?: SourceCapabilities | undefined;
   /**
    * Where the collection's saved views and presentation preferences live —
-   * `createIndexedDBViewStore` from `@canonical/dataviews-core/views`, or a
+   * `createIndexedDBViewStore` from `@canonical/dataviews-core/indexeddb`, or a
    * store of the application's own. Left out, the collection has no views.
    */
-  readonly views?: ViewStore;
+  readonly views?: ViewStore | undefined;
   /**
    * How this collection's records declare their type: one `choices` field of
    * the schema, carried by every row. Left out, the collection is
@@ -119,7 +121,7 @@ export type DataViewsProviderConfig<
    * else here behaves differently. A field scoped to record types is then
    * inert, since there is only the one type for it to apply to.
    */
-  readonly types?: RecordTypes<TFields, TRow>;
+  readonly types?: RecordTypes<TFields, TRow> | undefined;
 };
 
 /** One field record with its address, for re-syncing after external changes. */

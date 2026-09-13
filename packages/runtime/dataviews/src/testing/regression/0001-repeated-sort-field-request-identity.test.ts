@@ -13,15 +13,19 @@ import {
   declareCapabilities,
   declareSorting,
 } from "../../../testing/fixtures.js";
-import createCollectionCoordinator from "../../lib/collection/createCollectionCoordinator.js";
-import createLocationBinding from "../../lib/location/createLocationBinding.js";
-import createMemoryLocation from "../../lib/location/createMemoryLocation.js";
-import createDataViewsProvider from "../../lib/provider/createDataViewsProvider.js";
-import DEFAULT_WINDOW from "../../lib/query/defaultWindow.js";
-import EMPTY_SLICE from "../../lib/query/emptySlice.js";
-import type { SortTerm } from "../../lib/query/types.js";
-import createSchema from "../../lib/schema/createSchema.js";
-import supportsRequest from "../../lib/source/supportsRequest.js";
+import { createCollectionCoordinator } from "../../lib/collection/index.js";
+import {
+  createLocationBinding,
+  createMemoryLocation,
+} from "../../lib/location/index.js";
+import { createDataViewsProvider } from "../../lib/provider/index.js";
+import {
+  DEFAULT_WINDOW,
+  EMPTY_SLICE,
+  type SortTerm,
+} from "../../lib/query/index.js";
+import { createSchema } from "../../lib/schema/index.js";
+import { supportsRequest } from "../../lib/source/index.js";
 
 const schema = createSchema([
   { field: "cpu", kind: "number" },

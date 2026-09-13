@@ -3,7 +3,7 @@ import {
   declareCapabilities,
   declareSorting,
 } from "../../../testing/fixtures.js";
-import type { PredicateOperator, SortTerm } from "../query/types.js";
+import type { PredicateOperator, SortTerm } from "../query/index.js";
 import copyCapabilities from "./copyCapabilities.js";
 import type { SourceCapabilities } from "./types.js";
 
@@ -14,19 +14,19 @@ const declared = (
 describe("copyCapabilities", () => {
   it("reads a field declared without operators as filterable by none", () => {
     const copy = copyCapabilities(declared({ filter: { cpu: undefined } }));
-    expect(copy.filter.cpu).toEqual([]);
+    expect(copy.filter["cpu"]).toEqual([]);
   });
 
   it("keeps the declared operators of a field that has them", () => {
     const copy = copyCapabilities(declared({ filter: { status: ["eq"] } }));
-    expect(copy.filter.status).toEqual(["eq"]);
+    expect(copy.filter["status"]).toEqual(["eq"]);
   });
 
   it("does not change when the declaration is mutated afterwards", () => {
     const filter: Record<string, PredicateOperator[]> = { status: ["eq"] };
     const copy = copyCapabilities(declared({ filter }));
-    filter.status?.push("isSet");
-    expect(copy.filter.status).toEqual(["eq"]);
+    filter["status"]?.push("isSet");
+    expect(copy.filter["status"]).toEqual(["eq"]);
   });
 
   it("reads a field named for a prototype member as absent", () => {
@@ -123,49 +123,12 @@ describe("copyCapabilities", () => {
     expect(copyCapabilities(declared()).pagination).toEqual({ mode: "offset" });
   });
 
-  it("copies the lookup batch, and keeps no lookup as none", () => {
-    expect(
-      copyCapabilities(declared({ lookup: { batch: 25 } })).lookup,
-    ).toEqual({ batch: 25 });
-    expect(copyCapabilities(declared()).lookup).toBeNull();
-  });
-
   it("copies each declared row operation", () => {
     const actions = { stop: { targets: "explicit" as const, limit: 10 } };
     const copy = copyCapabilities(declared({ actions }));
-    expect(copy.actions.stop).toEqual({ targets: "explicit", limit: 10 });
-    expect(Object.isFrozen(copy.actions.stop)).toBe(true);
+    expect(copy.actions["stop"]).toEqual({ targets: "explicit", limit: 10 });
+    expect(Object.isFrozen(copy.actions["stop"])).toBe(true);
     expect(copyCapabilities(declared()).actions).toEqual({});
-  });
-
-  it("copies each record kind's own narrowing, and keeps none as null", () => {
-    const copy = copyCapabilities(
-      declared({
-        kinds: {
-          machine: {
-            filter: { status: ["eq"] },
-            sort: declareSorting(["cpu"], 1),
-            actions: { stop: { targets: "explicit", limit: null } },
-            lookup: { batch: 5 },
-          },
-          image: {
-            filter: {},
-            sort: declareSorting([]),
-            actions: {},
-            lookup: null,
-          },
-        },
-      }),
-    );
-    expect(copy.kinds?.machine).toEqual({
-      filter: { status: ["eq"] },
-      sort: { ...declareSorting(["cpu"], 1) },
-      actions: { stop: { targets: "explicit", limit: null } },
-      lookup: { batch: 5 },
-    });
-    expect(copy.kinds?.image.lookup).toBeNull();
-    expect(Object.isFrozen(copy.kinds)).toBe(true);
-    expect(copyCapabilities(declared()).kinds).toBeNull();
   });
 
   it("freezes every part of the copy", () => {
@@ -178,7 +141,7 @@ describe("copyCapabilities", () => {
     );
     expect(Object.isFrozen(copy)).toBe(true);
     expect(Object.isFrozen(copy.filter)).toBe(true);
-    expect(Object.isFrozen(copy.filter.status)).toBe(true);
+    expect(Object.isFrozen(copy.filter["status"])).toBe(true);
     expect(Object.isFrozen(copy.search)).toBe(true);
     expect(Object.isFrozen(copy.sort.fields)).toBe(true);
     expect(Object.isFrozen(copy.group)).toBe(true);

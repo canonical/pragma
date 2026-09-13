@@ -1,4 +1,4 @@
-import { createChannel } from "@canonical/dataviews-core";
+import { createChannel } from "@canonical/dataviews-core/bindings";
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import useDataViewsValue from "./useDataViewsValue.js";

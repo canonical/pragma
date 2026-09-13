@@ -11,9 +11,13 @@
       "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js"
     },
-    "./views": {
-      "types": "./dist/types/lib/views/index.d.ts",
-      "import": "./dist/esm/lib/views/index.js"
+    "./bindings": {
+      "types": "./dist/types/lib/bindings/index.d.ts",
+      "import": "./dist/esm/lib/bindings/index.js"
+    },
+    "./indexeddb": {
+      "types": "./dist/types/lib/indexeddb/index.d.ts",
+      "import": "./dist/esm/lib/indexeddb/index.js"
     },
     "./virtualization": {
       "types": "./dist/types/lib/virtualization/index.d.ts",
@@ -56,6 +60,7 @@
     "@biomejs/biome": "2.5.12",
     "@canonical/biome-config": "^0.37.0",
     "@canonical/router-core": "^0.37.0",
+    "@canonical/typescript-config-strict": "^0.37.0",
     "@canonical/webarchitect": "^0.37.0",
     "@tanstack/query-core": "5.102.8",
     "@types/node": "^26.0.0",

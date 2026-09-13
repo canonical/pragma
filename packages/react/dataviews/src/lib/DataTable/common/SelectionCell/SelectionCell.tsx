@@ -1,6 +1,6 @@
 import { CheckboxInput } from "@canonical/react-ds-global-form";
 import type { ReactElement } from "react";
-import useDataViewsValue from "../../../DataViews/hooks/useDataViewsValue.js";
+import { useDataViewsValue } from "../../../DataViews/hooks/index.js";
 import type { SelectionCellProps } from "./types.js";
 
 const componentCssClassName = "ds data-table-body-cell selection";

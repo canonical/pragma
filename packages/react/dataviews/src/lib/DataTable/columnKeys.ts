@@ -1,5 +1,8 @@
-import type { ColumnSizing, ColumnToSize } from "@canonical/dataviews-core";
-import { sizingEquals } from "@canonical/dataviews-core";
+import {
+  type ColumnSizing,
+  type ColumnToSize,
+  sizingEquals,
+} from "@canonical/dataviews-core/bindings";
 import type { DataTableColumn } from "./types.js";
 
 /**
@@ -23,6 +26,10 @@ export const defaultSizing: ColumnSizing = {
 /** One column's declared sizing, defaulted. */
 export const sizingOf = (column: DataTableColumn): ColumnSizing =>
   column.sizing ?? defaultSizing;
+
+/** The field one column reads: its own, or its id when it names none. */
+export const fieldOf = (column: DataTableColumn): string =>
+  column.field ?? column.id;
 
 /**
  * The widths a resize may leave a column at, from its declared sizing —
@@ -48,10 +55,11 @@ export const sameColumnModel = (
 ): boolean =>
   a.length === b.length &&
   a.every((column, position) => {
-    const other = b[position];
+    // In range: the lengths were compared first.
+    const other = b[position] as DataTableColumn;
     return (
       column.id === other.id &&
-      (column.field ?? column.id) === (other.field ?? other.id) &&
+      fieldOf(column) === fieldOf(other) &&
       sizingEquals(sizingOf(column), sizingOf(other))
     );
   });
@@ -67,7 +75,8 @@ export const sameColumns = (
 ): boolean =>
   sameColumnModel(a, b) &&
   a.every((column, position) => {
-    const other = b[position];
+    // In range: the model comparison compared the lengths first.
+    const other = b[position] as DataTableColumn;
     return (
       column.sortable === other.sortable &&
       column.resizable === other.resizable &&
@@ -87,6 +96,7 @@ export const sameTracks = (
 ): boolean =>
   a.length === b.length &&
   a.every((track, position) => {
-    const other = b[position];
+    // In range: the lengths were compared first.
+    const other = b[position] as ColumnToSize;
     return track.id === other.id && sizingEquals(track.sizing, other.sizing);
   });

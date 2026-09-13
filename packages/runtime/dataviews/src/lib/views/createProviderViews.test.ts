@@ -1,11 +1,13 @@
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import createDataViewsProvider from "../provider/createDataViewsProvider.js";
-import type { DataViewsProvider } from "../provider/types.js";
-import DEFAULT_WINDOW from "../query/defaultWindow.js";
-import createSchema from "../schema/createSchema.js";
-import createArraySource from "../source/createArraySource.js";
-import createIndexedDBViewStore from "./createIndexedDBViewStore.js";
+import { createIndexedDBViewStore } from "../indexeddb/index.js";
+import {
+  createDataViewsProvider,
+  type DataViewsProvider,
+} from "../provider/index.js";
+import { DEFAULT_WINDOW } from "../query/index.js";
+import { createSchema } from "../schema/index.js";
+import { createArraySource } from "../source/index.js";
 import type {
   PreferenceResult,
   ProviderViews,
@@ -373,7 +375,7 @@ describe("createProviderViews opening and saving", () => {
     provider.fields.status.eq.set(["running"]);
     provider.navigateWindow({ page: 4 });
     views.reset();
-    expect(provider.state.get().slice.filter[0].operands).toEqual(["failed"]);
+    expect(provider.state.get().slice.filter[0]?.operands).toEqual(["failed"]);
     expect(provider.state.get().window.page).toBe(1);
     expect(views.state.get().modified).toBe(false);
   });
@@ -698,7 +700,7 @@ describe("createProviderViews names", () => {
     });
     const retried = await views.saveAs("Failed");
     expect(retried.status).toBe("saved");
-    expect(create.mock.calls[1][0].id).toBe(create.mock.calls[0][0].id);
+    expect(create.mock.calls[1]?.[0].id).toBe(create.mock.calls[0]?.[0].id);
     expect((await real.list()).views).toHaveLength(1);
   });
 
@@ -840,12 +842,12 @@ describe("createProviderViews presentation", () => {
     await views.open(view.id);
     // Observing read the default; opening read it again with the view's.
     expect(reads).toHaveLength(3);
-    reads[1].resolve({ width: 90 });
-    reads[2].resolve({ own: 1 });
+    reads[1]?.resolve({ width: 90 });
+    reads[2]?.resolve({ own: 1 });
     await vi.waitFor(() => {
       expect(views.state.get().presentation).toEqual({ width: 90, own: 1 });
     });
-    reads[0].resolve({ stale: 1 });
+    reads[0]?.resolve({ stale: 1 });
     await new Promise((settle) => setTimeout(settle));
     expect(views.state.get().presentation).toEqual({ width: 90, own: 1 });
   });

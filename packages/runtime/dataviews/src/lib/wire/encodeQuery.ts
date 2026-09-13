@@ -1,5 +1,4 @@
-import canonicalSlice from "../query/canonicalSlice.js";
-import type { PredicateOperand } from "../query/types.js";
+import { canonicalSlice, type PredicateOperand } from "../query/index.js";
 import type { EncodeQueryConfig } from "./types.js";
 import { isOwnedKey, OPERATOR_DELIMITER, wireKeyOf } from "./wireGrammar.js";
 
@@ -21,9 +20,10 @@ const plainDecimal = (value: number): string => {
   const exponent = Number(spelled.slice(at + 1));
   const mantissa = spelled.slice(0, at);
   const negative = mantissa.startsWith("-");
-  const [whole, fraction = ""] = (
-    negative ? mantissa.slice(1) : mantissa
-  ).split(".");
+  const unsigned = negative ? mantissa.slice(1) : mantissa;
+  const dot = unsigned.indexOf(".");
+  const whole = dot === -1 ? unsigned : unsigned.slice(0, dot);
+  const fraction = dot === -1 ? "" : unsigned.slice(dot + 1);
   const digits = `${whole}${fraction}`;
   const point = whole.length + exponent;
   const body =

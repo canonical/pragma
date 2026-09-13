@@ -1,22 +1,25 @@
-import type {
-  DataViewsProvider,
-  ResultWindow,
-  RowRecord,
-  Source,
-  ViewDraft,
-  ViewStore,
-} from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSourceBinding,
+  type DataViewsProvider,
   DEFAULT_WINDOW,
+  type ResultWindow,
+  type RowRecord,
+  type Source,
+  type ViewDraft,
+  type ViewStore,
 } from "@canonical/dataviews-core";
-import type { IndexedDBFactory } from "@canonical/dataviews-core/views";
-import { createIndexedDBViewStore } from "@canonical/dataviews-core/views";
+import {
+  createIndexedDBViewStore,
+  type IndexedDBFactory,
+} from "@canonical/dataviews-core/indexeddb";
 import type { Decorator } from "@storybook/react-vite";
 import { useEffect, useState } from "react";
-import type { MachineFields } from "./fixtures.js";
-import { createMachineSource, machineSchema } from "./fixtures.js";
+import {
+  createMachineSource,
+  type MachineFields,
+  machineSchema,
+} from "./fixtures.js";
 
 /**
  * Story machinery for the machine collection's stories — the table, its
@@ -34,13 +37,13 @@ export type MachineProvider = DataViewsProvider<MachineFields>;
 /** How one story's collection is set up. Read once, when the story mounts. */
 export type MachineProviderConfig = {
   /** The source the table reads; every machine by default. */
-  readonly source?: () => Source;
+  readonly source?: (() => Source) | undefined;
   /** The displayed window; the provider's default page otherwise. */
-  readonly window?: Partial<ResultWindow>;
+  readonly window?: Partial<ResultWindow> | undefined;
   /** Commands issued once the source is bound: a sort, a search, a selection. */
-  readonly prepare?: (provider: MachineProvider) => void;
+  readonly prepare?: ((provider: MachineProvider) => void) | undefined;
   /** Where the collection's saved views live; none by default. */
-  readonly views?: ViewStore;
+  readonly views?: ViewStore | undefined;
 };
 
 /**
@@ -58,7 +61,7 @@ export function useMachineProvider({
   prepare,
   views,
 }: MachineProviderConfig = {}): MachineProvider {
-  const [bound] = useState(source);
+  const [bound] = useState<Source>(source);
   const [provider] = useState(() =>
     createDataViewsProvider<MachineFields>({
       schema: machineSchema,
@@ -119,7 +122,7 @@ export const withScrollingFrame =
 
 /** Names a record for its selection checkbox: by host, else by identity. */
 export const hostName = (row: RowRecord, rowId: string): string =>
-  typeof row.name === "string" ? row.name : rowId;
+  typeof row["name"] === "string" ? row["name"] : rowId;
 
 /** A story's saved-view store, and a way to open another tab over it. */
 export type StoryViewStore = {
@@ -130,9 +133,9 @@ export type StoryViewStore = {
 /** How one story's saved-view store is set up. Read once, when it mounts. */
 export type StoryViewStoreConfig = {
   /** The views the store holds when the story opens. */
-  readonly seed?: readonly ViewDraft[];
+  readonly seed?: readonly ViewDraft[] | undefined;
   /** The browser's IndexedDB by default; a stand-in shows refused storage. */
-  readonly indexedDB?: IndexedDBFactory;
+  readonly indexedDB?: IndexedDBFactory | undefined;
 };
 
 /**

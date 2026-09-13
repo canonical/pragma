@@ -1,6 +1,5 @@
-import type { ReactElement } from "react";
-import { useContext } from "react";
-import PaginationBar from "../../../PaginationBar/PaginationBar.js";
+import { type ReactElement, useContext } from "react";
+import { PaginationBar } from "../../../PaginationBar/index.js";
 import DataViewsContext from "../../Context.js";
 import type { DataViewsPaginationProps } from "./types.js";
 

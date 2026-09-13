@@ -5,9 +5,12 @@
  */
 
 import { describe, expect, it } from "vitest";
-import DEFAULT_WINDOW from "../query/defaultWindow.js";
-import type { ResultWindow, Slice } from "../query/types.js";
-import createSchema from "../schema/createSchema.js";
+import {
+  DEFAULT_WINDOW,
+  type ResultWindow,
+  type Slice,
+} from "../query/index.js";
+import { createSchema } from "../schema/index.js";
 import encodeQuery from "./encodeQuery.js";
 
 const machines = () =>

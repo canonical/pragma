@@ -3,16 +3,13 @@ import type { ReactElement } from "react";
 import { expect, waitFor } from "storybook/test";
 import { consumerCode } from "../../../../storybook/machines/consumerCode.js";
 import { createSourceWithoutCores } from "../../../../storybook/machines/fixtures.js";
-import type {
-  MachineProvider,
-  MachineProviderConfig,
-} from "../../../../storybook/machines/story-utils.js";
 import {
+  type MachineProvider,
+  type MachineProviderConfig,
   useMachineProvider,
   withAppScope,
 } from "../../../../storybook/machines/story-utils.js";
-import DataTable from "../../../DataTable/DataTable.js";
-import type { DataTableColumn } from "../../../DataTable/types.js";
+import { DataTable, type DataTableColumn } from "../../../DataTable/index.js";
 import DataViews from "../../Provider.js";
 import Component from "./Filters.js";
 import type { DataViewsFiltersProps } from "./types.js";
@@ -55,7 +52,7 @@ function FilteredMachines({
   options,
   ...args
 }: DataViewsFiltersProps & {
-  readonly options?: MachineProviderConfig;
+  readonly options?: MachineProviderConfig | undefined;
 }): ReactElement {
   const provider = useMachineProvider(options);
   return (

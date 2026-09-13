@@ -4,7 +4,7 @@
  * capability member does not have to be spelled into ninety test files.
  */
 
-import type { SourceCapabilities } from "../src/lib/source/types.js";
+import type { SourceCapabilities } from "../src/lib/source/index.js";
 
 /** A source declaring nothing executable: every request is refused. */
 export const NOTHING_DECLARED: SourceCapabilities = Object.freeze({
@@ -26,9 +26,7 @@ export const NOTHING_DECLARED: SourceCapabilities = Object.freeze({
   counts: Object.freeze({ visible: "none", matched: "none", total: "none" }),
   pagination: Object.freeze({ mode: "offset" }),
   selection: Object.freeze({ scope: "explicit" }),
-  lookup: null,
   actions: Object.freeze({}),
-  kinds: null,
 });
 
 /** `NOTHING_DECLARED` with the named members replaced. */

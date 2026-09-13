@@ -1,5 +1,6 @@
-import reasonOf from "../source/reasonOf.js";
+import { reasonOf } from "../source/index.js";
 import type {
+  JsonValue,
   PreferenceResult,
   PresentationTarget,
   SavedView,
@@ -11,7 +12,7 @@ import type {
   ViewRemoveResult,
   ViewStore,
   ViewUpdateResult,
-} from "./types.js";
+} from "../views/index.js";
 
 /**
  * An event-handler slot. The parameter is `never` so the platform's own
@@ -122,7 +123,7 @@ type StoredPreference = {
   readonly scope: string;
   readonly target: string;
   readonly key: string;
-  readonly value: unknown;
+  readonly value: JsonValue;
 };
 
 /** Run `then` with a request's result once it succeeds. */
@@ -175,11 +176,58 @@ const isStoredView = (
   );
 };
 
+/** Whether a value is JSON: what a presentation may hold, and nothing else. */
+const isJsonValue = (value: unknown): value is JsonValue => {
+  switch (typeof value) {
+    case "string":
+    case "boolean":
+      return true;
+    case "number":
+      return Number.isFinite(value);
+    case "object":
+      if (value === null) {
+        return true;
+      }
+      if (Array.isArray(value)) {
+        return value.every(isJsonValue);
+      }
+      return (
+        Object.getPrototypeOf(value) === Object.prototype &&
+        Object.values(value).every(isJsonValue)
+      );
+    default:
+      return false;
+  }
+};
+
+/**
+ * Whether a stored record is a preference this store can read. Storage is
+ * an external boundary — another client, a newer version of this store or
+ * a hand-edited database may have written it — so a record is checked
+ * before it is read, never cast. One that fails reads as absent: a pin
+ * that is not one leaves the view unpinned, a presentation entry that is
+ * not one leaves its key unset, and neither is misread as a value.
+ */
+const isStoredPreference = (record: unknown): record is StoredPreference => {
+  if (typeof record !== "object" || record === null) {
+    return false;
+  }
+  const { scope, target, key, value } = record as Readonly<
+    Record<string, unknown>
+  >;
+  return (
+    typeof scope === "string" &&
+    typeof target === "string" &&
+    typeof key === "string" &&
+    isJsonValue(value)
+  );
+};
+
 /** Why a stored record cannot be read as a saved view. */
 const unreadableReason = (record: Readonly<Record<string, unknown>>): string =>
-  record.v === RECORD_VERSION
+  record["v"] === RECORD_VERSION
     ? "the record does not have the shape of a saved view"
-    : `record version ${String(record.v)} is not the supported version ${RECORD_VERSION}`;
+    : `record version ${String(record["v"])} is not the supported version ${RECORD_VERSION}`;
 
 /** A stored saved view as this viewer sees it. */
 const viewOf = (record: StoredView, pinned: boolean): SavedView => ({
@@ -211,7 +259,7 @@ const disposedError = (): Error => new Error("the view store is disposed");
  * the platform's error as the cause; nothing falls back to memory and
  * claims to persist. Other tabs' writes reach `subscribe` through a
  * BroadcastChannel where the platform has one. Import it explicitly from
- * `@canonical/dataviews-core/views`.
+ * `@canonical/dataviews-core/indexeddb`.
  */
 export default function createIndexedDBViewStore(
   config: IndexedDBViewStoreConfig,
@@ -453,7 +501,11 @@ export default function createIndexedDBViewStore(
       }
       then(
         isStoredView(record)
-          ? { status: "found", view: viewOf(record, pin !== undefined), record }
+          ? {
+              status: "found",
+              view: viewOf(record, isStoredPreference(pin)),
+              record,
+            }
           : { status: "unreadable", reason: unreadableReason(record) },
       );
     });
@@ -509,7 +561,7 @@ export default function createIndexedDBViewStore(
         let listed: ViewList = { views: [], unreadable: [] };
         step(preferences.index("target").getAll([scope, PINS]), (pins) => {
           const pinned = new Set(
-            pins.map((pin) => (pin as StoredPreference).key),
+            pins.filter(isStoredPreference).map((pin) => pin.key),
           );
           const found: SavedView[] = [];
           const unreadable: UnreadableView[] = [];
@@ -520,7 +572,7 @@ export default function createIndexedDBViewStore(
               found.push(viewOf(record, pinned.has(record.id)));
             } else {
               unreadable.push({
-                id: String(record.id),
+                id: String(record["id"]),
                 reason: unreadableReason(record),
               });
             }
@@ -657,16 +709,16 @@ export default function createIndexedDBViewStore(
 
     readPresentation(target) {
       return read(({ preferences }, step) => {
-        const presentation: Record<string, unknown> = {};
+        const presentation: Record<string, JsonValue> = {};
         step(
           preferences.index("target").getAll([scope, targetKey(target)]),
           (records) => {
-            for (const record of records as readonly StoredPreference[]) {
+            for (const record of records.filter(isStoredPreference)) {
               presentation[record.key] = record.value;
             }
           },
         );
-        return () => presentation as ViewPresentation;
+        return () => presentation;
       });
     },
 

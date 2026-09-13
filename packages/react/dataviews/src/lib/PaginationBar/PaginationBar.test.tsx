@@ -3,17 +3,18 @@
  * counts that describe the rows on screen. It takes its provider explicitly,
  * so every case here mounts it with no DataViews root at all.
  */
-import type { Count, DataViewsProvider } from "@canonical/dataviews-core";
 import {
+  type Count,
   createDataViewsProvider,
   createSchema,
+  type DataViewsProvider,
   DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
 import { describe, expect, it } from "vitest";
 import { declaring } from "../capabilities.fixtures.js";
-import DataViews from "../DataViews/Provider.js";
+import { DataViews } from "../DataViews/index.js";
 import PaginationBar from "./PaginationBar.js";
 import type { PaginationBarProps } from "./types.js";
 

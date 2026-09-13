@@ -4,10 +4,10 @@
  * nothing from the store.
  */
 
-import type { ViewStore } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
+  type ViewStore,
 } from "@canonical/dataviews-core";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, onTestFinished, vi } from "vitest";

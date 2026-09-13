@@ -19,7 +19,10 @@ const flex = (
   maxPx?: number,
 ): ColumnToSize => ({
   id,
-  sizing: { kind: "flex", weight, minPx, maxPx },
+  sizing:
+    maxPx === undefined
+      ? { kind: "flex", weight, minPx }
+      : { kind: "flex", weight, minPx, maxPx },
 });
 
 /** A solved vector, as the caller that already ran the solver holds it. */

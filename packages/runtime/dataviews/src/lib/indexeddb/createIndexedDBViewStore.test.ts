@@ -1,10 +1,10 @@
 import { forceCloseDatabase, IDBFactory, IDBObjectStore } from "fake-indexeddb";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { JsonValue, SavedView, ViewStore } from "../views/index.js";
 import createIndexedDBViewStore, {
   type IndexedDBFactory,
   type IndexedDBViewStoreConfig,
 } from "./createIndexedDBViewStore.js";
-import type { JsonValue, SavedView, ViewStore } from "./types.js";
 
 /**
  * The IndexedDB view store, exercised against `fake-indexeddb`: a complete
@@ -59,19 +59,20 @@ const saved = (outcome: { readonly status: string }): SavedView => {
   return outcome.view as SavedView;
 };
 
-/** Write records straight into the views store, as another client would. */
+/** Write records straight into one object store, as another client would. */
 const writeRaw = (
   indexedDB: Factory,
   records: readonly Record<string, unknown>[],
+  objectStore: "views" | "preferences" = "views",
 ): Promise<void> =>
   new Promise((resolve, reject) => {
     const request = indexedDB.open("operations-console");
     request.onerror = () => reject(request.error);
     request.onsuccess = () => {
       const database = request.result;
-      const transaction = database.transaction(["views"], "readwrite");
+      const transaction = database.transaction([objectStore], "readwrite");
       for (const record of records) {
-        transaction.objectStore("views").put(record);
+        transaction.objectStore(objectStore).put(record);
       }
       transaction.oncomplete = () => {
         database.close();
@@ -395,6 +396,50 @@ describe("createIndexedDBViewStore viewer preferences", () => {
       density: "compact",
     });
     expect(await store.get("ready")).toMatchObject({ view: { pinned: true } });
+  });
+
+  it("reads a stored preference only when it has the shape of one", async () => {
+    const indexedDB = new IDBFactory();
+    const store = storeOver(indexedDB);
+    await store.create(failed);
+    await store.patchPresentation("default", { density: "compact" });
+    const preference = (fields: Record<string, unknown>) => ({
+      scope: machinesScope,
+      target: "default",
+      ...fields,
+    });
+    await writeRaw(
+      indexedDB,
+      [
+        // Another client wrote values a presentation cannot hold.
+        preference({ key: "width", value: undefined }),
+        preference({ key: "zoom", value: Number.POSITIVE_INFINITY }),
+        preference({ key: "order", value: [1, new Date(0)] }),
+        preference({ key: "layout", value: { nested: new Map() } }),
+        preference({ key: 7, value: true }),
+        preference({ key: "columns", value: { visible: ["a", null], n: 1 } }),
+        // A pin whose key is not a view id pins nothing.
+        preference({ target: "pins", key: 7, value: true }),
+        preference({ target: "pins", key: "failed", value: "yes" }),
+      ],
+      "preferences",
+    );
+
+    // Every unreadable entry reads as absent, never as a misread value.
+    expect(await store.readPresentation("default")).toEqual({
+      density: "compact",
+      columns: { visible: ["a", null], n: 1 },
+    });
+    expect(await store.get("failed")).toMatchObject({
+      view: { pinned: true },
+    });
+    expect(await store.list()).toMatchObject({
+      views: [{ id: "failed", pinned: true }],
+    });
+    await store.unpin("failed");
+    expect(await store.get("failed")).toMatchObject({
+      view: { pinned: false },
+    });
   });
 });
 

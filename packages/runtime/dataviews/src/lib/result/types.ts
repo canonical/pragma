@@ -13,8 +13,8 @@ import type {
   PredicateOperator,
   ResultWindow,
   Slice,
-} from "../query/types.js";
-import type { RowRecord } from "../rows/types.js";
+} from "../query/index.js";
+import type { RowRecord } from "../rows/index.js";
 
 /**
  * A number a source claims, with how much it claims. Never a bare null:

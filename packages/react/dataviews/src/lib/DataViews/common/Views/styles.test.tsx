@@ -6,10 +6,11 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { SavedView, ViewStore } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
+  type SavedView,
+  type ViewStore,
 } from "@canonical/dataviews-core";
 import {
   act,
@@ -122,7 +123,7 @@ const root = ".ds.data-views-views";
 describe("Views stylesheet", () => {
   it("styles only classes the control renders", async () => {
     const styled = new Set(
-      [...sheet.matchAll(/\.([a-z][\w-]*)/g)].map(([, name]) => name),
+      [...sheet.matchAll(/\.([a-z][\w-]*)/g)].map(([, name = ""]) => name),
     );
     const classes = new Set(
       (await rendered()).flatMap((container) =>
@@ -181,7 +182,7 @@ describe("Views anatomy", () => {
   it("states only DOM the control renders", async () => {
     const anatomy = read("Views.anatomy.yaml");
     const stated = [...anatomy.matchAll(/DOM `([^`]+)`/g)]
-      .map(([, dom]) => selectorOf(dom))
+      .map(([, dom = ""]) => selectorOf(dom))
       // Rendered inside a `noscript`, so only without JavaScript.
       .filter((selector) => selector !== ".unavailable");
     expect(stated.length).toBeGreaterThan(0);

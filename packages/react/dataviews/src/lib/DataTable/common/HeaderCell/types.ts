@@ -1,4 +1,5 @@
-import type { GridInteraction, SortTerm } from "@canonical/dataviews-core";
+import type { SortTerm } from "@canonical/dataviews-core";
+import type { GridInteraction } from "@canonical/dataviews-core/bindings";
 import type { DataTableColumn } from "../../types.js";
 
 /**

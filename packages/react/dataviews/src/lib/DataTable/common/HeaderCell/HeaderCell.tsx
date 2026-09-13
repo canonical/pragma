@@ -1,6 +1,5 @@
 import type { SortTerm } from "@canonical/dataviews-core";
-import type { IconProps } from "@canonical/react-ds-global";
-import { Icon } from "@canonical/react-ds-global";
+import { Icon, type IconProps } from "@canonical/react-ds-global";
 import type { ReactElement } from "react";
 import { ResizeHandle } from "../ResizeHandle/index.js";
 import type { HeaderCellProps } from "./types.js";

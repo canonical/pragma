@@ -8,11 +8,13 @@
  */
 
 import { describe, expect, it } from "vitest";
-import createLocationBinding from "../../lib/location/createLocationBinding.js";
-import createMemoryLocation from "../../lib/location/createMemoryLocation.js";
-import type { Location } from "../../lib/location/types.js";
-import createDataViewsProvider from "../../lib/provider/createDataViewsProvider.js";
-import createSchema from "../../lib/schema/createSchema.js";
+import {
+  createLocationBinding,
+  createMemoryLocation,
+  type Location,
+} from "../../lib/location/index.js";
+import { createDataViewsProvider } from "../../lib/provider/index.js";
+import { createSchema } from "../../lib/schema/index.js";
 
 const schema = createSchema([
   { field: "cpu", kind: "number" },

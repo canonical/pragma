@@ -1,11 +1,8 @@
-import type { CollectionState } from "../collection/createCollectionCoordinator.js";
-import type { Identity } from "../createIdentity.js";
-import type { FieldInteractionState } from "../field/createFieldInteraction.js";
-import type { ReadonlyChannel } from "../observable/createChannel.js";
-import type {
-  ActionInvocation,
-  Operation,
-} from "../operation/createOperation.js";
+import type { CollectionState } from "../collection/index.js";
+import type { FieldInteractionState } from "../field/index.js";
+import type { Identity } from "../identity/index.js";
+import type { ReadonlyChannel } from "../observable/index.js";
+import type { ActionInvocation, Operation } from "../operation/index.js";
 import type {
   GroupPath,
   GroupTerm,
@@ -13,19 +10,19 @@ import type {
   Query,
   SortTerm,
   WindowNavigation,
-} from "../query/types.js";
-import type { Completion } from "../result/types.js";
-import type { Applicability, RowModel, RowRecord } from "../rows/types.js";
-import type { Schema } from "../schema/createSchema.js";
+} from "../query/index.js";
+import type { Completion } from "../result/index.js";
+import type { Applicability, RowModel, RowRecord } from "../rows/index.js";
 import type {
   AppliedOf,
   EmptyOr,
+  Schema,
   SchemaFieldDefinition,
   TextField,
-} from "../schema/types.js";
-import type { Selection } from "../selection/createSelection.js";
-import type { SourceCapabilities } from "../source/types.js";
-import type { ProviderViews } from "../views/types.js";
+} from "../schema/index.js";
+import type { Selection } from "../selection/index.js";
+import type { SourceCapabilities } from "../source/index.js";
+import type { ProviderViews } from "../views/index.js";
 
 /** One filter address on a provider: observation plus bounded edits. */
 export type FieldHandle<TApplied> = {

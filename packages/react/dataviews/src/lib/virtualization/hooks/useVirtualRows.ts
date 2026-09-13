@@ -1,8 +1,10 @@
 import type { RowModel } from "@canonical/dataviews-core";
-import type { MountedRange } from "@canonical/dataviews-core/virtualization";
-import { createVirtualRange } from "@canonical/dataviews-core/virtualization";
-import type { FocusEvent } from "react";
 import {
+  createVirtualRange,
+  type MountedRange,
+} from "@canonical/dataviews-core/virtualization";
+import {
+  type FocusEvent,
   useCallback,
   useLayoutEffect,
   useMemo,
@@ -196,8 +198,9 @@ export default function useVirtualRows({
             let rowWidth = width;
             for (const record of records) {
               const id = measured.get(record.target);
-              if (id !== undefined) {
-                const [box] = record.borderBoxSize;
+              // A record without a box reports nothing to measure.
+              const box = record.borderBoxSize[0];
+              if (id !== undefined && box !== undefined) {
                 sizes.push([id, box.blockSize]);
                 rowWidth = box.inlineSize;
               }

@@ -1,5 +1,5 @@
 import type { SchemaFieldDefinition } from "@canonical/dataviews-core";
-import type { PaginationBarProps } from "../../../PaginationBar/types.js";
+import type { PaginationBarProps } from "../../../PaginationBar/index.js";
 
 /**
  * Props of the connected pagination part: the pagination bar's, less the

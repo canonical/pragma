@@ -1,9 +1,11 @@
 import type {
   DataViewsProvider,
-  RowScopes,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
-import { createRowScopes } from "@canonical/dataviews-core";
+import {
+  createRowScopes,
+  type RowScopes,
+} from "@canonical/dataviews-core/bindings";
 import { useEffect, useMemo } from "react";
 
 /**

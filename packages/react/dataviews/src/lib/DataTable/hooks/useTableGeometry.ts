@@ -1,12 +1,13 @@
-import type {
-  ColumnLayout,
-  ColumnToSize,
-  GridInteraction,
-  ResolvedColumn,
-} from "@canonical/dataviews-core";
-import { columnTemplate, resolveColumns } from "@canonical/dataviews-core";
+import {
+  type ColumnLayout,
+  type ColumnToSize,
+  columnTemplate,
+  type GridInteraction,
+  type ResolvedColumn,
+  resolveColumns,
+} from "@canonical/dataviews-core/bindings";
 import { useCallback, useMemo, useState } from "react";
-import useDataViewsValue from "../../DataViews/hooks/useDataViewsValue.js";
+import { useDataViewsValue } from "../../DataViews/hooks/index.js";
 import { sameTracks } from "../columnKeys.js";
 import type { TableGeometry } from "./types.js";
 import useStableValue from "./useStableValue.js";

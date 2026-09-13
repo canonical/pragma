@@ -40,8 +40,8 @@ describe("resolveColumns", () => {
       700,
     );
     // Remaining 700 - 100 - 200 = 400; name takes 2/3, description 1/3.
-    expect(widths(result).name).toBeCloseTo(100 + (400 * 2) / 3, 5);
-    expect(widths(result).description).toBeCloseTo(100 + 400 / 3, 5);
+    expect(widths(result)["name"]).toBeCloseTo(100 + (400 * 2) / 3, 5);
+    expect(widths(result)["description"]).toBeCloseTo(100 + 400 / 3, 5);
   });
 
   it("preserves declared widths on overflow so the container scrolls", () => {
@@ -59,8 +59,8 @@ describe("resolveColumns", () => {
     );
     // 800 - 200 minima = 600 shared equally: each asks 300 over its minimum.
     // Name caps at 200 and description absorbs the rest.
-    expect(widths(result).name).toBe(200);
-    expect(widths(result).description).toBe(600);
+    expect(widths(result)["name"]).toBe(200);
+    expect(widths(result)["description"]).toBe(600);
   });
 
   it("leaves leftover space unassigned when every column is capped or fixed", () => {
@@ -80,13 +80,13 @@ describe("resolveColumns", () => {
       500,
     );
     // 500 - 200 minima = 300 extra, all to the only positive weight.
-    expect(widths(result).name).toBe(100);
-    expect(widths(result).description).toBe(400);
+    expect(widths(result)["name"]).toBe(100);
+    expect(widths(result)["description"]).toBe(400);
   });
 
   it("keeps all zero-weight flex columns at minima with spare width left", () => {
     const result = resolveColumns([flex("name", 0, 100)], 500);
-    expect(widths(result).name).toBe(100);
+    expect(widths(result)["name"]).toBe(100);
     const total = result.reduce((sum, column) => sum + column.width, 0);
     expect(total).toBe(100);
   });
@@ -102,7 +102,7 @@ describe("resolveColumns", () => {
 
   it("handles a window smaller than a single column", () => {
     const result = resolveColumns([flex("name", 1, 200)], 100);
-    expect(widths(result).name).toBe(200);
+    expect(widths(result)["name"]).toBe(200);
   });
 
   it("rejects invalid sizing with reasons", () => {

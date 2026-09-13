@@ -1,24 +1,30 @@
-import type { ViewDraft, ViewStore } from "@canonical/dataviews-core";
 import {
   createLocationBinding,
   createMemoryLocation,
   DEFAULT_WINDOW,
+  type ViewDraft,
+  type ViewStore,
 } from "@canonical/dataviews-core";
-import type { IndexedDBFactory } from "@canonical/dataviews-core/views";
+import type { IndexedDBFactory } from "@canonical/dataviews-core/indexeddb";
 import { Button } from "@canonical/react-ds-global";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { ReactElement, ReactNode } from "react";
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  type ReactElement,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import { consumerCode } from "../../../../storybook/machines/consumerCode.js";
-import type { MachineProvider } from "../../../../storybook/machines/story-utils.js";
 import {
+  type MachineProvider,
   useMachineProvider,
   useStoryViewStore,
   withAppScope,
 } from "../../../../storybook/machines/story-utils.js";
-import DataTable from "../../../DataTable/DataTable.js";
-import type { DataTableColumn } from "../../../DataTable/types.js";
+import { DataTable, type DataTableColumn } from "../../../DataTable/index.js";
 import DataViews from "../../Provider.js";
 import Component from "./Views.js";
 
@@ -73,7 +79,7 @@ function Collection({
   children,
 }: {
   readonly provider: MachineProvider;
-  readonly children?: ReactNode;
+  readonly children?: ReactNode | undefined;
 }): ReactElement {
   return (
     <DataViews provider={provider}>
@@ -91,8 +97,8 @@ function SavedMachines({
   seed,
   indexedDB,
 }: {
-  readonly seed?: readonly ViewDraft[];
-  readonly indexedDB?: IndexedDBFactory;
+  readonly seed?: readonly ViewDraft[] | undefined;
+  readonly indexedDB?: IndexedDBFactory | undefined;
 }): ReactElement {
   const { store } = useStoryViewStore({ seed, indexedDB });
   const provider = useMachineProvider({

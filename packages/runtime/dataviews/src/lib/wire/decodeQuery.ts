@@ -1,19 +1,21 @@
-import DEFAULT_WINDOW from "../query/defaultWindow.js";
-import EMPTY_SLICE from "../query/emptySlice.js";
-import { collapseSortTerms } from "../query/index.js";
+import {
+  collapseSortTerms,
+  DEFAULT_WINDOW,
+  EMPTY_SLICE,
+  type GroupTerm,
+  type Predicate,
+  type PredicateOperand,
+  type PredicateOperator,
+  type ResultWindow,
+  type Slice,
+  type SortTerm,
+} from "../query/index.js";
 import type {
-  GroupTerm,
-  Predicate,
-  PredicateOperand,
-  PredicateOperator,
-  ResultWindow,
-  Slice,
-  SortTerm,
-} from "../query/types.js";
-import type { Schema, SchemaPredicateResult } from "../schema/createSchema.js";
-import type { SchemaFieldDefinition } from "../schema/types.js";
-import supportsRequest from "../source/supportsRequest.js";
-import type { SourceCapabilities } from "../source/types.js";
+  Schema,
+  SchemaFieldDefinition,
+  SchemaPredicateResult,
+} from "../schema/index.js";
+import { type SourceCapabilities, supportsRequest } from "../source/index.js";
 import type { DecodedQuery, DecodeQueryConfig, QueryIssue } from "./types.js";
 import {
   fieldOfWireKey,
@@ -42,7 +44,8 @@ const singletonOf = (
       reason: `"${key}" takes one value; the extra values were ignored`,
     });
   }
-  return values[0];
+  // A key read off the parameters has at least the value it was read from.
+  return values[0] as string;
 };
 
 /** Read one window value, falling back rather than paging somewhere absurd. */
@@ -151,7 +154,7 @@ const readPredicate = (
     schema.predicateFor(
       field,
       operator,
-      operator === "eq" ? operands : [operands[0]],
+      operator === "eq" ? operands : operands.slice(0, 1),
     ),
     key,
     filter,

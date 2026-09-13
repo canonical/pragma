@@ -1,5 +1,9 @@
-import type { RowRecord, Source } from "@canonical/dataviews-core";
-import { createArraySource, createSchema } from "@canonical/dataviews-core";
+import {
+  createArraySource,
+  createSchema,
+  type RowRecord,
+  type Source,
+} from "@canonical/dataviews-core";
 
 /**
  * Story fixtures for the machine collection. Story-only: this folder is
@@ -226,7 +230,6 @@ export const createUncountedSource = (): Source => {
           },
         });
       }),
-    lookup: source.lookup,
   };
 };
 

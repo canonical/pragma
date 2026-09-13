@@ -2,8 +2,9 @@
  * Compile-time contract tests for the package's public type surface.
  *
  * Runtime behavior lives in the sibling test files; this file pins the type
- * exports through the barrel: removing any name from a folder barrel, or
- * changing one of the pinned shapes, fails compilation here.
+ * exports of each entry point through its barrel: removing a name from a
+ * barrel, adding one without a decision, or changing one of the pinned
+ * shapes fails here.
  */
 
 import { readFileSync } from "node:fs";
@@ -18,16 +19,8 @@ import type {
   AppliedValues,
   ArraySource,
   ArraySourceConfig,
-  Channel,
-  ChannelConfig,
   ChoicesField,
-  CollectionCoordinator,
-  CollectionCoordinatorConfig,
   CollectionState,
-  ColumnLayout,
-  ColumnLayoutState,
-  ColumnSizing,
-  ColumnToSize,
   Completion,
   Count,
   CountCapabilities,
@@ -39,43 +32,27 @@ import type {
   DecodedQuery,
   DecodeQueryConfig,
   DiscriminatorField,
-  DispatchResult,
-  DisplayEntriesConfig,
-  DisplayEntry,
-  DisplayEntryKind,
-  EffectiveOrdering,
   EmptyOr,
   EncodeQueryConfig,
-  ExecuteSliceConfig,
   FieldFeedback,
   FieldHandle,
-  FieldInteraction,
-  FieldInteractionConfig,
   FieldInteractionState,
   FieldReader,
   FieldValidation,
-  FixedSizing,
   FlagField,
-  FlexSizing,
-  GridInteraction,
-  GridInteractionState,
   GroupCapabilities,
   GroupPath,
   GroupSummary,
   GroupTerm,
   Identity,
   JsonValue,
-  KindCapabilities,
   Location,
   LocationBinding,
   LocationBindingConfig,
   LocationConfig,
   LocationHost,
-  LookupOutcome,
   NumberField,
-  ObservedQuery,
   Operation,
-  OperationConfig,
   OperationFailure,
   OperationOutcome,
   OperationState,
@@ -91,22 +68,11 @@ import type {
   ProviderFields,
   ProviderViews,
   Query,
-  QueryCommand,
-  QueryCommandResult,
   QueryIssue,
-  QueryObservation,
-  QueryObserver,
-  QueryObserverFactory,
   QuerySourceConfig,
   ReadonlyChannel,
   RecordTypes,
-  RelayConnection,
-  RelayEnvironment,
-  RelayOperation,
-  RelayPageRequest,
-  RelaySnapshot,
   RelaySourceConfig,
-  ResolvedColumn,
   ResultProblem,
   ResultProvenance,
   ResultState,
@@ -115,16 +81,8 @@ import type {
   RowEntry,
   RowIdentifier,
   RowModel,
-  RowModelConfig,
-  RowModelResult,
   RowRecord,
-  RowScope,
-  RowScopes,
-  RowScopesConfig,
   SavedView,
-  SaveSession,
-  SaveSessionConfig,
-  SaveSessionState,
   Schema,
   SchemaFieldDefinition,
   SchemaPredicateResult,
@@ -145,7 +103,6 @@ import type {
   SourceDelivery,
   SourceFailure,
   SourceHost,
-  SourceLookup,
   SourcePage,
   SourceRefusal,
   SourceRefusalCode,
@@ -172,9 +129,29 @@ import type {
 } from "./index.js";
 import * as dataviews from "./index.js";
 import type {
+  Channel,
+  ChannelConfig,
+  ColumnLayout,
+  ColumnLayoutState,
+  ColumnSizing,
+  ColumnToSize,
+  DisplayEntriesConfig,
+  DisplayEntry,
+  DisplayEntryKind,
+  FixedSizing,
+  FlexSizing,
+  GridInteraction,
+  GridInteractionState,
+  ResolvedColumn,
+  RowScope,
+  RowScopes,
+  RowScopesConfig,
+} from "./lib/bindings/index.js";
+import * as bindings from "./lib/bindings/index.js";
+import type {
   IndexedDBFactory,
   IndexedDBViewStoreConfig,
-} from "./lib/views/index.js";
+} from "./lib/indexeddb/index.js";
 import type {
   MountedRange,
   MountedRun,
@@ -184,9 +161,6 @@ import type {
 
 /** A consumer's own row type: an interface, with no index signature. */
 type Machine = { readonly id: string; readonly cpu: number };
-
-/** Every type the saved-view entry point exports, as one enumerable tuple. */
-type EveryViewsType = [IndexedDBFactory, IndexedDBViewStoreConfig];
 
 /** Every type the package root re-exports, as one enumerable tuple. */
 type EveryPublicType = [
@@ -198,16 +172,8 @@ type EveryPublicType = [
   AppliedValues<readonly SchemaFieldDefinition[]>,
   ArraySource,
   ArraySourceConfig,
-  Channel<unknown>,
-  ChannelConfig<unknown>,
   ChoicesField,
-  CollectionCoordinator,
-  CollectionCoordinatorConfig,
   CollectionState,
-  ColumnLayout,
-  ColumnLayoutState,
-  ColumnSizing,
-  ColumnToSize,
   Completion,
   Count,
   CountCapabilities,
@@ -218,44 +184,28 @@ type EveryPublicType = [
   DecodedQuery,
   DeclaredRecordTypes,
   DecodeQueryConfig,
-  DispatchResult,
   DiscriminatorField<readonly SchemaFieldDefinition[], RowRecord>,
-  DisplayEntriesConfig<unknown>,
-  DisplayEntry,
-  DisplayEntryKind,
-  EffectiveOrdering,
   EmptyOr<unknown>,
   EncodeQueryConfig,
-  ExecuteSliceConfig,
   FieldFeedback,
   FieldHandle<unknown>,
-  FieldInteraction,
-  FieldInteractionConfig,
   FieldInteractionState,
   FieldReader,
   FieldValidation,
-  FixedSizing,
   FlagField,
-  FlexSizing,
-  GridInteraction,
-  GridInteractionState,
   GroupCapabilities,
   GroupPath,
   GroupSummary,
   GroupTerm,
   Identity,
   JsonValue,
-  KindCapabilities,
   Location,
   LocationBinding,
   LocationBindingConfig,
   LocationConfig,
   LocationHost,
-  LookupOutcome,
   NumberField,
-  ObservedQuery<SourcePage>,
   Operation,
-  OperationConfig,
   OperationFailure,
   OperationOutcome,
   OperationState,
@@ -271,22 +221,11 @@ type EveryPublicType = [
   ProviderFields<readonly SchemaFieldDefinition[]>,
   ProviderViews,
   Query,
-  QueryCommand,
-  QueryCommandResult,
   QueryIssue,
-  QueryObservation<SourcePage>,
-  QueryObserver<SourcePage>,
-  QueryObserverFactory<SourcePage>,
   QuerySourceConfig,
   ReadonlyChannel<unknown>,
   RecordTypes<readonly SchemaFieldDefinition[], RowRecord>,
-  RelayConnection,
-  RelayEnvironment,
-  RelayOperation,
-  RelayPageRequest,
-  RelaySnapshot,
   RelaySourceConfig,
-  ResolvedColumn,
   ResultProblem,
   ResultProvenance,
   ResultState,
@@ -295,16 +234,8 @@ type EveryPublicType = [
   RowEntry<RowRecord>,
   RowIdentifier<RowRecord>,
   RowModel<RowRecord>,
-  RowModelConfig<RowRecord>,
-  RowModelResult<RowRecord>,
   RowRecord,
-  RowScope<RowRecord>,
-  RowScopes<RowRecord>,
-  RowScopesConfig<RowRecord>,
   SavedView,
-  SaveSession<unknown>,
-  SaveSessionConfig<unknown>,
-  SaveSessionState<unknown>,
   Schema<readonly SchemaFieldDefinition[]>,
   SchemaFieldDefinition,
   SchemaPredicateResult,
@@ -325,7 +256,6 @@ type EveryPublicType = [
   SourceDelivery,
   SourceFailure,
   SourceHost,
-  SourceLookup,
   SourcePage,
   SourceRefusal,
   SourceRefusalCode,
@@ -351,25 +281,44 @@ type EveryPublicType = [
   WindowNavigation,
 ];
 
-/** Every type name one barrel puts on the surface, following its re-exports. */
-const surfaceOf = (barrel: string): string[] => {
+/** Every type the binding entry point exports, as one enumerable tuple. */
+type EveryBindingType = [
+  Channel<unknown>,
+  ChannelConfig<unknown>,
+  ColumnLayout,
+  ColumnLayoutState,
+  ColumnSizing,
+  ColumnToSize,
+  DisplayEntriesConfig<unknown>,
+  DisplayEntry,
+  DisplayEntryKind,
+  FixedSizing,
+  FlexSizing,
+  GridInteraction,
+  GridInteractionState,
+  ResolvedColumn,
+  RowScope<RowRecord>,
+  RowScopes<RowRecord>,
+  RowScopesConfig<RowRecord>,
+];
+
+/** Every type the saved-view entry point exports, as one enumerable tuple. */
+type EveryIndexedDBType = [IndexedDBFactory, IndexedDBViewStoreConfig];
+
+/**
+ * The type names an entry-point barrel puts on the surface. Only an
+ * explicit `export type { … } from` line counts: a barrel that re-exported a
+ * domain whole would carry whatever that domain carries, so the walk fails
+ * on one rather than following it.
+ */
+const listTypeSurface = (barrel: string): string[] => {
   const text = readFileSync(barrel, "utf8");
-  const from = (spec: string): string =>
-    path.join(path.dirname(barrel), spec.replace(/\.js$/, ".ts"));
+  const wildcard = text.match(/^export (?:type )?\* from "[^"]+";/m);
+  if (wildcard !== null) {
+    throw new Error(`${barrel} re-exports a domain whole: ${wildcard[0]}`);
+  }
   const names: string[] = [];
-  for (const [, spec] of text.matchAll(/^export \* from "([^"]+)";/gm)) {
-    names.push(...surfaceOf(from(spec)));
-  }
-  for (const [, spec] of text.matchAll(/^export type \* from "([^"]+)";/gm)) {
-    names.push(
-      ...[
-        ...readFileSync(from(spec), "utf8").matchAll(
-          /^export (?:type|interface) (\w+)/gm,
-        ),
-      ].map(([, name]) => name),
-    );
-  }
-  for (const [, list] of text.matchAll(
+  for (const [, list = ""] of text.matchAll(
     /^export type \{([^}]*)\} from "[^"]+";/gms,
   )) {
     for (const entry of list.split(",")) {
@@ -385,37 +334,76 @@ const surfaceOf = (barrel: string): string[] => {
   return names;
 };
 
-/** The names this file pins, read from its own import of the barrel. */
-const pinned = (): string[] => {
+/** The names this file pins for one entry point, read from its own import. */
+const listPinned = (specifier: string): string[] => {
   // Resolved from the package root, which is where the suite runs: the
   // module's own URL is not a file URL in every project this runs under.
   const text = readFileSync(path.resolve("src/index.types.test.ts"), "utf8");
-  const block = text.match(/import type \{([^}]*)\} from "\.\/index\.js";/s);
+  const block = text.match(
+    new RegExp(`import type \\{([^}]*)\\} from "${specifier}";`, "s"),
+  );
   if (block === null) {
-    throw new Error("this file must import its pins from the barrel");
+    throw new Error(`this file must import its pins from ${specifier}`);
   }
-  return block[1]
+  return (block[1] ?? "")
     .split(",")
     .map((entry) => entry.trim())
     .filter((entry) => entry !== "");
 };
 
 describe("public surface types", () => {
-  it("re-exports the full type surface from the barrel", () => {
+  it("re-exports the root's type surface name by name", () => {
     // The import above is checked by the compiler, so a name that leaves
     // the barrel fails to compile. This is the other direction: a name that
     // *enters* it without a decision, which no type assertion can catch —
     // the tuple's own length only ever compares the list against itself.
     const surface = [
-      ...new Set(surfaceOf(path.resolve("src/lib/index.ts"))),
+      ...new Set(listTypeSurface(path.resolve("src/lib/index.ts"))),
     ].sort();
-    expect(surface).toEqual(pinned().sort());
-    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<159>();
+    expect(surface).toEqual(listPinned("\\./index\\.js").sort());
+    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<115>();
   });
 
-  it("keeps only the saved-view store behind its own entry point", () => {
-    expectTypeOf<EveryViewsType>().not.toBeAny();
-    expectTypeOf<EveryViewsType["length"]>().toEqualTypeOf<2>();
+  it("re-exports the binding entry point's type surface name by name", () => {
+    const surface = [
+      ...new Set(listTypeSurface(path.resolve("src/lib/bindings/index.ts"))),
+    ].sort();
+    expect(surface).toEqual(listPinned("\\./lib/bindings/index\\.js").sort());
+    expectTypeOf<EveryBindingType["length"]>().toEqualTypeOf<17>();
+    // Nothing a binding takes from here is also on the application root.
+    for (const name of surface) {
+      expect(listTypeSurface(path.resolve("src/lib/index.ts"))).not.toContain(
+        name,
+      );
+    }
+  });
+
+  it("keeps the provider's owned records off every entry point", () => {
+    // What the provider builds and owns is not exported: the coordinator,
+    // the filter input, the action run, the row model and the selection
+    // factories, the slice algebra, and the request check.
+    for (const owned of [
+      "createCollectionCoordinator",
+      "createFieldInteraction",
+      "createOperation",
+      "createRowModel",
+      "createSelection",
+      "applyWindow",
+      "areSortsEqual",
+      "collapseSortTerms",
+      "executeSlice",
+      "supportsRequest",
+      "readField",
+      "isCalendarDate",
+    ]) {
+      expect(dataviews).not.toHaveProperty(owned);
+      expect(bindings).not.toHaveProperty(owned);
+    }
+  });
+
+  it("keeps only the saved-view store behind ./indexeddb", () => {
+    expectTypeOf<EveryIndexedDBType>().not.toBeAny();
+    expectTypeOf<EveryIndexedDBType["length"]>().toEqualTypeOf<2>();
     // The contract itself is at the root, where types cost no bytes.
     expectTypeOf<
       ViewStore["create"]
@@ -453,13 +441,13 @@ describe("public surface types", () => {
   });
 
   it("exports the identity functions with the declared shapes", () => {
-    expectTypeOf(dataviews.createIdentity).returns.toEqualTypeOf<Identity>();
-    expectTypeOf(dataviews.isIdentity).parameter(0).toEqualTypeOf<unknown>();
+    expectTypeOf(bindings.createIdentity).returns.toEqualTypeOf<Identity>();
+    expectTypeOf(bindings.isIdentity).parameter(0).toEqualTypeOf<unknown>();
   });
 
   it("narrows unknown values to Identity", () => {
     const value: unknown = undefined;
-    if (dataviews.isIdentity(value)) {
+    if (bindings.isIdentity(value)) {
       expectTypeOf(value).toEqualTypeOf<Identity>();
     }
   });
@@ -469,9 +457,9 @@ describe("public surface types", () => {
     expectTypeOf<object>().not.toExtend<Identity>();
   });
 
-  it("re-exports the query grammar types from the barrel", () => {
-    expectTypeOf(dataviews.canonicalSlice).parameter(0).toEqualTypeOf<Slice>();
-    expectTypeOf(dataviews.sliceEquals).parameters.toEqualTypeOf<
+  it("exports the query grammar with the slice comparison on ./bindings", () => {
+    expectTypeOf(bindings.canonicalSlice).parameter(0).toEqualTypeOf<Slice>();
+    expectTypeOf(bindings.sliceEquals).parameters.toEqualTypeOf<
       [Slice, Slice]
     >();
     expectTypeOf<Query>().toEqualTypeOf<{
@@ -481,22 +469,6 @@ describe("public surface types", () => {
     // Paging never addresses collapse; `setCollapsed` alone does.
     expectTypeOf<WindowNavigation>().toEqualTypeOf<
       Partial<Omit<ResultWindow, "collapsed">>
-    >();
-  });
-
-  it("re-exports the machine handle types from the barrel", () => {
-    expectTypeOf(
-      dataviews.createFieldInteraction,
-    ).returns.toEqualTypeOf<FieldInteraction>();
-    expectTypeOf(dataviews.createOperation).returns.toEqualTypeOf<Operation>();
-    expectTypeOf(
-      dataviews.createCollectionCoordinator<RowRecord>,
-    ).returns.toEqualTypeOf<CollectionCoordinator>();
-    expectTypeOf(
-      dataviews.createSaveSession<{ density: string }>,
-    ).returns.toEqualTypeOf<SaveSession<{ density: string }>>();
-    expectTypeOf(dataviews.createRowModel<RowRecord>).parameters.toEqualTypeOf<
-      [RowModelConfig<RowRecord>]
     >();
   });
 
@@ -510,18 +482,12 @@ describe("public surface types", () => {
     expectTypeOf<GridInteraction["state"]>().toEqualTypeOf<
       ReadonlyChannel<GridInteractionState>
     >();
+    expectTypeOf(bindings.createChannel<number>).returns.toEqualTypeOf<
+      Channel<number>
+    >();
   });
 
-  it("discriminates the command, completion and outcome unions by status", () => {
-    expectTypeOf<QueryCommand["kind"]>().toEqualTypeOf<
-      | "setPredicate"
-      | "removePredicate"
-      | "setSearch"
-      | "setSort"
-      | "setGroup"
-      | "setCollapsed"
-      | "navigateWindow"
-    >();
+  it("discriminates the completion and outcome unions by status", () => {
     expectTypeOf<Completion["status"]>().toEqualTypeOf<
       "succeeded" | "failed" | "refused"
     >();
@@ -648,7 +614,7 @@ describe("public surface types", () => {
     expectTypeOf<SourceRefusalPart>().toEqualTypeOf<
       "filter" | "search" | "sort" | "group" | "window" | "targets"
     >();
-    expectTypeOf(dataviews.supportsRequest).returns.toEqualTypeOf<
+    expectTypeOf<SourceBinding["supports"]>().returns.toEqualTypeOf<
       readonly SourceRefusal[]
     >();
     // Every count is declared on its own, and claimed on its own.
@@ -677,5 +643,22 @@ describe("public surface types", () => {
     expectTypeOf<ArraySource["setRows"]>().parameters.toEqualTypeOf<
       [readonly RowRecord[]]
     >();
+  });
+
+  it("types the adapters' configuration without naming their client's shapes", () => {
+    // The observer TanStack Query mints and the environment Relay hands the
+    // adapter are matched structurally; an application writes the config
+    // and never names the shape the client is held to.
+    expectTypeOf<QuerySourceConfig>().toHaveProperty("observe");
+    expectTypeOf<RelaySourceConfig>().toHaveProperty("environment");
+    const surface = listTypeSurface(path.resolve("src/lib/index.ts"));
+    expect(
+      surface.filter((name) => /^(Relay|Query)/.test(name)).sort(),
+    ).toEqual([
+      "Query",
+      "QueryIssue",
+      "QuerySourceConfig",
+      "RelaySourceConfig",
+    ]);
   });
 });

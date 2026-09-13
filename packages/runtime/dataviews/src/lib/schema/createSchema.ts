@@ -1,10 +1,10 @@
-import type { FieldValidation } from "../field/createFieldInteraction.js";
+import type { FieldValidation } from "../field/index.js";
 import type {
   Predicate,
   PredicateOperand,
   PredicateOperator,
-} from "../query/types.js";
-import { wireNameRejection } from "../wire/wireGrammar.js";
+} from "../query/index.js";
+import { wireNameRejection } from "../wire/index.js";
 import isCalendarDate from "./isCalendarDate.js";
 import type { SchemaFieldDefinition } from "./types.js";
 

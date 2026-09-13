@@ -7,28 +7,28 @@
  * jsdom lays nothing out, so the viewport's height, its scroll position
  * and every row's measured size are the test's to set.
  */
-import type { DataViewsProvider } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
+  type DataViewsProvider,
 } from "@canonical/dataviews-core";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import type { ReactElement } from "react";
-import { StrictMode } from "react";
+import { type ReactElement, StrictMode } from "react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import elementAt from "../../../../../testing/elementAt.js";
 import {
   COUNTED_EXACTLY,
   declaring,
   sorting,
 } from "../../../capabilities.fixtures.js";
-import DataTable from "../../../DataTable/DataTable.js";
-import type {
-  DataTableCellProps,
-  DataTableColumn,
-  DataTableProps,
-} from "../../../DataTable/types.js";
+import {
+  DataTable,
+  type DataTableCellProps,
+  type DataTableColumn,
+  type DataTableProps,
+} from "../../../DataTable/index.js";
 import virtualRows from "../../virtualRows.js";
 
 const schema = createSchema([
@@ -94,6 +94,16 @@ class FakeResizeObserver {
       sizes.map(([target, height]) => ({
         target,
         borderBoxSize: [{ blockSize: height, inlineSize: width }],
+      })) as unknown as ResizeObserverEntry[],
+      this as unknown as ResizeObserver,
+    );
+  }
+  /** Report elements with no box at all, as an engine may for a detached one. */
+  reportNoBox(targets: readonly Element[]): void {
+    this.#callback(
+      targets.map((target) => ({
+        target,
+        borderBoxSize: [],
       })) as unknown as ResizeObserverEntry[],
       this as unknown as ResizeObserver,
     );
@@ -451,6 +461,16 @@ describe("windowed DataTable", () => {
       expect(table.scrollTop).toBe(5020);
     });
 
+    it("ignores a report that carries no box", () => {
+      const { table } = windowedTable();
+      report([[rowOf("host-1"), 30]]);
+      const grown = table.scrollHeight;
+      act(() => {
+        rowObserver().reportNoBox([rowOf("host-1")]);
+      });
+      expect(table.scrollHeight).toBe(grown);
+    });
+
     it("forgets the heights of rows not mounted when the rows' width changes", () => {
       const { table } = windowedTable();
       report(machines(5).map((row) => [rowOf(row.name), 20] as const));
@@ -733,7 +753,9 @@ describe("windowed DataTable", () => {
     );
     load(first, machines(1000));
     load(second, machines(1000));
-    const [one, two] = screen.getAllByRole("table").map(scrollable);
+    const tables = screen.getAllByRole("table").map(scrollable);
+    const one = elementAt(tables, 0);
+    const two = elementAt(tables, 1);
     scrollTo(one, 5000);
     expect(mountedHosts(one)).toContain("host-500");
     expect(mountedHosts(two)[0]).toBe("host-0");

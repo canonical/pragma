@@ -73,16 +73,24 @@ const setPredicate = (slice: Slice, predicate: Predicate): Slice => ({
   ],
 });
 
+/**
+ * Whether two lists are equal element by element. The lengths are compared
+ * first, so the parallel read is in range and asserted in place rather
+ * than handled.
+ */
+const listsEqual = <T>(
+  a: readonly T[],
+  b: readonly T[],
+  equals: (left: T, right: T) => boolean,
+): boolean =>
+  a.length === b.length &&
+  a.every((left, index) => equals(left, b[index] as T));
+
 const collapsedEquals = (
   a: readonly GroupPath[],
   b: readonly GroupPath[],
 ): boolean =>
-  a.length === b.length &&
-  a.every(
-    (path, index) =>
-      path.length === b[index].length &&
-      path.every((key, depth) => Object.is(key, b[index][depth])),
-  );
+  listsEqual(a, b, (left, right) => listsEqual(left, right, Object.is));
 
 /**
  * Apply one addressed query command as a coherent transition: a changed

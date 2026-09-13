@@ -1,8 +1,11 @@
-import type { Slice, SortTerm } from "../query/index.js";
-import { applyWindow, collapseSortTerms } from "../query/index.js";
-import type { SourceDelivery } from "../result/types.js";
-import defaultRowIdentifier from "../rows/defaultRowIdentifier.js";
-import type { RowIdentifier, RowRecord } from "../rows/types.js";
+import {
+  applyWindow,
+  collapseSortTerms,
+  type Slice,
+  type SortTerm,
+} from "../query/index.js";
+import type { SourceDelivery } from "../result/index.js";
+import type { RowRecord } from "../rows/index.js";
 import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
 import { ROOT_NUMERIC_COLLATION } from "./constants.js";
 import copyCapabilities from "./copyCapabilities.js";
@@ -11,7 +14,6 @@ import readProperty from "./readProperty.js";
 import type {
   ActionCapabilities,
   FieldReader,
-  LookupOutcome,
   Source,
   SourceActionRunner,
   SourceRequest,
@@ -57,11 +59,6 @@ export type ArraySourceConfig<TRow extends object = RowRecord> = {
   readonly searchFields?: readonly string[];
   /** How one field is read off a row; own-property lookup by default. */
   readonly read?: FieldReader;
-  /**
-   * Reads one record's stable identity, for lookup by id. Defaults to the
-   * record's own `id`, which must then be a non-empty string.
-   */
-  readonly identify?: RowIdentifier<TRow>;
   /** Row operations by name, with the runner that executes them. */
   readonly actions?: Readonly<Record<string, ActionCapabilities>>;
   /** Runs the declared row operations. Required whenever any is declared. */
@@ -89,8 +86,6 @@ export default function createArraySource<TRow extends object = RowRecord>(
 ): ArraySource<TRow> {
   const { schema, collation = ROOT_NUMERIC_COLLATION } = config;
   const read = config.read ?? readProperty;
-  const identify: (row: TRow) => unknown =
-    config.identify ?? defaultRowIdentifier;
   const searchFields = config.searchFields ?? [];
   const defaultSort = collapseSortTerms(config.defaultSort ?? []);
   for (const term of defaultSort) {
@@ -118,15 +113,10 @@ export default function createArraySource<TRow extends object = RowRecord>(
     counts: { visible: "exact", matched: "exact", total: "exact" },
     pagination: { mode: "offset" },
     selection: { scope: "explicit" },
-    lookup: { batch: null },
     actions: config.actions ?? {},
-    kinds: null,
   });
 
   let rows: readonly TRow[] = Object.freeze([...config.rows]);
-  /** The identity index, built on the first lookup and kept until the
-   * records change. */
-  let index: Map<string, TRow> | null = null;
   /** Deliveries of the live requests; each closure is its own registration. */
   const live = new Set<() => void>();
   /** The last executed query and its result, so a window-only change does
@@ -173,32 +163,9 @@ export default function createArraySource<TRow extends object = RowRecord>(
         live.delete(run);
       };
     },
-    lookup(ids: readonly string[]): Promise<readonly LookupOutcome<TRow>[]> {
-      if (index === null) {
-        index = new Map<string, TRow>();
-        for (const row of rows) {
-          const id = identify(row);
-          // A record with no usable identity cannot be addressed by one, so
-          // it never enters the index and a lookup of it answers "missing".
-          if (typeof id === "string" && id !== "") {
-            index.set(id, row);
-          }
-        }
-      }
-      const built = index;
-      return Promise.resolve(
-        ids.map((id): LookupOutcome<TRow> => {
-          const record = built.get(id);
-          return record === undefined
-            ? { id, status: "missing" }
-            : { id, status: "found", record };
-        }),
-      );
-    },
     setRows(next: readonly TRow[]): void {
       rows = Object.freeze([...next]);
       executed = null;
-      index = null;
       for (const run of [...live]) {
         run();
       }

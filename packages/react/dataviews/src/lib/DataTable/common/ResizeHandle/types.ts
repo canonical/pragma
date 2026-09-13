@@ -1,4 +1,4 @@
-import type { GridInteraction } from "@canonical/dataviews-core";
+import type { GridInteraction } from "@canonical/dataviews-core/bindings";
 
 /**
  * Props of one column's resize handle.

@@ -1,9 +1,9 @@
-import type {
-  ColumnLayout,
-  ColumnSizing,
-  ProviderViews,
-} from "@canonical/dataviews-core";
-import { sizingEquals } from "@canonical/dataviews-core";
+import type { ProviderViews } from "@canonical/dataviews-core";
+import {
+  type ColumnLayout,
+  type ColumnSizing,
+  sizingEquals,
+} from "@canonical/dataviews-core/bindings";
 import { useLayoutEffect } from "react";
 import { boundsOf } from "../columnKeys.js";
 
@@ -38,21 +38,21 @@ export default function usePreferredWidths(
     if (views === null) {
       return;
     }
-    const ids = Object.keys(layout.state.get().declared);
+    const declared = Object.entries(layout.state.get().declared);
 
     /** The width the saved presentation sets a column to, if any. */
-    const implied = (id: string): ColumnSizing | null => {
+    const implied = (id: string, sizing: ColumnSizing): ColumnSizing | null => {
       const width = views.state.get().presentation[widthKey(id)];
       if (typeof width !== "number" || !Number.isFinite(width) || width < 0) {
         return null;
       }
-      const { min, max } = boundsOf(layout.state.get().declared[id]);
+      const { min, max } = boundsOf(sizing);
       return { kind: "fixed", px: Math.min(max, Math.max(min, width)) };
     };
 
     const apply = (): void => {
-      for (const id of ids) {
-        const sizing = implied(id);
+      for (const [id, declaredSizing] of declared) {
+        const sizing = implied(id, declaredSizing);
         if (sizing === null) {
           layout.resetOverride(id);
         } else {
@@ -67,12 +67,12 @@ export default function usePreferredWidths(
     const stopLayout = layout.state.subscribe(() => {
       const { overrides } = layout.state.get();
       const patch: Record<string, number | null> = {};
-      for (const id of ids) {
+      for (const [id, declaredSizing] of declared) {
         const override = overrides[id];
         if (override === seen[id]) {
           continue;
         }
-        const sizing = implied(id);
+        const sizing = implied(id, declaredSizing);
         const agrees =
           override === undefined
             ? sizing === null

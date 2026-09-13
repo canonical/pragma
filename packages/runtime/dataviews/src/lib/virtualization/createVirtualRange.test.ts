@@ -1,6 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
-import displayEntries from "../rows/displayEntries.js";
+import { displayEntries } from "../rows/index.js";
 import createVirtualRange from "./createVirtualRange.js";
+import type { MountedRange, MountedRun } from "./types.js";
+
+/** The one run a range holds, which these cases mount exactly one of. */
+const onlyRun = (range: MountedRange): MountedRun => {
+  const [run, ...rest] = range.runs;
+  if (run === undefined || rest.length > 0) {
+    throw new Error(`expected one run, got ${range.runs.length}`);
+  }
+  return run;
+};
 
 /** Row identities `r-0` to `r-<count - 1>`. */
 const rowIds = (count: number, from = 0): string[] =>
@@ -324,7 +334,7 @@ describe("createVirtualRange", () => {
       range.measure(sizes);
       const whole = sizes.reduce((total, [, size]) => total + size, 0);
       range.setViewport(whole / 2, 100);
-      const [run] = range.get().runs;
+      const run = onlyRun(range.get());
       const mounted = sizes
         .slice(run.start, run.end)
         .reduce((total, [, size]) => total + size, 0);
@@ -338,7 +348,7 @@ describe("createVirtualRange", () => {
     const range = createVirtualRange({ estimates: { record: 32, status: 64 } });
     range.setEntries(records(rowIds(1_000_000)));
     range.setViewport(16_000_000, 640);
-    const [run] = range.get().runs;
+    const run = onlyRun(range.get());
     expect(run.end - run.start).toBe(20 + 1 + 8);
     expect(run.before + (run.end - run.start) * 32 + range.get().after).toBe(
       32_000_000,

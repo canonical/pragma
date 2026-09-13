@@ -1,5 +1,5 @@
-import type { ReadonlyChannel } from "../observable/createChannel.js";
-import type { DisplayEntry, DisplayEntryKind } from "../rows/types.js";
+import type { ReadonlyChannel } from "../observable/index.js";
+import type { DisplayEntry, DisplayEntryKind } from "../rows/index.js";
 
 /** Configuration of one table's virtual range. */
 export type VirtualRangeConfig = {

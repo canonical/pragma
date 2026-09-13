@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { declareSorting } from "../../../testing/fixtures.js";
-import EMPTY_SLICE from "../query/emptySlice.js";
-import type { Slice } from "../query/types.js";
+import { EMPTY_SLICE, type Slice } from "../query/index.js";
 import resolveEffectiveOrdering from "./resolveEffectiveOrdering.js";
 import type { SortCapabilities } from "./types.js";
 

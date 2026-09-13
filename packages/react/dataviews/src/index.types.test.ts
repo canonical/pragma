@@ -28,6 +28,7 @@ import type {
   UseDataViewsFieldResult,
   UseDataViewsResult,
 } from "./index.js";
+import * as dataviewsReact from "./index.js";
 import type { VirtualRowsConfig } from "./lib/virtualization/index.js";
 import { virtualRows } from "./lib/virtualization/index.js";
 
@@ -52,25 +53,20 @@ type EveryPublicType = [
   DataViewsViewsProps,
 ];
 
-/** Every type name one barrel puts on the surface, following its re-exports. */
-const surfaceOf = (barrel: string): string[] => {
+/**
+ * The type names an entry-point barrel puts on the surface. Only an
+ * explicit `export type { … } from` line counts: a barrel that re-exported a
+ * domain whole would carry whatever that domain carries, so the walk fails
+ * on one rather than following it.
+ */
+const listTypeSurface = (barrel: string): string[] => {
   const text = readFileSync(barrel, "utf8");
-  const from = (spec: string): string =>
-    path.join(path.dirname(barrel), spec.replace(/\.js$/, ".ts"));
+  const wildcard = text.match(/^export (?:type )?\* from "[^"]+";/m);
+  if (wildcard !== null) {
+    throw new Error(`${barrel} re-exports a domain whole: ${wildcard[0]}`);
+  }
   const names: string[] = [];
-  for (const [, spec] of text.matchAll(/^export \* from "([^"]+)";/gm)) {
-    names.push(...surfaceOf(from(spec)));
-  }
-  for (const [, spec] of text.matchAll(/^export type \* from "([^"]+)";/gm)) {
-    names.push(
-      ...[
-        ...readFileSync(from(spec), "utf8").matchAll(
-          /^export (?:type|interface) (\w+)/gm,
-        ),
-      ].map(([, name]) => name),
-    );
-  }
-  for (const [, list] of text.matchAll(
+  for (const [, list = ""] of text.matchAll(
     /^export type \{([^}]*)\} from "[^"]+";/gms,
   )) {
     for (const entry of list.split(",")) {
@@ -86,16 +82,20 @@ const surfaceOf = (barrel: string): string[] => {
   return names;
 };
 
-/** The names this file pins, read from its own import of the barrel. */
-const pinned = (): string[] => {
+/** The names this file pins for one entry point, read from its own import. */
+const listPinned = (specifier: string): string[] => {
   // Resolved from the package root, which is where the suite runs: the
   // module's own URL is not a file URL in every project this runs under.
   const text = readFileSync(path.resolve("src/index.types.test.ts"), "utf8");
-  const block = text.match(/import type \{([^}]*)\} from "\.\/index\.js";/s);
+  // The type-only import statement, which the pins are read from; a value
+  // import from the same barrel is deliberately kept apart from it.
+  const block = text.match(
+    new RegExp(`import type \\{([^}]*)\\} from "${specifier}";`, "s"),
+  );
   if (block === null) {
-    throw new Error("this file must import its pins from the barrel");
+    throw new Error(`this file must import its pins from ${specifier}`);
   }
-  return block[1]
+  return (block[1] ?? "")
     .split(",")
     .map((entry) => entry.trim())
     .filter((entry) => entry !== "");
@@ -107,10 +107,33 @@ describe("public surface types", () => {
     // the barrel fails to compile. This is the other direction: a name that
     // *enters* it without a decision, which no type assertion can catch.
     const surface = [
-      ...new Set(surfaceOf(path.resolve("src/lib/index.ts"))),
+      ...new Set(listTypeSurface(path.resolve("src/lib/index.ts"))),
     ].sort();
-    expect(surface).toEqual(pinned().sort());
+    expect(surface).toEqual(listPinned("\\./index\\.js").sort());
     expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<15>();
+  });
+
+  it("re-exports the virtualization entry point's types name by name", () => {
+    const surface = listTypeSurface(
+      path.resolve("src/lib/virtualization/index.ts"),
+    );
+    expect(surface).toEqual(listPinned("\\./lib/virtualization/index\\.js"));
+    expectTypeOf<VirtualRowsConfig["estimatedRowHeight"]>().toBeNumber();
+  });
+
+  it("keeps what the parts share among themselves off the root", () => {
+    // The cell context the table installs, the windowing key it reads and
+    // the row parts a virtualized body reuses are reached by sibling
+    // components through their owner's barrel and by no application.
+    expect(Object.keys(dataviewsReact).sort()).toEqual([
+      "DataTable",
+      "DataViews",
+      "PaginationBar",
+      "useDataViews",
+      "useDataViewsCell",
+      "useDataViewsField",
+      "useDataViewsValue",
+    ]);
   });
 });
 

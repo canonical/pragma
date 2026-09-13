@@ -3,14 +3,14 @@
  * provider. The table's own behaviour is pinned beside it; this pins the
  * binding, which is the whole of the part.
  */
-import type { DataViewsProvider } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
+  type DataViewsProvider,
 } from "@canonical/dataviews-core";
 import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import type { DataTableColumn } from "../../../DataTable/types.js";
+import type { DataTableColumn } from "../../../DataTable/index.js";
 import DataViews from "../../Provider.js";
 import DataTable from "./DataTable.js";
 

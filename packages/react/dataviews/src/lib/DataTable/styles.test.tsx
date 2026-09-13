@@ -13,10 +13,11 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Completion, SortTerm } from "@canonical/dataviews-core";
 import {
+  type Completion,
   createDataViewsProvider,
   createSchema,
+  type SortTerm,
 } from "@canonical/dataviews-core";
 import { act, cleanup, render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -27,7 +28,7 @@ import {
   exact,
   sorting,
 } from "../capabilities.fixtures.js";
-import virtualRows from "../virtualization/virtualRows.js";
+import { virtualRows } from "../virtualization/index.js";
 import DataTable from "./DataTable.js";
 import type { DataTableColumn } from "./types.js";
 
@@ -235,7 +236,7 @@ describe("DataTable stylesheet", () => {
 
   it("styles only classes the table renders", () => {
     const styled = new Set(
-      [...sheet.matchAll(/\.([a-z][\w-]*)/g)].map(([, name]) => name),
+      [...sheet.matchAll(/\.([a-z][\w-]*)/g)].map(([, name = ""]) => name),
     );
     const rendered = classesOf(loaded());
     cleanup();
@@ -434,7 +435,7 @@ describe("DataTable anatomy", () => {
   it("states only DOM the table renders", () => {
     const stated = new Set(
       anatomies.flatMap(([anatomy]) =>
-        [...read(anatomy).matchAll(/DOM `([^`]+)`/g)].map(([, dom]) =>
+        [...read(anatomy).matchAll(/DOM `([^`]+)`/g)].map(([, dom = ""]) =>
           selectorOf(dom),
         ),
       ),

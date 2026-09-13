@@ -7,12 +7,11 @@ import {
   declareCapabilities,
   declareSorting,
 } from "../../../testing/fixtures.js";
-import createDataViewsProvider from "../provider/createDataViewsProvider.js";
-import DEFAULT_WINDOW from "../query/defaultWindow.js";
-import type { Slice } from "../query/types.js";
-import type { SourceDelivery, SourcePage } from "../result/types.js";
-import type { RowRecord } from "../rows/types.js";
-import createSchema from "../schema/createSchema.js";
+import { createDataViewsProvider } from "../provider/index.js";
+import { DEFAULT_WINDOW, type Slice } from "../query/index.js";
+import type { SourceDelivery, SourcePage } from "../result/index.js";
+import type { RowRecord } from "../rows/index.js";
+import { createSchema } from "../schema/index.js";
 import createQuerySource, {
   type QueryObservation,
   type QueryObserver,
@@ -21,7 +20,6 @@ import createSourceBinding from "./createSourceBinding.js";
 import type {
   SourceActionRunner,
   SourceCapabilities,
-  SourceLookup,
   SourceRequest,
 } from "./types.js";
 
@@ -307,22 +305,6 @@ describe("createQuerySource over @tanstack/query-core", () => {
     expect(refuses).toHaveBeenCalledTimes(1);
   });
 
-  it("carries the endpoint's record lookup", async () => {
-    const lookup = vi
-      .fn<SourceLookup>()
-      .mockResolvedValue([{ id: "a", status: "missing" }]);
-    const built = createQuerySource({
-      capabilities: declareCapabilities({ lookup: { batch: 10 } }),
-      queryKey: ["machines"],
-      fetchPage: () => Promise.resolve(page([], 0)),
-      observe: (query) => new TanStackObserver(client(), query),
-      lookup,
-    });
-    await expect(built.lookup?.(["a"])).resolves.toEqual([
-      { id: "a", status: "missing" },
-    ]);
-  });
-
   it("carries the application's row operations", async () => {
     const runAction = vi.fn<SourceActionRunner>().mockResolvedValue([]);
     const built = createQuerySource({
@@ -347,7 +329,6 @@ describe("createQuerySource over @tanstack/query-core", () => {
   it("has no optional port unless the application supplies one", () => {
     const built = source(client(), () => Promise.resolve(page([], 0)));
     expect("refuses" in built).toBe(false);
-    expect("lookup" in built).toBe(false);
     expect("runAction" in built).toBe(false);
   });
 });

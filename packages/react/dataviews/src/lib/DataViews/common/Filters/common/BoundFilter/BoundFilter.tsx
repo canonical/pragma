@@ -1,8 +1,7 @@
 import type { FieldFeedback } from "@canonical/dataviews-core";
-import type { ReactElement } from "react";
-import { useId } from "react";
+import { type ReactElement, useId } from "react";
+import { composeSentence } from "../../../../../utils/index.js";
 import useDataViewsField from "../../../../hooks/useDataViewsField.js";
-import sentenceOf from "../../../../sentenceOf.js";
 import type { BoundFilterProps } from "./types.js";
 
 const componentCssClassName = "ds data-views-filters-bound";
@@ -32,8 +31,8 @@ const feedbackTextOf = (
         : "Enter a value to apply this restriction.";
     case "invalid":
       return feedback.retainsPredicate
-        ? `${sentenceOf(feedback.reason)} ${STILL_APPLIES}`
-        : sentenceOf(feedback.reason);
+        ? `${composeSentence(feedback.reason)} ${STILL_APPLIES}`
+        : composeSentence(feedback.reason);
   }
 };
 

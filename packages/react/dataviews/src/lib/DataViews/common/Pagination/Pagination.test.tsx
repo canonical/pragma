@@ -3,10 +3,10 @@
  * root's provider. The bar's own behaviour is pinned beside it; this pins the
  * binding.
  */
-import type { DataViewsProvider } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
+  type DataViewsProvider,
   DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
 import { act, fireEvent, render, screen } from "@testing-library/react";

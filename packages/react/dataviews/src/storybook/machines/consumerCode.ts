@@ -9,25 +9,25 @@ type ConsumerCode = {
   /** Named imports from `@canonical/dataviews-react`. */
   readonly parts: readonly string[];
   /** Functions from `@canonical/dataviews-core` the declarations use. */
-  readonly core?: readonly string[];
+  readonly core?: readonly string[] | undefined;
   /** Types from `@canonical/dataviews-core` the declarations use. */
-  readonly coreTypes?: readonly string[];
+  readonly coreTypes?: readonly string[] | undefined;
   /** Further import lines, in place of the machines module's default one. */
-  readonly imports?: string;
+  readonly imports?: string | undefined;
   /** Module-level code: columns, custom children. */
-  readonly declarations?: string;
+  readonly declarations?: string | undefined;
   /** The source, as source text; the machines over a local array by default. */
-  readonly source?: string;
+  readonly source?: string | undefined;
   /** The window the provider starts on, as source text. */
-  readonly window?: string;
+  readonly window?: string | undefined;
   /** Commands issued once the source is bound, as source text. */
-  readonly prepare?: string;
+  readonly prepare?: string | undefined;
   /** Keep the binding in state, for children that run actions through it. */
-  readonly keepsBinding?: boolean;
+  readonly keepsBinding?: boolean | undefined;
   /** Give the provider the browser's saved-view store. */
-  readonly views?: boolean;
+  readonly views?: boolean | undefined;
   /** React hooks the declarations use beyond `useEffect` and `useState`. */
-  readonly hooks?: readonly string[];
+  readonly hooks?: readonly string[] | undefined;
   /** What the component renders, as JSX source text. */
   readonly render: string;
 };
@@ -123,7 +123,7 @@ export const consumerCode = ({
         code: [
           `import {
 ${core.map((name) => `  ${name},`).join("\n")}
-} from "@canonical/dataviews-core";${views ? `\nimport { createIndexedDBViewStore } from "@canonical/dataviews-core/views";` : ""}
+} from "@canonical/dataviews-core";${views ? `\nimport { createIndexedDBViewStore } from "@canonical/dataviews-core/indexeddb";` : ""}
 import { ${parts.join(", ")} } from "@canonical/dataviews-react";
 import { ${["useEffect", "useState", ...hooks].join(", ")} } from "react";
 ${imports ?? `import { machineSchema, machines } from "./machines.js";`}`,

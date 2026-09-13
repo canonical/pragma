@@ -5,10 +5,10 @@
  * mutation-tested against that contract.
  */
 import { describe, expect, it, vi } from "vitest";
-import createChannel from "../observable/createChannel.js";
-import createSelection from "../selection/createSelection.js";
+import buildRowModel from "../../../testing/buildRowModel.js";
+import { createChannel } from "../observable/index.js";
+import { createSelection } from "../selection/index.js";
 import createRowScopes from "./createRowScopes.js";
-import { builtRowModel } from "./rowModel.fixtures.js";
 import type { RowModel } from "./types.js";
 
 type Machine = {
@@ -27,13 +27,13 @@ const harness = (
   rows: readonly Machine[],
   fields: readonly string[] = ["status", "cpu"],
 ) => {
-  const model = builtRowModel({ rows });
+  const model = buildRowModel({ rows });
   const channel = createChannel<RowModel<Machine>>(model);
   const selection = createSelection();
   const scopes = createRowScopes({ rows: channel, selection, fields });
   const detach = scopes.observe();
   const publish = (next: readonly Machine[]): void => {
-    channel.set(builtRowModel({ rows: next, previous: channel.get() }));
+    channel.set(buildRowModel({ rows: next, previous: channel.get() }));
   };
   return { channel, selection, scopes, publish, detach };
 };
@@ -59,8 +59,8 @@ describe("createRowScopes", () => {
     const scope = scopes.scope("m-1");
     const status = vi.fn();
     const cpu = vi.fn();
-    scope.fields.status.subscribe(status);
-    scope.fields.cpu.subscribe(cpu);
+    scope.fields["status"]?.subscribe(status);
+    scope.fields["cpu"]?.subscribe(cpu);
     publish([machine("m-1", "stopped", 4)]);
     expect(status).toHaveBeenCalledTimes(1);
     expect(cpu).not.toHaveBeenCalled();
@@ -68,7 +68,7 @@ describe("createRowScopes", () => {
 
   it("publishes undefined for a field the record does not carry", () => {
     const { scopes } = harness([machine("m-1")], ["absent"]);
-    expect(scopes.scope("m-1").fields.absent.get()).toBeUndefined();
+    expect(scopes.scope("m-1").fields["absent"]?.get()).toBeUndefined();
   });
 
   it("collapses a repeated field name to one channel", () => {
@@ -128,7 +128,7 @@ describe("createRowScopes", () => {
       },
     });
     const unchanged = counted("running");
-    const channel = createChannel(builtRowModel({ rows: [unchanged] }));
+    const channel = createChannel(buildRowModel({ rows: [unchanged] }));
     const selection = createSelection();
     const scopes = createRowScopes({
       rows: channel,
@@ -139,14 +139,14 @@ describe("createRowScopes", () => {
     const minted = reads;
     // The same record object comes back for an unchanged row, and records
     // are immutable, so nothing is re-read.
-    channel.set(builtRowModel({ rows: [unchanged], previous: channel.get() }));
+    channel.set(buildRowModel({ rows: [unchanged], previous: channel.get() }));
     expect(reads).toBe(minted);
     // A replaced record is read once per observed field.
     channel.set(
-      builtRowModel({ rows: [counted("stopped")], previous: channel.get() }),
+      buildRowModel({ rows: [counted("stopped")], previous: channel.get() }),
     );
     expect(reads).toBe(minted + 1);
-    expect(scopes.scope("m-1").fields.status.get()).toBe("stopped");
+    expect(scopes.scope("m-1").fields["status"]?.get()).toBe("stopped");
   });
 
   it("reads a record's own fields only, never the prototype chain", () => {
@@ -154,7 +154,7 @@ describe("createRowScopes", () => {
     const { scopes } = harness([machine("m-1")], inherited);
     const scope = scopes.scope("m-1");
     for (const name of inherited) {
-      expect(scope.fields[name].get()).toBeUndefined();
+      expect(scope.fields[name]?.get()).toBeUndefined();
     }
   });
 
@@ -171,7 +171,7 @@ describe("createRowScopes", () => {
   });
 
   it("observes nothing until it is asked to, then catches up", () => {
-    const model = builtRowModel({ rows: [machine("m-1")] });
+    const model = buildRowModel({ rows: [machine("m-1")] });
     const channel = createChannel<RowModel<Machine>>(model);
     const selection = createSelection();
     const scopes = createRowScopes({
@@ -182,7 +182,7 @@ describe("createRowScopes", () => {
     // A registry nobody attached — a discarded render's, or a server
     // render's — subscribed to nothing, so this publication reaches it only
     // when it starts observing.
-    channel.set(builtRowModel({ rows: [machine("m-1"), machine("m-2")] }));
+    channel.set(buildRowModel({ rows: [machine("m-1"), machine("m-2")] }));
     selection.set(["m-1"]);
     expect(scopes.ids.get()).toEqual(["m-1"]);
     scopes.observe();

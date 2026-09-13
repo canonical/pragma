@@ -1,32 +1,30 @@
-import type { RowRecord } from "@canonical/dataviews-core";
-import { DEFAULT_WINDOW } from "@canonical/dataviews-core";
+import { DEFAULT_WINDOW, type RowRecord } from "@canonical/dataviews-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { ComponentType, ReactElement, ReactNode } from "react";
-import { useState } from "react";
+import {
+  type ComponentType,
+  type ReactElement,
+  type ReactNode,
+  useState,
+} from "react";
 import { expect, userEvent, waitFor } from "storybook/test";
-import type {
-  MachineFields,
-  SortableField,
-} from "../../storybook/machines/fixtures.js";
 import {
   createEmptySource,
   createFailingSource,
   createMachineSource,
   createPendingSource,
+  type MachineFields,
   manyMachines,
+  type SortableField,
 } from "../../storybook/machines/fixtures.js";
-import type {
-  MachineProvider,
-  MachineProviderConfig,
-} from "../../storybook/machines/story-utils.js";
 import {
   hostName,
+  type MachineProvider,
+  type MachineProviderConfig,
   useMachineProvider,
   withAppScope,
   withFrame,
 } from "../../storybook/machines/story-utils.js";
-import useDataViewsCell from "../DataViews/hooks/useDataViewsCell.js";
-import useDataViewsValue from "../DataViews/hooks/useDataViewsValue.js";
+import { useDataViewsCell, useDataViewsValue } from "../DataViews/index.js";
 import { virtualRows } from "../virtualization/index.js";
 import Component from "./DataTable.js";
 import type {
@@ -70,7 +68,7 @@ function MachinesTable({
   ...args
 }: StoryTableProps & {
   readonly columns: readonly DataTableColumn[];
-  readonly options?: MachineProviderConfig;
+  readonly options?: MachineProviderConfig | undefined;
 }): ReactElement {
   const provider = useMachineProvider(options);
   return (
@@ -183,7 +181,7 @@ const searchForNothing = (provider: MachineProvider): void => {
 };
 
 const consumerImports = `import { createDataViewsProvider } from "@canonical/dataviews-core";
-import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
+import { DataTable, useDataViewsCell, useDataViewsValue, type DataTableColumn } from "@canonical/dataviews-react";
 import { machineSchema, source } from "./machines.js";`;
 
 /**
@@ -193,7 +191,10 @@ import { machineSchema, source } from "./machines.js";`;
  */
 const consumer = (
   body: string,
-  options: { readonly imports?: string; readonly provider?: string } = {},
+  options: {
+    readonly imports?: string | undefined;
+    readonly provider?: string;
+  } = {},
 ): NonNullable<Story["parameters"]> => ({
   docs: {
     source: {
@@ -370,7 +371,7 @@ export const Selectable: Story = {
     // The select-all header leads the row: the stylesheet's track, from the
     // design's 32px dimension token.
     const [selection, ...columns] = canvas.getAllByRole("columnheader");
-    await expect(widthOf(selection)).toBe(32);
+    await expect(selection === undefined ? null : widthOf(selection)).toBe(32);
     // The data columns share exactly what that track leaves.
     const shared = columns.reduce(
       (total, column) => total + column.getBoundingClientRect().width,
@@ -857,7 +858,6 @@ const columns: readonly DataTableColumn[] = [
 />;`,
     {
       imports: `import type { DataTableCellProps } from "@canonical/dataviews-react";
-import { useDataViewsCell, useDataViewsValue } from "@canonical/dataviews-react";
 import type { Machine } from "./machines.js";`,
     },
   ),
@@ -1153,20 +1153,21 @@ const columns: readonly DataTableColumn[] = [
     };
     await frames();
     const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
-    const [first] = rows().filter(
+    const first = rows().find(
       (row) => row.getBoundingClientRect().bottom > headerBottom,
     );
-    const top = first.getBoundingClientRect().top;
+    const top = first?.getBoundingClientRect().top;
+    await expect(top).toBeDefined();
     // Settled, and measured: the row being read holds still.
     await frames();
-    await expect(first.getBoundingClientRect().top).toBe(top);
+    await expect(first?.getBoundingClientRect().top).toBe(top);
     // The mounted rows cover the viewport, with no blank band at either end.
     const mounted = rows();
-    await expect(mounted[0].getBoundingClientRect().top).toBeLessThanOrEqual(
-      headerBottom,
-    );
     await expect(
-      mounted[mounted.length - 1].getBoundingClientRect().bottom,
+      mounted.at(0)?.getBoundingClientRect().top,
+    ).toBeLessThanOrEqual(headerBottom);
+    await expect(
+      mounted.at(-1)?.getBoundingClientRect().bottom,
     ).toBeGreaterThanOrEqual(table.getBoundingClientRect().bottom - 1);
     await expect(
       new Set(

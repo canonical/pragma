@@ -6,15 +6,15 @@
  * runs a competing one.
  */
 
-import type { OperationOutcome } from "../operation/createOperation.js";
+import type { OperationOutcome } from "../operation/index.js";
 import type {
   PredicateOperator,
   Query,
   Slice,
   SortTerm,
-} from "../query/types.js";
-import type { SourceDelivery, SourceRefusal } from "../result/types.js";
-import type { RowRecord } from "../rows/types.js";
+} from "../query/index.js";
+import type { SourceDelivery, SourceRefusal } from "../result/index.js";
+import type { RowRecord } from "../rows/index.js";
 
 /** One executable request: the issued identity and the query it addresses. */
 export type SourceRequest = Query & {
@@ -130,19 +130,6 @@ export type ActionCapabilities = {
 };
 
 /**
- * What a source may declare per record kind when its collection holds
- * several types. The collection-level members are what every kind
- * supports; a kind may support more.
- *
- * Seam for the polymorphism unit: the rule for combining these across the
- * kinds present, and whether identity is scoped by kind, are that unit's.
- */
-export type KindCapabilities = Pick<
-  SourceCapabilities,
-  "filter" | "sort" | "actions" | "lookup"
->;
-
-/**
  * What a source declares it can execute. Pure data: copied, frozen and
  * compared by the binding, carried by the provider, read by every control.
  * Absence means unavailable, never "probably supported". The binding checks
@@ -162,21 +149,8 @@ export type SourceCapabilities = {
   readonly pagination: PaginationCapabilities;
   /** Whether actions may address every row matching a query, not only ids. */
   readonly selection: { readonly scope: "explicit" | "query" };
-  /**
-   * Record lookup by identity; `batch` is the most ids per call and null is
-   * unbounded. Null declares no lookup, and the `lookup` port must then be
-   * absent.
-   */
-  readonly lookup: { readonly batch: number | null } | null;
   /** Row operations by name. A name absent here cannot be run. */
   readonly actions: Readonly<Record<string, ActionCapabilities>>;
-  /**
-   * Per-record-kind narrowing, or null for a monomorphic collection, which
-   * needs nothing else.
-   *
-   * Seam for the polymorphism unit.
-   */
-  readonly kinds: Readonly<Record<string, KindCapabilities>> | null;
 };
 
 /**
@@ -205,21 +179,6 @@ export type SourceActionRunner = (
 ) => Promise<readonly OperationOutcome[]>;
 
 /**
- * One record looked up by identity. Missing, forbidden and failed stay
- * distinct, and a forbidden record carries nothing of the record.
- */
-export type LookupOutcome<TRow extends object = RowRecord> =
-  | { readonly id: string; readonly status: "found"; readonly record: TRow }
-  | { readonly id: string; readonly status: "missing" }
-  | { readonly id: string; readonly status: "forbidden" }
-  | { readonly id: string; readonly status: "failed"; readonly reason: string };
-
-/** Look records up by identity, one outcome per id in the order given. */
-export type SourceLookup<TRow extends object = RowRecord> = (
-  ids: readonly string[],
-) => Promise<readonly LookupOutcome<TRow>[]>;
-
-/**
  * A source: a declaration plus request-scoped execution ports. The binding
  * checks at construction that every declared capability has the port that
  * serves it and throws otherwise.
@@ -246,16 +205,8 @@ export type Source<TRow extends object = RowRecord> = {
     request: SourceRequest,
     deliver: (delivery: SourceDelivery<TRow>) => void,
   ) => () => void;
-  /** Records by identity; present exactly when `capabilities.lookup` is. */
-  readonly lookup?: SourceLookup<TRow>;
   /** Run one action; present whenever `capabilities.actions` has a name. */
   readonly runAction?: SourceActionRunner;
-  /**
-   * The kind of one record; present exactly when `capabilities.kinds` is.
-   *
-   * Seam for the polymorphism unit.
-   */
-  readonly kindOf?: (row: TRow) => string;
 };
 
 /** How one field is read off an opaque row. */

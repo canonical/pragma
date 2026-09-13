@@ -3,9 +3,8 @@ import type {
   RowRecord,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
-import type { ReactElement } from "react";
-import { useContext } from "react";
-import Table from "../../../DataTable/DataTable.js";
+import { type ReactElement, useContext } from "react";
+import { DataTable as Table } from "../../../DataTable/index.js";
 import DataViewsContext from "../../Context.js";
 import type { DataViewsDataTableProps } from "./types.js";
 

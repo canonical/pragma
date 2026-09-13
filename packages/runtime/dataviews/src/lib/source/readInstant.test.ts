@@ -85,12 +85,12 @@ describe("readInstant", () => {
     // Every spelling reads as the same instant wherever it is read; a local
     // clock anywhere in the arithmetic would move it with the zone. The zone
     // is off the hour, so an hour-shaped mistake cannot cancel out.
-    const zone = process.env.TZ;
+    const zone = process.env["TZ"];
     beforeAll(() => {
-      process.env.TZ = "America/St_Johns";
+      process.env["TZ"] = "America/St_Johns";
     });
     afterAll(() => {
-      process.env.TZ = zone;
+      process.env["TZ"] = zone;
     });
 
     it("reads calendar dates and instants as they are read in UTC", () => {

@@ -1,5 +1,4 @@
-import type { ReactElement } from "react";
-import { memo } from "react";
+import { memo, type ReactElement } from "react";
 import { Row } from "../Row/index.js";
 import { StatusRow } from "../StatusRow/index.js";
 import type { TableBodyProps } from "./types.js";
@@ -11,7 +10,6 @@ function TableBody<TRow extends object>({
   scopes,
   entries,
   columns,
-  fields,
   selectable,
   rowLabel,
   renderStatus,
@@ -32,7 +30,6 @@ function TableBody<TRow extends object>({
             provider={provider}
             scope={scopes.scope(entry.rowId)}
             columns={columns}
-            fields={fields}
             selectable={selectable}
             rowLabel={rowLabel}
           />

@@ -1,0 +1,36 @@
+{
+  "name": "@canonical/typescript-config-strict",
+  "version": "0.37.0",
+  "description": "Canonical's stricter-than-strict TypeScript configuration: the checks `strict` leaves off, for packages that adopt them",
+  "main": "tsconfig.json",
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/pragma"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/pragma/issues"
+  },
+  "homepage": "https://github.com/canonical/pragma#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "check": "bun run check:biome",
+    "check:fix": "bun run check:biome:fix",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.12",
+    "@canonical/biome-config": "^0.37.0",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

@@ -3,10 +3,9 @@
  * including the owned parameters it rejected.
  */
 
-import type { Query, ResultWindow, Slice } from "../query/types.js";
-import type { Schema } from "../schema/createSchema.js";
-import type { SchemaFieldDefinition } from "../schema/types.js";
-import type { SourceCapabilities } from "../source/types.js";
+import type { Query, ResultWindow, Slice } from "../query/index.js";
+import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
+import type { SourceCapabilities } from "../source/index.js";
 
 /**
  * One refusal of an owned parameter — by the grammar, the schema or the
@@ -60,5 +59,5 @@ export type DecodeQueryConfig = {
    * like a malformed one, so an unexecutable link never becomes the query.
    * Omitted or null, only the grammar and the schema are checked.
    */
-  readonly capabilities?: SourceCapabilities | null;
+  readonly capabilities?: SourceCapabilities | null | undefined;
 };

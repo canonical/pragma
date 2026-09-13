@@ -12,7 +12,7 @@ import {
 } from "@canonical/dataviews-core";
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import DataTable from "../../../DataTable/DataTable.js";
+import { DataTable } from "../../../DataTable/index.js";
 import virtualRows from "../../virtualRows.js";
 
 const sheet = readFileSync(

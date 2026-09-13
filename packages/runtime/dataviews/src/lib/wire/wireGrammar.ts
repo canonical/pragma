@@ -6,7 +6,7 @@
  * URL belongs to the host.
  */
 
-import type { PredicateOperator } from "../query/types.js";
+import type { PredicateOperator } from "../query/index.js";
 
 /** The delimiter between a field's wire name and its operator. */
 export const OPERATOR_DELIMITER = "__";

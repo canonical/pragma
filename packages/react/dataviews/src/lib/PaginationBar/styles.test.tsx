@@ -13,11 +13,11 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { SourcePage } from "@canonical/dataviews-core";
 import {
   createDataViewsProvider,
   createSchema,
   DEFAULT_WINDOW,
+  type SourcePage,
 } from "@canonical/dataviews-core";
 import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -106,7 +106,7 @@ const navigation = "& > .trailing > .navigation";
 describe("PaginationBar stylesheet", () => {
   it("styles only classes the bar renders", () => {
     const styled = new Set(
-      [...sheet.matchAll(/\.([a-z][\w-]*)/g)].map(([, name]) => name),
+      [...sheet.matchAll(/\.([a-z][\w-]*)/g)].map(([, name = ""]) => name),
     );
     const rendered = new Set(
       [...loaded().querySelectorAll("[class]")].flatMap((element) => [
@@ -218,7 +218,7 @@ describe("PaginationBar anatomy", () => {
   });
 
   it("states only DOM the bar renders", () => {
-    const stated = [...anatomy.matchAll(/DOM `([^`]+)`/g)].map(([, dom]) =>
+    const stated = [...anatomy.matchAll(/DOM `([^`]+)`/g)].map(([, dom = ""]) =>
       selectorOf(dom),
     );
     expect(stated.length).toBeGreaterThan(0);
@@ -235,7 +235,7 @@ describe("PaginationBar anatomy", () => {
       ["previous", "Previous page"],
       ["next", "Next page"],
       ["last", "Last page"],
-    ]) {
+    ] as const) {
       expect(anatomy).toMatch(new RegExp(`slotName: ${name}$`, "m"));
       expect(anatomy).toMatch(new RegExp(`DOM \`\\.${name}\``));
       expect(screen.getByRole("button", { name: destination })).toHaveClass(

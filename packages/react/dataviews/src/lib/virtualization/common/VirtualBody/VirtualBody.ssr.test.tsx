@@ -9,7 +9,7 @@ import {
 } from "@canonical/dataviews-core";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import DataTable from "../../../DataTable/DataTable.js";
+import { DataTable } from "../../../DataTable/index.js";
 import virtualRows from "../../virtualRows.js";
 
 const schema = createSchema([

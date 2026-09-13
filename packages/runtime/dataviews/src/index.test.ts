@@ -1,98 +1,60 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import * as dataviews from "./index.js";
+import * as bindings from "./lib/bindings/index.js";
+import * as indexeddb from "./lib/indexeddb/index.js";
+import * as virtualization from "./lib/virtualization/index.js";
 
 const EMPTY_SLICE = dataviews.EMPTY_SLICE;
 
+/** The package manifest, whose `exports` map names every entry point. */
+const manifest = (): { readonly exports: Record<string, unknown> } =>
+  JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+
 describe("public surface", () => {
-  it("exports exactly the public API", () => {
+  it("exports exactly the application's runtime API from the root", () => {
     expect(Object.keys(dataviews).sort()).toEqual([
       "DEFAULT_WINDOW",
       "EMPTY_SLICE",
-      "applyWindow",
-      "areSortsEqual",
-      "canonicalSlice",
-      "collapseSortTerms",
-      "columnTemplate",
       "createArraySource",
-      "createChannel",
-      "createCollectionCoordinator",
-      "createColumnLayout",
       "createDataViewsProvider",
-      "createFieldInteraction",
-      "createGridInteraction",
-      "createIdentity",
       "createLocationBinding",
       "createMemoryLocation",
-      "createOperation",
       "createPlatformLocation",
       "createQuerySource",
       "createRelaySource",
-      "createRowModel",
-      "createRowScopes",
-      "createSaveSession",
       "createSchema",
-      "createSelection",
       "createSourceBinding",
       "decodeQuery",
-      "displayEntries",
       "encodeQuery",
-      "executeSlice",
-      "isCalendarDate",
-      "isIdentity",
-      "readField",
-      "resolveColumns",
-      "sizingEquals",
-      "sliceEquals",
-      "supportsRequest",
     ]);
   });
 
   it("wires the barrel to working functions", () => {
-    expect(dataviews.isIdentity(dataviews.createIdentity())).toBe(true);
-    expect(dataviews.createCollectionCoordinator().state.result.status).toBe(
-      "idle",
-    );
     expect(
       dataviews.createSchema([{ field: "owner", kind: "flag" }]).fieldNames,
     ).toEqual(["owner"]);
-    expect(dataviews.createChannel(0).get()).toBe(0);
-    expect(dataviews.createSelection().state.get().ids.size).toBe(0);
-    expect(dataviews.applyWindow(["a"], dataviews.DEFAULT_WINDOW)).toEqual([
-      "a",
-    ]);
-    expect(dataviews.createRowModel({ rows: [{ id: "a" }] })).toMatchObject({
-      status: "built",
-      model: { ids: ["a"] },
-    });
-    expect(
-      dataviews.columnTemplate(
-        [{ id: "a", sizing: { kind: "fixed", px: 8 } }],
-        null,
-      ),
-    ).toBe("8px");
-    expect(
-      dataviews.sizingEquals(
-        { kind: "fixed", px: 8 },
-        { kind: "fixed", px: 8 },
-      ),
-    ).toBe(true);
     const idSchema = dataviews.createSchema([{ field: "id", kind: "text" }]);
     const source = dataviews.createArraySource({
       rows: [{ id: "a" }],
       schema: idSchema,
     });
+    const provider = dataviews.createDataViewsProvider({
+      schema: idSchema,
+      capabilities: source.capabilities,
+    });
+    const binding = dataviews.createSourceBinding({ host: provider, source });
     expect(
-      dataviews.supportsRequest(source.capabilities, {
+      binding.supports({
         slice: EMPTY_SLICE,
         window: dataviews.DEFAULT_WINDOW,
       }),
     ).toEqual([]);
-    expect(
-      dataviews.executeSlice([{ id: "a" }], EMPTY_SLICE, {
-        schema: idSchema,
-        sort: source.capabilities.sort,
-      }),
-    ).toEqual([{ id: "a" }]);
+    const release = binding.observe();
+    provider.refresh();
+    expect(provider.rows.get().ids).toEqual(["a"]);
+    release();
+    provider.dispose();
   });
 
   it("wires the wire grammar and the location loop through the barrel", () => {
@@ -132,31 +94,63 @@ describe("public surface", () => {
     ).toEqual({ ...dataviews.DEFAULT_WINDOW, page: 3 });
   });
 
-  it("keeps the virtual range out of the root, behind its own entry point", async () => {
-    expect(dataviews).not.toHaveProperty("createVirtualRange");
-    const virtualization = await import("./lib/virtualization/index.js");
-    expect(Object.keys(virtualization)).toEqual(["createVirtualRange"]);
-    const { readFileSync } = await import("node:fs");
-    const manifest = JSON.parse(
-      readFileSync(new URL("../package.json", import.meta.url), "utf8"),
-    );
-    expect(manifest.exports["./virtualization"]).toEqual({
-      types: "./dist/types/lib/virtualization/index.d.ts",
-      import: "./dist/esm/lib/virtualization/index.js",
-    });
+  it("names every entry point in the manifest, and no other", () => {
+    expect(Object.keys(manifest().exports)).toEqual([
+      ".",
+      "./bindings",
+      "./indexeddb",
+      "./virtualization",
+    ]);
+    for (const entry of ["bindings", "indexeddb", "virtualization"]) {
+      expect(manifest().exports[`./${entry}`]).toEqual({
+        types: `./dist/types/lib/${entry}/index.d.ts`,
+        import: `./dist/esm/lib/${entry}/index.js`,
+      });
+    }
   });
 
-  it("keeps saved-view storage out of the root, behind its own entry point", async () => {
+  it("hands framework bindings their shared machinery from ./bindings", () => {
+    expect(Object.keys(bindings).sort()).toEqual([
+      "canonicalSlice",
+      "columnTemplate",
+      "createChannel",
+      "createColumnLayout",
+      "createGridInteraction",
+      "createIdentity",
+      "createRowScopes",
+      "displayEntries",
+      "isIdentity",
+      "resolveColumns",
+      "sizingEquals",
+      "sliceEquals",
+    ]);
+    for (const name of Object.keys(bindings)) {
+      expect(dataviews).not.toHaveProperty(name);
+    }
+    expect(bindings.isIdentity(bindings.createIdentity())).toBe(true);
+    expect(bindings.createChannel(0).get()).toBe(0);
+    expect(
+      bindings.columnTemplate(
+        [{ id: "a", sizing: { kind: "fixed", px: 8 } }],
+        null,
+      ),
+    ).toBe("8px");
+    expect(
+      bindings.sizingEquals({ kind: "fixed", px: 8 }, { kind: "fixed", px: 8 }),
+    ).toBe(true);
+    expect(bindings.sliceEquals(EMPTY_SLICE, EMPTY_SLICE)).toBe(true);
+    expect(bindings.displayEntries({ rowIds: ["a"], status: null })).toEqual([
+      { kind: "record", id: "record:a", index: 2, parent: null, rowId: "a" },
+    ]);
+  });
+
+  it("keeps saved-view storage out of the root, behind ./indexeddb", () => {
     expect(dataviews).not.toHaveProperty("createIndexedDBViewStore");
-    const views = await import("./lib/views/index.js");
-    expect(Object.keys(views)).toEqual(["createIndexedDBViewStore"]);
-    const { readFileSync } = await import("node:fs");
-    const manifest = JSON.parse(
-      readFileSync(new URL("../package.json", import.meta.url), "utf8"),
-    );
-    expect(manifest.exports["./views"]).toEqual({
-      types: "./dist/types/lib/views/index.d.ts",
-      import: "./dist/esm/lib/views/index.js",
-    });
+    expect(Object.keys(indexeddb)).toEqual(["createIndexedDBViewStore"]);
+  });
+
+  it("keeps the virtual range out of the root, behind ./virtualization", () => {
+    expect(dataviews).not.toHaveProperty("createVirtualRange");
+    expect(Object.keys(virtualization)).toEqual(["createVirtualRange"]);
   });
 });

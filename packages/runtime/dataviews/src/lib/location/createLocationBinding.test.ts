@@ -9,14 +9,17 @@ import {
   declareCapabilities,
   NOTHING_DECLARED,
 } from "../../../testing/fixtures.js";
-import createDataViewsProvider from "../provider/createDataViewsProvider.js";
-import DEFAULT_WINDOW from "../query/defaultWindow.js";
-import type { Query, ResultWindow, Slice } from "../query/types.js";
-import type { Completion } from "../result/types.js";
-import type { RowRecord } from "../rows/types.js";
-import createSchema from "../schema/createSchema.js";
-import createArraySource from "../source/createArraySource.js";
-import createSourceBinding from "../source/createSourceBinding.js";
+import { createDataViewsProvider } from "../provider/index.js";
+import {
+  DEFAULT_WINDOW,
+  type Query,
+  type ResultWindow,
+  type Slice,
+} from "../query/index.js";
+import type { Completion } from "../result/index.js";
+import type { RowRecord } from "../rows/index.js";
+import { createSchema } from "../schema/index.js";
+import { createArraySource, createSourceBinding } from "../source/index.js";
 import type { LocationHost } from "./createLocationBinding.js";
 import createLocationBinding from "./createLocationBinding.js";
 import createMemoryLocation from "./createMemoryLocation.js";

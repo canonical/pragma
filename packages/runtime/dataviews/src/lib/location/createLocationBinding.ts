@@ -1,16 +1,14 @@
-import type { CollectionState } from "../collection/createCollectionCoordinator.js";
-import type { ReadonlyChannel } from "../observable/createChannel.js";
-import createChannel from "../observable/createChannel.js";
-import { areSortsEqual } from "../query/index.js";
-import sliceEquals from "../query/sliceEquals.js";
-import type { Query } from "../query/types.js";
-import type { Schema } from "../schema/createSchema.js";
-import type { SchemaFieldDefinition } from "../schema/types.js";
-import type { SourceCapabilities } from "../source/types.js";
-import decodeQuery from "../wire/decodeQuery.js";
-import encodeQuery from "../wire/encodeQuery.js";
-import type { QueryIssue } from "../wire/types.js";
-import { isOwnedKey } from "../wire/wireGrammar.js";
+import type { CollectionState } from "../collection/index.js";
+import { createChannel, type ReadonlyChannel } from "../observable/index.js";
+import { areSortsEqual, type Query, sliceEquals } from "../query/index.js";
+import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
+import type { SourceCapabilities } from "../source/index.js";
+import {
+  decodeQuery,
+  encodeQuery,
+  isOwnedKey,
+  type QueryIssue,
+} from "../wire/index.js";
 import type { Location } from "./types.js";
 
 /**
@@ -113,11 +111,11 @@ const issuesEqual = (
   b: readonly QueryIssue[],
 ): boolean =>
   a.length === b.length &&
-  a.every(
-    (issue, index) =>
-      issue.parameter === b[index].parameter &&
-      issue.reason === b[index].reason,
-  );
+  a.every((issue, index) => {
+    // In range: the lengths were compared first.
+    const other = b[index] as QueryIssue;
+    return issue.parameter === other.parameter && issue.reason === other.reason;
+  });
 
 /**
  * Bind a Location to a host's query authority.

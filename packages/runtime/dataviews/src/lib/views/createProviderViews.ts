@@ -1,16 +1,19 @@
-import type { CollectionState } from "../collection/createCollectionCoordinator.js";
-import type { ReadonlyChannel } from "../observable/createChannel.js";
-import createChannel from "../observable/createChannel.js";
-import sliceEquals from "../query/sliceEquals.js";
-import type { Query, ResultWindow, Slice } from "../query/types.js";
-import type { Schema } from "../schema/createSchema.js";
-import type { SchemaFieldDefinition } from "../schema/types.js";
-import reasonOf from "../source/reasonOf.js";
-import type { SourceCapabilities } from "../source/types.js";
-import decodeQuery from "../wire/decodeQuery.js";
-import encodeQuery from "../wire/encodeQuery.js";
-import type { QueryIssue } from "../wire/types.js";
-import { isOwnedKey } from "../wire/wireGrammar.js";
+import type { CollectionState } from "../collection/index.js";
+import { createChannel, type ReadonlyChannel } from "../observable/index.js";
+import {
+  type Query,
+  type ResultWindow,
+  type Slice,
+  sliceEquals,
+} from "../query/index.js";
+import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
+import { reasonOf, type SourceCapabilities } from "../source/index.js";
+import {
+  decodeQuery,
+  encodeQuery,
+  isOwnedKey,
+  type QueryIssue,
+} from "../wire/index.js";
 import type {
   JsonValue,
   PresentationPatch,
@@ -142,10 +145,15 @@ const settleLayer = (
     if (change <= since && !layer.failed.has(key)) {
       continue;
     }
-    if (Object.hasOwn(layer.values, key)) {
-      values[key] = layer.values[key];
-    } else {
+    // An own property only: a key naming a prototype member has no value
+    // just because the prototype has that member.
+    const value = Object.hasOwn(layer.values, key)
+      ? layer.values[key]
+      : undefined;
+    if (value === undefined) {
       delete values[key];
+    } else {
+      values[key] = value;
     }
   }
   layer.values = values;

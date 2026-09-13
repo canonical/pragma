@@ -3,10 +3,9 @@ import {
   declareCapabilities,
   declareSorting,
 } from "../../../testing/fixtures.js";
-import DEFAULT_WINDOW from "../query/defaultWindow.js";
-import type { Slice } from "../query/types.js";
-import type { Completion } from "../result/types.js";
-import createSchema from "../schema/createSchema.js";
+import { DEFAULT_WINDOW, type Slice } from "../query/index.js";
+import type { Completion } from "../result/index.js";
+import { createSchema } from "../schema/index.js";
 import createDataViewsProvider from "./createDataViewsProvider.js";
 import type { RecordTypes } from "./types.js";
 
@@ -484,7 +483,7 @@ describe("createDataViewsProvider", () => {
     expect(p.capabilities).toEqual(declared);
     expect(p.capabilities).not.toBe(declared);
     expect(Object.isFrozen(p.capabilities)).toBe(true);
-    expect(Object.isFrozen(p.capabilities?.filter.status)).toBe(true);
+    expect(Object.isFrozen(p.capabilities?.filter["status"])).toBe(true);
   });
 });
 
