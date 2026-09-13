@@ -34,7 +34,6 @@ import type {
   Source,
   SourceActionRunner,
   SourceCapabilities,
-  SourceLookup,
   SourceRequest,
 } from "./types.js";
 
@@ -1199,22 +1198,18 @@ describe("createRelaySource over relay-runtime", () => {
     expect(adapter.capabilities.sort.fields).toEqual(["name"]);
   });
 
-  it("carries the application's lookup and row operations", () => {
+  it("carries the application's row operations", () => {
     const { environment } = relay();
     const runAction: SourceActionRunner = vi.fn().mockResolvedValue([]);
-    const lookup: SourceLookup = vi.fn().mockResolvedValue([]);
     const adapter = createRelaySource<MachinesOperation>({
       capabilities: connectionCapabilities,
       environment,
       operation,
       connection: (data: MachinesData) => data.machines,
-      lookup,
       runAction,
     });
-    expect(adapter.lookup).toBe(lookup);
     expect(adapter.runAction).toBe(runAction);
     const plain = source(environment);
-    expect("lookup" in plain).toBe(false);
     expect("runAction" in plain).toBe(false);
   });
 });

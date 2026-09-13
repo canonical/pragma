@@ -23,11 +23,9 @@ import createArraySource from "./createArraySource.js";
 import createSourceBinding, { type SourceHost } from "./createSourceBinding.js";
 import type {
   ActionCapabilities,
-  KindCapabilities,
   Source,
   SourceActionRunner,
   SourceCapabilities,
-  SourceLookup,
   SourceRequest,
 } from "./types.js";
 
@@ -192,13 +190,6 @@ const structuralHost = () => {
   };
 };
 
-const machineKind: KindCapabilities = {
-  filter: { status: ["eq"] },
-  sort: declareSorting(["cpu"], 2),
-  actions: {},
-  lookup: null,
-};
-
 describe("createSourceBinding construction", () => {
   it("binds a host told its source's own declaration, however spelled", () => {
     const spelled = declareCapabilities({
@@ -213,16 +204,12 @@ describe("createSourceBinding construction", () => {
         summaries: "none",
         collapse: false,
       },
-      lookup: { batch: 10 },
       actions: { stop: { targets: "explicit", limit: null } },
-      kinds: { machine: machineKind, image: machineKind },
     });
     const source: Source = {
       capabilities: spelled,
       execute: () => () => {},
-      lookup: () => Promise.resolve([]),
       runAction: () => Promise.resolve([]),
-      kindOf: () => "machine",
     };
     const told = createDataViewsProvider({
       schema,
@@ -238,7 +225,6 @@ describe("createSourceBinding construction", () => {
           summaries: "none",
           collapse: false,
         },
-        kinds: { image: machineKind, machine: machineKind },
       },
     });
     const binding = createSourceBinding({ host: told, source });
@@ -251,55 +237,6 @@ describe("createSourceBinding construction", () => {
       owner: [],
     });
     expect(binding.capabilities.sort.fields).toEqual(["cpu", "status"]);
-    expect(binding.capabilities.kinds).toEqual({
-      machine: machineKind,
-      image: machineKind,
-    });
-  });
-
-  it("carries the record kinds without narrowing anything by them", () => {
-    // Seam for the polymorphism unit: a source may declare kinds and read
-    // one off a row, and this release neither combines them nor asks.
-    const kindOf = vi.fn(() => "machine");
-    const declared = declareCapabilities({
-      ...permissive,
-      kinds: { machine: machineKind, image: machineKind },
-    });
-    const host = provider();
-    const source = { ...manual(declared).source, kindOf };
-    const binding = createSourceBinding({ host, source });
-    const release = binding.observe();
-    host.refresh();
-    expect(binding.capabilities.kinds).toEqual({
-      machine: machineKind,
-      image: machineKind,
-    });
-    expect(kindOf).not.toHaveBeenCalled();
-    release();
-  });
-
-  it("refuses a host told a different narrowing for the same kind", () => {
-    // The kinds are compared by what each one narrows, not by their names:
-    // one name carrying two offers is the same disagreement as any other.
-    const declared = declareCapabilities({
-      ...permissive,
-      kinds: { machine: machineKind },
-    });
-    const told = createDataViewsProvider({
-      schema,
-      capabilities: {
-        ...declared,
-        kinds: { machine: { ...machineKind, lookup: { batch: 5 } } },
-      },
-    });
-    expect(() =>
-      createSourceBinding({
-        host: told,
-        source: { ...manual(declared).source, kindOf: () => "machine" },
-      }),
-    ).toThrow(
-      "the host was told different capabilities from those its source declares",
-    );
   });
 
   it.each([
@@ -338,9 +275,7 @@ describe("createSourceBinding construction", () => {
       { pagination: { mode: "cursor", backward: false, durable: true } },
     ],
     ["selection scope", { selection: { scope: "query" } }],
-    ["lookup batch", { lookup: { batch: 10 } }],
     ["row operation", { actions: { stop: { targets: "explicit", limit: 1 } } }],
-    ["record kinds", { kinds: { machine: machineKind } }],
   ] as const)("refuses a host told a different %s", (_part, difference) => {
     const told = createDataViewsProvider({
       schema,
@@ -355,16 +290,6 @@ describe("createSourceBinding construction", () => {
 
   it.each([
     [
-      "a lookup it has no port for",
-      { capabilities: declareCapabilities({ lookup: { batch: null } }) },
-      "this source declares a lookup it has no port for",
-    ],
-    [
-      "a lookup port it does not declare",
-      { lookup: (() => Promise.resolve([])) as SourceLookup },
-      "this source offers a lookup port it does not declare",
-    ],
-    [
       "row operations it has no port for",
       {
         capabilities: declareCapabilities({
@@ -377,18 +302,6 @@ describe("createSourceBinding construction", () => {
       "a row-operation port it names no operation for",
       { runAction: (() => Promise.resolve([])) as SourceActionRunner },
       "this source offers a row-operation port it declares no operation for",
-    ],
-    [
-      "record kinds it has no port for",
-      {
-        capabilities: declareCapabilities({ kinds: { machine: machineKind } }),
-      },
-      "this source declares record kinds it has no port for",
-    ],
-    [
-      "a kind port it does not declare",
-      { kindOf: () => "machine" },
-      "this source reads record kinds it does not declare",
     ],
     [
       "cursor pages nothing says are reachable",
@@ -438,28 +351,6 @@ describe("createSourceBinding construction", () => {
     }).source;
     expect(() => createSourceBinding({ host: told, source })).not.toThrow();
   });
-
-  it.each([
-    ["zero", 0],
-    ["negative", -1],
-    ["fractional", 1.5],
-    ["not a number", Number.NaN],
-  ])(
-    "refuses a source declareCapabilities a %s lookup batch",
-    (_kind, batch) => {
-      expect(() =>
-        createSourceBinding({
-          host: provider(),
-          source: {
-            ...manual(declareCapabilities({ lookup: { batch } })).source,
-            lookup: () => Promise.resolve([]),
-          },
-        }),
-      ).toThrow(
-        "a lookup batch must be a positive whole number, or null for no limit",
-      );
-    },
-  );
 
   it("offers a frozen copy, so the declaration cannot move under it", () => {
     const declared: SourceCapabilities = { ...permissive };
@@ -1458,79 +1349,6 @@ describe("createSourceBinding counts", () => {
   });
 });
 
-describe("createSourceBinding record lookup", () => {
-  const looking = (batch: number | null, lookup: SourceLookup) =>
-    createSourceBinding({
-      host: provider(),
-      source: {
-        ...manual(declareCapabilities({ ...permissive, lookup: { batch } }))
-          .source,
-        lookup,
-      },
-    });
-
-  const answering: SourceLookup = (ids) =>
-    Promise.resolve(ids.map((id) => ({ id, status: "missing" as const })));
-
-  it("refuses to look up on a source that declares no lookup", async () => {
-    const binding = createSourceBinding({
-      host: provider(),
-      source: manual().source,
-    });
-    await expect(binding.lookup(["a"])).rejects.toThrow(
-      "this source declares no record lookup",
-    );
-  });
-
-  it("asks for every id at once when the source bounds nothing", async () => {
-    const lookup = vi.fn<SourceLookup>(answering);
-    await expect(
-      looking(null, lookup).lookup(["a", "b", "c"]),
-    ).resolves.toEqual([
-      { id: "a", status: "missing" },
-      { id: "b", status: "missing" },
-      { id: "c", status: "missing" },
-    ]);
-    expect(lookup).toHaveBeenCalledTimes(1);
-  });
-
-  it("asks once for a call that already fits the declared batch", async () => {
-    const lookup = vi.fn<SourceLookup>(answering);
-    await looking(3, lookup).lookup(["a", "b", "c"]);
-    expect(lookup).toHaveBeenCalledTimes(1);
-    expect(lookup).toHaveBeenCalledWith(["a", "b", "c"]);
-  });
-
-  it("splits a longer call into batches and concatenates them in order", async () => {
-    const lookup = vi.fn<SourceLookup>(answering);
-    await expect(
-      looking(2, lookup).lookup(["a", "b", "c", "d", "e"]),
-    ).resolves.toEqual([
-      { id: "a", status: "missing" },
-      { id: "b", status: "missing" },
-      { id: "c", status: "missing" },
-      { id: "d", status: "missing" },
-      { id: "e", status: "missing" },
-    ]);
-    expect(lookup.mock.calls).toEqual([[["a", "b"]], [["c", "d"]], [["e"]]]);
-  });
-
-  it("makes no empty call when the ids divide by the batch exactly", async () => {
-    const lookup = vi.fn<SourceLookup>(answering);
-    await looking(2, lookup).lookup(["a", "b", "c", "d"]);
-    expect(lookup.mock.calls).toEqual([[["a", "b"]], [["c", "d"]]]);
-  });
-
-  it("takes a batch of one, the smallest a source can declare", async () => {
-    const lookup = vi.fn<SourceLookup>(answering);
-    await expect(looking(1, lookup).lookup(["a", "b"])).resolves.toEqual([
-      { id: "a", status: "missing" },
-      { id: "b", status: "missing" },
-    ]);
-    expect(lookup.mock.calls).toEqual([[["a"]], [["b"]]]);
-  });
-});
-
 describe("createSourceBinding row operations", () => {
   const stopping = (
     host: ReturnType<typeof provider>,
@@ -1581,7 +1399,6 @@ describe("createSourceBinding row operations", () => {
       succeeded: ["a", "c"],
       failed: [{ target: "b", reason: "locked by ex:bo" }],
       remaining: [],
-      attempts: 1,
     });
     expect([...host.selection.state.get().ids]).toEqual(["b"]);
   });
@@ -1665,23 +1482,6 @@ describe("createSourceBinding row operations", () => {
     runAction.mockRejectedValueOnce(new Error());
     const operation = await binding.runAction(stop(["a"]));
     expect(operation.state.failed).toEqual([{ target: "a", reason: "Error" }]);
-  });
-
-  it("retries only the failed targets under the same identity", async () => {
-    const { runAction, binding } = stopping(provider());
-    runAction.mockResolvedValueOnce([
-      { target: "a", status: "succeeded" },
-      { target: "b", status: "failed", reason: "locked" },
-    ]);
-    const operation = await binding.runAction(stop(["a", "b"]));
-    const { identity } = operation;
-    operation.retry();
-    expect(operation.identity).toBe(identity);
-    expect(operation.state).toMatchObject({
-      status: "pending",
-      remaining: ["b"],
-      attempts: 2,
-    });
   });
 
   it("refuses to act on a source that declares no row operations", async () => {

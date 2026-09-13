@@ -65,13 +65,11 @@ import type {
   GroupTerm,
   Identity,
   JsonValue,
-  KindCapabilities,
   Location,
   LocationBinding,
   LocationBindingConfig,
   LocationConfig,
   LocationHost,
-  LookupOutcome,
   NumberField,
   ObservedQuery,
   Operation,
@@ -122,9 +120,6 @@ import type {
   RowScopes,
   RowScopesConfig,
   SavedView,
-  SaveSession,
-  SaveSessionConfig,
-  SaveSessionState,
   Schema,
   SchemaFieldDefinition,
   SchemaPredicateResult,
@@ -145,7 +140,6 @@ import type {
   SourceDelivery,
   SourceFailure,
   SourceHost,
-  SourceLookup,
   SourcePage,
   SourceRefusal,
   SourceRefusalCode,
@@ -245,13 +239,11 @@ type EveryPublicType = [
   GroupTerm,
   Identity,
   JsonValue,
-  KindCapabilities,
   Location,
   LocationBinding,
   LocationBindingConfig,
   LocationConfig,
   LocationHost,
-  LookupOutcome,
   NumberField,
   ObservedQuery<SourcePage>,
   Operation,
@@ -302,9 +294,6 @@ type EveryPublicType = [
   RowScopes<RowRecord>,
   RowScopesConfig<RowRecord>,
   SavedView,
-  SaveSession<unknown>,
-  SaveSessionConfig<unknown>,
-  SaveSessionState<unknown>,
   Schema<readonly SchemaFieldDefinition[]>,
   SchemaFieldDefinition,
   SchemaPredicateResult,
@@ -325,7 +314,6 @@ type EveryPublicType = [
   SourceDelivery,
   SourceFailure,
   SourceHost,
-  SourceLookup,
   SourcePage,
   SourceRefusal,
   SourceRefusalCode,
@@ -410,7 +398,7 @@ describe("public surface types", () => {
       ...new Set(surfaceOf(path.resolve("src/lib/index.ts"))),
     ].sort();
     expect(surface).toEqual(pinned().sort());
-    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<159>();
+    expectTypeOf<EveryPublicType["length"]>().toEqualTypeOf<153>();
   });
 
   it("keeps only the saved-view store behind its own entry point", () => {
@@ -492,9 +480,6 @@ describe("public surface types", () => {
     expectTypeOf(
       dataviews.createCollectionCoordinator<RowRecord>,
     ).returns.toEqualTypeOf<CollectionCoordinator>();
-    expectTypeOf(
-      dataviews.createSaveSession<{ density: string }>,
-    ).returns.toEqualTypeOf<SaveSession<{ density: string }>>();
     expectTypeOf(dataviews.createRowModel<RowRecord>).parameters.toEqualTypeOf<
       [RowModelConfig<RowRecord>]
     >();

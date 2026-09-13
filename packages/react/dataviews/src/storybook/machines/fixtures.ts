@@ -226,7 +226,6 @@ export const createUncountedSource = (): Source => {
           },
         });
       }),
-    lookup: source.lookup,
   };
 };
 

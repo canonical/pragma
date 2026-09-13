@@ -29,7 +29,6 @@ describe("public surface", () => {
       "createRelaySource",
       "createRowModel",
       "createRowScopes",
-      "createSaveSession",
       "createSchema",
       "createSelection",
       "createSourceBinding",

@@ -1,7 +1,6 @@
 import type { PredicateOperator, SortTerm } from "../query/types.js";
 import type {
   ActionCapabilities,
-  KindCapabilities,
   SortCapabilities,
   SourceCapabilities,
 } from "./types.js";
@@ -52,27 +51,6 @@ const copyFilter = (
   return Object.freeze(copied);
 };
 
-const copyKinds = (
-  kinds: SourceCapabilities["kinds"],
-): SourceCapabilities["kinds"] => {
-  if (kinds === null) {
-    return null;
-  }
-  const copied = bareRecord<KindCapabilities>();
-  for (const [kind, capabilities] of Object.entries(kinds)) {
-    copied[kind] = Object.freeze({
-      filter: copyFilter(capabilities.filter),
-      sort: copySort(capabilities.sort),
-      actions: copyActions(capabilities.actions),
-      lookup:
-        capabilities.lookup === null
-          ? null
-          : Object.freeze({ batch: capabilities.lookup.batch }),
-    });
-  }
-  return Object.freeze(copied);
-};
-
 /**
  * A frozen, prototype-free copy of a source's declaration, so it cannot
  * change under the binding after construction and every control reads the
@@ -110,11 +88,6 @@ export default function copyCapabilities(
             durable: capabilities.pagination.durable,
           }),
     selection: Object.freeze({ scope: capabilities.selection.scope }),
-    lookup:
-      capabilities.lookup === null
-        ? null
-        : Object.freeze({ batch: capabilities.lookup.batch }),
     actions: copyActions(capabilities.actions),
-    kinds: copyKinds(capabilities.kinds),
   });
 }

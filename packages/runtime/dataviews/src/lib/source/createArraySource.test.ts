@@ -75,9 +75,7 @@ describe("createArraySource", () => {
       counts: { visible: "exact", matched: "exact", total: "exact" },
       pagination: { mode: "offset" },
       selection: { scope: "explicit" },
-      lookup: { batch: null },
       actions: {},
-      kinds: null,
     });
   });
 
@@ -347,58 +345,6 @@ describe("createArraySource", () => {
     expect(deliveredAt(deliver, 0)).toMatchObject({
       page: { counts: { matched: exact(1) } },
     });
-  });
-
-  it("looks records up by identity, reporting the absent ones as missing", async () => {
-    const live = source();
-    const found = [
-      { id: "c", status: "found", record: rows[2] },
-      { id: "gone", status: "missing" },
-      { id: "a", status: "found", record: rows[0] },
-    ];
-    await expect(live.lookup?.(["c", "gone", "a"])).resolves.toEqual(found);
-    // The index outlives one call, so a second lookup reads the same
-    // records rather than indexing every row again.
-    await expect(live.lookup?.(["c", "gone", "a"])).resolves.toEqual(found);
-  });
-
-  it("looks up through a caller-supplied identity", async () => {
-    const live = createArraySource({
-      rows: [{ key: "k1" }, { key: "k2" }],
-      schema: createSchema([{ field: "key", kind: "text" }]),
-      identify: (row) => String(row.key),
-    });
-    await expect(live.lookup?.(["k2"])).resolves.toEqual([
-      { id: "k2", status: "found", record: { key: "k2" } },
-    ]);
-  });
-
-  it("reports a record with no usable identity as missing", async () => {
-    // A record nothing can address is a record no lookup can name: it never
-    // enters the index, rather than keying it under a value that is not one.
-    const live = createArraySource<RowRecord>({
-      rows: [{ id: "a" }, { name: "unidentified" }, { id: "" }],
-      schema,
-    });
-    await expect(live.lookup?.(["a", "unidentified", ""])).resolves.toEqual([
-      { id: "a", status: "found", record: { id: "a" } },
-      { id: "unidentified", status: "missing" },
-      { id: "", status: "missing" },
-    ]);
-  });
-
-  it("looks up against the replacement records after a write", async () => {
-    const live = source();
-    // The identity index is kept between lookups, so the write is what has
-    // to drop it; a second lookup must not answer from the old records.
-    await expect(live.lookup?.(["a"])).resolves.toEqual([
-      { id: "a", status: "found", record: rows[0] },
-    ]);
-    live.setRows([{ id: "z", name: "Zed", cpu: 1 }]);
-    await expect(live.lookup?.(["a", "z"])).resolves.toEqual([
-      { id: "a", status: "missing" },
-      { id: "z", status: "found", record: { id: "z", name: "Zed", cpu: 1 } },
-    ]);
   });
 
   it("carries the application's row operations", async () => {

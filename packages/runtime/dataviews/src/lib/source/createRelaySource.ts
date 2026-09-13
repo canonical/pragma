@@ -9,7 +9,6 @@ import type {
   Source,
   SourceActionRunner,
   SourceCapabilities,
-  SourceLookup,
 } from "./types.js";
 
 /** What a Relay selector reads, and whether the store holds all of it. */
@@ -108,12 +107,6 @@ export type RelaySourceConfig<
   readonly connection: (
     data: TQuery["response"],
   ) => RelayConnection<TRow> | null | undefined;
-  /**
-   * Records by identity, for example through the schema's `nodes(ids:)`
-   * field, which answers one entry per argument in order. Required whenever
-   * the declaration carries a `lookup`.
-   */
-  readonly lookup?: SourceLookup<TRow>;
   /** Row operations, when the schema has any. */
   readonly runAction?: SourceActionRunner;
 };
@@ -359,7 +352,6 @@ export default function createRelaySource<
       }
       return release;
     },
-    ...(config.lookup === undefined ? {} : { lookup: config.lookup }),
     ...(config.runAction === undefined ? {} : { runAction: config.runAction }),
   };
 }

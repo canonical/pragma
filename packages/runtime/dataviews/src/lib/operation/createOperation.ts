@@ -28,7 +28,6 @@ export type OperationState = {
   readonly failed: readonly OperationFailure[];
   /** Captured targets without a reported outcome yet. */
   readonly remaining: readonly string[];
-  readonly attempts: number;
 };
 
 /**
@@ -58,12 +57,6 @@ export type Operation = {
    * targets are ignored.
    */
   readonly recordOutcomes: (outcomes: readonly OperationOutcome[]) => void;
-  /**
-   * Retry the failed captured targets under the same operation identity,
-   * keeping the original capture. No-op unless the last attempt ended in
-   * failure.
-   */
-  readonly retry: () => void;
 };
 
 /**
@@ -78,11 +71,10 @@ export default function createOperation(config: OperationConfig): Operation {
   }
   const identity = createIdentity();
   const targets = Object.freeze([...new Set(config.targets)]);
-  let succeeded: string[] = [];
-  let failed: OperationFailure[] = [];
+  const succeeded: string[] = [];
+  const failed: OperationFailure[] = [];
   let remaining = [...targets];
   let status: OperationState["status"] = "pending";
-  let attempts = 1;
   let snapshot = buildSnapshot();
 
   function settle(): void {
@@ -102,7 +94,6 @@ export default function createOperation(config: OperationConfig): Operation {
       succeeded: Object.freeze([...succeeded]),
       failed: Object.freeze([...failed]),
       remaining: Object.freeze([...remaining]),
-      attempts,
     });
   }
 
@@ -119,8 +110,8 @@ export default function createOperation(config: OperationConfig): Operation {
           continue;
         }
         settled = true;
-        // A target settles at most once per attempt: it leaves `open`, so a
-        // later outcome for it cannot arrive through this path.
+        // A target settles at most once: it leaves `open`, so a later
+        // outcome for it cannot arrive through this path.
         open.delete(entry.target);
         if (entry.status === "succeeded") {
           succeeded.push(entry.target);
@@ -133,17 +124,6 @@ export default function createOperation(config: OperationConfig): Operation {
       }
       remaining = [...open];
       settle();
-      snapshot = buildSnapshot();
-    },
-    retry(): void {
-      if (status !== "failed") {
-        return;
-      }
-      remaining = failed.map((failure) => failure.target);
-      succeeded = [];
-      failed = [];
-      attempts += 1;
-      status = "pending";
       snapshot = buildSnapshot();
     },
   };

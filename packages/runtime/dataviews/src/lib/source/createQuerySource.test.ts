@@ -21,7 +21,6 @@ import createSourceBinding from "./createSourceBinding.js";
 import type {
   SourceActionRunner,
   SourceCapabilities,
-  SourceLookup,
   SourceRequest,
 } from "./types.js";
 
@@ -307,22 +306,6 @@ describe("createQuerySource over @tanstack/query-core", () => {
     expect(refuses).toHaveBeenCalledTimes(1);
   });
 
-  it("carries the endpoint's record lookup", async () => {
-    const lookup = vi
-      .fn<SourceLookup>()
-      .mockResolvedValue([{ id: "a", status: "missing" }]);
-    const built = createQuerySource({
-      capabilities: declareCapabilities({ lookup: { batch: 10 } }),
-      queryKey: ["machines"],
-      fetchPage: () => Promise.resolve(page([], 0)),
-      observe: (query) => new TanStackObserver(client(), query),
-      lookup,
-    });
-    await expect(built.lookup?.(["a"])).resolves.toEqual([
-      { id: "a", status: "missing" },
-    ]);
-  });
-
   it("carries the application's row operations", async () => {
     const runAction = vi.fn<SourceActionRunner>().mockResolvedValue([]);
     const built = createQuerySource({
@@ -347,7 +330,6 @@ describe("createQuerySource over @tanstack/query-core", () => {
   it("has no optional port unless the application supplies one", () => {
     const built = source(client(), () => Promise.resolve(page([], 0)));
     expect("refuses" in built).toBe(false);
-    expect("lookup" in built).toBe(false);
     expect("runAction" in built).toBe(false);
   });
 });

@@ -26,9 +26,7 @@ export const NOTHING_DECLARED: SourceCapabilities = Object.freeze({
   counts: Object.freeze({ visible: "none", matched: "none", total: "none" }),
   pagination: Object.freeze({ mode: "offset" }),
   selection: Object.freeze({ scope: "explicit" }),
-  lookup: null,
   actions: Object.freeze({}),
-  kinds: null,
 });
 
 /** `NOTHING_DECLARED` with the named members replaced. */
