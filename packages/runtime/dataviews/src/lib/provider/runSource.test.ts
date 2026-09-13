@@ -212,7 +212,7 @@ describe("runSource refusals", () => {
   it("refuses a request before it costs the source a round trip", () => {
     const source = manual(declare({ ...permissive, sort: declareSort([], 0) }));
     const { host, release } = running(source.source);
-    host.adopt(query({ sort: [{ field: "cpu", direction: "asc" }] }));
+    host.adopt(query({ sort: [{ field: "cpu", direction: "asc" }] }), "view");
     expect(source.calls).toHaveLength(0);
     expect(host.state.get().result.status).toBe("failed");
     expect(problemOf(host.state.get())).toEqual({
@@ -237,6 +237,7 @@ describe("runSource refusals", () => {
     const { host, release } = running(source.source);
     host.adopt(
       query({ search: "web", sort: [{ field: "cpu", direction: "asc" }] }),
+      "view",
     );
     expect(source.calls).toHaveLength(0);
     const problem = problemOf(host.state.get());
@@ -255,6 +256,7 @@ describe("runSource refusals", () => {
     const { host, release } = running(source.source);
     host.adopt(
       query({ filter: [{ field: "cpu", operator: "gte", operands: [1] }] }),
+      "view",
     );
     expect(source.calls).toHaveLength(0);
     expect(problemOf(host.state.get())).toMatchObject({
@@ -269,7 +271,7 @@ describe("runSource refusals", () => {
     const { host, release } = running(source.source);
     host.refresh();
     source.callAt(0).deliver(succeeded([]));
-    host.adopt(query({ group: [{ field: "status" }] }));
+    host.adopt(query({ group: [{ field: "status" }] }), "view");
     // Refused before the source is asked: the page stands.
     expect(source.calls).toHaveLength(1);
     expect(problemOf(host.state.get())).toMatchObject({
@@ -284,10 +286,13 @@ describe("runSource refusals", () => {
     const { host, release } = running(source.source);
     host.refresh();
     source.callAt(0).deliver(succeeded([]));
-    host.adopt({
-      ...query(),
-      window: { ...DEFAULT_WINDOW, collapsed: [["failed"]] },
-    });
+    host.adopt(
+      {
+        ...query(),
+        window: { ...DEFAULT_WINDOW, collapsed: [["failed"]] },
+      },
+      "view",
+    );
     expect(source.calls).toHaveLength(1);
     expect(problemOf(host.state.get())).toMatchObject({
       status: "refused",
@@ -299,10 +304,13 @@ describe("runSource refusals", () => {
   it("refuses a cursor page on a source that pages by number", () => {
     const source = manual();
     const { host, release } = running(source.source);
-    host.adopt({
-      ...query(),
-      window: { ...DEFAULT_WINDOW, page: 2, cursor: "c1" },
-    });
+    host.adopt(
+      {
+        ...query(),
+        window: { ...DEFAULT_WINDOW, page: 2, cursor: "c1" },
+      },
+      "view",
+    );
     expect(source.calls).toHaveLength(0);
     expect(problemOf(host.state.get())).toMatchObject({
       status: "refused",
@@ -326,7 +334,7 @@ describe("runSource refusals", () => {
     const { host, release } = running(source.source);
     host.refresh();
     expect(source.calls).toHaveLength(1);
-    host.adopt(query({ search: "web" }));
+    host.adopt(query({ search: "web" }), "view");
     expect(source.calls).toHaveLength(1);
     expect(problemOf(host.state.get())).toMatchObject({
       status: "refused",
@@ -638,7 +646,7 @@ describe("runSource", () => {
       group: [],
     };
     const window = { ...DEFAULT_WINDOW, page: 3, size: 25 };
-    const requestId = host.adopt({ slice: adopted, window });
+    const requestId = host.adopt({ slice: adopted, window }, "view");
     expect(source.callAt(0).request).toEqual({
       requestId,
       slice: host.state.get().slice,
@@ -689,14 +697,14 @@ describe("runSource", () => {
       matches: true,
       problem: null,
     });
-    host.adopt(query({ filter: failing }));
+    host.adopt(query({ filter: failing }), "view");
     expect(observed()).toEqual({
       rows: 3,
       status: "ready",
       matches: true,
       problem: null,
     });
-    host.adopt(query({ filter: failing, sort: byCpu }));
+    host.adopt(query({ filter: failing, sort: byCpu }), "view");
     expect(observed()).toEqual({
       rows: 3,
       status: "stale",
@@ -708,6 +716,7 @@ describe("runSource", () => {
         filter: [{ field: "status", operator: "eq", operands: ["ready"] }],
         sort: byCpu,
       }),
+      "view",
     );
     expect(observed()).toEqual({
       rows: 3,
@@ -721,6 +730,7 @@ describe("runSource", () => {
       query({
         filter: [{ field: "status", operator: "eq", operands: ["ready"] }],
       }),
+      "view",
     );
     expect(observed()).toEqual({
       rows: 6,

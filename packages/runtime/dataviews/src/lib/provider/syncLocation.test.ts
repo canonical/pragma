@@ -11,6 +11,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 import createManualSource from "../../../testing/createManualSource.js";
+import createRecordingLocation from "../../../testing/createRecordingLocation.js";
 import {
   byId,
   declare,
@@ -38,7 +39,7 @@ import createDataViewsProvider from "./createDataViewsProvider.js";
 import readProviderHost from "./readProviderHost.js";
 import runSource from "./runSource.js";
 import syncLocation from "./syncLocation.js";
-import type { ProviderHost } from "./types.js";
+import type { HistoryPolicy, ProviderHost } from "./types.js";
 
 const machines = createCollection({
   fields: [
@@ -80,6 +81,20 @@ const CPU_UNSORTABLE: SourceRefusal = {
   reason: 'field "cpu" cannot be sorted',
 };
 
+/** The issue a location's `q` earns from a source declaring no search. */
+const SEARCH_REFUSED = {
+  parameter: "q",
+  code: "undeclared-field",
+  reason: "this source cannot search",
+};
+
+/** The issue a `status` value outside the options earns. */
+const MELTED = {
+  parameter: "status",
+  code: "invalid",
+  reason: '"melted" is not an option of "status"',
+};
+
 /** Two failed machines and three ready ones, for a source to execute over. */
 const fleet: readonly RowRecord[] = [
   { id: "m1", status: "failed", cpu: 4 },
@@ -110,11 +125,13 @@ type Seed = {
 const machinesProvider = (
   capabilities: SourceCapabilities = permissive,
   seed: Seed = {},
+  history?: HistoryPolicy,
 ) =>
   createDataViewsProvider({
     collection: machines,
     source: sourceOf(capabilities).source,
     seed,
+    ...(history === undefined ? {} : { history }),
   });
 
 type SetUp = {
@@ -122,7 +139,7 @@ type SetUp = {
   readonly location?: QueryLocation | undefined;
   readonly capabilities?: SourceCapabilities | undefined;
   readonly seed?: Seed | undefined;
-  readonly history?: "push" | "replace" | undefined;
+  readonly history?: HistoryPolicy | undefined;
 };
 
 /**
@@ -131,15 +148,15 @@ type SetUp = {
  * provider starts.
  */
 const setUp = (options: SetUp = {}) => {
-  const provider = machinesProvider(options.capabilities, options.seed);
+  const provider = machinesProvider(
+    options.capabilities,
+    options.seed,
+    options.history,
+  );
   const host = readProviderHost(provider);
   const location =
     options.location ?? createMemoryLocation({ href: options.href ?? "/" });
-  const sync = syncLocation({
-    host,
-    location,
-    history: options.history ?? "replace",
-  });
+  const sync = syncLocation({ host, location });
   return { provider, host, location, sync };
 };
 
@@ -154,32 +171,18 @@ const spyAdopt = <TFields extends readonly SchemaFieldDefinition[]>(
 /**
  * Move the host to a search the way a saved view does: through adopt,
  * which the boundary does not check. A search the source cannot execute
- * then reaches the location, whose echo is what refuses it.
+ * then reaches the location, where the loop's own reading refuses it.
  */
 const adoptSearch = (
   host: Pick<ProviderHost, "state" | "adopt">,
   search: string,
 ): void => {
   const { slice, window } = host.state.get();
-  host.adopt({ slice: { ...slice, search }, window });
+  host.adopt({ slice: { ...slice, search }, window }, "view");
 };
 
-/** A memory location that records every write with its history mode. */
-const recording = (href: string) => {
-  const memory = createMemoryLocation({ href });
-  const writes: (readonly [string, string])[] = [];
-  const location: QueryLocation = {
-    ...memory,
-    write: (
-      next: URLSearchParams,
-      options?: { readonly history?: "push" | "replace" },
-    ) => {
-      writes.push([next.toString(), options?.history ?? "replace"]);
-      memory.write(next, options);
-    },
-  };
-  return { memory, location, writes };
-};
+/** A recording port over the given href. */
+const recording = (href: string) => createRecordingLocation({ href });
 
 const windowAt = (overrides: Partial<ResultWindow> = {}): ResultWindow => ({
   ...DEFAULT_WINDOW,
@@ -233,11 +236,9 @@ describe("syncLocation", () => {
       href: "/machines?status=failed&status=failed",
     });
     const { host, adopt } = spyAdopt(readProviderHost(provider));
-    const release = syncLocation({
-      host,
-      location,
-      history: "replace",
-    }).observe();
+    const release = syncLocation({ host, location }).observe();
+    // Once, for the query the location carried; the respelling is not a
+    // second adoption.
     expect(adopt).toHaveBeenCalledTimes(1);
     expect(location.read().getAll("status")).toEqual(["failed"]);
     release();
@@ -305,11 +306,7 @@ describe("syncLocation", () => {
       href: "/machines?page=2&size=50&cursor=after-page-one",
     });
     const { host, adopt } = spyAdopt(readProviderHost(provider));
-    const release = syncLocation({
-      host,
-      location,
-      history: "replace",
-    }).observe();
+    const release = syncLocation({ host, location }).observe();
     adopt.mockClear();
     location.write(new URLSearchParams("page=2&size=50&cursor=elsewhere"));
     expect(adopt).toHaveBeenCalledTimes(1);
@@ -322,11 +319,7 @@ describe("syncLocation", () => {
     const location = createMemoryLocation({ href: "/machines" });
     const host = readProviderHost(provider);
     const watched = spyAdopt(host);
-    const release = syncLocation({
-      host: watched.host,
-      location,
-      history: "replace",
-    }).observe();
+    const release = syncLocation({ host: watched.host, location }).observe();
     const inputs = createFilterInputs({ host });
     const stopInputs = inputs.observe();
     inputs.handles.cpu.gte.edit("4");
@@ -335,6 +328,26 @@ describe("syncLocation", () => {
     // The live input session survives: nothing re-synced the input.
     expect(inputs.handles.cpu.gte.state.get().input).toBe("4");
     stopInputs();
+    release();
+  });
+
+  it("reads a written spelling back once, and not again as its echo", () => {
+    // The read-back is the transition's; the location's notification of the
+    // very spelling written is the loop's own echo and stops before reading
+    // anything — one comparison of the host's state per transition, not two.
+    const provider = machinesProvider();
+    const host = readProviderHost(provider);
+    const read = vi.fn(host.state.get);
+    const watched: typeof host = {
+      ...host,
+      state: { get: read, subscribe: host.state.subscribe },
+    };
+    const location = createMemoryLocation({ href: "/machines" });
+    const release = syncLocation({ host: watched, location }).observe();
+    read.mockClear();
+    provider.navigateWindow({ page: 2 });
+    expect(location.read().get("page")).toBe("2");
+    expect(read).toHaveBeenCalledTimes(1);
     release();
   });
 
@@ -355,9 +368,29 @@ describe("syncLocation", () => {
     release();
   });
 
+  it("adopts a return to a spelling it once wrote, and never writes it back", () => {
+    // Forward after Back lands on the very text the loop wrote earlier. The
+    // echo guard remembers one write, not every write: the location moved
+    // on since, so the return is a move like any other.
+    const { location, writes, move } = recording("/machines");
+    const { provider, sync } = setUp({ location });
+    const release = sync.observe();
+    provider.navigateWindow({ page: 2 });
+    provider.navigateWindow({ page: 3 });
+    writes.length = 0;
+    // Back, then Forward, as the browser replays them through the port.
+    move("page=2&size=50");
+    expect(provider.state.get().window.page).toBe(2);
+    move("page=3&size=50");
+    expect(provider.state.get().window.page).toBe(3);
+    // Both adopted, neither written back.
+    expect(writes).toEqual([]);
+    release();
+  });
+
   it("replaces by default and pushes when asked", () => {
-    // The default is the provider's: a provider given a location and no
-    // history mode replaces.
+    // The default is the provider's: a search replaces, so typing never
+    // floods history; a policy naming the search transition makes it push.
     const location = createMemoryLocation();
     const write = vi.spyOn(location, "write");
     const provider = createDataViewsProvider({
@@ -366,22 +399,126 @@ describe("syncLocation", () => {
       location,
     });
     const release = provider.observe();
-    provider.navigateWindow({ page: 2 });
+    provider.setSearch("ya");
     expect(write).toHaveBeenLastCalledWith(expect.anything(), {
       history: "replace",
     });
     release();
 
-    const pushing = syncLocation({
-      host: readProviderHost(provider),
+    const pushing = createDataViewsProvider({
+      collection: machines,
+      source: sourceOf().source,
       location,
-      history: "push",
-    }).observe();
-    provider.navigateWindow({ page: 3 });
+      history: { search: "push" },
+    });
+    const releasePushing = pushing.observe();
+    pushing.setSearch("yak");
     expect(write).toHaveBeenLastCalledWith(expect.anything(), {
       history: "push",
     });
-    pushing();
+    releasePushing();
+  });
+
+  it("enters history by the transition: search replaces, the rest push", () => {
+    const { location, writes } = recording("/machines");
+    const { provider, host, sync } = setUp({ location });
+    const release = sync.observe();
+    writes.length = 0;
+    host.setPredicate({ field: "status", operator: "eq", operands: ["ready"] });
+    provider.setSearch("yak");
+    provider.setSort([{ field: "cpu", direction: "asc" }]);
+    provider.navigateWindow({ page: 2 });
+    host.removePredicate("status", "eq");
+    expect(writes.map(([, mode]) => mode)).toEqual([
+      "push",
+      "replace",
+      "push",
+      "push",
+      "push",
+    ]);
+    release();
+  });
+
+  it("drives history through the port alone: a search replaces, a sort pushes, Back adopts and writes nothing back", () => {
+    // Proven against the port's own record, never a browser: every write
+    // the loop makes reaches `write` with its mode, every move it learns of
+    // arrives through `subscribe`, and the loop touches nothing else.
+    const { location, writes, notifications, move } = createRecordingLocation({
+      href: "/machines",
+    });
+    const { provider, sync } = setUp({ location });
+    const release = sync.observe();
+    writes.length = 0;
+    notifications.length = 0;
+    provider.setSearch("ya");
+    provider.setSearch("yak");
+    provider.setSort([{ field: "cpu", direction: "asc" }]);
+    expect(writes).toEqual([
+      ["q=ya&page=1&size=50", "replace"],
+      ["q=yak&page=1&size=50", "replace"],
+      ["q=yak&sort=cpu__asc&page=1&size=50", "push"],
+    ]);
+    // Each write echoed once through the port, and each echo stopped.
+    expect(notifications).toEqual(writes.map(([params]) => params));
+    // Back, then Forward, arrive through the port's subscribe.
+    writes.length = 0;
+    move("q=yak&page=1&size=50");
+    expect(provider.state.get().slice.sort).toEqual([]);
+    move("q=yak&sort=cpu__asc&page=1&size=50");
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "cpu", direction: "asc" },
+    ]);
+    // Adopted, and nothing written back.
+    expect(writes).toEqual([]);
+    release();
+  });
+
+  it("follows a policy naming one mode for every transition", () => {
+    const { location, writes } = recording("/machines");
+    const { provider, host, sync } = setUp({ location, history: "replace" });
+    const release = sync.observe();
+    writes.length = 0;
+    host.setPredicate({ field: "status", operator: "eq", operands: ["ready"] });
+    provider.setSort([{ field: "cpu", direction: "asc" }]);
+    provider.navigateWindow({ page: 2 });
+    expect(writes.map(([, mode]) => mode)).toEqual([
+      "replace",
+      "replace",
+      "replace",
+    ]);
+    release();
+  });
+
+  it("pushes a saved view's query and writes nothing for the location's own", () => {
+    const { location, writes } = recording("/machines");
+    const { host, sync } = setUp({ location });
+    const release = sync.observe();
+    writes.length = 0;
+    // Opened the way a saved view is: the view's authority, a step Back
+    // returns from.
+    host.adopt(
+      {
+        slice: {
+          filter: [{ field: "status", operator: "eq", operands: ["ready"] }],
+          search: null,
+          sort: [],
+          group: [],
+        },
+        window: DEFAULT_WINDOW,
+      },
+      "view",
+    );
+    expect(writes).toEqual([["status=ready&page=1&size=50", "push"]]);
+    // Adopted the way the location's own query is: never written back.
+    host.adopt(
+      {
+        slice: { filter: [], search: null, sort: [], group: [] },
+        window: DEFAULT_WINDOW,
+      },
+      "adopt",
+    );
+    expect(writes).toHaveLength(1);
+    release();
   });
 
   it("publishes the owned parameters it refused, and narrows nothing", () => {
@@ -390,11 +527,15 @@ describe("syncLocation", () => {
     });
     const release = sync.observe();
     expect(sync.issues.get()).toEqual([
-      { parameter: "status", reason: '"melted" is not an option of "status"' },
-      { parameter: "cpu__near", reason: 'unknown operator "near"' },
+      MELTED,
+      {
+        parameter: "cpu__near",
+        code: "malformed",
+        reason: 'unknown operator "near"',
+      },
     ]);
     expect(provider.state.get().slice.filter).toEqual([]);
-    // The host's parameter survives the canonicalizing write.
+    // The host's parameter survives, and so does the refused clause.
     expect(location.read().get("tab")).toBe("overview");
     release();
   });
@@ -422,12 +563,10 @@ describe("syncLocation", () => {
       href: "/machines?status=melted&page=2",
     });
     const release = sync.observe();
-    // The adoption publishes, and that publication re-enters the write. It
-    // must not rewrite the refusal away, nor the echo clear its report.
+    // The adoption is never written back, so the refusal is not rewritten
+    // away and its report stands.
     expect(location.read().toString()).toBe("status=melted&page=2");
-    expect(sync.issues.get()).toEqual([
-      { parameter: "status", reason: '"melted" is not an option of "status"' },
-    ]);
+    expect(sync.issues.get()).toEqual([MELTED]);
     expect(provider.state.get().window).toEqual(windowAt({ page: 2 }));
     release();
   });
@@ -507,6 +646,90 @@ describe("syncLocation", () => {
     again();
   });
 
+  it("lets a reset nothing observed win over the location, once", () => {
+    const { location, writes } = recording("/machines");
+    const { provider, sync } = setUp({ location });
+    const release = sync.observe();
+    provider.setSort([{ field: "cpu", direction: "desc" }]);
+    release();
+    // Reset while nothing observed: no port ran, so the location still
+    // carries the ordering. The next observation reads that the last move
+    // was a reset and writes the seed over it rather than adopting it.
+    provider.reset();
+    writes.length = 0;
+    const again = sync.observe();
+    expect(provider.state.get().slice.sort).toEqual([]);
+    expect(writes).toEqual([["page=1&size=50", "replace"]]);
+    again();
+    // Reset again, unheard, with the location standing at the seed already:
+    // the next observation has nothing to write.
+    provider.reset();
+    writes.length = 0;
+    sync.observe()();
+    expect(writes).toEqual([]);
+  });
+
+  it("hears the reset it writes on observing, so a later move is the reader's", () => {
+    const { location, writes } = recording("/machines");
+    const { provider, sync } = setUp({ location });
+    // Reset while nothing observed: unheard, written on the next observe.
+    provider.reset();
+    const first = sync.observe();
+    expect(writes).toEqual([["page=1&size=50", "replace"]]);
+    first();
+    // Heard then, so the reader's move while nothing observes stands.
+    location.write(new URLSearchParams("status=failed"));
+    writes.length = 0;
+    const second = sync.observe();
+    expect(provider.state.get().slice.filter).toEqual([
+      { field: "status", operator: "eq", operands: ["failed"] },
+    ]);
+    expect(writes).toEqual([["status=failed&page=1&size=50", "replace"]]);
+    second();
+  });
+
+  it("lets only a reset win over a location carrying a query on observe", () => {
+    // A view opened while nothing observed moved the host; the location
+    // still carries a query, and it is the location that wins on observe.
+    const { host, location, sync } = setUp({ href: "/machines?status=failed" });
+    host.adopt(
+      {
+        slice: { filter: [], search: null, sort: [], group: [] },
+        window: { ...DEFAULT_WINDOW, page: 3 },
+      },
+      "view",
+    );
+    const release = sync.observe();
+    expect(host.state.get().slice.filter).toEqual([
+      { field: "status", operator: "eq", operands: ["failed"] },
+    ]);
+    expect(host.state.get().window.page).toBe(1);
+    expect(location.read().toString()).toBe("status=failed&page=1&size=50");
+    release();
+  });
+
+  it("leaves a location moved after a reset it heard to the reader", () => {
+    const { location, writes } = recording("/machines");
+    const { provider, sync } = setUp({ location });
+    const release = sync.observe();
+    provider.setSort([{ field: "cpu", direction: "desc" }]);
+    // Reset while observed: heard, and written at once, replacing.
+    provider.reset();
+    expect(writes.at(-1)).toEqual(["page=1&size=50", "replace"]);
+    release();
+    // Unobserved, the reader goes somewhere else — Back, a bookmark. The
+    // reset was written already, so the next observation adopts the
+    // location rather than writing the seed over it.
+    location.write(new URLSearchParams("status=failed"));
+    writes.length = 0;
+    const again = sync.observe();
+    expect(provider.state.get().slice.filter).toEqual([
+      { field: "status", operator: "eq", operands: ["failed"] },
+    ]);
+    expect(writes).toEqual([["status=failed&page=1&size=50", "replace"]]);
+    again();
+  });
+
   it("reports afresh when observed again", () => {
     const { location, sync } = setUp({
       href: "/machines?status=failed&status=melted",
@@ -558,15 +781,36 @@ describe("syncLocation", () => {
     release();
   });
 
+  it("respells a location before adopting it, so a move the adoption provokes lands last", () => {
+    const { location, writes, move } = recording("/machines");
+    const { provider, sync } = setUp({ location });
+    const release = sync.observe();
+    // Reacting to the adoption, something pages on.
+    const stop = provider.state.subscribe(() => {
+      if (provider.state.get().window.page === 7) {
+        provider.navigateWindow({ page: 8 });
+      }
+    });
+    writes.length = 0;
+    move("page=007&size=50");
+    // The respelling first, replacing; then the step, pushing — and the
+    // location ends where the step went.
+    expect(writes).toEqual([
+      ["page=7&size=50", "replace"],
+      ["page=8&size=50", "push"],
+    ]);
+    expect(location.read().toString()).toBe("page=8&size=50");
+    stop();
+    release();
+  });
+
   it("clears its report on writing, whether or not the location echoes", () => {
     const memory = createMemoryLocation({ href: "/machines?status=melted" });
     // A location that never notifies: the loop hears no echo.
     const location: QueryLocation = { ...memory, subscribe: () => () => {} };
     const { host, sync } = setUp({ location });
     const release = sync.observe();
-    expect(sync.issues.get()).toEqual([
-      { parameter: "status", reason: '"melted" is not an option of "status"' },
-    ]);
+    expect(sync.issues.get()).toEqual([MELTED]);
     host.setPredicate({ field: "status", operator: "eq", operands: ["ready"] });
     expect(location.read().toString()).toBe("status=ready&page=1&size=50");
     expect(sync.issues.get()).toEqual([]);
@@ -585,12 +829,18 @@ describe("syncLocation", () => {
       sort: [],
       group: [],
     });
+    // Each refusal keeps the code the source gave it.
     expect(sync.issues.get()).toEqual([
       {
         parameter: "cpu__gte",
+        code: "undeclared-operator",
         reason: 'field "cpu" cannot be filtered with gte',
       },
-      { parameter: "sort", reason: "this source cannot sort" },
+      {
+        parameter: "sort",
+        code: "too-many-terms",
+        reason: "this source cannot sort",
+      },
     ]);
     // Standing, like any refusal, until the query moves.
     expect(location.read().toString()).toBe(
@@ -610,10 +860,14 @@ describe("syncLocation", () => {
     const location = createMemoryLocation({
       href: "/machines?status=failed&sort=cpu__asc",
     });
-    const sync = syncLocation({ host, location, history: "replace" });
+    const sync = syncLocation({ host, location });
     const release = sync.observe();
     expect(sync.issues.get()).toEqual([
-      { parameter: "sort", reason: 'field "cpu" cannot be sorted' },
+      {
+        parameter: "sort",
+        code: "undeclared-field",
+        reason: 'field "cpu" cannot be sorted',
+      },
     ]);
     const state = provider.state.get();
     expect(state.slice.sort).toEqual([]);
@@ -641,11 +895,7 @@ describe("syncLocation", () => {
     const host = readProviderHost(provider);
     const stopSource = runSource({ host, source }).observe();
     const location = createMemoryLocation({ href: "/machines?status=failed" });
-    const release = syncLocation({
-      host,
-      location,
-      history: "replace",
-    }).observe();
+    const release = syncLocation({ host, location }).observe();
     expect(provider.state.get().result.status).toBe("ready");
 
     location.write(new URLSearchParams("status=ready&sort=cpu__asc"));
@@ -668,7 +918,7 @@ describe("syncLocation", () => {
     stopSource();
   });
 
-  it("pushes a history entry for a sort command, whatever the default mode", () => {
+  it("pushes a history entry for a sort command, by its own default", () => {
     const { location, writes } = recording("/machines");
     const { provider, sync } = setUp({ location });
     const release = sync.observe();
@@ -703,6 +953,7 @@ describe("syncLocation", () => {
   });
 
   it("replaces rather than pushes when a command leaves the ordering alone", () => {
+    // A search beside a standing ordering is still a search: it replaces.
     const { location, writes } = recording("/machines?sort=cpu__asc");
     const { provider, sync } = setUp({ location });
     const release = sync.observe();
@@ -729,7 +980,7 @@ describe("syncLocation", () => {
     release();
   });
 
-  it("retries a write the location threw on at the next publication", () => {
+  it("retries a write the location threw on at the next transition", () => {
     const { provider, location, sync } = setUp({ href: "/machines" });
     const release = sync.observe();
     const write = vi.spyOn(location, "write").mockImplementationOnce(() => {
@@ -739,9 +990,30 @@ describe("syncLocation", () => {
       "history refused",
     );
     expect(location.read().get("page")).toBe("1");
+    // A publication that moves nothing owes nothing; the next move writes.
     provider.refresh();
+    expect(write).toHaveBeenCalledTimes(1);
+    provider.navigateWindow({ page: 3 });
     expect(write).toHaveBeenCalledTimes(2);
-    expect(location.read().get("page")).toBe("2");
+    expect(location.read().get("page")).toBe("3");
+    release();
+  });
+
+  it("adopts a spelling it failed to write when it later arrives from outside", () => {
+    const { provider, location, sync } = setUp({ href: "/machines" });
+    const release = sync.observe();
+    vi.spyOn(location, "write").mockImplementationOnce(() => {
+      throw new Error("history refused");
+    });
+    expect(() => provider.navigateWindow({ page: 2 })).toThrow(
+      "history refused",
+    );
+    // Back to page one under the host: the failed spelling is no echo to
+    // await, so the same text arriving from outside is a move.
+    location.write(new URLSearchParams("page=1&size=50"));
+    expect(provider.state.get().window.page).toBe(1);
+    location.write(new URLSearchParams("page=2&size=50"));
+    expect(provider.state.get().window.page).toBe(2);
     release();
   });
 
@@ -763,15 +1035,19 @@ describe("syncLocation", () => {
     location.write(new URLSearchParams("size=0"));
     expect(seen).toHaveBeenCalledTimes(1);
     expect(sync.issues.get()).toEqual([
-      { parameter: "size", reason: '"0" is not a positive integer' },
+      {
+        parameter: "size",
+        code: "malformed",
+        reason: '"0" is not a positive integer',
+      },
     ]);
     stop();
     release();
   });
 
   it("refuses a command the source cannot execute at the boundary, and writes nothing", () => {
-    // Refused before it moves anything: the provider publishes nothing, so
-    // the loop hears nothing and the URL is left exactly as it was.
+    // Refused before it moves anything: the provider announces no
+    // transition, so the loop hears nothing and the URL is left as it was.
     const { location, writes } = recording("/machines");
     const { provider, sync } = setUp({
       location,
@@ -807,22 +1083,49 @@ describe("syncLocation", () => {
     release();
   });
 
+  it("writes nothing for a collapse, which has no spelling", () => {
+    const { location, writes } = recording("/machines");
+    const { provider, host, sync } = setUp({
+      location,
+      capabilities: declare({
+        group: {
+          fields: ["status"],
+          levels: 1,
+          collapse: true,
+          summaries: "none",
+        },
+      }),
+    });
+    const release = sync.observe();
+    writes.length = 0;
+    // The source honours collapse, so the command passes the boundary: the
+    // window moved, the transition enters no history, and the location
+    // hears nothing.
+    expect(provider.setCollapsed([["failed"]])).toEqual([]);
+    expect(host.state.get().window.collapsed).toEqual([["failed"]]);
+    expect(host.transitions.get()).toMatchObject({
+      cause: "collapse",
+      history: null,
+    });
+    expect(writes).toEqual([]);
+    release();
+  });
+
   it("keeps a refusal its own write provoked, under a location that echoes at once", () => {
     // A host transition the source cannot execute — adopted, as a saved
-    // view is, past the boundary: the write echoes synchronously, the echo
-    // refuses it, and that refusal must stand rather than be overwritten by
-    // the write that provoked it.
+    // view is, past the boundary: written, echoed at once, and read back
+    // from the spelling itself, so the clause is refused and the host
+    // narrowed exactly as a reload of that URL would leave them.
     const { provider, host, location, sync } = setUp({
       href: "/machines",
       capabilities: NOTHING_DECLARED,
     });
     const release = sync.observe();
     adoptSearch(host, "abc");
-    expect(sync.issues.get()).toEqual([
-      { parameter: "q", reason: "this source cannot search" },
-    ]);
+    expect(sync.issues.get()).toEqual([SEARCH_REFUSED]);
     expect(provider.state.get().slice.search).toBeNull();
-    // Standing: a publication at the adopted position rewrites nothing.
+    // Standing: a publication at the adopted position rewrites nothing, and
+    // the refused link stays for a reload to refuse again.
     provider.refresh();
     expect(location.read().toString()).toBe("q=abc&page=1&size=50");
     release();
@@ -838,9 +1141,7 @@ describe("syncLocation", () => {
     // The encode matches what the location already says, so nothing is
     // written and nothing echoes — the refusal must still hold.
     adoptSearch(host, "abc");
-    expect(sync.issues.get()).toEqual([
-      { parameter: "q", reason: "this source cannot search" },
-    ]);
+    expect(sync.issues.get()).toEqual([SEARCH_REFUSED]);
     expect(provider.state.get().slice.search).toBeNull();
     expect(location.read().toString()).toBe("q=abc&page=1&size=50");
     release();
@@ -860,9 +1161,8 @@ describe("syncLocation", () => {
       }
     });
     expect(() => adoptSearch(host, "abc")).toThrow("listener failed");
-    expect(sync.issues.get()).toEqual([
-      { parameter: "q", reason: "this source cannot search" },
-    ]);
+    expect(sync.issues.get()).toEqual([SEARCH_REFUSED]);
+    expect(provider.state.get().slice.search).toBeNull();
     // Written, so not retried: the refused link stands.
     provider.refresh();
     expect(location.read().toString()).toBe("q=abc&page=1&size=50");
@@ -888,10 +1188,57 @@ describe("syncLocation", () => {
     const release = sync.observe();
     armed = true;
     expect(() => adoptSearch(host, "abc")).toThrow("listener failed");
-    expect(sync.issues.get()).toEqual([
-      { parameter: "q", reason: "this source cannot search" },
-    ]);
+    expect(sync.issues.get()).toEqual([SEARCH_REFUSED]);
     expect(provider.state.get().slice.search).toBeNull();
+    stop();
+    release();
+  });
+
+  it("keeps writing when a listener throws after the write landed", () => {
+    const { provider, location, sync } = setUp({ href: "/machines" });
+    const release = sync.observe();
+    let thrown = false;
+    const stop = location.subscribe(() => {
+      if (!thrown) {
+        thrown = true;
+        throw new Error("listener failed");
+      }
+    });
+    expect(() => provider.navigateWindow({ page: 2 })).toThrow(
+      "listener failed",
+    );
+    // Written, so not retried: the loop's own listener heard the echo.
+    expect(location.read().toString()).toBe("page=2&size=50");
+    provider.navigateWindow({ page: 3 });
+    expect(location.read().toString()).toBe("page=3&size=50");
+    stop();
+    release();
+  });
+
+  it("keeps writing when a listener that threw first never let it echo", () => {
+    const location = createMemoryLocation({ href: "/machines" });
+    // Subscribed before the loop, so its throw stops the location before
+    // the loop's own listener hears the write.
+    let armed = false;
+    const stop = location.subscribe(() => {
+      if (armed) {
+        armed = false;
+        throw new Error("listener failed");
+      }
+    });
+    const { provider, sync } = setUp({ location });
+    const release = sync.observe();
+    armed = true;
+    expect(() => provider.navigateWindow({ page: 2 })).toThrow(
+      "listener failed",
+    );
+    expect(location.read().toString()).toBe("page=2&size=50");
+    // The unheard echo is still the loop's own write: an external move to
+    // another spelling is adopted, the same spelling is not re-adopted.
+    provider.navigateWindow({ page: 3 });
+    expect(location.read().toString()).toBe("page=3&size=50");
+    location.write(new URLSearchParams("page=4&size=50"));
+    expect(provider.state.get().window.page).toBe(4);
     stop();
     release();
   });
@@ -940,7 +1287,7 @@ describe("syncLocation", () => {
   });
 
   it("owes a read-back respelling a replace, even in push mode", () => {
-    const { memory, location, writes } = recording(
+    const { location, writes, move } = recording(
       "/machines?q=abc&page=1&size=50",
     );
     const { provider, host, sync } = setUp({
@@ -955,7 +1302,7 @@ describe("syncLocation", () => {
       const { slice } = provider.state.get();
       if (step === 0 && slice.search === null) {
         step = 1;
-        memory.write(new URLSearchParams("page=007&size=50"));
+        move("page=007&size=50");
       }
     });
     writes.length = 0;
@@ -988,7 +1335,7 @@ describe("syncLocation", () => {
   });
 
   it("lets a genuine move after a respelling in one read-back push", () => {
-    const { memory, location, writes } = recording(
+    const { location, writes, move } = recording(
       "/machines?q=abc&page=1&size=50",
     );
     const { provider, host, sync } = setUp({
@@ -1002,7 +1349,7 @@ describe("syncLocation", () => {
     const respell = provider.state.subscribe(() => {
       if (!respelled && provider.state.get().slice.search === null) {
         respelled = true;
-        memory.write(new URLSearchParams("page=007&size=50"));
+        move("page=007&size=50");
       }
     });
     // Subscribed after the loop: it moves once the respelling is adopted.
@@ -1013,15 +1360,19 @@ describe("syncLocation", () => {
     });
     writes.length = 0;
     adoptSearch(host, "abc");
-    // The last reason decides: the move is the user's step, so it pushes.
-    expect(writes).toEqual([["page=8&size=50", "push"]]);
+    // Each move enters history on its own terms: the respelling replaces,
+    // the step the user took pushes.
+    expect(writes).toEqual([
+      ["page=7&size=50", "replace"],
+      ["page=8&size=50", "push"],
+    ]);
     mover();
     respell();
     release();
   });
 
   it("keeps a read-back respelling a replace when the host republishes in place", () => {
-    const { memory, location, writes } = recording(
+    const { location, writes, move } = recording(
       "/machines?q=abc&page=1&size=50",
     );
     const { provider, host, sync } = setUp({
@@ -1035,7 +1386,7 @@ describe("syncLocation", () => {
     const respell = provider.state.subscribe(() => {
       if (!respelled && provider.state.get().slice.search === null) {
         respelled = true;
-        memory.write(new URLSearchParams("page=007&size=50"));
+        move("page=007&size=50");
       }
     });
     // Publishes without moving once the respelling is adopted.
@@ -1089,23 +1440,17 @@ describe("syncLocation", () => {
     const location = createMemoryLocation({
       href: "/machines?q=abc&page=1&size=50",
     });
-    const sync = syncLocation({
-      host: stubborn,
-      location,
-      history: "replace",
-    });
+    const sync = syncLocation({ host: stubborn, location });
     const release = sync.observe();
     const reads = vi.spyOn(location, "read");
     const writes = vi.spyOn(location, "write");
     adoptSearch(host, "abc");
-    // Once, and it terminates: a host that publishes on adopt without
-    // moving would otherwise bring the read-back straight back here, and
-    // the refused clause is left standing rather than rewritten away.
+    // Once, and it terminates: a publication is not a transition, so a host
+    // that publishes on adopt without moving cannot bring the read-back
+    // straight back here, and the refused clause is left standing.
     expect(reads).toHaveBeenCalledTimes(1);
     expect(writes).not.toHaveBeenCalled();
-    expect(sync.issues.get()).toEqual([
-      { parameter: "q", reason: "this source cannot search" },
-    ]);
+    expect(sync.issues.get()).toEqual([SEARCH_REFUSED]);
     reads.mockRestore();
     writes.mockRestore();
     release();
@@ -1128,6 +1473,7 @@ describe("syncLocation", () => {
     expect(sync.issues.get()).toEqual([
       {
         parameter: "status",
+        code: "undeclared-field",
         reason: 'field "status" cannot be filtered',
       },
     ]);
@@ -1163,11 +1509,7 @@ describe("syncLocation", () => {
     const provider = machinesProvider();
     const location = createMemoryLocation({ href: "/machines" });
     const { host, adopt } = spyAdopt(readProviderHost(provider));
-    const release = syncLocation({
-      host,
-      location,
-      history: "replace",
-    }).observe();
+    const release = syncLocation({ host, location }).observe();
     release();
     release();
 

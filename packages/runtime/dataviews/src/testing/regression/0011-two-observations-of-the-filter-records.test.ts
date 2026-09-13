@@ -37,13 +37,16 @@ describe("regression 0011 — two observations of the filter records", () => {
     const first = inputs.observe();
     const second = inputs.observe();
     first();
-    host.adopt({
-      slice: {
-        ...EMPTY_SLICE,
-        filter: [{ field: "cpu", operator: "gte", operands: [8] }],
+    host.adopt(
+      {
+        slice: {
+          ...EMPTY_SLICE,
+          filter: [{ field: "cpu", operator: "gte", operands: [8] }],
+        },
+        window: DEFAULT_WINDOW,
       },
-      window: DEFAULT_WINDOW,
-    });
+      "view",
+    );
     expect(inputs.handles.cpu.gte.applied.get()).toEqual({
       kind: "value",
       value: 8,

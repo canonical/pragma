@@ -34,6 +34,7 @@ export type {
   FilterInputState,
 } from "./filter/index.js";
 export type {
+  HistoryMode,
   MemoryLocationConfig,
   PlatformLocation,
   QueryLocation,
@@ -46,6 +47,8 @@ export type { ReadonlyChannel } from "./observable/index.js";
 export type {
   DataViewsProvider,
   DataViewsProviderConfig,
+  HistoryPolicy,
+  QueryTransition,
 } from "./provider/index.js";
 export { createDataViewsProvider } from "./provider/index.js";
 export type {
@@ -158,5 +161,6 @@ export type {
   DecodeQueryConfig,
   EncodeQueryConfig,
   QueryIssue,
+  QueryIssueCode,
 } from "./wire/index.js";
 export { decodeQuery, encodeQuery } from "./wire/index.js";

@@ -74,8 +74,16 @@ describe("describeViewStatus", () => {
         status: "refused",
         view,
         issues: [
-          { parameter: "cores__gte", reason: '"zero" is not a number' },
-          { parameter: "sort", reason: "sorting is not supported" },
+          {
+            parameter: "cores__gte",
+            code: "invalid",
+            reason: '"zero" is not a number',
+          },
+          {
+            parameter: "sort",
+            code: "too-many-terms",
+            reason: "sorting is not supported",
+          },
         ],
       })[0],
     ).toBe(

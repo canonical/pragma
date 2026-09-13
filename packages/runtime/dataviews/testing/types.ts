@@ -1,9 +1,10 @@
 /**
- * Test-only shapes: what a manual source records and answers with, and
- * what a counting view store reports. Named here so a test file imports
- * one place for them.
+ * Test-only shapes: what a manual source records and answers with, what a
+ * counting view store reports, and what a recording location port
+ * records. Named here so a test file imports one place for them.
  */
 
+import type { HistoryMode, QueryLocation } from "../src/lib/location/index.js";
 import type { Query } from "../src/lib/query/index.js";
 import type {
   SourceDelivery,
@@ -67,4 +68,21 @@ export type CountingViewStoreConfig = {
    * refusing to be heard, as storage the browser blocks might.
    */
   readonly onSubscribe?: (() => void) | undefined;
+};
+
+/**
+ * One write a recording location received: the parameters, and the history
+ * mode the writer asked for — null when it asked for none.
+ */
+export type RecordedWrite = readonly [string, HistoryMode | null];
+
+/** A location port and the record of what passed through it. */
+export type RecordingLocation = {
+  readonly location: QueryLocation;
+  /** Every write, in order. */
+  readonly writes: RecordedWrite[];
+  /** What the location read at each notification its subscribers received. */
+  readonly notifications: string[];
+  /** Move the location from outside the loop, as the browser would. */
+  readonly move: (params: string) => void;
 };

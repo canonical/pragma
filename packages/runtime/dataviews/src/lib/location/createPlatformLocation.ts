@@ -1,4 +1,4 @@
-import type { PlatformLocation, QueryLocation } from "./types.js";
+import type { HistoryMode, PlatformLocation, QueryLocation } from "./types.js";
 
 const resolve = (input: string | URL): URL => {
   if (input instanceof URL) {
@@ -28,7 +28,7 @@ export default function createPlatformLocation(
     },
     write(
       next: URLSearchParams,
-      options?: { readonly history?: "push" | "replace" },
+      options?: { readonly history?: HistoryMode },
     ): void {
       const current = resolve(platform.getLocation());
       const search = next.toString();

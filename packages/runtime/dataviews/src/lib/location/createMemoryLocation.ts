@@ -1,4 +1,8 @@
-import type { MemoryLocationConfig, QueryLocation } from "./types.js";
+import type {
+  HistoryMode,
+  MemoryLocationConfig,
+  QueryLocation,
+} from "./types.js";
 
 /** The parsing base for relative hrefs; never surfaced through the port. */
 const LOCAL_BASE = "http://localhost/";
@@ -26,7 +30,7 @@ export default function createMemoryLocation(
     },
     write(
       next: URLSearchParams,
-      options?: { readonly history?: "push" | "replace" },
+      options?: { readonly history?: HistoryMode },
     ): void {
       void options;
       const search = next.toString();

@@ -6,8 +6,14 @@ import {
 import type { SourceRefusal } from "../result/index.js";
 import type { RowRecord } from "../rows/index.js";
 import { refusalsOf } from "../source/index.js";
+import { CAUSE_OF_COMMAND } from "./constants.js";
 import listIncurredRefusals from "./listIncurredRefusals.js";
-import type { QueryCommands, QueryCommandsConfig } from "./types.js";
+import type {
+  AdoptionCause,
+  QueryCommands,
+  QueryCommandsConfig,
+  TransitionCause,
+} from "./types.js";
 
 /** What every applied command answers with: no refusal, one frozen list. */
 const NO_REFUSALS: readonly SourceRefusal[] = Object.freeze([]);
@@ -26,13 +32,28 @@ const NO_REFUSALS: readonly SourceRefusal[] = Object.freeze([]);
  * its trouble. A command the grammar rejects is a programmer error and
  * throws.
  *
- * @note Impure by design: every accepted command moves the coordinator and
- * publishes its state.
+ * Every move is announced as a transition once its state is published:
+ * what moved the query and how the move enters history, by the policy.
+ *
+ * @note Impure by design: every accepted command moves the coordinator,
+ * publishes its state and announces the transition.
  */
 export default function createQueryCommands<TRow extends object = RowRecord>(
   config: QueryCommandsConfig<TRow>,
 ): QueryCommands {
-  const { coordinator, capabilities, source, publish } = config;
+  const { coordinator, capabilities, source, publish, transitions, history } =
+    config;
+
+  /** Publish the state the coordinator reached, then announce the move. */
+  const announce = (cause: TransitionCause): void => {
+    publish();
+    const { slice, window } = coordinator.state;
+    transitions.set({
+      query: { slice, window },
+      cause,
+      history: history[cause],
+    });
+  };
 
   const refusals = (query: Query): readonly SourceRefusal[] => {
     const declared = refusalsOf(capabilities, query);
@@ -72,13 +93,13 @@ export default function createQueryCommands<TRow extends object = RowRecord>(
       // Applied above to a copy, and here for real: the same command over
       // the same state, so what moved there moves here and issues a request.
       coordinator.dispatch(next);
-      publish();
+      announce(CAUSE_OF_COMMAND[next.kind]);
       return NO_REFUSALS;
     },
-    adopt(query: Query): string | null {
+    adopt(query: Query, cause: AdoptionCause): string | null {
       const requestId = coordinator.adopt(query);
       if (requestId !== null) {
-        publish();
+        announce(cause);
       }
       return requestId;
     },

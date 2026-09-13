@@ -97,11 +97,19 @@ describe("decodeQuery", () => {
     expect(decode("page=none")).toMatchObject({
       window: firstPage,
       issues: [
-        { parameter: "page", reason: '"none" is not a positive integer' },
+        {
+          parameter: "page",
+          code: "malformed",
+          reason: '"none" is not a positive integer',
+        },
       ],
     });
     expect(decode("size=0").issues).toEqual([
-      { parameter: "size", reason: '"0" is not a positive integer' },
+      {
+        parameter: "size",
+        code: "malformed",
+        reason: '"0" is not a positive integer',
+      },
     ]);
   });
 
@@ -111,8 +119,16 @@ describe("decodeQuery", () => {
       slice: noQuery,
       window: firstPage,
       issues: [
-        { parameter: "page", reason: `"${huge}" is too large` },
-        { parameter: "size", reason: `"${huge}" is too large` },
+        {
+          parameter: "page",
+          code: "malformed",
+          reason: `"${huge}" is too large`,
+        },
+        {
+          parameter: "size",
+          code: "malformed",
+          reason: `"${huge}" is too large`,
+        },
       ],
     });
   });
@@ -139,20 +155,16 @@ describe("decodeQuery", () => {
     expect(decoded.issues).toEqual([
       {
         parameter: "cursor",
+        code: "unreachable-page",
         reason: "this source pages by number and reaches no page by token",
       },
     ]);
   });
 
-  it("refuses a cursor carrying no token", () => {
+  it("reads a blank cursor as none", () => {
     expect(decode("page=3&cursor=")).toMatchObject({
       window: { page: 3, cursor: null },
-      issues: [
-        {
-          parameter: "cursor",
-          reason: '"cursor" must carry the token a page handed back',
-        },
-      ],
+      issues: [],
     });
   });
 
@@ -168,6 +180,7 @@ describe("decodeQuery", () => {
     expect(decode("page=2&page=5").issues).toEqual([
       {
         parameter: "page",
+        code: "malformed",
         reason: '"page" takes one value; the extra values were ignored',
       },
     ]);
@@ -176,6 +189,7 @@ describe("decodeQuery", () => {
     expect(decode("cursor=a&cursor=b").issues).toEqual([
       {
         parameter: "cursor",
+        code: "malformed",
         reason: '"cursor" takes one value; the extra values were ignored',
       },
     ]);
@@ -185,37 +199,44 @@ describe("decodeQuery", () => {
     expect(decode("cpu__gte=4&cpu__gte=8").issues).toEqual([
       {
         parameter: "cpu__gte",
+        code: "malformed",
         reason: '"cpu__gte" takes one value; the extra values were ignored',
       },
     ]);
   });
 
-  it("refuses a grouping level naming nothing", () => {
+  it("reads a blank grouping level as none, beside the levels that name a field", () => {
     expect(decode("group=")).toMatchObject({
       slice: { group: [] },
-      issues: [{ parameter: "group", reason: '"group" must name a field' }],
+      issues: [],
     });
-  });
-
-  it("refuses a whole grouping when any of its levels names nothing", () => {
-    // Dropping one level would nest the rest under a parent nobody asked for.
     const decoded = decode("group=status&group=&group=owner");
-    expect(decoded.slice.group).toEqual([]);
-    expect(decoded.issues).toEqual([
-      { parameter: "group", reason: '"group" must name a field' },
+    expect(decoded.slice.group).toEqual([
+      { field: "status" },
+      { field: "owner" },
     ]);
+    expect(decoded.issues).toEqual([]);
   });
 
   it("refuses a sort value that is not an ordered term", () => {
     expect(decode("sort=updated").issues).toEqual([
-      { parameter: "sort", reason: '"updated" is not an ordered sort term' },
+      {
+        parameter: "sort",
+        code: "malformed",
+        reason: '"updated" is not an ordered sort term',
+      },
     ]);
     expect(decode("sort=__asc").issues).toEqual([
-      { parameter: "sort", reason: '"__asc" is not an ordered sort term' },
+      {
+        parameter: "sort",
+        code: "malformed",
+        reason: '"__asc" is not an ordered sort term',
+      },
     ]);
     expect(decode("sort=updated__sideways").issues).toEqual([
       {
         parameter: "sort",
+        code: "malformed",
         reason: '"updated__sideways" is not an ordered sort term',
       },
     ]);
@@ -226,11 +247,23 @@ describe("decodeQuery", () => {
     const decoded = decode("sort=cpu__asc&sort=bogus&sort=status__desc");
     expect(decoded.slice.sort).toEqual([]);
     expect(decoded.issues).toEqual([
-      { parameter: "sort", reason: '"bogus" is not an ordered sort term' },
+      {
+        parameter: "sort",
+        code: "malformed",
+        reason: '"bogus" is not an ordered sort term',
+      },
     ]);
     expect(decode("sort=bogus&sort=worse").issues).toEqual([
-      { parameter: "sort", reason: '"bogus" is not an ordered sort term' },
-      { parameter: "sort", reason: '"worse" is not an ordered sort term' },
+      {
+        parameter: "sort",
+        code: "malformed",
+        reason: '"bogus" is not an ordered sort term',
+      },
+      {
+        parameter: "sort",
+        code: "malformed",
+        reason: '"worse" is not an ordered sort term',
+      },
     ]);
   });
 
@@ -245,6 +278,7 @@ describe("decodeQuery", () => {
     expect(decode("name=alder").issues).toEqual([
       {
         parameter: "name",
+        code: "invalid",
         reason: "text fields are ordered, not filtered",
       },
     ]);
@@ -263,6 +297,7 @@ describe("decodeQuery", () => {
     expect(decoded.issues).toEqual([
       {
         parameter: "sort",
+        code: "unknown-field",
         reason: '"region" is not a field of this collection',
       },
     ]);
@@ -302,7 +337,13 @@ describe("decodeQuery", () => {
     expect(decode("cpu__near=4")).toEqual({
       slice: noQuery,
       window: firstPage,
-      issues: [{ parameter: "cpu__near", reason: 'unknown operator "near"' }],
+      issues: [
+        {
+          parameter: "cpu__near",
+          code: "malformed",
+          reason: 'unknown operator "near"',
+        },
+      ],
     });
   });
 
@@ -310,18 +351,21 @@ describe("decodeQuery", () => {
     expect(decode("status__isSet=1").issues).toEqual([
       {
         parameter: "status__isSet",
+        code: "invalid",
         reason: 'choices field "status" does not accept the isSet operator',
       },
     ]);
     expect(decode("owner=yes").issues).toEqual([
       {
         parameter: "owner",
+        code: "invalid",
         reason: 'flag field "owner" does not accept the eq operator',
       },
     ]);
     expect(decode("status__gte=ready").issues).toEqual([
       {
         parameter: "status__gte",
+        code: "invalid",
         reason: 'choices field "status" does not accept the gte operator',
       },
     ]);
@@ -333,29 +377,44 @@ describe("decodeQuery", () => {
       issues: [
         {
           parameter: "status",
+          code: "invalid",
           reason: '"melted" is not an option of "status"',
         },
       ],
     });
     expect(decode("cpu__gte=lots").issues).toEqual([
-      { parameter: "cpu__gte", reason: "not a number" },
+      { parameter: "cpu__gte", code: "invalid", reason: "not a number" },
     ]);
     expect(decode("cpu__gte=99").issues).toEqual([
-      { parameter: "cpu__gte", reason: "99 is above the maximum of 64" },
+      {
+        parameter: "cpu__gte",
+        code: "invalid",
+        reason: "99 is above the maximum of 64",
+      },
     ]);
     expect(decode("updated__gte=2026-02-30").issues).toEqual([
       {
         parameter: "updated__gte",
+        code: "invalid",
         reason: '"2026-02-30" is not an ISO-8601 calendar date (YYYY-MM-DD)',
       },
     ]);
   });
 
-  it("reports an owned parameter given no value", () => {
-    expect(decode("status=")).toMatchObject({
-      slice: { filter: [] },
-      issues: [{ parameter: "status", reason: '"status" was given no value' }],
+  it("reads a blank owned parameter as no clause", () => {
+    // A native GET form submits every named control, the empty ones as
+    // `name=`: a bound nobody typed in is no clause, not a refusal.
+    expect(
+      decode("status=&cpu__gte=&cpu__lte=&sort=&page=&size="),
+    ).toMatchObject({
+      slice: { filter: [], sort: [] },
+      window: firstPage,
+      issues: [],
     });
+    // Blank beside a value: the value is the clause.
+    expect(decode("status=&status=failed").slice.filter).toEqual([
+      { field: "status", operator: "eq", operands: ["failed"] },
+    ]);
   });
 
   it("keeps the operands that pass and reports the ones that do not", () => {
@@ -364,7 +423,11 @@ describe("decodeQuery", () => {
       { field: "status", operator: "eq", operands: ["failed"] },
     ]);
     expect(decoded.issues).toEqual([
-      { parameter: "status", reason: '"melted" is not an option of "status"' },
+      {
+        parameter: "status",
+        code: "invalid",
+        reason: '"melted" is not an option of "status"',
+      },
     ]);
   });
 
@@ -389,7 +452,9 @@ describe("decodeQuery", () => {
     expect(
       decodeQuery({ schema, params: new URLSearchParams("load__gte=1e999") })
         .issues,
-    ).toEqual([{ parameter: "load__gte", reason: "not a number" }]);
+    ).toEqual([
+      { parameter: "load__gte", code: "invalid", reason: "not a number" },
+    ]);
   });
 
   it("refuses each clause the source cannot execute, and only those", () => {
@@ -416,14 +481,24 @@ describe("decodeQuery", () => {
     expect(decoded.issues).toEqual([
       {
         parameter: "cpu__lte",
+        code: "undeclared-operator",
         reason: 'field "cpu" cannot be filtered with lte',
       },
       {
         parameter: "owner__isSet",
+        code: "undeclared-field",
         reason: 'field "owner" cannot be filtered',
       },
-      { parameter: "q", reason: "this source cannot search" },
-      { parameter: "group", reason: "this source cannot group" },
+      {
+        parameter: "q",
+        code: "undeclared-field",
+        reason: "this source cannot search",
+      },
+      {
+        parameter: "group",
+        code: "too-many-levels",
+        reason: "this source cannot group",
+      },
     ]);
   });
 
@@ -435,8 +510,16 @@ describe("decodeQuery", () => {
     });
     expect(decoded.slice.sort).toEqual([]);
     expect(decoded.issues).toEqual([
-      { parameter: "sort", reason: 'field "cpu" cannot be sorted' },
-      { parameter: "sort", reason: 'field "name" cannot be sorted' },
+      {
+        parameter: "sort",
+        code: "undeclared-field",
+        reason: 'field "cpu" cannot be sorted',
+      },
+      {
+        parameter: "sort",
+        code: "undeclared-field",
+        reason: 'field "name" cannot be sorted',
+      },
     ]);
   });
 
@@ -451,7 +534,11 @@ describe("decodeQuery", () => {
     });
     expect(decoded.slice.sort).toEqual([]);
     expect(decoded.issues).toEqual([
-      { parameter: "sort", reason: "this source orders by at most 1 term" },
+      {
+        parameter: "sort",
+        code: "too-many-terms",
+        reason: "this source orders by at most 1 term",
+      },
     ]);
     // A field spelled twice is one term, so it fits the same limit.
     expect(
@@ -491,7 +578,11 @@ describe("decodeQuery", () => {
     });
     expect(decoded.slice.sort).toEqual([]);
     expect(decoded.issues).toEqual([
-      { parameter: "sort", reason: 'field "name" cannot be sorted' },
+      {
+        parameter: "sort",
+        code: "undeclared-field",
+        reason: 'field "name" cannot be sorted',
+      },
     ]);
   });
 
@@ -510,7 +601,11 @@ describe("decodeQuery", () => {
     });
     expect(decoded.slice.group).toEqual([]);
     expect(decoded.issues).toEqual([
-      { parameter: "group", reason: 'field "region" cannot be grouped' },
+      {
+        parameter: "group",
+        code: "undeclared-field",
+        reason: 'field "region" cannot be grouped',
+      },
     ]);
   });
 

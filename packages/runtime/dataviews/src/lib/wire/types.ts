@@ -4,13 +4,31 @@
  */
 
 import type { Query, ResultWindow, Slice } from "../query/index.js";
+import type { SourceRefusalCode } from "../result/index.js";
 import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
 import type { SourceCapabilities } from "../source/index.js";
 
 /**
+ * Which stage refused a parameter, for a control to switch on: the
+ * source's own code where the source refused it, `malformed` where the
+ * grammar could not read it, `invalid` where the schema refused its value or
+ * its operator, and `unknown-field` where it names a field the collection
+ * does not have.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export type QueryIssueCode =
+  | SourceRefusalCode
+  | "malformed"
+  | "invalid"
+  | "unknown-field";
+
+/**
  * One refusal of an owned parameter — by the grammar, the schema or the
  * source — named for a visible query error. One parameter may carry
- * several.
+ * several. The code names the stage that refused it, and the reason is what
+ * a control says.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -18,6 +36,8 @@ import type { SourceCapabilities } from "../source/index.js";
 export type QueryIssue = {
   /** The parameter as it was spelled in the URL. */
   readonly parameter: string;
+  /** Which stage refused it, for a control to switch on. */
+  readonly code: QueryIssueCode;
   /** Why it was refused: a lowercase fragment, as schema reasons are. */
   readonly reason: string;
 };

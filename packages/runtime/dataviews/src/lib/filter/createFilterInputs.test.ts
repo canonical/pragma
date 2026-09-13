@@ -140,15 +140,18 @@ describe("createFilterInputs", () => {
     const host = readProviderHost(p);
     const inputs = createFilterInputs({ host });
     // Moved before anything followed it: seen on observe.
-    host.adopt({
-      slice: {
-        filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
-        search: null,
-        sort: [],
-        group: [],
+    host.adopt(
+      {
+        slice: {
+          filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
+          search: null,
+          sort: [],
+          group: [],
+        },
+        window: p.state.get().window,
       },
-      window: p.state.get().window,
-    });
+      "adopt",
+    );
     expect(inputs.handles.status.eq.applied.get()).toEqual({ kind: "empty" });
     const stop = inputs.observe();
     expect(inputs.handles.status.eq.applied.get()).toEqual({
@@ -157,15 +160,18 @@ describe("createFilterInputs", () => {
     });
     // Moved while following: adopted at once, stale input discarded.
     inputs.handles.cpu.gte.edit("nope");
-    host.adopt({
-      slice: {
-        filter: [{ field: "cpu", operator: "gte", operands: [8] }],
-        search: null,
-        sort: [],
-        group: [],
+    host.adopt(
+      {
+        slice: {
+          filter: [{ field: "cpu", operator: "gte", operands: [8] }],
+          search: null,
+          sort: [],
+          group: [],
+        },
+        window: p.state.get().window,
       },
-      window: p.state.get().window,
-    });
+      "adopt",
+    );
     expect(inputs.handles.status.eq.applied.get()).toEqual({ kind: "empty" });
     expect(inputs.handles.cpu.gte.state.get()).toEqual({
       input: "8",

@@ -269,10 +269,13 @@ export default function createProviderViews(
     });
     const unknown = [...new Set(params.keys())]
       .filter((key) => key !== "as" && !isOwnedKey(key, host.schema))
-      .map((key) => ({
-        parameter: key,
-        reason: `"${key}" names no field of this collection`,
-      }));
+      .map(
+        (key): QueryIssue => ({
+          parameter: key,
+          code: "unknown-field",
+          reason: `"${key}" names no field of this collection`,
+        }),
+      );
     return { slice, issues: [...issues, ...unknown] };
   };
 

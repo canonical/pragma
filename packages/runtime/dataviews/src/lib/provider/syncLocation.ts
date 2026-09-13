@@ -1,10 +1,6 @@
+import type { HistoryMode } from "../location/index.js";
 import { createChannel, protectChannel } from "../observable/index.js";
-import {
-  areListsEqual,
-  areSlicesEqual,
-  areSortsEqual,
-  type Query,
-} from "../query/index.js";
+import { areListsEqual, areSlicesEqual, type Query } from "../query/index.js";
 import type { RowRecord } from "../rows/index.js";
 import type { SchemaFieldDefinition } from "../schema/index.js";
 import {
@@ -13,19 +9,7 @@ import {
   isOwnedKey,
   type QueryIssue,
 } from "../wire/index.js";
-import type { LocationSync, LocationSyncConfig } from "./types.js";
-
-/** One read-back of the location: where the host began it, and what it owes. */
-type ReadBack = {
-  readonly from: Query;
-  /** The history mode of a write owed once it is done, or null. */
-  owed: "push" | "replace" | null;
-};
-
-const readQuery = (source: Query): Query => ({
-  slice: source.slice,
-  window: source.window,
-});
+import type { LocationSync, LocationSyncConfig, Transition } from "./types.js";
 
 /**
  * Two queries the location cannot tell apart. Every window member the
@@ -38,18 +22,6 @@ const isSameQuery = (a: Query, b: Query): boolean =>
   a.window.size === b.window.size &&
   a.window.cursor === b.window.cursor;
 
-/**
- * Whether a transition changed the ordering.
- *
- * Ordering is the one discrete step in the grammar: a reader sorts a column,
- * reads the rows and expects Back to return to the order they came from. A
- * filter or a search is a stream of small edits, so those keep the
- * configured mode; a respelling of an ordering already in the location is
- * not a step either, and the terms then read the same.
- */
-const hasOrderingChanged = (a: Query, b: Query): boolean =>
-  !areSortsEqual(a.slice.sort, b.slice.sort);
-
 const areIssuesEqual = (
   a: readonly QueryIssue[],
   b: readonly QueryIssue[],
@@ -58,19 +30,27 @@ const areIssuesEqual = (
     a,
     b,
     (issue, other) =>
-      issue.parameter === other.parameter && issue.reason === other.reason,
+      issue.parameter === other.parameter &&
+      issue.code === other.code &&
+      issue.reason === other.reason,
   );
 
 /**
  * Keep a location and the host's query in step.
  *
  * There is one authoritative query and it lives in the location: the host
- * never mirrors it with an effect of its own. A write the sync makes
- * decodes back to the state that produced it, so an echo adopts nothing and
- * the loop terminates on the first pass in both directions. On `observe()`
- * the location is adopted before anything else runs, so the first request
- * a provider issues is the location's query and never the seed followed by
- * a second fetch.
+ * never mirrors it with an effect of its own. The loop is driven by the
+ * transitions the host announces, each carrying its history mode: one with
+ * a mode is spelled and, where the location says otherwise, written in that
+ * mode, then read back; the location's notification of that very spelling
+ * is the loop's own echo and stops. Any other notification is read — its
+ * refusals reported with their codes, its query adopted if it differs, its
+ * spelling made canonical in place — and an adoption is never written back.
+ * On `observe()` the location is read before anything else runs, so the
+ * first request a provider issues is the location's query and never the
+ * seed followed by a second fetch. Everything that touches the URL goes
+ * through the location port: the loop never reads the browser, and how a
+ * write enters history is the port's to carry out.
  *
  * One sync owns one host: two syncs on the same host both write every
  * transition.
@@ -82,207 +62,160 @@ export default function syncLocation<
   TFields extends readonly SchemaFieldDefinition[],
   TRow extends object = RowRecord,
 >(config: LocationSyncConfig<TFields, TRow>): LocationSync {
-  const { host, location, history } = config;
+  const { host, location } = config;
   const { schema } = host.collection;
   const issues = createChannel<readonly QueryIssue[]>([], {
     equals: areIssuesEqual,
   });
   /**
-   * The query the location stands at, or null when it is owed a write.
-   * The host sitting there writes nothing: rows arriving, a refresh and an
-   * error all publish the same query, and a refused location keeps its
-   * parameters — so the error survives a reload instead of quietly
-   * becoming the broader query that was not asked for.
+   * The spelling the loop last wrote, whose notification is its own echo.
+   * Null once the location has moved on, so a later return to that very
+   * spelling — Forward after Back — is read like any other move.
    */
-  let standing: Query | null = null;
+  let lastWritten: string | null = null;
   /**
-   * The parameters the sync last wrote or found already written. Their
-   * echo is read back but never re-canonicalized — which is also what ends
-   * the read-back of a write that had nothing to write.
+   * The last transition the loop heard. A reset announced while nothing
+   * observed is one the loop never heard, and the next observation writes
+   * it over the location; one it heard was written as it was heard — or
+   * threw then, and is not retried — and a location moved since, by Back
+   * or a bookmark, is the reader's to keep.
    */
-  let written: string | null = null;
+  let heard: Transition | null = null;
 
-  /** The read-back in progress, or null. */
-  let reading: ReadBack | null = null;
-  /**
-   * The generation the loop last kept the location in step with. A reset
-   * while nothing observed moved the host to its seed without a write; the
-   * next observation then owes the location that write, rather than
-   * adopting the query the location still carries from before.
-   */
-  let generation = host.state.get().generation;
-
-  /**
-   * Write the host's query. `then` says what follows a write with
-   * nothing to write: `"read-back"` reads the location back as its echo
-   * would; `"skip"` does not, because the caller has just decoded the
-   * location.
-   */
-  function writeToLocation(
-    mode: "push" | "replace",
-    then: "read-back" | "skip",
-  ): void {
-    if (reading !== null) {
-      // A publication the read-back provokes — landing where the location
-      // stands or where the read-back began — writes nothing: the read-back
-      // has the last word, and a host that publishes on adopt without
-      // moving would otherwise bring it straight back here. Anything else
-      // is owed one write once it is done, in the mode of the last reason
-      // for it: a canonicalization replaces, a later genuine move pushes.
-      // Termination holds per synchronous
-      // dispatch; a listener that re-applies a refused clause lands where
-      // the read-back began and is taken as its own.
-      const moved = host.state.get();
-      const provoked =
-        standing !== null &&
-        (isSameQuery(standing, moved) || isSameQuery(reading.from, moved));
-      if (!provoked) {
-        reading.owed = mode;
-      }
-      return;
-    }
-    const state = host.state.get();
-    if (standing !== null && isSameQuery(standing, state)) {
-      return;
-    }
-    const preserve = location.read();
-    const next = encodeQuery({
+  /** A query as the location spells it, the location's other parameters kept. */
+  const spell = (query: Query, preserve: URLSearchParams): URLSearchParams =>
+    encodeQuery({
       schema,
-      slice: state.slice,
-      window: state.window,
+      slice: query.slice,
+      window: query.window,
       preserve,
     });
-    const spelled = next.toString();
-    // Recorded before the write: a location notifying synchronously
-    // re-enters adoptFromLocation from inside it, and what that adoption
-    // records — a refusal included — must have the last word.
-    const at = readQuery(state);
-    standing = at;
-    issues.set([]);
-    written = spelled;
-    if (spelled === preserve.toString()) {
-      // Nothing to write, so nothing echoes: read the location back as the
-      // echo would, so a clause the source cannot execute is still refused.
-      if (then === "read-back") {
-        const current: ReadBack = { from: at, owed: null };
-        reading = current;
-        try {
-          adoptFromLocation(preserve);
-        } finally {
-          reading = null;
-        }
-        if (current.owed !== null) {
-          // Owed, so written wherever the location stands.
-          standing = null;
-          writeToLocation(current.owed, "read-back");
-        }
-      }
-      return;
-    }
+
+  /**
+   * Write a spelling the location does not carry yet. A write that throws
+   * without landing is awaited as no echo: the spelling arriving later from
+   * outside is a move to adopt.
+   */
+  const writeLocation = (next: URLSearchParams, history: HistoryMode): void => {
+    lastWritten = next.toString();
     try {
-      location.write(next, { history: mode });
+      location.write(next, { history });
     } catch (error) {
-      if (location.read().toString() === spelled) {
-        // Written, but a listener threw — perhaps before this binding's own
-        // listener heard it. Read it back so its refusal is not lost; an
-        // error from that read-back replaces the listener's.
-        adoptFromLocation();
-      } else {
-        // Unwritten, so the next publication tries again.
-        standing = null;
+      if (location.read().toString() !== lastWritten) {
+        lastWritten = null;
       }
       throw error;
     }
-  }
+  };
 
-  function adoptFromLocation(params = location.read()): void {
+  /**
+   * Read the location: report what it refuses, respell what is clean but
+   * not canonical, and adopt what it carries when the host stands
+   * elsewhere. The respelling replaces, since it is not a step the reader
+   * took, and comes before the adoption, so whatever the adoption provokes
+   * finds the location already settled.
+   */
+  const readLocation = (params: URLSearchParams): void => {
     const decoded = decodeQuery({
       schema,
       params,
       capabilities: host.capabilities,
     });
     issues.set(decoded.issues);
-    // Recorded before adopting: the adoption publishes, and that
-    // publication re-enters writeToLocation, which must find the location
-    // already standing here.
-    standing = readQuery(decoded);
-    if (isSameQuery(host.state.get(), decoded)) {
-      // The echo of the sync's own write, or a change that reads the
-      // same: adopting would discard live input sessions for nothing. The
-      // host's own slice is kept, so later comparisons short-circuit on
-      // reference.
-      standing = readQuery(host.state.get());
-    } else {
-      host.adopt({ slice: decoded.slice, window: decoded.window });
-    }
-    if (decoded.issues.length === 0 && params.toString() !== written) {
-      // A clean location is canonicalized in place — unless it is the
-      // binding's own write coming back. A respelling is not a step the
-      // user took, so it replaces rather than pushes, and it was decoded
-      // just now, so the write reads nothing back.
-      if (reading !== null) {
-        // Inside a read-back the canonicalization is owed, not written: the
-        // read-back writes it once done, and a publication landing here
-        // meanwhile is its own.
-        reading.owed = "replace";
-        return;
+    // What the loop wrote itself is canonical by construction; only a
+    // spelling that arrived from elsewhere can need respelling.
+    if (decoded.issues.length === 0 && params.toString() !== lastWritten) {
+      const canonical = spell(decoded, params);
+      if (canonical.toString() !== params.toString()) {
+        writeLocation(canonical, "replace");
       }
-      standing = null;
-      writeToLocation("replace", "skip");
     }
-  }
+    if (!isSameQuery(host.state.get(), decoded)) {
+      host.adopt({ slice: decoded.slice, window: decoded.window }, "adopt");
+    }
+  };
+
+  /**
+   * Write a transition that enters history, where the location says
+   * otherwise, and read the spelling back: what was written is what the
+   * location now carries, and a clause the source cannot execute — one a
+   * caller adopted past the command boundary — is refused and narrowed
+   * exactly as it would be on a reload.
+   */
+  const onTransition = (): void => {
+    const transition = host.transitions.get();
+    heard = transition;
+    if (transition === null || transition.history === null) {
+      return;
+    }
+    const params = location.read();
+    const spelled = spell(transition.query, params);
+    if (spelled.toString() !== params.toString()) {
+      try {
+        writeLocation(spelled, transition.history);
+      } catch (error) {
+        if (lastWritten !== null) {
+          // Written, but a listener threw — perhaps before the loop's own
+          // heard it. Read it back all the same, so a refusal is not lost.
+          readLocation(spelled);
+        }
+        throw error;
+      }
+    }
+    readLocation(spelled);
+  };
 
   return {
     issues: protectChannel(issues),
     observe(): () => void {
       let live = true;
-      const onHostChange = (): void => {
-        const moved = host.state.get();
-        generation = moved.generation;
-        writeToLocation(
-          standing !== null && hasOrderingChanged(standing, moved)
-            ? "push"
-            : history,
-          "read-back",
-        );
-      };
-      // The location may have moved while nothing was observing it, so a
-      // fresh observation owes it a write.
-      standing = null;
-      written = null;
-      const reset = host.state.get().generation !== generation;
-      generation = host.state.get().generation;
-      const carriesQuery = [...location.read().keys()].some((key) =>
+      // The location may have moved while nothing was observing it, so
+      // nothing written before is awaited as an echo.
+      lastWritten = null;
+      const params = location.read();
+      const carriesQuery = [...new Set(params.keys())].some((key) =>
         isOwnedKey(key, schema),
       );
-      if (carriesQuery && !reset) {
-        adoptFromLocation();
+      const last = host.transitions.get();
+      const unheardReset = last?.cause === "reset" && last !== heard;
+      heard = last;
+      if (carriesQuery && !unheardReset) {
+        readLocation(params);
       } else {
-        // A location carrying no query takes the host's seed rather than
-        // erasing it; so does one left behind by a reset nothing observed.
-        // Nothing is listening yet, so the write's echo is read back here,
-        // whether or not there was anything to write: a seed clause the
-        // source cannot execute is refused and reported the way any other
-        // location clause is.
-        writeToLocation("replace", "skip");
-        adoptFromLocation();
+        // A location carrying no query takes the host's — its seed, or the
+        // state a reset nothing observed returned it to — and is then read
+        // back, so a seed clause the source cannot execute is refused and
+        // reported the way any other location clause is.
+        const spelled = spell(host.state.get(), params);
+        if (spelled.toString() !== params.toString()) {
+          writeLocation(spelled, "replace");
+        }
+        readLocation(location.read());
       }
       // Subscribed after the first pass, so a location that notifies on
       // subscribe cannot adopt itself over the seed before the pass has
-      // read it. Its own closure, never the shared function: a Location
-      // holds its listeners in a set, so two observations subscribing one
-      // reference register once and the first release deafens the second.
+      // read it. Each subscription is its own closure, never a shared
+      // function: listeners are held in a set, so two observations
+      // subscribing one reference would register once and the first
+      // release would deafen the second.
       const stopLocation = location.subscribe(() => {
-        adoptFromLocation();
+        const current = location.read();
+        if (current.toString() === lastWritten) {
+          return;
+        }
+        lastWritten = null;
+        readLocation(current);
       });
-      const stopHost = host.state.subscribe(onHostChange);
+      const stopTransitions = host.transitions.subscribe(() => {
+        onTransition();
+      });
       return function release(): void {
         if (!live) {
           return;
         }
         live = false;
         stopLocation();
-        stopHost();
+        stopTransitions();
       };
     },
   };
