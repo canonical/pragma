@@ -506,7 +506,7 @@ export type QuerySourceConfig<TRow extends object = RowRecord> = {
    * cannot combine with a filter. Pure and synchronous; no round trip.
    */
   readonly refusals?: ((query: Query) => readonly SourceRefusal[]) | undefined;
-  /** Stable prefix of the query key; the canonical query is appended. */
+  /** Stable prefix of the query key; the query's own key is appended. */
   readonly queryKey: readonly unknown[];
   /**
    * Fetch one page, mapping the endpoint's answer onto the envelope.

@@ -1,10 +1,10 @@
+import { type Query, type Slice, spellSliceKey } from "../query/index.js";
 import {
-  canonicalizeSlice,
-  type Query,
-  type Slice,
-  stringifyStable,
-} from "../query/index.js";
-import type { Count, SourceDelivery, SourceRefusal } from "../result/index.js";
+  type Count,
+  type SourceDelivery,
+  type SourceRefusal,
+  UNKNOWN_COUNT,
+} from "../result/index.js";
 import type { RowRecord } from "../rows/index.js";
 import copyCapabilities from "./copyCapabilities.js";
 import describeError from "./describeError.js";
@@ -14,9 +14,6 @@ import type {
   RelaySourceConfig,
   Source,
 } from "./types.js";
-
-/** An unknown count, shared: a connection that reports none reports nothing. */
-const UNKNOWN: Count = Object.freeze({ kind: "unknown" });
 
 /**
  * Whether normalization selections carry a `@connection` handle, which the
@@ -77,7 +74,7 @@ export default function createRelaySource<
   /** The trail one query keeps its cursors under: what it asks for, and how
    * many rows at a time. */
   const trailKey = (slice: Slice, size: number): string =>
-    stringifyStable([canonicalizeSlice(slice), size]);
+    `${size}:${spellSliceKey(slice)}`;
 
   /** The trail of one query, now the most recently used. */
   const trailOf = (key: string): Map<number, string> => {
@@ -215,7 +212,7 @@ export default function createRelaySource<
         const matched: Count =
           typeof connection.totalCount === "number"
             ? { kind: "exact", value: connection.totalCount }
-            : UNKNOWN;
+            : UNKNOWN_COUNT;
         const more = typeof hasNextPage === "boolean" ? hasNextPage : null;
         send(data, {
           status: "succeeded",
@@ -224,7 +221,7 @@ export default function createRelaySource<
             groups: null,
             // Nothing collapses, so the rows the window pages over are the
             // rows that matched; the whole collection is never asked for.
-            counts: { pageable: matched, matched, total: UNKNOWN },
+            counts: { pageable: matched, matched, total: UNKNOWN_COUNT },
             more,
             cursors: {
               next: more === false ? null : (endCursor ?? null),

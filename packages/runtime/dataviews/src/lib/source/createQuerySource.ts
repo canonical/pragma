@@ -1,4 +1,4 @@
-import { canonicalizeSlice } from "../query/index.js";
+import { spellQueryKey } from "../query/index.js";
 import type { SourcePage } from "../result/index.js";
 import type { RowRecord } from "../rows/index.js";
 import copyCapabilities from "./copyCapabilities.js";
@@ -33,11 +33,7 @@ export default function createQuerySource<TRow extends object = RowRecord>(
     ...(config.refusals === undefined ? {} : { refusals: config.refusals }),
     execute(request, deliver) {
       const observer = config.createObserver({
-        queryKey: [
-          ...config.queryKey,
-          canonicalizeSlice(request.slice),
-          request.window,
-        ],
+        queryKey: [...config.queryKey, spellQueryKey(request)],
         queryFn: () => config.fetchPage(request),
       });
       let delivered: Delivered<TRow> | null = null;

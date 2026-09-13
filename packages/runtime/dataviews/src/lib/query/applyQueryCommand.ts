@@ -4,6 +4,7 @@ import areSlicesEqual from "./areSlicesEqual.js";
 import collapseSortTerms from "./collapseSortTerms.js";
 import { OPERATOR_ARITY } from "./constants.js";
 import rejectOperandArity from "./rejectOperandArity.js";
+import rejectWindow from "./rejectWindow.js";
 import type {
   GroupPath,
   Predicate,
@@ -85,18 +86,13 @@ export default function applyQueryCommand(
   if (command.kind === "navigateWindow") {
     const page = command.page ?? window.page;
     const size = command.size ?? window.size;
-    if (!Number.isInteger(page) || page < 1) {
-      return rejected(slice, window, "page must be a positive integer");
-    }
-    if (!Number.isInteger(size) || size < 1) {
-      return rejected(slice, window, "size must be a positive integer");
-    }
-    if (command.cursor === "") {
-      return rejected(
-        slice,
-        window,
-        "cursor must not be empty; use null to clear it",
-      );
+    const rejection = rejectWindow({
+      page,
+      size,
+      cursor: command.cursor ?? null,
+    });
+    if (rejection !== null) {
+      return rejected(slice, window, rejection);
     }
     // A token addresses one page start, so moving without supplying one
     // leaves no token behind to describe the page that was left.
