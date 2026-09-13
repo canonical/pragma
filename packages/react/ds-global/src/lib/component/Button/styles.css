@@ -173,6 +173,7 @@
   .ds.button > .icon {
     display: inline-flex;
     align-items: center;
+    align-self: center;
     justify-content: center;
     flex-shrink: 0;
     width: var(--icon-size, 1em);
