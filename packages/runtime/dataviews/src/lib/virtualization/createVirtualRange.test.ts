@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { listDisplayEntries } from "../rows/index.js";
+import { listDisplayEntries } from "../display/index.js";
 import createVirtualRange from "./createVirtualRange.js";
 import type { MountedRange, MountedRun } from "./types.js";
 
@@ -212,7 +212,7 @@ describe("createVirtualRange", () => {
       range.setViewport(500, 45);
       const stale = listDisplayEntries({
         rowIds: rowIds(100),
-        status: "stale",
+        status: { status: "stale", reason: "offline" },
       });
       expect(range.setEntries(stale)).toBe(30);
       // Entry 51 is r-50: the same rows stay mounted under the status row.

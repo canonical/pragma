@@ -34,6 +34,7 @@ import type {
   DateField,
   DecodedQuery,
   DecodeQueryConfig,
+  DisplayStatus,
   EmptyOr,
   EncodeQueryConfig,
   FieldKind,
@@ -134,6 +135,7 @@ import type {
   DisplayEntriesConfig,
   DisplayEntry,
   DisplayEntryKind,
+  DisplayPagination,
   FilterInputs,
   FilterInputsConfig,
   FixedSizing,
@@ -186,6 +188,7 @@ type EveryPublicType = [
   DateField,
   DecodedQuery,
   DecodeQueryConfig,
+  DisplayStatus,
   EmptyOr<unknown>,
   EncodeQueryConfig,
   FieldKind,
@@ -284,9 +287,10 @@ type EveryBindingType = [
   ColumnLayoutState,
   ColumnSizing,
   ColumnToSize,
-  DisplayEntriesConfig<unknown>,
+  DisplayEntriesConfig,
   DisplayEntry,
   DisplayEntryKind,
+  DisplayPagination,
   FilterInputs<readonly SchemaFieldDefinition[]>,
   FilterInputsConfig<readonly SchemaFieldDefinition[]>,
   FixedSizing,
@@ -399,7 +403,7 @@ describe("public surface types", () => {
       "registerProviderHost",
       "createSelection",
       "applyWindow",
-      "areSortsEqual",
+      "stringifyStable",
       "collapseSortTerms",
       "executeSlice",
       "refusalsOf",
@@ -444,10 +448,31 @@ describe("public surface types", () => {
     expectTypeOf<DisplayEntry>()
       .toHaveProperty("parent")
       .toEqualTypeOf<string | null>();
-    // A status entry carries whatever status its renderer defines.
+    // A status entry carries the core's own status, decided once.
     expectTypeOf<
-      Extract<DisplayEntry<"stale">, { readonly kind: "status" }>["status"]
-    >().toEqualTypeOf<"stale">();
+      Extract<DisplayEntry, { readonly kind: "status" }>["status"]
+    >().toEqualTypeOf<DisplayStatus>();
+  });
+
+  it("spells one status vocabulary, in one casing, with its phases", () => {
+    expectTypeOf<DisplayStatus["status"]>().toEqualTypeOf<
+      | "pending"
+      | "regrouping"
+      | "failed"
+      | "refresh-failed"
+      | "stale"
+      | "no-data"
+      | "no-results"
+    >();
+    // The failures carry their reason; the rest say what they are.
+    expectTypeOf<
+      Extract<DisplayStatus, { readonly reason: string }>["status"]
+    >().toEqualTypeOf<"failed" | "refresh-failed" | "stale">();
+    expectTypeOf(bindings.DISPLAY_STATUS_PHASES).toEqualTypeOf<
+      Readonly<Record<DisplayStatus["status"], "terminal" | "transient">>
+    >();
+    // The pagination facts carry the count's exactness, never a bare number.
+    expectTypeOf<DisplayPagination["total"]>().toEqualTypeOf<Count>();
   });
 
   it("exports the provider check with the declared shape", () => {
@@ -459,10 +484,8 @@ describe("public surface types", () => {
     expectTypeOf(bindings.isDataViewsProvider).returns.toEqualTypeOf<boolean>();
   });
 
-  it("exports the query grammar with the slice comparison on ./bindings", () => {
-    expectTypeOf(bindings.areSlicesEqual).parameters.toEqualTypeOf<
-      [Slice, Slice]
-    >();
+  it("exports the query grammar, and keeps slice equality the provider's own", () => {
+    expect(bindings).not.toHaveProperty("areSlicesEqual");
     expectTypeOf<Query>().toEqualTypeOf<{
       readonly slice: Slice;
       readonly window: ResultWindow;

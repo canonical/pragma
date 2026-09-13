@@ -11,7 +11,12 @@ import {
   type Variables,
 } from "relay-runtime";
 import { describe, expect, it, vi } from "vitest";
-import { byId, declare, declareSort } from "../../../testing/fixtures.js";
+import {
+  byId,
+  declare,
+  declareSort,
+  exactly,
+} from "../../../testing/fixtures.js";
 import { createCollection } from "../collection/index.js";
 import {
   createDataViewsProvider,
@@ -23,11 +28,12 @@ import {
   type ResultWindow,
   type Slice,
 } from "../query/index.js";
-import type {
-  Count,
-  SourceCounts,
-  SourceDelivery,
-  SourceRefusal,
+import {
+  type Count,
+  type SourceCounts,
+  type SourceDelivery,
+  type SourceRefusal,
+  UNKNOWN_COUNT,
 } from "../result/index.js";
 import createRelaySource from "./createRelaySource.js";
 import type {
@@ -305,15 +311,11 @@ const connectionCapabilities: SourceCapabilities = declare({
   pagination: { kind: "cursor", backward: false, durable: false },
 });
 
-const UNKNOWN: Count = { kind: "unknown" };
-
-const exactly = (value: number): Count => ({ kind: "exact", value });
-
 /** What an ungrouped connection counts: the matched rows are the visible ones. */
 const countsOf = (matched: Count): SourceCounts => ({
   pageable: matched,
   matched,
-  total: UNKNOWN,
+  total: UNKNOWN_COUNT,
 });
 
 const statusOf = (slice: Slice): readonly string[] | null => {
@@ -686,7 +688,7 @@ describe("createRelaySource over relay-runtime", () => {
     expect(lastOf(deliver)).toMatchObject({
       status: "succeeded",
       page: {
-        counts: countsOf(UNKNOWN),
+        counts: countsOf(UNKNOWN_COUNT),
         more: null,
         cursors: { next: "c:m2", previous: null },
       },

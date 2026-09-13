@@ -27,6 +27,7 @@ export type {
   ResultState,
   ResultStatus,
 } from "./coordinator/index.js";
+export type { DisplayStatus } from "./display/index.js";
 export type {
   FilterFeedback,
   FilterHandle,
