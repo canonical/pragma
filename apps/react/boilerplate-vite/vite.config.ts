@@ -3,6 +3,7 @@ import browserslist from "browserslist";
 import { browserslistToTargets } from "lightningcss";
 import { defineConfig } from "vite";
 import relay from "vite-plugin-relay-lite";
+import { dsIcons } from "./vite-plugin-ds-icons.js";
 
 // Path aliases (#lib, #domains, #styles) are declared as Node subpath imports
 // in package.json "imports" and resolved natively by Vite — no resolver plugin.
@@ -24,7 +25,11 @@ export default defineConfig(({ mode }) => ({
   // rolldown despite its peer range stopping at Vite 7 (bun installs it with
   // only a peer-version warning). `codegen: false` because artifacts are
   // committed and regenerated explicitly via `bun run relay` / `relay:watch`.
-  plugins: [relay({ codegen: false }), react()],
+  // dsIcons() serves the @canonical/ds-assets icons at /icons in dev and
+  // copies them into the client build output — design-system components
+  // fetch glyphs at runtime from `/icons/<name>.svg#<name>`, and an
+  // unserved icon renders empty with no error.
+  plugins: [dsIcons(), relay({ codegen: false }), react()],
   // Honour the PORT env var for `dev` (SPA) and `preview` so all server scripts
   // — including the SSR ones, which already read PORT — respond to it uniformly.
   server: { port: PORT },

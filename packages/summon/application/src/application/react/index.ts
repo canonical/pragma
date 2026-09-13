@@ -323,6 +323,11 @@ fallback.`,
             dest: dest("vite.config.ts"),
             vars,
           }),
+          // Icons delivery: design-system components fetch glyphs at runtime
+          // from `/icons/<name>.svg#<name>`; the plugin serves them from
+          // @canonical/ds-assets in dev and copies them into the client
+          // build output (wired into plugins in vite.config.ts above).
+          copy("vite-plugin-ds-icons.ts"),
           copy("vitest.config.ts"),
           // vitest setup (EJS — relay-test-utils' jest→vi alias only when --relay)
           template({
