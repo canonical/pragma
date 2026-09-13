@@ -14,8 +14,8 @@ import type { EffectiveOrdering, SortCapabilities } from "./types.js";
  * of its own runs on it. One shared answer, so a local execution, a header
  * and a server render describe the same rows the same way.
  *
- * Seam for the header unit, which reads this to show the ordering in force
- * when the query states none, and exports it with that consumer.
+ * @seam sort header — read by the header's sorted-column report, to
+ * show the ordering in force when the query states none
  */
 export default function resolveEffectiveOrdering(
   slice: Slice,

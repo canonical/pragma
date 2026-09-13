@@ -1,5 +1,5 @@
 /** The reported reason of a thrown or rejected value, always as text. */
-export default function reasonOf(error: unknown): string {
+export default function describeError(error: unknown): string {
   try {
     return (error instanceof Error ? error.message : "") || String(error);
   } catch {
