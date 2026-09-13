@@ -1,3 +1,4 @@
+import areSortsEqual from "./areSortsEqual.js";
 import canonicalSlice, { operandRankOf } from "./canonicalSlice.js";
 import type { Slice } from "./types.js";
 
@@ -29,13 +30,6 @@ const groupsEqual = (a: Slice["group"], b: Slice["group"]): boolean =>
   a.length === b.length &&
   a.every((term, index) => term.field === b[index].field);
 
-const sortsEqual = (a: Slice["sort"], b: Slice["sort"]): boolean =>
-  a.length === b.length &&
-  a.every(
-    (term, index) =>
-      term.field === b[index].field && term.direction === b[index].direction,
-  );
-
 /**
  * Semantic slice equality: two slices are equal when their canonical forms
  * match. Equality operand order does not matter; sort order always does.
@@ -47,6 +41,6 @@ export default function sliceEquals(a: Slice, b: Slice): boolean {
     left.search === right.search &&
     groupsEqual(left.group, right.group) &&
     predicatesEqual(left.filter, right.filter) &&
-    sortsEqual(left.sort, right.sort)
+    areSortsEqual(left.sort, right.sort)
   );
 }

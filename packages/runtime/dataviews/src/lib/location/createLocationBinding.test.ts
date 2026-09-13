@@ -622,6 +622,61 @@ describe("createLocationBinding", () => {
     stopSource();
   });
 
+  it("pushes a history entry for a sort command, whatever the default mode", () => {
+    const provider = machinesProvider();
+    const { location, writes } = recording("/machines");
+    const release = createLocationBinding({
+      host: provider,
+      location,
+    }).observe();
+    provider.setSort([{ field: "cpu", direction: "asc" }]);
+    provider.setSort([{ field: "cpu", direction: "desc" }]);
+    provider.setSort([
+      { field: "cpu", direction: "desc" },
+      { field: "status", direction: "asc" },
+    ]);
+    provider.setSort([{ field: "status", direction: "asc" }]);
+    expect(writes.map(([spelled, mode]) => [spelled, mode])).toEqual([
+      ["page=1&size=50", "replace"],
+      ["sort=cpu__asc&page=1&size=50", "push"],
+      ["sort=cpu__desc&page=1&size=50", "push"],
+      ["sort=cpu__desc&sort=status__asc&page=1&size=50", "push"],
+      ["sort=status__asc&page=1&size=50", "push"],
+    ]);
+    release();
+  });
+
+  it("writes nothing when a sort command only respells the ordering in force", () => {
+    const provider = machinesProvider();
+    const { location, writes } = recording("/machines?sort=cpu__asc");
+    const release = createLocationBinding({
+      host: provider,
+      location,
+    }).observe();
+    const before = writes.length;
+    provider.setSort([
+      { field: "cpu", direction: "asc" },
+      { field: "cpu", direction: "desc" },
+    ]);
+    expect(writes.slice(before)).toEqual([]);
+    release();
+  });
+
+  it("replaces rather than pushes when a command leaves the ordering alone", () => {
+    const provider = machinesProvider();
+    const { location, writes } = recording("/machines?sort=cpu__asc");
+    const release = createLocationBinding({
+      host: provider,
+      location,
+    }).observe();
+    provider.setSearch("yak");
+    expect(writes).toEqual([
+      ["sort=cpu__asc&page=1&size=50", "replace"],
+      ["q=yak&sort=cpu__asc&page=1&size=50", "replace"],
+    ]);
+    release();
+  });
+
   it("replaces when a location respells an ordering it already carries", () => {
     // The first occurrence is the ordering, so the duplicate is a
     // respelling rather than a step the reader took.

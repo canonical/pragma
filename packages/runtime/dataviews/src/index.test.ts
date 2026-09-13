@@ -9,6 +9,7 @@ describe("public surface", () => {
       "DEFAULT_WINDOW",
       "EMPTY_SLICE",
       "applyWindow",
+      "areSortsEqual",
       "canonicalSlice",
       "collapseSortTerms",
       "columnTemplate",
