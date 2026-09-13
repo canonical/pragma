@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import DEFAULT_WINDOW from "../query/defaultWindow.js";
-import type { Slice } from "../query/types.js";
+import type { Slice, SortTerm } from "../query/types.js";
 import type { SourceDelivery } from "../result/types.js";
 import type { RowRecord } from "../rows/types.js";
+import createSchema from "../schema/createSchema.js";
+import { ROOT_NUMERIC_COLLATION } from "./constants.js";
 import createArraySource from "./createArraySource.js";
 import type { SourceActionRunner, SourceRequest } from "./types.js";
 
@@ -23,10 +25,16 @@ const rows = [
   { id: "c", name: "Gamma", cpu: 8 },
 ];
 
+const schema = createSchema([
+  { field: "id", kind: "text" },
+  { field: "name", kind: "text" },
+  { field: "cpu", kind: "number" },
+]);
+
 const source = () =>
   createArraySource<RowRecord>({
     rows,
-    fields: ["id", "name", "cpu"],
+    schema,
     searchFields: ["name"],
   });
 
@@ -50,20 +58,18 @@ const idsOf = (delivered: SourceDelivery) =>
     : [delivered.failure.reason];
 
 describe("createArraySource", () => {
-  it("declares complete input and every grammar operator per field", () => {
+  it("declares complete input, and each field's own operators", () => {
     expect({ ...source().capabilities }).toEqual({
-      filter: {
-        id: ["eq", "gte", "lte", "isSet"],
-        name: ["eq", "gte", "lte", "isSet"],
-        cpu: ["eq", "gte", "lte", "isSet"],
-      },
+      // Text fields are ordered, never filtered, so the
+      // declaration offers no operator over them at all.
+      filter: { cpu: ["gte", "lte"] },
       search: { fields: ["name"] },
       sort: {
         fields: ["id", "name", "cpu"],
         terms: null,
         default: [],
         tiebreak: "opaque",
-        collation: null,
+        collation: ROOT_NUMERIC_COLLATION,
       },
       group: { fields: [], depth: 0, summaries: "none", collapse: false },
       counts: { visible: "exact", matched: "exact", total: "exact" },
@@ -75,19 +81,88 @@ describe("createArraySource", () => {
     });
   });
 
-  it("declares no search when no field is searchable", () => {
+  it("declares a default ordering with each field once", () => {
     expect(
-      createArraySource({ rows, fields: ["id"] }).capabilities.search,
-    ).toBeNull();
+      createArraySource({
+        rows,
+        schema,
+        defaultSort: [
+          { field: "cpu", direction: "desc" },
+          { field: "cpu", direction: "asc" },
+        ],
+      }).capabilities.sort.default,
+    ).toEqual([{ field: "cpu", direction: "desc" }]);
+  });
+
+  it("refuses a default ordering naming a field the schema does not define", () => {
+    expect(() =>
+      createArraySource({
+        rows,
+        schema,
+        defaultSort: [{ field: "zone", direction: "asc" }],
+      }),
+    ).toThrow('defaultSort names unknown field "zone"');
+  });
+
+  it("runs its declared default when a query states no term of its own", () => {
+    const live = createArraySource({
+      rows,
+      schema,
+      defaultSort: [{ field: "cpu", direction: "desc" }],
+    });
+    const deliver = delivery();
+    live.execute(request({ window: { ...DEFAULT_WINDOW, size: 3 } }), deliver);
+    expect(idsOf(deliveredAt(deliver, 0))).toEqual(["b", "c", "a"]);
+  });
+
+  it("collates text at the root locale, numerically, unless told otherwise", () => {
+    const numbered = [
+      { id: "n10", name: "node10" },
+      { id: "n2", name: "node2" },
+    ];
+    const live = createArraySource({ rows: numbered, schema });
+    const deliver = delivery();
+    live.execute(
+      request({
+        slice: { ...emptySlice, sort: [{ field: "name", direction: "asc" }] },
+      }),
+      deliver,
+    );
+    expect(idsOf(deliveredAt(deliver, 0))).toEqual(["n2", "n10"]);
+
+    const byCodePoint = createArraySource({
+      rows: numbered,
+      schema,
+      collation: null,
+    });
+    const other = delivery();
+    byCodePoint.execute(
+      request({
+        slice: { ...emptySlice, sort: [{ field: "name", direction: "asc" }] },
+      }),
+      other,
+    );
+    expect(idsOf(deliveredAt(other, 0))).toEqual(["n10", "n2"]);
+  });
+
+  it("declares no search when no field is searchable", () => {
+    expect(createArraySource({ rows, schema }).capabilities.search).toBeNull();
   });
 
   it("freezes its declaration against the caller's arrays", () => {
-    const fields = ["id", "name"];
+    const defaultSort: SortTerm[] = [{ field: "id", direction: "asc" }];
     const searchFields = ["name"];
-    const { capabilities } = createArraySource({ rows, fields, searchFields });
-    fields.push("cpu");
+    const { capabilities } = createArraySource({
+      rows,
+      schema,
+      defaultSort,
+      searchFields,
+    });
+    defaultSort.push({ field: "cpu", direction: "asc" });
     searchFields.push("cpu");
-    expect(capabilities.sort.fields).toEqual(["id", "name"]);
+    expect(capabilities.sort.default).toEqual([
+      { field: "id", direction: "asc" },
+    ]);
     expect(capabilities.search).toEqual({ fields: ["name"] });
     expect(Object.isFrozen(capabilities)).toBe(true);
     expect(Object.isFrozen(capabilities.sort.fields)).toBe(true);
@@ -159,7 +234,7 @@ describe("createArraySource", () => {
         ? (row as Record<string, unknown>)[field]
         : undefined,
     );
-    const live = createArraySource({ rows, fields: ["cpu"], read });
+    const live = createArraySource({ rows, schema, read });
     const query: Slice = {
       ...emptySlice,
       sort: [{ field: "cpu", direction: "asc" }],
@@ -234,7 +309,7 @@ describe("createArraySource", () => {
 
   it("copies the records, so a caller's later mutation cannot leak in", () => {
     const mutable = [{ id: "a" }];
-    const live = createArraySource({ rows: mutable, fields: ["id"] });
+    const live = createArraySource({ rows: mutable, schema });
     mutable.push({ id: "b" });
     const deliver = delivery();
     live.execute(request(), deliver);
@@ -255,7 +330,7 @@ describe("createArraySource", () => {
   it("reads fields through a caller-supplied accessor", () => {
     const live = createArraySource({
       rows: [{ record: { id: "a", cpu: 1 } }],
-      fields: ["cpu"],
+      schema,
       read: (row, field) =>
         (row as { record: Record<string, unknown> }).record[field],
     });
@@ -290,8 +365,8 @@ describe("createArraySource", () => {
   it("looks up through a caller-supplied identity", async () => {
     const live = createArraySource({
       rows: [{ key: "k1" }, { key: "k2" }],
-      fields: ["key"],
-      identify: (row) => row.key,
+      schema: createSchema([{ field: "key", kind: "text" }]),
+      identify: (row) => String(row.key),
     });
     await expect(live.lookup?.(["k2"])).resolves.toEqual([
       { id: "k2", status: "found", record: { key: "k2" } },
@@ -303,7 +378,7 @@ describe("createArraySource", () => {
     // enters the index, rather than keying it under a value that is not one.
     const live = createArraySource<RowRecord>({
       rows: [{ id: "a" }, { name: "unidentified" }, { id: "" }],
-      fields: ["id"],
+      schema,
     });
     await expect(live.lookup?.(["a", "unidentified", ""])).resolves.toEqual([
       { id: "a", status: "found", record: { id: "a" } },
@@ -330,7 +405,7 @@ describe("createArraySource", () => {
     const runAction = vi.fn<SourceActionRunner>().mockResolvedValue([]);
     const live = createArraySource({
       rows,
-      fields: ["id"],
+      schema,
       actions: { stop: { targets: "explicit", limit: null } },
       runAction,
     });

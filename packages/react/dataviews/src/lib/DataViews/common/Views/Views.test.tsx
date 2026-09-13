@@ -32,10 +32,7 @@ const schema = createSchema([
 
 type Fields = typeof schema.fields;
 
-const capabilities = createArraySource({
-  rows: [],
-  fields: ["status"],
-}).capabilities;
+const capabilities = createArraySource({ rows: [], schema }).capabilities;
 
 const stamp = "2026-09-11T00:00:00.000Z";
 

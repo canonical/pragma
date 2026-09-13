@@ -32,6 +32,10 @@ const machines = () =>
     { field: "owner", kind: "flag" },
   ]);
 
+/** The machines as a source that holds no cpu field and cannot order by one. */
+const createSchemaWithoutCpu = () =>
+  createSchema(machines().fields.filter((field) => field.field !== "cpu"));
+
 /** A provider behind a counting host: adoptions are the observable here. */
 const tracked = (provider: ReturnType<typeof machinesProvider>) => {
   const adopt = vi.fn((query: Query): string | null => provider.adopt(query));
@@ -540,7 +544,10 @@ describe("createLocationBinding", () => {
   });
 
   it("refuses a sort its source cannot execute arriving in the location, and answers the rest", () => {
-    const source = createArraySource({ rows: fleet, fields: ["status"] });
+    const source = createArraySource({
+      rows: fleet,
+      schema: createSchemaWithoutCpu(),
+    });
     const provider = createDataViewsProvider({
       schema: machines(),
       capabilities: source.capabilities,
@@ -569,7 +576,10 @@ describe("createLocationBinding", () => {
   });
 
   it("shows rows a refused location sort could not replace as stale, and recovers on the way back", () => {
-    const source = createArraySource({ rows: fleet, fields: ["status"] });
+    const source = createArraySource({
+      rows: fleet,
+      schema: createSchemaWithoutCpu(),
+    });
     // Not told the source's capabilities, so the location's sort is adopted
     // and it is the source that refuses it.
     const provider = machinesProvider();

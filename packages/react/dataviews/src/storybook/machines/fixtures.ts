@@ -136,8 +136,9 @@ export const machines = [
 ] as const satisfies readonly Machine[];
 
 /**
- * The collection's filterable schema. It names the fields a filter control
- * would edit; a column's ordering is declared by the source below, not here.
+ * The collection's schema: every field with its kind. The kind decides both
+ * the filter control a field offers — text offers none — and how an ordered
+ * term over it compares.
  */
 export const machineSchema = createSchema([
   {
@@ -146,20 +147,20 @@ export const machineSchema = createSchema([
     options: ["running", "failed", "pending"],
   },
   { field: "cores", kind: "number", min: 1 },
+  { field: "name", kind: "text" },
+  { field: "region", kind: "text" },
+  { field: "owner", kind: "text" },
 ]);
 
 /** The schema's field definitions, for typing a provider over it. */
 export type MachineFields = typeof machineSchema.fields;
 
 /**
- * Every field the source can filter and order by. A source refuses a query
- * carrying a sort term it never declared, so a column offering a sort the
- * source cannot execute would offer a dead control.
+ * A field the source can order by — the only kind a story may sort. The
+ * source orders by every field of its schema, so a column offering a sort
+ * outside it would offer a dead control.
  */
-const sortableFields = ["name", "status", "region", "cores", "owner"] as const;
-
-/** A field the source can order by — the only kind a story may sort. */
-export type SortableField = (typeof sortableFields)[number];
+export type SortableField = MachineFields[number]["field"];
 
 /**
  * `count` machines for the windowed stories, made from the twelve above in
@@ -178,18 +179,23 @@ export const createMachineSource = (
 ): Source =>
   createArraySource<RowRecord>({
     rows,
-    fields: sortableFields,
+    schema: machineSchema,
     searchFields: ["name", "owner"],
   });
 
+/** The collection without its cores field, for a source that cannot use it. */
+export const machineSchemaWithoutCores = createSchema(
+  machineSchema.fields.filter((definition) => definition.field !== "cores"),
+);
+
 /**
- * A source that cannot filter or order by cores: its declaration leaves the
- * field out, so no part may offer it.
+ * A source that cannot filter or order by cores: its schema leaves the field
+ * out, so no part may offer it.
  */
 export const createSourceWithoutCores = (): Source =>
   createArraySource<RowRecord>({
     rows: machines,
-    fields: sortableFields.filter((field) => field !== "cores"),
+    schema: machineSchemaWithoutCores,
     searchFields: ["name", "owner"],
   });
 

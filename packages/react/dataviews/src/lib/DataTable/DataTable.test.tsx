@@ -471,11 +471,10 @@ describe("DataTable", () => {
     expect(screen.getByText("nothing: no-results")).toBeInTheDocument();
   });
 
-  it("reports no sorted column while a declared default is not executed", () => {
-    // Seam for the ordering unit: a source declares the order its pages
-    // already come in, and nothing reads it yet. Until it does, a header
-    // that claimed the sorted attribute would be claiming an order the
-    // table cannot show or change.
+  it("reports no sorted column for a declared default the header does not read yet", () => {
+    // Seam for the header unit: a source's declared default already orders
+    // its rows, but the header does not report it yet, so it claims no
+    // sorted column rather than half of that contract.
     const declared = declaring({
       filter: { status: ["eq"] },
       sort: {

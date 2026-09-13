@@ -109,10 +109,17 @@ const rows = [
   { id: "c", name: "Gamma", cpu: 8 },
 ];
 
+const localSchema = createSchema([
+  { field: "id", kind: "text" },
+  { field: "name", kind: "text" },
+  { field: "cpu", kind: "number" },
+  { field: "status", kind: "choices", options: ["failed", "ready"] },
+]);
+
 const local = () =>
   createArraySource<RowRecord>({
     rows,
-    fields: ["id", "name", "cpu", "status"],
+    schema: localSchema,
     searchFields: ["name"],
   });
 
@@ -1022,9 +1029,12 @@ describe("createSourceBinding", () => {
     const host = provider();
     const release = createSourceBinding({
       host,
+      // The source holds no cpu field, so it cannot order by one.
       source: createArraySource<RowRecord>({
         rows: fleet,
-        fields: ["status"],
+        schema: createSchema(
+          localSchema.fields.filter((field) => field.field !== "cpu"),
+        ),
       }),
     }).observe();
     const observed = () => {

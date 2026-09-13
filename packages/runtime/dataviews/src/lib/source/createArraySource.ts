@@ -1,10 +1,13 @@
-import applyWindow from "../query/applyWindow.js";
-import type { PredicateOperator, Slice } from "../query/types.js";
+import type { Slice, SortTerm } from "../query/index.js";
+import { applyWindow, collapseSortTerms } from "../query/index.js";
 import type { SourceDelivery } from "../result/types.js";
 import defaultRowIdentifier from "../rows/defaultRowIdentifier.js";
 import type { RowIdentifier, RowRecord } from "../rows/types.js";
+import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
+import { ROOT_NUMERIC_COLLATION } from "./constants.js";
 import copyCapabilities from "./copyCapabilities.js";
-import executeSlice, { readProperty } from "./executeSlice.js";
+import executeSlice from "./executeSlice.js";
+import readProperty from "./readProperty.js";
 import type {
   ActionCapabilities,
   FieldReader,
@@ -14,27 +17,43 @@ import type {
   SourceRequest,
 } from "./types.js";
 
-/** Every grammar operator, exhaustively: adding one to the grammar without
- * adding it here fails to type-check. */
-const operatorPresence: Readonly<Record<PredicateOperator, true>> = {
-  eq: true,
-  gte: true,
-  lte: true,
-  isSet: true,
-};
-const everyOperator = Object.freeze(
-  Object.keys(operatorPresence) as PredicateOperator[],
-);
-
 const exact = (value: number) => ({ kind: "exact" as const, value });
 
 /** Configuration of one local-array source. */
 export type ArraySourceConfig<TRow extends object = RowRecord> = {
   /** The complete record set. Copied at construction; never read live. */
   readonly rows: readonly TRow[];
-  /** Every field the source filters and sorts. Absent fields are refused. */
-  readonly fields: readonly string[];
-  /** Fields free-text search reads; none by default, which refuses search. */
+  /**
+   * The collection's fields and their kinds. The source filters every field
+   * of it with the operators its kind accepts and orders by every one of
+   * them, comparing an ordered term through its kind. A field the schema
+   * does not define is refused.
+   *
+   * @experimental Replaces the bare `fields` list; the row type may later be
+   * inferred from it.
+   */
+  readonly schema: Schema<readonly SchemaFieldDefinition[]>;
+  /**
+   * The ordering a query with no term of its own runs on. Empty by default,
+   * which declares that the source documents no order.
+   *
+   * @experimental A default may later take a tiebreak of its own.
+   */
+  readonly defaultSort?: readonly SortTerm[];
+  /**
+   * The BCP-47 tag text compares under, root collation with numeric ordering
+   * by default, or null to compare by code point. The source's locale, never
+   * the viewer's, so a server render and a local execution agree.
+   *
+   * @experimental The declared tag is not yet canonicalized against what the
+   * runtime resolves.
+   */
+  readonly collation?: string | null;
+  /**
+   * Fields free-text search reads; none by default, which refuses search.
+   * They need not be schema fields: search reads the row itself, and a note
+   * nothing filters or orders by is still worth searching.
+   */
   readonly searchFields?: readonly string[];
   /** How one field is read off a row; own-property lookup by default. */
   readonly read?: FieldReader;
@@ -60,7 +79,7 @@ export type ArraySource<TRow extends object = RowRecord> = Source<TRow> & {
 
 /**
  * Create a source over a complete local record set. Each request is
- * filtered, searched and sorted over every record and then windowed, so all
+ * filtered, searched and ordered over every record and then windowed, so all
  * three counts are exact rather than one loaded page's. Grouping is not
  * executed here, so a grouped query is refused rather than answered with
  * ungrouped rows.
@@ -68,23 +87,32 @@ export type ArraySource<TRow extends object = RowRecord> = Source<TRow> & {
 export default function createArraySource<TRow extends object = RowRecord>(
   config: ArraySourceConfig<TRow>,
 ): ArraySource<TRow> {
+  const { schema, collation = ROOT_NUMERIC_COLLATION } = config;
   const read = config.read ?? readProperty;
   const identify: (row: TRow) => unknown =
     config.identify ?? defaultRowIdentifier;
   const searchFields = config.searchFields ?? [];
+  const defaultSort = collapseSortTerms(config.defaultSort ?? []);
+  for (const term of defaultSort) {
+    if (!schema.hasField(term.field)) {
+      throw new Error(`defaultSort names unknown field "${term.field}"`);
+    }
+  }
   const capabilities = copyCapabilities({
     filter: Object.fromEntries(
-      config.fields.map((field) => [field, everyOperator]),
+      schema.fieldNames
+        .map((field) => [field, schema.listOperators(field)] as const)
+        .filter(([, operators]) => operators.length > 0),
     ),
     search: searchFields.length === 0 ? null : { fields: searchFields },
     sort: {
-      fields: config.fields,
+      fields: schema.fieldNames,
       terms: null,
-      default: [],
+      default: defaultSort,
       // Complete local input has a stable total order the source does not
       // name: the order the records were given in.
       tiebreak: "opaque",
-      collation: null,
+      collation,
     },
     group: { fields: [], depth: 0, summaries: "none", collapse: false },
     counts: { visible: "exact", matched: "exact", total: "exact" },
@@ -109,7 +137,12 @@ export default function createArraySource<TRow extends object = RowRecord>(
     if (executed === null || executed.slice !== request.slice) {
       executed = {
         slice: request.slice,
-        matched: executeSlice(rows, request.slice, { read, searchFields }),
+        matched: executeSlice(rows, request.slice, {
+          schema,
+          sort: capabilities.sort,
+          read,
+          searchFields,
+        }),
       };
     }
     const matched = exact(executed.matched.length);

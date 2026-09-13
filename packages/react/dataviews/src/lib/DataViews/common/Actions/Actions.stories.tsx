@@ -100,7 +100,7 @@ function ManagedMachines({
     };
     const managed = createArraySource({
       rows: remaining,
-      fields: ["name", "status", "region", "cores", "owner"],
+      schema: machineSchema,
       actions: { archive: overAnyRows, delete: overAnyRows },
       // Both actions take the machines out of the collection.
       runAction: async ({ targets }) => {
@@ -224,7 +224,7 @@ import { archiveMachines, machineSchema, machines } from "./machines.js";`,
     declarations: `${selectionActionCode}${declarations}`,
     source: `createArraySource({
       rows: machines,
-      fields: ["name", "status", "region", "cores", "owner"],
+      schema: machineSchema,
       // What each operation may address; nothing else can be run.
       actions: {
         archive: { targets: "explicit", limit: null },

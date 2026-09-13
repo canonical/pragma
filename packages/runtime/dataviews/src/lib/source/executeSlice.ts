@@ -1,14 +1,13 @@
 import canonicalSlice, { operandRankOf } from "../query/canonicalSlice.js";
 import type { Predicate, PredicateOperand, Slice } from "../query/types.js";
-import type { FieldReader } from "./types.js";
+import type { Schema } from "../schema/createSchema.js";
+import type { SchemaFieldDefinition } from "../schema/types.js";
+import orderRows from "./orderRows.js";
+import readProperty from "./readProperty.js";
+import resolveEffectiveOrdering from "./resolveEffectiveOrdering.js";
+import type { FieldReader, SortCapabilities } from "./types.js";
 
-/** Own-property read: the default field access for plain record rows. */
-export const readProperty: FieldReader = (row, field) =>
-  typeof row === "object" && row !== null && Object.hasOwn(row, field)
-    ? (row as Record<string, unknown>)[field]
-    : undefined;
-
-/** Absent values never satisfy a predicate and always sort last. */
+/** Absent values never satisfy a predicate. */
 const isAbsent = (value: unknown): boolean =>
   value === null || value === undefined;
 
@@ -31,10 +30,11 @@ const rankOf = (value: unknown): string | null => {
 };
 
 /**
- * Order two values of one type: numbers, strings by code point, booleans
- * false before true. Values of different types, and `NaN`, are
- * incomparable and return null — the source never invents an order across
- * types, and never reports a `NaN` as within a range.
+ * Order two values of one type for a range test: numbers, strings by code
+ * point, booleans false before true. Values of different types, and `NaN`,
+ * are incomparable and return null — the source never invents an order
+ * across types, and never reports a `NaN` as within a range. Row ordering
+ * lives in `orderRows`, which reads each field through its declared kind.
  */
 const compareValues = (a: unknown, b: unknown): number | null => {
   if (typeof a === "number" && typeof b === "number") {
@@ -53,28 +53,6 @@ const compareValues = (a: unknown, b: unknown): number | null => {
     return a === b ? 0 : a ? 1 : -1;
   }
   return null;
-};
-
-/**
- * The sort bucket of an incomparable value: its type name, with `NaN` in a
- * bucket of its own. Ordering buckets before values keeps the comparator a
- * total order, so a mixed-type column still sorts the same way everywhere.
- */
-const bucketOf = (value: unknown): string =>
-  typeof value === "number" && Number.isNaN(value)
-    ? "number:nan"
-    : typeof value;
-
-/** A total order over row values: within a type by value, across types by
- * bucket name. */
-const compareForSort = (a: unknown, b: unknown): number => {
-  const order = compareValues(a, b);
-  if (order !== null) {
-    return order;
-  }
-  const left = bucketOf(a);
-  const right = bucketOf(b);
-  return left < right ? -1 : left > right ? 1 : 0;
 };
 
 /** One predicate compiled to a per-row test, with its operands resolved
@@ -148,8 +126,23 @@ const matchesSearch = (
   return false;
 };
 
-/** How a local execution reads rows and what free text searches. */
+/** What a local execution needs beyond the rows and the query. */
 export type ExecuteSliceConfig = {
+  /**
+   * The field kinds every ordered term is compared through.
+   *
+   * @experimental Newly required: ordering now goes through the schema, and
+   * the filter path may follow it for date values.
+   */
+  readonly schema: Schema<readonly SchemaFieldDefinition[]>;
+  /**
+   * What the source declares about ordering: the default, the tiebreak and
+   * the collation. A term — a tiebreak's included — naming no field of the
+   * schema orders nothing, so an identity tiebreak needs its field there.
+   *
+   * @experimental Newly required; may narrow to the three members it reads.
+   */
+  readonly sort: SortCapabilities;
   /** Field access; own-property lookup by default. */
   readonly read?: FieldReader;
   /** Fields free-text search reads; none by default. */
@@ -158,19 +151,23 @@ export type ExecuteSliceConfig = {
 
 /**
  * Execute a query over complete local input: filter, then search, then
- * sort. Windowing stays a separate projection (`applyWindow`), so the
- * caller still holds every matching row and can count it. The sort is
- * stable over a total order, so the input order is the effective default
- * ordering and the tiebreak of every term.
+ * order. Windowing stays a separate projection (`applyWindow`), so the
+ * caller still holds every matching row and can count it.
  *
- * Seam for the grouping unit: group levels order before the sort terms and
- * produce the summaries of one page. Nothing here groups, because no source
- * declares a groupable field and a grouped request is refused.
+ * The ordering applied is the effective one: the query's own terms, or the
+ * source's declared default when it states none, then the source's
+ * tiebreak. An empty `slice.sort` is therefore the documented default, never
+ * "unordered".
+ *
+ * Seam for the grouping unit: group levels already order before the sort
+ * terms, and the summaries of one page are still owed. Nothing here groups,
+ * because no source declares a groupable field and a grouped request is
+ * refused.
  */
 export default function executeSlice<TRow extends object>(
   rows: readonly TRow[],
   slice: Slice,
-  config: ExecuteSliceConfig = {},
+  config: ExecuteSliceConfig,
 ): readonly TRow[] {
   const read = config.read ?? readProperty;
   const searchFields = config.searchFields ?? [];
@@ -187,35 +184,10 @@ export default function executeSlice<TRow extends object>(
     return needle === null || matchesSearch(row, needle, searchFields, read);
   });
 
-  const terms = query.sort;
-  if (terms.length === 0) {
-    return matched;
-  }
-  // Read each sort key once per row rather than once per comparison.
-  const keyed = matched.map((row) => ({
-    row,
-    keys: terms.map((term) => read(row, term.field)),
-  }));
-  keyed.sort((a, b) => {
-    for (let index = 0; index < terms.length; index += 1) {
-      const left = a.keys[index];
-      const right = b.keys[index];
-      const leftAbsent = isAbsent(left);
-      const rightAbsent = isAbsent(right);
-      if (leftAbsent || rightAbsent) {
-        if (leftAbsent && rightAbsent) {
-          continue;
-        }
-        // Absent values sort last in both directions.
-        return leftAbsent ? 1 : -1;
-      }
-      const order = compareForSort(left, right);
-      if (order === 0) {
-        continue;
-      }
-      return terms[index].direction === "asc" ? order : -order;
-    }
-    return 0;
+  return orderRows(matched, {
+    ordering: resolveEffectiveOrdering(query, config.sort),
+    schema: config.schema,
+    collation: config.sort.collation,
+    read,
   });
-  return keyed.map((entry) => entry.row);
 }

@@ -34,10 +34,8 @@ export type SortTiebreak = readonly SortTerm[] | "opaque" | "none";
 
 /**
  * Everything a source declares about ordering, in one block, so a header
- * reads its whole contract from one place.
- *
- * Seam for the ordering unit: `default`, `tiebreak` and `collation` are
- * declared here now and nothing reads them for comparison yet.
+ * reads its whole contract from one place. `effectiveOrdering` resolves the
+ * three of them against a query into the order rows are actually in.
  */
 export type SortCapabilities = {
   /** Sortable fields. A field absent here cannot be ordered. */
@@ -53,18 +51,38 @@ export type SortCapabilities = {
    * declares that the source documents no order, so pages may not be
    * stable.
    *
-   * Seam for the ordering unit, which will have a header report it and
-   * "clear sort" return to it. Nothing reads it today, so a header over a
-   * query with no term reports no sorted column rather than claiming one.
+   * Seam for the header unit, which will report it and have "clear sort"
+   * return to it. A header over a query with no term still reports no
+   * sorted column rather than the default it is in fact ordering by.
    */
   readonly default: readonly SortTerm[];
   readonly tiebreak: SortTiebreak;
   /**
-   * The locale text compares under, as a BCP-47 tag, or null when the
-   * source names none and text compares by code point. The source's locale,
-   * never the viewer's, so a server render and a local execution agree.
+   * The locale text compares under, as a BCP-47 tag with any collation
+   * extension — `en-u-kn-true` is the root collation with numeric ordering
+   * — or null when the source names none and text compares by code point.
+   * The source's locale, never the viewer's, so a server render and a local
+   * execution agree.
    */
   readonly collation: string | null;
+};
+
+/**
+ * The ordering rows are actually in: the group levels, then the query's own
+ * terms or the source's default when it states none, then the tiebreak the
+ * source appends itself.
+ *
+ * `terms` never carries the tiebreak, because the tiebreak is the source's
+ * and is never sent back as a user term. A field appears once: a group level
+ * takes the direction of the query's own term over that field and that term
+ * is not repeated below it.
+ *
+ * @experimental Resolved by local execution today; the header unit will read
+ * it and may add whether the terms are the query's own.
+ */
+export type EffectiveOrdering = {
+  readonly terms: readonly SortTerm[];
+  readonly tiebreak: SortTiebreak;
 };
 
 /**

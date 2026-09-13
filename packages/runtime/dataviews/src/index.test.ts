@@ -38,6 +38,7 @@ describe("public surface", () => {
       "executeSlice",
       "isCalendarDate",
       "isIdentity",
+      "readField",
       "resolveColumns",
       "sizingEquals",
       "sliceEquals",
@@ -74,9 +75,10 @@ describe("public surface", () => {
         { kind: "fixed", px: 8 },
       ),
     ).toBe(true);
+    const idSchema = dataviews.createSchema([{ field: "id", kind: "text" }]);
     const source = dataviews.createArraySource({
       rows: [{ id: "a" }],
-      fields: ["id"],
+      schema: idSchema,
     });
     expect(
       dataviews.supportsRequest(source.capabilities, {
@@ -84,9 +86,12 @@ describe("public surface", () => {
         window: dataviews.DEFAULT_WINDOW,
       }),
     ).toEqual([]);
-    expect(dataviews.executeSlice([{ id: "a" }], EMPTY_SLICE)).toEqual([
-      { id: "a" },
-    ]);
+    expect(
+      dataviews.executeSlice([{ id: "a" }], EMPTY_SLICE, {
+        schema: idSchema,
+        sort: source.capabilities.sort,
+      }),
+    ).toEqual([{ id: "a" }]);
   });
 
   it("wires the wire grammar and the location loop through the barrel", () => {

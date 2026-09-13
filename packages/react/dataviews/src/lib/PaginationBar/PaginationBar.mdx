@@ -48,7 +48,7 @@ export function Machines() {
   const [source] = useState(() =>
     createArraySource<RowRecord>({
       rows: machines,
-      fields: ["name", "status", "region", "cores", "owner"],
+      schema: machineSchema,
     }),
   );
   const [provider] = useState(() =>
