@@ -1,4 +1,4 @@
-import { reasonOf } from "../source/index.js";
+import { describeError } from "../source/index.js";
 import type {
   JsonValue,
   PreferenceResult,
@@ -13,86 +13,14 @@ import type {
   ViewStore,
   ViewUpdateResult,
 } from "../views/index.js";
-
-/**
- * An event-handler slot. The parameter is `never` so the platform's own
- * typed handlers fill it; this store never reads the event.
- */
-type Handler = ((event: never) => void) | null;
-
-/** One request; keys and values are the platform's own. */
-type IndexedDBRequest<TResult> = {
-  readonly result: TResult;
-  onsuccess: Handler;
-};
-
-type IndexedDBObjectStore = {
-  get(key: unknown): IndexedDBRequest<unknown>;
-  put(value: unknown): IndexedDBRequest<unknown>;
-  delete(key: unknown): IndexedDBRequest<unknown>;
-  createIndex(name: string, keyPath: string | string[]): unknown;
-  index(name: string): {
-    getAll(key: unknown): IndexedDBRequest<readonly unknown[]>;
-    getAllKeys(key: unknown): IndexedDBRequest<readonly unknown[]>;
-  };
-};
-
-type IndexedDBTransaction = {
-  readonly error: unknown;
-  objectStore(name: string): IndexedDBObjectStore;
-  abort(): void;
-  oncomplete: Handler;
-  onabort: Handler;
-};
-
-type IndexedDBDatabase = {
-  createObjectStore(
-    name: string,
-    options: { keyPath: string[] },
-  ): IndexedDBObjectStore;
-  transaction(
-    names: string[],
-    mode: "readonly" | "readwrite",
-  ): IndexedDBTransaction;
-  close(): void;
-  onversionchange: Handler;
-  onclose: Handler;
-};
-
-type IndexedDBOpenRequest = IndexedDBRequest<IndexedDBDatabase> & {
-  readonly error: unknown;
-  onerror: Handler;
-  onupgradeneeded: Handler;
-};
-
-/**
- * The structural IndexedDB surface the store drives. The platform's
- * `indexedDB` satisfies it by shape; the members are methods, so its
- * narrower parameter types still do.
- */
-export type IndexedDBFactory = {
-  open(name: string, version: number): IndexedDBOpenRequest;
-};
-
-/** Configuration of one IndexedDB view store: its storage and its scope. */
-export type IndexedDBViewStoreConfig = {
-  /** The platform's IndexedDB, supplied explicitly: `window.indexedDB`. */
-  readonly indexedDB: IndexedDBFactory;
-  /**
-   * A database of the store's own, named by the application —
-   * `operations-console-views` — and never one it uses for anything else:
-   * a database already holding other stores is not upgraded to hold these.
-   */
-  readonly database: string;
-  /** A stable key of the collection whose views these are. */
-  readonly collection: string;
-  /**
-   * An opaque partition — account, tenant — so one identity never sees
-   * another's views, or null for an application with one identity only.
-   * Never a credential.
-   */
-  readonly partition: string | null;
-};
+import type {
+  IndexedDBDatabase,
+  IndexedDBObjectStore,
+  IndexedDBOpenRequest,
+  IndexedDBRequest,
+  IndexedDBTransaction,
+  IndexedDBViewStoreConfig,
+} from "./types.js";
 
 /** The database schema this store creates. Version 1 is the first. */
 const DATABASE_VERSION = 1;
@@ -260,6 +188,9 @@ const disposedError = (): Error => new Error("the view store is disposed");
  * claims to persist. Other tabs' writes reach `subscribe` through a
  * BroadcastChannel where the platform has one. Import it explicitly from
  * `@canonical/dataviews-core/indexeddb`.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export default function createIndexedDBViewStore(
   config: IndexedDBViewStoreConfig,
@@ -318,7 +249,7 @@ export default function createIndexedDBViewStore(
     new Promise((resolve, reject) => {
       const unavailable = (error: unknown): void => {
         reject(
-          new Error(`view storage is unavailable: ${reasonOf(error)}`, {
+          new Error(`view storage is unavailable: ${describeError(error)}`, {
             cause: error,
           }),
         );
@@ -401,7 +332,7 @@ export default function createIndexedDBViewStore(
     return new Promise((resolve, reject) => {
       const failed = (error: unknown): void => {
         reject(
-          new Error(`view storage failed: ${reasonOf(error)}`, {
+          new Error(`view storage failed: ${describeError(error)}`, {
             cause: error,
           }),
         );
@@ -552,6 +483,11 @@ export default function createIndexedDBViewStore(
       return () => ({ status: exists ? "saved" : "missing" });
     });
 
+  /**
+   * The moment a write happens, as the store records it.
+   *
+   * @note Impure: reads the clock.
+   */
   const stamp = (): string => new Date().toISOString();
 
   return {

@@ -5,10 +5,19 @@
  * the IndexedDB store is the local-first one shipped here.
  */
 
+import type { CollectionState } from "../collection/index.js";
 import type { ReadonlyChannel } from "../observable/index.js";
+import type { Query } from "../query/index.js";
+import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
+import type { SourceCapabilities } from "../source/index.js";
 import type { QueryIssue } from "../wire/index.js";
 
-/** A JSON value. */
+/**
+ * A JSON value.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type JsonValue =
   | string
   | number
@@ -20,10 +29,18 @@ export type JsonValue =
 /**
  * Presentation as keyed JSON values — widths, density and the like — as a
  * view saves it and as viewer preferences hold it.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type ViewPresentation = { readonly [key: string]: JsonValue };
 
-/** One saved view, resolved for this viewer. */
+/**
+ * One saved view, resolved for this viewer.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type SavedView = {
   readonly id: string;
   readonly name: string;
@@ -45,22 +62,36 @@ export type SavedView = {
   readonly updatedAt: string;
 };
 
-/** The view an edit is made against: its id and the revision last read. */
+/**
+ * The view an edit is made against: its id and the revision last read.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type ViewRevision = Pick<SavedView, "id" | "revision">;
 
 /**
  * A view to create. The caller mints the id, so retrying a creation whose
  * response was lost finds the view instead of duplicating it.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type ViewDraft = {
   readonly id: string;
   readonly name: string;
   readonly query: string;
   /** Presentation saved with the view; left out for none. */
-  readonly presentation?: ViewPresentation;
+  readonly presentation?: ViewPresentation | undefined;
 };
 
-/** Changes to a saved view; a field left out keeps its value. */
+/**
+ * Changes to a saved view; a field left out keeps its value. Strict on
+ * purpose: a field written `undefined` would be applied, not skipped.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type ViewChanges = {
   readonly name?: string;
   readonly query?: string;
@@ -71,19 +102,32 @@ export type ViewChanges = {
 /**
  * A stored record this client cannot read — corrupt, or written in a
  * record version it does not know. It is reported and never overwritten.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type UnreadableView = {
   readonly id: string;
   readonly reason: string;
 };
 
-/** Every view in the store's scope. */
+/**
+ * Every view in the store's scope.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type ViewList = {
   readonly views: readonly SavedView[];
   readonly unreadable: readonly UnreadableView[];
 };
 
-/** One view looked up by id. */
+/**
+ * One view looked up by id.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type ViewGetResult =
   | { readonly status: "found"; readonly view: SavedView }
   | { readonly status: "missing" }
@@ -92,6 +136,9 @@ export type ViewGetResult =
 /**
  * The outcome of a creation. A conflict is a different view already under
  * the id; the same creation arriving again is `saved`.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type ViewCreateResult =
   | { readonly status: "saved"; readonly view: SavedView }
@@ -101,6 +148,9 @@ export type ViewCreateResult =
 /**
  * The outcome of an update. A conflict carries the view as it is stored
  * now: reload it, save as a new view, or overwrite it by passing it back.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type ViewUpdateResult =
   | { readonly status: "saved"; readonly view: SavedView }
@@ -108,13 +158,23 @@ export type ViewUpdateResult =
   | { readonly status: "missing" }
   | { readonly status: "unreadable"; readonly reason: string };
 
-/** The outcome of a removal; removing a view already gone succeeds. */
+/**
+ * The outcome of a removal; removing a view already gone succeeds.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type ViewRemoveResult =
   | { readonly status: "removed" }
   | { readonly status: "conflict"; readonly view: SavedView }
   | { readonly status: "unreadable"; readonly reason: string };
 
-/** The outcome of a preference write: `missing` when its view is not there. */
+/**
+ * The outcome of a preference write: `missing` when its view is not there.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type PreferenceResult =
   | { readonly status: "saved" }
   | { readonly status: "missing" };
@@ -123,6 +183,9 @@ export type PreferenceResult =
  * Where presentation preferences apply: the collection's default
  * arrangement, or one view's own, which is distinct from the presentation
  * saved with the view.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type PresentationTarget = "default" | { readonly view: string };
 
@@ -130,6 +193,9 @@ export type PresentationTarget = "default" | { readonly view: string };
  * Preference keys to set, each to a JSON value, or to remove when
  * undefined. JSON drops undefined, so a REST-backed store sends removals
  * explicitly.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type PresentationPatch = {
   readonly [key: string]: JsonValue | undefined;
@@ -139,6 +205,9 @@ export type PresentationPatch = {
  * A scoped view store. Its scope — database, collection and partition —
  * is fixed when it is constructed, so no call names it. Storage failures
  * reject; outcomes of the saved-view contract resolve.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type ViewStore = {
   readonly list: () => Promise<ViewList>;
@@ -177,14 +246,22 @@ export type ViewStore = {
   readonly dispose: () => void;
 };
 
-/** A saved-view operation a collection runs. */
-export type ViewAction = "open" | "save" | "saveAs" | "rename" | "remove";
+/**
+ * A saved-view operation a collection runs.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export type ViewAction = "open" | "save" | "save-as" | "rename" | "remove";
 
 /**
  * How a saved-view operation ended. `invalid` is a name refused before
  * anything is written; `refused` a view whose query the collection cannot
  * read whole, so opening it would quietly widen the query; `failed` a
  * store that rejected, with nothing claimed saved.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type ViewOutcome =
   | { readonly status: "opened" | "saved"; readonly view: SavedView }
@@ -200,7 +277,12 @@ export type ViewOutcome =
   | { readonly status: "unreadable"; readonly reason: string }
   | { readonly status: "failed"; readonly reason: string };
 
-/** An outcome an operation settles to: never a refused name. */
+/**
+ * An outcome an operation settles to: never a refused name.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type ViewSettledOutcome = Exclude<
   ViewOutcome,
   { readonly status: "invalid" }
@@ -209,6 +291,9 @@ export type ViewSettledOutcome = Exclude<
 /**
  * The latest saved-view operation: in flight, or settled with its outcome. A
  * refused name is never one: the caller shows it where the name was given.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type ViewOperation =
   | { readonly action: ViewAction; readonly status: "pending" }
@@ -218,7 +303,12 @@ export type ViewOperation =
       readonly outcome: ViewSettledOutcome;
     };
 
-/** A collection's saved views, as its controls show them. */
+/**
+ * A collection's saved views, as its controls show them.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type ViewsState = {
   /**
    * Whether the store's views are known. `idle` until something observes
@@ -260,6 +350,9 @@ export type ViewsState = {
  * settles as `failed`; a state listener that throws rejects that operation
  * alone. An operation still in flight when the scope rotates answers its
  * caller and changes nothing.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type ProviderViews = {
   readonly state: ReadonlyChannel<ViewsState>;
@@ -305,4 +398,30 @@ export type ProviderViews = {
    * that fails is reported on `presentationFailure`, never undone.
    */
   readonly arrange: (patch: PresentationPatch) => void;
+};
+
+/** The query authority the views read and drive: their provider's. */
+export type ViewsHost = {
+  /** The schema a stored query is read against. */
+  readonly schema: Schema<readonly SchemaFieldDefinition[]>;
+  /** What the source can execute; a stored clause outside it is refused. */
+  readonly capabilities: SourceCapabilities | null;
+  /** The live query and window, which "modified" is derived from. */
+  readonly state: ReadonlyChannel<CollectionState<object>>;
+  /** Adopt a view's query and window together. */
+  readonly adopt: (query: Query) => void;
+};
+
+/** Configuration of one provider's views. */
+export type ProviderViewsConfig = {
+  readonly host: ViewsHost;
+  readonly store: ViewStore;
+};
+
+/** The provider's views, with what only the provider calls. */
+export type OwnedViews = ProviderViews & {
+  /** Forget the open view, as a scope rotation resets the query. */
+  readonly forget: () => void;
+  /** Detach from the store and the host for good. */
+  readonly dispose: () => void;
 };

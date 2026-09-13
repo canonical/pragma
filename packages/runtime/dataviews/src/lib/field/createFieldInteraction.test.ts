@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Predicate } from "../query/index.js";
-import type { FieldValidation } from "./createFieldInteraction.js";
 import createFieldInteraction from "./createFieldInteraction.js";
+import type { FieldValidation } from "./types.js";
 
 /** Validator for a numeric bound: incomplete while partial, invalid beyond. */
 const validateNumber = (input: string): FieldValidation => {
