@@ -1,5 +1,6 @@
 import reasonOf from "../source/reasonOf.js";
 import type {
+  JsonValue,
   PreferenceResult,
   PresentationTarget,
   SavedView,
@@ -122,7 +123,7 @@ type StoredPreference = {
   readonly scope: string;
   readonly target: string;
   readonly key: string;
-  readonly value: unknown;
+  readonly value: JsonValue;
 };
 
 /** Run `then` with a request's result once it succeeds. */
@@ -172,6 +173,53 @@ const isStoredView = (
       (typeof presentation === "object" &&
         presentation !== null &&
         !Array.isArray(presentation)))
+  );
+};
+
+/** Whether a value is JSON: what a presentation may hold, and nothing else. */
+const isJsonValue = (value: unknown): value is JsonValue => {
+  switch (typeof value) {
+    case "string":
+    case "boolean":
+      return true;
+    case "number":
+      return Number.isFinite(value);
+    case "object":
+      if (value === null) {
+        return true;
+      }
+      if (Array.isArray(value)) {
+        return value.every(isJsonValue);
+      }
+      return (
+        Object.getPrototypeOf(value) === Object.prototype &&
+        Object.values(value).every(isJsonValue)
+      );
+    default:
+      return false;
+  }
+};
+
+/**
+ * Whether a stored record is a preference this store can read. Storage is
+ * an external boundary — another client, a newer version of this store or
+ * a hand-edited database may have written it — so a record is checked
+ * before it is read, never cast. One that fails reads as absent: a pin
+ * that is not one leaves the view unpinned, a presentation entry that is
+ * not one leaves its key unset, and neither is misread as a value.
+ */
+const isStoredPreference = (record: unknown): record is StoredPreference => {
+  if (typeof record !== "object" || record === null) {
+    return false;
+  }
+  const { scope, target, key, value } = record as Readonly<
+    Record<string, unknown>
+  >;
+  return (
+    typeof scope === "string" &&
+    typeof target === "string" &&
+    typeof key === "string" &&
+    isJsonValue(value)
   );
 };
 
@@ -453,7 +501,11 @@ export default function createIndexedDBViewStore(
       }
       then(
         isStoredView(record)
-          ? { status: "found", view: viewOf(record, pin !== undefined), record }
+          ? {
+              status: "found",
+              view: viewOf(record, isStoredPreference(pin)),
+              record,
+            }
           : { status: "unreadable", reason: unreadableReason(record) },
       );
     });
@@ -509,7 +561,7 @@ export default function createIndexedDBViewStore(
         let listed: ViewList = { views: [], unreadable: [] };
         step(preferences.index("target").getAll([scope, PINS]), (pins) => {
           const pinned = new Set(
-            pins.map((pin) => (pin as StoredPreference).key),
+            pins.filter(isStoredPreference).map((pin) => pin.key),
           );
           const found: SavedView[] = [];
           const unreadable: UnreadableView[] = [];
@@ -657,16 +709,16 @@ export default function createIndexedDBViewStore(
 
     readPresentation(target) {
       return read(({ preferences }, step) => {
-        const presentation: Record<string, unknown> = {};
+        const presentation: Record<string, JsonValue> = {};
         step(
           preferences.index("target").getAll([scope, targetKey(target)]),
           (records) => {
-            for (const record of records as readonly StoredPreference[]) {
+            for (const record of records.filter(isStoredPreference)) {
               presentation[record.key] = record.value;
             }
           },
         );
-        return () => presentation as ViewPresentation;
+        return () => presentation;
       });
     },
 
