@@ -1,4 +1,4 @@
-/** @module Preference hooks for theme, contrast, and motion */
+/** @module Preference hooks for theme, contrast, motion, and keyboard shortcuts */
 
 export {
   clearPreferenceCookie,
@@ -12,6 +12,7 @@ export type {
   Contrast,
   Motion,
   PreferenceSource,
+  Shortcuts,
   Theme,
   UseMediaPreferenceProps,
   UseMediaPreferenceResult,
@@ -19,10 +20,13 @@ export type {
   UsePreferredContrastResult,
   UsePreferredMotionProps,
   UsePreferredMotionResult,
+  UsePreferredShortcutsProps,
+  UsePreferredShortcutsResult,
   UsePreferredThemeProps,
   UsePreferredThemeResult,
 } from "./types.js";
 export { default as useMediaPreference } from "./useMediaPreference.js";
 export { default as usePreferredContrast } from "./usePreferredContrast.js";
 export { default as usePreferredMotion } from "./usePreferredMotion.js";
+export { default as usePreferredShortcuts } from "./usePreferredShortcuts.js";
 export { default as usePreferredTheme } from "./usePreferredTheme.js";

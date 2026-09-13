@@ -3,7 +3,7 @@
 import { createMemoryAdapter, createRouter } from "@canonical/router-core";
 import { RouterProvider } from "@canonical/router-react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { collectShortcuts, ROUTE_SHORTCUT_META_KEY } from "#lib/routeShortcut";
 import { appRoutes, notFoundRoute } from "../../routes.js";
 import { LENS_ENTRIES } from "./constants.js";
@@ -22,6 +22,14 @@ const renderRail = (initialUrl = "/") => {
   );
   return { router, view };
 };
+
+afterEach(() => {
+  // The shortcuts preference is a cookie written at `path=/`; clearing it on
+  // any other path leaves it set, and an "off" rail would leak into every
+  // later test in this file.
+  // biome-ignore lint/suspicious/noDocumentCookie: test cleanup
+  document.cookie = "shortcuts=; path=/; max-age=0";
+});
 
 describe("Rail", () => {
   it("is a labelled nav carrying the v1 lens set in the ruled order", () => {
@@ -138,6 +146,36 @@ describe("Rail", () => {
   it("navigates on a bare lens digit (the wired keyboard grammar)", async () => {
     const { router } = renderRail("/");
     fireEvent.keyDown(document, { key: "2" });
+    await waitFor(() => {
+      expect(router.getState().location.pathname).toBe("/components");
+    });
+  });
+
+  it("fires no digit while the shortcuts preference is off", () => {
+    // A returning visitor who has switched the shortcuts off: the preference
+    // is in the cookie before the rail ever mounts, and the listener reads it
+    // on the first render.
+    //
+    // Asserted through `preventDefault` rather than through the router's
+    // pathname, and so without a wall-clock wait: the handler cancels the
+    // event only when it acts, and `fireEvent` returns false for a cancelled
+    // event. That distinguishes DECLINED from "acted, but the navigation has
+    // not landed yet", which a sleep-then-check-the-pathname cannot.
+    // biome-ignore lint/suspicious/noDocumentCookie: test setup
+    document.cookie = "shortcuts=off; path=/";
+    renderRail("/");
+    expect(fireEvent.keyDown(document, { key: "2" })).toBe(true);
+  });
+
+  it("fires a digit when the preference is on (the same assertion, inverted)", async () => {
+    // The control case for the test above: without it, a rail whose listener
+    // never acted at all would satisfy the "off" assertion. The navigation is
+    // awaited rather than left in flight, so no state update escapes into
+    // another test's teardown.
+    // biome-ignore lint/suspicious/noDocumentCookie: test setup
+    document.cookie = "shortcuts=on; path=/";
+    const { router } = renderRail("/");
+    expect(fireEvent.keyDown(document, { key: "2" })).toBe(false);
     await waitFor(() => {
       expect(router.getState().location.pathname).toBe("/components");
     });

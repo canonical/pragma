@@ -17,17 +17,25 @@
  * wires: one walk per render, one source, no way for the shown digit and
  * the live digit to disagree.
  *
- * Guards, in check order: no modifier chords (the browser's own
+ * Guards, in check order: the stored shortcuts preference is off
+ * (`usePreferredShortcuts`); no modifier chords (the browser's own
  * `Alt+digit` etc. stay untouched); no firing mid-IME-composition (the
  * digit is text being composed, not a command) or on key auto-repeat (a
  * held digit navigates once); no firing while the user types in an
  * editable target — digits belong to the text field then, not the
  * compass.
  *
- * WCAG 2.1.4 close-out (user disable toggle in the utility cluster) is
- * deferred — the guards here narrow the surface, they do not satisfy 2.1.4.
+ * WCAG 2.1.4 (Character Key Shortcuts) asks first that a bare-key shortcut
+ * be switchable off, and the preference is that switch. It asks for a
+ * mechanism available to the user, though, and this site still exposes no
+ * control that writes it, so the criterion is NOT yet satisfied here.
+ * Close-out is the toggle in the utility cluster, which needs the preference
+ * threaded through SSR first (nothing else in the rail may change shape on
+ * hydration) and must, in the same change, stop the rail advertising `kbd`
+ * hints and `aria-keyshortcuts` for keys that no longer fire.
  */
 
+import { usePreferredShortcuts } from "@canonical/react-hooks";
 import type { RouteName } from "@canonical/router-core";
 import { type RegisteredRouteMap, useRouter } from "@canonical/router-react";
 import { useEffect, useMemo } from "react";
@@ -65,8 +73,18 @@ export const useLensShortcuts = (): ShortcutAllocation<
     to: RouteName<RegisteredRouteMap>,
   ) => unknown;
 
+  // The 2.1.4 switch, checked in the handler beside the other four guards so
+  // the whole keystroke decision reads in one place and one order. It is a
+  // dependency below because the handler closes over it: the listener
+  // re-attaches on a flip rather than reading a stale boolean.
+  const { value: shortcuts } = usePreferredShortcuts();
+  const shortcutsEnabled = shortcuts !== "off";
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
+      if (!shortcutsEnabled) {
+        return;
+      }
       if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
         return;
       }
@@ -86,7 +104,7 @@ export const useLensShortcuts = (): ShortcutAllocation<
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [navigate, allocation]);
+  }, [navigate, allocation, shortcutsEnabled]);
 
   return allocation;
 };
