@@ -1,6 +1,6 @@
 import type { CollectionState } from "../collection/createCollectionCoordinator.js";
-import type { Identity } from "../createIdentity.js";
 import type { FieldInteractionState } from "../field/createFieldInteraction.js";
+import type { Identity } from "../identity/index.js";
 import type { ReadonlyChannel } from "../observable/createChannel.js";
 import type {
   ActionInvocation,

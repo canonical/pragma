@@ -4,7 +4,7 @@ import {
   createMemoryLocation,
   DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
-import type { IndexedDBFactory } from "@canonical/dataviews-core/views";
+import type { IndexedDBFactory } from "@canonical/dataviews-core/indexeddb";
 import { Button } from "@canonical/react-ds-global";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactElement, ReactNode } from "react";

@@ -1,10 +1,12 @@
 import type {
-  ColumnLayout,
-  ColumnSizing,
   DataViewsProvider,
   RowRecord,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
+import type {
+  ColumnLayout,
+  ColumnSizing,
+} from "@canonical/dataviews-core/bindings";
 import type { ComponentProps, ComponentType, ReactNode } from "react";
 import type { Windowed, default as windowed } from "./windowed.js";
 

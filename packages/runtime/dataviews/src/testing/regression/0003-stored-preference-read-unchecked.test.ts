@@ -12,10 +12,10 @@
 
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import createIndexedDBViewStore from "../../lib/indexeddb/createIndexedDBViewStore.js";
 import createDataViewsProvider from "../../lib/provider/createDataViewsProvider.js";
 import type { DataViewsProvider } from "../../lib/provider/types.js";
 import createSchema from "../../lib/schema/createSchema.js";
-import createIndexedDBViewStore from "../../lib/views/createIndexedDBViewStore.js";
 import type { ViewStore } from "../../lib/views/types.js";
 
 const schema = createSchema([{ field: "cpu", kind: "number" }]);

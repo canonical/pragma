@@ -1,8 +1,8 @@
 import type {
   DataViewsProvider,
-  RowScope,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
+import type { RowScope } from "@canonical/dataviews-core/bindings";
 import type { Ref } from "react";
 import type { DataTableColumn } from "../../types.js";
 

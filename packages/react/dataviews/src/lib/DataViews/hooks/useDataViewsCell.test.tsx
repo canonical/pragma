@@ -1,9 +1,9 @@
 import type { DataViewsProvider } from "@canonical/dataviews-core";
 import {
-  createChannel,
   createDataViewsProvider,
   createSchema,
 } from "@canonical/dataviews-core";
+import { createChannel } from "@canonical/dataviews-core/bindings";
 import { renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";

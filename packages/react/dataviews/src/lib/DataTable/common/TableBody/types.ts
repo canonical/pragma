@@ -1,9 +1,11 @@
 import type {
   DataViewsProvider,
-  DisplayEntry,
-  RowScopes,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
+import type {
+  DisplayEntry,
+  RowScopes,
+} from "@canonical/dataviews-core/bindings";
 import type { ReactNode } from "react";
 import type { DataTableColumn, DataTableStatus } from "../../types.js";
 

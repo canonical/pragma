@@ -11,7 +11,7 @@ A saved view is a named query. Opening one applies its query on the first page; 
 
 ## Saved views in a composition
 
-Views live in a store the application creates and gives to the provider. `createIndexedDBViewStore` keeps them in the browser's IndexedDB, and it is imported from its own entry point, `@canonical/dataviews-core/views`, so an application without views never bundles it. Declare one store for as long as the application runs, and give it to each provider built for the collection, as the code beneath this story does.
+Views live in a store the application creates and gives to the provider. `createIndexedDBViewStore` keeps them in the browser's IndexedDB, and it is imported from its own entry point, `@canonical/dataviews-core/indexeddb`, so an application without views never bundles it. Declare one store for as long as the application runs, and give it to each provider built for the collection, as the code beneath this story does.
 
 <Canvas of={Stories.SavedViews} sourceState="shown" />
 

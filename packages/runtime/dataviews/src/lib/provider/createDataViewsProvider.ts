@@ -3,9 +3,9 @@ import type {
   CollectionState,
 } from "../collection/createCollectionCoordinator.js";
 import createCollectionCoordinator from "../collection/createCollectionCoordinator.js";
-import createIdentity from "../createIdentity.js";
 import type { FieldInteractionState } from "../field/createFieldInteraction.js";
 import createFieldInteraction from "../field/createFieldInteraction.js";
+import { createIdentity } from "../identity/index.js";
 import type { Channel } from "../observable/createChannel.js";
 import createChannel from "../observable/createChannel.js";
 import type { ActionInvocation } from "../operation/createOperation.js";
@@ -108,7 +108,7 @@ export type DataViewsProviderConfig<
   readonly capabilities?: SourceCapabilities;
   /**
    * Where the collection's saved views and presentation preferences live —
-   * `createIndexedDBViewStore` from `@canonical/dataviews-core/views`, or a
+   * `createIndexedDBViewStore` from `@canonical/dataviews-core/indexeddb`, or a
    * store of the application's own. Left out, the collection has no views.
    */
   readonly views?: ViewStore;

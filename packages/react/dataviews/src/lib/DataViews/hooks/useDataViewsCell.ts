@@ -3,7 +3,7 @@ import type {
   RowRecord,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
-import { isIdentity } from "@canonical/dataviews-core";
+import { isIdentity } from "@canonical/dataviews-core/bindings";
 import { useContext, useMemo } from "react";
 import CellScopeContext from "../CellScopeContext.js";
 import type { UseDataViewsCellResult } from "./types.js";

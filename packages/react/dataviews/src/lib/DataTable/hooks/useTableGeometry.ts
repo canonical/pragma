@@ -3,8 +3,11 @@ import type {
   ColumnToSize,
   GridInteraction,
   ResolvedColumn,
-} from "@canonical/dataviews-core";
-import { columnTemplate, resolveColumns } from "@canonical/dataviews-core";
+} from "@canonical/dataviews-core/bindings";
+import {
+  columnTemplate,
+  resolveColumns,
+} from "@canonical/dataviews-core/bindings";
 import { useCallback, useMemo, useState } from "react";
 import useDataViewsValue from "../../DataViews/hooks/useDataViewsValue.js";
 import { sameTracks } from "../columnKeys.js";

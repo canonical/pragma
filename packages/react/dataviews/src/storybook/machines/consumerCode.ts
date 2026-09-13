@@ -123,7 +123,7 @@ export const consumerCode = ({
         code: [
           `import {
 ${core.map((name) => `  ${name},`).join("\n")}
-} from "@canonical/dataviews-core";${views ? `\nimport { createIndexedDBViewStore } from "@canonical/dataviews-core/views";` : ""}
+} from "@canonical/dataviews-core";${views ? `\nimport { createIndexedDBViewStore } from "@canonical/dataviews-core/indexeddb";` : ""}
 import { ${parts.join(", ")} } from "@canonical/dataviews-react";
 import { ${["useEffect", "useState", ...hooks].join(", ")} } from "react";
 ${imports ?? `import { machineSchema, machines } from "./machines.js";`}`,

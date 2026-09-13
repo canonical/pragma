@@ -4,16 +4,13 @@
  * unrelated change does no work, and one scope per row rather than one per
  * cell. Each case is mutation-tested against that contract.
  */
-import type {
-  ColumnLayout,
-  Completion,
-  DataViewsProvider,
-} from "@canonical/dataviews-core";
+import type { Completion, DataViewsProvider } from "@canonical/dataviews-core";
 import {
-  createColumnLayout,
   createDataViewsProvider,
   createSchema,
 } from "@canonical/dataviews-core";
+import type { ColumnLayout } from "@canonical/dataviews-core/bindings";
+import { createColumnLayout } from "@canonical/dataviews-core/bindings";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { createRef, StrictMode, useState } from "react";

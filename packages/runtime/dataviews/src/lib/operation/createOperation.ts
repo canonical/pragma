@@ -1,4 +1,4 @@
-import createIdentity, { type Identity } from "../createIdentity.js";
+import { createIdentity, type Identity } from "../identity/index.js";
 
 /** Per-target outcome of a partial operation result. */
 export type OperationOutcome =

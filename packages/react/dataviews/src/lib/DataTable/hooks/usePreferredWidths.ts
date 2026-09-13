@@ -1,9 +1,9 @@
+import type { ProviderViews } from "@canonical/dataviews-core";
 import type {
   ColumnLayout,
   ColumnSizing,
-  ProviderViews,
-} from "@canonical/dataviews-core";
-import { sizingEquals } from "@canonical/dataviews-core";
+} from "@canonical/dataviews-core/bindings";
+import { sizingEquals } from "@canonical/dataviews-core/bindings";
 import { useLayoutEffect } from "react";
 import { boundsOf } from "../columnKeys.js";
 

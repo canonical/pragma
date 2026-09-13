@@ -4,7 +4,7 @@
  * render re-mints the layout and re-renders every cell. Each case
  * below is one fact the keys must carry, or deliberately must not.
  */
-import type { ColumnToSize } from "@canonical/dataviews-core";
+import type { ColumnToSize } from "@canonical/dataviews-core/bindings";
 import { describe, expect, it } from "vitest";
 import {
   boundsOf,

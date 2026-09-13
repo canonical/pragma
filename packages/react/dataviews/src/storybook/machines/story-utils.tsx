@@ -11,8 +11,8 @@ import {
   createSourceBinding,
   DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
-import type { IndexedDBFactory } from "@canonical/dataviews-core/views";
-import { createIndexedDBViewStore } from "@canonical/dataviews-core/views";
+import type { IndexedDBFactory } from "@canonical/dataviews-core/indexeddb";
+import { createIndexedDBViewStore } from "@canonical/dataviews-core/indexeddb";
 import type { Decorator } from "@storybook/react-vite";
 import { useEffect, useState } from "react";
 import type { MachineFields } from "./fixtures.js";

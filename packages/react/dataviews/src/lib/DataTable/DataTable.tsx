@@ -1,14 +1,14 @@
 import type {
-  ColumnToSize,
   RowRecord,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
+import type { ColumnToSize } from "@canonical/dataviews-core/bindings";
 import {
   createColumnLayout,
   createGridInteraction,
   displayEntries,
   isIdentity,
-} from "@canonical/dataviews-core";
+} from "@canonical/dataviews-core/bindings";
 import type { CSSProperties, ReactElement } from "react";
 import { useCallback, useEffect, useId, useMemo, useRef } from "react";
 import useDataViewsValue from "../DataViews/hooks/useDataViewsValue.js";

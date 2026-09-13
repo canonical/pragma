@@ -4,7 +4,7 @@ import type {
   SchemaFieldDefinition,
   Slice,
 } from "@canonical/dataviews-core";
-import { isIdentity, sliceEquals } from "@canonical/dataviews-core";
+import { isIdentity, sliceEquals } from "@canonical/dataviews-core/bindings";
 import { Button } from "@canonical/react-ds-global";
 import { SelectInput } from "@canonical/react-ds-global-form";
 import type { FocusEvent, ReactElement } from "react";

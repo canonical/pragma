@@ -1,4 +1,4 @@
-import createIdentity, { type Identity } from "../createIdentity.js";
+import { createIdentity, type Identity } from "../identity/index.js";
 import type {
   Predicate,
   PredicateOperand,

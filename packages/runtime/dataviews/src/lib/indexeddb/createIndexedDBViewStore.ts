@@ -12,7 +12,7 @@ import type {
   ViewRemoveResult,
   ViewStore,
   ViewUpdateResult,
-} from "./types.js";
+} from "../views/types.js";
 
 /**
  * An event-handler slot. The parameter is `never` so the platform's own
@@ -259,7 +259,7 @@ const disposedError = (): Error => new Error("the view store is disposed");
  * the platform's error as the cause; nothing falls back to memory and
  * claims to persist. Other tabs' writes reach `subscribe` through a
  * BroadcastChannel where the platform has one. Import it explicitly from
- * `@canonical/dataviews-core/views`.
+ * `@canonical/dataviews-core/indexeddb`.
  */
 export default function createIndexedDBViewStore(
   config: IndexedDBViewStoreConfig,

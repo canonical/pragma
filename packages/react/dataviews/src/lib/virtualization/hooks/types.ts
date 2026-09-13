@@ -3,7 +3,8 @@
  * result type here.
  */
 
-import type { DisplayEntry, RowModel } from "@canonical/dataviews-core";
+import type { RowModel } from "@canonical/dataviews-core";
+import type { DisplayEntry } from "@canonical/dataviews-core/bindings";
 import type { MountedRange } from "@canonical/dataviews-core/virtualization";
 import type { FocusEvent, RefObject } from "react";
 

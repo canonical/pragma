@@ -1,4 +1,4 @@
-import createIdentity, { type Identity } from "../createIdentity.js";
+import { createIdentity, type Identity } from "../identity/index.js";
 import applyQueryCommand from "../query/applyQueryCommand.js";
 import canonicalSlice from "../query/canonicalSlice.js";
 import DEFAULT_WINDOW from "../query/defaultWindow.js";

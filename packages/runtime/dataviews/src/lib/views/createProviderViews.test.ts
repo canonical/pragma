@@ -1,11 +1,11 @@
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import createIndexedDBViewStore from "../indexeddb/createIndexedDBViewStore.js";
 import createDataViewsProvider from "../provider/createDataViewsProvider.js";
 import type { DataViewsProvider } from "../provider/types.js";
 import DEFAULT_WINDOW from "../query/defaultWindow.js";
 import createSchema from "../schema/createSchema.js";
 import createArraySource from "../source/createArraySource.js";
-import createIndexedDBViewStore from "./createIndexedDBViewStore.js";
 import type {
   PreferenceResult,
   ProviderViews,
