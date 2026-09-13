@@ -78,7 +78,22 @@ describe("server matrix (2×3) serves correctly", () => {
           expect(asset.status).toBe(200);
           expect(asset.headers.get("content-type")).toMatch(JS_CONTENT_TYPE);
 
-          // 4. SSR cells render /sitemap.xml as XML from the sitemap renderer —
+          // 4. SSR cells carry the page's own title, inside <head>, in the
+          //    served HTML — the point of @canonical/react-head's <Head>, and
+          //    the thing that was silently missing before it: head tags were
+          //    applied in an effect, which never runs on the server. Scoped to
+          //    <head> deliberately: a title streamed in after a suspended
+          //    boundary lands in <body>, which is a regression a whole-document
+          //    match would not see. Exactly one, because the shell carries none
+          //    for the page's to beat.
+          if (cell.ssr) {
+            const head = html.slice(0, html.indexOf("</head>"));
+
+            expect(head.match(/<title>/g)?.length ?? 0).toBe(1);
+            expect(head).toContain("<title>Home — Boilerplate</title>");
+          }
+
+          // 5. SSR cells render /sitemap.xml as XML from the sitemap renderer —
           //    the second renderer, picked by path, never the HTML app. (The SPA
           //    dev/preview cells have no SSR route, so they are exempt.)
           if (cell.ssr) {
@@ -90,7 +105,7 @@ describe("server matrix (2×3) serves correctly", () => {
             expect(xml).toContain("<loc>");
           }
 
-          // 5. SSR cells negotiate the locale per request (i18n-core:
+          // 6. SSR cells negotiate the locale per request (i18n-core:
           //    cookie > Accept-Language > default) and render the translated
           //    document server-side: `<html lang dir>` plus the localized
           //    navigation chrome, before any client JavaScript runs.

@@ -11,6 +11,7 @@ import type { FetchFunction } from "relay-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { createStaticRouter } from "#lib/router";
 import { createEnvironment } from "#relay";
+import formatDocumentTitle from "../../../formatDocumentTitle.js";
 import { appRoutes, middleware, notFoundRoute } from "../../../routes.js";
 import JourneysPage from "./JourneysPage.js";
 
@@ -21,7 +22,7 @@ describe("JourneysPage SSR", () => {
     > &
       FetchFunction;
     const html = renderToString(
-      <HeadProvider>
+      <HeadProvider titleTemplate={formatDocumentTitle}>
         <RelayEnvironmentProvider
           environment={createEnvironment({ records: undefined, fetchFn })}
         >

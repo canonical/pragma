@@ -1,4 +1,4 @@
-import { useHead } from "@canonical/react-head";
+import { Head } from "@canonical/react-head";
 import type { ReactElement } from "react";
 
 interface LoginSearch {
@@ -10,10 +10,9 @@ export default function LoginPage({
 }: {
   search: LoginSearch;
 }): ReactElement {
-  useHead({ title: "Login — Pragma docs" });
-
   return (
     <section aria-labelledby="login-title">
+      <Head title="Login" />
       <h1 id="login-title">Login</h1>
       <p>
         Demo login. Add <code>?auth=1</code> to any protected URL to simulate

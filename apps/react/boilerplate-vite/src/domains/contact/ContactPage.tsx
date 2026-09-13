@@ -1,7 +1,7 @@
 import { useTranslation } from "@canonical/i18n-react";
 import { Button } from "@canonical/react-ds-global";
 import { Field, Form } from "@canonical/react-ds-global-form";
-import { useHead } from "@canonical/react-head";
+import { Head } from "@canonical/react-head";
 import type { ReactElement } from "react";
 
 function handleSubmit(data: Record<string, unknown>) {
@@ -10,10 +10,10 @@ function handleSubmit(data: Record<string, unknown>) {
 
 export default function ContactPage(): ReactElement {
   const { t } = useTranslation();
-  useHead({ title: t("contact.title") });
 
   return (
     <section aria-labelledby="contact-title">
+      <Head title={t("contact.title")} />
       <h1 id="contact-title">{t("contact.heading")}</h1>
       <Form onSubmit={handleSubmit}>
         <Field name="name" inputType="text" label={t("contact.name")} />

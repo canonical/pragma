@@ -142,7 +142,7 @@ export const generator: GeneratorDefinition<ApplicationReactAnswers> = {
   - Server-side rendering (Express + Bun dev servers) — the default
     --rendering ssr; --rendering spa omits the whole server layer
   - Routing with @canonical/router-core
-  - Head management with @canonical/react-head
+  - Head management with @canonical/react-head (SSR-visible <title>/<meta>)
   - Two domains (marketing + account) with pages
   - Contact domain with form components (on by default; omit with --no-forms)
   - Relay (GraphQL) data layer with a local mock schema, catalog example
@@ -333,7 +333,8 @@ fallback.`,
           copy("vitest.e2e.config.ts"),
           // Relay compiler config (validates queries against the mock SDL)
           when(answers.relay, copy("relay.config.json")),
-          // index.html (EJS — <title> uses the app name)
+          // index.html (EJS — the client-only arm titles the shell; the SSR
+          // arm leaves the title to the page, which owns it)
           template({
             source: src("index.html.ejs"),
             dest: dest("index.html"),
@@ -368,6 +369,15 @@ fallback.`,
             vars,
           }),
           copy("src/styles/app.css"),
+
+          // Document title template (EJS — carries the app name). Shared by the
+          // client entry, the server entry and the Storybook decorator so every
+          // one of them composes page titles the same way.
+          template({
+            source: src("src/formatDocumentTitle.ts.ejs"),
+            dest: dest("src/formatDocumentTitle.ts"),
+            vars,
+          }),
 
           // Client (EJS — RelayEnvironmentProvider only when --relay)
           template({

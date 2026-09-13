@@ -19,6 +19,7 @@ import type { FetchFunction } from "relay-runtime";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { createStaticRouter } from "#lib/router";
 import { createEnvironment } from "#relay";
+import formatDocumentTitle from "../../../../formatDocumentTitle.js";
 import { appRoutes, middleware, notFoundRoute } from "../../../../routes.js";
 import { StandardReadingPage } from "../StandardReadingPage/index.js";
 import { StandardsPage } from "../StandardsPage/index.js";
@@ -53,7 +54,7 @@ const providerStack = (
   fetchFn: FetchFunction,
   page: ReactElement,
 ): ReactElement => (
-  <HeadProvider>
+  <HeadProvider titleTemplate={formatDocumentTitle}>
     <RelayEnvironmentProvider
       environment={createEnvironment({ records, fetchFn })}
     >

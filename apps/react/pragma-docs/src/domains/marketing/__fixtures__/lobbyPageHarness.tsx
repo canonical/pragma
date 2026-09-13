@@ -18,6 +18,7 @@ import type { FetchFunction } from "relay-runtime";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { createStaticRouter } from "#lib/router";
 import { createEnvironment } from "#relay";
+import formatDocumentTitle from "../../../formatDocumentTitle.js";
 import { appRoutes, middleware, notFoundRoute } from "../../../routes.js";
 import HomePage from "../HomePage.js";
 
@@ -48,7 +49,7 @@ export const lobbyPage = (
   records: RecordMap | undefined,
   fetchFn: FetchFunction,
 ): ReactElement => (
-  <HeadProvider>
+  <HeadProvider titleTemplate={formatDocumentTitle}>
     <RelayEnvironmentProvider
       environment={createEnvironment({ records, fetchFn })}
     >

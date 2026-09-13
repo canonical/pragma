@@ -7,6 +7,7 @@ import {
 } from "@canonical/router-core";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 import type { ElementType } from "react";
+import formatDocumentTitle from "../../src/formatDocumentTitle.js";
 
 const defaultRoutes = {
   story: route({
@@ -39,7 +40,7 @@ const withRouter =
     const router = createRouter(routes, { adapter: createHashAdapter() });
 
     return (
-      <HeadProvider>
+      <HeadProvider titleTemplate={formatDocumentTitle}>
         <RouterProvider router={router}>
           <Story />
           <Outlet />

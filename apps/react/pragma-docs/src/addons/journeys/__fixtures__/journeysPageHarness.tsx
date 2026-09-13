@@ -27,6 +27,7 @@ import type { FetchFunction } from "relay-runtime";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { createStaticRouter } from "#lib/router";
 import { createEnvironment } from "#relay";
+import formatDocumentTitle from "../../../formatDocumentTitle.js";
 import { appRoutes, middleware, notFoundRoute } from "../../../routes.js";
 import { JourneysPage } from "../JourneysPage/index.js";
 import { JourneyViewProvider } from "../journeyViewContext.js";
@@ -51,7 +52,7 @@ export const journeysPageAt = (
   records: RecordMap | undefined,
   fetchFn: FetchFunction,
 ): ReactElement => (
-  <HeadProvider>
+  <HeadProvider titleTemplate={formatDocumentTitle}>
     <RelayEnvironmentProvider
       environment={createEnvironment({ records, fetchFn })}
     >
@@ -90,7 +91,7 @@ export const journeysStrip = (
 ): ReactElement => {
   const { Controls } = journeysStripSlots;
   return (
-    <HeadProvider>
+    <HeadProvider titleTemplate={formatDocumentTitle}>
       <RelayEnvironmentProvider
         environment={createEnvironment({ records, fetchFn })}
       >

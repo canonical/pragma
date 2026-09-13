@@ -1,4 +1,4 @@
-import { useHead } from "@canonical/react-head";
+import { Head } from "@canonical/react-head";
 import type React from "react";
 import { Suspense } from "react";
 import { graphql, useLazyLoadQuery } from "react-relay";
@@ -65,28 +65,25 @@ const EntityContent = ({
     },
   );
   const component = data.component;
-  // Titles are client-only: the head hook writes `document.title` in an
-  // effect. This app's SSR path emits no `<title>` (EntryServer mounts
-  // HeadProvider without a collector), so nothing here rides an
-  // SSR-escaping path (P-5 Relay/SSR review).
-  useHead(
-    {
-      title: `${component ? (component.name ?? component._meta.curie) : "Component not found"} — Pragma docs`,
-    },
-    [component],
-  );
+  const title = component
+    ? (component.name ?? component._meta.curie)
+    : "Component not found";
 
   if (!component) {
     return (
-      <p role="alert">
-        No component found at <code>{uri}</code>. The catalog lists every
-        component the graph carries.
-      </p>
+      <>
+        <Head title={title} />
+        <p role="alert">
+          No component found at <code>{uri}</code>. The catalog lists every
+          component the graph carries.
+        </p>
+      </>
     );
   }
 
   return (
     <>
+      <Head title={title} />
       <div className="component-entity-body">
         <article className="component-entity-article">
           <EntityHeader component={component} />

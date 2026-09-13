@@ -38,6 +38,7 @@ import { createEnvironment, setPrefetchEnvironment } from "#relay";
 import type { InitialData } from "#server";
 import catalogRecords from "../domains/components/__fixtures__/catalogRecords.js";
 import componentEntityRecordsButton from "../domains/components/__fixtures__/componentEntityRecordsButton.js";
+import formatDocumentTitle from "../formatDocumentTitle.js";
 import { appRoutes, middleware, notFoundRoute } from "../routes.js";
 import { hydrateApp } from "./hydrateApp.js";
 
@@ -83,7 +84,7 @@ const renderSeededServerHtml = (
   records: RecordMap,
 ): string =>
   renderToString(
-    <HeadProvider>
+    <HeadProvider titleTemplate={formatDocumentTitle}>
       <RelayEnvironmentProvider
         environment={createEnvironment({ records, fetchFn })}
       >
@@ -147,6 +148,9 @@ describe("client-side navigation over a hydrated app", () => {
       journeyRecords,
     );
     expect(serverHtml).toContain(ENTITY_LINK_SELECTOR.slice(3, -2));
+    // Warm, the server titles the page: the store is seeded, nothing
+    // suspends, and <Head> renders into the document React hoists from.
+    expect(serverHtml).toContain("<title>Components — Pragma docs</title>");
 
     window.history.pushState({}, "", CATALOG_URL);
     (window as TestWindow).__INITIAL_DATA__ = {
@@ -176,6 +180,10 @@ describe("client-side navigation over a hydrated app", () => {
     });
     const entityTitle = container.querySelector(ENTITY_TITLE_SELECTOR);
     expect(entityTitle?.textContent).toBe("Button");
+    // The document title followed the navigation, and exactly one survives:
+    // the outgoing page's <Head> unmounts as the incoming one's renders.
+    expect(document.title).toBe("Button — Pragma docs");
+    expect(document.head.querySelectorAll("title").length).toBe(1);
     expect(window.location.pathname).toBe(
       "/components/ds%3Aglobal.component.button",
     );
@@ -192,6 +200,7 @@ describe("client-side navigation over a hydrated app", () => {
     });
     expect(container.querySelector("#lens-components-title")).toBeTruthy();
     expect(container.querySelector(ENTITY_LINK_SELECTOR)).toBeTruthy();
+    expect(document.title).toBe("Components — Pragma docs");
 
     // History: the browser's Back button, a structurally DIFFERENT path
     // through the router (its popstate handler, not its click handler) —

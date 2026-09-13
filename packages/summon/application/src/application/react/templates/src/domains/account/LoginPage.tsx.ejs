@@ -1,7 +1,7 @@
 <% if (intl) { -%>
 import { useTranslation } from "@canonical/i18n-react";
 <% } -%>
-import { useHead } from "@canonical/react-head";
+import { Head } from "@canonical/react-head";
 import type { ReactElement } from "react";
 
 interface LoginSearch {
@@ -15,20 +15,19 @@ export default function LoginPage({
 }): ReactElement {
 <% if (intl) { -%>
   const { t } = useTranslation();
-  useHead({ title: t("login.title") });
-<% } else { -%>
-  useHead({ title: "Login — Boilerplate" });
-<% } -%>
 
+<% } -%>
   return (
     <section aria-labelledby="login-title">
 <% if (intl) { -%>
+      <Head title={t("login.title")} />
       <h1 id="login-title">{t("login.heading")}</h1>
       {/*
         The `?auth=1` literal is markup (<code>), which a plain message string
         cannot carry, so the sentence is catalogued as the fragments around it.
       */}
 <% } else { -%>
+      <Head title="Login" />
       <h1 id="login-title">Login</h1>
 <% } -%>
       <p>

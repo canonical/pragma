@@ -5,17 +5,16 @@
  * pragma data instead of lorem ipsum.
  */
 
-import { useHead } from "@canonical/react-head";
+import { Head } from "@canonical/react-head";
 import { type ReactElement, Suspense } from "react";
 import ErrorBoundary from "#lib/ErrorBoundary";
 import ComponentProbe from "./ComponentProbe.js";
 import { PROBE_URI } from "./probeQuery.js";
 
 export default function PlaygroundPage(): ReactElement {
-  useHead({ title: "Playground — pragma docs" });
-
   return (
     <section aria-labelledby="playground-title">
+      <Head title="Playground" />
       <h1 id="playground-title">Playground</h1>
       <p>
         A real projection of the pragma graph: <code>ComponentProbe</code>{" "}

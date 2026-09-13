@@ -249,7 +249,7 @@ The following tables list all workspace packages with their location and purpose
 | `@canonical/ssr-adapter-cloudflare` | `packages/react/ssr-adapter-cloudflare` | Cloudflare Workers adapter for `@canonical/react-ssr` (**internal**) |
 | `@canonical/ssr-adapter-deno` | `packages/react/ssr-adapter-deno` | Deno Deploy adapter for `@canonical/react-ssr` (**internal**) |
 | `@canonical/ssr-adapter-vercel` | `packages/react/ssr-adapter-vercel` | Vercel deployment adapter for `@canonical/react-ssr` (**internal**) |
-| `@canonical/react-head` | `packages/react/head` | Declarative head management for React with SSR collection |
+| `@canonical/react-head` | `packages/react/head` | Declarative head management for React that renders head tags on the server and the client |
 | `@canonical/react-hooks` | `packages/react/hooks` | Shared React hooks: preferences, navigation tree |
 | `@canonical/i18n-react` | `packages/react/i18n` | React bindings for `@canonical/i18n-core`: I18nProvider plus useTranslation, useLocale, and useFormatters hooks |
 | `@canonical/router-react` | `packages/react/router` | React bindings for `@canonical/router-core` |

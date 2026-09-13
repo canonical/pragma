@@ -1,5 +1,5 @@
 import { useTranslation } from "@canonical/i18n-react";
-import { useHead } from "@canonical/react-head";
+import { Head } from "@canonical/react-head";
 import type { ReactElement } from "react";
 
 interface LoginSearch {
@@ -12,10 +12,10 @@ export default function LoginPage({
   search: LoginSearch;
 }): ReactElement {
   const { t } = useTranslation();
-  useHead({ title: t("login.title") });
 
   return (
     <section aria-labelledby="login-title">
+      <Head title={t("login.title")} />
       <h1 id="login-title">{t("login.heading")}</h1>
       {/*
         The `?auth=1` literal is markup (<code>), which a plain message string

@@ -35,6 +35,16 @@ and no build step — and for `preview:*` when verifying that the production bun
 behaves before a deploy: `preview:*` builds the client and runs a compiled
 renderer over the built assets, the same artifact that deploys.
 
+One asymmetry to expect in the **SPA** cells: this app is server-rendered, so
+its `index.html` carries no `<title>`. The renderer re-emits the shell's head
+tags ahead of the ones React hoists, so a shell title would beat every page's
+in the SSR cells (see `@canonical/react-head`'s one-owner rule, and
+`src/formatDocumentTitle.ts`). The SPA cells serve that shell directly, so the
+tab is untitled for the moment before React renders the page's own title — and
+stays untitled with JavaScript off. A scaffolded client-only app does not have
+this: `summon` gives the `--rendering spa` arm a shell title, because it has no
+server to compete with.
+
 ```bash
 bun run storybook    # component workshop
 ```

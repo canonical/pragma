@@ -1,4 +1,4 @@
-import { useHead } from "@canonical/react-head";
+import { Head } from "@canonical/react-head";
 import type React from "react";
 import { Suspense } from "react";
 import ErrorBoundary from "#lib/ErrorBoundary";
@@ -27,12 +27,6 @@ const JourneysPage = ({
   params,
 }: JourneysPageProps): React.ReactElement => {
   const job = readJobParam(params ?? {});
-  useHead(
-    {
-      title: job ? `${job} — Journeys — Pragma docs` : "Journeys — Pragma docs",
-    },
-    [job],
-  );
 
   return (
     <section
@@ -40,6 +34,7 @@ const JourneysPage = ({
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       data-view="journeys"
     >
+      <Head title={job ? `${job} — Journeys` : "Journeys"} />
       <h1 id="lens-journeys-title">Journeys</h1>
       <ErrorBoundary
         fallback={

@@ -25,6 +25,7 @@ import { catalogs, i18nConfig } from "#i18n/index.js";
 <% if (relay) { -%>
 import { createEnvironment } from "#relay/environment.js";
 <% } -%>
+import formatDocumentTitle from "../formatDocumentTitle.js";
 import {
   appRoutes,
   getAuthRedirectForMatch,
@@ -325,7 +326,7 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
         <div id="root">
 <% if (intl) { -%>
           <I18nProvider config={i18nConfig} catalogs={catalogs} locale={locale}>
-            <HeadProvider>
+            <HeadProvider titleTemplate={formatDocumentTitle}>
               <RelayEnvironmentProvider environment={relayEnvironment}>
                 <RouterProvider router={router}>
                   <Outlet fallback={<p>Loading…</p>} />
@@ -334,7 +335,7 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
             </HeadProvider>
           </I18nProvider>
 <% } else { -%>
-          <HeadProvider>
+          <HeadProvider titleTemplate={formatDocumentTitle}>
             <RelayEnvironmentProvider environment={relayEnvironment}>
               <RouterProvider router={router}>
                 <Outlet fallback={<p>Loading…</p>} />
@@ -373,14 +374,14 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
         <div id="root">
 <% if (intl) { -%>
           <I18nProvider config={i18nConfig} catalogs={catalogs} locale={locale}>
-            <HeadProvider>
+            <HeadProvider titleTemplate={formatDocumentTitle}>
               <RouterProvider router={router}>
                 <Outlet fallback={<p>Loading…</p>} />
               </RouterProvider>
             </HeadProvider>
           </I18nProvider>
 <% } else { -%>
-          <HeadProvider>
+          <HeadProvider titleTemplate={formatDocumentTitle}>
             <RouterProvider router={router}>
               <Outlet fallback={<p>Loading…</p>} />
             </RouterProvider>

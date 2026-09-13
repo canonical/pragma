@@ -1,24 +1,23 @@
 <% if (intl) { -%>
 import { useTranslation } from "@canonical/i18n-react";
 <% } -%>
-import { useHead } from "@canonical/react-head";
+import { Head } from "@canonical/react-head";
 import { type ReactElement, Suspense } from "react";
 import { ExampleComponent, LazyComponent } from "#lib/index.js";
 
 export default function HomePage(): ReactElement {
 <% if (intl) { -%>
   const { t } = useTranslation();
-  useHead({ title: t("home.title") });
-<% } else { -%>
-  useHead({ title: "Home — Boilerplate" });
-<% } -%>
 
+<% } -%>
   return (
     <section aria-labelledby="home-title">
 <% if (intl) { -%>
+      <Head title={t("home.title")} />
       <h1 id="home-title">{t("home.heading")}</h1>
       <p>{t("home.tagline")}</p>
 <% } else { -%>
+      <Head title="Home" />
       <h1 id="home-title">Home</h1>
       <p>Welcome to the pragma router boilerplate.</p>
 <% } -%>

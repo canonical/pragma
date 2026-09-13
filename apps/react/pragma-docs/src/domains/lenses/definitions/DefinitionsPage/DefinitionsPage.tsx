@@ -1,4 +1,4 @@
-import { useHead } from "@canonical/react-head";
+import { Head } from "@canonical/react-head";
 import type React from "react";
 import { Suspense } from "react";
 import ErrorBoundary from "#lib/ErrorBoundary";
@@ -26,14 +26,6 @@ const DefinitionsPage = ({
   params,
 }: DefinitionsPageProps): React.ReactElement => {
   const term = readTermParam(params ?? {});
-  useHead(
-    {
-      title: term
-        ? `${term} — Definitions — Pragma docs`
-        : "Definitions — Pragma docs",
-    },
-    [term],
-  );
 
   return (
     <section
@@ -41,6 +33,7 @@ const DefinitionsPage = ({
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       data-view="definitions"
     >
+      <Head title={term ? `${term} — Definitions` : "Definitions"} />
       <h1 id="lens-definitions-title">Definitions</h1>
       <ErrorBoundary
         fallback={

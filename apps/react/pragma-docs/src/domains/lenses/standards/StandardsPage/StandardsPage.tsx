@@ -1,4 +1,4 @@
-import { useHead } from "@canonical/react-head";
+import { Head } from "@canonical/react-head";
 import type React from "react";
 import { Suspense } from "react";
 import { graphql, useLazyLoadQuery } from "react-relay";
@@ -54,13 +54,12 @@ const IndexContent = (): React.ReactElement => {
 const StandardsPage = ({
   className,
 }: StandardsPageProps): React.ReactElement => {
-  useHead({ title: "Standards — Pragma docs" });
-
   return (
     <section
       aria-labelledby="lens-standards-title"
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
     >
+      <Head title="Standards" />
       <h1 id="lens-standards-title">Standards</h1>
       <ErrorBoundary
         fallback={
