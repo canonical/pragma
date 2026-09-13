@@ -24,6 +24,8 @@ This package is released alongside `@canonical/styles`, and its dependency range
 
 ## Installation
 
+These steps assume your Vanilla build is Sass, because that is how Vanilla ships and how every site running it compiles today. Steps 2 and 3 are written as Sass, and the rest is plain CSS and markup. If you have no Sass step, [A page with no build step](#a-page-with-no-build-step) under Recipes does the same thing with a link tag and an import, and [An application built with a bundler](#an-application-built-with-a-bundler) covers a JavaScript entry.
+
 ### 1. Add the packages
 
 ```bash
@@ -46,7 +48,7 @@ This is the one step with no safety net. A layer takes its place the first time 
 
 ```scss
 /* styles.scss — your existing stylesheet, with two changes */
-@use "pkg:@canonical/styles-vanilla-adapter/layers.css";
+@use "@canonical/styles-vanilla-adapter/src/layers";
 
 @layer vanilla {
   @import "vanilla-framework";   /* everything you already had, unchanged, inside the block */
@@ -55,9 +57,11 @@ This is the one step with no safety net. A layer takes its place the first time 
 }
 ```
 
-The `pkg:` form inlines the statement in place and needs a package importer, which Dart Sass 1.71 and later provide and the `sass` command line enables with `--pkg-importer=node`. Without one, write `@import "@canonical/styles-vanilla-adapter/src/layers";` instead, which also inlines it.
+That needs `node_modules` on your Sass load path, which most setups already have; on the command line it is `--load-path=node_modules`. Sass reads the file and inlines the statement where you wrote it, so the statement is the first rule of your compiled CSS. `@use "@canonical/styles-vanilla-adapter/src/layers.css"` does the same thing if you prefer naming the extension.
 
-Sass will not inline a `.css`-suffixed or `url()` import: at the top level it hoists such an import above your statement, and inside a block it emits an invalid nested `@import`. Use one of the two forms above.
+`src/layers.css` is a supported path, not an internal one. It is named here rather than through the package's export map because Sass resolves a load path against the filesystem and never reads `exports`.
+
+One form does not work, and it fails quietly: `@import` with a `.css` suffix. Sass leaves it as a literal `@import` in the output rather than inlining it, so the browser is asked to fetch a bare package name and the statement never arrives. Use `@use`, which is also the form that survives Dart Sass 3, where `@import` is removed.
 
 ### 4. Put pragma's CSS in a second entry
 
@@ -196,9 +200,9 @@ A browser below the `@scope` floor drops each confined block whole, so pragma's 
 `static/sass/styles.scss`:
 
 ```scss
-/* 1. The order contract, inlined in place. `@use` with the pkg: form needs a
-      package importer; without one, use @import "…/src/layers" instead. */
-@use "pkg:@canonical/styles-vanilla-adapter/layers.css";
+/* 1. The order contract, inlined in place. Needs `node_modules` on the Sass
+      load path; see step 3. */
+@use "@canonical/styles-vanilla-adapter/src/layers";
 
 /* 2. Vanilla and everything built on it: one layer, one territory.
       global-settings sets $font-base-family and $font-monospace to
