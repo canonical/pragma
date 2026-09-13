@@ -54,8 +54,15 @@
     --accordion-item-header-padding-inline: var(--dimension-200);
 
     --accordion-item-content-padding-inline: var(--dimension-200);
-    /* Vertical content padding in baseline multiples (dimension-100 = 1 bU). */
+    /* Vertical content padding in baseline multiples (dimension-100 = 1 bU).
+       The TOP gap (header -> content) is one spacing rung; the BOTTOM gap
+       (content -> closing divider) is the design-review value --dimension-200
+       (16px) by default, and two rungs inside a density scope (the density
+       block below: 16px comfy, 8px apps-dense). The divider compensation
+       subtracts its thickness from the painted bottom padding, so painted +
+       divider = the token value, still a whole baseline multiple. */
     --accordion-item-content-padding-block: var(--dimension-100);
+    --accordion-item-content-padding-block-end: var(--dimension-200);
 
     /* Fixed chevron size (per Figma) so every item reserves the same chevron
        column width and all headings start at the same x-position, regardless of
@@ -236,7 +243,12 @@
   .ds.accordion-item > .content {
     color: var(--accordion-item-color-text);
 
-    padding-block: var(--accordion-item-content-padding-block);
+    /* Split block padding: the start (header -> content) is one density rung;
+       the end (content -> divider) is TWO of the same rung (design review:
+       16px — the comfortable rung doubled) — see the tokens above and the
+       density block below. */
+    padding-block: var(--accordion-item-content-padding-block)
+      var(--accordion-item-content-padding-block-end);
     padding-inline-start: var(--accordion-item-content-indent);
     padding-inline-end: var(--accordion-item-content-padding-inline);
   }
@@ -256,7 +268,7 @@
 
   .ds.accordion-item[open] > .content {
     padding-block-end: calc(
-      var(--accordion-item-content-padding-block) -
+      var(--accordion-item-content-padding-block-end) -
       var(--dimension-stroke-thickness-medium)
     );
   }
@@ -293,15 +305,22 @@
    * inherits the seat line and drops the nudges, so an h6 header is exact in
    * every cell and tracks the seat if the tokens ever move. */
   :is(.comfortable, .dense, .app, .site, .docs) .ds.accordion-item {
-    /* The CONTENT panel consumes the density system's semantic spacing rung for
-       its block padding — space-md (16px apps-comfortable, 8px apps-dense,
-       20/12px sites) — instead of the fixed 1 bU, so the panel's breathing room
-       follows the density cell. Every rung is a whole baseline multiple, so the
-       rhythm holds; the [open] divider compensation reads this same token, so it
-       follows automatically. Outside a density scope the :root default stands. */
+    /* The CONTENT panel's TOP gap (header -> content) consumes the density
+       system's semantic spacing rung — space-md — instead of the fixed 1 bU,
+       so it follows the density cell. The BOTTOM gap is re-declared HERE as
+       two of the same rung (a var() substituted at :root would capture the
+       :root rung and never follow this override): 16px comfy — the value the
+       design review asked for — 8px apps-dense. Every rung is a whole
+       baseline multiple, so the rhythm holds; the [open] divider
+       compensation reads the end token, so it follows automatically.
+       Outside a density scope the :root defaults stand. */
     --accordion-item-content-padding-block: var(
       --density-space-md,
       var(--dimension-100)
+    );
+    --accordion-item-content-padding-block-end: calc(
+      var(--accordion-item-content-padding-block) *
+      2
     );
   }
 
