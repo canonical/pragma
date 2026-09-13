@@ -1,10 +1,10 @@
-import type { Location, LocationConfig } from "./types.js";
+import type { MemoryLocationConfig, QueryLocation } from "./types.js";
 
 /** The parsing base for relative hrefs; never surfaced through the port. */
 const LOCAL_BASE = "http://localhost/";
 
 /**
- * Create a memory Location: the query authority for local or secondary
+ * Create a memory location: the query authority for local or secondary
  * collections, and the fixture harness for URL-backed transport tests.
  * Repeated parameters survive every read and write. The host name in the
  * base URL is a parsing detail only — it never reaches consumers through
@@ -15,8 +15,8 @@ const LOCAL_BASE = "http://localhost/";
  * name may change or move before the first release.
  */
 export default function createMemoryLocation(
-  config: LocationConfig = {},
-): Location {
+  config: MemoryLocationConfig = {},
+): QueryLocation {
   let current = new URL(config.href ?? "/", LOCAL_BASE);
   const listeners = new Set<() => void>();
 

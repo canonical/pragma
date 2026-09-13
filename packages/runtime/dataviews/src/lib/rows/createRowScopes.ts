@@ -1,13 +1,18 @@
-import { type Channel, createChannel } from "../observable/index.js";
+import {
+  type Channel,
+  createChannel,
+  protectChannel,
+  type ReadonlyChannel,
+} from "../observable/index.js";
 import readField from "./readField.js";
-import type { RowScope, RowScopes, RowScopesConfig } from "./types.js";
+import type { RowChannels, RowScopes, RowScopesConfig } from "./types.js";
 
 /** One observed field, paired with the channel it publishes into. */
 type FieldSlot = { readonly field: string; readonly channel: Channel<unknown> };
 
-/** A scope with the writable channels its updates go through. */
+/** A row's channels with the writable side its updates go through. */
 type ScopeRecord<TRow extends object> = {
-  readonly scope: RowScope<TRow>;
+  readonly channels: RowChannels<TRow>;
   readonly row: Channel<TRow>;
   readonly selected: Channel<boolean>;
   readonly slots: readonly FieldSlot[];
@@ -46,21 +51,21 @@ export default function createRowScopes<TRow extends object>(
     record: TRow,
     selected: boolean,
   ): ScopeRecord<TRow> => {
-    const fields: Record<string, Channel<unknown>> = {};
+    const fields: Record<string, ReadonlyChannel<unknown>> = {};
     const slots: FieldSlot[] = [];
     for (const field of observed) {
       const channel = createChannel<unknown>(readField(record, field));
-      fields[field] = channel;
+      fields[field] = protectChannel(channel);
       slots.push({ field, channel });
     }
     const row = createChannel<TRow>(record);
     const membership = createChannel(selected);
     return {
-      scope: Object.freeze({
+      channels: Object.freeze({
         id,
-        row,
+        record: protectChannel(row),
         fields: Object.freeze(fields),
-        selected: membership,
+        selected: protectChannel(membership),
       }),
       row,
       selected: membership,
@@ -110,13 +115,13 @@ export default function createRowScopes<TRow extends object>(
   reconcile();
 
   return {
-    ids,
-    scope(id: string): RowScope<TRow> {
+    ids: protectChannel(ids),
+    readRow(id: string): RowChannels<TRow> {
       const record = records.get(id);
       if (record === undefined) {
         throw new Error(`row "${id}" is not in the current model`);
       }
-      return record.scope;
+      return record.channels;
     },
     observe(): () => void {
       // Re-read before subscribing: whatever the model published between

@@ -1,5 +1,6 @@
+import type { Collection } from "../collection/index.js";
 import type { PredicateOperator } from "../query/index.js";
-import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
+import type { SchemaFieldDefinition } from "../schema/index.js";
 import copyCapabilities from "./copyCapabilities.js";
 import type { CapabilityDeclaration, SourceCapabilities } from "./types.js";
 
@@ -20,10 +21,12 @@ import type { CapabilityDeclaration, SourceCapabilities } from "./types.js";
  */
 export default function declareCapabilities<
   const TFields extends readonly SchemaFieldDefinition[],
+  TRow extends object,
 >(
-  schema: Schema<TFields>,
+  collection: Collection<TFields, TRow>,
   declaration: CapabilityDeclaration<TFields>,
 ): SourceCapabilities {
+  const { schema } = collection;
   const filter: Record<string, readonly PredicateOperator[]> = {};
   // The declaration's keys are optional, which the compiler reads as an
   // object that may lack them, not as a record. A TypeScript author cannot

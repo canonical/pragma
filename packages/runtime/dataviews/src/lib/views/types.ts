@@ -5,7 +5,7 @@
  * the IndexedDB store is the local-first one shipped here.
  */
 
-import type { CollectionState } from "../collection/index.js";
+import type { DataViewsState } from "../coordinator/index.js";
 import type { ReadonlyChannel } from "../observable/index.js";
 import type { Query } from "../query/index.js";
 import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
@@ -348,7 +348,7 @@ export type ViewsState = {
  * one is open, whether the query has moved from it, and the operations on
  * it. Operations run one at a time, in call order. A store that rejects
  * settles as `failed`; a state listener that throws rejects that operation
- * alone. An operation still in flight when the scope rotates answers its
+ * alone. An operation still in flight when the generation moves answers its
  * caller and changes nothing.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
@@ -405,9 +405,9 @@ export type ViewsHost = {
   /** The schema a stored query is read against. */
   readonly schema: Schema<readonly SchemaFieldDefinition[]>;
   /** What the source can execute; a stored clause outside it is refused. */
-  readonly capabilities: SourceCapabilities | null;
+  readonly capabilities: SourceCapabilities;
   /** The live query and window, which "modified" is derived from. */
-  readonly state: ReadonlyChannel<CollectionState<object>>;
+  readonly state: ReadonlyChannel<DataViewsState<object>>;
   /** Adopt a view's query and window together. */
   readonly adopt: (query: Query) => void;
 };
@@ -420,8 +420,6 @@ export type ProviderViewsConfig = {
 
 /** The provider's views, with what only the provider calls. */
 export type OwnedViews = ProviderViews & {
-  /** Forget the open view, as a scope rotation resets the query. */
+  /** Forget the open view, as a reset returns the query to its seed. */
   readonly forget: () => void;
-  /** Detach from the store and the host for good. */
-  readonly dispose: () => void;
 };

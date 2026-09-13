@@ -3,14 +3,13 @@ import {
   QueryObserver as TanStackObserver,
 } from "@tanstack/query-core";
 import { describe, expect, it, vi } from "vitest";
-import { declare, declareSort } from "../../../testing/fixtures.js";
+import { byId, declare, declareSort } from "../../../testing/fixtures.js";
+import { createCollection } from "../collection/index.js";
 import { createDataViewsProvider } from "../provider/index.js";
 import { DEFAULT_WINDOW, type Slice } from "../query/index.js";
 import type { SourceDelivery, SourcePage } from "../result/index.js";
 import type { RowRecord } from "../rows/index.js";
-import { createSchema } from "../schema/index.js";
 import createQuerySource from "./createQuerySource.js";
-import createSourceBinding from "./createSourceBinding.js";
 import type {
   QueryObservation,
   QueryObserver,
@@ -259,29 +258,32 @@ describe("createQuerySource over @tanstack/query-core", () => {
 
   it("carries an invalidation's refetched page through to the collection", async () => {
     const queryClient = client();
-    const host = createDataViewsProvider({
-      schema: createSchema([
-        { field: "status", kind: "choices", options: ["ready", "failed"] },
-      ]),
-    });
     let served = page([{ id: "a" }], 1);
-    const binding = createSourceBinding({
-      host,
+    const provider = createDataViewsProvider({
+      collection: createCollection({
+        fields: [
+          { field: "status", kind: "choices", options: ["ready", "failed"] },
+        ],
+        identify: byId,
+      }),
       source: source(queryClient, () => Promise.resolve(served)),
     });
-    const release = binding.observe();
-    const first = host.refresh();
+    // The first observer issues the first request; nothing ran before.
+    expect(provider.state.get().pendingRequestId).toBeNull();
+    const release = provider.observe();
+    const first = provider.state.get().pendingRequestId;
+    expect(first).not.toBeNull();
     await vi.waitFor(() =>
-      expect(host.state.get().result.status).toBe("ready"),
+      expect(provider.state.get().result.status).toBe("ready"),
     );
-    expect(host.state.get().result.provenance?.requestId).toBe(first);
+    expect(provider.state.get().result.provenance?.requestId).toBe(first);
 
     served = page([{ id: "a" }, { id: "b" }], 2);
     await queryClient.invalidateQueries();
     await vi.waitFor(() =>
-      expect(host.state.get().result.counts?.matched).toEqual(exact(2)),
+      expect(provider.state.get().result.counts?.matched).toEqual(exact(2)),
     );
-    const state = host.state.get();
+    const state = provider.state.get();
     expect(state.result.provenance).not.toBeNull();
     expect(state.result.provenance?.requestId).not.toBe(first);
     expect(state.resultMatchesQuery).toBe(true);

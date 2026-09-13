@@ -1,13 +1,16 @@
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import createManualSource from "../../../testing/createManualSource.js";
+import { answering, byId, declare } from "../../../testing/fixtures.js";
+import { createCollection } from "../collection/index.js";
 import { createIndexedDBViewStore } from "../indexeddb/index.js";
 import {
   createDataViewsProvider,
-  type DataViewsProvider,
+  type ProviderHost,
+  readProviderHost,
 } from "../provider/index.js";
 import { DEFAULT_WINDOW } from "../query/index.js";
-import { createSchema } from "../schema/index.js";
-import { createArraySource } from "../source/index.js";
+import createProviderViews from "./createProviderViews.js";
 import type {
   PreferenceResult,
   ProviderViews,
@@ -26,21 +29,28 @@ import type {
  * unreadable record.
  */
 
-const schema = createSchema([
-  { field: "status", kind: "choices", options: ["failed", "running"] },
-  { field: "cores", kind: "number", min: 1, max: 64 },
-]);
+const collection = createCollection({
+  fields: [
+    { field: "status", kind: "choices", options: ["failed", "running"] },
+    { field: "cores", kind: "number", min: 1, max: 64 },
+  ],
+  identify: byId,
+});
 
-type Fields = typeof schema.fields;
-
-const capabilities = createArraySource({ rows: [], schema }).capabilities;
+/** Every filter these scenarios apply, and nothing else: no search. */
+const capabilities = declare({
+  filter: { status: ["eq"], cores: ["gte", "lte"] },
+});
 
 const stores: ViewStore[] = [];
 
+/** Every observation a scenario opened, released before its store closes. */
+const releases: (() => void)[] = [];
+
 afterEach(() => {
-  // Providers first, so a write still gathering reaches a live store.
-  for (const provider of providers.splice(0)) {
-    provider.dispose();
+  // Observations first, so a write still gathering reaches a live store.
+  for (const release of releases.splice(0)) {
+    release();
   }
   for (const store of stores.splice(0)) {
     store.dispose();
@@ -64,43 +74,51 @@ const tab = (indexedDB: Factory): ViewStore => {
   return store;
 };
 
-const providers: DataViewsProvider<Fields>[] = [];
-
-const providerOver = (store: ViewStore): DataViewsProvider<Fields> => {
-  const provider = createDataViewsProvider<Fields>({
-    schema,
-    capabilities,
-    window: { ...DEFAULT_WINDOW, page: 3, size: 5 },
+/** A provider over the store, seeded on the third page of five. */
+const providerOver = (store: ViewStore) =>
+  createDataViewsProvider({
+    collection,
+    source: createManualSource({ capabilities, answer: answering([]) }).source,
     views: store,
+    seed: { window: { ...DEFAULT_WINDOW, page: 3, size: 5 } },
   });
-  providers.push(provider);
-  return provider;
-};
+
+type Provider = ReturnType<typeof providerOver>;
+
+type Host = ProviderHost<typeof collection.schema.fields>;
 
 /** The provider's views, which a provider given a store always has. */
-const viewsOf = (provider: DataViewsProvider<Fields>): ProviderViews => {
+const viewsOf = (provider: Provider): ProviderViews => {
   if (provider.views === null) {
     throw new Error("expected the provider to have views");
   }
   return provider.views;
 };
 
-/** A provider over a fresh profile, observed as a mounted control would. */
+/** Observe, as a mounted control does, releasing when the scenario ends. */
+const watch = (observable: { readonly observe: () => () => void }) => {
+  const release = observable.observe();
+  releases.push(release);
+  return release;
+};
+
+/** A provider over a fresh profile, its views observed and listed. */
 const observed = async () => {
   const indexedDB = new IDBFactory();
   const store = tab(indexedDB);
   const provider = providerOver(store);
   const views = viewsOf(provider);
-  const release = views.observe();
+  const host = readProviderHost(provider);
+  const release = watch(views);
   await vi.waitFor(() => {
     expect(views.state.get().listing.status).toBe("ready");
   });
-  return { indexedDB, store, provider, views, release };
+  return { indexedDB, store, provider, host, views, release };
 };
 
 /** Observe the views, as a mounted control does, until they are listed. */
 const listed = async (views: ProviderViews): Promise<void> => {
-  views.observe();
+  watch(views);
   await vi.waitFor(() => {
     expect(views.state.get().listing.status).toBe("ready");
   });
@@ -114,8 +132,12 @@ const viewOf = (outcome: ViewOutcome): SavedView => {
   return outcome.view;
 };
 
-const failedOnly = (provider: DataViewsProvider<Fields>): void => {
-  provider.fields.status.eq.set(["failed"]);
+const failedOnly = (host: Host): void => {
+  host.setPredicate({ field: "status", operator: "eq", operands: ["failed"] });
+};
+
+const coresAtLeast = (host: Host, cores: number): void => {
+  host.setPredicate({ field: "cores", operator: "gte", operands: [cores] });
 };
 
 /** A store whose every method rejects or answers as a test says. */
@@ -151,13 +173,12 @@ const storedView = (overrides: Partial<SavedView> = {}): SavedView => ({
 /** Views over a stand-in store holding one view, with that view open. */
 const openOver = async (overrides: Partial<ViewStore>) => {
   const view = storedView();
-  const views = viewsOf(
-    providerOver(
-      standIn({ get: async () => ({ status: "found", view }), ...overrides }),
-    ),
+  const provider = providerOver(
+    standIn({ get: async () => ({ status: "found", view }), ...overrides }),
   );
+  const views = viewsOf(provider);
   await views.open(view.id);
-  return { view, views };
+  return { view, views, host: readProviderHost(provider) };
 };
 
 /** A promise and its settling functions, to answer a stand-in call on cue. */
@@ -173,7 +194,10 @@ const deferred = <T>() => {
 
 describe("createProviderViews", () => {
   it("has no views without a store: nothing is kept in memory instead", () => {
-    const provider = createDataViewsProvider<Fields>({ schema });
+    const provider = createDataViewsProvider({
+      collection,
+      source: createManualSource({ capabilities }).source,
+    });
     expect(provider.views).toBeNull();
   });
 
@@ -198,6 +222,38 @@ describe("createProviderViews", () => {
     expect(readPresentation).not.toHaveBeenCalled();
   });
 
+  it("follows the host's query only while observed: never on construction, and not after the last release", () => {
+    // The provider's own host, with its state channel counted: what the
+    // views subscribe to is what a mounted control's query moves through.
+    const provider = providerOver(standIn());
+    const host = readProviderHost(provider);
+    const stopHost = vi.fn();
+    const subscribe = vi.fn((listener: () => void) => {
+      const stop = provider.state.subscribe(listener);
+      return () => {
+        stopHost();
+        stop();
+      };
+    });
+    const views = createProviderViews({
+      host: {
+        schema: collection.schema,
+        capabilities: provider.capabilities,
+        state: { get: provider.state.get, subscribe },
+        adopt: host.adopt,
+      },
+      store: standIn(),
+    });
+    expect(subscribe).not.toHaveBeenCalled();
+    const first = views.observe();
+    const second = views.observe();
+    expect(subscribe).toHaveBeenCalledTimes(1);
+    first();
+    expect(stopHost).not.toHaveBeenCalled();
+    second();
+    expect(stopHost).toHaveBeenCalledTimes(1);
+  });
+
   it("lists the views by name once observed, with the records it cannot read", async () => {
     const list = vi.fn(async () => ({
       views: [
@@ -207,7 +263,7 @@ describe("createProviderViews", () => {
       unreadable: [{ id: "c", reason: "record version 2 is not supported" }],
     }));
     const views = viewsOf(providerOver(standIn({ list })));
-    views.observe();
+    watch(views);
     expect(views.state.get().listing.status).toBe("pending");
     await vi.waitFor(() => {
       expect(views.state.get().listing.status).toBe("ready");
@@ -250,8 +306,27 @@ describe("createProviderViews", () => {
     await vi.waitFor(() => {
       expect(views.state.get().listing.status).toBe("ready");
     });
-    views.observe();
+    watch(views);
     expect(views.state.get().listing.status).toBe("ready");
+  });
+
+  it("starts with the provider's first observer and stops with its last", async () => {
+    const unsubscribe = vi.fn();
+    const subscribe = vi.fn(() => unsubscribe);
+    const provider = providerOver(standIn({ subscribe }));
+    const views = viewsOf(provider);
+    expect(subscribe).not.toHaveBeenCalled();
+    const first = provider.observe();
+    const second = provider.observe();
+    expect(subscribe).toHaveBeenCalledTimes(1);
+    expect(views.state.get().listing.status).toBe("pending");
+    await vi.waitFor(() => {
+      expect(views.state.get().listing.status).toBe("ready");
+    });
+    first();
+    expect(unsubscribe).not.toHaveBeenCalled();
+    second();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
 
   it("reports storage it cannot list, and lists again when asked", async () => {
@@ -260,7 +335,7 @@ describe("createProviderViews", () => {
       .mockRejectedValueOnce(new Error("view storage is unavailable: blocked"))
       .mockResolvedValue({ views: [storedView()], unreadable: [] });
     const views = viewsOf(providerOver(standIn({ list })));
-    views.observe();
+    watch(views);
     await vi.waitFor(() => {
       expect(views.state.get().listing).toEqual({
         status: "failed",
@@ -286,7 +361,7 @@ describe("createProviderViews", () => {
         unreadable: [],
       });
     const views = viewsOf(providerOver(standIn({ list })));
-    views.observe();
+    watch(views);
     views.reload();
     views.reload();
     await vi.waitFor(() => {
@@ -304,8 +379,8 @@ describe("createProviderViews", () => {
 
 describe("createProviderViews opening and saving", () => {
   it("saves the live query as a new view with its renderer, and opens it", async () => {
-    const { provider, views, store } = await observed();
-    failedOnly(provider);
+    const { host, views, store } = await observed();
+    failedOnly(host);
     const outcome = await views.saveAs("  Failed machines ");
     expect(outcome.status).toBe("saved");
     const view = viewOf(outcome);
@@ -323,36 +398,36 @@ describe("createProviderViews opening and saving", () => {
   });
 
   it("is modified once the query moves, and not by the window", async () => {
-    const { provider, views } = await observed();
-    failedOnly(provider);
+    const { provider, host, views } = await observed();
+    failedOnly(host);
     await views.saveAs("Failed");
     provider.navigateWindow({ page: 2 });
     expect(views.state.get().modified).toBe(false);
-    provider.fields.cores.gte.edit("8");
+    coresAtLeast(host, 8);
     expect(views.state.get().modified).toBe(true);
-    provider.fields.cores.gte.clear();
+    host.removePredicate("cores", "gte");
     expect(views.state.get().modified).toBe(false);
   });
 
   it("publishes only when modified changes, not on every query move", async () => {
-    const { provider, views } = await observed();
-    failedOnly(provider);
+    const { provider, host, views } = await observed();
+    failedOnly(host);
     await views.saveAs("Failed");
     const published: boolean[] = [];
     views.state.subscribe(() => {
       published.push(views.state.get().modified);
     });
-    provider.fields.cores.gte.edit("8");
-    provider.fields.cores.gte.edit("16");
+    coresAtLeast(host, 8);
+    coresAtLeast(host, 16);
     provider.navigateWindow({ page: 2 });
     expect(published).toEqual([true]);
   });
 
   it("opens a view: its query on the first page, keeping the page size", async () => {
-    const { provider, views } = await observed();
-    failedOnly(provider);
+    const { provider, host, views } = await observed();
+    failedOnly(host);
     const view = viewOf(await views.saveAs("Failed"));
-    provider.fields.status.eq.clear();
+    host.removePredicate("status", "eq");
     const outcome = await views.open(view.id);
     expect(outcome).toEqual({ status: "opened", view });
     expect(provider.state.get().slice.filter).toEqual([
@@ -367,12 +442,16 @@ describe("createProviderViews opening and saving", () => {
   });
 
   it("resets to the open view's query, and does nothing with none open", async () => {
-    const { provider, views } = await observed();
+    const { provider, host, views } = await observed();
     views.reset();
     expect(provider.state.get().window.page).toBe(3);
-    failedOnly(provider);
+    failedOnly(host);
     await views.saveAs("Failed");
-    provider.fields.status.eq.set(["running"]);
+    host.setPredicate({
+      field: "status",
+      operator: "eq",
+      operands: ["running"],
+    });
     provider.navigateWindow({ page: 4 });
     views.reset();
     expect(provider.state.get().slice.filter[0]?.operands).toEqual(["failed"]);
@@ -413,10 +492,10 @@ describe("createProviderViews opening and saving", () => {
   });
 
   it("saves the live query into the open view", async () => {
-    const { provider, views, store } = await observed();
-    failedOnly(provider);
+    const { host, views, store } = await observed();
+    failedOnly(host);
     const view = viewOf(await views.saveAs("Failed"));
-    provider.fields.cores.gte.edit("8");
+    coresAtLeast(host, 8);
     const outcome = await views.save();
     const saved = viewOf(outcome);
     expect(saved.revision).toBe(view.revision + 1);
@@ -439,11 +518,12 @@ describe("createProviderViews opening and saving", () => {
         return real.update(view, changes);
       },
     });
+    const host = readProviderHost(provider);
     const views = viewsOf(provider);
     await listed(views);
-    failedOnly(provider);
+    failedOnly(host);
     await views.saveAs("Failed");
-    provider.fields.cores.gte.edit("8");
+    coresAtLeast(host, 8);
     const saving = views.save();
     await vi.waitFor(() => {
       expect(views.state.get().operation).toEqual({
@@ -454,17 +534,17 @@ describe("createProviderViews opening and saving", () => {
     // A reset leaves an operation still running as it is.
     views.reset();
     expect(views.state.get().operation?.status).toBe("pending");
-    provider.fields.cores.gte.edit("16");
+    coresAtLeast(host, 16);
     gate.resolve();
     await saving;
     expect(views.state.get().modified).toBe(true);
-    provider.fields.cores.gte.edit("8");
+    coresAtLeast(host, 8);
     expect(views.state.get().modified).toBe(false);
   });
 
   it("runs operations one at a time, each against the last one's revision", async () => {
-    const { provider, views } = await observed();
-    failedOnly(provider);
+    const { host, views } = await observed();
+    failedOnly(host);
     const creating = views.saveAs("Failed");
     const renaming = views.rename("Failures");
     const saving = views.save();
@@ -522,15 +602,15 @@ describe("createProviderViews opening and saving", () => {
 
 describe("createProviderViews across tabs", () => {
   it("conflicts on save; the stored view becomes the open one, and saving again overwrites it", async () => {
-    const { indexedDB, provider, views } = await observed();
-    failedOnly(provider);
+    const { indexedDB, host, views } = await observed();
+    failedOnly(host);
     const view = viewOf(await views.saveAs("Failed"));
     // The other tab saves a different query into the same view.
     const other = tab(indexedDB);
     const theirs = await other.update(view, {
       query: "as=table&status=running",
     });
-    provider.fields.cores.gte.edit("8");
+    coresAtLeast(host, 8);
     const outcome = await views.save();
     expect(outcome.status).toBe("conflict");
     const stored = viewOf(outcome);
@@ -548,11 +628,11 @@ describe("createProviderViews across tabs", () => {
   });
 
   it("discards the changes after a conflict by resetting to the stored query", async () => {
-    const { indexedDB, provider, views } = await observed();
-    failedOnly(provider);
+    const { indexedDB, provider, host, views } = await observed();
+    failedOnly(host);
     const view = viewOf(await views.saveAs("Failed"));
     await tab(indexedDB).update(view, { query: "as=table&status=running" });
-    provider.fields.cores.gte.edit("8");
+    coresAtLeast(host, 8);
     await views.save();
     views.reset();
     expect(provider.state.get().slice.filter).toEqual([
@@ -579,19 +659,19 @@ describe("createProviderViews across tabs", () => {
   });
 
   it("loses the identity, not the query, when the other tab deleted the view", async () => {
-    const { indexedDB, provider, views } = await observed();
-    failedOnly(provider);
+    const { indexedDB, provider, host, views } = await observed();
+    failedOnly(host);
     const view = viewOf(await views.saveAs("Failed"));
     await tab(indexedDB).remove(view);
-    provider.fields.cores.gte.edit("8");
+    coresAtLeast(host, 8);
     expect(await views.save()).toEqual({ status: "missing" });
     expect(views.state.get().current).toBeNull();
     expect(provider.state.get().slice.filter).toHaveLength(2);
   });
 
   it("hears the other tab's deletion and lets the identity go", async () => {
-    const { indexedDB, provider, views } = await observed();
-    failedOnly(provider);
+    const { indexedDB, provider, host, views } = await observed();
+    failedOnly(host);
     const view = viewOf(await views.saveAs("Failed"));
     await tab(indexedDB).remove(view);
     await vi.waitFor(() => {
@@ -601,8 +681,8 @@ describe("createProviderViews across tabs", () => {
   });
 
   it("conflicts on rename and on delete, and succeeds on the retry", async () => {
-    const { indexedDB, provider, views } = await observed();
-    failedOnly(provider);
+    const { indexedDB, provider, host, views } = await observed();
+    failedOnly(host);
     const view = viewOf(await views.saveAs("Failed"));
     const other = tab(indexedDB);
     await other.update(view, { name: "Theirs" });
@@ -636,8 +716,8 @@ describe("createProviderViews across tabs", () => {
 
 describe("createProviderViews names", () => {
   it("refuses an empty or duplicate name before writing anything", async () => {
-    const { provider, views } = await observed();
-    failedOnly(provider);
+    const { host, views } = await observed();
+    failedOnly(host);
     await views.saveAs("Café");
     await vi.waitFor(() => {
       expect(views.state.get().views).toHaveLength(1);
@@ -647,7 +727,7 @@ describe("createProviderViews names", () => {
       reason: "a view needs a name",
     });
     // Case and Unicode composition make no different name.
-    expect(await views.saveAs(" CAFE\u0301 ")).toEqual({
+    expect(await views.saveAs(" CAFÉ ")).toEqual({
       status: "invalid",
       reason: 'a view named "Café" already exists',
     });
@@ -660,14 +740,14 @@ describe("createProviderViews names", () => {
   });
 
   it("lets a view keep its own name on rename, but not take another's", async () => {
-    const { provider, views } = await observed();
-    failedOnly(provider);
+    const { host, views } = await observed();
+    failedOnly(host);
     await views.saveAs("Running");
     await views.saveAs("Failed");
     await vi.waitFor(() => {
       expect(views.state.get().views).toHaveLength(2);
     });
-    provider.fields.cores.gte.edit("8");
+    coresAtLeast(host, 8);
     expect((await views.rename("FAILED")).status).toBe("saved");
     // A rename saves no query: the moved one stays modified.
     expect(views.state.get().modified).toBe(true);
@@ -714,7 +794,7 @@ describe("createProviderViews names", () => {
     await views.saveAs("Failed");
     await views.saveAs("Failures");
     await views.saveAs("Failures");
-    failedOnly(provider);
+    failedOnly(readProviderHost(provider));
     await views.saveAs("Failures");
     views.arrange({ width: 120 });
     await views.saveAs("Failures");
@@ -744,7 +824,7 @@ describe("createProviderViews presentation", () => {
     await store.patchPresentation("default", { density: "dense", width: 100 });
     const provider = providerOver(store);
     const views = viewsOf(provider);
-    views.observe();
+    watch(views);
     await vi.waitFor(() => {
       expect(views.state.get().presentation).toEqual({
         density: "dense",
@@ -780,8 +860,8 @@ describe("createProviderViews presentation", () => {
   });
 
   it("saves a change to the open view's own preferences, never its saved presentation", async () => {
-    const { provider, views, store } = await observed();
-    failedOnly(provider);
+    const { host, views, store } = await observed();
+    failedOnly(host);
     views.arrange({ width: 120 });
     const view = viewOf(await views.saveAs("Failed"));
     expect(view.presentation).toEqual({ width: 120 });
@@ -815,7 +895,7 @@ describe("createProviderViews presentation", () => {
     const views = viewsOf(
       providerOver(standIn({ readPresentation: () => read.promise })),
     );
-    views.observe();
+    watch(views);
     views.arrange({ width: 120, height: undefined });
     read.resolve({ width: 90, height: 30, depth: 4 });
     await vi.waitFor(() => {
@@ -838,7 +918,7 @@ describe("createProviderViews presentation", () => {
         }),
       ),
     );
-    views.observe();
+    watch(views);
     await views.open(view.id);
     // Observing read the default; opening read it again with the view's.
     expect(reads).toHaveLength(3);
@@ -858,7 +938,7 @@ describe("createProviderViews presentation", () => {
       .mockRejectedValueOnce(new Error("view storage is unavailable: blocked"))
       .mockResolvedValue({});
     const views = viewsOf(providerOver(standIn({ readPresentation })));
-    views.observe();
+    watch(views);
     await vi.waitFor(() => {
       expect(views.state.get().presentationFailure).toBe(
         "view storage is unavailable: blocked",
@@ -892,7 +972,7 @@ describe("createProviderViews presentation", () => {
       .mockReturnValueOnce(early.promise)
       .mockResolvedValue({});
     const views = viewsOf(providerOver(standIn({ readPresentation })));
-    views.observe();
+    watch(views);
     views.reload();
     early.reject(new Error("too late"));
     await new Promise((settle) => setTimeout(settle));
@@ -901,30 +981,42 @@ describe("createProviderViews presentation", () => {
 });
 
 describe("createProviderViews lifetime", () => {
-  it("forgets the open view when the scope rotates", async () => {
-    const { provider, views } = await observed();
-    failedOnly(provider);
+  it("forgets the open view when the provider resets", async () => {
+    const { provider, host, views } = await observed();
+    failedOnly(host);
     await views.saveAs("Failed");
-    provider.rotateScope();
+    provider.reset();
     expect(views.state.get()).toMatchObject({ current: null, operation: null });
   });
 
-  it("disposes cleanly when nothing ever observed it", () => {
-    const provider = providerOver(standIn());
+  it("stops hearing the store and the query once the last observer releases", async () => {
+    const unsubscribe = vi.fn();
+    const view = storedView();
+    const provider = providerOver(
+      standIn({
+        subscribe: () => unsubscribe,
+        get: async () => ({ status: "found", view }),
+      }),
+    );
+    const host = readProviderHost(provider);
     const views = viewsOf(provider);
-    const before = views.state.get();
-    provider.dispose();
-    failedOnly(provider);
-    expect(views.state.get()).toBe(before);
+    const release = views.observe();
+    await views.open(view.id);
+    release();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    // The query moves from the open view's; nothing here hears it.
+    coresAtLeast(host, 8);
+    expect(views.state.get().modified).toBe(false);
+    // Observed again, the views read the query as it now stands.
+    watch(views);
+    expect(views.state.get().modified).toBe(true);
   });
 
-  it("stops hearing the store and the query once disposed", async () => {
-    const unsubscribe = vi.fn();
+  it("lets an operation still in flight when the last observer releases answer its caller", async () => {
     const view = storedView();
     const gate = deferred<void>();
     const provider = providerOver(
       standIn({
-        subscribe: () => unsubscribe,
         get: async () => {
           await gate.promise;
           return { status: "found", view };
@@ -932,23 +1024,24 @@ describe("createProviderViews lifetime", () => {
       }),
     );
     const views = viewsOf(provider);
-    views.observe();
+    const release = views.observe();
     const opening = views.open(view.id);
-    const before = views.state.get();
-    provider.dispose();
-    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    release();
     gate.resolve();
-    // The outcome still answers the caller; the state no longer moves.
+    // A release is not a reset: the views stay the provider's, and the
+    // operation opens the view as it would have with an observer.
     expect((await opening).status).toBe("opened");
-    expect(views.state.get()).toBe(before);
-    expect(provider.state.get().slice.filter).toEqual([]);
+    expect(views.state.get().current).toEqual(view);
+    expect(provider.state.get().slice.filter).toEqual([
+      { field: "status", operator: "eq", operands: ["failed"] },
+    ]);
   });
 });
 
 describe("createProviderViews races and failures", () => {
   it("refuses a name already given a moment ago, before the store lists it", async () => {
-    const { provider, views } = await observed();
-    failedOnly(provider);
+    const { host, views } = await observed();
+    failedOnly(host);
     const first = views.saveAs("Failed");
     const second = views.saveAs("failed");
     expect((await first).status).toBe("saved");
@@ -997,7 +1090,7 @@ describe("createProviderViews races and failures", () => {
     expect((await views.open(view.id)).status).toBe("opened");
   });
 
-  it("lets an operation still in flight when the scope rotates change nothing", async () => {
+  it("lets an operation still in flight when the provider resets change nothing", async () => {
     const view = storedView();
     const gate = deferred<void>();
     const provider = providerOver(
@@ -1013,7 +1106,7 @@ describe("createProviderViews races and failures", () => {
     await vi.waitFor(() => {
       expect(views.state.get().operation?.status).toBe("pending");
     });
-    provider.rotateScope();
+    provider.reset();
     gate.resolve();
     expect((await opening).status).toBe("opened");
     expect(views.state.get()).toMatchObject({ current: null, operation: null });
@@ -1127,18 +1220,32 @@ describe("createProviderViews races and failures", () => {
     ]);
   });
 
-  it("writes the changes still gathering when the provider is disposed, and none after", async () => {
+  it("writes the changes still gathering when the last observer releases, once", async () => {
+    const patchPresentation = vi.fn<ViewStore["patchPresentation"]>(
+      async () => ({ status: "saved" }),
+    );
+    const views = viewsOf(providerOver(standIn({ patchPresentation })));
+    const first = views.observe();
+    const second = views.observe();
+    views.arrange({ width: 100 });
+    first();
+    expect(patchPresentation).not.toHaveBeenCalled();
+    second();
+    expect(patchPresentation).toHaveBeenCalledWith("default", { width: 100 });
+    // The timer that was gathering the change does not write it again.
+    await new Promise((settle) => setTimeout(settle, 250));
+    expect(patchPresentation).toHaveBeenCalledTimes(1);
+  });
+
+  it("writes the changes still gathering when the provider's last observer releases", async () => {
     const patchPresentation = vi.fn<ViewStore["patchPresentation"]>(
       async () => ({ status: "saved" }),
     );
     const provider = providerOver(standIn({ patchPresentation }));
+    const release = provider.observe();
     viewsOf(provider).arrange({ width: 100 });
-    provider.dispose();
+    release();
     expect(patchPresentation).toHaveBeenCalledWith("default", { width: 100 });
-    // A change after that is ignored: the collection is gone for good.
-    viewsOf(provider).arrange({ width: 200 });
-    await new Promise((settle) => setTimeout(settle, 250));
-    expect(patchPresentation).toHaveBeenCalledTimes(1);
   });
 
   it("writes again the open view's preferences whose write failed", async () => {

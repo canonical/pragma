@@ -1,4 +1,4 @@
-import { createChannel } from "../observable/index.js";
+import { createChannel, protectChannel } from "../observable/index.js";
 import {
   areSlicesEqual,
   type ResultWindow,
@@ -135,7 +135,7 @@ const settleLayer = (
 
 /**
  * What a write settles to: its outcome, and how to apply it to the views —
- * which runs only while the scope it was made in is still current.
+ * which runs only while the generation it was made in is still current.
  */
 type Settlement = {
   readonly outcome: ViewSettledOutcome;
@@ -160,7 +160,7 @@ type Prepared = ViewOutcome | (() => Promise<Settlement>);
  * they were read at, so a view changed in another tab conflicts instead of
  * being overwritten; after a conflict the stored view is the open one, and
  * the user chooses to overwrite it, save a new view or discard the changes.
- * An operation still in flight when the scope rotates answers its caller
+ * An operation still in flight when the generation moves answers its caller
  * and changes nothing.
  *
  * Presentation is layered: the viewer's default arrangement, then the open
@@ -169,8 +169,13 @@ type Prepared = ViewOutcome | (() => Promise<Settlement>);
  * the store changes; a change not yet sent when a read began, or whose
  * write failed, wins over it.
  *
- * Constructing it reads nothing: the store is first read when something
- * observes the views.
+ * Constructing it reads and subscribes to nothing: the store is first read
+ * and the query first followed when something observes the views, and the
+ * last release stops both.
+ *
+ * @note Impure by design: the views hold the open view, its baseline and
+ * the preferences gathering to be written; observing subscribes to the
+ * store and the host.
  */
 export default function createProviderViews(
   config: ProviderViewsConfig,
@@ -182,7 +187,7 @@ export default function createProviderViews(
   const defaults = emptyLayer();
   /** The open view's own preferences. */
   let own = emptyLayer();
-  /** Bumped when the scope rotates or the views are disposed. */
+  /** Bumped when the provider resets, so an operation in flight answers nothing. */
   let generation = 0;
   let listRead = 0;
   let preferenceRead = 0;
@@ -194,7 +199,8 @@ export default function createProviderViews(
   /** Why the latest failed preference write failed. */
   let writeFailure = "";
   let observers = 0;
-  let unsubscribe = (): void => {};
+  /** Stops hearing the store and the host, while something observes. */
+  let stopFollowing: (() => void) | null = null;
   let queue: Promise<unknown> = Promise.resolve();
   /** Presentation changes not yet written, merged by target. */
   const queued = new Map<
@@ -208,15 +214,11 @@ export default function createProviderViews(
   let flushing: ReturnType<typeof setTimeout> | null = null;
   /** A creation whose outcome never arrived, kept to be retried under its id. */
   let draft: Attempt | null = null;
-  let disposed = false;
 
   const modifiedNow = (): boolean =>
     baseline !== null && !areSlicesEqual(baseline, host.state.get().slice);
 
   const publish = (changed: Partial<ViewsState>): void => {
-    if (disposed) {
-      return;
-    }
     const next = { ...state.get(), ...changed };
     const presentation: ViewPresentation = Object.freeze({
       ...defaults.values,
@@ -235,11 +237,12 @@ export default function createProviderViews(
     state.set(Object.freeze(published));
   };
 
-  const stopHost = host.state.subscribe(() => {
+  /** Whether the live query has moved from the open view's, republished. */
+  const followHost = (): void => {
     if (state.get().modified !== modifiedNow()) {
       publish({});
     }
-  });
+  };
 
   const queryText = (slice: Slice): string =>
     encodeQuery({
@@ -416,10 +419,6 @@ export default function createProviderViews(
     target: PresentationTarget,
     patch: PresentationPatch,
   ): void => {
-    // Gone for good: nothing more is written.
-    if (disposed) {
-      return;
-    }
     const token = ++changes;
     const key = JSON.stringify(target);
     const gathered = queued.get(key)?.patch ?? {};
@@ -549,12 +548,18 @@ export default function createProviderViews(
   };
 
   return {
-    state,
+    state: protectChannel(state),
 
     observe() {
       observers += 1;
       if (observers === 1) {
-        unsubscribe = store.subscribe(refresh);
+        const stopStore = store.subscribe(refresh);
+        const stopHost = host.state.subscribe(followHost);
+        stopFollowing = () => {
+          stopStore();
+          stopHost();
+        };
+        followHost();
         if (state.get().listing.status === "idle") {
           publish({ listing: { status: "pending" } });
         }
@@ -568,7 +573,11 @@ export default function createProviderViews(
         observing = false;
         observers -= 1;
         if (observers === 0) {
-          unsubscribe();
+          // Changes the viewer made are written, even as the last observer
+          // goes: a resize committed a moment before unmount is not lost.
+          flush();
+          stopFollowing?.();
+          stopFollowing = null;
         }
       };
     },
@@ -751,15 +760,6 @@ export default function createProviderViews(
         ...(current === null ? {} : leave(current.id)),
         operation: null,
       });
-    },
-
-    dispose() {
-      // Changes the viewer made are written, even as the collection goes.
-      flush();
-      generation += 1;
-      disposed = true;
-      unsubscribe();
-      stopHost();
     },
   };
 }

@@ -11,44 +11,41 @@
  */
 
 export type {
-  CollectionState,
+  ActionFailure,
+  ActionOutcome,
+  ActionRequest,
+  ActionRun,
+} from "./action/index.js";
+export type {
+  Collection,
+  CollectionConfig,
+  RecordTypes,
+} from "./collection/index.js";
+export { createCollection } from "./collection/index.js";
+export type {
+  DataViewsState,
   ResultState,
   ResultStatus,
-} from "./collection/index.js";
+} from "./coordinator/index.js";
 export type {
-  FieldFeedback,
-  FieldInteractionState,
-  FieldValidation,
-} from "./field/index.js";
-export type { Identity } from "./identity/index.js";
+  FilterFeedback,
+  FilterHandle,
+  FilterHandles,
+  FilterInputState,
+} from "./filter/index.js";
 export type {
-  Location,
-  LocationBinding,
-  LocationBindingConfig,
-  LocationConfig,
-  LocationHost,
+  MemoryLocationConfig,
   PlatformLocation,
+  QueryLocation,
 } from "./location/index.js";
 export {
-  createLocationBinding,
   createMemoryLocation,
   createPlatformLocation,
 } from "./location/index.js";
 export type { ReadonlyChannel } from "./observable/index.js";
 export type {
-  ActionInvocation,
-  Operation,
-  OperationFailure,
-  OperationOutcome,
-  OperationState,
-} from "./operation/index.js";
-export type {
   DataViewsProvider,
   DataViewsProviderConfig,
-  DeclaredRecordTypes,
-  FieldHandle,
-  ProviderFields,
-  RecordTypes,
 } from "./provider/index.js";
 export { createDataViewsProvider } from "./provider/index.js";
 export type {
@@ -81,7 +78,6 @@ export type {
   SourceRefusalPart,
 } from "./result/index.js";
 export type {
-  Applicability,
   RowEntry,
   RowIdentifier,
   RowModel,
@@ -93,6 +89,7 @@ export type {
   DateField,
   EmptyOr,
   FieldKind,
+  FieldValidation,
   FlagField,
   NumberField,
   Schema,
@@ -121,10 +118,7 @@ export type {
   Source,
   SourceActionRequest,
   SourceActionRunner,
-  SourceBinding,
-  SourceBindingConfig,
   SourceCapabilities,
-  SourceHost,
   SourceRequest,
 } from "./source/index.js";
 export {
@@ -132,7 +126,6 @@ export {
   createPage,
   createQuerySource,
   createRelaySource,
-  createSourceBinding,
   declareCapabilities,
   readSlice,
 } from "./source/index.js";

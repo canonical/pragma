@@ -1,15 +1,15 @@
 /**
- * Record typing is the whole of what a polymorphic collection knows about
- * its types: the discriminator checked against the schema, which fields
- * apply to which type, and what type each selected identity was displayed
- * as. Every case is mutation-tested — dropping a guard, the scope index or
- * the memory's prune fails one.
+ * Record typing is what a polymorphic collection knows about its types at
+ * runtime: which fields apply to which type, and what type each selected
+ * identity was displayed as. The declaration itself is the collection's
+ * and is tested with it. Every case is mutation-tested — dropping the scope
+ * index or the memory's prune fails one.
  */
 import { describe, expect, it } from "vitest";
 import buildRowModel from "../../../testing/buildRowModel.js";
+import { createCollection } from "../collection/index.js";
 import { createChannel } from "../observable/index.js";
 import { EMPTY_ROW_MODEL, type RowModel } from "../rows/index.js";
-import { createSchema } from "../schema/index.js";
 import { createSelection } from "../selection/index.js";
 import createRecordTyping from "./createRecordTyping.js";
 
@@ -25,22 +25,28 @@ type VirtualMachine = {
 };
 type Instance = Container | VirtualMachine;
 
+const byId = (instance: Instance): string => instance.id;
+
 const instances = () =>
-  createSchema([
-    {
-      field: "type",
-      kind: "choices",
-      options: ["container", "virtual-machine"],
-    },
-    {
-      field: "secureboot",
-      kind: "choices",
-      options: ["true", "false"],
-      types: ["virtual-machine"],
-    },
-    { field: "processes", kind: "number", min: 0, types: ["container"] },
-    { field: "name", kind: "flag" },
-  ]);
+  createCollection({
+    identify: byId,
+    discriminator: "type",
+    fields: [
+      {
+        field: "type",
+        kind: "choices",
+        options: ["container", "virtual-machine"],
+      },
+      {
+        field: "secureboot",
+        kind: "choices",
+        options: ["true", "false"],
+        appliesTo: ["virtual-machine"],
+      },
+      { field: "processes", kind: "number", min: 0, appliesTo: ["container"] },
+      { field: "name", kind: "flag" },
+    ],
+  });
 
 const container = (id: string): Container => ({ id, type: "container" });
 const machine = (id: string): VirtualMachine => ({
@@ -52,79 +58,26 @@ const machine = (id: string): VirtualMachine => ({
 const typing = (model: RowModel<Instance> = EMPTY_ROW_MODEL) => {
   const selection = createSelection();
   const rows = createChannel<RowModel<Instance>>(model);
-  const record = createRecordTyping<
-    ReturnType<typeof instances>["fields"],
-    Instance
-  >({ schema: instances(), field: "type", selection, rows });
+  const record = createRecordTyping({
+    collection: instances(),
+    selection,
+    rows,
+  });
   return { record, rows, selection };
 };
 
 const modelOf = (rows: readonly Instance[]): RowModel<Instance> =>
-  buildRowModel({ rows });
+  buildRowModel({ identify: byId, rows });
 
 describe("createRecordTyping", () => {
-  it("publishes the discriminator and its names in declaration order", () => {
-    const { declared } = typing().record;
-    expect(declared).toEqual({
-      field: "type",
-      names: ["container", "virtual-machine"],
-    });
-    // Handed to every consumer of the provider, so nothing can rewrite the
-    // collection's own type list through it.
-    expect(Object.isFrozen(declared)).toBe(true);
-    expect(Object.isFrozen(declared.names)).toBe(true);
-  });
-
-  it("refuses a discriminator the schema does not describe", () => {
-    const schema = instances();
+  it("refuses to build over a monomorphic collection", () => {
     expect(() =>
       createRecordTyping({
-        schema,
-        field: "kind",
+        collection: createCollection({ fields: [], identify: byId }),
         selection: createSelection(),
         rows: createChannel<RowModel<Instance>>(EMPTY_ROW_MODEL),
       }),
-    ).toThrow('unknown discriminator field "kind"');
-  });
-
-  it("refuses a discriminator that is not a closed set of names", () => {
-    expect(() =>
-      createRecordTyping({
-        schema: instances(),
-        field: "name",
-        selection: createSelection(),
-        rows: createChannel<RowModel<Instance>>(EMPTY_ROW_MODEL),
-      }),
-    ).toThrow('discriminator field "name" must be a choices field, not a flag');
-  });
-
-  it("refuses a discriminator whose options are not names", () => {
-    expect(() =>
-      createRecordTyping({
-        schema: createSchema([
-          { field: "type", kind: "choices", options: [1] },
-        ]),
-        field: "type",
-        selection: createSelection(),
-        rows: createChannel<RowModel<object>>(EMPTY_ROW_MODEL),
-      }),
-    ).toThrow('discriminator field "type" requires string options');
-  });
-
-  it("refuses a field scoped to a type the discriminator does not offer", () => {
-    expect(() =>
-      createRecordTyping({
-        schema: createSchema([
-          { field: "type", kind: "choices", options: ["container"] },
-          { field: "secureboot", kind: "flag", types: ["virtual-machine"] },
-        ]),
-        field: "type",
-        selection: createSelection(),
-        rows: createChannel<RowModel<object>>(EMPTY_ROW_MODEL),
-      }),
-    ).toThrow(
-      'field "secureboot" is scoped to "virtual-machine", which is not a type of "type"',
-    );
+    ).toThrow("a monomorphic collection has no record typing to build");
   });
 
   describe("applicability", () => {
@@ -296,7 +249,7 @@ describe("createRecordTyping", () => {
       expect(record.recordType("x-1")).toBeNull();
     });
 
-    it("forgets everything when the scope rotates", () => {
+    it("forgets everything when reset begins the next generation", () => {
       const first = modelOf([machine("v-1")]);
       const { record, rows, selection } = typing(first);
       selection.set(["v-1"]);

@@ -1,166 +1,44 @@
 /**
  * The provider's contract: the configuration it is built from, the handle
- * it hands out, and the field handles and record types it publishes on it.
+ * it hands an application, and the internal host its ports and the
+ * framework bindings drive.
  */
 
-import type { CollectionState } from "../collection/index.js";
-import type { FieldInteractionState } from "../field/index.js";
-import type { Identity } from "../identity/index.js";
-import type { ReadonlyChannel } from "../observable/index.js";
-import type { ActionInvocation, Operation } from "../operation/index.js";
+import type { ActionRequest, ActionRun } from "../action/index.js";
+import type { Collection } from "../collection/index.js";
+import type { DataViewsState, QueryCoordinator } from "../coordinator/index.js";
+import type { QueryLocation } from "../location/index.js";
+import type { Channel, ReadonlyChannel } from "../observable/index.js";
 import type {
   GroupPath,
   GroupTerm,
-  PredicateOperand,
+  Predicate,
+  PredicateOperator,
   Query,
+  QueryCommand,
   ResultWindow,
   Slice,
   SortTerm,
   WindowNavigation,
 } from "../query/index.js";
-import type { Completion } from "../result/index.js";
+import type { Completion, SourceRefusal } from "../result/index.js";
 import type {
   Applicability,
   RowIdentifier,
   RowModel,
   RowRecord,
 } from "../rows/index.js";
-import type {
-  AppliedOf,
-  EmptyOr,
-  FieldKind,
-  FieldKindOperators,
-  Schema,
-  SchemaFieldDefinition,
-  TextField,
-} from "../schema/index.js";
+import type { SchemaFieldDefinition } from "../schema/index.js";
 import type { Selection } from "../selection/index.js";
-import type { SourceCapabilities } from "../source/index.js";
+import type { Source, SourceCapabilities } from "../source/index.js";
 import type { ProviderViews, ViewStore } from "../views/index.js";
+import type { QueryIssue } from "../wire/index.js";
 
 /**
- * One filter address on a provider: observation plus bounded edits.
- *
- * @experimental Pre-release: the whole surface is still settling, and this
- * name may change or move before the first release.
- */
-export type FieldHandle<TApplied> = {
-  /** The field's interaction state: its input and its feedback. */
-  readonly state: ReadonlyChannel<FieldInteractionState>;
-  /** The field's applied semantic value. */
-  readonly applied: ReadonlyChannel<EmptyOr<TApplied>>;
-  /** Edit through the text input; invalid edits retain the predicate. */
-  readonly edit: (input: string) => void;
-  /** Set the semantic operands directly (multi-value controls). */
-  readonly set: (operands: readonly PredicateOperand[]) => void;
-  /** Explicitly remove the field's predicate. */
-  readonly clear: () => void;
-};
-
-/**
- * One field's handles, keyed by the operators the field kind table declares
- * for its kind. Written as a conditional so the kind resolves to its
- * literal before the operators are looked up.
- */
-type FieldHandles<TDefinition extends SchemaFieldDefinition> =
-  TDefinition extends { readonly kind: infer TKind extends FieldKind }
-    ? {
-        readonly [TOperator in FieldKindOperators[TKind]]: FieldHandle<
-          AppliedOf<TDefinition>
-        >;
-      }
-    : never;
-
-/**
- * The provider's field handles, keyed by field and its legal operators —
- * the operators the field kind table declares for the field's kind.
- *
- * @experimental Pre-release: the whole surface is still settling, and this
- * name may change or move before the first release.
- */
-export type ProviderFields<TFields extends readonly SchemaFieldDefinition[]> = {
-  // A text field accepts no operator, so it has no handle to address.
-  readonly [TDefinition in Exclude<
-    TFields[number],
-    TextField
-  > as TDefinition["field"]]: FieldHandles<TDefinition>;
-};
-
-/** Whether a row's value at one key can carry a field's options. */
-type CarriesOptions<TRow, TName, TOption> = TName extends keyof TRow
-  ? // The default row shape says nothing about its values, so it carries any.
-    unknown extends TRow[TName]
-    ? true
-    : // A key the row may not have carries no type, and such a row fails
-      // every completion: this is the case the check exists to catch.
-      undefined extends TRow[TName]
-      ? false
-      : [TRow[TName]] extends [TOption]
-        ? true
-        : // An adapter typing the key as the wider `string` carries them too.
-          [TOption] extends [TRow[TName]]
-          ? true
-          : false
-  : false;
-
-/**
- * The schema fields that may declare a collection's record types: a
- * `choices` field with string options, carried by the row at the same key
- * with a value its options and the row agree on.
- *
- * @experimental Pre-release: the whole surface is still settling, and this
- * name may change or move before the first release.
- */
-export type DiscriminatorField<
-  TFields extends readonly SchemaFieldDefinition[],
-  TRow extends object = RowRecord,
-> = {
-  [TDefinition in TFields[number] as TDefinition["field"]]: TDefinition extends {
-    readonly kind: "choices";
-    readonly options: infer TOptions extends readonly string[];
-  }
-    ? CarriesOptions<TRow, TDefinition["field"], TOptions[number]> extends true
-      ? TDefinition["field"]
-      : never
-    : never;
-}[TFields[number]["field"]] &
-  /* The mapped type answers with field names, which the compiler cannot see
-     through an unresolved `TFields`; this says so. */
-  string;
-
-/**
- * How a collection's records declare their type: one field of the schema,
- * carried by every row. A source whose backend sends no such field writes it
- * when it builds its rows. A row carrying a value outside the field's options
- * fails the completion; it is never displayed.
- *
- * Declaring none makes the collection monomorphic, and nothing here applies.
- *
- * @experimental Pre-release: the whole surface is still settling, and this
- * name may change or move before the first release.
- */
-export type RecordTypes<
-  TFields extends readonly SchemaFieldDefinition[],
-  TRow extends object = RowRecord,
-> = {
-  readonly field: DiscriminatorField<TFields, TRow>;
-};
-
-/**
- * A collection's record types as the provider publishes them.
- *
- * @experimental Pre-release: the whole surface is still settling, and this
- * name may change or move before the first release.
- */
-export type DeclaredRecordTypes = {
-  /** The schema field every row carries its type in. */
-  readonly field: string;
-  /** Every type name the field declares, in declaration order. */
-  readonly names: readonly string[];
-};
-
-/**
- * The provider: the one owner assembling core state for a collection.
+ * The provider: the one owner of a collection's state and of the ports
+ * that feed it. Built once per page over a module-scope collection, a
+ * source and, optionally, a location and a view store; every mount that
+ * reads it calls `observe()`.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -170,26 +48,32 @@ export type DataViewsProvider<
     readonly SchemaFieldDefinition[] = readonly SchemaFieldDefinition[],
   TRow extends object = RowRecord,
 > = {
-  /** The provider's referential scope identity. */
-  readonly identity: Identity;
-  readonly schema: Schema<TFields>;
+  /** The collection this provider was built over; the witness a hook compares. */
+  readonly collection: Collection<TFields, TRow>;
   /**
-   * What the collection's source declares it can execute, or null when the
-   * provider was not told. Connected parts, and DataTable's sortable
-   * columns, offer only what is declared.
+   * A frozen copy of what the source declares it can execute, taken once
+   * when the provider is built. Connected parts, and DataTable's
+   * sortable columns, offer only what is declared; a command outside it is
+   * refused at the boundary and moves nothing.
    */
-  readonly capabilities: SourceCapabilities | null;
+  readonly capabilities: SourceCapabilities;
   /**
    * The collection's snapshot: query, window, result and pending request,
-   * published at every mutation boundary.
+   * published at every mutation boundary. Read-only at runtime.
    */
-  readonly state: ReadonlyChannel<CollectionState<TRow>>;
+  readonly state: ReadonlyChannel<DataViewsState<TRow>>;
   /**
    * The displayed rows as one shared model: stable identities in result
    * order. Every root and every table on this provider reads the same model,
    * so no cell owns a duplicate record.
    */
   readonly rows: ReadonlyChannel<RowModel<TRow>>;
+  /**
+   * The owned parameters the location carries that were refused — a clause
+   * the grammar, the schema or the source cannot run. Empty while the query
+   * is clean, and always empty without a location.
+   */
+  readonly issues: ReadonlyChannel<readonly QueryIssue[]>;
   readonly selection: Selection;
   /**
    * The collection's saved views over the store the provider was given, or
@@ -197,15 +81,150 @@ export type DataViewsProvider<
    * in memory and lost on reload.
    */
   readonly views: ProviderViews | null;
-  readonly fields: ProviderFields<TFields>;
   /**
-   * The collection's record types, or null when it declares none and is
-   * therefore monomorphic. A column's scope is narrower than the
-   * collection's — it is the `types` of that column's own schema field.
-   *
-   * @seam actions — read by `useDataViewsAction`, for an action's own types
+   * Bounded commands, not raw dispatch. Each answers with the refusals the
+   * query it would produce incurs, empty when applied; a refused command
+   * publishes nothing, requests nothing and writes nothing.
    */
-  readonly types: DeclaredRecordTypes | null;
+  readonly navigateWindow: (
+    window: WindowNavigation,
+  ) => readonly SourceRefusal[];
+  readonly setSort: (sort: readonly SortTerm[]) => readonly SourceRefusal[];
+  readonly setSearch: (search: string) => readonly SourceRefusal[];
+  /**
+   * Replace the grouping levels. Reserved: refused while no source declares
+   * a groupable field.
+   *
+   * @seam grouping — read by the group header row
+   */
+  readonly setGroup: (group: readonly GroupTerm[]) => readonly SourceRefusal[];
+  /**
+   * Replace the collapsed group paths. Reserved: refused while no source
+   * honours collapse.
+   *
+   * @seam grouping — read by the group header's disclosure
+   */
+  readonly setCollapsed: (
+    collapsed: readonly GroupPath[],
+  ) => readonly SourceRefusal[];
+  /** Request the current query again; retained rows stay while it runs. */
+  readonly refresh: () => void;
+  /**
+   * Every refusal a query would incur, from the declaration and from the
+   * source's own check. Empty means executable. What a control reads before
+   * offering a destination.
+   */
+  readonly refusals: (query: Query) => readonly SourceRefusal[];
+  /**
+   * Run one declared action over the given identities, or over the
+   * selection when none are given. Resolves with the settled run once every
+   * captured target has an outcome — a target the source reports nothing
+   * for fails rather than staying pending. Successful targets leave the
+   * selection; failures stay for review. Rejects when the action is not
+   * declared, addresses nothing, or addresses more than the declaration
+   * allows.
+   */
+  readonly runAction: (request: ActionRequest) => Promise<ActionRun>;
+  /**
+   * Start the provider's ports and return the release. Ref-counted: the
+   * first observer adopts the location, starts source execution, the
+   * location loop and the saved views, and asks for a page when nothing is
+   * pending after that — the first page when the state is idle, the current
+   * one again when an earlier observation settled it and released; the last
+   * release stops all of it. Every mount that
+   * reads the provider calls this in an effect, so two roots on one
+   * provider do not race and a rehearsal mount and unmount leaves a
+   * provider that starts again on the next observer. Construction starts
+   * nothing, so a server render stays idle.
+   */
+  readonly observe: () => () => void;
+  /**
+   * Begin the next generation: query, window, result, rows and selection
+   * return to the seed, and a completion of the old generation never
+   * publishes into the new one.
+   */
+  readonly reset: () => void;
+};
+
+/**
+ * Configuration of one DataViews provider: the collection it is built
+ * over, the source that answers it, and the ports it drives.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export type DataViewsProviderConfig<
+  TFields extends readonly SchemaFieldDefinition[],
+  TRow extends object = RowRecord,
+> = {
+  /** The module-scope collection: schema, identity and record types. */
+  readonly collection: Collection<TFields, TRow>;
+  /** The source that executes the requests; its capabilities are read here. */
+  readonly source: Source<TRow>;
+  /**
+   * Where the applied query lives — a URL through `createPlatformLocation`
+   * or a memory location. Left out, the query lives in the provider alone
+   * and `issues` stays empty.
+   */
+  readonly location?: QueryLocation | undefined;
+  /**
+   * How a query transition enters the location's history. Defaults to
+   * `"replace"`, so a stream of edits does not bury the entry the user
+   * arrived on. Seeding and canonicalizing an adopted location always
+   * replace: neither is a step the user took. A transition that changes
+   * the ordering always pushes, whatever this says.
+   */
+  readonly history?: "push" | "replace" | undefined;
+  /**
+   * Where the collection's saved views and presentation preferences live —
+   * `createIndexedDBViewStore` from `@canonical/dataviews-core/indexeddb`, or a
+   * store of the application's own. Left out, the collection has no views.
+   */
+  readonly views?: ViewStore | undefined;
+  /** The query and window the provider starts on, and returns to on `reset()`. */
+  readonly seed?:
+    | {
+        readonly slice?: Slice | undefined;
+        readonly window?: ResultWindow | undefined;
+      }
+    | undefined;
+};
+
+/**
+ * The provider's internal host: what its ports and the framework bindings
+ * drive, and nothing an application writes reaches. Reachable through
+ * `readProviderHost` on the bindings entry point.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export type ProviderHost<
+  TFields extends
+    readonly SchemaFieldDefinition[] = readonly SchemaFieldDefinition[],
+  TRow extends object = RowRecord,
+> = Pick<
+  DataViewsProvider<TFields, TRow>,
+  "collection" | "capabilities" | "state" | "refusals"
+> & {
+  /** Replace the predicate at its address; the window returns to page one. */
+  readonly setPredicate: (predicate: Predicate) => readonly SourceRefusal[];
+  /** Remove the predicate at an address; the window returns to page one. */
+  readonly removePredicate: (
+    field: string,
+    operator: PredicateOperator,
+  ) => readonly SourceRefusal[];
+  /** Request the current query again and name the request. */
+  readonly refresh: () => string;
+  /**
+   * Adopt an externally authoritative query — back/forward, a saved view —
+   * and name the request it issued, or null when the query did not move.
+   */
+  readonly adopt: (query: Query) => string | null;
+  /** Complete the pending request; false when it is not the one pending. */
+  readonly complete: (
+    requestId: string,
+    completion: Completion<TRow>,
+  ) => boolean;
   /**
    * Whether a schema field applies to a row, by the field's type scoping.
    * Always "applies" on a monomorphic collection, and on a field the schema
@@ -229,79 +248,6 @@ export type DataViewsProvider<
    * applicability to records selected on an earlier page from here
    */
   readonly recordType: (id: string) => string | null;
-  /** Bounded commands, not raw dispatch: */
-  readonly navigateWindow: (window: WindowNavigation) => void;
-  readonly setSort: (sort: readonly SortTerm[]) => void;
-  readonly setSearch: (search: string) => void;
-  /**
-   * Replace the grouping levels. Reserved: refused while no source declares
-   * a groupable field.
-   *
-   * @seam grouping — read by the group header row
-   */
-  readonly setGroup: (group: readonly GroupTerm[]) => void;
-  /**
-   * Replace the collapsed group paths. Reserved: refused while no source
-   * honours collapse.
-   *
-   * @seam grouping — read by the group header's disclosure
-   */
-  readonly setCollapsed: (collapsed: readonly GroupPath[]) => void;
-  readonly refresh: () => string | null;
-  /** Invoke an operation with immutable captured targets. */
-  readonly invokeAction: (invocation: ActionInvocation) => Operation;
-  /** Adopt an externally authoritative query (back/forward, a saved view). */
-  readonly adopt: (query: Query) => string | null;
-  /** Source-facing request completion. */
-  readonly complete: (
-    requestId: string,
-    completion: Completion<TRow>,
-  ) => boolean;
-  /** Rotate to a fresh scope: query/window/result/selection all reset. */
-  readonly rotateScope: () => void;
-  /** Detach permanently: subscriptions and pending requests die. */
-  readonly dispose: () => void;
-};
-
-/**
- * Configuration of one DataViews provider.
- *
- * @experimental Pre-release: the whole surface is still settling, and this
- * name may change or move before the first release.
- */
-export type DataViewsProviderConfig<
-  TFields extends readonly SchemaFieldDefinition[],
-  TRow extends object = RowRecord,
-> = {
-  readonly schema: Schema<TFields>;
-  readonly slice?: Slice | undefined;
-  readonly window?: ResultWindow | undefined;
-  /**
-   * Reads one record's stable identity. Defaults to the record's own `id`,
-   * which must then be a non-empty string.
-   */
-  readonly identify?: RowIdentifier<TRow> | undefined;
-  /**
-   * What the source bound to this provider declares it can execute — the
-   * source's own `capabilities`. Connected parts, and DataTable's sortable
-   * columns, offer only what is declared, and a location clause outside it
-   * is refused.
-   */
-  readonly capabilities?: SourceCapabilities | undefined;
-  /**
-   * Where the collection's saved views and presentation preferences live —
-   * `createIndexedDBViewStore` from `@canonical/dataviews-core/indexeddb`, or a
-   * store of the application's own. Left out, the collection has no views.
-   */
-  readonly views?: ViewStore | undefined;
-  /**
-   * How this collection's records declare their type: one `choices` field of
-   * the schema, carried by every row. Left out, the collection is
-   * monomorphic — no memory is kept, no row is read for a type, and nothing
-   * else here behaves differently. A field scoped to record types is then
-   * inert, since there is only the one type for it to apply to.
-   */
-  readonly types?: RecordTypes<TFields, TRow> | undefined;
 };
 
 /** Configuration of one collection's record typing. */
@@ -309,9 +255,8 @@ export type RecordTypingConfig<
   TFields extends readonly SchemaFieldDefinition[],
   TRow extends object = RowRecord,
 > = {
-  readonly schema: Schema<TFields>;
-  /** The discriminator: the schema field every row carries its type in. */
-  readonly field: string;
+  /** The collection, whose declared types and scoped fields are read. */
+  readonly collection: Collection<TFields, TRow>;
   /** The selection whose identities are the ones worth remembering. */
   readonly selection: Selection;
   /** The displayed rows, read for a type the memory has not taken yet. */
@@ -320,8 +265,6 @@ export type RecordTypingConfig<
 
 /** One collection's record typing: what the provider answers about types. */
 export type RecordTyping<TRow extends object = RowRecord> = {
-  /** The discriminator and its type names, as the provider publishes them. */
-  readonly declared: DeclaredRecordTypes;
   /** Why a model cannot be displayed, or null when every row is typed. */
   readonly rejectionOf: (model: RowModel<TRow>) => string | null;
   /** Whether a schema field applies to a row. */
@@ -330,6 +273,97 @@ export type RecordTyping<TRow extends object = RowRecord> = {
   readonly recordType: (id: string) => string | null;
   /** Take the type of every selected row of a model about to be replaced. */
   readonly remember: (model: RowModel<TRow>) => void;
-  /** Drop the memory: the scope rotated, so nothing displayed survives. */
+  /** Drop the memory: the generation moved, so nothing displayed survives. */
   readonly forget: () => void;
+};
+
+/** Configuration of the source run: the host it feeds and the source it drives. */
+export type SourceRunConfig<
+  TFields extends readonly SchemaFieldDefinition[],
+  TRow extends object = RowRecord,
+> = {
+  readonly host: ProviderHost<TFields, TRow>;
+  readonly source: Source<TRow>;
+};
+
+/** Configuration of the location sync: the host, the location and history. */
+export type LocationSyncConfig<
+  TFields extends readonly SchemaFieldDefinition[],
+  TRow extends object = RowRecord,
+> = {
+  readonly host: ProviderHost<TFields, TRow>;
+  readonly location: QueryLocation;
+  /** How a host transition enters history; see `DataViewsProviderConfig`. */
+  readonly history: "push" | "replace";
+};
+
+/** One port's run: starts on `observe()`, stops through its release. */
+export type PortRun = {
+  readonly observe: () => () => void;
+};
+
+/** One ref-counted observation over several ports. */
+export type PortsObservation = PortRun & {
+  /** How many observers hold the ports right now. */
+  readonly observers: number;
+};
+
+/** Configuration of one ports observation. */
+export type PortsObservationConfig = {
+  /** The ports, in the order they start; they stop in reverse. */
+  readonly ports: readonly PortRun[];
+  /** Runs once the first observer has started every port. */
+  readonly afterStart: () => void;
+};
+
+/** Configuration of the provider's query path. */
+export type QueryCommandsConfig<TRow extends object = RowRecord> = {
+  readonly coordinator: QueryCoordinator<TRow>;
+  readonly capabilities: SourceCapabilities;
+  readonly source: Source<TRow>;
+  /** Publish the coordinator's state after a move. */
+  readonly publish: () => void;
+};
+
+/**
+ * The provider's query path: the refusal check, the command boundary, and
+ * the two moves the ports make.
+ */
+export type QueryCommands = Pick<
+  ProviderHost,
+  "refusals" | "adopt" | "refresh"
+> & {
+  /** Apply one command at the boundary; the refusals it incurs, empty when applied. */
+  readonly command: (command: QueryCommand) => readonly SourceRefusal[];
+};
+
+/**
+ * The location sync: the loop and the issues it publishes. On start the
+ * location wins when it carries a query, and takes the host's seed when it
+ * carries none. After that, every accepted host transition writes the
+ * canonical query and every external location change — back, forward, a
+ * pasted URL — is adopted.
+ */
+export type LocationSync = PortRun & {
+  /** The owned parameters the location carries that were refused. */
+  readonly issues: ReadonlyChannel<readonly QueryIssue[]>;
+};
+
+/** Configuration of the provider's action runner. */
+export type ActionRunnerConfig<TRow extends object = RowRecord> = {
+  readonly source: Source<TRow>;
+  readonly capabilities: SourceCapabilities;
+  readonly selection: Selection;
+};
+
+/** Configuration of the provider's completion path. */
+export type RequestCompleterConfig<TRow extends object = RowRecord> = {
+  readonly coordinator: QueryCoordinator<TRow>;
+  /** The shared row model, written here and nowhere else. */
+  readonly rows: Channel<RowModel<TRow>>;
+  readonly identify: RowIdentifier<TRow>;
+  /** The record typing, or null on a monomorphic collection. */
+  readonly recordTyping: RecordTyping<TRow> | null;
+  /** Publish the coordinator's state after a completion. */
+  readonly publish: () => void;
 };

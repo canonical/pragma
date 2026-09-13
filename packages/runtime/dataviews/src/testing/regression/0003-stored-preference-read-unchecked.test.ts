@@ -12,15 +12,17 @@
 
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import createManualSource from "../../../testing/createManualSource.js";
+import { byId } from "../../../testing/fixtures.js";
+import { createCollection } from "../../lib/collection/index.js";
 import { createIndexedDBViewStore } from "../../lib/indexeddb/index.js";
-import {
-  createDataViewsProvider,
-  type DataViewsProvider,
-} from "../../lib/provider/index.js";
-import { createSchema } from "../../lib/schema/index.js";
+import { createDataViewsProvider } from "../../lib/provider/index.js";
 import type { ViewStore } from "../../lib/views/index.js";
 
-const schema = createSchema([{ field: "cpu", kind: "number" }]);
+const machines = createCollection({
+  identify: byId,
+  fields: [{ field: "cpu", kind: "number" }],
+});
 const database = "operations-console";
 
 /** A fake-indexeddb factory, driven directly as another client would. */
@@ -50,12 +52,8 @@ const writePreferences = (
   });
 
 const opened: ViewStore[] = [];
-const providers: DataViewsProvider[] = [];
 
 afterEach(() => {
-  for (const provider of providers.splice(0)) {
-    provider.dispose();
-  }
   for (const store of opened.splice(0)) {
     store.dispose();
   }
@@ -79,8 +77,11 @@ describe("regression 0003 — a stored preference is read unchecked", () => {
       { scope, target: "default", key: 7, value: 7 },
     ]);
 
-    const provider = createDataViewsProvider({ schema, views: store });
-    providers.push(provider);
+    const provider = createDataViewsProvider({
+      collection: machines,
+      source: createManualSource().source,
+      views: store,
+    });
     const views = provider.views;
     if (views === null) {
       throw new Error("a provider given a store has views");

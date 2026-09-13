@@ -12,49 +12,44 @@ import path from "node:path";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type {
   ActionCapabilities,
-  ActionInvocation,
+  ActionFailure,
+  ActionOutcome,
+  ActionRequest,
+  ActionRun,
   ActionTargets,
-  Applicability,
   AppliedOf,
   ArraySource,
   ArraySourceConfig,
   CapabilityDeclaration,
   ChoicesField,
-  CollectionState,
+  Collection,
+  CollectionConfig,
   Completion,
   Count,
   CountCapabilities,
   CountSupport,
   DataViewsProvider,
   DataViewsProviderConfig,
+  DataViewsState,
   DateField,
-  DeclaredRecordTypes,
   DecodedQuery,
   DecodeQueryConfig,
   EmptyOr,
   EncodeQueryConfig,
-  FieldFeedback,
-  FieldHandle,
-  FieldInteractionState,
   FieldKind,
   FieldValidation,
+  FilterFeedback,
+  FilterHandle,
+  FilterHandles,
+  FilterInputState,
   FlagField,
   GroupCapabilities,
   GroupPath,
   GroupSummary,
   GroupTerm,
-  Identity,
   JsonValue,
-  Location,
-  LocationBinding,
-  LocationBindingConfig,
-  LocationConfig,
-  LocationHost,
+  MemoryLocationConfig,
   NumberField,
-  Operation,
-  OperationFailure,
-  OperationOutcome,
-  OperationState,
   PageConfig,
   PageCursors,
   PaginationCapabilities,
@@ -65,10 +60,10 @@ import type {
   PreferenceResult,
   PresentationPatch,
   PresentationTarget,
-  ProviderFields,
   ProviderViews,
   Query,
   QueryIssue,
+  QueryLocation,
   QuerySourceConfig,
   ReadonlyChannel,
   RecordTypes,
@@ -97,13 +92,10 @@ import type {
   Source,
   SourceActionRequest,
   SourceActionRunner,
-  SourceBinding,
-  SourceBindingConfig,
   SourceCapabilities,
   SourceCounts,
   SourceDelivery,
   SourceFailure,
-  SourceHost,
   SourcePage,
   SourceRefusal,
   SourceRefusalCode,
@@ -130,6 +122,7 @@ import type {
 } from "./index.js";
 import * as dataviews from "./index.js";
 import type {
+  Applicability,
   ColumnLayout,
   ColumnLayoutState,
   ColumnSizing,
@@ -137,12 +130,15 @@ import type {
   DisplayEntriesConfig,
   DisplayEntry,
   DisplayEntryKind,
+  FilterInputs,
+  FilterInputsConfig,
   FixedSizing,
   FlexSizing,
   GridInteraction,
   GridInteractionState,
+  ProviderHost,
   ResolvedColumn,
-  RowScope,
+  RowChannels,
   RowScopes,
   RowScopesConfig,
 } from "./lib/bindings/index.js";
@@ -164,49 +160,44 @@ type Machine = { readonly id: string; readonly cpu: number };
 /** Every type the package root re-exports, as one enumerable tuple. */
 type EveryPublicType = [
   ActionCapabilities,
-  ActionInvocation,
+  ActionFailure,
+  ActionOutcome,
+  ActionRequest,
+  ActionRun,
   ActionTargets,
-  Applicability,
   AppliedOf<FlagField>,
   ArraySource,
   ArraySourceConfig,
   CapabilityDeclaration<readonly SchemaFieldDefinition[]>,
   ChoicesField,
-  CollectionState,
+  Collection,
+  CollectionConfig<readonly SchemaFieldDefinition[], RowRecord>,
   Completion,
   Count,
   CountCapabilities,
   CountSupport,
   DataViewsProvider,
   DataViewsProviderConfig<readonly SchemaFieldDefinition[]>,
+  DataViewsState,
   DateField,
   DecodedQuery,
-  DeclaredRecordTypes,
   DecodeQueryConfig,
   EmptyOr<unknown>,
   EncodeQueryConfig,
-  FieldFeedback,
-  FieldHandle<unknown>,
-  FieldInteractionState,
   FieldKind,
   FieldValidation,
+  FilterFeedback,
+  FilterHandle<unknown>,
+  FilterHandles<readonly SchemaFieldDefinition[]>,
+  FilterInputState,
   FlagField,
   GroupCapabilities,
   GroupPath,
   GroupSummary,
   GroupTerm,
-  Identity,
   JsonValue,
-  Location,
-  LocationBinding,
-  LocationBindingConfig,
-  LocationConfig,
-  LocationHost,
+  MemoryLocationConfig,
   NumberField,
-  Operation,
-  OperationFailure,
-  OperationOutcome,
-  OperationState,
   PageCursors,
   PageConfig,
   PaginationCapabilities,
@@ -217,13 +208,13 @@ type EveryPublicType = [
   PreferenceResult,
   PresentationPatch,
   PresentationTarget,
-  ProviderFields<readonly SchemaFieldDefinition[]>,
   ProviderViews,
   Query,
   QueryIssue,
+  QueryLocation,
   QuerySourceConfig,
   ReadonlyChannel<unknown>,
-  RecordTypes<readonly SchemaFieldDefinition[], RowRecord>,
+  RecordTypes,
   RelaySourceConfig,
   ResultProblem,
   ResultProvenance,
@@ -249,13 +240,10 @@ type EveryPublicType = [
   Source,
   SourceActionRequest,
   SourceActionRunner,
-  SourceBinding,
-  SourceBindingConfig,
   SourceCapabilities,
   SourceCounts,
   SourceDelivery,
   SourceFailure,
-  SourceHost,
   SourcePage,
   SourceRefusal,
   SourceRefusalCode,
@@ -283,6 +271,7 @@ type EveryPublicType = [
 
 /** Every type the binding entry point exports, as one enumerable tuple. */
 type EveryBindingType = [
+  Applicability,
   ColumnLayout,
   ColumnLayoutState,
   ColumnSizing,
@@ -290,12 +279,15 @@ type EveryBindingType = [
   DisplayEntriesConfig<unknown>,
   DisplayEntry,
   DisplayEntryKind,
+  FilterInputs<readonly SchemaFieldDefinition[]>,
+  FilterInputsConfig<readonly SchemaFieldDefinition[]>,
   FixedSizing,
   FlexSizing,
   GridInteraction,
   GridInteractionState,
+  ProviderHost,
   ResolvedColumn,
-  RowScope<RowRecord>,
+  RowChannels<RowRecord>,
   RowScopes<RowRecord>,
   RowScopesConfig<RowRecord>,
 ];
@@ -389,10 +381,14 @@ describe("public surface types", () => {
     // the filter input, the action run, the row model and the selection
     // factories, the slice algebra, and the request check.
     for (const owned of [
-      "createCollectionCoordinator",
-      "createFieldInteraction",
-      "createOperation",
+      "createQueryCoordinator",
+      "createFilterInput",
+      "createActionRun",
+      "createRecordTyping",
       "createRowModel",
+      "runSource",
+      "syncLocation",
+      "registerProviderHost",
       "createSelection",
       "applyWindow",
       "areSortsEqual",
@@ -446,20 +442,13 @@ describe("public surface types", () => {
     >().toEqualTypeOf<"stale">();
   });
 
-  it("exports the identity check with the declared shape", () => {
-    expectTypeOf(bindings.isIdentity).parameter(0).toEqualTypeOf<unknown>();
-  });
-
-  it("narrows unknown values to Identity", () => {
-    const value: unknown = undefined;
-    if (bindings.isIdentity(value)) {
-      expectTypeOf(value).toEqualTypeOf<Identity>();
-    }
-  });
-
-  it("keeps Identity opaque to structural construction", () => {
-    expectTypeOf<Record<string, never>>().not.toExtend<Identity>();
-    expectTypeOf<object>().not.toExtend<Identity>();
+  it("exports the provider check with the declared shape", () => {
+    expectTypeOf(bindings.isDataViewsProvider)
+      .parameter(0)
+      .toEqualTypeOf<unknown>();
+    // A check, not a narrowing: a caller holds a provider typed over its
+    // own collection, which no default-typed predicate could hand back.
+    expectTypeOf(bindings.isDataViewsProvider).returns.toEqualTypeOf<boolean>();
   });
 
   it("exports the query grammar with the slice comparison on ./bindings", () => {
@@ -501,14 +490,12 @@ describe("public surface types", () => {
       | "stale"
       | "failed"
     >();
-    expectTypeOf<OperationState["status"]>().toEqualTypeOf<
-      "pending" | "partial" | "succeeded" | "failed"
-    >();
+    expectTypeOf<ActionRun["status"]>().toEqualTypeOf<"succeeded" | "failed">();
     // Feedback discriminates on status, as every other union here does.
-    expectTypeOf<FieldFeedback["status"]>().toEqualTypeOf<
-      "none" | "applied" | "incomplete" | "invalid"
+    expectTypeOf<FilterFeedback["status"]>().toEqualTypeOf<
+      "none" | "applied" | "incomplete" | "invalid" | "refused"
     >();
-    expectTypeOf<FieldInteractionState>()
+    expectTypeOf<FilterInputState>()
       .toHaveProperty("input")
       .toEqualTypeOf<string>();
     expectTypeOf<ResultWindow["page"]>().toEqualTypeOf<number>();
@@ -520,7 +507,7 @@ describe("public surface types", () => {
       { field: "cpu", kind: "number" },
       { field: "owner", kind: "flag" },
     ]);
-    type Machines = ProviderFields<typeof machines.fields>;
+    type Machines = FilterHandles<typeof machines.fields>;
     expectTypeOf<Machines["status"]["eq"]["applied"]>().toEqualTypeOf<
       ReadonlyChannel<EmptyOr<ReadonlySet<"failed" | "cancelled">>>
     >();
@@ -536,61 +523,72 @@ describe("public surface types", () => {
     expectTypeOf<
       DataViewsProvider["navigateWindow"]
     >().parameters.toEqualTypeOf<[WindowNavigation]>();
-    expectTypeOf<DataViewsProvider["adopt"]>().parameters.toEqualTypeOf<
-      [Query]
-    >();
-    expectTypeOf<DataViewsProvider["invokeAction"]>().parameters.toEqualTypeOf<
-      [ActionInvocation]
-    >();
     expectTypeOf<DataViewsProvider["setGroup"]>().parameters.toEqualTypeOf<
       [readonly GroupTerm[]]
     >();
     expectTypeOf<DataViewsProvider["setCollapsed"]>().parameters.toEqualTypeOf<
       [readonly GroupPath[]]
     >();
+    expectTypeOf<DataViewsProvider["runAction"]>().parameters.toEqualTypeOf<
+      [ActionRequest]
+    >();
+    expectTypeOf<
+      DataViewsProvider["runAction"]
+    >().returns.resolves.toEqualTypeOf<ActionRun>();
+    // Every query command answers with the refusals it would incur.
+    expectTypeOf<
+      ReturnType<
+        DataViewsProvider[
+          | "navigateWindow"
+          | "setSort"
+          | "setSearch"
+          | "setGroup"
+          | "setCollapsed"]
+      >
+    >().toEqualTypeOf<readonly SourceRefusal[]>();
     expectTypeOf<DataViewsProvider<readonly SchemaFieldDefinition[], Machine>>()
       .toHaveProperty("state")
-      .toEqualTypeOf<ReadonlyChannel<CollectionState<Machine>>>();
+      .toEqualTypeOf<ReadonlyChannel<DataViewsState<Machine>>>();
   });
 
-  it("accepts the provider as a source host without a cast", () => {
-    expectTypeOf<DataViewsProvider>().toExtend<SourceHost>();
-    // Including a provider built for a real record type: the host and the
-    // source agree on it rather than on the default record shape.
-    expectTypeOf<
-      DataViewsProvider<readonly SchemaFieldDefinition[], Machine>
-    >().toExtend<SourceHost<Machine>>();
-    expectTypeOf<SourceHost<Machine>["complete"]>().parameters.toEqualTypeOf<
-      [string, Completion<Machine>]
-    >();
+  it("keeps the host's members off the provider an application holds", () => {
+    // What the ports and the framework bindings drive reaches them through
+    // the host on `./bindings`, never through the provider.
+    expectTypeOf<DataViewsProvider>().not.toHaveProperty("adopt");
+    expectTypeOf<DataViewsProvider>().not.toHaveProperty("complete");
+    expectTypeOf<DataViewsProvider>().not.toHaveProperty("dispose");
+    expectTypeOf<DataViewsProvider>().not.toHaveProperty("invokeAction");
+    expectTypeOf<DataViewsProvider>().not.toHaveProperty("setPredicate");
+    expectTypeOf<DataViewsProvider>().not.toHaveProperty("removePredicate");
+    expectTypeOf<DataViewsProvider>().not.toHaveProperty("applicability");
+    expectTypeOf<DataViewsProvider>().not.toHaveProperty("recordType");
+    expectTypeOf<DataViewsProvider>().not.toHaveProperty("fields");
+    expectTypeOf<DataViewsProvider>().not.toHaveProperty("schema");
+    expectTypeOf<ProviderHost<readonly SchemaFieldDefinition[], Machine>>()
+      .toHaveProperty("complete")
+      .parameters.toEqualTypeOf<[string, Completion<Machine>]>();
+    expectTypeOf<ProviderHost["adopt"]>().parameters.toEqualTypeOf<[Query]>();
+    expectTypeOf<ProviderHost["refresh"]>().returns.toEqualTypeOf<string>();
+    expectTypeOf<DataViewsProvider["refresh"]>().returns.toEqualTypeOf<void>();
   });
 
-  it("carries the source's declaration, or null, on every host", () => {
-    // Required everywhere a host is: an optional one would be undefined
-    // too, and a host could drop the declaration without a word.
+  it("carries the source's declaration, never null, on the provider and its host", () => {
     expectTypeOf<
       DataViewsProvider["capabilities"]
-    >().toEqualTypeOf<SourceCapabilities | null>();
+    >().toEqualTypeOf<SourceCapabilities>();
     expectTypeOf<
-      SourceHost["capabilities"]
-    >().toEqualTypeOf<SourceCapabilities | null>();
-    expectTypeOf<
-      LocationHost["capabilities"]
-    >().toEqualTypeOf<SourceCapabilities | null>();
-  });
-
-  it("takes a declaration in, and hands the source's back, by shape", () => {
-    // Given once, to the provider; absent means not told, so the key is
-    // optional and not nullable.
+      ProviderHost["capabilities"]
+    >().toEqualTypeOf<SourceCapabilities>();
+    // The provider reads it from the source; the configuration carries no
+    // copy to keep in step.
     type ProviderConfig = DataViewsProviderConfig<
       readonly SchemaFieldDefinition[]
     >;
-    expectTypeOf<ProviderConfig["capabilities"]>().toEqualTypeOf<
-      SourceCapabilities | undefined
+    expectTypeOf<ProviderConfig>().not.toHaveProperty("capabilities");
+    expectTypeOf<ProviderConfig["source"]>().toEqualTypeOf<Source>();
+    expectTypeOf<ProviderConfig["location"]>().toEqualTypeOf<
+      QueryLocation | undefined
     >();
-    expectTypeOf<
-      Omit<ProviderConfig, "capabilities">
-    >().toExtend<ProviderConfig>();
     // A decode outside any host may pass nothing, or null.
     expectTypeOf<DecodeQueryConfig["capabilities"]>().toEqualTypeOf<
       SourceCapabilities | null | undefined
@@ -598,28 +596,30 @@ describe("public surface types", () => {
     expectTypeOf<
       Omit<DecodeQueryConfig, "capabilities">
     >().toExtend<DecodeQueryConfig>();
-    // The binding hands back the source's own declaration, always present.
-    expectTypeOf<
-      SourceBinding["capabilities"]
-    >().toEqualTypeOf<SourceCapabilities>();
   });
 
-  it("accepts the provider as a location host without a cast", () => {
-    expectTypeOf<DataViewsProvider>().toExtend<LocationHost>();
-    // Including a provider built for a real record type: the host reads the
-    // snapshot channel and never publishes on it, so its record type is the
-    // widest one rather than an invariant pin on the default.
+  it("takes the collection as the witness, typed by its identity", () => {
+    const machines = dataviews.createCollection({
+      identify: (machine: Machine) => machine.id,
+      fields: [{ field: "cpu", kind: "number" }],
+    });
+    expectTypeOf(machines).toEqualTypeOf<
+      Collection<typeof machines.schema.fields, Machine>
+    >();
     expectTypeOf<
-      DataViewsProvider<readonly SchemaFieldDefinition[], Machine>
-    >().toExtend<LocationHost>();
-    expectTypeOf<Parameters<LocationHost["adopt"]>>().toEqualTypeOf<[Query]>();
+      DataViewsProvider<typeof machines.schema.fields, Machine>["collection"]
+    >().toEqualTypeOf<typeof machines>();
+    expectTypeOf<Collection["types"]>().toEqualTypeOf<RecordTypes | null>();
+    expectTypeOf<
+      CollectionConfig<typeof machines.schema.fields, Machine>["identify"]
+    >().toEqualTypeOf<RowIdentifier<Machine>>();
   });
 
   it("reports refusals structurally, by part and code", () => {
     expectTypeOf<SourceRefusalPart>().toEqualTypeOf<
       "filter" | "search" | "sort" | "group" | "window" | "targets"
     >();
-    expectTypeOf<SourceBinding["refusals"]>().returns.toEqualTypeOf<
+    expectTypeOf<DataViewsProvider["refusals"]>().returns.toEqualTypeOf<
       readonly SourceRefusal[]
     >();
     // Every count is declared on its own, and claimed on its own.
@@ -662,6 +662,7 @@ describe("public surface types", () => {
     ).toEqual([
       "Query",
       "QueryIssue",
+      "QueryLocation",
       "QuerySourceConfig",
       "RelaySourceConfig",
     ]);

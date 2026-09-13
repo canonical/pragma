@@ -1,18 +1,13 @@
 /**
  * The source contract: how a data source executes the request identities
- * the collection coordinator issues, and what it declares it can execute.
+ * the query coordinator issues, and what it declares it can execute.
  * Sources own transport, cache, retry, deduplication and invalidation
  * through the application's existing query library — this package never
  * runs a competing one.
  */
 
-import type { CollectionState } from "../collection/index.js";
-import type { ReadonlyChannel } from "../observable/index.js";
-import type {
-  ActionInvocation,
-  Operation,
-  OperationOutcome,
-} from "../operation/index.js";
+import type { ActionOutcome } from "../action/index.js";
+import type { Collection } from "../collection/index.js";
 import type {
   PredicateOperator,
   Query,
@@ -20,7 +15,6 @@ import type {
   SortTerm,
 } from "../query/index.js";
 import type {
-  Completion,
   Count,
   PageCursors,
   SourceDelivery,
@@ -35,7 +29,6 @@ import type {
   SchemaFieldDefinition,
   TextField,
 } from "../schema/index.js";
-import type { Selection } from "../selection/index.js";
 
 /**
  * One executable request: the issued identity and the query it addresses.
@@ -190,11 +183,11 @@ export type ActionCapabilities = {
 };
 
 /**
- * What a source declares it can execute. Pure data: copied, frozen and
- * compared by the binding, carried by the provider, read by every control.
- * Absence means unavailable, never "probably supported". The binding checks
- * every declared capability against the port that must serve it, so a
- * declaration is never a promise the source cannot keep.
+ * What a source declares it can execute. Pure data: declared once by the
+ * source, copied and frozen by the provider, read by every control.
+ * Absence means unavailable, never "probably supported". The provider
+ * checks every declared capability against the port that must serve it, so
+ * a declaration is never a promise the source cannot keep.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -250,11 +243,11 @@ export type SourceActionRequest = {
  */
 export type SourceActionRunner = (
   request: SourceActionRequest,
-) => Promise<readonly OperationOutcome[]>;
+) => Promise<readonly ActionOutcome[]>;
 
 /**
- * A source: a declaration plus request-scoped execution ports. The binding
- * checks at construction that every declared capability has the port that
+ * A source: a declaration plus request-scoped execution ports. The provider
+ * checks when it is built that every declared capability has the port that
  * serves it and throws otherwise.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
@@ -273,7 +266,7 @@ export type Source<TRow extends object = RowRecord> = {
   /**
    * Begin executing one request. `deliver` may be called synchronously and
    * more than once: every later call is an external change to the same
-   * query — a store write, an invalidation — which the binding republishes
+   * query — a store write, an invalidation — which the provider republishes
    * under a fresh identity. A throw is a failed request. The returned
    * release detaches this request's observers and nothing else: never the
    * application's client or its cache.
@@ -412,15 +405,12 @@ export type ArraySourceConfig<TRow extends object = RowRecord> = {
   /** The complete record set. Copied at construction; never read live. */
   readonly rows: readonly TRow[];
   /**
-   * The collection's fields and their kinds. The source filters every field
-   * of it with the operators its kind accepts and orders by every one of
-   * them, comparing an ordered term through its kind. A field the schema
+   * The collection the rows belong to. The source filters every field of
+   * its schema with the operators its kind accepts and orders by every one
+   * of them, comparing an ordered term through its kind. A field the schema
    * does not define is refused.
-   *
-   * @experimental Replaces the bare `fields` list; the row type may later be
-   * inferred from it.
    */
-  readonly schema: Schema<readonly SchemaFieldDefinition[]>;
+  readonly collection: Collection<readonly SchemaFieldDefinition[], TRow>;
   /**
    * The ordering a query with no term of its own runs on. Empty by default,
    * which declares that the source documents no order.
@@ -628,75 +618,6 @@ export type RelaySourceConfig<
   ) => RelayConnection<TRow> | null | undefined;
   /** Row operations, when the schema has any. */
   readonly runAction?: SourceActionRunner | undefined;
-};
-
-/**
- * The structural host surface the binding drives. The handle
- * `createDataViewsProvider` returns satisfies it, and so can a narrower
- * host.
- *
- * @experimental Pre-release: the whole surface is still settling, and this
- * name may change or move before the first release.
- */
-export type SourceHost<TRow extends object = RowRecord> = {
-  /**
-   * What the host's source declares it can execute, or null when the host
-   * was not told. Non-null, it must be the source's own declaration.
-   */
-  readonly capabilities: SourceCapabilities | null;
-  /** The coordinator snapshot channel: query, window and pending request. */
-  readonly state: ReadonlyChannel<CollectionState<TRow>>;
-  readonly selection: Selection;
-  readonly refresh: () => string | null;
-  readonly complete: (
-    requestId: string,
-    completion: Completion<TRow>,
-  ) => boolean;
-  readonly invokeAction: (invocation: ActionInvocation) => Operation;
-};
-
-/**
- * Configuration of one source binding.
- *
- * @experimental Pre-release: the whole surface is still settling, and this
- * name may change or move before the first release.
- */
-export type SourceBindingConfig<TRow extends object = RowRecord> = {
-  readonly host: SourceHost<TRow>;
-  readonly source: Source<TRow>;
-};
-
-/**
- * Handle of one source binding.
- *
- * @experimental Pre-release: the whole surface is still settling, and this
- * name may change or move before the first release.
- */
-export type SourceBinding = {
-  /**
-   * What the bound source declares it can execute. Connected parts read the
-   * host's copy instead; this is for code holding the binding.
-   */
-  readonly capabilities: SourceCapabilities;
-  /**
-   * Every refusal a request in hand would collect, from the declaration and
-   * from the source's own check. Empty means executable.
-   */
-  readonly refusals: (query: Query) => readonly SourceRefusal[];
-  /**
-   * Run one row operation. Resolves with the operation record once every
-   * captured target has an outcome — a target the source reports nothing
-   * for fails rather than staying pending. Successful targets leave the
-   * selection; failures stay for review and retry. Rejects when the action
-   * is not declared, or addresses more or other than the declaration allows.
-   */
-  readonly runAction: (request: SourceActionRequest) => Promise<Operation>;
-  /**
-   * Start executing the host's requests. The release stops the live
-   * request and detaches from the host; it never touches the source's own
-   * client or cache.
-   */
-  readonly observe: () => () => void;
 };
 
 /** What a local execution needs beyond the rows and the query. */

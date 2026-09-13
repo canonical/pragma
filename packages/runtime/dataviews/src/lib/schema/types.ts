@@ -6,7 +6,6 @@
  * range, and how its rows order.
  */
 
-import type { FieldValidation } from "../field/index.js";
 import type {
   Predicate,
   PredicateOperand,
@@ -96,7 +95,7 @@ export type TextField = {
  * has nothing to exclude and every field applies to every row.
  */
 type TypeScoped = {
-  readonly types?: readonly string[];
+  readonly appliesTo?: readonly string[];
 };
 
 /**
@@ -107,6 +106,21 @@ type TypeScoped = {
  */
 export type SchemaFieldDefinition = TypeScoped &
   (ChoicesField | NumberField | FlagField | DateField | TextField);
+
+/**
+ * Result of validating one text input against a field's kind: the operands
+ * it read, or that the input is incomplete or cannot be read.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export type FieldValidation =
+  | {
+      readonly status: "valid";
+      readonly operands: readonly PredicateOperand[];
+    }
+  | { readonly status: "incomplete" }
+  | { readonly status: "invalid"; readonly reason: string };
 
 /**
  * The applied semantic value a field's predicate carries. A text field

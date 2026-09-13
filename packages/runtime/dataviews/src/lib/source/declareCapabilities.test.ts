@@ -1,16 +1,20 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createSchema } from "../schema/index.js";
+import { byId } from "../../../testing/fixtures.js";
+import { createCollection } from "../collection/index.js";
 import declareCapabilities from "./declareCapabilities.js";
 import type { CapabilityDeclaration } from "./types.js";
 
-const machines = createSchema([
-  { field: "status", kind: "choices", options: ["failed", "ready"] },
-  { field: "cpu", kind: "number" },
-  { field: "owner", kind: "flag" },
-  { field: "name", kind: "text" },
-]);
+const machines = createCollection({
+  identify: byId,
+  fields: [
+    { field: "status", kind: "choices", options: ["failed", "ready"] },
+    { field: "cpu", kind: "number" },
+    { field: "owner", kind: "flag" },
+    { field: "name", kind: "text" },
+  ],
+});
 
-type Declaration = CapabilityDeclaration<typeof machines.fields>;
+type Declaration = CapabilityDeclaration<typeof machines.schema.fields>;
 
 describe("declareCapabilities", () => {
   it("refuses everything an author does not declare", () => {

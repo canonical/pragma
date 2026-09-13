@@ -1,4 +1,3 @@
-import readDefaultIdentity from "./readDefaultIdentity.js";
 import type {
   RowEntry,
   RowModel,
@@ -24,16 +23,7 @@ export default function createRowModel<TRow extends object>(
   config: RowModelConfig<TRow>,
 ): RowModelResult<TRow> {
   const { rows, previous } = config;
-  const identify: (row: TRow) => unknown =
-    config.identify ?? readDefaultIdentity;
-  // Named once, not per row: a declared identifier that answered with a
-  // non-identity is a different mistake from a record with no `id` at all.
-  // Both are fragments a renderer composes into a sentence, so neither
-  // tells the developer what to do about it; `identify` says that.
-  const identityRejection =
-    config.identify === undefined
-      ? "row record has no non-empty string id"
-      : "row identity must be a non-empty string";
+  const identify: (row: TRow) => unknown = config.identify;
   const reusable = new Map<string, RowEntry<TRow>>();
   for (const entry of previous?.entries ?? []) {
     reusable.set(entry.id, entry);
@@ -52,7 +42,10 @@ export default function createRowModel<TRow extends object>(
   for (const [position, record] of rows.entries()) {
     const id = identify(record);
     if (typeof id !== "string" || id === "") {
-      return { status: "rejected", reason: identityRejection };
+      return {
+        status: "rejected",
+        reason: "row identity must be a non-empty string",
+      };
     }
     if (index.has(id)) {
       return { status: "rejected", reason: `duplicate row id "${id}"` };

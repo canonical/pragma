@@ -11,8 +11,12 @@ import {
   type Variables,
 } from "relay-runtime";
 import { describe, expect, it, vi } from "vitest";
-import { declare, declareSort } from "../../../testing/fixtures.js";
-import { createDataViewsProvider } from "../provider/index.js";
+import { byId, declare, declareSort } from "../../../testing/fixtures.js";
+import { createCollection } from "../collection/index.js";
+import {
+  createDataViewsProvider,
+  readProviderHost,
+} from "../provider/index.js";
 import {
   DEFAULT_WINDOW,
   type Query,
@@ -25,9 +29,7 @@ import type {
   SourceDelivery,
   SourceRefusal,
 } from "../result/index.js";
-import { createSchema } from "../schema/index.js";
 import createRelaySource from "./createRelaySource.js";
-import createSourceBinding from "./createSourceBinding.js";
 import type {
   RelayEnvironment,
   RelayPageRequest,
@@ -389,23 +391,28 @@ const lastOf = (deliver: ReturnType<typeof delivery>): SourceDelivery => {
   return call[0];
 };
 
-const schema = createSchema([
-  { field: "status", kind: "choices", options: ["ready", "failed"] },
-]);
+const machinesCollection = createCollection({
+  fields: [{ field: "status", kind: "choices", options: ["ready", "failed"] }],
+  identify: byId,
+});
 
-/** A provider bound to a Relay source, as an application assembles it. */
-const collection = (environment: RelayEnvironment) => {
-  const host = createDataViewsProvider({
-    schema,
-    capabilities: connectionCapabilities,
-    window: paged(),
-  });
-  const release = createSourceBinding({
-    host,
+/**
+ * A provider over a Relay source, observed as a mounted root observes it:
+ * the first observer issues the first request, so `fetchAt(0)` is the
+ * observation's own fetch.
+ */
+const bound = (
+  environment: RelayEnvironment,
+  window: ResultWindow = paged(),
+) => {
+  const provider = createDataViewsProvider({
+    collection: machinesCollection,
     source: source(environment),
-  }).observe();
+    seed: { window },
+  });
+  const release = provider.observe();
   const shown = () => {
-    const state = host.state.get();
+    const state = provider.state.get();
     return {
       ids: (state.result.rows ?? []).map((row) => (row as Machine).id),
       status: state.result.status,
@@ -414,7 +421,7 @@ const collection = (environment: RelayEnvironment) => {
       problem: state.result.problem,
     };
   };
-  return { host, release, shown };
+  return { provider, host: readProviderHost(provider), release, shown };
 };
 
 /** An environment whose retentions, subscriptions and fetches are counted. */
@@ -1213,10 +1220,24 @@ describe("createRelaySource over relay-runtime", () => {
 });
 
 describe("createRelaySource bound to a collection", () => {
+  it("fetches nothing until the provider is observed, and its first page then", () => {
+    const { environment, fetches } = relay();
+    const provider = createDataViewsProvider({
+      collection: machinesCollection,
+      source: source(environment),
+      seed: { window: paged() },
+    });
+    expect(fetches).toHaveLength(0);
+    expect(provider.state.get().result.status).toBe("idle");
+    const release = provider.observe();
+    expect(fetches).toHaveLength(1);
+    expect(provider.state.get().result.status).toBe("pending");
+    release();
+  });
+
   it("publishes pages under the collection's request identities", () => {
     const { environment, fetchAt } = relay();
-    const { host, shown, release } = collection(environment);
-    host.refresh();
+    const { provider, shown, release } = bound(environment);
     fetchAt(0).respond();
     expect(shown()).toMatchObject({
       ids: ["m1", "m2"],
@@ -1225,7 +1246,7 @@ describe("createRelaySource bound to a collection", () => {
       matches: true,
     });
 
-    host.navigateWindow({ page: 2 });
+    provider.navigateWindow({ page: 2 });
     expect(shown().status).toBe("pending");
     fetchAt(1).respond();
     expect(shown()).toMatchObject({ ids: ["m3", "m4"], status: "ready" });
@@ -1234,15 +1255,21 @@ describe("createRelaySource bound to a collection", () => {
 
   it("never lets an abandoned filter replace a newer one", () => {
     const { environment, fetchAt } = relay();
-    const { host, shown, release } = collection(environment);
-    host.fields.status.eq.set(["failed"]);
-    host.fields.status.eq.set(["ready"]);
+    const { host, shown, release } = bound(environment);
+    // The observation's own fetch is the first one abandoned.
+    host.setPredicate({
+      field: "status",
+      operator: "eq",
+      operands: ["failed"],
+    });
+    host.setPredicate({ field: "status", operator: "eq", operands: ["ready"] });
     expect(fetchAt(0).cancelled).toBe(true);
+    expect(fetchAt(1).cancelled).toBe(true);
 
-    fetchAt(1).respond();
+    fetchAt(2).respond();
     expect(shown()).toMatchObject({ ids: ["m1", "m3"], status: "ready" });
     // The abandoned fetch answering late reaches nothing.
-    fetchAt(0).respond();
+    fetchAt(1).respond();
     expect(shown()).toMatchObject({
       ids: ["m1", "m3"],
       status: "ready",
@@ -1254,22 +1281,21 @@ describe("createRelaySource bound to a collection", () => {
 
   it("follows a local update into the collection without refetching", () => {
     const { environment, fetches, fetchAt } = relay();
-    const { host, shown, release } = collection(environment);
-    host.refresh();
+    const { provider, shown, release } = bound(environment);
     fetchAt(0).respond();
-    const before = host.state.get().result.provenance;
+    const before = provider.state.get().result.provenance;
 
     commitLocalUpdate(environment, (store) => {
       store.get("m2")?.setValue("failed", "status");
       store.get("m2")?.setValue("beta-renamed", "name");
     });
-    const rows = host.state.get().result.rows as readonly Machine[];
+    const rows = provider.state.get().result.rows as readonly Machine[];
     expect(rows[1]).toEqual({
       id: "m2",
       name: "beta-renamed",
       status: "failed",
     });
-    expect(host.state.get().result.provenance).not.toEqual(before);
+    expect(provider.state.get().result.provenance).not.toEqual(before);
     expect(shown().matches).toBe(true);
     expect(fetches).toHaveLength(1);
     release();
@@ -1277,17 +1303,8 @@ describe("createRelaySource bound to a collection", () => {
 
   it("reports a page reached without its cursor as a refusal", () => {
     const { environment, fetches } = relay();
-    const host = createDataViewsProvider({
-      schema,
-      capabilities: connectionCapabilities,
-      window: paged({ page: 3 }),
-    });
-    const release = createSourceBinding({
-      host,
-      source: source(environment),
-    }).observe();
-    host.refresh();
-    expect(host.state.get().result).toMatchObject({
+    const { provider, release } = bound(environment, paged({ page: 3 }));
+    expect(provider.state.get().result).toMatchObject({
       status: "failed",
       rows: null,
       problem: { status: "refused", refusals: [unreachable(3)] },
@@ -1299,10 +1316,9 @@ describe("createRelaySource bound to a collection", () => {
 
   it("keeps the rows and reports the failure when a refetch fails", () => {
     const { environment, fetchAt } = relay();
-    const { host, shown, release } = collection(environment);
-    host.refresh();
+    const { provider, shown, release } = bound(environment);
     fetchAt(0).respond();
-    host.refresh();
+    provider.refresh();
     fetchAt(1).fail(new Error("timeout"));
     expect(shown()).toMatchObject({
       ids: ["m1", "m2"],
@@ -1313,40 +1329,25 @@ describe("createRelaySource bound to a collection", () => {
     release();
   });
 
-  it("releases everything when the scope rotates", () => {
-    const { environment, fetchAt } = relay();
+  it("releases everything when the provider resets, and requests the new generation's first page", () => {
+    const { environment, fetches, fetchAt } = relay();
     const { released, wrapped } = counted(environment);
-    const host = createDataViewsProvider({
-      schema,
-      capabilities: connectionCapabilities,
-      window: paged(),
-    });
-    const release = createSourceBinding({
-      host,
-      source: source(wrapped),
-    }).observe();
-    host.refresh();
-    host.rotateScope();
+    const { provider, release } = bound(wrapped);
+    provider.reset();
     expect(released).toEqual({ retentions: 1, subscriptions: 1, fetches: 1 });
     expect(fetchAt(0).cancelled).toBe(true);
-    expect(host.state.get().result.status).toBe("idle");
+    // Still observed, the provider asks for the new generation's first page.
+    expect(fetches).toHaveLength(2);
+    expect(provider.state.get().result.status).toBe("pending");
     release();
+    expect(released).toEqual({ retentions: 2, subscriptions: 2, fetches: 2 });
   });
 
-  it("releases everything when the observation ends or the provider is disposed", () => {
+  it("releases everything when the observation ends, answered or not", () => {
     const { environment, fetchAt } = relay();
     const detaching = counted(environment);
-    const host = createDataViewsProvider({
-      schema,
-      capabilities: connectionCapabilities,
-      window: paged(),
-    });
-    const release = createSourceBinding({
-      host,
-      source: source(detaching.wrapped),
-    }).observe();
-    host.refresh();
-    release();
+    const pending = bound(detaching.wrapped);
+    pending.release();
     expect(detaching.released).toEqual({
       retentions: 1,
       subscriptions: 1,
@@ -1354,18 +1355,9 @@ describe("createRelaySource bound to a collection", () => {
     });
 
     const ending = counted(environment);
-    const other = createDataViewsProvider({
-      schema,
-      capabilities: connectionCapabilities,
-      window: paged(),
-    });
-    createSourceBinding({
-      host: other,
-      source: source(ending.wrapped),
-    }).observe();
-    other.refresh();
+    const answered = bound(ending.wrapped);
     fetchAt(1).respond();
-    other.dispose();
+    answered.release();
     expect(ending.released).toEqual({
       retentions: 1,
       subscriptions: 1,

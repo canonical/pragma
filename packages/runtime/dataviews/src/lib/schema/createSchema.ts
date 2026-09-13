@@ -1,4 +1,3 @@
-import type { FieldValidation } from "../field/index.js";
 import {
   type PredicateOperand,
   type PredicateOperator,
@@ -7,6 +6,7 @@ import {
 import { rejectWireName } from "../wire/index.js";
 import resolveFieldKind from "./resolveFieldKind.js";
 import type {
+  FieldValidation,
   Schema,
   SchemaFieldDefinition,
   SchemaPredicateResult,
@@ -30,9 +30,9 @@ export default function createSchema<
   const storedFields = Object.freeze(
     fields.map((definition) => {
       const scoping =
-        definition.types === undefined
+        definition.appliesTo === undefined
           ? {}
-          : { types: Object.freeze([...definition.types]) };
+          : { appliesTo: Object.freeze([...definition.appliesTo]) };
       return definition.kind === "choices"
         ? Object.freeze({
             field: definition.field,
@@ -62,10 +62,13 @@ export default function createSchema<
     if (unspellable !== null) {
       throw new Error(`schema ${unspellable}`);
     }
-    // A field scoped to no type applies to no row at all. The provider
+    // A field scoped to no type applies to no row at all. The collection
     // checks the names themselves against the discriminator's options; an
     // empty list is the one mistake only the schema can see.
-    if (definition.types !== undefined && definition.types.length === 0) {
+    if (
+      definition.appliesTo !== undefined &&
+      definition.appliesTo.length === 0
+    ) {
       throw new Error(
         `field "${definition.field}" is scoped to no record type`,
       );

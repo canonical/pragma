@@ -1,2 +1,2 @@
-export { default as createCollectionCoordinator } from "./createCollectionCoordinator.js";
+export { default as createCollection } from "./createCollection.js";
 export type * from "./types.js";

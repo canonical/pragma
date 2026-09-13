@@ -16,6 +16,12 @@ const harness = (declared: readonly ColumnToSize[] = columns()) => {
 };
 
 describe("createGridInteraction", () => {
+  it("hands its state out read-only at runtime", () => {
+    const { interaction } = harness();
+    expect(Object.isFrozen(interaction.state)).toBe(true);
+    expect(interaction.state).not.toHaveProperty("set");
+  });
+
   it("starts idle and enters resizing with a captured start width", () => {
     const { interaction } = harness();
     expect(interaction.state.get()).toEqual({ status: "idle" });

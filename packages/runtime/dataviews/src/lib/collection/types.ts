@@ -1,147 +1,119 @@
 /**
- * The coordinator's contract: the snapshot it publishes at every mutation
- * boundary, the result and its status, and the commands and completions
- * it accepts. One state, so the provider, the bindings and every control
- * read the same shape.
+ * The collection: the schema, the record identity and the record types,
+ * declared once at module scope. It is the witness every hook and every
+ * provider is built over, and it holds no state, so one module-scope
+ * object serves every request and every root.
  */
 
-import type { Identity } from "../identity/index.js";
-import type {
-  Query,
-  QueryCommand,
-  QueryCommandResult,
-  ResultWindow,
-  Slice,
-} from "../query/index.js";
-import type {
-  Completion,
-  GroupSummary,
-  PageCursors,
-  ResultProblem,
-  ResultProvenance,
-  SourceCounts,
-} from "../result/index.js";
-import type { RowRecord } from "../rows/index.js";
+import type { RowIdentifier, RowRecord } from "../rows/index.js";
+import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
+
+/** Whether a row's value at one key can carry a field's options. */
+type CarriesOptions<TRow, TName, TOption> = TName extends keyof TRow
+  ? // The default row shape says nothing about its values, so it carries any.
+    unknown extends TRow[TName]
+    ? true
+    : // A key the row may not have carries no type, and such a row fails
+      // every completion: this is the case the check exists to catch.
+      undefined extends TRow[TName]
+      ? false
+      : [TRow[TName]] extends [TOption]
+        ? true
+        : // An adapter typing the key as the wider `string` carries them too.
+          [TOption] extends [TRow[TName]]
+          ? true
+          : false
+  : false;
+
 /**
- * Display status of the result projection.
- *
- * `refresh-failed` is a settled problem over rows that still answer the
- * current query, as after a failed refresh: the rows are usable and the
- * problem is real, so both are reported. `stale` is the same over rows an
- * earlier query produced. `failed` is a problem with no rows to keep. A
- * result that does not match the current query never reports `ready`.
+ * The schema fields that may declare a collection's record types: a
+ * `choices` field with string options, carried by the row at the same key
+ * with a value its options and the row agree on.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
  */
-export type ResultStatus =
-  | "idle"
-  | "pending"
-  | "refreshing"
-  | "ready"
-  | "refresh-failed"
-  | "stale"
-  | "failed";
+export type DiscriminatorField<
+  TFields extends readonly SchemaFieldDefinition[],
+  TRow extends object = RowRecord,
+> = {
+  [TDefinition in TFields[number] as TDefinition["field"]]: TDefinition extends {
+    readonly kind: "choices";
+    readonly options: infer TOptions extends readonly string[];
+  }
+    ? CarriesOptions<TRow, TDefinition["field"], TOptions[number]> extends true
+      ? TDefinition["field"]
+      : never
+    : never;
+}[TFields[number]["field"]] &
+  /* The mapped type answers with field names, which the compiler cannot see
+     through an unresolved `TFields`; this says so. */
+  string;
 
 /**
- * Immutable result state: one page of a collection as the renderer sees
- * it. Retained rows keep the provenance of the request that produced them,
- * so they are never described as results of the current query.
+ * A collection's record types as it declares them: the discriminator
+ * field every row carries its type in, and every type name that field
+ * declares, in declaration order.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
  */
-export type ResultState<TRow extends object = RowRecord> = {
-  readonly status: ResultStatus;
-  readonly rows: readonly TRow[] | null;
-  /**
-   * The page's group summaries; null until a source declares summaries.
-   *
-   * @seam grouping — read by the group header row's count
-   */
-  readonly groups: readonly GroupSummary[] | null;
-  readonly counts: SourceCounts | null;
-  /** Whether a further page exists when no count says so; null when unknown. */
-  readonly more: boolean | null;
-  readonly cursors: PageCursors | null;
-  readonly provenance: ResultProvenance | null;
-  /** The last refusal or failure, structurally; null after a success. */
-  readonly problem: ResultProblem | null;
-};
-
-/** Coordinator configuration; `slice` and `window` seed every fresh scope. */
-export type CollectionCoordinatorConfig = {
-  readonly slice?: Slice | undefined;
-  readonly window?: ResultWindow | undefined;
-};
-
-/** Result of dispatching one command through the coordinator. */
-export type DispatchResult = QueryCommandResult & {
-  /** Request identity to execute, or null when no new request is needed. */
-  readonly requestId: string | null;
+export type RecordTypes = {
+  /** The schema field every row carries its type in. */
+  readonly field: string;
+  /** Every type name the field declares, in declaration order. */
+  readonly names: readonly string[];
 };
 
 /**
- * Immutable coordinator snapshot; referentially stable between mutations.
+ * Configuration of one collection: the fields, the identity function and
+ * the discriminator, if the records come in several types.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
  */
-export type CollectionState<TRow extends object = RowRecord> = Query & {
-  readonly scope: Identity;
-  readonly result: ResultState<TRow>;
-  /** True when displayed rows were produced by the current query and window. */
-  readonly resultMatchesQuery: boolean;
+export type CollectionConfig<
+  TFields extends readonly SchemaFieldDefinition[],
+  TRow extends object,
+> = {
+  /** The schema's field definitions, as `createSchema` takes them. */
+  readonly fields: TFields;
   /**
-   * The one request identity awaiting completion, or null when none is
-   * outstanding. A source executes exactly this request: every other
-   * completion is dropped by the identity guard.
+   * Reads one record's stable identity. Required, and typed over the
+   * record: the record type is inferred from its parameter, so the field
+   * list and the record type are declared once and never spelled by hand.
    */
-  readonly pendingRequestId: string | null;
-  readonly disposed: boolean;
+  readonly identify: RowIdentifier<TRow>;
+  /**
+   * How this collection's records declare their type: one `choices` field
+   * of the schema, carried by every row. Left out, the collection is
+   * monomorphic — no memory is kept, no row is read for a type, and nothing
+   * else behaves differently. A field scoped with `appliesTo` is then
+   * inert, since there is only the one type for it to apply to.
+   */
+  readonly discriminator?: DiscriminatorField<TFields, TRow> | undefined;
 };
 
-/** Handle owning query/window coherence and the request lifecycle. */
-export type CollectionCoordinator<TRow extends object = RowRecord> = {
-  readonly state: CollectionState<TRow>;
+/**
+ * One collection, declared at module scope: its schema, its record
+ * identity and its record types. The witness `useDataViews(collection)`
+ * and `createDataViewsProvider({ collection })` take, and the object the
+ * runtime check compares by reference.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export type Collection<
+  TFields extends
+    readonly SchemaFieldDefinition[] = readonly SchemaFieldDefinition[],
+  TRow extends object = RowRecord,
+> = {
+  readonly schema: Schema<TFields>;
+  readonly identify: RowIdentifier<TRow>;
   /**
-   * Apply one addressed command coherently. An accepted change that moves
-   * the query or window issues a new request identity and retains previous
-   * rows with their old provenance until a matching completion arrives.
+   * The collection's record types, or null when it declares none and is
+   * therefore monomorphic. A field's scope is narrower than the
+   * collection's — it is the `appliesTo` of that field's own definition.
    */
-  readonly dispatch: (command: QueryCommand) => DispatchResult;
-  /**
-   * Refresh the current query: retained rows stay displayed with a
-   * refreshing status until a matching completion arrives.
-   */
-  readonly refresh: () => string | null;
-  /**
-   * Adopt an externally authoritative query, as on back/forward navigation
-   * or a restored view. Invalid windows throw, the same rejections the
-   * addressed command layer applies. Supersedes any pending request,
-   * discards stale input sessions above this layer, and returns a request
-   * identity when the adopted query differs from the current one.
-   */
-  readonly adopt: (query: Query) => string | null;
-  /**
-   * Publish a completion for the most recently issued request, at most
-   * once. Completions for superseded requests, rotated scopes or a disposed
-   * coordinator are ignored. A success publishes rows, summaries, counts,
-   * cursors and provenance together. A refusal or a failure keeps the rows
-   * with the problem recorded — `failed` when no rows have been published,
-   * `refresh-failed` while the kept rows still answer the current query,
-   * `stale` when an earlier query produced them, even an empty set.
-   */
-  readonly complete: (
-    requestId: string,
-    completion: Completion<TRow>,
-  ) => boolean;
-  /**
-   * Rotate to a fresh scope: query, window and result reset to the
-   * configured seed and pending requests die. Completions from the old
-   * scope never publish into the new one.
-   */
-  readonly rotateScope: () => void;
-  /** Detach permanently; every later completion is ignored. */
-  readonly dispose: () => void;
+  readonly types: RecordTypes | null;
 };

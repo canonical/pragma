@@ -17,15 +17,14 @@ describe("public surface", () => {
       "DEFAULT_WINDOW",
       "EMPTY_SLICE",
       "createArraySource",
+      "createCollection",
       "createDataViewsProvider",
-      "createLocationBinding",
       "createMemoryLocation",
       "createPage",
       "createPlatformLocation",
       "createQuerySource",
       "createRelaySource",
       "createSchema",
-      "createSourceBinding",
       "declareCapabilities",
       "decodeQuery",
       "encodeQuery",
@@ -37,52 +36,57 @@ describe("public surface", () => {
     expect(
       dataviews.createSchema([{ field: "owner", kind: "flag" }]).fieldNames,
     ).toEqual(["owner"]);
-    const idSchema = dataviews.createSchema([{ field: "id", kind: "text" }]);
+    const ids = dataviews.createCollection({
+      identify: (row: { readonly id: string }) => row.id,
+      fields: [{ field: "id", kind: "text" }],
+    });
     const source = dataviews.createArraySource({
       rows: [{ id: "a" }],
-      schema: idSchema,
+      collection: ids,
     });
-    expect(dataviews.declareCapabilities(idSchema, {}).sort.terms).toBe(0);
-    expect(dataviews.readSlice(idSchema, EMPTY_SLICE).filters).toEqual({});
+    expect(dataviews.declareCapabilities(ids, {}).sort.terms).toBe(0);
+    expect(dataviews.readSlice(ids, EMPTY_SLICE).filters).toEqual({});
     expect(dataviews.createPage({ rows: [] }).counts.total).toEqual({
       kind: "unknown",
     });
     const provider = dataviews.createDataViewsProvider({
-      schema: idSchema,
-      capabilities: source.capabilities,
+      collection: ids,
+      source,
     });
-    const binding = dataviews.createSourceBinding({ host: provider, source });
     expect(
-      binding.refusals({
+      provider.refusals({
         slice: EMPTY_SLICE,
         window: dataviews.DEFAULT_WINDOW,
       }),
     ).toEqual([]);
-    const release = binding.observe();
-    provider.refresh();
+    // Nothing runs until something observes; the first observer asks for
+    // the first page and the array source answers at once.
+    expect(provider.state.get().result.status).toBe("idle");
+    const release = provider.observe();
     expect(provider.rows.get().ids).toEqual(["a"]);
     release();
-    provider.dispose();
   });
 
   it("wires the wire grammar and the location loop through the barrel", () => {
-    const schema = dataviews.createSchema([
-      { field: "status", kind: "choices", options: ["failed"] },
-    ]);
-    const provider = dataviews.createDataViewsProvider({ schema });
+    const machines = dataviews.createCollection({
+      identify: (row: { readonly id: string }) => row.id,
+      fields: [{ field: "status", kind: "choices", options: ["failed"] }],
+    });
+    const { schema } = machines;
     const location = dataviews.createMemoryLocation({
       href: "/machines?status=failed",
     });
-    const binding = dataviews.createLocationBinding({
-      host: provider,
+    const provider = dataviews.createDataViewsProvider({
+      collection: machines,
+      source: dataviews.createArraySource({ rows: [], collection: machines }),
       location,
     });
-    const release = binding.observe();
+    const release = provider.observe();
     expect(provider.state.get().slice.filter).toEqual([
       { field: "status", operator: "eq", operands: ["failed"] },
     ]);
     expect(location.read().toString()).toBe("status=failed&page=1&size=50");
-    expect(binding.issues.get()).toEqual([]);
+    expect(provider.issues.get()).toEqual([]);
     release();
 
     expect(
@@ -124,16 +128,18 @@ describe("public surface", () => {
       "areSlicesEqual",
       "buildColumnTemplate",
       "createColumnLayout",
+      "createFilterInputs",
       "createGridInteraction",
       "createRowScopes",
-      "isIdentity",
+      "isDataViewsProvider",
       "listDisplayEntries",
+      "readProviderHost",
       "resolveColumns",
     ]);
     for (const name of Object.keys(bindings)) {
       expect(dataviews).not.toHaveProperty(name);
     }
-    expect(bindings.isIdentity(undefined)).toBe(false);
+    expect(bindings.isDataViewsProvider(undefined)).toBe(false);
     expect(
       bindings.buildColumnTemplate(
         [{ id: "a", sizing: { kind: "fixed", px: 8 } }],

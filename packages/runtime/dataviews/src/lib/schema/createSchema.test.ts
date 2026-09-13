@@ -35,28 +35,33 @@ describe("createSchema", () => {
   it("keeps a field's record-type scoping as a frozen copy", () => {
     const types = ["virtual-machine"];
     const scoped = createSchema([
-      { field: "type", kind: "choices", options: ["container"], types },
-      { field: "secureboot", kind: "flag", types },
+      {
+        field: "type",
+        kind: "choices",
+        options: ["container"],
+        appliesTo: types,
+      },
+      { field: "secureboot", kind: "flag", appliesTo: types },
     ]);
     types.push("container");
     // The copy answers, not the caller's array: a schema whose scoping
     // could change under it would scope a field one way per read.
-    expect(scoped.fields[0].types).toEqual(["virtual-machine"]);
-    expect(scoped.fields[1].types).toEqual(["virtual-machine"]);
-    expect(Object.isFrozen(scoped.fields[0].types)).toBe(true);
+    expect(scoped.fields[0].appliesTo).toEqual(["virtual-machine"]);
+    expect(scoped.fields[1].appliesTo).toEqual(["virtual-machine"]);
+    expect(Object.isFrozen(scoped.fields[0].appliesTo)).toBe(true);
     expect(scoped.fields[0].options).toEqual(["container"]);
   });
 
   it("leaves an unscoped field with no scoping at all", () => {
-    expect(schema.fields[0]).not.toHaveProperty("types");
-    expect(schema.fields[1]).not.toHaveProperty("types");
+    expect(schema.fields[0]).not.toHaveProperty("appliesTo");
+    expect(schema.fields[1]).not.toHaveProperty("appliesTo");
   });
 
   it("rejects a field scoped to no record type", () => {
     // The names themselves are the provider's to check against the
     // discriminator; an empty list is the one mistake only the schema sees.
     expect(() =>
-      createSchema([{ field: "secureboot", kind: "flag", types: [] }]),
+      createSchema([{ field: "secureboot", kind: "flag", appliesTo: [] }]),
     ).toThrow('field "secureboot" is scoped to no record type');
   });
 

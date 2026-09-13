@@ -2,6 +2,7 @@ export { default as addressPredicate } from "./addressPredicate.js";
 export { default as applyQueryCommand } from "./applyQueryCommand.js";
 export { default as applyWindow } from "./applyWindow.js";
 export { default as areListsEqual } from "./areListsEqual.js";
+export { default as arePredicatesEqual } from "./arePredicatesEqual.js";
 export { default as areSlicesEqual } from "./areSlicesEqual.js";
 export { default as areSortsEqual } from "./areSortsEqual.js";
 export { default as canonicalizeSlice } from "./canonicalizeSlice.js";

@@ -9,25 +9,26 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { declare, declareSort } from "../../../testing/fixtures.js";
-import { createCollectionCoordinator } from "../../lib/collection/index.js";
-import {
-  createLocationBinding,
-  createMemoryLocation,
-} from "../../lib/location/index.js";
+import createManualSource from "../../../testing/createManualSource.js";
+import { byId, declare, declareSort } from "../../../testing/fixtures.js";
+import { createCollection } from "../../lib/collection/index.js";
+import { createQueryCoordinator } from "../../lib/coordinator/index.js";
+import { createMemoryLocation } from "../../lib/location/index.js";
 import { createDataViewsProvider } from "../../lib/provider/index.js";
 import {
   DEFAULT_WINDOW,
   EMPTY_SLICE,
   type SortTerm,
 } from "../../lib/query/index.js";
-import { createSchema } from "../../lib/schema/index.js";
 import { refusalsOf } from "../../lib/source/index.js";
 
-const schema = createSchema([
-  { field: "cpu", kind: "number" },
-  { field: "name", kind: "text" },
-]);
+const machines = createCollection({
+  identify: byId,
+  fields: [
+    { field: "cpu", kind: "number" },
+    { field: "name", kind: "text" },
+  ],
+});
 
 const once: readonly SortTerm[] = [{ field: "cpu", direction: "asc" }];
 const twice: readonly SortTerm[] = [
@@ -37,7 +38,7 @@ const twice: readonly SortTerm[] = [
 
 describe("regression 0001 — a repeated sort field keeps one request identity", () => {
   it("holds the ordering a command respells as the ordering it means", () => {
-    const coordinator = createCollectionCoordinator({
+    const coordinator = createQueryCoordinator({
       slice: { ...EMPTY_SLICE, sort: [{ field: "name", direction: "asc" }] },
     });
     coordinator.dispatch({ kind: "setSort", sort: twice });
@@ -45,7 +46,7 @@ describe("regression 0001 — a repeated sort field keeps one request identity",
   });
 
   it("issues no new request for the respelling of the ordering in force", () => {
-    const coordinator = createCollectionCoordinator({
+    const coordinator = createQueryCoordinator({
       slice: { ...EMPTY_SLICE, sort: once },
     });
     coordinator.refresh();
@@ -64,14 +65,17 @@ describe("regression 0001 — a repeated sort field keeps one request identity",
   });
 
   it("adopts a respelled location as the ordering it means and writes it back once", () => {
-    const provider = createDataViewsProvider({ schema });
     const location = createMemoryLocation({
       href: "/machines?sort=cpu__asc&sort=cpu__desc",
     });
-    const release = createLocationBinding({
-      host: provider,
+    const provider = createDataViewsProvider({
+      collection: machines,
+      source: createManualSource({
+        capabilities: declare({ sort: declareSort(["cpu"], 1) }),
+      }).source,
       location,
-    }).observe();
+    });
+    const release = provider.observe();
     expect(provider.state.get().slice.sort).toEqual(once);
     expect(location.read().getAll("sort")).toEqual(["cpu__asc"]);
     release();
