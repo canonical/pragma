@@ -1,9 +1,8 @@
 /**
  * The machinery every framework binding shares and no application calls:
  * the column geometry a table solves, the row scopes and display entries a
- * body renders from, the identity tokens a binding checks a provider by,
- * the channels it hands values through, and the slice comparison a bar
- * settles pages with. React uses it now; a Svelte binding would use the
+ * body renders from, the identity check a binding tells a provider by, and
+ * the list and slice comparisons a bar settles pages with. React uses it now; a Svelte binding would use the
  * same names rather than solve its own geometry.
  */
 
@@ -19,16 +18,14 @@ export type {
   ResolvedColumn,
 } from "../geometry/index.js";
 export {
-  columnTemplate,
+  areSizingsEqual,
+  buildColumnTemplate,
   createColumnLayout,
   createGridInteraction,
   resolveColumns,
-  sizingEquals,
 } from "../geometry/index.js";
-export { createIdentity, isIdentity } from "../identity/index.js";
-export type { Channel, ChannelConfig } from "../observable/index.js";
-export { createChannel } from "../observable/index.js";
-export { canonicalSlice, sliceEquals } from "../query/index.js";
+export { isIdentity } from "../identity/index.js";
+export { areListsEqual, areSlicesEqual } from "../query/index.js";
 export type {
   DisplayEntriesConfig,
   DisplayEntry,
@@ -37,4 +34,4 @@ export type {
   RowScopes,
   RowScopesConfig,
 } from "../rows/index.js";
-export { createRowScopes, displayEntries } from "../rows/index.js";
+export { createRowScopes, listDisplayEntries } from "../rows/index.js";

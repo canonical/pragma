@@ -1,7 +1,17 @@
+/**
+ * The virtual range a windowed table mounts its rows by: the sizes it
+ * indexes, the runs it publishes and the configuration it starts from.
+ */
+
 import type { ReadonlyChannel } from "../observable/index.js";
 import type { DisplayEntry, DisplayEntryKind } from "../rows/index.js";
 
-/** Configuration of one table's virtual range. */
+/**
+ * Configuration of one table's virtual range.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type VirtualRangeConfig = {
   /**
    * Each entry kind's size before it is measured, in pixels. An estimate
@@ -11,7 +21,12 @@ export type VirtualRangeConfig = {
   readonly estimates: Readonly<Record<DisplayEntryKind, number>>;
 };
 
-/** One run of consecutive entries to mount. */
+/**
+ * One run of consecutive entries to mount.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type MountedRun = {
   /** The position of the run's first entry. */
   readonly start: number;
@@ -21,7 +36,12 @@ export type MountedRun = {
   readonly before: number;
 };
 
-/** Which entries to mount, and the space the others take. */
+/**
+ * Which entries to mount, and the space the others take.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
 export type MountedRange = {
   /** Runs of consecutive entries, in display order. */
   readonly runs: readonly MountedRun[];
@@ -42,6 +62,9 @@ export type MountedRange = {
  * and its commands only ever change that one thing, so a `state` member
  * would name the record twice; it reads as a channel with commands, which
  * is what a renderer holds it as.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type VirtualRange = ReadonlyChannel<MountedRange> & {
   /**
@@ -78,4 +101,23 @@ export type VirtualRange = ReadonlyChannel<MountedRange> & {
    * viewport is; null keeps none. An id not displayed is ignored.
    */
   readonly retain: (id: string | null) => void;
+};
+
+/** The sizes of one sequence of entries, summed in logarithmic time. */
+export type SizeIndex = {
+  /** The size of the entry at one position. */
+  readonly size: (position: number) => number;
+  /** Replace the size of the entry at one position. */
+  readonly set: (position: number, size: number) => void;
+  /**
+   * The summed size of every entry before one position: where it starts.
+   * At the sequence's length, the whole: read from the same tree, so it
+   * never drifts from the offsets beside it.
+   */
+  readonly offset: (position: number) => number;
+  /**
+   * The position of the entry covering one offset: the last whose start is
+   * at or before it, held to the sequence. An empty sequence answers 0.
+   */
+  readonly at: (offset: number) => number;
 };

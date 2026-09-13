@@ -1,7 +1,7 @@
 /**
  * @canonical/dataviews-core — collection-views core for Canonical apps:
  * runtime identity tokens, the bounded query grammar with addressed commands
- * and window projection, field interaction, operation and save-race records,
+ * and window projection, the field interaction and operation records,
  * the collection coordinator owning query/window coherence and the request
  * lifecycle, the Location port and its adapters, the flat URL query grammar
  * and the authority loop binding a Location to a provider, the
