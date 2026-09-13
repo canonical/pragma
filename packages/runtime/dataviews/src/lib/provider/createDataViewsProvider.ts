@@ -42,36 +42,25 @@ import type { ViewStore } from "../views/types.js";
 import createRecordTyping from "./createRecordTyping.js";
 import type { DataViewsProvider, FieldHandle, RecordTypes } from "./types.js";
 
-/** The legal operators of a field kind, in display order. */
-const operatorsFor = (
-  kind: SchemaFieldDefinition["kind"],
-): readonly PredicateOperator[] => {
-  switch (kind) {
-    case "choices":
-      return ["eq"];
-    case "number":
-    case "date":
-      return ["gte", "lte"];
-    case "flag":
-      return ["isSet"];
-  }
-};
-
-/** Derive the applied semantic value of one field's predicate. */
-const appliedValueOf = (
-  definition: SchemaFieldDefinition,
+/**
+ * Derive the applied semantic value of one field's predicate. The operator
+ * decides it, not the kind: a set of options, the presence a flag states, or
+ * the single bound of a range.
+ */
+const deriveAppliedValue = (
+  operator: PredicateOperator,
   predicate: Predicate | null,
 ): EmptyOr<unknown> => {
   if (predicate === null) {
     return { kind: "empty" };
   }
-  switch (definition.kind) {
-    case "choices":
+  switch (operator) {
+    case "eq":
       return { kind: "value", value: new Set(predicate.operands) };
-    case "flag":
+    case "isSet":
       return { kind: "value", value: true };
-    case "number":
-    case "date":
+    case "gte":
+    case "lte":
       return { kind: "value", value: predicate.operands[0] };
   }
 };
@@ -137,7 +126,6 @@ export type DataViewsProviderConfig<
 type AddressedRecord = {
   readonly field: string;
   readonly operator: PredicateOperator;
-  readonly definition: SchemaFieldDefinition;
   readonly interaction: ReturnType<typeof createFieldInteraction>;
   /** The writable side, kept here so the handle can publish read-only. */
   readonly state: Channel<FieldInteractionState>;
@@ -208,13 +196,13 @@ export default function createDataViewsProvider<
   };
 
   const buildFieldRecord = (
-    definition: SchemaFieldDefinition,
+    field: string,
     operator: PredicateOperator,
   ): AddressedRecord => {
     const interaction = createFieldInteraction({
-      field: definition.field,
+      field,
       operator,
-      validate: (input) => schema.validateInput(definition.field, input),
+      validate: (input) => schema.validateInput(field, input),
       format: (predicate) =>
         predicate === null ? "" : String(predicate.operands[0] ?? ""),
     });
@@ -235,10 +223,10 @@ export default function createDataViewsProvider<
           dispatchCommand(command);
         }
         stateChannel.set(interaction.state);
-        applied.set(appliedValueOf(definition, interaction.state.applied));
+        applied.set(deriveAppliedValue(operator, interaction.state.applied));
       },
       set(operands: readonly PredicateOperand[]): void {
-        const built = schema.predicateFor(definition.field, operator, operands);
+        const built = schema.predicateFor(field, operator, operands);
         if (built.status !== "valid") {
           return;
         }
@@ -247,7 +235,7 @@ export default function createDataViewsProvider<
           predicate: built.predicate,
         });
         interaction.setApplied(built.predicate);
-        applied.set(appliedValueOf(definition, built.predicate));
+        applied.set(deriveAppliedValue(operator, built.predicate));
         stateChannel.set(interaction.state);
       },
       clear(): void {
@@ -258,9 +246,8 @@ export default function createDataViewsProvider<
       },
     };
     return {
-      field: definition.field,
+      field,
       operator,
-      definition,
       interaction,
       state: stateChannel,
       applied,
@@ -271,9 +258,13 @@ export default function createDataViewsProvider<
   const fieldRecords: AddressedRecord[] = [];
   const fields: Record<string, Record<string, FieldHandle<unknown>>> = {};
   for (const definition of schema.fields) {
+    const operators = schema.listOperators(definition.field);
+    if (operators.length === 0) {
+      continue;
+    }
     const byOperator: Record<string, FieldHandle<unknown>> = {};
-    for (const operator of operatorsFor(definition.kind)) {
-      const record = buildFieldRecord(definition, operator);
+    for (const operator of operators) {
+      const record = buildFieldRecord(definition.field, operator);
       fieldRecords.push(record);
       byOperator[operator] = record.handle;
     }
@@ -288,7 +279,7 @@ export default function createDataViewsProvider<
         applied.get(predicateAddress(record.field, record.operator)) ?? null;
       record.interaction.setApplied(predicate);
       record.state.set(record.interaction.state);
-      record.applied.set(appliedValueOf(record.definition, predicate));
+      record.applied.set(deriveAppliedValue(record.operator, predicate));
     }
   };
 

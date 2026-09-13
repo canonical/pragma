@@ -7,6 +7,7 @@ const schema = createSchema([
   { field: "memory", kind: "number" },
   { field: "owner", kind: "flag" },
   { field: "updated", kind: "date" },
+  { field: "name", kind: "text" },
 ]);
 
 describe("createSchema", () => {
@@ -150,12 +151,35 @@ describe("createSchema", () => {
       "memory",
       "owner",
       "updated",
+      "name",
     ]);
     expect(schema.hasField("cpu")).toBe(true);
     expect(schema.hasField("zone")).toBe(false);
     expect(() =>
       (schema.fieldNames as unknown as { push: () => void }).push(),
     ).toThrow();
+  });
+
+  it("names the operators each kind accepts, and none for an unknown field", () => {
+    expect(schema.listOperators("status")).toEqual(["eq"]);
+    expect(schema.listOperators("cpu")).toEqual(["gte", "lte"]);
+    expect(schema.listOperators("updated")).toEqual(["gte", "lte"]);
+    expect(schema.listOperators("owner")).toEqual(["isSet"]);
+    // Text is ordered: the grammar has no substring operator,
+    // so nothing filters it.
+    expect(schema.listOperators("name")).toEqual([]);
+    expect(schema.listOperators("zone")).toEqual([]);
+  });
+
+  it("refuses every predicate over a text field", () => {
+    expect(schema.predicateFor("name", "eq", ["alder"])).toEqual({
+      status: "invalid",
+      reason: 'text field "name" does not accept the eq operator',
+    });
+    expect(schema.validateInput("name", "alder")).toEqual({
+      status: "invalid",
+      reason: "text fields are ordered, not filtered",
+    });
   });
 
   it("validates a choices input against the option set", () => {

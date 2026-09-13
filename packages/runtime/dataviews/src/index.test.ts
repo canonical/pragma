@@ -35,6 +35,7 @@ describe("public surface", () => {
       "displayEntries",
       "encodeQuery",
       "executeSlice",
+      "isCalendarDate",
       "isIdentity",
       "resolveColumns",
       "sizingEquals",
