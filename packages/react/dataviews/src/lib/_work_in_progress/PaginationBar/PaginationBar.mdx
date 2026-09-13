@@ -9,7 +9,7 @@ import * as Stories from "./PaginationBar.stories";
 
 It takes its provider explicitly, as `DataTable` does. A table used on its own gets the same footer as one composed inside a `DataViews` root, and the bar never behaves differently because some context happened to be present. Inside a root, `DataViews.Pagination` renders this same bar for the root's provider.
 
-The page size and page selects are the design system's `SelectInput`, and the buttons its `Button`. The select's chrome comes from the `@canonical/react-ds-global-form` stylesheet, so load it on the page beside `@canonical/styles`:
+The page size and page selects are the design system's `SelectInput`, and the page controls are drawn as its `Button` — a real link where the page can be reached, a disabled button where it cannot. The select's chrome comes from the `@canonical/react-ds-global-form` stylesheet, so load it on the page beside `@canonical/styles`:
 
 ```css
 @import url("@canonical/styles");
@@ -72,7 +72,7 @@ export function Machines() {
 
 ## Counts it can stand behind
 
-Every count describes the rows on screen, and every button goes somewhere the collection can reach. A source that counts the rows the window pages over exactly — `counts.pageable` declared `"exact"` — gets a page total and a last page. One that counts them loosely or not at all gets neither: the summary counts the rows on screen, Last is unavailable, and Next is taken from the page's own word that more exists, or, failing that, offered while the page is full, the only evidence left that there may be another.
+Every count describes the rows on screen, and every page control goes somewhere the collection can reach. A source that counts the rows the window pages over exactly — `counts.pageable` declared `"exact"` — gets a page total and a last page. One that counts them loosely or not at all gets neither: the summary counts the rows on screen, Last is unavailable, and Next is taken from the page's own word that more exists, or, failing that, offered while the page is full, the only evidence left that there may be another.
 
 A source that reaches its pages only through tokens — `pagination.kind` declared `"cursor"` — is paged by those tokens: Next carries the one the current page handed back, Previous the one before it. Such a source may still count its rows exactly, and the summary says so, but no page total is shown and Last stays unavailable, because a page number addresses nothing there.
 
@@ -82,7 +82,11 @@ While the rows on screen do not answer the current query — nothing has arrived
 
 <Canvas of={Stories.Loading} sourceState="none" />
 
-The summary is a polite status. It names the rows on screen — "Showing 6–10 out of 12 items", or "Showing item 11 out of 12" for one — and speaks when settled results change what it says, so moving to another page or narrowing the collection is announced, and a background refresh with the same answer is not. When a navigation button that has the focus becomes unavailable — Next while its page loads, Last on arriving at the last page — the focus moves to the page select rather than to the document.
+The summary is a polite status. It names the rows on screen — "Showing 6–10 out of 12 items", or "Showing item 11 out of 12" for one — and speaks when settled results change what it says, so moving to another page or narrowing the collection is announced, and a background refresh with the same answer is not. When a page control that has the focus becomes unavailable — Next while its page loads, Last on arriving at the last page — the focus moves to the page select rather than to the document.
+
+## Before any script runs
+
+With a location, every page the bar can reach is a link the provider's encoder spelled, carrying the whole query and the location's other parameters, so paging works before any script runs and a page opens in a new tab like any other link. Pass your router's `Link` as `LinkComponent` and the links render through it, against the design system's shared link contract; the router navigates, and the provider hears the move through its location port. The page size and the page select each sit in a GET form beside hidden controls carrying the rest of the query, with a submit control that is hidden once scripting is enabled. Once it is, a plain click or a submission moves the window in place through the provider instead of navigating; a modified click is left to the browser. Without a location there is no destination a link could lead to, and the page controls are buttons only the enhancement drives, hidden until it runs.
 
 ## Sticky at the bottom
 

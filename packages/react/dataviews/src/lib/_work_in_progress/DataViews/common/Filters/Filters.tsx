@@ -1,18 +1,37 @@
 import type {
+  DataViewsState,
   FieldKind,
   FilterHandles,
   PredicateOperand,
   PredicateOperator,
+  Query,
   SchemaFieldDefinition,
   SourceCapabilities,
 } from "@canonical/dataviews-core";
+import { Button } from "@canonical/react-ds-global";
 import { Fragment, type ReactElement } from "react";
+import { interceptSubmit } from "../../../../utils/index.js";
 import { useDataViewsRoot } from "../../hooks/index.js";
+import { HiddenQueryFields } from "../HiddenQueryFields/index.js";
 import { findFilterHandle } from "../utils/index.js";
 import { BoundFilter, ChoicesFilter, FlagFilter } from "./common/index.js";
 import type { DataViewsFiltersProps } from "./types.js";
+import "./styles.css";
 
 const componentCssClassName = "ds data-views-filters";
+
+/** The controls submit every filter themselves; nothing else is theirs. */
+const NO_OWN_KEYS: readonly string[] = [];
+
+/**
+ * The destination a submission reaches: the applied query less every
+ * filter, which the controls submit themselves, from the first page, as a
+ * filter command would leave it.
+ */
+const destinationOf = ({ slice, window }: DataViewsState<object>): Query => ({
+  slice: { ...slice, filter: [] },
+  window: { ...window, page: 1, cursor: null },
+});
 
 /** What every control is built against: the root's records and what its source declares. */
 type FilterContext = {
@@ -47,7 +66,7 @@ const renderBounds = (
         )}
         label={name}
         bound={bound}
-        kind={definition.kind}
+        definition={definition}
         declared={declares(context, definition.field, bound)}
       />
     ))}
@@ -76,6 +95,7 @@ const controls: {
         "eq",
       )}
       label={name}
+      field={definition.field}
       declared={declares(context, definition.field, "eq")}
     />
   ),
@@ -88,6 +108,7 @@ const controls: {
         "isSet",
       )}
       label={name}
+      field={definition.field}
       declared={declares(context, definition.field, "isSet")}
     />
   ),
@@ -123,6 +144,13 @@ const renderControl = (
  * is already in force and says so beside the control, and two roots over
  * one provider never share a half-typed input.
  *
+ * At baseline the controls are a GET form: each is named as the wire
+ * grammar spells its clause, a number bound is a native number input with
+ * the schema's bounds, hidden controls carry the rest of the query, and the
+ * submit control leads to the destination the provider would have written.
+ * Once scripting is enabled every edit applies as it is made, the clear
+ * controls appear, and a submission is intercepted.
+ *
  * `import { DataViews } from "@canonical/dataviews-react";`
  *
  * @experimental Pre-release: the whole surface is still settling, and this
@@ -140,18 +168,30 @@ export default function Filters({
     capabilities: provider.capabilities,
   };
   return (
-    <fieldset
+    <form
       {...rest}
+      method="get"
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      onSubmit={interceptSubmit}
     >
-      <legend className="legend">{label}</legend>
-      {provider.collection.schema.fields.map((definition) =>
-        renderControl(
-          context,
-          definition,
-          labels?.[definition.field] ?? definition.field,
-        ),
-      )}
-    </fieldset>
+      <fieldset className="group">
+        <legend className="legend">{label}</legend>
+        {provider.collection.schema.fields.map((definition) =>
+          renderControl(
+            context,
+            definition,
+            labels?.[definition.field] ?? definition.field,
+          ),
+        )}
+      </fieldset>
+      <HiddenQueryFields
+        provider={provider}
+        destinationOf={destinationOf}
+        omit={NO_OWN_KEYS}
+      />
+      <Button type="submit" importance="secondary" className="submit">
+        Apply filters
+      </Button>
+    </form>
   );
 }

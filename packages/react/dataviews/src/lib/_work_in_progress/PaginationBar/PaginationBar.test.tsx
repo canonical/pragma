@@ -7,13 +7,15 @@
  */
 import {
   type Count,
+  createMemoryLocation,
   type DataViewsProvider,
   DEFAULT_WINDOW,
   declareCapabilities,
 } from "@canonical/dataviews-core";
 import { readProviderHost } from "@canonical/dataviews-core/bindings";
+import type { LinkComponentProps } from "@canonical/react-ds-global";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { StrictMode } from "react";
+import { type ReactElement, StrictMode } from "react";
 import { describe, expect, it } from "vitest";
 import {
   machines as collection,
@@ -136,10 +138,13 @@ describe("PaginationBar", () => {
     mount(makeProvider().provider, { label: "Machines pagination" });
     const nav = screen.getByRole("navigation", { name: "Machines pagination" });
     // Page size first, then the summary; the page select, then the buttons.
+    // The submit controls are the baseline's, beside the select they submit.
     expect([...nav.querySelectorAll("select, [role=status], button")]).toEqual([
       sizeSelect(),
+      button("Apply page size"),
       summary(),
       pageSelect(),
+      button("Go to page"),
       first(),
       previous(),
       next(),
@@ -337,10 +342,10 @@ describe("PaginationBar", () => {
     load(source, machines(2), 6);
     // Back or forward adopts the query under a new request identity.
     act(() => {
-      readProviderHost(provider).adopt({
-        slice: provider.state.get().slice,
-        window: at(2, 2),
-      });
+      readProviderHost(provider).adopt(
+        { slice: provider.state.get().slice, window: at(2, 2) },
+        "adopt",
+      );
     });
     expect(values(pageSelect())).toEqual(["1", "2", "3"]);
   });
@@ -523,6 +528,205 @@ describe("PaginationBar", () => {
     });
     // And the source is asked for the page the token names.
     expect(source.latest().request.window.cursor).toBe("c:m1");
+  });
+
+  it("hides the controls only the enhancement can drive until scripting is enabled", () => {
+    // Without a location there is no destination a link could lead to, so
+    // the page controls are buttons the enhancement alone drives, marked
+    // for the stylesheet to hold back until it runs.
+    mount(makeProvider().provider);
+    for (const control of [first(), previous(), next(), last()]) {
+      expect(control).toHaveClass("scripted");
+    }
+    expect(screen.queryByRole("link")).toBeNull();
+  });
+
+  it("offers every reachable page as a real link the encoder spelled", () => {
+    const location = createMemoryLocation({
+      href: "/machines?tab=overview&status=failed&page=2&size=2",
+    });
+    const { provider, source } = createMachineProvider({ location });
+    mount(provider);
+    load(source, machines(2), 6);
+    const hrefOf = (name: string) =>
+      screen.getByRole("link", { name }).getAttribute("href");
+    // Each carries the whole query and the host's own parameter; only the
+    // window moves.
+    expect(hrefOf("First page")).toBe(
+      "?tab=overview&status=failed&page=1&size=2",
+    );
+    expect(hrefOf("Previous page")).toBe(
+      "?tab=overview&status=failed&page=1&size=2",
+    );
+    expect(hrefOf("Next page")).toBe(
+      "?tab=overview&status=failed&page=3&size=2",
+    );
+    expect(hrefOf("Last page")).toBe(
+      "?tab=overview&status=failed&page=3&size=2",
+    );
+    // A link is a link: nothing is marked for the enhancement alone.
+    expect(screen.getByRole("link", { name: "Next page" })).not.toHaveClass(
+      "scripted",
+    );
+    expect(screen.queryByRole("button", { name: "Next page" })).toBeNull();
+  });
+
+  it("follows the location's other parameters into its destinations", () => {
+    const location = createMemoryLocation({
+      href: "/machines?tab=overview&page=1&size=2",
+    });
+    const { provider, source } = createMachineProvider({ location });
+    mount(provider);
+    load(source, machines(2), 6);
+    const hrefOf = (name: string) =>
+      screen.getByRole("link", { name }).getAttribute("href");
+    expect(hrefOf("Next page")).toBe("?tab=overview&page=2&size=2");
+    // The host moves its own parameter; the query stands, so no state is
+    // published — the bar redraws on the location itself.
+    act(() => {
+      location.write(new URLSearchParams("tab=details&page=1&size=2"));
+    });
+    expect(hrefOf("Next page")).toBe("?tab=details&page=2&size=2");
+  });
+
+  it("intercepts a plain click on a link and pages in place, leaving other clicks to the browser", () => {
+    const location = createMemoryLocation({ href: "/machines?page=1&size=2" });
+    const { provider, source } = createMachineProvider({ location });
+    mount(provider);
+    load(source, machines(2), 6);
+    const link = screen.getByRole("link", { name: "Next page" });
+    // A modified click, or another button, asks the browser for something
+    // else — a new tab, a saved link: not intercepted.
+    for (const other of [
+      { metaKey: true },
+      { ctrlKey: true },
+      { shiftKey: true },
+      { altKey: true },
+      { button: 1 },
+    ]) {
+      expect(fireEvent.click(link, other)).toBe(true);
+      expect(windowOf(provider).page).toBe(1);
+    }
+    // A plain click is the enhancement's: the window moves, the location
+    // follows with a history entry, and the browser does not navigate.
+    expect(fireEvent.click(link)).toBe(false);
+    expect(windowOf(provider).page).toBe(2);
+    expect(location.read().get("page")).toBe("2");
+  });
+
+  it("renders its links through the consumer's router link, which navigates itself", () => {
+    // The shared link contract: href, className and children reach the
+    // router's Link, which does the navigating; the provider then hears the
+    // move through its location port, so nothing is intercepted here.
+    const seen: string[] = [];
+    const RouterLink = ({
+      href,
+      className,
+      children,
+    }: LinkComponentProps): ReactElement => (
+      <a
+        href={href}
+        className={className}
+        data-router-link=""
+        onClick={(event) => {
+          event.preventDefault();
+          seen.push(href ?? "");
+        }}
+      >
+        {children}
+      </a>
+    );
+    const location = createMemoryLocation({ href: "/machines?page=1&size=2" });
+    const { provider, source } = createMachineProvider({ location });
+    mount(provider, { LinkComponent: RouterLink });
+    load(source, machines(2), 6);
+    const next = screen.getByRole("link", { name: "Next page" });
+    expect(next).toHaveAttribute("data-router-link");
+    expect(next).toHaveAttribute("href", "?page=2&size=2");
+    expect(next).toHaveClass("ds", "button", "tertiary", "next");
+    fireEvent.click(next);
+    // The router's link saw the click; the bar moved nothing itself.
+    expect(seen).toEqual(["?page=2&size=2"]);
+    expect(windowOf(provider).page).toBe(1);
+  });
+
+  it("disables the control to a page it cannot reach, named for where it would go", () => {
+    const location = createMemoryLocation({ href: "/machines?page=1&size=2" });
+    const { provider, source } = createMachineProvider({ location });
+    mount(provider);
+    load(source, machines(2), 6);
+    // From the first page there is no earlier one: a disabled button, not a
+    // link to nowhere — and not one the enhancement alone drives, since a
+    // destination exists.
+    expect(first()).toBeDisabled();
+    expect(first()).not.toHaveClass("scripted");
+    expect(previous()).toBeDisabled();
+    expect(screen.queryByRole("link", { name: "First page" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Next page" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Last page" })).toBeInTheDocument();
+  });
+
+  it("moves focus to the page select when the focused link becomes unreachable", () => {
+    const location = createMemoryLocation({ href: "/machines?page=2&size=2" });
+    const { provider, source } = createMachineProvider({ location });
+    mount(provider);
+    load(source, machines(2), 6);
+    const link = screen.getByRole("link", { name: "Previous page" });
+    link.focus();
+    expect(link).toHaveFocus();
+    // The link was the way back to page one; there the way disappears, and
+    // the disabled button that replaces it cannot hold focus.
+    fireEvent.click(link);
+    load(source, machines(2), 6);
+    expect(previous()).toBeDisabled();
+    expect(pageSelect()).toHaveFocus();
+  });
+
+  it("puts the page size and the page in GET forms carrying the rest of the query", () => {
+    const location = createMemoryLocation({
+      href: "/machines?tab=overview&status=failed&page=2&size=2",
+    });
+    const { provider, source } = createMachineProvider({ location });
+    const { container } = mount(provider);
+    load(source, machines(2), 6);
+    const forms = container.querySelectorAll("form");
+    expect(forms).toHaveLength(2);
+    for (const form of forms) {
+      expect(form).toHaveAttribute("method", "get");
+    }
+    const hiddenOf = (form: Element) =>
+      [...form.querySelectorAll<HTMLInputElement>("input[type=hidden]")].map(
+        (input) => [input.name, input.value],
+      );
+    // The size form supplies the size and leaves the page to its default:
+    // a new size is a new window.
+    const [sizeForm, pageForm] = forms;
+    if (sizeForm === undefined || pageForm === undefined) {
+      throw new Error("expected two forms");
+    }
+    expect(sizeSelect()).toHaveAttribute("name", "size");
+    expect(sizeForm.contains(sizeSelect())).toBe(true);
+    expect(hiddenOf(sizeForm)).toEqual([
+      ["tab", "overview"],
+      ["status", "failed"],
+    ]);
+    // The page form supplies the page and keeps the size.
+    expect(pageSelect()).toHaveAttribute("name", "page");
+    expect(pageForm.contains(pageSelect())).toBe(true);
+    expect(hiddenOf(pageForm)).toEqual([
+      ["tab", "overview"],
+      ["status", "failed"],
+      ["size", "2"],
+    ]);
+    // A submission the enhancement sees has nothing left to apply.
+    expect(fireEvent.submit(pageForm)).toBe(false);
+    expect(fireEvent.submit(sizeForm)).toBe(false);
+    for (const name of ["Apply page size", "Go to page"]) {
+      expect(screen.getByRole("button", { name })).toHaveAttribute(
+        "type",
+        "submit",
+      );
+    }
   });
 
   it("passes native nav props through and merges the class name", () => {

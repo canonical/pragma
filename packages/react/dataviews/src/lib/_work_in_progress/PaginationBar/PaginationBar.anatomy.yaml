@@ -13,13 +13,14 @@
 #                                         DOM `ds data-table-pagination-bar`
 #   leading group   design "Frame 1062"   DOM `.leading`
 #   page size       design "Items per page:" + "Pagination dropdown"
-#                                         DOM `.page-size`
+#                                         DOM `.page-size`, a GET form
 #   divider         design "Rectangle 1"  DOM `.divider`
 #   result summary  design "Table pagination item indicator"
 #                                         DOM `.summary`
 #   trailing group  design "Frame 1067"   DOM `.trailing`
 #   page control    design "Pagination dropdown" + "Total page amount wrapper"
-#                                         DOM `.page`
+#                                         DOM `.page`, a GET form
+#   submit          —                     DOM `.submit`, one per form
 #   page total      design "of 2 pages"   DOM `.total`
 #   navigation      design "Frame 1066"   DOM `.navigation`
 #   first           design "Pagination button"   DOM `.first`
@@ -46,8 +47,13 @@
 # form layer's own, drawn in `color/icon`. The chrome comes from the
 # `@canonical/react-ds-global-form` stylesheet, which the page loads.
 #
-# The four buttons are the design system's Button, tertiary: a ghost fill
-# with no border, its hover, active and focus states the Button's own. An
+# The four page controls are drawn as the design system's Button, tertiary: a
+# ghost fill with no border, its hover, active and focus states the Button's
+# own. A control to a page the collection can reach is a real link, because
+# the baseline pages by navigating; the Button has no link rendering, so the
+# link carries the Button's classes and icon slot by hand (a link variant of
+# the Button is asked of the design system, and the borrowing is recorded on
+# the control). A control to an unreachable page is the Button, disabled. An
 # icon-only Button collapses to its icon, because the Button seats its height
 # on a label, so the bar holds each to a square of the density line
 # (`density/line-height-effective`) with its icon centred in it: the one
@@ -55,6 +61,22 @@
 # inline padding is set to `dimension/100` through the Button's own padding
 # channel. A disabled tertiary Button draws a border its enabled state hides;
 # the design draws no disabled state, and the Button's own is kept.
+#
+# The links take the design system's shared link contract: `LinkComponent`
+# renders each through the consumer's router link, which navigates itself,
+# and the provider hears the move through its location port; the intrinsic
+# anchor, the default, has its plain click intercepted instead. The link is
+# named by its icon, since the contract carries no name of its own.
+#
+# Transport, which the DSL does not draw: the page size and the page control
+# are each a GET form, the select named as the wire spells its parameter
+# (`size`, `page`) beside hidden controls carrying the rest of the applied
+# query and the location's other parameters, so a submission is the
+# destination the provider would have written; each form's submit control is
+# the baseline's, hidden once scripting is enabled. Every link is spelled by
+# the same encoder. Without a location there is no destination a link could
+# lead to, and the page controls are buttons only the enhancement drives,
+# marked `.scripted` and hidden until it runs.
 #
 # Icons: `chevron-left` and `chevron-right` as drawn. The design's
 # `skip-to-start` and `skip-to-end` are not in `@canonical/ds-assets`; until
@@ -89,13 +111,16 @@
 #     level below the documented keys, valid under the open key pattern.
 #   - The groups wrap onto two lines when the bar is too narrow for both;
 #     the DSL has no wrapping key.
+#   - Conditional display is deferred in the DSL. The submit controls show
+#     only while scripting is not enabled, and the `.scripted` page controls
+#     only once it is.
 #
 # States:
 #   - first and previous are disabled on the first page; next is disabled
 #     when no later page is known to exist; last is disabled on the last page
 #     and whenever there is no total for the current query — before results,
-#     while a replacement loads, or from a source that publishes none. Each is
-#     the Button's `@disabled`.
+#     while a replacement loads, or from a source that publishes none. A
+#     reachable page is a link; an unreachable one is the Button's `@disabled`.
 #   - The page select lists every page the last settled total makes, keeping
 #     that list while a page move loads (a new query, page size or scope
 #     drops it), and lists a window past the last page after the pages there
@@ -111,8 +136,13 @@
 #                       4.1.2). The bar is a named `nav`; the page size select
 #                       is labelled by its visible text, the page select is
 #                       named "Page" and described by its total, and each
-#                       button is named for its destination ("First page",
-#                       "Previous page", "Next page", "Last page").
+#                       page control is named for its destination ("First
+#                       page", "Previous page", "Next page", "Last page"),
+#                       a link where it can be reached and a disabled button
+#                       where it cannot. A focused control that becomes
+#                       unavailable hands the focus to the page select.
+#   submit              Named for what it applies ("Apply page size", "Go to
+#                       page"); reachable until scripting is enabled.
 #   result summary      "Summary" (1.3.1, 4.1.3). A polite status: it changes
 #                       only when settled results change what it says, so a
 #                       background refresh with the same answer is silent.

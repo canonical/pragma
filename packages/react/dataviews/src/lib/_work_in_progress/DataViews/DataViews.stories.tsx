@@ -95,6 +95,7 @@ function Collection({
   return (
     <Component provider={provider}>
       {provider.views === null ? null : <Component.Views />}
+      <Component.Search label="Search machines" />
       <Component.Filters labels={{ status: "Status", cores: "Cores" }} />
       <QueryIssues />
       {children}
@@ -150,6 +151,7 @@ ${queryIssuesCode}`,
     window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
     render: `<DataViews provider={provider}>
   <DataViews.Views />
+  <DataViews.Search label="Search machines" />
   <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
   <QueryIssues />
   <DataViews.DataTable
@@ -209,9 +211,10 @@ function QueryInTheLocation({
 /**
  * The query in the URL: the location arrived carrying `status=failed`, so
  * the provider adopted it, and running machines were then added in the
- * filters, which wrote the query back to the location. A link carrying a
- * clause the source refuses stays in the URL with its reasons on the
- * provider's `issues`.
+ * filters, which wrote the query back to the location as a history entry —
+ * a filter is a step Back returns from, while typing in the search replaces
+ * the entry. A link carrying a clause the source refuses stays in the URL
+ * with its reasons on the provider's `issues`.
  */
 export const QueryInTheUrl: Story = {
   parameters: consumerCode({
@@ -232,6 +235,7 @@ ${queryIssuesCode}`,
     // every edit back.
     location: "createPlatformLocation(platform)",
     render: `<DataViews provider={provider}>
+  <DataViews.Search label="Search machines" />
   <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
   <QueryIssues />
   <DataViews.DataTable

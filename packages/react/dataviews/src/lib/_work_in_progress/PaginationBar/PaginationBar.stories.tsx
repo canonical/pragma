@@ -1,7 +1,10 @@
-import { DEFAULT_WINDOW } from "@canonical/dataviews-core";
+import {
+  createMemoryLocation,
+  DEFAULT_WINDOW,
+} from "@canonical/dataviews-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { ReactElement } from "react";
-import { expect, waitFor } from "storybook/test";
+import { type ReactElement, useState } from "react";
+import { expect, userEvent, waitFor } from "storybook/test";
 import {
   withAppScope,
   withScrollingFrame,
@@ -166,6 +169,60 @@ export const LastPage: Story = {
       ),
     );
     await expectAvailable(canvas, [true, true, false, false]);
+  },
+};
+
+/**
+ * Real destinations: with the query in the URL, every page the bar can reach
+ * is a link the provider's encoder spelled, so paging works before any
+ * script runs and a page opens in a new tab like any other link. Once
+ * scripting is enabled a plain click pages in place instead of navigating.
+ * The page size and the page select sit in GET forms whose submit controls
+ * are hidden once scripting is enabled. A memory location stands in for the
+ * browser's here, so the story never rewrites this page's own address.
+ */
+export const RealDestinations: Story = {
+  parameters: consumerCode({
+    parts: ["DataTable", "PaginationBar", "type DataTableColumn"],
+    core: ["createPlatformLocation"],
+    imports: `import { machineCollection, machines } from "./machines.js";
+import { platform } from "./router.js";`,
+    declarations: columnsCode,
+    location: "createPlatformLocation(platform)",
+    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
+    render: pageCode,
+  }),
+  render: function Render(args) {
+    const [location] = useState(() =>
+      createMemoryLocation({ href: "/machines" }),
+    );
+    return <MachinesPage {...args} options={{ location }} />;
+  },
+  play: async ({ canvas }) => {
+    await waitFor(() =>
+      expect(canvas.getByRole("status")).toHaveTextContent(
+        "Showing 1–5 out of 12 items",
+      ),
+    );
+    const next = canvas.getByRole("link", { name: "Next page" });
+    await expect(next).toHaveAttribute("href", "?page=2&size=5");
+    await expect(
+      canvas.getByRole("link", { name: "Last page" }),
+    ).toHaveAttribute("href", "?page=3&size=5");
+    // Scripting is enabled here: the forms' submit controls are hidden.
+    await expect(
+      canvas.getByRole("button", { name: "Go to page", hidden: true }),
+    ).not.toBeVisible();
+    // A plain click pages in place.
+    await userEvent.click(next);
+    await waitFor(() =>
+      expect(canvas.getByRole("status")).toHaveTextContent(
+        "Showing 6–10 out of 12 items",
+      ),
+    );
+    await expect(
+      canvas.getByRole("link", { name: "Previous page" }),
+    ).toHaveAttribute("href", "?page=1&size=5");
   },
 };
 

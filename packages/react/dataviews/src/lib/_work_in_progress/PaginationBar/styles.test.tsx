@@ -120,9 +120,22 @@ describe("PaginationBar stylesheet", () => {
       `${bar} > .trailing > .navigation > .ds.button`,
       `${bar} > .trailing > .navigation > .first .ds.icon`,
       `${bar} > .trailing > .navigation > .last .ds.icon`,
+      `${bar} > .leading > .page-size > .submit`,
+      `${bar} > .trailing > .page > .submit`,
+      `${bar} > .trailing > .navigation > .scripted`,
     ]) {
       expect(container.querySelector(selector), selector).not.toBeNull();
     }
+  });
+
+  it("hides the baseline's submit controls under scripting, and the scripted controls until then", () => {
+    // The submit controls are the GET forms' way to page before any script
+    // runs; the page controls with no destination are the enhancement's.
+    expect(rule(`${navigation} > .scripted`)).toMatch(/display: none;/);
+    expect(sheet).toMatch(
+      /@media \(scripting: enabled\) \{ & > \.leading > \.page-size > \.submit, & > \.trailing > \.page > \.submit \{ display: none; \} & > \.trailing > \.navigation > \.scripted \{ display: inline-flex; \}/,
+    );
+    expect(sheet.match(/\.submit/g)).toHaveLength(2);
   });
 
   it("writes no length or colour of its own", () => {
@@ -217,7 +230,7 @@ describe("PaginationBar anatomy", () => {
     ).toEqual([]);
   });
 
-  it("names its four buttons as the DOM classes them", () => {
+  it("names its four page controls as the DOM classes them", () => {
     loaded();
     for (const [name, destination] of [
       ["first", "First page"],

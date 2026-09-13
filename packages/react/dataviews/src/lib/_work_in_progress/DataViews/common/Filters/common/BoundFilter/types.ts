@@ -18,8 +18,11 @@ export type BoundFilterProps = {
   readonly label: string;
   /** Which bound this control edits. */
   readonly bound: Extract<PredicateOperator, "gte" | "lte">;
-  /** The field's kind, which decides the control. */
-  readonly kind: Extract<SchemaFieldDefinition["kind"], "number" | "date">;
+  /** The field's definition: its kind decides the control, its bounds the input's. */
+  readonly definition: Extract<
+    SchemaFieldDefinition,
+    { readonly kind: "number" | "date" }
+  >;
   /**
    * Whether the source declares this bound. An undeclared one is offered
    * only while it stands, and only for removal.

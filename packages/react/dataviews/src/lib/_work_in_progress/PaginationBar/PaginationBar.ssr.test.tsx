@@ -1,4 +1,8 @@
-import { createPage, DEFAULT_WINDOW } from "@canonical/dataviews-core";
+import {
+  createMemoryLocation,
+  createPage,
+  DEFAULT_WINDOW,
+} from "@canonical/dataviews-core";
 import { readProviderHost } from "@canonical/dataviews-core/bindings";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -33,6 +37,35 @@ describe("PaginationBar SSR", () => {
     expect(renderToString(<PaginationBar provider={provider} />)).toBe(html);
     expect(source.calls).toHaveLength(0);
     expect(provider.state.get().pendingRequestId).toBe(null);
+  });
+
+  it("renders the baseline's links and forms from the seeded query and the location", () => {
+    const location = createMemoryLocation({
+      href: "/machines?tab=overview&page=2&size=2",
+    });
+    const { provider, source } = createMachineProvider({
+      location,
+      seed: { window: { ...DEFAULT_WINDOW, page: 2, size: 2 } },
+    });
+    const host = readProviderHost(provider);
+    host.complete(host.refresh(), {
+      status: "succeeded",
+      page: createPage({
+        rows: [machine("m3", "three"), machine("m4", "four")],
+        matched: 6,
+        total: 6,
+      }),
+    });
+    const html = renderToString(<PaginationBar provider={provider} />);
+    // Every reachable page is a link the encoder spelled, host parameter kept.
+    expect(html).toContain('href="?tab=overview&amp;page=1&amp;size=2"');
+    expect(html).toContain('href="?tab=overview&amp;page=3&amp;size=2"');
+    // The two GET forms, their selects named as the wire spells them.
+    expect(html.match(/<form [^>]*method="get"/g)).toHaveLength(2);
+    expect(html).toContain('name="size"');
+    expect(html).toContain('name="page"');
+    expect(html).toContain('type="hidden" name="tab" value="overview"');
+    expect(source.calls).toHaveLength(0);
   });
 
   it("renders results the provider already holds", () => {

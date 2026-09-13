@@ -1,8 +1,11 @@
 import type { FilterFeedback } from "@canonical/dataviews-core";
+import { spellWireKey } from "@canonical/dataviews-core/bindings";
+import { Button } from "@canonical/react-ds-global";
 import { type ReactElement, useId } from "react";
 import { composeSentence } from "../../../../../../utils/index.js";
 import { useFilterHandle } from "../../../../hooks/index.js";
 import type { BoundFilterProps } from "./types.js";
+import "./styles.css";
 
 const componentCssClassName = "ds data-views-filters-bound";
 
@@ -49,15 +52,18 @@ const feedbackTextOf = (
  * One bound of a number or date field.
  *
  * Emptying the input is incomplete, not a removal: the applied bound stays
- * until it is explicitly cleared, which is what the clear control is for.
- * A number is typed as text, so what the user typed is what is validated
- * and shown — a number input would hand over an empty value instead.
+ * until it is explicitly cleared, which is what the clear control is for. A
+ * number is a native number input carrying the schema's bounds, so the
+ * browser validates it before any script runs and the same bounds the
+ * schema enforces are the ones it announces; a date is a native date input.
+ * The control is named as the wire spells the clause, so a GET submission
+ * is the same destination the edit writes.
  */
 export default function BoundFilter({
   handle,
   label,
   bound,
-  kind,
+  definition,
   declared,
 }: BoundFilterProps): ReactElement | null {
   const field = useFilterHandle(handle);
@@ -69,6 +75,17 @@ export default function BoundFilter({
   const feedbackId = `${inputId}-feedback`;
   const message = feedbackTextOf(field.feedback, retained);
   const name = `${label} ${BOUND_WORDING[bound]}`;
+  // The schema's bounds, natively: an out-of-range value is refused by the
+  // browser at baseline and by the schema once scripted.
+  const native =
+    definition.kind === "number"
+      ? {
+          type: "number",
+          min: definition.min,
+          max: definition.max,
+          step: "any",
+        }
+      : { type: "date" };
   return (
     <div className={componentCssClassName}>
       <label htmlFor={inputId} className="label">
@@ -77,8 +94,8 @@ export default function BoundFilter({
       <input
         id={inputId}
         className="input"
-        type={kind === "number" ? "text" : "date"}
-        inputMode={kind === "number" ? "decimal" : undefined}
+        {...native}
+        name={spellWireKey(definition.field, bound)}
         value={field.input}
         // Undeclared, the bound can only be cleared, never replaced.
         readOnly={!declared}
@@ -88,19 +105,26 @@ export default function BoundFilter({
         }
         aria-describedby={message === null ? undefined : feedbackId}
         onChange={(event) => {
+          // A number input hands over nothing while its text is not yet a
+          // number — "-", "1e": nothing is edited until it is one, so the
+          // applied bound and its message stand.
+          if (event.target.validity.badInput) {
+            return;
+          }
           field.edit(event.target.value);
         }}
       />
       {retained ? (
-        <button
+        <Button
           type="button"
+          importance="tertiary"
           className="clear"
           onClick={() => {
             field.clear();
           }}
         >
           {`Clear ${name}`}
-        </button>
+        </Button>
       ) : null}
       {/* Mounted even when empty, so a message appearing is announced. */}
       <p id={feedbackId} className="feedback" role="status">

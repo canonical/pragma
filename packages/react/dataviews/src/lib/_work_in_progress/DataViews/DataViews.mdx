@@ -81,6 +81,7 @@ export function Machines() {
   return (
     <DataViews provider={provider}>
       <DataViews.Views />
+      <DataViews.Search label="Search machines" />
       <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
       <QueryIssues />
       <DataViews.DataTable
@@ -129,7 +130,42 @@ The filters and the table's sortable columns offer nothing the source did not de
 
 ## Keeping the query in the URL
 
-With a location, the URL is the query's other home. The provider owns the loop: every edit the filters make writes the canonical query to the location, and back, forward or a pasted URL is adopted — one authority, no mirroring effect and nothing to wire. A clause the grammar, the collection or the source refuses is left out of the adopted query and kept in the URL, with its reasons published on the provider's `issues`, for a child of the root to show beside the controls, as `QueryIssues` above does.
+With a location, the URL is the query's other home. The provider owns the loop: every edit the search and the filters make writes the canonical query to the location, and back, forward or a pasted URL is adopted — one authority, no mirroring effect and nothing to wire. A clause the grammar, the collection or the source refuses is left out of the adopted query and kept in the URL, with its reasons and codes published on the provider's `issues`, for a child of the root to show beside the controls, as `QueryIssues` above does.
+
+History follows the transition. A search replaces the entry, so typing never floods history; a filter, a sort, a page move and a saved view opened each push one, so Back returns from them one step at a time; adopting the URL writes nothing back, and a respelling of a URL that is already the query replaces. `history` on the provider config changes that — one mode for every transition, or overrides per transition:
+
+```ts
+createDataViewsProvider({
+  collection: machineCollection,
+  source,
+  location: createPlatformLocation(platform),
+  // Every filter keystroke is a step of its own here; make edits replace.
+  history: { filter: "replace" },
+});
+```
+
+## Before any script runs
+
+The search, the filters and the pagination bar are real HTML first. The search and the filters are GET forms whose controls are named as the URL spells their clauses — `q`, `status`, `cores__gte` — with a number bound a native number input carrying the schema's `min` and `max`; every page the bar can reach is a link the same encoder spelled; and the page size and the page select each sit in a GET form. Each form also carries the rest of the applied query hidden, so a submission lands on the destination the provider would have written. Once scripting is enabled the parts intercept a click or a submission and apply the same command in place, the baseline's submit controls are hidden with `@media (scripting: enabled)`, and controls only the enhancement can drive — the clear buttons, page controls with no location to lead to — appear.
+
+A server that renders the page seeds the provider with the query the request carries, through the same decoder the browser uses, and gives it a memory location over the request's URL, so the forms and links it renders are the ones the browser would have built:
+
+```ts
+import { createMemoryLocation, decodeQuery } from "@canonical/dataviews-core";
+
+const params = new URL(request.url).searchParams;
+const { slice, window } = decodeQuery({
+  schema: machineCollection.schema,
+  params,
+  capabilities: source.capabilities,
+});
+const provider = createDataViewsProvider({
+  collection: machineCollection,
+  source,
+  location: createMemoryLocation({ href: request.url }),
+  seed: { slice, window },
+});
+```
 
 `createPlatformLocation` comes from `@canonical/dataviews-core`. The platform is your router's platform surface — anything with `getLocation`, `navigate` and `subscribe`. `createMemoryLocation` is the same port in memory, for a secondary collection on the page or a test.
 

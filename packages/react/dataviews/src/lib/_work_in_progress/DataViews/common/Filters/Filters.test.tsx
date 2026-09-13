@@ -7,6 +7,7 @@
 import {
   createCollection,
   createDataViewsProvider,
+  createMemoryLocation,
   type DataViewsProvider,
   DEFAULT_WINDOW,
   declareCapabilities,
@@ -17,7 +18,7 @@ import {
 import { readProviderHost } from "@canonical/dataviews-core/bindings";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import createManualSource from "../../../../../../testing/createManualSource.js";
 import { COUNTED_EXACTLY } from "../../../../../../testing/fixtures.js";
 import DataViews from "../../Provider.js";
@@ -83,7 +84,7 @@ const adopt = (
     window: DEFAULT_WINDOW,
   };
   act(() => {
-    readProviderHost(provider).adopt(query);
+    readProviderHost(provider).adopt(query, "adopt");
   });
 };
 
@@ -102,21 +103,20 @@ describe("DataViews.Filters", () => {
     mount(makeProvider());
     // Three options and the flag; two bounds on each of two fields.
     expect(screen.getAllByRole("checkbox")).toHaveLength(4);
-    expect(screen.getAllByRole("textbox")).toHaveLength(2);
+    expect(screen.getAllByRole("spinbutton")).toHaveLength(2);
     expect(screen.queryByLabelText("owner from")).toBeNull();
     expect(screen.getByRole("group", { name: "Filters" })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "status" })).toBeInTheDocument();
     expect(
       screen.getByRole("checkbox", { name: "failed" }),
     ).toBeInTheDocument();
-    // A number is typed as text with a numeric keyboard, so what was typed
-    // is what is validated.
-    expect(screen.getByLabelText("cpu from")).toHaveAttribute("type", "text");
-    expect(screen.getByLabelText("cpu from")).toHaveAttribute(
-      "inputmode",
-      "decimal",
-    );
-    expect(screen.getByLabelText("cpu to")).toHaveAttribute("type", "text");
+    // A number is a native number input carrying the schema's bounds, so
+    // the browser validates it before any script runs.
+    expect(screen.getByLabelText("cpu from")).toHaveAttribute("type", "number");
+    expect(screen.getByLabelText("cpu from")).toHaveAttribute("min", "0");
+    expect(screen.getByLabelText("cpu from")).toHaveAttribute("max", "64");
+    expect(screen.getByLabelText("cpu from")).toHaveAttribute("step", "any");
+    expect(screen.getByLabelText("cpu to")).toHaveAttribute("type", "number");
     expect(screen.getByLabelText("cpu to")).not.toHaveAttribute("readonly");
     expect(screen.getByRole("checkbox", { name: "failed" })).toBeEnabled();
     expect(screen.getByLabelText("updated from")).toHaveAttribute(
@@ -283,14 +283,113 @@ describe("DataViews.Filters", () => {
     expect(provider.state.get().slice.filter).toEqual([]);
   });
 
-  it("shows the text typed, and reads text that is not a number as invalid", () => {
+  it("shows the value typed, and reads one outside the schema's bounds as invalid natively and by the schema", () => {
     const provider = makeProvider();
     mount(provider);
-    const input = screen.getByLabelText("cpu from");
-    fireEvent.change(input, { target: { value: "-" } });
-    expect(input).toHaveValue("-");
+    const input = screen.getByLabelText<HTMLInputElement>("cpu from");
+    fireEvent.change(input, { target: { value: "99" } });
+    expect(input).toHaveValue(99);
     expect(input).toHaveAttribute("aria-invalid", "true");
-    expect(screen.getByText("Not a number.")).toBeInTheDocument();
+    expect(screen.getByText("99 is above the maximum of 64.")).toBeVisible();
+    // The same bound, natively: the browser refuses it before any script.
+    expect(input.validity.rangeOverflow).toBe(true);
+    expect(input.checkValidity()).toBe(false);
+  });
+
+  it("edits nothing while a number input's text is not yet a number", () => {
+    // "-" or "1e" on the way to a value: the browser hands over an empty
+    // value. Nothing is edited, so the applied bound and its message stand
+    // until the text is a number.
+    const provider = makeProvider();
+    mount(provider);
+    const input = screen.getByLabelText<HTMLInputElement>("cpu from");
+    fireEvent.change(input, { target: { value: "4" } });
+    // jsdom never reports bad input; the browser's state is stood in for.
+    const validity = vi.spyOn(input, "validity", "get");
+    validity.mockReturnValue({ ...input.validity, badInput: true });
+    fireEvent.change(input, { target: { value: "" } });
+    expect(provider.state.get().slice.filter).toEqual([
+      { field: "cpu", operator: "gte", operands: [4] },
+    ]);
+    expect(input).not.toHaveAttribute("aria-invalid", "true");
+    expect(input).not.toHaveAttribute("aria-describedby");
+    validity.mockRestore();
+    // Emptied for real, the edit is incomplete and says so.
+    fireEvent.change(input, { target: { value: "" } });
+    expect(input).toHaveAttribute("aria-describedby");
+  });
+
+  it("is a GET form whose controls are named as the wire spells their clauses", () => {
+    const location = createMemoryLocation({
+      href: "/machines?tab=overview&q=yak&sort=updated__desc&page=3&size=10",
+    });
+    // A source that also searches and orders, so the location's clauses
+    // are the query's rather than refused.
+    const provider = createDataViewsProvider({
+      collection,
+      source: createManualSource<Row>({
+        capabilities: declareCapabilities(collection, {
+          filter: { status: true, cpu: true, updated: true, owner: true },
+          search: ["name"],
+          sort: { fields: ["updated"], terms: 1 },
+          counts: COUNTED_EXACTLY,
+        }),
+      }).source,
+      location,
+    });
+    const { container } = mount(provider);
+    const form = container.querySelector("form");
+    expect(form).toHaveAttribute("method", "get");
+    expect(form).toHaveClass("ds", "data-views-filters");
+    expect(screen.getByRole("checkbox", { name: "failed" })).toHaveAttribute(
+      "name",
+      "status",
+    );
+    expect(screen.getByRole("checkbox", { name: "failed" })).toHaveAttribute(
+      "value",
+      "failed",
+    );
+    expect(screen.getByRole("checkbox", { name: "owner" })).toHaveAttribute(
+      "name",
+      "owner__isSet",
+    );
+    expect(screen.getByRole("checkbox", { name: "owner" })).toHaveAttribute(
+      "value",
+      "1",
+    );
+    expect(screen.getByLabelText("cpu from")).toHaveAttribute(
+      "name",
+      "cpu__gte",
+    );
+    expect(screen.getByLabelText("updated to")).toHaveAttribute(
+      "name",
+      "updated__lte",
+    );
+    // The rest of the query rides hidden — the host's own parameter, the
+    // search, the ordering, the size — from the first page; every filter is
+    // a visible control's.
+    const hidden = [
+      ...container.querySelectorAll<HTMLInputElement>("input[type=hidden]"),
+    ].map((input) => [input.name, input.value]);
+    expect(hidden).toEqual([
+      ["tab", "overview"],
+      ["q", "yak"],
+      ["sort", "updated__desc"],
+      ["page", "1"],
+      ["size", "10"],
+    ]);
+    expect(
+      screen.getByRole("button", { name: "Apply filters" }),
+    ).toHaveAttribute("type", "submit");
+  });
+
+  it("intercepts a submission, which has nothing left to apply", () => {
+    const { container } = mount(makeProvider());
+    const form = container.querySelector("form");
+    if (form === null) {
+      throw new Error("expected the form");
+    }
+    expect(fireEvent.submit(form)).toBe(false);
   });
 
   it("points at no description while there is nothing to say", () => {
@@ -330,7 +429,7 @@ describe("DataViews.Filters", () => {
   it("asks for a value when an empty bound applies nothing", () => {
     mount(makeProvider());
     const input = screen.getByLabelText("cpu from");
-    fireEvent.change(input, { target: { value: "lots" } });
+    fireEvent.change(input, { target: { value: "99" } });
     fireEvent.change(input, { target: { value: "" } });
     expect(
       screen.getByText("Enter a value to apply this restriction."),
@@ -372,7 +471,7 @@ describe("DataViews.Filters", () => {
     // The query moving on withdraws what no longer stands.
     adopt(provider, [{ field: "cpu", operator: "lte", operands: [8] }]);
     expect(screen.queryByRole("checkbox")).toBeNull();
-    expect(screen.getByLabelText("cpu to")).toHaveValue("8");
+    expect(screen.getByLabelText("cpu to")).toHaveValue(8);
     // The last undeclared restriction is removed through its own control.
     fireEvent.click(screen.getByRole("button", { name: "Clear cpu to" }));
     expect(provider.state.get().slice.filter).toEqual([]);
@@ -387,7 +486,7 @@ describe("DataViews.Filters", () => {
       { field: "cpu", operator: "gte", operands: [8] },
     ]);
     expect(screen.getByRole("checkbox", { name: "cancelled" })).toBeChecked();
-    expect(screen.getByLabelText("cpu from")).toHaveValue("8");
+    expect(screen.getByLabelText("cpu from")).toHaveValue(8);
   });
 
   it("edits and follows the provider under StrictMode", () => {
@@ -410,13 +509,21 @@ describe("DataViews.Filters", () => {
     adopt(provider, [{ field: "status", operator: "eq", operands: ["ready"] }]);
     expect(screen.getByRole("checkbox", { name: "ready" })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: "failed" })).not.toBeChecked();
-    expect(screen.getByLabelText("cpu from")).toHaveValue("");
+    expect(screen.getByLabelText("cpu from")).toHaveValue(null);
   });
 
-  it("passes native fieldset props through and merges the class name", () => {
-    mount(makeProvider(), { className: "compact", disabled: true });
-    const group = screen.getByRole("group", { name: "Filters" });
-    expect(group).toHaveClass("ds", "data-views-filters", "compact");
-    expect(screen.getByLabelText("cpu from")).toBeDisabled();
+  it("passes native form props through and merges the class name", () => {
+    const { container } = mount(makeProvider(), {
+      className: "compact",
+      action: "/machines",
+      id: "machine-filters",
+    });
+    const form = container.querySelector("form");
+    expect(form).toHaveClass("ds", "data-views-filters", "compact");
+    expect(form).toHaveAttribute("action", "/machines");
+    expect(form).toHaveAttribute("id", "machine-filters");
+    // What the part sets, the caller cannot override through the spread.
+    expect(form).toHaveAttribute("method", "get");
+    expect(screen.getByRole("group", { name: "Filters" })).toBeInTheDocument();
   });
 });
