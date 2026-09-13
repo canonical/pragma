@@ -3,7 +3,8 @@ import describeStatus from "./describeStatus.js";
 
 describe("describeStatus", () => {
   it("gives each status its own words", () => {
-    expect(describeStatus({ status: "loading" })).toBe("Loading…");
+    expect(describeStatus({ status: "pending" })).toBe("Loading…");
+    expect(describeStatus({ status: "regrouping" })).toBe("Regrouping…");
     expect(describeStatus({ status: "failed", reason: "offline" })).toBe(
       "These rows could not be loaded: offline",
     );

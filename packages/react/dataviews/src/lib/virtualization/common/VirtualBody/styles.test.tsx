@@ -1,6 +1,6 @@
 /**
- * The windowed stylesheet's contract with the markup: the table it styles
- * is the one a windowed body renders, and it declares what the range needs
+ * The virtualized stylesheet's contract with the markup: the table it styles
+ * is the one a virtualized body renders, and it declares what the range needs
  * of its viewport. jsdom applies no CSS, so the declarations are read.
  */
 import { readFileSync } from "node:fs";
@@ -17,19 +17,19 @@ const sheet = readFileSync(
   "utf8",
 ).replace(/\/\*[\s\S]*?\*\//g, "");
 
-describe("windowed DataTable stylesheet", () => {
-  it("styles the table a windowed body renders", () => {
+describe("virtualized DataTable stylesheet", () => {
+  it("styles the table a virtualized body renders", () => {
     const { provider } = createMachineProvider();
     const { container } = render(
       <DataTable
         provider={provider}
         label="Machines"
         columns={[{ id: "name", header: "Name" }]}
-        windowing={virtualizeRows({ estimatedRowHeight: 32 })}
+        virtualization={virtualizeRows({ estimatedRowHeight: 32 })}
       />,
     );
     const selector = sheet.match(/\.ds\.data-table:has\(> ([^)]+)\)/)?.[1];
-    expect(selector).toBe(".ds.data-table-row-group.body.windowed");
+    expect(selector).toBe(".ds.data-table-row-group.body.virtual");
     expect(
       container.querySelector(`.ds.data-table > ${selector}`),
     ).not.toBeNull();

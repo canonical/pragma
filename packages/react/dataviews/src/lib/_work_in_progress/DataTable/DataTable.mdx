@@ -202,26 +202,25 @@ const columns: readonly DataTableColumn[] = [
 
 ## The outcomes
 
-A table with no rows says why, and the reasons stay distinct: nothing has arrived yet (`loading`), the read failed (`failed`), the collection is empty (`no-data`), or the query matched nothing (`no-results`). They call for different responses from the reader — wait, retry, add something, change the query — so they are never collapsed into one message.
+A table with no rows says why, and the reasons stay distinct: nothing has arrived yet (`pending`), the read failed (`failed`), the collection is empty (`no-data`), or the query matched nothing (`no-results`). They call for different responses from the reader — wait, retry, add something, change the query — so they are never collapsed into one message.
 
-Two more are said *beside* rows rather than in place of them, because a table that keeps showing rows must not hide what went wrong: `refresh-failed`, where the rows still answer the query but the request that would have replaced them failed, and `stale`, where an earlier query produced them. `renderStatus` replaces the default text with your own words; the stories below show the defaults.
+Two more are said *above* rows rather than in place of them, because a table that keeps showing rows must not hide what went wrong: `refresh-failed`, where the rows still answer the query but the request that would have replaced them failed, and `stale`, where an earlier query produced them. The status is the core's `DisplayStatus`, decided once from the collection's state; the table renders it and decides nothing itself. A settled outcome is announced once as a polite status message, a passing state is silent. `renderStatus` replaces the default text with your own words; the stories below show the defaults.
 
 ```tsx
-import {
-  DataTable,
-  type DataTableColumn,
-  type DataTableStatus,
-} from "@canonical/dataviews-react";
+import type { DisplayStatus } from "@canonical/dataviews-core";
+import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host" },
   { id: "status", header: "Status" },
 ];
 
-const statusText = (status: DataTableStatus): string => {
+const statusText = (status: DisplayStatus): string => {
   switch (status.status) {
-    case "loading":
+    case "pending":
       return "Fetching machines…";
+    case "regrouping":
+      return "Regrouping machines…";
     case "failed":
       return `Could not read machines: ${status.reason}`;
     case "refresh-failed":
@@ -249,7 +248,7 @@ const statusText = (status: DataTableStatus): string => {
 
 ## Mounting only the rows in view
 
-A table renders every row of its result window, which is the right default: a page of fifty is small, and every row is in the page for the browser's own search and for a reader without JavaScript. When a result window holds thousands of rows, give the table `windowing`, and it mounts only the rows near its viewport. `virtualizeRows` comes from its own entry point, `@canonical/dataviews-react/virtualization`, so an application that never imports it never ships it. The window the provider starts on is its `seed`.
+A table renders every row of its result window, which is the right default: a page of fifty is small, and every row is in the page for the browser's own search and for a reader without JavaScript. When a result window holds thousands of rows, give the table `virtualization`, and it mounts only the rows near its viewport. `virtualizeRows` comes from its own entry point, `@canonical/dataviews-react/virtualization`, so an application that never imports it never ships it. The window the provider starts on is its `seed`.
 
 ```tsx
 import {
@@ -264,7 +263,7 @@ import { machineCollection, machines } from "./machines.js";
 
 // One descriptor serves any number of tables: each keeps its own
 // viewport, measurements and focus.
-const windowing = virtualizeRows({ estimatedRowHeight: 24 });
+const virtualization = virtualizeRows({ estimatedRowHeight: 24 });
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host", sortable: true },
@@ -290,7 +289,7 @@ export function Machines() {
       provider={provider}
       columns={columns}
       label="Machines"
-      windowing={windowing}
+      virtualization={virtualization}
       style={{ maxBlockSize: "24rem" }}
     />
   );
@@ -301,10 +300,10 @@ export function Machines() {
 - **The estimate is only an estimate.** `estimatedRowHeight` places a row until it is mounted, and then the row is measured. Rows may differ in height: a cell that wraps grows its row, and the rows around it make room. When a row above the viewport turns out taller than estimated, the view stays on the rows being read.
 - **Every row still counts.** The table reports how many rows it has and each mounted row its position among them, so assistive technology knows there is more above and below. Selection, the header's select-all and sorting act on every row of the result window, mounted or not.
 - **Focus stays put.** The row holding focus stays mounted however far the table scrolls, with a neighbour on each side, and is let go when focus leaves the table.
-- **What it does not do.** Rows that are not mounted are not in the page, so the browser's own search does not find them. On the server, and without JavaScript, the table renders its whole result window, and paging is what keeps that bounded: keep real page links for readers without JavaScript. Hydrating that markup costs what hydrating a table without `windowing` costs, before the table narrows to the rows in view.
+- **What it does not do.** Rows that are not mounted are not in the page, so the browser's own search does not find them. On the server, and without JavaScript, the table renders its whole result window, and paging is what keeps that bounded: keep real page links for readers without JavaScript. Hydrating that markup costs what hydrating a table without `virtualization` costs, before the table narrows to the rows in view.
 
-<Canvas of={Stories.Windowed} sourceState="none" />
+<Canvas of={Stories.Virtualized} sourceState="none" />
 
-<Canvas of={Stories.WindowedVariableHeights} sourceState="none" />
+<Canvas of={Stories.VirtualizedVariableHeights} sourceState="none" />
 
-<Canvas of={Stories.WindowedKeepsFocus} sourceState="none" />
+<Canvas of={Stories.VirtualizedKeepsFocus} sourceState="none" />

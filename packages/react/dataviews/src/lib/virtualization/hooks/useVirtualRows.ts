@@ -13,6 +13,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import type { EntryPlacement } from "../../common/index.js";
 import type { UseVirtualRowsProps, UseVirtualRowsResult } from "./types.js";
 
 /** What the rows' heights were last measured against. */
@@ -147,8 +148,8 @@ export default function useVirtualRows({
   // One ref per mounted entry, held for as long as its row is mounted so a
   // memoised row is never rendered again for a new one.
   const refFor = useMemo(() => {
-    const refs = new Map<string, (node: HTMLDivElement) => () => void>();
-    return (id: string): ((node: HTMLDivElement) => () => void) => {
+    const refs = new Map<string, EntryPlacement["ref"]>();
+    return (id: string): EntryPlacement["ref"] => {
       const known = refs.get(id);
       if (known !== undefined) {
         return known;

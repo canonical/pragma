@@ -1,18 +1,24 @@
 // @vitest-environment node
 /**
- * Bundle isolation, read from the output module graph of two consumer
- * bundles: one rendering DataTable without windowing ships no part of the
- * virtualization, and one importing it ships the implementation over a
- * single copy of the core both share. React and the design system's own
- * packages stay external; the DataViews core is bundled, so its modules
- * are in the graph to be counted.
+ * Bundle isolation, read from the output module graph of consumer bundles:
+ * one rendering DataTable without virtualization ships no part of the
+ * virtualization and none of the composition, one importing the
+ * virtualization ships the implementation over a single copy of the core
+ * both share, and the virtualized body loads no part of the table it is
+ * rendered into. React and the design system's own packages stay external;
+ * the DataViews core is bundled, so its modules are in the graph to be
+ * counted.
  */
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "vite";
 import { describe, expect, it } from "vitest";
 
-const lib = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+/** The library folder, two levels up from `src/testing/integration`. */
+const lib = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../lib",
+);
 
 type Output = {
   readonly output: readonly (
@@ -74,7 +80,7 @@ const bundle = async (
 const from = (module: string): string => JSON.stringify(path.join(lib, module));
 
 describe("bundle isolation", () => {
-  it("ships no virtualization to a table without windowing", async () => {
+  it("stands the table alone: no virtualization, no composition", async () => {
     const { modules, css } = await bundle(
       `export { DataTable } from ${from("index.ts")};`,
     );
@@ -83,9 +89,22 @@ describe("bundle isolation", () => {
     expect(modules.some((id) => id.endsWith("/rows/createRowScopes.js"))).toBe(
       true,
     );
-    expect(modules.filter((id) => id.includes("/virtualization/"))).toEqual([]);
+    // The key a descriptor is read by is the table's; the implementation
+    // behind it, and the core's range, are not.
+    expect(
+      modules.filter(
+        (id) =>
+          id.includes("/virtualization/") &&
+          !id.endsWith("/common/virtualization/constants.ts"),
+      ),
+    ).toEqual([]);
+    // The standalone table is an adoption boundary of its own: a consumer
+    // who never mounts a DataViews root ships no root, no connected part
+    // and no context, only the table, the shared hooks and the core.
+    expect(modules.filter((id) => id.includes("/DataViews/"))).toEqual([]);
+    expect(modules.filter((id) => id.includes("/PaginationBar/"))).toEqual([]);
     expect(css).toContain("data-table");
-    expect(css).not.toContain("windowed");
+    expect(css).not.toContain("virtual");
   }, 60_000);
 
   it("loads the body without the table it is rendered into", async () => {
@@ -95,7 +114,9 @@ describe("bundle isolation", () => {
       `export { virtualizeRows } from ${from("virtualization/index.ts")};`,
     );
     expect(modules.some((id) => id.endsWith("VirtualBody.tsx"))).toBe(true);
-    expect(modules.some((id) => id.endsWith("/DataTable.tsx"))).toBe(false);
+    // Nothing of the table's own folder: the body renders rows through the
+    // renderer the table hands it, so it knows no row of its own.
+    expect(modules.filter((id) => id.includes("/DataTable/"))).toEqual([]);
   }, 60_000);
 
   it("ships the implementation over one copy of the shared core", async () => {
@@ -114,6 +135,6 @@ export { virtualizeRows } from ${from("virtualization/index.ts")};`,
     expect(
       modules.filter((id) => id.includes("/runtime/dataviews/src/")),
     ).toEqual([]);
-    expect(css).toContain("windowed");
+    expect(css).toContain("virtual");
   }, 60_000);
 });

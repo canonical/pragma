@@ -3,7 +3,8 @@
  * page, the shapes a test hands a manual source when it answers a request
  * by hand. A source's declaration is built the way an application builds
  * one, with `declareCapabilities` against the test's own collection;
- * `COUNTED_EXACTLY` is the counts block complete local input declares.
+ * `COUNTED_EXACTLY` is the counts block complete local input declares; and
+ * one display status of each kind, for the parts that render one.
  */
 
 import {
@@ -11,6 +12,7 @@ import {
   type Count,
   type CountCapabilities,
   createPage,
+  type DisplayStatus,
   type SourcePage,
 } from "@canonical/dataviews-core";
 
@@ -40,3 +42,11 @@ export const deliverRows = <TRow extends object>(
   status: "succeeded",
   page: pageOf(rows),
 });
+
+/** One display status of each kind, with a reason where the kind carries one. */
+export const displayStatusOf = (
+  status: DisplayStatus["status"],
+): DisplayStatus =>
+  status === "failed" || status === "refresh-failed" || status === "stale"
+    ? { status, reason: "offline" }
+    : { status };

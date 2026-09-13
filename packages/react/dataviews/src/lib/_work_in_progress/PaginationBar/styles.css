@@ -2,6 +2,44 @@
 
 @layer ds.components.global {
   /**
+   * PaginationBar component tokens — each a binding to a design token, never
+   * a value of its own. The rules below read these and nothing else, so a
+   * theme or a host retunes the bar by setting them, and the anatomy beside
+   * the code names what each binds. The bindings that read a channel of
+   * @canonical/styles — density and surface — are declared on the bar
+   * itself, below: a custom property set here resolves its `var()` at the
+   * root, where no context class sets a channel, so it would freeze there
+   * rather than follow the nearest `.dense` or surface.
+   */
+  :root {
+    --data-table-pagination-bar-gap: var(--dimension-100);
+    --data-table-pagination-bar-gap-control: var(--dimension-050);
+    /* The inset a control keeps from the divider beside it. */
+    --data-table-pagination-bar-inset-inline: var(--dimension-100);
+    --data-table-pagination-bar-border-width: var(
+      --dimension-stroke-thickness-medium
+    );
+    --data-table-pagination-bar-border-color: var(--color-border-muted);
+    --data-table-pagination-bar-font-family: var(
+      --typography-text-primary-font-family
+    );
+    --data-table-pagination-bar-font-size: var(
+      --typography-text-primary-font-size
+    );
+    --data-table-pagination-bar-font-weight: var(
+      --typography-text-primary-font-weight
+    );
+    --data-table-pagination-bar-divider-inline-size: var(
+      --dimension-stroke-thickness-medium
+    );
+    --data-table-pagination-bar-divider-block-size: var(--dimension-300);
+    --data-table-pagination-bar-divider-color: var(--color-border-muted);
+    --data-table-pagination-bar-control-padding-inline-end: var(
+      --dimension-100
+    );
+  }
+
+  /**
    * PaginationBar styles
    *
    * The specification is the anatomy beside the code,
@@ -14,6 +52,25 @@
    * and each icon-only button's square.
    */
   .ds.data-table-pagination-bar {
+    /* The channel-bound tokens, resolved where the channels are set: the
+       leading inset reads the density channel, as the table's cells do; the
+       control size is one density line; the colours are the surface the bar
+       sits on, so the rows it covers do not show through. */
+    --data-table-pagination-bar-padding-inline-start: var(
+      --density-padding-inline
+    );
+    --data-table-pagination-bar-control-size: var(
+      --density-line-height-effective
+    );
+    --data-table-pagination-bar-color-text: var(
+      --surface-color-text,
+      var(--color-text)
+    );
+    --data-table-pagination-bar-color-background: var(
+      --surface-color-background,
+      var(--color-background)
+    );
+
     /* Held to the bottom of whatever scrolls it, over the rows beneath. */
     position: sticky;
     inset-block-end: 0;
@@ -22,19 +79,18 @@
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: var(--dimension-100);
-    padding-inline-start: var(--density-padding-inline);
-    color: var(--surface-color-text, var(--color-text));
-    font-family: var(--typography-text-primary-font-family);
-    font-size: var(--typography-text-primary-font-size);
-    font-weight: var(--typography-text-primary-font-weight);
-    /* The surface it sits on, so the rows it covers do not show through. */
-    background-color: var(--surface-color-background, var(--color-background));
-    border-block-start: var(--dimension-stroke-thickness-medium) solid
-      var(--color-border-muted);
+    gap: var(--data-table-pagination-bar-gap);
+    padding-inline-start: var(--data-table-pagination-bar-padding-inline-start);
+    color: var(--data-table-pagination-bar-color-text);
+    font-family: var(--data-table-pagination-bar-font-family);
+    font-size: var(--data-table-pagination-bar-font-size);
+    font-weight: var(--data-table-pagination-bar-font-weight);
+    background-color: var(--data-table-pagination-bar-color-background);
+    border-block-start: var(--data-table-pagination-bar-border-width) solid
+      var(--data-table-pagination-bar-border-color);
 
     /* The design's compact, borderless dropdown, on the select's own tokens. */
-    --form-input-height: var(--density-line-height-effective);
+    --form-input-height: var(--data-table-pagination-bar-control-size);
     --form-input-padding-block: var(--dimension-050);
     --form-input-padding-inline: var(--dimension-100);
     --form-input-background: var(--color-foreground-ghost);
@@ -44,31 +100,31 @@
     & > .trailing {
       display: flex;
       align-items: center;
-      gap: var(--dimension-100);
+      gap: var(--data-table-pagination-bar-gap);
     }
 
     & > .leading > .page-size,
     & > .trailing > .page {
       display: flex;
       align-items: center;
-      gap: var(--dimension-050);
+      gap: var(--data-table-pagination-bar-gap-control);
       white-space: nowrap;
     }
 
     & > .trailing > .page {
-      padding-inline-end: var(--dimension-100);
+      padding-inline-end: var(--data-table-pagination-bar-inset-inline);
     }
 
     & > .leading > .summary {
-      padding-inline-start: var(--dimension-100);
+      padding-inline-start: var(--data-table-pagination-bar-inset-inline);
       white-space: nowrap;
     }
 
     & > .leading > .divider,
     & > .trailing > .divider {
-      inline-size: var(--dimension-stroke-thickness-medium);
-      block-size: var(--dimension-300);
-      background-color: var(--color-border-muted);
+      inline-size: var(--data-table-pagination-bar-divider-inline-size);
+      block-size: var(--data-table-pagination-bar-divider-block-size);
+      background-color: var(--data-table-pagination-bar-divider-color);
     }
 
     /* The input chrome fills its container; in a bar it takes its content. */
@@ -85,20 +141,24 @@
     /* Icon-only Buttons collapse without a label. Each is held to a square
        one row tall, its icon centred and its side padding equal. */
     & > .trailing > .navigation > .ds.button {
-      --button-padding-inline-end: var(--dimension-100);
-      min-block-size: var(--density-line-height-effective);
-      min-inline-size: var(--density-line-height-effective);
+      --button-padding-inline-end: var(
+        --data-table-pagination-bar-control-padding-inline-end
+      );
+      min-block-size: var(--data-table-pagination-bar-control-size);
+      min-inline-size: var(--data-table-pagination-bar-control-size);
       align-items: center;
       justify-content: center;
     }
 
     /* Until the design's skip icons ship: a bar with an arrow meeting it,
-       turned towards the edge the button goes to. */
-    & > .trailing > .navigation > .first .ds.icon {
+       turned towards the edge the control goes to. The icon slot is the
+       control's own child, so the turn reaches it without descending into
+       the Icon. */
+    & > .trailing > .navigation > .first > .icon {
       rotate: -90deg;
     }
 
-    & > .trailing > .navigation > .last .ds.icon {
+    & > .trailing > .navigation > .last > .icon {
       rotate: 90deg;
     }
 

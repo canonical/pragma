@@ -13,6 +13,7 @@ import {
   createCollection,
   createDataViewsProvider,
   type DataViewsProvider,
+  type DisplayStatus,
   declareCapabilities,
   type SourceDelivery,
 } from "@canonical/dataviews-core";
@@ -36,11 +37,8 @@ import {
   machines,
 } from "../../../../testing/machines.js";
 import type { ManualSource } from "../../../../testing/types.js";
-import {
-  DataViews,
-  useDataViewsCell,
-  useDataViewsValue,
-} from "../DataViews/index.js";
+import { useDataViewsCell, useDataViewsValue } from "../../hooks/index.js";
+import { DataViews } from "../DataViews/index.js";
 import DataTable from "./DataTable.js";
 import type { DataTableCellProps, DataTableColumn } from "./types.js";
 
@@ -413,40 +411,169 @@ describe("DataTable", () => {
     expect(glyph()).toBeNull();
   });
 
-  it("says it is loading, without announcing it as a status message", () => {
+  /**
+   * The status row the core decided, rendered once and first in the body,
+   * carrying its status as `data-status`. Returns the rows after it.
+   */
+  const statusRow = (
+    status: DisplayStatus["status"],
+    text: string,
+    announced: boolean,
+  ): readonly HTMLElement[] => {
+    const table = screen.getByRole("table", { name: "Machines" });
+    const body = elementAt(within(table).getAllByRole("rowgroup"), 1);
+    const listed = within(body).getAllByRole("row");
+    const first = elementAt(listed, 0);
+    const rows = listed.slice(1);
+    expect(first).toHaveClass("status");
+    expect(within(body).getAllByRole("row", { name: text })).toHaveLength(1);
+    const cell = within(first).getByRole("cell");
+    expect(cell).toHaveAttribute("data-status", status);
+    expect(cell).toHaveTextContent(text);
+    if (announced) {
+      expect(within(cell).getByRole("status")).toHaveTextContent(text);
+    } else {
+      expect(within(table).queryByRole("status")).toBeNull();
+    }
+    return rows;
+  };
+
+  /** A settled outcome: announced politely, once, from the status cell. */
+  const announcedStatusRow = (
+    status: DisplayStatus["status"],
+    text: string,
+  ): readonly HTMLElement[] => statusRow(status, text, true);
+
+  /** A passing state: silent, so nothing is announced that will not last. */
+  const silentStatusRow = (
+    status: DisplayStatus["status"],
+    text: string,
+  ): readonly HTMLElement[] => statusRow(status, text, false);
+
+  it("renders pending in place of the rows, silently, before any arrive", () => {
     const { provider, source } = createMachineProvider();
     render(
       <DataTable provider={provider} columns={columns} label="Machines" />,
     );
-    // The first request is out and unanswered.
-    expect(source.calls).toHaveLength(1);
-    expect(screen.getByRole("row", { name: "Loading…" })).toBeInTheDocument();
-    // Nothing has gone wrong and nothing has arrived: there is no outcome to
+    // The first request is out and unanswered: there is no outcome to
     // announce, so the row is not a `role="status"` live region.
-    expect(screen.queryByRole("status")).toBeNull();
+    expect(source.calls).toHaveLength(1);
+    expect(silentStatusRow("pending", "Loading…")).toEqual([]);
+    expect(screen.getByRole("table")).toHaveAttribute("aria-busy", "true");
   });
 
-  it("tells an empty collection from a query that matched nothing", () => {
-    // The two call for different responses — add something, or change the
-    // query — so they are never one message.
+  it("renders a failure in place of the rows, and announces it", () => {
+    const { provider, source } = createMachineProvider();
+    render(
+      <DataTable provider={provider} columns={columns} label="Machines" />,
+    );
+    fail(source, "the inventory is unreachable");
+    expect(
+      announcedStatusRow(
+        "failed",
+        "These rows could not be loaded: the inventory is unreachable",
+      ),
+    ).toEqual([]);
+    expect(screen.getByRole("table")).toHaveAttribute("aria-busy", "false");
+  });
+
+  it("renders an empty collection as no data, and announces it", () => {
+    deliveredTable([]);
+    expect(announcedStatusRow("no-data", "There is nothing here yet.")).toEqual(
+      [],
+    );
+  });
+
+  it("renders a query that matched nothing as no results, and announces it", () => {
+    // Told apart from no data: the two call for different responses — add
+    // something, or change the query — so they are never one message.
     const { provider, source } = deliveredTable([]);
-    expect(screen.getByText("There is nothing here yet.")).toBeInTheDocument();
     act(() => {
       provider.setSearch("alpha");
     });
     deliver(source, []);
-    expect(screen.getByText("No rows match this query.")).toBeInTheDocument();
+    expect(
+      announcedStatusRow("no-results", "No rows match this query."),
+    ).toEqual([]);
   });
 
-  it("lets the caller replace the words of an outcome", () => {
-    const { provider, source } = deliveredTable([], {
-      renderStatus: (status) => <em>nothing: {status.status}</em>,
+  it("renders an earlier query's rows under stale, announced, and leaves focus alone", () => {
+    const { source } = deliveredTable();
+    const button = screen.getByRole("button", { name: "Name" });
+    button.focus();
+    fireEvent.click(button);
+    // The ordering issued a request the source is now executing.
+    expect(source.calls).toHaveLength(2);
+    fail(source, "the inventory is unreachable");
+    expect(screen.getByRole("table")).toHaveAttribute("aria-busy", "false");
+    // The status row leads, and the retained rows follow it unblanked.
+    const rows = announcedStatusRow(
+      "stale",
+      "These rows do not match the current query: the inventory is unreachable",
+    );
+    expect(rows.map((row) => row.textContent)).toEqual([
+      "alpharunning",
+      "betarunning",
+    ]);
+    expect(document.activeElement).toBe(button);
+    // The query is shown as asked, with the failed ordering still applied.
+    expect(screen.getAllByRole("columnheader")[0]).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
+  });
+
+  it("renders the rows a failed refresh could not replace under refresh-failed, announced", () => {
+    const { provider, source } = deliveredTable();
+    act(() => {
+      provider.refresh();
+    });
+    fail(source, "the inventory is unreachable");
+    expect(screen.getByRole("table")).toHaveAttribute("aria-busy", "false");
+    // The rows still answer the query the user asked, so they stay, and the
+    // failure is said above them rather than shown nowhere at all.
+    const rows = announcedStatusRow(
+      "refresh-failed",
+      "These rows could not be refreshed: the inventory is unreachable",
+    );
+    expect(rows.map((row) => row.textContent)).toEqual([
+      "alpharunning",
+      "betarunning",
+    ]);
+  });
+
+  it("hands the core's status to the caller's renderStatus, as any node", () => {
+    const { provider, source, view } = deliveredTable([], {
+      renderStatus: (status) =>
+        "reason" in status ? (
+          `${status.status} (${status.reason})`
+        ) : (
+          <em>nothing: {status.status}</em>
+        ),
     });
     act(() => {
       provider.setSearch("alpha");
     });
     deliver(source, []);
-    expect(screen.getByText("nothing: no-results")).toBeInTheDocument();
+    expect(screen.getByText("nothing: no-results").tagName).toBe("EM");
+    act(() => {
+      provider.refresh();
+    });
+    fail(source, "offline");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      /^failed \(offline\)$/,
+    );
+    // A new renderer while a status shows is shown at once: the body is
+    // not held behind the one it was mounted with.
+    view.rerender(
+      <DataTable
+        provider={provider}
+        columns={columns}
+        label="Machines"
+        renderStatus={() => "Changed"}
+      />,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(/^Changed$/);
   });
 
   it("reports no sorted column for a declared default the header does not read yet", () => {
@@ -514,7 +641,7 @@ describe("DataTable", () => {
     expect(screen.getAllByRole("row")[1]).not.toHaveAttribute("aria-selected");
   });
 
-  it("leaves row counts and positions to a windowed table", () => {
+  it("leaves row counts and positions to a virtualized table", () => {
     loadedTable([machine("m-1", "alpha")]);
     expect(screen.getByRole("table")).not.toHaveAttribute("aria-rowcount");
     for (const row of screen.getAllByRole("row")) {
@@ -1434,36 +1561,6 @@ describe("DataTable", () => {
     );
   });
 
-  it("keeps an earlier query's rows in view, says they are stale and why, and leaves focus alone", () => {
-    const { source } = deliveredTable();
-    const button = screen.getByRole("button", { name: "Name" });
-    button.focus();
-    fireEvent.click(button);
-    // The ordering issued a request the source is now executing.
-    expect(source.calls).toHaveLength(2);
-    fail(source, "the inventory is unreachable");
-    const table = screen.getByRole("table", { name: "Machines" });
-    expect(table).toHaveAttribute("aria-busy", "false");
-    expect(within(table).getByRole("status")).toHaveTextContent(
-      "These rows do not match the current query: the inventory is unreachable",
-    );
-    // The status row leads, and the retained rows follow it unblanked.
-    const body = elementAt(within(table).getAllByRole("rowgroup"), 1);
-    const [status, ...rows] = within(body).getAllByRole("row");
-    expect(status).toBeDefined();
-    expect(status).toHaveClass("status");
-    expect(rows.map((row) => row.textContent)).toEqual([
-      "alpharunning",
-      "betarunning",
-    ]);
-    expect(document.activeElement).toBe(button);
-    // The query is shown as asked, with the failed ordering still applied.
-    expect(screen.getAllByRole("columnheader")[0]).toHaveAttribute(
-      "aria-sort",
-      "ascending",
-    );
-  });
-
   it("keeps one stale status element across re-renders", () => {
     const { provider, source, view } = deliveredTable([
       machine("m-1", "alpha"),
@@ -1485,7 +1582,7 @@ describe("DataTable", () => {
     );
   });
 
-  it("returns to a coherent table once the stale query is replaced", () => {
+  it("returns to a coherent table once the status clears", () => {
     const { provider, source } = deliveredTable();
     act(() => {
       provider.setSearch("beta");
@@ -1497,24 +1594,19 @@ describe("DataTable", () => {
     });
     deliver(source, [machine("m-2", "beta")]);
     expect(screen.queryByRole("status")).toBeNull();
-    expect(provider.state.get().result.status).toBe("ready");
     expect(screen.getAllByRole("row")).toHaveLength(2);
-  });
-
-  it("hands a stale status to the caller's renderStatus", () => {
-    const { provider, source } = deliveredTable(undefined, {
-      renderStatus: (status) =>
-        status.status === "stale"
-          ? `Out of date (${status.reason})`
-          : status.status,
-    });
+    // A refresh that fails and then succeeds clears the same way.
     act(() => {
-      provider.setSearch("beta");
+      provider.refresh();
     });
     fail(source, "offline");
-    expect(screen.getByRole("status")).toHaveTextContent(
-      /^Out of date \(offline\)$/,
-    );
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    act(() => {
+      provider.refresh();
+    });
+    deliver(source, [machine("m-2", "beta")]);
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.getAllByRole("row")).toHaveLength(2);
   });
 
   it("shows the new reason when a later query fails differently", () => {
@@ -1532,61 +1624,6 @@ describe("DataTable", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "These rows do not match the current query: timed out",
     );
-  });
-
-  it("keeps the rows a failed refresh could not replace, and says why", () => {
-    const { provider, source } = deliveredTable();
-    act(() => {
-      provider.refresh();
-    });
-    fail(source, "the inventory is unreachable");
-    const table = screen.getByRole("table", { name: "Machines" });
-    expect(table).toHaveAttribute("aria-busy", "false");
-    // The rows still answer the query the user asked, so they stay, and the
-    // failure is said above them rather than shown nowhere at all.
-    expect(within(table).getByRole("status")).toHaveTextContent(
-      "These rows could not be refreshed: the inventory is unreachable",
-    );
-    const body = elementAt(within(table).getAllByRole("rowgroup"), 1);
-    const [status, ...rows] = within(body).getAllByRole("row");
-    expect(status).toBeDefined();
-    expect(status).toHaveClass("status");
-    expect(rows.map((row) => row.textContent)).toEqual([
-      "alpharunning",
-      "betarunning",
-    ]);
-  });
-
-  it("hands a failed refresh to the caller's renderStatus", () => {
-    const { provider, source } = deliveredTable(undefined, {
-      renderStatus: (status) =>
-        status.status === "refresh-failed"
-          ? `Not refreshed (${status.reason})`
-          : status.status,
-    });
-    act(() => {
-      provider.refresh();
-    });
-    fail(source, "offline");
-    expect(screen.getByRole("status")).toHaveTextContent(
-      /^Not refreshed \(offline\)$/,
-    );
-  });
-
-  it("drops the failed refresh's status once a refresh succeeds", () => {
-    const { provider, source } = deliveredTable();
-    act(() => {
-      provider.refresh();
-    });
-    fail(source, "offline");
-    expect(screen.getByRole("status")).toBeInTheDocument();
-    act(() => {
-      provider.refresh();
-    });
-    deliver(source, [machine("m-1", "alpha")]);
-    expect(screen.queryByRole("status")).toBeNull();
-    expect(provider.state.get().result.status).toBe("ready");
-    expect(screen.getAllByRole("row")).toHaveLength(2);
   });
 
   it("marks the table busy while a request is in flight", () => {

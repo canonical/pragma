@@ -1,8 +1,8 @@
 import { Button } from "@canonical/react-ds-global";
 import { type ReactElement, useCallback, useRef } from "react";
-import { useMergedRef } from "../../../../hooks/index.js";
+import { useDataViewsValue, useMergedRef } from "../../../../hooks/index.js";
 import { pluralizeNoun } from "../../../../utils/index.js";
-import { useDataViewsRoot, useDataViewsValue } from "../../hooks/index.js";
+import { useDataViewsRoot } from "../../hooks/index.js";
 import type { DataViewsActionsProps } from "./types.js";
 import "./styles.css";
 

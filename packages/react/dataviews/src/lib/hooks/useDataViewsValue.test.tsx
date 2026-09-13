@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import createFakeChannel from "../../../../../testing/createFakeChannel.js";
+import createFakeChannel from "../../../testing/createFakeChannel.js";
 import useDataViewsValue from "./useDataViewsValue.js";
 
 describe("useDataViewsValue", () => {

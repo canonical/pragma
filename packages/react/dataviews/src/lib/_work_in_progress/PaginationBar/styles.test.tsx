@@ -118,8 +118,8 @@ describe("PaginationBar stylesheet", () => {
       `${bar} > .trailing > .page > .total`,
       `${bar} > .trailing > .divider`,
       `${bar} > .trailing > .navigation > .ds.button`,
-      `${bar} > .trailing > .navigation > .first .ds.icon`,
-      `${bar} > .trailing > .navigation > .last .ds.icon`,
+      `${bar} > .trailing > .navigation > .first > .icon`,
+      `${bar} > .trailing > .navigation > .last > .icon`,
       `${bar} > .leading > .page-size > .submit`,
       `${bar} > .trailing > .page > .submit`,
       `${bar} > .trailing > .navigation > .scripted`,
@@ -144,25 +144,93 @@ describe("PaginationBar stylesheet", () => {
     expect(sheet).not.toMatch(/\d(px|rem|em)\b|#[0-9a-f]{3,8}\b|opacity/i);
   });
 
+  it("binds every component token to a design token or a channel, and reads each", () => {
+    // The bar's own tier: a token per design decision, each bound to the
+    // design system's tokens or to a channel of @canonical/styles, and each
+    // read by a rule — a token nothing reads is a decision nobody made. The
+    // static bindings sit on the root scope; the four that read a channel
+    // sit on the bar, where the channel is set, so they follow the nearest
+    // density and surface rather than freezing at the root.
+    const binding = /(--data-table-pagination-bar-[\w-]+): (var\([^;]*\));/g;
+    const atRoot = [...rule(":root").matchAll(binding)].map(
+      ([, token = "", value = ""]) => [token, value] as const,
+    );
+    const onBar = [...rule(bar).matchAll(binding)].map(
+      ([, token = "", value = ""]) => [token, value] as const,
+    );
+    expect(atRoot.length).toBeGreaterThan(0);
+    for (const [token, value] of atRoot) {
+      expect(value, token).toMatch(/^var\( ?--(dimension|color|typography)-/);
+    }
+    expect(onBar.map(([token]) => token).sort()).toEqual([
+      "--data-table-pagination-bar-color-background",
+      "--data-table-pagination-bar-color-text",
+      "--data-table-pagination-bar-control-size",
+      "--data-table-pagination-bar-padding-inline-start",
+    ]);
+    for (const [token, value] of onBar) {
+      expect(value, token).toMatch(/^var\( ?--(density|surface)-/);
+    }
+    // A long token wraps inside its `var()`; read them all without the space.
+    const rules = sheet
+      .slice(sheet.indexOf(bar))
+      .replaceAll("var( ", "var(")
+      .replaceAll(" )", ")");
+    for (const [token] of [...atRoot, ...onBar]) {
+      expect(rules, token).toContain(`var(${token})`);
+    }
+    // And no rule reaches past its tier to a token the bar did not bind,
+    // but for the two channels it themes the design system's parts through.
+    const read = [...rules.matchAll(/var\((--[\w-]+)/g)].map(
+      ([, token = ""]) => token,
+    );
+    expect(
+      read.filter(
+        (token) =>
+          !token.startsWith("--data-table-pagination-bar-") &&
+          !token.startsWith("--form-input-") &&
+          !token.startsWith("--button-"),
+      ),
+    ).toEqual([
+      // The bar's own channel bindings, then the select's tokens, set from
+      // the design's values directly: the form layer's tier, not this bar's.
+      "--density-padding-inline",
+      "--density-line-height-effective",
+      "--surface-color-text",
+      "--color-text",
+      "--surface-color-background",
+      "--color-background",
+      "--dimension-050",
+      "--dimension-100",
+      "--color-foreground-ghost",
+    ]);
+  });
+
   it("holds to the bottom of what scrolls it, on the surface it covers", () => {
     const root = rule(bar);
     expect(root).toMatch(/position: sticky;/);
     expect(root).toMatch(/inset-block-end: 0;/);
     expect(root).toMatch(
-      /background-color: var\(--surface-color-background, var\(--color-background\)\);/,
+      /background-color: var\(--data-table-pagination-bar-color-background\);/,
     );
     expect(root).toMatch(
-      /border-block-start: var\(--dimension-stroke-thickness-medium\) solid var\(--color-border-muted\);/,
+      /--data-table-pagination-bar-color-background: var\( ?--surface-color-background, var\(--color-background\) ?\);/,
     );
     expect(root).toMatch(
-      /padding-inline-start: var\(--density-padding-inline\);/,
+      /border-block-start: var\(--data-table-pagination-bar-border-width\) solid var\(--data-table-pagination-bar-border-color\);/,
+    );
+    expect(root).toMatch(
+      /padding-inline-start: var\(--data-table-pagination-bar-padding-inline-start\);/,
+    );
+    expect(root).toMatch(
+      /--data-table-pagination-bar-padding-inline-start: var\( ?--density-padding-inline ?\);/,
     );
   });
 
   it("themes the design system's select through its own tokens", () => {
     const root = rule(bar);
     for (const declaration of [
-      /--form-input-height: var\(--density-line-height-effective\);/,
+      /--form-input-height: var\(--data-table-pagination-bar-control-size\);/,
       /--form-input-padding-block: var\(--dimension-050\);/,
       /--form-input-padding-inline: var\(--dimension-100\);/,
       /--form-input-background: var\(--color-foreground-ghost\);/,
@@ -182,29 +250,40 @@ describe("PaginationBar stylesheet", () => {
     // Left to the Button, an icon-only one is shorter than the minimum target.
     const button = rule(`${navigation} > .ds.button`);
     expect(button).toMatch(
-      /--button-padding-inline-end: var\(--dimension-100\);/,
+      /--button-padding-inline-end: var\( ?--data-table-pagination-bar-control-padding-inline-end ?\);/,
     );
     expect(button).toMatch(
-      /min-block-size: var\(--density-line-height-effective\);/,
+      /min-block-size: var\(--data-table-pagination-bar-control-size\);/,
     );
     expect(button).toMatch(
-      /min-inline-size: var\(--density-line-height-effective\);/,
+      /min-inline-size: var\(--data-table-pagination-bar-control-size\);/,
+    );
+    expect(rule(bar)).toMatch(
+      /--data-table-pagination-bar-control-size: var\( ?--density-line-height-effective ?\);/,
     );
     expect(button).toMatch(/align-items: center;/);
     expect(button).toMatch(/justify-content: center;/);
   });
 
   it("turns the interim first and last icons towards their edges", () => {
-    expect(rule(`${navigation} > .first .ds.icon`)).toMatch(/rotate: -90deg;/);
-    expect(rule(`${navigation} > .last .ds.icon`)).toMatch(/rotate: 90deg;/);
+    // Through the control's own icon slot, a child, never down into the
+    // Icon component's class.
+    expect(rule(`${navigation} > .first > .icon`)).toMatch(/rotate: -90deg;/);
+    expect(rule(`${navigation} > .last > .icon`)).toMatch(/rotate: 90deg;/);
+    expect(sheet).not.toMatch(/\.ds\.icon/);
   });
 
   it("draws the design's dividers", () => {
     const divider = rule("& > .leading > .divider, & > .trailing > .divider");
     expect(divider).toMatch(
-      /inline-size: var\(--dimension-stroke-thickness-medium\);/,
+      /inline-size: var\(--data-table-pagination-bar-divider-inline-size\);/,
     );
-    expect(divider).toMatch(/block-size: var\(--dimension-300\);/);
+    expect(divider).toMatch(
+      /block-size: var\(--data-table-pagination-bar-divider-block-size\);/,
+    );
+    expect(rule(":root")).toMatch(
+      /--data-table-pagination-bar-divider-block-size: var\(--dimension-300\);/,
+    );
   });
 });
 

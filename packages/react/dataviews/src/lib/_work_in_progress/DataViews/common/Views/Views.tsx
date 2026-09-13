@@ -8,8 +8,9 @@ import {
   useRef,
   useState,
 } from "react";
+import { useDataViewsValue } from "../../../../hooks/index.js";
 import { composeSentence, pluralizeNoun } from "../../../../utils/index.js";
-import { useDataViewsRoot, useDataViewsValue } from "../../hooks/index.js";
+import { useDataViewsRoot } from "../../hooks/index.js";
 import { DeleteConfirm, NameForm } from "./common/index.js";
 import describeViewStatus from "./describeViewStatus.js";
 import type { DataViewsViewsProps } from "./types.js";

@@ -5,7 +5,7 @@ import type {
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
 import { useContext, useMemo } from "react";
-import CellContext from "../CellContext.js";
+import { CellContext } from "../common/index.js";
 import type { UseDataViewsCellResult } from "./types.js";
 
 /**

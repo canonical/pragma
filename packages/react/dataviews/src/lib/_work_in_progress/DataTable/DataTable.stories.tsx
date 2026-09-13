@@ -21,8 +21,8 @@ import {
   type MachineProviderConfig,
   useMachineProvider,
 } from "../../../storybook/machines/story-utils.js";
+import { useDataViewsCell, useDataViewsValue } from "../../hooks/index.js";
 import { virtualizeRows } from "../../virtualization/index.js";
-import { useDataViewsCell, useDataViewsValue } from "../DataViews/index.js";
 import Component from "./DataTable.js";
 import type {
   DataTableCellProps,
@@ -45,7 +45,7 @@ const meta = {
     layout: { control: false },
     rowLabel: { control: false },
     renderStatus: { control: false },
-    windowing: { control: false },
+    virtualization: { control: false },
   },
 } satisfies Meta<typeof Component>;
 
@@ -917,7 +917,7 @@ export const LongValues: Story = {
 };
 
 /** 24px: a dense row, the border beneath it included. */
-const windowing = virtualizeRows({ estimatedRowHeight: 24 });
+const virtualization = virtualizeRows({ estimatedRowHeight: 24 });
 
 /** Ten thousand machines, all in one window. */
 const tenThousand = {
@@ -925,23 +925,23 @@ const tenThousand = {
   window: { ...DEFAULT_WINDOW, page: 1, size: 10_000 },
 } as const;
 
-/** A windowed story's render: its args, windowed, over ten thousand machines. */
-const renderWindowed =
+/** A virtualized story's render: its args, virtualized, over ten thousand machines. */
+const renderVirtualized =
   (columns: readonly DataTableColumn[]): NonNullable<Story["render"]> =>
   (args) => (
     <MachinesTable
       {...args}
       columns={columns}
-      windowing={windowing}
+      virtualization={virtualization}
       options={tenThousand}
     />
   );
 
 /**
- * A windowed story's consumer code: the table, windowed, in a capped frame,
+ * A virtualized story's consumer code: the table, virtualized, in a capped frame,
  * over a provider whose window holds every one of ten thousand machines.
  */
-const windowedConsumer = (
+const virtualizedConsumer = (
   columns: string,
   parts: readonly string[] = tableParts,
 ): NonNullable<Story["parameters"]> =>
@@ -951,7 +951,7 @@ const windowedConsumer = (
 import { machineCollection, machines } from "./machines.js";`,
     declarations: `// One descriptor serves any number of tables: each keeps its own
 // viewport, measurements and focus.
-const windowing = virtualizeRows({ estimatedRowHeight: 24 });
+const virtualization = virtualizeRows({ estimatedRowHeight: 24 });
 
 ${columns}`,
     window: "{ ...DEFAULT_WINDOW, page: 1, size: 10_000 }",
@@ -961,7 +961,7 @@ ${columns}`,
   label="Machines"
   selectable
   rowLabel={(row) => row.name}
-  windowing={windowing}
+  virtualization={virtualization}
   style={{ maxBlockSize: "24rem" }}
 />`,
   });
@@ -973,7 +973,7 @@ const mountedPositions = (table: HTMLElement): number[] =>
   );
 
 /**
- * Windowed: ten thousand machines in one window, and only the rows near the
+ * Virtualized: ten thousand machines in one window, and only the rows near the
  * viewport are mounted — a few dozen at a time, however far the table is
  * scrolled. The table is its own scroll viewport, here capped at 24rem, with
  * the header held above its rows.
@@ -984,8 +984,8 @@ const mountedPositions = (table: HTMLElement): number[] =>
  * selection and the header's select-all act on every row of the result
  * window, mounted or not.
  */
-export const Windowed: Story = {
-  parameters: windowedConsumer(`const columns: readonly DataTableColumn[] = [
+export const Virtualized: Story = {
+  parameters: virtualizedConsumer(`const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host", sortable: true },
   { id: "status", header: "Status", sortable: true },
   { id: "region", header: "Region" },
@@ -993,7 +993,7 @@ export const Windowed: Story = {
   { id: "owner", header: "Owner" },
 ];`),
   args: { selectable: true, style: { maxBlockSize: "24rem" } },
-  render: renderWindowed(sortableColumns),
+  render: renderVirtualized(sortableColumns),
   play: async ({ canvas }) => {
     const table = canvas.getByRole("table");
     await waitFor(() =>
@@ -1022,8 +1022,8 @@ function WrappingNote({ value }: DataTableCellProps): ReactElement {
  * around it follows. When a row above the viewport turns out taller than
  * its estimate, the view stays on the rows being read rather than jumping.
  */
-export const WindowedVariableHeights: Story = {
-  parameters: windowedConsumer(
+export const VirtualizedVariableHeights: Story = {
+  parameters: virtualizedConsumer(
     `function WrappingNote({ value }: DataTableCellProps) {
   return <span style={{ whiteSpace: "normal" }}>{String(value)}</span>;
 }
@@ -1042,7 +1042,7 @@ const columns: readonly DataTableColumn[] = [
   ),
   args: { selectable: true, style: { maxBlockSize: "24rem" } },
   decorators: [withFrame("40rem")],
-  render: renderWindowed([
+  render: renderVirtualized([
     { id: "name", header: "Host", sizing: { kind: "fixed", px: 224 } },
     { id: "status", header: "Status", sizing: { kind: "fixed", px: 96 } },
     {
@@ -1103,8 +1103,8 @@ const columns: readonly DataTableColumn[] = [
  * from it still reaches the rows beside it. Once focus leaves the table,
  * the row is let go.
  */
-export const WindowedKeepsFocus: Story = {
-  parameters: windowedConsumer(`const columns: readonly DataTableColumn[] = [
+export const VirtualizedKeepsFocus: Story = {
+  parameters: virtualizedConsumer(`const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host" },
   { id: "status", header: "Status" },
   { id: "region", header: "Region" },
@@ -1112,7 +1112,7 @@ export const WindowedKeepsFocus: Story = {
   { id: "owner", header: "Owner" },
 ];`),
   args: { selectable: true, style: { maxBlockSize: "24rem" } },
-  render: renderWindowed(plainColumns),
+  render: renderVirtualized(plainColumns),
   play: async ({ canvas }) => {
     const checkbox = await canvas.findByRole("checkbox", {
       name: "Select node-00000.example.com",

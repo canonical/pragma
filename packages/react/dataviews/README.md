@@ -105,5 +105,5 @@ The recipes, with consumer code and the live stories beside them, are the Storyb
 - **Selection** — the design system's checkboxes in a 32px column, named by `rowLabel`; select-all acts on the displayed rows.
 - **Resizing and its limits** — held to the declared bounds; no control on the last column; one shared `layout` gives two tables on a provider the same arrangement.
 - **A cell that reads its own scope** — a module-scope renderer reading its row's record through `useDataViewsCell(collection)`, typed by the collection.
-- **The outcomes** — loading, failed, empty and no match in place of the rows; a failed refresh and retained rows that no longer answer the current query (`refresh-failed`, `stale`) beside them, with `renderStatus`.
-- **Mounting only the rows in view** — `windowing={virtualizeRows({ estimatedRowHeight })}`, from `@canonical/dataviews-react/virtualization`, for a result window of thousands of rows: the table becomes its own scroll viewport and every row still counts.
+- **The outcomes** — pending, failed, empty and no match in place of the rows; a failed refresh and retained rows that no longer answer the current query (`refresh-failed`, `stale`) above them, with `renderStatus` over the core's `DisplayStatus`.
+- **Mounting only the rows in view** — `virtualization={virtualizeRows({ estimatedRowHeight })}`, from `@canonical/dataviews-react/virtualization`, for a result window of thousands of rows: the table becomes its own scroll viewport and every row still counts.

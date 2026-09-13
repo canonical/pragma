@@ -21,9 +21,9 @@ import {
   type MachineProvider,
   machines,
 } from "../../../../../testing/machines.js";
+import { useDataViewsValue } from "../../../hooks/index.js";
 import DataViews from "../Provider.js";
 import useDataViews from "./useDataViews.js";
-import useDataViewsValue from "./useDataViewsValue.js";
 
 /** A wrapper for renderHook, over one root. */
 const inRoot =

@@ -6,12 +6,12 @@
    *
    * The specification is `DataTable.anatomy.yaml`: every value below is one
    * it binds, and what it could not bind is recorded there, never hardcoded
-   * here. A windowed body mounts the entries near the viewport and holds a
+   * here. A virtualized body mounts the entries near the viewport and holds a
    * gap, sized inline, for the rest. The body imports these rules itself,
-   * so an application that never windows a table loads them only if it
+   * so an application that never virtualizes a table loads them only if it
    * links `index.css`.
    */
-  .ds.data-table:has(> .ds.data-table-row-group.body.windowed) {
+  .ds.data-table:has(> .ds.data-table-row-group.body.virtual) {
     /* The body's offset, which places the viewport among the entries, is
        measured from the root. */
     position: relative;

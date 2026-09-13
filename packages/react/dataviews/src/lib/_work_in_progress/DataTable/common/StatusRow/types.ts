@@ -1,5 +1,5 @@
+import type { DisplayStatus } from "@canonical/dataviews-core";
 import type { ReactNode, Ref } from "react";
-import type { DataTableStatus } from "../../types.js";
 
 /**
  * Props of the table's status row.
@@ -9,10 +9,10 @@ import type { DataTableStatus } from "../../types.js";
  * native props.
  */
 export type StatusRowProps = {
-  readonly status: DataTableStatus;
-  readonly renderStatus: (status: DataTableStatus) => ReactNode;
-  /** The row's logical position, reported only by a windowed table. */
-  readonly position?: number;
-  /** The row element, for a windowed table to measure. */
-  readonly ref?: Ref<HTMLDivElement>;
+  readonly status: DisplayStatus;
+  readonly renderStatus: (status: DisplayStatus) => ReactNode;
+  /** The row's logical position, reported only by a virtualized table. */
+  readonly position?: number | undefined;
+  /** The row element, for a virtualized table to measure. */
+  readonly ref?: Ref<HTMLDivElement> | undefined;
 };

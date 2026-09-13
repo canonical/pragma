@@ -12,7 +12,6 @@ import type {
   FilterHandles,
   PredicateOperand,
   Query,
-  ReadonlyChannel,
   RowRecord,
   SchemaFieldDefinition,
   SourceRefusal,
@@ -51,9 +50,6 @@ export type UseDestinationProps = {
 
 /** What the destination hook returns: the spelled parameters, or null without a location. */
 export type UseDestinationResult = string | null;
-
-/** What `useDataViewsValue` returns: the channel's current value. */
-export type UseDataViewsValueResult<T> = T;
 
 /**
  * The typed collection scope returned by useDataViews: the provider's own
@@ -116,22 +112,3 @@ export type UseDataViewsFilterResult<TApplied> = {
 /** What `useFilterHandle` returns: one filter handle, read and edited. */
 export type UseFilterHandleResult<TApplied> =
   UseDataViewsFilterResult<TApplied>;
-
-/**
- * The cell scope returned by useDataViewsCell. Its channels are read-only.
- *
- * @experimental Pre-release: the whole surface is still settling, and this
- * name may change or move before the first release.
- */
-export type UseDataViewsCellResult<TRow extends object = RowRecord> = {
-  /** The identity of the row the cell displays. */
-  readonly rowId: string;
-  /** The id of the column the cell renders. */
-  readonly columnId: string;
-  /** The whole record; watching it is broader than watching one field. */
-  readonly record: ReadonlyChannel<TRow>;
-  /** One channel per field the table observes, keyed by field name. */
-  readonly fields: Readonly<Record<string, ReadonlyChannel<unknown>>>;
-  /** Whether the row is in the collection's selection. */
-  readonly selected: ReadonlyChannel<boolean>;
-};

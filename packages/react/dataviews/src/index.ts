@@ -2,7 +2,7 @@
  * @canonical/dataviews-react — React bindings for collection views: the
  * DataViews root with its connected Search, Filters, Actions, Pagination and Views
  * parts, provider context, the four scoped observation hooks, the DataTable
- * renderer with its explicitly imported row windowing, and the
+ * renderer with its explicitly imported row virtualization, and the
  * PaginationBar, built on @canonical/dataviews-core.
  *
  * @packageDocumentation
