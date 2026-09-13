@@ -1,0 +1,35 @@
+.ds.side-panel-footer {
+  /* Never shrinks, and stays visible: the panel scrolls beneath it. */
+  flex: none;
+  position: sticky;
+  inset-block-end: 0;
+  /* Above the in-flow content, whatever it contains. */
+  z-index: 1;
+  /*
+    Opaque, so scrolling content passes behind rather than through. `inherit`
+    picks up whichever surface colour the panel resolved, so the two cannot
+    drift apart.
+  */
+  background-color: inherit;
+
+  /*
+    Closes the scroll region. It lives here rather than on the content pane
+    because the panel is the scroller now: a border on the content would scroll
+    away with it, whereas this one is pinned by the sticky footer. The panel's
+    inline padding already insets it, so it stops short of both panel edges.
+
+    The colour is the panel's to own, and is read without a local fallback so
+    the two cannot state different defaults: `--side-panel-color-border` is
+    declared in the panel's `:root` block.
+  */
+  border-block-start: var(--dimension-stroke-thickness-medium) solid
+    var(--side-panel-color-border);
+
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--dimension-200);
+  flex-wrap: wrap;
+
+  padding-block: var(--side-panel-footer-padding-block, var(--dimension-200));
+}

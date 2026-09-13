@@ -1,0 +1,56 @@
+import { renderToString } from "react-dom/server";
+import { describe, expect, it } from "vitest";
+import SidePanel from "./SidePanel.js";
+
+describe("SidePanel SSR", () => {
+  it("renders its parts without hydration errors", () => {
+    const html = renderToString(
+      <SidePanel>
+        <SidePanel.Header>Panel title</SidePanel.Header>
+        <SidePanel.Content>Test content</SidePanel.Content>
+        <SidePanel.Footer>Actions</SidePanel.Footer>
+      </SidePanel>,
+    );
+    /*
+      Matched as whole class attributes rather than with `toContain`: every
+      part's class starts with the panel's own, so `toContain("ds side-panel")`
+      would pass on the strength of the header alone even if the dialog's
+      class were gone.
+    */
+    expect(html).toContain('class="ds side-panel"');
+    expect(html).toContain('class="ds side-panel-header"');
+    expect(html).toContain('class="ds side-panel-content"');
+    expect(html).toContain('class="ds side-panel-footer"');
+    expect(html).toContain("Panel title");
+    expect(html).toContain("Test content");
+    expect(html).toContain("Actions");
+  });
+
+  it("never paints an open dialog on the server", () => {
+    const html = renderToString(
+      <SidePanel>
+        <SidePanel.Content>Test content</SidePanel.Content>
+      </SidePanel>,
+    );
+    /*
+      Opening runs through the handle's `show()`, which the server never
+      executes — the markup is always closed and the panel appears only once a
+      client opens it. Asserted against the opening tag rather than the whole
+      document, and on a tag that must exist: `not.toContain("<dialog open")`
+      would pass just as happily if `open` were emitted after another
+      attribute.
+    */
+    const dialogTag = html.match(/<dialog[^>]*>/)?.[0];
+    expect(dialogTag).toBeDefined();
+    expect(dialogTag).not.toMatch(/\sopen[=\s>]/);
+  });
+
+  it("does not claim to be modal", () => {
+    const html = renderToString(
+      <SidePanel aria-label="Filters">
+        <SidePanel.Content>Test content</SidePanel.Content>
+      </SidePanel>,
+    );
+    expect(html).not.toContain("aria-modal");
+  });
+});
