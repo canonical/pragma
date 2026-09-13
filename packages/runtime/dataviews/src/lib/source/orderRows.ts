@@ -1,23 +1,13 @@
 import { collapseSortTerms } from "../query/index.js";
-import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
-import readInstant from "./readInstant.js";
-import type { EffectiveOrdering, FieldReader } from "./types.js";
-
-/**
- * The comparison key of one present value: a rank the kind places it at,
- * then the text that orders values sharing a rank. Numbers, instants, flags
- * and declared options need only the rank; text needs only the text; an
- * option the schema does not list needs both.
- */
-type OrderKey = {
-  readonly rank: number;
-  readonly text: string;
-};
-
-const createKey = (rank: number, text = ""): OrderKey => ({ rank, text });
-
-const compareByCodePoint = (a: string, b: string): number =>
-  a < b ? -1 : a > b ? 1 : 0;
+import { readField } from "../rows/index.js";
+import {
+  type KindOrder,
+  type OrderKey,
+  resolveFieldKind,
+  type Schema,
+  type SchemaFieldDefinition,
+} from "../schema/index.js";
+import type { EffectiveOrdering } from "./types.js";
 
 /**
  * The collator a BCP-47 tag names, or null when none can be honoured.
@@ -49,7 +39,7 @@ const collators = new Map<string | null, Intl.Collator | null>();
 /**
  * The collator a tag names, built once per tag.
  *
- * @note Impure: memoizes into the module-level `collators` map, because an
+ * @note Impure: memoises into the module-level `collators` map, because an
  * `Intl.Collator` is expensive to build and every request would otherwise
  * build one again.
  */
@@ -61,108 +51,6 @@ const getCachedCollator = (collation: string | null): Intl.Collator | null => {
   const collator = resolveCollator(collation);
   collators.set(collation, collator);
   return collator;
-};
-
-/** How one field's kind reads and compares its ordering keys. */
-type KindOrder = {
-  /**
-   * The key of a row value, or null when the kind has none for it: that
-   * value is empty, and orders after every value with a key.
-   */
-  readonly readKey: (value: unknown) => OrderKey | null;
-  /** Order two values sharing a rank. */
-  readonly compareText: (a: string, b: string) => number;
-};
-
-/** A field the schema does not define: every row is empty under it. */
-const NO_ORDER: KindOrder = {
-  readKey: () => null,
-  compareText: compareByCodePoint,
-};
-
-const createChoicesOrder = (
-  options: readonly (string | number)[],
-): KindOrder => {
-  // Keyed by string form, as the schema matches an option to an input:
-  // colliding string forms are rejected at construction, so this is exact.
-  const ranks = new Map(
-    options.map((option, index) => [String(option), index]),
-  );
-  return {
-    readKey: (value) => {
-      if (typeof value !== "string" && typeof value !== "number") {
-        return null;
-      }
-      const text = String(value);
-      const rank = ranks.get(text);
-      // A value the options do not list is still a value: it orders after
-      // every declared one rather than disappearing into the empties.
-      return rank === undefined ? createKey(ranks.size, text) : createKey(rank);
-    },
-    compareText: compareByCodePoint,
-  };
-};
-
-/**
- * Text orders through the source's collator. An empty string carries
- * nothing to order by, so it is empty rather than a value: two blank cells
- * a reader cannot tell apart must not order differently, and one of them
- * must not move with the direction while the other stays last.
- */
-const createTextOrder = (collator: Intl.Collator | null): KindOrder => ({
-  readKey: (value) =>
-    typeof value === "string" && value !== "" ? createKey(0, value) : null,
-  compareText: collator === null ? compareByCodePoint : collator.compare,
-});
-
-const NUMBER_ORDER: KindOrder = {
-  readKey: (value) =>
-    typeof value === "number" && Number.isFinite(value)
-      ? createKey(value)
-      : null,
-  compareText: compareByCodePoint,
-};
-
-const DATE_ORDER: KindOrder = {
-  readKey: (value) => {
-    const at = readInstant(value);
-    return at === null ? null : createKey(at);
-  },
-  compareText: compareByCodePoint,
-};
-
-/**
- * A flag orders false before true. Its domain is presence — the one thing
- * it filters on — so anything present that is not a boolean counts as set
- * and only an absent value is empty. Ordering and `isSet` then agree about
- * which rows are set.
- */
-const FLAG_ORDER: KindOrder = {
-  readKey: (value) => {
-    if (value === null || value === undefined) {
-      return null;
-    }
-    return createKey(value === false ? 0 : 1);
-  },
-  compareText: compareByCodePoint,
-};
-
-const resolveKindOrder = (
-  definition: SchemaFieldDefinition,
-  collation: string | null,
-): KindOrder => {
-  switch (definition.kind) {
-    case "choices":
-      return createChoicesOrder(definition.options);
-    case "number":
-      return NUMBER_ORDER;
-    case "date":
-      return DATE_ORDER;
-    case "flag":
-      return FLAG_ORDER;
-    case "text":
-      return createTextOrder(getCachedCollator(collation));
-  }
 };
 
 /** One term of the effective ordering, compiled against the schema. */
@@ -204,7 +92,6 @@ type OrderRowsConfig = {
    * to compare by code point.
    */
   readonly collation: string | null;
-  readonly read: FieldReader;
 };
 
 /**
@@ -216,22 +103,25 @@ type OrderRowsConfig = {
  */
 const compileTerms = (config: OrderRowsConfig): readonly CompiledTerm[] => {
   const { ordering, schema, collation } = config;
-  const definitions = new Map(
-    schema.fields.map((definition) => [definition.field, definition]),
-  );
   return collapseSortTerms([
     ...ordering.terms,
     ...(typeof ordering.tiebreak === "string" ? [] : ordering.tiebreak),
-  ]).map((term): CompiledTerm => {
-    const definition = definitions.get(term.field);
-    return {
-      field: term.field,
-      descending: term.direction === "desc",
-      order:
-        definition === undefined
-          ? NO_ORDER
-          : resolveKindOrder(definition, collation),
-    };
+  ]).flatMap((term): CompiledTerm[] => {
+    const definition = schema.findField(term.field);
+    // A field the schema does not define orders nothing: every row is
+    // empty under it, so the term is left out rather than compared.
+    return definition === undefined
+      ? []
+      : [
+          {
+            field: term.field,
+            descending: term.direction === "desc",
+            order: resolveFieldKind(definition.kind).createOrder(
+              definition,
+              getCachedCollator(collation),
+            ),
+          },
+        ];
   });
 };
 
@@ -258,21 +148,21 @@ export default function orderRows<TRow extends object>(
   rows: readonly TRow[],
   config: OrderRowsConfig,
 ): readonly TRow[] {
-  const { read } = config;
   const terms = compileTerms(config);
   if (terms.length === 0) {
     return rows;
   }
   const keyed = rows.map((row) => ({
     row,
-    keys: terms.map((term) => term.order.readKey(read(row, term.field))),
+    keys: terms.map((term) => term.order.readKey(readField(row, term.field))),
   }));
   keyed.sort((a, b) => {
     for (const [index, term] of terms.entries()) {
+      // Every key list was mapped from `terms`, so each index is in range.
       const order = compareKeys(
         term,
-        a.keys.at(index) ?? null,
-        b.keys.at(index) ?? null,
+        a.keys[index] as OrderKey | null,
+        b.keys[index] as OrderKey | null,
       );
       if (order !== 0) {
         return order;

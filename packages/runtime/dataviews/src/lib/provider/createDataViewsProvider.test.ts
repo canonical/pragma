@@ -1,8 +1,5 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
-import {
-  declareCapabilities,
-  declareSorting,
-} from "../../../testing/fixtures.js";
+import { declare, declareSort } from "../../../testing/fixtures.js";
 import { DEFAULT_WINDOW, type Slice } from "../query/index.js";
 import type { Completion } from "../result/index.js";
 import { createSchema } from "../schema/index.js";
@@ -33,7 +30,7 @@ const delivered = <TRow extends object>(
     rows,
     groups: null,
     counts: {
-      visible: exact(rows.length),
+      pageable: exact(rows.length),
       matched: exact(rows.length),
       total: exact(rows.length),
     },
@@ -297,7 +294,7 @@ describe("createDataViewsProvider", () => {
     expect(p.state.get().result.rows).toEqual([{ id: "machine-1" }]);
     expect(p.state.get().result.status).toBe("ready");
     expect(p.state.get().result.counts).toEqual({
-      visible: exact(1),
+      pageable: exact(1),
       matched: exact(1),
       total: exact(1),
     });
@@ -391,7 +388,7 @@ describe("createDataViewsProvider", () => {
     // The rows still answer the query, so they are kept and the refresh is
     // reported as failed over them — never replaced by rows nothing can key.
     expect(p.rows.get()).toBe(retained);
-    expect(p.state.get().result.status).toBe("refreshFailed");
+    expect(p.state.get().result.status).toBe("refresh-failed");
     expect(p.state.get().result.problem).toMatchObject({
       status: "failed",
       failure: { reason: 'duplicate row id "m-2"' },
@@ -416,7 +413,7 @@ describe("createDataViewsProvider", () => {
     const retained = p.rows.get();
     p.complete(refreshRequest(p), FAILED);
     expect(p.rows.get()).toBe(retained);
-    expect(p.state.get().result.status).toBe("refreshFailed");
+    expect(p.state.get().result.status).toBe("refresh-failed");
     expect(p.state.get().result.problem).toEqual({
       status: "failed",
       failure: { reason: "offline", cause: null, transient: true },
@@ -472,9 +469,9 @@ describe("createDataViewsProvider", () => {
 
   it("carries the source's declaration as a frozen copy, or null", () => {
     expect(provider().capabilities).toBeNull();
-    const declared = declareCapabilities({
+    const declared = declare({
       filter: { status: ["eq"] },
-      sort: declareSorting(["cpu"], 1),
+      sort: declareSort(["cpu"], 1),
     });
     const p = createDataViewsProvider({
       schema: machinesSchema(),
@@ -572,7 +569,7 @@ describe("createDataViewsProvider record types", () => {
     // Never displayed: the rows already on screen stay, and the refresh is
     // reported as failed over them.
     expect(p.rows.get()).toBe(retained);
-    expect(p.state.get().result.status).toBe("refreshFailed");
+    expect(p.state.get().result.status).toBe("refresh-failed");
     expect(p.state.get().result.problem).toMatchObject({
       status: "failed",
       failure: {

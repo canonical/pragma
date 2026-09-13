@@ -3,6 +3,7 @@ import {
   DEFAULT_WINDOW,
   EMPTY_SLICE,
   type GroupTerm,
+  OPERATOR_ARITY,
   type Predicate,
   type PredicateOperand,
   type PredicateOperator,
@@ -10,20 +11,21 @@ import {
   type Slice,
   type SortTerm,
 } from "../query/index.js";
-import type {
-  Schema,
-  SchemaFieldDefinition,
-  SchemaPredicateResult,
-} from "../schema/index.js";
-import { type SourceCapabilities, supportsRequest } from "../source/index.js";
-import type { DecodedQuery, DecodeQueryConfig, QueryIssue } from "./types.js";
 import {
-  fieldOfWireKey,
+  resolveFieldKind,
+  type Schema,
+  type SchemaFieldDefinition,
+  type SchemaPredicateResult,
+} from "../schema/index.js";
+import { refusalsOf, type SourceCapabilities } from "../source/index.js";
+import {
   OPERATOR_DELIMITER,
   RESERVED_QUERY_KEYS,
   SUFFIXED_OPERATORS,
-  wireKeyOf,
-} from "./wireGrammar.js";
+} from "./constants.js";
+import readWireField from "./readWireField.js";
+import spellWireKey from "./spellWireKey.js";
+import type { DecodedQuery, DecodeQueryConfig, QueryIssue } from "./types.js";
 
 const DIGITS = /^\d+$/;
 
@@ -105,11 +107,12 @@ const readPredicate = (
   key: string,
   values: readonly string[],
   schema: Schema<readonly SchemaFieldDefinition[]>,
-  kind: SchemaFieldDefinition["kind"],
+  definition: SchemaFieldDefinition,
   filter: Predicate[],
   issues: QueryIssue[],
 ): void => {
-  const field = fieldOfWireKey(key);
+  const { field } = definition;
+  const kind = resolveFieldKind(definition.kind);
   let operator: PredicateOperator = "eq";
   if (key.includes(OPERATOR_DELIMITER)) {
     const suffix = key.slice(field.length + OPERATOR_DELIMITER.length);
@@ -119,10 +122,15 @@ const readPredicate = (
     }
     operator = suffix;
   }
-  if (operator === "isSet" || kind === "flag") {
+  if (
+    OPERATOR_ARITY[operator] === "none" ||
+    (kind.input.kind === "none" && kind.operators.length > 0)
+  ) {
     // The zero-value operator carries no operands — its presence is the
-    // predicate, never a truthiness test on its value — and a flag field
-    // accepts no other operator. The schema says so in both directions.
+    // predicate, never a truthiness test on its value — and a kind that
+    // filters without a text input has none to parse: the schema answers
+    // for the operator alone. A kind that filters by nothing at all reads
+    // its values below, so the report says why, not which operator.
     record(schema.predicateFor(field, operator, []), key, filter, issues);
     return;
   }
@@ -175,7 +183,7 @@ const executableOf = (
   issues: QueryIssue[],
 ): Slice => {
   const keeps = (parameter: string, clause: Slice): boolean => {
-    const refusals = supportsRequest(capabilities, {
+    const refusals = refusalsOf(capabilities, {
       slice: clause,
       window: DEFAULT_WINDOW,
     });
@@ -189,7 +197,7 @@ const executableOf = (
   };
   return {
     filter: slice.filter.filter((predicate) =>
-      keeps(wireKeyOf(predicate.field, predicate.operator), {
+      keeps(spellWireKey(predicate.field, predicate.operator), {
         ...EMPTY_SLICE,
         filter: [predicate],
       }),
@@ -215,7 +223,7 @@ const addressableWindow = (
   capabilities: SourceCapabilities,
   issues: QueryIssue[],
 ): ResultWindow => {
-  const refusals = supportsRequest(capabilities, {
+  const refusals = refusalsOf(capabilities, {
     slice: EMPTY_SLICE,
     window,
   });
@@ -237,13 +245,12 @@ const addressableWindow = (
  * it cannot execute is refused the same way. A parameter naming no field of
  * this collection — delimited or not — belongs to the host and is left
  * alone: unknown, not invalid.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export default function decodeQuery(config: DecodeQueryConfig): DecodedQuery {
   const { schema, params, capabilities } = config;
-  const kinds = new Map<string, SchemaFieldDefinition["kind"]>();
-  for (const definition of schema.fields) {
-    kinds.set(definition.field, definition.kind);
-  }
 
   const issues: QueryIssue[] = [];
   const filter: Predicate[] = [];
@@ -270,7 +277,7 @@ export default function decodeQuery(config: DecodeQueryConfig): DecodedQuery {
             parameter: key,
             reason: `"${value}" is not an ordered sort term`,
           });
-        } else if (!schema.hasField(term.field)) {
+        } else if (schema.findField(term.field) === undefined) {
           // A field with no kind cannot be compared, so a term naming one is
           // as malformed as a term with no direction.
           issues.push({
@@ -327,11 +334,11 @@ export default function decodeQuery(config: DecodeQueryConfig): DecodedQuery {
       // names — is the host's to interpret.
       continue;
     }
-    const kind = kinds.get(fieldOfWireKey(key));
-    if (kind === undefined) {
+    const definition = schema.findField(readWireField(key));
+    if (definition === undefined) {
       continue;
     }
-    readPredicate(key, values, schema, kind, filter, issues);
+    readPredicate(key, values, schema, definition, filter, issues);
   }
 
   const read: Slice = { filter, search, sort, group };

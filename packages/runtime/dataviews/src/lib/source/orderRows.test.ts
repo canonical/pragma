@@ -7,8 +7,7 @@ import {
 } from "../schema/index.js";
 import { ROOT_NUMERIC_COLLATION } from "./constants.js";
 import orderRows from "./orderRows.js";
-import readProperty from "./readProperty.js";
-import type { EffectiveOrdering, FieldReader } from "./types.js";
+import type { EffectiveOrdering } from "./types.js";
 
 const schema = createSchema([
   { field: "name", kind: "text" },
@@ -38,7 +37,6 @@ type Ordered = {
   readonly schema?: Schema<readonly SchemaFieldDefinition[]>;
   readonly collation?: string | null;
   readonly tiebreak?: EffectiveOrdering["tiebreak"];
-  readonly read?: FieldReader;
 };
 
 const buildOrderConfig = (
@@ -51,7 +49,6 @@ const buildOrderConfig = (
     options.collation === undefined
       ? ROOT_NUMERIC_COLLATION
       : options.collation,
-  read: options.read ?? readProperty,
 });
 
 /** Order rows by one ordering, answering their ids. */
@@ -303,19 +300,19 @@ describe("orderRows", () => {
   it("reads a field once per row when the tiebreak repeats it", () => {
     // Comparing one field twice can only tie, so the second key is never
     // read rather than read and discarded.
-    const rows = [
-      { id: "a", cores: 2 },
-      { id: "b", cores: 1 },
-    ];
     let reads = 0;
-    const read: FieldReader = (row, field) => {
-      reads += 1;
-      return readProperty(row, field);
-    };
+    const counted = (id: string, cores: number) =>
+      Object.defineProperty({ id }, "cores", {
+        enumerable: true,
+        get: () => {
+          reads += 1;
+          return cores;
+        },
+      });
+    const rows = [counted("a", 2), counted("b", 1)];
     expect(
       order(rows, [buildAscTerm("cores")], {
         tiebreak: [buildDescTerm("cores")],
-        read,
       }),
     ).toEqual(["b", "a"]);
     expect(reads).toBe(rows.length);
@@ -342,19 +339,6 @@ describe("orderRows", () => {
       "b",
       "a",
     ]);
-  });
-
-  it("reads fields through a caller-supplied accessor", () => {
-    const rows = [
-      { id: "two", record: { cores: 2 } },
-      { id: "one", record: { cores: 1 } },
-    ];
-    expect(
-      order(rows, [buildAscTerm("cores")], {
-        read: (row, field) =>
-          (row as { record: Record<string, unknown> }).record[field],
-      }),
-    ).toEqual(["one", "two"]);
   });
 
   it("agrees with the declared collator over an adversarial list, in either arrival order", () => {

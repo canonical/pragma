@@ -1,21 +1,20 @@
 import {
-  canonicalSlice,
-  operandRankOf,
+  canonicalizeSlice,
   type Predicate,
-  type PredicateOperand,
+  rankOperand,
   type Slice,
 } from "../query/index.js";
-import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
+import { readField } from "../rows/index.js";
+import { type FieldKindRules, resolveFieldKind } from "../schema/index.js";
 import orderRows from "./orderRows.js";
-import readProperty from "./readProperty.js";
 import resolveEffectiveOrdering from "./resolveEffectiveOrdering.js";
-import type { FieldReader, SortCapabilities } from "./types.js";
+import type { ExecuteSliceConfig } from "./types.js";
 
 /** Absent values never satisfy a predicate. */
 const isAbsent = (value: unknown): boolean =>
   value === null || value === undefined;
 
-const nullRank = operandRankOf(null);
+const nullRank = rankOperand(null);
 
 /**
  * The operand rank of a row value, or null when the value is outside the
@@ -27,36 +26,10 @@ const rankOf = (value: unknown): string | null => {
     case "string":
     case "number":
     case "boolean":
-      return operandRankOf(value);
+      return rankOperand(value);
     default:
       return value === null ? nullRank : null;
   }
-};
-
-/**
- * Order two values of one type for a range test: numbers, strings by code
- * point, booleans false before true. Values of different types, and `NaN`,
- * are incomparable and return null — the source never invents an order
- * across types, and never reports a `NaN` as within a range. Row ordering
- * lives in `orderRows`, which reads each field through its declared kind.
- */
-const compareValues = (a: unknown, b: unknown): number | null => {
-  if (typeof a === "number" && typeof b === "number") {
-    return Number.isNaN(a) || Number.isNaN(b)
-      ? null
-      : a < b
-        ? -1
-        : a > b
-          ? 1
-          : 0;
-  }
-  if (typeof a === "string" && typeof b === "string") {
-    return a < b ? -1 : a > b ? 1 : 0;
-  }
-  if (typeof a === "boolean" && typeof b === "boolean") {
-    return a === b ? 0 : a ? 1 : -1;
-  }
-  return null;
 };
 
 /** One predicate compiled to a per-row test, with its operands resolved
@@ -66,13 +39,21 @@ type CompiledPredicate = {
   readonly test: (value: unknown) => boolean;
 };
 
-const compilePredicate = (predicate: Predicate): CompiledPredicate => {
+/**
+ * One predicate compiled against the field's kind: a range test compares
+ * through the kind, so a field the schema does not define — and a kind with
+ * no range — matches nothing.
+ */
+const compilePredicate = (
+  predicate: Predicate,
+  kind: FieldKindRules | null,
+): CompiledPredicate => {
   const { field } = predicate;
   switch (predicate.operator) {
     case "isSet":
       return { field, test: (value) => !isAbsent(value) };
     case "eq": {
-      const ranks = new Set(predicate.operands.map(operandRankOf));
+      const ranks = new Set(predicate.operands.map(rankOperand));
       return {
         field,
         test: (value) => {
@@ -83,9 +64,10 @@ const compilePredicate = (predicate: Predicate): CompiledPredicate => {
     }
     case "gte":
     case "lte": {
-      const bound: PredicateOperand | undefined = predicate.operands.at(0);
-      if (bound === undefined) {
-        // A range without its operand is not a range; it matches nothing.
+      const [bound] = predicate.operands;
+      // A range without its operand is not a range, and a range over a
+      // field the schema does not describe compares nothing: neither matches.
+      if (bound === undefined || kind === null) {
         return { field, test: () => false };
       }
       const atLeast = predicate.operator === "gte";
@@ -95,7 +77,7 @@ const compilePredicate = (predicate: Predicate): CompiledPredicate => {
           if (isAbsent(value)) {
             return false;
           }
-          const order = compareValues(value, bound);
+          const order = kind.compareToBound(value, bound);
           if (order === null) {
             return false;
           }
@@ -112,13 +94,12 @@ const compilePredicate = (predicate: Predicate): CompiledPredicate => {
  * never matches.
  */
 const matchesSearch = (
-  row: unknown,
+  row: object,
   needle: string,
   fields: readonly string[],
-  read: FieldReader,
 ): boolean => {
   for (const field of fields) {
-    const value = read(row, field);
+    const value = readField(row, field);
     if (typeof value !== "string" && typeof value !== "number") {
       continue;
     }
@@ -130,29 +111,6 @@ const matchesSearch = (
   return false;
 };
 
-/** What a local execution needs beyond the rows and the query. */
-export type ExecuteSliceConfig = {
-  /**
-   * The field kinds every ordered term is compared through.
-   *
-   * @experimental Newly required: ordering now goes through the schema, and
-   * the filter path may follow it for date values.
-   */
-  readonly schema: Schema<readonly SchemaFieldDefinition[]>;
-  /**
-   * What the source declares about ordering: the default, the tiebreak and
-   * the collation. A term — a tiebreak's included — naming no field of the
-   * schema orders nothing, so an identity tiebreak needs its field there.
-   *
-   * @experimental Newly required; may narrow to the three members it reads.
-   */
-  readonly sort: SortCapabilities;
-  /** Field access; own-property lookup by default. */
-  readonly read?: FieldReader;
-  /** Fields free-text search reads; none by default. */
-  readonly searchFields?: readonly string[];
-};
-
 /**
  * Execute a query over complete local input: filter, then search, then
  * order. Windowing stays a separate projection (`applyWindow`), so the
@@ -161,37 +119,37 @@ export type ExecuteSliceConfig = {
  * The ordering applied is the effective one: the query's own terms, or the
  * source's declared default when it states none, then the source's
  * tiebreak. An empty `slice.sort` is therefore the documented default, never
- * "unordered".
- *
- * Seam for the grouping unit: group levels already order before the sort
- * terms, and the summaries of one page are still owed. Nothing here groups,
- * because no source declares a groupable field and a grouped request is
- * refused.
+ * "unordered". Nothing here groups: no source declares a groupable field,
+ * and a grouped request is refused before it reaches this.
  */
 export default function executeSlice<TRow extends object>(
   rows: readonly TRow[],
   slice: Slice,
   config: ExecuteSliceConfig,
 ): readonly TRow[] {
-  const read = config.read ?? readProperty;
   const searchFields = config.searchFields ?? [];
-  const query = canonicalSlice(slice);
+  const query = canonicalizeSlice(slice);
   const needle = query.search === null ? null : query.search.toLowerCase();
-  const predicates = query.filter.map(compilePredicate);
+  const predicates = query.filter.map((predicate) => {
+    const definition = config.schema.findField(predicate.field);
+    return compilePredicate(
+      predicate,
+      definition === undefined ? null : resolveFieldKind(definition.kind),
+    );
+  });
 
   const matched = rows.filter((row) => {
     for (const predicate of predicates) {
-      if (!predicate.test(read(row, predicate.field))) {
+      if (!predicate.test(readField(row, predicate.field))) {
         return false;
       }
     }
-    return needle === null || matchesSearch(row, needle, searchFields, read);
+    return needle === null || matchesSearch(row, needle, searchFields);
   });
 
   return orderRows(matched, {
     ordering: resolveEffectiveOrdering(query, config.sort),
     schema: config.schema,
     collation: config.sort.collation,
-    read,
   });
 }

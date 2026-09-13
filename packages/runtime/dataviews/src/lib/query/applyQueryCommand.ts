@@ -1,6 +1,9 @@
-import { predicateAddress } from "./canonicalSlice.js";
+import addressPredicate from "./addressPredicate.js";
+import areListsEqual from "./areListsEqual.js";
+import areSlicesEqual from "./areSlicesEqual.js";
 import collapseSortTerms from "./collapseSortTerms.js";
-import sliceEquals from "./sliceEquals.js";
+import { OPERATOR_ARITY } from "./constants.js";
+import rejectOperandArity from "./rejectOperandArity.js";
 import type {
   GroupPath,
   Predicate,
@@ -31,23 +34,10 @@ const predicateRejection = (predicate: Predicate): string | null => {
   ) {
     return "predicate operands must be finite numbers";
   }
-  switch (predicate.operator) {
-    case "eq":
-      return predicate.operands.length > 0
-        ? null
-        : "eq predicate needs at least one operand";
-    case "gte":
-    case "lte":
-      return predicate.operands.length === 1
-        ? null
-        : `${predicate.operator} predicate needs exactly one operand`;
-    case "isSet":
-      return predicate.operands.length === 0
-        ? null
-        : "isSet predicate takes no operands";
-    default:
-      return `unknown predicate operator ${String(predicate.operator)}`;
+  if (!Object.hasOwn(OPERATOR_ARITY, predicate.operator)) {
+    return `unknown predicate operator ${String(predicate.operator)}`;
   }
+  return rejectOperandArity(predicate.operator, predicate.operands.length);
 };
 
 /**
@@ -66,31 +56,18 @@ const setPredicate = (slice: Slice, predicate: Predicate): Slice => ({
   filter: [
     ...slice.filter.filter(
       (existing) =>
-        predicateAddress(existing.field, existing.operator) !==
-        predicateAddress(predicate.field, predicate.operator),
+        addressPredicate(existing.field, existing.operator) !==
+        addressPredicate(predicate.field, predicate.operator),
     ),
     predicate,
   ],
 });
 
-/**
- * Whether two lists are equal element by element. The lengths are compared
- * first, so the parallel read is in range and asserted in place rather
- * than handled.
- */
-const listsEqual = <T>(
-  a: readonly T[],
-  b: readonly T[],
-  equals: (left: T, right: T) => boolean,
-): boolean =>
-  a.length === b.length &&
-  a.every((left, index) => equals(left, b[index] as T));
-
 const collapsedEquals = (
   a: readonly GroupPath[],
   b: readonly GroupPath[],
 ): boolean =>
-  listsEqual(a, b, (left, right) => listsEqual(left, right, Object.is));
+  areListsEqual(a, b, (left, right) => areListsEqual(left, right, Object.is));
 
 /**
  * Apply one addressed query command as a coherent transition: a changed
@@ -171,7 +148,7 @@ export default function applyQueryCommand(
   }
 
   const nextSlice = applyToSlice(slice, command);
-  if (sliceEquals(slice, nextSlice)) {
+  if (areSlicesEqual(slice, nextSlice)) {
     // A semantically unchanged edit is not a request and not a history entry.
     return {
       status: "accepted",
@@ -226,12 +203,12 @@ const applyToSlice = (slice: Slice, command: SliceCommand): Slice => {
     case "setPredicate":
       return setPredicate(slice, command.predicate);
     case "removePredicate": {
-      const address = predicateAddress(command.field, command.operator);
+      const address = addressPredicate(command.field, command.operator);
       return {
         ...slice,
         filter: slice.filter.filter(
           (predicate) =>
-            predicateAddress(predicate.field, predicate.operator) !== address,
+            addressPredicate(predicate.field, predicate.operator) !== address,
         ),
       };
     }
