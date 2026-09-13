@@ -51,9 +51,8 @@
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
     "storybook": "storybook dev -p 6010 --no-open --host 0.0.0.0",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@canonical/dataviews-core": "^0.37.0",
