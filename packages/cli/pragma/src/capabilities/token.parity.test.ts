@@ -5,14 +5,15 @@
  * The fixture is authored to make the story's two hard rules FALSIFIABLE, which
  * the shipped corpus cannot do on its own:
  *
- * - the AGREEMENT rule. Type and description are definition-level facts and a
- *   symbol can have many definitions, so the story publishes a value only when
- *   every definition agrees and blanks it when they disagree. `color.text` here
- *   has three definitions that agree on type and disagree on description, which
- *   is the only shape that tells the rule apart from "sample one definition" —
- *   over the shipped graph both rules would return the same type for it, and a
- *   sample would return SOME description, so a shipped-only test could not see
- *   the difference.
+ * - the symbol's OWN DEFINITION. Type and description are definition-level
+ *   facts and a symbol can have many definitions, so the story reads the one
+ *   the symbol's BASE resolved value was authored in — the head of that value's
+ *   resolution chain. `color.text` here has three definitions with three
+ *   different descriptions, one of them the base head and one of them the head
+ *   of the value at `mode.dark`, which is the only shape that tells the rule
+ *   apart from both of its neighbours: "sample one definition" would return any
+ *   of the three, and a walk that forgot to restrict itself to the BASE value
+ *   would publish two rows for the symbol.
  * - the two S3 surfaces select the chain AND the derivation. The shape admits
  *   exactly one of the two, and every value in the token corpus that carries a
  *   derivation is a channel routing — so the fixture carries one of each, and
@@ -59,15 +60,17 @@ const PREFIXES = {
 /**
  * Four symbols, chosen so every branch of the story has a witness:
  *
- * - `color.text` — three definitions AGREEING on type, DISAGREEING on
+ * - `color.text` — three definitions agreeing on type and each carrying its OWN
  *   description; two resolved values, one at the default position and one at a
- *   coordinate, the second carrying a two-link chain;
- * - `color.border` — one definition, so both fields publish; it is also the
- *   symbol the channel derives from, so it proves the derivation renders a NAME
- *   rather than an IRI;
- * - `modifier.color.text` — a CHANNEL: no definitions at all (so both fields
- *   blank by absence rather than by disagreement) and one resolved value
- *   carrying a derivation and NO value;
+ *   coordinate, the second carrying a two-link chain whose head is a DIFFERENT
+ *   definition from the base value's. So the published description is the base
+ *   head's, and a walk over every value would publish the symbol twice;
+ * - `color.border` — one definition and one base value, so both fields publish;
+ *   it is also the symbol the channel derives from, so it proves the derivation
+ *   renders a NAME rather than an IRI;
+ * - `modifier.color.text` — a CHANNEL: no definitions at all, and one resolved
+ *   value carrying a derivation, a coordinate and NO chain — so it has no base
+ *   head and both fields are left unbound;
  * - `number.hue` — a second type, so `--type` is a real narrowing rather than
  *   a filter that happens to match everything.
  */
@@ -135,7 +138,9 @@ dt:modifier.color.text a dt:TokenSymbol ;
     dt:channelOf dt:color.text .
 
 # — The definitions ————————————————————————————————————————————————————————
-# Three for color.text: SAME type, TWO different descriptions.
+# Three for color.text: SAME type, THREE different descriptions. The light one
+# is the head of the BASE value's chain and so the one the story publishes; the
+# dark one heads the chain at mode.dark and must NOT reach the row.
 <${DT}file/light.json#color.text> a w3c-tokens:Token ;
     dt:symbol dt:color.text ;
     dt:tokenType w3c-tokens:color ;
@@ -145,7 +150,7 @@ dt:modifier.color.text a dt:TokenSymbol ;
     dt:symbol dt:color.text ;
     dt:tokenType w3c-tokens:color ;
     w3c-tokens:inFile <${DT}file/dark.json> ;
-    w3c-tokens:description "Default text colour." .
+    w3c-tokens:description "Text colour in dark mode." .
 <${DT}file/success.json#color.text> a w3c-tokens:Token ;
     dt:symbol dt:color.text ;
     dt:tokenType w3c-tokens:color ;
@@ -207,11 +212,22 @@ dt:coordinate.mode.dark a dt:Coordinate .
 dt:coordinate.criticality.success a dt:Coordinate .
 
 # — The resolved values ————————————————————————————————————————————————————
-# Default position: no coordinate at all, one-link chain.
+# Default position: no coordinate at all, one-link chain. This value's chain
+# HEAD is what the list and the lookup publish as the symbol's own type and
+# description, so every symbol with a definition carries one — which is the
+# shipped graph's shape too.
 [] a dt:ResolvedValue ;
     dt:forSymbol dt:color.text ;
     dt:resolvesTo "black" ;
     dt:resolutionChain ( <${DT}file/light.json#color.text> ) .
+[] a dt:ResolvedValue ;
+    dt:forSymbol dt:color.border ;
+    dt:resolvesTo "grey" ;
+    dt:resolutionChain ( <${DT}file/light.json#color.border> ) .
+[] a dt:ResolvedValue ;
+    dt:forSymbol dt:number.hue ;
+    dt:resolvesTo "240" ;
+    dt:resolutionChain ( <${DT}file/light.json#number.hue> ) .
 # A coordinate, and a TWO-link chain: the authored definition first, what it
 # aliased through second. The lookup's expand shows the head; the verb shows both.
 [] a dt:ResolvedValue ;
@@ -272,7 +288,7 @@ function children(
   return (entity[name] ?? []) as Record<string, string>[];
 }
 
-describe("token list — the symbols, and the agreement rule (PROTECTED)", () => {
+describe("token list — the symbols, and their own definitions (PROTECTED)", () => {
   it("publishes one row per symbol, ordered by the dotted name", async () => {
     expect((await rows("list")).map((row) => row.name)).toEqual([
       "color.border",
@@ -282,28 +298,42 @@ describe("token list — the symbols, and the agreement rule (PROTECTED)", () =>
     ]);
   });
 
-  it("publishes the type and description every definition AGREES on", async () => {
+  it("publishes the type and description of the symbol's OWN definition", async () => {
     const byName = new Map((await rows("list")).map((r) => [r.name, r]));
-    // One definition: both fields agree with themselves and both publish.
+    // One definition, which is therefore the base value's chain head.
     expect(byName.get("color.border")).toMatchObject({
       type: "color",
       description: "Border colour.",
     });
-    // Three definitions agreeing on type, DISAGREEING on description. This is
-    // the whole rule: the type survives, the description is blanked, and the
-    // row is still published rather than dropped.
-    expect(byName.get("color.text")).toMatchObject({ type: "color" });
-    expect(byName.get("color.text")?.description).toBe("");
+    // Three definitions with three different descriptions. The published one
+    // is the BASE value's head — `light.json` — and not `dark.json`'s, which
+    // heads the chain at `mode.dark`, nor `success.json`'s, which heads no
+    // value at all.
+    expect(byName.get("color.text")).toMatchObject({
+      type: "color",
+      description: "Default text colour.",
+    });
   });
 
-  it("blanks BOTH fields for a symbol with no definition at all", async () => {
-    // A minted channel has no definition, so there is no value every
-    // definition agrees on — absence and disagreement answer the same way.
+  it("publishes ONE row per symbol even where several values carry chains", async () => {
+    // `color.text` has a base value and a value at `mode.dark`, each with its
+    // own chain head and its own description. A walk over every value would
+    // publish the symbol twice — once per head — which is what restricting to
+    // the value with no coordinate prevents.
+    const named = (await rows("list")).filter((r) => r.name === "color.text");
+    expect(named).toHaveLength(1);
+  });
+
+  it("leaves BOTH fields unbound for a symbol with no base chain head", async () => {
+    // A minted channel has no definition anywhere and its only value is a
+    // derivation, so there is no head to read. The cells are absent rather
+    // than guessed.
     const channel = (await rows("list")).find(
       (row) => row.name === "modifier.color.text",
     );
-    expect(channel?.type).toBe("");
-    expect(channel?.description).toBe("");
+    expect(channel).toBeDefined();
+    expect(channel?.type).toBeUndefined();
+    expect(channel?.description).toBeUndefined();
   });
 
   it("binds the channel relation to the base symbol's NAME, not its IRI", async () => {
@@ -314,7 +344,7 @@ describe("token list — the symbols, and the agreement rule (PROTECTED)", () =>
     expect(byName.get("color.text")?.channelOf).toBeUndefined();
   });
 
-  it("--type narrows to the agreed type, and a blank type matches nothing", async () => {
+  it("--type narrows to the definition's type, and an unbound type matches nothing", async () => {
     expect((await rows("list", { type: "color" })).map((r) => r.name)).toEqual([
       "color.border",
       "color.text",
@@ -346,14 +376,20 @@ describe("token list — the symbols, and the agreement rule (PROTECTED)", () =>
     });
   });
 
-  it("--search reads the name and the agreed description", async () => {
+  it("--search reads the name and the published description", async () => {
     expect(
       (await rows("list", { search: "border" })).map((r) => r.name),
     ).toEqual(["color.border"]);
-    // The description is searchable where it published; where the agreement
-    // rule blanked it, the row is reachable by name alone.
+    // Only the published description is searchable. A word that appears solely
+    // in a definition this symbol's base value was NOT authored in reaches no
+    // row — `successful` is `success.json`'s wording, and `dark mode` is the
+    // head at `mode.dark`. Both are readable through the `definitions` expand
+    // and neither is a symbol-level fact.
     expect(
       (await rows("list", { search: "successful" })).map((r) => r.name),
+    ).toEqual([]);
+    expect(
+      (await rows("list", { search: "dark mode" })).map((r) => r.name),
     ).toEqual([]);
   });
 });
@@ -363,14 +399,22 @@ describe("token values — chain AND derivation on the same surface (PROTECTED)"
     expect(
       (await rows("values")).map((row) => [row.symbol, row.position ?? ""]),
     ).toEqual([
+      ["color.border", ""],
       ["color.text", ""],
       ["color.text", "mode.dark"],
       ["modifier.color.text", "criticality.success"],
+      ["number.hue", ""],
     ]);
   });
 
   it("names the position by its dotted coordinate, and leaves the default empty", async () => {
-    const [defaultRow, darkRow] = await rows("values");
+    const named = await rows("values");
+    const darkRow = named.find(
+      (row) => row.symbol === "color.text" && row.position,
+    );
+    const defaultRow = named.find(
+      (row) => row.symbol === "color.text" && !row.position,
+    );
     // Not `dt:coordinate.mode.dark`: the class prefix its IRI carries is
     // dropped, so a position reads and filters the way it is written elsewhere.
     expect(darkRow?.position).toBe("mode.dark");
@@ -387,7 +431,9 @@ describe("token values — chain AND derivation on the same surface (PROTECTED)"
     // Pinning the order would be pinning the engine's evaluation, and the
     // story's own note now says the cell answers WHICH definitions a value
     // passed through rather than in what order.
-    const darkRow = (await rows("values")).at(1);
+    const darkRow = (await rows("values")).find(
+      (row) => row.symbol === "color.text" && row.position === "mode.dark",
+    );
     expect(darkRow?.chain?.split(" ").sort()).toEqual([
       "dark.json#color.text",
       "light.json#color.border",
@@ -395,7 +441,9 @@ describe("token values — chain AND derivation on the same surface (PROTECTED)"
   });
 
   it("a derived value carries its derivation by NAME and no value cell", async () => {
-    const derived = (await rows("values")).at(2);
+    const derived = (await rows("values")).find(
+      (row) => row.symbol === "modifier.color.text",
+    );
     expect(derived).toMatchObject({
       symbol: "modifier.color.text",
       position: "criticality.success",
@@ -541,10 +589,38 @@ describe("token lookup — one symbol, end to end (PROTECTED)", () => {
     expect(await lookup("dt:color.text")).toMatchObject({ name: "color.text" });
   });
 
+  it("carries the SAME type and description the list row publishes", async () => {
+    // Two spellings of one rule: the list reads the base value's chain head in
+    // its own SPARQL, the lookup reads it as a property path. A divergence here
+    // would mean a caller who looked a symbol up saw a different description
+    // from the one that brought them to it.
+    //
+    // Asserted on `color.border`, which has ONE chain head. `color.text` is
+    // deliberately the other case: this fixture gives its two values two
+    // DIFFERENT heads, and a property path cannot spell the base restriction
+    // that tells them apart, so the lookup's cell is whichever row the store
+    // returns first. That is not a defect this fixture can fix — it is a
+    // CONDITION on the corpus, and `tokenGraph.shipped.exec.test.ts` pins it:
+    // over the shipped graph no symbol's heads name two types or two
+    // descriptions, which is what makes the path's answer the list's answer.
+    const row = (await rows("list")).find((r) => r.name === "color.border");
+    expect(row?.description).toBe("Border colour.");
+    expect(await lookup("color.border")).toMatchObject({
+      type: row?.type,
+      description: row?.description,
+    });
+  });
+
+  it("leaves the pair unbound for a symbol with no base chain head", async () => {
+    const channel = await lookup("modifier.color.text");
+    expect(channel.type).toBeUndefined();
+    expect(channel.description).toBeUndefined();
+  });
+
   it("shows every definition APART, with its own type and description", async () => {
-    // The only surface that can: the symbol-level pair follows the agreement
-    // rule, and this is where the three descriptions behind `color.text`
-    // become visible instead of one being chosen arbitrarily.
+    // The only surface that can: the symbol-level pair names ONE definition —
+    // the base value's head — and this is where the other two behind
+    // `color.text` stay readable rather than being outvoted or discarded.
     const definitions = children(await lookup("color.text"), "definitions");
     expect(definitions).toHaveLength(3);
     expect(definitions.map((d) => d.file).sort()).toEqual([
@@ -552,7 +628,7 @@ describe("token lookup — one symbol, end to end (PROTECTED)", () => {
       "light.json",
       "success.json",
     ]);
-    expect(new Set(definitions.map((d) => d.description)).size).toBe(2);
+    expect(new Set(definitions.map((d) => d.description)).size).toBe(3);
     expect(new Set(definitions.map((d) => d.type))).toEqual(new Set(["color"]));
   });
 

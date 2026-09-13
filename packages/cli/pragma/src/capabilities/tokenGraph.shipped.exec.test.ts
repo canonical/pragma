@@ -383,6 +383,106 @@ describe("a resolved value carries a chain XOR a derivation (PROTECTED)", () => 
   });
 });
 
+describe("a symbol's own definition is its base chain's HEAD (PROTECTED)", () => {
+  // What `token list`'s two definition-level columns rest on, and what a
+  // fixture cannot vouch for. The story reads the head of the symbol's BASE
+  // resolved value — the one with no `dt:coordinate` — so three things have to
+  // hold over the corpus: that there is at most one such value per symbol, that
+  // its head really is a definition OF that symbol, and that the heads of a
+  // symbol's OTHER values never name a different type or description, because
+  // `token lookup` reads the same pair as a property path and a path cannot
+  // spell the base restriction.
+  it("no symbol has two base resolved values", async () => {
+    // If one ever did, the list would publish the symbol twice — or, with the
+    // `DISTINCT` that guards it, silently drop whichever head sorted second.
+    expect(
+      await count(
+        `SELECT (COUNT(*) AS ?n) WHERE {
+           SELECT ?s WHERE {
+             ?v a dt:ResolvedValue ; dt:forSymbol ?s .
+             FILTER NOT EXISTS { ?v dt:coordinate ?c }
+           } GROUP BY ?s HAVING (COUNT(?v) > 1)
+         }`,
+      ),
+    ).toBe(0);
+  });
+
+  it("a chain head is a definition OF the symbol the value is for", async () => {
+    // The claim that makes "its own definition" true rather than merely
+    // convenient: the head is reached through the value, not through
+    // `dt:symbol`, so nothing in the path itself guarantees it points back.
+    expect(
+      await count(
+        `SELECT (COUNT(*) AS ?n) WHERE {
+           ?v a dt:ResolvedValue ;
+              dt:forSymbol ?s ;
+              dt:resolutionChain/rdf:first ?head .
+           FILTER NOT EXISTS { ?head dt:symbol ?s }
+         }`,
+      ),
+    ).toBe(0);
+  });
+
+  it("a symbol's chain heads never name two types, or two descriptions", async () => {
+    // This is what licenses the lookup's unrestricted path. A symbol with
+    // values at several positions has several heads (354 of them do today); as
+    // long as they agree on these two fields, the path is one value repeated
+    // and the first row the resolver keeps is the same answer the list gives.
+    for (const property of [
+      "dt:tokenType/rdfs:label",
+      "w3c-tokens:description",
+    ]) {
+      expect(
+        await count(
+          `SELECT (COUNT(*) AS ?n) WHERE {
+             SELECT ?s WHERE {
+               ?v dt:forSymbol ?s ; dt:resolutionChain/rdf:first/${property} ?o .
+             } GROUP BY ?s HAVING (COUNT(DISTINCT ?o) > 1)
+           }`,
+        ),
+        property,
+      ).toBe(0);
+    }
+  });
+
+  it("the population is there, so none of the three passes vacuously", async () => {
+    expect(
+      await count(
+        `SELECT (COUNT(DISTINCT ?s) AS ?n) WHERE {
+           ?v a dt:ResolvedValue ;
+              dt:forSymbol ?s ;
+              dt:resolutionChain/rdf:first ?head .
+           FILTER NOT EXISTS { ?v dt:coordinate ?c }
+         }`,
+      ),
+    ).toBeGreaterThan(0);
+    expect(
+      await count(
+        `SELECT (COUNT(*) AS ?n) WHERE {
+           SELECT ?s WHERE { ?v dt:forSymbol ?s ; dt:resolutionChain ?ch }
+           GROUP BY ?s HAVING (COUNT(?v) > 1)
+         }`,
+      ),
+    ).toBeGreaterThan(0);
+  });
+
+  it("token list and token lookup publish the SAME pair for one symbol", async () => {
+    // One rule, two spellings — the list's own SPARQL and the lookup's
+    // property path — so this is the seam a divergence would open at.
+    const listed = (
+      (await verb("token", "list").run(
+        { search: "color.text" },
+        rt,
+      )) as PackPage
+    ).rows.find((row) => row.name === "color.text");
+    const looked = await lookup("token", "color.text");
+    expect(listed?.type).toBeTruthy();
+    expect(listed?.description).toBeTruthy();
+    expect(looked.type).toBe(listed?.type);
+    expect(looked.description).toBe(listed?.description);
+  });
+});
+
 describe("the shipped nouns answer, end to end (PROTECTED)", () => {
   it("token list publishes rows, and every row is named and typed or blank", async () => {
     const page = (await verb("token", "list").run(
@@ -392,8 +492,8 @@ describe("the shipped nouns answer, end to end (PROTECTED)", () => {
     expect(page.rows.length).toBeGreaterThan(0);
     for (const row of page.rows) {
       expect(row.name, JSON.stringify(row)).toBeTruthy();
-      // The agreement rule's contract: `type` is either the agreed value or
-      // empty. It is never a partial guess, and never an IRI.
+      // The column's contract: `type` is the label its own definition carries,
+      // or nothing at all. It is never a partial guess, and never an IRI.
       expect(row.type ?? "").not.toContain("://");
     }
   });
@@ -402,9 +502,9 @@ describe("the shipped nouns answer, end to end (PROTECTED)", () => {
     const symbol = await lookup("token", "color.text");
     expect(symbol).toMatchObject({ name: "color.text" });
     const definitions = symbol.definitions as Record<string, string>[];
-    // Many definitions is the fact the agreement rule exists for, and the only
-    // surface that can show them apart. Asserted as a floor, not a count:
-    // upstream adds modifier contexts.
+    // Many definitions is the fact that makes "the symbol's own" a real
+    // choice, and this expand is the only surface that shows them apart.
+    // Asserted as a floor, not a count: upstream adds modifier contexts.
     expect(definitions.length).toBeGreaterThan(1);
     expect(new Set(definitions.map((d) => d.type))).toEqual(new Set(["color"]));
     // Coverage reads the family end of the relation; values read the other.

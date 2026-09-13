@@ -530,7 +530,7 @@ Read-only.
 
 ### token_list
 
-List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description every definition of that symbol agrees on, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: "color" }.
+List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description from the symbol's OWN definition, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: "color" }.
 
 Read-only.
 
@@ -538,7 +538,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `type` | string | no | Filter by the agreed type. |
+| `type` | string | no | Filter by type. |
 | `channelOf` | string | no | Filter to one symbol's channels. |
 | `search` | string | no | Search name and description. |
 | `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
@@ -546,7 +546,7 @@ Read-only.
 
 ### token_lookup
 
-Get one design-token symbol in full: every definition behind it with that definition's own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob. Example: token_lookup { name: ["color.text"] }.
+Get one design-token symbol in full: its own type and description, every definition behind it with that definition's own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob. Example: token_lookup { name: ["color.text"] }.
 
 Read-only.
 

@@ -391,31 +391,46 @@ const designSystemStories: readonly PackDefinition[] = [
     noun: "token",
     description: "List the design-token symbols.",
     toolDescription:
-      'List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description every definition of that symbol agrees on, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: "color" }.',
+      'List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description from the symbol\'s OWN definition, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: "color" }.',
     list: {
       // Type and description are DEFINITION-level facts, and 393 of the 745
-      // symbols have more than one definition (`color.text` has 20). The
-      // AGREEMENT RULE decides which reaches the row: a value is published when
-      // every definition of that symbol agrees on it, and left blank when they
-      // disagree. That is one fact and one rule, and it lives HERE — in the
-      // query — because a formatter cannot see the population it would have to
-      // judge, and because the same rule has to hold for the documentation
-      // projection reading the same graph.
+      // symbols have more than one definition (`color.text` has 20). The one
+      // that speaks FOR the symbol is its own, and the graph already carries a
+      // path to it: every symbol the resolver reached has a BASE
+      // `dt:ResolvedValue` — the one with no `dt:coordinate` — and the HEAD of
+      // that value's `dt:resolutionChain` is the definition the value was
+      // authored in at the all-defaults position. Its `dt:tokenType` and its
+      // `w3c-tokens:description` are this row's two cells.
       //
-      // `COUNT(DISTINCT ...) = 1` is the whole rule; `MIN` then names the one
-      // value there is, and is preferred to `SAMPLE` because it ignores an
-      // unbound row rather than being free to return it. A symbol with NO
-      // definition at all (the 25 minted channels) counts 0, not 1, so it
-      // blanks too — absence and disagreement both answer blank, which is the
-      // honest reading of "no value every definition agrees on".
+      // The base restriction is SPELLED OUT rather than left to `DISTINCT`.
+      // 354 of the 519 values at a coordinate carry a chain too, and their
+      // heads are the definitions authored for those positions — a different
+      // definition, correctly so, and not this column's. Over the shipped
+      // corpus those heads happen to agree with the base head on both fields,
+      // so the unrestricted walk answers the same 745 rows; `FILTER NOT EXISTS`
+      // says WHICH value is meant instead of resting on that coincidence.
       //
-      // Measured over the 745 symbols: the agreement rule blanks 40
-      // descriptions by disagreement and 0 types, plus 25 of each by absence.
-      // The rejected alternative — prefer the mode file — blanks BOTH fields
-      // for 391 of them, every primitive included, so `token list --type color`
-      // could not have returned a single palette symbol.
+      // Measured over the 745 symbols: 718 publish both fields, 27 blank both.
+      // The 27 are the 25 minted channels, which have no definition anywhere,
+      // plus `typography.heading.display` and its `.bold` twin, which have
+      // definitions but no resolved value to authorise one of them. Nothing
+      // publishes one field and blanks the other — a chain head carries both,
+      // or the symbol has no chain head.
+      //
+      // This REPLACED an agreement rule (publish what every definition agrees
+      // on, blank it when they disagree), and the two never disagree where the
+      // old one spoke: 0 of the 745 symbols have two definitions naming
+      // different types, and the 40 whose descriptions "disagreed" disagree
+      // only with a `semantic/modifier/**` definition — one position's wording,
+      // which the old rule let outvote the symbol's own. Those 40 now read
+      // their own description instead of a blank. What went with the old rule
+      // is its cost: a `COUNT(DISTINCT ...)` sub-select over 1,311 definitions
+      // made this the slowest body in the distribution. The paged walk that
+      // `listQuery.shipped.exec.test.ts` runs over it took 190 s, past its own
+      // 60-second timeout; over this query it takes 1.8 s, and the whole
+      // population comes back in 71 ms rather than 1.1 s a page.
       query: [
-        "SELECT ?uri ?name ?type ?description ?channelOf",
+        "SELECT DISTINCT ?uri ?name ?type ?description ?channelOf",
         "WHERE {",
         "  ?uri a dt:TokenSymbol ;",
         "       rdfs:label ?name .",
@@ -425,22 +440,12 @@ const designSystemStories: readonly PackDefinition[] = [
         // filter column and the displayed column are one column, and an
         // unbound IRI cell renders as a full IRI.
         "  OPTIONAL { ?uri dt:channelOf/rdfs:label ?channelOf }",
-        "  {",
-        "    SELECT ?uri",
-        '           (IF(COUNT(DISTINCT ?definedType) = 1, MIN(?typeLabel), "") AS ?type)',
-        '           (IF(COUNT(DISTINCT ?definedDescription) = 1, MIN(?definedDescription), "") AS ?description)',
-        "    WHERE {",
-        "      ?uri a dt:TokenSymbol .",
-        "      OPTIONAL {",
-        "        ?definition dt:symbol ?uri .",
-        "        OPTIONAL {",
-        "          ?definition dt:tokenType ?definedType .",
-        "          ?definedType rdfs:label ?typeLabel .",
-        "        }",
-        "        OPTIONAL { ?definition w3c-tokens:description ?definedDescription }",
-        "      }",
-        "    }",
-        "    GROUP BY ?uri",
+        "  OPTIONAL {",
+        "    ?resolved dt:forSymbol ?uri ;",
+        "              dt:resolutionChain/rdf:first ?definition .",
+        "    FILTER NOT EXISTS { ?resolved dt:coordinate ?coordinate }",
+        "    OPTIONAL { ?definition dt:tokenType/rdfs:label ?type }",
+        "    OPTIONAL { ?definition w3c-tokens:description ?description }",
         "  }",
         "}",
         "ORDER BY ?name",
@@ -457,9 +462,9 @@ const designSystemStories: readonly PackDefinition[] = [
           param: "type",
           variable: "type",
           // The seven typed members of the definition's type class, which is
-          // the same term the `type` column reads through its definitions. A
-          // type the ontology declares that no symbol is filed under is a calm
-          // empty list, not a bad argument.
+          // the same term the `type` column reads off the symbol's own
+          // definition. A type the ontology declares that no symbol is filed
+          // under is a calm empty list, not a bad argument.
           vocabulary: {
             query: [
               "SELECT DISTINCT ?type WHERE {",
@@ -468,7 +473,7 @@ const designSystemStories: readonly PackDefinition[] = [
               "}",
             ].join("\n"),
           },
-          description: "Filter by the agreed type.",
+          description: "Filter by type.",
         },
         {
           param: "channelOf",
@@ -784,7 +789,7 @@ const designSystemStories: readonly PackDefinition[] = [
       description:
         "Look up one or more token symbols by dotted name, IRI, or glob.",
       toolDescription:
-        'Get one design-token symbol in full: every definition behind it with that definition\'s own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob. Example: token_lookup { name: ["color.text"] }.',
+        'Get one design-token symbol in full: its own type and description, every definition behind it with that definition\'s own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob. Example: token_lookup { name: ["color.text"] }.',
       fields: [
         // Single-valued: a channel provisions exactly one symbol.
         {
@@ -792,16 +797,33 @@ const designSystemStories: readonly PackDefinition[] = [
           property: "dt:channelOf/rdfs:label",
           label: "Channel of",
         },
+        // The same pair `token list` publishes, reached the same way: the head
+        // of a resolved value's chain is the definition that value was authored
+        // in, so these two read the symbol's OWN definition rather than
+        // sampling one of the twenty behind `color.text`.
+        //
+        // A lookup field is a property PATH, so it cannot spell the
+        // `FILTER NOT EXISTS` that restricts the list's walk to the BASE value,
+        // and here it does not have to. 354 symbols have more than one chain
+        // head — one per materialised position — and over the shipped corpus no
+        // symbol's heads name two types or two descriptions, so the path is
+        // multi-valued with one value repeated and `firstRowPerEntity` keeping
+        // the first is a choice between identical answers. Were a position's
+        // head ever to differ, the `definitions` expand is where the difference
+        // is readable, because it shows every definition APART.
+        {
+          name: "type",
+          property:
+            "^dt:forSymbol/dt:resolutionChain/rdf:first/dt:tokenType/rdfs:label",
+          label: "Type",
+        },
+        {
+          name: "description",
+          property:
+            "^dt:forSymbol/dt:resolutionChain/rdf:first/w3c-tokens:description",
+          label: "Description",
+        },
       ],
-      // A symbol-level `type` and `description` are deliberately NOT fields
-      // here. A lookup field is a property PATH, and the path from a symbol to
-      // its definitions' types is multi-valued — 20 rows for `color.text` — of
-      // which the resolver keeps the first. That is exactly the "sample one
-      // definition" the agreement rule exists to refuse, and a path cannot
-      // express `COUNT(DISTINCT ...) = 1`. So the agreed pair is published
-      // where a query can judge it (`token list`, and `--search <name>` to
-      // reach one symbol), and the `definitions` expand — which CAN show the
-      // definitions apart — carries each definition's own.
       expand: [
         {
           name: "definitions",

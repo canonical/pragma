@@ -73,7 +73,10 @@ ds:betaWidget a ds:Component ;
 # The token STRATA, not the retired ds:Token class: the story addresses
 # dt:TokenSymbol, keyed on the rdfs:label the token-ontology pack publishes,
 # with type and description hanging on the DEFINITIONS behind each symbol
-# rather than on the symbol itself.
+# rather than on the symbol itself. The story reaches the one definition that
+# speaks for the symbol through the symbol's BASE resolved value — the head of
+# its resolution chain — so every labelled symbol here carries one, which is
+# the shipped graph's own shape.
 dt:TokenSymbol a owl:Class .
 w3c-tokens:Token a owl:Class .
 w3c-tokens:TokenType a owl:Class .
@@ -111,6 +114,9 @@ dt:spacing.medium a dt:TokenSymbol ; rdfs:label "spacing.medium" .
 [] a dt:ResolvedValue ; dt:forSymbol dt:color.primary ;
   dt:resolvesTo "#0066CC" ;
   dt:resolutionChain ( <https://dt.canonical.com/file/light.json#color.primary> ) .
+[] a dt:ResolvedValue ; dt:forSymbol dt:spacing.medium ;
+  dt:resolvesTo "1rem" ;
+  dt:resolutionChain ( <https://dt.canonical.com/file/light.json#spacing.medium> ) .
 
 # ---- Platform variables ----
 # The second stratum-shaped noun needs a population here for the same reason the

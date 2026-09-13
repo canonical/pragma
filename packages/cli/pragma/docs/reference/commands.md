@@ -1182,7 +1182,7 @@ pragma token consumers --format llm
 
 List the design-token symbols.
 
-List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description every definition of that symbol agrees on, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: "color" }.
+List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description from the symbol's OWN definition, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: "color" }.
 
 ```
 pragma token list [options]
@@ -1192,7 +1192,7 @@ pragma token list [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--type` | `<string>` | Filter by the agreed type. |
+| `--type` | `<string>` | Filter by type. |
 | `--channel-of` | `<string>` | Filter to one symbol's channels. |
 | `--search` | `<string>` | Search name and description. |
 | `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
@@ -1212,7 +1212,7 @@ pragma token list --format llm
 
 Look up one or more token symbols by dotted name, IRI, or glob.
 
-Get one design-token symbol in full: every definition behind it with that definition's own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob. Example: token_lookup { name: ["color.text"] }.
+Get one design-token symbol in full: its own type and description, every definition behind it with that definition's own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob. Example: token_lookup { name: ["color.text"] }.
 
 ```
 pragma token lookup <name...>
