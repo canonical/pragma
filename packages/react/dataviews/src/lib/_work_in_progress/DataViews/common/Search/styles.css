@@ -1,0 +1,42 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /**
+   * Search styles
+   *
+   * The specification is the anatomy beside the code, `Search.anatomy.yaml`.
+   * Every value below is one it binds; what it could not bind is recorded
+   * there, never hardcoded here.
+   *
+   * The input is a native search input themed through the form layer's
+   * channels, as the saved-views control themes its name input. The submit
+   * control is the baseline's: it is hidden once scripting is enabled, when
+   * every edit applies as it is typed.
+   */
+  .ds.data-views-search {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--dimension-050);
+    color: var(--color-text);
+    font-family: var(--typography-text-primary-font-family);
+    font-size: var(--typography-text-primary-font-size);
+    font-weight: var(--typography-text-primary-font-weight);
+    --form-input-height: var(--density-line-height-effective);
+    --form-input-padding-block: var(--dimension-050);
+    --form-input-padding-inline: var(--dimension-100);
+
+    & > .input {
+      block-size: var(--form-input-height);
+      padding-block: var(--form-input-padding-block);
+      padding-inline: var(--form-input-padding-inline);
+      font: inherit;
+    }
+
+    @media (scripting: enabled) {
+      & > .submit {
+        display: none;
+      }
+    }
+  }
+}

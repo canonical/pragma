@@ -9,6 +9,7 @@ import {
   DataTable,
   Filters,
   Pagination,
+  Search,
   Views,
 } from "./common/index.js";
 import { useProviderState } from "./hooks/index.js";
@@ -44,5 +45,7 @@ DataViews.DataTable = DataTable;
 DataViews.Filters = Filters;
 /** The connected window-navigation part of the composition. */
 DataViews.Pagination = Pagination;
+/** The connected search part, over the applied search. */
+DataViews.Search = Search;
 /** The connected saved-view control, over the store the provider was given. */
 DataViews.Views = Views;

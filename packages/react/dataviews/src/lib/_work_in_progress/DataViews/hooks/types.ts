@@ -1,15 +1,17 @@
 /**
  * Hook domain types for the DataViews domain: every hook's result, and the
- * props of the one hook that takes a config object. The witness hooks and
- * the value hook take their one input positionally — the collection, a
- * channel, a handle — so they declare no props type of their own.
+ * props of the hooks that take a config object. The witness hooks and the
+ * value hook take their one input positionally — the collection, a channel,
+ * a handle — so they declare no props type of their own.
  */
 import type {
   DataViewsProvider,
+  DataViewsState,
   EmptyOr,
   FilterFeedback,
   FilterHandles,
   PredicateOperand,
+  Query,
   ReadonlyChannel,
   RowRecord,
   SchemaFieldDefinition,
@@ -31,6 +33,24 @@ export type UseProviderStateResult = ContextOptions;
 
 /** What a connected part reads off the enclosing root: its value. */
 export type UseDataViewsRootResult = ContextOptions;
+
+/** What the applied-search hook takes: the provider whose search it reads. */
+export type UseAppliedSearchProps = {
+  readonly provider: DataViewsProvider<readonly SchemaFieldDefinition[]>;
+};
+
+/** What the applied-search hook returns: the applied search, empty for none. */
+export type UseAppliedSearchResult = string;
+
+/** What the destination hook takes: the provider, and the query a state leads to. */
+export type UseDestinationProps = {
+  readonly provider: DataViewsProvider<readonly SchemaFieldDefinition[]>;
+  /** The destination's query, from the applied state; held by identity. */
+  readonly destinationOf: (state: DataViewsState<object>) => Query;
+};
+
+/** What the destination hook returns: the spelled parameters, or null without a location. */
+export type UseDestinationResult = string | null;
 
 /** What `useDataViewsValue` returns: the channel's current value. */
 export type UseDataViewsValueResult<T> = T;
@@ -83,7 +103,7 @@ export type UseDataViewsFilterResult<TApplied> = {
   readonly applied: EmptyOr<TApplied>;
   /** What the control shows beside its input: applied, incomplete, or why not. */
   readonly feedback: FilterFeedback;
-  /** Edit through the text input; an edit that cannot apply keeps the standing predicate. */
+  /** Edit through the input; an edit that cannot apply keeps the standing predicate. */
   readonly edit: (input: string) => void;
   /** Set the semantic operands directly, as a multi-value control does. */
   readonly set: (

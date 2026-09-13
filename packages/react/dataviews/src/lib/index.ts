@@ -22,6 +22,7 @@ export type {
   DataViewsFiltersProps,
   DataViewsPaginationProps,
   DataViewsProps,
+  DataViewsSearchProps,
   DataViewsViewsProps,
   UseDataViewsCellResult,
   UseDataViewsFilterResult,
