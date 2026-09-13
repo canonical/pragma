@@ -1,5 +1,7 @@
 import type {
+  HistoryMode,
   Query,
+  QueryLocation,
   ReadonlyChannel,
   Source,
   SourceActionRunner,
@@ -47,4 +49,21 @@ export type ManualSource<TRow extends object> = {
   readonly callAt: (index: number) => ManualCall<TRow>;
   /** The latest execution, or a failure when none was asked for. */
   readonly latest: () => ManualCall<TRow>;
+};
+
+/**
+ * One write a recording location received: the parameters, and the history
+ * mode the writer asked for — null when it asked for none.
+ */
+export type RecordedWrite = readonly [string, HistoryMode | null];
+
+/** A location port and the record of what passed through it. */
+export type RecordingLocation = {
+  readonly location: QueryLocation;
+  /** Every write, in order. */
+  readonly writes: RecordedWrite[];
+  /** What the location read at each notification its subscribers received. */
+  readonly notifications: string[];
+  /** Move the location from outside the loop, as the browser would. */
+  readonly move: (params: string) => void;
 };

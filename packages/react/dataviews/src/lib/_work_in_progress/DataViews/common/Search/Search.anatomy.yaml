@@ -1,0 +1,89 @@
+---
+# DataViews.Search — the collection's text search: one labelled native search
+# input over the applied search, in a GET form that works before any script
+# runs.
+#
+# Anatomy DSL 0.3.0. No validator runs on this file yet: it is checked in
+# review against the DSL's JSON schema. The root carries the design-system
+# graph's IRI for the search input; the graph's block is the design of this
+# part's default UI, and the part keeps the composition's name. The clear
+# affordance the graph allows is the native search input's own.
+#
+# Names — one per part, the same in the design, the DOM and here:
+#   search form       design "Search"      graph "SearchInput"
+#                                          DOM `ds data-views-search`, a GET
+#                                          form with the search role
+#   label             design "Label"       DOM `.label`
+#   query             design "Input"       DOM `.input`, `input[type=search]`
+#   submit            —                    DOM `.submit`
+#
+# Tokens are `/`-paths over `@canonical/design-tokens` 0.10.0 ids. The input
+# is themed through the form layer's own channels, as the saved-views control
+# themes its name input, never restyled:
+#   --form-input-height          density/line-height-effective
+#   --form-input-padding-block   dimension/050
+#   --form-input-padding-inline  dimension/100
+#
+# Transport, which the DSL does not draw: the root is a GET form carrying
+# the search landmark's role, whose one named control is the search input,
+# spelled `q` as the wire grammar spells it, beside hidden controls carrying
+# the rest of the applied query and the location's other parameters, so a
+# submission is the same destination the provider writes. The submit control
+# is the baseline's; it is hidden once scripting is enabled, when every edit
+# applies as it is typed and a submission is intercepted. The `search`
+# element would say the landmark natively; jsdom and browsers before 2023 do
+# not know it, so the role on the form says it instead.
+#
+# Deviations the DSL cannot express, recorded here:
+#   - The part is absent, not disabled, where the source declares no search:
+#     rendering it throws, as the saved views do without a store, because a
+#     control nothing can execute is a programmer error, not a state.
+#   - The design draws a search icon inside the input; the native search
+#     input draws its own affordances, and none is added here.
+#   - Conditional display is deferred in the DSL. The submit control shows
+#     only while scripting is not enabled.
+#
+# States:
+#   - applied: the input shows the applied search, empty when there is none.
+#   - editing: every change applies at once; the applied search is the
+#     value, so an external move — Back, a saved view — is what the input
+#     shows next.
+#
+# Accessibility (DataViews component coverage, "DataViews.Search": 1.3.1,
+# 2.1.1, 2.4.6, 3.3.2, 4.1.2):
+#   search form       A search landmark, unnamed: one per page needs no name,
+#                     and a name repeating the input's would be read twice.
+#   query             A native search input, named by its visible label.
+#                     Typing never floods history: a search replaces the
+#                     entry, and Back restores the applied search into the
+#                     input.
+#   submit            Named "Search"; reachable until scripting is enabled.
+node:
+  uri: global.subcomponent.search_input
+  styles:
+    layout.type: stack
+    layout.direction: row
+    layout.align: center
+    spacing.gap: dimension/050
+    typography.color: color/text
+    typography.family: typography/text/primary/font-family
+    typography.size: typography/text/primary/font-size
+    typography.weight: typography/text/primary/font-weight
+  edges:
+    - node:
+        role: label
+      relation:
+        cardinality: "1"
+        slotName: label
+    - node:
+        role: query
+      relation:
+        cardinality: "1"
+        slotName: default
+    - node:
+        uri: global.component.button
+        props:
+          importance: secondary
+      relation:
+        cardinality: "0..1"
+        slotName: submit

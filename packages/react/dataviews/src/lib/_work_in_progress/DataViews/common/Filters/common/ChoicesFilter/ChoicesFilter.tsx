@@ -1,4 +1,5 @@
 import type { PredicateOperand } from "@canonical/dataviews-core";
+import { spellWireKey } from "@canonical/dataviews-core/bindings";
 import type { ReactElement } from "react";
 import { useFilterHandle } from "../../../../hooks/index.js";
 import type { ChoicesFilterProps } from "./types.js";
@@ -11,12 +12,15 @@ const NONE_SELECTED: ReadonlySet<PredicateOperand> = new Set();
  * One closed-set filter: a checkbox per option, so the applied set is
  * visible and reachable without opening anything. Membership is the whole
  * state — the last option cleared removes the predicate rather than
- * applying an empty restriction that matches nothing.
+ * applying an empty restriction that matches nothing. Every checkbox is
+ * named by the field, as the wire spells equality, so a GET submission
+ * repeats the field once per chosen option.
  */
 export default function ChoicesFilter({
   options,
   handle,
   label,
+  field: fieldName,
   declared,
 }: ChoicesFilterProps): ReactElement | null {
   const field = useFilterHandle(handle);
@@ -32,6 +36,8 @@ export default function ChoicesFilter({
         <label key={String(option)} className="option">
           <input
             type="checkbox"
+            name={spellWireKey(fieldName, "eq")}
+            value={String(option)}
             checked={selected.has(option)}
             // Undeclared, the set may only shrink: adding an option would
             // be a restriction the source never offered.

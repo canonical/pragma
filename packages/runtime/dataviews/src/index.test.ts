@@ -135,6 +135,7 @@ describe("public surface", () => {
       "listDisplayEntries",
       "readProviderHost",
       "resolveColumns",
+      "spellWireKey",
     ]);
     for (const name of Object.keys(bindings)) {
       expect(dataviews).not.toHaveProperty(name);

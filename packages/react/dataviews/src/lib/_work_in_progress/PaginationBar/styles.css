@@ -101,5 +101,22 @@
     & > .trailing > .navigation > .last .ds.icon {
       rotate: 90deg;
     }
+
+    /* A control only the enhancement can drive waits for it; the baseline's
+       submit controls leave once it is there. */
+    & > .trailing > .navigation > .scripted {
+      display: none;
+    }
+
+    @media (scripting: enabled) {
+      & > .leading > .page-size > .submit,
+      & > .trailing > .page > .submit {
+        display: none;
+      }
+
+      & > .trailing > .navigation > .scripted {
+        display: inline-flex;
+      }
+    }
   }
 }

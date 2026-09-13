@@ -1,0 +1,18 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /**
+   * Filters styles
+   *
+   * The controls are native, themed by the page. What this sheet settles is
+   * the baseline: the submit control is the GET form's, hidden once
+   * scripting is enabled, when every edit applies as it is made.
+   */
+  .ds.data-views-filters {
+    @media (scripting: enabled) {
+      & > .submit {
+        display: none;
+      }
+    }
+  }
+}

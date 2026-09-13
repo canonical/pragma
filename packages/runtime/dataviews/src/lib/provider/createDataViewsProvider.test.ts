@@ -348,7 +348,11 @@ describe("createDataViewsProvider observe", () => {
     expect(provider.issues.get()).toEqual([]);
     const release = provider.observe();
     expect(provider.issues.get()).toEqual([
-      { parameter: "status", reason: 'field "status" cannot be filtered' },
+      {
+        parameter: "status",
+        code: "undeclared-field",
+        reason: 'field "status" cannot be filtered',
+      },
     ]);
     // The refused clause never reaches the source; the rest of the query does.
     expect(callAt(0).request.slice.filter).toEqual([]);
@@ -515,7 +519,10 @@ describe("createDataViewsProvider host", () => {
       filter: [STATUS_FAILED],
       search: "yak",
     };
-    const requestId = host.adopt({ slice: adopted, window: DEFAULT_WINDOW });
+    const requestId = host.adopt(
+      { slice: adopted, window: DEFAULT_WINDOW },
+      "adopt",
+    );
     expect(requestId).not.toBeNull();
     expect(provider.state.get().pendingRequestId).toBe(requestId);
     expect(provider.state.get().slice.filter).toEqual([STATUS_FAILED]);
@@ -530,9 +537,131 @@ describe("createDataViewsProvider host", () => {
       notifications += 1;
     });
     expect(
-      host.adopt({ slice: EMPTY_SLICE, window: DEFAULT_WINDOW }),
+      host.adopt({ slice: EMPTY_SLICE, window: DEFAULT_WINDOW }, "adopt"),
     ).toBeNull();
     expect(notifications).toBe(0);
+  });
+
+  it("announces every move as a transition carrying its cause and history", () => {
+    // Grouping is not declarable yet; the raw record stands in for a source
+    // that will honour it, so the group and collapse causes are heard.
+    const { provider, host } = machineProvider({
+      ...permissive,
+      group: {
+        fields: ["status"],
+        levels: 1,
+        collapse: true,
+        summaries: "none",
+      },
+    });
+    const heard: string[] = [];
+    host.transitions.subscribe(() => {
+      const transition = host.transitions.get();
+      heard.push(`${transition?.cause}:${transition?.history}`);
+    });
+    expect(host.transitions.get()).toBeNull();
+    host.setPredicate(STATUS_FAILED);
+    provider.setSearch("yak");
+    provider.setSort([{ field: "cpu", direction: "asc" }]);
+    provider.navigateWindow({ page: 2 });
+    host.removePredicate("status", "eq");
+    provider.setGroup([{ field: "status" }]);
+    provider.setCollapsed([["failed"]]);
+    provider.setGroup([]);
+    host.adopt({ slice: EMPTY_SLICE, window: DEFAULT_WINDOW }, "adopt");
+    host.adopt(
+      { slice: { ...EMPTY_SLICE, search: "web" }, window: DEFAULT_WINDOW },
+      "view",
+    );
+    provider.reset();
+    // A refused command and a move to the same place announce nothing.
+    expect(
+      provider.setSort([{ field: "owner", direction: "asc" }]),
+    ).not.toEqual([]);
+    provider.setSearch("");
+    expect(heard).toEqual([
+      "filter:push",
+      "search:replace",
+      "sort:push",
+      "window:push",
+      "filter:push",
+      "group:push",
+      "collapse:null",
+      "group:push",
+      "adopt:null",
+      "view:push",
+      "reset:replace",
+    ]);
+    // The transition carries the query it led to.
+    expect(host.transitions.get()?.query).toEqual({
+      slice: EMPTY_SLICE,
+      window: DEFAULT_WINDOW,
+    });
+  });
+
+  it("enters history by the policy: one mode for all, or per transition", () => {
+    const heardOf = (
+      provider: ReturnType<typeof machineProvider>["provider"],
+      moves: (provider: ReturnType<typeof machineProvider>["provider"]) => void,
+    ): (string | null)[] => {
+      const host = readProviderHost(provider);
+      const modes: (string | null)[] = [];
+      host.transitions.subscribe(() => {
+        modes.push(host.transitions.get()?.history ?? null);
+      });
+      moves(provider);
+      return modes;
+    };
+    const moves = (
+      provider: ReturnType<typeof machineProvider>["provider"],
+    ) => {
+      provider.setSearch("yak");
+      provider.setSort([{ field: "cpu", direction: "asc" }]);
+      provider.navigateWindow({ page: 2 });
+    };
+    const uniform = createDataViewsProvider({
+      collection: machines,
+      source: createManualSource<Machine>({ capabilities: permissive }).source,
+      history: "replace",
+    });
+    expect(heardOf(uniform, moves)).toEqual(["replace", "replace", "replace"]);
+    const overridden = createDataViewsProvider({
+      collection: machines,
+      source: createManualSource<Machine>({ capabilities: permissive }).source,
+      history: { search: "push", window: "replace" },
+    });
+    expect(heardOf(overridden, moves)).toEqual(["push", "push", "replace"]);
+  });
+
+  it("spells a query as the location carries it, and nothing without one", () => {
+    const query = {
+      slice: { ...EMPTY_SLICE, filter: [STATUS_FAILED] },
+      window: { ...DEFAULT_WINDOW, page: 2 },
+    };
+    expect(machineProvider().host.spellQuery(query)).toBeNull();
+    expect(machineProvider().host.location).toBeNull();
+    const location = createMemoryLocation({
+      href: "/machines?tab=overview&q=old",
+    });
+    const located = createDataViewsProvider({
+      collection: machines,
+      source: createManualSource<Machine>({ capabilities: permissive }).source,
+      location,
+    });
+    // The host's own parameter survives; the grammar's are the query's.
+    expect(readProviderHost(located).spellQuery(query)?.toString()).toBe(
+      "tab=overview&status=failed&page=2&size=50",
+    );
+    // The read side alone, called through so an adapter keeps its `this`:
+    // the location sync is the one writer.
+    const side = readProviderHost(located).location;
+    expect(side).not.toHaveProperty("write");
+    expect(side?.read().toString()).toBe("tab=overview&q=old");
+    const heard = vi.fn();
+    const stop = side?.subscribe(heard);
+    location.write(new URLSearchParams("tab=details"));
+    expect(heard).toHaveBeenCalledTimes(1);
+    stop?.();
   });
 
   it("edits the filter through predicate commands", () => {

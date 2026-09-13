@@ -2,6 +2,7 @@ import {
   createQueryCoordinator,
   type DataViewsState,
 } from "../coordinator/index.js";
+import type { QueryLocation } from "../location/index.js";
 import {
   createChannel,
   protectChannel,
@@ -12,6 +13,7 @@ import type {
   GroupTerm,
   Predicate,
   PredicateOperator,
+  Query,
   SortTerm,
   WindowNavigation,
 } from "../query/index.js";
@@ -25,13 +27,14 @@ import type { SchemaFieldDefinition } from "../schema/index.js";
 import { createSelection } from "../selection/index.js";
 import { copyCapabilities } from "../source/index.js";
 import { createProviderViews } from "../views/index.js";
-import type { QueryIssue } from "../wire/index.js";
+import { encodeQuery, type QueryIssue } from "../wire/index.js";
 import createActionRunner from "./createActionRunner.js";
 import createQueryCommands from "./createQueryCommands.js";
 import createRecordTyping from "./createRecordTyping.js";
 import createRequestCompleter from "./createRequestCompleter.js";
 import observePorts from "./observePorts.js";
 import registerProviderHost from "./registerProviderHost.js";
+import resolveHistoryPolicy from "./resolveHistoryPolicy.js";
 import runSource from "./runSource.js";
 import syncLocation from "./syncLocation.js";
 import type {
@@ -39,7 +42,22 @@ import type {
   DataViewsProviderConfig,
   PortRun,
   ProviderHost,
+  Transition,
 } from "./types.js";
+
+/**
+ * The read side of a location, called through rather than unbound: an
+ * adapter may reach its own state through `this`. Null without a location.
+ */
+const readSideOf = (
+  location: QueryLocation | undefined,
+): ProviderHost["location"] =>
+  location === undefined
+    ? null
+    : {
+        read: () => location.read(),
+        subscribe: (listener) => location.subscribe(listener),
+      };
 
 /** The issues a provider without a location publishes: none, ever. */
 const NO_ISSUES: ReadonlyChannel<readonly QueryIssue[]> = protectChannel(
@@ -101,6 +119,8 @@ export default function createDataViewsProvider<
     state.set(coordinator.state);
   };
 
+  const transitions = createChannel<Transition | null>(null);
+  const history = resolveHistoryPolicy(config.history);
   const {
     refusals,
     command,
@@ -111,6 +131,8 @@ export default function createDataViewsProvider<
     capabilities,
     source,
     publish: publishState,
+    transitions,
+    history,
   });
 
   const complete = createRequestCompleter({
@@ -132,6 +154,18 @@ export default function createDataViewsProvider<
       command({ kind: "removePredicate", field, operator }),
     refresh: issueRefresh,
     adopt,
+    transitions: protectChannel(transitions),
+    location: readSideOf(config.location),
+    spellQuery(query: Query): URLSearchParams | null {
+      return config.location === undefined
+        ? null
+        : encodeQuery({
+            schema: collection.schema,
+            slice: query.slice,
+            window: query.window,
+            preserve: config.location.read(),
+          });
+    },
     complete,
     applicability(field: string, row: TRow): Applicability {
       return recordTyping?.applicability(field, row) ?? "applies";
@@ -149,18 +183,18 @@ export default function createDataViewsProvider<
             schema: collection.schema,
             capabilities,
             state: host.state,
-            adopt,
+            // A view's query is the view's authority, and opening one is a
+            // step Back returns from.
+            adopt(query: Query): void {
+              adopt(query, "view");
+            },
           },
           store: config.views,
         });
   const location =
     config.location === undefined
       ? null
-      : syncLocation({
-          host,
-          location: config.location,
-          history: config.history ?? "replace",
-        });
+      : syncLocation({ host, location: config.location });
   const run = runSource({ host, source });
 
   const runAction = createActionRunner({ source, capabilities, selection });
@@ -230,6 +264,15 @@ export default function createDataViewsProvider<
       recordTyping?.forget();
       views?.forget();
       publishState();
+      // Announced whether or not anything observes: the next observation
+      // reads that the last move was a reset, and writes the seed over a
+      // location still carrying the query from before.
+      const { slice, window } = coordinator.state;
+      transitions.set({
+        query: { slice, window },
+        cause: "reset",
+        history: history.reset,
+      });
       // An observed provider is asked for the new generation's first page
       // as it was for the first one; an unobserved one waits for its
       // first observer, which asks then.

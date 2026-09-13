@@ -14,6 +14,8 @@ export type ChoicesFilterProps = {
   readonly handle: FilterHandle<ReadonlySet<PredicateOperand>>;
   /** The group's visible name. */
   readonly label: string;
+  /** The field the control addresses, which names its checkboxes. */
+  readonly field: string;
   /**
    * Whether the source declares this field's equality predicate. An undeclared
    * one is offered only while it stands, and only for removal.

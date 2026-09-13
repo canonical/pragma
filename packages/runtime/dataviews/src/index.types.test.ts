@@ -47,6 +47,8 @@ import type {
   GroupPath,
   GroupSummary,
   GroupTerm,
+  HistoryMode,
+  HistoryPolicy,
   JsonValue,
   MemoryLocationConfig,
   NumberField,
@@ -63,8 +65,10 @@ import type {
   ProviderViews,
   Query,
   QueryIssue,
+  QueryIssueCode,
   QueryLocation,
   QuerySourceConfig,
+  QueryTransition,
   ReadonlyChannel,
   RecordTypes,
   RelaySourceConfig,
@@ -195,6 +199,8 @@ type EveryPublicType = [
   GroupPath,
   GroupSummary,
   GroupTerm,
+  HistoryMode,
+  HistoryPolicy,
   JsonValue,
   MemoryLocationConfig,
   NumberField,
@@ -211,8 +217,10 @@ type EveryPublicType = [
   ProviderViews,
   Query,
   QueryIssue,
+  QueryIssueCode,
   QueryLocation,
   QuerySourceConfig,
+  QueryTransition,
   ReadonlyChannel<unknown>,
   RecordTypes,
   RelaySourceConfig,
@@ -567,7 +575,9 @@ describe("public surface types", () => {
     expectTypeOf<ProviderHost<readonly SchemaFieldDefinition[], Machine>>()
       .toHaveProperty("complete")
       .parameters.toEqualTypeOf<[string, Completion<Machine>]>();
-    expectTypeOf<ProviderHost["adopt"]>().parameters.toEqualTypeOf<[Query]>();
+    expectTypeOf<ProviderHost["adopt"]>().parameters.toEqualTypeOf<
+      [Query, "adopt" | "view"]
+    >();
     expectTypeOf<ProviderHost["refresh"]>().returns.toEqualTypeOf<string>();
     expectTypeOf<DataViewsProvider["refresh"]>().returns.toEqualTypeOf<void>();
   });
@@ -662,8 +672,10 @@ describe("public surface types", () => {
     ).toEqual([
       "Query",
       "QueryIssue",
+      "QueryIssueCode",
       "QueryLocation",
       "QuerySourceConfig",
+      "QueryTransition",
       "RelaySourceConfig",
     ]);
   });

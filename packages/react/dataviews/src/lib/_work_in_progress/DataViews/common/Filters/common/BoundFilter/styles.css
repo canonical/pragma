@@ -1,0 +1,23 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /**
+   * BoundFilter styles
+   *
+   * The controls are native, themed by the page. What this sheet settles is
+   * the clear control: the enhancement's, so it appears only once scripting
+   * is enabled — at baseline a bound is removed by emptying it and
+   * submitting.
+   */
+  .ds.data-views-filters-bound {
+    & > .clear {
+      display: none;
+    }
+
+    @media (scripting: enabled) {
+      & > .clear {
+        display: inline-flex;
+      }
+    }
+  }
+}

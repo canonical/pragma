@@ -1,0 +1,71 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./Search.stories";
+
+<Meta of={Stories} name="Recipes" />
+
+# DataViews.Search recipes
+
+`DataViews.Search` is the collection's text search: one labelled native search input over the applied search. It takes no value and no callback — every edit applies as it is typed, through the provider's `setSearch`, and the input shows the applied search and nothing else, so Back or a saved view opened is what the input shows next. It reads the applied search alone, so a result arriving or a page turning re-renders no search box.
+
+The part throws where the provider's source declares no search, as `DataViews.Views` does without a store: a control nothing can execute is not offered disabled.
+
+## Search over a composed collection
+
+The source declares which fields its search reads — here host names and owners — and the part edits the query the table answers. `label` names the input; the props are the input's, so `placeholder`, `autoFocus` and the rest reach it.
+
+```tsx
+import {
+  createArraySource,
+  createDataViewsProvider,
+} from "@canonical/dataviews-core";
+import {
+  DataTable,
+  DataViews,
+  type DataTableColumn,
+} from "@canonical/dataviews-react";
+import { useState } from "react";
+import { machineCollection, machines } from "./machines.js";
+
+const columns: readonly DataTableColumn[] = [
+  { id: "name", header: "Host" },
+  { id: "status", header: "Status" },
+  { id: "owner", header: "Owner" },
+];
+
+export function Machines() {
+  const [provider] = useState(() =>
+    createDataViewsProvider({
+      collection: machineCollection,
+      source: createArraySource({
+        rows: machines,
+        collection: machineCollection,
+        searchFields: ["name", "owner"],
+      }),
+    }),
+  );
+  return (
+    <DataViews provider={provider}>
+      <DataViews.Search label="Search machines" />
+      <DataTable provider={provider} columns={columns} label="Machines" />
+    </DataViews>
+  );
+}
+```
+
+<Canvas of={Stories.Default} sourceState="none" />
+
+## A search applied
+
+The provider started on a query searching for `ex:a`, and the input shows it. The input is the applied search, not a draft of it — there is no second query to apply or keep in step.
+
+<Canvas of={Stories.SearchApplied} sourceState="none" />
+
+## Typing never floods history
+
+With a location, every keystroke is written to the URL and each write replaces the history entry rather than pushing one, so Back returns to the page the reader arrived from, not through every letter typed; a filter, a sort or a page move pushes, so Back returns from those one step at a time. `history` on the provider config changes that per transition. Back itself restores the applied search into the input.
+
+<Canvas of={Stories.SearchInTheUrl} sourceState="none" />
+
+## Before any script runs
+
+The input sits in a GET form — the search landmark — named `q`, as the URL spells the search, beside hidden controls carrying the rest of the applied query, so a submission lands on the destination the provider would have written. Once scripting is enabled the submit control is hidden and a submission is intercepted: every edit has applied already.

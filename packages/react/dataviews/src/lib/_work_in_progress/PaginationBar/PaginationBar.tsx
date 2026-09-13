@@ -1,4 +1,5 @@
 import type {
+  ResultWindow,
   RowRecord,
   SchemaFieldDefinition,
   Slice,
@@ -6,21 +7,29 @@ import type {
 import {
   areSlicesEqual,
   isDataViewsProvider,
+  readProviderHost,
 } from "@canonical/dataviews-core/bindings";
 import { Button } from "@canonical/react-ds-global";
 import { SelectInput } from "@canonical/react-ds-global-form";
 import {
   type FocusEvent,
   type ReactElement,
+  useCallback,
   useEffect,
   useId,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
-import { pluralizeNoun } from "../../utils/index.js";
+import {
+  interceptSubmit,
+  listHiddenFields,
+  pluralizeNoun,
+} from "../../utils/index.js";
 import { useDataViewsValue } from "../DataViews/hooks/index.js";
+import { PageControl } from "./common/index.js";
 import derivePaginationState from "./derivePaginationState.js";
 import type { PaginationBarProps, PaginationState } from "./types.js";
 import "./styles.css";
@@ -67,6 +76,27 @@ const listSizeOptions = (values: readonly number[]) =>
   values.map((value) => ({ value: String(value), label: String(value) }));
 
 /**
+ * The hidden controls of one of the bar's GET forms. Rendered here rather
+ * than through the composition's leaf: the bar's destinations differ per
+ * render and it watches the state and the location already.
+ */
+const renderHiddenFields = (
+  destination: URLSearchParams | null,
+  omit: readonly string[],
+): ReactElement[] =>
+  listHiddenFields(destination, omit).map((field) => (
+    <input
+      key={field.key}
+      type="hidden"
+      name={field.name}
+      value={field.value}
+    />
+  ));
+
+/** What a bar without a location subscribes to: nothing moves its destinations. */
+const subscribeToNothing = (): (() => void) => () => {};
+
+/**
  * The pagination bar is the navigation bar anchored to the bottom of the
  * table that lets users move between pages of data. The data table
  * supports two pagination variants, offset and keyset, chosen based on the
@@ -76,10 +106,17 @@ const listSizeOptions = (values: readonly number[]) =>
  * That is the design system's description of the block; its keyset variant
  * is the core's `cursor` pagination kind. What this implementation covers:
  * the page size, which items are on screen out of how many, and the way to
- * every other page. It takes its provider explicitly, as DataTable does, so a standalone table
- * gets the same footer as a composed one. It offers only pages the
- * collection can reach, and a focused button that becomes unavailable hands
- * the focus to the page select.
+ * every other page. It takes its provider explicitly, as DataTable does, so
+ * a standalone table gets the same footer as a composed one. It offers only
+ * pages the collection can reach, and a focused control that becomes
+ * unavailable hands the focus to the page select.
+ *
+ * At baseline every destination is real: each page the collection can reach
+ * is a link the provider's encoder spelled, and the page size and the page
+ * select each sit in a GET form carrying the rest of the query, so the bar
+ * pages before any script runs. The enhancement intercepts a plain click or
+ * a submission and moves the window in place; controls only it can drive
+ * are hidden until scripting is enabled.
  *
  * `import { PaginationBar } from "@canonical/dataviews-react";`
  *
@@ -95,6 +132,7 @@ export default function PaginationBar<
   provider,
   label = "Pagination",
   sizes = DEFAULT_SIZES,
+  LinkComponent = "a",
   className,
   ...rest
 }: PaginationBarProps<TFields, TRow>): ReactElement {
@@ -117,6 +155,33 @@ export default function PaginationBar<
   const baseId = useId();
   const sizeId = `${baseId}-size`;
   const totalId = `${baseId}-total`;
+  const { spellQuery, location } = readProviderHost(provider);
+  // The destinations carry the location's other parameters too, which can
+  // move without the query: the bar redraws when the location does.
+  const readLocation = useCallback(
+    () => location?.read().toString() ?? null,
+    [location],
+  );
+  useSyncExternalStore(
+    location?.subscribe ?? subscribeToNothing,
+    readLocation,
+    readLocation,
+  );
+  /** A window of the current query, spelled as the location carries it. */
+  const spell = (moved: Partial<ResultWindow>): URLSearchParams | null =>
+    spellQuery({
+      slice: snapshot.slice,
+      window: { ...snapshot.window, ...moved },
+    });
+  /** Every destination the bar offers; the location's text is read by the spelling. */
+  const destinations = {
+    query: spell({}),
+    current: spell({ cursor: null }),
+    first: spell({ page: 1, cursor: null }),
+    previous: spell({ page: view.back, cursor: view.backCursor }),
+    next: spell({ page: page + 1, cursor: view.nextCursor }),
+    last: spell({ page: pages ?? page, cursor: null }),
+  };
 
   // The page select keeps the last settled page count while a page move
   // loads, so stepping through it does not cut its own list short. A new
@@ -148,19 +213,26 @@ export default function PaginationBar<
     [listed, page],
   );
 
-  // The navigation button last focused, until focus leaves it. A button
-  // disabled while focused reports no blur, so this finds focus stranded.
-  const focused = useRef<HTMLButtonElement | null>(null);
+  // The navigation control last focused, until focus leaves it. A button
+  // disabled while focused reports no blur, and a link replaced by one
+  // leaves the document without a word, so this finds focus stranded.
+  // Tracked on the navigation group, where focus events reach it from any
+  // control — a router's own link included.
+  const focused = useRef<HTMLElement | null>(null);
   const pageSelect = useRef<HTMLSelectElement>(null);
   useLayoutEffect(() => {
-    if (focused.current?.disabled) {
+    const control = focused.current;
+    if (
+      control !== null &&
+      (!control.isConnected || control.matches(":disabled"))
+    ) {
       focused.current = null;
       pageSelect.current?.focus();
     }
   });
   const trackFocus = {
-    onFocus: (event: FocusEvent<HTMLButtonElement>) => {
-      focused.current = event.currentTarget;
+    onFocus: (event: FocusEvent<HTMLElement>) => {
+      focused.current = event.target;
     },
     onBlur: () => {
       focused.current = null;
@@ -181,10 +253,11 @@ export default function PaginationBar<
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
     >
       <div className="leading">
-        <div className="page-size">
+        <form method="get" className="page-size" onSubmit={interceptSubmit}>
           <label htmlFor={sizeId}>Items per page:</label>
           <SelectInput
             id={sizeId}
+            name="size"
             value={String(view.size)}
             options={listSizeOptions(view.sizes)}
             onChange={(event) => {
@@ -197,16 +270,23 @@ export default function PaginationBar<
               });
             }}
           />
-        </div>
+          {/* The size is the select's, and the page is left to default: a
+              new size is a new window, so the old page cannot survive it. */}
+          {renderHiddenFields(destinations.query, ["page", "size", "cursor"])}
+          <Button type="submit" importance="secondary" className="submit">
+            Apply page size
+          </Button>
+        </form>
         <span className="divider" />
         <span role="status" className="summary">
           {describeSummary(view)}
         </span>
       </div>
       <div className="trailing">
-        <div className="page">
+        <form method="get" className="page" onSubmit={interceptSubmit}>
           <SelectInput
             ref={pageSelect}
+            name="page"
             aria-label="Page"
             aria-describedby={pages === null ? undefined : totalId}
             value={String(page)}
@@ -223,48 +303,48 @@ export default function PaginationBar<
               {`of ${pages} ${pluralizeNoun(pages, "page")}`}
             </span>
           )}
-        </div>
+          {renderHiddenFields(destinations.current, ["page"])}
+          <Button type="submit" importance="secondary" className="submit">
+            Go to page
+          </Button>
+        </form>
         <span className="divider" />
-        <div className="navigation">
-          <Button
-            {...trackFocus}
-            type="button"
-            importance="tertiary"
+        <div className="navigation" {...trackFocus}>
+          <PageControl
+            LinkComponent={LinkComponent}
             icon="back-to-top"
             className="first"
-            aria-label="First page"
-            disabled={page <= 1}
-            onClick={go(1, null)}
+            label="First page"
+            destination={destinations.first}
+            reachable={page > 1}
+            onNavigate={go(1, null)}
           />
-          <Button
-            {...trackFocus}
-            type="button"
-            importance="tertiary"
+          <PageControl
+            LinkComponent={LinkComponent}
             icon="chevron-left"
             className="previous"
-            aria-label="Previous page"
-            disabled={page <= 1}
-            onClick={go(view.back, view.backCursor)}
+            label="Previous page"
+            destination={destinations.previous}
+            reachable={page > 1}
+            onNavigate={go(view.back, view.backCursor)}
           />
-          <Button
-            {...trackFocus}
-            type="button"
-            importance="tertiary"
+          <PageControl
+            LinkComponent={LinkComponent}
             icon="chevron-right"
             className="next"
-            aria-label="Next page"
-            disabled={!view.hasNext}
-            onClick={go(page + 1, view.nextCursor)}
+            label="Next page"
+            destination={destinations.next}
+            reachable={view.hasNext}
+            onNavigate={go(page + 1, view.nextCursor)}
           />
-          <Button
-            {...trackFocus}
-            type="button"
-            importance="tertiary"
+          <PageControl
+            LinkComponent={LinkComponent}
             icon="back-to-top"
             className="last"
-            aria-label="Last page"
-            disabled={pages === null || page === pages}
-            onClick={go(pages ?? page, null)}
+            label="Last page"
+            destination={destinations.last}
+            reachable={pages !== null && page !== pages}
+            onNavigate={go(pages ?? page, null)}
           />
         </div>
       </div>

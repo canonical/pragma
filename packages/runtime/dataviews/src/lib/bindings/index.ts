@@ -2,10 +2,10 @@
  * The machinery every framework binding shares and no application calls:
  * the column geometry a table solves, the row channels and display entries
  * a body renders from, the filter records a root builds, the check a
- * binding tells a provider by, the provider's internal host and
- * the list and slice comparisons a bar settles pages with. React uses it
- * now; a Svelte binding would use the same names rather than solve its own
- * geometry.
+ * binding tells a provider by, the provider's internal host, the list and
+ * slice comparisons a bar settles pages with, and the wire key a form
+ * control is named by. React uses it now; a Svelte binding would use the
+ * same names rather than solve its own geometry.
  */
 
 export type {
@@ -44,3 +44,4 @@ export type {
   RowScopesConfig,
 } from "../rows/index.js";
 export { createRowScopes, listDisplayEntries } from "../rows/index.js";
+export { spellWireKey } from "../wire/index.js";

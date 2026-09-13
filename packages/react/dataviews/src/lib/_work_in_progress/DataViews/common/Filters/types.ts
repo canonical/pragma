@@ -13,18 +13,28 @@ type OwnProps = {
 };
 
 /**
- * Props of the connected filters part. The root is a `fieldset` naming the
- * group, so it extends native fieldset props — `disabled` reaches every
- * control for free. `children` is excluded: the controls are derived from
- * the provider, not composed by hand. So are `role`, which would override
- * the fieldset's `group` role, and `aria-label` and `aria-labelledby`,
- * which would override the name it takes from `label`.
+ * Props of the connected filters part. The root is the GET form the
+ * baseline submits, so it extends native form props; inside it a `fieldset`
+ * named by `label` groups the controls. `children` is excluded: the controls
+ * are derived from the provider, not composed by hand. So are `method` and
+ * `onSubmit`, which make the form the baseline's — a GET the enhancement
+ * intercepts — and `aria-label` and `aria-labelledby`, since the group is
+ * what carries the name. `label` names that group rather than the root, a
+ * recorded departure from the convention: a form is named by nothing
+ * native, and the group is what a reader lands on. The form takes no
+ * `disabled`: the fieldset inside is the part's, and nothing composes the
+ * filters disabled yet.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
  */
 export type DataViewsFiltersProps = OwnProps &
   Omit<
-    ComponentProps<"fieldset">,
-    keyof OwnProps | "children" | "role" | "aria-label" | "aria-labelledby"
+    ComponentProps<"form">,
+    | keyof OwnProps
+    | "children"
+    | "method"
+    | "onSubmit"
+    | "aria-label"
+    | "aria-labelledby"
   >;

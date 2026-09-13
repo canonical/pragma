@@ -7,6 +7,15 @@
  */
 
 /**
+ * How a write enters a history-backed location: `push` appends an entry
+ * Back returns from, `replace` respells the current one.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export type HistoryMode = "push" | "replace";
+
+/**
  * Configuration of one memory location.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
@@ -18,9 +27,34 @@ export type MemoryLocationConfig = {
 };
 
 /**
- * The location port: where a collection's applied query lives. A URL
- * through `createPlatformLocation`, a memory location for a secondary
- * collection or a test, or an adapter of the application's own.
+ * The location port: where a collection's applied query lives, and the one
+ * seam between the provider and a router. Everything the provider does to
+ * the URL goes through this port — it never reads the browser's location
+ * or touches its history itself — so an application hands it the adapter
+ * of its own router: `createPlatformLocation` over `@canonical/router-core`,
+ * `createMemoryLocation` for a secondary collection or a test, or three
+ * functions of the application's own over TanStack Router, React Router or
+ * a framework's navigation.
+ *
+ * What an adapter implements:
+ *
+ * - `read()` — the current query string, repeated parameters intact.
+ * - `write(params, { history })` — replace the URL's query string with the
+ *   given parameters, keeping the path and the hash, and enter the
+ *   router's history in the mode asked for: `push` appends an entry Back
+ *   returns from, `replace` respells the current one. The provider decides
+ *   the mode per transition; the adapter carries it out.
+ * - `subscribe(listener)` — call the listener whenever the URL changes,
+ *   whatever moved it: a write through this port, Back or Forward, or a
+ *   navigation the router made itself. The listener takes no payload and
+ *   calls `read()`.
+ *
+ * What an adapter guarantees, so the provider's echo rule holds: a write
+ * through the port is observed by the port's own subscribers at most once
+ * — once, synchronously or before the next write returns, or not at all if
+ * the router notifies only on navigations it did not make. The provider
+ * recognises the echo by the spelling it wrote and tolerates its absence;
+ * it must never see one write as two moves.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -32,14 +66,14 @@ export type QueryLocation = {
    */
   readonly read: () => URLSearchParams;
   /**
-   * Write the full query parameter set. On history-backed locations,
-   * `history: "push"` appends an entry and the default replaces, so
-   * continuous input does not flood history; the memory location has no
+   * Write the full query parameter set. On history-backed locations
+   * `history` says whether the write appends an entry or respells the
+   * current one, and the default replaces; the memory location has no
    * history stack and ignores the option.
    */
   readonly write: (
     next: URLSearchParams,
-    options?: { readonly history?: "push" | "replace" },
+    options?: { readonly history?: HistoryMode },
   ) => void;
   /**
    * Subscribe to every change; the return value unsubscribes. A throwing

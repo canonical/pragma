@@ -109,7 +109,7 @@ export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("group", { name: "Filters" })).toBeVisible();
     await waitFor(() => expect(recordRows(canvas)).toBe(12));
-    await expect(canvas.getByLabelText("Cores from")).toHaveValue("");
+    await expect(canvas.getByLabelText("Cores from")).toHaveValue(null);
   },
 };
 
@@ -144,16 +144,26 @@ export const BoundApplied: Story = {
   }),
   render: renderWith({ slice: atLeastSixteenCores }),
   play: async ({ canvas }) => {
-    await expect(canvas.getByLabelText("Cores from")).toHaveValue("16");
+    await expect(canvas.getByLabelText("Cores from")).toHaveValue(16);
     await waitFor(() => expect(recordRows(canvas)).toBe(4));
+    // Scripting is enabled here: the clear control the enhancement drives
+    // shows, and the baseline's submit control does not.
+    await expect(
+      canvas.getByRole("button", { name: "Clear Cores from" }),
+    ).toBeVisible();
+    await expect(
+      canvas.getByRole("button", { name: "Apply filters", hidden: true }),
+    ).not.toBeVisible();
   },
 };
 
 /**
  * An invalid edit keeps the restriction: sixteen cores was applied, then the
- * bound was edited to text that is not a number. The edit is refused, the
- * sixteen-core restriction stays in force, and the message beside the input
- * says so — the text on screen is not what is filtering the rows.
+ * bound was edited below the schema's minimum of one. The edit is refused
+ * by the schema — and, being a native number input carrying that minimum,
+ * by the browser too — the sixteen-core restriction stays in force, and the
+ * message beside the input says so: the value on screen is not what is
+ * filtering the rows.
  */
 export const InvalidEditKeepsTheRestriction: Story = {
   parameters: consumerCode({
@@ -164,14 +174,15 @@ export const InvalidEditKeepsTheRestriction: Story = {
   }),
   render: renderWith({ slice: atLeastSixteenCores }),
   play: async ({ canvas }) => {
-    const bound = canvas.getByLabelText("Cores from");
-    await expect(bound).toHaveValue("16");
+    const bound = canvas.getByLabelText<HTMLInputElement>("Cores from");
+    await expect(bound).toHaveValue(16);
     await userEvent.clear(bound);
-    await userEvent.type(bound, "lots");
+    await userEvent.type(bound, "0");
     await expect(bound).toHaveAttribute("aria-invalid", "true");
     await expect(bound).toHaveAccessibleDescription(
       /The previous restriction still applies\.$/,
     );
+    await expect(bound.validity.rangeUnderflow).toBe(true);
     await waitFor(() => expect(recordRows(canvas)).toBe(4));
   },
 };

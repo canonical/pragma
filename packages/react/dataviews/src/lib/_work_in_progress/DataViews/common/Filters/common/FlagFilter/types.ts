@@ -12,6 +12,8 @@ export type FlagFilterProps = {
   readonly handle: FilterHandle<boolean>;
   /** The field's visible name. */
   readonly label: string;
+  /** The field the control addresses, which names its checkbox. */
+  readonly field: string;
   /**
    * Whether the source declares this field's presence predicate. An undeclared
    * one is offered only while it stands, and only for removal.

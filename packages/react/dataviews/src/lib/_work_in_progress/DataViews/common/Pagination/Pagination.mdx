@@ -5,7 +5,7 @@ import * as Stories from "./Pagination.stories";
 
 # DataViews.Pagination recipes
 
-`DataViews.Pagination` is the pagination bar bound to the enclosing `DataViews` root. It renders exactly what `PaginationBar` renders (its own recipes are the **PaginationBar / Recipes** page) — the page size, the summary, the page select and its four buttons — for the root's provider. The one difference is where the provider comes from: the part reads the root it is placed in, and throws outside one.
+`DataViews.Pagination` is the pagination bar bound to the enclosing `DataViews` root. It renders exactly what `PaginationBar` renders (its own recipes are the **PaginationBar / Recipes** page) — the page size, the summary, the page select and its four page controls — for the root's provider. The one difference is where the provider comes from: the part reads the root it is placed in, and throws outside one.
 
 Use the part inside a composition and the bar beside a standalone table. The two never mix: the part takes no provider prop, and the bar never reads a root.
 

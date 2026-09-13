@@ -77,9 +77,13 @@ A checked status or a filled bound is the restriction in force. A query the prov
 
 ## An invalid edit keeps the restriction
 
-A bound that does not parse is refused, not applied. The restriction already in force stays in force, and the message beside the input says so, because the text on screen is no longer what filters the rows. Emptying a bound is incomplete rather than a removal; the clear button removes it.
+A bound outside the schema's bounds is refused, not applied — by the schema, and natively by the browser, since a number bound is a native number input carrying the schema's `min` and `max`. The restriction already in force stays in force, and the message beside the input says so, because the value on screen is no longer what filters the rows. Emptying a bound is incomplete rather than a removal; the clear button removes it.
 
 <Canvas of={Stories.InvalidEditKeepsTheRestriction} sourceState="none" />
+
+## Before any script runs
+
+The filters are a GET form. Each control is named as the URL spells its clause — `status` repeated once per chosen option, `owner__isSet`, `cores__gte` — and the rest of the applied query rides hidden beside them, so a submission lands on the destination the provider would have written, from the first page. Once scripting is enabled every edit applies as it is made, a submission is intercepted, the submit control is hidden and the clear buttons appear.
 
 ## Only what the source can run
 

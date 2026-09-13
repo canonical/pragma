@@ -3,6 +3,7 @@ import type {
   RowRecord,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
+import type { LinkComponent } from "@canonical/react-ds-global";
 import type { ComponentProps } from "react";
 
 type OwnProps<
@@ -19,6 +20,14 @@ type OwnProps<
    * describing.
    */
   readonly sizes?: readonly number[];
+  /**
+   * Router integration for the page links, against the design system's
+   * shared link contract. Defaults to `"a"`, where a plain click is
+   * intercepted and pages in place; a router's `Link` navigates itself, and
+   * the provider hears the move through its location port — the router's
+   * own navigation then decides how the move enters history.
+   */
+  readonly LinkComponent?: LinkComponent;
 };
 
 /**

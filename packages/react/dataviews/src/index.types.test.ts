@@ -24,6 +24,7 @@ import type {
   DataViewsFiltersProps,
   DataViewsPaginationProps,
   DataViewsProps,
+  DataViewsSearchProps,
   DataViewsViewsProps,
   PaginationBarProps,
   UseDataViewsCellResult,
@@ -49,6 +50,7 @@ type EveryPublicType = [
   DataViewsFiltersProps,
   PaginationBarProps<Fields>,
   DataViewsPaginationProps,
+  DataViewsSearchProps,
   UseDataViewsCellResult,
   UseDataViewsFilterResult<unknown>,
   UseDataViewsResult<Fields>,
@@ -240,13 +242,28 @@ describe("connected part props", () => {
   });
 
   it("keeps what Filters derives out of its props", () => {
-    // Its controls come from the provider, its name from its legend and the
-    // fieldset's group role is its own.
+    // Its controls come from the provider, its name from its legend, and
+    // the form's method and submission are the baseline's.
     expectTypeOf<DataViewsFiltersProps>().not.toHaveProperty("children");
-    expectTypeOf<DataViewsFiltersProps>().not.toHaveProperty("role");
+    expectTypeOf<DataViewsFiltersProps>().not.toHaveProperty("method");
+    expectTypeOf<DataViewsFiltersProps>().not.toHaveProperty("onSubmit");
     expectTypeOf<DataViewsFiltersProps>().not.toHaveProperty("aria-label");
     expectTypeOf<DataViewsFiltersProps>().not.toHaveProperty("aria-labelledby");
-    expectTypeOf<DataViewsFiltersProps>().toHaveProperty("disabled");
+    expectTypeOf<DataViewsFiltersProps>().toHaveProperty("action");
+  });
+
+  it("keeps what Search derives out of its props", () => {
+    // The props are the search input's; what binds it to the applied
+    // search and to its form is the part's.
+    expectTypeOf<DataViewsSearchProps>().not.toHaveProperty("type");
+    expectTypeOf<DataViewsSearchProps>().not.toHaveProperty("name");
+    expectTypeOf<DataViewsSearchProps>().not.toHaveProperty("value");
+    expectTypeOf<DataViewsSearchProps>().not.toHaveProperty("defaultValue");
+    expectTypeOf<DataViewsSearchProps>().not.toHaveProperty("onChange");
+    expectTypeOf<DataViewsSearchProps>().not.toHaveProperty("form");
+    expectTypeOf<DataViewsSearchProps>().not.toHaveProperty("aria-label");
+    expectTypeOf<DataViewsSearchProps>().toHaveProperty("placeholder");
+    expectTypeOf<DataViewsSearchProps>().toHaveProperty("label");
   });
 
   it("keeps what Pagination derives out of its props", () => {

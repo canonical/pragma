@@ -35,16 +35,19 @@ describe("regression 0006 — a command is refused only for what it incurs", () 
       source: createManualSource({ capabilities: declare({}) }).source,
     });
     const host = readProviderHost(provider);
-    host.adopt({
-      slice: {
-        ...EMPTY_SLICE,
-        filter: [
-          { field: "status", operator: "eq", operands: ["failed"] },
-          { field: "cpu", operator: "gte", operands: [4] },
-        ],
+    host.adopt(
+      {
+        slice: {
+          ...EMPTY_SLICE,
+          filter: [
+            { field: "status", operator: "eq", operands: ["failed"] },
+            { field: "cpu", operator: "gte", operands: [4] },
+          ],
+        },
+        window: DEFAULT_WINDOW,
       },
-      window: DEFAULT_WINDOW,
-    });
+      "view",
+    );
     expect(host.removePredicate("status", "eq")).toEqual([]);
     expect(provider.state.get().slice.filter).toEqual([
       { field: "cpu", operator: "gte", operands: [4] },

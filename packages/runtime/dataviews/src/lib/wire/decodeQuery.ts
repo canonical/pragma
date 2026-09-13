@@ -43,6 +43,7 @@ const singletonOf = (
   if (values.length > 1) {
     issues.push({
       parameter: key,
+      code: "malformed",
       reason: `"${key}" takes one value; the extra values were ignored`,
     });
   }
@@ -62,6 +63,7 @@ const windowValueOf = (
   if (!DIGITS.test(value) || parsed < 1) {
     issues.push({
       parameter: key,
+      code: "malformed",
       reason: `"${value}" is not a positive integer`,
     });
     return fallback;
@@ -69,7 +71,11 @@ const windowValueOf = (
   // Digits alone are not enough: past the safe range a page or size reads
   // as Infinity or as a neighbouring number.
   if (!Number.isSafeInteger(parsed)) {
-    issues.push({ parameter: key, reason: `"${value}" is too large` });
+    issues.push({
+      parameter: key,
+      code: "malformed",
+      reason: `"${value}" is too large`,
+    });
     return fallback;
   }
   return parsed;
@@ -99,7 +105,7 @@ const record = (
     filter.push(result.predicate);
     return;
   }
-  issues.push({ parameter: key, reason: result.reason });
+  issues.push({ parameter: key, code: "invalid", reason: result.reason });
 };
 
 /** Read one field's parameter into a schema-enforced predicate. */
@@ -117,7 +123,11 @@ const readPredicate = (
   if (key.includes(OPERATOR_DELIMITER)) {
     const suffix = key.slice(field.length + OPERATOR_DELIMITER.length);
     if (!isOperator(suffix)) {
-      issues.push({ parameter: key, reason: `unknown operator "${suffix}"` });
+      issues.push({
+        parameter: key,
+        code: "malformed",
+        reason: `unknown operator "${suffix}"`,
+      });
       return;
     }
     operator = suffix;
@@ -141,13 +151,13 @@ const readPredicate = (
       operands.push(...parsed.operands);
       continue;
     }
-    issues.push({
-      parameter: key,
-      reason:
-        parsed.status === "incomplete"
-          ? `"${key}" was given no value`
-          : parsed.reason,
-    });
+    // The schema reads a blank input as incomplete, and no blank reaches
+    // it: the decoder dropped them before parsing.
+    /* v8 ignore next 3 -- unreachable: blanks are dropped above */
+    if (parsed.status === "incomplete") {
+      continue;
+    }
+    issues.push({ parameter: key, code: "invalid", reason: parsed.reason });
   }
   if (operands.length === 0) {
     return;
@@ -155,6 +165,7 @@ const readPredicate = (
   if (operator !== "eq" && operands.length > 1) {
     issues.push({
       parameter: key,
+      code: "malformed",
       reason: `"${key}" takes one value; the extra values were ignored`,
     });
   }
@@ -191,7 +202,7 @@ const executableOf = (
       return true;
     }
     for (const refusal of refusals) {
-      issues.push({ parameter, reason: refusal.reason });
+      issues.push({ parameter, code: refusal.code, reason: refusal.reason });
     }
     return false;
   };
@@ -231,7 +242,11 @@ const addressableWindow = (
     return window;
   }
   for (const refusal of refusals) {
-    issues.push({ parameter: "cursor", reason: refusal.reason });
+    issues.push({
+      parameter: "cursor",
+      code: refusal.code,
+      reason: refusal.reason,
+    });
   }
   return { ...window, cursor: null };
 };
@@ -244,7 +259,8 @@ const addressableWindow = (
  * fails is left out and reported. With the source's capabilities, a clause
  * it cannot execute is refused the same way. A parameter naming no field of
  * this collection — delimited or not — belongs to the host and is left
- * alone: unknown, not invalid.
+ * alone: unknown, not invalid. A blank value is a form control left empty
+ * and reads as no clause, so a GET form submits cleanly.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -262,10 +278,15 @@ export default function decodeQuery(config: DecodeQueryConfig): DecodedQuery {
   let cursor = DEFAULT_WINDOW.cursor;
 
   for (const key of new Set(params.keys())) {
-    const values = params.getAll(key);
+    // A blank value is a control left empty — a bound nobody typed in, a
+    // select on its empty option — submitted as a native form submits it:
+    // no clause, and nothing to report.
+    const values = params.getAll(key).filter((value) => value !== "");
+    if (values.length === 0) {
+      continue;
+    }
     if (key === "q") {
-      const value = singletonOf(key, values, issues);
-      search = value === "" ? null : value;
+      search = singletonOf(key, values, issues);
       continue;
     }
     if (key === "sort") {
@@ -275,13 +296,15 @@ export default function decodeQuery(config: DecodeQueryConfig): DecodedQuery {
         if (term === null) {
           issues.push({
             parameter: key,
+            code: "malformed",
             reason: `"${value}" is not an ordered sort term`,
           });
         } else if (schema.findField(term.field) === undefined) {
-          // A field with no kind cannot be compared, so a term naming one is
-          // as malformed as a term with no direction.
+          // A field with no kind cannot be compared, so a term naming one
+          // refuses the ordering as a term with no direction does.
           issues.push({
             parameter: key,
+            code: "unknown-field",
             reason: `"${term.field}" is not a field of this collection`,
           });
         } else {
@@ -296,29 +319,11 @@ export default function decodeQuery(config: DecodeQueryConfig): DecodedQuery {
       continue;
     }
     if (key === "group") {
-      const levels: GroupTerm[] = [];
-      for (const value of values) {
-        if (value === "") {
-          issues.push({ parameter: key, reason: `"${key}" must name a field` });
-        } else {
-          levels.push({ field: value });
-        }
-      }
-      // A grouping is kept whole or not at all: dropping one level would
-      // nest the rest under a parent nobody asked for.
-      group = levels.length === values.length ? levels : [];
+      group = values.map((value) => ({ field: value }));
       continue;
     }
     if (key === "cursor") {
-      const value = singletonOf(key, values, issues);
-      if (value === "") {
-        issues.push({
-          parameter: key,
-          reason: `"${key}" must carry the token a page handed back`,
-        });
-        continue;
-      }
-      cursor = value;
+      cursor = singletonOf(key, values, issues);
       continue;
     }
     if (key === "page") {

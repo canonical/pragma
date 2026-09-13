@@ -240,7 +240,9 @@ describe("createProviderViews", () => {
         schema: collection.schema,
         capabilities: provider.capabilities,
         state: { get: provider.state.get, subscribe },
-        adopt: host.adopt,
+        adopt(query) {
+          host.adopt(query, "view");
+        },
       },
       store: standIn(),
     });
@@ -1072,9 +1074,14 @@ describe("createProviderViews races and failures", () => {
       status: "refused",
       view,
       issues: [
-        { parameter: "q", reason: "this source cannot search" },
+        {
+          parameter: "q",
+          code: "undeclared-field",
+          reason: "this source cannot search",
+        },
         {
           parameter: "region",
+          code: "unknown-field",
           reason: '"region" names no field of this collection',
         },
       ],

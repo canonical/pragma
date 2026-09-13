@@ -7,7 +7,7 @@
 import type { ActionRequest, ActionRun } from "../action/index.js";
 import type { Collection } from "../collection/index.js";
 import type { DataViewsState, QueryCoordinator } from "../coordinator/index.js";
-import type { QueryLocation } from "../location/index.js";
+import type { HistoryMode, QueryLocation } from "../location/index.js";
 import type { Channel, ReadonlyChannel } from "../observable/index.js";
 import type {
   GroupPath,
@@ -168,13 +168,15 @@ export type DataViewsProviderConfig<
    */
   readonly location?: QueryLocation | undefined;
   /**
-   * How a query transition enters the location's history. Defaults to
-   * `"replace"`, so a stream of edits does not bury the entry the user
-   * arrived on. Seeding and canonicalizing an adopted location always
-   * replace: neither is a step the user took. A transition that changes
-   * the ordering always pushes, whatever this says.
+   * How each query transition enters the location's history. By default a
+   * search replaces, so typing never floods history, and every other
+   * transition — a filter, a sort, a grouping, a window move, a saved view
+   * opened — pushes an entry Back returns from. One mode sets every
+   * transition; a record overrides the default per transition. Adopting
+   * the location writes nothing back, a canonical respelling and a reset
+   * replace, and collapse has no spelling, whatever this says.
    */
-  readonly history?: "push" | "replace" | undefined;
+  readonly history?: HistoryPolicy | undefined;
   /**
    * Where the collection's saved views and presentation preferences live —
    * `createIndexedDBViewStore` from `@canonical/dataviews-core/indexeddb`, or a
@@ -189,6 +191,60 @@ export type DataViewsProviderConfig<
       }
     | undefined;
 };
+
+/**
+ * What a query transition changed, named for the member it moved: the key
+ * a history policy is written against. `Transition` is the announced move
+ * itself, on the internal host.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export type QueryTransition =
+  | "filter"
+  | "search"
+  | "sort"
+  | "group"
+  | "window"
+  | "view";
+
+/**
+ * How query transitions enter the location's history: one mode for every
+ * transition, or overrides per transition over the default — search
+ * replaces, everything else pushes.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export type HistoryPolicy =
+  | HistoryMode
+  | Readonly<Partial<Record<QueryTransition, HistoryMode>>>;
+
+/**
+ * What moved the query: a transition that enters history, a collapse —
+ * which has no spelling and enters none — the location adopted, or a reset
+ * back to the seed.
+ */
+export type TransitionCause = QueryTransition | "collapse" | "adopt" | "reset";
+
+/** Whose authority an adoption takes: the location's, or a saved view's. */
+export type AdoptionCause = Extract<TransitionCause, "adopt" | "view">;
+
+/**
+ * One move of the query, as the location sync hears it: where the query
+ * now stands, what moved it, and how the move enters history — null when
+ * it enters none, because the location moved it or it has no spelling.
+ */
+export type Transition = {
+  readonly query: Query;
+  readonly cause: TransitionCause;
+  readonly history: HistoryMode | null;
+};
+
+/** The history mode of every cause, resolved from the provider's policy. */
+export type TransitionHistory = Readonly<
+  Record<TransitionCause, HistoryMode | null>
+>;
 
 /**
  * The provider's internal host: what its ports and the framework bindings
@@ -216,10 +272,30 @@ export type ProviderHost<
   /** Request the current query again and name the request. */
   readonly refresh: () => string;
   /**
-   * Adopt an externally authoritative query — back/forward, a saved view —
-   * and name the request it issued, or null when the query did not move.
+   * Adopt an externally authoritative query and name the request it issued,
+   * or null when the query did not move. The cause says whose authority:
+   * the location's (`adopt`), which is never written back, or a saved
+   * view's (`view`), which enters history as the policy says.
    */
-  readonly adopt: (query: Query) => string | null;
+  readonly adopt: (query: Query, cause: AdoptionCause) => string | null;
+  /**
+   * Every move of the query, as it happens: what the location sync writes
+   * from. Null until the first move.
+   */
+  readonly transitions: ReadonlyChannel<Transition | null>;
+  /**
+   * A query spelled as the location would carry it, the location's other
+   * parameters preserved — the destination a link or a form leads to. Null
+   * without a location: there is nowhere for a destination to lead.
+   */
+  readonly spellQuery: (query: Query) => URLSearchParams | null;
+  /**
+   * The read side of the location port the provider was given, or null:
+   * what a control spelling destinations watches, since the location's
+   * other parameters can move without the query moving. Never its write:
+   * the location sync is the one writer.
+   */
+  readonly location: Pick<QueryLocation, "read" | "subscribe"> | null;
   /** Complete the pending request; false when it is not the one pending. */
   readonly complete: (
     requestId: string,
@@ -286,15 +362,13 @@ export type SourceRunConfig<
   readonly source: Source<TRow>;
 };
 
-/** Configuration of the location sync: the host, the location and history. */
+/** Configuration of the location sync: the host and the location. */
 export type LocationSyncConfig<
   TFields extends readonly SchemaFieldDefinition[],
   TRow extends object = RowRecord,
 > = {
   readonly host: ProviderHost<TFields, TRow>;
   readonly location: QueryLocation;
-  /** How a host transition enters history; see `DataViewsProviderConfig`. */
-  readonly history: "push" | "replace";
 };
 
 /** One port's run: starts on `observe()`, stops through its release. */
@@ -323,6 +397,10 @@ export type QueryCommandsConfig<TRow extends object = RowRecord> = {
   readonly source: Source<TRow>;
   /** Publish the coordinator's state after a move. */
   readonly publish: () => void;
+  /** Where every move is announced, after its state is published. */
+  readonly transitions: Channel<Transition | null>;
+  /** How each cause enters history. */
+  readonly history: TransitionHistory;
 };
 
 /**
@@ -339,10 +417,10 @@ export type QueryCommands = Pick<
 
 /**
  * The location sync: the loop and the issues it publishes. On start the
- * location wins when it carries a query, and takes the host's seed when it
- * carries none. After that, every accepted host transition writes the
- * canonical query and every external location change — back, forward, a
- * pasted URL — is adopted.
+ * location wins when it carries a query, and takes the host's query when it
+ * carries none. After that, every transition with a history mode writes the
+ * canonical query in that mode and every external location change — back,
+ * forward, a pasted URL — is adopted and never written back.
  */
 export type LocationSync = PortRun & {
   /** The owned parameters the location carries that were refused. */
