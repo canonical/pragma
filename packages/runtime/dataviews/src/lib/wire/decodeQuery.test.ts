@@ -25,6 +25,7 @@ const machines = () =>
     { field: "cpu", kind: "number", min: 0, max: 64 },
     { field: "updated", kind: "date" },
     { field: "owner", kind: "flag" },
+    { field: "name", kind: "text" },
   ]);
 
 const decode = (search: string) =>
@@ -237,15 +238,48 @@ describe("decodeQuery", () => {
     ]);
   });
 
-  it("sorts and groups on fields the filter schema does not describe", () => {
-    // Sortable, groupable and filterable are different capabilities: a name
-    // column may be ordered without ever being a filter field.
+  it("orders by a field carrying no filter of its own", () => {
+    // Sortable and filterable are different capabilities: a name column is
+    // ordered without ever being a filter field.
     expect(decode("sort=name__asc").slice.sort).toEqual([
       { field: "name", direction: "asc" },
     ]);
     expect(decode("sort=name__asc").issues).toEqual([]);
+    expect(decode("name=alder").slice.filter).toEqual([]);
+    expect(decode("name=alder").issues).toEqual([
+      {
+        parameter: "name",
+        reason: "text fields are ordered, not filtered",
+      },
+    ]);
+  });
+
+  it("groups on a field the schema does not describe", () => {
+    // Seam for the grouping unit: a group level is not yet checked against
+    // the schema the way an ordered term is.
     expect(decode("group=region").slice.group).toEqual([{ field: "region" }]);
     expect(decode("group=region").issues).toEqual([]);
+  });
+
+  it("refuses an ordering naming no field of the collection, whole", () => {
+    const decoded = decode("sort=cpu__asc&sort=region__desc");
+    expect(decoded.slice.sort).toEqual([]);
+    expect(decoded.issues).toEqual([
+      {
+        parameter: "sort",
+        reason: '"region" is not a field of this collection',
+      },
+    ]);
+  });
+
+  it("collapses a field spelled twice to its first term, without an issue", () => {
+    // Not a refusal, only a respelling: the canonical link replaces it.
+    const decoded = decode("sort=cpu__asc&sort=name__asc&sort=cpu__desc");
+    expect(decoded.slice.sort).toEqual([
+      { field: "cpu", direction: "asc" },
+      { field: "name", direction: "asc" },
+    ]);
+    expect(decoded.issues).toEqual([]);
   });
 
   it("leaves the host's own parameters alone", () => {
@@ -403,10 +437,37 @@ describe("decodeQuery", () => {
       params: new URLSearchParams("sort=cpu__asc&sort=name__desc"),
       capabilities: declareCapabilities({ sort: declareSorting(["status"]) }),
     });
+    expect(decoded.slice.sort).toEqual([]);
     expect(decoded.issues).toEqual([
       { parameter: "sort", reason: 'field "cpu" cannot be sorted' },
       { parameter: "sort", reason: 'field "name" cannot be sorted' },
     ]);
+  });
+
+  it("refuses an ordering longer than the source executes, whole", () => {
+    const capabilities = declareCapabilities({
+      sort: declareSorting(["cpu", "name"], 1),
+    });
+    const decoded = decodeQuery({
+      schema: machines(),
+      params: new URLSearchParams("sort=cpu__asc&sort=name__desc"),
+      capabilities,
+    });
+    expect(decoded.slice.sort).toEqual([]);
+    expect(decoded.issues).toEqual([
+      { parameter: "sort", reason: "this source orders by at most 1 term" },
+    ]);
+    // A field spelled twice is one term, so it fits the same limit.
+    expect(
+      decodeQuery({
+        schema: machines(),
+        params: new URLSearchParams("sort=cpu__asc&sort=cpu__desc"),
+        capabilities,
+      }),
+    ).toMatchObject({
+      slice: { sort: [{ field: "cpu", direction: "asc" }] },
+      issues: [],
+    });
   });
 
   it("checks only the grammar and the schema without a declaration", () => {

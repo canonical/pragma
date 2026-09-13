@@ -149,15 +149,48 @@ describe("supportsRequest", () => {
     ]);
   });
 
-  it("counts the term limit in the plural above one", () => {
+  it("reports an unsortable field beside the term limit, not instead of it", () => {
     expect(
       supportsRequest(
-        declareCapabilities({ sort: declareSorting(["cpu"], 2) }),
+        declareCapabilities({ sort: declareSorting(["cpu"], 1) }),
+        query({
+          sort: [
+            { field: "cpu", direction: "asc" },
+            { field: "zone", direction: "desc" },
+          ],
+        }),
+      ).map((refusal) => [refusal.code, refusal.field]),
+    ).toEqual([
+      ["too-many-terms", null],
+      ["undeclared-field", "zone"],
+    ]);
+  });
+
+  it("counts a field spelled twice once against the term limit", () => {
+    expect(
+      supportsRequest(
+        declareCapabilities({ sort: declareSorting(["cpu"], 1) }),
         query({
           sort: [
             { field: "cpu", direction: "asc" },
             { field: "cpu", direction: "desc" },
+          ],
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it("counts the term limit in the plural above one", () => {
+    expect(
+      supportsRequest(
+        declareCapabilities({
+          sort: declareSorting(["cpu", "name", "zone"], 2),
+        }),
+        query({
+          sort: [
             { field: "cpu", direction: "asc" },
+            { field: "name", direction: "desc" },
+            { field: "zone", direction: "asc" },
           ],
         }),
       ),

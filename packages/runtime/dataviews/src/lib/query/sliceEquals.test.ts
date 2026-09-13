@@ -13,6 +13,20 @@ const slice = (overrides: Partial<Slice> = {}): Slice => ({
 });
 
 describe("sliceEquals", () => {
+  it("is true when an ordering repeats a field it already orders by", () => {
+    expect(
+      sliceEquals(
+        slice({
+          sort: [
+            { field: "cpu", direction: "asc" },
+            { field: "cpu", direction: "desc" },
+          ],
+        }),
+        slice({ sort: [{ field: "cpu", direction: "asc" }] }),
+      ),
+    ).toBe(true);
+  });
+
   it("is true for identical slices", () => {
     const value = slice({ search: "yak" });
     expect(sliceEquals(value, slice({ search: "yak" }))).toBe(true);

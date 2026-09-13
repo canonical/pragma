@@ -183,6 +183,25 @@ describe("applyQueryCommand", () => {
     expect(result.window.page).toBe(1);
   });
 
+  it("stores a sort field spelled twice as its first term", () => {
+    const base = slice({ sort: [{ field: "name", direction: "asc" }] });
+    const result = applyQueryCommand(base, window(), {
+      kind: "setSort",
+      sort: [
+        { field: "name", direction: "asc" },
+        { field: "updated", direction: "desc" },
+        { field: "name", direction: "desc" },
+      ],
+    });
+    if (result.status !== "accepted") {
+      throw new Error("expected acceptance");
+    }
+    expect(result.slice.sort).toEqual([
+      { field: "name", direction: "asc" },
+      { field: "updated", direction: "desc" },
+    ]);
+  });
+
   it("clears the sort through an empty replacement", () => {
     const base = slice({ sort: [{ field: "name", direction: "asc" }] });
     const result = applyQueryCommand(base, window(), {

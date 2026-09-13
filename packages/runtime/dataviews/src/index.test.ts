@@ -10,6 +10,7 @@ describe("public surface", () => {
       "EMPTY_SLICE",
       "applyWindow",
       "canonicalSlice",
+      "collapseSortTerms",
       "columnTemplate",
       "createArraySource",
       "createChannel",

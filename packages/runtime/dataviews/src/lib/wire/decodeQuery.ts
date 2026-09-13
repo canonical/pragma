@@ -1,5 +1,6 @@
 import DEFAULT_WINDOW from "../query/defaultWindow.js";
 import EMPTY_SLICE from "../query/emptySlice.js";
+import { collapseSortTerms } from "../query/index.js";
 import type {
   GroupTerm,
   Predicate,
@@ -243,7 +244,7 @@ export default function decodeQuery(config: DecodeQueryConfig): DecodedQuery {
 
   const issues: QueryIssue[] = [];
   const filter: Predicate[] = [];
-  let sort: SortTerm[] = [];
+  let sort: readonly SortTerm[] = [];
   let search: string | null = null;
   let group: GroupTerm[] = [];
   let page = DEFAULT_WINDOW.page;
@@ -266,13 +267,22 @@ export default function decodeQuery(config: DecodeQueryConfig): DecodedQuery {
             parameter: key,
             reason: `"${value}" is not an ordered sort term`,
           });
+        } else if (!schema.hasField(term.field)) {
+          // A field with no kind cannot be compared, so a term naming one is
+          // as malformed as a term with no direction.
+          issues.push({
+            parameter: key,
+            reason: `"${term.field}" is not a field of this collection`,
+          });
         } else {
           terms.push(term);
         }
       }
       // An ordering is kept whole or not at all: dropping one term would
-      // promote the next into a precedence nobody asked for.
-      sort = terms.length === values.length ? terms : [];
+      // promote the next into a precedence nobody asked for. A field spelled
+      // twice is not a refusal, only a respelling — the first occurrence is
+      // the ordering, and the canonical link is written back.
+      sort = terms.length === values.length ? collapseSortTerms(terms) : [];
       continue;
     }
     if (key === "group") {

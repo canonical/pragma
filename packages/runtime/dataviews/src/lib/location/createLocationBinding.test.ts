@@ -612,6 +612,24 @@ describe("createLocationBinding", () => {
     stopSource();
   });
 
+  it("replaces when a location respells an ordering it already carries", () => {
+    // The first occurrence is the ordering, so the duplicate is a
+    // respelling rather than a step the reader took.
+    const provider = machinesProvider();
+    const { location, writes } = recording(
+      "/machines?sort=cpu__asc&sort=cpu__desc",
+    );
+    const release = createLocationBinding({
+      host: provider,
+      location,
+    }).observe();
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "cpu", direction: "asc" },
+    ]);
+    expect(writes).toEqual([["sort=cpu__asc&page=1&size=50", "replace"]]);
+    release();
+  });
+
   it("retries a write the location threw on at the next publication", () => {
     const provider = machinesProvider();
     const location = createMemoryLocation({ href: "/machines" });
