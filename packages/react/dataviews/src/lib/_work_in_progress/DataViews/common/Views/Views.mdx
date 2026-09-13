@@ -17,7 +17,7 @@ Views live in a store the application creates and gives to the provider. `create
 
 ## The store's scope
 
-The store's scope — its database, the collection and an opaque partition such as the signed-in account — is fixed when it is created; the `@canonical/dataviews-core` README describes each. When the account changes, create a store for the new partition and a provider over it; dispose of the old provider, then its store.
+The store's scope — its database, the collection and an opaque partition such as the signed-in account — is fixed when it is created; the `@canonical/dataviews-core` README describes each. When the account changes, create a store for the new partition and a provider over it, and mount the parts on that: the old provider stops when its last root unmounts, and nothing reads its store after.
 
 ## Saving, saving as, renaming
 
@@ -54,7 +54,7 @@ A resize is saved as the viewer's own: to the open view's preferences, or to the
 
 ## Keeping the query in the URL
 
-With a location binding, opening a view is an edit like any other: the provider adopts the view's query, and the binding writes it to the URL. The link carries the query, which works in any browser. It does not carry the view: views live in this browser's storage, and a reload keeps the query, not the open view.
+Give the provider a `location` — `createPlatformLocation(platform)` over your router's platform surface — and opening a view is an edit like any other: the provider applies the view's query and writes it to the URL itself; nothing else is wired. The link carries the query, which works in any browser. It does not carry the view: views live in this browser's storage, and a reload keeps the query, not the open view.
 
 <Canvas of={Stories.WithTheQueryInTheUrl} sourceState="shown" />
 

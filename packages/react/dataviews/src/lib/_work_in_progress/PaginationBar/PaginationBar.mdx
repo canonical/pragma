@@ -19,23 +19,21 @@ The page size and page selects are the design system's `SelectInput`, and the bu
 
 ## A table and its pagination bar
 
-Build the source and the provider once, tell the provider what the source can execute, and bind them in an effect that disposes the binding. The table and the bar read the same provider: the bar asks for a window, and the table shows the rows that answer it.
+Build the provider once, in state, over the module-scope collection and its source, and hand it to both parts. Nothing runs until one of them observes it: the table and the bar each observe the provider for as long as they are mounted, the first observer runs the source and asks for the first page, and the last to leave stops it. The two read the same provider: the bar asks for a window, and the table shows the rows that answer it. The window the provider starts on is its `seed`.
 
 ```tsx
 import {
   createArraySource,
   createDataViewsProvider,
-  createSourceBinding,
   DEFAULT_WINDOW,
-  type RowRecord,
 } from "@canonical/dataviews-core";
 import {
   DataTable,
   PaginationBar,
   type DataTableColumn,
 } from "@canonical/dataviews-react";
-import { useEffect, useState } from "react";
-import { machineSchema, machines } from "./machines.js";
+import { useState } from "react";
+import { machineCollection, machines } from "./machines.js";
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host" },
@@ -45,27 +43,18 @@ const columns: readonly DataTableColumn[] = [
 ];
 
 export function Machines() {
-  const [source] = useState(() =>
-    createArraySource<RowRecord>({
-      rows: machines,
-      schema: machineSchema,
-    }),
-  );
+  // Built once: the parts observe it, which starts its source.
   const [provider] = useState(() =>
     createDataViewsProvider({
-      schema: machineSchema,
-      capabilities: source.capabilities,
-      window: { ...DEFAULT_WINDOW, size: 5 },
+      collection: machineCollection,
+      source: createArraySource({
+        rows: machines,
+        collection: machineCollection,
+        searchFields: ["name", "owner"],
+      }),
+      seed: { window: { ...DEFAULT_WINDOW, size: 5 } },
     }),
   );
-  useEffect(() => {
-    const binding = createSourceBinding({ host: provider, source });
-    const release = binding.observe();
-    if (provider.state.get().result.status === "idle") {
-      provider.refresh();
-    }
-    return release;
-  }, [provider, source]);
   return (
     <>
       <DataTable provider={provider} columns={columns} label="Machines" />

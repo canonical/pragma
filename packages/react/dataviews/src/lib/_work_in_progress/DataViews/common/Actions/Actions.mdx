@@ -11,7 +11,7 @@ It renders on the design system's contrasted surface — its root carries `.cont
 
 ## Actions over the selection
 
-The actions are your own components, placed as children. Each reads the selection when it is pressed, through `useDataViews`, and runs through the source binding: `binding.runAction({ action, targets, payload })` captures those targets, calls the source's own `runAction`, and removes the targets that succeed from the selection. A failed target stays selected, for review and retry. An action the source did not declare, or one addressing more rows than it declared it can take at once, is refused before anything runs.
+The actions are your own components, placed as children. Each runs through the provider when it is pressed: `runAction({ action })` from `useDataViews(collection)` captures the selection as its targets — or the `targets` you name — calls the source's own `runAction`, and removes the targets that succeed from the selection. A failed target stays selected, for review and retry. An action the source did not declare, one addressing nothing, or one addressing more rows than it declared it can take at once, is rejected before anything runs.
 
 A destructive action is the design system's `Button` with `anticipation="destructive"`.
 
@@ -19,24 +19,17 @@ A destructive action is the design system's `Button` with `anticipation="destruc
 import {
   createArraySource,
   createDataViewsProvider,
-  createSourceBinding,
-  type DataViewsProvider,
   DEFAULT_WINDOW,
-  type RowRecord,
-  type SourceBinding,
 } from "@canonical/dataviews-core";
 import {
   DataTable,
   DataViews,
   type DataTableColumn,
   useDataViews,
-  useDataViewsValue,
 } from "@canonical/dataviews-react";
 import { Button, type ButtonProps } from "@canonical/react-ds-global";
-import { useEffect, useState } from "react";
-import { archiveMachines, machineSchema, machines } from "./machines.js";
-
-type MachinesProvider = DataViewsProvider<typeof machineSchema.fields>;
+import { useState } from "react";
+import { archiveMachines, machineCollection, machines } from "./machines.js";
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Host" },
@@ -44,67 +37,46 @@ const columns: readonly DataTableColumn[] = [
   { id: "owner", header: "Owner" },
 ];
 
+// Pressed, it runs through the provider, which captures the selection as
+// its targets, runs the source's action and removes the ones that succeed.
 function SelectionAction({
-  provider,
-  binding,
   action,
   ...button
-}: Omit<ButtonProps, "onClick"> & {
-  provider: MachinesProvider;
-  binding: SourceBinding | null;
-  action: string;
-}) {
-  const { selection } = useDataViews(provider);
+}: Omit<ButtonProps, "onClick"> & { action: string }) {
+  const { runAction } = useDataViews(machineCollection);
   return (
     <Button
       {...button}
       type="button"
       importance="tertiary"
-      disabled={binding === null}
       onClick={() => {
-        void binding?.runAction({
-          action,
-          targets: { kind: "explicit", ids: [...selection.state.get().ids] },
-          payload: undefined,
-        });
+        // Targets left out: the action addresses the selection.
+        void runAction({ action });
       }}
     />
   );
 }
 
 export function Machines() {
-  const [source] = useState(() =>
-    createArraySource<RowRecord>({
-      rows: machines,
-      schema: machineSchema,
-      // Declared, then served: the binding refuses an action either half
-      // is missing.
-      actions: { archive: { targets: "explicit", limit: null } },
-      // Resolves with one outcome per target: { target, status }.
-      runAction: ({ action, targets }) =>
-        archiveMachines(action, targets.kind === "explicit" ? targets.ids : []),
-    }),
-  );
+  // Built once: the parts observe it, which starts its source and ports.
   const [provider] = useState(() =>
     createDataViewsProvider({
-      schema: machineSchema,
-      capabilities: source.capabilities,
-      window: { ...DEFAULT_WINDOW, size: 5 },
+      collection: machineCollection,
+      source: createArraySource({
+        rows: machines,
+        collection: machineCollection,
+        // Declared, then served: the provider refuses a source that
+        // declares an action and has no runner for it.
+        actions: {
+          archive: { targets: "explicit", limit: null },
+          delete: { targets: "explicit", limit: null },
+        },
+        // Resolves with one outcome per target: { target, status }.
+        runAction: ({ action, targets }) => archiveMachines(action, targets),
+      }),
+      seed: { window: { ...DEFAULT_WINDOW, page: 1, size: 5 } },
     }),
   );
-  const [binding, setBinding] = useState<SourceBinding | null>(null);
-  useEffect(() => {
-    const bound = createSourceBinding({ host: provider, source });
-    const release = bound.observe();
-    setBinding(bound);
-    if (provider.state.get().result.status === "idle") {
-      provider.refresh();
-    }
-    return () => {
-      release();
-      setBinding(null);
-    };
-  }, [provider, source]);
   return (
     <DataViews provider={provider}>
       <DataTable
@@ -112,19 +84,11 @@ export function Machines() {
         columns={columns}
         label="Machines"
         selectable
-        rowLabel={(row) => String(row.name)}
+        rowLabel={(row) => row.name}
       />
       <DataViews.Actions>
-        <SelectionAction provider={provider} binding={binding} action="archive">
-          Archive
-        </SelectionAction>
-        <SelectionAction
-          provider={provider}
-          binding={binding}
-          action="delete"
-          anticipation="destructive"
-          icon="delete"
-        >
+        <SelectionAction action="archive">Archive</SelectionAction>
+        <SelectionAction action="delete" anticipation="destructive" icon="delete">
           Delete
         </SelectionAction>
       </DataViews.Actions>
@@ -152,11 +116,11 @@ When an action succeeds for every target, the targets leave the selection, and w
 
 ## Your own indicator
 
-`indicator` replaces the count; `null` shows none. A replacement reads the selection itself, through `useDataViews`, and owns its own announcement: the default count is a polite status, so give yours `role="status"` if it stands in for it, and the class `indicator` to take the default's inset. When the persistent selection panel ships, its trigger takes this place.
+`indicator` replaces the count; `null` shows none. A replacement reads the selection itself, through `useDataViews(collection)`, and owns its own announcement: the default count is a polite status, so give yours `role="status"` if it stands in for it, and the class `indicator` to take the default's inset. When the persistent selection panel ships, its trigger takes this place.
 
 ```tsx
-function MachinesSelected({ provider }: { provider: MachinesProvider }) {
-  const { selection } = useDataViews(provider);
+function MachinesSelected() {
+  const { selection } = useDataViews(machineCollection);
   const count = useDataViewsValue(selection.state).ids.size;
   return (
     <span role="status" className="indicator">
@@ -165,7 +129,7 @@ function MachinesSelected({ provider }: { provider: MachinesProvider }) {
   );
 }
 
-<DataViews.Actions indicator={<MachinesSelected provider={provider} />}>
+<DataViews.Actions indicator={<MachinesSelected />}>
   {/* the actions */}
 </DataViews.Actions>;
 ```
