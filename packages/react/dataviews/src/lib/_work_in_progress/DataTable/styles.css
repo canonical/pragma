@@ -206,7 +206,9 @@
     }
 
     /* The sort control is the header cell's text: it inherits the type rather
-       than looking like a button that happens to sit in a table. */
+       than looking like a button or a link that happens to sit in a table.
+       It is the link to the next ordering until scripts take over, and a
+       button after, drawn the same, so nothing moves on hydration. */
     & > .sort {
       display: flex;
       min-inline-size: 0;
@@ -217,6 +219,7 @@
       color: inherit;
       font: inherit;
       text-align: start;
+      text-decoration: none;
       background: none;
       border: none;
       cursor: pointer;
@@ -228,11 +231,35 @@
         outline-offset: calc(-1 * var(--dimension-stroke-thickness-large));
       }
 
-      /* The applied ordering's chevron, which never shrinks as the label
-         does. An unsorted column shows none. */
-      & > .ds.icon {
+      /* The ordering's chevron and, from two terms, the column's
+         precedence, neither of which shrinks as the label does. A column
+         the ordering does not name shows neither. */
+      & > .ds.icon,
+      & > .precedence {
         flex: none;
       }
+    }
+
+    /* A column the ordering names that offers no sort shows the same. */
+    & > .ds.icon,
+    & > .precedence {
+      flex: none;
+    }
+
+    /* The precedence numeral keeps one width as it counts. */
+    & .precedence {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Why an activation changed nothing, for assistive technology: read
+       politely, taking no room and drawing nothing. Unthemable geometry. */
+    & > .sort-status {
+      position: absolute;
+      inline-size: 0;
+      block-size: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
   }
 

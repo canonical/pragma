@@ -9,15 +9,21 @@
 #
 # Names — one per part, the same in the design, the DOM and here:
 #   HeaderCell      design "HeaderCell"   DOM `ds data-table-header-cell`
-#   sort control    design "Sort by icon wrapper"   DOM `button.sort`
+#   sort control    design "Sort by icon wrapper"   DOM `a.sort` until scripts
+#                                         take over, `button.sort` after
 #   sort icon       design `sort-both` (hidden at rest)   DOM `svg.ds.icon`
+#   precedence      design none yet       DOM `span.precedence`
 #   resize handle   design "Resize handle wrapper" + "Column resizing handle"
 #                                         DOM `ds data-table-resize-handle`
 #
 # States:
-#   - Sort none, ascending, descending are `aria-sort` on the heading, shown by
-#     the sort icon: `chevron-up` ascending, `chevron-down` descending, nothing
-#     at rest, as the design hides its icon at rest. The chevrons stand in for
+#   - The ordering in force — the query's terms, or the source's default when
+#     it states none — is shown by the sort icon on every column it names:
+#     `chevron-up` ascending, `chevron-down` descending, nothing at rest, as
+#     the design hides its icon at rest. From two terms a precedence numeral
+#     follows the icon. Only the first term's heading carries `aria-sort`;
+#     every other heading omits it. The design owners have not drawn the
+#     numeral yet: it takes the heading's own type. The chevrons stand in for
 #     the design's `sort-both`, which `@canonical/ds-assets` does not ship yet;
 #     when it lands the switch collapses to one icon.
 #   - Focus sits on the controls (the sort button, the resize handle), not on
@@ -44,8 +50,13 @@
 # `color/focus-ring` is the package's `color.focusRing`, whose camelCase id the
 # DSL's token-path grammar cannot spell.
 #
+# The sort control is described by its direction and precedence, as
+# "descending, 2nd of 3", from a hidden element; a refused activation is
+# read politely from a visually hidden status beside it, once scripts run.
+#
 # Accessibility: "Sort/header menu/resize" (2.1.1, 2.5.2, 2.5.7-2.5.8, 4.1.2),
-# with 1.4.1 — the ordering is `aria-sort`, never only the chevron — and 2.5.8
+# with 1.4.1 — the ordering is `aria-sort` and the description, never only
+# the chevron or the numeral — and 2.5.8
 # for the resize handle: its 16px strip is under the 24px minimum target and
 # passes only with the keyboard alternative and the spacing exception.
 node:
@@ -79,7 +90,7 @@ node:
                     role: label
                   relation:
                     cardinality: "1"
-                # The applied ordering chooses the icon; none at rest.
+                # The ordering chooses the icon; none at rest.
                 - switch:
                     "on": internal
                     cases:
@@ -91,6 +102,11 @@ node:
                           uri: global.component.icon
                           props:
                             icon: chevron-down
+                  relation:
+                    cardinality: "0..1"
+                # The column's place in an ordering of two terms or more.
+                - node:
+                    role: precedence
                   relation:
                     cardinality: "0..1"
           - node:

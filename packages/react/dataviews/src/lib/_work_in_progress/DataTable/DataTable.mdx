@@ -84,7 +84,9 @@ const columns: readonly DataTableColumn[] = [
 
 ## Sorting
 
-Mark a column `sortable` and the table offers the order, but only when the source declares that field sortable: the provider carries the source's declaration, and a `sortable` column on a field outside it offers nothing, because a heading offering a sort the source would refuse would be a control that does nothing. The heading cycles ascending, descending, then back to the source's own order, and reports it through `aria-sort`. An ordered heading shows a chevron — up for ascending, down for descending — and an unordered one shows none; the chevron repeats the order for the eye, and `aria-sort` is what carries it to assistive technology.
+Mark a column `sortable` and the table offers the order, but only when the source declares that field sortable: the provider carries the source's declaration, and a `sortable` column on a field outside it offers nothing, because a heading offering a sort the source would refuse would be a control that does nothing. Activating a heading sorts by that column alone and cycles ascending, descending, then back to the source's own order. Shift with a click, Enter or Space adds the column as a further term instead, turns an ascending term descending where it stands, and removes a descending one; a term past what the source orders by changes nothing, and the heading says why, politely. Focus stays on the heading throughout.
+
+The headings show the ordering in force — the reader's own terms, or the source's documented default when there are none — so rows a source orders are never shown as unsorted. Each heading the ordering names shows a chevron, up for ascending and down for descending, and from two terms a numeral for its place; its control is described by both, as "descending, 2nd of 3". Exactly one heading, the first term's, carries `aria-sort`. Without scripting each sortable heading is a real link to the next ordering, from the first page, where the provider has a location to lead to.
 
 ```tsx
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
@@ -103,6 +105,10 @@ const columns: readonly DataTableColumn[] = [
 To open on an order, issue it once the provider is built, before anything observes it: `provider.setSort([{ field: "status", direction: "asc" }])` inside the state initializer. The first request then carries it.
 
 <Canvas of={Stories.Sortable} sourceState="none" />
+
+<Canvas of={Stories.SortedByTwoTerms} sourceState="none" />
+
+<Canvas of={Stories.DefaultOrdering} sourceState="none" />
 
 ## Selection
 

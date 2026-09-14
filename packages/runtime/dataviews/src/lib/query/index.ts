@@ -7,6 +7,7 @@ export { default as areSlicesEqual } from "./areSlicesEqual.js";
 export { default as canonicalizeSlice } from "./canonicalizeSlice.js";
 export { default as collapseSortTerms } from "./collapseSortTerms.js";
 export { DEFAULT_WINDOW, EMPTY_SLICE, OPERATOR_ARITY } from "./constants.js";
+export { default as cycleSortTerm } from "./cycleSortTerm.js";
 export { default as rankOperand } from "./rankOperand.js";
 export { default as rejectOperandArity } from "./rejectOperandArity.js";
 export { default as rejectWindow } from "./rejectWindow.js";

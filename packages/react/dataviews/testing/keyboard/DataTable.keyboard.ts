@@ -462,19 +462,55 @@ test.describe("DataTable stories, keyboard only", () => {
     });
   }
 
-  test("Sortable: Enter and Space cycle a heading's sort and keep focus on it", async ({
+  test("Sortable: Enter and Space cycle a header's sort, Shift adds a term, focus stays", async ({
     page,
   }) => {
     await openStory(page, findStory(TABLE, "Sortable").id);
-    const heading = page.getByRole("columnheader", { name: /^Host/ });
-    const control = heading.getByRole("button", { name: "Host" });
-    await tabTo(page, control);
+    const host = page.getByRole("columnheader", { name: "Host", exact: true });
+    const status = page.getByRole("columnheader", {
+      name: "Status",
+      exact: true,
+    });
+    const hostSort = host.getByRole("button", { name: "Host", exact: true });
+    const statusSort = status.getByRole("button", {
+      name: "Status",
+      exact: true,
+    });
+    // At rest nothing is sorted, and no header claims it is.
+    await expect(host).not.toHaveAttribute("aria-sort");
+
+    await tabTo(page, hostSort);
     await page.keyboard.press("Enter");
-    await expect(heading).toHaveAttribute("aria-sort", "ascending");
-    await expect(control).toBeFocused();
+    await expect(host).toHaveAttribute("aria-sort", "ascending");
+    await expect(hostSort).toBeFocused();
     await page.keyboard.press("Space");
-    await expect(heading).toHaveAttribute("aria-sort", "descending");
-    await expect(control).toBeFocused();
+    await expect(host).toHaveAttribute("aria-sort", "descending");
+    await expect(hostSort).toBeFocused();
+
+    // Shift adds Status as the second term; Host keeps the sort's claim.
+    await tabTo(page, statusSort);
+    await page.keyboard.press("Shift+Enter");
+    await expect(statusSort).toHaveAccessibleDescription("ascending, 2nd of 2");
+    await expect(status.locator(".precedence")).toHaveText("2");
+    await expect(host).toHaveAttribute("aria-sort", "descending");
+    await expect(status).not.toHaveAttribute("aria-sort");
+    await expect(statusSort).toBeFocused();
+    await page.keyboard.press("Shift+Space");
+    await expect(statusSort).toHaveAccessibleDescription(
+      "descending, 2nd of 2",
+    );
+    await expect(statusSort).toBeFocused();
+
+    // Enter alone on a descending Status completes its cycle: back to the
+    // source's own order, which here orders by nothing.
+    await page.keyboard.press("Enter");
+    await expect(status).not.toHaveAttribute("aria-sort");
+    await expect(host).not.toHaveAttribute("aria-sort");
+    await expect(statusSort).toBeFocused();
+    // Enter again starts it over, by Status alone.
+    await page.keyboard.press("Enter");
+    await expect(status).toHaveAttribute("aria-sort", "ascending");
+    await expect(status.locator(".precedence")).toHaveCount(0);
   });
 
   test("Selectable: Space checks a row's checkbox", async ({ page }) => {

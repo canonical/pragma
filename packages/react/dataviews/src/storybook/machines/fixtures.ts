@@ -192,6 +192,18 @@ export const createMachineSource = (
   });
 
 /**
+ * A local-array source over the machines that documents its own order: by
+ * host, when a query states no term of its own.
+ */
+export const createHostOrderedSource = (): Source<Machine> =>
+  createArraySource<Machine>({
+    rows: machines,
+    collection: machineCollection,
+    searchFields: ["name", "owner"],
+    defaultSort: [{ field: "name", direction: "asc" }],
+  });
+
+/**
  * A source that cannot filter or order by cores: its declaration leaves
  * the field out, so no part may offer it, though the collection has it.
  */

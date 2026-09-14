@@ -12,10 +12,12 @@ import type { EffectiveOrdering, SortCapabilities } from "./types.js";
  * An empty ordering means "the source's default", never "unordered": a
  * source documents the order its pages come in, and a query stating no term
  * of its own runs on it. One shared answer, so a local execution, a header
- * and a server render describe the same rows the same way.
+ * and a server render describe the same rows the same way: a table's
+ * headers read it to show which columns the rows are sorted by, the
+ * source's default included.
  *
- * @seam sort header — read by the header's sorted-column report, to
- * show the ordering in force when the query states none
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export default function resolveEffectiveOrdering(
   slice: Pick<Slice, "sort" | "group">,

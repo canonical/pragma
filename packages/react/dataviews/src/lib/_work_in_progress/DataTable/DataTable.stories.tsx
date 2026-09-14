@@ -7,6 +7,7 @@ import { consumerCode } from "../../../storybook/machines/consumerCode.js";
 import {
   createEmptySource,
   createFailingSource,
+  createHostOrderedSource,
   createMachineSource,
   createPendingSource,
   type Machine,
@@ -252,14 +253,16 @@ export const Default: Story = {
 };
 
 /**
- * Sortable: a column marked `sortable` makes its heading a button, and the
- * heading reports the applied order through `aria-sort`. Nothing is sorted
- * yet, so every sortable heading says `none`. Activating a heading cycles
- * ascending, then descending, then back to the source's own order — enabling
- * a sort never lands on descending by accident.
+ * Sortable: a column marked `sortable` makes its heading a control that
+ * sorts by it. Nothing is sorted yet, so no heading claims a sort.
+ * Activating a heading sorts by that column alone and cycles ascending,
+ * then descending, then back to the source's own order — enabling a sort
+ * never lands on descending by accident. Shift with a click, Enter or Space
+ * adds the column as a further term instead.
  *
- * Region and Owner are not sortable, so they carry no `aria-sort` at all
- * rather than claiming `none` about an order they cannot change.
+ * Without scripting each sortable heading is a link to that next ordering,
+ * from the first page. Region and Owner are not sortable, so they offer
+ * nothing to activate.
  */
 export const Sortable: Story = {
   parameters: consumerCode({
@@ -331,6 +334,78 @@ export const SortedDescending: Story = {
         "ironwood.example.com",
       ),
     );
+  },
+};
+
+const sortByStatusThenCores = (provider: MachineProvider): void => {
+  provider.setSort([
+    { field: "status", direction: "asc" },
+    { field: "cores", direction: "desc" },
+  ]);
+};
+
+/**
+ * Sorted by two terms: failed, pending and running machines, and the
+ * largest first within each status. Each sorted heading shows its place as
+ * a numeral and states it — Cores reads "descending, 2nd of 2" — while only
+ * Status, the first term, reports the sort through `aria-sort`, so exactly
+ * one heading ever claims it.
+ */
+export const SortedByTwoTerms: Story = {
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: sortableColumnsCode,
+    prepare: `provider.setSort([
+  { field: "status", direction: "asc" },
+  { field: "cores", direction: "desc" },
+]);`,
+    render: tableCode,
+  }),
+  render: renderMachines(sortableColumns, { prepare: sortByStatusThenCores }),
+  play: async ({ canvas }) => {
+    await waitFor(() =>
+      expect(
+        canvas.getByRole("columnheader", { name: /^Status/ }),
+      ).toHaveAttribute("aria-sort", "ascending"),
+    );
+    await expect(
+      canvas.getByRole("columnheader", { name: /^Cores/ }),
+    ).not.toHaveAttribute("aria-sort");
+    await expect(
+      canvas.getByRole("button", { name: "Cores" }),
+    ).toHaveAccessibleDescription("descending, 2nd of 2");
+  },
+};
+
+/**
+ * The source's own order: this source documents that its pages come by
+ * host when a query states no term, so the Host heading shows that order
+ * and reports it — rows a source orders are never shown as unsorted. The
+ * first activation of Host is still ascending, as a term of the reader's
+ * own; clearing it returns to this.
+ */
+export const DefaultOrdering: Story = {
+  parameters: consumerCode({
+    parts: [...tableParts, "createArraySource"],
+    declarations: `const source = createArraySource({
+  rows: machines,
+  collection: machineCollection,
+  defaultSort: [{ field: "name", direction: "asc" }],
+});
+
+${sortableColumnsCode}`,
+    render: tableCode,
+  }),
+  render: renderMachines(sortableColumns, { source: createHostOrderedSource }),
+  play: async ({ canvas }) => {
+    await waitFor(() =>
+      expect(
+        canvas.getByRole("columnheader", { name: /^Host/ }),
+      ).toHaveAttribute("aria-sort", "ascending"),
+    );
+    await expect(
+      canvas.getByRole("button", { name: "Host" }),
+    ).toHaveAccessibleDescription("ascending");
   },
 };
 

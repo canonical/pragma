@@ -5,7 +5,12 @@
  * observe the provider: a server render starts no request.
  */
 
-import type { PresentationStore } from "@canonical/dataviews-core";
+import {
+  createMemoryLocation,
+  DEFAULT_WINDOW,
+  decodeQuery,
+  type PresentationStore,
+} from "@canonical/dataviews-core";
 import { readProviderHost } from "@canonical/dataviews-core/bindings";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -13,7 +18,9 @@ import { createStandInPresentationStore } from "../../../../testing/createStandI
 import { deliverRows } from "../../../../testing/fixtures.js";
 import {
   createMachineProvider,
+  declareMachineOrdering,
   machine,
+  machines,
 } from "../../../../testing/machines.js";
 import DataTable from "./DataTable.js";
 import type { DataTableColumn } from "./types.js";
@@ -89,5 +96,80 @@ describe("DataTable SSR", () => {
         <DataTable provider={provider} label="Machines" columns={columns} />,
       ),
     ).toBe(html);
+  });
+
+  /** Every sort link's destination in server markup, entities decoded. */
+  const listSortLinks = (markup: string): readonly URLSearchParams[] =>
+    [...markup.matchAll(/<a href="\?([^"]*)"[^>]*class="sort"/g)].map(
+      (match) => new URLSearchParams((match[1] ?? "").replaceAll("&amp;", "&")),
+    );
+
+  it("renders each sortable header as a real link to the next ordering, from page one", () => {
+    // The page the reader is on, a host parameter the grammar does not own,
+    // and the ordering the provider holds.
+    const location = createMemoryLocation({
+      href: "/machines?tab=inventory&sort=name__asc&page=3",
+    });
+    const { provider } = createMachineProvider({
+      location,
+      capabilities: declareMachineOrdering(3),
+      seed: {
+        slice: {
+          filter: [],
+          search: null,
+          sort: [{ field: "name", direction: "asc" }],
+          group: [],
+        },
+        window: { ...DEFAULT_WINDOW, page: 3 },
+      },
+    });
+    const markup = renderToString(
+      <DataTable
+        provider={provider}
+        columns={[
+          { id: "name", header: "Name", sortable: true },
+          { id: "status", header: "Status", sortable: true },
+          { id: "cores", header: "Cores" },
+        ]}
+        label="Machines"
+      />,
+    );
+    const links = listSortLinks(markup);
+    expect(links).toHaveLength(2);
+    const decoded = links.map((params) =>
+      decodeQuery({ schema: machines.schema, params }),
+    );
+    // Name cycles from ascending to descending; Status starts ascending.
+    expect(decoded.map((query) => query.slice.sort)).toEqual([
+      [{ field: "name", direction: "desc" }],
+      [{ field: "status", direction: "asc" }],
+    ]);
+    for (const [at, query] of decoded.entries()) {
+      expect(query.issues).toEqual([]);
+      expect(query.window.page).toBe(1);
+      expect(links.at(at)?.get("tab")).toBe("inventory");
+    }
+    // Nothing a script alone drives is offered, and one header claims the sort.
+    expect(markup).not.toContain("<button");
+    expect(markup).not.toContain('role="status"');
+    expect(markup.match(/aria-sort=/g)).toEqual(["aria-sort="]);
+    expect(markup).toContain('aria-sort="ascending"');
+  });
+
+  it("renders a sortable header as its label when there is no location to link to", () => {
+    const { provider } = createMachineProvider({
+      rows: [machine("m-1", "alpha")],
+      capabilities: declareMachineOrdering(3),
+    });
+    const markup = renderToString(
+      <DataTable
+        provider={provider}
+        columns={[{ id: "name", header: "Name", sortable: true }]}
+        label="Machines"
+      />,
+    );
+    expect(markup).not.toContain("<a ");
+    expect(markup).not.toContain("<button");
+    expect(markup).toContain('class="label">Name</span>');
   });
 });

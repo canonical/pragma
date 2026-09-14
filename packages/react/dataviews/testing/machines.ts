@@ -13,6 +13,7 @@ import {
   declareCapabilities,
   type PresentationStore,
   type QueryLocation,
+  type SortTerm,
   type SourceCapabilities,
   type ViewStore,
 } from "@canonical/dataviews-core";
@@ -59,6 +60,26 @@ export const MACHINE_CAPABILITIES: SourceCapabilities = declareCapabilities(
     counts: COUNTED_EXACTLY,
   },
 );
+
+/**
+ * A declaration ordering by all three machine fields, with the given term
+ * limit and default: what a header test sorts several columns over.
+ */
+export const declareMachineOrdering = (
+  terms: number | null,
+  defaultSort: readonly SortTerm[] = [],
+): SourceCapabilities =>
+  declareCapabilities(machines, {
+    filter: { status: ["eq"], cores: ["gte", "lte"] },
+    search: ["name"],
+    sort: {
+      fields: ["name", "status", "cores"],
+      terms,
+      tiebreak: "opaque",
+      default: defaultSort,
+    },
+    counts: COUNTED_EXACTLY,
+  });
 
 /** How one test's machine provider is set up. */
 export type MachineProviderConfig = Omit<

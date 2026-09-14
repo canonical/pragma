@@ -132,6 +132,7 @@ describe("public surface", () => {
       "createFilterInputs",
       "createGridInteraction",
       "createRowScopes",
+      "cycleSortTerm",
       "isDataViewsProvider",
       "listDisplayEntries",
       "readProviderHost",
@@ -139,6 +140,7 @@ describe("public surface", () => {
       "resolveColumnArrangement",
       "resolveColumns",
       "resolveDisplayStatus",
+      "resolveEffectiveOrdering",
       "resolvePagination",
       "spellWireKey",
     ]);
