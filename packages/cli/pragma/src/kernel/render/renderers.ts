@@ -189,12 +189,30 @@ function renderHeaderRow<T>(
   return style.enabled ? style.bold(line) : line;
 }
 
+/**
+ * Render a list as condensed Markdown.
+ *
+ * The heading COUNTS what the reader is looking at and — when the caller says
+ * so — admits that the count is not the population: `## Token (300, more
+ * exist)` rather than a bare `## Token (300)` that reads as a complete answer.
+ * The total is not named because it is not known: a page is cut with one extra
+ * row (`packs/runBodies.ts`), never with a second COUNT over the whole filtered
+ * population, so "more exist" is the strongest honest claim.
+ *
+ * @param items - The rows on this page.
+ * @param options - Columns and empty-state copy.
+ * @param page - What the page knows about itself (`more`: further rows exist).
+ * @returns The formatted Markdown list.
+ */
 export function renderListLlm<T>(
   items: readonly T[],
   options: RenderListOptions<T>,
+  page: { readonly more?: boolean } = {},
 ): string {
   const prefixes = options.prefixes ?? DEFAULT_PREFIX_MAP;
-  const lines = [`## ${options.heading} (${items.length})`, ""];
+  const count =
+    page.more === true ? `${items.length}, more exist` : `${items.length}`;
+  const lines = [`## ${options.heading} (${count})`, ""];
 
   if (items.length === 0) {
     const body = emptyBody(options);

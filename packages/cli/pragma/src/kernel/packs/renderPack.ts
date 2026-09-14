@@ -67,6 +67,14 @@ const DEFAULT_EMPTY_HINT = `Either nothing matched — try a wider filter — or
  * `notice` seam — the channel that already exists for what the data cannot say
  * about itself, and which both machine surfaces project into `meta.notice`.
  *
+ * EVERY format says it, though, because a truncation nobody is told about is a
+ * wrong answer in any dialect. The seam alone did not reach `llm`: the
+ * dispatcher routes a notice to stderr in `plain` and into `meta.notice` in
+ * `json`, but the `llm` branch renders the body and nothing else — and `llm`
+ * is what an agent (or any piped invocation, which auto-detects it) actually
+ * reads. So the condensed form carries the sentence in its own body, as a final
+ * line, and its heading admits the page is a page.
+ *
  * A page that is the whole answer says nothing, which is why declaring the
  * default page size above every story's population left every existing answer
  * untouched, notice included.
@@ -98,7 +106,13 @@ export function listFormatters(
   };
   return {
     plain: (page, context) => renderListPlain(page.rows, options, context),
-    llm: (page) => renderListLlm(page.rows, options),
+    llm: (page) => {
+      const body = renderListLlm(page.rows, options, {
+        more: page.nextAfter !== undefined,
+      });
+      const notice = pageNotice(page, meta);
+      return notice ? `${body}\n\n${notice}` : body;
+    },
     json: (page) => JSON.stringify(page.rows, null, 2),
     // Zero rows: the dispatcher routes this to stderr (exit 0) so the plain
     // stdout stream stays pure data; llm/json keep their own empty shapes.
