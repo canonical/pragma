@@ -1,5 +1,5 @@
 import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Component from "./ContextualMenu.js";
 import type { MenuEntry } from "./types.js";
 
@@ -29,13 +29,50 @@ const stage: Decorator = (Story) => (
   </div>
 );
 
+/**
+ * Every story renders its menu open — a story is first a picture of the
+ * pattern, and a preview has nothing else to click. The open is deferred one
+ * effect after mount rather than `useState(true)`: it must land like a click,
+ * once the trigger and the portalled menu both exist — opened on the very
+ * first render, the fitment positioning runs before either ref is attached
+ * and the menu lands unpositioned. Real state rather than a static
+ * `open: true` keeps the story interactive: Escape, an outside click, or
+ * choosing an item closes the menu, and the trigger reopens it. Open
+ * previews stack safely because each docs preview is its own iframe.
+ */
+const openByDefault: Decorator = (Story, context) => {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    setOpen(true);
+  }, []);
+  // Args passed here REPLACE the story's args, so the story's own args must be
+  // spread back in — without them the trigger and the items vanish.
+  return <Story args={{ ...context.args, open, onOpenChange: setOpen }} />;
+};
+
 const meta = {
   title: "components/ContextualMenu",
   component: Component,
-  decorators: [stage],
+  decorators: [stage, openByDefault],
   parameters: {
     // Centre the trigger in the story canvas so the (portalled) menu is framed.
     layout: "centered",
+    // Docs previews render in an iframe: the open menu is portalled and
+    // `position: fixed`, so it escapes every container — inside an iframe the
+    // preview window is its own viewport and the menu stays contained in its
+    // story.
+    docs: {
+      story: {
+        inline: false,
+        iframeHeight: "480px",
+      },
+    },
+  },
+  argTypes: {
+    // The `openByDefault` decorator drives the open state, so panel controls
+    // for it would only ever be overridden by it.
+    open: { control: false },
+    onOpenChange: { control: false },
   },
 } satisfies Meta<typeof Component>;
 
@@ -78,8 +115,9 @@ export const LongScrollable: Story = {
 };
 
 /**
- * A trigger opens the menu on click. In the docs canvas the menus render closed
- * (click a trigger to open one) so they do not stack on top of one another.
+ * A trigger opens the menu on click — though in the stories the menu is open
+ * from the start (the `openByDefault` decorator): a story is first a picture
+ * of the pattern.
  */
 export const Default: Story = {
   args: {
