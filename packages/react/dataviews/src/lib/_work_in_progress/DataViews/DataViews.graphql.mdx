@@ -1,0 +1,152 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./DataViews.graphql.stories";
+
+<Meta of={Stories} name="Recipes" />
+
+# Connect a GraphQL API
+
+A collection backed by a GraphQL endpoint uses the application's own Relay environment through `createRelaySource`. DataViews adds no cache of its own: Relay's store stays the only cache, and each request retains its operation, delivers a page already in the store at once, fetches it, and follows every later change to the store.
+
+The stories on this page are answered by a mock endpoint, served by Mock Service Worker. It stands in for a real endpoint so the stories can show what a local array cannot; it is not evidence about any real API.
+
+## Declare what the endpoint runs
+
+The declaration is the whole offer. Every part reads it: Filters offers a control only for what is declared, a header sorts only a declared field, and anything else is refused before a request is sent. This endpoint filters status, bounds cores, looks for text in the host name, the region and the owner, searches, orders by one term, and pages forward by cursor with no counts at all. An endpoint that counts nothing leaves `counts` out: the pagination bar then says which items are on screen and never out of how many.
+
+```tsx
+import {
+  createRelaySource,
+  declareCapabilities,
+  readSlice,
+} from "@canonical/dataviews-core";
+import { createOperationDescriptor } from "relay-runtime";
+import MachinesQuery from "./__generated__/MachinesQuery.graphql.js";
+import { machineCollection } from "./machines.js";
+import { environment } from "./relay.js";
+
+const capabilities = declareCapabilities(machineCollection, {
+  filter: {
+    status: ["eq"],
+    cores: ["gte", "lte"],
+    name: ["contains"],
+    region: ["contains"],
+    owner: ["contains"],
+  },
+  search: ["name", "owner"],
+  sort: {
+    fields: ["name", "status", "cores", "region", "owner"],
+    terms: 1,
+    tiebreak: "opaque",
+  },
+  pagination: { kind: "cursor", backward: false, durable: false },
+});
+```
+
+## Map a request onto the endpoint
+
+The query pages by its own `first` and `after` arguments, not through `@connection`, which would merge its pages. `readSlice` reads the request by field, so the variables are built by name: a text filter reads as the text it contains.
+
+```tsx
+const source = createRelaySource({
+  capabilities,
+  environment,
+  operation: ({ slice, first, after }) => {
+    const { filters, search, sort } = readSlice(machineCollection, slice);
+    return createOperationDescriptor(MachinesQuery, {
+      first,
+      after,
+      where: {
+        status: filters.status === undefined ? null : [...filters.status],
+        coresGte: filters.cores?.gte ?? null,
+        coresLte: filters.cores?.lte ?? null,
+        nameContains: filters.name ?? null,
+        regionContains: filters.region ?? null,
+        ownerContains: filters.owner ?? null,
+        search,
+      },
+      orderBy: sort.map(({ field, direction }) => ({
+        field,
+        direction: direction === "asc" ? "ASC" : "DESC",
+      })),
+    });
+  },
+  connection: (data) => data.machines,
+});
+```
+
+The provider and the parts are built over it as over any other source.
+
+<Canvas of={Stories.Answered} sourceState="none" />
+
+## While the endpoint answers
+
+Until the first page arrives the table says it is loading and claims no count.
+
+<Canvas of={Stories.Loading} sourceState="none" />
+
+## When the endpoint cannot answer
+
+When the endpoint fails, the reason it gives stands in place of the rows. When a later page fails, the rows already shown stay, marked as no longer answering the query.
+
+The reason is whatever the environment's network throws, so the network reads the answer rather than trusting it. An answer whose data holds something is passed on with any errors beside it — a partial answer, which Relay stores — and one whose data holds nothing fails in the endpoint's own words:
+
+```tsx
+import { Environment, Network, RecordSource, Store } from "relay-runtime";
+
+export const environment = new Environment({
+  network: Network.create(async (request, variables) => {
+    const response = await fetch("/graphql", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        query: request.text,
+        operationName: request.name,
+        variables,
+      }),
+    });
+    const body = await response.json().catch(() => null);
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      throw new Error(
+        response.ok
+          ? "the endpoint answered without a JSON object"
+          : response.statusText || `the endpoint answered ${response.status}`,
+      );
+    }
+    const { data } = body;
+    // Data that holds nothing — a failed nullable root field is answered as
+    // null beside its error — is no page, so it fails like no data at all.
+    if (
+      typeof data === "object" &&
+      data !== null &&
+      Object.values(data).some((value) => value !== null && value !== undefined)
+    ) {
+      return body;
+    }
+    const [error] = Array.isArray(body.errors) ? body.errors : [];
+    if (error !== undefined) {
+      // A failure's message is what the table shows beside the rows.
+      throw new Error(
+        typeof error?.message === "string"
+          ? error.message
+          : "the endpoint answered with an error it did not describe",
+      );
+    }
+    throw new Error(
+      response.ok
+        ? "the endpoint answered without data"
+        : response.statusText || `the endpoint answered ${response.status}`,
+    );
+  }),
+  store: new Store(new RecordSource()),
+});
+```
+
+<Canvas of={Stories.Failed} sourceState="none" />
+
+<Canvas of={Stories.FailedOverKeptRows} sourceState="none" />
+
+## A request the endpoint cannot run
+
+A forward connection reaches a page only through the one before it. A link to the third page opened fresh has no cursor for it, so the source refuses it before sending anything and says why, rather than answering another page.
+
+<Canvas of={Stories.UnreachablePage} sourceState="none" />

@@ -1,0 +1,111 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./DataViews.rest.stories";
+
+<Meta of={Stories} name="Recipes" />
+
+# Connect a REST API
+
+A collection backed by a REST endpoint uses the application's own query client — TanStack Query here — through `createQuerySource`. DataViews adds no cache of its own: the client keeps its cache, its retries and its invalidations, and the source maps each request onto one call to the endpoint and its answer onto a page.
+
+The stories on this page are answered by a mock endpoint, served by Mock Service Worker. It stands in for a real endpoint so the stories can show what a local array cannot; it is not evidence about any real API.
+
+## Declare what the endpoint runs
+
+The declaration is the whole offer. Every part reads it: Filters offers a control only for what is declared, a header sorts only a declared field, and anything else is refused before a request is sent. This endpoint filters status, bounds cores, looks for text in the host name and the region but not the owner, searches, orders by one term, pages by number and counts exactly.
+
+```tsx
+import {
+  createPage,
+  createQuerySource,
+  declareCapabilities,
+  encodeQuery,
+} from "@canonical/dataviews-core";
+import { QueryClient, QueryObserver } from "@tanstack/query-core";
+import { machineCollection } from "./machines.js";
+
+const capabilities = declareCapabilities(machineCollection, {
+  filter: {
+    status: ["eq"],
+    cores: ["gte", "lte"],
+    name: ["contains"],
+    region: ["contains"],
+  },
+  search: ["name", "owner"],
+  sort: {
+    fields: ["name", "status", "cores", "region", "owner"],
+    terms: 1,
+    tiebreak: "opaque",
+  },
+  counts: { pageable: "exact", matched: "exact", total: "exact" },
+});
+```
+
+## Map a request onto the endpoint
+
+When the endpoint reads the same flat parameters the URL uses, `encodeQuery` writes the request for it — `status=failed&name__contains=web&sort=cores__desc&page=2&size=5`. `createPage` builds the page: a count given is exact, a count left out is unknown.
+
+```tsx
+const queryClient = new QueryClient();
+// Mounted, so its queries refetch when the window regains focus or the
+// network reconnects.
+queryClient.mount();
+
+const source = createQuerySource({
+  capabilities,
+  queryKey: ["machines"],
+  fetchPage: async ({ slice, window }) => {
+    const params = encodeQuery({
+      schema: machineCollection.schema,
+      slice,
+      window,
+    });
+    const response = await fetch(`/api/machines?${params}`);
+    // Read the answer, never trust it: a field of another shape is absent.
+    const body = await response.json().catch(() => null);
+    if (!response.ok) {
+      // A failure's message is what the table shows beside the rows.
+      throw new Error(
+        typeof body?.reason === "string"
+          ? body.reason
+          : response.statusText || `the endpoint answered ${response.status}`,
+      );
+    }
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      throw new Error("the endpoint answered without a JSON object");
+    }
+    if (!Array.isArray(body.items)) {
+      throw new Error("the endpoint answered without machines");
+    }
+    return createPage({
+      rows: body.items,
+      matched: typeof body.matched === "number" ? body.matched : undefined,
+      total: typeof body.total === "number" ? body.total : undefined,
+    });
+  },
+  createObserver: (query) => new QueryObserver(queryClient, query),
+});
+```
+
+The provider and the parts are built over it as over any other source.
+
+<Canvas of={Stories.Answered} sourceState="none" />
+
+## While the endpoint answers
+
+Until the first page arrives the table says it is loading and claims no count.
+
+<Canvas of={Stories.Loading} sourceState="none" />
+
+## When the endpoint cannot answer
+
+When the endpoint fails, the reason it gives stands in place of the rows. When a later page fails, the rows already shown stay, marked as no longer answering the query.
+
+<Canvas of={Stories.Failed} sourceState="none" />
+
+<Canvas of={Stories.FailedOverKeptRows} sourceState="none" />
+
+## A request the endpoint cannot run
+
+The endpoint orders by one term, so a second term added from a header is refused before any request is sent, and that header says why. The ordering already in force stays.
+
+<Canvas of={Stories.SortLimitedToOneTerm} sourceState="none" />
