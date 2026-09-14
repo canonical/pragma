@@ -22,8 +22,11 @@
  */
 
 import type { Command } from "commander";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { verbKey } from "../kernel/packs/uniqueness.js";
+import { dispatch } from "../kernel/project/cli/dispatch.js";
+import type { GlobalFlags } from "../kernel/runtime/types.js";
+import type { VerbSpec } from "../kernel/spec/types.js";
 import { projectCli } from "../testing/helpers/projectCli.js";
 import { storyModules } from "./distribution.js";
 
@@ -225,5 +228,52 @@ describe("the names these nouns publish are typable (PROTECTED)", () => {
       key: ["appearance.background"],
       variable: ["color-text"],
     });
+  });
+});
+
+describe("a stray positional is refused, not ignored (PROTECTED)", () => {
+  const PLAIN: GlobalFlags = {
+    llm: false,
+    autoLlm: false,
+    format: "plain",
+    verbose: false,
+  };
+  const savedExit = process.exitCode;
+  afterEach(() => {
+    process.exitCode = savedExit;
+  });
+
+  const chain = (storyModules.get("variable")?.verbs ?? []).find(
+    (verb) => verbKey(verb.path) === "variable chain",
+  ) as VerbSpec;
+
+  it("the parser hands the stray word to the action — nothing stops it there", async () => {
+    // Half the defect: a sub-verb-only noun opts into excess operands to keep
+    // its "unknown command" suggestion, and Commander copies that opt-in down
+    // to every verb attached under it. So `variable chain color-text` parses.
+    const parsed = await parse(["variable", "chain", "color-text"]);
+    expect(parsed.path).toBe("variable chain");
+    expect(parsed.args).toEqual(["color-text"]);
+  });
+
+  it("`variable chain color-text` refuses, naming the flag it belonged to", async () => {
+    // The other half: the verb declares no positional, so the word used to be
+    // dropped on the floor and the unfiltered chain printed 300 rows about
+    // something else entirely.
+    expect(chain.params.some((param) => param.positional)).toBe(false);
+    const errs: string[] = [];
+    const spy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation((chunk: string | Uint8Array) => {
+        errs.push(String(chunk));
+        return true;
+      });
+    await dispatch(chain, ["color-text"], {}, PLAIN);
+    spy.mockRestore();
+
+    const out = errs.join("");
+    expect(out).toContain("takes no positional argument");
+    expect(out).toContain("Did you mean `--variable color-text`?");
+    expect(process.exitCode).toBe(2);
   });
 });

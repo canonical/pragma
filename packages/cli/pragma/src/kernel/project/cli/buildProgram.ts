@@ -175,7 +175,23 @@ function attachVerb(
 
   command.action(async (...actionArgs: unknown[]) => {
     const { positionals: positionalArgs, opts } = splitActionArgs(actionArgs);
-    await dispatch(verb, positionalArgs, opts, globalFlags);
+    // `command.args` is every operand this leaf received; the action arguments
+    // are only the DECLARED ones, so a verb that declares none is handed
+    // nothing and a stray word vanishes between the two. Dispatch reads the
+    // longer of the two lists and refuses what the verb cannot take
+    // (`dispatch.ts#refuseExcessPositionals`) — Commander's own excess check
+    // cannot: a sub-verb-only noun opts into excess operands to keep its
+    // "unknown command" suggestion, and `copyInheritedSettings` hands that
+    // opt-in down to every verb attached beneath it.
+    const operands = command.args.filter(
+      (arg): arg is string => typeof arg === "string",
+    );
+    await dispatch(
+      verb,
+      operands.length > positionalArgs.length ? operands : positionalArgs,
+      opts,
+      globalFlags,
+    );
   });
 }
 
