@@ -59,6 +59,7 @@
 
   &:hover:not(:disabled):not(:checked):not(:indeterminate) {
     background-color: var(--color-foreground-checkbox-unselected-hover);
+    border-color: var(--color-border-highlighted);
   }
 
   &:indeterminate {
