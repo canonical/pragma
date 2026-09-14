@@ -21,7 +21,6 @@ import type {
   FieldKindOperators,
   Schema,
   SchemaFieldDefinition,
-  TextField,
 } from "../schema/index.js";
 
 /**
@@ -136,11 +135,7 @@ type HandlesOfField<TDefinition extends SchemaFieldDefinition> =
  * name may change or move before the first release.
  */
 export type FilterHandles<TFields extends readonly SchemaFieldDefinition[]> = {
-  // A text field accepts no operator, so it has no handle to address.
-  readonly [TDefinition in Exclude<
-    TFields[number],
-    TextField
-  > as TDefinition["field"]]: HandlesOfField<TDefinition>;
+  readonly [TDefinition in TFields[number] as TDefinition["field"]]: HandlesOfField<TDefinition>;
 };
 
 /**

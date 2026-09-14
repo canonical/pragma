@@ -38,6 +38,7 @@ describe("the wire grammar's names", () => {
     expect(spellWireKey("cpu", "gte")).toBe("cpu__gte");
     expect(spellWireKey("cpu", "lte")).toBe("cpu__lte");
     expect(spellWireKey("owner", "isSet")).toBe("owner__isSet");
+    expect(spellWireKey("name", "contains")).toBe("name__contains");
   });
 
   it("reads the field a wire key addresses", () => {

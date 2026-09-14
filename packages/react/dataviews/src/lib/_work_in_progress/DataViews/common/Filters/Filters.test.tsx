@@ -126,8 +126,7 @@ describe("DataViews.Filters", () => {
     expect(screen.getByRole("checkbox", { name: "owner" })).toBeInTheDocument();
     // A choices field has one operator, so it gets no bounds.
     expect(screen.queryByLabelText("status from")).toBeNull();
-    // A text field has no operator at all, so it gets no control: it is
-    // ordered instead.
+    // The source declares nothing over the text field, so it gets no control.
     expect(screen.queryByLabelText("name")).toBeNull();
     expect(screen.queryByLabelText("name from")).toBeNull();
   });

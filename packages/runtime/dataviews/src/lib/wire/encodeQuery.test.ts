@@ -23,6 +23,7 @@ const machines = () =>
     { field: "cpu", kind: "number", min: 0, max: 64 },
     { field: "updated", kind: "date" },
     { field: "owner", kind: "flag" },
+    { field: "name", kind: "text" },
   ]);
 
 const emptySlice: Slice = {
@@ -96,6 +97,20 @@ describe("encodeQuery", () => {
     expect(params.get("updated__lte")).toBe("2026-01-01");
     expect(params.get("owner__isSet")).toBe("1");
     expect(params.get("q")).toBe("yak");
+  });
+
+  it("spells the text a field contains exactly as it was given", () => {
+    const text = " 50%_ a+b é";
+    const params = encodeQuery({
+      schema: machines(),
+      slice: {
+        ...emptySlice,
+        filter: [{ field: "name", operator: "contains", operands: [text] }],
+      },
+      window: firstPage,
+    });
+    expect(params.get("name__contains")).toBe(text);
+    expect(params.toString()).toContain("name__contains=+50%25_+a%2Bb+%C3%A9");
   });
 
   it("writes one group parameter per nesting level, outermost first", () => {

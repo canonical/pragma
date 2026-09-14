@@ -13,8 +13,8 @@ import type { SliceReading } from "./types.js";
  *
  * A number or date filter reads as its bounds, `gte` and `lte`, each
  * present only when the slice carries it; a `choices` filter as the set of
- * its options; a flag as `true`. The search text and the ordered sort
- * terms come as they are, canonicalized.
+ * its options; a flag as `true`; a text filter as the text it contains. The
+ * search text and the ordered sort terms come as they are, canonicalized.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.

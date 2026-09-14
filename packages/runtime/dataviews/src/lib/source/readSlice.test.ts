@@ -25,6 +25,7 @@ describe("readSlice", () => {
         { field: "cpu", operator: "gte", operands: [4] },
         { field: "owner", operator: "isSet", operands: [] },
         { field: "updated", operator: "gte", operands: ["2026-01-01"] },
+        { field: "name", operator: "contains", operands: ["web"] },
       ],
       search: "yak",
       sort: [
@@ -38,6 +39,7 @@ describe("readSlice", () => {
         cpu: { gte: 4, lte: 16 },
         owner: true,
         updated: { gte: "2026-01-01" },
+        name: "web",
       },
       search: "yak",
       sort: [{ field: "cpu", direction: "desc" }],
@@ -70,6 +72,6 @@ describe("readSlice", () => {
       { readonly gte?: number; readonly lte?: number } | undefined
     >();
     expectTypeOf(reading.filters.owner).toEqualTypeOf<boolean | undefined>();
-    expectTypeOf(reading.filters).not.toHaveProperty("name");
+    expectTypeOf(reading.filters.name).toEqualTypeOf<string | undefined>();
   });
 });

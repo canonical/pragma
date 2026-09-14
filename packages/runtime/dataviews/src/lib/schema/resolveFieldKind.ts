@@ -244,11 +244,22 @@ const DATE: FieldKindRules<DateField> = {
 };
 
 const TEXT: FieldKindRules<TextField> = {
-  // The grammar has no substring operator.
-  operators: [],
+  operators: ["contains"],
   rejectDefinition: () => null,
-  input: { kind: "none", reason: "text fields are ordered, not filtered" },
-  rejectOperands: () => null,
+  input: {
+    kind: "text",
+    // Literal: the operand is the text looked for, spaces and all.
+    parse: (_definition, input) => ({ status: "valid", operand: input }),
+  },
+  rejectOperands: (_definition, operands) => {
+    for (const operand of operands) {
+      // An empty operand is held by every string, so it restricts nothing.
+      if (typeof operand !== "string" || operand === "") {
+        return `${describeOperand(operand)} is not non-empty text`;
+      }
+    }
+    return null;
+  },
   readApplied: readBound,
   areAppliedEqual: isSameValue,
   compareToBound: compareScalars,

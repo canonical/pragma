@@ -74,10 +74,11 @@ describe("useDataViewsFilter", () => {
     expectTypeOf(result.current.status.applied).toEqualTypeOf<
       EmptyOr<ReadonlySet<"failed" | "running">>
     >();
-    // A text field has no operator, and a number no equality: neither is an
-    // address, so neither compiles. Never called: the check is the compiler's.
+    // Text is looked for, never equal, and a number is bounded, never equal:
+    // neither is an address, so neither compiles. Never called: the check is
+    // the compiler's.
     const rejectedAddresses = (): void => {
-      // @ts-expect-error name is ordered, never filtered
+      // @ts-expect-error a text field contains, it is never equal
       useDataViewsFilter(machines, "name", "eq");
       // @ts-expect-error a number is bounded, never equal
       useDataViewsFilter(machines, "cores", "eq");

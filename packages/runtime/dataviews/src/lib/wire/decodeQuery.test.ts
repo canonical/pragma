@@ -267,9 +267,9 @@ describe("decodeQuery", () => {
     ]);
   });
 
-  it("orders by a field carrying no filter of its own", () => {
+  it("orders by a text field, which is never filtered by equality", () => {
     // Sortable and filterable are different capabilities: a name column is
-    // ordered without ever being a filter field.
+    // ordered, and filtered only by the text it contains.
     expect(decode("sort=name__asc").slice.sort).toEqual([
       { field: "name", direction: "asc" },
     ]);
@@ -279,7 +279,32 @@ describe("decodeQuery", () => {
       {
         parameter: "name",
         code: "invalid",
-        reason: "text fields are ordered, not filtered",
+        reason: 'text field "name" does not accept the eq operator',
+      },
+    ]);
+  });
+
+  it("reads the text a text field contains, literally", () => {
+    const decoded = decode(`name__contains=${encodeURIComponent(" 50%_ ")}`);
+    expect(decoded.slice.filter).toEqual([
+      { field: "name", operator: "contains", operands: [" 50%_ "] },
+    ]);
+    expect(decoded.issues).toEqual([]);
+    // A blank submission is an input left empty, and restricts nothing.
+    expect(decode("name__contains=")).toEqual(decode(""));
+    expect(decode("name__contains=web&name__contains=api").issues).toEqual([
+      {
+        parameter: "name__contains",
+        code: "malformed",
+        reason:
+          '"name__contains" takes one value; the extra values were ignored',
+      },
+    ]);
+    expect(decode("status__contains=fail").issues).toEqual([
+      {
+        parameter: "status__contains",
+        code: "invalid",
+        reason: 'choices field "status" does not accept the contains operator',
       },
     ]);
   });
@@ -634,6 +659,11 @@ describe("decodeQuery", () => {
     const slice = {
       filter: [
         { field: "cpu", operator: "gte" as const, operands: [4] },
+        {
+          field: "name",
+          operator: "contains" as const,
+          operands: [" 50%_ a+b é"],
+        },
         {
           field: "status",
           operator: "eq" as const,

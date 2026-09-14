@@ -10,7 +10,7 @@
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
  */
-export type PredicateOperator = "eq" | "gte" | "lte" | "isSet";
+export type PredicateOperator = "eq" | "gte" | "lte" | "isSet" | "contains";
 
 /**
  * A semantic operand value. Field metadata owns coercion; core never guesses.
@@ -22,8 +22,8 @@ export type PredicateOperand = string | number | boolean | null;
 
 /**
  * One filter clause, addressed by its field and operator. `eq` operands are
- * a non-empty set; `gte` and `lte` carry exactly one operand; `isSet`
- * carries none. Numbers must be finite.
+ * a non-empty set; `gte`, `lte` and `contains` carry exactly one operand;
+ * `isSet` carries none. Numbers must be finite.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.

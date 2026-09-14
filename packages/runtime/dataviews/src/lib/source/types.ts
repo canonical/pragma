@@ -27,7 +27,6 @@ import type {
   FieldKindOperators,
   Schema,
   SchemaFieldDefinition,
-  TextField,
 } from "../schema/index.js";
 
 /**
@@ -344,7 +343,7 @@ export type CapabilityDeclaration<
    */
   readonly filter?:
     | {
-        readonly [TName in Exclude<TFields[number], TextField>["field"]]?:
+        readonly [TName in FieldNameOf<TFields>]?:
           | readonly OperatorsOf<TFields, TName>[]
           | true;
       }
@@ -391,19 +390,17 @@ export type CapabilityDeclaration<
 /**
  * One slice read by field, typed from the schema: a `choices` filter as
  * the set of its options, a number or date filter as its bounds, a flag
- * as `true` when set, each present only when the slice carries it — plus
- * the search text and the ordered sort terms. An adapter finds the status
- * filter by name instead of scanning predicates and stringifying operands.
+ * as `true` when set, a text filter as the text it contains, each present
+ * only when the slice carries it — plus the search text and the ordered sort
+ * terms. An adapter finds the status filter by name instead of scanning
+ * predicates and stringifying operands.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
  */
 export type SliceReading<TFields extends readonly SchemaFieldDefinition[]> = {
   readonly filters: {
-    readonly [TDefinition in Exclude<
-      TFields[number],
-      TextField
-    > as TDefinition["field"]]?: TDefinition extends {
+    readonly [TDefinition in TFields[number] as TDefinition["field"]]?: TDefinition extends {
       readonly kind: "number" | "date";
     }
       ? {

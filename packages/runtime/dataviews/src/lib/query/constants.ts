@@ -6,8 +6,8 @@
 import type { PredicateOperator, ResultWindow, Slice } from "./types.js";
 
 /**
- * How many operands each operator carries: `eq` a non-empty set, `gte` and
- * `lte` exactly one, `isSet` none.
+ * How many operands each operator carries: `eq` a non-empty set, `gte`,
+ * `lte` and `contains` exactly one, `isSet` none.
  */
 export const OPERATOR_ARITY: Readonly<
   Record<PredicateOperator, "none" | "one" | "many">
@@ -16,6 +16,7 @@ export const OPERATOR_ARITY: Readonly<
   gte: "one",
   lte: "one",
   isSet: "none",
+  contains: "one",
 });
 
 /**

@@ -46,12 +46,9 @@ export default function createFilterInputs<
   const records: AddressedInput[] = [];
   const handles: Record<string, Record<string, FilterHandle<unknown>>> = {};
   for (const definition of schema.fields) {
-    const operators = schema.listOperators(definition.field);
-    if (operators.length === 0) {
-      continue;
-    }
     const byOperator: Record<string, FilterHandle<unknown>> = {};
-    for (const operator of operators) {
+    // Every kind accepts at least one operator, so every field has a handle.
+    for (const operator of schema.listOperators(definition.field)) {
       const input = createFilterInput({
         schema,
         field: definition.field,

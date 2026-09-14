@@ -67,11 +67,14 @@ export type DateField = {
 
 /**
  * A free-text field: ordered through the source's collator, and filtered by
- * nothing. The grammar has no substring operator, so a text field carries no
- * predicate and free-text search covers the reading it would have served.
+ * `contains` — the value holds the operand once both are folded: normalised
+ * to NFC, lowercased without a locale, final sigma read as sigma, and
+ * normalised to NFC again. The operand is literal: `%`, `_` and `\` are
+ * characters to look for, never wildcards, and nothing is trimmed. Only a
+ * string value can hold one; an absent, null or non-string value never does.
  *
- * @experimental A substring operator may later give the kind a filter, which
- * would change the applied value it maps to.
+ * @experimental Pre-release: the operators a text field accepts may change
+ * before the first release.
  */
 export type TextField = {
   readonly field: string;
@@ -123,8 +126,9 @@ export type FieldValidation =
   | { readonly status: "invalid"; readonly reason: string };
 
 /**
- * The applied semantic value a field's predicate carries. A text field
- * carries no predicate, so it applies nothing.
+ * The applied semantic value a field's predicate carries: a `choices` set,
+ * a number or date bound, a flag's presence, or the text a text field
+ * contains.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -140,7 +144,7 @@ export type AppliedOf<TField extends SchemaFieldDefinition> = TField extends {
     ? number
     : TField extends { readonly kind: "flag" }
       ? boolean
-      : TField extends { readonly kind: "date" }
+      : TField extends { readonly kind: "date" | "text" }
         ? string
         : never;
 
@@ -177,7 +181,7 @@ export type FieldKindOperators = {
   readonly number: "gte" | "lte";
   readonly flag: "isSet";
   readonly date: "gte" | "lte";
-  readonly text: never;
+  readonly text: "contains";
 };
 
 /** One text input read as an operand, or the reason it is not one. */
@@ -288,17 +292,17 @@ export type Schema<TFields extends readonly SchemaFieldDefinition[]> = {
   /** The definition of one field, or undefined when the schema has none by that name. */
   readonly findField: (name: string) => SchemaFieldDefinition | undefined;
   /**
-   * The operators the field's kind accepts, empty for an unknown field and
-   * for a kind the grammar has no operator for. One authority, so a source
-   * declaring what it filters and a control offering it agree.
+   * The operators the field's kind accepts, empty for an unknown field. One
+   * authority, so a source declaring what it filters and a control offering
+   * it agree.
    *
-   * @experimental Added with the text kind; a later operator on text would
-   * change what it lists for such a field.
+   * @experimental A later text operator would change what it lists for a
+   * text field.
    */
   readonly listOperators: (name: string) => readonly PredicateOperator[];
   /**
    * Validate one text input for the field's single-value editing path.
-   * Flag and text fields do not edit through a text input.
+   * Flag fields do not edit through a text input.
    */
   readonly validateInput: (name: string, input: string) => FieldValidation;
   /**

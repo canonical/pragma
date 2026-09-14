@@ -75,8 +75,8 @@ const renderBounds = (
 
 /**
  * The control each field kind edits through, keyed by kind so a kind the
- * schema gains is a compile error here until its control exists. Text is
- * ordered, never filtered, so it has none.
+ * schema gains is a compile error here until its control exists. Text
+ * offers none here.
  */
 const controls: {
   readonly [TKind in FieldKind]: (

@@ -561,6 +561,18 @@ describe("applyQueryCommand", () => {
       },
       {
         kind: "setPredicate",
+        predicate: { field: "name", operator: "contains", operands: [] },
+      },
+      {
+        kind: "setPredicate",
+        predicate: {
+          field: "name",
+          operator: "contains",
+          operands: ["a", "b"],
+        },
+      },
+      {
+        kind: "setPredicate",
         predicate: { field: "cpu", operator: "gte", operands: [Number.NaN] },
       },
       {
@@ -600,13 +612,13 @@ describe("applyQueryCommand", () => {
   it("rejects a predicate with an unknown operator without losing the reason", () => {
     const forged = {
       kind: "setPredicate",
-      predicate: { field: "status", operator: "contains", operands: ["x"] },
+      predicate: { field: "status", operator: "like", operands: ["x"] },
     } as unknown as { kind: "setPredicate"; predicate: Predicate };
     const result = applyQueryCommand(slice(), window(), forged);
     if (result.status !== "rejected") {
       throw new Error("expected rejection");
     }
-    expect(result.reason).toBe("unknown predicate operator contains");
+    expect(result.reason).toBe("unknown predicate operator like");
   });
 
   it("keeps state unchanged on rejection", () => {

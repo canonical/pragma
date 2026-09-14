@@ -32,7 +32,7 @@ describe("schema type inference", () => {
     expect(owner).toBe(true);
   });
 
-  it("applies no value for a text field, which carries no predicate", () => {
-    expectTypeOf<AppliedOf<FieldOf<"name">>>().toEqualTypeOf<never>();
+  it("applies the text a text field contains", () => {
+    expectTypeOf<AppliedOf<FieldOf<"name">>>().toEqualTypeOf<string>();
   });
 });
