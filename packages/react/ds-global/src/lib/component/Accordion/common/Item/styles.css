@@ -64,6 +64,12 @@
     --accordion-item-content-padding-block: var(--dimension-100);
     --accordion-item-content-padding-block-end: var(--dimension-200);
 
+    /* Readable measure cap: the panel's TEXT may run at most 40em wide.
+       Box sizing is border-box, so the .content rule below adds the two
+       inline paddings back onto the cap — the content box, what the text
+       actually fills, lands on exactly 40em. */
+    --accordion-item-content-max-width: 40em;
+
     /* Fixed chevron size (per Figma) so every item reserves the same chevron
        column width and all headings start at the same x-position, regardless of
        heading level — no horizontal drift. */
@@ -251,6 +257,15 @@
       var(--accordion-item-content-padding-block-end);
     padding-inline-start: var(--accordion-item-content-indent);
     padding-inline-end: var(--accordion-item-content-padding-inline);
+
+    /* Measure cap (design review): max-width includes the inline paddings
+       (border-box), so the cap is the 40em measure PLUS them — what remains
+       for the text is exactly 40em. */
+    max-width: calc(
+      var(--accordion-item-content-max-width) +
+      var(--accordion-item-content-indent) +
+      var(--accordion-item-content-padding-inline)
+    );
   }
 
   /* 1px divider baseline compensation: subtract the divider thickness from the
