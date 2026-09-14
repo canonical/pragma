@@ -201,6 +201,7 @@ export function lookupOptions(
       key: section.name,
       heading: section.label ?? section.name,
       kind: section.kind ?? "field",
+      ...(section.note ? { note: section.note } : {}),
     }),
   );
   const expandSections: SectionDef<PackEntity>[] = (lookup.expand ?? []).map(

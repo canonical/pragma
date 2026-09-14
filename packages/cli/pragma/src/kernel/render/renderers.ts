@@ -344,6 +344,11 @@ function renderLookupSections<T>(
         ? `${"#".repeat(SECTION_HEADING_LEVEL)} ${section.heading}`
         : `${section.heading}:`,
     );
+    // How to read what follows goes between the heading and the body — a
+    // notation's key is no use anywhere else.
+    if (section.note) {
+      sections.push(mode === "llm" ? section.note : indentBlock(section.note));
+    }
     sections.push(body);
   }
 

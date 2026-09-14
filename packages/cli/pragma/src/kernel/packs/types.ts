@@ -89,6 +89,17 @@ export interface PackField {
 export interface PackSection extends PackField {
   /** Rendering kind (inline field or fenced code block). */
   readonly kind?: "field" | "code";
+  /**
+   * One sentence rendered under the section's heading, above its body: how to
+   * READ what follows, when the body's own notation does not say.
+   *
+   * For a section whose body is a document the graph authored, the label is
+   * enough. For one whose body is a NOTATION — a block's anatomy is a YAML
+   * document in which `background.color: [a, b]` is a fallback chain, first
+   * value that resolves winning — the reader has to be told, and the place to
+   * tell them is where they are looking.
+   */
+  readonly note?: string;
 }
 
 /** A field read from each child node of a {@link PackExpand}. */

@@ -208,6 +208,12 @@ describe("block lookup — Button content parity (GraphQL, detailed)", () => {
     expect(llm).toContain("#### When not to use");
     expect(llm).not.toContain("\n### When to use\n");
     expect(llm).toContain("### Anatomy (DSL)");
+    // The anatomy is a NOTATION, and its one unguessable rule is stated where
+    // the reader is looking: a bracketed value reads as a set of equals and is
+    // in fact an ordered fallback chain.
+    expect(llm).toContain(
+      "### Anatomy (DSL)\nA list value is the fallback chain the implementation reads, first wins.",
+    );
     expect(llm).toContain("### Modifier Families");
     expect(llm).toContain("primary");
   });

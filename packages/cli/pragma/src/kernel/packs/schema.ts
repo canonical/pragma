@@ -192,6 +192,7 @@ const fieldSchema = z
 
 const sectionSchema = fieldSchema.extend({
   kind: z.enum(["field", "code"]).optional(),
+  note: z.string().optional(),
 });
 
 const nestedExpandSchema = z
