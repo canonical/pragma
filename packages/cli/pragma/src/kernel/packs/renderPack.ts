@@ -26,8 +26,10 @@ import {
   renderLookupPlain,
 } from "../render/renderers.js";
 import type { Formatters } from "../spec/index.js";
+import { kebabCase } from "../spec/index.js";
 import type { LookupOutput } from "./resolveEntity.js";
 import type {
+  PackAppliedFilter,
   PackChildRow,
   PackEntity,
   PackList,
@@ -107,7 +109,7 @@ export function listFormatters(
   return {
     plain: (page, context) => renderListPlain(page.rows, options, context),
     llm: (page) => {
-      const body = renderListLlm(page.rows, options, {
+      const body = renderListLlm(page.rows, emptyCopy(page, meta, options), {
         more: page.nextAfter !== undefined,
       });
       const notice = pageNotice(page, meta);
@@ -118,9 +120,51 @@ export function listFormatters(
     // stdout stream stays pure data; llm/json keep their own empty shapes.
     notice: (page) =>
       page.rows.length === 0
-        ? renderListEmptyNotice(options)
+        ? renderListEmptyNotice(emptyCopy(page, meta, options))
         : pageNotice(page, meta),
   };
+}
+
+/**
+ * The empty-state copy this page deserves.
+ *
+ * A story's `emptyRecovery` answers ONE question — "why is the population
+ * empty?" — and `token list --search zzzznotreal` is not asking it. Answering
+ * it there ("No token symbols in the store … run `pragma sources update`")
+ * tells a reader with 745 symbols in the store that the store is empty and
+ * prescribes a write that changes nothing. So a page narrowed by at least one
+ * filter reports the NARROWING instead, naming the arguments the caller typed;
+ * an unfiltered empty page keeps the story's recovery, which is the case it was
+ * written for.
+ *
+ * @param page - The rendered page (its rows and the filters that cut them).
+ * @param meta - The noun, for the sentence.
+ * @param base - The story's own empty copy.
+ * @returns `base` unchanged, or filter-shaped copy with no population hint.
+ */
+function emptyCopy(
+  page: PackPage,
+  meta: RenderMeta,
+  base: RenderListOptions<PackRow>,
+): RenderListOptions<PackRow> {
+  const applied = page.filters ?? [];
+  if (page.rows.length > 0 || applied.length === 0) return base;
+  const { emptyHint: _population, ...rest } = base;
+  return {
+    ...rest,
+    emptyMessage: `No ${meta.noun} matches ${listFilters(applied)}.`,
+  };
+}
+
+/** The filters in force, as flags a reader can edit: `\`--kind input\`` … */
+function listFilters(applied: readonly PackAppliedFilter[]): string {
+  const flags = applied.map(
+    (filter) => `\`--${kebabCase(filter.param)} ${filter.value}\``,
+  );
+  const last = flags.at(-1) as string;
+  return flags.length === 1
+    ? last
+    : `${flags.slice(0, -1).join(", ")} and ${last}`;
 }
 
 /**

@@ -30,6 +30,7 @@ import {
 import { runSelect } from "./sparql/runSelect.js";
 import { readSearchTerm } from "./sparql/searchTerm.js";
 import type {
+  PackAppliedFilter,
   PackFilter,
   PackList,
   PackLookup,
@@ -117,14 +118,49 @@ export function makeListRun(
       meta.source,
     );
     const hasMore = rows.length > limit;
+    const applied = appliedFilters(shape, params, search?.term);
     return {
       rows: hasMore ? rows.slice(0, limit) : rows,
       ...(hasMore
         ? { nextAfter: encodeCursor(offset + limit, fingerprint) }
         : {}),
+      ...(applied.length > 0 ? { filters: applied } : {}),
       limit,
     };
   };
+}
+
+/**
+ * The filters this read was narrowed by, in the spelling the caller used.
+ *
+ * Read off the DECLARED filters and the search term rather than off the
+ * compiled predicates: what an empty answer has to name is the argument a
+ * reader typed (`--search zzzznotreal`), not the query variable it bound to.
+ * A repeated flag accumulates into an array; it is joined here so the renderer
+ * never has to know that.
+ *
+ * @param shape - The story's list shape (its declared filters).
+ * @param params - The arguments this invocation supplied.
+ * @param search - The normalised search term, when the caller supplied one.
+ * @returns One entry per filter in force, in declared order, search last.
+ */
+function appliedFilters(
+  shape: PackList,
+  params: Record<string, unknown>,
+  search: string | undefined,
+): PackAppliedFilter[] {
+  const applied: PackAppliedFilter[] = [];
+  for (const filter of shape.filters ?? []) {
+    const provided = params[filter.param];
+    if (provided === undefined) continue;
+    const value = Array.isArray(provided)
+      ? provided.map(String).join(", ")
+      : String(provided);
+    if (value === "") continue;
+    applied.push({ param: filter.param, value });
+  }
+  if (search !== undefined) applied.push({ param: "search", value: search });
+  return applied;
 }
 
 /**

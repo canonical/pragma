@@ -493,12 +493,34 @@ export interface PackPage {
   /** This page's rows, in the story's own order. */
   readonly rows: readonly PackRow[];
   /**
+   * The filters this read was narrowed by, as the caller spelled them — absent
+   * when the read was unfiltered.
+   *
+   * Carried because ZERO ROWS means two different things and the rows cannot
+   * tell them apart. An unfiltered empty list is a statement about the
+   * POPULATION, which is what a story's `emptyRecovery` answers ("build the
+   * store"). A filtered empty list is a statement about the FILTER, and
+   * answering it with the population's recovery tells a reader with 745 symbols
+   * in the store that the store is empty, then prescribes a write. The renderer
+   * cannot re-derive this — it sees a page, not the arguments — so the run body
+   * records what it narrowed by.
+   */
+  readonly filters?: readonly PackAppliedFilter[];
+  /**
    * The cursor that asks for the rows after this page, absent when this page is
    * the last. Its presence IS the "more rows exist" answer.
    */
   readonly nextAfter?: string;
   /** The limit this page was cut to, for the notice that reports it. */
   readonly limit: number;
+}
+
+/** One filter a list read was narrowed by, as the caller spelled it. */
+export interface PackAppliedFilter {
+  /** The parameter name (its CLI flag is `--<param>`). */
+  readonly param: string;
+  /** The value(s) supplied, already joined for display. */
+  readonly value: string;
 }
 
 /**
