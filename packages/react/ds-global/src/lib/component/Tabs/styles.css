@@ -14,7 +14,7 @@
    * and scrolls horizontally on overflow.
    */
   :root {
-    --tabs-border-width: var(--dimension-strokeThickness-medium, 1px);
+    --tabs-border-width: var(--dimension-stroke-thickness-medium, 1px);
   }
 
   .ds.tabs {
