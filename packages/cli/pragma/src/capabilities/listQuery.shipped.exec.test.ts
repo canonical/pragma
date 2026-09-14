@@ -386,15 +386,29 @@ describe("a refusal and a calm empty answer stay distinguishable (PROTECTED)", (
       const answered = await page(body, { [param]: value });
       expect(answered.rows).toEqual([]);
       expect(answered.nextAfter).toBeUndefined();
-      // And the calm sentence rides the same seam it always did — naming the
-      // filter that narrowed to nothing, since a filtered empty answer is a
-      // statement about the filter and not about the population.
-      expect(body.verb.output.formatters.notice?.(answered as never)).toContain(
-        // In the flag's own spelling: a story's `channelOf` param is typed
-        // `--channel-of`, and an answer that named the param would be naming
-        // something no caller can pass.
-        `matches \`--${kebabCase(param)} ${value}\`.`,
-      );
+      // And the calm sentence rides the same seam it always did. WHICH sentence
+      // depends on whether there was anything to narrow — zero rows looks
+      // identical either way, so the page carries the answer.
+      //
+      // Either way it is in the FLAG's own spelling: a story's `channelOf`
+      // param is typed `--channel-of`, and an answer that named the param would
+      // be naming something no caller can pass.
+      const said =
+        body.verb.output.formatters.notice?.(answered as never) ?? "";
+      if (answered.populationEmpty === true) {
+        // `token consumers` is this case: no block records a binding yet, so
+        // every admissible symbol narrows an already-empty table. A sentence
+        // about the filter reads as a mistyped value there and withholds the
+        // story's account of the emptiness — so the account stays, and the
+        // filter is named in a clause of it.
+        expect(said).toContain(
+          `(with \`--${kebabCase(param)} ${value}\` applied)`,
+        );
+      } else {
+        // A filter that missed a POPULATED table is a statement about the
+        // filter, and says so without the population's recovery.
+        expect(said).toContain(`matches \`--${kebabCase(param)} ${value}\`.`);
+      }
     }
   }, 120_000);
 });

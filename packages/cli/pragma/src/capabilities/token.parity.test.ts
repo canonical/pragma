@@ -549,13 +549,17 @@ describe("token consumers — the binding tuple, either spelling (PROTECTED)", (
     // "why is the POPULATION empty?" and prescribes `sources update`, which
     // is the wrong answer to a filter that matched none of a populated table —
     // the defect users hit as "No token symbols in the store" over 745 present
-    // symbols. The story cannot yet say which of its two empty cases a
-    // recovery is about, so the one it declares stays with the case it
-    // describes: the unfiltered one.
+    // symbols.
+    //
+    // THIS fixture records bindings, so the population is not empty and the
+    // filter really is the whole story — which is why the page says so, and why
+    // the recovery stays away. A filter over an EMPTY binding table is the
+    // opposite case and keeps the recovery; `filteredEmpty.test.ts` owns it.
     const answered = await page("consumers", {
       variable: "button-color-background",
     });
     expect(answered.rows).toEqual([]);
+    expect(answered.populationEmpty).toBe(false);
     const notice = verb("consumers").output.formatters.notice?.(
       answered as never,
     );

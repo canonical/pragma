@@ -518,6 +518,26 @@ export interface PackPage {
    */
   readonly filters?: readonly PackAppliedFilter[];
   /**
+   * Whether the story's population is empty once every filter is dropped —
+   * recorded only when a FILTERED read came back with zero rows, the one case
+   * where the answer is not already in hand.
+   *
+   * {@link filters} says a narrowing happened; it cannot say whether the
+   * narrowing is what emptied the answer. `token consumers --symbol color.text`
+   * reads a table holding no bindings at all, so "no token matches
+   * `--symbol color.text`" is indistinguishable from a mistyped symbol and
+   * withholds the one thing that verb has to say today. So a zero-row filtered
+   * read asks its own query once more with the filters removed and `LIMIT 1`,
+   * and records the answer here: `true` means the story has nothing to filter
+   * and the population's own recovery is the honest reply, `false` means the
+   * filter really did miss a populated table.
+   *
+   * Absent on every other page, so nothing but that path pays for the probe: a
+   * page WITH rows has a non-empty population by construction, and an
+   * unfiltered empty page IS the population's own statement.
+   */
+  readonly populationEmpty?: boolean;
+  /**
    * The cursor that asks for the rows after this page, absent when this page is
    * the last. Its presence IS the "more rows exist" answer.
    */
