@@ -11,6 +11,7 @@ import {
   Pagination,
   SavedViews,
   Search,
+  SortPanel,
 } from "./common/index.js";
 import { useProviderState } from "./hooks/index.js";
 import type { DataViewsProps } from "./types.js";
@@ -49,3 +50,5 @@ DataViews.Pagination = Pagination;
 DataViews.SavedViews = SavedViews;
 /** The connected search part, over the applied search. */
 DataViews.Search = Search;
+/** The connected sort panel, over the applied ordering. */
+DataViews.SortPanel = SortPanel;
