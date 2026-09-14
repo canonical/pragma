@@ -93,3 +93,9 @@ export type ContainsCase = {
   /** What the case pins, for a failure to say. */
   readonly pins: string;
 };
+
+/** One answer from the mock machine API: its HTTP status and its parsed body. */
+export type MockApiAnswer = {
+  readonly status: number;
+  readonly body: unknown;
+};

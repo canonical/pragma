@@ -107,6 +107,18 @@ describe("bundle isolation", () => {
     expect(css).not.toContain("virtual");
   }, 60_000);
 
+  it("ships no mock endpoint, query client or story code from the root", async () => {
+    const { modules } = await bundle(`export * from ${from("index.ts")};`);
+    // An application brings its own client, and nothing here ships one.
+    expect(
+      modules.filter((id) =>
+        /\/node_modules\/(\.bun\/[^/]+\/node_modules\/)?(msw|@tanstack|relay-runtime|graphql)\/|\/src\/storybook\/|\/testing\//.test(
+          id,
+        ),
+      ),
+    ).toEqual([]);
+  }, 60_000);
+
   it("loads the body without the table it is rendered into", async () => {
     // The entry point is named for its bytes: what it adds to a table is
     // the body, and a table's own graph is the table's to load.
