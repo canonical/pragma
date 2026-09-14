@@ -11,6 +11,7 @@ import {
   type DataViewsProvider,
   DEFAULT_WINDOW,
   declareCapabilities,
+  decodeQuery,
   type Query,
   type Slice,
   type SourceCapabilities,
@@ -18,8 +19,10 @@ import {
 import { readProviderHost } from "@canonical/dataviews-core/bindings";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { renderToString } from "react-dom/server";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import createManualSource from "../../../../../../testing/createManualSource.js";
+import expectNoAxeViolations from "../../../../../../testing/expectNoAxeViolations.js";
 import { COUNTED_EXACTLY } from "../../../../../../testing/fixtures.js";
 import DataViews from "../../Provider.js";
 import Filters from "./Filters.js";
@@ -48,6 +51,12 @@ type Fields = typeof collection.schema.fields;
 /** A source declaring every operator the schema allows, and nothing else. */
 const everything = declareCapabilities(collection, {
   filter: { status: true, cpu: true, updated: true, owner: true },
+  counts: COUNTED_EXACTLY,
+});
+
+/** Every operator the schema allows, the text field's included. */
+const withText = declareCapabilities(collection, {
+  filter: { status: true, cpu: true, updated: true, owner: true, name: true },
   counts: COUNTED_EXACTLY,
 });
 
@@ -524,5 +533,221 @@ describe("DataViews.Filters", () => {
     // What the part sets, the caller cannot override through the spread.
     expect(form).toHaveAttribute("method", "get");
     expect(screen.getByRole("group", { name: "Filters" })).toBeInTheDocument();
+  });
+
+  describe("text", () => {
+    // The no-JS case writes the server's markup into the page; nothing is left
+    // for the next case, whatever the outcome.
+    afterEach(() => {
+      document.body.innerHTML = "";
+    });
+
+    it("offers a labelled text input named as the wire spells contains", () => {
+      mount(makeProvider(withText), { labels: { name: "Host" } });
+      const input = screen.getByRole("textbox", { name: "Host contains" });
+      expect(input).toHaveAttribute("type", "text");
+      expect(input).toHaveAttribute("name", "name__contains");
+      expect(input).not.toHaveAttribute("readonly");
+    });
+
+    it("edits the applied query with the text as it is typed, and clears it", () => {
+      const provider = makeProvider(withText);
+      mount(provider);
+      fireEvent.change(screen.getByLabelText("name contains"), {
+        target: { value: "web" },
+      });
+      expect(provider.state.get().slice.filter).toEqual([
+        { field: "name", operator: "contains", operands: ["web"] },
+      ]);
+      fireEvent.click(
+        screen.getByRole("button", { name: "Clear name contains" }),
+      );
+      expect(provider.state.get().slice.filter).toEqual([]);
+      expect(screen.getByLabelText("name contains")).toHaveValue("");
+    });
+
+    it("keeps the text applied while the input is emptied, and says so", () => {
+      const provider = makeProvider(withText);
+      mount(provider);
+      const input = screen.getByLabelText("name contains");
+      fireEvent.change(input, { target: { value: "web" } });
+      fireEvent.change(input, { target: { value: "" } });
+      expect(provider.state.get().slice.filter).toEqual([
+        { field: "name", operator: "contains", operands: ["web"] },
+      ]);
+      expect(input).toHaveAccessibleDescription(
+        "Enter a value to change this restriction. The previous restriction still applies.",
+      );
+    });
+
+    it("says beside the input why the source refused the text", () => {
+      const provider = createDataViewsProvider({
+        collection,
+        source: createManualSource<Row>({
+          capabilities: withText,
+          refusals: ({ slice }) =>
+            slice.filter.some(({ operator }) => operator === "contains")
+              ? [
+                  {
+                    part: "filter",
+                    code: "unsupported-combination",
+                    field: "name",
+                    operator: "contains",
+                    reason:
+                      "this endpoint looks for text in one field at a time",
+                  },
+                ]
+              : [],
+        }).source,
+      });
+      mount(provider);
+      const input = screen.getByLabelText("name contains");
+      fireEvent.change(input, { target: { value: "web" } });
+      expect(provider.state.get().slice.filter).toEqual([]);
+      expect(input).toHaveAttribute("aria-invalid", "true");
+      expect(input).toHaveAccessibleDescription(
+        "This endpoint looks for text in one field at a time.",
+      );
+    });
+
+    it("offers text the source does not declare only while it stands, and only to clear", () => {
+      const provider = makeProvider(everything);
+      mount(provider);
+      expect(screen.queryByLabelText("name contains")).toBeNull();
+      adopt(provider, [
+        { field: "name", operator: "contains", operands: ["web"] },
+      ]);
+      const input = screen.getByLabelText("name contains");
+      expect(input).toHaveValue("web");
+      expect(input).toHaveAttribute("readonly");
+      fireEvent.click(
+        screen.getByRole("button", { name: "Clear name contains" }),
+      );
+      expect(screen.queryByLabelText("name contains")).toBeNull();
+    });
+
+    // Beside the other text cases rather than in the SSR file: the submission
+    // needs a DOM to build the form's data, which that file's environment lacks.
+    it("submits, before any script runs, a query the decoder reads back", () => {
+      const provider = makeProvider(withText);
+      // The server's markup, never hydrated: no handler runs, so what the
+      // browser submits is the form's own controls.
+      document.body.innerHTML = renderToString(
+        <DataViews provider={provider}>
+          <Filters />
+        </DataViews>,
+      );
+      const form = document.querySelector("form");
+      const input = document.querySelector<HTMLInputElement>(
+        'input[name="name__contains"]',
+      );
+      if (form === null || input === null) {
+        throw new Error("the server renders the form and its text input");
+      }
+      input.value = "50% a+b é";
+      // Spelled from the form's own data as a GET submission spells it, then
+      // read back as a server reads it: `%`, `+`, a space and a non-ASCII
+      // letter all survive.
+      const spelled = new URLSearchParams(
+        [...new FormData(form)].map(([key, value]) => [key, String(value)]),
+      ).toString();
+      expect(
+        decodeQuery({
+          schema: collection.schema,
+          params: new URLSearchParams(spelled),
+          capabilities: withText,
+        }).slice.filter,
+      ).toEqual([
+        { field: "name", operator: "contains", operands: ["50% a+b é"] },
+      ]);
+    });
+
+    it("submits applied text back unchanged, before any script runs", () => {
+      const provider = createDataViewsProvider({
+        collection,
+        source: createManualSource<Row>({ capabilities: withText }).source,
+        snapshot: { query: "name__contains=web", presentation: {} },
+      });
+      document.body.innerHTML = renderToString(
+        <DataViews provider={provider}>
+          <Filters />
+        </DataViews>,
+      );
+      const form = document.querySelector("form");
+      if (form === null) {
+        throw new Error("the server renders the form");
+      }
+      const params = new URLSearchParams(
+        [...new FormData(form)].map(([key, value]) => [key, String(value)]),
+      );
+      expect(
+        decodeQuery({
+          schema: collection.schema,
+          params,
+          capabilities: withText,
+        }).slice.filter,
+      ).toEqual([{ field: "name", operator: "contains", operands: ["web"] }]);
+    });
+
+    it("describes the input only while there is something to say", () => {
+      mount(makeProvider(withText));
+      const input = screen.getByLabelText("name contains");
+      expect(input).not.toHaveAttribute("aria-describedby");
+      fireEvent.change(input, { target: { value: "web" } });
+      expect(input).not.toHaveAttribute("aria-describedby");
+      fireEvent.change(input, { target: { value: "" } });
+      expect(input).toHaveAttribute("aria-describedby");
+    });
+
+    it("has no axe violations with text applied", async () => {
+      const { container } = mount(makeProvider(withText));
+      fireEvent.change(screen.getByLabelText("name contains"), {
+        target: { value: "web" },
+      });
+      await expectNoAxeViolations(container);
+    });
+
+    it("has no axe violations with text refused beside its input", async () => {
+      const provider = createDataViewsProvider({
+        collection,
+        source: createManualSource<Row>({
+          capabilities: withText,
+          refusals: ({ slice }) =>
+            slice.filter.some(({ operator }) => operator === "contains")
+              ? [
+                  {
+                    part: "filter",
+                    code: "unsupported-combination",
+                    field: "name",
+                    operator: "contains",
+                    reason:
+                      "this endpoint looks for text in one field at a time",
+                  },
+                ]
+              : [],
+        }).source,
+      });
+      const { container } = mount(provider);
+      fireEvent.change(screen.getByLabelText("name contains"), {
+        target: { value: "web" },
+      });
+      expect(screen.getByLabelText("name contains")).toHaveAttribute(
+        "aria-invalid",
+        "true",
+      );
+      await expectNoAxeViolations(container);
+    });
+
+    it("has no axe violations with undeclared text shown for removal", async () => {
+      const provider = makeProvider(everything);
+      const { container } = mount(provider);
+      adopt(provider, [
+        { field: "name", operator: "contains", operands: ["web"] },
+      ]);
+      expect(screen.getByLabelText("name contains")).toHaveAttribute(
+        "readonly",
+      );
+      await expectNoAxeViolations(container);
+    });
   });
 });

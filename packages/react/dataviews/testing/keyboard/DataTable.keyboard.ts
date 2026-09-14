@@ -643,4 +643,30 @@ test.describe("DataTable, sort panel and server-backed stories, keyboard only", 
     await expect(terms.nth(1)).toHaveText(/^cores, descending/);
     await expect(moveDown).toBeFocused();
   });
+
+  test("REST API Answered: text typed into a filter narrows the table, and Enter on its clear restores it", async ({
+    page,
+  }) => {
+    await openStory(page, findStory(REST_API, "Answered").id);
+    const summary = page
+      .getByRole("navigation", { name: "Pagination" })
+      .getByRole("status");
+    // The story's own play function has already kept the failed machines.
+    await expect(summary).toHaveText("Showing 1–3 out of 3 items");
+    const host = page.getByRole("textbox", { name: "Host contains" });
+    await tabTo(page, host);
+    // Characters, not a shortcut: the input's own text is the query.
+    await page.keyboard.type("fir");
+    await expect(summary).toHaveText("Showing item 1 out of 1");
+    await expect(host).toBeFocused();
+    await page.keyboard.press("Tab");
+    const clear = page.getByRole("button", { name: "Clear Host contains" });
+    await expect(clear).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(summary).toHaveText("Showing 1–3 out of 3 items");
+    await expect(host).toHaveValue("");
+    // The clear control leaves with the text; focus moves to the input.
+    await expect(clear).toHaveCount(0);
+    await expect(host).toBeFocused();
+  });
 });

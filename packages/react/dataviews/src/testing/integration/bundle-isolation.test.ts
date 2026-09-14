@@ -109,7 +109,10 @@ describe("bundle isolation", () => {
 
   it("ships no mock endpoint, query client or story code from the root", async () => {
     const { modules } = await bundle(`export * from ${from("index.ts")};`);
-    // An application brings its own client, and nothing here ships one.
+    // The whole application surface, the connected filters among it.
+    expect(modules.some((id) => id.endsWith("TextFilter.tsx"))).toBe(true);
+    // The server-backed stories reach their endpoints through these; an
+    // application brings its own client, and nothing here ships one.
     expect(
       modules.filter((id) =>
         /\/node_modules\/(\.bun\/[^/]+\/node_modules\/)?(msw|@tanstack|relay-runtime|graphql)\/|\/src\/storybook\/|\/testing\//.test(

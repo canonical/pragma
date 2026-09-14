@@ -35,6 +35,9 @@ export const SERVER_BACKED_PARTS = {
   labels: {
     status: "Status",
     cores: "Cores",
+    name: "Host",
+    region: "Region",
+    owner: "Owner",
   },
   sizes: [5, 10],
 } as const satisfies {

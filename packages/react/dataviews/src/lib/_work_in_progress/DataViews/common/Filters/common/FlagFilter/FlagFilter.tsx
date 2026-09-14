@@ -11,12 +11,15 @@ const componentCssClassName = "ds data-views-filters-flag";
  * asserting the field is unset — the grammar has no operator for that. The
  * checkbox is named as the wire spells presence, and its value is the
  * marker the encoder writes, so a GET submission is the same clause.
+ * Unchecking an undeclared flag removes the control, so focus moves to the
+ * filters' group.
  */
 export default function FlagFilter({
   handle,
   label,
   field: fieldName,
   declared,
+  onLeave,
 }: FlagFilterProps): ReactElement | null {
   const field = useFilterHandle(handle);
   const applied = field.applied.kind === "value";
@@ -34,6 +37,10 @@ export default function FlagFilter({
           onChange={() => {
             if (applied) {
               field.clear();
+              if (!declared) {
+                // The control leaves with the checkbox that had focus.
+                onLeave();
+              }
               return;
             }
             field.set([]);

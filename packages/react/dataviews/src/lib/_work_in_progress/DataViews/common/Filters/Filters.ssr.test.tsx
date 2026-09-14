@@ -8,8 +8,12 @@ import {
   createCollection,
   createDataViewsProvider,
   createMemoryLocation,
+  DEFAULT_WINDOW,
   declareCapabilities,
+  EMPTY_SLICE,
+  type SourceCapabilities,
 } from "@canonical/dataviews-core";
+import { readProviderHost } from "@canonical/dataviews-core/bindings";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import createManualSource from "../../../../../../testing/createManualSource.js";
@@ -30,6 +34,7 @@ const collection = createCollection({
     { field: "cpu", kind: "number", min: 0, max: 64 },
     { field: "updated", kind: "date" },
     { field: "owner", kind: "flag" },
+    { field: "name", kind: "text" },
   ],
 });
 
@@ -38,6 +43,52 @@ const everything = declareCapabilities(collection, {
   search: ["name"],
   counts: COUNTED_EXACTLY,
 });
+
+/** Every operator the schema allows, the text field's included. */
+const withText = declareCapabilities(collection, {
+  filter: { status: true, cpu: true, updated: true, owner: true, name: true },
+  counts: COUNTED_EXACTLY,
+});
+
+/**
+ * The filters rendered on the server over a query holding `name contains
+ * "web"`, adopted as a location's query is: a clause the source does not
+ * declare still stands, for removal, where a snapshot would refuse it.
+ */
+const renderWithTextApplied = (capabilities: SourceCapabilities): string => {
+  const provider = createDataViewsProvider({
+    collection,
+    source: createManualSource<Row>({ capabilities }).source,
+  });
+  readProviderHost(provider).adopt(
+    {
+      slice: {
+        ...EMPTY_SLICE,
+        filter: [{ field: "name", operator: "contains", operands: ["web"] }],
+      },
+      window: DEFAULT_WINDOW,
+    },
+    "adopt",
+    null,
+  );
+  return renderToString(
+    <DataViews provider={provider}>
+      <Filters />
+    </DataViews>,
+  );
+};
+
+/**
+ * The server markup of the text input alone, so its attributes are read
+ * wherever React places them and however it spells them.
+ */
+const readTextInput = (html: string): string => {
+  const tag = /<input[^>]*name="name__contains"[^>]*\/>/.exec(html)?.at(0);
+  if (tag === undefined) {
+    throw new Error("the server renders no text input for name");
+  }
+  return tag;
+};
 
 describe("DataViews.Filters SSR", () => {
   it("renders the form on the server, its controls and destination from the query the location carries", () => {
@@ -65,5 +116,17 @@ describe("DataViews.Filters SSR", () => {
     expect(html).not.toContain('type="hidden" name="status"');
     // Nothing observed the provider, so nothing ran.
     expect(source.calls).toHaveLength(0);
+  });
+
+  it("renders applied text into its input, so a submission keeps it", () => {
+    const input = readTextInput(renderWithTextApplied(withText));
+    expect(input).toContain('value="web"');
+    expect(input).not.toMatch(/readonly=/i);
+  });
+
+  it("renders applied text the source does not declare read-only", () => {
+    const input = readTextInput(renderWithTextApplied(everything));
+    expect(input).toContain('value="web"');
+    expect(input).toMatch(/readonly=""/i);
   });
 });

@@ -112,8 +112,9 @@ export type Machine = {
 };
 
 // Every field and its kind: the kind decides which filter a field offers —
-// text offers none — and how the rows order by it. The identity is what
-// the selection and every row key hold; the record type is inferred from it.
+// text is filtered by what it contains — and how the rows order by it. The
+// identity is what the selection and every row key hold; the record type is
+// inferred from it.
 export const machineCollection = createCollection({
   identify: (machine: Machine) => machine.id,
   fields: [

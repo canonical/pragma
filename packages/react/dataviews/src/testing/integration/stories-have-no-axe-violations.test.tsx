@@ -6,8 +6,8 @@
  * Each story renders through its own decorators and args. A table or panel
  * story is checked as a reader first sees it; a server-backed story once its
  * play function has run, in the state that leaves — the failure beside the
- * rows, the refusal beside the header — answered by the mock endpoints it
- * declares.
+ * rows, the refusal beside the header, the text applied with its clear
+ * control — answered by the mock endpoints it declares.
  *
  * Necessary evidence, not a conformance claim: jsdom lays nothing out, so
  * contrast is left to a browser, and axe checks what markup can prove.

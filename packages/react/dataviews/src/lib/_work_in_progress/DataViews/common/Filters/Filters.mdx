@@ -7,7 +7,7 @@ import * as Stories from "./Filters.stories";
 
 `DataViews.Filters` edits the collection's query. It takes no query and no list of fields: which fields it offers comes from the collection's schema, and which operators each accepts comes from what the provider's source declares it can execute. It never offers a restriction the source would refuse, and it has no draft to keep in step with the applied query — each edit is the applied query.
 
-The design has not drawn the filters yet, so the part renders plain form controls: a group of checkboxes for a choices field, a from and a to bound for a number or date field, and one checkbox for a flag.
+The design has not drawn the filters yet, so the part renders plain form controls: a group of checkboxes for a choices field, a from and a to bound for a number or date field, one checkbox for a flag, and a text input for the text a text field must contain.
 
 ## Filters over a composed collection
 
@@ -28,8 +28,8 @@ import { useState } from "react";
 import { type Machine, machines } from "./machines.js";
 
 // Every field and its kind: the kind decides which filter a field offers —
-// text offers none — and how the rows order by it. Declared once, beside
-// the identity every machine carries.
+// text is filtered by what it contains — and how the rows order
+// by it. Declared once, beside the identity every machine carries.
 const machineCollection = createCollection({
   identify: (machine: Machine) => machine.id,
   fields: [
@@ -69,21 +69,25 @@ export function Machines() {
 
 ## The applied query, not a draft
 
-A checked status or a filled bound is the restriction in force. A query the provider starts on — a `snapshot`, a view it opens, a URL it adopts — shows in the controls the same way, and from inside the root the same edits are made in code through this root's filter handles: `useDataViews(machineCollection).filters.status.eq.set(["failed"])`. The handles are the root's, not the provider's: two roots over one provider share the applied query and never each other's half-typed input.
+A checked status, a filled bound or text typed into a text field is the restriction in force. A query the provider starts on — a `snapshot`, a view it opens, a URL it adopts — shows in the controls the same way, and from inside the root the same edits are made in code through this root's filter handles: `useDataViews(machineCollection).filters.status.eq.set(["failed"])`. The handles are the root's, not the provider's: two roots over one provider share the applied query and never each other's half-typed input.
 
 <Canvas of={Stories.ChoiceApplied} sourceState="none" />
 
 <Canvas of={Stories.BoundApplied} sourceState="none" />
 
+## Text a field contains
+
+A text field is filtered by the text its value contains, compared case-insensitively: `web` finds `WEB-01`. The text is taken literally — `%` and `_` are characters to look for, never wildcards, and nothing is trimmed. Emptying the input is incomplete rather than a removal, so the text already applied stays until the clear button removes it. A source offers the input only on the text fields it can look through; the REST API stories show one that looks through some fields and not others, and the GraphQL API stories one that looks through all of them.
+
 ## An invalid edit keeps the restriction
 
-A bound outside the schema's bounds is refused, not applied — by the schema, and natively by the browser, since a number bound is a native number input carrying the schema's `min` and `max`. The restriction already in force stays in force, and the message beside the input says so, because the value on screen is no longer what filters the rows. Emptying a bound is incomplete rather than a removal; the clear button removes it.
+A bound outside the schema's bounds is refused, not applied — by the schema, and natively by the browser, since a number bound is a native number input carrying the schema's `min` and `max`. The restriction already in force stays in force, and the message beside the input says so, because the value on screen is no longer what filters the rows. A valid edit the source refuses is kept out the same way, with the source's reason beside the input. Emptying a bound is incomplete rather than a removal; the clear button removes it.
 
 <Canvas of={Stories.InvalidEditKeepsTheRestriction} sourceState="none" />
 
 ## Before any script runs
 
-The filters are a GET form. Each control is named as the URL spells its clause — `status` repeated once per chosen option, `owner__isSet`, `cores__gte` — and the rest of the applied query rides hidden beside them, so a submission lands on the destination the provider would have written, from the first page. Once scripting is enabled every edit applies as it is made, a submission is intercepted, the submit control is hidden and the clear buttons appear.
+The filters are a GET form. Each control is named as the URL spells its clause — `status` repeated once per chosen option, `owner__isSet`, `cores__gte`, `name__contains` — and the rest of the applied query rides hidden beside them, so a submission lands on the destination the provider would have written, from the first page. Once scripting is enabled every edit applies as it is made, a submission is intercepted, the submit control is hidden and the clear buttons appear.
 
 ## Only what the source can run
 

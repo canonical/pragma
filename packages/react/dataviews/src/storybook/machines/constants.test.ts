@@ -26,6 +26,9 @@ describe("SERVER_BACKED_RENDER_CODE", () => {
     labels={{
       status: "Status",
       cores: "Cores",
+      name: "Host",
+      region: "Region",
+      owner: "Owner",
     }}
   />
   <DataViews.DataTable

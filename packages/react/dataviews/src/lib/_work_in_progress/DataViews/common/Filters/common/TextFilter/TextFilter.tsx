@@ -3,34 +3,32 @@ import { Button } from "@canonical/react-ds-global";
 import { type ReactElement, useId, useRef } from "react";
 import { useFilterHandle } from "../../../../hooks/index.js";
 import { describeFilterFeedback } from "../utils/index.js";
-import type { BoundFilterProps } from "./types.js";
+import type { TextFilterProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds data-views-filters-bound";
-
-const BOUND_WORDING = { gte: "from", lte: "to" } as const;
+const componentCssClassName = "ds data-views-filters-text";
 
 /**
- * One bound of a number or date field.
+ * One text filter: the text a text field must contain.
  *
- * Emptying the input is incomplete, not a removal: the applied bound stays
- * until it is explicitly cleared, which is what the clear control is for;
- * clearing moves focus to the input while the source declares the bound,
- * and otherwise to the filters' group, as the control leaves with it. A
- * number is a native number input carrying the schema's bounds, so the
- * browser validates it before any script runs and the same bounds the schema
- * enforces are the ones it announces; a date is a native date input.
- * The control is named as the wire spells the clause, so a GET submission
- * is the same destination the edit writes.
+ * A labelled native text input named as the wire spells the clause,
+ * `<field>__contains`, so a GET submission before any script runs is the
+ * same destination the edit writes; the server's decoder reads it back as
+ * the predicate. Once scripting is enabled each edit applies as it is typed.
+ * Emptying the input is incomplete, not a removal: the applied text stays
+ * until it is cleared, which is what the clear control is for; at baseline
+ * an emptied input submits no clause. Clearing moves focus to the input while
+ * the source declares the text, and otherwise to the filters' group, as the
+ * control leaves with it. What the source refused, and why, is said beside
+ * the input.
  */
-export default function BoundFilter({
+export default function TextFilter({
   handle,
   label,
-  bound,
-  definition,
+  field: fieldName,
   declared,
   onLeave,
-}: BoundFilterProps): ReactElement | null {
+}: TextFilterProps): ReactElement | null {
   const field = useFilterHandle(handle);
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -40,18 +38,7 @@ export default function BoundFilter({
   }
   const feedbackId = `${inputId}-feedback`;
   const message = describeFilterFeedback(field.feedback, retained);
-  const name = `${label} ${BOUND_WORDING[bound]}`;
-  // The schema's bounds, natively: an out-of-range value is refused by the
-  // browser at baseline and by the schema once scripted.
-  const native =
-    definition.kind === "number"
-      ? {
-          type: "number",
-          min: definition.min,
-          max: definition.max,
-          step: "any",
-        }
-      : { type: "date" };
+  const name = `${label} contains`;
   return (
     <div className={componentCssClassName}>
       <label htmlFor={inputId} className="label">
@@ -61,10 +48,10 @@ export default function BoundFilter({
         ref={inputRef}
         id={inputId}
         className="input"
-        {...native}
-        name={spellWireKey(definition.field, bound)}
+        type="text"
+        name={spellWireKey(fieldName, "contains")}
         value={field.input}
-        // Undeclared, the bound can only be cleared, never replaced.
+        // Undeclared, the text can only be cleared, never replaced.
         readOnly={!declared}
         aria-invalid={
           field.feedback.status === "invalid" ||
@@ -72,12 +59,6 @@ export default function BoundFilter({
         }
         aria-describedby={message === null ? undefined : feedbackId}
         onChange={(event) => {
-          // A number input hands over nothing while its text is not yet a
-          // number — "-", "1e": nothing is edited until it is one, so the
-          // applied bound and its message stand.
-          if (event.target.validity.badInput) {
-            return;
-          }
           field.edit(event.target.value);
         }}
       />
@@ -88,8 +69,8 @@ export default function BoundFilter({
           className="clear"
           onClick={() => {
             field.clear();
-            // The control with focus leaves with the bound. The input stays
-            // while the source declares the bound, so focus goes there;
+            // The control with focus leaves with the text. The input stays
+            // while the source declares the field, so focus goes there;
             // otherwise the whole control leaves, and its parent places
             // focus rather than the document.
             if (declared) {

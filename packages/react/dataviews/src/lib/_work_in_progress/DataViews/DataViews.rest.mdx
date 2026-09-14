@@ -90,6 +90,12 @@ The provider and the parts are built over it as over any other source.
 
 <Canvas of={Stories.Answered} sourceState="none" />
 
+## Text a field contains
+
+`name__contains=web` asks for the hosts whose name holds `web`, compared case-insensitively. The text is literal: an endpoint matching with SQL `LIKE` escapes `%`, `_` and its escape character before it wraps the text in `%`, so `50%` never matches `5050`. The owner has no text input here, because the endpoint declares no `contains` on it.
+
+<Canvas of={Stories.TextApplied} sourceState="none" />
+
 ## While the endpoint answers
 
 Until the first page arrives the table says it is loading and claims no count.

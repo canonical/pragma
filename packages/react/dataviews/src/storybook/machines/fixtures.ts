@@ -142,9 +142,9 @@ export const machines = [
 /**
  * The machine collection, declared once at module scope: its schema —
  * every field with its kind, which decides both the filter control a field
- * offers (text offers none) and how an ordered term over it compares — and
- * the identity every machine carries. It is the witness every story's
- * provider is built over and every custom child names.
+ * offers (text is filtered by what it contains) and how an ordered term over
+ * it compares — and the identity every machine carries. It is the witness
+ * every story's provider is built over and every custom child names.
  */
 export const machineCollection = createCollection({
   identify: (machine: Machine) => machine.id,

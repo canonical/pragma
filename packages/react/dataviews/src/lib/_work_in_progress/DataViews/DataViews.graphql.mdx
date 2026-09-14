@@ -78,6 +78,12 @@ The provider and the parts are built over it as over any other source.
 
 <Canvas of={Stories.Answered} sourceState="none" />
 
+## Text a field contains
+
+`nameContains` asks for the hosts whose name holds the text, compared case-insensitively. The text is literal, so `50%` never matches `5050`. The owner has a text input here, because this endpoint declares `contains` on it.
+
+<Canvas of={Stories.TextApplied} sourceState="none" />
+
 ## While the endpoint answers
 
 Until the first page arrives the table says it is loading and claims no count.

@@ -210,3 +210,37 @@ export const UnreachablePage: Story = {
     ).toBeVisible();
   },
 };
+
+/**
+ * Text a host must contain, typed into the filters: each edit is a request
+ * the endpoint answers case-insensitively and literally, so `ELM` finds
+ * `elm.example.com`. Before any script runs the input is a GET form
+ * control named `name__contains`, and a submission reaches the same query.
+ */
+export const TextApplied: Story = {
+  parameters: code,
+  render: () => (
+    <ServerBackedMachines source={() => createGraphQLMachineSource("live")} />
+  ),
+  play: async ({ canvas }) => {
+    await waitFor(() =>
+      expect(readPaginationSummary(canvas)).toHaveTextContent(
+        "Showing 1–5 items",
+      ),
+    );
+    const host = canvas.getByRole("textbox", { name: "Host contains" });
+    await userEvent.type(host, "ELM");
+    await waitFor(() =>
+      expect(readPaginationSummary(canvas)).toHaveTextContent("Showing item 1"),
+    );
+    await expect(
+      canvas.getByRole("row", { name: /elm\.example\.com/ }),
+    ).toBeVisible();
+    await expect(host).toHaveFocus();
+    await expect(host).toHaveAttribute("name", "name__contains");
+    // This endpoint declares `contains` on the owner, so the owner has one.
+    await expect(
+      canvas.getByRole("textbox", { name: "Owner contains" }),
+    ).toBeVisible();
+  },
+};

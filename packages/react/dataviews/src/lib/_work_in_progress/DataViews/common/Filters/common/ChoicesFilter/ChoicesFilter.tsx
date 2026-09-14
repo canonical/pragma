@@ -14,7 +14,9 @@ const NONE_SELECTED: ReadonlySet<PredicateOperand> = new Set();
  * state — the last option cleared removes the predicate rather than
  * applying an empty restriction that matches nothing. Every checkbox is
  * named by the field, as the wire spells equality, so a GET submission
- * repeats the field once per chosen option.
+ * repeats the field once per chosen option. Unchecking an option of an
+ * undeclared set disables its checkbox, or removes the control with the
+ * last, so focus moves to the filters' group.
  */
 export default function ChoicesFilter({
   options,
@@ -22,6 +24,7 @@ export default function ChoicesFilter({
   label,
   field: fieldName,
   declared,
+  onLeave,
 }: ChoicesFilterProps): ReactElement | null {
   const field = useFilterHandle(handle);
   if (!declared && field.applied.kind === "empty") {
@@ -50,9 +53,15 @@ export default function ChoicesFilter({
               );
               if (next.length === 0) {
                 field.clear();
-                return;
+              } else {
+                field.set(next);
               }
-              field.set(next);
+              if (!declared) {
+                // The checkbox that had focus leaves with the set, or is
+                // disabled as an option the set may not regain: neither can
+                // keep focus.
+                onLeave();
+              }
             }}
           />
           {String(option)}
