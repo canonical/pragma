@@ -4,8 +4,8 @@
  * model reading must carry, or deliberately must not.
  */
 import { describe, expect, it } from "vitest";
+import type { DataTableColumn } from "../../types.js";
 import areColumnModelsEqual from "./areColumnModelsEqual.js";
-import type { DataTableColumn } from "./types.js";
 
 const name: DataTableColumn = { id: "name", header: "Name" };
 const status: DataTableColumn = { id: "status", header: "Status" };

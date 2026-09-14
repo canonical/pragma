@@ -26,7 +26,6 @@ import {
   type VirtualizedBodyProps,
 } from "../../common/index.js";
 import { useDataViewsValue, useMergedRef } from "../../hooks/index.js";
-import areColumnModelsEqual from "./areColumnModelsEqual.js";
 import {
   HeaderCell,
   Row,
@@ -34,7 +33,11 @@ import {
   StatusRow,
   TableBody,
 } from "./common/index.js";
-import { readFieldName, readSizing } from "./common/utils/index.js";
+import {
+  areColumnModelsEqual,
+  readFieldName,
+  readSizing,
+} from "./common/utils/index.js";
 import describeStatus from "./describeStatus.js";
 import {
   useColumnArrangement,

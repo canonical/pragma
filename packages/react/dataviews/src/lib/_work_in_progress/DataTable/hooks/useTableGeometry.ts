@@ -8,7 +8,7 @@ import {
 } from "@canonical/dataviews-core/bindings";
 import { useCallback, useMemo, useState } from "react";
 import { useDataViewsValue } from "../../../hooks/index.js";
-import areTracksEqual from "../areTracksEqual.js";
+import { areTracksEqual } from "../common/utils/index.js";
 import type { UseTableGeometryResult } from "./types.js";
 import useStableValue from "./useStableValue.js";
 
