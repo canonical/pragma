@@ -57,8 +57,6 @@
       var(--modal-max-inline-size)
     );
 
-
-
     --modal-max-block-size: 80vh;
   }
 
